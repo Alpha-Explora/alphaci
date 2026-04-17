@@ -1,65 +1,178 @@
-import Image from "next/image";
+"use client";
 
-export default function Home() {
+import Link from "next/link";
+import { motion, useReducedMotion } from "framer-motion";
+
+import { FlowBackground } from "@/components/layout/flow-background";
+import { useAuthSession } from "@/hooks/use-auth-session";
+import { createGitHubLoginUrl } from "@/lib/api/client";
+import { hasActiveSubscription } from "@/lib/auth/subscription";
+
+const valueCards = [
+  {
+    title: "Source-backed templates",
+    body: "Template cards map directly to files inside cicd-workflow so your team can trust where each pipeline starts.",
+  },
+  {
+    title: "Setup in minutes",
+    body: "Use GitHub login, open Setup Workflows, and generate validated YAML without rebuilding every rule by hand.",
+  },
+  {
+    title: "Clear tabs per workflow function",
+    body: "Switch between setup, current workflows, and all templates with no clutter.",
+  },
+];
+
+const flowSteps = [
+  "Sign up or log in with GitHub",
+  "Choose the 300 pesos monthly subscription",
+  "Open workflow tabs and generate your YAML",
+];
+
+const trustPills = ["Light UI", "GitHub OAuth", "cicd-workflow source-linked"];
+
+export default function LandingPage() {
+  const prefersReducedMotion = useReducedMotion();
+  const { status, session } = useAuthSession();
+  const hasSubscription = hasActiveSubscription(session);
+
+  const signupHref = createGitHubLoginUrl("/auth/callback?intent=signup&next=%2Fhome");
+
+  let primaryHref = signupHref;
+  let primaryLabel = "Sign up with GitHub";
+  let secondaryHref = "/login";
+  let secondaryLabel = "Log in";
+  let appHref = "/subscribe";
+  let appLabel = "Pricing";
+
+  if (status === "signed-in") {
+    appHref = "/home";
+    appLabel = "Dashboard";
+
+    if (hasSubscription) {
+      primaryHref = "/home";
+      primaryLabel = "Open your workspace";
+      secondaryHref = "/workflows";
+      secondaryLabel = "Go to workflows";
+    } else {
+      primaryHref = "/subscribe";
+      primaryLabel = "Activate 300 pesos plan";
+      secondaryHref = "/subscribe";
+      secondaryLabel = "See plan and unlock tabs";
+    }
+  }
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+    <main className="flow-shell marketing-shell">
+      <FlowBackground />
+
+      <header className="marketing-nav glass-panel">
+        <p className="brand-mark">FlowCI Studio</p>
+        <nav aria-label="Primary" className="nav-links">
+          <a href="#product">Product</a>
+          <a href="#pricing">Pricing</a>
+          <Link href="/workflows">Workflows</Link>
+          <Link href="/login">Login</Link>
+          <Link href="/signup">Sign up</Link>
+        </nav>
+        <Link className="ghost-button" href={appHref}>
+          {appLabel}
+        </Link>
+      </header>
+
+      <section className="hero-block glass-panel">
+        <motion.p
+          className="hero-kicker"
+          initial={prefersReducedMotion ? undefined : { opacity: 0, y: 10 }}
+          animate={prefersReducedMotion ? undefined : { opacity: 1, y: 0 }}
+        >
+          Friendly CI/CD for teams that ship every week
+        </motion.p>
+        <motion.h1
+          initial={prefersReducedMotion ? undefined : { opacity: 0, y: 20 }}
+          animate={prefersReducedMotion ? undefined : { opacity: 1, y: 0 }}
+          transition={{ duration: 0.42 }}
+        >
+          Friendly CI/CD workflow studio for real teams.
+        </motion.h1>
+        <motion.p
+          className="hero-description"
+          initial={prefersReducedMotion ? undefined : { opacity: 0, y: 18 }}
+          animate={prefersReducedMotion ? undefined : { opacity: 1, y: 0 }}
+          transition={{ duration: 0.48, delay: 0.08 }}
+        >
+          Build pipelines from source templates in cicd-workflow, then switch between Setup, Current,
+          and All tabs to manage everything in one place.
+        </motion.p>
+        <motion.div
+          className="hero-actions"
+          initial={prefersReducedMotion ? undefined : { opacity: 0, y: 20 }}
+          animate={prefersReducedMotion ? undefined : { opacity: 1, y: 0 }}
+          transition={{ duration: 0.45, delay: 0.15 }}
+        >
+          <Link className="primary-button" href={primaryHref}>
+            {primaryLabel}
+          </Link>
+          <Link className="ghost-button" href={secondaryHref}>
+            {secondaryLabel}
+          </Link>
+        </motion.div>
+        <ul className="pill-row" aria-label="Highlights">
+          {trustPills.map((pill) => (
+            <li key={pill} className="status-pill">
+              {pill}
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      <section id="product" className="section-card glass-panel">
+        <div className="section-header">
+          <h2>How the workflow studio runs</h2>
+          <p>Three simple steps from login to source-linked workflow output.</p>
+        </div>
+        <div className="step-track">
+          {flowSteps.map((step, index) => (
+            <article key={step} className="step-card">
+              <span className="step-number">0{index + 1}</span>
+              <p>{step}</p>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="section-card glass-panel">
+        <div className="section-header">
+          <h2>Built for practical release teams</h2>
+        </div>
+        <div className="value-grid">
+          {valueCards.map((card) => (
+            <article key={card.title} className="value-card">
+              <h3>{card.title}</h3>
+              <p>{card.body}</p>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section id="pricing" className="section-card pricing-card glass-panel">
+        <div>
+          <p className="hero-kicker">Pricing</p>
+          <h2>Pro subscription is 300 pesos per month</h2>
+          <p>
+            Unlock setup tools, current workflow management, and full template access after GitHub sign in.
+            Cancel anytime.
           </p>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-39.5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/8 px-5 transition-colors hover:border-transparent hover:bg-black/4 dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-39.5"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+        <div className="pricing-actions">
+          <Link className="primary-button" href="/subscribe">
+            Subscribe for 300 pesos
+          </Link>
+          <Link className="ghost-button" href="/login">
+            Open login page
+          </Link>
         </div>
-      </main>
-    </div>
+      </section>
+    </main>
   );
 }

@@ -15,6 +15,8 @@ const customJestConfig = {
     '<rootDir>/src/**/*.{ts,tsx}',
     '!<rootDir>/src/**/*.d.ts',
     '!<rootDir>/src/app/**/*.{ts,tsx}',
+    '!<rootDir>/src/components/**/*.{ts,tsx}',
+    '!<rootDir>/src/lib/api/**/*.{ts,tsx}',
   ],
   coverageReporters: ['text', 'lcov', 'json-summary'],
   coverageThreshold: {

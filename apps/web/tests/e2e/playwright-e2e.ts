@@ -4,7 +4,11 @@ import { chromium, firefox, webkit } from 'playwright';
 
 type BrowserName = 'chromium' | 'firefox' | 'webkit';
 
-const LOCAL_PAGE_MARKERS = ['Get started by editing', 'To get started, edit the page.tsx file.'];
+const LOCAL_PAGE_MARKERS = [
+  'Ship with calm, not chaos.',
+  'FlowCI Studio',
+  'Pro subscription is 300 pesos per month',
+];
 
 function hasExpectedLandingMarker(text: string): boolean {
   return LOCAL_PAGE_MARKERS.some((marker) => text.includes(marker));
@@ -63,6 +67,15 @@ async function waitForServer(url: string, timeoutMs = 45_000): Promise<void> {
   throw new Error(`Timed out waiting for server at ${url}`);
 }
 
+async function isServerReachable(url: string): Promise<boolean> {
+  try {
+    const response = await fetch(url, { method: 'GET' });
+    return response.status >= 200 && response.status < 500;
+  } catch {
+    return false;
+  }
+}
+
 async function main() {
   const port = process.env.PORT || '4173';
   const baseUrl = process.env.E2E_BASE_URL || `http://127.0.0.1:${port}`;
@@ -70,7 +83,9 @@ async function main() {
   const isExternalTarget = Boolean(process.env.E2E_BASE_URL);
   const waitTimeoutMs = isExternalTarget ? 120_000 : 45_000;
 
-  const app = isExternalTarget
+  const hasReusableLocalServer = isExternalTarget ? false : await isServerReachable(baseUrl);
+
+  const app = isExternalTarget || hasReusableLocalServer
     ? null
     : spawn('npm', ['run', 'dev', '--', '--hostname', '127.0.0.1', '--port', port], {
         stdio: 'inherit',
