@@ -5,6 +5,7 @@ import type {
   GenerateWorkflowRequest,
   GenerateWorkflowResponse,
   SubscriptionInfo,
+  WorkflowHistoryResponse,
 } from "./contracts";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:4000/api/v1";
@@ -58,6 +59,18 @@ export function createGitHubLoginUrl(returnTo: string): string {
   return `${API_BASE_URL}/auth/github/start?returnTo=${encodeURIComponent(returnTo)}`;
 }
 
+export function createDummyLoginUrl(returnTo: string, login?: string): string {
+  const search = new URLSearchParams({
+    returnTo,
+  });
+
+  if (login) {
+    search.set("login", login);
+  }
+
+  return `${API_BASE_URL}/auth/dummy/login?${search.toString()}`;
+}
+
 export async function getAuthSession(): Promise<AuthMeResponse> {
   return request<AuthMeResponse>("/auth/me");
 }
@@ -101,6 +114,23 @@ export async function activateMockSubscription(plan: "pro" | "enterprise"): Prom
   return response.subscription;
 }
 
+export async function activateMonthlySubscription(plan: "pro" | "enterprise"): Promise<SubscriptionInfo> {
+  const response = await request<{ subscription: SubscriptionInfo }>("/subscription/monthly/activate", {
+    method: "POST",
+    body: JSON.stringify({ plan }),
+  });
+
+  return response.subscription;
+}
+
+export async function cancelMonthlySubscription(): Promise<SubscriptionInfo> {
+  const response = await request<{ subscription: SubscriptionInfo }>("/subscription/monthly/cancel", {
+    method: "POST",
+  });
+
+  return response.subscription;
+}
+
 export async function generateWorkflow(
   payload: GenerateWorkflowRequest,
 ): Promise<GenerateWorkflowResponse> {
@@ -108,4 +138,9 @@ export async function generateWorkflow(
     method: "POST",
     body: JSON.stringify(payload),
   });
+}
+
+export async function getWorkflowHistory(limit = 25): Promise<WorkflowHistoryResponse> {
+  const safeLimit = Math.max(1, Math.min(100, Math.trunc(limit)));
+  return request<WorkflowHistoryResponse>(`/workflows/history?limit=${safeLimit}`);
 }

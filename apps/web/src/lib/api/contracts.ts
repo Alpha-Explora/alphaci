@@ -12,8 +12,14 @@ export interface SessionUser {
 export interface SubscriptionInfo {
   plan: SubscriptionPlan;
   status: SubscriptionStatus;
-  provider: "mock";
+  provider: "mock" | "supabase" | "manual";
   updatedAt: string;
+  planCode?: string;
+  currentPeriodStart?: string | null;
+  currentPeriodEnd?: string | null;
+  cancelAtPeriodEnd?: boolean;
+  amountPhp?: number;
+  interval?: "month" | "year";
 }
 
 export interface AuthMeResponse {
@@ -74,4 +80,22 @@ export interface GenerateWorkflowResponse {
     sourceWorkflowFile: string;
     outputFileName: string;
   };
+}
+
+export interface WorkflowHistoryItem {
+  id: string;
+  createdAt: string;
+  templateId: string;
+  templateName: string;
+  stack: string;
+  serviceName: string;
+  outputFileName: string;
+  sourceWorkflowFile: string;
+  sourcePropertiesFile: string;
+  lineCount: number;
+  yaml: string;
+}
+
+export interface WorkflowHistoryResponse {
+  items: WorkflowHistoryItem[];
 }

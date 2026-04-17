@@ -28,6 +28,7 @@ const statusCopy: Record<string, string> = {
   failed: "GitHub sign in failed. Please retry.",
   invalid_state: "The OAuth state token was invalid. Please retry sign in.",
   unavailable: "GitHub OAuth is unavailable in this environment.",
+  dummy_not_found: "Requested dummy account does not exist in the backend seed data.",
 };
 
 export function AuthCallbackClient() {
@@ -83,7 +84,12 @@ export function AuthCallbackClient() {
       }
     }
 
-    if (authStatus === "failed" || authStatus === "invalid_state" || authStatus === "unavailable") {
+    if (
+      authStatus === "failed" ||
+      authStatus === "invalid_state" ||
+      authStatus === "unavailable" ||
+      authStatus === "dummy_not_found"
+    ) {
       setState("failed");
       return;
     }

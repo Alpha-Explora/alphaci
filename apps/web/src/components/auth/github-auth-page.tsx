@@ -7,7 +7,7 @@ import { motion, useReducedMotion } from "framer-motion";
 
 import { FlowBackground } from "@/components/layout/flow-background";
 import { useAuthSession } from "@/hooks/use-auth-session";
-import { createGitHubLoginUrl } from "@/lib/api/client";
+import { createDummyLoginUrl, createGitHubLoginUrl } from "@/lib/api/client";
 import { hasActiveSubscription } from "@/lib/auth/subscription";
 
 interface GitHubAuthPageProps {
@@ -58,6 +58,15 @@ export function GitHubAuthPage({
   }, [mode, nextPath]);
 
   const githubLoginHref = useMemo(() => createGitHubLoginUrl(callbackReturnTo), [callbackReturnTo]);
+  const dummyLoginHref = useMemo(
+    () => createDummyLoginUrl(callbackReturnTo, "dummy-pro-active"),
+    [callbackReturnTo],
+  );
+  const dummyEnterpriseHref = useMemo(
+    () => createDummyLoginUrl(callbackReturnTo, "dummy-enterprise-active"),
+    [callbackReturnTo],
+  );
+  const showDummyAccounts = process.env.NODE_ENV !== "production";
 
   useEffect(() => {
     if (status !== "signed-in") {
@@ -112,6 +121,20 @@ export function GitHubAuthPage({
             View 300 pesos plan
           </Link>
         </div>
+
+        {showDummyAccounts ? (
+          <div className="auth-dummy-row" aria-label="Dummy accounts for local development">
+            <p className="helper-text">Local quick sign in:</p>
+            <div className="hero-actions">
+              <Link className="ghost-button" href={dummyLoginHref}>
+                Dummy Pro
+              </Link>
+              <Link className="ghost-button" href={dummyEnterpriseHref}>
+                Dummy Enterprise
+              </Link>
+            </div>
+          </div>
+        ) : null}
 
         {status === "loading" ? <p className="helper-text">Checking current session...</p> : null}
         {error ? (

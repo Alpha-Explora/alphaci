@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useMemo, useState, type KeyboardEvent } from "react";
+import { useCallback, useEffect, useMemo, useState, type KeyboardEvent } from "react";
 import { AnimatePresence, MotionConfig, motion, useReducedMotion } from "framer-motion";
 
 import {
   generateWorkflow,
   getCategories,
+  getWorkflowHistory,
   getTemplates,
   type ApiError,
 } from "@/lib/api/client";
@@ -14,6 +15,7 @@ import type {
   CategorySummary,
   GenerateWorkflowRequest,
   GenerateWorkflowResponse,
+  WorkflowHistoryItem,
 } from "@/lib/api/contracts";
 
 import { TemplateCard } from "./template-card";
@@ -23,23 +25,8 @@ interface WorkflowBuilderProps {
   plan: string;
 }
 
-interface WorkflowHistoryEntry {
-  id: string;
-  createdAt: string;
-  templateName: string;
-  templateId: string;
-  stack: string;
-  serviceName: string;
-  outputFileName: string;
-  sourceWorkflowFile: string;
-  sourcePropertiesFile: string;
-  lineCount: number;
-  yaml: string;
-}
-
 type WorkflowTab = "setup" | "current" | "all";
 
-const HISTORY_STORAGE_KEY = "cicd-workflow-generation-history-v1";
 const WORKFLOW_TABS: WorkflowTab[] = ["setup", "current", "all"];
 
 const enhancementLabels: Array<{
@@ -83,12 +70,24 @@ function toSourcePath(path: string): string {
     return "cicd-workflow/workflow-templates";
   }
 
-  const normalized = path.replaceAll("\\", "/").replace(/^\/+/, "");
-  if (normalized.startsWith("cicd-workflow/")) {
+  const normalized = path.replaceAll("\\", "/");
+  const repoMarker = "/cicd-workflow/";
+  const repoIndex = normalized.toLowerCase().lastIndexOf(repoMarker);
+
+  if (repoIndex >= 0) {
+    return normalized.slice(repoIndex + 1);
+  }
+
+  const trimmed = normalized.replace(/^\/+/, "");
+  if (trimmed.startsWith("cicd-workflow/")) {
+    return trimmed;
+  }
+
+  if (/^[a-zA-Z]:\//.test(normalized)) {
     return normalized;
   }
 
-  return `cicd-workflow/${normalized}`;
+  return `cicd-workflow/${trimmed}`;
 }
 
 function chooseSelectedTemplate(
@@ -121,65 +120,16 @@ function formatDate(value: string): string {
   }).format(date);
 }
 
-function readHistoryFromStorage(): WorkflowHistoryEntry[] {
-  if (globalThis.window === undefined) {
-    return [];
-  }
-
-  const raw = globalThis.localStorage.getItem(HISTORY_STORAGE_KEY);
-  if (!raw) {
-    return [];
-  }
-
-  try {
-    const parsed = JSON.parse(raw) as WorkflowHistoryEntry[];
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
-  }
-}
-
-function writeHistoryToStorage(entries: WorkflowHistoryEntry[]): boolean {
-  if (globalThis.window === undefined) {
-    return false;
-  }
-
-  try {
-    globalThis.localStorage.setItem(HISTORY_STORAGE_KEY, JSON.stringify(entries));
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-function createHistoryEntry(
-  response: GenerateWorkflowResponse,
-  serviceName: string,
-): WorkflowHistoryEntry {
-  return {
-    id: `${response.metadata.sha256}-${Date.now()}`,
-    createdAt: response.metadata.generatedAt,
-    templateName: response.metadata.templateName,
-    templateId: response.metadata.templateId,
-    stack: response.metadata.stack,
-    serviceName,
-    outputFileName: response.metadata.outputFileName,
-    sourceWorkflowFile: response.metadata.sourceWorkflowFile,
-    sourcePropertiesFile: response.metadata.sourcePropertiesFile,
-    lineCount: response.metadata.lineCount,
-    yaml: response.yaml,
-  };
-}
-
 export function WorkflowBuilder({ login, plan }: Readonly<WorkflowBuilderProps>) {
   const prefersReducedMotion = useReducedMotion();
   const reducedMotion = prefersReducedMotion ?? false;
 
   const [categories, setCategories] = useState<CategorySummary[]>([]);
   const [allTemplates, setAllTemplates] = useState<CatalogTemplate[]>([]);
-  const [history, setHistory] = useState<WorkflowHistoryEntry[]>([]);
+  const [history, setHistory] = useState<WorkflowHistoryItem[]>([]);
 
   const [loadingCatalog, setLoadingCatalog] = useState(false);
+  const [loadingHistory, setLoadingHistory] = useState(false);
   const [catalogError, setCatalogError] = useState<string | null>(null);
 
   const [activeTab, setActiveTab] = useState<WorkflowTab>("setup");
@@ -198,9 +148,28 @@ export function WorkflowBuilder({ login, plan }: Readonly<WorkflowBuilderProps>)
   const [generationResult, setGenerationResult] = useState<GenerateWorkflowResponse | null>(null);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
 
-  useEffect(() => {
-    setHistory(readHistoryFromStorage());
+  const loadHistory = useCallback(async (silent = false) => {
+    if (!silent) {
+      setLoadingHistory(true);
+    }
+
+    try {
+      const response = await getWorkflowHistory(25);
+      setHistory(response.items);
+    } catch {
+      if (!silent) {
+        setStatusMessage("Workflow history is temporarily unavailable.");
+      }
+    } finally {
+      if (!silent) {
+        setLoadingHistory(false);
+      }
+    }
   }, []);
+
+  useEffect(() => {
+    void loadHistory();
+  }, [loadHistory]);
 
   useEffect(() => {
     let active = true;
@@ -361,18 +330,10 @@ export function WorkflowBuilder({ login, plan }: Readonly<WorkflowBuilderProps>)
       };
 
       const response = await generateWorkflow(payload);
-      const historyEntry = createHistoryEntry(response, normalizedService);
-      const updatedHistory = [historyEntry, ...history].slice(0, 25);
-
-      const persisted = writeHistoryToStorage(updatedHistory);
-      setHistory(updatedHistory);
       setGenerationResult(response);
       setActiveTab("current");
-      setStatusMessage(
-        persisted
-          ? `Generated ${response.metadata.outputFileName}`
-          : `Generated ${response.metadata.outputFileName}. Local history could not be saved.`,
-      );
+      await loadHistory(true);
+      setStatusMessage(`Generated ${response.metadata.outputFileName} and saved to workflow history.`);
     } catch (error) {
       const apiError = error as ApiError;
       if (apiError?.details) {
@@ -637,10 +598,12 @@ export function WorkflowBuilder({ login, plan }: Readonly<WorkflowBuilderProps>)
           <p>{history.length} generated entries</p>
         </div>
         <p className="helper-text">
-          These entries are generated from cicd-workflow source templates and stored locally in this browser.
+          These entries are generated from cicd-workflow source templates and persisted in your backend account history.
         </p>
 
-        {history.length === 0 ? (
+        {loadingHistory ? <p className="helper-text">Loading workflow history...</p> : null}
+
+        {!loadingHistory && history.length === 0 ? (
           <p className="helper-text">No generated workflows yet. Open Setup tab to generate your first one.</p>
         ) : (
           <div className="history-grid">
