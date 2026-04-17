@@ -17,7 +17,6 @@ const kpiCards = [
 
 const quickActions = [
   { label: "Open workflows", href: "/workflows" },
-  { label: "Generate new template", href: "/workflows" },
   { label: "Manage plan", href: "/subscribe" },
 ];
 
@@ -104,9 +103,10 @@ export default function HomeDashboardPage() {
       <header className="marketing-nav glass-panel">
         <p className="brand-mark">FlowCI Studio</p>
         <nav aria-label="Primary" className="nav-links">
+          <Link href="/home">Home</Link>
           <Link href="/">Landing</Link>
-          <Link href="/subscribe">Billing</Link>
           <Link href="/workflows">Workflows</Link>
+          <Link href="/subscribe">Billing</Link>
         </nav>
         <button className="ghost-button" type="button" onClick={handleLogout} disabled={isLoggingOut}>
           {isLoggingOut ? "Signing out..." : "Sign out"}
@@ -116,10 +116,7 @@ export default function HomeDashboardPage() {
       <section className="section-card glass-panel">
         <p className="hero-kicker">Home</p>
         <h1>Welcome back, {session?.user.name ?? session?.user.login ?? "builder"}.</h1>
-        <p>
-          You are connected to GitHub and subscribed to <strong>{session?.subscription.plan ?? "pro"}</strong>.
-          Start where you left off or jump straight into your workflow templates.
-        </p>
+        <p>You are connected to GitHub with an active <strong>{session?.subscription.plan ?? "pro"}</strong> plan.</p>
 
         <div className="hero-actions">
           <Link className="primary-button" href="/workflows">
@@ -136,7 +133,7 @@ export default function HomeDashboardPage() {
       <section className="section-card glass-panel">
         <div className="section-header">
           <h2>Release pulse</h2>
-          <p>Quick health snapshot for your CI/CD motion.</p>
+          <p>Quick status snapshot.</p>
         </div>
         <div className="kpi-grid">
           {kpiCards.map((kpi) => (

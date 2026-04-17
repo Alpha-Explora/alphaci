@@ -81,9 +81,10 @@ export function GitHubAuthPage({
         <nav aria-label="Primary" className="nav-links">
           <Link href="/">Landing</Link>
           <Link href="/subscribe">Pricing</Link>
-          <Link href="/login">Login</Link>
-          <Link href="/signup">Sign up</Link>
         </nav>
+        <Link className="ghost-button" href={mode === "login" ? "/signup" : "/login"}>
+          {mode === "login" ? "Sign up" : "Login"}
+        </Link>
       </header>
 
       <section className="section-card auth-card glass-panel">
@@ -112,9 +113,12 @@ export function GitHubAuthPage({
           </Link>
         </div>
 
-        <p className="helper-text">Next destination after sign in: {nextPath}</p>
         {status === "loading" ? <p className="helper-text">Checking current session...</p> : null}
-        {error ? <p className="helper-text">{error}</p> : null}
+        {error ? (
+          <p className="error-text" role="alert">
+            {error}
+          </p>
+        ) : null}
 
         <p className="auth-switch-text">
           {switchText} <Link href={switchHref}>{switchCta}</Link>

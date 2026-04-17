@@ -1,13 +1,13 @@
 import type { Metadata } from "next";
-import { Nunito, Space_Grotesk } from "next/font/google";
+import { Manrope, Sora } from "next/font/google";
 import "./globals.css";
 
-const displayFont = Space_Grotesk({
+const displayFont = Sora({
   variable: "--font-display",
   subsets: ["latin"],
 });
 
-const bodyFont = Nunito({
+const bodyFont = Manrope({
   variable: "--font-body",
   subsets: ["latin"],
 });

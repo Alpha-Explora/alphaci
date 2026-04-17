@@ -758,9 +758,7 @@ export function WorkflowBuilder({ login, plan }: Readonly<WorkflowBuilderProps>)
         </header>
 
         <section className="intro-panel">
-          <p>
-            Use tabs for setup, current generated workflows, and all available source templates.
-          </p>
+          <p>Use tabs to set up, review generated workflows, and browse templates.</p>
           {statusMessage ? (
             <p className="helper-text" role="status" aria-live="polite">
               {statusMessage}
@@ -773,7 +771,7 @@ export function WorkflowBuilder({ login, plan }: Readonly<WorkflowBuilderProps>)
           ) : null}
         </section>
 
-        <div className="studio-tab-bar" role="tablist" aria-label="Workflow functions">
+        <div className="studio-tab-bar glass-panel" role="tablist" aria-label="Workflow functions">
           <button
             type="button"
             role="tab"
@@ -785,7 +783,7 @@ export function WorkflowBuilder({ login, plan }: Readonly<WorkflowBuilderProps>)
             onClick={() => setActiveTab("setup")}
             onKeyDown={(event) => handleTabKeyDown(event, "setup")}
           >
-            Setup Workflows
+            Setup
           </button>
           <button
             type="button"
@@ -798,7 +796,7 @@ export function WorkflowBuilder({ login, plan }: Readonly<WorkflowBuilderProps>)
             onClick={() => setActiveTab("current")}
             onKeyDown={(event) => handleTabKeyDown(event, "current")}
           >
-            Current Workflows
+            Current
           </button>
           <button
             type="button"
@@ -811,7 +809,7 @@ export function WorkflowBuilder({ login, plan }: Readonly<WorkflowBuilderProps>)
             onClick={() => setActiveTab("all")}
             onKeyDown={(event) => handleTabKeyDown(event, "all")}
           >
-            All Templates
+            Templates
           </button>
         </div>
 

@@ -13,8 +13,7 @@ import { hasActiveSubscription } from "@/lib/auth/subscription";
 const planFeatures = [
   "Unlimited workflow generation",
   "Priority template updates",
-  "Advanced deployment approvals",
-  "Faster support during release windows",
+  "Advanced approvals",
 ];
 
 export default function SubscribePage() {
@@ -58,7 +57,6 @@ export default function SubscribePage() {
           <Link href="/">Landing</Link>
           <Link href="/login">Login</Link>
           <Link href="/signup">Sign up</Link>
-          <Link href="/home">Home</Link>
           <Link href="/workflows">Workflows</Link>
         </nav>
         <Link className="ghost-button" href="/">
@@ -81,10 +79,7 @@ export default function SubscribePage() {
         >
           Pro is 300 pesos per month
         </motion.h1>
-        <p>
-          Connect GitHub, activate Pro, and unlock full workflow generation across your services.
-          Cancel anytime.
-        </p>
+        <p>Connect GitHub and unlock full workflow generation. Cancel anytime.</p>
 
         <div className="price-band">
           <p className="price-amount">300 pesos</p>

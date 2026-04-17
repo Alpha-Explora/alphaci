@@ -22,7 +22,7 @@ export default function SignupPage() {
       <GitHubAuthPage
         mode="signup"
         title="Create your workflow workspace"
-        subtitle="Sign up with GitHub and start from production-ready CI/CD templates powered by cicd-workflow."
+        subtitle="Sign up with GitHub and start generating workflows right away."
         primaryCta="Sign up with GitHub"
         switchText="Already have an account?"
         switchHref="/login"

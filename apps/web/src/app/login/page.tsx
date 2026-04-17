@@ -22,7 +22,7 @@ export default function LoginPage() {
       <GitHubAuthPage
         mode="login"
         title="Welcome back"
-        subtitle="Sign in with GitHub to access your workflows, generated YAML outputs, and deployment setup tools."
+        subtitle="Sign in with GitHub to continue to your workflow studio."
         primaryCta="Continue with GitHub"
         switchText="New here?"
         switchHref="/signup"

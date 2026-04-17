@@ -28,9 +28,7 @@ export function TemplateCard({
         reducedMotion
           ? undefined
           : {
-              y: -6,
-              rotateX: 2,
-              rotateY: -2,
+              y: -2,
             }
       }
       whileTap={reducedMotion ? undefined : { scale: 0.985 }}

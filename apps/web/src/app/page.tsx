@@ -10,26 +10,23 @@ import { hasActiveSubscription } from "@/lib/auth/subscription";
 
 const valueCards = [
   {
-    title: "Source-backed templates",
-    body: "Template cards map directly to files inside cicd-workflow so your team can trust where each pipeline starts.",
+    icon: "GEN",
+    title: "Source-backed generation",
+    body: "Generate workflow files from templates mapped to real source files.",
   },
   {
-    title: "Setup in minutes",
-    body: "Use GitHub login, open Setup Workflows, and generate validated YAML without rebuilding every rule by hand.",
+    icon: "CICD",
+    title: "Automated CI/CD setup",
+    body: "Apply service settings and output production-ready YAML in one flow.",
   },
   {
-    title: "Clear tabs per workflow function",
-    body: "Switch between setup, current workflows, and all templates with no clutter.",
+    icon: "AGNT",
+    title: "Multi-agent workflow system",
+    body: "Use guided tabs to move from setup to generated workflows and templates.",
   },
 ];
 
-const flowSteps = [
-  "Sign up or log in with GitHub",
-  "Choose the 300 pesos monthly subscription",
-  "Open workflow tabs and generate your YAML",
-];
-
-const trustPills = ["Light UI", "GitHub OAuth", "cicd-workflow source-linked"];
+const heroChip = "Powered by source-backed templates";
 
 export default function LandingPage() {
   const prefersReducedMotion = useReducedMotion();
@@ -40,139 +37,107 @@ export default function LandingPage() {
 
   let primaryHref = signupHref;
   let primaryLabel = "Sign up with GitHub";
-  let secondaryHref = "/login";
-  let secondaryLabel = "Log in";
   let appHref = "/subscribe";
   let appLabel = "Pricing";
+  let navUtilityHref = "/login";
+  let navUtilityLabel = "Login";
 
   if (status === "signed-in") {
     appHref = "/home";
     appLabel = "Dashboard";
+    navUtilityHref = "/home";
+    navUtilityLabel = "Home";
 
     if (hasSubscription) {
       primaryHref = "/home";
       primaryLabel = "Open your workspace";
-      secondaryHref = "/workflows";
-      secondaryLabel = "Go to workflows";
     } else {
       primaryHref = "/subscribe";
       primaryLabel = "Activate 300 pesos plan";
-      secondaryHref = "/subscribe";
-      secondaryLabel = "See plan and unlock tabs";
     }
   }
 
   return (
-    <main className="flow-shell marketing-shell">
+    <main className="flow-shell marketing-shell landing-layout">
       <FlowBackground />
 
-      <header className="marketing-nav glass-panel">
-        <p className="brand-mark">FlowCI Studio</p>
-        <nav aria-label="Primary" className="nav-links">
-          <a href="#product">Product</a>
-          <a href="#pricing">Pricing</a>
-          <Link href="/workflows">Workflows</Link>
-          <Link href="/login">Login</Link>
-          <Link href="/signup">Sign up</Link>
-        </nav>
-        <Link className="ghost-button" href={appHref}>
-          {appLabel}
-        </Link>
-      </header>
+      <div className="landing-content">
+        <header className="marketing-nav glass-panel">
+          <p className="brand-mark">FlowCI Studio</p>
+          <nav aria-label="Primary" className="nav-links">
+            <Link href="/workflows">Workflows</Link>
+          </nav>
+          <div className="landing-nav-actions">
+            <Link className="ghost-button" href={navUtilityHref}>
+              {navUtilityLabel}
+            </Link>
+            <Link className="primary-button" href={appHref}>
+              {appLabel}
+            </Link>
+          </div>
+        </header>
 
-      <section className="hero-block glass-panel">
-        <motion.p
-          className="hero-kicker"
-          initial={prefersReducedMotion ? undefined : { opacity: 0, y: 10 }}
-          animate={prefersReducedMotion ? undefined : { opacity: 1, y: 0 }}
-        >
-          Friendly CI/CD for teams that ship every week
-        </motion.p>
-        <motion.h1
-          initial={prefersReducedMotion ? undefined : { opacity: 0, y: 20 }}
-          animate={prefersReducedMotion ? undefined : { opacity: 1, y: 0 }}
-          transition={{ duration: 0.42 }}
-        >
-          Friendly CI/CD workflow studio for real teams.
-        </motion.h1>
-        <motion.p
-          className="hero-description"
-          initial={prefersReducedMotion ? undefined : { opacity: 0, y: 18 }}
-          animate={prefersReducedMotion ? undefined : { opacity: 1, y: 0 }}
-          transition={{ duration: 0.48, delay: 0.08 }}
-        >
-          Build pipelines from source templates in cicd-workflow, then switch between Setup, Current,
-          and All tabs to manage everything in one place.
-        </motion.p>
-        <motion.div
-          className="hero-actions"
-          initial={prefersReducedMotion ? undefined : { opacity: 0, y: 20 }}
-          animate={prefersReducedMotion ? undefined : { opacity: 1, y: 0 }}
-          transition={{ duration: 0.45, delay: 0.15 }}
-        >
-          <Link className="primary-button" href={primaryHref}>
-            {primaryLabel}
-          </Link>
-          <Link className="ghost-button" href={secondaryHref}>
-            {secondaryLabel}
-          </Link>
-        </motion.div>
-        <ul className="pill-row" aria-label="Highlights">
-          {trustPills.map((pill) => (
-            <li key={pill} className="status-pill">
-              {pill}
-            </li>
-          ))}
-        </ul>
-      </section>
+        <section className="landing-stage">
+          <section className="hero-block landing-hero" aria-label="Main message">
+            <motion.p
+              className="hero-chip"
+              initial={prefersReducedMotion ? undefined : { opacity: 0, y: 10 }}
+              animate={prefersReducedMotion ? undefined : { opacity: 1, y: 0 }}
+            >
+              {heroChip}
+            </motion.p>
+            <motion.h1
+              initial={prefersReducedMotion ? undefined : { opacity: 0, y: 20 }}
+              animate={prefersReducedMotion ? undefined : { opacity: 1, y: 0 }}
+              transition={{ duration: 0.42 }}
+            >
+              Build production-ready workflows{" "}
+              <span className="hero-highlight">instantly</span>
+            </motion.h1>
+            <motion.p
+              className="hero-description"
+              initial={prefersReducedMotion ? undefined : { opacity: 0, y: 18 }}
+              animate={prefersReducedMotion ? undefined : { opacity: 1, y: 0 }}
+              transition={{ duration: 0.48, delay: 0.08 }}
+            >
+              Transform service requirements into complete CI/CD pipelines with agent-guided setup,
+              generation, and export in one place.
+            </motion.p>
+            <motion.div
+              className="hero-actions"
+              initial={prefersReducedMotion ? undefined : { opacity: 0, y: 20 }}
+              animate={prefersReducedMotion ? undefined : { opacity: 1, y: 0 }}
+              transition={{ duration: 0.45, delay: 0.15 }}
+            >
+              <Link className="primary-button" href={primaryHref}>
+                {primaryLabel}
+              </Link>
+            </motion.div>
+          </section>
 
-      <section id="product" className="section-card glass-panel">
-        <div className="section-header">
-          <h2>How the workflow studio runs</h2>
-          <p>Three simple steps from login to source-linked workflow output.</p>
-        </div>
-        <div className="step-track">
-          {flowSteps.map((step, index) => (
-            <article key={step} className="step-card">
-              <span className="step-number">0{index + 1}</span>
-              <p>{step}</p>
-            </article>
-          ))}
-        </div>
-      </section>
+          <section className="section-card glass-panel landing-features">
+            <div className="value-grid">
+              {valueCards.map((card) => (
+                <article key={card.title} className="value-card">
+                  <span className="value-card-icon" aria-hidden="true">
+                    {card.icon}
+                  </span>
+                  <h3>{card.title}</h3>
+                  <p>{card.body}</p>
+                </article>
+              ))}
+            </div>
+          </section>
+        </section>
 
-      <section className="section-card glass-panel">
-        <div className="section-header">
-          <h2>Built for practical release teams</h2>
-        </div>
-        <div className="value-grid">
-          {valueCards.map((card) => (
-            <article key={card.title} className="value-card">
-              <h3>{card.title}</h3>
-              <p>{card.body}</p>
-            </article>
-          ))}
-        </div>
-      </section>
-
-      <section id="pricing" className="section-card pricing-card glass-panel">
-        <div>
-          <p className="hero-kicker">Pricing</p>
-          <h2>Pro subscription is 300 pesos per month</h2>
-          <p>
-            Unlock setup tools, current workflow management, and full template access after GitHub sign in.
-            Cancel anytime.
-          </p>
-        </div>
-        <div className="pricing-actions">
-          <Link className="primary-button" href="/subscribe">
-            Subscribe for 300 pesos
-          </Link>
-          <Link className="ghost-button" href="/login">
-            Open login page
-          </Link>
-        </div>
-      </section>
+        <section id="pricing" className="section-card pricing-card glass-panel">
+          <div>
+            <p className="hero-kicker">Pricing</p>
+            <h2>Pro subscription is 300 pesos per month</h2>
+            <p>Unlock setup tools and template access. Cancel anytime.</p>
+          </div>
+        </section>
+      </div>
     </main>
   );
 }
