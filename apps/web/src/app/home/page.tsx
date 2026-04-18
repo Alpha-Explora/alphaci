@@ -48,7 +48,7 @@ export default function HomeDashboardPage() {
       await refresh();
       router.push("/");
     } catch {
-      setLogoutMessage("Sign out failed. Please retry, or use the landing link.");
+      setLogoutMessage("Sign out failed. Please retry, or use the Home link.");
     } finally {
       setIsLoggingOut(false);
     }
@@ -71,7 +71,7 @@ export default function HomeDashboardPage() {
         <FlowBackground />
         <section className="section-card glass-panel">
           <h1>We could not verify your session.</h1>
-          <p className="helper-text">Please retry or return to the landing page.</p>
+          <p className="helper-text">Please retry or return to Home.</p>
           <div className="hero-actions">
             <button className="primary-button" type="button" onClick={() => void refresh()}>
               Retry session check
@@ -103,8 +103,8 @@ export default function HomeDashboardPage() {
       <header className="marketing-nav glass-panel">
         <p className="brand-mark">FlowCI Studio</p>
         <nav aria-label="Primary" className="nav-links">
-          <Link href="/home">Home</Link>
-          <Link href="/">Landing</Link>
+          <Link href="/home">Dashboard</Link>
+          <Link href="/">Home</Link>
           <Link href="/workflows">Workflows</Link>
           <Link href="/subscribe">Billing</Link>
         </nav>
@@ -116,7 +116,10 @@ export default function HomeDashboardPage() {
       <section className="section-card glass-panel">
         <p className="hero-kicker">Home</p>
         <h1>Welcome back, {session?.user.name ?? session?.user.login ?? "builder"}.</h1>
-        <p>You are connected to GitHub with an active <strong>{session?.subscription.plan ?? "pro"}</strong> plan.</p>
+        <p>
+          You are connected with your OAuth account and an active <strong>{session?.subscription.plan ?? "pro"}</strong>{" "}
+          plan.
+        </p>
 
         <div className="hero-actions">
           <Link className="primary-button" href="/workflows">

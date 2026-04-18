@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 
-import { GitHubAuthPage } from "@/components/auth/github-auth-page";
+import { OAuthAuthPage } from "@/components/auth/oauth-auth-page";
 import { FlowBackground } from "@/components/layout/flow-background";
 
 function SignupFallback() {
@@ -8,7 +8,7 @@ function SignupFallback() {
     <main className="flow-shell page-shell auth-shell">
       <FlowBackground />
       <section className="section-card auth-card glass-panel">
-        <p className="hero-kicker">GitHub Sign Up</p>
+        <p className="hero-kicker">OAuth Sign Up</p>
         <h1>Loading sign up page</h1>
         <p className="helper-text">Preparing your secure registration route.</p>
       </section>
@@ -19,11 +19,10 @@ function SignupFallback() {
 export default function SignupPage() {
   return (
     <Suspense fallback={<SignupFallback />}>
-      <GitHubAuthPage
+      <OAuthAuthPage
         mode="signup"
         title="Create your workflow workspace"
-        subtitle="Sign up with GitHub and start generating workflows right away."
-        primaryCta="Sign up with GitHub"
+        subtitle="Sign up with Google or GitHub and start generating workflows right away."
         switchText="Already have an account?"
         switchHref="/login"
         switchCta="Log in"

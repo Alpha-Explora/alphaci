@@ -59,16 +59,8 @@ export function createGitHubLoginUrl(returnTo: string): string {
   return `${API_BASE_URL}/auth/github/start?returnTo=${encodeURIComponent(returnTo)}`;
 }
 
-export function createDummyLoginUrl(returnTo: string, login?: string): string {
-  const search = new URLSearchParams({
-    returnTo,
-  });
-
-  if (login) {
-    search.set("login", login);
-  }
-
-  return `${API_BASE_URL}/auth/dummy/login?${search.toString()}`;
+export function createGoogleLoginUrl(returnTo: string): string {
+  return `${API_BASE_URL}/auth/google/start?returnTo=${encodeURIComponent(returnTo)}`;
 }
 
 export async function getAuthSession(): Promise<AuthMeResponse> {
@@ -103,15 +95,6 @@ export async function getTemplates(params: {
 
   const suffix = search.size ? `?${search.toString()}` : "";
   return request<CatalogTemplatesResponse>(`/catalog/templates${suffix}`);
-}
-
-export async function activateMockSubscription(plan: "pro" | "enterprise"): Promise<SubscriptionInfo> {
-  const response = await request<{ subscription: SubscriptionInfo }>("/subscription/mock/activate", {
-    method: "POST",
-    body: JSON.stringify({ plan }),
-  });
-
-  return response.subscription;
 }
 
 export async function activateMonthlySubscription(plan: "pro" | "enterprise"): Promise<SubscriptionInfo> {

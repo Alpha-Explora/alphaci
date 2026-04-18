@@ -37,7 +37,7 @@ const planCatalog = [
 ];
 
 const activationChecklist = [
-  "Connect your GitHub account",
+  "Connect your Google or GitHub account",
   "Pick monthly plan",
   "Activate and open workflow studio",
   "Generate and download YAML",
@@ -150,13 +150,13 @@ export default function SubscribePage() {
       <header className="marketing-nav glass-panel">
         <p className="brand-mark">FlowCI Studio</p>
         <nav aria-label="Primary" className="nav-links">
-          <Link href="/">Landing</Link>
+          <Link href="/">Home</Link>
           <Link href="/login">Login</Link>
           <Link href="/signup">Sign up</Link>
           <Link href="/workflows">Workflows</Link>
         </nav>
         <Link className="ghost-button" href="/">
-          Back to landing
+          Back to Home
         </Link>
       </header>
 
@@ -176,7 +176,8 @@ export default function SubscribePage() {
           Monthly subscription plans for workflow generation
         </motion.h1>
         <p>
-          Use GitHub login, choose your monthly plan, and unlock complete setup, generation, and history features.
+          Use Google or GitHub login, choose your monthly plan, and unlock complete setup, generation, and history
+          features.
         </p>
 
         <div className="status-pill-row">
@@ -219,7 +220,7 @@ export default function SubscribePage() {
           {status === "signed-out" ? (
             <>
               <Link className="primary-button" href="/signup">
-                Sign up with GitHub first
+                Sign up with Google or GitHub first
               </Link>
               <Link className="ghost-button" href="/login">
                 Already have an account? Log in

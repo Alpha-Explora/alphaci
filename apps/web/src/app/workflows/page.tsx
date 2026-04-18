@@ -38,7 +38,7 @@ export default function WorkflowsPage() {
       await refresh();
       router.push("/");
     } catch {
-      setLogoutMessage("Sign out failed. Please retry, or use the landing link.");
+      setLogoutMessage("Sign out failed. Please retry, or use the Home link.");
     } finally {
       setIsLoggingOut(false);
     }
@@ -61,7 +61,7 @@ export default function WorkflowsPage() {
         <FlowBackground />
         <section className="section-card glass-panel">
           <h1>We could not verify your workflow access.</h1>
-          <p className="helper-text">Retry session check or return to landing.</p>
+          <p className="helper-text">Retry session check or return to Home.</p>
           <div className="hero-actions">
             <button className="primary-button" type="button" onClick={() => void refresh()}>
               Retry session check
@@ -94,9 +94,9 @@ export default function WorkflowsPage() {
       <header className="marketing-nav glass-panel">
         <p className="brand-mark">FlowCI Studio</p>
         <nav aria-label="Primary" className="nav-links">
-          <Link href="/">Landing</Link>
+          <Link href="/">Home</Link>
           <Link href="/subscribe">Billing</Link>
-          <Link href="/home">Home</Link>
+          <Link href="/home">Dashboard</Link>
         </nav>
         <button className="ghost-button" type="button" onClick={handleLogout} disabled={isLoggingOut}>
           {isLoggingOut ? "Signing out..." : "Sign out"}

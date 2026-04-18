@@ -13,7 +13,7 @@ const bodyFont = Manrope({
 });
 
 export const metadata: Metadata = {
-  title: "CI/CD Workflow Studio",
+  title: "Home | CI/CD Workflow Studio",
   description:
     "Friendly workflow generation studio with GitHub login, subscription gating, and template customization.",
 };

@@ -5,7 +5,6 @@ import { motion, useReducedMotion } from "framer-motion";
 
 import { FlowBackground } from "@/components/layout/flow-background";
 import { useAuthSession } from "@/hooks/use-auth-session";
-import { createGitHubLoginUrl } from "@/lib/api/client";
 import { hasActiveSubscription } from "@/lib/auth/subscription";
 
 const valueCards = [
@@ -33,10 +32,8 @@ export default function LandingPage() {
   const { status, session } = useAuthSession();
   const hasSubscription = hasActiveSubscription(session);
 
-  const signupHref = createGitHubLoginUrl("/auth/callback?intent=signup&next=%2Fhome");
-
-  let primaryHref = signupHref;
-  let primaryLabel = "Sign up with GitHub";
+  let primaryHref = "/signup";
+  let primaryLabel = "Sign up with Google or GitHub";
   let appHref = "/subscribe";
   let appLabel = "Pricing";
   let navUtilityHref = "/login";

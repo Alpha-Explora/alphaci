@@ -9,7 +9,7 @@ function CallbackFallback() {
     <main className="flow-shell page-shell">
       <FlowBackground />
       <section className="section-card callback-card glass-panel">
-        <p className="hero-kicker">GitHub Login</p>
+        <p className="hero-kicker">OAuth Login</p>
         <h1>Completing authentication</h1>
         <p>Finalizing your session...</p>
       </section>
