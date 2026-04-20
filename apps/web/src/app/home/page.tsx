@@ -6,14 +6,9 @@ import { useEffect, useState } from "react";
 
 import { FlowBackground } from "@/components/layout/flow-background";
 import { useAuthSession } from "@/hooks/use-auth-session";
-import { logout } from "@/lib/api/client";
+import { logout, getWorkflowHistory } from "@/lib/api/client";
+import type { WorkflowHistoryItem } from "@/lib/api/contracts";
 import { hasActiveSubscription } from "@/lib/auth/subscription";
-
-const kpiCards = [
-  { label: "Pipeline success", value: "98%" },
-  { label: "Avg build time", value: "6m 21s" },
-  { label: "Failed runs", value: "2 this week" },
-];
 
 const quickActions = [
   { label: "Open workflows", href: "/workflows" },
@@ -25,6 +20,8 @@ export default function HomeDashboardPage() {
   const { status, session, error, refresh } = useAuthSession();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [logoutMessage, setLogoutMessage] = useState<string | null>(null);
+  const [history, setHistory] = useState<WorkflowHistoryItem[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(true);
 
   const hasSubscription = hasActiveSubscription(session);
 
@@ -38,6 +35,15 @@ export default function HomeDashboardPage() {
       router.replace("/subscribe");
     }
   }, [hasSubscription, router, status]);
+
+  useEffect(() => {
+    if (status !== "signed-in") return;
+
+    getWorkflowHistory(25)
+      .then((response) => setHistory(response.items))
+      .catch(() => {})
+      .finally(() => setHistoryLoading(false));
+  }, [status]);
 
   async function handleLogout() {
     setIsLoggingOut(true);
@@ -96,6 +102,20 @@ export default function HomeDashboardPage() {
     );
   }
 
+  const uniqueServices = new Set(history.map((h) => h.serviceName)).size;
+  const kpiCards = [
+    { label: "Workflows generated", value: historyLoading ? "..." : String(history.length) },
+    { label: "Services configured", value: historyLoading ? "..." : String(uniqueServices) },
+    {
+      label: "Last activity",
+      value: historyLoading
+        ? "..."
+        : history[0]
+        ? new Intl.DateTimeFormat("en-PH", { dateStyle: "medium" }).format(new Date(history[0].createdAt))
+        : "None yet",
+    },
+  ];
+
   return (
     <main className="flow-shell page-shell">
       <FlowBackground />
@@ -115,7 +135,20 @@ export default function HomeDashboardPage() {
 
       <section className="section-card glass-panel">
         <p className="hero-kicker">Home</p>
-        <h1>Welcome back, {session?.user.name ?? session?.user.login ?? "builder"}.</h1>
+        <div className="welcome-header">
+          {session?.user.avatarUrl ? (
+            <img
+              src={session.user.avatarUrl}
+              alt={session.user.name ?? session.user.login}
+              className="user-avatar"
+            />
+          ) : (
+            <span className="user-avatar-placeholder" aria-hidden="true">
+              {(session?.user.name ?? session?.user.login ?? "U").slice(0, 1).toUpperCase()}
+            </span>
+          )}
+          <h1>Welcome back, {session?.user.name ?? session?.user.login ?? "builder"}.</h1>
+        </div>
         <p>
           You are connected with your OAuth account and an active <strong>{session?.subscription.plan ?? "pro"}</strong>{" "}
           plan.
@@ -147,6 +180,26 @@ export default function HomeDashboardPage() {
           ))}
         </div>
       </section>
+
+      {history.length > 0 && (
+        <section className="section-card glass-panel">
+          <div className="section-header">
+            <h2>Recent workflows</h2>
+            <p>Last {Math.min(history.length, 3)} generated.</p>
+          </div>
+          <div className="action-grid">
+            {history.slice(0, 3).map((item) => (
+              <article key={item.id} className="kpi-card">
+                <p style={{ fontSize: "0.74rem", textTransform: "uppercase", letterSpacing: "0.08em" }}>
+                  {item.stack}
+                </p>
+                <h3 style={{ fontSize: "0.98rem" }}>{item.serviceName}</h3>
+                <p>{item.outputFileName}</p>
+              </article>
+            ))}
+          </div>
+        </section>
+      )}
 
       <section className="section-card glass-panel">
         <div className="section-header">

@@ -4,6 +4,7 @@ import type {
   CatalogTemplatesResponse,
   GenerateWorkflowRequest,
   GenerateWorkflowResponse,
+  GitHubReposResponse,
   SubscriptionInfo,
   WorkflowHistoryResponse,
 } from "./contracts";
@@ -126,4 +127,8 @@ export async function generateWorkflow(
 export async function getWorkflowHistory(limit = 25): Promise<WorkflowHistoryResponse> {
   const safeLimit = Math.max(1, Math.min(100, Math.trunc(limit)));
   return request<WorkflowHistoryResponse>(`/workflows/history?limit=${safeLimit}`);
+}
+
+export async function getGithubRepos(): Promise<GitHubReposResponse> {
+  return request<GitHubReposResponse>("/github/repos");
 }

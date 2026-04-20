@@ -99,3 +99,18 @@ export interface WorkflowHistoryItem {
 export interface WorkflowHistoryResponse {
   items: WorkflowHistoryItem[];
 }
+
+export interface GitHubRepo {
+  id: number;
+  name: string;
+  fullName: string;
+  private: boolean;
+  description: string | null;
+  defaultBranch: string;
+  htmlUrl: string;
+  updatedAt: string;
+}
+
+export interface GitHubReposResponse {
+  repos: GitHubRepo[];
+}

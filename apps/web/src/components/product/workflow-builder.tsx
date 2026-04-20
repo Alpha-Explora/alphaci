@@ -8,6 +8,7 @@ import {
   getCategories,
   getWorkflowHistory,
   getTemplates,
+  getGithubRepos,
   type ApiError,
 } from "@/lib/api/client";
 import type {
@@ -16,6 +17,7 @@ import type {
   GenerateWorkflowRequest,
   GenerateWorkflowResponse,
   WorkflowHistoryItem,
+  GitHubRepo,
 } from "@/lib/api/contracts";
 
 import { TemplateCard } from "./template-card";
@@ -55,6 +57,13 @@ const enhancementLabels: Array<{
     description: "Disable synthetic load smoke tests",
   },
 ];
+
+function statusBannerVariant(message: string): "error" | "success" | "info" {
+  const lower = message.toLowerCase();
+  if (lower.includes("fail") || lower.includes("error")) return "error";
+  if (lower.includes("generat") || lower.includes("copied") || lower.includes("download")) return "success";
+  return "info";
+}
 
 function toSlug(value: string): string {
   return value
@@ -144,9 +153,33 @@ export function WorkflowBuilder({ login, plan }: Readonly<WorkflowBuilderProps>)
   const [coverageThreshold, setCoverageThreshold] = useState("80");
   const [enhancements, setEnhancements] = useState<NonNullable<GenerateWorkflowRequest["enhancements"]>>([]);
 
+  const [githubRepos, setGithubRepos] = useState<GitHubRepo[]>([]);
+  const [loadingRepos, setLoadingRepos] = useState(false);
+  const [reposLoaded, setReposLoaded] = useState(false);
+
   const [isGenerating, setIsGenerating] = useState(false);
   const [generationResult, setGenerationResult] = useState<GenerateWorkflowResponse | null>(null);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
+
+  async function handleLoadRepos() {
+    setLoadingRepos(true);
+    try {
+      const response = await getGithubRepos();
+      setGithubRepos(response.repos);
+      setReposLoaded(true);
+    } catch {
+      setStatusMessage("Could not load GitHub repos. Make sure you signed in with GitHub.");
+    } finally {
+      setLoadingRepos(false);
+    }
+  }
+
+  function handleRepoSelect(event: React.ChangeEvent<HTMLSelectElement>) {
+    const repoName = event.target.value;
+    if (!repoName) return;
+    setServiceName(toSlug(repoName.split("/").pop() ?? repoName));
+    setServicePath(repoName);
+  }
 
   const loadHistory = useCallback(async (silent = false) => {
     if (!silent) {
@@ -407,6 +440,30 @@ export function WorkflowBuilder({ login, plan }: Readonly<WorkflowBuilderProps>)
             <option value="nodejs">Node.js</option>
           </select>
 
+          <p className="input-label">GitHub Repository</p>
+          <div className="github-repo-select">
+            {reposLoaded ? (
+              <select onChange={handleRepoSelect} defaultValue="">
+                <option value="">Select a repo (optional)</option>
+                {githubRepos.map((repo) => (
+                  <option key={repo.id} value={repo.fullName}>
+                    {repo.fullName}
+                    {repo.private ? " 🔒" : ""}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <button
+                type="button"
+                className="github-repo-load-btn"
+                onClick={() => void handleLoadRepos()}
+                disabled={loadingRepos}
+              >
+                {loadingRepos ? "Loading repos..." : "Load my GitHub repos"}
+              </button>
+            )}
+          </div>
+
           <p className="input-label">Category</p>
           <div className="category-wrap">
             <button
@@ -439,7 +496,13 @@ export function WorkflowBuilder({ login, plan }: Readonly<WorkflowBuilderProps>)
             <p>{filteredTemplates.length} templates matched</p>
           </div>
 
-          {loadingCatalog ? <p className="helper-text">Loading templates from cicd-workflow...</p> : null}
+          {loadingCatalog ? (
+            <div className="template-grid">
+              {[1, 2, 3, 4, 5, 6].map((n) => (
+                <div key={n} className="skeleton-card" />
+              ))}
+            </div>
+          ) : null}
 
           <div className="template-grid">
             {filteredTemplates.map((template) => (
@@ -723,9 +786,16 @@ export function WorkflowBuilder({ login, plan }: Readonly<WorkflowBuilderProps>)
         <section className="intro-panel">
           <p>Use tabs to set up, review generated workflows, and browse templates.</p>
           {statusMessage ? (
-            <p className="helper-text" role="status" aria-live="polite">
+            <motion.p
+              className={`status-banner ${statusBannerVariant(statusMessage)}`}
+              role="status"
+              aria-live="polite"
+              initial={{ opacity: 0, y: -6 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0 }}
+            >
               {statusMessage}
-            </p>
+            </motion.p>
           ) : null}
           {catalogError ? (
             <p className="error-text" role="alert">
@@ -746,7 +816,8 @@ export function WorkflowBuilder({ login, plan }: Readonly<WorkflowBuilderProps>)
             onClick={() => setActiveTab("setup")}
             onKeyDown={(event) => handleTabKeyDown(event, "setup")}
           >
-            Setup
+            <svg className="studio-tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+            {"Setup"}
           </button>
           <button
             type="button"
@@ -759,7 +830,8 @@ export function WorkflowBuilder({ login, plan }: Readonly<WorkflowBuilderProps>)
             onClick={() => setActiveTab("current")}
             onKeyDown={(event) => handleTabKeyDown(event, "current")}
           >
-            Current
+            <svg className="studio-tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+            {"Current"}
           </button>
           <button
             type="button"
@@ -772,7 +844,8 @@ export function WorkflowBuilder({ login, plan }: Readonly<WorkflowBuilderProps>)
             onClick={() => setActiveTab("all")}
             onKeyDown={(event) => handleTabKeyDown(event, "all")}
           >
-            Templates
+            <svg className="studio-tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+            {"Templates"}
           </button>
         </div>
 

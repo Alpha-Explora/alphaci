@@ -43,6 +43,25 @@ const activationChecklist = [
   "Generate and download YAML",
 ];
 
+function CheckIcon() {
+  return (
+    <svg
+      width="14"
+      height="14"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      style={{ display: "inline-block", verticalAlign: "middle", marginRight: "0.4rem", color: "var(--success)", flexShrink: 0 }}
+    >
+      <polyline points="20 6 9 17 4 12" />
+    </svg>
+  );
+}
+
 type PlanOption = (typeof planCatalog)[number];
 
 interface PlanOptionCardProps {
@@ -72,7 +91,10 @@ function PlanOptionCard({
 
       <ul className="feature-list" aria-label={`${plan.title} features`}>
         {plan.features.map((feature) => (
-          <li key={feature}>{feature}</li>
+          <li key={feature} style={{ display: "flex", alignItems: "center" }}>
+            <CheckIcon />
+            <span>{feature}</span>
+          </li>
         ))}
       </ul>
 
