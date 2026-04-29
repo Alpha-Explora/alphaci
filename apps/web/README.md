@@ -39,5 +39,5 @@ npm run build
 ## Product Integration
 
 - Frontend connects to `cicd-workflow-be` API using cookie-based session auth.
-- Backend reads templates from sibling repo `../cicd-workflow/workflow-templates`.
+- Backend reads templates from sibling repo `../workflow-core/workflow-templates`.
 - Generated output is shown in UI and can be copied or downloaded as `.yml`.

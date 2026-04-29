@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
@@ -137,10 +138,13 @@ export default function HomeDashboardPage() {
         <p className="hero-kicker">Home</p>
         <div className="welcome-header">
           {session?.user.avatarUrl ? (
-            <img
+            <Image
               src={session.user.avatarUrl}
               alt={session.user.name ?? session.user.login}
               className="user-avatar"
+              width={48}
+              height={48}
+              unoptimized
             />
           ) : (
             <span className="user-avatar-placeholder" aria-hidden="true">

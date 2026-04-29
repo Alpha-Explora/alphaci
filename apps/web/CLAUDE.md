@@ -33,7 +33,7 @@ Everything else listed under "Planned surfaces" below does **not** exist yet.
 | `/login` | "Sign in with GitHub" button → redirects to `BE /api/v1/auth/github/start?returnTo=/dashboard`. After callback, session cookie is set. |
 | `/billing` | Plan comparison card (Free / Pro ₱300 / Enterprise ₱1200). "Subscribe" → `BE POST /v1/checkout/sessions` → redirect to PayMongo checkout URL. |
 | `/connect` | "Install GitHub App" button (links to GitHub App installation URL). After install, shows repo picker: calls `BE GET /api/v1/github/repos` (session-authenticated) → user selects a repo to set up. |
-| `/setup/[owner]/[repo]` | Workflow catalog: list templates filtered by stack + category. Per-template form maps to `GenerateWorkflowDto` fields: `serviceName` (required), `servicePath`, `nodeVersion`, `coverageThreshold`, enhancements (`strictProductionApproval`, `enableUatApproval`, `disablePlaywright`, `disableK6`). Submit → `BE POST /v1/projects/setup`. |
+| `/setup/[owner]/[repo]` | Workflow catalog: list templates filtered by stack + category. Per-template form maps to `GenerateWorkflowDto` fields: `serviceName` (required), `servicePath`, `nodeVersion`, `coverageThreshold`, enhancements (`strictProductionApproval`, `enableUatApproval`, `disablePlaywright`, `disableK6`). Submit to `BE POST /api/v1/projects/setup`. |
 | `/runs` | Workflow run history for the user's connected repos. Polled from BE (which mirrors GitHub App `workflow_run` webhook events). |
 | `/dashboard` | Post-login landing: connected repos, subscription status, quick links to `/setup` and `/runs`. |
 

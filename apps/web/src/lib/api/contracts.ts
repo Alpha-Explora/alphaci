@@ -105,21 +105,6 @@ export interface WorkflowHistoryResponse {
   items: WorkflowHistoryItem[];
 }
 
-export interface GitHubRepo {
-  id: number;
-  name: string;
-  fullName: string;
-  private: boolean;
-  description: string | null;
-  defaultBranch: string;
-  htmlUrl: string;
-  updatedAt: string;
-}
-
-export interface GitHubReposResponse {
-  repos: GitHubRepo[];
-}
-
 export interface GithubAppInstallUrlResponse {
   installUrl: string;
 }
@@ -131,7 +116,6 @@ export interface LinkGithubInstallationResponse {
 export interface LinkedGitHubRepo {
   installationId: number;
   repoFullName: string;
-  private?: boolean;
 }
 
 export interface LinkedGitHubReposResponse {
