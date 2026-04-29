@@ -32,10 +32,11 @@ Everything else listed under "Planned surfaces" below does **not** exist yet.
 |-------|-------------|
 | `/login` | "Sign in with GitHub" button → redirects to `BE /api/v1/auth/github/start?returnTo=/dashboard`. After callback, session cookie is set. |
 | `/billing` | Plan comparison card (Free / Pro ₱300 / Enterprise ₱1200). "Subscribe" → `BE POST /v1/checkout/sessions` → redirect to PayMongo checkout URL. |
-| `/connect` | "Install GitHub App" button (links to GitHub App installation URL). After install, shows repo picker: calls `BE GET /api/v1/github/repos` (session-authenticated) → user selects a repo to set up. |
-| `/setup/[owner]/[repo]` | Workflow catalog: list templates filtered by stack + category. Per-template form maps to `GenerateWorkflowDto` fields: `serviceName` (required), `servicePath`, `nodeVersion`, `coverageThreshold`, enhancements (`strictProductionApproval`, `enableUatApproval`, `disablePlaywright`, `disableK6`). Submit to `BE POST /api/v1/projects/setup`. |
+| `/connect` | "Install GitHub App" button (links to GitHub App installation URL). MVP requires an all-repositories installation so newly created repos are accessible to the App. |
+| `/projects/new` | Create Project flow: repo name, visibility, repo shape, project type, workflow recipe, and recipe-filtered options. Submit to `BE POST /api/v1/projects`. MVP enables only `repoShape=single-app`; monorepo/fullstack/library/mobile should be shown later only when backend support exists. |
+| `/setup/[owner]/[repo]` | Existing-repo setup path using `BE POST /api/v1/projects/setup`; not the primary MVP Create Project flow. |
 | `/runs` | Workflow run history for the user's connected repos. Polled from BE (which mirrors GitHub App `workflow_run` webhook events). |
-| `/dashboard` | Post-login landing: connected repos, subscription status, quick links to `/setup` and `/runs`. |
+| `/dashboard` | Post-login landing: current projects, subscription status, primary Create Project CTA, and quick links to setup/runs. |
 
 ---
 
@@ -182,6 +183,9 @@ npm-debug.log*
 
 - **Never store provider tokens in the browser.** GitHub access token and Render/Vercel credentials live only in the BE session and Supabase.
 - All GitHub API calls are proxied through the BE. FE only talks to `NEXT_PUBLIC_API_URL` (the BE base URL).
+- The Create Project UI must be catalog-driven: read valid repo shapes, project
+  types, workflow recipes, defaults, and options from the backend instead of
+  hardcoding language/workflow combinations.
 - Use `credentials: "include"` on every `fetch` so the session cookie is sent cross-origin.
 - BE origin must be in `CORS_ORIGINS` env var on the BE side; session cookie name is `cicd_workflow_sid`.
 

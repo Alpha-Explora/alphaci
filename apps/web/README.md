@@ -4,8 +4,8 @@ Next.js frontend for the product experience:
 
 1. User signs in with GitHub.
 2. User activates a subscription.
-3. User browses workflow categories and templates from the shared catalog.
-4. User generates a customized CI/CD workflow file.
+3. User opens Create Project and chooses repo shape, project type, workflow recipe, and options from the shared catalog.
+4. User creates a GitHub project with starter files, `CI_TOKEN`, and a customized CI/CD workflow.
 
 ## Local Run
 
@@ -39,5 +39,6 @@ npm run build
 ## Product Integration
 
 - Frontend connects to `cicd-workflow-be` API using cookie-based session auth.
-- Backend reads templates from sibling repo `../workflow-core/workflow-templates`.
+- Backend reads catalog, starter templates, and workflow templates from sibling repo `../workflow-core`.
+- The Create Project UI should be catalog-driven through `repoShape -> projectTypeId -> workflowRecipeId -> options`, not hardcoded per language.
 - Generated output is shown in UI and can be copied or downloaded as `.yml`.
