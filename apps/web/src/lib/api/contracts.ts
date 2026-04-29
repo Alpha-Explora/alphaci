@@ -64,6 +64,11 @@ export interface GenerateWorkflowRequest {
   >;
 }
 
+export interface SetupProjectRequest extends GenerateWorkflowRequest {
+  repoFullName: string;
+  outputFileName?: string;
+}
+
 export interface GenerateWorkflowResponse {
   yaml: string;
   metadata: {
@@ -113,4 +118,47 @@ export interface GitHubRepo {
 
 export interface GitHubReposResponse {
   repos: GitHubRepo[];
+}
+
+export interface GithubAppInstallUrlResponse {
+  installUrl: string;
+}
+
+export interface LinkGithubInstallationResponse {
+  reposLinked: number;
+}
+
+export interface LinkedGitHubRepo {
+  installationId: number;
+  repoFullName: string;
+  private?: boolean;
+}
+
+export interface LinkedGitHubReposResponse {
+  repos: LinkedGitHubRepo[];
+}
+
+export interface SetupProjectResponse {
+  id: string;
+  repoFullName: string;
+  status: "provisioned";
+  workflowPath: string;
+  githubCommitSha: string;
+  githubCommitUrl: string | null;
+}
+
+export interface ProvisionedProject {
+  id: string;
+  repoFullName: string;
+  templateId: string;
+  serviceName: string;
+  workflowPath: string;
+  status: "provisioning" | "provisioned" | "failed";
+  githubCommitSha: string | null;
+  githubCommitUrl: string | null;
+  failureReason: string | null;
+}
+
+export interface ProvisionedProjectsResponse {
+  items: ProvisionedProject[];
 }

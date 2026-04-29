@@ -4,12 +4,27 @@ import type {
   CatalogTemplatesResponse,
   GenerateWorkflowRequest,
   GenerateWorkflowResponse,
+  GithubAppInstallUrlResponse,
   GitHubReposResponse,
+  LinkedGitHubReposResponse,
+  LinkGithubInstallationResponse,
+  ProvisionedProjectsResponse,
+  SetupProjectRequest,
+  SetupProjectResponse,
   SubscriptionInfo,
   WorkflowHistoryResponse,
 } from "./contracts";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:4000/api/v1";
+function normalizeApiBaseUrl(value: string): string {
+  const trimmed = value.replace(/\/+$/, "");
+  return trimmed.endsWith("/api/v1") ? trimmed : `${trimmed}/api/v1`;
+}
+
+const API_BASE_URL = normalizeApiBaseUrl(
+  process.env.NEXT_PUBLIC_API_BASE_URL ||
+    process.env.NEXT_PUBLIC_API_URL ||
+    "http://localhost:4000/api/v1",
+);
 
 export class ApiError extends Error {
   status: number;
@@ -124,6 +139,18 @@ export async function generateWorkflow(
   });
 }
 
+export async function setupProject(payload: SetupProjectRequest): Promise<SetupProjectResponse> {
+  return request<SetupProjectResponse>("/projects/setup", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function getProjects(limit = 25): Promise<ProvisionedProjectsResponse> {
+  const safeLimit = Math.max(1, Math.min(100, Math.trunc(limit)));
+  return request<ProvisionedProjectsResponse>(`/projects?limit=${safeLimit}`);
+}
+
 export async function getWorkflowHistory(limit = 25): Promise<WorkflowHistoryResponse> {
   const safeLimit = Math.max(1, Math.min(100, Math.trunc(limit)));
   return request<WorkflowHistoryResponse>(`/workflows/history?limit=${safeLimit}`);
@@ -131,4 +158,21 @@ export async function getWorkflowHistory(limit = 25): Promise<WorkflowHistoryRes
 
 export async function getGithubRepos(): Promise<GitHubReposResponse> {
   return request<GitHubReposResponse>("/github/repos");
+}
+
+export async function getGithubAppInstallUrl(): Promise<GithubAppInstallUrlResponse> {
+  return request<GithubAppInstallUrlResponse>("/github/app/install-url");
+}
+
+export async function linkGithubInstallation(
+  installationId: number,
+): Promise<LinkGithubInstallationResponse> {
+  return request<LinkGithubInstallationResponse>("/github/installations", {
+    method: "POST",
+    body: JSON.stringify({ installationId }),
+  });
+}
+
+export async function getLinkedGithubRepos(): Promise<LinkedGitHubReposResponse> {
+  return request<LinkedGitHubReposResponse>("/github/installations/repos");
 }

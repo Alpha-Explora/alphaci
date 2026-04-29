@@ -4,20 +4,24 @@ import { useCallback, useEffect, useMemo, useState, type KeyboardEvent } from "r
 import { AnimatePresence, MotionConfig, motion, useReducedMotion } from "framer-motion";
 
 import {
-  generateWorkflow,
   getCategories,
+  getGithubAppInstallUrl,
+  getLinkedGithubRepos,
+  getProjects,
   getWorkflowHistory,
   getTemplates,
-  getGithubRepos,
+  linkGithubInstallation,
+  setupProject,
   type ApiError,
 } from "@/lib/api/client";
 import type {
   CatalogTemplate,
   CategorySummary,
-  GenerateWorkflowRequest,
-  GenerateWorkflowResponse,
+  LinkedGitHubRepo,
+  ProvisionedProject,
+  SetupProjectRequest,
+  SetupProjectResponse,
   WorkflowHistoryItem,
-  GitHubRepo,
 } from "@/lib/api/contracts";
 
 import { TemplateCard } from "./template-card";
@@ -32,7 +36,7 @@ type WorkflowTab = "setup" | "current" | "all";
 const WORKFLOW_TABS: WorkflowTab[] = ["setup", "current", "all"];
 
 const enhancementLabels: Array<{
-  key: NonNullable<GenerateWorkflowRequest["enhancements"]>[number];
+  key: NonNullable<SetupProjectRequest["enhancements"]>[number];
   label: string;
   description: string;
 }> = [
@@ -61,7 +65,13 @@ const enhancementLabels: Array<{
 function statusBannerVariant(message: string): "error" | "success" | "info" {
   const lower = message.toLowerCase();
   if (lower.includes("fail") || lower.includes("error")) return "error";
-  if (lower.includes("generat") || lower.includes("copied") || lower.includes("download")) return "success";
+  if (
+    lower.includes("generat") ||
+    lower.includes("copied") ||
+    lower.includes("download") ||
+    lower.includes("completed") ||
+    lower.includes("linked")
+  ) return "success";
   return "info";
 }
 
@@ -129,6 +139,31 @@ function formatDate(value: string): string {
   }).format(date);
 }
 
+function formatApiError(error: unknown, fallback: string): string {
+  const details = (error as ApiError)?.details;
+
+  if (!details) {
+    return fallback;
+  }
+
+  if (typeof details === "string") {
+    return `${fallback}: ${details}`;
+  }
+
+  if (typeof details === "object" && details !== null && "message" in details) {
+    const message = (details as { message?: unknown }).message;
+    if (Array.isArray(message)) {
+      return `${fallback}: ${message.join(", ")}`;
+    }
+
+    if (typeof message === "string") {
+      return `${fallback}: ${message}`;
+    }
+  }
+
+  return `${fallback}: ${JSON.stringify(details)}`;
+}
+
 export function WorkflowBuilder({ login, plan }: Readonly<WorkflowBuilderProps>) {
   const prefersReducedMotion = useReducedMotion();
   const reducedMotion = prefersReducedMotion ?? false;
@@ -136,9 +171,11 @@ export function WorkflowBuilder({ login, plan }: Readonly<WorkflowBuilderProps>)
   const [categories, setCategories] = useState<CategorySummary[]>([]);
   const [allTemplates, setAllTemplates] = useState<CatalogTemplate[]>([]);
   const [history, setHistory] = useState<WorkflowHistoryItem[]>([]);
+  const [projects, setProjects] = useState<ProvisionedProject[]>([]);
 
   const [loadingCatalog, setLoadingCatalog] = useState(false);
   const [loadingHistory, setLoadingHistory] = useState(false);
+  const [loadingProjects, setLoadingProjects] = useState(false);
   const [catalogError, setCatalogError] = useState<string | null>(null);
 
   const [activeTab, setActiveTab] = useState<WorkflowTab>("setup");
@@ -151,34 +188,49 @@ export function WorkflowBuilder({ login, plan }: Readonly<WorkflowBuilderProps>)
   const [servicePath, setServicePath] = useState("");
   const [nodeVersion, setNodeVersion] = useState("24");
   const [coverageThreshold, setCoverageThreshold] = useState("80");
-  const [enhancements, setEnhancements] = useState<NonNullable<GenerateWorkflowRequest["enhancements"]>>([]);
+  const [outputFileName, setOutputFileName] = useState("");
+  const [enhancements, setEnhancements] = useState<NonNullable<SetupProjectRequest["enhancements"]>>([]);
 
-  const [githubRepos, setGithubRepos] = useState<GitHubRepo[]>([]);
-  const [loadingRepos, setLoadingRepos] = useState(false);
-  const [reposLoaded, setReposLoaded] = useState(false);
+  const [linkedRepos, setLinkedRepos] = useState<LinkedGitHubRepo[]>([]);
+  const [selectedRepoFullName, setSelectedRepoFullName] = useState("");
+  const [loadingLinkedRepos, setLoadingLinkedRepos] = useState(false);
+  const [linkedReposLoaded, setLinkedReposLoaded] = useState(false);
+  const [installUrl, setInstallUrl] = useState<string | null>(null);
+  const [loadingInstallUrl, setLoadingInstallUrl] = useState(false);
+  const [installationId, setInstallationId] = useState("");
+  const [linkingInstallation, setLinkingInstallation] = useState(false);
 
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [generationResult, setGenerationResult] = useState<GenerateWorkflowResponse | null>(null);
+  const [isSettingUp, setIsSettingUp] = useState(false);
+  const [setupResult, setSetupResult] = useState<SetupProjectResponse | null>(null);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
 
-  async function handleLoadRepos() {
-    setLoadingRepos(true);
-    try {
-      const response = await getGithubRepos();
-      setGithubRepos(response.repos);
-      setReposLoaded(true);
-    } catch {
-      setStatusMessage("Could not load GitHub repos. Make sure you signed in with GitHub.");
-    } finally {
-      setLoadingRepos(false);
+  const loadLinkedRepos = useCallback(async (silent = false) => {
+    if (!silent) {
+      setLoadingLinkedRepos(true);
     }
-  }
+
+    try {
+      const response = await getLinkedGithubRepos();
+      setLinkedRepos(response.repos);
+      setLinkedReposLoaded(true);
+    } catch {
+      if (!silent) {
+        setStatusMessage("Could not load linked GitHub App repos.");
+      }
+    } finally {
+      if (!silent) {
+        setLoadingLinkedRepos(false);
+      }
+    }
+  }, []);
 
   function handleRepoSelect(event: React.ChangeEvent<HTMLSelectElement>) {
     const repoName = event.target.value;
-    if (!repoName) return;
-    setServiceName(toSlug(repoName.split("/").pop() ?? repoName));
-    setServicePath(repoName);
+    setSelectedRepoFullName(repoName);
+
+    if (repoName && (!serviceName || serviceName === "cicd-service")) {
+      setServiceName(toSlug(repoName.split("/").pop() ?? repoName));
+    }
   }
 
   const loadHistory = useCallback(async (silent = false) => {
@@ -200,9 +252,64 @@ export function WorkflowBuilder({ login, plan }: Readonly<WorkflowBuilderProps>)
     }
   }, []);
 
+  const loadProjects = useCallback(async (silent = false) => {
+    if (!silent) {
+      setLoadingProjects(true);
+    }
+
+    try {
+      const response = await getProjects(25);
+      setProjects(response.items);
+    } catch {
+      if (!silent) {
+        setStatusMessage("Provisioned project history is temporarily unavailable.");
+      }
+    } finally {
+      if (!silent) {
+        setLoadingProjects(false);
+      }
+    }
+  }, []);
+
   useEffect(() => {
     void loadHistory();
   }, [loadHistory]);
+
+  useEffect(() => {
+    void loadProjects();
+  }, [loadProjects]);
+
+  useEffect(() => {
+    void loadLinkedRepos();
+  }, [loadLinkedRepos]);
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadInstallUrl() {
+      setLoadingInstallUrl(true);
+      try {
+        const response = await getGithubAppInstallUrl();
+        if (active) {
+          setInstallUrl(response.installUrl);
+        }
+      } catch {
+        if (active) {
+          setInstallUrl(null);
+        }
+      } finally {
+        if (active) {
+          setLoadingInstallUrl(false);
+        }
+      }
+    }
+
+    void loadInstallUrl();
+
+    return () => {
+      active = false;
+    };
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -294,7 +401,7 @@ export function WorkflowBuilder({ login, plan }: Readonly<WorkflowBuilderProps>)
     setStatusMessage(`Selected template: ${template.name}`);
   }
 
-  function toggleEnhancement(key: NonNullable<GenerateWorkflowRequest["enhancements"]>[number]) {
+  function toggleEnhancement(key: NonNullable<SetupProjectRequest["enhancements"]>[number]) {
     setEnhancements((current) => {
       if (current.includes(key)) {
         return current.filter((value) => value !== key);
@@ -331,9 +438,35 @@ export function WorkflowBuilder({ login, plan }: Readonly<WorkflowBuilderProps>)
     }
   }
 
-  async function handleGenerate() {
+  async function handleLinkInstallation() {
+    const parsedInstallationId = Number(installationId);
+    if (!Number.isInteger(parsedInstallationId) || parsedInstallationId < 1) {
+      setStatusMessage("Enter a valid GitHub App installation id.");
+      return;
+    }
+
+    setLinkingInstallation(true);
+    setStatusMessage("Linking GitHub App installation...");
+
+    try {
+      const response = await linkGithubInstallation(parsedInstallationId);
+      await loadLinkedRepos(true);
+      setStatusMessage(`Linked ${response.reposLinked} GitHub repo${response.reposLinked === 1 ? "" : "s"}.`);
+    } catch (error) {
+      setStatusMessage(formatApiError(error, "GitHub App installation link failed"));
+    } finally {
+      setLinkingInstallation(false);
+    }
+  }
+
+  async function handleSetupProject() {
     if (!selectedTemplate) {
       setStatusMessage("Please select a template first.");
+      return;
+    }
+
+    if (!selectedRepoFullName) {
+      setStatusMessage("Select a linked GitHub App repo first.");
       return;
     }
 
@@ -348,34 +481,45 @@ export function WorkflowBuilder({ login, plan }: Readonly<WorkflowBuilderProps>)
       return;
     }
 
-    setIsGenerating(true);
-    setStatusMessage("Generating workflow YAML from cicd-workflow templates...");
+    setIsSettingUp(true);
+    setStatusMessage("Setting up GitHub repo with CI_TOKEN and workflow file...");
 
     try {
       const normalizedService = toSlug(serviceName);
-      const payload: GenerateWorkflowRequest = {
+      const payload: SetupProjectRequest = {
+        repoFullName: selectedRepoFullName,
         templateId: selectedTemplate.id,
         serviceName: normalizedService,
         servicePath: servicePath || undefined,
         nodeVersion: nodeVersion || undefined,
         coverageThreshold: coverage,
         enhancements: enhancements.length ? enhancements : undefined,
+        outputFileName: outputFileName || undefined,
       };
 
-      const response = await generateWorkflow(payload);
-      setGenerationResult(response);
+      const response = await setupProject(payload);
+      setSetupResult(response);
+      await Promise.all([loadProjects(true), loadHistory(true)]);
+      setProjects((current) => [
+        {
+          id: response.id,
+          repoFullName: response.repoFullName,
+          templateId: payload.templateId,
+          serviceName: payload.serviceName,
+          workflowPath: response.workflowPath,
+          status: response.status,
+          githubCommitSha: response.githubCommitSha,
+          githubCommitUrl: response.githubCommitUrl,
+          failureReason: null,
+        },
+        ...current.filter((project) => project.id !== response.id),
+      ]);
       setActiveTab("current");
-      await loadHistory(true);
-      setStatusMessage(`Generated ${response.metadata.outputFileName} and saved to workflow history.`);
+      setStatusMessage(`Setup completed for ${response.repoFullName}. Push to the repo to trigger validate-access.`);
     } catch (error) {
-      const apiError = error as ApiError;
-      if (apiError?.details) {
-        setStatusMessage(`Generation failed: ${JSON.stringify(apiError.details)}`);
-      } else {
-        setStatusMessage("Generation failed. Please retry.");
-      }
+      setStatusMessage(formatApiError(error, "Setup failed"));
     } finally {
-      setIsGenerating(false);
+      setIsSettingUp(false);
     }
   }
 
@@ -440,14 +584,47 @@ export function WorkflowBuilder({ login, plan }: Readonly<WorkflowBuilderProps>)
             <option value="nodejs">Node.js</option>
           </select>
 
-          <p className="input-label">GitHub Repository</p>
+          <p className="input-label">GitHub App</p>
           <div className="github-repo-select">
-            {reposLoaded ? (
-              <select onChange={handleRepoSelect} defaultValue="">
-                <option value="">Select a repo (optional)</option>
-                {githubRepos.map((repo) => (
-                  <option key={repo.id} value={repo.fullName}>
-                    {repo.fullName}
+            {installUrl ? (
+              <a className="github-repo-load-btn github-install-link" href={installUrl} target="_blank" rel="noreferrer">
+                Install GitHub App
+              </a>
+            ) : (
+              <button type="button" className="github-repo-load-btn" disabled>
+                {loadingInstallUrl ? "Loading install link..." : "Install link unavailable"}
+              </button>
+            )}
+
+            <label className="input-label compact-label" htmlFor="installation-id">
+              Installation ID
+            </label>
+            <input
+              id="installation-id"
+              value={installationId}
+              onChange={(event) => setInstallationId(event.target.value.replaceAll(/\D/g, ""))}
+              placeholder="12345678"
+            />
+            <button
+              type="button"
+              className="github-repo-load-btn"
+              onClick={() => void handleLinkInstallation()}
+              disabled={linkingInstallation}
+            >
+              {linkingInstallation ? "Linking..." : "Link installation"}
+            </button>
+          </div>
+
+          <label className="input-label" htmlFor="linked-repo-select">
+            Linked repository
+          </label>
+          <div className="github-repo-select">
+            {linkedReposLoaded ? (
+              <select id="linked-repo-select" value={selectedRepoFullName} onChange={handleRepoSelect}>
+                <option value="">Select a linked repo</option>
+                {linkedRepos.map((repo) => (
+                  <option key={`${repo.installationId}-${repo.repoFullName}`} value={repo.repoFullName}>
+                    {repo.repoFullName}
                     {repo.private ? " 🔒" : ""}
                   </option>
                 ))}
@@ -456,12 +633,15 @@ export function WorkflowBuilder({ login, plan }: Readonly<WorkflowBuilderProps>)
               <button
                 type="button"
                 className="github-repo-load-btn"
-                onClick={() => void handleLoadRepos()}
-                disabled={loadingRepos}
+                onClick={() => void loadLinkedRepos()}
+                disabled={loadingLinkedRepos}
               >
-                {loadingRepos ? "Loading repos..." : "Load my GitHub repos"}
+                {loadingLinkedRepos ? "Loading linked repos..." : "Load linked repos"}
               </button>
             )}
+            {linkedReposLoaded && linkedRepos.length === 0 ? (
+              <p className="helper-text">No linked repos yet. Install the GitHub App, then link the installation ID.</p>
+            ) : null}
           </div>
 
           <p className="input-label">Category</p>
@@ -518,7 +698,7 @@ export function WorkflowBuilder({ login, plan }: Readonly<WorkflowBuilderProps>)
 
           {selectedTemplate ? (
             <div className="generate-form">
-              <h3>Generate from {selectedTemplate.name}</h3>
+              <h3>Set up {selectedTemplate.name}</h3>
               <p className="helper-text">
                 Source workflow: {toSourcePath(selectedTemplate.workflowPath)}
               </p>
@@ -544,6 +724,16 @@ export function WorkflowBuilder({ login, plan }: Readonly<WorkflowBuilderProps>)
                 value={servicePath}
                 onChange={(event) => setServicePath(event.target.value)}
                 placeholder="apps/payments"
+              />
+
+              <label className="input-label" htmlFor="output-file-name">
+                Workflow file name (optional)
+              </label>
+              <input
+                id="output-file-name"
+                value={outputFileName}
+                onChange={(event) => setOutputFileName(event.target.value)}
+                placeholder="example-app-ci.yml"
               />
 
               <div className="input-row">
@@ -585,8 +775,14 @@ export function WorkflowBuilder({ login, plan }: Readonly<WorkflowBuilderProps>)
                 ))}
               </div>
 
-              <button type="button" className="primary-button" disabled={isGenerating} onClick={handleGenerate}>
-                {isGenerating ? "Generating..." : "Generate workflow"}
+              <button
+                type="button"
+                className="primary-button"
+                data-testid="setup-project-button"
+                disabled={isSettingUp}
+                onClick={() => void handleSetupProject()}
+              >
+                {isSettingUp ? "Setting up..." : "Set up project"}
               </button>
             </div>
           ) : (
@@ -595,38 +791,29 @@ export function WorkflowBuilder({ login, plan }: Readonly<WorkflowBuilderProps>)
         </section>
 
         <aside className="result-panel">
-          <h2>Latest Output</h2>
+          <h2>Latest Setup</h2>
           <AnimatePresence mode="wait">
-            {generationResult ? (
+            {setupResult ? (
               <motion.div
-                key={generationResult.metadata.sha256}
+                key={setupResult.id}
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -8 }}
               >
-                <p className="helper-text">
-                  {generationResult.metadata.outputFileName} · {generationResult.metadata.lineCount} lines
-                </p>
-                <p className="helper-text">
-                  Source workflow: {toSourcePath(generationResult.metadata.sourceWorkflowFile)}
-                </p>
+                <p className="helper-text">Repo: {setupResult.repoFullName}</p>
+                <p className="helper-text">Workflow: {setupResult.workflowPath}</p>
+                <p className="helper-text">Commit: {setupResult.githubCommitSha}</p>
                 <div className="result-actions">
-                  <button
-                    className="ghost-button"
-                    type="button"
-                    onClick={() => copyYaml(generationResult.yaml)}
-                  >
-                    Copy YAML
-                  </button>
-                  <button
-                    className="ghost-button"
-                    type="button"
-                    onClick={() => downloadYaml(generationResult.yaml, generationResult.metadata.outputFileName)}
-                  >
-                    Download
+                  {setupResult.githubCommitUrl ? (
+                    <a className="ghost-button" href={setupResult.githubCommitUrl} target="_blank" rel="noreferrer">
+                      Open commit
+                    </a>
+                  ) : null}
+                  <button className="ghost-button" type="button" onClick={() => setActiveTab("current")}>
+                    View project
                   </button>
                 </div>
-                <pre>{generationResult.yaml}</pre>
+                <p className="helper-text">Next step: push to the repository and confirm validate-access reaches /v1/ci/validate.</p>
               </motion.div>
             ) : (
               <motion.p
@@ -635,7 +822,7 @@ export function WorkflowBuilder({ login, plan }: Readonly<WorkflowBuilderProps>)
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
               >
-                Generate a workflow in Setup to preview YAML output here.
+                Select a linked GitHub repo and set up a project to write CI_TOKEN and commit the workflow.
               </motion.p>
             )}
           </AnimatePresence>
@@ -657,17 +844,61 @@ export function WorkflowBuilder({ login, plan }: Readonly<WorkflowBuilderProps>)
         transition={{ duration: 0.3 }}
       >
         <div className="templates-header">
-          <h2>Current Workflows</h2>
+          <h2>Provisioned Projects</h2>
+          <p>{projects.length} setup entries</p>
+        </div>
+        <p className="helper-text">
+          These repos have been set up through the GitHub App path and can be validated by pushing to the repository.
+        </p>
+
+        {loadingProjects ? <p className="helper-text">Loading provisioned projects...</p> : null}
+
+        {!loadingProjects && projects.length === 0 ? (
+          <p className="helper-text">No provisioned projects yet. Open Setup tab to configure your first repo.</p>
+        ) : (
+          <div className="history-grid">
+            {projects.map((project) => (
+              <article key={project.id} className="history-card">
+                <div className="history-head">
+                  <h3>{project.repoFullName}</h3>
+                  <p>{project.status}</p>
+                </div>
+                <p className="helper-text">Service: {project.serviceName}</p>
+                <p className="helper-text">Template: {project.templateId}</p>
+                <p className="helper-text">Workflow: {project.workflowPath}</p>
+                {project.githubCommitSha ? (
+                  <p className="helper-text">Commit: {project.githubCommitSha}</p>
+                ) : null}
+                {project.failureReason ? (
+                  <p className="error-text">Failure: {project.failureReason}</p>
+                ) : null}
+                <div className="result-actions">
+                  {project.githubCommitUrl ? (
+                    <a className="ghost-button" href={project.githubCommitUrl} target="_blank" rel="noreferrer">
+                      Open commit
+                    </a>
+                  ) : null}
+                  <button className="ghost-button" type="button" onClick={() => setActiveTab("setup")}>
+                    Open Setup
+                  </button>
+                </div>
+              </article>
+            ))}
+          </div>
+        )}
+
+        <div className="templates-header history-section-header">
+          <h2>Generated YAML History</h2>
           <p>{history.length} generated entries</p>
         </div>
         <p className="helper-text">
-          These entries are generated from cicd-workflow source templates and persisted in your backend account history.
+          Project setup also stores generated source YAML for review and export.
         </p>
 
         {loadingHistory ? <p className="helper-text">Loading workflow history...</p> : null}
 
         {!loadingHistory && history.length === 0 ? (
-          <p className="helper-text">No generated workflows yet. Open Setup tab to generate your first one.</p>
+          <p className="helper-text">No generated workflow history yet.</p>
         ) : (
           <div className="history-grid">
             {history.map((entry) => (
