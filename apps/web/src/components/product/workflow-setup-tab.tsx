@@ -2,38 +2,53 @@
 
 import { motion } from "framer-motion";
 
-import type { SetupProjectResponse } from "@/lib/api/contracts";
+import type { CreateProjectResponse, MvpProjectOptionKey } from "@/lib/api/contracts";
+import type { CreateProjectFormState } from "@/hooks/use-create-project-form";
 import type { GithubInstallationsState } from "@/hooks/use-github-installations";
-import type { ProjectSetupFormState } from "@/hooks/use-project-setup-form";
-import type { WorkflowCatalogState } from "@/hooks/use-workflow-catalog";
+import {
+  projectOptionLabels,
+  type ProjectOptionsCatalogState,
+} from "@/hooks/use-project-options-catalog";
 
 import { SetupResultPanel } from "./setup-result-panel";
-import { TemplateCard } from "./template-card";
-import { enhancementLabels, toSlug, toSourcePath } from "./workflow-builder-utils";
 
 interface WorkflowSetupTabProps {
-  catalog: WorkflowCatalogState;
-  form: ProjectSetupFormState;
+  createResult: CreateProjectResponse | null;
+  form: CreateProjectFormState;
   github: GithubInstallationsState;
-  isSettingUp: boolean;
-  onSetupProject: () => void;
-  onTemplateSelect: NonNullable<Parameters<typeof TemplateCard>[0]["onSelect"]>;
+  isCreatingProject: boolean;
+  onCreateProject: () => void;
   onViewProject: () => void;
+  projectCatalog: ProjectOptionsCatalogState;
   reducedMotion: boolean;
-  setupResult: SetupProjectResponse | null;
 }
 
+const projectOptionDescriptions: Record<MvpProjectOptionKey, string> = {
+  lint: "Run code quality checks before build.",
+  unit: "Run the starter project's test script.",
+  build: "Compile or bundle the project.",
+  coverage: "Enforce the configured coverage threshold.",
+  security: "Run dependency and workflow security checks.",
+  docker: "Build a container image when the recipe supports it.",
+};
+
 export function WorkflowSetupTab({
-  catalog,
+  createResult,
   form,
   github,
-  isSettingUp,
-  onSetupProject,
-  onTemplateSelect,
+  isCreatingProject,
+  onCreateProject,
   onViewProject,
+  projectCatalog,
   reducedMotion,
-  setupResult,
 }: Readonly<WorkflowSetupTabProps>) {
+  const createDisabled =
+    isCreatingProject ||
+    projectCatalog.loadingProjectOptions ||
+    !github.hasAllRepositoriesInstallation ||
+    !projectCatalog.selectedProjectType ||
+    !projectCatalog.selectedWorkflowRecipe;
+
   return (
     <motion.section
       className="studio-grid"
@@ -41,40 +56,14 @@ export function WorkflowSetupTab({
       role="tabpanel"
       aria-labelledby="workflow-tab-setup"
       tabIndex={0}
-      initial={{ opacity: 0, y: 20 }}
+      initial={reducedMotion ? false : { opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.35 }}
     >
       <aside className="controls-panel">
-        <h2>Setup Filters</h2>
-        <label className="input-label" htmlFor="template-search">
-          Search templates
-        </label>
-        <input
-          id="template-search"
-          value={catalog.searchQuery}
-          onChange={(event) => catalog.setSearchQuery(event.target.value)}
-          placeholder="Find by name, stack, or category"
-        />
+        <h2>GitHub App</h2>
+        <p className="helper-text">{github.installationStatusCopy}</p>
 
-        <label className="input-label" htmlFor="stack-select">
-          Stack
-        </label>
-        <select
-          id="stack-select"
-          value={catalog.selectedStack}
-          onChange={(event) => catalog.setSelectedStack(event.target.value)}
-        >
-          <option value="all">All stacks</option>
-          <option value="nextjs">Next.js</option>
-          <option value="react">React</option>
-          <option value="react-native">React Native</option>
-          <option value="expo">Expo</option>
-          <option value="nestjs">NestJS</option>
-          <option value="nodejs">Node.js</option>
-        </select>
-
-        <p className="input-label">GitHub App</p>
         <div className="github-repo-select">
           {github.installUrl ? (
             <a className="github-repo-load-btn github-install-link" href={github.installUrl} target="_blank" rel="noreferrer">
@@ -105,54 +94,60 @@ export function WorkflowSetupTab({
           </button>
         </div>
 
-        <label className="input-label" htmlFor="linked-repo-select">
-          Linked repository
+        <h2 className="side-section-title">Catalog</h2>
+        <label className="input-label" htmlFor="repo-shape-select">
+          Repository shape
         </label>
-        <div className="github-repo-select">
-          {github.linkedReposLoaded ? (
-            <select id="linked-repo-select" value={github.selectedRepoFullName} onChange={github.handleRepoSelect}>
-              <option value="">Select a linked repo</option>
-              {github.linkedRepos.map((repo) => (
-                <option key={`${repo.installationId}-${repo.repoFullName}`} value={repo.repoFullName}>
-                  {repo.repoFullName}
-                </option>
-              ))}
-            </select>
-          ) : (
-            <button
-              type="button"
-              className="github-repo-load-btn"
-              onClick={() => void github.loadLinkedRepos()}
-              disabled={github.loadingLinkedRepos}
-            >
-              {github.loadingLinkedRepos ? "Loading linked repos..." : "Load linked repos"}
-            </button>
-          )}
-          {github.linkedReposLoaded && github.linkedRepos.length === 0 ? (
-            <p className="helper-text">No linked repos yet. Install the GitHub App, then link the installation ID.</p>
-          ) : null}
-        </div>
-
-        <p className="input-label">Category</p>
-        <div className="category-wrap">
-          <button
-            type="button"
-            className={`category-chip ${catalog.selectedCategory === "All" ? "active" : ""}`}
-            onClick={() => catalog.setSelectedCategory("All")}
-          >
-            All
-          </button>
-          {catalog.availableCategories.map((category) => (
-            <button
-              type="button"
-              key={category.name}
-              className={`category-chip ${catalog.selectedCategory === category.name ? "active" : ""}`}
-              onClick={() => catalog.setSelectedCategory(category.name)}
-            >
-              {category.name} ({category.count})
-            </button>
+        <select
+          id="repo-shape-select"
+          value={projectCatalog.selectedRepoShapeId}
+          onChange={(event) => projectCatalog.setSelectedRepoShapeId(event.target.value)}
+          disabled={projectCatalog.loadingProjectOptions}
+        >
+          {projectCatalog.allRepoShapes.map((shape) => (
+            <option key={shape.id} value={shape.id} disabled={!shape.enabled}>
+              {shape.label}{shape.enabled ? "" : " (coming soon)"}
+            </option>
           ))}
-        </div>
+        </select>
+        {projectCatalog.selectedRepoShape?.description ? (
+          <p className="helper-text">{projectCatalog.selectedRepoShape.description}</p>
+        ) : null}
+
+        <label className="input-label" htmlFor="project-type-select">
+          Language / framework
+        </label>
+        <select
+          id="project-type-select"
+          value={projectCatalog.selectedProjectTypeId}
+          onChange={(event) => projectCatalog.setSelectedProjectTypeId(event.target.value)}
+          disabled={projectCatalog.loadingProjectOptions}
+        >
+          {projectCatalog.projectTypesForShape.map((projectType) => (
+            <option key={projectType.id} value={projectType.id}>
+              {projectType.label}
+            </option>
+          ))}
+        </select>
+
+        <label className="input-label" htmlFor="workflow-recipe-select">
+          Workflow recipe
+        </label>
+        <select
+          id="workflow-recipe-select"
+          value={projectCatalog.selectedWorkflowRecipeId}
+          onChange={(event) => projectCatalog.setSelectedWorkflowRecipeId(event.target.value)}
+          disabled={projectCatalog.loadingProjectOptions}
+        >
+          {projectCatalog.recipesForSelectedProject.map((recipe) => (
+            <option key={recipe.id} value={recipe.id}>
+              {recipe.label}
+            </option>
+          ))}
+        </select>
+        {projectCatalog.selectedWorkflowRecipe?.description ? (
+          <p className="helper-text">{projectCatalog.selectedWorkflowRecipe.description}</p>
+        ) : null}
 
         <p className="helper-text">
           Source repository: <strong>workflow-core</strong>
@@ -161,125 +156,133 @@ export function WorkflowSetupTab({
 
       <section className="templates-panel">
         <div className="templates-header">
-          <h2>Setup Workflows</h2>
-          <p>{catalog.filteredTemplates.length} templates matched</p>
+          <h2>Create Project</h2>
+          <p>{projectCatalog.selectedProjectType?.label ?? "Choose a project type"}</p>
         </div>
 
-        {catalog.loadingCatalog ? (
-          <div className="template-grid">
-            {[1, 2, 3, 4, 5, 6].map((n) => (
-              <div key={n} className="skeleton-card" />
-            ))}
-          </div>
+        {projectCatalog.loadingProjectOptions ? (
+          <p className="helper-text">Loading project catalog...</p>
         ) : null}
 
-        <div className="template-grid">
-          {catalog.filteredTemplates.map((template) => (
-            <TemplateCard
-              key={template.id}
-              template={template}
-              selected={catalog.selectedTemplate?.id === template.id}
-              onSelect={onTemplateSelect}
-              reducedMotion={reducedMotion}
-            />
-          ))}
-        </div>
+        <div className="generate-form create-project-form">
+          <label className="input-label" htmlFor="repo-name">
+            Repository name
+          </label>
+          <input
+            id="repo-name"
+            value={form.repoName}
+            onChange={(event) => form.setRepoName(event.target.value)}
+            placeholder="my-next-app"
+          />
 
-        {catalog.selectedTemplate ? (
-          <div className="generate-form">
-            <h3>Set up {catalog.selectedTemplate.name}</h3>
-            <p className="helper-text">
-              Source workflow: {toSourcePath(catalog.selectedTemplate.workflowPath)}
-            </p>
-            <p className="helper-text">
-              Source properties: {toSourcePath(catalog.selectedTemplate.propertiesPath)}
-            </p>
+          <label className="input-label" htmlFor="repo-visibility">
+            Visibility
+          </label>
+          <select
+            id="repo-visibility"
+            value={form.visibility}
+            onChange={(event) => form.setVisibility(event.target.value as "private" | "public")}
+          >
+            <option value="private">Private</option>
+            <option value="public">Public</option>
+          </select>
 
-            <label className="input-label" htmlFor="service-name">
-              Service name
-            </label>
-            <input
-              id="service-name"
-              value={form.serviceName}
-              onChange={(event) => form.setServiceName(toSlug(event.target.value))}
-              placeholder="payments-service"
-            />
+          <label className="input-label" htmlFor="service-name">
+            Service name
+          </label>
+          <input
+            id="service-name"
+            value={form.serviceName}
+            onChange={(event) => form.setServiceName(event.target.value)}
+            placeholder="my-next-app"
+          />
 
-            <label className="input-label" htmlFor="service-path">
-              Service path (optional)
-            </label>
-            <input
-              id="service-path"
-              value={form.servicePath}
-              onChange={(event) => form.setServicePath(event.target.value)}
-              placeholder="apps/payments"
-            />
+          <label className="input-label" htmlFor="service-path">
+            Service path
+          </label>
+          <input
+            id="service-path"
+            value={form.servicePath}
+            onChange={(event) => form.setServicePath(event.target.value)}
+            placeholder="."
+          />
 
-            <label className="input-label" htmlFor="output-file-name">
-              Workflow file name (optional)
-            </label>
-            <input
-              id="output-file-name"
-              value={form.outputFileName}
-              onChange={(event) => form.setOutputFileName(event.target.value)}
-              placeholder="example-app-ci.yml"
-            />
+          <label className="input-label" htmlFor="output-file-name">
+            Workflow file name
+          </label>
+          <input
+            id="output-file-name"
+            value={form.outputFileName}
+            onChange={(event) => form.setOutputFileName(event.target.value)}
+            placeholder="ci.yml"
+          />
 
-            <div className="input-row">
-              <div>
-                <label className="input-label" htmlFor="node-version">
-                  Node version
-                </label>
-                <input
-                  id="node-version"
-                  value={form.nodeVersion}
-                  onChange={(event) => form.setNodeVersion(event.target.value)}
-                  placeholder="24"
-                />
-              </div>
-              <div>
-                <label className="input-label" htmlFor="coverage-threshold">
-                  Coverage %
-                </label>
-                <input
-                  id="coverage-threshold"
-                  value={form.coverageThreshold}
-                  onChange={(event) => form.setCoverageThreshold(event.target.value)}
-                  placeholder="80"
-                />
-              </div>
+          <div className="input-row">
+            <div>
+              <label className="input-label" htmlFor="node-version">
+                Node version
+              </label>
+              <input
+                id="node-version"
+                value={form.nodeVersion}
+                onChange={(event) => form.setNodeVersion(event.target.value)}
+                placeholder="24"
+              />
             </div>
-
-            <div className="enhancement-grid">
-              {enhancementLabels.map((enhancement) => (
-                <label className="enhancement-option" key={enhancement.key}>
-                  <input
-                    type="checkbox"
-                    checked={form.enhancements.includes(enhancement.key)}
-                    onChange={() => form.toggleEnhancement(enhancement.key)}
-                  />
-                  <span>{enhancement.label}</span>
-                  <small>{enhancement.description}</small>
-                </label>
-              ))}
+            <div>
+              <label className="input-label" htmlFor="coverage-threshold">
+                Coverage %
+              </label>
+              <input
+                id="coverage-threshold"
+                value={form.coverageThreshold}
+                onChange={(event) => form.setCoverageThreshold(event.target.value)}
+                placeholder="80"
+              />
             </div>
-
-            <button
-              type="button"
-              className="primary-button"
-              data-testid="setup-project-button"
-              disabled={isSettingUp}
-              onClick={() => void onSetupProject()}
-            >
-              {isSettingUp ? "Setting up..." : "Set up project"}
-            </button>
           </div>
-        ) : (
-          <p className="helper-text">No templates match your current filters.</p>
-        )}
+
+          <div className="enhancement-grid" aria-label="Workflow checks">
+            {projectCatalog.supportedTestOptions.map((option) => (
+              <label
+                className={`enhancement-option ${option.supported ? "" : "disabled-option"}`}
+                key={option.key}
+                htmlFor={`test-${option.key}`}
+              >
+                <input
+                  id={`test-${option.key}`}
+                  type="checkbox"
+                  checked={option.checked}
+                  disabled={!option.supported}
+                  onChange={() => projectCatalog.toggleTestOption(option.key)}
+                />
+                <span>{projectOptionLabels[option.key]}</span>
+                <small>
+                  {projectOptionDescriptions[option.key]}
+                  {option.job ? ` Job: ${option.job}.` : ""}
+                </small>
+              </label>
+            ))}
+          </div>
+
+          <button
+            type="button"
+            className="primary-button"
+            data-testid="setup-project-button"
+            disabled={createDisabled}
+            onClick={() => void onCreateProject()}
+          >
+            {isCreatingProject ? "Creating..." : "Create project"}
+          </button>
+          {!github.hasAllRepositoriesInstallation ? (
+            <p className="helper-text">
+              Create Project is enabled after the GitHub App is linked with all repositories access.
+            </p>
+          ) : null}
+        </div>
       </section>
 
-      <SetupResultPanel setupResult={setupResult} onViewProject={onViewProject} />
+      <SetupResultPanel setupResult={createResult} onViewProject={onViewProject} />
     </motion.section>
   );
 }

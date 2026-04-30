@@ -21,8 +21,8 @@ export default function LoginPage() {
     <Suspense fallback={<LoginFallback />}>
       <OAuthAuthPage
         mode="login"
-        title="Welcome back to your workflow control center"
-        subtitle="Choose Google or GitHub to continue to your workflow studio."
+        title="Welcome back to your project control center"
+        subtitle="Choose Google or GitHub to continue to Create Project."
         switchText="New here?"
         switchHref="/signup"
         switchCta="Create your account"

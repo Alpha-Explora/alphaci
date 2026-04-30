@@ -54,7 +54,7 @@ export function WorkflowAllTab({ allTemplates, onUseTemplate }: Readonly<Workflo
                 type="button"
                 onClick={() => onUseTemplate(template)}
               >
-                Use in Setup
+                Use in Create Project
               </button>
             </div>
           </article>

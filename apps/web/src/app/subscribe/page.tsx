@@ -39,8 +39,8 @@ const planCatalog = [
 const activationChecklist = [
   "Connect your Google or GitHub account",
   "Pick monthly plan",
-  "Activate and open workflow studio",
-  "Generate and download YAML",
+  "Activate and open Create Project",
+  "Create a GitHub project with managed CI",
 ];
 
 function CheckIcon() {
@@ -195,10 +195,10 @@ export default function SubscribePage() {
           animate={prefersReducedMotion ? undefined : { opacity: 1, y: 0 }}
           transition={{ duration: 0.4 }}
         >
-          Monthly subscription plans for workflow generation
+          Monthly subscription plans for project creation
         </motion.h1>
         <p>
-          Use Google or GitHub login, choose your monthly plan, and unlock complete setup, generation, and history
+          Use Google or GitHub login, choose your monthly plan, and unlock project creation, workflow generation, and history
           features.
         </p>
 
@@ -272,7 +272,7 @@ export default function SubscribePage() {
           ) : null}
 
           <Link className="ghost-button" href="/workflows">
-            Browse workflows
+            Create Project
           </Link>
         </div>
       </section>
@@ -281,7 +281,7 @@ export default function SubscribePage() {
         <h2>Billing notes</h2>
         <p>
           This monthly flow is environment-backed for product testing. You can switch between Pro and Enterprise plans
-          and validate entitlement changes immediately in the workflow studio.
+          and validate entitlement changes immediately in Create Project.
         </p>
         <p>
           If your status updates but UI still shows old data, run a session refresh by revisiting login or home.

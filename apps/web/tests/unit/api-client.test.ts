@@ -1,6 +1,9 @@
 import {
+  createProject,
+  getGithubInstallationAccounts,
   getGithubAppInstallUrl,
   getLinkedGithubRepos,
+  getProjectOptions,
   getProjects,
   linkGithubInstallation,
   setupProject,
@@ -77,6 +80,101 @@ describe("API client project setup helpers", () => {
     );
   });
 
+  it("loads catalog-driven project options", async () => {
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        repoShapes: [{ id: "single-app", label: "Single App", enabled: true }],
+        projectTypes: [
+          {
+            id: "nextjs-app",
+            label: "Next.js App",
+            language: "typescript",
+            framework: "nextjs",
+            repoShapes: ["single-app"],
+            defaultRecipe: "frontend-standard-ci",
+            allowedRecipes: ["frontend-standard-ci"],
+            defaultOptions: { lint: true, unit: true, build: true, coverage: true },
+          },
+        ],
+        recipes: [
+          {
+            id: "frontend-standard-ci",
+            label: "Frontend Standard CI",
+            supportedProjectTypes: ["nextjs-app"],
+            templateByProjectType: { "nextjs-app": "fe-nextjs" },
+            supportedOptions: { lint: true, unit: true, build: true, coverage: true },
+            optionJobs: { lint: "lint", unit: "unit-tests" },
+          },
+        ],
+      }),
+    });
+
+    await expect(getProjectOptions()).resolves.toMatchObject({
+      repoShapes: [{ id: "single-app", enabled: true }],
+      projectTypes: [{ id: "nextjs-app" }],
+      recipes: [{ id: "frontend-standard-ci" }],
+    });
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      "http://localhost:4000/api/v1/catalog/project-options",
+      expect.objectContaining({ credentials: "include" }),
+    );
+  });
+
+  it("creates a new GitHub project from a catalog payload", async () => {
+    const payload = {
+      repoName: "example-app",
+      visibility: "private" as const,
+      repoShape: "single-app",
+      projectTypeId: "nextjs-app",
+      workflowRecipeId: "frontend-standard-ci",
+      serviceName: "example-app",
+      servicePath: ".",
+      nodeVersion: "24",
+      coverageThreshold: 80,
+      tests: {
+        lint: true,
+        unit: true,
+        build: true,
+        coverage: true,
+        security: true,
+        docker: false,
+      },
+      outputFileName: "ci.yml",
+    };
+
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      status: 201,
+      json: async () => ({
+        id: "project-1",
+        repoFullName: "tone/example-app",
+        repoUrl: "https://github.com/tone/example-app",
+        status: "provisioned",
+        workflowPath: ".github/workflows/ci.yml",
+        githubCommitSha: "commit-sha",
+        githubCommitUrl: "https://github.com/tone/example-app/commit/commit-sha",
+        projectTypeId: "nextjs-app",
+        workflowRecipeId: "frontend-standard-ci",
+      }),
+    });
+
+    await expect(createProject(payload)).resolves.toMatchObject({
+      repoUrl: "https://github.com/tone/example-app",
+      workflowPath: ".github/workflows/ci.yml",
+    });
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      "http://localhost:4000/api/v1/projects",
+      expect.objectContaining({
+        method: "POST",
+        body: JSON.stringify(payload),
+      }),
+    );
+  });
+
   it("gets the GitHub App install URL", async () => {
     fetchMock.mockResolvedValueOnce({
       ok: true,
@@ -100,10 +198,13 @@ describe("API client project setup helpers", () => {
     fetchMock.mockResolvedValueOnce({
       ok: true,
       status: 201,
-      json: async () => ({ reposLinked: 2 }),
+      json: async () => ({ reposLinked: 2, repositorySelection: "all" }),
     });
 
-    await expect(linkGithubInstallation(12345)).resolves.toEqual({ reposLinked: 2 });
+    await expect(linkGithubInstallation(12345)).resolves.toEqual({
+      reposLinked: 2,
+      repositorySelection: "all",
+    });
 
     expect(fetchMock).toHaveBeenCalledWith(
       "http://localhost:4000/api/v1/github/installations",
@@ -111,6 +212,39 @@ describe("API client project setup helpers", () => {
         method: "POST",
         body: JSON.stringify({ installationId: 12345 }),
       }),
+    );
+  });
+
+  it("loads GitHub App installation accounts", async () => {
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        accounts: [
+          {
+            installationId: 12345,
+            accountLogin: "tone",
+            accountId: 999,
+            repositorySelection: "all",
+          },
+        ],
+      }),
+    });
+
+    await expect(getGithubInstallationAccounts()).resolves.toEqual({
+      accounts: [
+        {
+          installationId: 12345,
+          accountLogin: "tone",
+          accountId: 999,
+          repositorySelection: "all",
+        },
+      ],
+    });
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      "http://localhost:4000/api/v1/github/installations/accounts",
+      expect.objectContaining({ credentials: "include" }),
     );
   });
 
@@ -131,6 +265,12 @@ describe("API client project setup helpers", () => {
             {
               id: "project-1",
               repoFullName: "tone/example-app",
+              repoUrl: "https://github.com/tone/example-app",
+              visibility: "private",
+              repoShape: "single-app",
+              projectTypeId: "nextjs-app",
+              workflowRecipeId: "frontend-standard-ci",
+              projectOptions: { lint: true, unit: true, build: true },
               templateId: "frontend-react",
               serviceName: "example-app",
               workflowPath: ".github/workflows/example.yml",

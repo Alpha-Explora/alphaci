@@ -1,4 +1,8 @@
-import type { CatalogCategoriesResponse, CatalogTemplatesResponse } from "./contracts";
+import type {
+  CatalogCategoriesResponse,
+  CatalogTemplatesResponse,
+  ProjectOptionsResponse,
+} from "./contracts";
 import { request } from "./request";
 
 export async function getCategories(): Promise<CatalogCategoriesResponse> {
@@ -23,4 +27,8 @@ export async function getTemplates(params: {
 
   const suffix = search.size ? `?${search.toString()}` : "";
   return request<CatalogTemplatesResponse>(`/catalog/templates${suffix}`);
+}
+
+export async function getProjectOptions(): Promise<ProjectOptionsResponse> {
+  return request<ProjectOptionsResponse>("/catalog/project-options");
 }

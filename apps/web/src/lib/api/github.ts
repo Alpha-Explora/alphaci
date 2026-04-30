@@ -1,5 +1,6 @@
 import type {
   GithubAppInstallUrlResponse,
+  GithubInstallationAccountsResponse,
   LinkedGitHubReposResponse,
   LinkGithubInstallationResponse,
 } from "./contracts";
@@ -20,4 +21,8 @@ export async function linkGithubInstallation(
 
 export async function getLinkedGithubRepos(): Promise<LinkedGitHubReposResponse> {
   return request<LinkedGitHubReposResponse>("/github/installations/repos");
+}
+
+export async function getGithubInstallationAccounts(): Promise<GithubInstallationAccountsResponse> {
+  return request<GithubInstallationAccountsResponse>("/github/installations/accounts");
 }

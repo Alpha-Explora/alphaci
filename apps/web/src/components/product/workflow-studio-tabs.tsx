@@ -12,7 +12,7 @@ interface WorkflowStudioTabsProps {
 
 export function WorkflowStudioTabs({ activeTab, onChange, onKeyDown }: Readonly<WorkflowStudioTabsProps>) {
   return (
-    <div className="studio-tab-bar glass-panel" role="tablist" aria-label="Workflow functions">
+    <div className="studio-tab-bar glass-panel" role="tablist" aria-label="Create project functions">
       <button
         type="button"
         role="tab"
@@ -25,7 +25,7 @@ export function WorkflowStudioTabs({ activeTab, onChange, onKeyDown }: Readonly<
         onKeyDown={(event) => onKeyDown(event, "setup")}
       >
         <svg className="studio-tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
-        {"Setup"}
+        {"Create Project"}
       </button>
       <button
         type="button"
@@ -39,7 +39,7 @@ export function WorkflowStudioTabs({ activeTab, onChange, onKeyDown }: Readonly<
         onKeyDown={(event) => onKeyDown(event, "current")}
       >
         <svg className="studio-tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-        {"Current"}
+        {"Current Projects"}
       </button>
       <button
         type="button"
@@ -53,7 +53,7 @@ export function WorkflowStudioTabs({ activeTab, onChange, onKeyDown }: Readonly<
         onKeyDown={(event) => onKeyDown(event, "all")}
       >
         <svg className="studio-tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
-        {"Templates"}
+        {"Catalog"}
       </button>
     </div>
   );

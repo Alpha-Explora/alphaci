@@ -1114,6 +1114,16 @@ a:focus-visible {
   color: var(--text-secondary);
 }
 
+.enhancement-option.disabled-option {
+  opacity: 0.62;
+}
+
+.side-section-title {
+  margin-top: 1rem;
+  padding-top: 0.85rem;
+  border-top: 1px solid var(--border-soft);
+}
+
 .result-panel {
   max-height: calc(100dvh - 12rem);
   overflow: auto;

@@ -7,12 +7,12 @@ import { useEffect, useState } from "react";
 
 import { FlowBackground } from "@/components/layout/flow-background";
 import { useAuthSession } from "@/hooks/use-auth-session";
-import { logout, getWorkflowHistory } from "@/lib/api/client";
-import type { WorkflowHistoryItem } from "@/lib/api/contracts";
+import { logout, getProjects, getWorkflowHistory } from "@/lib/api/client";
+import type { ProvisionedProject, WorkflowHistoryItem } from "@/lib/api/contracts";
 import { hasActiveSubscription } from "@/lib/auth/subscription";
 
 const quickActions = [
-  { label: "Open workflows", href: "/workflows" },
+  { label: "Create Project", href: "/workflows" },
   { label: "Manage plan", href: "/subscribe" },
 ];
 
@@ -22,7 +22,9 @@ export default function HomeDashboardPage() {
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [logoutMessage, setLogoutMessage] = useState<string | null>(null);
   const [history, setHistory] = useState<WorkflowHistoryItem[]>([]);
+  const [projects, setProjects] = useState<ProvisionedProject[]>([]);
   const [historyLoading, setHistoryLoading] = useState(true);
+  const [projectsLoading, setProjectsLoading] = useState(true);
 
   const hasSubscription = hasActiveSubscription(session);
 
@@ -44,6 +46,10 @@ export default function HomeDashboardPage() {
       .then((response) => setHistory(response.items))
       .catch(() => {})
       .finally(() => setHistoryLoading(false));
+    getProjects(25)
+      .then((response) => setProjects(response.items))
+      .catch(() => {})
+      .finally(() => setProjectsLoading(false));
   }, [status]);
 
   async function handleLogout() {
@@ -105,6 +111,7 @@ export default function HomeDashboardPage() {
 
   const uniqueServices = new Set(history.map((h) => h.serviceName)).size;
   const kpiCards = [
+    { label: "Projects created", value: projectsLoading ? "..." : String(projects.length) },
     { label: "Workflows generated", value: historyLoading ? "..." : String(history.length) },
     { label: "Services configured", value: historyLoading ? "..." : String(uniqueServices) },
     {
@@ -160,7 +167,7 @@ export default function HomeDashboardPage() {
 
         <div className="hero-actions">
           <Link className="primary-button" href="/workflows">
-            Open workflow studio
+            Create project
           </Link>
           <Link className="ghost-button" href="/subscribe">
             View subscription

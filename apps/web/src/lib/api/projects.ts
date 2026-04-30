@@ -1,8 +1,21 @@
-import type { ProvisionedProjectsResponse, SetupProjectRequest, SetupProjectResponse } from "./contracts";
+import type {
+  CreateProjectRequest,
+  CreateProjectResponse,
+  ProvisionedProjectsResponse,
+  SetupProjectRequest,
+  SetupProjectResponse,
+} from "./contracts";
 import { request } from "./request";
 
 export async function setupProject(payload: SetupProjectRequest): Promise<SetupProjectResponse> {
   return request<SetupProjectResponse>("/projects/setup", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function createProject(payload: CreateProjectRequest): Promise<CreateProjectResponse> {
+  return request<CreateProjectResponse>("/projects", {
     method: "POST",
     body: JSON.stringify(payload),
   });

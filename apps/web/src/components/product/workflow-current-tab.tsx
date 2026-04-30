@@ -16,6 +16,15 @@ interface WorkflowCurrentTabProps {
   projects: ProvisionedProject[];
 }
 
+function selectedChecks(project: ProvisionedProject): string {
+  const options = project.projectOptions ?? {};
+  const enabled = Object.entries(options)
+    .filter(([, value]) => value === true)
+    .map(([key]) => key);
+
+  return enabled.length ? enabled.join(", ") : "None selected";
+}
+
 export function WorkflowCurrentTab({
   history,
   loadingHistory,
@@ -38,16 +47,16 @@ export function WorkflowCurrentTab({
     >
       <div className="templates-header">
         <h2>Provisioned Projects</h2>
-        <p>{projects.length} setup entries</p>
+        <p>{projects.length} projects</p>
       </div>
       <p className="helper-text">
-        These repos have been set up through the GitHub App path and can be validated by pushing to the repository.
+        These repos were created through the GitHub App path and include CI_TOKEN plus the managed workflow file.
       </p>
 
       {loadingProjects ? <p className="helper-text">Loading provisioned projects...</p> : null}
 
       {!loadingProjects && projects.length === 0 ? (
-        <p className="helper-text">No provisioned projects yet. Open Setup tab to configure your first repo.</p>
+        <p className="helper-text">No provisioned projects yet. Open Create Project to scaffold your first repo.</p>
       ) : (
         <div className="history-grid">
           {projects.map((project) => (
@@ -56,8 +65,25 @@ export function WorkflowCurrentTab({
                 <h3>{project.repoFullName}</h3>
                 <p>{project.status}</p>
               </div>
+              {project.repoUrl ? (
+                <p className="helper-text">
+                  Repo URL:{" "}
+                  <a href={project.repoUrl} target="_blank" rel="noreferrer">
+                    {project.repoUrl}
+                  </a>
+                </p>
+              ) : null}
+              {project.visibility ? (
+                <p className="helper-text">Visibility: {project.visibility}</p>
+              ) : null}
               <p className="helper-text">Service: {project.serviceName}</p>
-              <p className="helper-text">Template: {project.templateId}</p>
+              <p className="helper-text">
+                Project type: {project.projectTypeId ?? project.templateId}
+              </p>
+              <p className="helper-text">
+                Recipe: {project.workflowRecipeId ?? project.templateId}
+              </p>
+              <p className="helper-text">Selected checks: {selectedChecks(project)}</p>
               <p className="helper-text">Workflow: {project.workflowPath}</p>
               {project.githubCommitSha ? (
                 <p className="helper-text">Commit: {project.githubCommitSha}</p>
@@ -66,13 +92,23 @@ export function WorkflowCurrentTab({
                 <p className="error-text">Failure: {project.failureReason}</p>
               ) : null}
               <div className="result-actions">
+                {project.repoUrl ? (
+                  <>
+                    <a className="ghost-button" href={project.repoUrl} target="_blank" rel="noreferrer">
+                      Open repo
+                    </a>
+                    <a className="ghost-button" href={`${project.repoUrl}/actions`} target="_blank" rel="noreferrer">
+                      Open Actions
+                    </a>
+                  </>
+                ) : null}
                 {project.githubCommitUrl ? (
                   <a className="ghost-button" href={project.githubCommitUrl} target="_blank" rel="noreferrer">
                     Open commit
                   </a>
                 ) : null}
                 <button className="ghost-button" type="button" onClick={onOpenSetup}>
-                  Open Setup
+                  Create Project
                 </button>
               </div>
             </article>
@@ -85,7 +121,7 @@ export function WorkflowCurrentTab({
         <p>{history.length} generated entries</p>
       </div>
       <p className="helper-text">
-        Project setup also stores generated source YAML for review and export.
+        Project creation also stores generated source YAML for review and export.
       </p>
 
       {loadingHistory ? <p className="helper-text">Loading workflow history...</p> : null}
@@ -116,7 +152,7 @@ export function WorkflowCurrentTab({
                   Download
                 </button>
                 <button className="ghost-button" type="button" onClick={onOpenSetup}>
-                  Open Setup
+                  Create Project
                 </button>
               </div>
               <details>

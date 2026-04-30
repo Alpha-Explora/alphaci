@@ -3,10 +3,11 @@
 import { useState, type KeyboardEvent } from "react";
 import { MotionConfig, motion, useReducedMotion } from "framer-motion";
 
-import { setupProject } from "@/lib/api/client";
-import type { CatalogTemplate, SetupProjectResponse } from "@/lib/api/contracts";
+import { createProject } from "@/lib/api/client";
+import type { CatalogTemplate, CreateProjectResponse } from "@/lib/api/contracts";
+import { useCreateProjectForm } from "@/hooks/use-create-project-form";
 import { useGithubInstallations } from "@/hooks/use-github-installations";
-import { useProjectSetupForm } from "@/hooks/use-project-setup-form";
+import { useProjectOptionsCatalog } from "@/hooks/use-project-options-catalog";
 import { useProvisionedProjects } from "@/hooks/use-provisioned-projects";
 import { useWorkflowCatalog } from "@/hooks/use-workflow-catalog";
 import { useWorkflowHistory } from "@/hooks/use-workflow-history";
@@ -32,25 +33,21 @@ export function WorkflowBuilder({ login, plan }: Readonly<WorkflowBuilderProps>)
   const reducedMotion = prefersReducedMotion ?? false;
 
   const [activeTab, setActiveTab] = useState<WorkflowTab>("setup");
-  const [isSettingUp, setIsSettingUp] = useState(false);
-  const [setupResult, setSetupResult] = useState<SetupProjectResponse | null>(null);
+  const [isCreatingProject, setIsCreatingProject] = useState(false);
+  const [createResult, setCreateResult] = useState<CreateProjectResponse | null>(null);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
 
   const catalog = useWorkflowCatalog();
+  const projectCatalog = useProjectOptionsCatalog();
   const history = useWorkflowHistory(setStatusMessage);
   const projects = useProvisionedProjects(setStatusMessage);
-  const setupForm = useProjectSetupForm();
-  const github = useGithubInstallations(setStatusMessage, setupForm.applyRepoSelection);
-
-  function handleTemplateSelection(template: CatalogTemplate) {
-    catalog.setSelectedTemplate(template);
-    setStatusMessage(`Selected template: ${template.name}`);
-  }
+  const createForm = useCreateProjectForm();
+  const github = useGithubInstallations(setStatusMessage, () => undefined);
 
   function handleUseTemplate(template: CatalogTemplate) {
     catalog.setSelectedTemplate(template);
     setActiveTab("setup");
-    setStatusMessage(`Ready to set up ${template.name}`);
+    setStatusMessage(`Ready to create a project with ${template.name}`);
   }
 
   function handleTabKeyDown(event: KeyboardEvent<HTMLButtonElement>, currentTab: WorkflowTab) {
@@ -80,27 +77,34 @@ export function WorkflowBuilder({ login, plan }: Readonly<WorkflowBuilderProps>)
     }
   }
 
-  async function handleSetupProject() {
-    const setupPayload = setupForm.buildPayload(catalog.selectedTemplate, github.selectedRepoFullName);
-    if (!setupPayload.ok) {
-      setStatusMessage(setupPayload.message);
+  async function handleCreateProject() {
+    const createPayload = createForm.buildPayload({
+      hasAllRepositoriesInstallation: github.hasAllRepositoriesInstallation,
+      repoShapeId: projectCatalog.selectedRepoShapeId,
+      projectTypeId: projectCatalog.selectedProjectTypeId,
+      workflowRecipeId: projectCatalog.selectedWorkflowRecipeId,
+      tests: projectCatalog.tests,
+    });
+
+    if (!createPayload.ok) {
+      setStatusMessage(createPayload.message);
       return;
     }
 
-    setIsSettingUp(true);
-    setStatusMessage("Setting up GitHub repo with CI_TOKEN and workflow file...");
+    setIsCreatingProject(true);
+    setStatusMessage("Creating GitHub repo, writing CI_TOKEN, and committing the workflow...");
 
     try {
-      const response = await setupProject(setupPayload.payload);
-      setSetupResult(response);
+      const response = await createProject(createPayload.payload);
+      setCreateResult(response);
       await Promise.all([projects.loadProjects(true), history.loadHistory(true)]);
-      projects.prependSetupResult(response, setupPayload.payload);
+      projects.prependCreateResult(response, createPayload.payload);
       setActiveTab("current");
-      setStatusMessage(`Setup completed for ${response.repoFullName}. Push to the repo to trigger validate-access.`);
+      setStatusMessage(`Created ${response.repoFullName}. Open Actions or push to the repo when Phase 4 validation is ready.`);
     } catch (error) {
-      setStatusMessage(formatApiError(error, "Setup failed"));
+      setStatusMessage(formatApiError(error, "Create Project failed"));
     } finally {
-      setIsSettingUp(false);
+      setIsCreatingProject(false);
     }
   }
 
@@ -133,8 +137,8 @@ export function WorkflowBuilder({ login, plan }: Readonly<WorkflowBuilderProps>)
       <section className="workflow-surface">
         <header className="product-topbar">
           <div>
-            <p className="eyebrow">Workflow Studio</p>
-            <h1>Build and manage workflows</h1>
+            <p className="eyebrow">Create Project</p>
+            <h1>Create and manage projects</h1>
           </div>
           <div className="topbar-controls">
             <p className="status-pill">@{login}</p>
@@ -144,7 +148,7 @@ export function WorkflowBuilder({ login, plan }: Readonly<WorkflowBuilderProps>)
         </header>
 
         <section className="intro-panel">
-          <p>Use tabs to set up, review generated workflows, and browse templates.</p>
+          <p>Create a GitHub repo from the catalog, write CI_TOKEN, and commit the managed workflow.</p>
           {statusMessage ? (
             <motion.p
               className={`status-banner ${statusBannerVariant(statusMessage)}`}
@@ -162,6 +166,11 @@ export function WorkflowBuilder({ login, plan }: Readonly<WorkflowBuilderProps>)
               {catalog.catalogError}
             </p>
           ) : null}
+          {projectCatalog.projectOptionsError ? (
+            <p className="error-text" role="alert">
+              {projectCatalog.projectOptionsError}
+            </p>
+          ) : null}
         </section>
 
         <WorkflowStudioTabs
@@ -172,15 +181,14 @@ export function WorkflowBuilder({ login, plan }: Readonly<WorkflowBuilderProps>)
 
         {activeTab === "setup" ? (
           <WorkflowSetupTab
-            catalog={catalog}
-            form={setupForm}
+            form={createForm}
             github={github}
-            isSettingUp={isSettingUp}
-            onSetupProject={handleSetupProject}
-            onTemplateSelect={handleTemplateSelection}
+            isCreatingProject={isCreatingProject}
+            onCreateProject={handleCreateProject}
+            projectCatalog={projectCatalog}
             onViewProject={() => setActiveTab("current")}
             reducedMotion={reducedMotion}
-            setupResult={setupResult}
+            createResult={createResult}
           />
         ) : null}
         {activeTab === "current" ? (

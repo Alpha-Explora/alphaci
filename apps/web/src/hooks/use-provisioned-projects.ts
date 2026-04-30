@@ -3,7 +3,13 @@
 import { useCallback, useEffect, useState } from "react";
 
 import { getProjects } from "@/lib/api/client";
-import type { ProvisionedProject, SetupProjectRequest, SetupProjectResponse } from "@/lib/api/contracts";
+import type {
+  CreateProjectRequest,
+  CreateProjectResponse,
+  ProvisionedProject,
+  SetupProjectRequest,
+  SetupProjectResponse,
+} from "@/lib/api/contracts";
 
 export function useProvisionedProjects(setStatusMessage: (message: string) => void) {
   const [projects, setProjects] = useState<ProvisionedProject[]>([]);
@@ -49,9 +55,33 @@ export function useProvisionedProjects(setStatusMessage: (message: string) => vo
     ]);
   }
 
+  function prependCreateResult(response: CreateProjectResponse, payload: CreateProjectRequest) {
+    setProjects((current) => [
+      {
+        id: response.id,
+        repoFullName: response.repoFullName,
+        repoUrl: response.repoUrl,
+        visibility: payload.visibility,
+        repoShape: payload.repoShape ?? "single-app",
+        projectTypeId: response.projectTypeId,
+        workflowRecipeId: response.workflowRecipeId,
+        projectOptions: payload.tests ?? {},
+        templateId: response.projectTypeId,
+        serviceName: payload.serviceName,
+        workflowPath: response.workflowPath,
+        status: response.status,
+        githubCommitSha: response.githubCommitSha,
+        githubCommitUrl: response.githubCommitUrl,
+        failureReason: null,
+      },
+      ...current.filter((project) => project.id !== response.id),
+    ]);
+  }
+
   return {
     loadProjects,
     loadingProjects,
+    prependCreateResult,
     prependSetupResult,
     projects,
   };

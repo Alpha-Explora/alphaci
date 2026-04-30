@@ -13,9 +13,9 @@ const bodyFont = Manrope({
 });
 
 export const metadata: Metadata = {
-  title: "Home | CI/CD Workflow Studio",
+  title: "Create Project | FlowCI Studio",
   description:
-    "Friendly workflow generation studio with GitHub login, subscription gating, and template customization.",
+    "Create GitHub projects with subscription-gated CI workflows, starter files, and managed Actions secrets.",
 };
 
 export default function RootLayout({

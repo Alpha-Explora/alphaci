@@ -3,24 +3,30 @@ import { createRoot, type Root } from "react-dom/client";
 
 import {
   getCategories,
+  getGithubInstallationAccounts,
   getGithubAppInstallUrl,
   getLinkedGithubRepos,
+  getProjectOptions,
   getProjects,
   getTemplates,
   getWorkflowHistory,
   linkGithubInstallation,
 } from "../../src/lib/api/client";
-import type { CatalogTemplate } from "../../src/lib/api/contracts";
+import type { CatalogTemplate, ProjectOptionsResponse } from "../../src/lib/api/contracts";
+import { useCreateProjectForm } from "../../src/hooks/use-create-project-form";
 import { useGithubInstallations } from "../../src/hooks/use-github-installations";
 import { useProjectSetupForm } from "../../src/hooks/use-project-setup-form";
+import { useProjectOptionsCatalog } from "../../src/hooks/use-project-options-catalog";
 import { useProvisionedProjects } from "../../src/hooks/use-provisioned-projects";
 import { useWorkflowCatalog } from "../../src/hooks/use-workflow-catalog";
 import { useWorkflowHistory } from "../../src/hooks/use-workflow-history";
 
 jest.mock("../../src/lib/api/client", () => ({
   getCategories: jest.fn(),
+  getGithubInstallationAccounts: jest.fn(),
   getGithubAppInstallUrl: jest.fn(),
   getLinkedGithubRepos: jest.fn(),
+  getProjectOptions: jest.fn(),
   getProjects: jest.fn(),
   getTemplates: jest.fn(),
   getWorkflowHistory: jest.fn(),
@@ -28,12 +34,16 @@ jest.mock("../../src/lib/api/client", () => ({
 }));
 
 const mockedGetCategories = getCategories as jest.MockedFunction<typeof getCategories>;
+const mockedGetGithubInstallationAccounts = getGithubInstallationAccounts as jest.MockedFunction<
+  typeof getGithubInstallationAccounts
+>;
 const mockedGetGithubAppInstallUrl = getGithubAppInstallUrl as jest.MockedFunction<
   typeof getGithubAppInstallUrl
 >;
 const mockedGetLinkedGithubRepos = getLinkedGithubRepos as jest.MockedFunction<
   typeof getLinkedGithubRepos
 >;
+const mockedGetProjectOptions = getProjectOptions as jest.MockedFunction<typeof getProjectOptions>;
 const mockedGetProjects = getProjects as jest.MockedFunction<typeof getProjects>;
 const mockedGetTemplates = getTemplates as jest.MockedFunction<typeof getTemplates>;
 const mockedGetWorkflowHistory = getWorkflowHistory as jest.MockedFunction<typeof getWorkflowHistory>;
@@ -51,6 +61,112 @@ const template: CatalogTemplate = {
   stack: "react",
   propertiesPath: "workflow-templates/frontend-react.properties.json",
   workflowPath: "workflow-templates/frontend-react.yml",
+};
+
+const projectOptions: ProjectOptionsResponse = {
+  repoShapes: [
+    {
+      id: "single-app",
+      label: "Single App",
+      enabled: true,
+      description: "One repository contains one app or service.",
+    },
+    {
+      id: "monorepo",
+      label: "Monorepo",
+      enabled: false,
+      description: "Reserved for later.",
+    },
+  ],
+  projectTypes: [
+    {
+      id: "nextjs-app",
+      label: "Next.js App",
+      runtime: "node",
+      language: "typescript",
+      framework: "nextjs",
+      starterPath: "starter-templates/nextjs-app",
+      repoShapes: ["single-app"],
+      reservedRepoShapes: ["monorepo"],
+      defaultRecipe: "frontend-standard-ci",
+      allowedRecipes: ["frontend-standard-ci"],
+      defaultOptions: {
+        lint: true,
+        unit: true,
+        build: true,
+        coverage: true,
+        security: true,
+        docker: false,
+      },
+    },
+    {
+      id: "nestjs-api",
+      label: "NestJS API",
+      runtime: "node",
+      language: "typescript",
+      framework: "nestjs",
+      starterPath: "starter-templates/nestjs-api",
+      repoShapes: ["single-app"],
+      defaultRecipe: "backend-api-ci",
+      allowedRecipes: ["backend-api-ci"],
+      defaultOptions: {
+        lint: true,
+        unit: true,
+        build: false,
+        coverage: true,
+        security: true,
+        docker: false,
+      },
+    },
+  ],
+  recipes: [
+    {
+      id: "frontend-standard-ci",
+      label: "Frontend Standard CI",
+      description: "Validate and build frontend apps.",
+      supportedProjectTypes: ["nextjs-app"],
+      templateByProjectType: { "nextjs-app": "fe-nextjs" },
+      mandatoryJobs: ["validate-access"],
+      supportedOptions: {
+        lint: true,
+        unit: true,
+        build: true,
+        coverage: true,
+        security: true,
+        docker: false,
+      },
+      optionJobs: {
+        lint: "lint",
+        unit: "unit-tests",
+        build: "build",
+        coverage: "unit-tests",
+        security: "security",
+      },
+    },
+    {
+      id: "backend-api-ci",
+      label: "Backend API CI",
+      description: "Validate and test backend APIs.",
+      supportedProjectTypes: ["nestjs-api"],
+      templateByProjectType: { "nestjs-api": "be-nestjs" },
+      mandatoryJobs: ["validate-access"],
+      supportedOptions: {
+        lint: true,
+        unit: true,
+        build: false,
+        coverage: true,
+        security: true,
+        docker: true,
+      },
+      optionJobs: {
+        lint: "lint",
+        unit: "unit-tests",
+        coverage: "unit-tests",
+        security: "security",
+        docker: "docker",
+      },
+    },
+  ],
 };
 
 async function flushMicrotasks(cycles = 1) {
@@ -102,10 +218,21 @@ describe("workflow hooks", () => {
     mockedGetGithubAppInstallUrl.mockResolvedValue({
       installUrl: "https://github.com/apps/cicd-example/installations/new",
     });
+    mockedGetGithubInstallationAccounts.mockResolvedValue({
+      accounts: [
+        {
+          installationId: 12345,
+          accountLogin: "tone",
+          accountId: 999,
+          repositorySelection: "all",
+        },
+      ],
+    });
     mockedGetLinkedGithubRepos.mockResolvedValue({
       repos: [{ installationId: 12345, repoFullName: "tone/example-app" }],
     });
-    mockedLinkGithubInstallation.mockResolvedValue({ reposLinked: 1 });
+    mockedGetProjectOptions.mockResolvedValue(projectOptions);
+    mockedLinkGithubInstallation.mockResolvedValue({ reposLinked: 1, repositorySelection: "all" });
   });
 
   afterEach(async () => {
@@ -206,6 +333,251 @@ describe("workflow hooks", () => {
     expect(current?.filteredTemplates).toHaveLength(0);
   });
 
+  it("loads project options, defaults to the first enabled shape, and filters recipes by project type", async () => {
+    let current: ReturnType<typeof useProjectOptionsCatalog> | null = null;
+
+    function Probe() {
+      const value = useProjectOptionsCatalog();
+      useEffect(() => {
+        current = value;
+      }, [value]);
+      return null;
+    }
+
+    await act(async () => {
+      hookRoot.root.render(<Probe />);
+    });
+
+    await waitForCondition(() => current?.selectedProjectType?.id === "nextjs-app");
+
+    expect(current?.enabledRepoShapes.map((shape) => shape.id)).toEqual(["single-app"]);
+    expect(current?.selectedRepoShapeId).toBe("single-app");
+    expect(current?.recipesForSelectedProject.map((recipe) => recipe.id)).toEqual(["frontend-standard-ci"]);
+    expect(current?.tests).toMatchObject({
+      lint: true,
+      unit: true,
+      build: true,
+      coverage: true,
+      security: true,
+      docker: false,
+    });
+
+    act(() => current?.toggleTestOption("security"));
+    await flushMicrotasks();
+    expect(current?.tests.security).toBe(false);
+
+    act(() => current?.toggleTestOption("docker"));
+    await flushMicrotasks();
+    expect(current?.tests.docker).toBe(false);
+
+    act(() => current?.setSelectedProjectTypeId("nestjs-api"));
+    await flushMicrotasks();
+
+    expect(current?.selectedWorkflowRecipeId).toBe("backend-api-ci");
+    expect(current?.recipesForSelectedProject.map((recipe) => recipe.id)).toEqual(["backend-api-ci"]);
+    expect(current?.tests).toMatchObject({
+      lint: true,
+      unit: true,
+      build: false,
+      coverage: true,
+      security: true,
+      docker: false,
+    });
+
+    act(() => current?.setSelectedRepoShapeId("monorepo"));
+    await flushMicrotasks();
+    expect(current?.selectedRepoShapeId).toBe("single-app");
+  });
+
+  it("reports project option catalog load failures", async () => {
+    let current: ReturnType<typeof useProjectOptionsCatalog> | null = null;
+    mockedGetProjectOptions.mockRejectedValueOnce(new Error("catalog unavailable"));
+
+    function Probe() {
+      const value = useProjectOptionsCatalog();
+      useEffect(() => {
+        current = value;
+      }, [value]);
+      return null;
+    }
+
+    await act(async () => {
+      hookRoot.root.render(<Probe />);
+    });
+
+    await waitForCondition(() => current?.projectOptionsError !== null);
+    expect(current?.projectOptionsError).toBe("Unable to load create project options right now.");
+    expect(current?.enabledRepoShapes).toEqual([]);
+    expect(current?.selectedRepoShapeId).toBe("");
+  });
+
+  it("builds create project payloads and requires an all-repositories installation", async () => {
+    let current: ReturnType<typeof useCreateProjectForm> | null = null;
+
+    function Probe() {
+      const value = useCreateProjectForm();
+      useEffect(() => {
+        current = value;
+      }, [value]);
+      return null;
+    }
+
+    await act(async () => {
+      hookRoot.root.render(<Probe />);
+    });
+
+    expect(current?.nodeVersion).toBe("24");
+    expect(current?.coverageThreshold).toBe("80");
+    expect(current?.visibility).toBe("private");
+    expect(current?.outputFileName).toBe("ci.yml");
+
+    expect(
+      current?.buildPayload({
+        hasAllRepositoriesInstallation: false,
+        repoShapeId: "single-app",
+        projectTypeId: "nextjs-app",
+        workflowRecipeId: "frontend-standard-ci",
+        tests: { lint: true },
+      }),
+    ).toEqual({
+      ok: false,
+      message: "Link a GitHub App installation with all repositories access before creating a project.",
+    });
+
+    act(() => current?.setRepoName("Example App"));
+    await flushMicrotasks();
+    expect(current?.serviceName).toBe("example-app");
+
+    const result = current?.buildPayload({
+      hasAllRepositoriesInstallation: true,
+      repoShapeId: "single-app",
+      projectTypeId: "nextjs-app",
+      workflowRecipeId: "frontend-standard-ci",
+      tests: {
+        lint: true,
+        unit: true,
+        build: true,
+        coverage: true,
+        security: true,
+        docker: false,
+      },
+    });
+
+    expect(result).toEqual({
+      ok: true,
+      payload: {
+        repoName: "example-app",
+        visibility: "private",
+        repoShape: "single-app",
+        projectTypeId: "nextjs-app",
+        workflowRecipeId: "frontend-standard-ci",
+        serviceName: "example-app",
+        servicePath: ".",
+        nodeVersion: "24",
+        coverageThreshold: 80,
+        tests: {
+          lint: true,
+          unit: true,
+          build: true,
+          coverage: true,
+          security: true,
+          docker: false,
+        },
+        outputFileName: "ci.yml",
+      },
+    });
+  });
+
+  it("reports create project form validation branches", async () => {
+    let current: ReturnType<typeof useCreateProjectForm> | null = null;
+    const baseInput = {
+      hasAllRepositoriesInstallation: true,
+      repoShapeId: "single-app",
+      projectTypeId: "nextjs-app",
+      workflowRecipeId: "frontend-standard-ci",
+      tests: {
+        lint: true,
+        unit: true,
+        build: true,
+        coverage: true,
+        security: true,
+        docker: false,
+      },
+    };
+
+    function Probe() {
+      const value = useCreateProjectForm();
+      useEffect(() => {
+        current = value;
+      }, [value]);
+      return null;
+    }
+
+    await act(async () => {
+      hookRoot.root.render(<Probe />);
+    });
+
+    expect(current?.buildPayload(baseInput)).toEqual({
+      ok: false,
+      message: "Repository name is required.",
+    });
+
+    act(() => current?.setRepoName("Example App"));
+    await flushMicrotasks();
+
+    expect(current?.buildPayload({ ...baseInput, repoShapeId: "" })).toEqual({
+      ok: false,
+      message: "Choose a repository shape.",
+    });
+    expect(current?.buildPayload({ ...baseInput, projectTypeId: "" })).toEqual({
+      ok: false,
+      message: "Choose a project type.",
+    });
+    expect(current?.buildPayload({ ...baseInput, workflowRecipeId: "" })).toEqual({
+      ok: false,
+      message: "Choose a workflow recipe.",
+    });
+
+    act(() => {
+      current?.setServiceName("API Service");
+      current?.setCoverageThreshold("101");
+    });
+    await flushMicrotasks();
+    expect(current?.buildPayload(baseInput)).toEqual({
+      ok: false,
+      message: "Coverage threshold must be between 0 and 100.",
+    });
+
+    act(() => {
+      current?.setCoverageThreshold("80");
+      current?.setOutputFileName("folder/ci.yml");
+    });
+    await flushMicrotasks();
+    expect(current?.buildPayload(baseInput)).toEqual({
+      ok: false,
+      message: "Workflow file name must be a .yml or .yaml basename.",
+    });
+
+    act(() => {
+      current?.setOutputFileName("custom.yaml");
+      current?.setNodeVersion("");
+      current?.setServicePath("");
+      current?.setVisibility("public");
+    });
+    await flushMicrotasks();
+
+    expect(current?.buildPayload(baseInput)).toEqual({
+      ok: true,
+      payload: expect.objectContaining({
+        nodeVersion: "24",
+        outputFileName: "custom.yaml",
+        serviceName: "api-service",
+        servicePath: ".",
+        visibility: "public",
+      }),
+    });
+  });
+
   it("falls back to template categories and reports catalog load failures", async () => {
     let current: ReturnType<typeof useWorkflowCatalog> | null = null;
 
@@ -261,6 +633,8 @@ describe("workflow hooks", () => {
     await waitForCondition(() => current?.linkedReposLoaded === true);
     expect(current?.installUrl).toContain("github.com/apps");
     expect(current?.linkedRepos).toEqual([{ installationId: 12345, repoFullName: "tone/example-app" }]);
+    expect(current?.hasAllRepositoriesInstallation).toBe(true);
+    expect(current?.allRepositoriesAccount?.accountLogin).toBe("tone");
 
     act(() => {
       current?.handleRepoSelect({
@@ -282,7 +656,41 @@ describe("workflow hooks", () => {
     });
 
     expect(mockedLinkGithubInstallation).toHaveBeenCalledWith(12345);
-    expect(statusMessages).toContain("Linked 1 GitHub repo.");
+    expect(statusMessages).toContain("Linked 1 GitHub repo. Installation access: all repositories.");
+  });
+
+  it("keeps create project disabled when only selected-repository installation access exists", async () => {
+    let current: ReturnType<typeof useGithubInstallations> | null = null;
+    const pushStatus = jest.fn();
+    const applyRepo = jest.fn();
+    mockedGetGithubInstallationAccounts.mockResolvedValueOnce({
+      accounts: [
+        {
+          installationId: 12345,
+          accountLogin: "tone",
+          accountId: 999,
+          repositorySelection: "selected",
+        },
+      ],
+    });
+
+    function Probe() {
+      const value = useGithubInstallations(pushStatus, applyRepo);
+      useEffect(() => {
+        current = value;
+      }, [value]);
+      return null;
+    }
+
+    await act(async () => {
+      hookRoot.root.render(<Probe />);
+    });
+
+    await waitForCondition(() => current?.installationAccountsLoaded === true);
+    expect(current?.hasAllRepositoriesInstallation).toBe(false);
+    expect(current?.installationStatusCopy).toBe(
+      "GitHub App is linked for selected repositories only. Reinstall or update it with all repositories access to create new repos.",
+    );
   });
 
   it("reports GitHub App load and link failures", async () => {
@@ -333,6 +741,12 @@ describe("workflow hooks", () => {
         {
           id: "project-1",
           repoFullName: "tone/example-app",
+          repoUrl: "https://github.com/tone/example-app",
+          visibility: "private",
+          repoShape: "single-app",
+          projectTypeId: "nextjs-app",
+          workflowRecipeId: "frontend-standard-ci",
+          projectOptions: { lint: true, unit: true, build: true },
           templateId: "frontend-react",
           serviceName: "example-app",
           workflowPath: ".github/workflows/example.yml",
@@ -379,20 +793,30 @@ describe("workflow hooks", () => {
     expect(statusMessages).toEqual([]);
 
     act(() => {
-      projects?.prependSetupResult(
+      projects?.prependCreateResult(
         {
           id: "project-2",
           repoFullName: "tone/next-app",
+          repoUrl: "https://github.com/tone/next-app",
           status: "provisioned",
           workflowPath: ".github/workflows/next.yml",
           githubCommitSha: "commit-2",
           githubCommitUrl: null,
+          projectTypeId: "nextjs-app",
+          workflowRecipeId: "frontend-standard-ci",
         },
         {
-          repoFullName: "tone/next-app",
-          templateId: "frontend-react",
+          repoName: "next-app",
+          visibility: "private",
+          repoShape: "single-app",
+          projectTypeId: "nextjs-app",
+          workflowRecipeId: "frontend-standard-ci",
           serviceName: "next-app",
+          servicePath: ".",
+          nodeVersion: "24",
           coverageThreshold: 80,
+          tests: { lint: true, unit: true, build: true },
+          outputFileName: "next.yml",
         },
       );
     });

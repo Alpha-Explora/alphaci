@@ -49,7 +49,7 @@ export default function WorkflowsPage() {
       <main className="flow-shell page-shell">
         <FlowBackground />
         <section className="section-card glass-panel">
-          <h1>Loading workflow studio...</h1>
+          <h1>Loading Create Project...</h1>
         </section>
       </main>
     );
