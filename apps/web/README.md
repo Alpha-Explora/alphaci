@@ -27,6 +27,33 @@ NEXT_PUBLIC_API_BASE_URL=http://localhost:4000/api/v1
 npm run dev
 ```
 
+## Local MVP Smoke Notes
+
+Run the frontend at `http://localhost:3000` and the backend at
+`http://localhost:4000`. The default API base URL is already
+`http://localhost:4000/api/v1`; set `NEXT_PUBLIC_API_BASE_URL` only when using a
+different backend URL.
+
+Before opening `/workflows`, finish the backend GitHub setup:
+
+- GitHub OAuth App is configured for
+  `http://localhost:4000/api/v1/auth/github/callback`.
+- GitHub App is installed with all repositories access.
+- Backend `.env` has `CI_VALIDATE_URL=https://<trycloudflare-host>/v1/ci/validate`.
+- `Tone-Lloyd-Sir-Catubag-CICD/central-workflow` is public for the smoke and has
+  a `v1` ref.
+
+Smoke path:
+
+1. Sign in with GitHub.
+2. Activate mock Pro at `/subscribe`.
+3. Open `/workflows`.
+4. Install/link the GitHub App installation ID.
+5. Create `flowci-mvp-nextjs-YYYYMMDD-HHMM` as a private Next.js project.
+6. Repeat with `flowci-mvp-nestjs-YYYYMMDD-HHMM`.
+7. Open the created repo Actions tab and confirm `validate-access` reaches the
+   backend callback.
+
 ## Quality Commands
 
 ```bash
