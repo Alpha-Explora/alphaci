@@ -2,12 +2,13 @@
 
 import { motion } from "framer-motion";
 
-import type { ProvisionedProject, WorkflowHistoryItem } from "@/lib/api/contracts";
+import type { CreateProjectResponse, ProvisionedProject, WorkflowHistoryItem } from "@/lib/api/contracts";
 
 import { formatDate, toSourcePath } from "./workflow-builder-utils";
 
 interface WorkflowCurrentTabProps {
   history: WorkflowHistoryItem[];
+  latestResult: CreateProjectResponse | null;
   loadingHistory: boolean;
   loadingProjects: boolean;
   onCopyYaml: (yaml: string) => void;
@@ -27,6 +28,7 @@ function selectedChecks(project: ProvisionedProject): string {
 
 export function WorkflowCurrentTab({
   history,
+  latestResult,
   loadingHistory,
   loadingProjects,
   onCopyYaml,
@@ -45,6 +47,32 @@ export function WorkflowCurrentTab({
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
     >
+      {latestResult ? (
+        <div className="section-card glass-panel" style={{ marginBottom: "1rem" }}>
+          <p className="eyebrow" style={{ color: "var(--success, #22c55e)" }}>Project created</p>
+          <h2>{latestResult.repoFullName}</h2>
+          <p className="helper-text">Workflow: {latestResult.workflowPath}</p>
+          {latestResult.githubCommitSha ? (
+            <p className="helper-text">Commit: {latestResult.githubCommitSha.slice(0, 7)}</p>
+          ) : null}
+          <div className="result-actions">
+            <a className="primary-button" href={latestResult.repoUrl} target="_blank" rel="noreferrer">
+              Open repo
+            </a>
+            <a className="ghost-button" href={`${latestResult.repoUrl}/actions`} target="_blank" rel="noreferrer">
+              Open Actions
+            </a>
+            {latestResult.githubCommitUrl ? (
+              <a className="ghost-button" href={latestResult.githubCommitUrl} target="_blank" rel="noreferrer">
+                Open commit
+              </a>
+            ) : null}
+          </div>
+          <p className="helper-text">
+            Push a commit to trigger the CI pipeline. The validate-access job calls /v1/ci/validate automatically.
+          </p>
+        </div>
+      ) : null}
       <div className="templates-header">
         <h2>Provisioned Projects</h2>
         <p>{projects.length} projects</p>

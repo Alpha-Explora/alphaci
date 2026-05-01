@@ -6,37 +6,68 @@ Next.js 16 (app router, React 19, Tailwind 4) frontend for the CI/CD-as-a-Servic
 
 ## Current state
 
-Only the default Next.js scaffold exists. **No auth UI, no API client, no real product surfaces have been built yet.** Tooling is fully wired: Tailwind 4, Jest (jsdom), Playwright, k6 smoke test.
+All MVP product surfaces are built and functional. Auth, billing, dashboard, and Create Project are wired to the backend API.
 
-### Actual src/ tree (exists today)
+### Built pages
 
-```
-src/
-  app/
-    App.css          # .app-root flex-column wrapper; references --background/--foreground CSS vars
-    App.tsx          # Thin wrapper component — renders children inside .app-root div
-    globals.css      # Tailwind v4 entry (@import "tailwindcss"), CSS vars, @theme inline block, dark-mode media query
-    layout.tsx       # Root layout; loads Geist Sans + Geist Mono via next/font/google; sets <html lang="en">
-    page.tsx         # Default Next.js landing page (scaffold); title text: "To get started, edit the page.tsx file."
-  lib/
-    sum.ts           # Pure utility: export function sum(left, right): number — exists only for test scaffolding
-```
+| Route | Status | Description |
+|-------|--------|-------------|
+| `/` | Built | Landing page with auth-aware CTAs |
+| `/login` | Built | GitHub + Google OAuth via `OAuthAuthPage` |
+| `/signup` | Built | Same component as login, signup-labelled |
+| `/auth/callback` | Built | OAuth callback handler; routes by subscription state |
+| `/home` | Built | Dashboard: KPI cards, recent workflows, quick actions; gates on active subscription |
+| `/subscribe` | Built | Plan comparison (Pro ₱300, Enterprise ₱1200); mock activate/cancel; `actionError` shown on failure |
+| `/workflows` | Built | 3-tab Create Project surface (Setup, Current Projects, Catalog); gates on active subscription |
 
-Everything else listed under "Planned surfaces" below does **not** exist yet.
+### Built components
 
----
+| Component | Description |
+|-----------|-------------|
+| `OAuthAuthPage` | Shared login/signup OAuth page with GitHub + Google buttons |
+| `WorkflowBuilder` | Orchestrates the 3-tab create-project interface; holds `createResult` state |
+| `WorkflowSetupTab` | Create Project form: repo name, visibility, service settings, catalog selectors, test toggles |
+| `SetupResultPanel` | Sidebar on Setup tab showing the latest created project with repo/actions/commit links |
+| `WorkflowCurrentTab` | Current tab: success banner for latest result, provisioned projects list, YAML history |
+| `WorkflowAllTab` | Catalog tab: template grid with "Use in Create Project" |
+| `WorkflowStudioTabs` | Accessible tab bar with keyboard navigation (arrow keys, Home, End) |
+| `FlowBackground` | Animated background (particles, ribbons, blobs) used on all pages |
 
-## Planned surfaces (not yet built)
+### Built hooks
+
+| Hook | Description |
+|------|-------------|
+| `useAuthSession` | Session fetch + loading/signed-in/signed-out/error states |
+| `useCreateProjectForm` | Form state for `POST /api/v1/projects`; slug-normalises repo/service names; validates before submit |
+| `useGithubInstallations` | Fetches install URL, links installations, detects all-repos access; auto-captures `?installation_id=` from callback URL |
+| `useProjectOptionsCatalog` | Loads repo shapes, project types, workflow recipes; cascading selection logic |
+| `useProvisionedProjects` | Fetches `GET /api/v1/projects`; supports prepending a fresh create result |
+| `useWorkflowCatalog` | Fetches templates + categories; local filtering |
+| `useWorkflowHistory` | Fetches `GET /api/v1/workflows/history` |
+
+### Built API client (`src/lib/api/`)
+
+| Module | Endpoints |
+|--------|-----------|
+| `auth.ts` | `GET /auth/github/start`, `GET /auth/google/start`, `GET /auth/me`, `POST /auth/logout` |
+| `catalog.ts` | `GET /catalog/categories`, `GET /catalog/templates`, `GET /catalog/project-options` |
+| `github.ts` | `GET /github/app/install-url`, `POST /github/installations`, `GET /github/installations/repos`, `GET /github/installations/accounts` |
+| `projects.ts` | `POST /api/v1/projects` (primary flow), `POST /api/v1/projects/setup` (existing repo), `GET /api/v1/projects` |
+| `subscription.ts` | `POST /subscription/monthly/activate`, `POST /subscription/monthly/cancel` |
+| `workflows.ts` | `POST /workflows/generate`, `GET /workflows/history` |
+
+### Not yet built
 
 | Route | Description |
 |-------|-------------|
-| `/login` | "Sign in with GitHub" button → redirects to `BE /api/v1/auth/github/start?returnTo=/dashboard`. After callback, session cookie is set. |
-| `/billing` | Plan comparison card (Free / Pro ₱300 / Enterprise ₱1200). "Subscribe" → `BE POST /v1/checkout/sessions` → redirect to PayMongo checkout URL. |
-| `/connect` | "Install GitHub App" button (links to GitHub App installation URL). MVP requires an all-repositories installation so newly created repos are accessible to the App. |
-| `/projects/new` | Create Project flow: repo name, visibility, repo shape, project type, workflow recipe, and recipe-filtered options. Submit to `BE POST /api/v1/projects`. MVP enables only `repoShape=single-app`; monorepo/fullstack/library/mobile should be shown later only when backend support exists. |
-| `/setup/[owner]/[repo]` | Existing-repo setup path using `BE POST /api/v1/projects/setup`; not the primary MVP Create Project flow. |
-| `/runs` | Workflow run history for the user's connected repos. Polled from BE (which mirrors GitHub App `workflow_run` webhook events). |
-| `/dashboard` | Post-login landing: current projects, subscription status, primary Create Project CTA, and quick links to setup/runs. |
+| `/runs` | Workflow run history per repo — blocked on GitHub App webhook receiver in BE |
+
+---
+
+## Planned surfaces (future, post-MVP)
+
+- PayMongo real checkout: `/billing` → `POST /v1/checkout/sessions` → redirect to PayMongo URL
+- Runs page: polls BE for `workflow_run` events mirrored from GitHub App webhooks
 
 ---
 

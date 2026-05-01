@@ -112,6 +112,7 @@ export default function SubscribePage() {
   const prefersReducedMotion = useReducedMotion();
   const { status, session, error, refresh } = useAuthSession();
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<"pro" | "enterprise">("pro");
 
@@ -133,6 +134,7 @@ export default function SubscribePage() {
 
   async function handleActivate(plan: "pro" | "enterprise") {
     setStatusMessage(null);
+    setActionError(null);
     setIsSubmitting(true);
 
     try {
@@ -144,7 +146,7 @@ export default function SubscribePage() {
           : "Pro monthly plan is active. Your workspace is ready.",
       );
     } catch {
-      setStatusMessage("Subscription activation failed. Please try again.");
+      setActionError("Subscription activation failed. Please try again.");
     } finally {
       setIsSubmitting(false);
     }
@@ -152,6 +154,7 @@ export default function SubscribePage() {
 
   async function handleCancel() {
     setStatusMessage(null);
+    setActionError(null);
     setIsSubmitting(true);
 
     try {
@@ -159,7 +162,7 @@ export default function SubscribePage() {
       await refresh();
       setStatusMessage("Monthly subscription canceled.");
     } catch {
-      setStatusMessage("Cancel request failed. Please retry.");
+      setActionError("Cancel request failed. Please retry.");
     } finally {
       setIsSubmitting(false);
     }
@@ -275,6 +278,7 @@ export default function SubscribePage() {
             Create Project
           </Link>
         </div>
+        {actionError ? <p className="error-text" role="alert">{actionError}</p> : null}
       </section>
 
       <section className="section-card pricing-page-card subscription-rail glass-panel">

@@ -25,6 +25,8 @@ export default function HomeDashboardPage() {
   const [projects, setProjects] = useState<ProvisionedProject[]>([]);
   const [historyLoading, setHistoryLoading] = useState(true);
   const [projectsLoading, setProjectsLoading] = useState(true);
+  const [historyError, setHistoryError] = useState<string | null>(null);
+  const [projectsError, setProjectsError] = useState<string | null>(null);
 
   const hasSubscription = hasActiveSubscription(session);
 
@@ -43,12 +45,12 @@ export default function HomeDashboardPage() {
     if (status !== "signed-in") return;
 
     getWorkflowHistory(25)
-      .then((response) => setHistory(response.items))
-      .catch(() => {})
+      .then((response) => { setHistory(response.items); setHistoryError(null); })
+      .catch(() => setHistoryError("Could not load workflow history."))
       .finally(() => setHistoryLoading(false));
     getProjects(25)
-      .then((response) => setProjects(response.items))
-      .catch(() => {})
+      .then((response) => { setProjects(response.items); setProjectsError(null); })
+      .catch(() => setProjectsError("Could not load projects."))
       .finally(() => setProjectsLoading(false));
   }, [status]);
 
@@ -190,6 +192,8 @@ export default function HomeDashboardPage() {
             </article>
           ))}
         </div>
+        {projectsError ? <p className="error-text">{projectsError}</p> : null}
+        {historyError ? <p className="error-text">{historyError}</p> : null}
       </section>
 
       {history.length > 0 && (

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState, type ChangeEvent } from "react";
+import { useCallback, useEffect, useRef, useState, type ChangeEvent } from "react";
 
 import {
   getGithubInstallationAccounts,
@@ -26,6 +26,7 @@ export function useGithubInstallations(
   const [loadingInstallUrl, setLoadingInstallUrl] = useState(false);
   const [installationId, setInstallationId] = useState("");
   const [linkingInstallation, setLinkingInstallation] = useState(false);
+  const autoLinkFiredRef = useRef(false);
 
   const loadLinkedRepos = useCallback(async (silent = false) => {
     if (!silent) {
@@ -98,6 +99,47 @@ export function useGithubInstallations(
     return () => {
       active = false;
     };
+  }, []);
+
+  useEffect(() => {
+    if (autoLinkFiredRef.current) return;
+
+    const params = new URLSearchParams(window.location.search);
+    const urlInstallationId = params.get("installation_id");
+    if (!urlInstallationId) return;
+
+    autoLinkFiredRef.current = true;
+    setInstallationId(urlInstallationId);
+
+    params.delete("installation_id");
+    const remaining = params.toString();
+    const cleanUrl = remaining ? `${window.location.pathname}?${remaining}` : window.location.pathname;
+    window.history.replaceState(null, "", cleanUrl);
+
+    const parsedId = Number(urlInstallationId);
+    if (!Number.isInteger(parsedId) || parsedId < 1) {
+      setStatusMessage("GitHub App callback contained an invalid installation ID.");
+      return;
+    }
+
+    setLinkingInstallation(true);
+    setStatusMessage("Linking GitHub App installation from callback...");
+
+    linkGithubInstallation(parsedId)
+      .then(async (response) => {
+        await Promise.all([loadLinkedRepos(true), loadInstallationAccounts(true)]);
+        const access = response.repositorySelection === "all" ? "all repositories" : "selected repositories";
+        setStatusMessage(
+          `Linked ${response.reposLinked} GitHub repo${response.reposLinked === 1 ? "" : "s"}. Installation access: ${access}.`,
+        );
+      })
+      .catch((error: unknown) => {
+        setStatusMessage(formatApiError(error, "GitHub App installation link failed"));
+      })
+      .finally(() => {
+        setLinkingInstallation(false);
+      });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   function handleRepoSelect(event: ChangeEvent<HTMLSelectElement>) {

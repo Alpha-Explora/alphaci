@@ -46,7 +46,7 @@ export function SetupResultPanel({ setupResult, onViewProject }: Readonly<SetupR
               </button>
             </div>
             <p className="helper-text">
-              Next step: open Actions or push to the repository once Phase 4 validation is available.
+              Push a commit to trigger the CI pipeline. The validate-access job calls /v1/ci/validate automatically.
             </p>
           </motion.div>
         ) : (

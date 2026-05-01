@@ -100,7 +100,7 @@ export function WorkflowBuilder({ login, plan }: Readonly<WorkflowBuilderProps>)
       await Promise.all([projects.loadProjects(true), history.loadHistory(true)]);
       projects.prependCreateResult(response, createPayload.payload);
       setActiveTab("current");
-      setStatusMessage(`Created ${response.repoFullName}. Open Actions or push to the repo when Phase 4 validation is ready.`);
+      setStatusMessage(`Project created: ${response.repoFullName}. Push a commit to trigger the CI pipeline.`);
     } catch (error) {
       setStatusMessage(formatApiError(error, "Create Project failed"));
     } finally {
@@ -194,6 +194,7 @@ export function WorkflowBuilder({ login, plan }: Readonly<WorkflowBuilderProps>)
         {activeTab === "current" ? (
           <WorkflowCurrentTab
             history={history.history}
+            latestResult={createResult}
             loadingHistory={history.loadingHistory}
             loadingProjects={projects.loadingProjects}
             onCopyYaml={(yaml) => void copyYaml(yaml)}

@@ -46,6 +46,7 @@ export function WorkflowSetupTab({
     isCreatingProject ||
     projectCatalog.loadingProjectOptions ||
     !github.hasAllRepositoriesInstallation ||
+    !projectCatalog.selectedRepoShapeId ||
     !projectCatalog.selectedProjectType ||
     !projectCatalog.selectedWorkflowRecipe;
 
