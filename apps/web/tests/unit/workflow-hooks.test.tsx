@@ -240,7 +240,7 @@ describe("workflow hooks", () => {
   });
 
   it("loads catalog data and applies local filters", async () => {
-    let current: ReturnType<typeof useWorkflowCatalog> | null = null;
+    let current = null as ReturnType<typeof useWorkflowCatalog> | null;
 
     function Probe() {
       const value = useWorkflowCatalog();
@@ -277,7 +277,7 @@ describe("workflow hooks", () => {
   });
 
   it("loads project options, defaults to the first enabled shape, and filters recipes by project type", async () => {
-    let current: ReturnType<typeof useProjectOptionsCatalog> | null = null;
+    let current = null as ReturnType<typeof useProjectOptionsCatalog> | null;
 
     function Probe() {
       const value = useProjectOptionsCatalog();
@@ -333,7 +333,7 @@ describe("workflow hooks", () => {
   });
 
   it("reports project option catalog load failures", async () => {
-    let current: ReturnType<typeof useProjectOptionsCatalog> | null = null;
+    let current = null as ReturnType<typeof useProjectOptionsCatalog> | null;
     mockedGetProjectOptions.mockRejectedValueOnce(new Error("catalog unavailable"));
 
     function Probe() {
@@ -355,7 +355,7 @@ describe("workflow hooks", () => {
   });
 
   it("builds create project payloads and requires an all-repositories installation", async () => {
-    let current: ReturnType<typeof useCreateProjectForm> | null = null;
+    let current = null as ReturnType<typeof useCreateProjectForm> | null;
 
     function Probe() {
       const value = useCreateProjectForm();
@@ -380,7 +380,7 @@ describe("workflow hooks", () => {
         repoShapeId: "single-app",
         projectTypeId: "nextjs-app",
         workflowRecipeId: "frontend-standard-ci",
-        tests: { lint: true },
+        tests: { lint: true } as Record<string, boolean>,
       }),
     ).toEqual({
       ok: false,
@@ -432,7 +432,7 @@ describe("workflow hooks", () => {
   });
 
   it("reports create project form validation branches", async () => {
-    let current: ReturnType<typeof useCreateProjectForm> | null = null;
+    let current = null as ReturnType<typeof useCreateProjectForm> | null;
     const baseInput = {
       hasAllRepositoriesInstallation: true,
       repoShapeId: "single-app",
@@ -522,7 +522,7 @@ describe("workflow hooks", () => {
   });
 
   it("falls back to template categories and reports catalog load failures", async () => {
-    let current: ReturnType<typeof useWorkflowCatalog> | null = null;
+    let current = null as ReturnType<typeof useWorkflowCatalog> | null;
 
     mockedGetCategories.mockResolvedValueOnce({ categories: [] });
 
@@ -559,7 +559,7 @@ describe("workflow hooks", () => {
     const selectedRepos: string[] = [];
     const pushStatus = (message: string) => statusMessages.push(message);
     const applyRepo = (repo: string) => selectedRepos.push(repo);
-    let current: ReturnType<typeof useGithubInstallations> | null = null;
+    let current = null as ReturnType<typeof useGithubInstallations> | null;
 
     function Probe() {
       const value = useGithubInstallations(pushStatus, applyRepo);
@@ -603,7 +603,7 @@ describe("workflow hooks", () => {
   });
 
   it("keeps create project disabled when only selected-repository installation access exists", async () => {
-    let current: ReturnType<typeof useGithubInstallations> | null = null;
+    let current = null as ReturnType<typeof useGithubInstallations> | null;
     const pushStatus = jest.fn();
     const applyRepo = jest.fn();
     mockedGetGithubInstallationAccounts.mockResolvedValueOnce({
@@ -640,7 +640,7 @@ describe("workflow hooks", () => {
     const statusMessages: string[] = [];
     const pushStatus = (message: string) => statusMessages.push(message);
     const applyRepo = jest.fn();
-    let current: ReturnType<typeof useGithubInstallations> | null = null;
+    let current = null as ReturnType<typeof useGithubInstallations> | null;
 
     mockedGetLinkedGithubRepos.mockRejectedValueOnce(new Error("repos unavailable"));
     mockedGetGithubAppInstallUrl.mockRejectedValueOnce(new Error("install unavailable"));
@@ -676,8 +676,8 @@ describe("workflow hooks", () => {
   it("loads project and workflow history data", async () => {
     const statusMessages: string[] = [];
     const pushStatus = (message: string) => statusMessages.push(message);
-    let projects: ReturnType<typeof useProvisionedProjects> | null = null;
-    let history: ReturnType<typeof useWorkflowHistory> | null = null;
+    let projects = null as ReturnType<typeof useProvisionedProjects> | null;
+    let history = null as ReturnType<typeof useWorkflowHistory> | null;
 
     mockedGetProjects.mockResolvedValue({
       items: [

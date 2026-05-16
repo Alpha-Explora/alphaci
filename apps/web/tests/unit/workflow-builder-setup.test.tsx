@@ -13,6 +13,7 @@ import {
   getTemplates,
   getWorkflowHistory,
 } from "../../src/lib/api/client";
+import type { ProjectOptionsResponse } from "../../src/lib/api/contracts";
 
 jest.mock("framer-motion", () => {
   const React = jest.requireActual("react");
@@ -245,7 +246,7 @@ describe("WorkflowBuilder project setup", () => {
     mockedGetLinkedGithubRepos.mockResolvedValue({
       repos: [{ installationId: 12345, repoFullName: "tone/example-app" }],
     });
-    mockedGetProjectOptions.mockResolvedValue(projectOptions);
+    mockedGetProjectOptions.mockResolvedValue(projectOptions as unknown as ProjectOptionsResponse);
     mockedCreateProject.mockResolvedValue({
       id: "project-1",
       repoFullName: "tone/example-app",
