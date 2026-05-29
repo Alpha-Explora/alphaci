@@ -1,0 +1,57 @@
+# Platform frontend CI.
+# This workflow validates the CI/CD product frontend itself.
+
+name: "Platform Frontend CI"
+
+on:
+  push:
+    branches: [test, uat, main]
+  pull_request:
+    branches: [test, uat, main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  unit-tests:
+    uses: Tone-Lloyd-Sir-Catubag-CICD/central-workflow/.github/workflows/frontend-tests.yml@v1
+    with:
+      working-directory: .
+      system-name: platform-frontend
+      node-version: 20
+      coverage-threshold: 80
+      test-command: npm run test
+
+  lint:
+    uses: Tone-Lloyd-Sir-Catubag-CICD/central-workflow/.github/workflows/lint-check.yml@v1
+    with:
+      working-directory: .
+      system-name: platform-frontend
+      node-version: 20
+      lint-command: npm run lint
+
+  security:
+    uses: Tone-Lloyd-Sir-Catubag-CICD/central-workflow/.github/workflows/security-scan.yml@v1
+    with:
+      working-directory: .
+      system-name: platform-frontend
+      node-version: 20
+      fail-on-high: true
+
+  build:
+    needs: [unit-tests, lint, security]
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: .
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - run: npm ci --ignore-scripts
+      - run: npm run build
