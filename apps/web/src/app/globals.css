@@ -110,6 +110,7 @@ h1, h2, h3 {
 .page-shell {
   max-width: none;
   padding-inline: 0;
+  padding-block: 0;
 }
 
 .page-shell > .marketing-nav,
@@ -166,6 +167,14 @@ h1, h2, h3 {
   border: none;
   box-shadow: none;
   border-radius: 0;
+}
+
+/* Inside .page-shell, glass-panels get full card treatment */
+.page-shell .glass-panel {
+  background: var(--bg-base);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-soft);
 }
 
 /* ── Section cards — no box, content lives in whitespace ─────────────────── */
@@ -278,14 +287,15 @@ h1, h2, h3 {
 
 /* ── Navigation ─────────────────────────────────────────────────────────── */
 .marketing-nav {
-  background: rgba(255, 255, 255, 0.97);
+  background: rgba(255, 255, 255, 0.98);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  border-bottom: 1px solid rgba(0, 0, 0, 0.07);
+  border-bottom: none;
   border-radius: 0;
   border-left: none;
   border-right: none;
   border-top: none;
+  box-shadow: 0 2px 0 0 rgba(26, 86, 219, 0.15), 0 1px 3px rgba(0, 0, 0, 0.06);
   padding: 0 clamp(2rem, 5vw, 4rem);
   height: 60px;
   display: flex;
@@ -1982,6 +1992,15 @@ button:focus-visible, a:focus-visible {
   color: var(--brand);
 }
 
+/* Section header tint — soft blue pill behind file-path labels in page-shell cards */
+.page-shell .glass-panel .file-path-label {
+  background: var(--brand-light);
+  border: 1px solid rgba(26, 86, 219, 0.12);
+  border-radius: var(--radius-pill);
+  padding: 0.18rem 0.6rem;
+  color: var(--brand);
+}
+
 /* ── Stat block ─────────────────────────────────────────────────────────── */
 .stat-block {
   display: flex;
@@ -2174,20 +2193,32 @@ button:focus-visible, a:focus-visible {
   color: var(--text-primary);
 }
 .kpi-cell-dominant {
-  background: var(--bg-soft);
+  background: linear-gradient(135deg, var(--brand) 0%, var(--brand-strong) 100%);
   padding: 1.8rem 2rem;
+}
+.kpi-cell-dominant p {
+  color: rgba(255, 255, 255, 0.75);
 }
 .kpi-cell-dominant h3 {
   font-size: clamp(2rem, 4vw, 3rem);
   font-weight: 800;
   line-height: 1;
-  color: var(--brand);
+  color: #ffffff;
+}
+.kpi-cell-dominant .kpi-badge {
+  background: rgba(0, 0, 0, 0.25);
+  border-color: rgba(255, 255, 255, 0.25);
+  color: #ffffff;
 }
 
 /* ── Command list (quick actions) ───────────────────────────────────────── */
 .command-list {
   display: grid;
   gap: 0.3rem;
+  background: #f8f9fc;
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+  padding: 0.5rem;
 }
 .command-item {
   display: flex;
@@ -2196,12 +2227,13 @@ button:focus-visible, a:focus-visible {
   padding: 0.5rem 0.75rem;
   border-radius: 8px;
   color: var(--text-secondary);
-  font-family: ui-monospace, monospace;
-  font-size: 0.85rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.83rem;
   text-decoration: none;
   transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
   border: 1px solid transparent;
   min-height: 44px;
+  letter-spacing: 0.01em;
 }
 .command-item::before {
   content: "❯";
@@ -2210,9 +2242,10 @@ button:focus-visible, a:focus-visible {
   flex-shrink: 0;
 }
 .command-item:hover {
-  background: var(--bg-soft);
+  background: #ffffff;
   border-color: var(--border-subtle);
   color: var(--text-primary);
+  box-shadow: var(--shadow-soft);
 }
 .command-item:focus-visible {
   outline: 2px solid var(--brand);
@@ -2370,12 +2403,18 @@ button:focus-visible, a:focus-visible {
   display: grid;
   grid-template-columns: 1fr auto;
   gap: 2rem;
-  align-items: center;
+  align-items: start;
 }
 @media (max-width: 760px) {
   .welcome-banner-split {
     grid-template-columns: 1fr;
   }
+}
+
+/* Left column brand-accent bar — adds blue edge to identity/greeting column */
+.welcome-banner-split > *:first-child {
+  border-left: 3px solid var(--brand);
+  padding-left: 1.5rem;
 }
 
 /* ── Reduced motion ──────────────────────────────────────────────────────── */
@@ -2454,4 +2493,85 @@ button:focus-visible, a:focus-visible {
 
 @keyframes pipelineDash {
   to { stroke-dashoffset: 0; }
+}
+
+/* ── Guest mode ──────────────────────────────────────────────────────────── */
+.guest-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  padding: 0.65rem clamp(1.5rem, 4vw, 3rem);
+  background: var(--brand-light);
+  border-bottom: 1px solid rgba(26, 86, 219, 0.15);
+  width: 100%;
+}
+
+.guest-banner-text {
+  font-size: 0.85rem;
+  color: var(--brand);
+  font-weight: 500;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.guest-banner-text::before {
+  content: "👁";
+  font-size: 0.9em;
+}
+
+.guest-banner-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+/* Locks an interactive section for guests */
+.guest-locked {
+  position: relative;
+  pointer-events: none;
+  user-select: none;
+  opacity: 0.45;
+  filter: blur(0.5px);
+}
+
+.guest-lock-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  background: rgba(255, 255, 255, 0.7);
+  border-radius: inherit;
+  pointer-events: all;
+  text-align: center;
+  padding: 1.5rem;
+}
+
+.guest-lock-overlay p {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  margin: 0;
+  max-width: 24ch;
+  line-height: 1.4;
+}
+
+.guest-lock-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  background: var(--brand);
+  color: #fff;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 0.25rem 0.65rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
 }

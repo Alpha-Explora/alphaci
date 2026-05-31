@@ -250,7 +250,7 @@ function resolveNavLinks(status: string, hasSubscription: boolean): NavLinks {
   }
 
   const primaryHref  = hasSubscription ? "/home"      : "/subscribe";
-  const primaryLabel = hasSubscription ? "Open your workspace" : "Activate 300 pesos plan";
+  const primaryLabel = hasSubscription ? "Open your workspace" : "Activate plan";
 
   return {
     primaryHref,
@@ -295,6 +295,9 @@ export default function LandingPage() {
           <Link href="/workflows">Workflows</Link>
         </nav>
         <div className="landing-nav-actions">
+          <Link className="ghost-button" href="/home" style={{ fontSize: "0.82rem", padding: "0.35rem 0.9rem", color: "var(--text-muted)", borderColor: "var(--border-subtle)" }}>
+            Guest mode
+          </Link>
           <Link className="ghost-button" href={navUtilityHref}>
             {navUtilityLabel}
           </Link>
@@ -378,6 +381,9 @@ export default function LandingPage() {
               </Link>
               <Link className="ghost-button" href="/subscribe">
                 View pricing
+              </Link>
+              <Link className="ghost-button" href="/home" style={{ color: "var(--text-muted)", borderColor: "var(--border-subtle)", fontSize: "0.85rem" }}>
+                Preview as guest →
               </Link>
             </motion.div>
           </motion.div>

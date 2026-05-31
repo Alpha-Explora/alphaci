@@ -11,7 +11,7 @@ import { PipelineLogo } from "@/components/layout/pipeline-logo";
 import { useAuthSession } from "@/hooks/use-auth-session";
 import { logout, getProjects, getWorkflowHistory } from "@/lib/api/client";
 import type { ProvisionedProject, WorkflowHistoryItem } from "@/lib/api/contracts";
-import { hasActiveSubscription } from "@/lib/auth/subscription";
+import { isGuest } from "@/lib/auth/subscription";
 
 /* ── Constants ─────────────────────────────────────────────────────────────── */
 
@@ -88,15 +88,7 @@ export default function HomeDashboardPage() {
   const [historyError, setHistoryError] = useState<string | null>(null);
   const [projectsError, setProjectsError] = useState<string | null>(null);
 
-  const hasSubscription = hasActiveSubscription(session);
-
-  useEffect(() => {
-    if (status === "signed-out") {
-      router.replace("/login?next=/home");
-    } else if (status === "signed-in" && !hasSubscription) {
-      router.replace("/subscribe");
-    }
-  }, [hasSubscription, router, status]);
+  // No redirect — unauthenticated and non-subscribed users see the page in guest preview mode
 
   useEffect(() => {
     if (status !== "signed-in") return;
@@ -155,18 +147,10 @@ export default function HomeDashboardPage() {
     );
   }
 
-  if (status !== "signed-in" || !hasSubscription) {
-    return (
-      <main className="flow-shell page-shell">
-        <FlowBackground />
-        <section className="section-card glass-panel">
-          <h1>Routing you to the correct page...</h1>
-        </section>
-      </main>
-    );
-  }
+  // signed-out falls through to guest preview — isGuest() handles the banner
+  const guest = isGuest(session);
 
-  /* Signed-in view */
+  /* Signed-in (or guest preview) view */
   const uniqueServices = new Set(history.map((h) => h.serviceName)).size;
   const lastActivityValue = history[0]
     ? new Intl.DateTimeFormat("en-PH", { dateStyle: "medium" }).format(new Date(history[0].createdAt))
@@ -208,23 +192,40 @@ export default function HomeDashboardPage() {
         </div>
         <nav aria-label="Primary" className="nav-links">
           <Link href="/home">Dashboard</Link>
-          <Link href="/">Home</Link>
           <Link href="/workflows">Workflows</Link>
           <Link href="/subscribe">Billing</Link>
         </nav>
-        <button className="ghost-button" type="button" onClick={handleLogout} disabled={isLoggingOut}>
-          {isLoggingOut ? "Signing out..." : "Sign out"}
-        </button>
+        {!guest && (
+          <button className="ghost-button" type="button" onClick={handleLogout} disabled={isLoggingOut}>
+            {isLoggingOut ? "Signing out..." : "Sign out"}
+          </button>
+        )}
       </header>
 
+      {guest && (
+        <div className="guest-banner" role="alert">
+          <p className="guest-banner-text">
+            You are viewing FlowCI Studio in preview mode. Sign up to unlock all features.
+          </p>
+          <div className="guest-banner-actions">
+            <Link className="primary-button" href="/signup" style={{ padding: "0.4rem 1rem", fontSize: "0.82rem" }}>
+              Sign up free
+            </Link>
+            <Link className="ghost-button" href="/login" style={{ padding: "0.4rem 0.9rem", fontSize: "0.82rem" }}>
+              Log in
+            </Link>
+          </div>
+        </div>
+      )}
+
       {/* ── Welcome banner — split layout ──────────────────────────── */}
-      <section className="section-card glass-panel" style={{ padding: "clamp(1.4rem, 2.5vw, 2rem)" }}>
+      <section className="section-card glass-panel" style={{ padding: "clamp(1.5rem, 2.5vw, 2rem) clamp(2rem, 5vw, 4rem) clamp(1.5rem, 3vw, 2.5rem)" }}>
         <div className="welcome-banner-split">
           {/* Left: identity + greeting */}
           <div style={{ display: "grid", gap: "0.75rem" }}>
             <p className="file-path-label">home/dashboard.yml</p>
             <div className="welcome-header">
-              {session?.user.avatarUrl ? (
+              {!guest && (session?.user.avatarUrl ? (
                 <Image
                   src={session.user.avatarUrl}
                   alt={session.user.name ?? session.user.login}
@@ -235,21 +236,30 @@ export default function HomeDashboardPage() {
                 />
               ) : (
                 <span className="user-avatar-placeholder" aria-hidden="true">{avatarInitial}</span>
-              )}
-              <h1 style={{ fontSize: "clamp(1.3rem, 2.5vw, 1.9rem)" }}>
-                Welcome back, {session?.user.name ?? session?.user.login ?? "builder"}.
+              ))}
+              <h1 style={{ fontSize: "clamp(1.6rem, 2.8vw, 2.2rem)", letterSpacing: "-0.02em", fontWeight: 800 }}>
+                {guest
+                  ? "FlowCI Studio Dashboard"
+                  : `Welcome back, ${session?.user.name ?? session?.user.login ?? "builder"}.`}
               </h1>
             </div>
             <p style={{ color: "var(--text-secondary)", margin: 0, fontSize: "0.9rem" }}>
-              Connected on{" "}
-              <strong style={{ color: "var(--text-primary)" }}>
-                {session?.subscription.plan ?? "pro"}
-              </strong>{" "}
-              plan.
+              {guest
+                ? "You are browsing in guest mode. Sign up to unlock all features."
+                : <>Connected on{" "}<strong style={{ color: "var(--text-primary)" }}>{session?.subscription.plan ?? "pro"}</strong>{" "}plan.</>}
             </p>
             <div className="hero-actions">
-              <Link className="primary-button" href="/workflows">Create project</Link>
-              <Link className="ghost-button" href="/subscribe">View subscription</Link>
+              {guest ? (
+                <>
+                  <Link className="primary-button" href="/signup">Sign up free</Link>
+                  <Link className="ghost-button" href="/login">Log in</Link>
+                </>
+              ) : (
+                <>
+                  <Link className="primary-button" href="/workflows">Create project</Link>
+                  <Link className="ghost-button" href="/subscribe">View subscription</Link>
+                </>
+              )}
             </div>
             {error ? <p className="error-text">{error}</p> : null}
             {logoutMessage ? <p className="error-text">{logoutMessage}</p> : null}
@@ -257,12 +267,14 @@ export default function HomeDashboardPage() {
 
           {/* Right: pipeline track */}
           <div style={{
-            borderLeft: "1px solid var(--border-subtle)",
-            paddingLeft: "clamp(1rem, 3vw, 2rem)",
-            alignSelf: "stretch",
+            borderLeft: "1px solid rgba(26,86,219,0.15)",
+            paddingLeft: "clamp(1.2rem, 3vw, 2rem)",
+            paddingRight: "1.5rem",
+            paddingTop: "0.2rem",
+            alignSelf: "start",
             display: "flex",
             flexDirection: "column",
-            justifyContent: "center",
+            gap: "0.75rem",
           }}>
             <p className="eyebrow" style={{ marginBottom: "0.5rem" }}>Pipeline stages</p>
             <PipelineTrack reduced={prefersReducedMotion} />
@@ -270,64 +282,69 @@ export default function HomeDashboardPage() {
         </div>
       </section>
 
-      {/* ── KPI editorial grid ──────────────────────────────────────── */}
-      <section className="section-card glass-panel" style={{ padding: "clamp(1.2rem, 2.2vw, 1.8rem)" }}>
-        <p className="file-path-label" style={{ marginBottom: "0.75rem" }}>metrics/release-pulse.yml</p>
-        <h2 style={{ margin: "0 0 1rem", fontSize: "1.1rem" }}>Release pulse</h2>
-        <div className="kpi-grid-editorial">
-          {kpiCards.map((kpi) => (
-            <div
-              key={kpi.label}
-              className={`kpi-cell${kpi.dominant ? " kpi-cell-dominant" : ""}`}
-            >
-              <p>{kpi.label}</p>
-              <h3>{kpi.value}</h3>
+      {/* ── KPI + Quick actions — fully visible to guests ───────────── */}
+      <div>
+        <div>
+          {/* ── KPI editorial grid ──────────────────────────────────── */}
+          <section className="section-card glass-panel" style={{ padding: "clamp(1.2rem, 2.2vw, 1.8rem)" }}>
+            <p className="file-path-label" style={{ marginBottom: "0.75rem" }}>metrics/release-pulse.yml</p>
+            <h2 style={{ margin: "0 0 1rem", fontSize: "1.1rem" }}>Release pulse</h2>
+            <div className="kpi-grid-editorial">
+              {kpiCards.map((kpi) => (
+                <div
+                  key={kpi.label}
+                  className={`kpi-cell${kpi.dominant ? " kpi-cell-dominant" : ""}`}
+                >
+                  <p>{kpi.label}</p>
+                  <h3>{kpi.value}</h3>
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
-        {projectsError ? <p className="error-text" style={{ marginTop: "0.75rem" }}>{projectsError}</p> : null}
-        {historyError ? <p className="error-text" style={{ marginTop: "0.75rem" }}>{historyError}</p> : null}
-      </section>
+            {!guest && projectsError ? <p className="error-text" style={{ marginTop: "0.75rem" }}>{projectsError}</p> : null}
+            {!guest && historyError ? <p className="error-text" style={{ marginTop: "0.75rem" }}>{historyError}</p> : null}
+          </section>
 
-      {/* ── Recent workflows ────────────────────────────────────────── */}
-      {history.length > 0 && (
-        <section className="section-card glass-panel" style={{ padding: "clamp(1.2rem, 2.2vw, 1.8rem)" }}>
-          <p className="file-path-label" style={{ marginBottom: "0.75rem" }}>workflows/recent.yml</p>
-          <h2 style={{ margin: "0 0 1rem", fontSize: "1.1rem" }}>
-            {"Recent workflows "}
-            <span style={{ color: "var(--text-muted)", fontWeight: 400, fontSize: "0.82rem" }}>
-              last {Math.min(history.length, 3)} generated
-            </span>
-          </h2>
-          <div className="kpi-grid-editorial" style={{ gridTemplateColumns: "repeat(3, 1fr)" }}>
-            {history.slice(0, 3).map((item) => (
-              <div key={item.id} className="kpi-cell">
-                <p style={{ fontSize: "0.74rem", textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--brand)" }}>
-                  {item.stack}
-                </p>
-                <h3 style={{ fontSize: "0.98rem" }}>{item.serviceName}</h3>
-                <p>{item.outputFileName}</p>
+          {/* ── Recent workflows ──────────────────────────────────── */}
+          {history.length > 0 && (
+            <section className="section-card glass-panel" style={{ padding: "clamp(1.2rem, 2.2vw, 1.8rem)" }}>
+              <p className="file-path-label" style={{ marginBottom: "0.75rem" }}>workflows/recent.yml</p>
+              <h2 style={{ margin: "0 0 1rem", fontSize: "1.1rem" }}>
+                {"Recent workflows "}
+                <span style={{ color: "var(--text-muted)", fontWeight: 400, fontSize: "0.82rem" }}>
+                  last {Math.min(history.length, 3)} generated
+                </span>
+              </h2>
+              <div className="kpi-grid-editorial" style={{ gridTemplateColumns: "repeat(3, 1fr)" }}>
+                {history.slice(0, 3).map((item) => (
+                  <div key={item.id} className="kpi-cell">
+                    <p style={{ fontSize: "0.74rem", textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--brand)" }}>
+                      {item.stack}
+                    </p>
+                    <h3 style={{ fontSize: "0.98rem" }}>{item.serviceName}</h3>
+                    <p>{item.outputFileName}</p>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
-        </section>
-      )}
+            </section>
+          )}
 
-      {/* ── Quick actions — command list ─────────────────────────────── */}
-      <section className="section-card glass-panel" style={{ padding: "clamp(1.2rem, 2.2vw, 1.8rem)" }}>
-        <p className="file-path-label" style={{ marginBottom: "0.75rem" }}>actions/quick.yml</p>
-        <h2 style={{ margin: "0 0 0.75rem", fontSize: "1.1rem" }}>Quick actions</h2>
-        <nav className="command-list" aria-label="Quick actions">
-          {quickActions.map((action) => (
-            <Link key={action.label} href={action.href} className="command-item">
-              {action.label}
-              <span style={{ color: "var(--text-muted)", fontSize: "0.78rem", marginLeft: "auto" }}>
-                {action.display}
-              </span>
-            </Link>
-          ))}
-        </nav>
-      </section>
+          {/* ── Quick actions — command list ───────────────────────── */}
+          <section className="section-card glass-panel" style={{ padding: "clamp(1.2rem, 2.2vw, 1.8rem)" }}>
+            <p className="file-path-label" style={{ marginBottom: "0.75rem" }}>actions/quick.yml</p>
+            <h2 style={{ margin: "0 0 0.75rem", fontSize: "1.1rem" }}>Quick actions</h2>
+            <nav className="command-list" aria-label="Quick actions">
+              {quickActions.map((action) => (
+                <Link key={action.label} href={action.href} className="command-item">
+                  {action.label}
+                  <span style={{ color: "var(--text-muted)", fontSize: "0.78rem", marginLeft: "auto" }}>
+                    {action.display}
+                  </span>
+                </Link>
+              ))}
+            </nav>
+          </section>
+        </div>
+      </div>
     </main>
   );
 }

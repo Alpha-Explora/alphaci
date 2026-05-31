@@ -26,9 +26,10 @@ import { WorkflowStudioTabs } from "./workflow-studio-tabs";
 interface WorkflowBuilderProps {
   login: string;
   plan: string;
+  guest?: boolean;
 }
 
-export function WorkflowBuilder({ login, plan }: Readonly<WorkflowBuilderProps>) {
+export function WorkflowBuilder({ login, plan, guest = false }: Readonly<WorkflowBuilderProps>) {
   const prefersReducedMotion = useReducedMotion();
   const reducedMotion = prefersReducedMotion ?? false;
 
@@ -181,39 +182,41 @@ export function WorkflowBuilder({ login, plan }: Readonly<WorkflowBuilderProps>)
           ) : null}
         </section>
 
-        <WorkflowStudioTabs
-          activeTab={activeTab}
-          onChange={setActiveTab}
-          onKeyDown={handleTabKeyDown}
-        />
+        <div>
+          <WorkflowStudioTabs
+            activeTab={activeTab}
+            onChange={setActiveTab}
+            onKeyDown={handleTabKeyDown}
+          />
 
-        {activeTab === "setup" ? (
-          <WorkflowSetupTab
-            form={createForm}
-            github={github}
-            isCreatingProject={isCreatingProject}
-            onCreateProject={handleCreateProject}
-            projectCatalog={projectCatalog}
-            onViewProject={() => setActiveTab("current")}
-            reducedMotion={reducedMotion}
-            createResult={createResult}
-          />
-        ) : null}
-        {activeTab === "current" ? (
-          <WorkflowCurrentTab
-            history={history.history}
-            latestResult={createResult}
-            loadingHistory={history.loadingHistory}
-            loadingProjects={projects.loadingProjects}
-            onCopyYaml={(yaml) => void copyYaml(yaml)}
-            onDownloadYaml={downloadYaml}
-            onOpenSetup={() => setActiveTab("setup")}
-            projects={projects.projects}
-          />
-        ) : null}
-        {activeTab === "all" ? (
-          <WorkflowAllTab allTemplates={catalog.allTemplates} onUseTemplate={handleUseTemplate} />
-        ) : null}
+          {activeTab === "setup" ? (
+            <WorkflowSetupTab
+              form={createForm}
+              github={github}
+              isCreatingProject={isCreatingProject}
+              onCreateProject={guest ? () => { window.location.href = "/signup"; } : handleCreateProject}
+              projectCatalog={projectCatalog}
+              onViewProject={() => setActiveTab("current")}
+              reducedMotion={reducedMotion}
+              createResult={createResult}
+            />
+          ) : null}
+          {activeTab === "current" ? (
+            <WorkflowCurrentTab
+              history={history.history}
+              latestResult={createResult}
+              loadingHistory={history.loadingHistory}
+              loadingProjects={projects.loadingProjects}
+              onCopyYaml={guest ? () => { window.location.href = "/signup"; } : (yaml) => void copyYaml(yaml)}
+              onDownloadYaml={guest ? () => { window.location.href = "/signup"; } : downloadYaml}
+              onOpenSetup={() => setActiveTab("setup")}
+              projects={projects.projects}
+            />
+          ) : null}
+          {activeTab === "all" ? (
+            <WorkflowAllTab allTemplates={catalog.allTemplates} onUseTemplate={handleUseTemplate} />
+          ) : null}
+        </div>
       </section>
     </MotionConfig>
   );

@@ -2,13 +2,14 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 import { FlowBackground } from "@/components/layout/flow-background";
+import { PipelineLogo } from "@/components/layout/pipeline-logo";
 import { WorkflowBuilder } from "../../components/product/workflow-builder";
 import { useAuthSession } from "@/hooks/use-auth-session";
 import { logout } from "@/lib/api/client";
-import { hasActiveSubscription } from "@/lib/auth/subscription";
+import { isGuest } from "@/lib/auth/subscription";
 
 export default function WorkflowsPage() {
   const router = useRouter();
@@ -16,18 +17,7 @@ export default function WorkflowsPage() {
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [logoutMessage, setLogoutMessage] = useState<string | null>(null);
 
-  const hasSubscription = hasActiveSubscription(session);
-
-  useEffect(() => {
-    if (status === "signed-out") {
-      router.replace("/login?next=/workflows");
-      return;
-    }
-
-    if (status === "signed-in" && !hasSubscription) {
-      router.replace("/subscribe");
-    }
-  }, [hasSubscription, router, status]);
+  // No redirect — unauthenticated and non-subscribed users see the page in guest preview mode
 
   async function handleLogout() {
     setIsLoggingOut(true);
@@ -76,38 +66,52 @@ export default function WorkflowsPage() {
     );
   }
 
-  if (status !== "signed-in" || !hasSubscription) {
-    return (
-      <main className="flow-shell page-shell">
-        <FlowBackground />
-        <section className="section-card glass-panel">
-          <h1>Routing you to the right page...</h1>
-        </section>
-      </main>
-    );
-  }
+  // signed-out falls through to guest preview — isGuest() handles the banner
+  const guest = isGuest(session);
 
   return (
     <main className="flow-shell page-shell">
       <FlowBackground />
 
       <header className="marketing-nav glass-panel">
-        <p className="brand-mark">FlowCI Studio</p>
+        <div className="brand-mark">
+          <PipelineLogo size={22} />
+          <span>FlowCI Studio</span>
+        </div>
         <nav aria-label="Primary" className="nav-links">
-          <Link href="/">Home</Link>
-          <Link href="/subscribe">Billing</Link>
           <Link href="/home">Dashboard</Link>
+          <Link href="/workflows">Workflows</Link>
+          <Link href="/subscribe">Billing</Link>
         </nav>
-        <button className="ghost-button" type="button" onClick={handleLogout} disabled={isLoggingOut}>
-          {isLoggingOut ? "Signing out..." : "Sign out"}
-        </button>
+        {!guest && (
+          <button className="ghost-button" type="button" onClick={handleLogout} disabled={isLoggingOut}>
+            {isLoggingOut ? "Signing out..." : "Sign out"}
+          </button>
+        )}
       </header>
+
+      {guest && (
+        <div className="guest-banner" role="alert">
+          <p className="guest-banner-text">
+            You are viewing FlowCI Studio in preview mode. Sign up to unlock all features.
+          </p>
+          <div className="guest-banner-actions">
+            <Link className="primary-button" href="/signup" style={{ padding: "0.4rem 1rem", fontSize: "0.82rem" }}>
+              Sign up free
+            </Link>
+            <Link className="ghost-button" href="/login" style={{ padding: "0.4rem 0.9rem", fontSize: "0.82rem" }}>
+              Log in
+            </Link>
+          </div>
+        </div>
+      )}
 
       {logoutMessage ? <p className="error-text">{logoutMessage}</p> : null}
 
       <WorkflowBuilder
         login={session?.user.login ?? "builder"}
         plan={session?.subscription.plan ?? "pro"}
+        guest={guest}
       />
     </main>
   );
