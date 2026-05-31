@@ -21,7 +21,7 @@ export default function LoginPage() {
     <Suspense fallback={<LoginFallback />}>
       <OAuthAuthPage
         mode="login"
-        title="Welcome back to your project control center"
+        title="Sign in to your pipeline workspace."
         subtitle="Choose Google or GitHub to continue to Create Project."
         switchText="New here?"
         switchHref="/signup"

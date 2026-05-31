@@ -4,21 +4,81 @@ import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { motion, useReducedMotion } from "framer-motion";
 
 import { FlowBackground } from "@/components/layout/flow-background";
+import { PipelineLogo } from "@/components/layout/pipeline-logo";
 import { useAuthSession } from "@/hooks/use-auth-session";
 import { logout, getProjects, getWorkflowHistory } from "@/lib/api/client";
 import type { ProvisionedProject, WorkflowHistoryItem } from "@/lib/api/contracts";
 import { hasActiveSubscription } from "@/lib/auth/subscription";
 
+/* ── Constants ─────────────────────────────────────────────────────────────── */
+
 const quickActions = [
-  { label: "Create Project", href: "/workflows" },
-  { label: "Manage plan", href: "/subscribe" },
+  { label: "create-project",     href: "/workflows",  display: "Create Project" },
+  { label: "view-workflows",     href: "/workflows",  display: "View Workflows" },
+  { label: "manage-plan",        href: "/subscribe",  display: "Manage Plan" },
 ];
+
+const pipelineStages = ["Source", "Lint", "Test", "Build", "Deploy"];
+
+const pipelineContainerVariants = {
+  hidden: {},
+  visible: { transition: { staggerChildren: 0.1, delayChildren: 0.2 } },
+};
+
+const pipelineDotVariants = {
+  hidden: { opacity: 0, scale: 0.5 },
+  visible: { opacity: 1, scale: 1, transition: { duration: 0.3, ease: "easeOut" as const } },
+};
+
+/* ── Sub-components ────────────────────────────────────────────────────────── */
+
+function PipelineTrack({ reduced }: Readonly<{ reduced: boolean | null }>) {
+  return (
+    <div>
+      <p className="file-path-label" style={{ marginBottom: "0.75rem" }}>pipeline/stages.yml</p>
+      <motion.div
+        className="pipeline-track"
+        aria-label="Pipeline stages"
+        variants={reduced ? undefined : pipelineContainerVariants}
+        initial={reduced ? undefined : "hidden"}
+        animate={reduced ? undefined : "visible"}
+      >
+        {pipelineStages.map((stage, index) => (
+          <span key={stage} style={{ display: "inline-flex", alignItems: "center" }}>
+            <motion.span
+              className={`pipeline-dot ${index === pipelineStages.length - 1 ? "active" : ""}`}
+              variants={reduced ? undefined : pipelineDotVariants}
+              title={stage}
+              style={{ cursor: "default" }}
+            />
+            {index < pipelineStages.length - 1 && (
+              <motion.span
+                className="pipeline-connector"
+                variants={reduced ? undefined : pipelineDotVariants}
+                aria-hidden="true"
+              />
+            )}
+          </span>
+        ))}
+      </motion.div>
+      <div style={{ display: "flex", gap: "0.5rem", marginTop: "0.45rem", flexWrap: "wrap" }}>
+        {pipelineStages.map((stage) => (
+          <span key={stage} className="template-tag">{stage}</span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ── Page ──────────────────────────────────────────────────────────────────── */
 
 export default function HomeDashboardPage() {
   const router = useRouter();
   const { status, session, error, refresh } = useAuthSession();
+  const prefersReducedMotion = useReducedMotion();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [logoutMessage, setLogoutMessage] = useState<string | null>(null);
   const [history, setHistory] = useState<WorkflowHistoryItem[]>([]);
@@ -33,10 +93,7 @@ export default function HomeDashboardPage() {
   useEffect(() => {
     if (status === "signed-out") {
       router.replace("/login?next=/home");
-      return;
-    }
-
-    if (status === "signed-in" && !hasSubscription) {
+    } else if (status === "signed-in" && !hasSubscription) {
       router.replace("/subscribe");
     }
   }, [hasSubscription, router, status]);
@@ -57,7 +114,6 @@ export default function HomeDashboardPage() {
   async function handleLogout() {
     setIsLoggingOut(true);
     setLogoutMessage(null);
-
     try {
       await logout();
       await refresh();
@@ -69,6 +125,7 @@ export default function HomeDashboardPage() {
     }
   }
 
+  /* Guard states */
   if (status === "loading") {
     return (
       <main className="flow-shell page-shell">
@@ -91,9 +148,7 @@ export default function HomeDashboardPage() {
             <button className="primary-button" type="button" onClick={() => void refresh()}>
               Retry session check
             </button>
-            <Link className="ghost-button" href="/login?next=/home">
-              Go to login
-            </Link>
+            <Link className="ghost-button" href="/login?next=/home">Go to login</Link>
           </div>
         </section>
       </main>
@@ -111,27 +166,46 @@ export default function HomeDashboardPage() {
     );
   }
 
+  /* Signed-in view */
   const uniqueServices = new Set(history.map((h) => h.serviceName)).size;
+  const lastActivityValue = history[0]
+    ? new Intl.DateTimeFormat("en-PH", { dateStyle: "medium" }).format(new Date(history[0].createdAt))
+    : "None yet";
+
   const kpiCards = [
-    { label: "Projects created", value: projectsLoading ? "..." : String(projects.length) },
-    { label: "Workflows generated", value: historyLoading ? "..." : String(history.length) },
-    { label: "Services configured", value: historyLoading ? "..." : String(uniqueServices) },
+    {
+      label: "Workflows generated",
+      value: historyLoading ? "..." : String(history.length),
+      dominant: true,
+    },
+    {
+      label: "Projects created",
+      value: projectsLoading ? "..." : String(projects.length),
+      dominant: false,
+    },
+    {
+      label: "Services configured",
+      value: historyLoading ? "..." : String(uniqueServices),
+      dominant: false,
+    },
     {
       label: "Last activity",
-      value: historyLoading
-        ? "..."
-        : history[0]
-        ? new Intl.DateTimeFormat("en-PH", { dateStyle: "medium" }).format(new Date(history[0].createdAt))
-        : "None yet",
+      value: historyLoading ? "..." : lastActivityValue,
+      dominant: false,
     },
   ];
+
+  const avatarInitial = (session?.user.name ?? session?.user.login ?? "U").slice(0, 1).toUpperCase();
 
   return (
     <main className="flow-shell page-shell">
       <FlowBackground />
 
-      <header className="marketing-nav glass-panel">
-        <p className="brand-mark">FlowCI Studio</p>
+      <header className="marketing-nav">
+        <div className="brand-mark">
+          <PipelineLogo size={22} />
+          <span>FlowCI Studio</span>
+        </div>
         <nav aria-label="Primary" className="nav-links">
           <Link href="/home">Dashboard</Link>
           <Link href="/">Home</Link>
@@ -143,90 +217,116 @@ export default function HomeDashboardPage() {
         </button>
       </header>
 
-      <section className="section-card glass-panel">
-        <p className="hero-kicker">Home</p>
-        <div className="welcome-header">
-          {session?.user.avatarUrl ? (
-            <Image
-              src={session.user.avatarUrl}
-              alt={session.user.name ?? session.user.login}
-              className="user-avatar"
-              width={48}
-              height={48}
-              unoptimized
-            />
-          ) : (
-            <span className="user-avatar-placeholder" aria-hidden="true">
-              {(session?.user.name ?? session?.user.login ?? "U").slice(0, 1).toUpperCase()}
-            </span>
-          )}
-          <h1>Welcome back, {session?.user.name ?? session?.user.login ?? "builder"}.</h1>
-        </div>
-        <p>
-          You are connected with your OAuth account and an active <strong>{session?.subscription.plan ?? "pro"}</strong>{" "}
-          plan.
-        </p>
+      {/* ── Welcome banner — split layout ──────────────────────────── */}
+      <section className="section-card glass-panel" style={{ padding: "clamp(1.4rem, 2.5vw, 2rem)" }}>
+        <div className="welcome-banner-split">
+          {/* Left: identity + greeting */}
+          <div style={{ display: "grid", gap: "0.75rem" }}>
+            <p className="file-path-label">home/dashboard.yml</p>
+            <div className="welcome-header">
+              {session?.user.avatarUrl ? (
+                <Image
+                  src={session.user.avatarUrl}
+                  alt={session.user.name ?? session.user.login}
+                  className="user-avatar"
+                  width={48}
+                  height={48}
+                  unoptimized
+                />
+              ) : (
+                <span className="user-avatar-placeholder" aria-hidden="true">{avatarInitial}</span>
+              )}
+              <h1 style={{ fontSize: "clamp(1.3rem, 2.5vw, 1.9rem)" }}>
+                Welcome back, {session?.user.name ?? session?.user.login ?? "builder"}.
+              </h1>
+            </div>
+            <p style={{ color: "var(--text-secondary)", margin: 0, fontSize: "0.9rem" }}>
+              Connected on{" "}
+              <strong style={{ color: "var(--text-primary)" }}>
+                {session?.subscription.plan ?? "pro"}
+              </strong>{" "}
+              plan.
+            </p>
+            <div className="hero-actions">
+              <Link className="primary-button" href="/workflows">Create project</Link>
+              <Link className="ghost-button" href="/subscribe">View subscription</Link>
+            </div>
+            {error ? <p className="error-text">{error}</p> : null}
+            {logoutMessage ? <p className="error-text">{logoutMessage}</p> : null}
+          </div>
 
-        <div className="hero-actions">
-          <Link className="primary-button" href="/workflows">
-            Create project
-          </Link>
-          <Link className="ghost-button" href="/subscribe">
-            View subscription
-          </Link>
+          {/* Right: pipeline track */}
+          <div style={{
+            borderLeft: "1px solid var(--border-subtle)",
+            paddingLeft: "clamp(1rem, 3vw, 2rem)",
+            alignSelf: "stretch",
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "center",
+          }}>
+            <p className="eyebrow" style={{ marginBottom: "0.5rem" }}>Pipeline stages</p>
+            <PipelineTrack reduced={prefersReducedMotion} />
+          </div>
         </div>
-        {error ? <p className="error-text">{error}</p> : null}
-        {logoutMessage ? <p className="error-text">{logoutMessage}</p> : null}
       </section>
 
-      <section className="section-card glass-panel">
-        <div className="section-header">
-          <h2>Release pulse</h2>
-          <p>Quick status snapshot.</p>
-        </div>
-        <div className="kpi-grid">
+      {/* ── KPI editorial grid ──────────────────────────────────────── */}
+      <section className="section-card glass-panel" style={{ padding: "clamp(1.2rem, 2.2vw, 1.8rem)" }}>
+        <p className="file-path-label" style={{ marginBottom: "0.75rem" }}>metrics/release-pulse.yml</p>
+        <h2 style={{ margin: "0 0 1rem", fontSize: "1.1rem" }}>Release pulse</h2>
+        <div className="kpi-grid-editorial">
           {kpiCards.map((kpi) => (
-            <article className="kpi-card" key={kpi.label}>
+            <div
+              key={kpi.label}
+              className={`kpi-cell${kpi.dominant ? " kpi-cell-dominant" : ""}`}
+            >
               <p>{kpi.label}</p>
               <h3>{kpi.value}</h3>
-            </article>
+            </div>
           ))}
         </div>
-        {projectsError ? <p className="error-text">{projectsError}</p> : null}
-        {historyError ? <p className="error-text">{historyError}</p> : null}
+        {projectsError ? <p className="error-text" style={{ marginTop: "0.75rem" }}>{projectsError}</p> : null}
+        {historyError ? <p className="error-text" style={{ marginTop: "0.75rem" }}>{historyError}</p> : null}
       </section>
 
+      {/* ── Recent workflows ────────────────────────────────────────── */}
       {history.length > 0 && (
-        <section className="section-card glass-panel">
-          <div className="section-header">
-            <h2>Recent workflows</h2>
-            <p>Last {Math.min(history.length, 3)} generated.</p>
-          </div>
-          <div className="action-grid">
+        <section className="section-card glass-panel" style={{ padding: "clamp(1.2rem, 2.2vw, 1.8rem)" }}>
+          <p className="file-path-label" style={{ marginBottom: "0.75rem" }}>workflows/recent.yml</p>
+          <h2 style={{ margin: "0 0 1rem", fontSize: "1.1rem" }}>
+            {"Recent workflows "}
+            <span style={{ color: "var(--text-muted)", fontWeight: 400, fontSize: "0.82rem" }}>
+              last {Math.min(history.length, 3)} generated
+            </span>
+          </h2>
+          <div className="kpi-grid-editorial" style={{ gridTemplateColumns: "repeat(3, 1fr)" }}>
             {history.slice(0, 3).map((item) => (
-              <article key={item.id} className="kpi-card">
-                <p style={{ fontSize: "0.74rem", textTransform: "uppercase", letterSpacing: "0.08em" }}>
+              <div key={item.id} className="kpi-cell">
+                <p style={{ fontSize: "0.74rem", textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--brand)" }}>
                   {item.stack}
                 </p>
                 <h3 style={{ fontSize: "0.98rem" }}>{item.serviceName}</h3>
                 <p>{item.outputFileName}</p>
-              </article>
+              </div>
             ))}
           </div>
         </section>
       )}
 
-      <section className="section-card glass-panel">
-        <div className="section-header">
-          <h2>Quick actions</h2>
-        </div>
-        <div className="action-grid">
+      {/* ── Quick actions — command list ─────────────────────────────── */}
+      <section className="section-card glass-panel" style={{ padding: "clamp(1.2rem, 2.2vw, 1.8rem)" }}>
+        <p className="file-path-label" style={{ marginBottom: "0.75rem" }}>actions/quick.yml</p>
+        <h2 style={{ margin: "0 0 0.75rem", fontSize: "1.1rem" }}>Quick actions</h2>
+        <nav className="command-list" aria-label="Quick actions">
           {quickActions.map((action) => (
-            <Link key={action.label} href={action.href} className="action-tile">
+            <Link key={action.label} href={action.href} className="command-item">
               {action.label}
+              <span style={{ color: "var(--text-muted)", fontSize: "0.78rem", marginLeft: "auto" }}>
+                {action.display}
+              </span>
             </Link>
           ))}
-        </div>
+        </nav>
       </section>
     </main>
   );

@@ -137,13 +137,21 @@ export function WorkflowBuilder({ login, plan }: Readonly<WorkflowBuilderProps>)
       <section className="workflow-surface">
         <header className="product-topbar">
           <div>
-            <p className="eyebrow">Create Project</p>
+            <nav className="topbar-breadcrumb" aria-label="Breadcrumb">
+              <a href="/home">Dashboard</a>
+              <span aria-hidden="true">/</span>
+              <span aria-current="page">Create Project</span>
+            </nav>
             <h1>Create and manage projects</h1>
           </div>
           <div className="topbar-controls">
             <p className="status-pill">@{login}</p>
             <p className="status-pill">Plan: {plan}</p>
-            <p className="status-pill">Source: workflow-core</p>
+            <span
+              className={`github-status-dot ${github.hasAllRepositoriesInstallation ? "" : "disconnected"}`}
+            >
+              {github.hasAllRepositoriesInstallation ? "GitHub connected" : "GitHub not linked"}
+            </span>
           </div>
         </header>
 

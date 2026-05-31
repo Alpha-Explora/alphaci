@@ -6,6 +6,7 @@ import { useEffect, useMemo, type MouseEvent } from "react";
 import { motion, useMotionValue, useReducedMotion, useSpring, useTransform } from "framer-motion";
 
 import { FlowBackground } from "@/components/layout/flow-background";
+import { PipelineLogo } from "@/components/layout/pipeline-logo";
 import { useAuthSession } from "@/hooks/use-auth-session";
 import { createGitHubLoginUrl, createGoogleLoginUrl } from "@/lib/api/client";
 import { hasActiveSubscription } from "@/lib/auth/subscription";
@@ -63,6 +64,67 @@ function toSafeNextPath(raw: string | null): string {
   }
 
   return "/home";
+}
+
+/* Decorative YAML lines shown in the left panel */
+const authPanelYaml = [
+  { id: "a0", content: <span className="mockup-comment"># payments-service.yml</span> },
+  { id: "a1", content: <><span className="mockup-key">name</span>{": "}<span className="mockup-string">payments-service-ci</span></> },
+  { id: "a2", content: <><span className="mockup-key">on</span>:</> },
+  { id: "a3", content: <>&nbsp;&nbsp;<span className="mockup-key">push</span>:</> },
+  { id: "a4", content: <>&nbsp;&nbsp;&nbsp;&nbsp;<span className="mockup-key">branches</span>{": "}<span className="mockup-string">["main"]</span></> },
+  { id: "a5", content: <><span className="mockup-keyword">jobs</span>:</> },
+  { id: "a6", content: <>&nbsp;&nbsp;<span className="mockup-key">build</span>:</> },
+  { id: "a7", content: <>&nbsp;&nbsp;&nbsp;&nbsp;<span className="mockup-key">runs-on</span>{": "}<span className="mockup-string">ubuntu-latest</span></> },
+];
+
+const pipelineStages = [
+  { label: "Source", color: "#1a56db", done: true },
+  { label: "Build",  color: "#1a56db", done: true },
+  { label: "Test",   color: "#1a56db", done: true },
+  { label: "Deploy", color: "#12b76a", done: true },
+];
+
+function PipelineStagesVisual() {
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 0 }}>
+      {pipelineStages.map((stage, i) => (
+        <div key={stage.label} style={{ display: "flex", alignItems: "center", flex: i < pipelineStages.length - 1 ? 1 : "none" }}>
+          {/* Stage node */}
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "0.35rem", flexShrink: 0 }}>
+            <div style={{
+              width: 32,
+              height: 32,
+              borderRadius: "50%",
+              background: stage.color,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              boxShadow: `0 0 0 4px ${stage.color}22`,
+            }}>
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+                <polyline points="2,6 5,9 10,3" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </div>
+            <span style={{ fontSize: "0.65rem", color: "var(--text-muted)", letterSpacing: "0.06em", textTransform: "uppercase", whiteSpace: "nowrap" }}>
+              {stage.label}
+            </span>
+          </div>
+          {/* Connector line */}
+          {i < pipelineStages.length - 1 && (
+            <div style={{
+              flex: 1,
+              height: 2,
+              background: `linear-gradient(90deg, ${stage.color}, ${pipelineStages[i + 1].color})`,
+              margin: "0 0.3rem",
+              marginBottom: "1.1rem",
+              borderRadius: 999,
+            }} />
+          )}
+        </div>
+      ))}
+    </div>
+  );
 }
 
 export function OAuthAuthPage({
@@ -149,21 +211,87 @@ export function OAuthAuthPage({
   }
 
   return (
-    <main className="flow-shell page-shell auth-shell">
+    <main className="auth-shell-split">
       <FlowBackground />
 
-      <header className="marketing-nav glass-panel">
-        <p className="brand-mark">FlowCI Studio</p>
-        <nav aria-label="Primary" className="nav-links">
-          <Link href="/">Home</Link>
-          <Link href="/subscribe">Pricing</Link>
-        </nav>
-        <Link className="ghost-button" href={mode === "login" ? "/signup" : "/login"}>
-          {mode === "login" ? "Sign up" : "Login"}
-        </Link>
-      </header>
+      {/* ── Left panel — brand / pipeline visual / YAML / stats / tagline ── */}
+      <div className="auth-left-panel">
+        {/* Top: brand */}
+        <div style={{ flexShrink: 0 }}>
+          <div className="brand-mark">
+            <PipelineLogo size={22} />
+            <span>FlowCI Studio</span>
+          </div>
+        </div>
 
-      <section className="section-card auth-card glass-panel auth-card-modern">
+        {/* Center: fills all available space */}
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", gap: "1.5rem", padding: "2rem 0" }}>
+
+          {/* Animated pipeline stages row */}
+          <motion.div
+            initial={prefersReducedMotion ? undefined : { opacity: 0, y: 12 }}
+            animate={prefersReducedMotion ? undefined : { opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.3 }}
+          >
+            <PipelineStagesVisual />
+          </motion.div>
+
+          {/* YAML terminal — full width */}
+          <div className="auth-left-yaml">
+            <div className="hero-mockup-bar">
+              <span className="mockup-dot mockup-dot-red" aria-hidden="true" />
+              <span className="mockup-dot mockup-dot-yellow" aria-hidden="true" />
+              <span className="mockup-dot mockup-dot-green" aria-hidden="true" />
+              <span style={{ fontFamily: "ui-monospace, monospace", fontSize: "0.7rem", color: "rgba(255,255,255,0.35)", marginLeft: "0.5rem" }}>
+                payments-service.yml
+              </span>
+            </div>
+            <pre style={{ background: "transparent", color: "#cdd6f4", padding: "1.2rem 1.4rem", margin: 0, fontSize: "0.8rem", lineHeight: 1.7, fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace", overflow: "auto" }} aria-hidden="true">
+              <span style={{ color: "#6c7086" }}>{`# Generated by FlowCI Studio\n`}</span>
+              <span style={{ color: "#89b4fa" }}>name</span><span style={{ color: "#cdd6f4" }}>: </span><span style={{ color: "#a6e3a1" }}>{`payments-service-ci\n`}</span>
+              <span style={{ color: "#89b4fa" }}>on</span><span style={{ color: "#cdd6f4" }}>{`:\n`}</span>
+              <span style={{ color: "#cdd6f4" }}>{"  "}</span><span style={{ color: "#89b4fa" }}>push</span><span style={{ color: "#cdd6f4" }}>{`:\n`}</span>
+              <span style={{ color: "#cdd6f4" }}>{"    "}</span><span style={{ color: "#89b4fa" }}>branches</span><span style={{ color: "#cdd6f4" }}>: [</span><span style={{ color: "#a6e3a1" }}>&quot;main&quot;</span><span style={{ color: "#cdd6f4" }}>, </span><span style={{ color: "#a6e3a1" }}>&quot;develop&quot;</span><span style={{ color: "#cdd6f4" }}>{`]\n`}</span>
+              <span style={{ color: "#89b4fa" }}>jobs</span><span style={{ color: "#cdd6f4" }}>{`:\n`}</span>
+              <span style={{ color: "#cdd6f4" }}>{"  "}</span><span style={{ color: "#89b4fa" }}>build</span><span style={{ color: "#cdd6f4" }}>{`:\n`}</span>
+              <span style={{ color: "#cdd6f4" }}>{"    "}</span><span style={{ color: "#89b4fa" }}>runs-on</span><span style={{ color: "#cdd6f4" }}>: </span><span style={{ color: "#a6e3a1" }}>{`ubuntu-latest\n`}</span>
+              <span style={{ color: "#fab387" }}>{"    steps"}</span><span style={{ color: "#cdd6f4" }}>{`:\n`}</span>
+              <span style={{ color: "#cdd6f4" }}>{"      - "}</span><span style={{ color: "#89b4fa" }}>uses</span><span style={{ color: "#cdd6f4" }}>: </span><span style={{ color: "#a6e3a1" }}>{`actions/checkout@v4\n`}</span>
+              <span style={{ color: "#cdd6f4" }}>{"      - "}</span><span style={{ color: "#89b4fa" }}>name</span><span style={{ color: "#cdd6f4" }}>: </span><span style={{ color: "#a6e3a1" }}>{`Run tests\n`}</span>
+              <span style={{ color: "#cdd6f4" }}>{"        "}</span><span style={{ color: "#89b4fa" }}>run</span><span style={{ color: "#cdd6f4" }}>: </span><span style={{ color: "#a6e3a1" }}>npm test</span>
+            </pre>
+          </div>
+
+          {/* Stats row */}
+          <div style={{ display: "flex", gap: "1.5rem" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.1rem" }}>
+              <span style={{ fontFamily: "'Sora', sans-serif", fontSize: "1.4rem", fontWeight: 800, color: "var(--text-primary)", lineHeight: 1 }}>40+</span>
+              <span style={{ fontSize: "0.7rem", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.1em" }}>Templates</span>
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.1rem" }}>
+              <span style={{ fontFamily: "'Sora', sans-serif", fontSize: "1.4rem", fontWeight: 800, color: "var(--text-primary)", lineHeight: 1 }}>&lt; 2 min</span>
+              <span style={{ fontSize: "0.7rem", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.1em" }}>Setup time</span>
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.1rem" }}>
+              <span style={{ fontFamily: "'Sora', sans-serif", fontSize: "1.4rem", fontWeight: 800, color: "#12b76a", lineHeight: 1 }}>100%</span>
+              <span style={{ fontSize: "0.7rem", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.1em" }}>GitHub native</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Bottom: tagline */}
+        <div style={{ flexShrink: 0 }}>
+          <p style={{ fontFamily: "ui-monospace, monospace", fontSize: "0.7rem", color: "var(--text-muted)", letterSpacing: "0.06em", margin: "0 0 0.35rem" }}>
+            <span style={{ color: "var(--brand)" }}>./</span> cicd/production.yml
+          </p>
+          <p style={{ color: "var(--text-secondary)", fontSize: "0.84rem", margin: 0, lineHeight: 1.5 }}>
+            Production-ready CI/CD from your GitHub repos.
+          </p>
+        </div>
+      </div>
+
+      {/* ── Right panel — clean form, no card wrapper ───────────────── */}
+      <div className="auth-right-panel">
         <motion.div
           className="auth-card-shell"
           initial={prefersReducedMotion ? undefined : { opacity: 0, y: 14, scale: 0.985 }}
@@ -181,10 +309,6 @@ export function OAuthAuthPage({
                 }
           }
         >
-          <span className="auth-card-glint" aria-hidden="true" />
-          <span className="auth-depth-orb auth-depth-orb-a" aria-hidden="true" />
-          <span className="auth-depth-orb auth-depth-orb-b" aria-hidden="true" />
-
           <div className="auth-header">
             <motion.p
               className="hero-kicker"
@@ -229,12 +353,14 @@ export function OAuthAuthPage({
             </Link>
           </fieldset>
 
+          <div className="section-divider">or</div>
+
           <div className="auth-support-row">
             <Link className="ghost-button auth-support-link" href="/subscribe">
-              View 300 pesos plan
+              View pricing
             </Link>
             <Link className="ghost-button auth-support-link" href="/">
-              Go to Home
+              Home
             </Link>
           </div>
 
@@ -249,7 +375,7 @@ export function OAuthAuthPage({
             {switchText} <Link href={switchHref}>{switchCta}</Link>
           </p>
         </motion.div>
-      </section>
+      </div>
     </main>
   );
 }

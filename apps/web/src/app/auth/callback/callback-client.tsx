@@ -132,7 +132,15 @@ export function AuthCallbackClient() {
       <section className="section-card callback-card glass-panel">
         <p className="hero-kicker">{providerName} {intent === "signup" ? "Sign Up" : "Login"}</p>
         <h1>{state === "checking" ? "Completing authentication" : "Authentication needs retry"}</h1>
-        <p>{message}</p>
+
+        {state === "checking" ? (
+          <div style={{ display: "flex", alignItems: "center", gap: "0.6rem" }}>
+            <span className="callback-pulse-dot" aria-hidden="true" />
+            <p style={{ margin: 0 }}>{message}</p>
+          </div>
+        ) : (
+          <p>{message}</p>
+        )}
 
         <div className="hero-actions">
           {state === "failed" ? (

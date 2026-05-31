@@ -31,6 +31,42 @@ export function WorkflowAllTab({ allTemplates, onUseTemplate }: Readonly<Workflo
         These are the source templates currently loaded from workflow-core/workflow-templates.
       </p>
 
+      {allTemplates.length === 0 ? (
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            gap: "0.65rem",
+            padding: "2.4rem 1rem",
+            textAlign: "center",
+          }}
+        >
+          <span
+            aria-hidden="true"
+            style={{
+              width: "2.8rem",
+              height: "2.8rem",
+              borderRadius: "0.74rem",
+              background: "rgba(59,142,240,0.08)",
+              border: "1px solid rgba(59,142,240,0.2)",
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              color: "var(--brand)",
+            }}
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <polyline points="4 17 10 11 4 5"/>
+              <line x1="12" y1="19" x2="20" y2="19"/>
+            </svg>
+          </span>
+          <p className="helper-text" style={{ maxWidth: "36ch", margin: 0 }}>
+            No templates loaded yet. Templates are sourced from <strong>workflow-core/workflow-templates</strong>.
+          </p>
+        </div>
+      ) : null}
+
       <div className="all-template-grid">
         {allTemplates.map((template) => (
           <article key={template.id} className="all-template-card">

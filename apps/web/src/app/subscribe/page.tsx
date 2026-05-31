@@ -5,6 +5,7 @@ import { useMemo, useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 
 import { FlowBackground } from "@/components/layout/flow-background";
+import { PipelineLogo } from "@/components/layout/pipeline-logo";
 import { useAuthSession } from "@/hooks/use-auth-session";
 import { activateMonthlySubscription, cancelMonthlySubscription } from "@/lib/api/client";
 import { hasActiveSubscription } from "@/lib/auth/subscription";
@@ -43,6 +44,16 @@ const activationChecklist = [
   "Create a GitHub project with managed CI",
 ];
 
+/* Feature comparison rows for the pricing table */
+const featureRows = [
+  { name: "Workflow generation",  pro: true,  enterprise: true  },
+  { name: "Template access",      pro: true,  enterprise: true  },
+  { name: "Workflow history",     pro: true,  enterprise: true  },
+  { name: "GitHub integration",   pro: true,  enterprise: true  },
+  { name: "Priority support",     pro: false, enterprise: true  },
+  { name: "Governance defaults",  pro: false, enterprise: true  },
+];
+
 function CheckIcon() {
   return (
     <svg
@@ -55,56 +66,9 @@ function CheckIcon() {
       strokeLinecap="round"
       strokeLinejoin="round"
       aria-hidden="true"
-      style={{ display: "inline-block", verticalAlign: "middle", marginRight: "0.4rem", color: "var(--success)", flexShrink: 0 }}
     >
       <polyline points="20 6 9 17 4 12" />
     </svg>
-  );
-}
-
-type PlanOption = (typeof planCatalog)[number];
-
-interface PlanOptionCardProps {
-  plan: PlanOption;
-  selectedPlan: "pro" | "enterprise";
-  activePlan?: string;
-  hasSubscription: boolean;
-  onSelectPlan: (plan: "pro" | "enterprise") => void;
-}
-
-function PlanOptionCard({
-  plan,
-  selectedPlan,
-  activePlan,
-  hasSubscription,
-  onSelectPlan,
-}: Readonly<PlanOptionCardProps>) {
-  const isActivePlan = hasSubscription && activePlan === plan.key;
-  const isSelected = selectedPlan === plan.key;
-
-  return (
-    <article className={`subscription-plan-card ${isSelected ? "selected" : ""}`}>
-      <p className="hero-kicker">{plan.title}</p>
-      <h2>{plan.amount} pesos</h2>
-      <p className="helper-text">Per month</p>
-      <p>{plan.summary}</p>
-
-      <ul className="feature-list" aria-label={`${plan.title} features`}>
-        {plan.features.map((feature) => (
-          <li key={feature} style={{ display: "flex", alignItems: "center" }}>
-            <CheckIcon />
-            <span>{feature}</span>
-          </li>
-        ))}
-      </ul>
-
-      <div className="hero-actions">
-        <button className="ghost-button" type="button" onClick={() => onSelectPlan(plan.key)}>
-          {isSelected ? "Selected" : "Select plan"}
-        </button>
-        {isActivePlan ? <span className="status-pill">Active</span> : null}
-      </div>
-    </article>
   );
 }
 
@@ -170,10 +134,14 @@ export default function SubscribePage() {
 
   return (
     <main className="flow-shell page-shell">
+      <a href="#main-content" className="skip-link">Skip to main content</a>
       <FlowBackground />
 
-      <header className="marketing-nav glass-panel">
-        <p className="brand-mark">FlowCI Studio</p>
+      <header className="marketing-nav">
+        <div className="brand-mark">
+          <PipelineLogo size={22} />
+          <span>FlowCI Studio</span>
+        </div>
         <nav aria-label="Primary" className="nav-links">
           <Link href="/">Home</Link>
           <Link href="/login">Login</Link>
@@ -185,116 +153,179 @@ export default function SubscribePage() {
         </Link>
       </header>
 
-      <section className="section-card pricing-page-card subscription-rail glass-panel">
-        <motion.p
-          className="hero-kicker"
-          initial={prefersReducedMotion ? undefined : { opacity: 0, y: 8 }}
-          animate={prefersReducedMotion ? undefined : { opacity: 1, y: 0 }}
-        >
-          Billing
-        </motion.p>
-        <motion.h1
-          initial={prefersReducedMotion ? undefined : { opacity: 0, y: 12 }}
-          animate={prefersReducedMotion ? undefined : { opacity: 1, y: 0 }}
-          transition={{ duration: 0.4 }}
-        >
-          Monthly subscription plans for project creation
-        </motion.h1>
-        <p>
-          Use Google or GitHub login, choose your monthly plan, and unlock project creation, workflow generation, and history
-          features.
-        </p>
+      <div id="main-content">
+        {/* ── Page header — full width, no box ──────────────────────── */}
+        <div style={{ padding: "clamp(3rem,6vw,5rem) clamp(2rem,6vw,5rem) 2rem", maxWidth: 900, margin: "0 auto" }}>
+          <p className="file-path-label">billing/plans.yml</p>
+          <motion.p
+            className="hero-kicker"
+            style={{ marginTop: "1rem" }}
+            initial={prefersReducedMotion ? undefined : { opacity: 0, y: 8 }}
+            animate={prefersReducedMotion ? undefined : { opacity: 1, y: 0 }}
+          >
+            Billing
+          </motion.p>
+          <motion.h1
+            initial={prefersReducedMotion ? undefined : { opacity: 0, y: 12 }}
+            animate={prefersReducedMotion ? undefined : { opacity: 1, y: 0 }}
+            transition={{ duration: 0.4 }}
+            style={{ fontSize: "clamp(2.2rem,5vw,3.5rem)", fontWeight: 800, letterSpacing: "-0.03em", margin: "0.4rem 0 0.8rem" }}
+          >
+            Monthly subscription plans for project creation
+          </motion.h1>
+          <p style={{ color: "var(--text-secondary)", maxWidth: 580, margin: 0, lineHeight: 1.6 }}>
+            Use Google or GitHub login, choose your monthly plan, and unlock project creation,
+            workflow generation, and history features.
+          </p>
 
-        <div className="status-pill-row">
-          <span className="status-pill">Currency: PHP</span>
-          <span className="status-pill">
-            Current status: {session?.subscription.status ?? (status === "signed-in" ? "inactive" : "guest")}
-          </span>
-          <span className="status-pill">Current plan: {activePlan ?? "free"}</span>
+          <div className="status-pill-row" style={{ marginTop: "1.2rem" }}>
+            <span className="status-pill">Currency: PHP</span>
+            <span className="status-pill">
+              Current status: {session?.subscription.status ?? (status === "signed-in" ? "inactive" : "guest")}
+            </span>
+            <span className="status-pill">Current plan: {activePlan ?? "free"}</span>
+          </div>
         </div>
-      </section>
 
-      <section className="section-card pricing-page-card subscription-rail glass-panel">
-        <div className="subscription-plan-grid">
-          {planCatalog.map((plan) => (
-            <PlanOptionCard
-              key={plan.key}
-              plan={plan}
-              selectedPlan={selectedPlan}
-              activePlan={activePlan}
-              hasSubscription={hasSubscription}
-              onSelectPlan={setSelectedPlan}
-            />
-          ))}
-        </div>
-      </section>
+        {/* ── Comparison table — no outer box ───────────────────────── */}
+        <div style={{ padding: "0 clamp(2rem,6vw,5rem) 2rem", maxWidth: 900, margin: "0 auto", width: "100%" }}>
+          <p className="section-divider" style={{ marginBottom: "1.5rem" }}>plan comparison</p>
 
-      <section className="section-card pricing-page-card subscription-rail glass-panel">
-        <h2>Activate your monthly plan</h2>
-        <p>
-          Selected plan: <strong>{selectedPlanMeta.title}</strong> at <strong>{selectedPlanMeta.amount} pesos/month</strong>.
-        </p>
+          <div className="pricing-table">
+            {/* Header row — empty feature label column, then plan columns */}
+            <div className="pricing-table-header pricing-table-empty" />
 
-        <ol className="subscription-checklist">
-          {activationChecklist.map((item) => (
-            <li key={item}>{item}</li>
-          ))}
-        </ol>
-
-        <div className="hero-actions">
-          {status === "signed-out" ? (
-            <>
-              <Link className="primary-button" href="/signup">
-                Sign up with Google or GitHub first
-              </Link>
-              <Link className="ghost-button" href="/login">
-                Already have an account? Log in
-              </Link>
-            </>
-          ) : null}
-
-          {status === "signed-in" ? (
-            <>
+            <div className="pricing-table-header">
+              <p className="pricing-table-plan-label">Pro Monthly</p>
+              <p className="pricing-table-price">₱300</p>
+              <p style={{ fontSize: "0.78rem", color: "var(--text-muted)", margin: "0.25rem 0 0.75rem" }}>per month</p>
               <button
-                className="primary-button"
+                className={`primary-button${selectedPlan === "pro" ? "" : " ghost-button"}`}
+                style={{ fontSize: "0.82rem", padding: "0.45rem 0.9rem", minHeight: "2.4rem" }}
                 type="button"
-                disabled={isSubmitting || isCurrentPlanSelected}
-                onClick={() => void handleActivate(selectedPlan)}
+                onClick={() => setSelectedPlan("pro")}
               >
-                {activateButtonLabel}
+                {selectedPlan === "pro" ? "Selected" : "Select plan"}
               </button>
+              {hasSubscription && activePlan === "pro" && (
+                <span className="status-pill" style={{ marginTop: "0.5rem", display: "inline-flex" }}>Active</span>
+              )}
+            </div>
+
+            <div className="pricing-table-header" style={{ borderLeft: "none" }}>
+              <p className="pricing-table-plan-label">Enterprise Monthly</p>
+              <p className="pricing-table-price enterprise">₱1,200</p>
+              <p style={{ fontSize: "0.78rem", color: "var(--text-muted)", margin: "0.25rem 0 0.75rem" }}>per month</p>
               <button
-                className="ghost-button"
+                className={`ghost-button${selectedPlan === "enterprise" ? " primary-button" : ""}`}
+                style={{ fontSize: "0.82rem", padding: "0.45rem 0.9rem", minHeight: "2.4rem" }}
                 type="button"
-                disabled={isSubmitting || !hasSubscription}
-                onClick={() => void handleCancel()}
+                onClick={() => setSelectedPlan("enterprise")}
               >
-                Cancel monthly subscription
+                {selectedPlan === "enterprise" ? "Selected" : "Select plan"}
               </button>
-            </>
-          ) : null}
+              {hasSubscription && activePlan === "enterprise" && (
+                <span className="status-pill" style={{ marginTop: "0.5rem", display: "inline-flex" }}>Active</span>
+              )}
+            </div>
 
-          <Link className="ghost-button" href="/workflows">
-            Create Project
-          </Link>
+            {/* Feature rows */}
+            {featureRows.map((row) => (
+              <div key={row.name} style={{ display: "contents" }}>
+                <div className="pricing-table-cell feature-name">{row.name}</div>
+                <div className={`pricing-table-cell${row.pro ? " check" : ""}`}>
+                  {row.pro
+                    ? <CheckIcon />
+                    : <span style={{ color: "var(--text-muted)" }}>—</span>
+                  }
+                </div>
+                <div className={`pricing-table-cell${row.enterprise ? " check" : ""}`}>
+                  {row.enterprise
+                    ? <CheckIcon />
+                    : <span style={{ color: "var(--text-muted)" }}>—</span>
+                  }
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
-        {actionError ? <p className="error-text" role="alert">{actionError}</p> : null}
-      </section>
 
-      <section className="section-card pricing-page-card subscription-rail glass-panel">
-        <h2>Billing notes</h2>
-        <p>
-          This monthly flow is environment-backed for product testing. You can switch between Pro and Enterprise plans
-          and validate entitlement changes immediately in Create Project.
-        </p>
-        <p>
-          If your status updates but UI still shows old data, run a session refresh by revisiting login or home.
-        </p>
+        {/* ── Activate section — no box ──────────────────────────────── */}
+        <div style={{ padding: "2rem clamp(2rem,6vw,5rem)", maxWidth: 900, margin: "0 auto", width: "100%" }}>
+          <p className="section-divider" style={{ marginBottom: "1.5rem" }}>activate</p>
+          <h2 style={{ fontSize: "clamp(1.4rem,2.5vw,2rem)", marginBottom: "0.6rem" }}>Activate your monthly plan</h2>
+          <p style={{ color: "var(--text-secondary)", margin: "0 0 1.2rem" }}>
+            Selected plan: <strong>{selectedPlanMeta.title}</strong> at{" "}
+            <strong>{selectedPlanMeta.amount} pesos/month</strong>.
+          </p>
 
-        {status === "loading" ? <p className="helper-text">Checking your account status...</p> : null}
-        {error ? <p className="error-text">{error}</p> : null}
-        {statusMessage ? <p className="helper-text">{statusMessage}</p> : null}
-      </section>
+          <ol className="subscription-checklist">
+            {activationChecklist.map((item, index) => (
+              <li key={item}>
+                <span className="checklist-step" aria-hidden="true">{index + 1}</span>
+                <span>{item}</span>
+              </li>
+            ))}
+          </ol>
+
+          <div className="hero-actions" style={{ marginTop: "1.2rem" }}>
+            {status === "signed-out" ? (
+              <>
+                <Link className="primary-button" href="/signup">
+                  Sign up with Google or GitHub first
+                </Link>
+                <Link className="ghost-button" href="/login">
+                  Already have an account? Log in
+                </Link>
+              </>
+            ) : null}
+
+            {status === "signed-in" ? (
+              <>
+                <button
+                  className="primary-button"
+                  type="button"
+                  disabled={isSubmitting || isCurrentPlanSelected}
+                  onClick={() => void handleActivate(selectedPlan)}
+                >
+                  {activateButtonLabel}
+                </button>
+                <button
+                  className="ghost-button"
+                  type="button"
+                  disabled={isSubmitting || !hasSubscription}
+                  onClick={() => void handleCancel()}
+                >
+                  Cancel monthly subscription
+                </button>
+              </>
+            ) : null}
+
+            <Link className="ghost-button" href="/workflows">
+              Create Project
+            </Link>
+          </div>
+          {actionError ? <p className="error-text" role="alert">{actionError}</p> : null}
+        </div>
+
+        {/* ── Billing notes — no box ─────────────────────────────────── */}
+        <div style={{ padding: "2rem clamp(2rem,6vw,5rem) clamp(3rem,6vw,5rem)", maxWidth: 900, margin: "0 auto", width: "100%", borderTop: "1px solid rgba(0,0,0,0.06)" }}>
+          <p className="file-path-label" style={{ marginBottom: "0.75rem" }}>billing/notes.md</p>
+          <h2 style={{ fontSize: "clamp(1.2rem,2vw,1.6rem)", marginBottom: "0.75rem" }}>Billing notes</h2>
+          <p style={{ color: "var(--text-secondary)", margin: "0 0 0.75rem", lineHeight: 1.6 }}>
+            This monthly flow is environment-backed for product testing. You can switch between Pro and
+            Enterprise plans and validate entitlement changes immediately in Create Project.
+          </p>
+          <p style={{ color: "var(--text-secondary)", margin: 0, lineHeight: 1.6 }}>
+            If your status updates but UI still shows old data, run a session refresh by revisiting
+            login or home.
+          </p>
+
+          {status === "loading" ? <p className="helper-text" style={{ marginTop: "0.75rem" }}>Checking your account status...</p> : null}
+          {error ? <p className="error-text" style={{ marginTop: "0.75rem" }}>{error}</p> : null}
+          {statusMessage ? <p className="helper-text" style={{ marginTop: "0.75rem" }}>{statusMessage}</p> : null}
+        </div>
+      </div>
     </main>
   );
 }
