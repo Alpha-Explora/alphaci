@@ -66,17 +66,6 @@ function toSafeNextPath(raw: string | null): string {
   return "/home";
 }
 
-/* Decorative YAML lines shown in the left panel */
-const authPanelYaml = [
-  { id: "a0", content: <span className="mockup-comment"># payments-service.yml</span> },
-  { id: "a1", content: <><span className="mockup-key">name</span>{": "}<span className="mockup-string">payments-service-ci</span></> },
-  { id: "a2", content: <><span className="mockup-key">on</span>:</> },
-  { id: "a3", content: <>&nbsp;&nbsp;<span className="mockup-key">push</span>:</> },
-  { id: "a4", content: <>&nbsp;&nbsp;&nbsp;&nbsp;<span className="mockup-key">branches</span>{": "}<span className="mockup-string">["main"]</span></> },
-  { id: "a5", content: <><span className="mockup-keyword">jobs</span>:</> },
-  { id: "a6", content: <>&nbsp;&nbsp;<span className="mockup-key">build</span>:</> },
-  { id: "a7", content: <>&nbsp;&nbsp;&nbsp;&nbsp;<span className="mockup-key">runs-on</span>{": "}<span className="mockup-string">ubuntu-latest</span></> },
-];
 
 const pipelineStages = [
   { label: "Source", color: "#1a56db", done: true },
