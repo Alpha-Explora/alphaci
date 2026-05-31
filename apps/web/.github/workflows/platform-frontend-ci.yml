@@ -1,7 +1,16 @@
-# Platform frontend CI.
-# This workflow validates the CI/CD product frontend itself.
-
-name: "Platform Frontend CI"
+# ──────────────────────────────────────────────────────────────
+# FE Pipeline Caller (unified)
+# Copy this file into the target repo at:
+#   .github/workflows/master-pipeline-fe.yml
+#
+# Works for both single-system and multi-system FE repositories.
+# The pipeline_mode input controls which SYSTEMS_JSON variable
+# is read (auto = picks multi if available, else single).
+#
+# Required repo secret:
+# - GH_PR_TOKEN (used for auto-promotion PRs and Vercel deploy PR comments)
+# ──────────────────────────────────────────────────────────────
+name: "Master Pipeline — FE"
 
 on:
   push:
@@ -9,49 +18,82 @@ on:
   pull_request:
     branches: [test, uat, main]
   workflow_dispatch:
+    inputs:
+      pipeline_mode:
+        description: "Pipeline mode (auto|single|multi)"
+        type: choice
+        options: [auto, single, multi]
+        default: auto
+      enable_playwright:
+        description: "Run Playwright E2E checks"
+        type: boolean
+        default: true
+      playwright_browsers:
+        description: "Playwright browser list (JSON array or CSV)"
+        type: string
+        default: '["chromium"]'
+      e2e_base_url:
+        description: "Optional base URL for Playwright E2E"
+        type: string
+        default: ""
+      playwright_run_only_on_branch:
+        description: "Branch allowed for Playwright execution"
+        type: string
+        default: "test,uat"
+      enable_grafana_k6:
+        description: "Run Grafana k6 cloud checks"
+        type: boolean
+        default: true
+      k6_script_path:
+        description: "Path to k6 script or performance tests directory"
+        type: string
+        default: "tests/performance"
+      k6_base_url:
+        description: "Optional base URL for k6"
+        type: string
+        default: ""
+      k6_run_only_on_branch:
+        description: "Branch allowed for k6 execution"
+        type: string
+        default: "test,uat"
+      run_deploy:
+        description: "Run deploy jobs"
+        type: boolean
+        default: true
+      run_promotion:
+        description: "Run PR promotion jobs"
+        type: boolean
+        default: true
+      dry_run:
+        description: "Preview-only mode (skip deploy/tag push, print PR body)"
+        type: boolean
+        default: false
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
 
 permissions:
-  contents: read
+  contents: write
+  pull-requests: write
+  packages: write
   security-events: write
 
 jobs:
-  unit-tests:
-    uses: Tone-Lloyd-Sir-Catubag-CICD/central-workflow/.github/workflows/frontend-tests.yml@v1
+  call-orchestrator:
+    # Track latest central workflow updates
+    uses: ImplementSprint/central-workflow/.github/workflows/master-pipeline-fe.yml@main
     with:
-      working-directory: .
-      system-name: platform-frontend
-      node-version: 20
-      coverage-threshold: 80
-      test-command: npm run test
-
-  lint:
-    uses: Tone-Lloyd-Sir-Catubag-CICD/central-workflow/.github/workflows/lint-check.yml@v1
-    with:
-      working-directory: .
-      system-name: platform-frontend
-      node-version: 20
-      lint-command: npm run lint
-
-  security:
-    uses: Tone-Lloyd-Sir-Catubag-CICD/central-workflow/.github/workflows/security-scan.yml@v1
-    with:
-      working-directory: .
-      system-name: platform-frontend
-      node-version: 20
-      fail-on-high: true
-
-  build:
-    needs: [unit-tests, lint, security]
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: .
-    steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-node@v5
-        with:
-          node-version: 20
-          cache: npm
-          cache-dependency-path: package-lock.json
-      - run: npm ci --ignore-scripts
-      - run: npm run build
+      pipeline_mode: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.pipeline_mode || 'auto' }}
+      enable_playwright: ${{ github.event_name == 'workflow_dispatch' && fromJSON(github.event.inputs.enable_playwright || 'true') || true }}
+      playwright_browsers: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.playwright_browsers || '["chromium"]' }}
+      e2e_base_url: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.e2e_base_url || '' }}
+      playwright_run_only_on_branch: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.playwright_run_only_on_branch || 'test,uat' }}
+      enable_grafana_k6: ${{ github.event_name == 'workflow_dispatch' && fromJSON(github.event.inputs.enable_grafana_k6 || 'true') || true }}
+      k6_script_path: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.k6_script_path || 'tests/performance' }}
+      k6_base_url: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.k6_base_url || '' }}
+      k6_run_only_on_branch: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.k6_run_only_on_branch || 'test,uat' }}
+      run_deploy: ${{ github.event_name == 'workflow_dispatch' && fromJSON(github.event.inputs.run_deploy || 'true') || github.event_name == 'push' }}
+      run_promotion: ${{ github.event_name == 'workflow_dispatch' && fromJSON(github.event.inputs.run_promotion || 'true') || github.event_name == 'push' }}
+      dry_run: ${{ github.event_name == 'workflow_dispatch' && fromJSON(github.event.inputs.dry_run || 'false') || false }}
+    secrets: inherit
