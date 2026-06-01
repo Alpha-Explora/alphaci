@@ -125,7 +125,6 @@ export default function HomeDashboardPage() {
     loadHistory();
     loadProjects();
     loadRepos();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status]);
 
   async function handleLogout() {
