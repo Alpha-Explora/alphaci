@@ -174,6 +174,21 @@ export interface LinkedGitHubReposResponse {
   repos: LinkedGitHubRepo[];
 }
 
+export interface GitHubRepo {
+  id: number;
+  name: string;
+  fullName: string;
+  private: boolean;
+  description: string | null;
+  defaultBranch: string;
+  htmlUrl: string;
+  updatedAt: string;
+}
+
+export interface GitHubReposResponse {
+  repos: GitHubRepo[];
+}
+
 export interface GithubInstallationAccount {
   installationId: number;
   accountLogin: string | null;

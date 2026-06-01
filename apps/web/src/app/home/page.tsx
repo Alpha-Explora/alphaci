@@ -9,8 +9,8 @@ import { motion, useReducedMotion } from "framer-motion";
 import { FlowBackground } from "@/components/layout/flow-background";
 import { PipelineLogo } from "@/components/layout/pipeline-logo";
 import { useAuthSession } from "@/hooks/use-auth-session";
-import { logout, getProjects, getWorkflowHistory } from "@/lib/api/client";
-import type { ProvisionedProject, WorkflowHistoryItem } from "@/lib/api/contracts";
+import { logout, getProjects, getWorkflowHistory, getGithubRepos } from "@/lib/api/client";
+import type { ProvisionedProject, WorkflowHistoryItem, GitHubRepo } from "@/lib/api/contracts";
 import { isGuest } from "@/lib/auth/subscription";
 
 /* ── Constants ─────────────────────────────────────────────────────────────── */
@@ -87,20 +87,45 @@ export default function HomeDashboardPage() {
   const [projectsLoading, setProjectsLoading] = useState(true);
   const [historyError, setHistoryError] = useState<string | null>(null);
   const [projectsError, setProjectsError] = useState<string | null>(null);
+  const [repos, setRepos] = useState<GitHubRepo[]>([]);
+  const [reposLoading, setReposLoading] = useState(true);
+  const [reposError, setReposError] = useState<string | null>(null);
 
   // No redirect — unauthenticated and non-subscribed users see the page in guest preview mode
 
-  useEffect(() => {
-    if (status !== "signed-in") return;
-
+  function loadHistory() {
+    setHistoryLoading(true);
+    setHistoryError(null);
     getWorkflowHistory(25)
       .then((response) => { setHistory(response.items); setHistoryError(null); })
       .catch(() => setHistoryError("Could not load workflow history."))
       .finally(() => setHistoryLoading(false));
+  }
+
+  function loadProjects() {
+    setProjectsLoading(true);
+    setProjectsError(null);
     getProjects(25)
       .then((response) => { setProjects(response.items); setProjectsError(null); })
       .catch(() => setProjectsError("Could not load projects."))
       .finally(() => setProjectsLoading(false));
+  }
+
+  function loadRepos() {
+    setReposLoading(true);
+    setReposError(null);
+    getGithubRepos()
+      .then((response) => { setRepos(response.repos); setReposError(null); })
+      .catch(() => setReposError("Could not load GitHub repositories."))
+      .finally(() => setReposLoading(false));
+  }
+
+  useEffect(() => {
+    if (status !== "signed-in") return;
+    loadHistory();
+    loadProjects();
+    loadRepos();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status]);
 
   async function handleLogout() {
@@ -159,22 +184,22 @@ export default function HomeDashboardPage() {
   const kpiCards = [
     {
       label: "Workflows generated",
-      value: historyLoading ? "..." : String(history.length),
+      value: historyLoading ? null : String(history.length),
       dominant: true,
     },
     {
       label: "Projects created",
-      value: projectsLoading ? "..." : String(projects.length),
+      value: projectsLoading ? null : String(projects.length),
       dominant: false,
     },
     {
       label: "Services configured",
-      value: historyLoading ? "..." : String(uniqueServices),
+      value: historyLoading ? null : String(uniqueServices),
       dominant: false,
     },
     {
       label: "Last activity",
-      value: historyLoading ? "..." : lastActivityValue,
+      value: historyLoading ? null : lastActivityValue,
       dominant: false,
     },
   ];
@@ -193,7 +218,9 @@ export default function HomeDashboardPage() {
         <nav aria-label="Primary" className="nav-links">
           <Link href="/home">Dashboard</Link>
           <Link href="/workflows">Workflows</Link>
-          <Link href="/subscribe">Billing</Link>
+          {guest
+            ? <Link href="/subscribe">Billing</Link>
+            : <Link href="/settings">Settings</Link>}
         </nav>
         {!guest && (
           <button className="ghost-button" type="button" onClick={handleLogout} disabled={isLoggingOut}>
@@ -296,13 +323,81 @@ export default function HomeDashboardPage() {
                   className={`kpi-cell${kpi.dominant ? " kpi-cell-dominant" : ""}`}
                 >
                   <p>{kpi.label}</p>
-                  <h3>{kpi.value}</h3>
+                  <h3>
+                    {kpi.value === null
+                      ? <span className="kpi-skeleton-value" aria-label="Loading..." />
+                      : kpi.value}
+                  </h3>
                 </div>
               ))}
             </div>
-            {!guest && projectsError ? <p className="error-text" style={{ marginTop: "0.75rem" }}>{projectsError}</p> : null}
-            {!guest && historyError ? <p className="error-text" style={{ marginTop: "0.75rem" }}>{historyError}</p> : null}
           </section>
+
+          {!guest && projectsError ? (
+            <div className="error-inline" role="alert">
+              <span className="error-inline-icon" aria-hidden="true">⚠</span>
+              <p className="error-inline-msg">{projectsError}</p>
+              <button className="error-retry-btn" type="button" onClick={loadProjects}>Retry</button>
+            </div>
+          ) : null}
+          {!guest && historyError ? (
+            <div className="error-inline" role="alert">
+              <span className="error-inline-icon" aria-hidden="true">⚠</span>
+              <p className="error-inline-msg">{historyError}</p>
+              <button className="error-retry-btn" type="button" onClick={loadHistory}>Retry</button>
+            </div>
+          ) : null}
+
+          {/* ── GitHub repositories (OAuth) ───────────────────────── */}
+          {!guest && (
+            <section className="section-card glass-panel" style={{ padding: "clamp(1.2rem, 2.2vw, 1.8rem)" }}>
+              <p className="file-path-label" style={{ marginBottom: "0.75rem" }}>repos/github.yml</p>
+              <h2 style={{ margin: "0 0 0.75rem", fontSize: "1.1rem" }}>
+                GitHub repositories
+                {!reposLoading && repos.length > 0 && (
+                  <span style={{ color: "var(--text-muted)", fontWeight: 400, fontSize: "0.82rem", marginLeft: "0.5rem" }}>
+                    {repos.length} repo{repos.length === 1 ? "" : "s"}
+                  </span>
+                )}
+              </h2>
+              {reposLoading ? (
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "0.5rem" }}>
+                  {[0, 1, 2].map((i) => <div key={i} className="skeleton-card" style={{ minHeight: "3rem" }} />)}
+                </div>
+              ) : reposError ? (
+                <div className="error-inline" role="alert">
+                  <span className="error-inline-icon" aria-hidden="true">⚠</span>
+                  <p className="error-inline-msg">{reposError}</p>
+                  <button className="error-retry-btn" type="button" onClick={loadRepos}>Retry</button>
+                </div>
+              ) : repos.length === 0 ? (
+                <p className="helper-text">No GitHub repositories found on your account.</p>
+              ) : (
+                <ul className="repo-list">
+                  {repos.map((repo) => (
+                    <li key={repo.id} className="repo-item">
+                      <a
+                        href={repo.htmlUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        style={{ color: "var(--brand)", textDecoration: "none", fontWeight: 600 }}
+                      >
+                        {repo.fullName}
+                      </a>
+                      <span style={{ display: "flex", alignItems: "center", gap: "0.5rem", flexShrink: 0 }}>
+                        {repo.description ? (
+                          <span className="repo-item-id" style={{ fontFamily: "inherit", maxWidth: "20ch", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                            {repo.description}
+                          </span>
+                        ) : null}
+                        <span className="repo-item-id">{repo.private ? "private" : "public"}</span>
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </section>
+          )}
 
           {/* ── Recent workflows ──────────────────────────────────── */}
           {history.length > 0 && (

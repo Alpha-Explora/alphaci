@@ -3,7 +3,7 @@
 import { useState, type KeyboardEvent } from "react";
 import { MotionConfig, motion, useReducedMotion } from "framer-motion";
 
-import { createProject } from "@/lib/api/client";
+import { createProject, generateWorkflow } from "@/lib/api/client";
 import type { CatalogTemplate, CreateProjectResponse } from "@/lib/api/contracts";
 import { useCreateProjectForm } from "@/hooks/use-create-project-form";
 import { useGithubInstallations } from "@/hooks/use-github-installations";
@@ -109,6 +109,51 @@ export function WorkflowBuilder({ login, plan, guest = false }: Readonly<Workflo
     }
   }
 
+  async function handleGenerateWorkflow() {
+    const serviceName = createForm.serviceName || createForm.repoName;
+    if (!serviceName) {
+      setStatusMessage("Enter a service name to generate a workflow.");
+      return;
+    }
+
+    // Resolve template: prefer explicitly selected, then match by project type stack
+    const templateId =
+      catalog.selectedTemplate?.id ??
+      catalog.allTemplates.find((t) => t.stack === projectCatalog.selectedProjectType?.id)?.id ??
+      catalog.allTemplates[0]?.id;
+
+    if (!templateId) {
+      setStatusMessage("No workflow templates available. Check catalog configuration.");
+      return;
+    }
+
+    const coverage = Number(createForm.coverageThreshold);
+    const safeCoverage =
+      Number.isFinite(coverage) && coverage >= 0 && coverage <= 100 ? coverage : 80;
+
+    setIsCreatingProject(true);
+    setStatusMessage("Generating workflow YAML...");
+
+    try {
+      await generateWorkflow({
+        templateId,
+        serviceName,
+        servicePath: createForm.servicePath || ".",
+        nodeVersion: createForm.nodeVersion || "24",
+        coverageThreshold: safeCoverage,
+      });
+      await history.loadHistory(true);
+      setActiveTab("current");
+      setStatusMessage(
+        `Workflow generated for "${serviceName}". Copy or download it from the Generated YAML History section.`,
+      );
+    } catch (error) {
+      setStatusMessage(formatApiError(error, "Workflow generation failed"));
+    } finally {
+      setIsCreatingProject(false);
+    }
+  }
+
   async function copyYaml(yaml: string) {
     try {
       if (!navigator.clipboard) {
@@ -150,8 +195,11 @@ export function WorkflowBuilder({ login, plan, guest = false }: Readonly<Workflo
             <p className="status-pill">Plan: {plan}</p>
             <span
               className={`github-status-dot ${github.hasAllRepositoriesInstallation ? "" : "disconnected"}`}
+              title={github.hasAllRepositoriesInstallation
+                ? "GitHub App installed — all repositories access confirmed"
+                : "GitHub App not installed. You are signed in via GitHub OAuth, but the GitHub App must be installed separately to create new repositories. Use the panel below to install it."}
             >
-              {github.hasAllRepositoriesInstallation ? "GitHub connected" : "GitHub not linked"}
+              {github.hasAllRepositoriesInstallation ? "GitHub App: connected" : "GitHub App: not installed →"}
             </span>
           </div>
         </header>
@@ -171,14 +219,16 @@ export function WorkflowBuilder({ login, plan, guest = false }: Readonly<Workflo
             </motion.p>
           ) : null}
           {catalog.catalogError ? (
-            <p className="error-text" role="alert">
-              {catalog.catalogError}
-            </p>
+            <div className="error-inline" role="alert">
+              <span className="error-inline-icon" aria-hidden="true">⚠</span>
+              <p className="error-inline-msg">{catalog.catalogError}</p>
+            </div>
           ) : null}
           {projectCatalog.projectOptionsError ? (
-            <p className="error-text" role="alert">
-              {projectCatalog.projectOptionsError}
-            </p>
+            <div className="error-inline" role="alert">
+              <span className="error-inline-icon" aria-hidden="true">⚠</span>
+              <p className="error-inline-msg">{projectCatalog.projectOptionsError}</p>
+            </div>
           ) : null}
         </section>
 
@@ -195,6 +245,7 @@ export function WorkflowBuilder({ login, plan, guest = false }: Readonly<Workflo
               github={github}
               isCreatingProject={isCreatingProject}
               onCreateProject={guest ? () => { window.location.href = "/signup"; } : handleCreateProject}
+              onGenerateWorkflow={guest ? () => { window.location.href = "/signup"; } : handleGenerateWorkflow}
               projectCatalog={projectCatalog}
               onViewProject={() => setActiveTab("current")}
               reducedMotion={reducedMotion}

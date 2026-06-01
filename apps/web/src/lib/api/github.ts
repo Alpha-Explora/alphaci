@@ -1,4 +1,5 @@
 import type {
+  GitHubReposResponse,
   GithubAppInstallUrlResponse,
   GithubInstallationAccountsResponse,
   LinkedGitHubReposResponse,
@@ -25,4 +26,8 @@ export async function getLinkedGithubRepos(): Promise<LinkedGitHubReposResponse>
 
 export async function getGithubInstallationAccounts(): Promise<GithubInstallationAccountsResponse> {
   return request<GithubInstallationAccountsResponse>("/github/installations/accounts");
+}
+
+export async function getGithubRepos(): Promise<GitHubReposResponse> {
+  return request<GitHubReposResponse>("/github/repos");
 }

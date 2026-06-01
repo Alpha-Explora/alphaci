@@ -1,14 +1,17 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 
 import { FlowBackground } from "@/components/layout/flow-background";
 import { PipelineLogo } from "@/components/layout/pipeline-logo";
+import { SubscriptionCongratsModal } from "@/components/product/subscription-congrats-modal";
 import { useAuthSession } from "@/hooks/use-auth-session";
 import { activateMonthlySubscription, cancelMonthlySubscription } from "@/lib/api/client";
 import { hasActiveSubscription } from "@/lib/auth/subscription";
+
+const CONGRATS_SESSION_KEY = "flowci_congrats_shown";
 
 const planCatalog = [
   {
@@ -79,6 +82,15 @@ export default function SubscribePage() {
   const [actionError, setActionError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<"pro" | "enterprise">("pro");
+  const [showCongratsModal, setShowCongratsModal] = useState(false);
+  const [congratsPlanName, setCongratusPlanName] = useState<string>("");
+
+  /* Prevent re-showing the modal in the same session */
+  useEffect(() => {
+    if (typeof window !== "undefined" && sessionStorage.getItem(CONGRATS_SESSION_KEY)) {
+      setShowCongratsModal(false);
+    }
+  }, []);
 
   const hasSubscription = hasActiveSubscription(session);
   const activePlan = session?.subscription.plan;
@@ -109,6 +121,12 @@ export default function SubscribePage() {
           ? "Enterprise monthly plan is active. Your workspace is ready."
           : "Pro monthly plan is active. Your workspace is ready.",
       );
+      /* Show congrats modal once per session */
+      if (typeof window !== "undefined" && !sessionStorage.getItem(CONGRATS_SESSION_KEY)) {
+        const meta = planCatalog.find((p) => p.key === plan);
+        setCongratusPlanName(meta?.title ?? (plan === "enterprise" ? "Enterprise Monthly" : "Pro Monthly"));
+        setShowCongratsModal(true);
+      }
     } catch {
       setActionError("Subscription activation failed. Please try again.");
     } finally {
@@ -129,6 +147,13 @@ export default function SubscribePage() {
       setActionError("Cancel request failed. Please retry.");
     } finally {
       setIsSubmitting(false);
+    }
+  }
+
+  function handleCongratsClose() {
+    setShowCongratsModal(false);
+    if (typeof window !== "undefined") {
+      sessionStorage.setItem(CONGRATS_SESSION_KEY, "1");
     }
   }
 
@@ -326,6 +351,13 @@ export default function SubscribePage() {
           {statusMessage ? <p className="helper-text" style={{ marginTop: "0.75rem" }}>{statusMessage}</p> : null}
         </div>
       </div>
+
+      {showCongratsModal ? (
+        <SubscriptionCongratsModal
+          planName={congratsPlanName}
+          onClose={handleCongratsClose}
+        />
+      ) : null}
     </main>
   );
 }

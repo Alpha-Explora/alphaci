@@ -113,7 +113,13 @@ h1, h2, h3 {
   padding-block: 0;
 }
 
-.page-shell > .marketing-nav,
+/* Compound selector (0,2,0) beats any single-class rule including the
+   @media (max-width: 900px) override — marketing-nav must be flush to top */
+.flow-shell.page-shell {
+  padding: 0;
+  gap: 0;
+}
+
 .page-shell > .section-card,
 .page-shell > .workflow-surface,
 .page-shell > .error-text {
@@ -1102,10 +1108,25 @@ h1, h2, h3 {
   animation: dotPulse 2.4s ease-in-out infinite;
 }
 
+.github-status-dot.disconnected {
+  color: #92400e;
+  background: #fffbeb;
+  border: 1px solid #fcd34d;
+  border-radius: var(--radius-pill);
+  padding: 0.2rem 0.55rem 0.2rem 0.4rem;
+  font-weight: 600;
+}
+
 .github-status-dot.disconnected::before {
-  background: var(--text-muted);
+  background: #f59e0b;
   box-shadow: none;
   animation: none;
+}
+
+.github-status-dot.disconnected::after {
+  content: " →";
+  font-size: 0.72rem;
+  opacity: 0.65;
 }
 
 @keyframes dotPulse {
@@ -1843,6 +1864,61 @@ button:focus-visible, a:focus-visible {
   50%       { transform: scale(1.4); opacity: 0.55; }
 }
 
+/* ── Error inline row (message + retry) ──────────────────────────────────── */
+.error-inline {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.55rem 0.74rem;
+  border-radius: 0.84rem;
+  border: 1px solid #fca5a5;
+  color: #991b1b;
+  background: #fef2f2;
+  font-size: 0.86rem;
+  margin-top: 0.75rem;
+}
+
+.error-inline-icon {
+  flex-shrink: 0;
+  font-style: normal;
+  font-size: 1rem;
+}
+
+.error-inline-msg {
+  flex: 1;
+  margin: 0;
+}
+
+.error-retry-btn {
+  flex-shrink: 0;
+  padding: 0.25rem 0.65rem;
+  border-radius: 0.55rem;
+  border: 1px solid #fca5a5;
+  background: #fff;
+  color: #991b1b;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+.error-retry-btn:hover { background: #fef2f2; border-color: #f87171; }
+
+/* ── KPI skeleton value ──────────────────────────────────────────────────── */
+.kpi-skeleton-value {
+  display: inline-block;
+  width: 2.8rem;
+  height: 1.5rem;
+  border-radius: 0.4rem;
+  background: var(--bg-panel);
+  animation: skeletonPulse 1.6s ease-in-out infinite;
+  vertical-align: middle;
+}
+
+/* ── Status banner prefix icons ──────────────────────────────────────────── */
+.status-banner.success::before { content: "✓ "; font-weight: 800; }
+.status-banner.info::before    { content: "ℹ "; font-weight: 700; }
+.status-banner.error::before   { content: "✕ "; font-weight: 800; }
+
 /* ── KPI icon badge ──────────────────────────────────────────────────────── */
 .kpi-badge {
   position: absolute;
@@ -2574,4 +2650,41 @@ button:focus-visible, a:focus-visible {
   padding: 0.25rem 0.65rem;
   letter-spacing: 0.04em;
   text-transform: uppercase;
+}
+
+/* ── GitHub repo list ───────────────────────────────────── */
+.repo-list {
+  list-style: none;
+  margin: 0.5rem 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.repo-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.52rem 0.74rem;
+  border-radius: 0.72rem;
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-soft);
+  font-size: 0.87rem;
+  font-family: 'Courier New', Courier, monospace;
+  color: var(--text-primary);
+  gap: 0.75rem;
+}
+
+.repo-item-id {
+  flex-shrink: 0;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  font-family: inherit;
+}
+
+/* ── Error inline width when used as page-level sibling ──── */
+.page-shell > .error-inline {
+  width: min(var(--layout-max), calc(100% - (var(--layout-gutter) * 2)));
+  margin-inline: auto;
 }

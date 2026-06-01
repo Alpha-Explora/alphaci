@@ -81,7 +81,9 @@ export default function WorkflowsPage() {
         <nav aria-label="Primary" className="nav-links">
           <Link href="/home">Dashboard</Link>
           <Link href="/workflows">Workflows</Link>
-          <Link href="/subscribe">Billing</Link>
+          {guest
+            ? <Link href="/subscribe">Billing</Link>
+            : <Link href="/settings">Settings</Link>}
         </nav>
         {!guest && (
           <button className="ghost-button" type="button" onClick={handleLogout} disabled={isLoggingOut}>

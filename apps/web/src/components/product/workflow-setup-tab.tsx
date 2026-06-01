@@ -18,6 +18,7 @@ interface WorkflowSetupTabProps {
   github: GithubInstallationsState;
   isCreatingProject: boolean;
   onCreateProject: () => void;
+  onGenerateWorkflow: () => void;
   onViewProject: () => void;
   projectCatalog: ProjectOptionsCatalogState;
   reducedMotion: boolean;
@@ -38,6 +39,7 @@ export function WorkflowSetupTab({
   github,
   isCreatingProject,
   onCreateProject,
+  onGenerateWorkflow,
   onViewProject,
   projectCatalog,
   reducedMotion,
@@ -49,6 +51,12 @@ export function WorkflowSetupTab({
     !projectCatalog.selectedRepoShapeId ||
     !projectCatalog.selectedProjectType ||
     !projectCatalog.selectedWorkflowRecipe;
+
+  const generateDisabled =
+    isCreatingProject ||
+    projectCatalog.loadingProjectOptions ||
+    !projectCatalog.selectedProjectType ||
+    !(form.serviceName || form.repoName);
 
   return (
     <motion.section
@@ -269,15 +277,33 @@ export function WorkflowSetupTab({
           <button
             type="button"
             className="primary-button"
+            data-testid="generate-workflow-button"
+            disabled={generateDisabled}
+            onClick={() => void onGenerateWorkflow()}
+            title="Generate workflow YAML from your selected template — no GitHub App required"
+          >
+            {isCreatingProject ? "Generating..." : "Generate Workflow YAML"}
+          </button>
+
+          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", margin: "0.25rem 0" }}>
+            <hr style={{ flex: 1, border: "none", borderTop: "1px solid var(--border-subtle)" }} />
+            <span style={{ fontSize: "0.75rem", color: "var(--text-muted)", whiteSpace: "nowrap" }}>or create a GitHub repo</span>
+            <hr style={{ flex: 1, border: "none", borderTop: "1px solid var(--border-subtle)" }} />
+          </div>
+
+          <button
+            type="button"
+            className="ghost-button"
             data-testid="setup-project-button"
             disabled={createDisabled}
             onClick={() => void onCreateProject()}
+            style={{ width: "100%" }}
           >
-            {isCreatingProject ? "Creating..." : "Create project"}
+            {isCreatingProject ? "Creating..." : "Create project + commit workflow"}
           </button>
           {!github.hasAllRepositoriesInstallation ? (
             <p className="helper-text">
-              Create Project is enabled after the GitHub App is linked with all repositories access.
+              Create project requires the GitHub App to be installed with all repositories access.
             </p>
           ) : null}
         </div>
