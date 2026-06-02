@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
 import { FlowBackground } from "@/components/layout/flow-background";
-import { ApiError, createGitHubLoginUrl, createGoogleLoginUrl, getAuthSession } from "@/lib/api/client";
+import { ApiError, createGitHubLoginUrl, getAuthSession } from "@/lib/api/client";
 import { hasActiveSubscription } from "@/lib/auth/subscription";
 
 type CallbackState = "checking" | "failed";
@@ -67,7 +67,7 @@ export function AuthCallbackClient() {
     });
 
     const returnTo = `/auth/callback?${callbackPath.toString()}`;
-    return provider === "google" ? createGoogleLoginUrl(returnTo) : createGitHubLoginUrl(returnTo);
+    return createGitHubLoginUrl(returnTo);
   }, [intent, nextPath, provider]);
 
   useEffect(() => {

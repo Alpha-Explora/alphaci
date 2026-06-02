@@ -75,7 +75,8 @@ describe("hasActiveSubscription", () => {
       hasActiveSubscription(
         buildSession({
           subscription: {
-            plan: "enterprise",
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            plan: "enterprise" as any,
             status: "active",
             provider: "mock",
             updatedAt: "2026-01-01T00:00:00.000Z",
@@ -111,7 +112,8 @@ describe("isGuest", () => {
   it("returns false for authenticated user with active paid plan", () => {
     expect(isGuest(buildSession())).toBe(false);
     expect(
-      isGuest(buildSession({ subscription: { plan: "enterprise", status: "active", provider: "mock", updatedAt: "2026-01-01T00:00:00.000Z" } })),
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      isGuest(buildSession({ subscription: { plan: "enterprise" as any, status: "active", provider: "mock", updatedAt: "2026-01-01T00:00:00.000Z" } })),
     ).toBe(false);
   });
 });

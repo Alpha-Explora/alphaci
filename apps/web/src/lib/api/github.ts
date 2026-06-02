@@ -31,3 +31,12 @@ export async function getGithubInstallationAccounts(): Promise<GithubInstallatio
 export async function getGithubRepos(): Promise<GitHubReposResponse> {
   return request<GitHubReposResponse>("/github/repos");
 }
+
+export async function createGithubRepo(
+  payload: import("./contracts").CreateGithubRepoRequest,
+): Promise<import("./contracts").CreateGithubRepoResponse> {
+  return request<import("./contracts").CreateGithubRepoResponse>("/github/repos", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}

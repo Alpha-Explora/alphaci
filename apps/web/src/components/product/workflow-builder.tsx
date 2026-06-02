@@ -3,8 +3,9 @@
 import { useState, type KeyboardEvent } from "react";
 import { MotionConfig, motion, useReducedMotion } from "framer-motion";
 
-import { createProject, generateWorkflow } from "@/lib/api/client";
-import type { CatalogTemplate, CreateProjectResponse } from "@/lib/api/contracts";
+import { createGithubRepo } from "@/lib/api/github";
+import { generateWorkflow } from "@/lib/api/workflows";
+import type { CatalogTemplate, CreateProjectResult } from "@/lib/api/contracts";
 import { useCreateProjectForm } from "@/hooks/use-create-project-form";
 import { useGithubInstallations } from "@/hooks/use-github-installations";
 import { useProjectOptionsCatalog } from "@/hooks/use-project-options-catalog";
@@ -35,7 +36,7 @@ export function WorkflowBuilder({ login, plan, guest = false }: Readonly<Workflo
 
   const [activeTab, setActiveTab] = useState<WorkflowTab>("setup");
   const [isCreatingProject, setIsCreatingProject] = useState(false);
-  const [createResult, setCreateResult] = useState<CreateProjectResponse | null>(null);
+  const [createResult, setCreateResult] = useState<CreateProjectResult | null>(null);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
 
   const catalog = useWorkflowCatalog();
@@ -65,9 +66,7 @@ export function WorkflowBuilder({ login, plan, guest = false }: Readonly<Workflo
       nextTab = WORKFLOW_TABS.at(-1) ?? "all";
     }
 
-    if (!nextTab) {
-      return;
-    }
+    if (!nextTab) return;
 
     event.preventDefault();
     setActiveTab(nextTab);
@@ -79,31 +78,74 @@ export function WorkflowBuilder({ login, plan, guest = false }: Readonly<Workflo
   }
 
   async function handleCreateProject() {
-    const createPayload = createForm.buildPayload({
-      hasAllRepositoriesInstallation: github.hasAllRepositoriesInstallation,
-      repoShapeId: projectCatalog.selectedRepoShapeId,
-      projectTypeId: projectCatalog.selectedProjectTypeId,
-      workflowRecipeId: projectCatalog.selectedWorkflowRecipeId,
-      tests: projectCatalog.tests,
-    });
+    const repoName = createForm.repoName.trim();
+    if (!repoName) {
+      setStatusMessage("Enter a repository name before creating a project.");
+      return;
+    }
 
-    if (!createPayload.ok) {
-      setStatusMessage(createPayload.message);
+    if (!projectCatalog.selectedProjectType) {
+      setStatusMessage("Choose a project type before creating a project.");
+      return;
+    }
+
+    const templateId =
+      catalog.selectedTemplate?.id ??
+      catalog.allTemplates.find((t) => t.stack === projectCatalog.selectedProjectType?.id)?.id ??
+      catalog.allTemplates[0]?.id;
+
+    if (!templateId) {
+      setStatusMessage("No workflow templates available. Check catalog configuration.");
       return;
     }
 
     setIsCreatingProject(true);
-    setStatusMessage("Creating GitHub repo, writing CI_TOKEN, and committing the workflow...");
+    setStatusMessage("Creating GitHub repository with branch rulesets...");
 
     try {
-      const response = await createProject(createPayload.payload);
-      setCreateResult(response);
-      await Promise.all([projects.loadProjects(true), history.loadHistory(true)]);
-      projects.prependCreateResult(response, createPayload.payload);
+      const repoResult = await createGithubRepo({
+        repoName,
+        private: createForm.visibility === "private",
+      });
+
+      setStatusMessage("Repository created. Generating workflow YAML...");
+
+      const serviceName = createForm.serviceName || repoName;
+      const coverage = Number(createForm.coverageThreshold);
+      const safeCoverage =
+        Number.isFinite(coverage) && coverage >= 0 && coverage <= 100 ? coverage : 80;
+
+      const workflowResult = await generateWorkflow({
+        templateId,
+        serviceName,
+        servicePath: createForm.servicePath || ".",
+        nodeVersion: createForm.nodeVersion || "24",
+        coverageThreshold: safeCoverage,
+      });
+
+      const ownerAndRepo = repoResult.repoUrl.replace("https://github.com/", "");
+
+      const result: CreateProjectResult = {
+        repoUrl: repoResult.repoUrl,
+        cloneUrl: repoResult.cloneUrl,
+        repoFullName: ownerAndRepo,
+        defaultBranch: repoResult.defaultBranch,
+        branchesCreated: repoResult.branchesCreated,
+        yaml: workflowResult.yaml,
+        outputFileName: workflowResult.metadata.outputFileName,
+        templateName: workflowResult.metadata.templateName,
+        stack: workflowResult.metadata.stack,
+        generatedAt: workflowResult.metadata.generatedAt,
+      };
+
+      setCreateResult(result);
+      await history.loadHistory(true);
       setActiveTab("current");
-      setStatusMessage(`Project created: ${response.repoFullName}. Push a commit to trigger the CI pipeline.`);
+      setStatusMessage(
+        `Repository "${ownerAndRepo}" created with branches: ${repoResult.branchesCreated.join(", ")}. Workflow YAML ready to copy.`,
+      );
     } catch (error) {
-      setStatusMessage(formatApiError(error, "Create Project failed"));
+      setStatusMessage(formatApiError(error, "Project creation failed"));
     } finally {
       setIsCreatingProject(false);
     }
@@ -116,7 +158,6 @@ export function WorkflowBuilder({ login, plan, guest = false }: Readonly<Workflo
       return;
     }
 
-    // Resolve template: prefer explicitly selected, then match by project type stack
     const templateId =
       catalog.selectedTemplate?.id ??
       catalog.allTemplates.find((t) => t.stack === projectCatalog.selectedProjectType?.id)?.id ??
@@ -156,10 +197,7 @@ export function WorkflowBuilder({ login, plan, guest = false }: Readonly<Workflo
 
   async function copyYaml(yaml: string) {
     try {
-      if (!navigator.clipboard) {
-        throw new Error("Clipboard API unavailable");
-      }
-
+      if (!navigator.clipboard) throw new Error("Clipboard API unavailable");
       await navigator.clipboard.writeText(yaml);
       setStatusMessage("YAML copied to clipboard.");
     } catch {
@@ -195,9 +233,11 @@ export function WorkflowBuilder({ login, plan, guest = false }: Readonly<Workflo
             <p className="status-pill">Plan: {plan}</p>
             <span
               className={`github-status-dot ${github.hasAllRepositoriesInstallation ? "" : "disconnected"}`}
-              title={github.hasAllRepositoriesInstallation
-                ? "GitHub App installed — all repositories access confirmed"
-                : "GitHub App not installed. You are signed in via GitHub OAuth, but the GitHub App must be installed separately to create new repositories. Use the panel below to install it."}
+              title={
+                github.hasAllRepositoriesInstallation
+                  ? "GitHub App installed — all repositories access confirmed"
+                  : "GitHub App not installed. Install it to link existing repositories."
+              }
             >
               {github.hasAllRepositoriesInstallation ? "GitHub App: connected" : "GitHub App: not installed →"}
             </span>
@@ -205,7 +245,7 @@ export function WorkflowBuilder({ login, plan, guest = false }: Readonly<Workflo
         </header>
 
         <section className="intro-panel">
-          <p>Create a GitHub repo from the catalog, write CI_TOKEN, and commit the managed workflow.</p>
+          <p>Create a GitHub repo from the catalog, apply branch rulesets, and commit the managed workflow.</p>
           {statusMessage ? (
             <motion.p
               className={`status-banner ${statusBannerVariant(statusMessage)}`}
@@ -246,6 +286,8 @@ export function WorkflowBuilder({ login, plan, guest = false }: Readonly<Workflo
               isCreatingProject={isCreatingProject}
               onCreateProject={guest ? () => { window.location.href = "/signup"; } : handleCreateProject}
               onGenerateWorkflow={guest ? () => { window.location.href = "/signup"; } : handleGenerateWorkflow}
+              onCopyYaml={guest ? () => { window.location.href = "/signup"; } : (yaml) => void copyYaml(yaml)}
+              onDownloadYaml={guest ? () => { window.location.href = "/signup"; } : downloadYaml}
               projectCatalog={projectCatalog}
               onViewProject={() => setActiveTab("current")}
               reducedMotion={reducedMotion}

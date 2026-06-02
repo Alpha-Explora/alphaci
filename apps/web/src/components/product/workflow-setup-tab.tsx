@@ -2,7 +2,7 @@
 
 import { motion } from "framer-motion";
 
-import type { CreateProjectResponse, MvpProjectOptionKey } from "@/lib/api/contracts";
+import type { CreateProjectResult, MvpProjectOptionKey } from "@/lib/api/contracts";
 import type { CreateProjectFormState } from "@/hooks/use-create-project-form";
 import type { GithubInstallationsState } from "@/hooks/use-github-installations";
 import {
@@ -13,12 +13,14 @@ import {
 import { SetupResultPanel } from "./setup-result-panel";
 
 interface WorkflowSetupTabProps {
-  createResult: CreateProjectResponse | null;
+  createResult: CreateProjectResult | null;
   form: CreateProjectFormState;
   github: GithubInstallationsState;
   isCreatingProject: boolean;
   onCreateProject: () => void;
   onGenerateWorkflow: () => void;
+  onCopyYaml: (yaml: string) => void;
+  onDownloadYaml: (yaml: string, fileName: string) => void;
   onViewProject: () => void;
   projectCatalog: ProjectOptionsCatalogState;
   reducedMotion: boolean;
@@ -40,6 +42,8 @@ export function WorkflowSetupTab({
   isCreatingProject,
   onCreateProject,
   onGenerateWorkflow,
+  onCopyYaml,
+  onDownloadYaml,
   onViewProject,
   projectCatalog,
   reducedMotion,
@@ -47,10 +51,8 @@ export function WorkflowSetupTab({
   const createDisabled =
     isCreatingProject ||
     projectCatalog.loadingProjectOptions ||
-    !github.hasAllRepositoriesInstallation ||
-    !projectCatalog.selectedRepoShapeId ||
-    !projectCatalog.selectedProjectType ||
-    !projectCatalog.selectedWorkflowRecipe;
+    !form.repoName.trim() ||
+    !projectCatalog.selectedProjectType;
 
   const generateDisabled =
     isCreatingProject ||
@@ -276,40 +278,43 @@ export function WorkflowSetupTab({
 
           <button
             type="button"
-            className="primary-button"
-            data-testid="generate-workflow-button"
-            disabled={generateDisabled}
-            onClick={() => void onGenerateWorkflow()}
-            title="Generate workflow YAML from your selected template — no GitHub App required"
-          >
-            {isCreatingProject ? "Generating..." : "Generate Workflow YAML"}
-          </button>
-
-          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", margin: "0.25rem 0" }}>
-            <hr style={{ flex: 1, border: "none", borderTop: "1px solid var(--border-subtle)" }} />
-            <span style={{ fontSize: "0.75rem", color: "var(--text-muted)", whiteSpace: "nowrap" }}>or create a GitHub repo</span>
-            <hr style={{ flex: 1, border: "none", borderTop: "1px solid var(--border-subtle)" }} />
-          </div>
-
-          <button
-            type="button"
-            className="ghost-button"
+            className="primary-button create-repo-btn"
             data-testid="setup-project-button"
             disabled={createDisabled}
             onClick={() => void onCreateProject()}
-            style={{ width: "100%" }}
           >
-            {isCreatingProject ? "Creating..." : "Create project + commit workflow"}
+            {isCreatingProject ? (
+              <span className="btn-spinner" aria-hidden="true" />
+            ) : (
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M12 .5C5.65.5.5 5.77.5 12.27c0 5.2 3.3 9.6 7.88 11.15.58.11.79-.26.79-.57 0-.28-.01-1.2-.02-2.18-3.2.71-3.88-1.39-3.88-1.39-.53-1.37-1.29-1.73-1.29-1.73-1.05-.74.08-.73.08-.73 1.17.08 1.78 1.22 1.78 1.22 1.03 1.81 2.71 1.29 3.37.98.1-.77.4-1.29.72-1.58-2.56-.3-5.26-1.3-5.26-5.8 0-1.28.45-2.33 1.18-3.16-.12-.3-.51-1.53.11-3.19 0 0 .97-.32 3.18 1.2a10.8 10.8 0 0 1 5.8 0c2.2-1.52 3.17-1.2 3.17-1.2.63 1.66.24 2.9.12 3.19.73.83 1.17 1.88 1.17 3.16 0 4.51-2.71 5.49-5.3 5.78.41.37.78 1.08.78 2.17 0 1.57-.01 2.83-.01 3.21 0 .31.21.69.8.57a11.83 11.83 0 0 0 7.87-11.15C23.5 5.77 18.35.5 12 .5Z"/>
+              </svg>
+            )}
+            {isCreatingProject ? "Creating..." : "Create GitHub Repository"}
           </button>
-          {!github.hasAllRepositoriesInstallation ? (
-            <p className="helper-text">
-              Create project requires the GitHub App to be installed with all repositories access.
-            </p>
-          ) : null}
+
+          <div className="generate-workflow-row">
+            <button
+              type="button"
+              className="ghost-button"
+              data-testid="generate-workflow-button"
+              disabled={generateDisabled}
+              onClick={() => void onGenerateWorkflow()}
+              title="Generate workflow YAML only — no GitHub repo created"
+            >
+              {isCreatingProject ? "Generating..." : "Generate YAML only"}
+            </button>
+            <span className="generate-workflow-hint">No repo — just the workflow file</span>
+          </div>
         </div>
       </section>
 
-      <SetupResultPanel setupResult={createResult} onViewProject={onViewProject} />
+      <SetupResultPanel
+        setupResult={createResult}
+        onViewProject={onViewProject}
+        onCopyYaml={onCopyYaml}
+        onDownloadYaml={onDownloadYaml}
+      />
     </motion.section>
   );
 }

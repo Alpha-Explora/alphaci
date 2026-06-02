@@ -2688,3 +2688,188 @@ button:focus-visible, a:focus-visible {
   width: min(var(--layout-max), calc(100% - (var(--layout-gutter) * 2)));
   margin-inline: auto;
 }
+
+/* ── Auth single-provider layout ───────────────────────────────────────── */
+.auth-provider-single {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin: 1.5rem 0 1rem;
+}
+
+.auth-provider-single .auth-provider-button {
+  width: 100%;
+  min-height: 3.4rem;
+  padding: 0.9rem 1.2rem;
+}
+
+/* ── Pricing single-plan layout ─────────────────────────────────────────── */
+.pricing-table-single {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.pricing-plan-card {
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  padding: 1.75rem;
+  background: var(--bg-base);
+  border-color: var(--border-subtle);
+}
+
+.pricing-plan-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1.25rem;
+}
+
+.pricing-feature-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.pricing-feature-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.88rem;
+  color: var(--text-secondary);
+}
+
+.pricing-feature-item svg {
+  color: var(--brand);
+  flex-shrink: 0;
+}
+
+.pricing-comparison {
+  border: 1px solid var(--border-subtle);
+  border-radius: 0.75rem;
+  padding: 1.25rem 1.75rem;
+  background: var(--bg-base);
+}
+
+.pricing-comparison-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.55rem 0;
+  border-bottom: 1px solid rgba(0,0,0,0.04);
+  font-size: 0.875rem;
+}
+
+.pricing-comparison-row:last-child {
+  border-bottom: none;
+}
+
+.pricing-comparison-feature {
+  color: var(--text-secondary);
+}
+
+.pricing-comparison-check {
+  color: var(--text-muted);
+}
+
+.pricing-comparison-check.active {
+  color: var(--brand);
+}
+
+/* ── Create repo button ─────────────────────────────────────── */
+.create-repo-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  width: 100%;
+  min-height: 2.8rem;
+}
+
+.create-repo-btn svg {
+  flex-shrink: 0;
+  opacity: 0.85;
+}
+
+.btn-spinner {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255,255,255,0.3);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.generate-workflow-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-top: 0.5rem;
+}
+
+.generate-workflow-row .ghost-button {
+  flex-shrink: 0;
+}
+
+.generate-workflow-hint {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ── Result panel — repo result ─────────────────────────────── */
+.result-repo-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.result-status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--success, #22c55e);
+  flex-shrink: 0;
+  box-shadow: 0 0 0 3px rgba(34,197,94,0.15);
+}
+
+.result-repo-name {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  text-decoration: none;
+  word-break: break-all;
+}
+
+.result-repo-name:hover {
+  text-decoration: underline;
+}
+
+.result-branches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.branch-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.15rem 0.55rem;
+  border-radius: 999px;
+  background: rgba(59,142,240,0.1);
+  border: 1px solid rgba(59,142,240,0.25);
+  font-size: 0.72rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  color: var(--brand);
+  letter-spacing: 0.02em;
+}

@@ -2,13 +2,13 @@
 
 import { motion } from "framer-motion";
 
-import type { CreateProjectResponse, ProvisionedProject, WorkflowHistoryItem } from "@/lib/api/contracts";
+import type { CreateProjectResult, ProvisionedProject, WorkflowHistoryItem } from "@/lib/api/contracts";
 
 import { formatDate, toSourcePath } from "./workflow-builder-utils";
 
 interface WorkflowCurrentTabProps {
   history: WorkflowHistoryItem[];
-  latestResult: CreateProjectResponse | null;
+  latestResult: CreateProjectResult | null;
   loadingHistory: boolean;
   loadingProjects: boolean;
   onCopyYaml: (yaml: string) => void;
@@ -51,10 +51,13 @@ export function WorkflowCurrentTab({
         <div className="section-card glass-panel" style={{ marginBottom: "1rem" }}>
           <p className="eyebrow" style={{ color: "var(--success, #22c55e)" }}>Project created</p>
           <h2>{latestResult.repoFullName}</h2>
-          <p className="helper-text">Workflow: {latestResult.workflowPath}</p>
-          {latestResult.githubCommitSha ? (
-            <p className="helper-text">Commit: {latestResult.githubCommitSha.slice(0, 7)}</p>
-          ) : null}
+          <div className="result-branches" style={{ margin: "0.5rem 0" }}>
+            {latestResult.branchesCreated.map((branch) => (
+              <span key={branch} className="branch-chip">{branch}</span>
+            ))}
+          </div>
+          <p className="helper-text">Workflow file: <strong>{latestResult.outputFileName}</strong></p>
+          <p className="helper-text">Template: {latestResult.templateName} ({latestResult.stack})</p>
           <div className="result-actions">
             <a className="primary-button" href={latestResult.repoUrl} target="_blank" rel="noreferrer">
               Open repo
@@ -62,14 +65,9 @@ export function WorkflowCurrentTab({
             <a className="ghost-button" href={`${latestResult.repoUrl}/actions`} target="_blank" rel="noreferrer">
               Open Actions
             </a>
-            {latestResult.githubCommitUrl ? (
-              <a className="ghost-button" href={latestResult.githubCommitUrl} target="_blank" rel="noreferrer">
-                Open commit
-              </a>
-            ) : null}
           </div>
           <p className="helper-text">
-            Push a commit to trigger the CI pipeline. The validate-access job calls /v1/ci/validate automatically.
+            Copy the workflow YAML from history below and commit it to <code>.github/workflows/{latestResult.outputFileName}</code> to trigger your first CI run.
           </p>
         </div>
       ) : null}

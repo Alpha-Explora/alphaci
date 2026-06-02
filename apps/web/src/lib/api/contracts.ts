@@ -1,4 +1,4 @@
-export type SubscriptionPlan = "free" | "pro" | "enterprise";
+export type SubscriptionPlan = "free" | "pro";
 export type SubscriptionStatus = "inactive" | "active" | "canceled";
 
 export interface SessionUser {
@@ -255,4 +255,30 @@ export interface ProvisionedProject {
 
 export interface ProvisionedProjectsResponse {
   items: ProvisionedProject[];
+}
+
+export interface CreateGithubRepoRequest {
+  repoName: string;
+  description?: string;
+  private: boolean;
+}
+
+export interface CreateGithubRepoResponse {
+  repoUrl: string;
+  cloneUrl: string;
+  defaultBranch: string;
+  branchesCreated: string[];
+}
+
+export interface CreateProjectResult {
+  repoUrl: string;
+  cloneUrl: string;
+  repoFullName: string;
+  defaultBranch: string;
+  branchesCreated: string[];
+  yaml: string;
+  outputFileName: string;
+  templateName: string;
+  stack: string;
+  generatedAt: string;
 }
