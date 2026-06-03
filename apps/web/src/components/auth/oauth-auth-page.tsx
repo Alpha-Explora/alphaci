@@ -6,8 +6,9 @@ import { useEffect, useMemo, type MouseEvent } from "react";
 import { motion, useMotionValue, useReducedMotion, useSpring, useTransform } from "framer-motion";
 
 import { FlowBackground } from "@/components/layout/flow-background";
+import { PipelineLogo } from "@/components/layout/pipeline-logo";
 import { useAuthSession } from "@/hooks/use-auth-session";
-import { createGitHubLoginUrl, createGoogleLoginUrl } from "@/lib/api/client";
+import { createGitHubLoginUrl } from "@/lib/api/client";
 import { hasActiveSubscription } from "@/lib/auth/subscription";
 
 interface OAuthAuthPageProps {
@@ -17,29 +18,6 @@ interface OAuthAuthPageProps {
   switchText: string;
   switchHref: string;
   switchCta: string;
-}
-
-function GoogleGlyph() {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-      <path
-        d="M22 12.23c0-.84-.08-1.63-.21-2.4h-9.74v4.55h5.58a4.76 4.76 0 0 1-2.07 3.12v2.59h3.34c1.95-1.8 3.1-4.46 3.1-7.86Z"
-        fill="#4285F4"
-      />
-      <path
-        d="M12.05 22.33c2.79 0 5.13-.92 6.84-2.5l-3.34-2.59c-.93.62-2.12 1-3.5 1-2.68 0-4.95-1.81-5.76-4.24H2.83v2.67a10.31 10.31 0 0 0 9.22 5.66Z"
-        fill="#34A853"
-      />
-      <path
-        d="M6.29 14c-.2-.61-.31-1.26-.31-1.94 0-.67.11-1.33.31-1.93V7.46H2.83A10.3 10.3 0 0 0 1.75 12c0 1.67.4 3.25 1.08 4.54L6.29 14Z"
-        fill="#FBBC05"
-      />
-      <path
-        d="M12.05 5.76c1.52 0 2.89.52 3.96 1.54l2.97-2.97a9.96 9.96 0 0 0-6.93-2.67A10.31 10.31 0 0 0 2.83 7.46l3.46 2.67c.81-2.42 3.08-4.37 5.76-4.37Z"
-        fill="#EA4335"
-      />
-    </svg>
-  );
 }
 
 function GitHubGlyph() {
@@ -54,15 +32,48 @@ function GitHubGlyph() {
 }
 
 function toSafeNextPath(raw: string | null): string {
-  if (!raw) {
-    return "/home";
-  }
-
-  if (raw.startsWith("/") && !raw.startsWith("//")) {
-    return raw;
-  }
-
+  if (!raw) return "/home";
+  if (raw.startsWith("/") && !raw.startsWith("//")) return raw;
   return "/home";
+}
+
+const pipelineStages = [
+  { label: "Source", color: "#1a56db", done: true },
+  { label: "Build",  color: "#1a56db", done: true },
+  { label: "Test",   color: "#1a56db", done: true },
+  { label: "Deploy", color: "#12b76a", done: true },
+];
+
+function PipelineStagesVisual() {
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 0 }}>
+      {pipelineStages.map((stage, i) => (
+        <div key={stage.label} style={{ display: "flex", alignItems: "center", flex: i < pipelineStages.length - 1 ? 1 : "none" }}>
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "0.35rem", flexShrink: 0 }}>
+            <div style={{
+              width: 32, height: 32, borderRadius: "50%", background: stage.color,
+              display: "flex", alignItems: "center", justifyContent: "center",
+              boxShadow: `0 0 0 4px ${stage.color}22`,
+            }}>
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+                <polyline points="2,6 5,9 10,3" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </div>
+            <span style={{ fontSize: "0.65rem", color: "var(--text-muted)", letterSpacing: "0.06em", textTransform: "uppercase", whiteSpace: "nowrap" }}>
+              {stage.label}
+            </span>
+          </div>
+          {i < pipelineStages.length - 1 && (
+            <div style={{
+              flex: 1, height: 2,
+              background: `linear-gradient(90deg, ${stage.color}, ${pipelineStages[i + 1].color})`,
+              margin: "0 0.3rem", marginBottom: "1.1rem", borderRadius: 999,
+            }} />
+          )}
+        </div>
+      ))}
+    </div>
+  );
 }
 
 export function OAuthAuthPage({
@@ -86,59 +97,35 @@ export function OAuthAuthPage({
       next: nextPath,
       provider: "github",
     });
-
-    return `/auth/callback?${callbackPath.toString()}`;
-  }, [mode, nextPath]);
-
-  const googleCallbackReturnTo = useMemo(() => {
-    const callbackPath = new URLSearchParams({
-      intent: mode,
-      next: nextPath,
-      provider: "google",
-    });
-
     return `/auth/callback?${callbackPath.toString()}`;
   }, [mode, nextPath]);
 
   const githubLoginHref = useMemo(() => createGitHubLoginUrl(githubCallbackReturnTo), [githubCallbackReturnTo]);
-  const googleLoginHref = useMemo(() => createGoogleLoginUrl(googleCallbackReturnTo), [googleCallbackReturnTo]);
 
   const pointerX = useMotionValue(0);
   const pointerY = useMotionValue(0);
 
   const rotateX = useSpring(useTransform(pointerY, [-0.5, 0.5], [3.2, -3.2]), {
-    stiffness: 190,
-    damping: 24,
-    mass: 0.45,
+    stiffness: 190, damping: 24, mass: 0.45,
   });
   const rotateY = useSpring(useTransform(pointerX, [-0.5, 0.5], [-3.2, 3.2]), {
-    stiffness: 190,
-    damping: 24,
-    mass: 0.45,
+    stiffness: 190, damping: 24, mass: 0.45,
   });
 
   useEffect(() => {
-    if (status !== "signed-in") {
-      return;
-    }
-
+    if (status !== "signed-in") return;
     if (hasActiveSubscription(session)) {
       router.replace(nextPath);
       return;
     }
-
     router.replace("/subscribe");
   }, [nextPath, router, session, status]);
 
   function handleCardPointerMove(event: MouseEvent<HTMLDivElement>) {
-    if (prefersReducedMotion) {
-      return;
-    }
-
+    if (prefersReducedMotion) return;
     const bounds = event.currentTarget.getBoundingClientRect();
     const x = (event.clientX - bounds.left) / bounds.width - 0.5;
     const y = (event.clientY - bounds.top) / bounds.height - 0.5;
-
     pointerX.set(Math.max(-0.5, Math.min(0.5, x)));
     pointerY.set(Math.max(-0.5, Math.min(0.5, y)));
   }
@@ -149,21 +136,78 @@ export function OAuthAuthPage({
   }
 
   return (
-    <main className="flow-shell page-shell auth-shell">
+    <main className="auth-shell-split">
       <FlowBackground />
 
-      <header className="marketing-nav glass-panel">
-        <p className="brand-mark">FlowCI Studio</p>
-        <nav aria-label="Primary" className="nav-links">
-          <Link href="/">Home</Link>
-          <Link href="/subscribe">Pricing</Link>
-        </nav>
-        <Link className="ghost-button" href={mode === "login" ? "/signup" : "/login"}>
-          {mode === "login" ? "Sign up" : "Login"}
-        </Link>
-      </header>
+      <div className="auth-left-panel">
+        <div style={{ flexShrink: 0 }}>
+          <div className="brand-mark">
+            <PipelineLogo size={22} />
+            <span>FlowCI Studio</span>
+          </div>
+        </div>
 
-      <section className="section-card auth-card glass-panel auth-card-modern">
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", gap: "1.5rem", padding: "2rem 0" }}>
+          <motion.div
+            initial={prefersReducedMotion ? undefined : { opacity: 0, y: 12 }}
+            animate={prefersReducedMotion ? undefined : { opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.3 }}
+          >
+            <PipelineStagesVisual />
+          </motion.div>
+
+          <div className="auth-left-yaml">
+            <div className="hero-mockup-bar">
+              <span className="mockup-dot mockup-dot-red" aria-hidden="true" />
+              <span className="mockup-dot mockup-dot-yellow" aria-hidden="true" />
+              <span className="mockup-dot mockup-dot-green" aria-hidden="true" />
+              <span style={{ fontFamily: "ui-monospace, monospace", fontSize: "0.7rem", color: "rgba(255,255,255,0.35)", marginLeft: "0.5rem" }}>
+                payments-service.yml
+              </span>
+            </div>
+            <pre style={{ background: "transparent", color: "#cdd6f4", padding: "1.2rem 1.4rem", margin: 0, fontSize: "0.8rem", lineHeight: 1.7, fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace", overflow: "auto" }} aria-hidden="true">
+              <span style={{ color: "#6c7086" }}>{`# Generated by FlowCI Studio\n`}</span>
+              <span style={{ color: "#89b4fa" }}>name</span><span style={{ color: "#cdd6f4" }}>: </span><span style={{ color: "#a6e3a1" }}>{`payments-service-ci\n`}</span>
+              <span style={{ color: "#89b4fa" }}>on</span><span style={{ color: "#cdd6f4" }}>{`:\n`}</span>
+              <span style={{ color: "#cdd6f4" }}>{"  "}</span><span style={{ color: "#89b4fa" }}>push</span><span style={{ color: "#cdd6f4" }}>{`:\n`}</span>
+              <span style={{ color: "#cdd6f4" }}>{"    "}</span><span style={{ color: "#89b4fa" }}>branches</span><span style={{ color: "#cdd6f4" }}>: [</span><span style={{ color: "#a6e3a1" }}>&quot;main&quot;</span><span style={{ color: "#cdd6f4" }}>, </span><span style={{ color: "#a6e3a1" }}>&quot;develop&quot;</span><span style={{ color: "#cdd6f4" }}>{`]\n`}</span>
+              <span style={{ color: "#89b4fa" }}>jobs</span><span style={{ color: "#cdd6f4" }}>{`:\n`}</span>
+              <span style={{ color: "#cdd6f4" }}>{"  "}</span><span style={{ color: "#89b4fa" }}>build</span><span style={{ color: "#cdd6f4" }}>{`:\n`}</span>
+              <span style={{ color: "#cdd6f4" }}>{"    "}</span><span style={{ color: "#89b4fa" }}>runs-on</span><span style={{ color: "#cdd6f4" }}>: </span><span style={{ color: "#a6e3a1" }}>{`ubuntu-latest\n`}</span>
+              <span style={{ color: "#fab387" }}>{"    steps"}</span><span style={{ color: "#cdd6f4" }}>{`:\n`}</span>
+              <span style={{ color: "#cdd6f4" }}>{"      - "}</span><span style={{ color: "#89b4fa" }}>uses</span><span style={{ color: "#cdd6f4" }}>: </span><span style={{ color: "#a6e3a1" }}>{`actions/checkout@v4\n`}</span>
+              <span style={{ color: "#cdd6f4" }}>{"      - "}</span><span style={{ color: "#89b4fa" }}>name</span><span style={{ color: "#cdd6f4" }}>: </span><span style={{ color: "#a6e3a1" }}>{`Run tests\n`}</span>
+              <span style={{ color: "#cdd6f4" }}>{"        "}</span><span style={{ color: "#89b4fa" }}>run</span><span style={{ color: "#cdd6f4" }}>: </span><span style={{ color: "#a6e3a1" }}>npm test</span>
+            </pre>
+          </div>
+
+          <div style={{ display: "flex", gap: "1.5rem" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.1rem" }}>
+              <span style={{ fontFamily: "'Sora', sans-serif", fontSize: "1.4rem", fontWeight: 800, color: "var(--text-primary)", lineHeight: 1 }}>40+</span>
+              <span style={{ fontSize: "0.7rem", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.1em" }}>Templates</span>
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.1rem" }}>
+              <span style={{ fontFamily: "'Sora', sans-serif", fontSize: "1.4rem", fontWeight: 800, color: "var(--text-primary)", lineHeight: 1 }}>&lt; 2 min</span>
+              <span style={{ fontSize: "0.7rem", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.1em" }}>Setup time</span>
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.1rem" }}>
+              <span style={{ fontFamily: "'Sora', sans-serif", fontSize: "1.4rem", fontWeight: 800, color: "#12b76a", lineHeight: 1 }}>100%</span>
+              <span style={{ fontSize: "0.7rem", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.1em" }}>GitHub native</span>
+            </div>
+          </div>
+        </div>
+
+        <div style={{ flexShrink: 0 }}>
+          <p style={{ fontFamily: "ui-monospace, monospace", fontSize: "0.7rem", color: "var(--text-muted)", letterSpacing: "0.06em", margin: "0 0 0.35rem" }}>
+            <span style={{ color: "var(--brand)" }}>./</span> cicd/production.yml
+          </p>
+          <p style={{ color: "var(--text-secondary)", fontSize: "0.84rem", margin: 0, lineHeight: 1.5 }}>
+            Production-ready CI/CD from your GitHub repos.
+          </p>
+        </div>
+      </div>
+
+      <div className="auth-right-panel">
         <motion.div
           className="auth-card-shell"
           initial={prefersReducedMotion ? undefined : { opacity: 0, y: 14, scale: 0.985 }}
@@ -174,17 +218,9 @@ export function OAuthAuthPage({
           style={
             prefersReducedMotion
               ? undefined
-              : {
-                  transformPerspective: 1100,
-                  rotateX,
-                  rotateY,
-                }
+              : { transformPerspective: 1100, rotateX, rotateY }
           }
         >
-          <span className="auth-card-glint" aria-hidden="true" />
-          <span className="auth-depth-orb auth-depth-orb-a" aria-hidden="true" />
-          <span className="auth-depth-orb auth-depth-orb-b" aria-hidden="true" />
-
           <div className="auth-header">
             <motion.p
               className="hero-kicker"
@@ -203,19 +239,7 @@ export function OAuthAuthPage({
             <p className="auth-subtitle">{subtitle}</p>
           </div>
 
-          <fieldset className="auth-provider-grid" aria-label="Authentication providers">
-            <Link className="auth-provider-button provider-google" href={googleLoginHref}>
-              <span className="auth-provider-icon" aria-hidden="true">
-                <GoogleGlyph />
-              </span>
-              <span className="auth-provider-copy">
-                <span className="auth-provider-label">
-                  {mode === "login" ? "Continue with Google" : "Sign up with Google"}
-                </span>
-                <span className="auth-provider-meta">Fastest sign in for product teams</span>
-              </span>
-            </Link>
-
+          <div className="auth-provider-single">
             <Link className="auth-provider-button provider-github" href={githubLoginHref}>
               <span className="auth-provider-icon" aria-hidden="true">
                 <GitHubGlyph />
@@ -224,17 +248,17 @@ export function OAuthAuthPage({
                 <span className="auth-provider-label">
                   {mode === "login" ? "Continue with GitHub" : "Sign up with GitHub"}
                 </span>
-                <span className="auth-provider-meta">Best path for workflow templates</span>
+                <span className="auth-provider-meta">Your repos, pipelines, and workflow history stay connected.</span>
               </span>
             </Link>
-          </fieldset>
+          </div>
 
           <div className="auth-support-row">
             <Link className="ghost-button auth-support-link" href="/subscribe">
-              View 300 pesos plan
+              View pricing
             </Link>
             <Link className="ghost-button auth-support-link" href="/">
-              Go to Home
+              Home
             </Link>
           </div>
 
@@ -249,7 +273,7 @@ export function OAuthAuthPage({
             {switchText} <Link href={switchHref}>{switchCta}</Link>
           </p>
         </motion.div>
-      </section>
+      </div>
     </main>
   );
 }

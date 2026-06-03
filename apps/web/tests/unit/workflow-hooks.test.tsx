@@ -636,6 +636,82 @@ describe("workflow hooks", () => {
     );
   });
 
+  it("auto-links a GitHub App installation from the URL callback param", async () => {
+    const statusMessages: string[] = [];
+    const pushStatus = (message: string) => statusMessages.push(message);
+    const applyRepo = jest.fn();
+    let current = null as ReturnType<typeof useGithubInstallations> | null;
+    const replaceSpy = jest.spyOn(window.history, "replaceState");
+
+    window.history.pushState({}, "", "/workflows?installation_id=99999");
+
+    function Probe() {
+      const value = useGithubInstallations(pushStatus, applyRepo);
+      useEffect(() => { current = value; }, [value]);
+      return null;
+    }
+
+    await act(async () => { hookRoot.root.render(<Probe />); });
+    await waitForCondition(() => statusMessages.some((m) => m.includes("Linked")));
+
+    expect(mockedLinkGithubInstallation).toHaveBeenCalledWith(99999);
+    expect(statusMessages).toContain("Linked 1 GitHub repo. Installation access: all repositories.");
+    expect(replaceSpy).toHaveBeenCalledWith(null, "", "/workflows");
+
+    replaceSpy.mockRestore();
+    window.history.pushState({}, "", "/");
+    expect(current).not.toBeNull();
+  });
+
+  it("rejects an invalid installation_id from the URL callback param", async () => {
+    const statusMessages: string[] = [];
+    const pushStatus = (message: string) => statusMessages.push(message);
+    const applyRepo = jest.fn();
+    const replaceSpy = jest.spyOn(window.history, "replaceState");
+
+    window.history.pushState({}, "", "/workflows?installation_id=not-a-number");
+
+    function Probe() {
+      useGithubInstallations(pushStatus, applyRepo);
+      return null;
+    }
+
+    await act(async () => { hookRoot.root.render(<Probe />); });
+    await flushMicrotasks(5);
+
+    expect(statusMessages).toContain("GitHub App callback contained an invalid installation ID.");
+    expect(mockedLinkGithubInstallation).not.toHaveBeenCalled();
+
+    replaceSpy.mockRestore();
+    window.history.pushState({}, "", "/");
+  });
+
+  it("handles silent failure when loading installation accounts after auto-link", async () => {
+    const statusMessages: string[] = [];
+    const pushStatus = (message: string) => statusMessages.push(message);
+    const applyRepo = jest.fn();
+    const replaceSpy = jest.spyOn(window.history, "replaceState");
+
+    mockedGetGithubInstallationAccounts
+      .mockResolvedValueOnce({ accounts: [] })
+      .mockRejectedValueOnce(new Error("accounts reload failed"));
+
+    window.history.pushState({}, "", "/workflows?installation_id=77777");
+
+    function Probe() {
+      useGithubInstallations(pushStatus, applyRepo);
+      return null;
+    }
+
+    await act(async () => { hookRoot.root.render(<Probe />); });
+    await waitForCondition(() => statusMessages.some((m) => m.includes("Linked")));
+
+    expect(statusMessages.every((m) => !m.includes("installation accounts"))).toBe(true);
+
+    replaceSpy.mockRestore();
+    window.history.pushState({}, "", "/");
+  });
+
   it("reports GitHub App load and link failures", async () => {
     const statusMessages: string[] = [];
     const pushStatus = (message: string) => statusMessages.push(message);

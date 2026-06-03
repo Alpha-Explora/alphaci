@@ -1,4 +1,5 @@
 import type {
+  GitHubReposResponse,
   GithubAppInstallUrlResponse,
   GithubInstallationAccountsResponse,
   LinkedGitHubReposResponse,
@@ -25,4 +26,17 @@ export async function getLinkedGithubRepos(): Promise<LinkedGitHubReposResponse>
 
 export async function getGithubInstallationAccounts(): Promise<GithubInstallationAccountsResponse> {
   return request<GithubInstallationAccountsResponse>("/github/installations/accounts");
+}
+
+export async function getGithubRepos(): Promise<GitHubReposResponse> {
+  return request<GitHubReposResponse>("/github/repos");
+}
+
+export async function createGithubRepo(
+  payload: import("./contracts").CreateGithubRepoRequest,
+): Promise<import("./contracts").CreateGithubRepoResponse> {
+  return request<import("./contracts").CreateGithubRepoResponse>("/github/repos", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
 }

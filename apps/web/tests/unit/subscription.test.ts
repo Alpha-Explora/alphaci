@@ -1,5 +1,5 @@
 import type { AuthMeResponse } from "@/lib/api/contracts";
-import { hasActiveSubscription } from "@/lib/auth/subscription";
+import { hasActiveSubscription, isGuest } from "@/lib/auth/subscription";
 
 const baseSession: AuthMeResponse = {
   authenticated: true,
@@ -75,7 +75,8 @@ describe("hasActiveSubscription", () => {
       hasActiveSubscription(
         buildSession({
           subscription: {
-            plan: "enterprise",
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            plan: "enterprise" as any,
             status: "active",
             provider: "mock",
             updatedAt: "2026-01-01T00:00:00.000Z",
@@ -83,5 +84,36 @@ describe("hasActiveSubscription", () => {
         }),
       ),
     ).toBe(true);
+  });
+});
+
+describe("isGuest", () => {
+  it("returns true for null or undefined session", () => {
+    expect(isGuest(null)).toBe(true);
+    expect(isGuest(undefined)).toBe(true);
+  });
+
+  it("returns true for unauthenticated session", () => {
+    expect(isGuest(buildSession({ authenticated: false }))).toBe(true);
+  });
+
+  it("returns true when subscription is not active", () => {
+    expect(
+      isGuest(buildSession({ subscription: { plan: "pro", status: "inactive", provider: "mock", updatedAt: "2026-01-01T00:00:00.000Z" } })),
+    ).toBe(true);
+  });
+
+  it("returns true when authenticated but on free plan", () => {
+    expect(
+      isGuest(buildSession({ subscription: { plan: "free", status: "active", provider: "mock", updatedAt: "2026-01-01T00:00:00.000Z" } })),
+    ).toBe(true);
+  });
+
+  it("returns false for authenticated user with active paid plan", () => {
+    expect(isGuest(buildSession())).toBe(false);
+    expect(
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      isGuest(buildSession({ subscription: { plan: "enterprise" as any, status: "active", provider: "mock", updatedAt: "2026-01-01T00:00:00.000Z" } })),
+    ).toBe(false);
   });
 });

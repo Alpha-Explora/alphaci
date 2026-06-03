@@ -22,7 +22,7 @@ export default function SignupPage() {
       <OAuthAuthPage
         mode="signup"
         title="Create your workflow workspace"
-        subtitle="Sign up with Google or GitHub and start generating workflows right away."
+        subtitle="Sign up with GitHub and start generating workflows right away."
         switchText="Already have an account?"
         switchHref="/login"
         switchCta="Log in"

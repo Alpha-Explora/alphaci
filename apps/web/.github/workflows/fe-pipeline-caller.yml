@@ -1,0 +1,261 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# fe-pipeline-caller.yml  —  FlowCI Studio: Next.js frontend (cicd-workflow-fe)
+#
+# Triggers:
+#   push         → test, uat, main   (promotion + deploy lanes)
+#   pull_request → test, uat, main   (quality gate only)
+#
+# Reusable workflows called (all in ImplementSprint/central-workflow):
+#   quality-gate.yml   — lint + typecheck + test (coverage ≥ 80%) + build
+#   trivy-scan.yml     — Trivy HIGH/CRITICAL scan (uat + main only)
+#   render-deploy.yml  — trigger Render deploy hook + poll health check
+#   promotion.yml      — auto-create next-environment PR via gh CLI
+#
+# FE-specific notes:
+#   - npm run lint   → eslint (flat config, Next.js ESLint rules)
+#   - npm run typecheck   → NOT present in package.json; handled by Next.js build
+#     OVERRIDE: tsc --noEmit added as inline step (build alone is insufficient for CI)
+#   - npm test       → jest --runInBand (no:cov flag — use test:cov in quality-gate)
+#   - coverage reporters include json-summary (see jest.config.js)
+#   - FE Dockerfile base is node:24-alpine (matches existing Dockerfile)
+#
+# Permission ceiling:
+#   contents: write        — release-tag job creates git tags
+#   pull-requests: write   — promotion.yml creates PRs
+#   security-events: write — trivy-scan.yml uploads SARIF
+#   checks: write          — quality-gate.yml writes annotations
+#   packages: write        — reserved for future GHCR push
+#   id-token: write        — reserved for future OIDC auth
+# ─────────────────────────────────────────────────────────────────────────────
+name: "FE Pipeline — cicd-workflow-fe"
+
+on:
+  push:
+    branches:
+      - test
+      - uat
+      - main
+  pull_request:
+    branches:
+      - test
+      - uat
+      - main
+  workflow_dispatch:
+    inputs:
+      run_deploy:
+        description: "Force deploy on this manual run"
+        type: boolean
+        default: false
+      dry_run:
+        description: "Dry-run promotion (print PR body, skip creation)"
+        type: boolean
+        default: false
+
+# ── Permission ceiling ─────────────────────────────────────────────────────────
+permissions:
+  contents: write
+  pull-requests: write
+  security-events: write
+  packages: write
+  checks: write
+  id-token: write
+
+# ── Concurrency ────────────────────────────────────────────────────────────────
+# Separate push and PR concurrency groups to avoid cross-event cancellation.
+# cancel-in-progress: false ensures the authoritative push run always completes.
+concurrency:
+  group: fe-${{ github.event_name }}-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: false
+
+jobs:
+  # ── Job 1: Quality Gate ──────────────────────────────────────────────────────
+  # Runs on every push and PR. Required status check for PRs to test/uat/main.
+  #
+  # The FE quality-gate uses the shared reusable workflow with run_build: true.
+  # `npm run build` (Next.js build) acts as the TypeScript check since the FE
+  # package.json has no standalone `typecheck` script. The build fails on TS errors.
+  quality-gate:
+    name: "Quality Gate"
+    # TODO: Switch @main to @v1 once ImplementSprint/central-workflow publishes a stable tag
+    uses: ImplementSprint/central-workflow/.github/workflows/quality-gate.yml@main
+    with:
+      service_name: "cicd-workflow-fe"
+      node_version: "22"
+      working_directory: "."
+      coverage_threshold: 80
+      run_build: true
+
+  # ── Job 2: Security Scan (uat + main push only) ───────────────────────────────
+  trivy-scan:
+    name: "Security Scan (Trivy)"
+    needs: [quality-gate]
+    if: |
+      github.event_name == 'push' &&
+      (github.ref_name == 'uat' || github.ref_name == 'main')
+    uses: ImplementSprint/central-workflow/.github/workflows/trivy-scan.yml@main
+    with:
+      service_name: "cicd-workflow-fe"
+      working_directory: "."
+      fail_on_severity: "HIGH,CRITICAL"
+
+  # ── Job 3: Docker Build Check (test push only) ────────────────────────────────
+  # Validates the multi-stage Next.js Dockerfile builds successfully.
+  # The FE Dockerfile uses node:24-alpine as base (three-stage: deps/builder/runner).
+  docker-build:
+    name: "Docker Build Check"
+    needs: [quality-gate]
+    if: |
+      github.event_name == 'push' && github.ref_name == 'test'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20  # Next.js builds can take longer than NestJS
+
+    steps:
+      - name: "Checkout code"
+        uses: actions/checkout@v4
+
+      - name: "Set up Docker Buildx"
+        uses: docker/setup-buildx-action@v3
+
+      - name: "Build Docker image (no push)"
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: false
+          tags: cicd-workflow-fe:${{ github.sha }}
+          # Layer cache shared across runs on the same branch
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            NEXT_PUBLIC_API_URL=${{ vars.NEXT_PUBLIC_API_URL_TEST || 'http://localhost:4000' }}
+
+  # ── Job 4a: Deploy to Render (test) ──────────────────────────────────────────
+  deploy-test:
+    name: "Deploy to Render (test)"
+    needs: [docker-build]
+    if: |
+      github.event_name == 'push' && github.ref_name == 'test'
+    uses: ImplementSprint/central-workflow/.github/workflows/render-deploy.yml@main
+    with:
+      environment: "test"
+      healthcheck_url: ${{ vars.RENDER_HEALTHCHECK_URL_TEST }}
+      poll_interval_sec: 15
+      poll_max_attempts: 20
+    secrets:
+      render_deploy_hook_url: ${{ secrets.RENDER_DEPLOY_HOOK_URL_TEST }}
+
+  # ── Job 4b: Deploy to Render (uat) ───────────────────────────────────────────
+  deploy-uat:
+    name: "Deploy to Render (uat)"
+    needs: [trivy-scan]
+    if: |
+      github.event_name == 'push' && github.ref_name == 'uat'
+    uses: ImplementSprint/central-workflow/.github/workflows/render-deploy.yml@main
+    with:
+      environment: "uat"
+      healthcheck_url: ${{ vars.RENDER_HEALTHCHECK_URL_UAT }}
+      poll_interval_sec: 15
+      poll_max_attempts: 20
+    secrets:
+      render_deploy_hook_url: ${{ secrets.RENDER_DEPLOY_HOOK_URL_UAT }}
+
+  # ── Job 4c: Deploy to Render (production) ────────────────────────────────────
+  deploy-main:
+    name: "Deploy to Render (production)"
+    needs: [trivy-scan]
+    if: |
+      github.event_name == 'push' && github.ref_name == 'main'
+    uses: ImplementSprint/central-workflow/.github/workflows/render-deploy.yml@main
+    with:
+      environment: "production"
+      healthcheck_url: ${{ vars.RENDER_HEALTHCHECK_URL_MAIN }}
+      poll_interval_sec: 15
+      poll_max_attempts: 24
+    secrets:
+      render_deploy_hook_url: ${{ secrets.RENDER_DEPLOY_HOOK_URL_MAIN }}
+
+  # ── Job 5: Promote test → uat ─────────────────────────────────────────────────
+  promote-test-to-uat:
+    name: "Promote test → uat"
+    needs: [deploy-test]
+    if: |
+      github.event_name == 'push' && github.ref_name == 'test'
+    uses: ImplementSprint/central-workflow/.github/workflows/promotion.yml@main
+    with:
+      source_branch: "test"
+      target_branch: "uat"
+      service_name: "cicd-workflow-fe"
+      dry_run: ${{ github.event_name == 'workflow_dispatch' && fromJSON(github.event.inputs.dry_run || 'false') || false }}
+    secrets:
+      gh_pr_token: ${{ secrets.GH_PR_TOKEN }}
+
+  # ── Job 6: Promote uat → main ─────────────────────────────────────────────────
+  promote-uat-to-main:
+    name: "Promote uat → main"
+    needs: [deploy-uat]
+    if: |
+      github.event_name == 'push' && github.ref_name == 'uat'
+    uses: ImplementSprint/central-workflow/.github/workflows/promotion.yml@main
+    with:
+      source_branch: "uat"
+      target_branch: "main"
+      service_name: "cicd-workflow-fe"
+      dry_run: ${{ github.event_name == 'workflow_dispatch' && fromJSON(github.event.inputs.dry_run || 'false') || false }}
+    secrets:
+      gh_pr_token: ${{ secrets.GH_PR_TOKEN }}
+
+  # ── Job 7: Tag release on main ────────────────────────────────────────────────
+  release-tag:
+    name: "Tag Release"
+    needs: [deploy-main]
+    if: |
+      github.event_name == 'push' && github.ref_name == 'main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+
+    steps:
+      - name: "Checkout code"
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GH_PR_TOKEN }}
+
+      - name: "Compute release tag"
+        id: tag
+        run: |
+          MANUAL_TAG="${{ vars.RELEASE_TAG }}"
+          if [[ -n "$MANUAL_TAG" ]]; then
+            TAG_NAME="$MANUAL_TAG"
+          else
+            DATE=$(date -u +'%Y.%m.%d')
+            RUN_NUM="${{ github.run_number }}"
+            TAG_NAME="v${DATE}-${RUN_NUM}"
+          fi
+          echo "tag_name=$TAG_NAME" >> "$GITHUB_OUTPUT"
+          echo "Release tag: $TAG_NAME"
+
+      - name: "Create and push annotated tag"
+        env:
+          TAG_NAME: ${{ steps.tag.outputs.tag_name }}
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          if git ls-remote --tags origin "$TAG_NAME" | grep -q "$TAG_NAME"; then
+            echo "Tag $TAG_NAME already exists. Skipping."
+            exit 0
+          fi
+
+          git tag -a "$TAG_NAME" \
+            -m "Release $TAG_NAME — deployed to production via run #${{ github.run_number }}"
+
+          git push origin "$TAG_NAME"
+          echo "Tagged and pushed: $TAG_NAME"
+
+      - name: "Write release summary"
+        run: |
+          echo "### Release Tag Created — FE" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "Tag: \`${{ steps.tag.outputs.tag_name }}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "Commit: \`${{ github.sha }}\`" >> "$GITHUB_STEP_SUMMARY"
