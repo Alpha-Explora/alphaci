@@ -22,7 +22,7 @@ export default function LoginPage() {
       <OAuthAuthPage
         mode="login"
         title="Sign in to your pipeline workspace."
-        subtitle="Choose Google or GitHub to continue to Create Project."
+        subtitle="Connect your GitHub account to continue to Create Project."
         switchText="New here?"
         switchHref="/signup"
         switchCta="Create your account"

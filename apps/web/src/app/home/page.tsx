@@ -146,9 +146,19 @@ export default function HomeDashboardPage() {
     return (
       <main className="flow-shell page-shell">
         <FlowBackground />
-        <section className="section-card glass-panel">
-          <h1>Loading your home page...</h1>
-        </section>
+        <header className="marketing-nav">
+          <div className="brand-mark">
+            <PipelineLogo size={22} />
+            <span>FlowCI Studio</span>
+          </div>
+        </header>
+        <div className="state-body">
+          <div className="state-card">
+            <div className="state-spinner" role="status" aria-label="Loading dashboard" />
+            <h1>Loading your dashboard</h1>
+            <p>Verifying your session and fetching your data.</p>
+          </div>
+        </div>
       </main>
     );
   }
@@ -157,16 +167,32 @@ export default function HomeDashboardPage() {
     return (
       <main className="flow-shell page-shell">
         <FlowBackground />
-        <section className="section-card glass-panel">
-          <h1>We could not verify your session.</h1>
-          <p className="helper-text">Please retry or return to Home.</p>
-          <div className="hero-actions">
-            <button className="primary-button" type="button" onClick={() => void refresh()}>
-              Retry session check
-            </button>
-            <Link className="ghost-button" href="/login?next=/home">Go to login</Link>
+        <header className="marketing-nav">
+          <div className="brand-mark">
+            <PipelineLogo size={22} />
+            <span>FlowCI Studio</span>
           </div>
-        </section>
+          <Link className="ghost-button" href="/login?next=/home">Sign in</Link>
+        </header>
+        <div className="state-body">
+          <div className="state-card">
+            <div className="state-icon" style={{ background: "rgba(255,79,79,0.08)", border: "1px solid rgba(255,79,79,0.2)" }}>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--danger)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="10"/>
+                <line x1="15" y1="9" x2="9" y2="15"/>
+                <line x1="9" y1="9" x2="15" y2="15"/>
+              </svg>
+            </div>
+            <h1>Session verification failed</h1>
+            <p>We could not verify your session. Please retry or sign in again.</p>
+            <div className="hero-actions">
+              <button className="primary-button" type="button" onClick={() => void refresh()}>
+                Retry
+              </button>
+              <Link className="ghost-button" href="/login?next=/home">Go to login</Link>
+            </div>
+          </div>
+        </div>
       </main>
     );
   }
@@ -293,7 +319,7 @@ export default function HomeDashboardPage() {
 
           {/* Right: pipeline track */}
           <div style={{
-            borderLeft: "1px solid rgba(26,86,219,0.15)",
+            borderLeft: "1px solid var(--border)",
             paddingLeft: "clamp(1.2rem, 3vw, 2rem)",
             paddingRight: "1.5rem",
             paddingTop: "0.2rem",
@@ -374,7 +400,7 @@ export default function HomeDashboardPage() {
               ) : (
                 <ul className="repo-list">
                   {repos.map((repo) => (
-                    <li key={repo.id} className="repo-item">
+                    <li key={repo.id} className="repo-item" style={{ background: "var(--bg-surface)", borderColor: "var(--border)" }}>
                       <a
                         href={repo.htmlUrl}
                         target="_blank"
@@ -411,7 +437,7 @@ export default function HomeDashboardPage() {
               <div className="kpi-grid-editorial" style={{ gridTemplateColumns: "repeat(3, 1fr)" }}>
                 {history.slice(0, 3).map((item) => (
                   <div key={item.id} className="kpi-cell">
-                    <p style={{ fontSize: "0.74rem", textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--brand)" }}>
+                    <p style={{ fontSize: "0.74rem", textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--brand)", margin: 0 }}>
                       {item.stack}
                     </p>
                     <h3 style={{ fontSize: "0.98rem" }}>{item.serviceName}</h3>

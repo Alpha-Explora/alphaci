@@ -41,9 +41,19 @@ export default function SettingsPage() {
     return (
       <main className="flow-shell page-shell">
         <FlowBackground />
-        <section className="section-card glass-panel">
-          <h1>Loading settings...</h1>
-        </section>
+        <header className="marketing-nav">
+          <div className="brand-mark">
+            <PipelineLogo size={22} />
+            <span>FlowCI Studio</span>
+          </div>
+        </header>
+        <div className="state-body">
+          <div className="state-card">
+            <div className="state-spinner" role="status" aria-label="Loading settings" />
+            <h1>Loading settings</h1>
+            <p>Fetching your account configuration.</p>
+          </div>
+        </div>
       </main>
     );
   }
@@ -52,17 +62,33 @@ export default function SettingsPage() {
     return (
       <main className="flow-shell page-shell">
         <FlowBackground />
-        <section className="section-card glass-panel">
-          <h1>We could not verify your session.</h1>
-          <p className="helper-text">Please retry or return to Home.</p>
-          <div className="hero-actions">
-            <button className="primary-button" type="button" onClick={() => void refresh()}>
-              Retry session check
-            </button>
-            <Link className="ghost-button" href="/login?next=/settings">Go to login</Link>
+        <header className="marketing-nav">
+          <div className="brand-mark">
+            <PipelineLogo size={22} />
+            <span>FlowCI Studio</span>
           </div>
-          {error ? <p className="error-text">{error}</p> : null}
-        </section>
+          <Link className="ghost-button" href="/login?next=/settings">Sign in</Link>
+        </header>
+        <div className="state-body">
+          <div className="state-card">
+            <div className="state-icon" style={{ background: "rgba(255,79,79,0.08)", border: "1px solid rgba(255,79,79,0.2)" }}>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--danger)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="10"/>
+                <line x1="15" y1="9" x2="9" y2="15"/>
+                <line x1="9" y1="9" x2="15" y2="15"/>
+              </svg>
+            </div>
+            <h1>Session verification failed</h1>
+            <p>We could not verify your session. Please retry or sign in again.</p>
+            <div className="hero-actions">
+              <button className="primary-button" type="button" onClick={() => void refresh()}>
+                Retry
+              </button>
+              <Link className="ghost-button" href="/login?next=/settings">Go to login</Link>
+            </div>
+            {error ? <p className="error-text" style={{ fontSize: "0.82rem" }}>{error}</p> : null}
+          </div>
+        </div>
       </main>
     );
   }

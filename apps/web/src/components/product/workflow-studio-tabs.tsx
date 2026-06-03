@@ -69,10 +69,10 @@ export function WorkflowStudioTabs({ activeTab, onChange, onKeyDown }: Readonly<
               style={{
                 position: "absolute",
                 inset: 0,
-                borderRadius: "var(--radius-pill)",
-                background: "rgba(59, 142, 240, 0.14)",
-                border: "1px solid rgba(59, 142, 240, 0.28)",
-                boxShadow: "0 0 14px rgba(59, 142, 240, 0.18), inset 0 0 0 1px rgba(59, 142, 240, 0.2)",
+                borderRadius: "0.5rem",
+                background: "rgba(79, 142, 255, 0.12)",
+                border: "1px solid rgba(79, 142, 255, 0.3)",
+                boxShadow: "0 0 16px rgba(79, 142, 255, 0.15), inset 0 0 0 1px rgba(79, 142, 255, 0.15)",
                 zIndex: 0,
               }}
               transition={{ type: "spring", stiffness: 420, damping: 34 }}
