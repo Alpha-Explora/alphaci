@@ -301,7 +301,7 @@ describe("WorkflowBuilder project setup", () => {
     jest.clearAllMocks();
   });
 
-  async function renderBuilder(accessText = "All repositories access confirmed") {
+  async function renderBuilder(accessText = "GitHub App: connected") {
     await act(async () => {
       root.render(<WorkflowBuilder login="tone" plan="pro" />);
     });
