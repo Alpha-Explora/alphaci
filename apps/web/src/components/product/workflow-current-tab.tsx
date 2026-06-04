@@ -77,14 +77,14 @@ export function WorkflowCurrentTab({
             </span>
           </div>
           <div className="result-branches" style={{ margin: 0 }}>
-            {latestResult.branchesCreated.map((branch) => (
-              <span key={branch} className="branch-chip">{branch}</span>
-            ))}
+            <span className="branch-chip">{latestResult.status}</span>
+            <span className="branch-chip">{latestResult.projectTypeId}</span>
+            <span className="branch-chip">{latestResult.workflowRecipeId}</span>
           </div>
           <p style={{ fontSize: "0.78rem", color: "var(--text-secondary)", margin: 0 }}>
             Workflow file: <strong style={{ color: "var(--text-primary)" }}>{latestResult.outputFileName}</strong>
             <span style={{ marginLeft: "0.75rem", color: "var(--text-muted)" }}>
-              {latestResult.templateName} ({latestResult.stack})
+              Commit {latestResult.githubCommitSha.slice(0, 10)}
             </span>
           </p>
           <div className="result-actions" style={{ margin: 0 }}>
@@ -96,9 +96,15 @@ export function WorkflowCurrentTab({
                style={{ padding: "0.5rem 1.1rem", fontSize: "0.85rem", minHeight: "2.4rem" }}>
               Open Actions
             </a>
+            {latestResult.githubCommitUrl ? (
+              <a className="ghost-button" href={latestResult.githubCommitUrl} target="_blank" rel="noreferrer"
+                 style={{ padding: "0.5rem 1.1rem", fontSize: "0.85rem", minHeight: "2.4rem" }}>
+                Open commit
+              </a>
+            ) : null}
           </div>
           <p style={{ fontSize: "0.76rem", color: "var(--text-muted)", margin: 0 }}>
-            Commit <code style={{ fontFamily: "ui-monospace, monospace", background: "rgba(255,255,255,0.06)", padding: "0.1rem 0.35rem", borderRadius: "0.3rem" }}>.github/workflows/{latestResult.outputFileName}</code> to trigger your first CI run.
+            The backend committed <code style={{ fontFamily: "ui-monospace, monospace", background: "rgba(255,255,255,0.06)", padding: "0.1rem 0.35rem", borderRadius: "0.3rem" }}>{latestResult.workflowPath}</code> to trigger the first CI run.
           </p>
         </div>
       ) : null}

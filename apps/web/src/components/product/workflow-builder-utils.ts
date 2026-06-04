@@ -56,7 +56,7 @@ export function toSlug(value: string): string {
 
 export function toSourcePath(path: string): string {
   if (!path) {
-    return "workflow-core/workflow-templates";
+    return "cicd-workflow/workflow-templates";
   }
 
   const normalized = path.replaceAll("\\", "/");
@@ -66,24 +66,24 @@ export function toSourcePath(path: string): string {
     const repoIndex = lower.lastIndexOf(marker);
     if (repoIndex >= 0) {
       const relative = normalized.slice(repoIndex + marker.length);
-      return `workflow-core/${relative}`;
+      return `cicd-workflow/${relative}`;
     }
   }
 
   const trimmed = normalized.replace(/^\/+/, "");
   if (trimmed.startsWith("workflow-core/")) {
-    return trimmed;
+    return `cicd-workflow/${trimmed.slice("workflow-core/".length)}`;
   }
 
   if (trimmed.startsWith("cicd-workflow/")) {
-    return `workflow-core/${trimmed.slice("cicd-workflow/".length)}`;
+    return trimmed;
   }
 
   if (/^[a-zA-Z]:\//.test(normalized)) {
     return normalized;
   }
 
-  return `workflow-core/${trimmed}`;
+  return `cicd-workflow/${trimmed}`;
 }
 
 export function chooseSelectedTemplate(

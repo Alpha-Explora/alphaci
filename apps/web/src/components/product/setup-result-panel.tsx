@@ -7,15 +7,11 @@ import type { CreateProjectResult } from "@/lib/api/contracts";
 interface SetupResultPanelProps {
   setupResult: CreateProjectResult | null;
   onViewProject: () => void;
-  onCopyYaml?: (yaml: string) => void;
-  onDownloadYaml?: (yaml: string, fileName: string) => void;
 }
 
 export function SetupResultPanel({
   setupResult,
   onViewProject,
-  onCopyYaml,
-  onDownloadYaml,
 }: Readonly<SetupResultPanelProps>) {
   return (
     <aside className="result-panel">
@@ -42,47 +38,34 @@ export function SetupResultPanel({
             </div>
 
             <div className="result-branches">
-              {setupResult.branchesCreated.map((branch) => (
-                <span key={branch} className="branch-chip">{branch}</span>
-              ))}
+              <span className="branch-chip">{setupResult.status}</span>
+              <span className="branch-chip">{setupResult.projectTypeId}</span>
+              <span className="branch-chip">{setupResult.workflowRecipeId}</span>
             </div>
 
             <p className="helper-text" style={{ margin: 0 }}>
               Workflow: <strong>{setupResult.outputFileName}</strong>
             </p>
             <p className="helper-text" style={{ margin: 0 }}>
-              Template: {setupResult.templateName}
+              Commit: {setupResult.githubCommitSha.slice(0, 10)}
             </p>
 
             <div className="result-actions">
               <a className="primary-button" href={setupResult.repoUrl} target="_blank" rel="noreferrer">
                 Open repo
               </a>
-              {onCopyYaml ? (
-                <button
-                  className="ghost-button"
-                  type="button"
-                  onClick={() => onCopyYaml(setupResult.yaml)}
-                >
-                  Copy YAML
-                </button>
-              ) : null}
-              {onDownloadYaml ? (
-                <button
-                  className="ghost-button"
-                  type="button"
-                  onClick={() => onDownloadYaml(setupResult.yaml, setupResult.outputFileName)}
-                >
-                  Download YAML
-                </button>
+              {setupResult.githubCommitUrl ? (
+                <a className="ghost-button" href={setupResult.githubCommitUrl} target="_blank" rel="noreferrer">
+                  Open commit
+                </a>
               ) : null}
               <button className="ghost-button" type="button" onClick={onViewProject}>
-                View history
+                View projects
               </button>
             </div>
 
             <p className="helper-text" style={{ fontSize: "0.78rem", color: "var(--text-muted)", margin: 0 }}>
-              Copy the workflow file into <code>.github/workflows/{setupResult.outputFileName}</code> and push a commit to trigger CI.
+              The backend committed <code>{setupResult.workflowPath}</code> to the repository.
             </p>
           </motion.div>
         ) : (

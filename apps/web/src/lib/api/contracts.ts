@@ -271,14 +271,14 @@ export interface CreateGithubRepoResponse {
 }
 
 export interface CreateProjectResult {
+  id: string;
   repoUrl: string;
-  cloneUrl: string;
   repoFullName: string;
-  defaultBranch: string;
-  branchesCreated: string[];
-  yaml: string;
+  status: "provisioned";
+  workflowPath: string;
+  githubCommitSha: string;
+  githubCommitUrl: string | null;
+  projectTypeId: string;
+  workflowRecipeId: string;
   outputFileName: string;
-  templateName: string;
-  stack: string;
-  generatedAt: string;
 }

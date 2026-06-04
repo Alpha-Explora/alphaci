@@ -19,8 +19,6 @@ interface WorkflowSetupTabProps {
   isCreatingProject: boolean;
   onCreateProject: () => void;
   onGenerateWorkflow: () => void;
-  onCopyYaml: (yaml: string) => void;
-  onDownloadYaml: (yaml: string, fileName: string) => void;
   onViewProject: () => void;
   projectCatalog: ProjectOptionsCatalogState;
   reducedMotion: boolean;
@@ -42,8 +40,6 @@ export function WorkflowSetupTab({
   isCreatingProject,
   onCreateProject,
   onGenerateWorkflow,
-  onCopyYaml,
-  onDownloadYaml,
   onViewProject,
   projectCatalog,
   reducedMotion,
@@ -185,7 +181,7 @@ export function WorkflowSetupTab({
         <hr className="controls-panel-rule" />
 
         <p style={{ color: "var(--text-muted)", fontSize: "0.72rem", margin: 0 }}>
-          Source: <strong style={{ color: "var(--text-secondary)" }}>workflow-core</strong>
+          Source: <strong style={{ color: "var(--text-secondary)" }}>cicd-workflow</strong>
         </p>
       </aside>
 
@@ -361,8 +357,6 @@ export function WorkflowSetupTab({
       <SetupResultPanel
         setupResult={createResult}
         onViewProject={onViewProject}
-        onCopyYaml={onCopyYaml}
-        onDownloadYaml={onDownloadYaml}
       />
     </motion.section>
   );
