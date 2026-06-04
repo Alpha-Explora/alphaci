@@ -2,13 +2,13 @@
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useMemo, type MouseEvent } from "react";
+import { useEffect, useMemo, useState, type MouseEvent } from "react";
 import { motion, useMotionValue, useReducedMotion, useSpring, useTransform } from "framer-motion";
 
 import { FlowBackground } from "@/components/layout/flow-background";
 import { PipelineLogo } from "@/components/layout/pipeline-logo";
 import { useAuthSession } from "@/hooks/use-auth-session";
-import { createGitHubLoginUrl } from "@/lib/api/client";
+import { createGitHubLoginUrl, warmupBackend } from "@/lib/api/client";
 import { hasActiveSubscription } from "@/lib/auth/subscription";
 
 interface OAuthAuthPageProps {
@@ -87,6 +87,8 @@ export function OAuthAuthPage({
   const router = useRouter();
   const searchParams = useSearchParams();
   const prefersReducedMotion = useReducedMotion();
+
+  const [isWarming, setIsWarming] = useState<boolean>(false);
 
   const { status, session, error } = useAuthSession();
 
@@ -240,17 +242,38 @@ export function OAuthAuthPage({
           </div>
 
           <div className="auth-provider-single">
-            <Link className="auth-provider-button provider-github" href={githubLoginHref}>
+            <a
+              className="auth-provider-button provider-github"
+              href={githubLoginHref}
+              aria-disabled={isWarming}
+              style={isWarming ? { pointerEvents: "none", opacity: 0.7 } : undefined}
+              onClick={async (e) => {
+                e.preventDefault();
+                setIsWarming(true);
+                try {
+                  await warmupBackend();
+                } catch {
+                  // Intentionally swallowed — warmup failure must not block login.
+                } finally {
+                  setIsWarming(false);
+                }
+                window.location.href = githubLoginHref;
+              }}
+            >
               <span className="auth-provider-icon" aria-hidden="true">
                 <GitHubGlyph />
               </span>
               <span className="auth-provider-copy">
                 <span className="auth-provider-label">
-                  {mode === "login" ? "Continue with GitHub" : "Sign up with GitHub"}
+                  {isWarming
+                    ? "Connecting..."
+                    : mode === "login"
+                    ? "Continue with GitHub"
+                    : "Sign up with GitHub"}
                 </span>
                 <span className="auth-provider-meta">Your repos, pipelines, and workflow history stay connected.</span>
               </span>
-            </Link>
+            </a>
           </div>
 
           <div className="auth-support-row">
