@@ -81,6 +81,7 @@ const projectOptions: ProjectOptionsResponse = {
     {
       id: "nextjs-app",
       label: "Next.js App",
+      kind: "frontend",
       runtime: "node",
       language: "typescript",
       framework: "nextjs",
@@ -101,6 +102,7 @@ const projectOptions: ProjectOptionsResponse = {
     {
       id: "nestjs-api",
       label: "NestJS API",
+      kind: "backend",
       runtime: "node",
       language: "typescript",
       framework: "nestjs",
@@ -295,6 +297,8 @@ describe("workflow hooks", () => {
 
     expect(current?.enabledRepoShapes.map((shape) => shape.id)).toEqual(["single-app"]);
     expect(current?.selectedRepoShapeId).toBe("single-app");
+    expect(current?.frontendProjectTypes.map((projectType) => projectType.id)).toEqual(["nextjs-app"]);
+    expect(current?.backendProjectTypes.map((projectType) => projectType.id)).toEqual(["nestjs-api"]);
     expect(current?.recipesForSelectedProject.map((recipe) => recipe.id)).toEqual(["frontend-standard-ci"]);
     expect(current?.tests).toMatchObject({
       lint: true,
@@ -625,7 +629,7 @@ describe("workflow hooks", () => {
     });
 
     await waitForCondition(() => current?.catalogError !== null);
-    expect(current?.catalogError).toBe("Unable to load workflow templates from workflow-core right now.");
+    expect(current?.catalogError).toBe("Unable to load workflow templates from cicd-workflow right now.");
   });
 
   it("loads GitHub App installation state and links installations", async () => {

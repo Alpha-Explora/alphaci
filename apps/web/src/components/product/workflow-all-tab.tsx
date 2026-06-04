@@ -25,10 +25,10 @@ export function WorkflowAllTab({ allTemplates, onUseTemplate }: Readonly<Workflo
     >
       <div className="templates-header">
         <h2>All Templates</h2>
-        <p>{allTemplates.length} templates from workflow-core</p>
+        <p>{allTemplates.length} templates from cicd-workflow</p>
       </div>
       <p className="helper-text">
-        These are the source templates currently loaded from workflow-core/workflow-templates.
+        These are the source templates currently loaded from cicd-workflow/workflow-templates.
       </p>
 
       {allTemplates.length === 0 ? (
@@ -62,7 +62,7 @@ export function WorkflowAllTab({ allTemplates, onUseTemplate }: Readonly<Workflo
             </svg>
           </span>
           <p className="helper-text" style={{ maxWidth: "36ch", margin: 0 }}>
-            No templates loaded yet. Templates are sourced from <strong>workflow-core/workflow-templates</strong>.
+            No templates loaded yet. Templates are sourced from <strong>cicd-workflow/workflow-templates</strong>.
           </p>
         </div>
       ) : null}

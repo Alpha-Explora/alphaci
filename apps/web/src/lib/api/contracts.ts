@@ -76,6 +76,7 @@ export interface RepoShapeOption {
 export interface ProjectTypeOption {
   id: string;
   label: string;
+  kind?: "frontend" | "backend";
   runtime?: string;
   language: string;
   framework: string;
@@ -93,6 +94,7 @@ export interface WorkflowRecipeOption {
   description?: string;
   supportedProjectTypes: string[];
   templateByProjectType: Record<string, string>;
+  workflowRefByProjectType?: Record<string, string>;
   mandatoryJobs?: string[];
   supportedOptions: ProjectOptionSet;
   optionJobs: Partial<Record<ProjectOptionKey, string>>;
