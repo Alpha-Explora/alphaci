@@ -12,7 +12,7 @@ export interface SessionUser {
 export interface SubscriptionInfo {
   plan: SubscriptionPlan;
   status: SubscriptionStatus;
-  provider: "mock" | "supabase" | "manual";
+  provider: "mock" | "supabase" | "manual" | "paymongo";
   updatedAt: string;
   planCode?: string;
   currentPeriodStart?: string | null;
@@ -98,6 +98,19 @@ export interface WorkflowRecipeOption {
   mandatoryJobs?: string[];
   supportedOptions: ProjectOptionSet;
   optionJobs: Partial<Record<ProjectOptionKey, string>>;
+}
+
+export interface SubscriptionCheckoutResponse {
+  checkoutId?: string;
+  id?: string;
+  status: string;
+  redirectUrl?: string;
+  metadata?: Record<string, unknown>;
+}
+
+export interface SubscriptionCheckoutStatusResponse {
+  status: string;
+  subscription?: SubscriptionInfo;
 }
 
 export interface ProjectOptionsResponse {

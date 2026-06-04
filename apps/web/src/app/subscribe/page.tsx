@@ -1,17 +1,25 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { Suspense, useEffect, useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 
 import { FlowBackground } from "@/components/layout/flow-background";
 import { PipelineLogo } from "@/components/layout/pipeline-logo";
 import { SubscriptionCongratsModal } from "@/components/product/subscription-congrats-modal";
 import { useAuthSession } from "@/hooks/use-auth-session";
-import { activateMonthlySubscription, cancelMonthlySubscription } from "@/lib/api/client";
+import {
+  activateMonthlySubscription,
+  cancelMonthlySubscription,
+  createSubscriptionCheckout,
+  getCheckoutStatus,
+} from "@/lib/api/client";
+import { ApiError } from "@/lib/api/request";
 import { hasActiveSubscription } from "@/lib/auth/subscription";
 
 const CONGRATS_SESSION_KEY = "flowci_congrats_shown";
+const CHECKOUT_SESSION_KEY = "flowci_paymongo_checkout_id";
 
 const proPlan = {
   key: "pro" as const,
@@ -54,19 +62,77 @@ function CheckIcon() {
   );
 }
 
-export default function SubscribePage() {
+function SubscribePageContent() {
   const prefersReducedMotion = useReducedMotion();
+  const searchParams = useSearchParams();
   const { status, session, error, refresh } = useAuthSession();
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showCongratsModal, setShowCongratsModal] = useState(false);
+  const [showMockFallback, setShowMockFallback] = useState(false);
 
   useEffect(() => {
     if (typeof window !== "undefined" && sessionStorage.getItem(CONGRATS_SESSION_KEY)) {
       setShowCongratsModal(false);
     }
   }, []);
+
+  useEffect(() => {
+    if (status !== "signed-in" || searchParams.get("status") !== "success") {
+      return;
+    }
+
+    const checkoutId =
+      typeof window !== "undefined"
+        ? sessionStorage.getItem(CHECKOUT_SESSION_KEY)
+        : null;
+
+    if (!checkoutId) {
+      return;
+    }
+
+    const confirmedCheckoutId = checkoutId;
+    let active = true;
+
+    async function confirmCheckout() {
+      setIsSubmitting(true);
+      setActionError(null);
+
+      try {
+        const result = await getCheckoutStatus(confirmedCheckoutId);
+        if (!active) {
+          return;
+        }
+
+        if (result.status === "paid") {
+          sessionStorage.removeItem(CHECKOUT_SESSION_KEY);
+          await refresh();
+          setStatusMessage("PayMongo payment confirmed. Pro monthly plan is active.");
+          if (!sessionStorage.getItem(CONGRATS_SESSION_KEY)) {
+            setShowCongratsModal(true);
+          }
+          return;
+        }
+
+        setStatusMessage(`Checkout status: ${result.status}. Refresh after PayMongo confirms payment.`);
+      } catch {
+        if (active) {
+          setActionError("Could not confirm PayMongo checkout status. Please retry.");
+        }
+      } finally {
+        if (active) {
+          setIsSubmitting(false);
+        }
+      }
+    }
+
+    void confirmCheckout();
+
+    return () => {
+      active = false;
+    };
+  }, [refresh, searchParams, status]);
 
   const hasSubscription = hasActiveSubscription(session);
   const activePlan = session?.subscription.plan;
@@ -82,6 +148,34 @@ export default function SubscribePage() {
   async function handleActivate() {
     setStatusMessage(null);
     setActionError(null);
+    setShowMockFallback(false);
+    setIsSubmitting(true);
+
+    try {
+      const checkout = await createSubscriptionCheckout("pro");
+      if (!checkout.redirectUrl || !checkout.checkoutId) {
+        throw new Error("Checkout session did not include redirect details.");
+      }
+
+      if (typeof window !== "undefined") {
+        sessionStorage.setItem(CHECKOUT_SESSION_KEY, checkout.checkoutId);
+        window.location.assign(checkout.redirectUrl);
+      }
+    } catch (checkoutError) {
+      const apiError = checkoutError as ApiError;
+      if (apiError.status === 503) {
+        setActionError("PayMongo checkout is unavailable in this environment.");
+        setShowMockFallback(true);
+      } else {
+        setActionError("Subscription checkout failed. Please try again.");
+      }
+      setIsSubmitting(false);
+    }
+  }
+
+  async function handleMockActivate() {
+    setStatusMessage(null);
+    setActionError(null);
     setIsSubmitting(true);
 
     try {
@@ -92,7 +186,7 @@ export default function SubscribePage() {
         setShowCongratsModal(true);
       }
     } catch {
-      setActionError("Subscription activation failed. Please try again.");
+      setActionError("Local mock activation is unavailable in this environment.");
     } finally {
       setIsSubmitting(false);
     }
@@ -254,6 +348,16 @@ export default function SubscribePage() {
                 >
                   {activateButtonLabel}
                 </button>
+                {showMockFallback ? (
+                  <button
+                    className="ghost-button"
+                    type="button"
+                    disabled={isSubmitting || isCurrentPlanActive}
+                    onClick={() => void handleMockActivate()}
+                  >
+                    Local mock activate
+                  </button>
+                ) : null}
                 <button
                   className="ghost-button"
                   type="button"
@@ -297,5 +401,13 @@ export default function SubscribePage() {
         />
       ) : null}
     </main>
+  );
+}
+
+export default function SubscribePage() {
+  return (
+    <Suspense fallback={null}>
+      <SubscribePageContent />
+    </Suspense>
   );
 }
