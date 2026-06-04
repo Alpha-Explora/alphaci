@@ -227,16 +227,8 @@ export function WorkflowBuilder({ login, plan, guest = false }: Readonly<Workflo
           </div>
         </header>
 
-        <section className="intro-panel glass-panel" style={{ padding: "1.5rem", marginBottom: "1.5rem", borderRadius: "var(--radius-card)", background: "rgba(14, 165, 233, 0.05)", border: "1px solid rgba(14, 165, 233, 0.2)" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "0.5rem" }}>
-            <span style={{ display: "flex", alignItems: "center", justifyContent: "center", width: "2rem", height: "2rem", borderRadius: "0.5rem", background: "var(--brand)", color: "#fff" }}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
-            </span>
-            <h2 style={{ fontSize: "1.2rem", margin: 0, color: "var(--text-primary)" }}>Agent-Guided Setup</h2>
-          </div>
-          <p style={{ margin: 0, color: "var(--text-secondary)", fontSize: "0.95rem" }}>
-            Let our AI agent assist you in creating a GitHub repo from the catalog, applying branch rulesets, and committing the managed workflow with zero manual configuration.
-          </p>
+        <section className="intro-panel glass-panel">
+          <p>Create a GitHub repo from the catalog, apply branch rulesets, and commit the managed workflow.</p>
           {statusMessage ? (
             <motion.p
               className={`status-banner ${statusBannerVariant(statusMessage)}`}
