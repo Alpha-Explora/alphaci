@@ -51,10 +51,14 @@ const labelAccentStyle: React.CSSProperties = {
 };
 
 const inputBaseStyle: React.CSSProperties = {
-  padding: "0.6rem 0.75rem",
-  background: "var(--bg-panel)",
-  border: "1px solid var(--border)",
-  borderRadius: "6px",
+  padding: "0.65rem 0.85rem",
+  background: "rgba(15, 23, 42, 0.6)",
+  border: "1px solid var(--border-soft)",
+  borderRadius: "0.5rem",
+  color: "var(--text-primary)",
+  fontSize: "0.85rem",
+  width: "100%",
+  transition: "all 0.2s ease",
 };
 
 export function WorkflowSetupTab({
