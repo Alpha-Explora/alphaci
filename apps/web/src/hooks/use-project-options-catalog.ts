@@ -229,9 +229,24 @@ export function useProjectOptionsCatalog() {
     }));
   }, [selectedWorkflowRecipe, tests]);
 
+  const isMicroservicesShape = selectedRepoShapeId === "microservices";
+
+  const backendProjectTypes = useMemo(
+    () => projectTypesForShape.filter((t) => ["nestjs", "nodejs"].includes(t.id)),
+    [projectTypesForShape],
+  );
+
+  const frontendProjectTypes = useMemo(
+    () => projectTypesForShape.filter((t) => ["nextjs", "react"].includes(t.id)),
+    [projectTypesForShape],
+  );
+
   return {
     allRepoShapes: catalog.repoShapes,
+    backendProjectTypes,
     enabledRepoShapes,
+    frontendProjectTypes,
+    isMicroservicesShape,
     loadingProjectOptions,
     projectOptionsError,
     projectTypesForShape,

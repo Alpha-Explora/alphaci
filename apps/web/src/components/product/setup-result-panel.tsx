@@ -47,25 +47,36 @@ export function SetupResultPanel({
               Workflow: <strong>{setupResult.outputFileName}</strong>
             </p>
             <p className="helper-text" style={{ margin: 0 }}>
-              Commit: {setupResult.githubCommitSha.slice(0, 10)}
+              Commit:{" "}
+              {setupResult.githubCommitUrl ? (
+                <a href={setupResult.githubCommitUrl} target="_blank" rel="noreferrer">
+                  <code>{setupResult.githubCommitSha.slice(0, 10)}</code>
+                </a>
+              ) : (
+                  <code>{setupResult.githubCommitSha.slice(0, 10)}</code>
+                )}
             </p>
 
             <div className="result-actions">
               <a className="primary-button" href={setupResult.repoUrl} target="_blank" rel="noreferrer">
                 Open repo
               </a>
-              {setupResult.githubCommitUrl ? (
-                <a className="ghost-button" href={setupResult.githubCommitUrl} target="_blank" rel="noreferrer">
-                  Open commit
-                </a>
-              ) : null}
+              <a
+                className="ghost-button"
+                href={`${setupResult.repoUrl}/blob/main/${setupResult.workflowPath}`}
+                target="_blank"
+                rel="noreferrer"
+              >
+                View workflow
+              </a>
               <button className="ghost-button" type="button" onClick={onViewProject}>
                 View projects
               </button>
             </div>
 
             <p className="helper-text" style={{ fontSize: "0.78rem", color: "var(--text-muted)", margin: 0 }}>
-              The backend committed <code>{setupResult.workflowPath}</code> to the repository.
+              Workflow committed to <code>{setupResult.workflowPath}</code> on <code>main</code>.
+              Push to <code>test</code> to trigger your first CI run.
             </p>
           </motion.div>
         ) : (

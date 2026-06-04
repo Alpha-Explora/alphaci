@@ -82,10 +82,24 @@ export function WorkflowCurrentTab({
             <span className="branch-chip">{latestResult.workflowRecipeId}</span>
           </div>
           <p style={{ fontSize: "0.78rem", color: "var(--text-secondary)", margin: 0 }}>
-            Workflow file: <strong style={{ color: "var(--text-primary)" }}>{latestResult.outputFileName}</strong>
-            <span style={{ marginLeft: "0.75rem", color: "var(--text-muted)" }}>
-              Commit {latestResult.githubCommitSha.slice(0, 10)}
-            </span>
+            Workflow file:{" "}
+            <strong style={{ color: "var(--text-primary)", fontFamily: "ui-monospace, monospace" }}>
+              {latestResult.outputFileName}
+            </strong>
+            {latestResult.githubCommitUrl ? (
+              <a
+                href={latestResult.githubCommitUrl}
+                target="_blank"
+                rel="noreferrer"
+                style={{ marginLeft: "0.75rem", color: "var(--text-muted)", fontFamily: "ui-monospace, monospace", fontSize: "0.75rem" }}
+              >
+                {latestResult.githubCommitSha.slice(0, 10)}
+              </a>
+            ) : (
+              <code style={{ marginLeft: "0.75rem", color: "var(--text-muted)", fontSize: "0.75rem" }}>
+                {latestResult.githubCommitSha.slice(0, 10)}
+              </code>
+            )}
           </p>
           <div className="result-actions" style={{ margin: 0 }}>
             <a className="primary-button" href={latestResult.repoUrl} target="_blank" rel="noreferrer"
@@ -96,15 +110,23 @@ export function WorkflowCurrentTab({
                style={{ padding: "0.5rem 1.1rem", fontSize: "0.85rem", minHeight: "2.4rem" }}>
               Open Actions
             </a>
-            {latestResult.githubCommitUrl ? (
-              <a className="ghost-button" href={latestResult.githubCommitUrl} target="_blank" rel="noreferrer"
-                 style={{ padding: "0.5rem 1.1rem", fontSize: "0.85rem", minHeight: "2.4rem" }}>
-                Open commit
-              </a>
-            ) : null}
+            <a
+              className="ghost-button"
+              href={`${latestResult.repoUrl}/blob/main/${latestResult.workflowPath}`}
+              target="_blank"
+              rel="noreferrer"
+              style={{ padding: "0.5rem 1.1rem", fontSize: "0.85rem", minHeight: "2.4rem" }}
+            >
+              View workflow
+            </a>
           </div>
           <p style={{ fontSize: "0.76rem", color: "var(--text-muted)", margin: 0 }}>
-            The backend committed <code style={{ fontFamily: "ui-monospace, monospace", background: "rgba(255,255,255,0.06)", padding: "0.1rem 0.35rem", borderRadius: "0.3rem" }}>{latestResult.workflowPath}</code> to trigger the first CI run.
+            Workflow committed to{" "}
+            <code style={{ fontFamily: "ui-monospace, monospace", background: "rgba(255,255,255,0.06)", padding: "0.1rem 0.35rem", borderRadius: "0.3rem" }}>
+              {latestResult.workflowPath}
+            </code>{" "}
+             on <code style={{ fontFamily: "ui-monospace, monospace", background: "rgba(255,255,255,0.06)", padding: "0.1rem 0.35rem", borderRadius: "0.3rem" }}>main</code>.
+             Push to <code style={{ fontFamily: "ui-monospace, monospace", background: "rgba(255,255,255,0.06)", padding: "0.1rem 0.35rem", borderRadius: "0.3rem" }}>test</code> to trigger your first CI run.
           </p>
         </div>
       ) : null}

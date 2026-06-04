@@ -79,6 +79,7 @@ export function WorkflowBuilder({ login, plan, guest = false }: Readonly<Workflo
   async function handleCreateProject() {
     const payloadResult = createForm.buildPayload({
       hasAllRepositoriesInstallation: github.hasAllRepositoriesInstallation,
+      isMicroservicesShape: projectCatalog.isMicroservicesShape,
       repoShapeId: projectCatalog.selectedRepoShapeId,
       projectTypeId: projectCatalog.selectedProjectTypeId,
       workflowRecipeId: projectCatalog.selectedWorkflowRecipeId,
@@ -91,21 +92,34 @@ export function WorkflowBuilder({ login, plan, guest = false }: Readonly<Workflo
     }
 
     setIsCreatingProject(true);
-    setStatusMessage("Creating GitHub repository and committing workflow...");
+    setStatusMessage("Creating GitHub repository, branches, and committing workflow...");
 
     try {
       const response = await createProject(payloadResult.payload);
+
+      const outputFileName = response.workflowPath.split("/").at(-1) ?? response.workflowPath;
+
       const result: CreateProjectResult = {
-        ...response,
-        outputFileName: response.workflowPath.split("/").at(-1) ?? response.workflowPath,
+        id: response.id,
+        repoFullName: response.repoFullName,
+        repoUrl: response.repoUrl,
+        status: response.status,
+        workflowPath: response.workflowPath,
+        outputFileName,
+        githubCommitSha: response.githubCommitSha,
+        githubCommitUrl: response.githubCommitUrl,
+        projectTypeId: response.projectTypeId,
+        workflowRecipeId: response.workflowRecipeId,
+        branchesCreated: ["main", "uat", "test"],
+        additionalWorkflowPaths: response.additionalWorkflowPaths,
       };
 
       setCreateResult(result);
       projects.prependCreateResult(response, payloadResult.payload);
-      await projects.loadProjects(true);
+      void projects.loadProjects(true);
       setActiveTab("current");
       setStatusMessage(
-        `Repository "${response.repoFullName}" created and workflow committed.`,
+        `Repository "${response.repoFullName}" created. Workflow committed to ${response.workflowPath}.`,
       );
     } catch (error) {
       setStatusMessage(formatApiError(error, "Project creation failed"));
@@ -207,7 +221,7 @@ export function WorkflowBuilder({ login, plan, guest = false }: Readonly<Workflo
           </div>
         </header>
 
-        <section className="intro-panel">
+        <section className="intro-panel glass-panel">
           <p>Create a GitHub repo from the catalog, apply branch rulesets, and commit the managed workflow.</p>
           {statusMessage ? (
             <motion.p
