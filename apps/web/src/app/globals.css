@@ -53,7 +53,7 @@ html::-webkit-scrollbar {
   /* ── Layout ────────────────────────────────────────────────── */
   --radius-card:     1.25rem;
   --radius-pill:     999px;
-  --layout-max:      1440px;
+  --layout-max: 100%;
   --layout-gutter:   clamp(1rem, 2vw, 1.5rem);
   --stack-gap:       clamp(1rem, 1.5vw, 1.5rem);
   --panel-pad:       clamp(1rem, 1.5vw, 1.5rem);
@@ -113,7 +113,7 @@ h1, h2, h3 {
   position: relative;
   min-height: 100dvh;
   width: 100%;
-  max-width: var(--layout-max);
+  
   margin: 0 auto;
   padding: clamp(0.95rem, 2vw, 1.8rem) var(--layout-gutter) clamp(1.25rem, 2.5vw, 2rem);
   display: flex;
@@ -142,7 +142,7 @@ h1, h2, h3 {
   position: relative;
   min-height: 100dvh;
   width: 100%;
-  max-width: var(--layout-max);
+  
   margin: 0 auto;
   padding: 1rem var(--layout-gutter);
   display: flex;
@@ -446,7 +446,10 @@ h1, h2, h3 {
   position: sticky;
   top: 0;
   z-index: 100;
-  width: 100%;
+  margin-top: -1rem;
+  margin-left: calc(-1 * var(--layout-gutter));
+  margin-right: calc(-1 * var(--layout-gutter));
+  width: calc(100% + (2 * var(--layout-gutter)));
 }
 
 .brand-mark {
@@ -835,7 +838,7 @@ h1, h2, h3 {
   box-shadow: none;
   border-radius: 0;
   padding: clamp(2rem, 5vw, 4rem) clamp(1.5rem, 5vw, 4rem);
-  max-width: 900px;
+  
   margin: 0 auto;
   width: 100%;
 }
@@ -846,14 +849,14 @@ h1, h2, h3 {
   box-shadow: none;
   border-radius: 0;
   padding: clamp(2rem, 5vw, 4rem) clamp(1.5rem, 5vw, 4rem);
-  max-width: 900px;
+  
   margin: 0 auto;
   width: 100%;
 }
 
 .callback-card,
 .auth-card {
-  max-width: 760px;
+  
   margin: 0 auto;
 }
 
@@ -969,7 +972,7 @@ h1, h2, h3 {
   flex-direction: column;
   gap: 1.2rem;
   width: 100%;
-  max-width: 360px;
+  max-width: 480px;
   transform-style: preserve-3d;
   will-change: transform;
 }
@@ -1042,10 +1045,10 @@ h1, h2, h3 {
 .auth-provider-button {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  padding: 0.75rem 1.1rem;
-  border: 1.5px solid var(--border-strong);
-  border-radius: 10px;
+  gap: 1rem;
+  padding: 1.1rem 1.4rem;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-card);
   background: var(--bg-surface);
   color: var(--text-primary);
   text-decoration: none;
@@ -2494,7 +2497,7 @@ select option {
 
 .auth-left-yaml {
   width: 100%;
-  max-width: 480px;
+  
   background: #0d1117;
   border-radius: 12px;
   overflow: hidden;
@@ -2541,7 +2544,7 @@ select option {
   border-radius: 12px;
   overflow: hidden;
   width: 100%;
-  max-width: 600px;
+  
   margin: 0 auto;
 }
 
@@ -2904,7 +2907,7 @@ select option {
   flex-direction: column;
   align-items: center;
   gap: 0.75rem;
-  max-width: 600px;
+  
 }
 
 .pipeline-section-header h2 {

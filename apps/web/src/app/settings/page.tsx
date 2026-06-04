@@ -118,8 +118,24 @@ export default function SettingsPage() {
             : <Link href="/settings">Settings</Link>}
         </nav>
         {!guest && (
-          <button className="ghost-button" type="button" onClick={handleLogout} disabled={isLoggingOut}>
-            {isLoggingOut ? "Signing out..." : "Sign out"}
+          <button
+            className="sign-out-icon-btn"
+            type="button"
+            onClick={handleLogout}
+            disabled={isLoggingOut}
+            aria-label={isLoggingOut ? "Signing out…" : "Sign out"}
+            title={isLoggingOut ? "Signing out…" : "Sign out"}
+            style={{ marginLeft: "auto" }}
+          >
+            {isLoggingOut ? (
+              <span className="btn-spinner" aria-hidden="true" style={{ width: "13px", height: "13px", borderWidth: "1.5px" }} />
+            ) : (
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                <polyline points="16 17 21 12 16 7" />
+                <line x1="21" y1="12" x2="9" y2="12" />
+              </svg>
+            )}
           </button>
         )}
       </header>
