@@ -69,6 +69,7 @@ export function WorkflowSetupTab({
   const createDisabled =
     isCreatingProject ||
     projectCatalog.loadingProjectOptions ||
+    !github.hasAllRepositoriesInstallation ||
     !form.repoName.trim() ||
     !projectCatalog.selectedProjectType;
 
@@ -92,17 +93,43 @@ export function WorkflowSetupTab({
       {/* ── Left: GitHub App + Catalog ─────────────────────────────── */}
       <aside className="controls-panel">
 
-        {/* GitHub App section — optional, de-emphasised */}
+        {/* GitHub App section */}
         <div className="controls-panel-section">
           <span className="controls-panel-label" style={{ display: "flex", alignItems: "center", gap: "0.45rem" }}>
             GitHub App
-            <span style={{ fontSize: "0.65rem", color: "var(--text-muted)", fontWeight: 400, letterSpacing: "0.03em", textTransform: "none" }}>
-              (Optional)
-            </span>
           </span>
           <p style={{ color: "var(--text-muted)", fontSize: "0.78rem", margin: "0.35rem 0 0.65rem", lineHeight: 1.5 }}>
-            Link an existing repo to FlowCI Studio. Not needed to create new repos.
+            {github.installationStatusCopy}
           </p>
+          {github.installationAccounts.length > 0 ? (
+            <div style={{ display: "grid", gap: "0.35rem", marginBottom: "0.65rem" }}>
+              {github.installationAccounts.map((account) => (
+                <div
+                  key={account.installationId}
+                  style={{
+                    border: "1px solid var(--border)",
+                    borderRadius: "6px",
+                    padding: "0.45rem 0.55rem",
+                    color: "var(--text-secondary)",
+                    fontSize: "0.76rem",
+                  }}
+                >
+                  <strong style={{ color: "var(--text-primary)" }}>
+                    {account.accountLogin ? `@${account.accountLogin}` : `Installation ${account.installationId}`}
+                  </strong>
+                  <span style={{ color: "var(--text-muted)" }}>
+                    {" "}· {account.repositorySelection} repositories
+                  </span>
+                </div>
+              ))}
+            </div>
+          ) : null}
+          {github.linkedRepos.length > 0 ? (
+            <p style={{ color: "var(--text-muted)", fontSize: "0.74rem", margin: "0 0 0.65rem", lineHeight: 1.45 }}>
+              Linked repos: {github.linkedRepos.slice(0, 3).map((repo) => repo.repoFullName).join(", ")}
+              {github.linkedRepos.length > 3 ? ` +${github.linkedRepos.length - 3} more` : ""}
+            </p>
+          ) : null}
 
           {github.installUrl ? (
             <a
