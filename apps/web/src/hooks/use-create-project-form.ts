@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import type { CreateProjectRequest, MvpProjectOptionKey } from "@/lib/api/contracts";
 import { toSlug } from "@/components/product/workflow-builder-utils";
@@ -11,6 +11,7 @@ type CreateProjectPayloadResult =
 
 interface BuildPayloadInput {
   hasAllRepositoriesInstallation: boolean;
+  isMicroservicesShape: boolean;
   repoShapeId: string;
   projectTypeId: string;
   workflowRecipeId: string;
@@ -31,6 +32,18 @@ export function useCreateProjectForm() {
   const [outputFileName, setOutputFileName] = useState("ci.yml");
   const [serviceNameTouched, setServiceNameTouched] = useState(false);
 
+  // Microservices dual-slot state
+  const [backendProjectTypeId, setBackendProjectTypeId] = useState("nestjs");
+  const [backendWorkflowRecipeId, setBackendWorkflowRecipeId] = useState("standard");
+  const [backendServiceName, setBackendServiceNameState] = useState("");
+  const [backendServicePath, setBackendServicePath] = useState("backend/");
+  const [backendServiceNameTouched, setBackendServiceNameTouched] = useState(false);
+  const [frontendProjectTypeId, setFrontendProjectTypeId] = useState("nextjs");
+  const [frontendWorkflowRecipeId, setFrontendWorkflowRecipeId] = useState("standard");
+  const [frontendServiceName, setFrontendServiceNameState] = useState("");
+  const [frontendServicePath, setFrontendServicePath] = useState("frontend/");
+  const [frontendServiceNameTouched, setFrontendServiceNameTouched] = useState(false);
+
   const setRepoName = useCallback(
     (value: string) => {
       const normalized = normalizeRepoName(value);
@@ -45,6 +58,29 @@ export function useCreateProjectForm() {
   const setServiceName = useCallback((value: string) => {
     setServiceNameTouched(true);
     setServiceNameState(toSlug(value));
+  }, []);
+
+  // Auto-populate microservices slot names from repoName when not manually touched.
+  useEffect(() => {
+    if (!backendServiceNameTouched) {
+      setBackendServiceNameState(repoName ? `${repoName}-backend` : "");
+    }
+  }, [repoName, backendServiceNameTouched]);
+
+  useEffect(() => {
+    if (!frontendServiceNameTouched) {
+      setFrontendServiceNameState(repoName ? `${repoName}-frontend` : "");
+    }
+  }, [repoName, frontendServiceNameTouched]);
+
+  const setBackendServiceName = useCallback((value: string) => {
+    setBackendServiceNameTouched(true);
+    setBackendServiceNameState(toSlug(value));
+  }, []);
+
+  const setFrontendServiceName = useCallback((value: string) => {
+    setFrontendServiceNameTouched(true);
+    setFrontendServiceNameState(toSlug(value));
   }, []);
 
   function buildPayload(input: BuildPayloadInput): CreateProjectPayloadResult {
@@ -65,16 +101,6 @@ export function useCreateProjectForm() {
       return { ok: false, message: "Choose a repository shape." };
     }
 
-    if (!input.projectTypeId) {
-      return { ok: false, message: "Choose a project type." };
-    }
-
-    if (!input.workflowRecipeId) {
-      return { ok: false, message: "Choose a workflow recipe." };
-    }
-
-    const normalizedServiceName = toSlug(serviceName || normalizedRepoName);
-
     const coverage = Number(coverageThreshold);
     if (!Number.isInteger(coverage) || coverage < 0 || coverage > 100) {
       return { ok: false, message: "Coverage threshold must be between 0 and 100." };
@@ -88,6 +114,55 @@ export function useCreateProjectForm() {
     ) {
       return { ok: false, message: "Workflow file name must be a .yml or .yaml basename." };
     }
+
+    if (input.isMicroservicesShape) {
+      const normalizedBackendName = toSlug(backendServiceName || `${normalizedRepoName}-backend`);
+      const normalizedFrontendName = toSlug(frontendServiceName || `${normalizedRepoName}-frontend`);
+
+      return {
+        ok: true,
+        payload: {
+          repoName: normalizedRepoName,
+          visibility,
+          repoShape: input.repoShapeId,
+          // projectTypeId is required on the contract; use backend as the primary slot.
+          projectTypeId: backendProjectTypeId,
+          workflowRecipeId: backendWorkflowRecipeId,
+          // serviceName/servicePath are satisfied by the primary slot for non-microservices
+          // consumers of the contract — the microservicesConfig carries the full detail.
+          serviceName: normalizedBackendName,
+          servicePath: backendServicePath.trim() || "backend/",
+          nodeVersion: nodeVersion.trim() || "24",
+          coverageThreshold: coverage,
+          tests: input.tests,
+          outputFileName: normalizedOutputFileName,
+          microservicesConfig: {
+            backend: {
+              projectTypeId: backendProjectTypeId,
+              workflowRecipeId: backendWorkflowRecipeId,
+              serviceName: normalizedBackendName,
+              servicePath: backendServicePath.trim() || "backend/",
+            },
+            frontend: {
+              projectTypeId: frontendProjectTypeId,
+              workflowRecipeId: frontendWorkflowRecipeId,
+              serviceName: normalizedFrontendName,
+              servicePath: frontendServicePath.trim() || "frontend/",
+            },
+          },
+        },
+      };
+    }
+
+    if (!input.projectTypeId) {
+      return { ok: false, message: "Choose a project type." };
+    }
+
+    if (!input.workflowRecipeId) {
+      return { ok: false, message: "Choose a workflow recipe." };
+    }
+
+    const normalizedServiceName = toSlug(serviceName || normalizedRepoName);
 
     return {
       ok: true,
@@ -108,14 +183,30 @@ export function useCreateProjectForm() {
   }
 
   return {
+    backendProjectTypeId,
+    backendServiceName,
+    backendServicePath,
+    backendWorkflowRecipeId,
     buildPayload,
     coverageThreshold,
+    frontendProjectTypeId,
+    frontendServiceName,
+    frontendServicePath,
+    frontendWorkflowRecipeId,
     nodeVersion,
     outputFileName,
     repoName,
     serviceName,
     servicePath,
+    setBackendProjectTypeId,
+    setBackendServiceName,
+    setBackendServicePath,
+    setBackendWorkflowRecipeId,
     setCoverageThreshold,
+    setFrontendProjectTypeId,
+    setFrontendServiceName,
+    setFrontendServicePath,
+    setFrontendWorkflowRecipeId,
     setNodeVersion,
     setOutputFileName,
     setRepoName,

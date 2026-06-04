@@ -3,8 +3,8 @@
 import { useState, type KeyboardEvent } from "react";
 import { MotionConfig, motion, useReducedMotion } from "framer-motion";
 
-import { createGithubRepo } from "@/lib/api/github";
 import { generateWorkflow } from "@/lib/api/workflows";
+import { createProject } from "@/lib/api/projects";
 import type { CatalogTemplate, CreateProjectResult } from "@/lib/api/contracts";
 import { useCreateProjectForm } from "@/hooks/use-create-project-form";
 import { useGithubInstallations } from "@/hooks/use-github-installations";
@@ -78,71 +78,54 @@ export function WorkflowBuilder({ login, plan, guest = false }: Readonly<Workflo
   }
 
   async function handleCreateProject() {
-    const repoName = createForm.repoName.trim();
-    if (!repoName) {
-      setStatusMessage("Enter a repository name before creating a project.");
-      return;
-    }
+    // Build and validate the full payload using the form hook's validator.
+    const payloadResult = createForm.buildPayload({
+      hasAllRepositoriesInstallation: github.hasAllRepositoriesInstallation,
+      isMicroservicesShape: projectCatalog.isMicroservicesShape,
+      repoShapeId: projectCatalog.selectedRepoShapeId,
+      projectTypeId: projectCatalog.selectedProjectTypeId,
+      workflowRecipeId: projectCatalog.selectedWorkflowRecipeId,
+      tests: projectCatalog.tests,
+    });
 
-    if (!projectCatalog.selectedProjectType) {
-      setStatusMessage("Choose a project type before creating a project.");
-      return;
-    }
-
-    const templateId =
-      catalog.selectedTemplate?.id ??
-      catalog.allTemplates.find((t) => t.stack === projectCatalog.selectedProjectType?.id)?.id ??
-      catalog.allTemplates[0]?.id;
-
-    if (!templateId) {
-      setStatusMessage("No workflow templates available. Check catalog configuration.");
+    if (!payloadResult.ok) {
+      setStatusMessage(payloadResult.message);
       return;
     }
 
     setIsCreatingProject(true);
-    setStatusMessage("Creating GitHub repository with branch rulesets...");
+    setStatusMessage("Creating GitHub repository, branches, and committing workflow...");
 
     try {
-      const repoResult = await createGithubRepo({
-        repoName,
-        private: createForm.visibility === "private",
-      });
+      // Single unified call: creates repo + branches + protection + commits YAML
+      const response = await createProject(payloadResult.payload);
 
-      setStatusMessage("Repository created. Generating workflow YAML...");
-
-      const serviceName = createForm.serviceName || repoName;
-      const coverage = Number(createForm.coverageThreshold);
-      const safeCoverage =
-        Number.isFinite(coverage) && coverage >= 0 && coverage <= 100 ? coverage : 80;
-
-      const workflowResult = await generateWorkflow({
-        templateId,
-        serviceName,
-        servicePath: createForm.servicePath || ".",
-        nodeVersion: createForm.nodeVersion || "24",
-        coverageThreshold: safeCoverage,
-      });
-
-      const ownerAndRepo = repoResult.repoUrl.replace("https://github.com/", "");
+      // Derive the workflow file basename from the path returned by the server.
+      // workflowPath is always `.github/workflows/{filename}`.
+      const outputFileName = response.workflowPath.split("/").at(-1) ?? response.workflowPath;
 
       const result: CreateProjectResult = {
-        repoUrl: repoResult.repoUrl,
-        cloneUrl: repoResult.cloneUrl,
-        repoFullName: ownerAndRepo,
-        defaultBranch: repoResult.defaultBranch,
-        branchesCreated: repoResult.branchesCreated,
-        yaml: workflowResult.yaml,
-        outputFileName: workflowResult.metadata.outputFileName,
-        templateName: workflowResult.metadata.templateName,
-        stack: workflowResult.metadata.stack,
-        generatedAt: workflowResult.metadata.generatedAt,
+        id: response.id,
+        repoFullName: response.repoFullName,
+        repoUrl: response.repoUrl,
+        status: response.status,
+        workflowPath: response.workflowPath,
+        outputFileName,
+        githubCommitSha: response.githubCommitSha,
+        githubCommitUrl: response.githubCommitUrl,
+        projectTypeId: response.projectTypeId,
+        workflowRecipeId: response.workflowRecipeId,
+        // The unified endpoint always creates these three branches.
+        branchesCreated: ["main", "uat", "test"],
       };
 
       setCreateResult(result);
-      await history.loadHistory(true);
+      // Optimistically prepend to the projects list, then silently refresh from the server.
+      projects.prependCreateResult(response, payloadResult.payload);
+      void projects.loadProjects(true);
       setActiveTab("current");
       setStatusMessage(
-        `Repository "${ownerAndRepo}" created with branches: ${repoResult.branchesCreated.join(", ")}. Workflow YAML ready to copy.`,
+        `Repository "${response.repoFullName}" created. Workflow committed to ${response.workflowPath}.`,
       );
     } catch (error) {
       setStatusMessage(formatApiError(error, "Project creation failed"));

@@ -209,6 +209,18 @@ export interface SetupProjectResponse {
   githubCommitUrl: string | null;
 }
 
+export interface MicroserviceSlotConfig {
+  projectTypeId: string;
+  workflowRecipeId?: string;
+  serviceName: string;
+  servicePath: string;
+}
+
+export interface MicroservicesConfig {
+  backend: MicroserviceSlotConfig;
+  frontend: MicroserviceSlotConfig;
+}
+
 export interface CreateProjectRequest {
   repoName: string;
   visibility: "private" | "public";
@@ -221,6 +233,7 @@ export interface CreateProjectRequest {
   coverageThreshold?: number;
   tests?: Partial<Record<MvpProjectOptionKey, boolean>>;
   outputFileName?: string;
+  microservicesConfig?: MicroservicesConfig;
 }
 
 export interface CreateProjectResponse {
@@ -270,15 +283,26 @@ export interface CreateGithubRepoResponse {
   branchesCreated: string[];
 }
 
+/**
+ * UI state type for the result of POST /api/v1/projects (unified endpoint).
+ * Derived from CreateProjectResponse plus helpers computed on the client side.
+ */
 export interface CreateProjectResult {
-  repoUrl: string;
-  cloneUrl: string;
+  /** Database ID of the provisioned project record. */
+  id: string;
   repoFullName: string;
-  defaultBranch: string;
-  branchesCreated: string[];
-  yaml: string;
+  repoUrl: string;
+  status: "provisioned";
+  /** Full path of the committed workflow file, e.g. `.github/workflows/ci.yml`. */
+  workflowPath: string;
+  /** Basename of the workflow file, derived from workflowPath. */
   outputFileName: string;
-  templateName: string;
-  stack: string;
-  generatedAt: string;
+  githubCommitSha: string;
+  githubCommitUrl: string | null;
+  projectTypeId: string;
+  workflowRecipeId: string;
+  /** Branch names always created by the unified endpoint: main, uat, test. */
+  branchesCreated: string[];
+  /** Additional workflow file paths committed for microservices shapes. */
+  additionalWorkflowPaths?: string[];
 }

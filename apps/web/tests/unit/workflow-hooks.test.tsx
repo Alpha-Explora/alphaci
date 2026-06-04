@@ -377,6 +377,7 @@ describe("workflow hooks", () => {
     expect(
       current?.buildPayload({
         hasAllRepositoriesInstallation: false,
+        isMicroservicesShape: false,
         repoShapeId: "single-app",
         projectTypeId: "nextjs-app",
         workflowRecipeId: "frontend-standard-ci",
@@ -393,6 +394,7 @@ describe("workflow hooks", () => {
 
     const result = current?.buildPayload({
       hasAllRepositoriesInstallation: true,
+      isMicroservicesShape: false,
       repoShapeId: "single-app",
       projectTypeId: "nextjs-app",
       workflowRecipeId: "frontend-standard-ci",
@@ -435,6 +437,7 @@ describe("workflow hooks", () => {
     let current = null as ReturnType<typeof useCreateProjectForm> | null;
     const baseInput = {
       hasAllRepositoriesInstallation: true,
+      isMicroservicesShape: false,
       repoShapeId: "single-app",
       projectTypeId: "nextjs-app",
       workflowRecipeId: "frontend-standard-ci",

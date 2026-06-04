@@ -26,6 +26,12 @@ interface WorkflowSetupTabProps {
   reducedMotion: boolean;
 }
 
+// onCopyYaml and onDownloadYaml are kept in the interface for the "Generate YAML only"
+// flow (handleGenerateWorkflow), which still works off workflow history entries that
+// contain the YAML content. They are intentionally not forwarded to SetupResultPanel
+// because the unified create endpoint commits the file to the repo directly — no YAML
+// is returned in the response.
+
 const projectOptionDescriptions: Record<MvpProjectOptionKey, string> = {
   lint:     "Run code quality checks before build.",
   unit:     "Run the starter project's test script.",
@@ -144,42 +150,130 @@ export function WorkflowSetupTab({
             </p>
           ) : null}
 
-          <label className="input-label" htmlFor="project-type-select" style={{ marginTop: "0.75rem" }}>
-            Language / framework
-          </label>
-          <select
-            id="project-type-select"
-            value={projectCatalog.selectedProjectTypeId}
-            onChange={(event) => projectCatalog.setSelectedProjectTypeId(event.target.value)}
-            disabled={projectCatalog.loadingProjectOptions}
-          >
-            {projectCatalog.projectTypesForShape.map((projectType) => (
-              <option key={projectType.id} value={projectType.id}>
-                {projectType.label}
-              </option>
-            ))}
-          </select>
+          {!projectCatalog.isMicroservicesShape ? (
+            <>
+              <label className="input-label" htmlFor="project-type-select" style={{ marginTop: "0.75rem" }}>
+                Language / framework
+              </label>
+              <select
+                id="project-type-select"
+                value={projectCatalog.selectedProjectTypeId}
+                onChange={(event) => projectCatalog.setSelectedProjectTypeId(event.target.value)}
+                disabled={projectCatalog.loadingProjectOptions}
+              >
+                {projectCatalog.projectTypesForShape.map((projectType) => (
+                  <option key={projectType.id} value={projectType.id}>
+                    {projectType.label}
+                  </option>
+                ))}
+              </select>
 
-          <label className="input-label" htmlFor="workflow-recipe-select" style={{ marginTop: "0.75rem" }}>
-            Workflow recipe
-          </label>
-          <select
-            id="workflow-recipe-select"
-            value={projectCatalog.selectedWorkflowRecipeId}
-            onChange={(event) => projectCatalog.setSelectedWorkflowRecipeId(event.target.value)}
-            disabled={projectCatalog.loadingProjectOptions}
-          >
-            {projectCatalog.recipesForSelectedProject.map((recipe) => (
-              <option key={recipe.id} value={recipe.id}>
-                {recipe.label}
-              </option>
-            ))}
-          </select>
-          {projectCatalog.selectedWorkflowRecipe?.description ? (
-            <p style={{ color: "var(--text-muted)", fontSize: "0.75rem", margin: "0.3rem 0 0", lineHeight: 1.5 }}>
-              {projectCatalog.selectedWorkflowRecipe.description}
-            </p>
-          ) : null}
+              <label className="input-label" htmlFor="workflow-recipe-select" style={{ marginTop: "0.75rem" }}>
+                Workflow recipe
+              </label>
+              <select
+                id="workflow-recipe-select"
+                value={projectCatalog.selectedWorkflowRecipeId}
+                onChange={(event) => projectCatalog.setSelectedWorkflowRecipeId(event.target.value)}
+                disabled={projectCatalog.loadingProjectOptions}
+              >
+                {projectCatalog.recipesForSelectedProject.map((recipe) => (
+                  <option key={recipe.id} value={recipe.id}>
+                    {recipe.label}
+                  </option>
+                ))}
+              </select>
+              {projectCatalog.selectedWorkflowRecipe?.description ? (
+                <p style={{ color: "var(--text-muted)", fontSize: "0.75rem", margin: "0.3rem 0 0", lineHeight: 1.5 }}>
+                  {projectCatalog.selectedWorkflowRecipe.description}
+                </p>
+              ) : null}
+            </>
+          ) : (
+            <>
+              {/* Backend service configurator */}
+              <div style={{ marginTop: "0.75rem", padding: "0.75rem", border: "1px solid var(--border)", borderRadius: "var(--radius-sm, 6px)" }}>
+                <span className="controls-panel-label" style={{ fontSize: "0.65rem", letterSpacing: "0.08em" }}>
+                  BACKEND SERVICE
+                </span>
+                <label className="input-label" htmlFor="backend-project-type-select" style={{ marginTop: "0.55rem" }}>
+                  Language
+                </label>
+                <select
+                  id="backend-project-type-select"
+                  value={form.backendProjectTypeId}
+                  onChange={(event) => form.setBackendProjectTypeId(event.target.value)}
+                  disabled={projectCatalog.loadingProjectOptions}
+                >
+                  {projectCatalog.backendProjectTypes.map((pt) => (
+                    <option key={pt.id} value={pt.id}>{pt.label}</option>
+                  ))}
+                  {projectCatalog.backendProjectTypes.length === 0 ? (
+                    <option value="nestjs">NestJS</option>
+                  ) : null}
+                </select>
+                <label className="input-label" htmlFor="backend-service-name" style={{ marginTop: "0.55rem" }}>
+                  Service name
+                </label>
+                <input
+                  id="backend-service-name"
+                  value={form.backendServiceName}
+                  onChange={(event) => form.setBackendServiceName(event.target.value)}
+                  placeholder={form.repoName ? `${form.repoName}-backend` : "my-app-backend"}
+                />
+                <label className="input-label" htmlFor="backend-service-path" style={{ marginTop: "0.55rem" }}>
+                  Service path
+                </label>
+                <input
+                  id="backend-service-path"
+                  value={form.backendServicePath}
+                  onChange={(event) => form.setBackendServicePath(event.target.value)}
+                  placeholder="backend/"
+                />
+              </div>
+
+              {/* Frontend service configurator */}
+              <div style={{ marginTop: "0.65rem", padding: "0.75rem", border: "1px solid var(--border)", borderRadius: "var(--radius-sm, 6px)" }}>
+                <span className="controls-panel-label" style={{ fontSize: "0.65rem", letterSpacing: "0.08em" }}>
+                  FRONTEND SERVICE
+                </span>
+                <label className="input-label" htmlFor="frontend-project-type-select" style={{ marginTop: "0.55rem" }}>
+                  Language
+                </label>
+                <select
+                  id="frontend-project-type-select"
+                  value={form.frontendProjectTypeId}
+                  onChange={(event) => form.setFrontendProjectTypeId(event.target.value)}
+                  disabled={projectCatalog.loadingProjectOptions}
+                >
+                  {projectCatalog.frontendProjectTypes.map((pt) => (
+                    <option key={pt.id} value={pt.id}>{pt.label}</option>
+                  ))}
+                  {projectCatalog.frontendProjectTypes.length === 0 ? (
+                    <option value="nextjs">Next.js</option>
+                  ) : null}
+                </select>
+                <label className="input-label" htmlFor="frontend-service-name" style={{ marginTop: "0.55rem" }}>
+                  Service name
+                </label>
+                <input
+                  id="frontend-service-name"
+                  value={form.frontendServiceName}
+                  onChange={(event) => form.setFrontendServiceName(event.target.value)}
+                  placeholder={form.repoName ? `${form.repoName}-frontend` : "my-app-frontend"}
+                />
+                <label className="input-label" htmlFor="frontend-service-path" style={{ marginTop: "0.55rem" }}>
+                  Service path
+                </label>
+                <input
+                  id="frontend-service-path"
+                  value={form.frontendServicePath}
+                  onChange={(event) => form.setFrontendServicePath(event.target.value)}
+                  placeholder="frontend/"
+                />
+              </div>
+            </>
+          )}
         </div>
 
         <hr className="controls-panel-rule" />
@@ -232,31 +326,33 @@ export function WorkflowSetupTab({
             </div>
           </div>
 
-          {/* Service name + Service path — paired row */}
-          <div className="form-pair-row">
-            <div>
-              <label className="input-label" htmlFor="service-name">
-                Service name
-              </label>
-              <input
-                id="service-name"
-                value={form.serviceName}
-                onChange={(event) => form.setServiceName(event.target.value)}
-                placeholder="my-next-app"
-              />
+          {/* Service name + Service path — single-service mode only */}
+          {!projectCatalog.isMicroservicesShape ? (
+            <div className="form-pair-row">
+              <div>
+                <label className="input-label" htmlFor="service-name">
+                  Service name
+                </label>
+                <input
+                  id="service-name"
+                  value={form.serviceName}
+                  onChange={(event) => form.setServiceName(event.target.value)}
+                  placeholder="my-next-app"
+                />
+              </div>
+              <div>
+                <label className="input-label" htmlFor="service-path">
+                  Service path
+                </label>
+                <input
+                  id="service-path"
+                  value={form.servicePath}
+                  onChange={(event) => form.setServicePath(event.target.value)}
+                  placeholder="."
+                />
+              </div>
             </div>
-            <div>
-              <label className="input-label" htmlFor="service-path">
-                Service path
-              </label>
-              <input
-                id="service-path"
-                value={form.servicePath}
-                onChange={(event) => form.setServicePath(event.target.value)}
-                placeholder="."
-              />
-            </div>
-          </div>
+          ) : null}
 
           {/* Workflow file name — full width */}
           <label className="input-label" htmlFor="output-file-name">
@@ -361,8 +457,6 @@ export function WorkflowSetupTab({
       <SetupResultPanel
         setupResult={createResult}
         onViewProject={onViewProject}
-        onCopyYaml={onCopyYaml}
-        onDownloadYaml={onDownloadYaml}
       />
     </motion.section>
   );
