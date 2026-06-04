@@ -33,7 +33,7 @@ function AppNav({ guest, session, onLogout, isLoggingOut }: Readonly<NavbarProps
   const avatarInitial = (session?.user.name ?? session?.user.login ?? "U").slice(0, 1).toUpperCase();
 
   return (
-    <header className="marketing-nav">
+    <header className="dash-nav">
       <Link className="brand-mark" href="/home">
         <PipelineLogo size={22} />
         <span>FlowCI Studio</span>
@@ -135,9 +135,9 @@ export default function WorkflowsPage() {
   /* ── Guard: loading ─────────────────────────────────────────────────────── */
   if (status === "loading") {
     return (
-      <main className="flow-shell page-shell">
+      <main className="dash-shell">
         <FlowBackground />
-        <header className="marketing-nav">
+        <header className="dash-nav">
           <Link className="brand-mark" href="/home">
             <PipelineLogo size={22} />
             <span>FlowCI Studio</span>
@@ -157,15 +157,15 @@ export default function WorkflowsPage() {
   /* ── Guard: error ───────────────────────────────────────────────────────── */
   if (status === "error") {
     return (
-      <main className="flow-shell page-shell">
+      <main className="dash-shell">
         <FlowBackground />
-        <header className="marketing-nav">
+        <header className="dash-nav">
           <Link className="brand-mark" href="/home">
             <PipelineLogo size={22} />
             <span>FlowCI Studio</span>
           </Link>
           <div className="nav-right">
-            <Link className="ghost-button" href="/login?next=/workflows" style={{ padding: "0.4rem 1rem", fontSize: "0.82rem", minHeight: "2.2rem" }}>Sign in</Link>
+            <Link className="ghost-button" href="/login?next=/workflows" style={{ padding: "0.2rem 0.75rem", fontSize: "0.82rem", minHeight: "1.8rem" }}>Sign in</Link>
           </div>
         </header>
         <div className="state-body">
@@ -196,7 +196,7 @@ export default function WorkflowsPage() {
   const guest = isGuest(session);
 
   return (
-    <main className="flow-shell page-shell" suppressHydrationWarning>
+    <main className="dash-shell" suppressHydrationWarning>
       <a href="#main-content" className="skip-link">Skip to main content</a>
       <FlowBackground />
 

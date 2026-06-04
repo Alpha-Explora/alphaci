@@ -96,7 +96,7 @@ function AppNav({ guest, session, onLogout, isLoggingOut }: Readonly<NavbarProps
   const avatarInitial = (session?.user.name ?? session?.user.login ?? "U").slice(0, 1).toUpperCase();
 
   return (
-    <header className="marketing-nav">
+    <header className="dash-nav">
       <Link className="brand-mark" href="/home">
         <PipelineLogo size={22} />
         <span>FlowCI Studio</span>
@@ -243,9 +243,9 @@ export default function HomeDashboardPage() {
   /* ── Guard: loading ─────────────────────────────────────────────────────── */
   if (status === "loading") {
     return (
-      <main className="flow-shell page-shell">
+      <main className="dash-shell">
         <FlowBackground />
-        <header className="marketing-nav">
+        <header className="dash-nav">
           <Link className="brand-mark" href="/home">
             <PipelineLogo size={22} />
             <span>FlowCI Studio</span>
@@ -265,17 +265,17 @@ export default function HomeDashboardPage() {
   /* ── Guard: error ───────────────────────────────────────────────────────── */
   if (status === "error") {
     return (
-      <main className="flow-shell page-shell">
-        <FlowBackground />
-        <header className="marketing-nav">
-          <Link className="brand-mark" href="/home">
-            <PipelineLogo size={22} />
-            <span>FlowCI Studio</span>
-          </Link>
-          <div className="nav-right">
-            <Link className="ghost-button" href="/login?next=/home" style={{ padding: "0.4rem 1rem", fontSize: "0.82rem", minHeight: "2.2rem" }}>Sign in</Link>
-          </div>
-        </header>
+      <main className="dash-shell">
+      <FlowBackground />
+      <header className="dash-nav">
+        <Link className="brand-mark" href="/home">
+          <PipelineLogo size={22} />
+          <span>FlowCI Studio</span>
+        </Link>
+        <div className="nav-right">
+          <Link className="ghost-button" href="/login?next=/home" style={{ padding: "0.2rem 0.75rem", fontSize: "0.82rem", minHeight: "1.8rem" }}>Sign in</Link>
+        </div>
+      </header>
         <div className="state-body">
           <div className="state-card">
             <div className="state-icon" style={{ background: "rgba(255,79,79,0.08)", border: "1px solid rgba(255,79,79,0.2)" }}>
@@ -317,7 +317,7 @@ export default function HomeDashboardPage() {
   const avatarInitial = (session?.user.name ?? session?.user.login ?? "U").slice(0, 1).toUpperCase();
 
   return (
-    <main className="flow-shell page-shell" suppressHydrationWarning>
+    <main className="dash-shell" suppressHydrationWarning>
       <a href="#main-content" className="skip-link">Skip to main content</a>
       <FlowBackground />
 
@@ -355,16 +355,16 @@ export default function HomeDashboardPage() {
                   src={session.user.avatarUrl}
                   alt={session.user.name ?? session.user.login}
                   className="welcome-editorial-avatar"
-                  width={44}
-                  height={44}
+                  width={36}
+                  height={36}
                   unoptimized
                 />
               ) : (
-                <span className="welcome-editorial-avatar-placeholder" aria-hidden="true">{avatarInitial}</span>
+                <span className="welcome-editorial-avatar-placeholder" aria-hidden="true" style={{ width: 36, height: 36, fontSize: '1rem' }}>{avatarInitial}</span>
               ))}
-              <div style={{ display: "flex", flexDirection: "column", gap: "0.2rem" }}>
-                <p className="file-path-label" style={{ marginBottom: 0 }}>home/dashboard.yml</p>
-                <h1 className="welcome-editorial" style={{ padding: 0, border: "none", margin: 0, display: "block" }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: "0.1rem" }}>
+                <p className="file-path-label" style={{ marginBottom: 0, fontSize: "0.7rem" }}>home/dashboard.yml</p>
+                <h1 className="welcome-editorial" style={{ padding: 0, border: "none", margin: 0, display: "block", fontSize: "clamp(1.2rem, 2vw, 1.5rem)" }}>
                   {guest
                     ? "FlowCI Studio Dashboard"
                     : `Welcome back, ${session?.user.name ?? session?.user.login ?? "builder"}.`}
@@ -375,11 +375,11 @@ export default function HomeDashboardPage() {
             {/* Right: pipeline track (visible on md+ only) */}
             <div style={{
               borderLeft: "1px solid var(--border)",
-              paddingLeft: "clamp(1rem, 2.5vw, 1.75rem)",
+              paddingLeft: "clamp(0.75rem, 1.5vw, 1.25rem)",
               alignSelf: "start",
               display: "flex",
               flexDirection: "column",
-              gap: "0.5rem",
+              gap: "0.25rem",
             }} className="pipeline-track-aside">
               <p className="eyebrow">Pipeline stages</p>
               <PipelineTrack reduced={prefersReducedMotion} />
@@ -395,13 +395,13 @@ export default function HomeDashboardPage() {
             <div className="welcome-editorial-actions">
               {guest ? (
                 <>
-                  <Link className="primary-button" href="/signup" style={{ padding: "0.6rem 1.4rem", fontSize: "0.88rem", minHeight: "2.5rem" }}>Sign up free</Link>
-                  <Link className="ghost-button" href="/login" style={{ padding: "0.6rem 1.2rem", fontSize: "0.88rem", minHeight: "2.5rem" }}>Log in</Link>
+                  <Link className="primary-button" href="/signup" style={{ padding: "0.4rem 1rem", fontSize: "0.8rem", minHeight: "2rem" }}>Sign up free</Link>
+                  <Link className="ghost-button" href="/login" style={{ padding: "0.4rem 1rem", fontSize: "0.8rem", minHeight: "2rem" }}>Log in</Link>
                 </>
               ) : (
                 <>
-                  <Link className="primary-button" href="/workflows" style={{ padding: "0.6rem 1.4rem", fontSize: "0.88rem", minHeight: "2.5rem" }}>Create project</Link>
-                  <Link className="ghost-button" href="/subscribe" style={{ padding: "0.6rem 1.2rem", fontSize: "0.88rem", minHeight: "2.5rem" }}>Subscription</Link>
+                  <Link className="primary-button" href="/workflows" style={{ padding: "0.4rem 1rem", fontSize: "0.8rem", minHeight: "2rem" }}>Create project</Link>
+                  <Link className="ghost-button" href="/subscribe" style={{ padding: "0.4rem 1rem", fontSize: "0.8rem", minHeight: "2rem" }}>Subscription</Link>
                 </>
               )}
             </div>

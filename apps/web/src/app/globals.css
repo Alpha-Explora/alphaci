@@ -54,9 +54,9 @@ html::-webkit-scrollbar {
   --radius-card:     1.25rem;
   --radius-pill:     999px;
   --layout-max:      1440px;
-  --layout-gutter:   clamp(1.5rem, 4vw, 3rem);
-  --stack-gap:       clamp(1.5rem, 2vw, 2.5rem);
-  --panel-pad:       clamp(1.5rem, 2.5vw, 2.5rem);
+  --layout-gutter:   clamp(1rem, 2vw, 1.5rem);
+  --stack-gap:       clamp(1rem, 1.5vw, 1.5rem);
+  --panel-pad:       clamp(1rem, 1.5vw, 1.5rem);
   --content-measure: 68ch;
   --tab-min-height:  3rem;
   --surface:         var(--bg-surface);
@@ -136,6 +136,30 @@ h1, h2, h3 {
 .flow-shell.page-shell {
   padding: 0;
   gap: 0;
+}
+
+.dash-shell {
+  position: relative;
+  min-height: 100dvh;
+  width: 100%;
+  max-width: var(--layout-max);
+  margin: 0 auto;
+  padding: 1rem var(--layout-gutter);
+  display: flex;
+  flex-direction: column;
+  gap: var(--stack-gap);
+  background: var(--bg-base);
+}
+
+.dash-shell h1 {
+  font-size: clamp(1.25rem, 2vw, 1.75rem);
+  line-height: 1.1;
+  letter-spacing: -0.015em;
+}
+
+.dash-shell h2 {
+  font-size: clamp(1.1rem, 1.5vw, 1.35rem);
+  line-height: 1.2;
 }
 
 /* ── In-flow guard state (loading / error) ──────────────────────────────── */
@@ -407,6 +431,22 @@ h1, h2, h3 {
   z-index: 100;
   width: 100%;
   box-shadow: 0 1px 0 rgba(79,142,255,0.08), 0 8px 32px rgba(0,0,0,0.3);
+}
+
+.dash-nav {
+  background: rgba(6, 10, 20, 0.85);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  padding: 0 var(--layout-gutter);
+  height: 48px;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  width: 100%;
 }
 
 .brand-mark {
@@ -4141,4 +4181,84 @@ select option {
   .form-pair-row {
     grid-template-columns: 1fr;
   }
+}
+
+/* ── Dashboard Specific Tightening ─────────────────────────────────────────────── */
+.dash-shell .dash-tab-bar {
+  display: flex;
+  gap: 0.5rem;
+  border-bottom: 1px solid var(--border-soft);
+  margin-bottom: 1rem;
+}
+
+.dash-shell .dash-tab-btn {
+  padding: 0.4rem 0.8rem;
+  font-size: 0.85rem;
+  font-weight: 500;
+  border: none;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.dash-shell .dash-tab-btn:hover {
+  color: var(--text-primary);
+}
+
+.dash-shell .dash-tab-btn.active {
+  color: var(--text-primary);
+  border-bottom: 2px solid var(--brand);
+}
+
+.dash-shell .kpi-grid-editorial {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 0.75rem;
+}
+
+.dash-shell .kpi-cell {
+  padding: 0.75rem 1rem;
+  background: var(--bg-surface);
+  border-radius: 0.75rem;
+  border: 1px solid var(--border-soft);
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.dash-shell .kpi-cell h3 {
+  font-size: 1.15rem;
+  margin: 0;
+}
+
+.dash-shell .kpi-cell p {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin: 0;
+}
+
+.dash-shell .command-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 0.5rem;
+}
+
+.dash-shell .command-item {
+  display: flex;
+  align-items: center;
+  padding: 0.6rem 0.8rem;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-soft);
+  border-radius: 0.5rem;
+  text-decoration: none;
+  color: var(--text-primary);
+  font-size: 0.85rem;
+  transition: all 0.2s;
+}
+
+.dash-shell .command-item:hover {
+  border-color: var(--border-brand);
+  background: var(--brand-light);
 }
