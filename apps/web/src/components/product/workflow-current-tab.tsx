@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { motion } from "framer-motion";
 
 import type { CreateProjectResult, ProvisionedProject, WorkflowHistoryItem } from "@/lib/api/contracts";
@@ -17,13 +18,20 @@ interface WorkflowCurrentTabProps {
   projects: ProvisionedProject[];
 }
 
+type SubTab = "projects" | "history";
+
 function selectedChecks(project: ProvisionedProject): string {
   const options = project.projectOptions ?? {};
   const enabled = Object.entries(options)
     .filter(([, value]) => value === true)
     .map(([key]) => key);
+  return enabled.length ? enabled.join(", ") : "None";
+}
 
-  return enabled.length ? enabled.join(", ") : "None selected";
+function statusVariant(status: string): string {
+  if (status === "provisioned") return "provisioned";
+  if (status === "provisioning" || status === "pending") return "provisioning";
+  return "failed";
 }
 
 export function WorkflowCurrentTab({
@@ -36,6 +44,8 @@ export function WorkflowCurrentTab({
   onOpenSetup,
   projects,
 }: Readonly<WorkflowCurrentTabProps>) {
+  const [subTab, setSubTab] = useState<SubTab>("projects");
+
   return (
     <motion.section
       className="tab-content-panel"
@@ -47,146 +57,330 @@ export function WorkflowCurrentTab({
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
     >
+      {/* ── Latest result banner ──────────────────────────────────── */}
       {latestResult ? (
-        <div className="section-card glass-panel" style={{ marginBottom: "1rem" }}>
-          <p className="eyebrow" style={{ color: "var(--success, #22c55e)" }}>Project created</p>
-          <h2>{latestResult.repoFullName}</h2>
-          <div className="result-branches" style={{ margin: "0.5rem 0" }}>
+        <div style={{
+          marginBottom: "1.25rem",
+          padding: "0.85rem 1rem",
+          borderRadius: "var(--radius-card)",
+          background: "rgba(0, 208, 132, 0.06)",
+          border: "1px solid rgba(0, 208, 132, 0.2)",
+          display: "flex",
+          flexDirection: "column",
+          gap: "0.5rem",
+        }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", flexWrap: "wrap" }}>
+            <p className="eyebrow" style={{ color: "var(--success)", margin: 0 }}>Project created</p>
+            <span style={{ color: "var(--text-muted)", fontSize: "0.78rem" }}>·</span>
+            <span style={{ fontWeight: 700, fontSize: "0.92rem", color: "var(--text-primary)", fontFamily: "ui-monospace, monospace" }}>
+              {latestResult.repoFullName}
+            </span>
+          </div>
+          <div className="result-branches" style={{ margin: 0 }}>
             {latestResult.branchesCreated.map((branch) => (
               <span key={branch} className="branch-chip">{branch}</span>
             ))}
           </div>
-          <p className="helper-text">Workflow file: <strong>{latestResult.outputFileName}</strong></p>
-          <p className="helper-text">Template: {latestResult.templateName} ({latestResult.stack})</p>
-          <div className="result-actions">
-            <a className="primary-button" href={latestResult.repoUrl} target="_blank" rel="noreferrer">
+          <p style={{ fontSize: "0.78rem", color: "var(--text-secondary)", margin: 0 }}>
+            Workflow file: <strong style={{ color: "var(--text-primary)" }}>{latestResult.outputFileName}</strong>
+            <span style={{ marginLeft: "0.75rem", color: "var(--text-muted)" }}>
+              {latestResult.templateName} ({latestResult.stack})
+            </span>
+          </p>
+          <div className="result-actions" style={{ margin: 0 }}>
+            <a className="primary-button" href={latestResult.repoUrl} target="_blank" rel="noreferrer"
+               style={{ padding: "0.5rem 1.1rem", fontSize: "0.85rem", minHeight: "2.4rem" }}>
               Open repo
             </a>
-            <a className="ghost-button" href={`${latestResult.repoUrl}/actions`} target="_blank" rel="noreferrer">
+            <a className="ghost-button" href={`${latestResult.repoUrl}/actions`} target="_blank" rel="noreferrer"
+               style={{ padding: "0.5rem 1.1rem", fontSize: "0.85rem", minHeight: "2.4rem" }}>
               Open Actions
             </a>
           </div>
-          <p className="helper-text">
-            Copy the workflow YAML from history below and commit it to <code>.github/workflows/{latestResult.outputFileName}</code> to trigger your first CI run.
+          <p style={{ fontSize: "0.76rem", color: "var(--text-muted)", margin: 0 }}>
+            Commit <code style={{ fontFamily: "ui-monospace, monospace", background: "rgba(255,255,255,0.06)", padding: "0.1rem 0.35rem", borderRadius: "0.3rem" }}>.github/workflows/{latestResult.outputFileName}</code> to trigger your first CI run.
           </p>
         </div>
       ) : null}
-      <div className="templates-header">
-        <h2>Provisioned Projects</h2>
-        <p>{projects.length} projects</p>
+
+      {/* ── Sub-tab bar ───────────────────────────────────────────── */}
+      <div className="subtab-bar" role="tablist" aria-label="Current tab sections">
+        <button
+          type="button"
+          role="tab"
+          id="subtab-projects"
+          aria-controls="subtab-panel-projects"
+          aria-selected={subTab === "projects"}
+          className={`subtab-btn${subTab === "projects" ? " active" : ""}`}
+          onClick={() => setSubTab("projects")}
+        >
+          Projects
+          {!loadingProjects && projects.length > 0 && (
+            <span style={{ marginLeft: "0.35rem", color: subTab === "projects" ? "var(--brand)" : "var(--text-muted)", fontSize: "0.75rem" }}>
+              {projects.length}
+            </span>
+          )}
+        </button>
+        <button
+          type="button"
+          role="tab"
+          id="subtab-history"
+          aria-controls="subtab-panel-history"
+          aria-selected={subTab === "history"}
+          className={`subtab-btn${subTab === "history" ? " active" : ""}`}
+          onClick={() => setSubTab("history")}
+        >
+          History
+          {!loadingHistory && history.length > 0 && (
+            <span style={{ marginLeft: "0.35rem", color: subTab === "history" ? "var(--brand)" : "var(--text-muted)", fontSize: "0.75rem" }}>
+              {history.length}
+            </span>
+          )}
+        </button>
       </div>
-      <p className="helper-text">
-        These repos were created through the GitHub App path and include CI_TOKEN plus the managed workflow file.
-      </p>
 
-      {loadingProjects ? <p className="helper-text">Loading provisioned projects...</p> : null}
+      {/* ── Projects panel ───────────────────────────────────────── */}
+      {subTab === "projects" && (
+        <div
+          id="subtab-panel-projects"
+          role="tabpanel"
+          aria-labelledby="subtab-projects"
+        >
+          {loadingProjects ? (
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: "0.75rem" }}>
+              {[0, 1, 2].map((i) => <div key={i} className="skeleton-card" style={{ minHeight: "8rem" }} />)}
+            </div>
+          ) : projects.length === 0 ? (
+            <div style={{ padding: "2.5rem 0", textAlign: "center" }}>
+              <p style={{ color: "var(--text-secondary)", margin: "0 0 1rem", fontSize: "0.88rem" }}>
+                No provisioned projects yet.
+              </p>
+              <button className="primary-button" type="button" onClick={onOpenSetup}
+                      style={{ padding: "0.6rem 1.4rem", fontSize: "0.88rem", minHeight: "2.5rem" }}>
+                Create your first project
+              </button>
+            </div>
+          ) : (
+            <div className="history-grid">
+              {projects.map((project) => (
+                <article key={project.id} className="project-card">
+                  {/* Header: repo name + status */}
+                  <div className="project-card-header">
+                    {project.repoUrl ? (
+                      <a
+                        href={project.repoUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="project-card-repo"
+                      >
+                        {project.repoFullName}
+                      </a>
+                    ) : (
+                      <span className="project-card-repo" style={{ cursor: "default" }}>
+                        {project.repoFullName}
+                      </span>
+                    )}
+                    <span className={`project-status-badge ${statusVariant(project.status)}`}>
+                      {project.status}
+                    </span>
+                  </div>
 
-      {!loadingProjects && projects.length === 0 ? (
-        <p className="helper-text">No provisioned projects yet. Open Create Project to scaffold your first repo.</p>
-      ) : (
-        <div className="history-grid">
-          {projects.map((project) => (
-            <article key={project.id} className="history-card">
-              <div className="history-head">
-                <h3>{project.repoFullName}</h3>
-                <p>{project.status}</p>
-              </div>
-              {project.repoUrl ? (
-                <p className="helper-text">
-                  Repo URL:{" "}
-                  <a href={project.repoUrl} target="_blank" rel="noreferrer">
-                    {project.repoUrl}
-                  </a>
-                </p>
-              ) : null}
-              {project.visibility ? (
-                <p className="helper-text">Visibility: {project.visibility}</p>
-              ) : null}
-              <p className="helper-text">Service: {project.serviceName}</p>
-              <p className="helper-text">
-                Project type: {project.projectTypeId ?? project.templateId}
-              </p>
-              <p className="helper-text">
-                Recipe: {project.workflowRecipeId ?? project.templateId}
-              </p>
-              <p className="helper-text">Selected checks: {selectedChecks(project)}</p>
-              <p className="helper-text">Workflow: {project.workflowPath}</p>
-              {project.githubCommitSha ? (
-                <p className="helper-text">Commit: {project.githubCommitSha}</p>
-              ) : null}
-              {project.failureReason ? (
-                <p className="error-text">Failure: {project.failureReason}</p>
-              ) : null}
-              <div className="result-actions">
-                {project.repoUrl ? (
-                  <>
-                    <a className="ghost-button" href={project.repoUrl} target="_blank" rel="noreferrer">
-                      Open repo
-                    </a>
-                    <a className="ghost-button" href={`${project.repoUrl}/actions`} target="_blank" rel="noreferrer">
-                      Open Actions
-                    </a>
-                  </>
-                ) : null}
-                {project.githubCommitUrl ? (
-                  <a className="ghost-button" href={project.githubCommitUrl} target="_blank" rel="noreferrer">
-                    Open commit
-                  </a>
-                ) : null}
-                <button className="ghost-button" type="button" onClick={onOpenSetup}>
-                  Create Project
-                </button>
-              </div>
-            </article>
-          ))}
+                  {/* Meta tags: projectTypeId + workflowRecipeId */}
+                  <div className="project-card-meta-row">
+                    {project.projectTypeId && (
+                      <span className="project-card-tag">{project.projectTypeId}</span>
+                    )}
+                    {project.workflowRecipeId && (
+                      <span className="project-card-tag">{project.workflowRecipeId}</span>
+                    )}
+                    {project.visibility && (
+                      <span className="project-card-tag">{project.visibility}</span>
+                    )}
+                  </div>
+
+                  {/* Key-value details */}
+                  <dl className="project-kv-grid">
+                    <dt className="project-kv-key">Service</dt>
+                    <dd className="project-kv-val">{project.serviceName}</dd>
+
+                    {project.workflowPath && (
+                      <>
+                        <dt className="project-kv-key">Workflow</dt>
+                        <dd className="project-kv-val" style={{ fontFamily: "ui-monospace, monospace", fontSize: "0.75rem" }}>
+                          {project.workflowPath}
+                        </dd>
+                      </>
+                    )}
+
+                    {selectedChecks(project) !== "None" && (
+                      <>
+                        <dt className="project-kv-key">Checks</dt>
+                        <dd className="project-kv-val">{selectedChecks(project)}</dd>
+                      </>
+                    )}
+
+                    {project.githubCommitSha && (
+                      <>
+                        <dt className="project-kv-key">Commit</dt>
+                        <dd className="project-kv-val" style={{ fontFamily: "ui-monospace, monospace", fontSize: "0.75rem" }}>
+                          {project.githubCommitSha.slice(0, 10)}
+                        </dd>
+                      </>
+                    )}
+                  </dl>
+
+                  {project.failureReason ? (
+                    <p className="error-text" style={{ margin: 0, fontSize: "0.78rem" }}>
+                      {project.failureReason}
+                    </p>
+                  ) : null}
+
+                  {/* Action buttons */}
+                  <div className="project-card-actions">
+                    {project.repoUrl && (
+                      <a
+                        className="ghost-button"
+                        href={project.repoUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        style={{ padding: "0.42rem 0.9rem", fontSize: "0.8rem", minHeight: "2.2rem" }}
+                      >
+                        Open repo
+                      </a>
+                    )}
+                    {project.repoUrl && (
+                      <a
+                        className="ghost-button"
+                        href={`${project.repoUrl}/actions`}
+                        target="_blank"
+                        rel="noreferrer"
+                        style={{ padding: "0.42rem 0.9rem", fontSize: "0.8rem", minHeight: "2.2rem" }}
+                      >
+                        Actions
+                      </a>
+                    )}
+                    {project.githubCommitUrl && (
+                      <a
+                        className="ghost-button"
+                        href={project.githubCommitUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        style={{ padding: "0.42rem 0.9rem", fontSize: "0.8rem", minHeight: "2.2rem" }}
+                      >
+                        Commit
+                      </a>
+                    )}
+                    <button
+                      className="ghost-button"
+                      type="button"
+                      onClick={onOpenSetup}
+                      style={{ padding: "0.42rem 0.9rem", fontSize: "0.8rem", minHeight: "2.2rem" }}
+                    >
+                      New project
+                    </button>
+                  </div>
+                </article>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
-      <div className="templates-header history-section-header">
-        <h2>Generated YAML History</h2>
-        <p>{history.length} generated entries</p>
-      </div>
-      <p className="helper-text">
-        Project creation also stores generated source YAML for review and export.
-      </p>
+      {/* ── History panel ─────────────────────────────────────────── */}
+      {subTab === "history" && (
+        <div
+          id="subtab-panel-history"
+          role="tabpanel"
+          aria-labelledby="subtab-history"
+        >
+          {loadingHistory ? (
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: "0.75rem" }}>
+              {[0, 1, 2].map((i) => <div key={i} className="skeleton-card" style={{ minHeight: "7rem" }} />)}
+            </div>
+          ) : history.length === 0 ? (
+            <div style={{ padding: "2.5rem 0", textAlign: "center" }}>
+              <p style={{ color: "var(--text-secondary)", margin: "0 0 1rem", fontSize: "0.88rem" }}>
+                No generated workflow history yet.
+              </p>
+              <button className="primary-button" type="button" onClick={onOpenSetup}
+                      style={{ padding: "0.6rem 1.4rem", fontSize: "0.88rem", minHeight: "2.5rem" }}>
+                Generate your first workflow
+              </button>
+            </div>
+          ) : (
+            <div className="history-grid">
+              {history.map((entry) => (
+                <article key={entry.id} className="history-entry-card">
+                  {/* Header */}
+                  <div className="history-entry-header">
+                    <h3 className="history-entry-title">{entry.templateName}</h3>
+                    <p className="history-entry-date">{formatDate(entry.createdAt)}</p>
+                  </div>
 
-      {loadingHistory ? <p className="helper-text">Loading workflow history...</p> : null}
+                  {/* Meta tags: stack + file name */}
+                  <div className="history-entry-meta">
+                    {entry.stack && (
+                      <span className="template-stack-badge">{entry.stack}</span>
+                    )}
+                    <span className="project-card-tag" style={{ fontFamily: "ui-monospace, monospace" }}>
+                      {entry.outputFileName}
+                    </span>
+                  </div>
 
-      {!loadingHistory && history.length === 0 ? (
-        <p className="helper-text">No generated workflow history yet.</p>
-      ) : (
-        <div className="history-grid">
-          {history.map((entry) => (
-            <article key={entry.id} className="history-card">
-              <div className="history-head">
-                <h3>{entry.templateName}</h3>
-                <p>{formatDate(entry.createdAt)}</p>
-              </div>
-              <p className="helper-text">Service: {entry.serviceName}</p>
-              <p className="helper-text">Output: {entry.outputFileName}</p>
-              <p className="helper-text">Source workflow: {toSourcePath(entry.sourceWorkflowFile)}</p>
-              <p className="helper-text">Source properties: {toSourcePath(entry.sourcePropertiesFile)}</p>
-              <div className="result-actions">
-                <button className="ghost-button" type="button" onClick={() => onCopyYaml(entry.yaml)}>
-                  Copy YAML
-                </button>
-                <button
-                  className="ghost-button"
-                  type="button"
-                  onClick={() => onDownloadYaml(entry.yaml, entry.outputFileName)}
-                >
-                  Download
-                </button>
-                <button className="ghost-button" type="button" onClick={onOpenSetup}>
-                  Create Project
-                </button>
-              </div>
-              <details>
-                <summary>Preview YAML</summary>
-                <pre>{entry.yaml}</pre>
-              </details>
-            </article>
-          ))}
+                  {/* Key-value row */}
+                  <dl className="project-kv-grid">
+                    <dt className="project-kv-key">Service</dt>
+                    <dd className="project-kv-val">{entry.serviceName}</dd>
+
+                    {entry.sourceWorkflowFile && (
+                      <>
+                        <dt className="project-kv-key">Source</dt>
+                        <dd className="project-kv-val" style={{ fontFamily: "ui-monospace, monospace", fontSize: "0.74rem" }}>
+                          {toSourcePath(entry.sourceWorkflowFile)}
+                        </dd>
+                      </>
+                    )}
+                  </dl>
+
+                  {/* Actions */}
+                  <div className="history-entry-actions">
+                    <button
+                      className="ghost-button"
+                      type="button"
+                      onClick={() => onCopyYaml(entry.yaml)}
+                      style={{ padding: "0.42rem 0.9rem", fontSize: "0.8rem", minHeight: "2.2rem" }}
+                    >
+                      Copy YAML
+                    </button>
+                    <button
+                      className="ghost-button"
+                      type="button"
+                      onClick={() => onDownloadYaml(entry.yaml, entry.outputFileName)}
+                      style={{ padding: "0.42rem 0.9rem", fontSize: "0.8rem", minHeight: "2.2rem" }}
+                    >
+                      Download
+                    </button>
+                    <button
+                      className="ghost-button"
+                      type="button"
+                      onClick={onOpenSetup}
+                      style={{ padding: "0.42rem 0.9rem", fontSize: "0.8rem", minHeight: "2.2rem" }}
+                    >
+                      New project
+                    </button>
+                  </div>
+
+                  {/* YAML preview */}
+                  <details>
+                    <summary style={{ cursor: "pointer", color: "var(--brand)", fontWeight: 700, fontSize: "0.82rem", marginTop: "0.25rem" }}>
+                      Preview YAML
+                    </summary>
+                    <pre style={{ marginTop: "0.5rem" }}>{entry.yaml}</pre>
+                  </details>
+                </article>
+              ))}
+            </div>
+          )}
         </div>
       )}
     </motion.section>

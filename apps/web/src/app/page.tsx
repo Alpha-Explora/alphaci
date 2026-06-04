@@ -276,11 +276,10 @@ function PipelineVisualization({ reduced }: Readonly<{ reduced: boolean | null }
 
       {/* Stage nodes */}
       <motion.div
+        className="glass-panel"
         style={{
-          background: "rgba(22, 27, 39, 0.9)",
-          border: "1px solid rgba(255,255,255,0.07)",
-          borderRadius: "0.75rem",
-          padding: "1rem 1.2rem 0.9rem",
+          padding: "1.5rem",
+          marginBottom: "1rem"
         }}
         initial={reduced ? undefined : { opacity: 0, y: 12 }}
         animate={reduced ? undefined : { opacity: 1, y: 0 }}
@@ -295,8 +294,9 @@ function PipelineVisualization({ reduced }: Readonly<{ reduced: boolean | null }
                   className={`pipeline-node ${stage.status}`}
                   initial={reduced ? undefined : { scale: 0.5, opacity: 0 }}
                   animate={reduced ? undefined : { scale: 1, opacity: 1 }}
+                  whileHover={reduced ? undefined : { scale: 1.15, filter: "brightness(1.3)", cursor: "pointer" }}
                   transition={{ delay: i * 0.1, duration: 0.3, ease: "easeOut" }}
-                  style={{ color: stage.status === "passing" ? "#00d084" : stage.status === "running" ? "#4f8eff" : "#4a5578" }}
+                  style={{ color: stage.status === "passing" ? "var(--success)" : stage.status === "running" ? "var(--brand)" : "var(--text-muted)" }}
                 >
                   {stage.status === "passing" ? (
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -612,15 +612,21 @@ export default function LandingPage() {
               animate={prefersReducedMotion ? undefined : { opacity: 1, y: 0 }}
               transition={{ duration: 0.45, delay: 0.15 }}
             >
-              <Link className="primary-button" href={primaryHref}>{primaryLabel}</Link>
-              <Link className="ghost-button" href="#pricing">View pricing</Link>
-              <Link
-                className="ghost-button"
-                href="/home"
-                style={{ color: "var(--text-muted)", borderColor: "var(--border-subtle)", fontSize: "0.9rem" }}
-              >
-                Preview as guest &rarr;
-              </Link>
+              <motion.div whileHover={prefersReducedMotion ? undefined : { scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                <Link className="primary-button" href={primaryHref}>{primaryLabel}</Link>
+              </motion.div>
+              <motion.div whileHover={prefersReducedMotion ? undefined : { scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                <Link className="ghost-button" href="#pricing">View pricing</Link>
+              </motion.div>
+              <motion.div whileHover={prefersReducedMotion ? undefined : { scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                <Link
+                  className="ghost-button"
+                  href="/home"
+                  style={{ color: "var(--text-muted)", borderColor: "var(--border-subtle)", fontSize: "0.9rem" }}
+                >
+                  Preview as guest &rarr;
+                </Link>
+              </motion.div>
             </motion.div>
 
             <motion.div
@@ -693,11 +699,18 @@ export default function LandingPage() {
           {valueCards.map((card, index) => (
             <motion.div
               key={card.title}
-              className="feature-strip-item"
+              className="feature-strip-item glass-panel"
               initial={prefersReducedMotion ? undefined : { opacity: 0, y: 16 }}
               whileInView={prefersReducedMotion ? undefined : { opacity: 1, y: 0 }}
+              whileHover={prefersReducedMotion ? undefined : { y: -6, scale: 1.02, borderColor: "var(--border-brand)", boxShadow: "var(--shadow-card), 0 0 30px rgba(14, 165, 233, 0.15)" }}
               viewport={{ once: true, margin: "-60px" }}
               transition={{ delay: index * 0.12, duration: 0.4 }}
+              style={{
+                padding: "2rem",
+                display: "flex",
+                flexDirection: "column",
+                gap: "0.75rem",
+              }}
             >
               <span className="feature-number">0{index + 1}</span>
               <span style={{
@@ -743,12 +756,13 @@ export default function LandingPage() {
             </p>
 
             <motion.div
-              className="pricing-plan-card"
+              className="pricing-plan-card glass-panel"
               initial={prefersReducedMotion ? undefined : { opacity: 0, y: 20 }}
               whileInView={prefersReducedMotion ? undefined : { opacity: 1, y: 0 }}
+              whileHover={prefersReducedMotion ? undefined : { scale: 1.02, borderColor: "var(--border-brand)", boxShadow: "var(--shadow-elevated), 0 0 60px rgba(14, 165, 233, 0.2)" }}
               viewport={{ once: true }}
               transition={{ duration: 0.45 }}
-              style={{ position: "relative", overflow: "hidden" }}
+              style={{ position: "relative", overflow: "hidden", padding: "2.5rem" }}
             >
               <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 2, background: "linear-gradient(90deg, transparent, var(--brand), var(--brand-accent), transparent)" }} aria-hidden="true" />
               <div className="pricing-plan-header">
