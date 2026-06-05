@@ -12,7 +12,7 @@ export function FlowBackground() {
       style={{
         position: "fixed",
         inset: 0,
-        zIndex: 0,
+        zIndex: -1,
         pointerEvents: "none",
         overflow: "hidden",
         background: "var(--bg-base)",

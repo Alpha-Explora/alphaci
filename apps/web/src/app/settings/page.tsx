@@ -74,10 +74,7 @@ function SettingsSection({
   danger?: boolean;
 }) {
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3, delay: index * 0.07 }}
+    <div
       style={{
         background: danger ? "rgba(248, 113, 113, 0.08)" : "rgba(30, 41, 59, 0.92)",
         border: danger ? "1px solid rgba(248, 113, 113, 0.3)" : "1px solid rgba(255,255,255,0.12)",
@@ -127,7 +124,7 @@ function SettingsSection({
       <div style={{ padding: "1.25rem" }}>
         {children}
       </div>
-    </motion.div>
+    </div>
   );
 }
 
