@@ -493,16 +493,27 @@ export default function HomeDashboardPage() {
         </div>
       )}
 
-      <div id="main-content" style={{ padding: "0 clamp(1rem, 3vw, 2rem)", flex: 1, display: "flex", flexDirection: "column", gap: "1.5rem" }}>
+      <div id="main-content" style={{ padding: "1.25rem clamp(1rem, 3vw, 2rem) 2rem", flex: 1, display: "flex", flexDirection: "column", gap: "1.5rem" }}>
 
         {/* ── Editorial welcome banner ──────────────────────────────── */}
         <section className="welcome-editorial glass-panel" aria-label="Welcome" style={{
-          background: "rgba(15, 23, 42, 0.45)",
-          border: "1px solid var(--border-soft)",
+          position: "relative",
+          background: "linear-gradient(135deg, rgba(15, 23, 42, 0.88) 0%, rgba(30, 41, 59, 0.80) 100%)",
+          border: "1px solid rgba(255,255,255,0.12)",
           borderRadius: "var(--radius-card)",
           padding: "1.5rem",
           boxShadow: "var(--shadow-soft)",
+          overflow: "hidden",
         }}>
+          {/* Thin gradient top accent bar */}
+          <div aria-hidden="true" style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            height: 2,
+            background: "linear-gradient(90deg, var(--brand), var(--brand-accent))",
+          }} />
           <div className="welcome-editorial-top" style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: "1.5rem", marginBottom: "1.25rem" }}>
             <div className="welcome-editorial-identity" style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
               {!guest && (session?.user.avatarUrl ? (
@@ -531,7 +542,7 @@ export default function HomeDashboardPage() {
                 }}>{avatarInitial}</span>
               ))}
               <div style={{ display: "flex", flexDirection: "column", gap: "0.2rem" }}>
-                <p className="file-path-label" style={{ marginBottom: 0, fontSize: "0.7rem", color: "var(--brand)", letterSpacing: "0.08em" }}>SYSTEM.DASHBOARD</p>
+                <p className="file-path-label" style={{ marginBottom: 0, fontSize: "0.72rem", color: "var(--brand)", letterSpacing: "0.08em" }}>SYSTEM.DASHBOARD</p>
                 <h1 className="welcome-editorial" style={{ padding: 0, border: "none", margin: 0, display: "block", fontSize: "clamp(1.4rem, 2.5vw, 1.85rem)", fontWeight: 800 }}>
                   {guest
                     ? "FlowCI Studio Dashboard"
