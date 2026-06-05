@@ -81,6 +81,7 @@ const projectOptions: ProjectOptionsResponse = {
     {
       id: "nextjs-app",
       label: "Next.js App",
+      kind: "frontend",
       runtime: "node",
       language: "typescript",
       framework: "nextjs",
@@ -101,6 +102,7 @@ const projectOptions: ProjectOptionsResponse = {
     {
       id: "nestjs-api",
       label: "NestJS API",
+      kind: "backend",
       runtime: "node",
       language: "typescript",
       framework: "nestjs",
@@ -295,6 +297,8 @@ describe("workflow hooks", () => {
 
     expect(current?.enabledRepoShapes.map((shape) => shape.id)).toEqual(["single-app"]);
     expect(current?.selectedRepoShapeId).toBe("single-app");
+    expect(current?.frontendProjectTypes.map((projectType) => projectType.id)).toEqual(["nextjs-app"]);
+    expect(current?.backendProjectTypes.map((projectType) => projectType.id)).toEqual(["nestjs-api"]);
     expect(current?.recipesForSelectedProject.map((recipe) => recipe.id)).toEqual(["frontend-standard-ci"]);
     expect(current?.tests).toMatchObject({
       lint: true,
@@ -524,6 +528,77 @@ describe("workflow hooks", () => {
     });
   });
 
+  it("builds microservices create project payloads", async () => {
+    let current = null as ReturnType<typeof useCreateProjectForm> | null;
+
+    function Probe() {
+      const value = useCreateProjectForm();
+      useEffect(() => {
+        current = value;
+      }, [value]);
+      return null;
+    }
+
+    await act(async () => {
+      hookRoot.root.render(<Probe />);
+    });
+
+    act(() => {
+      current?.setRepoName("Example Platform");
+      current?.setBackendProjectTypeId("nestjs");
+      current?.setBackendWorkflowRecipeId("backend-api-ci");
+      current?.setFrontendProjectTypeId("nextjs");
+      current?.setFrontendWorkflowRecipeId("frontend-standard-ci");
+      current?.setBackendServiceName("Orders API");
+      current?.setBackendServicePath("");
+      current?.setFrontendServiceName("Portal Web");
+      current?.setFrontendServicePath("");
+    });
+    await flushMicrotasks();
+
+    expect(
+      current?.buildPayload({
+        hasAllRepositoriesInstallation: true,
+        isMicroservicesShape: true,
+        repoShapeId: "microservices",
+        projectTypeId: "",
+        workflowRecipeId: "",
+        tests: {
+          lint: true,
+          unit: true,
+          build: true,
+          coverage: true,
+          security: true,
+          docker: true,
+        },
+      }),
+    ).toEqual({
+      ok: true,
+      payload: expect.objectContaining({
+        repoName: "example-platform",
+        repoShape: "microservices",
+        projectTypeId: "nestjs",
+        workflowRecipeId: "backend-api-ci",
+        serviceName: "orders-api",
+        servicePath: "backend/",
+        microservicesConfig: {
+          backend: {
+            projectTypeId: "nestjs",
+            workflowRecipeId: "backend-api-ci",
+            serviceName: "orders-api",
+            servicePath: "backend/",
+          },
+          frontend: {
+            projectTypeId: "nextjs",
+            workflowRecipeId: "frontend-standard-ci",
+            serviceName: "portal-web",
+            servicePath: "frontend/",
+          },
+        },
+      }),
+    });
+  });
+
   it("falls back to template categories and reports catalog load failures", async () => {
     let current = null as ReturnType<typeof useWorkflowCatalog> | null;
 
@@ -554,7 +629,7 @@ describe("workflow hooks", () => {
     });
 
     await waitForCondition(() => current?.catalogError !== null);
-    expect(current?.catalogError).toBe("Unable to load workflow templates from workflow-core right now.");
+    expect(current?.catalogError).toBe("Unable to load workflow templates from cicd-workflow right now.");
   });
 
   it("loads GitHub App installation state and links installations", async () => {

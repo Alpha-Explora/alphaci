@@ -97,6 +97,9 @@ export function WorkflowCurrentTab({
             </span>
           </div>
           <div className="result-branches" style={{ margin: 0, display: "flex", gap: "0.35rem" }}>
+            <span className="branch-chip">{latestResult.status}</span>
+            <span className="branch-chip">{latestResult.projectTypeId}</span>
+            <span className="branch-chip">{latestResult.workflowRecipeId}</span>
             {latestResult.branchesCreated.map((branch) => (
               <span key={branch} className="branch-chip" style={{
                 fontSize: "0.7rem",

@@ -3,6 +3,7 @@ import { createRoot, type Root } from "react-dom/client";
 
 import { WorkflowBuilder } from "../../src/components/product/workflow-builder";
 import {
+  createProject,
   createGithubRepo,
   generateWorkflow,
   getCategories,
@@ -45,6 +46,7 @@ jest.mock("framer-motion", () => {
 
 jest.mock("../../src/lib/api/client", () => ({
   createGithubRepo: jest.fn(),
+  createProject: jest.fn(),
   generateWorkflow: jest.fn(),
   getCategories: jest.fn(),
   getGithubInstallationAccounts: jest.fn(),
@@ -56,6 +58,7 @@ jest.mock("../../src/lib/api/client", () => ({
   getWorkflowHistory: jest.fn(),
 }));
 
+const mockedCreateProject = createProject as jest.MockedFunction<typeof createProject>;
 const mockedCreateGithubRepo = createGithubRepo as jest.MockedFunction<typeof createGithubRepo>;
 const mockedGenerateWorkflow = generateWorkflow as jest.MockedFunction<typeof generateWorkflow>;
 const mockedGetCategories = getCategories as jest.MockedFunction<typeof getCategories>;
@@ -256,6 +259,17 @@ describe("WorkflowBuilder project setup", () => {
       defaultBranch: "main",
       branchesCreated: ["test", "uat", "main"],
     });
+    mockedCreateProject.mockResolvedValue({
+      id: "project-1",
+      repoFullName: "tone/demo-next-app",
+      repoUrl: "https://github.com/tone/demo-next-app",
+      status: "provisioned",
+      workflowPath: ".github/workflows/ci.yml",
+      githubCommitSha: "commit-sha",
+      githubCommitUrl: "https://github.com/tone/demo-next-app/commit/commit-sha",
+      projectTypeId: "nextjs-app",
+      workflowRecipeId: "frontend-standard-ci",
+    });
     mockedGenerateWorkflow.mockResolvedValue({
       yaml: "name: CI\non: push",
       metadata: {
@@ -287,7 +301,7 @@ describe("WorkflowBuilder project setup", () => {
     jest.clearAllMocks();
   });
 
-  async function renderBuilder(accessText = "All repositories access confirmed") {
+  async function renderBuilder(accessText = "GitHub App: connected") {
     await act(async () => {
       root.render(<WorkflowBuilder login="tone" plan="pro" />);
     });
@@ -296,7 +310,7 @@ describe("WorkflowBuilder project setup", () => {
     await waitForCondition(() => container.textContent?.includes(accessText) ?? false);
   }
 
-  it("creates a new project and shows repo, branches, workflow file, and Actions link", async () => {
+  it("creates a new project through the backend project endpoint", async () => {
     await renderBuilder();
 
     const repoName = container.querySelector<HTMLInputElement>("#repo-name");
@@ -316,27 +330,25 @@ describe("WorkflowBuilder project setup", () => {
       () => container.textContent?.includes("tone/demo-next-app") ?? false,
     );
 
-    expect(mockedCreateGithubRepo).toHaveBeenCalledWith(
+    expect(mockedCreateProject).toHaveBeenCalledWith(
       expect.objectContaining({
         repoName: "demo-next-app",
-        private: true,
-      }),
-    );
-    expect(mockedGenerateWorkflow).toHaveBeenCalledWith(
-      expect.objectContaining({
-        templateId: expect.any(String),
+        visibility: "private",
+        repoShape: "single-app",
+        projectTypeId: "nextjs-app",
+        workflowRecipeId: "frontend-standard-ci",
         serviceName: "demo-next-app",
+        outputFileName: "ci.yml",
       }),
     );
+    expect(mockedCreateGithubRepo).not.toHaveBeenCalled();
+    expect(mockedGenerateWorkflow).not.toHaveBeenCalled();
     expect(container.textContent).toContain("tone/demo-next-app");
     expect(container.textContent).toContain("ci.yml");
-    expect(
-      container.querySelector<HTMLAnchorElement>("a[href='https://github.com/tone/demo-next-app/actions']"),
-    ).not.toBeNull();
   });
 
-  it("shows a create project error when createGithubRepo rejects", async () => {
-    mockedCreateGithubRepo.mockRejectedValueOnce({
+  it("shows a create project error when createProject rejects", async () => {
+    mockedCreateProject.mockRejectedValueOnce({
       details: { message: "Repository name already exists" },
     });
 
@@ -358,6 +370,7 @@ describe("WorkflowBuilder project setup", () => {
     await waitForCondition(() => container.textContent?.includes("Project creation failed") ?? false);
 
     expect(container.textContent).toContain("Repository name already exists");
+    expect(mockedCreateGithubRepo).not.toHaveBeenCalled();
   });
 
   it("keeps Create GitHub Repository disabled when repo name is empty", async () => {

@@ -232,12 +232,22 @@ export function useProjectOptionsCatalog() {
   const isMicroservicesShape = selectedRepoShapeId === "microservices";
 
   const backendProjectTypes = useMemo(
-    () => projectTypesForShape.filter((t) => ["nestjs", "nodejs"].includes(t.id)),
+    () =>
+      projectTypesForShape.filter((projectType) =>
+        projectType.kind
+          ? projectType.kind === "backend"
+          : ["nestjs", "nodejs"].includes(projectType.id),
+      ),
     [projectTypesForShape],
   );
 
   const frontendProjectTypes = useMemo(
-    () => projectTypesForShape.filter((t) => ["nextjs", "react"].includes(t.id)),
+    () =>
+      projectTypesForShape.filter((projectType) =>
+        projectType.kind
+          ? projectType.kind === "frontend"
+          : ["nextjs", "react"].includes(projectType.id),
+      ),
     [projectTypesForShape],
   );
 

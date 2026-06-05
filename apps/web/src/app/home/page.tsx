@@ -2,16 +2,53 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { useRouter, usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 
+import { AppNav } from "@/components/layout/app-nav";
 import { FlowBackground } from "@/components/layout/flow-background";
 import { PipelineLogo } from "@/components/layout/pipeline-logo";
 import { useAuthSession } from "@/hooks/use-auth-session";
 import { logout, getProjects, getWorkflowHistory, getGithubRepos } from "@/lib/api/client";
 import type { ProvisionedProject, WorkflowHistoryItem, GitHubRepo } from "@/lib/api/contracts";
 import { isGuest } from "@/lib/auth/subscription";
+
+/* ── Animated counter hook ──────────────────────────────────────────────────── */
+
+function useCountUp(target: number | null, duration = 900): number | null {
+  const [count, setCount] = useState<number | null>(null);
+  const rafRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (rafRef.current !== null) { cancelAnimationFrame(rafRef.current); }
+
+    // Route null/0 through rAF so all setState calls are async (avoids cascading render lint error)
+    if (target === null || target === 0) {
+      const safeTarget = target;
+      rafRef.current = requestAnimationFrame(() => { setCount(safeTarget); });
+      return () => { if (rafRef.current !== null) cancelAnimationFrame(rafRef.current); };
+    }
+
+    const safeTarget = target;
+    const start      = performance.now();
+
+    function tick(now: number) {
+      const elapsed  = now - start;
+      const progress = Math.min(elapsed / duration, 1);
+      const eased    = 1 - Math.pow(1 - progress, 3);
+      setCount(Math.round(eased * safeTarget));
+      if (progress < 1) {
+        rafRef.current = requestAnimationFrame(tick);
+      }
+    }
+
+    rafRef.current = requestAnimationFrame(tick);
+    return () => { if (rafRef.current !== null) cancelAnimationFrame(rafRef.current); };
+  }, [target, duration]);
+
+  return count;
+}
 
 /* ── Constants ─────────────────────────────────────────────────────────────── */
 
@@ -35,14 +72,9 @@ const pipelineDotVariants = {
 
 type DashTab = "overview" | "repositories" | "activity";
 
-/* ── Nav links (shared) ─────────────────────────────────────────────────────── */
-
-const navItems = [
-  { label: "Dashboard",  href: "/home" },
-  { label: "Workflows",  href: "/workflows" },
-];
-
 /* ── Sub-components ─────────────────────────────────────────────────────────── */
+
+// AppNav is now imported from @/components/layout/app-nav
 
 function PipelineTrack({ reduced }: Readonly<{ reduced: boolean | null }>) {
   return (
@@ -82,182 +114,206 @@ function PipelineTrack({ reduced }: Readonly<{ reduced: boolean | null }>) {
   );
 }
 
-/* ── Shared Navbar ──────────────────────────────────────────────────────────── */
+/* ── Skeleton value placeholder (hoisted outside BentoGrid to avoid re-mount on every render) */
 
-interface NavbarProps {
-  guest: boolean;
-  session: ReturnType<typeof useAuthSession>["session"];
-  onLogout: () => void;
-  isLoggingOut: boolean;
+function SkeletonValue({ wide = false }: { wide?: boolean }) {
+  return (
+    <span
+      style={{
+        display: "block",
+        height: "2.5rem",
+        width: wide ? "6rem" : "3.5rem",
+        background: "var(--bg-elevated)",
+        borderRadius: "6px",
+        animation: "state-pulse 1.5s infinite",
+      }}
+    />
+  );
 }
 
-function AppNav({ guest, session, onLogout, isLoggingOut }: Readonly<NavbarProps>) {
-  const pathname = usePathname();
-  const avatarInitial = (session?.user.name ?? session?.user.login ?? "U").slice(0, 1).toUpperCase();
+/* ── BentoGrid with animated counters ──────────────────────────────────────── */
+
+interface BentoGridProps {
+  historyLoading: boolean;
+  projectsLoading: boolean;
+  historyLength: number;
+  projectsLength: number;
+  uniqueServices: number;
+  lastActivityValue: string;
+  prefersReducedMotion: boolean | null;
+}
+
+function BentoGrid({
+  historyLoading,
+  projectsLoading,
+  historyLength,
+  projectsLength,
+  uniqueServices,
+  lastActivityValue,
+  prefersReducedMotion,
+}: Readonly<BentoGridProps>) {
+  // Animated counters — only fire once values are loaded
+  const animatedHistory  = useCountUp(prefersReducedMotion || historyLoading  ? null : historyLength);
+  const animatedProjects = useCountUp(prefersReducedMotion || projectsLoading ? null : projectsLength);
+  const animatedServices = useCountUp(prefersReducedMotion || historyLoading  ? null : uniqueServices);
+
+  const displayHistory  = prefersReducedMotion ? historyLength  : (animatedHistory  ?? historyLength);
+  const displayProjects = prefersReducedMotion ? projectsLength : (animatedProjects ?? projectsLength);
+  const displayServices = prefersReducedMotion ? uniqueServices : (animatedServices ?? uniqueServices);
 
   return (
-    <header className="dash-nav glass-panel" style={{
-      background: "rgba(2, 6, 23, 0.7)",
-      backdropFilter: "blur(32px) saturate(200%)",
-      WebkitBackdropFilter: "blur(32px) saturate(200%)",
-      borderBottom: "1px solid rgba(255, 255, 255, 0.08)",
-      boxShadow: "0 4px 30px rgba(0, 0, 0, 0.4), inset 0 -1px 0 rgba(56, 189, 248, 0.15)",
-      position: "sticky",
-      top: 0,
-      zIndex: 100,
-      borderRadius: 0,
-      margin: "-1rem calc(-1 * var(--layout-gutter)) 1rem",
-      padding: "0 var(--layout-gutter)",
-    }}>
-      <Link className="brand-mark" href="/home" style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-        <PipelineLogo size={22} />
-        <span style={{ fontWeight: 800, background: "linear-gradient(to right, #fff, var(--text-secondary))", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
-          FlowCI Studio
-        </span>
-      </Link>
-
-      <span className="nav-separator" aria-hidden="true" style={{ width: "1px", height: "1.5rem", background: "var(--border-soft)", margin: "0 1rem" }} />
-
-      <nav aria-label="Primary" className="nav-links" style={{ gap: "0.5rem" }}>
-        {navItems.map((item) => (
-          <Link
-            key={item.href}
-            href={item.href}
-            className={pathname === item.href ? "nav-active" : ""}
-            aria-current={pathname === item.href ? "page" : undefined}
+    <div className="kpi-bento-grid">
+      {/* Cell 1: Workflows Generated — dominant */}
+      <div className="bento-card bento-card-dominant">
+        <div className="bento-card-title">
+          <span
+            aria-hidden="true"
             style={{
-              position: "relative",
-              padding: "0.4rem 0.9rem",
-              borderRadius: "0.5rem",
-              fontSize: "0.85rem",
-              fontWeight: 600,
-              color: pathname === item.href ? "var(--brand)" : "var(--text-secondary)",
-              background: pathname === item.href ? "rgba(56, 189, 248, 0.08)" : "transparent",
-              border: pathname === item.href ? "1px solid rgba(56, 189, 248, 0.2)" : "1px solid transparent",
-              transition: "all 0.2s ease",
+              width: "6px",
+              height: "6px",
+              borderRadius: "50%",
+              background: "var(--brand)",
+              animation: "flowPulse 1.8s infinite",
             }}
-          >
-            {item.label}
-          </Link>
-        ))}
-        {guest
-          ? <Link href="/subscribe" className={pathname === "/subscribe" ? "nav-active" : ""} style={{
-              position: "relative",
-              padding: "0.4rem 0.9rem",
-              borderRadius: "0.5rem",
-              fontSize: "0.85rem",
-              fontWeight: 600,
-              color: pathname === "/subscribe" ? "var(--brand)" : "var(--text-secondary)",
-              background: pathname === "/subscribe" ? "rgba(56, 189, 248, 0.08)" : "transparent",
-              border: pathname === "/subscribe" ? "1px solid rgba(56, 189, 248, 0.2)" : "1px solid transparent",
-              transition: "all 0.2s ease",
-            }}>Billing</Link>
-          : <Link href="/settings" className={pathname === "/settings" ? "nav-active" : ""} style={{
-              position: "relative",
-              padding: "0.4rem 0.9rem",
-              borderRadius: "0.5rem",
-              fontSize: "0.85rem",
-              fontWeight: 600,
-              color: pathname === "/settings" ? "var(--brand)" : "var(--text-secondary)",
-              background: pathname === "/settings" ? "rgba(56, 189, 248, 0.08)" : "transparent",
-              border: pathname === "/settings" ? "1px solid rgba(56, 189, 248, 0.2)" : "1px solid transparent",
-              transition: "all 0.2s ease",
-            }}>Settings</Link>}
-      </nav>
+          />
+          Workflows Generated
+        </div>
+        <svg
+          className="bento-card-icon"
+          width="22"
+          height="22"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden="true"
+        >
+          <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+        </svg>
+        <div className="bento-card-value counter-number">
+          {historyLoading ? <SkeletonValue wide /> : displayHistory}
+        </div>
+        <p style={{ margin: "0.35rem 0 0", fontSize: "0.75rem", color: "var(--text-muted)" }}>
+          Managed GitHub Action build &amp; test recipes
+        </p>
+        {!historyLoading && historyLength > 0 && (
+          <span className="trend-up" style={{ marginTop: "0.5rem" }}>
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" />
+              <polyline points="17 6 23 6 23 12" />
+            </svg>
+            Active
+          </span>
+        )}
+      </div>
 
-      <div className="nav-right" style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-        {!guest && (
-          <>
-            <div className="user-pill" aria-label={`Signed in as ${session?.user.login ?? "user"}`} style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "0.5rem",
-              background: "rgba(15, 23, 42, 0.6)",
-              border: "1px solid var(--border)",
-              borderRadius: "var(--radius-pill)",
-              padding: "0.3rem 0.75rem 0.3rem 0.3rem",
-            }}>
-              {session?.user.avatarUrl ? (
-                <Image
-                  src={session.user.avatarUrl}
-                  alt={session.user.name ?? session.user.login}
-                  className="user-pill-avatar"
-                  width={24}
-                  height={24}
-                  style={{ borderRadius: "50%", border: "1px solid var(--border-brand)" }}
-                  unoptimized
-                />
-              ) : (
-                <span className="user-pill-placeholder" aria-hidden="true" style={{
-                  width: "24px",
-                  height: "24px",
-                  borderRadius: "50%",
-                  background: "var(--brand-light)",
-                  color: "var(--brand)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontSize: "0.75rem",
-                  fontWeight: 700,
-                }}>{avatarInitial}</span>
-              )}
-              <span className="user-pill-login" style={{ fontSize: "0.8rem", fontWeight: 600, color: "var(--text-primary)" }}>{session?.user.login ?? "user"}</span>
-              {session?.subscription.plan && (
-                <span className="user-pill-plan" style={{
-                  fontSize: "0.7rem",
-                  fontWeight: 700,
-                  textTransform: "uppercase",
-                  letterSpacing: "0.05em",
-                  padding: "0.1rem 0.4rem",
-                  borderRadius: "4px",
-                  background: "var(--brand-light)",
-                  color: "var(--brand)",
-                  border: "1px solid rgba(56, 189, 248, 0.2)",
-                }}>{session.subscription.plan}</span>
-              )}
-            </div>
+      {/* Cell 2: Projects Created */}
+      <div className="bento-card">
+        <div className="bento-card-title">Projects Created</div>
+        <svg className="bento-card-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <rect x="2" y="2" width="20" height="8" rx="2" ry="2" />
+          <rect x="2" y="14" width="20" height="8" rx="2" ry="2" />
+          <line x1="6" y1="6" x2="6.01" y2="6" />
+          <line x1="6" y1="18" x2="6.01" y2="18" />
+        </svg>
+        <div className="bento-card-value counter-number">
+          {projectsLoading ? <SkeletonValue /> : displayProjects}
+        </div>
+        <p style={{ margin: "0.5rem 0 0", fontSize: "0.75rem", color: "var(--text-muted)" }}>
+          Active repositories
+        </p>
+      </div>
 
-            <button
-              className="sign-out-icon-btn"
-              type="button"
-              onClick={onLogout}
-              disabled={isLoggingOut}
-              aria-label={isLoggingOut ? "Signing out…" : "Sign out"}
-              title={isLoggingOut ? "Signing out…" : "Sign out"}
+      {/* Cell 3: Services Configured */}
+      <div className="bento-card">
+        <div className="bento-card-title">Services</div>
+        <svg className="bento-card-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
+          <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
+          <line x1="12" y1="22.08" x2="12" y2="12" />
+        </svg>
+        <div className="bento-card-value counter-number">
+          {historyLoading ? <SkeletonValue /> : displayServices}
+        </div>
+        <p style={{ margin: "0.5rem 0 0", fontSize: "0.75rem", color: "var(--text-muted)" }}>
+          Unique services
+        </p>
+      </div>
+
+      {/* Cell 4: Last Activity */}
+      <div className="bento-card">
+        <div className="bento-card-title">Last Activity</div>
+        <svg className="bento-card-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+          <line x1="16" y1="2" x2="16" y2="6" />
+          <line x1="8" y1="2" x2="8" y2="6" />
+          <line x1="3" y1="10" x2="21" y2="10" />
+        </svg>
+        <div className="bento-card-value" style={{ fontSize: "1.35rem", fontWeight: 700 }}>
+          {historyLoading ? (
+            <span
+              style={{
+                display: "block",
+                height: "2rem",
+                width: "6rem",
+                background: "var(--bg-elevated)",
+                borderRadius: "6px",
+                animation: "state-pulse 1.5s infinite",
+              }}
+            />
+          ) : lastActivityValue}
+        </div>
+        <p style={{ margin: "0.5rem 0 0", fontSize: "0.75rem", color: "var(--text-muted)" }}>
+          Latest compilation run
+        </p>
+      </div>
+
+      {/* Cell 5: Quick Actions */}
+      <div className="bento-card" style={{ gridColumn: "span 3", minHeight: "160px", background: "rgba(15, 23, 42, 0.4)" }}>
+        <div className="bento-card-title" style={{ marginBottom: "0.75rem" }}>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <polyline points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+          </svg>
+          Quick actions
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "0.75rem", width: "100%", marginTop: "auto" }}>
+          {quickActions.map((action) => (
+            <Link
+              key={action.label}
+              href={action.href}
+              className="command-item-bento"
               style={{
                 display: "flex",
                 alignItems: "center",
-                justifyContent: "center",
-                width: "2rem",
-                height: "2rem",
-                borderRadius: "0.5rem",
-                border: "1px solid var(--border)",
-                background: "rgba(15, 23, 42, 0.4)",
-                color: "var(--text-secondary)",
-                cursor: "pointer",
+                justifyContent: "space-between",
+                padding: "0.75rem 1rem",
+                background: "rgba(15, 23, 42, 0.6)",
+                border: "1px solid var(--border-soft)",
+                borderRadius: "0.75rem",
+                color: "var(--text-primary)",
+                textDecoration: "none",
+                fontSize: "0.82rem",
+                fontWeight: 600,
                 transition: "all 0.2s ease",
               }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.borderColor = "var(--brand)";
+                e.currentTarget.style.background = "var(--brand-light)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.borderColor = "var(--border-soft)";
+                e.currentTarget.style.background = "rgba(15, 23, 42, 0.6)";
+              }}
             >
-              {isLoggingOut ? (
-                <span className="btn-spinner" aria-hidden="true" style={{ width: "13px", height: "13px", borderWidth: "1.5px" }} />
-              ) : (
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-                  <polyline points="16 17 21 12 16 7" />
-                  <line x1="21" y1="12" x2="9" y2="12" />
-                </svg>
-              )}
-            </button>
-          </>
-        )}
-
-        {guest && (
-          <Link className="primary-button" href="/signup" style={{ padding: "0.4rem 1rem", fontSize: "0.82rem", minHeight: "2.2rem" }}>
-            Sign up
-          </Link>
-        )}
+              <span style={{ fontFamily: "ui-monospace, monospace", color: "var(--brand)" }}>{action.label}</span>
+              <span style={{ color: "var(--text-muted)", fontSize: "0.75rem" }}>{action.display}</span>
+            </Link>
+          ))}
+        </div>
       </div>
-    </header>
+    </div>
   );
 }
 
@@ -394,13 +450,6 @@ export default function HomeDashboardPage() {
   const lastActivityValue = history[0]
     ? new Intl.DateTimeFormat("en-PH", { dateStyle: "medium" }).format(new Date(history[0].createdAt))
     : "None yet";
-
-  const kpiCards = [
-    { label: "Workflows generated", value: historyLoading ? null : String(history.length), dominant: true },
-    { label: "Projects created",    value: projectsLoading ? null : String(projects.length), dominant: false },
-    { label: "Services configured", value: historyLoading ? null : String(uniqueServices), dominant: false },
-    { label: "Last activity",       value: historyLoading ? null : lastActivityValue, dominant: false },
-  ];
 
   const avatarInitial = (session?.user.name ?? session?.user.login ?? "U").slice(0, 1).toUpperCase();
 
@@ -600,130 +649,15 @@ export default function HomeDashboardPage() {
           >
             {/* Bento Grid layout */}
             <section aria-label="Release pulse">
-              <div className="kpi-bento-grid">
-                
-                {/* Cell 1: Workflows Generated (Dominant) */}
-                <div className="bento-card bento-card-dominant">
-                  <div className="bento-card-title">
-                    <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "var(--brand)", animation: "flowPulse 1.8s infinite" }} />
-                    Workflows Generated
-                  </div>
-                  <svg className="bento-card-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
-                  </svg>
-                  <div className="bento-card-value">
-                    {historyLoading ? (
-                      <span className="kpi-skeleton-value" style={{ display: "block", height: "2.5rem", width: "4rem", background: "var(--bg-elevated)", borderRadius: "6px", animation: "state-pulse 1.5s infinite" }} />
-                    ) : (
-                      history.length
-                    )}
-                  </div>
-                  <p style={{ margin: "0.5rem 0 0", fontSize: "0.75rem", color: "var(--text-muted)" }}>
-                    Managed GitHub Action build & test recipes
-                  </p>
-                </div>
-
-                {/* Cell 2: Projects Created */}
-                <div className="bento-card">
-                  <div className="bento-card-title">Projects Created</div>
-                  <svg className="bento-card-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect>
-                    <rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect>
-                    <line x1="6" y1="6" x2="6.01" y2="6"></line>
-                    <line x1="6" y1="18" x2="6.01" y2="18"></line>
-                  </svg>
-                  <div className="bento-card-value">
-                    {projectsLoading ? (
-                      <span className="kpi-skeleton-value" style={{ display: "block", height: "2.5rem", width: "3rem", background: "var(--bg-elevated)", borderRadius: "6px", animation: "state-pulse 1.5s infinite" }} />
-                    ) : (
-                      projects.length
-                    )}
-                  </div>
-                  <p style={{ margin: "0.5rem 0 0", fontSize: "0.75rem", color: "var(--text-muted)" }}>
-                    Active repositories
-                  </p>
-                </div>
-
-                {/* Cell 3: Services Configured */}
-                <div className="bento-card">
-                  <div className="bento-card-title">Services</div>
-                  <svg className="bento-card-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
-                    <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
-                    <line x1="12" y1="22.08" x2="12" y2="12"></line>
-                  </svg>
-                  <div className="bento-card-value">
-                    {historyLoading ? (
-                      <span className="kpi-skeleton-value" style={{ display: "block", height: "2.5rem", width: "3rem", background: "var(--bg-elevated)", borderRadius: "6px", animation: "state-pulse 1.5s infinite" }} />
-                    ) : (
-                      uniqueServices
-                    )}
-                  </div>
-                  <p style={{ margin: "0.5rem 0 0", fontSize: "0.75rem", color: "var(--text-muted)" }}>
-                    Unique services
-                  </p>
-                </div>
-
-                {/* Cell 4: Last Activity */}
-                <div className="bento-card" style={{ gridColumn: "span 1" }}>
-                  <div className="bento-card-title">Last Activity</div>
-                  <svg className="bento-card-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
-                    <line x1="16" y1="2" x2="16" y2="6"></line>
-                    <line x1="8" y1="2" x2="8" y2="6"></line>
-                    <line x1="3" y1="10" x2="21" y2="10"></line>
-                  </svg>
-                  <div className="bento-card-value" style={{ fontSize: "1.35rem", fontWeight: 700 }}>
-                    {historyLoading ? (
-                      <span className="kpi-skeleton-value" style={{ display: "block", height: "2rem", width: "6rem", background: "var(--bg-elevated)", borderRadius: "6px", animation: "state-pulse 1.5s infinite" }} />
-                    ) : (
-                      lastActivityValue
-                    )}
-                  </div>
-                  <p style={{ margin: "0.5rem 0 0", fontSize: "0.75rem", color: "var(--text-muted)" }}>
-                    Latest compilation run
-                  </p>
-                </div>
-
-                {/* Cell 5: Quick Actions (Spans 3 cols inside bento grid!) */}
-                <div className="bento-card" style={{ gridColumn: "span 3", minHeight: "160px", background: "rgba(15, 23, 42, 0.4)" }}>
-                  <div className="bento-card-title" style={{ marginBottom: "0.75rem" }}>
-                    Quick actions command center
-                  </div>
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "0.75rem", width: "100%", marginTop: "auto" }}>
-                    {quickActions.map((action) => (
-                      <Link key={action.label} href={action.href} style={{
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "space-between",
-                        padding: "0.75rem 1rem",
-                        background: "rgba(15, 23, 42, 0.6)",
-                        border: "1px solid var(--border-soft)",
-                        borderRadius: "0.75rem",
-                        color: "var(--text-primary)",
-                        textDecoration: "none",
-                        fontSize: "0.82rem",
-                        fontWeight: 600,
-                        transition: "all 0.2s ease",
-                      }}
-                      className="command-item-bento"
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.borderColor = "var(--brand)";
-                        e.currentTarget.style.background = "var(--brand-light)";
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.borderColor = "var(--border-soft)";
-                        e.currentTarget.style.background = "rgba(15, 23, 42, 0.6)";
-                      }}
-                      >
-                        <span style={{ fontFamily: "ui-monospace, monospace", color: "var(--brand)" }}>{action.label}</span>
-                        <span style={{ color: "var(--text-muted)", fontSize: "0.75rem" }}>{action.display}</span>
-                      </Link>
-                    ))}
-                  </div>
-                </div>
-
-              </div>
+              <BentoGrid
+                historyLoading={historyLoading}
+                projectsLoading={projectsLoading}
+                historyLength={history.length}
+                projectsLength={projects.length}
+                uniqueServices={uniqueServices}
+                lastActivityValue={lastActivityValue}
+                prefersReducedMotion={prefersReducedMotion}
+              />
             </section>
 
             {/* Error states */}

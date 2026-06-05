@@ -12,7 +12,7 @@ export interface SessionUser {
 export interface SubscriptionInfo {
   plan: SubscriptionPlan;
   status: SubscriptionStatus;
-  provider: "mock" | "supabase" | "manual";
+  provider: "mock" | "supabase" | "manual" | "paymongo";
   updatedAt: string;
   planCode?: string;
   currentPeriodStart?: string | null;
@@ -76,6 +76,7 @@ export interface RepoShapeOption {
 export interface ProjectTypeOption {
   id: string;
   label: string;
+  kind?: "frontend" | "backend";
   runtime?: string;
   language: string;
   framework: string;
@@ -93,9 +94,23 @@ export interface WorkflowRecipeOption {
   description?: string;
   supportedProjectTypes: string[];
   templateByProjectType: Record<string, string>;
+  workflowRefByProjectType?: Record<string, string>;
   mandatoryJobs?: string[];
   supportedOptions: ProjectOptionSet;
   optionJobs: Partial<Record<ProjectOptionKey, string>>;
+}
+
+export interface SubscriptionCheckoutResponse {
+  checkoutId?: string;
+  id?: string;
+  status: string;
+  redirectUrl?: string;
+  metadata?: Record<string, unknown>;
+}
+
+export interface SubscriptionCheckoutStatusResponse {
+  status: string;
+  subscription?: SubscriptionInfo;
 }
 
 export interface ProjectOptionsResponse {
@@ -246,6 +261,7 @@ export interface CreateProjectResponse {
   githubCommitUrl: string | null;
   projectTypeId: string;
   workflowRecipeId: string;
+  additionalWorkflowPaths?: string[];
 }
 
 export interface ProvisionedProject {
@@ -268,6 +284,40 @@ export interface ProvisionedProject {
 
 export interface ProvisionedProjectsResponse {
   items: ProvisionedProject[];
+}
+
+export interface DiscoverExistingRepoRequest {
+  repoFullName: string;
+  baseBranch?: string;
+}
+
+export interface DiscoverExistingRepoResponse {
+  repoFullName: string;
+  baseBranch: string;
+  detectedProjectTypeId: string | null;
+  recommendedWorkflowRecipeId: string;
+  serviceName: string;
+  servicePath: string;
+}
+
+export interface SetupExistingRepoPrRequest {
+  repoFullName: string;
+  baseBranch?: string;
+  projectTypeId: string;
+  workflowRecipeId?: string;
+  serviceName: string;
+  servicePath?: string;
+  nodeVersion?: string;
+  coverageThreshold?: number;
+  outputFileName?: string;
+}
+
+export interface SetupExistingRepoPrResponse {
+  repoFullName: string;
+  branchName: string;
+  workflowPath: string;
+  pullRequestNumber: number;
+  pullRequestUrl: string;
 }
 
 export interface CreateGithubRepoRequest {

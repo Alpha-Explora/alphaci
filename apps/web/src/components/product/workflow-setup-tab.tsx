@@ -2,7 +2,12 @@
 
 import { motion } from "framer-motion";
 
-import type { CreateProjectResult, MvpProjectOptionKey } from "@/lib/api/contracts";
+import type {
+  CreateProjectResult,
+  DiscoverExistingRepoResponse,
+  MvpProjectOptionKey,
+  SetupExistingRepoPrResponse,
+} from "@/lib/api/contracts";
 import type { CreateProjectFormState } from "@/hooks/use-create-project-form";
 import type { GithubInstallationsState } from "@/hooks/use-github-installations";
 import {
@@ -14,13 +19,23 @@ import { SetupResultPanel } from "./setup-result-panel";
 
 interface WorkflowSetupTabProps {
   createResult: CreateProjectResult | null;
+  existingRepoBaseBranch: string;
+  existingRepoDiscovery: DiscoverExistingRepoResponse | null;
+  existingRepoFullName: string;
+  existingRepoResult: SetupExistingRepoPrResponse | null;
   form: CreateProjectFormState;
   github: GithubInstallationsState;
   isCreatingProject: boolean;
+  isDiscoveringExistingRepo: boolean;
+  isSettingUpExistingRepo: boolean;
+  setupMode: "new" | "existing";
+  onChangeExistingRepoBaseBranch: (value: string) => void;
+  onChangeExistingRepoFullName: (value: string) => void;
+  onChangeSetupMode: (value: "new" | "existing") => void;
   onCreateProject: () => void;
+  onDiscoverExistingRepo: () => void;
   onGenerateWorkflow: () => void;
-  onCopyYaml: (yaml: string) => void;
-  onDownloadYaml: (yaml: string, fileName: string) => void;
+  onSetupExistingRepoPullRequest: () => void;
   onViewProject: () => void;
   projectCatalog: ProjectOptionsCatalogState;
   reducedMotion: boolean;
@@ -63,28 +78,60 @@ const inputBaseStyle: React.CSSProperties = {
 
 export function WorkflowSetupTab({
   createResult,
+  existingRepoBaseBranch,
+  existingRepoDiscovery,
+  existingRepoFullName,
+  existingRepoResult,
   form,
   github,
   isCreatingProject,
+  isDiscoveringExistingRepo,
+  isSettingUpExistingRepo,
+  setupMode,
+  onChangeExistingRepoBaseBranch,
+  onChangeExistingRepoFullName,
+  onChangeSetupMode,
   onCreateProject,
+  onDiscoverExistingRepo,
   onGenerateWorkflow,
-  onCopyYaml,
-  onDownloadYaml,
+  onSetupExistingRepoPullRequest,
   onViewProject,
   projectCatalog,
   reducedMotion,
 }: Readonly<WorkflowSetupTabProps>) {
+  const isExistingMode = setupMode === "existing";
   const createDisabled =
     isCreatingProject ||
     projectCatalog.loadingProjectOptions ||
+    !github.hasAllRepositoriesInstallation ||
     !form.repoName.trim() ||
     !projectCatalog.selectedProjectType;
 
   const generateDisabled =
     isCreatingProject ||
+    isDiscoveringExistingRepo ||
+    isSettingUpExistingRepo ||
     projectCatalog.loadingProjectOptions ||
     !projectCatalog.selectedProjectType ||
     !(form.serviceName || form.repoName);
+
+  const existingDiscoverDisabled =
+    isDiscoveringExistingRepo ||
+    isSettingUpExistingRepo ||
+    projectCatalog.loadingProjectOptions ||
+    !existingRepoFullName.trim();
+
+  const existingSetupDisabled =
+    isDiscoveringExistingRepo ||
+    isSettingUpExistingRepo ||
+    projectCatalog.loadingProjectOptions ||
+    !existingRepoFullName.trim() ||
+    !projectCatalog.selectedProjectType;
+  const noLinkedRepos =
+    isExistingMode &&
+    github.linkedReposLoaded &&
+    !github.loadingLinkedRepos &&
+    github.linkedRepos.length === 0;
 
   return (
     <motion.section
@@ -100,17 +147,43 @@ export function WorkflowSetupTab({
       {/* ── Left: GitHub App + Catalog ─────────────────────────────── */}
       <aside className="controls-panel">
 
-        {/* GitHub App section — optional, de-emphasised */}
+        {/* GitHub App section */}
         <div className="controls-panel-section">
           <span className="controls-panel-label" style={{ display: "flex", alignItems: "center", gap: "0.45rem" }}>
             GitHub App
-            <span style={{ fontSize: "0.65rem", color: "var(--text-muted)", fontWeight: 400, letterSpacing: "0.03em", textTransform: "none" }}>
-              (Optional)
-            </span>
           </span>
           <p style={{ color: "var(--text-muted)", fontSize: "0.78rem", margin: "0.35rem 0 0.65rem", lineHeight: 1.5 }}>
-            Link an existing repo to FlowCI Studio. Not needed to create new repos.
+            {github.installationStatusCopy}
           </p>
+          {github.installationAccounts.length > 0 ? (
+            <div style={{ display: "grid", gap: "0.35rem", marginBottom: "0.65rem" }}>
+              {github.installationAccounts.map((account) => (
+                <div
+                  key={account.installationId}
+                  style={{
+                    border: "1px solid var(--border)",
+                    borderRadius: "6px",
+                    padding: "0.45rem 0.55rem",
+                    color: "var(--text-secondary)",
+                    fontSize: "0.76rem",
+                  }}
+                >
+                  <strong style={{ color: "var(--text-primary)" }}>
+                    {account.accountLogin ? `@${account.accountLogin}` : `Installation ${account.installationId}`}
+                  </strong>
+                  <span style={{ color: "var(--text-muted)" }}>
+                    {" "}· {account.repositorySelection} repositories
+                  </span>
+                </div>
+              ))}
+            </div>
+          ) : null}
+          {github.linkedRepos.length > 0 ? (
+            <p style={{ color: "var(--text-muted)", fontSize: "0.74rem", margin: "0 0 0.65rem", lineHeight: 1.45 }}>
+              Linked repos: {github.linkedRepos.slice(0, 3).map((repo) => repo.repoFullName).join(", ")}
+              {github.linkedRepos.length > 3 ? ` +${github.linkedRepos.length - 3} more` : ""}
+            </p>
+          ) : null}
 
           {github.installUrl ? (
             <a
@@ -362,7 +435,7 @@ export function WorkflowSetupTab({
         <hr className="controls-panel-rule" />
 
         <p style={{ color: "var(--text-muted)", fontSize: "0.72rem", margin: 0 }}>
-          Source: <strong style={{ color: "var(--text-secondary)" }}>workflow-core</strong>
+          Source: <strong style={{ color: "var(--text-secondary)" }}>cicd-workflow</strong>
         </p>
       </aside>
 
@@ -370,7 +443,9 @@ export function WorkflowSetupTab({
       <section className="templates-panel">
         <div className="templates-header">
           <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "1.25rem" }}>
-            <h2 style={{ margin: 0, fontSize: "1.25rem" }}>Create Project</h2>
+            <h2 style={{ margin: 0, fontSize: "1.25rem" }}>
+              {isExistingMode ? "Add CI/CD to Existing Repo" : "Create Project"}
+            </h2>
             {projectCatalog.selectedProjectType ? (
               <span style={{
                 fontSize: "0.72rem",
@@ -395,10 +470,130 @@ export function WorkflowSetupTab({
           </p>
         ) : null}
 
+        <div
+          role="group"
+          aria-label="Setup mode"
+          style={{
+            display: "grid",
+            gridTemplateColumns: "1fr 1fr",
+            gap: "0.5rem",
+            padding: "0.35rem",
+            border: "1px solid var(--border)",
+            borderRadius: "8px",
+            background: "var(--bg-panel)",
+          }}
+        >
+          {(["new", "existing"] as const).map((mode) => (
+            <button
+              key={mode}
+              type="button"
+              className={setupMode === mode ? "primary-button" : "ghost-button"}
+              onClick={() => onChangeSetupMode(mode)}
+              aria-pressed={setupMode === mode}
+              style={{ padding: "0.55rem 0.75rem" }}
+            >
+              {mode === "new" ? "New repository" : "Existing repository"}
+            </button>
+          ))}
+        </div>
+
         <div className="generate-form create-project-form">
 
+          {isExistingMode ? (
+            <div style={{ marginTop: "1.25rem", display: "grid", gap: "1rem" }}>
+              {noLinkedRepos ? (
+                <div className="readiness-empty-state" role="status">
+                  <strong>No linked GitHub repositories</strong>
+                  <p>
+                    Install or link the GitHub App, then retry this mode. You can still switch back to new repository creation.
+                  </p>
+                  <button
+                    type="button"
+                    className="ghost-button"
+                    onClick={() => void github.loadLinkedRepos()}
+                  >
+                    Retry repos
+                  </button>
+                </div>
+              ) : null}
+              <div className="form-pair-row" style={{ gap: "1rem" }}>
+                <div>
+                  <label className="input-label" htmlFor="existing-repo-select" style={labelAccentStyle}>
+                    Linked repository
+                  </label>
+                  <select
+                    id="existing-repo-select"
+                    value={existingRepoFullName}
+                    onChange={(event) => onChangeExistingRepoFullName(event.target.value)}
+                    disabled={github.loadingLinkedRepos}
+                    style={inputBaseStyle}
+                  >
+                    <option value="">
+                      {github.loadingLinkedRepos ? "Loading linked repos..." : "Choose a repository"}
+                    </option>
+                    {github.linkedRepos.map((repo) => (
+                      <option key={`${repo.installationId}-${repo.repoFullName}`} value={repo.repoFullName}>
+                        {repo.repoFullName}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="input-label" htmlFor="existing-base-branch" style={labelAccentStyle}>
+                    Base branch
+                  </label>
+                  <input
+                    id="existing-base-branch"
+                    value={existingRepoBaseBranch}
+                    onChange={(event) => onChangeExistingRepoBaseBranch(event.target.value)}
+                    placeholder="main"
+                    style={inputBaseStyle}
+                  />
+                </div>
+              </div>
+
+              <div style={{ border: "1px solid var(--border)", borderRadius: "8px", padding: "0.8rem", background: "var(--bg-panel)" }}>
+                <p className="helper-text" style={{ margin: "0 0 0.75rem" }}>
+                  Scan the repository first to prefill the project type. If detection is empty, choose a language and recipe manually from the catalog.
+                </p>
+                <p className="helper-text" id="existing-repo-disabled-help" style={{ margin: "0 0 0.75rem", color: "var(--text-muted)" }}>
+                  Discovery needs a linked repository. Setup PR also needs a selected project type.
+                </p>
+                <div className="result-actions" style={{ justifyContent: "flex-start" }}>
+                  <button
+                    type="button"
+                    className="ghost-button"
+                    disabled={existingDiscoverDisabled}
+                    aria-describedby="existing-repo-disabled-help"
+                    onClick={() => void onDiscoverExistingRepo()}
+                  >
+                    {isDiscoveringExistingRepo ? "Scanning..." : "Discover repo"}
+                  </button>
+                  <button
+                    type="button"
+                    className="primary-button"
+                    disabled={existingSetupDisabled}
+                    aria-describedby="existing-repo-disabled-help"
+                    onClick={() => void onSetupExistingRepoPullRequest()}
+                  >
+                    {isSettingUpExistingRepo ? "Opening PR..." : "Open setup PR"}
+                  </button>
+                </div>
+                {existingRepoDiscovery ? (
+                  <div className="result-branches" style={{ marginTop: "0.75rem" }}>
+                    <span className="branch-chip">{existingRepoDiscovery.baseBranch}</span>
+                    <span className="branch-chip">
+                      {existingRepoDiscovery.detectedProjectTypeId ?? "manual"}
+                    </span>
+                    <span className="branch-chip">{existingRepoDiscovery.recommendedWorkflowRecipeId}</span>
+                  </div>
+                ) : null}
+              </div>
+            </div>
+          ) : null}
+
           {/* Repository name + Visibility — paired row */}
-          <div className="form-pair-row" style={{ marginTop: "1.25rem", gap: "1rem" }}>
+          <div className="form-pair-row" style={{ marginTop: "1.25rem", gap: "1rem", display: isExistingMode ? "none" : undefined }}>
             <div>
               <label className="input-label" htmlFor="repo-name" style={labelAccentStyle}>
                 Repository name
@@ -545,7 +740,7 @@ export function WorkflowSetupTab({
             data-testid="setup-project-button"
             disabled={createDisabled}
             onClick={() => void onCreateProject()}
-            style={{ marginTop: "1.75rem" }}
+            style={{ marginTop: "1.75rem", display: isExistingMode ? "none" : undefined }}
           >
             {isCreatingProject ? (
               <span className="btn-spinner" aria-hidden="true" />
@@ -575,6 +770,7 @@ export function WorkflowSetupTab({
 
       {/* ── Right: Result panel ────────────────────────────────────── */}
       <SetupResultPanel
+        existingRepoResult={existingRepoResult}
         setupResult={createResult}
         onViewProject={onViewProject}
       />

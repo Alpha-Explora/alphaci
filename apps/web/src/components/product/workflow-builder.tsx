@@ -3,9 +3,18 @@
 import { useState, type KeyboardEvent } from "react";
 import { MotionConfig, motion, useReducedMotion } from "framer-motion";
 
-import { generateWorkflow } from "@/lib/api/workflows";
-import { createProject } from "@/lib/api/projects";
-import type { CatalogTemplate, CreateProjectResult } from "@/lib/api/contracts";
+import {
+  createProject,
+  discoverExistingRepo,
+  generateWorkflow,
+  setupExistingRepoPullRequest,
+} from "@/lib/api/client";
+import type {
+  CatalogTemplate,
+  CreateProjectResult,
+  DiscoverExistingRepoResponse,
+  SetupExistingRepoPrResponse,
+} from "@/lib/api/contracts";
 import { useCreateProjectForm } from "@/hooks/use-create-project-form";
 import { useGithubInstallations } from "@/hooks/use-github-installations";
 import { useProjectOptionsCatalog } from "@/hooks/use-project-options-catalog";
@@ -36,7 +45,16 @@ export function WorkflowBuilder({ login, plan, guest = false }: Readonly<Workflo
 
   const [activeTab, setActiveTab] = useState<WorkflowTab>("setup");
   const [isCreatingProject, setIsCreatingProject] = useState(false);
+  const [isDiscoveringExistingRepo, setIsDiscoveringExistingRepo] = useState(false);
+  const [isSettingUpExistingRepo, setIsSettingUpExistingRepo] = useState(false);
   const [createResult, setCreateResult] = useState<CreateProjectResult | null>(null);
+  const [existingRepoDiscovery, setExistingRepoDiscovery] =
+    useState<DiscoverExistingRepoResponse | null>(null);
+  const [existingRepoResult, setExistingRepoResult] =
+    useState<SetupExistingRepoPrResponse | null>(null);
+  const [setupMode, setSetupMode] = useState<"new" | "existing">("new");
+  const [existingRepoFullName, setExistingRepoFullName] = useState("");
+  const [existingRepoBaseBranch, setExistingRepoBaseBranch] = useState("main");
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
 
   const catalog = useWorkflowCatalog();
@@ -78,7 +96,6 @@ export function WorkflowBuilder({ login, plan, guest = false }: Readonly<Workflo
   }
 
   async function handleCreateProject() {
-    // Build and validate the full payload using the form hook's validator.
     const payloadResult = createForm.buildPayload({
       hasAllRepositoriesInstallation: github.hasAllRepositoriesInstallation,
       isMicroservicesShape: projectCatalog.isMicroservicesShape,
@@ -97,11 +114,8 @@ export function WorkflowBuilder({ login, plan, guest = false }: Readonly<Workflo
     setStatusMessage("Creating GitHub repository, branches, and committing workflow...");
 
     try {
-      // Single unified call: creates repo + branches + protection + commits YAML
       const response = await createProject(payloadResult.payload);
 
-      // Derive the workflow file basename from the path returned by the server.
-      // workflowPath is always `.github/workflows/{filename}`.
       const outputFileName = response.workflowPath.split("/").at(-1) ?? response.workflowPath;
 
       const result: CreateProjectResult = {
@@ -115,12 +129,11 @@ export function WorkflowBuilder({ login, plan, guest = false }: Readonly<Workflo
         githubCommitUrl: response.githubCommitUrl,
         projectTypeId: response.projectTypeId,
         workflowRecipeId: response.workflowRecipeId,
-        // The unified endpoint always creates these three branches.
         branchesCreated: ["main", "uat", "test"],
+        additionalWorkflowPaths: response.additionalWorkflowPaths,
       };
 
       setCreateResult(result);
-      // Optimistically prepend to the projects list, then silently refresh from the server.
       projects.prependCreateResult(response, payloadResult.payload);
       void projects.loadProjects(true);
       setActiveTab("current");
@@ -131,6 +144,89 @@ export function WorkflowBuilder({ login, plan, guest = false }: Readonly<Workflo
       setStatusMessage(formatApiError(error, "Project creation failed"));
     } finally {
       setIsCreatingProject(false);
+    }
+  }
+
+  async function handleDiscoverExistingRepo() {
+    const repoFullName = existingRepoFullName.trim();
+    if (!repoFullName) {
+      setStatusMessage("Choose a linked repository before discovery.");
+      return;
+    }
+
+    setIsDiscoveringExistingRepo(true);
+    setStatusMessage(`Scanning ${repoFullName} for a matching workflow recipe...`);
+
+    try {
+      const response = await discoverExistingRepo({
+        repoFullName,
+        baseBranch: existingRepoBaseBranch.trim() || "main",
+      });
+
+      setExistingRepoDiscovery(response);
+      setCreateResult(null);
+
+      if (response.detectedProjectTypeId) {
+        projectCatalog.setSelectedProjectTypeId(response.detectedProjectTypeId);
+      }
+      if (response.recommendedWorkflowRecipeId) {
+        projectCatalog.setSelectedWorkflowRecipeId(response.recommendedWorkflowRecipeId);
+      }
+      if (response.serviceName) {
+        createForm.setServiceName(response.serviceName);
+      }
+      if (response.servicePath) {
+        createForm.setServicePath(response.servicePath);
+      }
+
+      const detected = response.detectedProjectTypeId ?? "manual selection required";
+      setStatusMessage(`Discovery complete for ${repoFullName}. Detected: ${detected}.`);
+    } catch (error) {
+      setStatusMessage(formatApiError(error, "Repository discovery failed"));
+    } finally {
+      setIsDiscoveringExistingRepo(false);
+    }
+  }
+
+  async function handleSetupExistingRepoPullRequest() {
+    const repoFullName = existingRepoFullName.trim();
+    if (!repoFullName) {
+      setStatusMessage("Choose a linked repository before opening a setup PR.");
+      return;
+    }
+    if (!projectCatalog.selectedProjectTypeId) {
+      setStatusMessage("Choose a project type before opening a setup PR.");
+      return;
+    }
+
+    const coverage = Number(createForm.coverageThreshold);
+    const safeCoverage =
+      Number.isFinite(coverage) && coverage >= 0 && coverage <= 100 ? coverage : 80;
+    const fallbackServiceName = repoFullName.split("/").at(-1) ?? "service";
+
+    setIsSettingUpExistingRepo(true);
+    setStatusMessage(`Creating a workflow branch and PR for ${repoFullName}...`);
+
+    try {
+      const response = await setupExistingRepoPullRequest({
+        repoFullName,
+        baseBranch: existingRepoBaseBranch.trim() || "main",
+        projectTypeId: projectCatalog.selectedProjectTypeId,
+        workflowRecipeId: projectCatalog.selectedWorkflowRecipeId || "standard",
+        serviceName: createForm.serviceName || existingRepoDiscovery?.serviceName || fallbackServiceName,
+        servicePath: createForm.servicePath || existingRepoDiscovery?.servicePath || ".",
+        nodeVersion: createForm.nodeVersion || "24",
+        coverageThreshold: safeCoverage,
+        outputFileName: createForm.outputFileName || "ci.yml",
+      });
+
+      setExistingRepoResult(response);
+      setCreateResult(null);
+      setStatusMessage(`Setup PR opened for ${response.repoFullName}: #${response.pullRequestNumber}.`);
+    } catch (error) {
+      setStatusMessage(formatApiError(error, "Existing repository setup failed"));
+    } finally {
+      setIsSettingUpExistingRepo(false);
     }
   }
 
@@ -266,11 +362,21 @@ export function WorkflowBuilder({ login, plan, guest = false }: Readonly<Workflo
             <WorkflowSetupTab
               form={createForm}
               github={github}
+              existingRepoBaseBranch={existingRepoBaseBranch}
+              existingRepoDiscovery={existingRepoDiscovery}
+              existingRepoFullName={existingRepoFullName}
+              existingRepoResult={existingRepoResult}
               isCreatingProject={isCreatingProject}
+              isDiscoveringExistingRepo={isDiscoveringExistingRepo}
+              isSettingUpExistingRepo={isSettingUpExistingRepo}
+              setupMode={setupMode}
+              onChangeExistingRepoBaseBranch={setExistingRepoBaseBranch}
+              onChangeExistingRepoFullName={setExistingRepoFullName}
+              onChangeSetupMode={setSetupMode}
               onCreateProject={guest ? () => { window.location.href = "/signup"; } : handleCreateProject}
+              onDiscoverExistingRepo={guest ? () => { window.location.href = "/signup"; } : handleDiscoverExistingRepo}
               onGenerateWorkflow={guest ? () => { window.location.href = "/signup"; } : handleGenerateWorkflow}
-              onCopyYaml={guest ? () => { window.location.href = "/signup"; } : (yaml) => void copyYaml(yaml)}
-              onDownloadYaml={guest ? () => { window.location.href = "/signup"; } : downloadYaml}
+              onSetupExistingRepoPullRequest={guest ? () => { window.location.href = "/signup"; } : handleSetupExistingRepoPullRequest}
               projectCatalog={projectCatalog}
               onViewProject={() => setActiveTab("current")}
               reducedMotion={reducedMotion}

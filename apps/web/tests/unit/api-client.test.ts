@@ -1,5 +1,7 @@
 import {
   createProject,
+  createSubscriptionCheckout,
+  getCheckoutStatus,
   getGithubInstallationAccounts,
   getGithubAppInstallUrl,
   getLinkedGithubRepos,
@@ -299,6 +301,58 @@ describe("API client project setup helpers", () => {
       2,
       "http://localhost:4000/api/v1/projects?limit=25",
       expect.any(Object),
+    );
+  });
+
+  it("creates a subscription checkout session", async () => {
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      status: 201,
+      json: async () => ({
+        checkoutId: "cs_paymongo_123",
+        status: "active",
+        redirectUrl: "https://checkout.paymongo.com/cs_paymongo_123",
+      }),
+    });
+
+    await expect(createSubscriptionCheckout("pro")).resolves.toEqual({
+      checkoutId: "cs_paymongo_123",
+      status: "active",
+      redirectUrl: "https://checkout.paymongo.com/cs_paymongo_123",
+    });
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      "http://localhost:4000/api/v1/subscription/checkout",
+      expect.objectContaining({
+        method: "POST",
+        body: JSON.stringify({ plan: "pro" }),
+      }),
+    );
+  });
+
+  it("loads subscription checkout status", async () => {
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        status: "paid",
+        subscription: {
+          plan: "pro",
+          status: "active",
+          provider: "paymongo",
+          updatedAt: "2026-06-05T00:00:00.000Z",
+        },
+      }),
+    });
+
+    await expect(getCheckoutStatus("cs_paymongo_123")).resolves.toMatchObject({
+      status: "paid",
+      subscription: { provider: "paymongo" },
+    });
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      "http://localhost:4000/api/v1/subscription/checkout/cs_paymongo_123/status",
+      expect.objectContaining({ credentials: "include" }),
     );
   });
 

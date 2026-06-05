@@ -40,7 +40,7 @@ export function useWorkflowCatalog() {
           return;
         }
 
-        setCatalogError("Unable to load workflow templates from workflow-core right now.");
+        setCatalogError("Unable to load workflow templates from cicd-workflow right now.");
         setCategories([]);
         setAllTemplates([]);
       } finally {

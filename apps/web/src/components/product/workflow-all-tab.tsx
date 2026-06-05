@@ -41,7 +41,7 @@ export function WorkflowAllTab({ allTemplates, onUseTemplate }: Readonly<Workflo
     >
       <div className="templates-header" style={{ marginBottom: "1rem" }}>
         <h2 style={{ fontSize: "1.2rem", fontWeight: 700 }}>All Templates</h2>
-        <p style={{ fontSize: "0.82rem", color: "var(--text-secondary)" }}>{allTemplates.length} templates loaded from workflow-core</p>
+        <p style={{ fontSize: "0.82rem", color: "var(--text-secondary)" }}>{allTemplates.length} templates loaded from cicd-workflow</p>
       </div>
 
       {allTemplates.length === 0 ? (
@@ -78,7 +78,7 @@ export function WorkflowAllTab({ allTemplates, onUseTemplate }: Readonly<Workflo
             </svg>
           </span>
           <p className="helper-text" style={{ maxWidth: "36ch", margin: 0 }}>
-            No templates loaded yet. Templates are sourced from <strong>workflow-core/workflow-templates</strong>.
+            No templates loaded yet. Templates are sourced from <strong>cicd-workflow/workflow-templates</strong>.
           </p>
         </div>
       ) : null}
