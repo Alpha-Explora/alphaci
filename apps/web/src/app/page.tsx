@@ -793,21 +793,12 @@ export default function LandingPage() {
           {valueCards.map((card, index) => (
             <motion.div
               key={card.title}
-              className="feature-strip-item glass-panel feature-card-enhanced"
+              className="feature-strip-item feature-card-enhanced"
               initial={prefersReducedMotion ? undefined : { opacity: 0, y: 16 }}
               whileInView={prefersReducedMotion ? undefined : { opacity: 1, y: 0 }}
               whileHover={prefersReducedMotion ? undefined : { y: -8, scale: 1.02 }}
               viewport={{ once: true, margin: "-60px" }}
               transition={{ delay: index * 0.12, duration: 0.4 }}
-              style={{
-                padding: "2.5rem 2rem",
-                minHeight: "260px",
-                display: "flex",
-                flexDirection: "column",
-                gap: "0.85rem",
-                position: "relative",
-                overflow: "hidden",
-              }}
             >
               {/* Corner accent */}
               <div
