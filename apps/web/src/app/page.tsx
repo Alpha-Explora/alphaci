@@ -1,11 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { motion, useReducedMotion, useScroll, useTransform } from "framer-motion";
+import { motion, useReducedMotion, useScroll, useSpring, useTransform } from "framer-motion";
 import { useRef, useState, useEffect } from "react";
 
 import { FlowBackground } from "@/components/layout/flow-background";
 import { PipelineLogo } from "@/components/layout/pipeline-logo";
+
 import { useAuthSession } from "@/hooks/use-auth-session";
 import { hasActiveSubscription } from "@/lib/auth/subscription";
 
@@ -312,7 +313,10 @@ function PipelineVisualization({ reduced }: Readonly<{ reduced: boolean | null }
                 <span style={{ fontSize: "0.58rem", color: "var(--text-muted)", fontFamily: "ui-monospace, monospace", marginTop: "0.15rem" }}>{stage.duration}</span>
               </div>
               {i < PIPELINE_STAGES.length - 1 && (
-                <div className="pipeline-connector-line" style={{ margin: "0 0.2rem", marginBottom: "1.4rem" }} />
+                <div
+                  className="pipeline-connector-line pipeline-connector-animated"
+                  style={{ margin: "0 0.2rem", marginBottom: "1.4rem" }}
+                />
               )}
             </div>
           ))}
@@ -492,8 +496,24 @@ export default function LandingPage() {
   const hasSubscription = hasActiveSubscription(session);
 
   const heroRef = useRef<HTMLDivElement>(null);
-  const { scrollYProgress } = useScroll({ target: heroRef, offset: ["start start", "end start"] });
-  const heroY = useTransform(scrollYProgress, [0, 1], ["0%", "12%"]);
+  const navRef = useRef<HTMLElement>(null);
+  const { scrollYProgress: heroScrollYProgress } = useScroll({ target: heroRef, offset: ["start start", "end start"] });
+  const heroY = useTransform(heroScrollYProgress, [0, 1], ["0%", "12%"]);
+
+  // Page-level scroll progress bar
+  const { scrollYProgress: pageScrollYProgress } = useScroll();
+  const scaleX = useSpring(pageScrollYProgress, { stiffness: 200, damping: 40 });
+
+  // Navbar scroll-state: intensify backdrop + border when scrolled
+  useEffect(() => {
+    const nav = navRef.current;
+    if (!nav) return;
+    const onScroll = () => {
+      nav.dataset.scrolled = window.scrollY > 10 ? "true" : "false";
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
 
   const {
     primaryHref,
@@ -509,38 +529,87 @@ export default function LandingPage() {
       <a href="#main-content" className="skip-link">Skip to main content</a>
       <FlowBackground />
 
+      {/* Scroll progress bar */}
+      {!prefersReducedMotion && (
+        <motion.div
+          className="scroll-progress"
+          style={{ scaleX, width: "100%" }}
+          aria-hidden="true"
+        />
+      )}
+
       {/* Navigation */}
-      <header className="marketing-nav">
-        <Link className="brand-mark" href="/" aria-label="FlowCI Studio home">
-          <PipelineLogo size={26} />
-          <span>FlowCI Studio</span>
+      <header ref={navRef} className="marketing-nav marketing-nav-enhanced">
+        <Link className="brand-mark" href="/" aria-label="FlowCI Studio home" style={{ gap: "0.55rem" }}>
+          <PipelineLogo size={24} />
+          <span style={{ fontWeight: 800, color: "var(--text-primary)", letterSpacing: "-0.02em" }}>
+            FlowCI
+          </span>
+          <span style={{ fontWeight: 600, color: "var(--text-primary)", letterSpacing: "-0.01em" }}>
+            Studio
+          </span>
         </Link>
-        <nav aria-label="Primary" className="nav-links">
-          <Link href="/workflows">Workflows</Link>
-          <Link href="#pipeline">How it works</Link>
+
+        {/* Center nav links — plain text, underline on hover */}
+        <nav aria-label="Primary" className="nav-links" style={{ gap: "2rem" }}>
+          {[
+            { href: "/workflows", label: "Workflows" },
+            { href: "#pipeline", label: "How it works" },
+          ].map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              style={{
+                fontSize: "0.875rem",
+                fontWeight: 500,
+                color: "var(--text-secondary)",
+                textDecoration: "none",
+                letterSpacing: "-0.01em",
+                paddingBottom: "2px",
+                borderBottom: "1px solid transparent",
+                transition: "color 0.18s ease, border-color 0.18s ease",
+              }}
+              onMouseEnter={(e) => {
+                const el = e.currentTarget as HTMLAnchorElement;
+                el.style.color = "var(--text-primary)";
+                el.style.borderBottomColor = "rgba(255,255,255,0.3)";
+              }}
+              onMouseLeave={(e) => {
+                const el = e.currentTarget as HTMLAnchorElement;
+                el.style.color = "var(--text-secondary)";
+                el.style.borderBottomColor = "transparent";
+              }}
+            >
+              {item.label}
+            </Link>
+          ))}
         </nav>
-        <div className="landing-nav-actions">
+
+        <div className="landing-nav-actions" style={{ gap: "1.25rem" }}>
+          {/* Plain "Log in" text link */}
           <Link
-            className="ghost-button nav-ghost"
-            href="/home"
-            style={{ fontSize: "0.82rem", padding: "0.38rem 0.85rem", minHeight: "2.1rem" }}
-          >
-            Preview
-          </Link>
-          <Link
-            className="ghost-button nav-ghost"
             href={navUtilityHref}
-            style={{ fontSize: "0.82rem", padding: "0.38rem 0.85rem", minHeight: "2.1rem" }}
+            style={{
+              fontSize: "0.875rem",
+              fontWeight: 500,
+              color: "var(--text-secondary)",
+              textDecoration: "none",
+              transition: "color 0.18s ease",
+              whiteSpace: "nowrap",
+            }}
+            onMouseEnter={(e) => { (e.currentTarget as HTMLAnchorElement).style.color = "var(--text-primary)"; }}
+            onMouseLeave={(e) => { (e.currentTarget as HTMLAnchorElement).style.color = "var(--text-secondary)"; }}
           >
             {navUtilityLabel}
           </Link>
-          <span style={{ width: 1, height: 18, background: "rgba(255,255,255,0.12)", flexShrink: 0 }} aria-hidden="true" />
+          {/* Gradient pill CTA */}
           <Link
-            className="primary-button"
+            className="cta-gradient-button"
             href={appHref}
-            style={{ fontSize: "0.82rem", padding: "0.38rem 1.1rem", minHeight: "2.1rem" }}
+            style={{ fontSize: "0.85rem", padding: "0.45rem 1.25rem" }}
           >
-            {appLabel}
+            <span className="cta-shimmer" aria-hidden="true" />
+            {appLabel} &rarr;
           </Link>
         </div>
       </header>
@@ -548,6 +617,8 @@ export default function LandingPage() {
       <div id="main-content">
         {/* ── SECTION 1: Full-screen hero ──────────────────────────────── */}
         <section className="hero-full" ref={heroRef} aria-label="Main message">
+          <div aria-hidden="true" className="hero-mesh-bg" />
+
           <motion.div
             className="hero-full-content"
             style={prefersReducedMotion ? undefined : { y: heroY }}
@@ -560,6 +631,18 @@ export default function LandingPage() {
               animate={prefersReducedMotion ? undefined : { opacity: 1, y: 0 }}
               transition={{ duration: 0.38 }}
             >
+              <span
+                aria-hidden="true"
+                style={{
+                  width: "6px",
+                  height: "6px",
+                  borderRadius: "50%",
+                  background: "var(--brand-accent)",
+                  display: "inline-block",
+                  marginRight: "0.4rem",
+                  animation: "flowPulse 1.8s ease-in-out infinite",
+                }}
+              />
               Powered by source-backed templates
             </motion.p>
 
@@ -568,7 +651,9 @@ export default function LandingPage() {
               animate={prefersReducedMotion ? undefined : { opacity: 1, y: 0 }}
               transition={{ duration: 0.42 }}
             >
-              Build production-ready workflows{" "}
+              Build production-ready{" "}
+              <br className="hero-br-desktop" />
+              workflows{" "}
               <span className="hero-highlight">instantly</span>
             </motion.h1>
 
@@ -583,27 +668,33 @@ export default function LandingPage() {
             </motion.p>
 
             <motion.div
-              className="stats-row"
+              className="stats-row stats-row-enhanced"
               initial={prefersReducedMotion ? undefined : { opacity: 0, y: 14 }}
               animate={prefersReducedMotion ? undefined : { opacity: 1, y: 0 }}
               transition={{ duration: 0.42, delay: 0.12 }}
             >
-              <div className="stat-block">
-                <span className="stat-number">40+</span>
-                <span className="stat-label">Templates</span>
-              </div>
-              <div className="stat-block">
-                <span className="stat-number" style={{ fontSize: "1.5rem" }}>&lt;&nbsp;2 min</span>
-                <span className="stat-label">Setup time</span>
-              </div>
-              <div className="stat-block">
-                <span className="stat-number">100%</span>
-                <span className="stat-label">GitHub native</span>
-              </div>
-              <div className="stat-block">
-                <span className="stat-number" style={{ fontSize: "1.35rem" }}>&#8369;300/mo</span>
-                <span className="stat-label">Pro plan</span>
-              </div>
+              {[
+                { value: "40+", label: "Templates", accent: "var(--brand)" },
+                { value: "< 2 min", label: "Setup time", accent: "var(--brand-accent)" },
+                { value: "100%", label: "GitHub native", accent: "var(--brand)" },
+                { value: "₱300/mo", label: "Pro plan", accent: "var(--brand-accent)" },
+              ].map((stat) => (
+                <div key={stat.label} className="stat-block stat-block-enhanced">
+                  <span
+                    className="stat-number"
+                    style={{
+                      background: `linear-gradient(135deg, var(--text-primary), ${stat.accent})`,
+                      WebkitBackgroundClip: "text",
+                      WebkitTextFillColor: "transparent",
+                      backgroundClip: "text",
+                      color: "var(--text-primary)",
+                    }}
+                  >
+                    {stat.value}
+                  </span>
+                  <span className="stat-label">{stat.label}</span>
+                </div>
+              ))}
             </motion.div>
 
             <motion.div
@@ -612,13 +703,13 @@ export default function LandingPage() {
               animate={prefersReducedMotion ? undefined : { opacity: 1, y: 0 }}
               transition={{ duration: 0.45, delay: 0.15 }}
             >
-              <motion.div whileHover={prefersReducedMotion ? undefined : { scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+              <motion.div whileHover={prefersReducedMotion ? undefined : { scale: 1.04 }} whileTap={{ scale: 0.96 }}>
                 <Link className="primary-button" href={primaryHref}>{primaryLabel}</Link>
               </motion.div>
-              <motion.div whileHover={prefersReducedMotion ? undefined : { scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+              <motion.div whileHover={prefersReducedMotion ? undefined : { scale: 1.04 }} whileTap={{ scale: 0.96 }}>
                 <Link className="ghost-button" href="#pricing">View pricing</Link>
               </motion.div>
-              <motion.div whileHover={prefersReducedMotion ? undefined : { scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+              <motion.div whileHover={prefersReducedMotion ? undefined : { scale: 1.04 }} whileTap={{ scale: 0.96 }}>
                 <Link
                   className="ghost-button"
                   href="/home"
@@ -699,35 +790,67 @@ export default function LandingPage() {
           {valueCards.map((card, index) => (
             <motion.div
               key={card.title}
-              className="feature-strip-item glass-panel"
+              className="feature-strip-item feature-card-enhanced"
               initial={prefersReducedMotion ? undefined : { opacity: 0, y: 16 }}
               whileInView={prefersReducedMotion ? undefined : { opacity: 1, y: 0 }}
-              whileHover={prefersReducedMotion ? undefined : { y: -6, scale: 1.02, borderColor: "var(--border-brand)", boxShadow: "var(--shadow-card), 0 0 30px rgba(14, 165, 233, 0.15)" }}
+              whileHover={prefersReducedMotion ? undefined : { y: -8, scale: 1.02 }}
               viewport={{ once: true, margin: "-60px" }}
               transition={{ delay: index * 0.12, duration: 0.4 }}
-              style={{
-                padding: "2rem",
-                display: "flex",
-                flexDirection: "column",
-                gap: "0.75rem",
-              }}
             >
+              {/* Corner accent */}
+              <div
+                aria-hidden="true"
+                style={{
+                  position: "absolute",
+                  top: 0,
+                  right: 0,
+                  width: "80px",
+                  height: "80px",
+                  background: `radial-gradient(ellipse at top right, ${index === 0 ? "rgba(56,189,248,0.12)" : index === 1 ? "rgba(52,211,153,0.1)" : "rgba(56,189,248,0.08)"} 0%, transparent 70%)`,
+                  borderRadius: "0 1.25rem 0 0",
+                  pointerEvents: "none",
+                }}
+              />
+
               <span className="feature-number">0{index + 1}</span>
-              <span style={{
-                display: "inline-flex",
-                alignItems: "center",
-                justifyContent: "center",
-                width: "2.25rem",
-                height: "2.25rem",
-                borderRadius: "0.5rem",
-                border: "1px solid var(--border-brand)",
-                background: "linear-gradient(135deg, rgba(79,142,255,0.15), rgba(0,208,132,0.08))",
-                color: "var(--brand)",
-              }} aria-hidden="true">
+              <span
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  width: "2.5rem",
+                  height: "2.5rem",
+                  borderRadius: "0.6rem",
+                  border: `1px solid ${index === 1 ? "rgba(52,211,153,0.35)" : "var(--border-brand)"}`,
+                  background: index === 1
+                    ? "linear-gradient(135deg, rgba(52,211,153,0.15), rgba(16,185,129,0.06))"
+                    : "linear-gradient(135deg, rgba(56,189,248,0.15), rgba(14,165,233,0.06))",
+                  color: index === 1 ? "var(--brand-accent)" : "var(--brand)",
+                  boxShadow: index === 1
+                    ? "0 0 16px rgba(52,211,153,0.15)"
+                    : "0 0 16px rgba(56,189,248,0.15)",
+                }}
+                aria-hidden="true"
+              >
                 <CardIcon type={card.icon} />
               </span>
-              <h3>{card.title}</h3>
-              <p>{card.body}</p>
+              <div>
+                <p
+                  style={{
+                    margin: "0 0 0.15rem",
+                    fontSize: "0.65rem",
+                    fontWeight: 700,
+                    textTransform: "uppercase",
+                    letterSpacing: "0.1em",
+                    color: "var(--text-muted)",
+                    fontFamily: "ui-monospace, monospace",
+                  }}
+                >
+                  {card.eyebrow}
+                </p>
+                <h3 style={{ margin: 0 }}>{card.title}</h3>
+              </div>
+              <p style={{ color: "var(--text-secondary)", lineHeight: 1.65, margin: 0 }}>{card.body}</p>
             </motion.div>
           ))}
         </section>
@@ -746,52 +869,143 @@ export default function LandingPage() {
           aria-label="Pricing plans"
         >
           <div style={{ maxWidth: 640, margin: "0 auto" }}>
-            <p className="section-divider" style={{ marginBottom: "2rem" }}>pricing</p>
-            <p className="file-path-label" style={{ marginBottom: "0.75rem" }}>billing/plans.yml</p>
-            <h2 style={{ fontSize: "clamp(1.5rem, 3vw, 2.4rem)", marginBottom: "0.5rem" }}>
-              One plan. Everything included.
-            </h2>
-            <p style={{ color: "var(--text-secondary)", marginBottom: "2rem", fontSize: "0.95rem" }}>
-              No tiers, no seat limits, no hidden fees.
-            </p>
+            <motion.div
+              initial={prefersReducedMotion ? undefined : { opacity: 0, y: 12 }}
+              whileInView={prefersReducedMotion ? undefined : { opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.4 }}
+            >
+              <p className="section-divider" style={{ marginBottom: "1.5rem" }}>pricing</p>
+              <p className="file-path-label" style={{ marginBottom: "0.75rem" }}>billing/plans.yml</p>
+              <h2 style={{ fontSize: "clamp(1.5rem, 3vw, 2.4rem)", marginBottom: "0.5rem" }}>
+                One plan. Everything included.
+              </h2>
+              <p style={{ color: "var(--text-secondary)", marginBottom: "2rem", fontSize: "0.95rem" }}>
+                No tiers, no seat limits, no hidden fees.
+              </p>
+            </motion.div>
 
             <motion.div
-              className="pricing-plan-card glass-panel"
+              className="pricing-plan-card glass-panel pricing-card-enhanced"
               initial={prefersReducedMotion ? undefined : { opacity: 0, y: 20 }}
               whileInView={prefersReducedMotion ? undefined : { opacity: 1, y: 0 }}
-              whileHover={prefersReducedMotion ? undefined : { scale: 1.02, borderColor: "var(--border-brand)", boxShadow: "var(--shadow-elevated), 0 0 60px rgba(14, 165, 233, 0.2)" }}
+              whileHover={prefersReducedMotion ? undefined : { scale: 1.015 }}
               viewport={{ once: true }}
-              transition={{ duration: 0.45 }}
+              transition={{ duration: 0.45, delay: 0.1 }}
               style={{ position: "relative", overflow: "hidden", padding: "2.5rem" }}
             >
-              <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 2, background: "linear-gradient(90deg, transparent, var(--brand), var(--brand-accent), transparent)" }} aria-hidden="true" />
-              <div className="pricing-plan-header">
-                <div>
-                  <p style={{ fontSize: "0.72rem", textTransform: "uppercase", letterSpacing: "0.1em", color: "var(--text-muted)", marginBottom: "0.4rem" }}>Pro Monthly</p>
-                  <div style={{ display: "flex", alignItems: "baseline", gap: "0.35rem" }}>
-                    <span className="pricing-table-price">&#8369;300</span>
-                    <span style={{ fontSize: "0.88rem", color: "var(--text-muted)" }}>/ month</span>
-                  </div>
+              {/* Animated gradient top border */}
+              <div
+                aria-hidden="true"
+                style={{
+                  position: "absolute",
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  height: 2,
+                  background: "linear-gradient(90deg, transparent 0%, var(--brand) 30%, var(--brand-accent) 70%, transparent 100%)",
+                  animation: "gradient-shift 4s linear infinite",
+                  backgroundSize: "200% 100%",
+                }}
+              />
+
+              {/* PRO badge — top-left, on its own line above pricing */}
+              <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "1rem" }}>
+                <div
+                  aria-label="Most popular plan"
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "0.3rem",
+                    padding: "0.2rem 0.65rem",
+                    borderRadius: "999px",
+                    background: "linear-gradient(135deg, rgba(56,189,248,0.15), rgba(52,211,153,0.1))",
+                    border: "1px solid rgba(56,189,248,0.25)",
+                    fontSize: "0.65rem",
+                    fontWeight: 700,
+                    textTransform: "uppercase" as const,
+                    letterSpacing: "0.08em",
+                    color: "var(--brand)",
+                  }}
+                >
+                  <span
+                    aria-hidden="true"
+                    style={{
+                      width: "5px",
+                      height: "5px",
+                      borderRadius: "50%",
+                      background: "var(--brand-accent)",
+                      animation: "flowPulse 1.8s ease-in-out infinite",
+                    }}
+                  />
+                  Pro
                 </div>
-                <Link className="primary-button" href="/signup" style={{ fontSize: "0.85rem", padding: "0.55rem 1.2rem" }}>
-                  Get started
-                </Link>
+                <span style={{ fontSize: "0.72rem", textTransform: "uppercase" as const, letterSpacing: "0.1em", color: "var(--text-muted)" }}>Monthly</span>
               </div>
+
+              {/* Price block */}
+              <div style={{ marginBottom: "1.5rem" }}>
+                <div style={{ display: "flex", alignItems: "baseline", gap: "0.35rem", marginBottom: "0.4rem" }}>
+                  <span
+                    className="pricing-table-price"
+                    style={{
+                      background: "linear-gradient(135deg, var(--text-primary), var(--brand))",
+                      WebkitBackgroundClip: "text",
+                      WebkitTextFillColor: "transparent",
+                      backgroundClip: "text",
+                      color: "var(--text-primary)",
+                    }}
+                  >
+                    &#8369;300
+                  </span>
+                  <span style={{ fontSize: "0.88rem", color: "var(--text-muted)" }}>/ month</span>
+                </div>
+                <p style={{ margin: "0 0 1.25rem", fontSize: "0.82rem", color: "var(--text-secondary)" }}>
+                  Cancel any time. No hidden fees.
+                </p>
+                {/* Get started button — full width, below the price */}
+                <motion.div
+                  whileHover={prefersReducedMotion ? undefined : { scale: 1.02 }}
+                  whileTap={{ scale: 0.97 }}
+                  style={{ width: "100%" }}
+                >
+                  <Link
+                    className="primary-button"
+                    href="/signup"
+                    style={{ fontSize: "0.9rem", padding: "0.75rem 1.5rem", width: "100%", justifyContent: "center" }}
+                  >
+                    Get started &rarr;
+                  </Link>
+                </motion.div>
+              </div>
+
+              <div
+                aria-hidden="true"
+                style={{
+                  height: 1,
+                  background: "linear-gradient(90deg, transparent, var(--border), transparent)",
+                  margin: "1.5rem 0",
+                }}
+              />
+
               <ul className="pricing-feature-list">
                 {featureRows.map((row) => (
                   <li key={row.name} className="pricing-feature-item">
-                    <span style={{
-                      display: "inline-flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      width: "1.1rem",
-                      height: "1.1rem",
-                      borderRadius: "50%",
-                      background: "rgba(0,208,132,0.12)",
-                      border: "1px solid rgba(0,208,132,0.3)",
-                      flexShrink: 0,
-                      color: "var(--success)",
-                    }} aria-hidden="true">
+                    <span
+                      style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        width: "1.15rem",
+                        height: "1.15rem",
+                        borderRadius: "50%",
+                        background: "rgba(52, 211, 153, 0.12)",
+                        border: "1px solid rgba(52, 211, 153, 0.3)",
+                        flexShrink: 0,
+                        color: "var(--success)",
+                      }}
+                      aria-hidden="true"
+                    >
                       <CheckIcon />
                     </span>
                     {row.name}
