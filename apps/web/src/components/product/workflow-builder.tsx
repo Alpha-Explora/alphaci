@@ -298,33 +298,23 @@ export function WorkflowBuilder({ login, plan, guest = false }: Readonly<Workflo
   return (
     <MotionConfig reducedMotion={reducedMotion ? "always" : "never"}>
       <section className="workflow-surface">
-        <header className="product-topbar">
-          <div>
-            <nav className="topbar-breadcrumb" aria-label="Breadcrumb">
-              <a href="/home">Dashboard</a>
-              <span aria-hidden="true">/</span>
-              <span aria-current="page">Create Project</span>
-            </nav>
-            <h1>Create and manage projects</h1>
+        <div style={{ padding: "0.75rem var(--layout-gutter) 0" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", flexWrap: "wrap" }}>
+            <div className="topbar-controls">
+              <p className="status-pill">@{login}</p>
+              <p className="status-pill">Plan: {plan}</p>
+              <span
+                className={`github-status-dot ${github.hasAllRepositoriesInstallation ? "" : "disconnected"}`}
+                title={
+                  github.hasAllRepositoriesInstallation
+                    ? "GitHub App installed — all repositories access confirmed"
+                    : "GitHub App not installed. Install it to link existing repositories."
+                }
+              >
+                {github.hasAllRepositoriesInstallation ? "GitHub App: connected" : "GitHub App: not installed →"}
+              </span>
+            </div>
           </div>
-          <div className="topbar-controls">
-            <p className="status-pill">@{login}</p>
-            <p className="status-pill">Plan: {plan}</p>
-            <span
-              className={`github-status-dot ${github.hasAllRepositoriesInstallation ? "" : "disconnected"}`}
-              title={
-                github.hasAllRepositoriesInstallation
-                  ? "GitHub App installed — all repositories access confirmed"
-                  : "GitHub App not installed. Install it to link existing repositories."
-              }
-            >
-              {github.hasAllRepositoriesInstallation ? "GitHub App: connected" : "GitHub App: not installed →"}
-            </span>
-          </div>
-        </header>
-
-        <section className="intro-panel glass-panel">
-          <p>Create a GitHub repo from the catalog, apply branch rulesets, and commit the managed workflow.</p>
           {statusMessage ? (
             <motion.p
               className={`status-banner ${statusBannerVariant(statusMessage)}`}
@@ -333,23 +323,24 @@ export function WorkflowBuilder({ login, plan, guest = false }: Readonly<Workflo
               initial={{ opacity: 0, y: -6 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0 }}
+              style={{ marginTop: "0.5rem" }}
             >
               {statusMessage}
             </motion.p>
           ) : null}
           {catalog.catalogError ? (
-            <div className="error-inline" role="alert">
+            <div className="error-inline" role="alert" style={{ marginTop: "0.5rem" }}>
               <span className="error-inline-icon" aria-hidden="true">⚠</span>
               <p className="error-inline-msg">{catalog.catalogError}</p>
             </div>
           ) : null}
           {projectCatalog.projectOptionsError ? (
-            <div className="error-inline" role="alert">
+            <div className="error-inline" role="alert" style={{ marginTop: "0.5rem" }}>
               <span className="error-inline-icon" aria-hidden="true">⚠</span>
               <p className="error-inline-msg">{projectCatalog.projectOptionsError}</p>
             </div>
           ) : null}
-        </section>
+        </div>
 
         <div>
           <WorkflowStudioTabs
