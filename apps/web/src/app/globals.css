@@ -142,9 +142,9 @@ h1, h2, h3 {
   position: relative;
   min-height: 100dvh;
   width: 100%;
-  
+
   margin: 0 auto;
-  padding: 1rem var(--layout-gutter);
+  padding: 0 0 2rem 0;
   display: flex;
   flex-direction: column;
   gap: var(--stack-gap);
@@ -1480,19 +1480,24 @@ h1, h2, h3 {
 /* ── Studio grid ─────────────────────────────────────────────────────────── */
 .studio-grid {
   display: grid;
-  gap: 1rem;
+  gap: 0;
   grid-template-columns: minmax(220px, 280px) minmax(0, 1fr) minmax(280px, 360px);
 }
 
 .studio-grid > * {
   min-width: 0;
+  border-right: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.studio-grid > *:last-child {
+  border-right: none;
 }
 
 .controls-panel,
 .templates-panel,
 .result-panel,
 .tab-content-panel {
-  padding: var(--panel-pad);
+  padding: 1.5rem var(--panel-pad);
 }
 
 .controls-panel h2,

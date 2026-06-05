@@ -127,7 +127,28 @@ export default function WorkflowsPage() {
 
       {logoutMessage ? <p className="error-text">{logoutMessage}</p> : null}
 
-      <div id="main-content">
+      <div id="main-content" style={{ padding: "0" }}>
+        <div style={{
+          padding: "1.25rem var(--layout-gutter) 1rem",
+          display: "flex",
+          flexDirection: "column",
+          gap: "0.2rem",
+          borderBottom: "1px solid rgba(255,255,255,0.06)",
+        }}>
+          <p style={{
+            margin: 0,
+            fontSize: "0.65rem",
+            fontWeight: 700,
+            textTransform: "uppercase",
+            letterSpacing: "0.1em",
+            color: "var(--brand)",
+          }}>
+            FlowCI Studio / Workflows
+          </p>
+          <h1 style={{ fontSize: "clamp(1.4rem, 2.5vw, 1.85rem)", margin: 0 }}>
+            Create and manage projects
+          </h1>
+        </div>
         <WorkflowBuilder
           login={session?.user.login ?? "builder"}
           plan={session?.subscription.plan ?? "pro"}
