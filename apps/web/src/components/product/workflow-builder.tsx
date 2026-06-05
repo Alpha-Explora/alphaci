@@ -298,57 +298,70 @@ export function WorkflowBuilder({ login, plan, guest = false }: Readonly<Workflo
   return (
     <MotionConfig reducedMotion={reducedMotion ? "always" : "never"}>
       <section className="workflow-surface">
-        <div style={{ padding: "0.75rem var(--layout-gutter) 0" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", flexWrap: "wrap" }}>
-            <div className="topbar-controls">
-              <p className="status-pill">@{login}</p>
-              <p className="status-pill">Plan: {plan}</p>
-              <span
-                className={`github-status-dot ${github.hasAllRepositoriesInstallation ? "" : "disconnected"}`}
-                title={
-                  github.hasAllRepositoriesInstallation
-                    ? "GitHub App installed — all repositories access confirmed"
-                    : "GitHub App not installed. Install it to link existing repositories."
-                }
+        {/* Status bar — compact, only shows when needed */}
+        {(statusMessage || catalog.catalogError || projectCatalog.projectOptionsError) && (
+          <div style={{ padding: "0.5rem var(--layout-gutter) 0" }}>
+            {statusMessage && (
+              <motion.p
+                className={`status-banner ${statusBannerVariant(statusMessage)}`}
+                role="status"
+                aria-live="polite"
+                initial={{ opacity: 0, y: -6 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0 }}
               >
-                {github.hasAllRepositoriesInstallation ? "GitHub App: connected" : "GitHub App: not installed →"}
-              </span>
-            </div>
+                {statusMessage}
+              </motion.p>
+            )}
+            {catalog.catalogError && (
+              <div className="error-inline" role="alert">
+                <span className="error-inline-icon" aria-hidden="true">⚠</span>
+                <p className="error-inline-msg">{catalog.catalogError}</p>
+              </div>
+            )}
+            {projectCatalog.projectOptionsError && (
+              <div className="error-inline" role="alert">
+                <span className="error-inline-icon" aria-hidden="true">⚠</span>
+                <p className="error-inline-msg">{projectCatalog.projectOptionsError}</p>
+              </div>
+            )}
           </div>
-          {statusMessage ? (
-            <motion.p
-              className={`status-banner ${statusBannerVariant(statusMessage)}`}
-              role="status"
-              aria-live="polite"
-              initial={{ opacity: 0, y: -6 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0 }}
-              style={{ marginTop: "0.5rem" }}
+        )}
+
+        {/* Context bar: login, plan, GitHub status — compact strip */}
+        <div style={{
+          padding: "0.65rem var(--layout-gutter)",
+          display: "flex",
+          alignItems: "center",
+          gap: "0.6rem",
+          borderBottom: "1px solid rgba(255,255,255,0.05)",
+          flexWrap: "wrap",
+        }}>
+          <div className="topbar-controls">
+            <p className="status-pill">@{login}</p>
+            <p className="status-pill">Plan: {plan}</p>
+            <span
+              className={`github-status-dot ${github.hasAllRepositoriesInstallation ? "" : "disconnected"}`}
+              title={
+                github.hasAllRepositoriesInstallation
+                  ? "GitHub App installed — all repositories access confirmed"
+                  : "GitHub App not installed. Install it to link existing repositories."
+              }
             >
-              {statusMessage}
-            </motion.p>
-          ) : null}
-          {catalog.catalogError ? (
-            <div className="error-inline" role="alert" style={{ marginTop: "0.5rem" }}>
-              <span className="error-inline-icon" aria-hidden="true">⚠</span>
-              <p className="error-inline-msg">{catalog.catalogError}</p>
-            </div>
-          ) : null}
-          {projectCatalog.projectOptionsError ? (
-            <div className="error-inline" role="alert" style={{ marginTop: "0.5rem" }}>
-              <span className="error-inline-icon" aria-hidden="true">⚠</span>
-              <p className="error-inline-msg">{projectCatalog.projectOptionsError}</p>
-            </div>
-          ) : null}
+              {github.hasAllRepositoriesInstallation ? "GitHub App: connected" : "GitHub App: not installed →"}
+            </span>
+          </div>
         </div>
 
-        <div>
-          <WorkflowStudioTabs
-            activeTab={activeTab}
-            onChange={setActiveTab}
-            onKeyDown={handleTabKeyDown}
-          />
+        {/* Tab bar */}
+        <WorkflowStudioTabs
+          activeTab={activeTab}
+          onChange={setActiveTab}
+          onKeyDown={handleTabKeyDown}
+        />
 
+        {/* Tab content */}
+        <div>
           {activeTab === "setup" ? (
             <WorkflowSetupTab
               form={createForm}

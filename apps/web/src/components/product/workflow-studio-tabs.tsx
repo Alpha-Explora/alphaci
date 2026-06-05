@@ -47,7 +47,20 @@ const TABS: { id: WorkflowTab; label: string; icon: React.ReactNode }[] = [
 
 export function WorkflowStudioTabs({ activeTab, onChange, onKeyDown }: Readonly<WorkflowStudioTabsProps>) {
   return (
-    <div className="studio-tab-bar glass-panel" role="tablist" aria-label="Create project functions">
+    <div
+      className="studio-tab-bar glass-panel"
+      role="tablist"
+      aria-label="Create project functions"
+      style={{
+        borderRadius: "0",
+        borderLeft: "none",
+        borderRight: "none",
+        borderTop: "none",
+        background: "rgba(10,15,30,0.6)",
+        backdropFilter: "blur(24px)",
+        WebkitBackdropFilter: "blur(24px)",
+      }}
+    >
       {TABS.map((tab) => (
         <button
           key={tab.id}

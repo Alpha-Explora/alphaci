@@ -129,25 +129,60 @@ export default function WorkflowsPage() {
 
       <div id="main-content" style={{ padding: "0" }}>
         <div style={{
-          padding: "1.25rem var(--layout-gutter) 1rem",
+          padding: "1.75rem var(--layout-gutter) 1.25rem",
           display: "flex",
-          flexDirection: "column",
-          gap: "0.2rem",
-          borderBottom: "1px solid rgba(255,255,255,0.06)",
+          justifyContent: "space-between",
+          alignItems: "flex-end",
+          gap: "1rem",
+          flexWrap: "wrap",
+          borderBottom: "1px solid rgba(255,255,255,0.07)",
+          background: "linear-gradient(180deg, rgba(56,189,248,0.03) 0%, transparent 100%)",
         }}>
-          <p style={{
-            margin: 0,
-            fontSize: "0.65rem",
-            fontWeight: 700,
-            textTransform: "uppercase",
-            letterSpacing: "0.1em",
-            color: "var(--brand)",
+          <div>
+            <p style={{
+              margin: "0 0 0.3rem",
+              fontSize: "0.65rem",
+              fontWeight: 700,
+              textTransform: "uppercase",
+              letterSpacing: "0.12em",
+              color: "var(--brand)",
+              display: "flex",
+              alignItems: "center",
+              gap: "0.4rem",
+            }}>
+              <span style={{ opacity: 0.6 }}>FlowCI Studio</span>
+              <span style={{ opacity: 0.4 }}>/</span>
+              <span>Workflows</span>
+            </p>
+            <h1 style={{ fontSize: "clamp(1.5rem, 2.5vw, 2rem)", margin: 0, letterSpacing: "-0.02em" }}>
+              Create &amp; Manage Projects
+            </h1>
+            <p style={{ margin: "0.4rem 0 0", fontSize: "0.85rem", color: "var(--text-muted)" }}>
+              Generate GitHub Actions workflows, manage repositories, and browse the template catalog.
+            </p>
+          </div>
+          <div style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "0.5rem",
+            padding: "0.5rem 0.85rem",
+            background: "rgba(15,23,42,0.6)",
+            border: "1px solid rgba(255,255,255,0.07)",
+            borderRadius: "0.65rem",
+            fontSize: "0.78rem",
+            color: "var(--text-muted)",
           }}>
-            FlowCI Studio / Workflows
-          </p>
-          <h1 style={{ fontSize: "clamp(1.4rem, 2.5vw, 1.85rem)", margin: 0 }}>
-            Create and manage projects
-          </h1>
+            <span style={{
+              width: "6px",
+              height: "6px",
+              borderRadius: "50%",
+              background: "var(--success)",
+              boxShadow: "0 0 6px rgba(52,211,153,0.5)",
+              animation: "flowPulse 2s ease-in-out infinite",
+              display: "inline-block",
+            }} />
+            Studio active
+          </div>
         </div>
         <WorkflowBuilder
           login={session?.user.login ?? "builder"}
