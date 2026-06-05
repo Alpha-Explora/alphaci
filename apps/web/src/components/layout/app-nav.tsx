@@ -165,7 +165,7 @@ export function AppNav({ guest, session, onLogout, isLoggingOut }: Readonly<AppN
         top: 0,
         zIndex: 100,
         borderRadius: 0,
-        margin: "-1rem calc(-1 * var(--layout-gutter)) 1rem",
+        margin: "0",
         padding: "0 var(--layout-gutter)",
         display: "flex",
         alignItems: "center",

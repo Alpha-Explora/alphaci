@@ -493,7 +493,7 @@ export default function HomeDashboardPage() {
         </div>
       )}
 
-      <div id="main-content" style={{ padding: "1.25rem clamp(1rem, 3vw, 2rem) 2rem", flex: 1, display: "flex", flexDirection: "column", gap: "1.5rem" }}>
+      <div id="main-content" style={{ padding: "1.5rem var(--layout-gutter) 2rem", flex: 1, display: "flex", flexDirection: "column", gap: "1.5rem" }}>
 
         {/* ── Editorial welcome banner ──────────────────────────────── */}
         <section className="welcome-editorial glass-panel" aria-label="Welcome" style={{
