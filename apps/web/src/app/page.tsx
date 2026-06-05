@@ -6,7 +6,7 @@ import { useRef, useState, useEffect } from "react";
 
 import { FlowBackground } from "@/components/layout/flow-background";
 import { PipelineLogo } from "@/components/layout/pipeline-logo";
-import { WorkflowBg } from "@/components/layout/workflow-bg";
+
 import { useAuthSession } from "@/hooks/use-auth-session";
 import { hasActiveSubscription } from "@/lib/auth/subscription";
 
@@ -617,9 +617,6 @@ export default function LandingPage() {
       <div id="main-content">
         {/* ── SECTION 1: Full-screen hero ──────────────────────────────── */}
         <section className="hero-full" ref={heroRef} aria-label="Main message">
-          {/* Animated workflow DAG background */}
-          <WorkflowBg />
-          {/* Subtle mesh gradient layer */}
           <div aria-hidden="true" className="hero-mesh-bg" />
 
           <motion.div

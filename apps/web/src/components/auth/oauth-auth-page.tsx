@@ -271,6 +271,22 @@ export function OAuthAuthPage({
               : { transformPerspective: 1100, rotateX, rotateY }
           }
         >
+          {/* Top gradient border accent */}
+          <div
+            aria-hidden="true"
+            style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              right: 0,
+              height: "2px",
+              background: "linear-gradient(90deg, var(--brand-strong), var(--brand-accent), var(--brand-strong))",
+              borderRadius: "1.25rem 1.25rem 0 0",
+              backgroundSize: "200% 100%",
+              animation: "gradient-shift 3s linear infinite",
+            }}
+          />
+
           <div className="auth-header">
             <motion.p
               className="hero-kicker"
