@@ -14,3 +14,15 @@ export async function logout(): Promise<void> {
     method: "POST",
   });
 }
+
+export async function warmupBackend(): Promise<void> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 10_000);
+  try {
+    await fetch(`${getApiBaseUrl()}/health`, { signal: controller.signal });
+  } catch {
+    // Intentionally swallowed — we only want the server to wake up.
+  } finally {
+    clearTimeout(timer);
+  }
+}

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 
@@ -64,6 +64,7 @@ function CheckIcon() {
 
 function SubscribePageContent() {
   const prefersReducedMotion = useReducedMotion();
+  const router = useRouter();
   const searchParams = useSearchParams();
   const { status, session, error, refresh } = useAuthSession();
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
@@ -71,6 +72,12 @@ function SubscribePageContent() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showCongratsModal, setShowCongratsModal] = useState(false);
   const [showMockFallback, setShowMockFallback] = useState(false);
+
+  useEffect(() => {
+    if (status === "signed-in" && hasActiveSubscription(session)) {
+      router.replace("/home");
+    }
+  }, [status, session, router]);
 
   useEffect(() => {
     if (typeof window !== "undefined" && sessionStorage.getItem(CONGRATS_SESSION_KEY)) {
