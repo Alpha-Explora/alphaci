@@ -4298,10 +4298,10 @@ select option {
 .bento-card {
   position: relative;
   overflow: hidden;
-  background: rgba(15, 23, 42, 0.55);
+  background: rgba(15, 23, 42, 0.72);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  border: 1px solid var(--border-soft);
+  border: 1px solid rgba(255, 255, 255, 0.11);
   border-radius: 1.25rem;
   padding: 1.5rem;
   display: flex;
@@ -4524,6 +4524,36 @@ select option {
 @keyframes orb-drift-3 {
   0%, 100% { transform: translate(0, 0); }
   50%       { transform: translate(2%, 4%); }
+}
+
+/* ── CSS-driven FlowBackground orb animations (replaces JS-animated motion.div) */
+@keyframes orb-drift-a {
+  0%, 100% { transform: translate(0%, 0%); }
+  33%       { transform: translate(-8%, 6%); }
+  66%       { transform: translate(4%, -4%); }
+}
+
+@keyframes orb-drift-b {
+  0%, 100% { transform: translate(0%, 0%); }
+  33%       { transform: translate(10%, 8%); }
+  66%       { transform: translate(-5%, 3%); }
+}
+
+@keyframes orb-drift-c {
+  0%, 100% { transform: translate(0%, 0%); }
+  33%       { transform: translate(-6%, -5%); }
+  66%       { transform: translate(8%, 3%); }
+}
+
+@keyframes orb-drift-d {
+  0%, 100% { transform: translate(0%, 0%); }
+  33%       { transform: translate(5%, -7%); }
+  66%       { transform: translate(-8%, 4%); }
+}
+
+@keyframes orb-pulse-e {
+  0%, 100% { transform: translateX(-50%) scale(1); opacity: 0.14; }
+  50%       { transform: translateX(-50%) scale(1.06); opacity: 0.2; }
 }
 
 /* ── Gradient shift animation (for top border accent) ────────────────────── */
@@ -4852,24 +4882,24 @@ select option {
 
 /* ── Settings sections ───────────────────────────────────────────────────── */
 .settings-section {
-  background: rgba(15, 23, 42, 0.5);
-  border: 1px solid var(--border-soft);
+  background: rgba(15, 23, 42, 0.78);
+  border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 1rem;
   overflow: hidden;
   transition: border-color 0.2s ease;
 }
 
 .settings-section:hover {
-  border-color: rgba(56, 189, 248, 0.15);
+  border-color: rgba(56, 189, 248, 0.2);
 }
 
 .settings-section-danger {
-  background: rgba(248, 113, 113, 0.04);
-  border-color: rgba(248, 113, 113, 0.18);
+  background: rgba(248, 113, 113, 0.08);
+  border-color: rgba(248, 113, 113, 0.3);
 }
 
 .settings-section-danger:hover {
-  border-color: rgba(248, 113, 113, 0.3);
+  border-color: rgba(248, 113, 113, 0.4);
 }
 
 /* ── Guest banner enhanced ───────────────────────────────────────────────── */
