@@ -158,6 +158,44 @@ export function OAuthAuthPage({
             <PipelineStagesVisual />
           </motion.div>
 
+          {/* Feature bullets — staggered reveal */}
+          <motion.div
+            style={{ display: "flex", flexDirection: "column", gap: "0.65rem" }}
+            initial={prefersReducedMotion ? undefined : { opacity: 0 }}
+            animate={prefersReducedMotion ? undefined : { opacity: 1 }}
+            transition={{ duration: 0.4, delay: 0.5 }}
+          >
+            {[
+              { label: "Source-backed YAML generation", accent: "var(--brand)" },
+              { label: "40+ framework templates ready", accent: "var(--brand-accent)" },
+              { label: "GitHub repo + branch rules setup", accent: "var(--brand)" },
+              { label: "Export and push in under 2 minutes", accent: "var(--brand-accent)" },
+            ].map((bullet, i) => (
+              <motion.div
+                key={bullet.label}
+                initial={prefersReducedMotion ? undefined : { opacity: 0, x: -12 }}
+                animate={prefersReducedMotion ? undefined : { opacity: 1, x: 0 }}
+                transition={{ duration: 0.35, delay: 0.55 + i * 0.08 }}
+                style={{ display: "flex", alignItems: "center", gap: "0.55rem" }}
+              >
+                <span
+                  aria-hidden="true"
+                  style={{
+                    width: "6px",
+                    height: "6px",
+                    borderRadius: "50%",
+                    background: bullet.accent,
+                    flexShrink: 0,
+                    boxShadow: `0 0 8px ${bullet.accent}`,
+                  }}
+                />
+                <span style={{ fontSize: "0.84rem", color: "var(--text-secondary)", lineHeight: 1.4 }}>
+                  {bullet.label}
+                </span>
+              </motion.div>
+            ))}
+          </motion.div>
+
           <div className="auth-left-yaml">
             <div className="hero-mockup-bar">
               <span className="mockup-dot mockup-dot-red" aria-hidden="true" />
@@ -184,18 +222,28 @@ export function OAuthAuthPage({
           </div>
 
           <div style={{ display: "flex", gap: "1.5rem" }}>
-            <div style={{ display: "flex", flexDirection: "column", gap: "0.1rem" }}>
-              <span style={{ fontFamily: "'Sora', sans-serif", fontSize: "1.4rem", fontWeight: 800, color: "var(--text-primary)", lineHeight: 1 }}>40+</span>
-              <span style={{ fontSize: "0.7rem", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.1em" }}>Templates</span>
-            </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: "0.1rem" }}>
-              <span style={{ fontFamily: "'Sora', sans-serif", fontSize: "1.4rem", fontWeight: 800, color: "var(--text-primary)", lineHeight: 1 }}>&lt; 2 min</span>
-              <span style={{ fontSize: "0.7rem", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.1em" }}>Setup time</span>
-            </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: "0.1rem" }}>
-              <span style={{ fontFamily: "'Sora', sans-serif", fontSize: "1.4rem", fontWeight: 800, color: "#12b76a", lineHeight: 1 }}>100%</span>
-              <span style={{ fontSize: "0.7rem", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.1em" }}>GitHub native</span>
-            </div>
+            {[
+              { value: "40+", label: "Templates", color: "var(--text-primary)" },
+              { value: "< 2 min", label: "Setup time", color: "var(--text-primary)" },
+              { value: "100%", label: "GitHub native", color: "var(--brand-accent)" },
+            ].map((stat) => (
+              <div key={stat.label} style={{ display: "flex", flexDirection: "column", gap: "0.1rem" }}>
+                <span
+                  style={{
+                    fontFamily: "'Sora', sans-serif",
+                    fontSize: "1.4rem",
+                    fontWeight: 800,
+                    color: stat.color,
+                    lineHeight: 1,
+                  }}
+                >
+                  {stat.value}
+                </span>
+                <span style={{ fontSize: "0.7rem", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.1em" }}>
+                  {stat.label}
+                </span>
+              </div>
+            ))}
           </div>
         </div>
 

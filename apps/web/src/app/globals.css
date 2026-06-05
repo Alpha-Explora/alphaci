@@ -4499,4 +4499,417 @@ select option {
   }
 }
 
+/* ══════════════════════════════════════════════════════════════════════════════
+   UI ENHANCEMENT PASS — new utility classes
+   ══════════════════════════════════════════════════════════════════════════════ */
+
+/* ── Orb drift animations for FlowBackground ─────────────────────────────── */
+@keyframes orb-drift-1 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33%       { transform: translate(-3%, 4%) scale(1.06); }
+  66%       { transform: translate(4%, -3%) scale(0.95); }
+}
+
+@keyframes orb-drift-2 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  40%       { transform: translate(5%, -6%) scale(1.08); }
+  70%       { transform: translate(-4%, 3%) scale(0.93); }
+}
+
+@keyframes orb-drift-3 {
+  0%, 100% { transform: translate(0, 0); }
+  50%       { transform: translate(2%, 4%); }
+}
+
+/* ── Gradient shift animation (for top border accent) ────────────────────── */
+@keyframes gradient-shift {
+  0%   { background-position: 0% 50%; }
+  100% { background-position: 200% 50%; }
+}
+
+/* ── Shimmer sweep ───────────────────────────────────────────────────────── */
+@keyframes shimmer-sweep {
+  0%   { transform: translateX(-120%); }
+  100% { transform: translateX(120%); }
+}
+
+/* ── Gradient CTA button (landing nav) ──────────────────────────────────── */
+.cta-gradient-button {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.38rem 1.1rem;
+  min-height: 2.1rem;
+  border-radius: var(--radius-pill);
+  background: linear-gradient(135deg, var(--brand-strong), var(--brand-accent));
+  color: #fff;
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-decoration: none;
+  border: none;
+  overflow: hidden;
+  transition: filter 0.2s ease, transform 0.15s ease;
+  box-shadow: 0 2px 16px rgba(56, 189, 248, 0.3);
+  letter-spacing: 0.01em;
+  cursor: pointer;
+}
+
+.cta-gradient-button:hover {
+  filter: brightness(1.12);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 24px rgba(56, 189, 248, 0.45);
+}
+
+.cta-gradient-button:active {
+  transform: translateY(0);
+}
+
+.cta-gradient-button:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
+.cta-shimmer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.22), transparent);
+  transform: translateX(-120%);
+  pointer-events: none;
+}
+
+.cta-gradient-button:hover .cta-shimmer {
+  animation: shimmer-sweep 0.65s ease forwards;
+}
+
+/* ── Marketing nav enhancements ─────────────────────────────────────────── */
+.marketing-nav-enhanced {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07) !important;
+}
+
+.brand-mark-enhanced span {
+  background: linear-gradient(to right, #fff, var(--text-secondary));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  color: #fff;
+  font-weight: 800;
+}
+
+/* ── App nav premium ─────────────────────────────────────────────────────── */
+.app-nav-premium {
+  /* Inherits flex + sticky from inline styles */
+}
+
+/* ── Hero mesh gradient background ──────────────────────────────────────── */
+.hero-mesh-bg {
+  position: absolute;
+  top: -30%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 120%;
+  height: 120%;
+  background:
+    radial-gradient(ellipse 60% 45% at 45% 55%, rgba(56, 189, 248, 0.07) 0%, transparent 60%),
+    radial-gradient(ellipse 40% 35% at 70% 40%, rgba(52, 211, 153, 0.05) 0%, transparent 55%);
+  pointer-events: none;
+  z-index: 0;
+  animation: orb-drift-3 20s ease-in-out infinite;
+}
+
+/* ── Desktop line break in hero headline ────────────────────────────────── */
+.hero-br-desktop {
+  display: none;
+}
+
+@media (min-width: 768px) {
+  .hero-br-desktop {
+    display: inline;
+  }
+}
+
+/* ── Stats row enhancement ───────────────────────────────────────────────── */
+.stats-row-enhanced {
+  gap: 0 !important;
+}
+
+.stat-block-enhanced {
+  position: relative;
+  padding: 0.5rem 1.25rem;
+  border-right: 1px solid var(--border-soft);
+}
+
+.stat-block-enhanced:first-child {
+  padding-left: 0;
+}
+
+.stat-block-enhanced:last-child {
+  border-right: none;
+}
+
+/* ── Feature card glow on hover ─────────────────────────────────────────── */
+.feature-card-enhanced {
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.3s ease, box-shadow 0.3s ease !important;
+}
+
+.feature-card-enhanced:hover {
+  border-color: rgba(56, 189, 248, 0.3) !important;
+  box-shadow: var(--shadow-card), 0 0 40px rgba(56, 189, 248, 0.1) !important;
+}
+
+/* ── Pricing card gradient border animated ───────────────────────────────── */
+.pricing-card-enhanced {
+  border: 1px solid rgba(56, 189, 248, 0.25) !important;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease !important;
+}
+
+.pricing-card-enhanced:hover {
+  border-color: rgba(56, 189, 248, 0.4) !important;
+  box-shadow: var(--shadow-elevated), 0 0 60px rgba(56, 189, 248, 0.12) !important;
+}
+
+/* ── Pipeline connector animated flow ───────────────────────────────────── */
+.pipeline-connector-animated {
+  position: relative;
+  overflow: hidden;
+}
+
+.pipeline-connector-animated::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(56, 189, 248, 0.8), transparent);
+  animation: flow-dash 2s linear infinite;
+}
+
+@keyframes flow-dash {
+  0%   { left: -50%; }
+  100% { left: 150%; }
+}
+
+/* ── Subscribe page grid responsive ─────────────────────────────────────── */
+.subscribe-grid {
+  grid-template-columns: 1fr 1fr;
+}
+
+@media (max-width: 768px) {
+  .subscribe-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* ── Scroll progress bar ─────────────────────────────────────────────────── */
+.scroll-progress {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--brand), var(--brand-accent));
+  z-index: 200;
+  transform-origin: left;
+  pointer-events: none;
+}
+
+/* ── Gradient border (pseudo-element) ───────────────────────────────────── */
+.gradient-border {
+  position: relative;
+}
+
+.gradient-border::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(135deg, var(--brand), var(--brand-accent));
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+  animation: gradient-shift 4s linear infinite;
+  background-size: 200% 100%;
+}
+
+/* ── Noise overlay (subtle grain for premium glass panels) ──────────────── */
+.noise-overlay {
+  position: relative;
+}
+
+.noise-overlay::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+  background-size: 256px 256px;
+  pointer-events: none;
+  z-index: 1;
+  opacity: 0.5;
+}
+
+/* ── Nav active pill (slide indicator) ──────────────────────────────────── */
+.nav-active-pill {
+  position: absolute;
+  inset: 0;
+  border-radius: 0.5rem;
+  background: rgba(56, 189, 248, 0.1);
+  border: 1px solid rgba(56, 189, 248, 0.25);
+  z-index: -1;
+}
+
+/* ── Section gradient divider ────────────────────────────────────────────── */
+.section-gradient-rule {
+  height: 1px;
+  border: none;
+  background: linear-gradient(90deg, transparent, var(--border), transparent);
+  margin: 0;
+}
+
+/* ── Feature icon glow ───────────────────────────────────────────────────── */
+.feature-icon-glow {
+  position: relative;
+}
+
+.feature-icon-glow::after {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border-radius: inherit;
+  background: inherit;
+  filter: blur(8px);
+  opacity: 0.4;
+  z-index: -1;
+}
+
+/* ── Profile header gradient area ───────────────────────────────────────── */
+.profile-header {
+  position: relative;
+  border-radius: var(--radius-card);
+  overflow: hidden;
+  background: linear-gradient(135deg, rgba(56, 189, 248, 0.08) 0%, rgba(52, 211, 153, 0.04) 60%, rgba(15, 23, 42, 0.5) 100%);
+  border: 1px solid rgba(56, 189, 248, 0.2);
+}
+
+.profile-header::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--brand), var(--brand-accent));
+}
+
+/* ── Counter number display ──────────────────────────────────────────────── */
+.counter-number {
+  font-family: 'Sora', var(--font-display), sans-serif;
+  font-variant-numeric: tabular-nums;
+  font-weight: 800;
+  line-height: 1;
+}
+
+/* ── User pill premium (gradient avatar ring) ────────────────────────────── */
+.user-pill-premium {
+  transition: border-color 0.2s ease;
+}
+
+.user-pill-premium:hover {
+  border-color: rgba(56, 189, 248, 0.3) !important;
+}
+
+/* ── Tooltip animation ───────────────────────────────────────────────────── */
+.tooltip-popup {
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+/* ── Bento card trend indicators ─────────────────────────────────────────── */
+.trend-up {
+  color: var(--success);
+  font-size: 0.75rem;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+}
+
+.trend-neutral {
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+/* ── Settings sections ───────────────────────────────────────────────────── */
+.settings-section {
+  background: rgba(15, 23, 42, 0.5);
+  border: 1px solid var(--border-soft);
+  border-radius: 1rem;
+  overflow: hidden;
+  transition: border-color 0.2s ease;
+}
+
+.settings-section:hover {
+  border-color: rgba(56, 189, 248, 0.15);
+}
+
+.settings-section-danger {
+  background: rgba(248, 113, 113, 0.04);
+  border-color: rgba(248, 113, 113, 0.18);
+}
+
+.settings-section-danger:hover {
+  border-color: rgba(248, 113, 113, 0.3);
+}
+
+/* ── Guest banner enhanced ───────────────────────────────────────────────── */
+.guest-banner-enhanced {
+  background: linear-gradient(135deg, rgba(56, 189, 248, 0.08) 0%, rgba(15, 23, 42, 0.6) 100%);
+  border: 1px solid rgba(56, 189, 248, 0.2);
+  border-radius: 1rem;
+  padding: 1rem var(--layout-gutter);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+/* ── Auth card — hover glow (augments the structural rules at line 1009) ─── */
+/* Using :where() to avoid specificity conflict with the structural .auth-card-shell */
+:where(.auth-right-panel) .auth-card-shell:hover {
+  box-shadow: var(--shadow-elevated), 0 0 60px rgba(56, 189, 248, 0.08);
+}
+
+/* ── Sign out hover (danger color on hover via JS — no CSS override needed) */
+
+/* ── Responsive overflow fixes ───────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .pipeline-track-aside {
+    display: none !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .stats-row-enhanced {
+    flex-direction: column !important;
+    gap: 0.75rem !important;
+  }
+
+  .stat-block-enhanced {
+    border-right: none !important;
+    border-bottom: 1px solid var(--border-soft);
+    padding-left: 0 !important;
+  }
+
+  .stat-block-enhanced:last-child {
+    border-bottom: none !important;
+  }
+}
+
 

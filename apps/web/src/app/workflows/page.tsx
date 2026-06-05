@@ -1,114 +1,16 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
-import { useRouter, usePathname } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 
+import { AppNav } from "@/components/layout/app-nav";
 import { FlowBackground } from "@/components/layout/flow-background";
 import { PipelineLogo } from "@/components/layout/pipeline-logo";
 import { WorkflowBuilder } from "../../components/product/workflow-builder";
 import { useAuthSession } from "@/hooks/use-auth-session";
 import { logout } from "@/lib/api/client";
 import { isGuest } from "@/lib/auth/subscription";
-
-/* ── Nav items (must match home page) ──────────────────────────────────────── */
-
-const navItems = [
-  { label: "Dashboard", href: "/home" },
-  { label: "Workflows", href: "/workflows" },
-];
-
-/* ── Shared Navbar ──────────────────────────────────────────────────────────── */
-
-interface NavbarProps {
-  guest: boolean;
-  session: ReturnType<typeof useAuthSession>["session"];
-  onLogout: () => void;
-  isLoggingOut: boolean;
-}
-
-function AppNav({ guest, session, onLogout, isLoggingOut }: Readonly<NavbarProps>) {
-  const pathname = usePathname();
-  const avatarInitial = (session?.user.name ?? session?.user.login ?? "U").slice(0, 1).toUpperCase();
-
-  return (
-    <header className="dash-nav">
-      <Link className="brand-mark" href="/home">
-        <PipelineLogo size={22} />
-        <span>FlowCI Studio</span>
-      </Link>
-
-      <span className="nav-separator" aria-hidden="true" />
-
-      <nav aria-label="Primary" className="nav-links">
-        {navItems.map((item) => (
-          <Link
-            key={item.href}
-            href={item.href}
-            className={pathname === item.href ? "nav-active" : ""}
-            aria-current={pathname === item.href ? "page" : undefined}
-          >
-            {item.label}
-          </Link>
-        ))}
-        {guest
-          ? <Link href="/subscribe" className={pathname === "/subscribe" ? "nav-active" : ""}>Billing</Link>
-          : <Link href="/settings" className={pathname === "/settings" ? "nav-active" : ""}>Settings</Link>}
-      </nav>
-
-      <div className="nav-right">
-        {!guest && (
-          <>
-            <div className="user-pill" aria-label={`Signed in as ${session?.user.login ?? "user"}`}>
-              {session?.user.avatarUrl ? (
-                <Image
-                  src={session.user.avatarUrl}
-                  alt={session.user.name ?? session.user.login}
-                  className="user-pill-avatar"
-                  width={26}
-                  height={26}
-                  unoptimized
-                />
-              ) : (
-                <span className="user-pill-placeholder" aria-hidden="true">{avatarInitial}</span>
-              )}
-              <span className="user-pill-login">{session?.user.login ?? "user"}</span>
-              {session?.subscription.plan && (
-                <span className="user-pill-plan">{session.subscription.plan}</span>
-              )}
-            </div>
-
-            <button
-              className="sign-out-icon-btn"
-              type="button"
-              onClick={onLogout}
-              disabled={isLoggingOut}
-              aria-label={isLoggingOut ? "Signing out…" : "Sign out"}
-              title={isLoggingOut ? "Signing out…" : "Sign out"}
-            >
-              {isLoggingOut ? (
-                <span className="btn-spinner" aria-hidden="true" style={{ width: "13px", height: "13px", borderWidth: "1.5px" }} />
-              ) : (
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-                  <polyline points="16 17 21 12 16 7" />
-                  <line x1="21" y1="12" x2="9" y2="12" />
-                </svg>
-              )}
-            </button>
-          </>
-        )}
-
-        {guest && (
-          <Link className="primary-button" href="/signup" style={{ padding: "0.4rem 1rem", fontSize: "0.82rem", minHeight: "2.2rem" }}>
-            Sign up
-          </Link>
-        )}
-      </div>
-    </header>
-  );
-}
 
 /* ── Page ───────────────────────────────────────────────────────────────────── */
 
