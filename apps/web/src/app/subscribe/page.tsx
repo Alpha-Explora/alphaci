@@ -272,7 +272,7 @@ function SubscribePageContent() {
         {/* ── Hero section ──────────────────────────────────────────── */}
         <div
           style={{
-            padding: "clamp(3rem,6vw,5rem) clamp(1.5rem,4vw,3rem) 2rem",
+            padding: "clamp(1.25rem,2.5vw,2rem) clamp(1.5rem,4vw,3rem) 1.5rem",
             maxWidth: 960,
             margin: "0 auto",
             textAlign: "center",
