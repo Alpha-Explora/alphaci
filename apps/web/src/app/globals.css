@@ -189,7 +189,7 @@ h1, h2, h3 {
   text-align: center;
   gap: 1.4rem;
   max-width: 440px;
-  width: calc(100% - 2rem);
+  width: 100%;
   padding: 2.75rem 2.5rem 2.25rem;
   background: var(--bg-surface);
   border: 1px solid var(--border-strong);
@@ -4437,6 +4437,66 @@ select option {
   margin-top: auto;
   padding-top: 0.5rem;
   border-top: 1px solid var(--border-subtle);
+}
+
+.readiness-empty-state {
+  display: grid;
+  gap: 0.55rem;
+  padding: 1rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg-panel);
+}
+
+.readiness-empty-state strong {
+  color: var(--text-primary);
+  font-size: 0.9rem;
+}
+
+.readiness-empty-state p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.82rem;
+  line-height: 1.5;
+}
+
+@media (max-width: 640px) {
+  .state-body {
+    padding: 1rem;
+  }
+
+  .state-card {
+    max-width: 100%;
+    width: min(100%, calc(100vw - 5rem));
+    padding: 2rem 1.25rem 1.75rem;
+  }
+
+  .dash-shell,
+  .flow-shell {
+    overflow-x: hidden;
+  }
+
+  .repo-grid,
+  .all-template-grid {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .result-actions,
+  .hero-actions,
+  .guest-banner-actions {
+    align-items: stretch;
+  }
+
+  .result-actions > *,
+  .hero-actions > *,
+  .guest-banner-actions > * {
+    min-width: 0;
+    white-space: normal;
+  }
+
+  .workflow-surface {
+    overflow-x: hidden;
+  }
 }
 
 

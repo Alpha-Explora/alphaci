@@ -127,6 +127,11 @@ export function WorkflowSetupTab({
     projectCatalog.loadingProjectOptions ||
     !existingRepoFullName.trim() ||
     !projectCatalog.selectedProjectType;
+  const noLinkedRepos =
+    isExistingMode &&
+    github.linkedReposLoaded &&
+    !github.loadingLinkedRepos &&
+    github.linkedRepos.length === 0;
 
   return (
     <motion.section
@@ -496,6 +501,21 @@ export function WorkflowSetupTab({
 
           {isExistingMode ? (
             <div style={{ marginTop: "1.25rem", display: "grid", gap: "1rem" }}>
+              {noLinkedRepos ? (
+                <div className="readiness-empty-state" role="status">
+                  <strong>No linked GitHub repositories</strong>
+                  <p>
+                    Install or link the GitHub App, then retry this mode. You can still switch back to new repository creation.
+                  </p>
+                  <button
+                    type="button"
+                    className="ghost-button"
+                    onClick={() => void github.loadLinkedRepos()}
+                  >
+                    Retry repos
+                  </button>
+                </div>
+              ) : null}
               <div className="form-pair-row" style={{ gap: "1rem" }}>
                 <div>
                   <label className="input-label" htmlFor="existing-repo-select" style={labelAccentStyle}>
@@ -536,11 +556,15 @@ export function WorkflowSetupTab({
                 <p className="helper-text" style={{ margin: "0 0 0.75rem" }}>
                   Scan the repository first to prefill the project type. If detection is empty, choose a language and recipe manually from the catalog.
                 </p>
+                <p className="helper-text" id="existing-repo-disabled-help" style={{ margin: "0 0 0.75rem", color: "var(--text-muted)" }}>
+                  Discovery needs a linked repository. Setup PR also needs a selected project type.
+                </p>
                 <div className="result-actions" style={{ justifyContent: "flex-start" }}>
                   <button
                     type="button"
                     className="ghost-button"
                     disabled={existingDiscoverDisabled}
+                    aria-describedby="existing-repo-disabled-help"
                     onClick={() => void onDiscoverExistingRepo()}
                   >
                     {isDiscoveringExistingRepo ? "Scanning..." : "Discover repo"}
@@ -549,6 +573,7 @@ export function WorkflowSetupTab({
                     type="button"
                     className="primary-button"
                     disabled={existingSetupDisabled}
+                    aria-describedby="existing-repo-disabled-help"
                     onClick={() => void onSetupExistingRepoPullRequest()}
                   >
                     {isSettingUpExistingRepo ? "Opening PR..." : "Open setup PR"}

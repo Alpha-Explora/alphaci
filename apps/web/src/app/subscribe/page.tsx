@@ -413,7 +413,20 @@ function SubscribePageContent() {
 
 export default function SubscribePage() {
   return (
-    <Suspense fallback={null}>
+    <Suspense
+      fallback={
+        <main className="flow-shell page-shell">
+          <FlowBackground />
+          <div className="state-body">
+            <div className="state-card">
+              <div className="state-spinner" role="status" aria-label="Loading billing" />
+              <h1>Loading billing</h1>
+              <p>Preparing checkout state.</p>
+            </div>
+          </div>
+        </main>
+      }
+    >
       <SubscribePageContent />
     </Suspense>
   );

@@ -103,6 +103,7 @@ export default function SettingsPage() {
 
   return (
     <main className="flow-shell page-shell">
+      <a href="#main-content" className="skip-link">Skip to main content</a>
       <FlowBackground />
 
       <header className="marketing-nav">
@@ -141,7 +142,7 @@ export default function SettingsPage() {
       </header>
 
       {/* ── Account settings ───────────────────────────────────── */}
-      <section className="section-card glass-panel" style={{ padding: "clamp(1.5rem, 2.5vw, 2rem)" }}>
+      <section id="main-content" className="section-card glass-panel" style={{ padding: "clamp(1.5rem, 2.5vw, 2rem)" }}>
         <p className="file-path-label" style={{ marginBottom: "0.75rem" }}>settings/account.yml</p>
         <h1 style={{ fontSize: "clamp(1.3rem, 2vw, 1.6rem)", margin: "0 0 1.5rem", fontWeight: 800 }}>
           Account settings

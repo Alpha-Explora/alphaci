@@ -40,7 +40,7 @@ describe("hasActiveSubscription", () => {
     expect(hasActiveSubscription(buildSession({ authenticated: false }))).toBe(false);
   });
 
-  it("returns false for active free plan", () => {
+  it("returns true for authenticated users while the subscription gate is bypassed", () => {
     expect(
       hasActiveSubscription(
         buildSession({
@@ -52,10 +52,10 @@ describe("hasActiveSubscription", () => {
           },
         }),
       ),
-    ).toBe(false);
+    ).toBe(true);
   });
 
-  it("returns false for inactive paid plan", () => {
+  it("returns true for inactive paid plan while the subscription gate is bypassed", () => {
     expect(
       hasActiveSubscription(
         buildSession({
@@ -67,7 +67,7 @@ describe("hasActiveSubscription", () => {
           },
         }),
       ),
-    ).toBe(false);
+    ).toBe(true);
   });
 
   it("returns true for active paid plans", () => {
@@ -97,16 +97,16 @@ describe("isGuest", () => {
     expect(isGuest(buildSession({ authenticated: false }))).toBe(true);
   });
 
-  it("returns true when subscription is not active", () => {
+  it("returns false for authenticated users even when subscription is not active", () => {
     expect(
       isGuest(buildSession({ subscription: { plan: "pro", status: "inactive", provider: "mock", updatedAt: "2026-01-01T00:00:00.000Z" } })),
-    ).toBe(true);
+    ).toBe(false);
   });
 
-  it("returns true when authenticated but on free plan", () => {
+  it("returns false for authenticated users on the free plan", () => {
     expect(
       isGuest(buildSession({ subscription: { plan: "free", status: "active", provider: "mock", updatedAt: "2026-01-01T00:00:00.000Z" } })),
-    ).toBe(true);
+    ).toBe(false);
   });
 
   it("returns false for authenticated user with active paid plan", () => {
