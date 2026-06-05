@@ -545,7 +545,7 @@ export default function LandingPage() {
           <span style={{ fontWeight: 800, color: "var(--text-primary)", letterSpacing: "-0.02em" }}>
             FlowCI
           </span>
-          <span style={{ fontWeight: 600, color: "var(--brand-accent)", letterSpacing: "-0.01em" }}>
+          <span style={{ fontWeight: 600, color: "var(--text-primary)", letterSpacing: "-0.01em" }}>
             Studio
           </span>
         </Link>
