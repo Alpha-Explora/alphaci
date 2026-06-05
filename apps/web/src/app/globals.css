@@ -378,10 +378,16 @@ h1, h2, h3 {
 }
 
 .marketing-nav {
-  background: rgba(2, 6, 23, 0.75);
+  background: linear-gradient(
+    135deg,
+    rgba(30, 18, 74, 0.82) 0%,
+    rgba(15, 14, 48, 0.86) 50%,
+    rgba(10, 20, 60, 0.82) 100%
+  );
   backdrop-filter: blur(32px) saturate(200%);
   -webkit-backdrop-filter: blur(32px) saturate(200%);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+  border-bottom: 1px solid rgba(99, 102, 241, 0.18);
+  box-shadow: 0 1px 0 rgba(139, 92, 246, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.04);
   padding: 0 clamp(2rem, 5vw, 4rem);
   height: 72px;
   display: flex;
@@ -395,9 +401,14 @@ h1, h2, h3 {
 }
 
 .marketing-nav[data-scrolled="true"] {
-  background: rgba(2, 6, 23, 0.92);
-  border-bottom-color: rgba(255, 255, 255, 0.12);
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.5);
+  background: linear-gradient(
+    135deg,
+    rgba(30, 18, 74, 0.95) 0%,
+    rgba(15, 14, 48, 0.97) 50%,
+    rgba(10, 20, 60, 0.95) 100%
+  );
+  border-bottom-color: rgba(99, 102, 241, 0.28);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.55), 0 1px 0 rgba(139, 92, 246, 0.12);
 }
 
 .flow-ribbon-b {
@@ -464,10 +475,15 @@ h1, h2, h3 {
 
 /* ── Navigation ─────────────────────────────────────────────────────────── */
 .dash-nav {
-  background: rgba(2, 6, 23, 0.7);
+  background: linear-gradient(
+    135deg,
+    rgba(26, 16, 66, 0.88) 0%,
+    rgba(12, 12, 42, 0.92) 50%,
+    rgba(8, 18, 52, 0.88) 100%
+  );
   backdrop-filter: blur(32px) saturate(200%);
   -webkit-backdrop-filter: blur(32px) saturate(200%);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom: 1px solid rgba(99, 102, 241, 0.2);
   padding: 0 var(--layout-gutter);
   height: 64px;
   display: flex;
@@ -4576,7 +4592,7 @@ select option {
 
 /* ── Marketing nav enhancements ─────────────────────────────────────────── */
 .marketing-nav-enhanced {
-  border-bottom: 1px solid rgba(255, 255, 255, 0.07) !important;
+  border-bottom: 1px solid rgba(99, 102, 241, 0.18) !important;
 }
 
 .brand-mark-enhanced span {

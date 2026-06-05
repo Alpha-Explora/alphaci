@@ -17,6 +17,31 @@ export function FlowBackground() {
         background: "var(--bg-base)",
       }}
     >
+      {/* Noise grain texture — premium feel, always shown */}
+      <svg
+        aria-hidden="true"
+        style={{
+          position: "absolute",
+          inset: 0,
+          width: "100%",
+          height: "100%",
+          opacity: 0.038,
+          pointerEvents: "none",
+          mixBlendMode: "overlay",
+        }}
+      >
+        <filter id="noise-bg">
+          <feTurbulence
+            type="fractalNoise"
+            baseFrequency="0.72"
+            numOctaves="4"
+            stitchTiles="stitch"
+          />
+          <feColorMatrix type="saturate" values="0" />
+        </filter>
+        <rect width="100%" height="100%" filter="url(#noise-bg)" />
+      </svg>
+
       {/* Aurora orbs — only rendered when motion is allowed */}
       {!reduced && (
         <>
@@ -24,14 +49,14 @@ export function FlowBackground() {
           <motion.div
             style={{
               position: "absolute",
-              width: "70vw",
-              height: "70vw",
+              width: "72vw",
+              height: "72vw",
               borderRadius: "50%",
-              background: "radial-gradient(ellipse, #3b82f6 0%, transparent 70%)",
-              filter: "blur(80px)",
-              opacity: 0.14,
-              top: "-20%",
-              right: "-15%",
+              background: "radial-gradient(ellipse, #3b82f6 0%, #1d4ed8 40%, transparent 70%)",
+              filter: "blur(72px)",
+              opacity: 0.22,
+              top: "-22%",
+              right: "-18%",
             }}
             animate={{ x: ["0%", "-8%", "4%", "0%"], y: ["0%", "6%", "-4%", "0%"] }}
             transition={{ duration: 20, repeat: Infinity, ease: "easeInOut" }}
@@ -41,14 +66,14 @@ export function FlowBackground() {
           <motion.div
             style={{
               position: "absolute",
-              width: "60vw",
-              height: "60vw",
+              width: "64vw",
+              height: "64vw",
               borderRadius: "50%",
-              background: "radial-gradient(ellipse, #8b5cf6 0%, transparent 70%)",
-              filter: "blur(90px)",
-              opacity: 0.12,
-              top: "-10%",
-              left: "-20%",
+              background: "radial-gradient(ellipse, #8b5cf6 0%, #6d28d9 45%, transparent 70%)",
+              filter: "blur(80px)",
+              opacity: 0.2,
+              top: "-12%",
+              left: "-22%",
             }}
             animate={{ x: ["0%", "10%", "-5%", "0%"], y: ["0%", "8%", "3%", "0%"] }}
             transition={{ duration: 26, repeat: Infinity, ease: "easeInOut" }}
@@ -58,14 +83,14 @@ export function FlowBackground() {
           <motion.div
             style={{
               position: "absolute",
-              width: "55vw",
-              height: "55vw",
+              width: "58vw",
+              height: "58vw",
               borderRadius: "50%",
-              background: "radial-gradient(ellipse, #06b6d4 0%, transparent 70%)",
-              filter: "blur(100px)",
-              opacity: 0.1,
-              bottom: "-15%",
-              left: "25%",
+              background: "radial-gradient(ellipse, #06b6d4 0%, #0284c7 45%, transparent 70%)",
+              filter: "blur(90px)",
+              opacity: 0.18,
+              bottom: "-18%",
+              left: "22%",
             }}
             animate={{ x: ["0%", "-6%", "8%", "0%"], y: ["0%", "-5%", "3%", "0%"] }}
             transition={{ duration: 30, repeat: Infinity, ease: "easeInOut" }}
@@ -75,65 +100,53 @@ export function FlowBackground() {
           <motion.div
             style={{
               position: "absolute",
-              width: "50vw",
-              height: "50vw",
+              width: "52vw",
+              height: "52vw",
               borderRadius: "50%",
-              background: "radial-gradient(ellipse, #10b981 0%, transparent 70%)",
-              filter: "blur(85px)",
-              opacity: 0.1,
-              bottom: "-10%",
-              right: "-10%",
+              background: "radial-gradient(ellipse, #10b981 0%, #059669 45%, transparent 70%)",
+              filter: "blur(78px)",
+              opacity: 0.16,
+              bottom: "-12%",
+              right: "-12%",
             }}
             animate={{ x: ["0%", "5%", "-8%", "0%"], y: ["0%", "-7%", "4%", "0%"] }}
             transition={{ duration: 24, repeat: Infinity, ease: "easeInOut" }}
           />
+
+          {/* Orb 5 — deep indigo, center-bottom anchor */}
+          <motion.div
+            style={{
+              position: "absolute",
+              width: "50vw",
+              height: "50vw",
+              borderRadius: "50%",
+              background: "radial-gradient(ellipse, #4f46e5 0%, #3730a3 50%, transparent 70%)",
+              filter: "blur(96px)",
+              opacity: 0.14,
+              bottom: "5%",
+              left: "50%",
+              transform: "translateX(-50%)",
+            }}
+            animate={{ scale: [1, 1.06, 0.97, 1], opacity: [0.14, 0.2, 0.12, 0.14] }}
+            transition={{ duration: 18, repeat: Infinity, ease: "easeInOut" }}
+          />
         </>
       )}
 
-      {/* Dot grid — always shown */}
-      <svg
-        aria-hidden="true"
-        style={{
-          position: "absolute",
-          inset: 0,
-          width: "100%",
-          height: "100%",
-          opacity: 0.18,
-          pointerEvents: "none",
-        }}
-      >
-        <defs>
-          <pattern id="dot-grid-bg" x="0" y="0" width="32" height="32" patternUnits="userSpaceOnUse">
-            <circle cx="1" cy="1" r="1" fill="rgba(148, 163, 184, 0.5)" />
-          </pattern>
-          <radialGradient id="dot-fade-bg" cx="50%" cy="40%" r="65%">
-            <stop offset="0%" stopColor="white" stopOpacity="1" />
-            <stop offset="100%" stopColor="white" stopOpacity="0" />
-          </radialGradient>
-          <mask id="dot-mask-bg">
-            <rect width="100%" height="100%" fill="url(#dot-fade-bg)" />
-          </mask>
-        </defs>
-        <rect width="100%" height="100%" fill="url(#dot-grid-bg)" mask="url(#dot-mask-bg)" />
-      </svg>
-
-      {/* Horizontal scan line — subtle sweep */}
-      {!reduced && (
-        <motion.div
+      {/* Static aurora glow — shown even with reduced motion */}
+      {reduced && (
+        <div
           style={{
             position: "absolute",
-            left: 0,
-            right: 0,
-            height: "1px",
+            inset: 0,
             background:
-              "linear-gradient(90deg, transparent 5%, rgba(56,189,248,0.35) 30%, rgba(139,92,246,0.3) 60%, transparent 95%)",
-            pointerEvents: "none",
+              "radial-gradient(ellipse 60% 50% at 75% -10%, rgba(59,130,246,0.18) 0%, transparent 60%)," +
+              "radial-gradient(ellipse 50% 40% at 20% 0%, rgba(139,92,246,0.15) 0%, transparent 60%)," +
+              "radial-gradient(ellipse 40% 35% at 50% 90%, rgba(79,70,229,0.12) 0%, transparent 60%)",
           }}
-          initial={{ top: "0%" }}
-          animate={{ top: ["0%", "100%"] }}
-          transition={{ duration: 10, repeat: Infinity, ease: "linear", repeatDelay: 3 }}
         />
       )}
+
     </div>
   );
 }
