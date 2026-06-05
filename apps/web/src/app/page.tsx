@@ -6,6 +6,7 @@ import { useRef, useState, useEffect } from "react";
 
 import { FlowBackground } from "@/components/layout/flow-background";
 import { PipelineLogo } from "@/components/layout/pipeline-logo";
+import { WorkflowBg } from "@/components/layout/workflow-bg";
 import { useAuthSession } from "@/hooks/use-auth-session";
 import { hasActiveSubscription } from "@/lib/auth/subscription";
 
@@ -495,12 +496,24 @@ export default function LandingPage() {
   const hasSubscription = hasActiveSubscription(session);
 
   const heroRef = useRef<HTMLDivElement>(null);
+  const navRef = useRef<HTMLElement>(null);
   const { scrollYProgress: heroScrollYProgress } = useScroll({ target: heroRef, offset: ["start start", "end start"] });
   const heroY = useTransform(heroScrollYProgress, [0, 1], ["0%", "12%"]);
 
   // Page-level scroll progress bar
   const { scrollYProgress: pageScrollYProgress } = useScroll();
   const scaleX = useSpring(pageScrollYProgress, { stiffness: 200, damping: 40 });
+
+  // Navbar scroll-state: intensify backdrop + border when scrolled
+  useEffect(() => {
+    const nav = navRef.current;
+    if (!nav) return;
+    const onScroll = () => {
+      nav.dataset.scrolled = window.scrollY > 10 ? "true" : "false";
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
 
   const {
     primaryHref,
@@ -526,14 +539,19 @@ export default function LandingPage() {
       )}
 
       {/* Navigation */}
-      <header className="marketing-nav marketing-nav-enhanced">
-        <Link className="brand-mark brand-mark-enhanced" href="/" aria-label="FlowCI Studio home">
-          <PipelineLogo size={26} />
-          <span>FlowCI Studio</span>
+      <header ref={navRef} className="marketing-nav marketing-nav-enhanced">
+        <Link className="brand-mark" href="/" aria-label="FlowCI Studio home" style={{ gap: "0.55rem" }}>
+          <PipelineLogo size={24} />
+          <span style={{ fontWeight: 800, color: "var(--text-primary)", letterSpacing: "-0.02em" }}>
+            FlowCI
+          </span>
+          <span style={{ fontWeight: 600, color: "var(--brand-accent)", letterSpacing: "-0.01em" }}>
+            Studio
+          </span>
         </Link>
 
-        {/* Pill-based nav with slide indicator */}
-        <nav aria-label="Primary" className="nav-links nav-links-pill">
+        {/* Center nav links — plain text, underline on hover */}
+        <nav aria-label="Primary" className="nav-links" style={{ gap: "2rem" }}>
           {[
             { href: "/workflows", label: "Workflows" },
             { href: "#pipeline", label: "How it works" },
@@ -542,20 +560,24 @@ export default function LandingPage() {
               key={item.href}
               href={item.href}
               style={{
-                position: "relative",
-                padding: "0.38rem 0.9rem",
-                borderRadius: "0.5rem",
-                fontSize: "0.84rem",
-                fontWeight: 600,
+                fontSize: "0.875rem",
+                fontWeight: 500,
                 color: "var(--text-secondary)",
                 textDecoration: "none",
-                transition: "color 0.2s ease",
+                letterSpacing: "-0.01em",
+                paddingBottom: "2px",
+                borderBottom: "1px solid transparent",
+                transition: "color 0.18s ease, border-color 0.18s ease",
               }}
               onMouseEnter={(e) => {
-                (e.currentTarget as HTMLAnchorElement).style.color = "var(--text-primary)";
+                const el = e.currentTarget as HTMLAnchorElement;
+                el.style.color = "var(--text-primary)";
+                el.style.borderBottomColor = "rgba(255,255,255,0.3)";
               }}
               onMouseLeave={(e) => {
-                (e.currentTarget as HTMLAnchorElement).style.color = "var(--text-secondary)";
+                const el = e.currentTarget as HTMLAnchorElement;
+                el.style.color = "var(--text-secondary)";
+                el.style.borderBottomColor = "transparent";
               }}
             >
               {item.label}
@@ -563,30 +585,31 @@ export default function LandingPage() {
           ))}
         </nav>
 
-        <div className="landing-nav-actions">
+        <div className="landing-nav-actions" style={{ gap: "1.25rem" }}>
+          {/* Plain "Log in" text link */}
           <Link
-            className="ghost-button nav-ghost"
-            href="/home"
-            style={{ fontSize: "0.82rem", padding: "0.38rem 0.85rem", minHeight: "2.1rem" }}
-          >
-            Preview
-          </Link>
-          <Link
-            className="ghost-button nav-ghost"
             href={navUtilityHref}
-            style={{ fontSize: "0.82rem", padding: "0.38rem 0.85rem", minHeight: "2.1rem" }}
+            style={{
+              fontSize: "0.875rem",
+              fontWeight: 500,
+              color: "var(--text-secondary)",
+              textDecoration: "none",
+              transition: "color 0.18s ease",
+              whiteSpace: "nowrap",
+            }}
+            onMouseEnter={(e) => { (e.currentTarget as HTMLAnchorElement).style.color = "var(--text-primary)"; }}
+            onMouseLeave={(e) => { (e.currentTarget as HTMLAnchorElement).style.color = "var(--text-secondary)"; }}
           >
             {navUtilityLabel}
           </Link>
-          <span style={{ width: 1, height: 18, background: "rgba(255,255,255,0.12)", flexShrink: 0 }} aria-hidden="true" />
-          {/* Gradient CTA button */}
+          {/* Gradient pill CTA */}
           <Link
             className="cta-gradient-button"
             href={appHref}
-            style={{ fontSize: "0.82rem" }}
+            style={{ fontSize: "0.85rem", padding: "0.45rem 1.25rem" }}
           >
             <span className="cta-shimmer" aria-hidden="true" />
-            {appLabel}
+            {appLabel} &rarr;
           </Link>
         </div>
       </header>
@@ -594,7 +617,9 @@ export default function LandingPage() {
       <div id="main-content">
         {/* ── SECTION 1: Full-screen hero ──────────────────────────────── */}
         <section className="hero-full" ref={heroRef} aria-label="Main message">
-          {/* Animated mesh gradient behind hero */}
+          {/* Animated workflow DAG background */}
+          <WorkflowBg />
+          {/* Subtle mesh gradient layer */}
           <div aria-hidden="true" className="hero-mesh-bg" />
 
           <motion.div
@@ -775,7 +800,8 @@ export default function LandingPage() {
               viewport={{ once: true, margin: "-60px" }}
               transition={{ delay: index * 0.12, duration: 0.4 }}
               style={{
-                padding: "2rem",
+                padding: "2.5rem 2rem",
+                minHeight: "260px",
                 display: "flex",
                 flexDirection: "column",
                 gap: "0.85rem",
@@ -895,68 +921,72 @@ export default function LandingPage() {
                 }}
               />
 
-              {/* Popular badge */}
-              <div
-                aria-label="Most popular plan"
-                style={{
-                  position: "absolute",
-                  top: "1.25rem",
-                  right: "1.5rem",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "0.3rem",
-                  padding: "0.2rem 0.6rem",
-                  borderRadius: "999px",
-                  background: "linear-gradient(135deg, rgba(56,189,248,0.15), rgba(52,211,153,0.1))",
-                  border: "1px solid rgba(56,189,248,0.25)",
-                  fontSize: "0.65rem",
-                  fontWeight: 700,
-                  textTransform: "uppercase",
-                  letterSpacing: "0.08em",
-                  color: "var(--brand)",
-                }}
-              >
-                <span
-                  aria-hidden="true"
+              {/* PRO badge — top-left, on its own line above pricing */}
+              <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "1rem" }}>
+                <div
+                  aria-label="Most popular plan"
                   style={{
-                    width: "5px",
-                    height: "5px",
-                    borderRadius: "50%",
-                    background: "var(--brand-accent)",
-                    animation: "flowPulse 1.8s ease-in-out infinite",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "0.3rem",
+                    padding: "0.2rem 0.65rem",
+                    borderRadius: "999px",
+                    background: "linear-gradient(135deg, rgba(56,189,248,0.15), rgba(52,211,153,0.1))",
+                    border: "1px solid rgba(56,189,248,0.25)",
+                    fontSize: "0.65rem",
+                    fontWeight: 700,
+                    textTransform: "uppercase" as const,
+                    letterSpacing: "0.08em",
+                    color: "var(--brand)",
                   }}
-                />
-                Pro
+                >
+                  <span
+                    aria-hidden="true"
+                    style={{
+                      width: "5px",
+                      height: "5px",
+                      borderRadius: "50%",
+                      background: "var(--brand-accent)",
+                      animation: "flowPulse 1.8s ease-in-out infinite",
+                    }}
+                  />
+                  Pro
+                </div>
+                <span style={{ fontSize: "0.72rem", textTransform: "uppercase" as const, letterSpacing: "0.1em", color: "var(--text-muted)" }}>Monthly</span>
               </div>
 
-              <div className="pricing-plan-header">
-                <div>
-                  <p style={{ fontSize: "0.72rem", textTransform: "uppercase", letterSpacing: "0.1em", color: "var(--text-muted)", marginBottom: "0.4rem" }}>Pro Monthly</p>
-                  <div style={{ display: "flex", alignItems: "baseline", gap: "0.35rem" }}>
-                    <span
-                      className="pricing-table-price"
-                      style={{
-                        background: "linear-gradient(135deg, var(--text-primary), var(--brand))",
-                        WebkitBackgroundClip: "text",
-                        WebkitTextFillColor: "transparent",
-                        backgroundClip: "text",
-                        color: "var(--text-primary)",
-                      }}
-                    >
-                      &#8369;300
-                    </span>
-                    <span style={{ fontSize: "0.88rem", color: "var(--text-muted)" }}>/ month</span>
-                  </div>
-                  <p style={{ margin: "0.4rem 0 0", fontSize: "0.82rem", color: "var(--text-secondary)" }}>
-                    Cancel any time. No hidden fees.
-                  </p>
+              {/* Price block */}
+              <div style={{ marginBottom: "1.5rem" }}>
+                <div style={{ display: "flex", alignItems: "baseline", gap: "0.35rem", marginBottom: "0.4rem" }}>
+                  <span
+                    className="pricing-table-price"
+                    style={{
+                      background: "linear-gradient(135deg, var(--text-primary), var(--brand))",
+                      WebkitBackgroundClip: "text",
+                      WebkitTextFillColor: "transparent",
+                      backgroundClip: "text",
+                      color: "var(--text-primary)",
+                    }}
+                  >
+                    &#8369;300
+                  </span>
+                  <span style={{ fontSize: "0.88rem", color: "var(--text-muted)" }}>/ month</span>
                 </div>
+                <p style={{ margin: "0 0 1.25rem", fontSize: "0.82rem", color: "var(--text-secondary)" }}>
+                  Cancel any time. No hidden fees.
+                </p>
+                {/* Get started button — full width, below the price */}
                 <motion.div
-                  whileHover={prefersReducedMotion ? undefined : { scale: 1.05 }}
-                  whileTap={{ scale: 0.96 }}
+                  whileHover={prefersReducedMotion ? undefined : { scale: 1.02 }}
+                  whileTap={{ scale: 0.97 }}
+                  style={{ width: "100%" }}
                 >
-                  <Link className="primary-button" href="/signup" style={{ fontSize: "0.85rem", padding: "0.55rem 1.2rem" }}>
-                    Get started
+                  <Link
+                    className="primary-button"
+                    href="/signup"
+                    style={{ fontSize: "0.9rem", padding: "0.75rem 1.5rem", width: "100%", justifyContent: "center" }}
+                  >
+                    Get started &rarr;
                   </Link>
                 </motion.div>
               </div>

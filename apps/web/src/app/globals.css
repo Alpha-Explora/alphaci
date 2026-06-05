@@ -378,10 +378,10 @@ h1, h2, h3 {
 }
 
 .marketing-nav {
-  background: rgba(2, 6, 23, 0.7);
+  background: rgba(2, 6, 23, 0.75);
   backdrop-filter: blur(32px) saturate(200%);
   -webkit-backdrop-filter: blur(32px) saturate(200%);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
   padding: 0 clamp(2rem, 5vw, 4rem);
   height: 72px;
   display: flex;
@@ -391,8 +391,13 @@ h1, h2, h3 {
   top: 0;
   z-index: 100;
   width: 100%;
-  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5), inset 0 -1px 0 rgba(56, 189, 248, 0.2);
-  transition: all 0.3s ease;
+  transition: background 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.marketing-nav[data-scrolled="true"] {
+  background: rgba(2, 6, 23, 0.92);
+  border-bottom-color: rgba(255, 255, 255, 0.12);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.5);
 }
 
 .flow-ribbon-b {
@@ -458,24 +463,6 @@ h1, h2, h3 {
 }
 
 /* ── Navigation ─────────────────────────────────────────────────────────── */
-.marketing-nav {
-  background: rgba(2, 6, 23, 0.7);
-  backdrop-filter: blur(32px) saturate(200%);
-  -webkit-backdrop-filter: blur(32px) saturate(200%);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  padding: 0 clamp(2rem, 5vw, 4rem);
-  height: 72px;
-  display: flex;
-  align-items: center;
-  gap: 2rem;
-  position: sticky;
-  top: 0;
-  z-index: 100;
-  width: 100%;
-  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5), inset 0 -1px 0 rgba(56, 189, 248, 0.2);
-  transition: all 0.3s ease;
-}
-
 .dash-nav {
   background: rgba(2, 6, 23, 0.7);
   backdrop-filter: blur(32px) saturate(200%);
@@ -1222,9 +1209,9 @@ h1, h2, h3 {
   border-radius: 0.5rem;
   border: 1px solid transparent;
   font-weight: 600;
-  font-size: 1rem;
+  font-size: 1.05rem;
   min-height: 3rem;
-  padding: 0.85rem 2rem;
+  padding: 1rem 2.5rem;
   text-decoration: none;
   transition: background 0.15s, box-shadow 0.15s, transform 0.1s, border-color 0.15s, color 0.15s;
   white-space: nowrap;
@@ -1232,9 +1219,6 @@ h1, h2, h3 {
 }
 
 .primary-button {
-  padding: 0.85rem 2rem;
-  font-size: 1rem;
-  min-height: 3rem;
   color: #ffffff;
   background: var(--brand);
   box-shadow: 0 1px 2px rgba(79, 142, 255, 0.3);
@@ -1242,8 +1226,8 @@ h1, h2, h3 {
 
 .primary-button:hover {
   background: var(--brand-strong);
-  transform: translateY(-1px);
-  box-shadow: 0 0 24px rgba(79, 142, 255, 0.4);
+  transform: translateY(-2px);
+  box-shadow: 0 0 24px rgba(121, 192, 255, 0.5), 0 8px 16px rgba(0, 0, 0, 0.4);
 }
 
 .primary-button:active {
@@ -1259,15 +1243,15 @@ h1, h2, h3 {
   border-color: var(--border-strong);
   background: transparent;
   color: var(--text-secondary);
-  padding: 0.85rem 1.6rem;
   font-weight: 500;
 }
 
 .ghost-button:hover {
-  transform: translateY(-1px);
+  transform: translateY(-2px);
   border-color: var(--brand);
   color: var(--text-primary);
   background: var(--brand-light);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3), 0 0 12px rgba(121, 192, 255, 0.1);
 }
 
 .ghost-button:active {
@@ -2282,24 +2266,7 @@ select option {
     width: 100%;
     padding-top: 0.65rem;
   }
-  .marketing-nav {
-  background: rgba(2, 6, 23, 0.7);
-  backdrop-filter: blur(32px) saturate(200%);
-  -webkit-backdrop-filter: blur(32px) saturate(200%);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  padding: 0 clamp(2rem, 5vw, 4rem);
-  height: 72px;
-  display: flex;
-  align-items: center;
-  gap: 2rem;
-  position: sticky;
-  top: 0;
-  z-index: 100;
-  width: 100%;
-  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5), inset 0 -1px 0 rgba(56, 189, 248, 0.2);
-  transition: all 0.3s ease;
 }
-}
 
 @media (max-width: 640px) {
   .landing-hero .hero-actions {
@@ -2749,14 +2716,14 @@ select option {
 
 /* ── Full-screen hero ───────────────────────────────────────────── */
 .hero-full {
-  min-height: 100dvh;
+  min-height: calc(100dvh - 72px);
   width: 100%;
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  justify-content: flex-start;
   align-items: center;
   text-align: center;
-  padding: clamp(2rem, 4vh, 3.5rem) clamp(2rem, 6vw, 6rem) clamp(2rem, 4vh, 3rem);
+  padding: 0 clamp(2rem, 6vw, 6rem);
   position: relative;
   background: var(--bg-base);
   overflow: hidden;
@@ -2803,7 +2770,10 @@ select option {
   gap: 1.5rem;
   width: 100%;
   max-width: 100%;
-  padding: 0 clamp(1rem, 4vw, 3rem);
+  padding-top: clamp(4rem, 8vh, 6rem);
+  padding-bottom: clamp(3rem, 6vh, 5rem);
+  padding-left: clamp(1rem, 4vw, 3rem);
+  padding-right: clamp(1rem, 4vw, 3rem);
 }
 
 /* H1 sizing inside full-screen hero */
@@ -2948,7 +2918,7 @@ select option {
 /* ── Features strip ─────────────────────────────────────────────────────── */
 .features-strip {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   background: var(--bg-soft);
   max-width: 100%;
   position: relative;
@@ -4278,10 +4248,6 @@ select option {
   background-position: center center;
 }
 
-.primary-button, .ghost-button { padding: 1rem 2.5rem !important; font-size: 1.05rem !important; }
-.primary-button:hover { transform: translateY(-2px) !important; box-shadow: 0 0 24px rgba(121, 192, 255, 0.5), 0 8px 16px rgba(0, 0, 0, 0.4) !important; }
-.ghost-button:hover { transform: translateY(-2px) !important; box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3), 0 0 12px rgba(121, 192, 255, 0.1) !important; }
-
 /* ── Bento & Premium overrides ── */
 .kpi-bento-grid {
   display: grid;
@@ -4911,5 +4877,6 @@ select option {
     border-bottom: none !important;
   }
 }
+
 
 

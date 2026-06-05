@@ -324,11 +324,36 @@ export function OAuthAuthPage({
             </a>
           </div>
 
-          <div className="auth-support-row">
-            <Link className="ghost-button auth-support-link" href="/subscribe">
+          <div style={{ display: "flex", gap: "1.5rem", justifyContent: "center", marginTop: "0.25rem" }}>
+            <Link
+              href="/subscribe"
+              style={{
+                fontSize: "0.82rem",
+                color: "var(--text-muted)",
+                textDecoration: "none",
+                borderBottom: "1px solid var(--border-soft)",
+                paddingBottom: "1px",
+                transition: "color 0.2s ease",
+              }}
+              onMouseEnter={(e) => { (e.currentTarget as HTMLAnchorElement).style.color = "var(--text-primary)"; }}
+              onMouseLeave={(e) => { (e.currentTarget as HTMLAnchorElement).style.color = "var(--text-muted)"; }}
+            >
               View pricing
             </Link>
-            <Link className="ghost-button auth-support-link" href="/">
+            <span style={{ color: "var(--border)", fontSize: "0.82rem" }} aria-hidden="true">·</span>
+            <Link
+              href="/"
+              style={{
+                fontSize: "0.82rem",
+                color: "var(--text-muted)",
+                textDecoration: "none",
+                borderBottom: "1px solid var(--border-soft)",
+                paddingBottom: "1px",
+                transition: "color 0.2s ease",
+              }}
+              onMouseEnter={(e) => { (e.currentTarget as HTMLAnchorElement).style.color = "var(--text-primary)"; }}
+              onMouseLeave={(e) => { (e.currentTarget as HTMLAnchorElement).style.color = "var(--text-muted)"; }}
+            >
               Home
             </Link>
           </div>
