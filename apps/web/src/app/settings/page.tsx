@@ -79,8 +79,8 @@ function SettingsSection({
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3, delay: index * 0.07 }}
       style={{
-        background: danger ? "rgba(248, 113, 113, 0.04)" : "rgba(15, 23, 42, 0.5)",
-        border: danger ? "1px solid rgba(248, 113, 113, 0.18)" : "1px solid var(--border-soft)",
+        background: danger ? "rgba(248, 113, 113, 0.08)" : "rgba(15, 23, 42, 0.78)",
+        border: danger ? "1px solid rgba(248, 113, 113, 0.3)" : "1px solid rgba(255,255,255,0.12)",
         borderRadius: "1rem",
         overflow: "hidden",
       }}
@@ -92,8 +92,8 @@ function SettingsSection({
           alignItems: "center",
           gap: "0.6rem",
           padding: "0.85rem 1.25rem",
-          borderBottom: danger ? "1px solid rgba(248, 113, 113, 0.12)" : "1px solid var(--border-subtle)",
-          background: danger ? "rgba(248, 113, 113, 0.04)" : "rgba(15, 23, 42, 0.3)",
+          borderBottom: danger ? "1px solid rgba(248, 113, 113, 0.2)" : "1px solid rgba(255,255,255,0.08)",
+          background: danger ? "rgba(248, 113, 113, 0.06)" : "rgba(15, 23, 42, 0.55)",
         }}
       >
         <span
@@ -239,7 +239,7 @@ export default function SettingsPage() {
       <div
         id="main-content"
         style={{
-          padding: "0 clamp(1rem, 3vw, 2rem)",
+          padding: "1.25rem clamp(1rem, 3vw, 2rem) 2rem",
           flex: 1,
           display: "flex",
           flexDirection: "column",
@@ -568,6 +568,11 @@ export default function SettingsPage() {
             <p className="error-text" style={{ marginTop: "0.75rem" }}>{logoutMessage}</p>
           )}
         </SettingsSection>
+
+        {/* ── Footer note ─────────────────────────────────────────── */}
+        <p style={{ textAlign: "center", fontSize: "0.72rem", color: "var(--text-muted)", marginTop: "0.5rem", paddingBottom: "2rem" }}>
+          FlowCI Studio · {new Date().getFullYear()}
+        </p>
 
       </div>
     </main>
