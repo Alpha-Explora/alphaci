@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 
 import type { CreateProjectRequest, MvpProjectOptionKey } from "@/lib/api/contracts";
 import { toSlug } from "@/components/product/workflow-builder-utils";
@@ -60,19 +60,6 @@ export function useCreateProjectForm() {
     setServiceNameState(toSlug(value));
   }, []);
 
-  // Auto-populate microservices slot names from repoName when not manually touched.
-  useEffect(() => {
-    if (!backendServiceNameTouched) {
-      setBackendServiceNameState(repoName ? `${repoName}-backend` : "");
-    }
-  }, [repoName, backendServiceNameTouched]);
-
-  useEffect(() => {
-    if (!frontendServiceNameTouched) {
-      setFrontendServiceNameState(repoName ? `${repoName}-frontend` : "");
-    }
-  }, [repoName, frontendServiceNameTouched]);
-
   const setBackendServiceName = useCallback((value: string) => {
     setBackendServiceNameTouched(true);
     setBackendServiceNameState(toSlug(value));
@@ -82,6 +69,17 @@ export function useCreateProjectForm() {
     setFrontendServiceNameTouched(true);
     setFrontendServiceNameState(toSlug(value));
   }, []);
+
+  const effectiveBackendServiceName = backendServiceNameTouched
+    ? backendServiceName
+    : repoName
+      ? `${repoName}-backend`
+      : "";
+  const effectiveFrontendServiceName = frontendServiceNameTouched
+    ? frontendServiceName
+    : repoName
+      ? `${repoName}-frontend`
+      : "";
 
   function buildPayload(input: BuildPayloadInput): CreateProjectPayloadResult {
     if (!input.hasAllRepositoriesInstallation) {
@@ -116,8 +114,12 @@ export function useCreateProjectForm() {
     }
 
     if (input.isMicroservicesShape) {
-      const normalizedBackendName = toSlug(backendServiceName || `${normalizedRepoName}-backend`);
-      const normalizedFrontendName = toSlug(frontendServiceName || `${normalizedRepoName}-frontend`);
+      const normalizedBackendName = toSlug(
+        effectiveBackendServiceName || `${normalizedRepoName}-backend`,
+      );
+      const normalizedFrontendName = toSlug(
+        effectiveFrontendServiceName || `${normalizedRepoName}-frontend`,
+      );
 
       return {
         ok: true,
@@ -184,13 +186,13 @@ export function useCreateProjectForm() {
 
   return {
     backendProjectTypeId,
-    backendServiceName,
+    backendServiceName: effectiveBackendServiceName,
     backendServicePath,
     backendWorkflowRecipeId,
     buildPayload,
     coverageThreshold,
     frontendProjectTypeId,
-    frontendServiceName,
+    frontendServiceName: effectiveFrontendServiceName,
     frontendServicePath,
     frontendWorkflowRecipeId,
     nodeVersion,
