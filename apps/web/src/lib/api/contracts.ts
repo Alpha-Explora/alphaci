@@ -286,6 +286,40 @@ export interface ProvisionedProjectsResponse {
   items: ProvisionedProject[];
 }
 
+export interface DiscoverExistingRepoRequest {
+  repoFullName: string;
+  baseBranch?: string;
+}
+
+export interface DiscoverExistingRepoResponse {
+  repoFullName: string;
+  baseBranch: string;
+  detectedProjectTypeId: string | null;
+  recommendedWorkflowRecipeId: string;
+  serviceName: string;
+  servicePath: string;
+}
+
+export interface SetupExistingRepoPrRequest {
+  repoFullName: string;
+  baseBranch?: string;
+  projectTypeId: string;
+  workflowRecipeId?: string;
+  serviceName: string;
+  servicePath?: string;
+  nodeVersion?: string;
+  coverageThreshold?: number;
+  outputFileName?: string;
+}
+
+export interface SetupExistingRepoPrResponse {
+  repoFullName: string;
+  branchName: string;
+  workflowPath: string;
+  pullRequestNumber: number;
+  pullRequestUrl: string;
+}
+
 export interface CreateGithubRepoRequest {
   repoName: string;
   description?: string;

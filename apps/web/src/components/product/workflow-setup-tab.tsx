@@ -2,7 +2,12 @@
 
 import { motion } from "framer-motion";
 
-import type { CreateProjectResult, MvpProjectOptionKey } from "@/lib/api/contracts";
+import type {
+  CreateProjectResult,
+  DiscoverExistingRepoResponse,
+  MvpProjectOptionKey,
+  SetupExistingRepoPrResponse,
+} from "@/lib/api/contracts";
 import type { CreateProjectFormState } from "@/hooks/use-create-project-form";
 import type { GithubInstallationsState } from "@/hooks/use-github-installations";
 import {
@@ -14,11 +19,23 @@ import { SetupResultPanel } from "./setup-result-panel";
 
 interface WorkflowSetupTabProps {
   createResult: CreateProjectResult | null;
+  existingRepoBaseBranch: string;
+  existingRepoDiscovery: DiscoverExistingRepoResponse | null;
+  existingRepoFullName: string;
+  existingRepoResult: SetupExistingRepoPrResponse | null;
   form: CreateProjectFormState;
   github: GithubInstallationsState;
   isCreatingProject: boolean;
+  isDiscoveringExistingRepo: boolean;
+  isSettingUpExistingRepo: boolean;
+  setupMode: "new" | "existing";
+  onChangeExistingRepoBaseBranch: (value: string) => void;
+  onChangeExistingRepoFullName: (value: string) => void;
+  onChangeSetupMode: (value: "new" | "existing") => void;
   onCreateProject: () => void;
+  onDiscoverExistingRepo: () => void;
   onGenerateWorkflow: () => void;
+  onSetupExistingRepoPullRequest: () => void;
   onViewProject: () => void;
   projectCatalog: ProjectOptionsCatalogState;
   reducedMotion: boolean;
@@ -61,15 +78,28 @@ const inputBaseStyle: React.CSSProperties = {
 
 export function WorkflowSetupTab({
   createResult,
+  existingRepoBaseBranch,
+  existingRepoDiscovery,
+  existingRepoFullName,
+  existingRepoResult,
   form,
   github,
   isCreatingProject,
+  isDiscoveringExistingRepo,
+  isSettingUpExistingRepo,
+  setupMode,
+  onChangeExistingRepoBaseBranch,
+  onChangeExistingRepoFullName,
+  onChangeSetupMode,
   onCreateProject,
+  onDiscoverExistingRepo,
   onGenerateWorkflow,
+  onSetupExistingRepoPullRequest,
   onViewProject,
   projectCatalog,
   reducedMotion,
 }: Readonly<WorkflowSetupTabProps>) {
+  const isExistingMode = setupMode === "existing";
   const createDisabled =
     isCreatingProject ||
     projectCatalog.loadingProjectOptions ||
@@ -79,9 +109,24 @@ export function WorkflowSetupTab({
 
   const generateDisabled =
     isCreatingProject ||
+    isDiscoveringExistingRepo ||
+    isSettingUpExistingRepo ||
     projectCatalog.loadingProjectOptions ||
     !projectCatalog.selectedProjectType ||
     !(form.serviceName || form.repoName);
+
+  const existingDiscoverDisabled =
+    isDiscoveringExistingRepo ||
+    isSettingUpExistingRepo ||
+    projectCatalog.loadingProjectOptions ||
+    !existingRepoFullName.trim();
+
+  const existingSetupDisabled =
+    isDiscoveringExistingRepo ||
+    isSettingUpExistingRepo ||
+    projectCatalog.loadingProjectOptions ||
+    !existingRepoFullName.trim() ||
+    !projectCatalog.selectedProjectType;
 
   return (
     <motion.section
@@ -393,7 +438,9 @@ export function WorkflowSetupTab({
       <section className="templates-panel">
         <div className="templates-header">
           <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "1.25rem" }}>
-            <h2 style={{ margin: 0, fontSize: "1.25rem" }}>Create Project</h2>
+            <h2 style={{ margin: 0, fontSize: "1.25rem" }}>
+              {isExistingMode ? "Add CI/CD to Existing Repo" : "Create Project"}
+            </h2>
             {projectCatalog.selectedProjectType ? (
               <span style={{
                 fontSize: "0.72rem",
@@ -418,10 +465,110 @@ export function WorkflowSetupTab({
           </p>
         ) : null}
 
+        <div
+          role="group"
+          aria-label="Setup mode"
+          style={{
+            display: "grid",
+            gridTemplateColumns: "1fr 1fr",
+            gap: "0.5rem",
+            padding: "0.35rem",
+            border: "1px solid var(--border)",
+            borderRadius: "8px",
+            background: "var(--bg-panel)",
+          }}
+        >
+          {(["new", "existing"] as const).map((mode) => (
+            <button
+              key={mode}
+              type="button"
+              className={setupMode === mode ? "primary-button" : "ghost-button"}
+              onClick={() => onChangeSetupMode(mode)}
+              aria-pressed={setupMode === mode}
+              style={{ padding: "0.55rem 0.75rem" }}
+            >
+              {mode === "new" ? "New repository" : "Existing repository"}
+            </button>
+          ))}
+        </div>
+
         <div className="generate-form create-project-form">
 
+          {isExistingMode ? (
+            <div style={{ marginTop: "1.25rem", display: "grid", gap: "1rem" }}>
+              <div className="form-pair-row" style={{ gap: "1rem" }}>
+                <div>
+                  <label className="input-label" htmlFor="existing-repo-select" style={labelAccentStyle}>
+                    Linked repository
+                  </label>
+                  <select
+                    id="existing-repo-select"
+                    value={existingRepoFullName}
+                    onChange={(event) => onChangeExistingRepoFullName(event.target.value)}
+                    disabled={github.loadingLinkedRepos}
+                    style={inputBaseStyle}
+                  >
+                    <option value="">
+                      {github.loadingLinkedRepos ? "Loading linked repos..." : "Choose a repository"}
+                    </option>
+                    {github.linkedRepos.map((repo) => (
+                      <option key={`${repo.installationId}-${repo.repoFullName}`} value={repo.repoFullName}>
+                        {repo.repoFullName}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="input-label" htmlFor="existing-base-branch" style={labelAccentStyle}>
+                    Base branch
+                  </label>
+                  <input
+                    id="existing-base-branch"
+                    value={existingRepoBaseBranch}
+                    onChange={(event) => onChangeExistingRepoBaseBranch(event.target.value)}
+                    placeholder="main"
+                    style={inputBaseStyle}
+                  />
+                </div>
+              </div>
+
+              <div style={{ border: "1px solid var(--border)", borderRadius: "8px", padding: "0.8rem", background: "var(--bg-panel)" }}>
+                <p className="helper-text" style={{ margin: "0 0 0.75rem" }}>
+                  Scan the repository first to prefill the project type. If detection is empty, choose a language and recipe manually from the catalog.
+                </p>
+                <div className="result-actions" style={{ justifyContent: "flex-start" }}>
+                  <button
+                    type="button"
+                    className="ghost-button"
+                    disabled={existingDiscoverDisabled}
+                    onClick={() => void onDiscoverExistingRepo()}
+                  >
+                    {isDiscoveringExistingRepo ? "Scanning..." : "Discover repo"}
+                  </button>
+                  <button
+                    type="button"
+                    className="primary-button"
+                    disabled={existingSetupDisabled}
+                    onClick={() => void onSetupExistingRepoPullRequest()}
+                  >
+                    {isSettingUpExistingRepo ? "Opening PR..." : "Open setup PR"}
+                  </button>
+                </div>
+                {existingRepoDiscovery ? (
+                  <div className="result-branches" style={{ marginTop: "0.75rem" }}>
+                    <span className="branch-chip">{existingRepoDiscovery.baseBranch}</span>
+                    <span className="branch-chip">
+                      {existingRepoDiscovery.detectedProjectTypeId ?? "manual"}
+                    </span>
+                    <span className="branch-chip">{existingRepoDiscovery.recommendedWorkflowRecipeId}</span>
+                  </div>
+                ) : null}
+              </div>
+            </div>
+          ) : null}
+
           {/* Repository name + Visibility — paired row */}
-          <div className="form-pair-row" style={{ marginTop: "1.25rem", gap: "1rem" }}>
+          <div className="form-pair-row" style={{ marginTop: "1.25rem", gap: "1rem", display: isExistingMode ? "none" : undefined }}>
             <div>
               <label className="input-label" htmlFor="repo-name" style={labelAccentStyle}>
                 Repository name
@@ -568,7 +715,7 @@ export function WorkflowSetupTab({
             data-testid="setup-project-button"
             disabled={createDisabled}
             onClick={() => void onCreateProject()}
-            style={{ marginTop: "1.75rem" }}
+            style={{ marginTop: "1.75rem", display: isExistingMode ? "none" : undefined }}
           >
             {isCreatingProject ? (
               <span className="btn-spinner" aria-hidden="true" />
@@ -598,6 +745,7 @@ export function WorkflowSetupTab({
 
       {/* ── Right: Result panel ────────────────────────────────────── */}
       <SetupResultPanel
+        existingRepoResult={existingRepoResult}
         setupResult={createResult}
         onViewProject={onViewProject}
       />
