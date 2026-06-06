@@ -72,12 +72,18 @@ html::-webkit-scrollbar {
   box-sizing: border-box;
 }
 
+/* html holds the fallback dark background so FlowBackground (z-index:-1) never
+   uncovers a white flash before React hydrates */
+html {
+  background: var(--bg-base);
+}
+
 body {
   margin: 0;
   min-height: 100dvh;
   color: var(--text-primary);
   font-family: 'Manrope', var(--font-body), sans-serif;
-  background: var(--bg-base);
+  background: transparent;
   line-height: 1.65;
   letter-spacing: 0.015em;
 }

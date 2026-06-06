@@ -378,26 +378,11 @@ describe("workflow hooks", () => {
     expect(current?.visibility).toBe("private");
     expect(current?.outputFileName).toBe("ci.yml");
 
-    expect(
-      current?.buildPayload({
-        hasAllRepositoriesInstallation: false,
-        isMicroservicesShape: false,
-        repoShapeId: "single-app",
-        projectTypeId: "nextjs-app",
-        workflowRecipeId: "frontend-standard-ci",
-        tests: { lint: true } as Record<string, boolean>,
-      }),
-    ).toEqual({
-      ok: false,
-      message: "Link a GitHub App installation with all repositories access before creating a project.",
-    });
-
     act(() => current?.setRepoName("Example App"));
     await flushMicrotasks();
     expect(current?.serviceName).toBe("example-app");
 
     const result = current?.buildPayload({
-      hasAllRepositoriesInstallation: true,
       isMicroservicesShape: false,
       repoShapeId: "single-app",
       projectTypeId: "nextjs-app",
@@ -440,7 +425,6 @@ describe("workflow hooks", () => {
   it("reports create project form validation branches", async () => {
     let current = null as ReturnType<typeof useCreateProjectForm> | null;
     const baseInput = {
-      hasAllRepositoriesInstallation: true,
       isMicroservicesShape: false,
       repoShapeId: "single-app",
       projectTypeId: "nextjs-app",
@@ -558,7 +542,6 @@ describe("workflow hooks", () => {
 
     expect(
       current?.buildPayload({
-        hasAllRepositoriesInstallation: true,
         isMicroservicesShape: true,
         repoShapeId: "microservices",
         projectTypeId: "",

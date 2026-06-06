@@ -103,7 +103,6 @@ export function WorkflowSetupTab({
   const createDisabled =
     isCreatingProject ||
     projectCatalog.loadingProjectOptions ||
-    !github.hasAllRepositoriesInstallation ||
     !form.repoName.trim() ||
     !projectCatalog.selectedProjectType;
 
