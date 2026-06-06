@@ -137,6 +137,7 @@ export interface SetupProjectRequest extends GenerateWorkflowRequest {
 
 export interface GenerateWorkflowResponse {
   yaml: string;
+  workflowFiles?: WorkflowFile[];
   metadata: {
     templateId: string;
     templateName: string;
@@ -150,7 +151,21 @@ export interface GenerateWorkflowResponse {
     sourcePropertiesFile: string;
     sourceWorkflowFile: string;
     outputFileName: string;
+    workflowFiles?: WorkflowFileMetadata[];
   };
+}
+
+export type WorkflowStage = "access" | "quality" | "package";
+
+export interface WorkflowFileMetadata {
+  stage: WorkflowStage;
+  name: string;
+  path: string;
+  gated: boolean;
+}
+
+export interface WorkflowFile extends WorkflowFileMetadata {
+  yaml: string;
 }
 
 export interface WorkflowHistoryItem {
@@ -220,6 +235,7 @@ export interface SetupProjectResponse {
   repoFullName: string;
   status: "provisioned";
   workflowPath: string;
+  workflowFiles?: WorkflowFileMetadata[];
   githubCommitSha: string;
   githubCommitUrl: string | null;
 }
@@ -258,6 +274,7 @@ export interface CreateProjectResponse {
   repoUrl: string;
   status: "provisioned";
   workflowPath: string;
+  workflowFiles?: WorkflowFileMetadata[];
   githubCommitSha: string;
   githubCommitUrl: string | null;
   projectTypeId: string;
@@ -273,6 +290,7 @@ export interface ProvisionedProject {
   templateId: string;
   serviceName: string;
   workflowPath: string;
+  workflowFiles?: WorkflowFileMetadata[] | null;
   status: "provisioning" | "provisioned" | "failed";
   githubCommitSha: string | null;
   githubCommitUrl: string | null;
@@ -348,6 +366,7 @@ export interface CreateProjectResult {
   status: "provisioned";
   /** Full path of the committed workflow file, e.g. `.github/workflows/ci.yml`. */
   workflowPath: string;
+  workflowFiles?: WorkflowFileMetadata[];
   /** Basename of the workflow file, derived from workflowPath. */
   outputFileName: string;
   githubCommitSha: string;
