@@ -10,6 +10,47 @@ interface SetupResultPanelProps {
   onViewProject: () => void;
 }
 
+interface CommitLinkProps {
+  sha: string;
+  url: string | null;
+}
+
+function CommitLink({ sha, url }: Readonly<CommitLinkProps>) {
+  const short = sha.slice(0, 10);
+  if (url) {
+    return <a href={url} target="_blank" rel="noreferrer"><code>{short}</code></a>;
+  }
+  return <code>{short}</code>;
+}
+
+interface SecondaryRepoSectionProps {
+  url: string | undefined;
+  fullName: string | undefined;
+}
+
+function SecondaryRepoSection({ url, fullName }: Readonly<SecondaryRepoSectionProps>) {
+  if (!url) return null;
+  return (
+    <p className="helper-text" style={{ margin: 0 }}>
+      Secondary repo:{" "}
+      <a href={url} target="_blank" rel="noreferrer">{fullName}</a>
+    </p>
+  );
+}
+
+interface SecondaryRepoLinkProps {
+  url: string | undefined;
+}
+
+function SecondaryRepoLink({ url }: Readonly<SecondaryRepoLinkProps>) {
+  if (!url) return null;
+  return (
+    <a className="ghost-button" href={url} target="_blank" rel="noreferrer">
+      Open secondary repo
+    </a>
+  );
+}
+
 export function SetupResultPanel({
   existingRepoResult,
   setupResult,
@@ -107,14 +148,12 @@ export function SetupResultPanel({
             </p>
             <p className="helper-text" style={{ margin: 0 }}>
               Commit:{" "}
-              {setupResult.githubCommitUrl ? (
-                <a href={setupResult.githubCommitUrl} target="_blank" rel="noreferrer">
-                  <code>{setupResult.githubCommitSha.slice(0, 10)}</code>
-                </a>
-              ) : (
-                  <code>{setupResult.githubCommitSha.slice(0, 10)}</code>
-                )}
+              <CommitLink sha={setupResult.githubCommitSha} url={setupResult.githubCommitUrl} />
             </p>
+            <SecondaryRepoSection
+              url={setupResult.secondaryRepoUrl}
+              fullName={setupResult.secondaryRepoFullName}
+            />
 
             <div className="result-actions">
               <a className="primary-button" href={setupResult.repoUrl} target="_blank" rel="noreferrer">
@@ -128,6 +167,7 @@ export function SetupResultPanel({
               >
                 View workflow
               </a>
+              <SecondaryRepoLink url={setupResult.secondaryRepoUrl} />
               <button className="ghost-button" type="button" onClick={onViewProject}>
                 View projects
               </button>
