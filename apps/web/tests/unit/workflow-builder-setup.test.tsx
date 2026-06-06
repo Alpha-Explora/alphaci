@@ -195,6 +195,27 @@ const projectOptions = {
   ],
 };
 
+const stagedWorkflowFiles = [
+  {
+    stage: "access" as const,
+    name: "FlowCI Access Gate",
+    path: ".github/workflows/00-flowci-access.yml",
+    gated: true,
+  },
+  {
+    stage: "quality" as const,
+    name: "FlowCI Quality",
+    path: ".github/workflows/10-flowci-quality.yml",
+    gated: true,
+  },
+  {
+    stage: "package" as const,
+    name: "FlowCI Package",
+    path: ".github/workflows/20-flowci-package.yml",
+    gated: true,
+  },
+];
+
 async function flushMicrotasks(cycles = 1) {
   for (let index = 0; index < cycles; index += 1) {
     await act(async () => {
@@ -264,7 +285,8 @@ describe("WorkflowBuilder project setup", () => {
       repoFullName: "tone/demo-next-app",
       repoUrl: "https://github.com/tone/demo-next-app",
       status: "provisioned",
-      workflowPath: ".github/workflows/ci.yml",
+      workflowPath: ".github/workflows/00-flowci-access.yml",
+      workflowFiles: stagedWorkflowFiles,
       githubCommitSha: "commit-sha",
       githubCommitUrl: "https://github.com/tone/demo-next-app/commit/commit-sha",
       projectTypeId: "nextjs-app",
@@ -344,7 +366,11 @@ describe("WorkflowBuilder project setup", () => {
     expect(mockedCreateGithubRepo).not.toHaveBeenCalled();
     expect(mockedGenerateWorkflow).not.toHaveBeenCalled();
     expect(container.textContent).toContain("tone/demo-next-app");
-    expect(container.textContent).toContain("ci.yml");
+    expect(container.textContent).toContain("00-flowci-access.yml");
+    expect(container.textContent).toContain("FlowCI Access Gate");
+    expect(container.textContent).toContain("10-flowci-quality.yml");
+    expect(container.textContent).toContain("20-flowci-package.yml");
+    expect(container.textContent).toContain("3 gated workflow stages");
   });
 
   it("shows a create project error when createProject rejects", async () => {

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 
-import type { CreateProjectResult, ProvisionedProject, WorkflowHistoryItem } from "@/lib/api/contracts";
+import type { CreateProjectResult, ProvisionedProject, WorkflowFileMetadata, WorkflowHistoryItem } from "@/lib/api/contracts";
 
 import { formatDate, toSourcePath } from "./workflow-builder-utils";
 
@@ -47,6 +47,30 @@ function statusVariant(status: string): string {
   if (status === "provisioned") return "provisioned";
   if (status === "provisioning" || status === "pending") return "provisioning";
   return "failed";
+}
+
+function WorkflowStageList({ files }: Readonly<{ files?: WorkflowFileMetadata[] | null }>) {
+  if (!files?.length) return null;
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "0.35rem" }}>
+      <p style={{ fontSize: "0.78rem", color: "var(--text-secondary)", margin: 0, fontWeight: 700 }}>
+        {files.length} gated workflow stages
+      </p>
+      <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
+        {files.map((file) => (
+          <div key={file.path} style={{ display: "flex", gap: "0.5rem", alignItems: "baseline", flexWrap: "wrap" }}>
+            <span style={{ fontSize: "0.76rem", color: "var(--text-primary)", fontWeight: 700 }}>
+              {file.name}
+            </span>
+            <code style={{ fontSize: "0.72rem", color: "var(--text-muted)", wordBreak: "break-all" }}>
+              {file.path}
+            </code>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
 }
 
 export function WorkflowCurrentTab({
@@ -132,6 +156,7 @@ export function WorkflowCurrentTab({
               </code>
             )}
           </p>
+          <WorkflowStageList files={latestResult.workflowFiles} />
           <div className="result-actions" style={{ margin: "0.25rem 0", display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
             <a className="primary-button" href={latestResult.repoUrl} target="_blank" rel="noreferrer"
                style={{ padding: "0.4rem 1rem", fontSize: "0.8rem", minHeight: "2.2rem", display: "inline-flex", alignItems: "center" }}>
@@ -371,6 +396,15 @@ export function WorkflowCurrentTab({
                       </>
                     )}
 
+                    {project.workflowFiles?.length ? (
+                      <>
+                        <dt style={{ color: "var(--text-muted)" }}>Stages</dt>
+                        <dd style={{ color: "var(--text-secondary)" }}>
+                          {project.workflowFiles.length} gated workflow stages
+                        </dd>
+                      </>
+                    ) : null}
+
                     {selectedChecks(project) !== "None" && (
                       <>
                         <dt style={{ color: "var(--text-muted)" }}>Checks</dt>
@@ -393,6 +427,8 @@ export function WorkflowCurrentTab({
                       {project.failureReason}
                     </p>
                   ) : null}
+
+                  <WorkflowStageList files={project.workflowFiles} />
 
                   {/* Action buttons */}
                   <div style={{ display: "flex", gap: "0.35rem", marginTop: "auto", borderTop: "1px solid var(--border-soft)", paddingTop: "0.75rem", flexWrap: "wrap" }}>

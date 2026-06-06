@@ -2,7 +2,7 @@
 
 import { AnimatePresence, motion } from "framer-motion";
 
-import type { CreateProjectResult, SetupExistingRepoPrResponse } from "@/lib/api/contracts";
+import type { CreateProjectResult, SetupExistingRepoPrResponse, WorkflowFileMetadata } from "@/lib/api/contracts";
 
 interface SetupResultPanelProps {
   existingRepoResult?: SetupExistingRepoPrResponse | null;
@@ -48,6 +48,47 @@ function SecondaryRepoLink({ url }: Readonly<SecondaryRepoLinkProps>) {
     <a className="ghost-button" href={url} target="_blank" rel="noreferrer">
       Open secondary repo
     </a>
+  );
+}
+
+function WorkflowFilesList({ files }: Readonly<{ files?: WorkflowFileMetadata[] }>) {
+  if (!files?.length) return null;
+
+  return (
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        gap: "0.35rem",
+        padding: "0.7rem",
+        border: "1px solid var(--border-soft)",
+        borderRadius: "8px",
+        background: "rgba(0,0,0,0.14)",
+      }}
+    >
+      <p className="helper-text" style={{ margin: 0, fontWeight: 700 }}>
+        {files.length} gated workflow stages
+      </p>
+      {files.map((file) => (
+        <div
+          key={file.path}
+          style={{
+            display: "grid",
+            gridTemplateColumns: "minmax(7rem, auto) 1fr",
+            gap: "0.45rem",
+            alignItems: "center",
+            fontSize: "0.78rem",
+          }}
+        >
+          <span style={{ color: "var(--text-primary)", fontWeight: 700 }}>
+            {file.name}
+          </span>
+          <code style={{ color: "var(--text-muted)", wordBreak: "break-all" }}>
+            {file.path}
+          </code>
+        </div>
+      ))}
+    </div>
   );
 }
 
@@ -146,6 +187,7 @@ export function SetupResultPanel({
             <p className="helper-text" style={{ margin: 0 }}>
               Workflow: <strong>{setupResult.outputFileName}</strong>
             </p>
+            <WorkflowFilesList files={setupResult.workflowFiles} />
             <p className="helper-text" style={{ margin: 0 }}>
               Commit:{" "}
               <CommitLink sha={setupResult.githubCommitSha} url={setupResult.githubCommitUrl} />
