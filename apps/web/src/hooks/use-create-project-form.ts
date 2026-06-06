@@ -10,7 +10,6 @@ type CreateProjectPayloadResult =
   | { ok: false; message: string };
 
 interface BuildPayloadInput {
-  hasAllRepositoriesInstallation: boolean;
   isMicroservicesShape: boolean;
   repoShapeId: string;
   projectTypeId: string;
@@ -82,14 +81,6 @@ export function useCreateProjectForm() {
       : "";
 
   function buildPayload(input: BuildPayloadInput): CreateProjectPayloadResult {
-    if (!input.hasAllRepositoriesInstallation) {
-      return {
-        ok: false,
-        message:
-          "Link a GitHub App installation with all repositories access before creating a project.",
-      };
-    }
-
     const normalizedRepoName = normalizeRepoName(repoName);
     if (!normalizedRepoName) {
       return { ok: false, message: "Repository name is required." };

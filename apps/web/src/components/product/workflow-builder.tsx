@@ -97,7 +97,6 @@ export function WorkflowBuilder({ login, plan, guest = false }: Readonly<Workflo
 
   async function handleCreateProject() {
     const payloadResult = createForm.buildPayload({
-      hasAllRepositoriesInstallation: github.hasAllRepositoriesInstallation,
       isMicroservicesShape: projectCatalog.isMicroservicesShape,
       repoShapeId: projectCatalog.selectedRepoShapeId,
       projectTypeId: projectCatalog.selectedProjectTypeId,
