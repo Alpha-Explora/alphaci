@@ -11,6 +11,7 @@ type CreateProjectPayloadResult =
 
 interface BuildPayloadInput {
   isMicroservicesShape: boolean;
+  isMultiRepoShape: boolean;
   repoShapeId: string;
   projectTypeId: string;
   workflowRecipeId: string;
@@ -130,6 +131,46 @@ export function useCreateProjectForm() {
           tests: input.tests,
           outputFileName: normalizedOutputFileName,
           microservicesConfig: {
+            backend: {
+              projectTypeId: backendProjectTypeId,
+              workflowRecipeId: backendWorkflowRecipeId,
+              serviceName: normalizedBackendName,
+              servicePath: backendServicePath.trim() || "backend/",
+            },
+            frontend: {
+              projectTypeId: frontendProjectTypeId,
+              workflowRecipeId: frontendWorkflowRecipeId,
+              serviceName: normalizedFrontendName,
+              servicePath: frontendServicePath.trim() || "frontend/",
+            },
+          },
+        },
+      };
+    }
+
+    if (input.isMultiRepoShape) {
+      const normalizedBackendName = toSlug(
+        effectiveBackendServiceName || `${normalizedRepoName}-backend`,
+      );
+      const normalizedFrontendName = toSlug(
+        effectiveFrontendServiceName || `${normalizedRepoName}-frontend`,
+      );
+
+      return {
+        ok: true,
+        payload: {
+          repoName: normalizedRepoName,
+          visibility,
+          repoShape: input.repoShapeId,
+          projectTypeId: backendProjectTypeId,
+          workflowRecipeId: backendWorkflowRecipeId,
+          serviceName: normalizedBackendName,
+          servicePath: backendServicePath.trim() || "backend/",
+          nodeVersion: nodeVersion.trim() || "24",
+          coverageThreshold: coverage,
+          tests: input.tests,
+          outputFileName: normalizedOutputFileName,
+          multiRepoConfig: {
             backend: {
               projectTypeId: backendProjectTypeId,
               workflowRecipeId: backendWorkflowRecipeId,

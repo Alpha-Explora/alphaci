@@ -104,7 +104,7 @@ export function WorkflowSetupTab({
     isCreatingProject ||
     projectCatalog.loadingProjectOptions ||
     !form.repoName.trim() ||
-    !projectCatalog.selectedProjectType;
+    (!projectCatalog.isMicroservicesShape && !projectCatalog.isMultiRepoShape && !projectCatalog.selectedProjectType);
 
   const generateDisabled =
     isCreatingProject ||
@@ -294,7 +294,7 @@ export function WorkflowSetupTab({
             </p>
           ) : null}
 
-          {!projectCatalog.isMicroservicesShape ? (
+          {!projectCatalog.isMicroservicesShape && !projectCatalog.isMultiRepoShape ? (
             <>
               <label className="input-label" htmlFor="project-type-select" style={{ ...labelAccentStyle, marginTop: "1rem", display: "block" }}>
                 Language / framework
@@ -340,6 +340,11 @@ export function WorkflowSetupTab({
             </>
           ) : (
             <>
+              {projectCatalog.isMultiRepoShape && form.repoName ? (
+                <p style={{ color: "var(--text-muted)", fontSize: "0.75rem", margin: "0.5rem 0 0.75rem", lineHeight: 1.5 }}>
+                  {`2 separate repos will be created: ${form.repoName}-be and ${form.repoName}-fe`}
+                </p>
+              ) : null}
               {/* Backend service configurator */}
               <div style={{ marginTop: "0.75rem", padding: "0.75rem", border: "1px solid var(--border)", borderRadius: "var(--radius-sm, 6px)" }}>
                 <span className="controls-panel-label" style={{ fontSize: "0.65rem", letterSpacing: "0.08em" }}>
@@ -622,7 +627,7 @@ export function WorkflowSetupTab({
           </div>
 
           {/* Service name + Service path — single-service mode only */}
-          {!projectCatalog.isMicroservicesShape ? (
+          {!projectCatalog.isMicroservicesShape && !projectCatalog.isMultiRepoShape ? (
             <div className="form-pair-row" style={{ marginTop: "1.25rem", gap: "1rem" }}>
               <div>
                 <label className="input-label" htmlFor="service-name" style={labelAccentStyle}>

@@ -249,6 +249,7 @@ export interface CreateProjectRequest {
   tests?: Partial<Record<MvpProjectOptionKey, boolean>>;
   outputFileName?: string;
   microservicesConfig?: MicroservicesConfig;
+  multiRepoConfig?: MicroservicesConfig;
 }
 
 export interface CreateProjectResponse {
@@ -262,6 +263,8 @@ export interface CreateProjectResponse {
   projectTypeId: string;
   workflowRecipeId: string;
   additionalWorkflowPaths?: string[];
+  secondaryRepoFullName?: string;
+  secondaryRepoUrl?: string;
 }
 
 export interface ProvisionedProject {
@@ -355,4 +358,6 @@ export interface CreateProjectResult {
   branchesCreated: string[];
   /** Additional workflow file paths committed for microservices shapes. */
   additionalWorkflowPaths?: string[];
+  secondaryRepoFullName?: string;
+  secondaryRepoUrl?: string;
 }

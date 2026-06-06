@@ -98,6 +98,7 @@ export function WorkflowBuilder({ login, plan, guest = false }: Readonly<Workflo
   async function handleCreateProject() {
     const payloadResult = createForm.buildPayload({
       isMicroservicesShape: projectCatalog.isMicroservicesShape,
+      isMultiRepoShape: projectCatalog.isMultiRepoShape,
       repoShapeId: projectCatalog.selectedRepoShapeId,
       projectTypeId: projectCatalog.selectedProjectTypeId,
       workflowRecipeId: projectCatalog.selectedWorkflowRecipeId,
@@ -130,6 +131,8 @@ export function WorkflowBuilder({ login, plan, guest = false }: Readonly<Workflo
         workflowRecipeId: response.workflowRecipeId,
         branchesCreated: ["main", "uat", "test"],
         additionalWorkflowPaths: response.additionalWorkflowPaths,
+        secondaryRepoFullName: response.secondaryRepoFullName,
+        secondaryRepoUrl: response.secondaryRepoUrl,
       };
 
       setCreateResult(result);

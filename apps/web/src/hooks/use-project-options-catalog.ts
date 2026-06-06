@@ -230,6 +230,7 @@ export function useProjectOptionsCatalog() {
   }, [selectedWorkflowRecipe, tests]);
 
   const isMicroservicesShape = selectedRepoShapeId === "microservices";
+  const isMultiRepoShape = selectedRepoShapeId === "multi";
 
   const backendProjectTypes = useMemo(
     () =>
@@ -257,6 +258,7 @@ export function useProjectOptionsCatalog() {
     enabledRepoShapes,
     frontendProjectTypes,
     isMicroservicesShape,
+    isMultiRepoShape,
     loadingProjectOptions,
     projectOptionsError,
     projectTypesForShape,
