@@ -24,7 +24,7 @@ const CHECKOUT_SESSION_KEY = "flowci_paymongo_checkout_id";
 const proPlan = {
   key: "pro" as const,
   title: "Pro Monthly",
-  amount: "300",
+  amount: "0",
   summary: "For builders shipping service pipelines every week.",
   features: [
     "Unlimited workflow generation",
@@ -108,7 +108,7 @@ function SubscribePageContent() {
   const [actionError, setActionError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showCongratsModal, setShowCongratsModal] = useState(false);
-  const [showMockFallback, setShowMockFallback] = useState(false);
+  const [showMockFallback, setShowMockFallback] = useState(true);
 
   useEffect(() => {
     if (status === "signed-in" && hasActiveSubscription(session)) {
@@ -180,7 +180,6 @@ function SubscribePageContent() {
   async function handleActivate() {
     setStatusMessage(null);
     setActionError(null);
-    setShowMockFallback(false);
     setIsSubmitting(true);
 
     try {
@@ -472,7 +471,7 @@ function SubscribePageContent() {
                     Activate Pro Monthly
                   </h2>
                   <p style={{ color: "var(--text-secondary)", margin: 0, fontSize: "0.85rem" }}>
-                    <strong>&#8369;300/month</strong>. Cancel any time.
+                    <strong>&#8369;0/month</strong>. Cancel any time.
                   </p>
                 </div>
 
