@@ -30,6 +30,7 @@ import {
   type WorkflowTab,
 } from "./workflow-builder-utils";
 import { WorkflowCurrentTab } from "./workflow-current-tab";
+import { GeneratingOverlay } from "./generating-overlay";
 import { WorkflowSetupTab } from "./workflow-setup-tab";
 import { WorkflowStudioTabs } from "./workflow-studio-tabs";
 
@@ -300,6 +301,7 @@ export function WorkflowBuilder({ login, plan, guest = false }: Readonly<Workflo
 
   return (
     <MotionConfig reducedMotion={reducedMotion ? "always" : "never"}>
+      <GeneratingOverlay isVisible={isCreatingProject} />
       <section className="workflow-surface">
         {/* Status bar — compact, only shows when needed */}
         {(statusMessage || catalog.catalogError || projectCatalog.projectOptionsError) && (

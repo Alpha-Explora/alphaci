@@ -25,3 +25,15 @@ export async function getProjects(limit = 25): Promise<ProvisionedProjectsRespon
   const safeLimit = Math.max(1, Math.min(100, Math.trunc(limit)));
   return request<ProvisionedProjectsResponse>(`/projects?limit=${safeLimit}`);
 }
+
+export async function disconnectProject(id: string): Promise<void> {
+  await request<{ ok: boolean }>(`/projects/${encodeURIComponent(id)}`, {
+    method: 'DELETE',
+  });
+}
+
+export async function syncProjects(): Promise<{ orphaned: number; reachable: number; total: number }> {
+  return request<{ orphaned: number; reachable: number; total: number }>('/projects/sync', {
+    method: 'POST',
+  });
+}

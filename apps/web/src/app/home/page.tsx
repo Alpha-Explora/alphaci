@@ -10,7 +10,7 @@ import { AppNav } from "@/components/layout/app-nav";
 import { FlowBackground } from "@/components/layout/flow-background";
 import { PipelineLogo } from "@/components/layout/pipeline-logo";
 import { useAuthSession } from "@/hooks/use-auth-session";
-import { logout, getProjects, getWorkflowHistory, getGithubRepos } from "@/lib/api/client";
+import { logout, getProjects, getWorkflowHistory, getGithubRepos, disconnectProject, syncProjects } from "@/lib/api/client";
 import type { ProvisionedProject, WorkflowHistoryItem, GitHubRepo } from "@/lib/api/contracts";
 import { isGuest } from "@/lib/auth/subscription";
 
@@ -335,6 +335,10 @@ export default function HomeDashboardPage() {
   const [repos, setRepos]                   = useState<GitHubRepo[]>([]);
   const [reposLoading, setReposLoading]     = useState(true);
   const [reposError, setReposError]         = useState<string | null>(null);
+  const [disconnectingId, setDisconnectingId]     = useState<string | null>(null);
+  const [confirmDisconnectId, setConfirmDisconnectId] = useState<string | null>(null);
+  const [isSyncing, setIsSyncing]               = useState(false);
+  const [syncResult, setSyncResult]             = useState<{ orphaned: number; reachable: number; total: number } | null>(null);
 
   function loadHistory() {
     setHistoryLoading(true);
@@ -381,6 +385,35 @@ export default function HomeDashboardPage() {
       setLogoutMessage("Sign out failed. Please retry, or use the Home link.");
     } finally {
       setIsLoggingOut(false);
+    }
+  }
+
+  async function handleSync() {
+    setIsSyncing(true);
+    setSyncResult(null);
+    try {
+      const result = await syncProjects();
+      setSyncResult(result);
+      // Refresh provisioned projects list
+      const updated = await getProjects(25);
+      setProjects(updated.items);
+    } catch {
+      // silently ignore
+    } finally {
+      setIsSyncing(false);
+    }
+  }
+
+  async function handleDisconnect(id: string) {
+    setDisconnectingId(id);
+    try {
+      await disconnectProject(id);
+      setProjects((prev) => prev.filter((p) => p.id !== id));
+      setConfirmDisconnectId(null);
+    } catch {
+      // silently ignore
+    } finally {
+      setDisconnectingId(null);
     }
   }
 
@@ -699,94 +732,215 @@ export default function HomeDashboardPage() {
             initial={prefersReducedMotion ? false : { opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.25 }}
+            style={{ display: "flex", flexDirection: "column", gap: "2rem" }}
           >
             {guest ? (
               <div className="glass-panel" style={{ textAlign: "center", padding: "3rem 1.5rem", background: "rgba(15, 23, 42, 0.3)", borderRadius: "var(--radius-card)" }}>
-                <p style={{ color: "var(--text-secondary)", marginBottom: "1.25rem", fontSize: "0.9rem" }}>Sign in to see your GitHub repositories.</p>
+                <p style={{ color: "var(--text-secondary)", marginBottom: "1.25rem", fontSize: "0.9rem" }}>Sign in to see your repositories.</p>
                 <Link className="primary-button" href="/login" style={{ padding: "0.65rem 1.5rem", fontSize: "0.9rem" }}>Sign in</Link>
               </div>
             ) : (
-              <section aria-label="GitHub repositories">
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1rem", flexWrap: "wrap", gap: "0.5rem" }}>
-                  <p className="file-path-label" style={{ marginBottom: 0, color: "var(--brand)" }}>repos/github.yml</p>
-                  {!reposLoading && repos.length > 0 && (
-                    <span style={{ color: "var(--text-muted)", fontSize: "0.78rem", background: "rgba(255,255,255,0.04)", padding: "0.15rem 0.5rem", borderRadius: "999px", border: "1px solid var(--border-soft)" }}>
-                      {repos.length} repos connected
-                    </span>
-                  )}
-                </div>
+              <>
+                {/* ── Provisioned Projects (always shown for authenticated users) ── */}
+                <section aria-label="Provisioned projects">
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1rem", flexWrap: "wrap", gap: "0.5rem" }}>
+                    <p className="file-path-label" style={{ marginBottom: 0, color: "var(--brand)" }}>projects/provisioned.yml</p>
+                    {!projectsLoading && projects.length > 0 && (
+                      <span style={{ color: "var(--text-muted)", fontSize: "0.78rem", background: "rgba(255,255,255,0.04)", padding: "0.15rem 0.5rem", borderRadius: "999px", border: "1px solid var(--border-soft)" }}>
+                        {projects.length} project{projects.length !== 1 ? "s" : ""}
+                      </span>
+                    )}
+                  </div>
 
-                {reposLoading ? (
-                  <div className="repo-grid">
-                    {[0, 1, 2].map((i) => (
-                      <div key={i} className="skeleton-card glass-panel" style={{ minHeight: "6.5rem", background: "rgba(15, 23, 42, 0.3)", animation: "state-pulse 1.5s infinite" }} />
-                    ))}
-                  </div>
-                ) : reposError ? (
-                  <div className="error-inline glass-panel" role="alert" style={{ background: "rgba(248, 113, 113, 0.05)" }}>
-                    <span className="error-inline-icon" aria-hidden="true">⚠</span>
-                    <p className="error-inline-msg">{reposError}</p>
-                    <button className="error-retry-btn" type="button" onClick={loadRepos}>Retry</button>
-                  </div>
-                ) : repos.length === 0 ? (
-                  <p style={{ color: "var(--text-secondary)", fontSize: "0.88rem", textAlign: "center", padding: "2rem 0" }}>No GitHub repositories found on your account.</p>
-                ) : (
-                  <div className="repo-grid" aria-label="GitHub repositories">
-                    {repos.map((repo) => (
-                      <article key={repo.id} className="repo-card glass-panel">
-                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start", gap: "0.5rem" }}>
-                          <a
-                            href={repo.htmlUrl}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="repo-card-title"
-                          >
-                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
-                              <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22" />
-                            </svg>
-                            <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                              {repo.fullName.split("/")[1]}
-                            </span>
-                          </a>
-                          <span className={`repo-visibility-badge${repo.private ? "" : " public"}`} style={{
-                            fontSize: "0.65rem",
-                            fontWeight: 700,
-                            textTransform: "uppercase",
-                            padding: "0.1rem 0.4rem",
-                            borderRadius: "4px",
-                            background: repo.private ? "rgba(255, 255, 255, 0.05)" : "rgba(52, 211, 153, 0.1)",
-                            color: repo.private ? "var(--text-muted)" : "var(--success)",
-                            border: repo.private ? "1px solid var(--border-soft)" : "1px solid rgba(52, 211, 153, 0.2)",
-                          }}>
-                            {repo.private ? "private" : "public"}
+                  {projectsLoading ? (
+                    <div className="repo-grid">
+                      {[0, 1, 2].map((i) => (
+                        <div key={i} className="skeleton-card glass-panel" style={{ minHeight: "6.5rem", background: "rgba(15, 23, 42, 0.3)", animation: "state-pulse 1.5s infinite" }} />
+                      ))}
+                    </div>
+                  ) : projectsError ? (
+                    <div className="error-inline glass-panel" role="alert" style={{ background: "rgba(248, 113, 113, 0.05)" }}>
+                      <span className="error-inline-icon" aria-hidden="true">⚠</span>
+                      <p className="error-inline-msg">{projectsError}</p>
+                      <button className="error-retry-btn" type="button" onClick={loadProjects}>Retry</button>
+                    </div>
+                  ) : projects.length === 0 ? (
+                    <div className="glass-panel" style={{ textAlign: "center", padding: "3rem 1.5rem", background: "rgba(15, 23, 42, 0.3)", borderRadius: "var(--radius-card)" }}>
+                      <p style={{ color: "var(--text-secondary)", marginBottom: "1.25rem", fontSize: "0.88rem" }}>No projects provisioned yet.</p>
+                      <Link className="primary-button" href="/workflows" style={{ padding: "0.65rem 1.5rem", fontSize: "0.9rem" }}>Create your first project</Link>
+                    </div>
+                  ) : (
+                    <>
+                      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '1rem', gap: '0.75rem', alignItems: 'center' }}>
+                        {syncResult && (
+                          <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
+                            Sync complete — {syncResult.orphaned} orphaned, {syncResult.reachable} reachable
                           </span>
-                        </div>
-                        
-                        {repo.description ? (
-                          <p style={{ color: "var(--text-secondary)", fontSize: "0.78rem", margin: 0, lineHeight: 1.4, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", textOverflow: "ellipsis" }}>
-                            {repo.description}
-                          </p>
-                        ) : (
-                          <p style={{ color: "var(--text-muted)", fontSize: "0.78rem", margin: 0, fontStyle: "italic" }}>No description provided.</p>
                         )}
+                        <button
+                          onClick={() => void handleSync()}
+                          disabled={isSyncing}
+                          style={{
+                            padding: '0.4rem 0.9rem',
+                            fontSize: '0.78rem',
+                            fontWeight: 600,
+                            borderRadius: '6px',
+                            border: '1px solid rgba(56,189,248,0.3)',
+                            background: 'rgba(56,189,248,0.08)',
+                            color: 'var(--brand)',
+                            cursor: isSyncing ? 'not-allowed' : 'pointer',
+                            opacity: isSyncing ? 0.6 : 1,
+                          }}
+                        >
+                          {isSyncing ? 'Syncing...' : 'Sync with GitHub'}
+                        </button>
+                      </div>
+                    <div className="repo-grid" aria-label="Provisioned projects">
+                      {projects.map((project) => (
+                        <article key={project.id} className="repo-card glass-panel" style={{ borderLeft: project.status === "provisioned" ? "3px solid var(--success)" : project.status === "failed" ? "3px solid var(--danger)" : project.status === "orphaned" ? "3px solid rgba(251,146,60,0.8)" : "3px solid var(--brand)" }}>
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start", gap: "0.5rem" }}>
+                            <a
+                              href={project.repoUrl ?? `https://github.com/${project.repoFullName}`}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="repo-card-title"
+                            >
+                              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+                                <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22" />
+                              </svg>
+                              <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                                {project.repoFullName.split("/")[1] ?? project.repoFullName}
+                              </span>
+                            </a>
+                            <span style={{
+                              fontSize: "0.65rem",
+                              fontWeight: 700,
+                              textTransform: "uppercase",
+                              padding: "0.1rem 0.4rem",
+                              borderRadius: "4px",
+                              background: project.status === "provisioned" ? "rgba(52, 211, 153, 0.1)" : project.status === "failed" ? "rgba(248, 113, 113, 0.1)" : project.status === "orphaned" ? "rgba(251, 146, 60, 0.1)" : "rgba(56, 189, 248, 0.1)",
+                              color: project.status === "provisioned" ? "var(--success)" : project.status === "failed" ? "var(--danger)" : project.status === "orphaned" ? "rgb(251,146,60)" : "var(--brand)",
+                              border: project.status === "provisioned" ? "1px solid rgba(52, 211, 153, 0.2)" : project.status === "failed" ? "1px solid rgba(248, 113, 113, 0.2)" : project.status === "orphaned" ? "1px solid rgba(251, 146, 60, 0.3)" : "1px solid rgba(56, 189, 248, 0.2)",
+                            }}>
+                              {project.status}
+                            </span>
+                          </div>
 
-                        <div className="repo-card-meta">
-                          <span style={{ color: "var(--text-muted)", fontSize: "0.7rem", fontFamily: "ui-monospace, monospace" }}>
-                            ID: {repo.id}
-                          </span>
-                          <a href={repo.htmlUrl} target="_blank" rel="noreferrer" style={{ fontSize: "0.7rem", color: "var(--brand)", fontWeight: 600, textDecoration: "none", display: "flex", alignItems: "center", gap: "0.25rem" }}>
-                            Browse
-                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                              <line x1="7" y1="17" x2="17" y2="7"></line>
-                              <polyline points="7 7 17 7 17 17"></polyline>
-                            </svg>
-                          </a>
-                        </div>
-                      </article>
-                    ))}
-                  </div>
+                          <p style={{ color: "var(--text-secondary)", fontSize: "0.78rem", margin: 0, fontFamily: "ui-monospace, monospace", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                            {project.serviceName}
+                          </p>
+
+                          <div className="repo-card-meta">
+                            <span style={{ color: "var(--text-muted)", fontSize: "0.7rem", fontFamily: "ui-monospace, monospace" }}>
+                              {project.workflowPath}
+                            </span>
+                            {project.githubCommitUrl ? (
+                              <a href={project.githubCommitUrl} target="_blank" rel="noreferrer" style={{ fontSize: "0.7rem", color: "var(--brand)", fontWeight: 600, textDecoration: "none", display: "flex", alignItems: "center", gap: "0.25rem" }}>
+                                View commit
+                                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                                  <line x1="7" y1="17" x2="17" y2="7"></line>
+                                  <polyline points="7 7 17 7 17 17"></polyline>
+                                </svg>
+                              </a>
+                            ) : (
+                              <a href={project.repoUrl ?? `https://github.com/${project.repoFullName}`} target="_blank" rel="noreferrer" style={{ fontSize: "0.7rem", color: "var(--brand)", fontWeight: 600, textDecoration: "none", display: "flex", alignItems: "center", gap: "0.25rem" }}>
+                                Browse
+                                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                                  <line x1="7" y1="17" x2="17" y2="7"></line>
+                                  <polyline points="7 7 17 7 17 17"></polyline>
+                                </svg>
+                              </a>
+                            )}
+                          </div>
+
+                          {/* Disconnect confirmation or button */}
+                          {confirmDisconnectId === project.id ? (
+                            <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.75rem', paddingTop: '0.75rem', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+                              <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', flex: 1, alignSelf: 'center' }}>
+                                Remove from FlowCI? GitHub repo is untouched.
+                              </span>
+                              <button
+                                onClick={() => void handleDisconnect(project.id)}
+                                disabled={disconnectingId === project.id}
+                                style={{ padding: '0.3rem 0.7rem', fontSize: '0.72rem', fontWeight: 600, borderRadius: '5px', border: '1px solid rgba(248,113,113,0.4)', background: 'rgba(248,113,113,0.1)', color: 'var(--danger)', cursor: 'pointer' }}
+                              >
+                                {disconnectingId === project.id ? 'Removing...' : 'Yes, remove'}
+                              </button>
+                              <button
+                                onClick={() => setConfirmDisconnectId(null)}
+                                style={{ padding: '0.3rem 0.7rem', fontSize: '0.72rem', borderRadius: '5px', border: '1px solid rgba(255,255,255,0.1)', background: 'transparent', color: 'var(--text-secondary)', cursor: 'pointer' }}
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          ) : (
+                            <button
+                              onClick={() => setConfirmDisconnectId(project.id)}
+                              style={{ marginTop: '0.5rem', fontSize: '0.72rem', color: 'rgba(248,113,113,0.7)', background: 'none', border: 'none', cursor: 'pointer', padding: 0, textAlign: 'left' }}
+                            >
+                              Disconnect
+                            </button>
+                          )}
+                        </article>
+                      ))}
+                    </div>
+                    </>
+                  )}
+                </section>
+
+                {/* ── Connected GitHub repos (only shown when available via OAuth token) ── */}
+                {!reposLoading && repos.length > 0 && (
+                  <section aria-label="GitHub repositories">
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1rem", flexWrap: "wrap", gap: "0.5rem" }}>
+                      <p className="file-path-label" style={{ marginBottom: 0, color: "var(--brand)" }}>repos/github.yml</p>
+                      <span style={{ color: "var(--text-muted)", fontSize: "0.78rem", background: "rgba(255,255,255,0.04)", padding: "0.15rem 0.5rem", borderRadius: "999px", border: "1px solid var(--border-soft)" }}>
+                        {repos.length} GitHub repos
+                      </span>
+                    </div>
+                    <div className="repo-grid" aria-label="GitHub repositories">
+                      {repos.map((repo) => (
+                        <article key={repo.id} className="repo-card glass-panel">
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start", gap: "0.5rem" }}>
+                            <a href={repo.htmlUrl} target="_blank" rel="noreferrer" className="repo-card-title">
+                              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+                                <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22" />
+                              </svg>
+                              <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                                {repo.fullName.split("/")[1]}
+                              </span>
+                            </a>
+                            <span style={{
+                              fontSize: "0.65rem", fontWeight: 700, textTransform: "uppercase", padding: "0.1rem 0.4rem", borderRadius: "4px",
+                              background: repo.private ? "rgba(255, 255, 255, 0.05)" : "rgba(52, 211, 153, 0.1)",
+                              color: repo.private ? "var(--text-muted)" : "var(--success)",
+                              border: repo.private ? "1px solid var(--border-soft)" : "1px solid rgba(52, 211, 153, 0.2)",
+                            }}>
+                              {repo.private ? "private" : "public"}
+                            </span>
+                          </div>
+                          {repo.description ? (
+                            <p style={{ color: "var(--text-secondary)", fontSize: "0.78rem", margin: 0, lineHeight: 1.4, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", textOverflow: "ellipsis" }}>
+                              {repo.description}
+                            </p>
+                          ) : (
+                            <p style={{ color: "var(--text-muted)", fontSize: "0.78rem", margin: 0, fontStyle: "italic" }}>No description provided.</p>
+                          )}
+                          <div className="repo-card-meta">
+                            <span style={{ color: "var(--text-muted)", fontSize: "0.7rem", fontFamily: "ui-monospace, monospace" }}>ID: {repo.id}</span>
+                            <a href={repo.htmlUrl} target="_blank" rel="noreferrer" style={{ fontSize: "0.7rem", color: "var(--brand)", fontWeight: 600, textDecoration: "none", display: "flex", alignItems: "center", gap: "0.25rem" }}>
+                              Browse
+                              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                                <line x1="7" y1="17" x2="17" y2="7"></line>
+                                <polyline points="7 7 17 7 17 17"></polyline>
+                              </svg>
+                            </a>
+                          </div>
+                        </article>
+                      ))}
+                    </div>
+                  </section>
                 )}
-              </section>
+              </>
             )}
           </motion.div>
         )}

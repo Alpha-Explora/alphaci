@@ -1,6 +1,6 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 
 import type {
   CreateProjectResult,
@@ -139,9 +139,9 @@ export function WorkflowSetupTab({
       role="tabpanel"
       aria-labelledby="workflow-tab-setup"
       tabIndex={0}
-      initial={reducedMotion ? false : { opacity: 0, y: 20 }}
+      initial={reducedMotion ? false : { opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.35 }}
+      transition={{ duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] }}
     >
       {/* ── Left: GitHub App + Catalog ─────────────────────────────── */}
       <aside className="controls-panel">
@@ -503,8 +503,16 @@ export function WorkflowSetupTab({
 
         <div className="generate-form create-project-form">
 
+          <AnimatePresence mode="wait">
           {isExistingMode ? (
-            <div style={{ marginTop: "1.25rem", display: "grid", gap: "1rem" }}>
+            <motion.div
+              key="existing-mode"
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.25, ease: [0.25, 0.46, 0.45, 0.94] }}
+              style={{ marginTop: "1.25rem", display: "grid", gap: "1rem" }}
+            >
               {noLinkedRepos ? (
                 <div className="readiness-empty-state" role="status">
                   <strong>No linked GitHub repositories</strong>
@@ -593,11 +601,12 @@ export function WorkflowSetupTab({
                   </div>
                 ) : null}
               </div>
-            </div>
+            </motion.div>
           ) : null}
+          </AnimatePresence>
 
           {/* Repository name + Visibility — paired row */}
-          <div className="form-pair-row" style={{ marginTop: "1.25rem", gap: "1rem", display: isExistingMode ? "none" : undefined }}>
+          <div className="form-pair-row" style={{ marginTop: "1.5rem", gap: "1rem", display: isExistingMode ? "none" : undefined }}>
             <div>
               <label className="input-label" htmlFor="repo-name" style={labelAccentStyle}>
                 Repository name
@@ -628,7 +637,7 @@ export function WorkflowSetupTab({
 
           {/* Service name + Service path — single-service mode only */}
           {!projectCatalog.isMicroservicesShape && !projectCatalog.isMultiRepoShape ? (
-            <div className="form-pair-row" style={{ marginTop: "1.25rem", gap: "1rem" }}>
+            <div className="form-pair-row" style={{ marginTop: "1.5rem", gap: "1rem" }}>
               <div>
                 <label className="input-label" htmlFor="service-name" style={labelAccentStyle}>
                   Service name
@@ -657,7 +666,7 @@ export function WorkflowSetupTab({
           ) : null}
 
           {/* Workflow file name — full width */}
-          <div style={{ marginTop: "1.25rem" }}>
+          <div style={{ marginTop: "1.5rem" }}>
             <label className="input-label" htmlFor="output-file-name" style={labelAccentStyle}>
               Workflow file name
             </label>
@@ -671,7 +680,7 @@ export function WorkflowSetupTab({
           </div>
 
           {/* Node version + Coverage — paired row */}
-          <div className="form-pair-row" style={{ marginTop: "1.25rem", gap: "1rem" }}>
+          <div className="form-pair-row" style={{ marginTop: "1.5rem", gap: "1rem" }}>
             <div>
               <label className="input-label" htmlFor="node-version" style={labelAccentStyle}>
                 Node version
