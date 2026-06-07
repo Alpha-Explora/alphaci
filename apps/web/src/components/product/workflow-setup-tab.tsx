@@ -605,165 +605,181 @@ export function WorkflowSetupTab({
           ) : null}
           </AnimatePresence>
 
-          {/* Repository name + Visibility — paired row */}
-          <div className="form-pair-row" style={{ marginTop: "1.5rem", gap: "1rem", display: isExistingMode ? "none" : undefined }}>
-            <div>
-              <label className="input-label" htmlFor="repo-name" style={labelAccentStyle}>
-                Repository name
-              </label>
-              <input
-                id="repo-name"
-                value={form.repoName}
-                onChange={(event) => form.setRepoName(event.target.value)}
-                placeholder="my-next-app"
-                style={inputBaseStyle}
-              />
-            </div>
-            <div>
-              <label className="input-label" htmlFor="repo-visibility" style={labelAccentStyle}>
-                Visibility
-              </label>
-              <select
-                id="repo-visibility"
-                value={form.visibility}
-                onChange={(event) => form.setVisibility(event.target.value as "private" | "public")}
-                style={inputBaseStyle}
+          <AnimatePresence mode="wait" initial={false}>
+            {!isExistingMode && (
+              <motion.div
+                key="new-repo-fields"
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: "auto", opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                style={{ overflow: "hidden" }}
+                transition={{ duration: 0.28, ease: [0.25, 0.46, 0.45, 0.94] }}
               >
-                <option value="private">Private</option>
-                <option value="public">Public</option>
-              </select>
-            </div>
-          </div>
-
-          {/* Service name + Service path — single-service mode only */}
-          {!projectCatalog.isMicroservicesShape && !projectCatalog.isMultiRepoShape ? (
-            <div className="form-pair-row" style={{ marginTop: "1.5rem", gap: "1rem" }}>
-              <div>
-                <label className="input-label" htmlFor="service-name" style={labelAccentStyle}>
-                  Service name
-                </label>
-                <input
-                  id="service-name"
-                  value={form.serviceName}
-                  onChange={(event) => form.setServiceName(event.target.value)}
-                  placeholder="my-next-app"
-                  style={inputBaseStyle}
-                />
-              </div>
-              <div>
-                <label className="input-label" htmlFor="service-path" style={labelAccentStyle}>
-                  Service path
-                </label>
-                <input
-                  id="service-path"
-                  value={form.servicePath}
-                  onChange={(event) => form.setServicePath(event.target.value)}
-                  placeholder="."
-                  style={inputBaseStyle}
-                />
-              </div>
-            </div>
-          ) : null}
-
-          {/* Workflow file name — full width */}
-          <div style={{ marginTop: "1.5rem" }}>
-            <label className="input-label" htmlFor="output-file-name" style={labelAccentStyle}>
-              Workflow file name
-            </label>
-            <input
-              id="output-file-name"
-              value={form.outputFileName}
-              onChange={(event) => form.setOutputFileName(event.target.value)}
-              placeholder="ci.yml"
-              style={{ ...inputBaseStyle, width: "100%" }}
-            />
-          </div>
-
-          {/* Node version + Coverage — paired row */}
-          <div className="form-pair-row" style={{ marginTop: "1.5rem", gap: "1rem" }}>
-            <div>
-              <label className="input-label" htmlFor="node-version" style={labelAccentStyle}>
-                Node version
-              </label>
-              <input
-                id="node-version"
-                value={form.nodeVersion}
-                onChange={(event) => form.setNodeVersion(event.target.value)}
-                placeholder="24"
-                style={inputBaseStyle}
-              />
-            </div>
-            <div>
-              <label className="input-label" htmlFor="coverage-threshold" style={labelAccentStyle}>
-                Coverage %
-              </label>
-              <input
-                id="coverage-threshold"
-                value={form.coverageThreshold}
-                onChange={(event) => form.setCoverageThreshold(event.target.value)}
-                placeholder="80"
-                style={inputBaseStyle}
-              />
-            </div>
-          </div>
-
-          {/* Enhancement chips */}
-          <div style={{ marginTop: "1.5rem" }}>
-            <span
-              className="input-label"
-              style={{ ...labelAccentStyle, marginTop: 0, marginBottom: "0.5rem", display: "block" }}
-            >
-              Workflow checks
-            </span>
-            <div
-              style={{
-                background: "var(--bg-panel)",
-                padding: "0.75rem",
-                borderRadius: "8px",
-                border: "1px solid var(--border)",
-              }}
-            >
-              <div className="enhancement-chips" aria-label="Workflow checks" role="group" style={{ gap: "0.5rem", flexWrap: "wrap" }}>
-                {projectCatalog.supportedTestOptions.map((option) => (
-                  <label
-                    key={option.key}
-                    className={`enhancement-chip-label${option.supported ? "" : " disabled"}`}
-                    htmlFor={`chip-${option.key}`}
-                    title={projectOptionDescriptions[option.key]}
-                    style={option.supported ? undefined : { opacity: 0.45, cursor: "not-allowed" }}
-                  >
+                {/* Repository name + Visibility — paired row */}
+                <div className="form-pair-row" style={{ marginTop: "1.5rem", gap: "1rem" }}>
+                  <div>
+                    <label className="input-label" htmlFor="repo-name" style={labelAccentStyle}>
+                      Repository name
+                    </label>
                     <input
-                      id={`chip-${option.key}`}
-                      type="checkbox"
-                      checked={option.checked}
-                      disabled={!option.supported}
-                      onChange={() => projectCatalog.toggleTestOption(option.key)}
+                      id="repo-name"
+                      value={form.repoName}
+                      onChange={(event) => form.setRepoName(event.target.value)}
+                      placeholder="my-next-app"
+                      style={inputBaseStyle}
                     />
-                    <span className="enhancement-chip-dot" aria-hidden="true" />
-                    {projectOptionLabels[option.key]}
-                  </label>
-                ))}
-              </div>
-            </div>
-          </div>
+                  </div>
+                  <div>
+                    <label className="input-label" htmlFor="repo-visibility" style={labelAccentStyle}>
+                      Visibility
+                    </label>
+                    <select
+                      id="repo-visibility"
+                      value={form.visibility}
+                      onChange={(event) => form.setVisibility(event.target.value as "private" | "public")}
+                      style={inputBaseStyle}
+                    >
+                      <option value="private">Private</option>
+                      <option value="public">Public</option>
+                    </select>
+                  </div>
+                </div>
 
-          <button
-            type="button"
-            className="primary-button create-repo-btn"
-            data-testid="setup-project-button"
-            disabled={createDisabled}
-            onClick={() => void onCreateProject()}
-            style={{ marginTop: "1.75rem", display: isExistingMode ? "none" : undefined }}
-          >
-            {isCreatingProject ? (
-              <span className="btn-spinner" aria-hidden="true" />
-            ) : (
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <path d="M12 .5C5.65.5.5 5.77.5 12.27c0 5.2 3.3 9.6 7.88 11.15.58.11.79-.26.79-.57 0-.28-.01-1.2-.02-2.18-3.2.71-3.88-1.39-3.88-1.39-.53-1.37-1.29-1.73-1.29-1.73-1.05-.74.08-.73.08-.73 1.17.08 1.78 1.22 1.78 1.22 1.03 1.81 2.71 1.29 3.37.98.1-.77.4-1.29.72-1.58-2.56-.3-5.26-1.3-5.26-5.8 0-1.28.45-2.33 1.18-3.16-.12-.3-.51-1.53.11-3.19 0 0 .97-.32 3.18 1.2a10.8 10.8 0 0 1 5.8 0c2.2-1.52 3.17-1.2 3.17-1.2.63 1.66.24 2.9.12 3.19.73.83 1.17 1.88 1.17 3.16 0 4.51-2.71 5.49-5.3 5.78.41.37.78 1.08.78 2.17 0 1.57-.01 2.83-.01 3.21 0 .31.21.69.8.57a11.83 11.83 0 0 0 7.87-11.15C23.5 5.77 18.35.5 12 .5Z"/>
-              </svg>
+                {/* Service name + Service path — single-service mode only */}
+                {!projectCatalog.isMicroservicesShape && !projectCatalog.isMultiRepoShape ? (
+                  <div className="form-pair-row" style={{ marginTop: "1.5rem", gap: "1rem" }}>
+                    <div>
+                      <label className="input-label" htmlFor="service-name" style={labelAccentStyle}>
+                        Service name
+                      </label>
+                      <input
+                        id="service-name"
+                        value={form.serviceName}
+                        onChange={(event) => form.setServiceName(event.target.value)}
+                        placeholder="my-next-app"
+                        style={inputBaseStyle}
+                      />
+                    </div>
+                    <div>
+                      <label className="input-label" htmlFor="service-path" style={labelAccentStyle}>
+                        Service path
+                      </label>
+                      <input
+                        id="service-path"
+                        value={form.servicePath}
+                        onChange={(event) => form.setServicePath(event.target.value)}
+                        placeholder="."
+                        style={inputBaseStyle}
+                      />
+                    </div>
+                  </div>
+                ) : null}
+
+                {/* Workflow file name — full width */}
+                <div style={{ marginTop: "1.5rem" }}>
+                  <label className="input-label" htmlFor="output-file-name" style={labelAccentStyle}>
+                    Workflow file name
+                  </label>
+                  <input
+                    id="output-file-name"
+                    value={form.outputFileName}
+                    onChange={(event) => form.setOutputFileName(event.target.value)}
+                    placeholder="ci.yml"
+                    style={{ ...inputBaseStyle, width: "100%" }}
+                  />
+                </div>
+
+                {/* Node version + Coverage — paired row */}
+                <div className="form-pair-row" style={{ marginTop: "1.5rem", gap: "1rem" }}>
+                  <div>
+                    <label className="input-label" htmlFor="node-version" style={labelAccentStyle}>
+                      Node version
+                    </label>
+                    <input
+                      id="node-version"
+                      value={form.nodeVersion}
+                      onChange={(event) => form.setNodeVersion(event.target.value)}
+                      placeholder="24"
+                      style={inputBaseStyle}
+                    />
+                  </div>
+                  <div>
+                    <label className="input-label" htmlFor="coverage-threshold" style={labelAccentStyle}>
+                      Coverage %
+                    </label>
+                    <input
+                      id="coverage-threshold"
+                      value={form.coverageThreshold}
+                      onChange={(event) => form.setCoverageThreshold(event.target.value)}
+                      placeholder="80"
+                      style={inputBaseStyle}
+                    />
+                  </div>
+                </div>
+
+                {/* Enhancement chips */}
+                <div style={{ marginTop: "1.5rem" }}>
+                  <span
+                    className="input-label"
+                    style={{ ...labelAccentStyle, marginTop: 0, marginBottom: "0.5rem", display: "block" }}
+                  >
+                    Workflow checks
+                  </span>
+                  <div
+                    style={{
+                      background: "var(--bg-panel)",
+                      padding: "0.75rem",
+                      borderRadius: "8px",
+                      border: "1px solid var(--border)",
+                    }}
+                  >
+                    <div className="enhancement-chips" aria-label="Workflow checks" role="group" style={{ gap: "0.5rem", flexWrap: "wrap" }}>
+                      {projectCatalog.supportedTestOptions.map((option) => (
+                        <motion.label
+                          key={option.key}
+                          className={`enhancement-chip-label${option.supported ? "" : " disabled"}${option.checked ? " enhancement-chip-label--active" : ""}`}
+                          htmlFor={`chip-${option.key}`}
+                          title={projectOptionDescriptions[option.key]}
+                          style={option.supported ? undefined : { opacity: 0.45, cursor: "not-allowed" }}
+                          whileTap={option.supported ? { scale: 0.95 } : undefined}
+                          animate={option.checked ? { scale: 1 } : { scale: 1 }}
+                          transition={{ type: "spring", stiffness: 500, damping: 20 }}
+                        >
+                          <input
+                            id={`chip-${option.key}`}
+                            type="checkbox"
+                            checked={option.checked}
+                            disabled={!option.supported}
+                            onChange={() => projectCatalog.toggleTestOption(option.key)}
+                          />
+                          <span className="enhancement-chip-dot" aria-hidden="true" />
+                          {projectOptionLabels[option.key]}
+                        </motion.label>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  className="primary-button create-repo-btn"
+                  data-testid="setup-project-button"
+                  disabled={createDisabled}
+                  onClick={() => void onCreateProject()}
+                  style={{ marginTop: "1.75rem" }}
+                >
+                  {isCreatingProject ? (
+                    <span className="btn-spinner" aria-hidden="true" />
+                  ) : (
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                      <path d="M12 .5C5.65.5.5 5.77.5 12.27c0 5.2 3.3 9.6 7.88 11.15.58.11.79-.26.79-.57 0-.28-.01-1.2-.02-2.18-3.2.71-3.88-1.39-3.88-1.39-.53-1.37-1.29-1.73-1.29-1.73-1.05-.74.08-.73.08-.73 1.17.08 1.78 1.22 1.78 1.22 1.03 1.81 2.71 1.29 3.37.98.1-.77.4-1.29.72-1.58-2.56-.3-5.26-1.3-5.26-5.8 0-1.28.45-2.33 1.18-3.16-.12-.3-.51-1.53.11-3.19 0 0 .97-.32 3.18 1.2a10.8 10.8 0 0 1 5.8 0c2.2-1.52 3.17-1.2 3.17-1.2.63 1.66.24 2.9.12 3.19.73.83 1.17 1.88 1.17 3.16 0 4.51-2.71 5.49-5.3 5.78.41.37.78 1.08.78 2.17 0 1.57-.01 2.83-.01 3.21 0 .31.21.69.8.57a11.83 11.83 0 0 0 7.87-11.15C23.5 5.77 18.35.5 12 .5Z"/>
+                    </svg>
+                  )}
+                  {isCreatingProject ? "Creating…" : "Create GitHub Repository"}
+                </button>
+              </motion.div>
             )}
-            {isCreatingProject ? "Creating…" : "Create GitHub Repository"}
-          </button>
+          </AnimatePresence>
 
           <div className="generate-workflow-row" style={{ marginTop: "0.85rem" }}>
             <button
