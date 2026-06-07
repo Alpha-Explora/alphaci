@@ -374,6 +374,21 @@ export default function HomeDashboardPage() {
     loadRepos();
   }, [status]);
 
+  // Auto-sync when the repositories tab becomes active — runs silently in the
+  // background so orphaned repos appear immediately without a manual button click.
+  useEffect(() => {
+    if (activeTab !== "repositories") return;
+    void (async () => {
+      try {
+        await syncProjects();
+        const updated = await getProjects(25);
+        setProjects(updated.items);
+      } catch {
+        // silently ignore — the manual "Sync with GitHub" button is still available
+      }
+    })();
+  }, [activeTab]);
+
   async function handleLogout() {
     setIsLoggingOut(true);
     setLogoutMessage(null);
