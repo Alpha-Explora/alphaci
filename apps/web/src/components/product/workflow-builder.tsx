@@ -124,6 +124,7 @@ export function WorkflowBuilder({ login, plan, guest = false }: Readonly<Workflo
         repoUrl: response.repoUrl,
         status: response.status,
         workflowPath: response.workflowPath,
+        workflowFiles: response.workflowFiles,
         outputFileName,
         githubCommitSha: response.githubCommitSha,
         githubCommitUrl: response.githubCommitUrl,
