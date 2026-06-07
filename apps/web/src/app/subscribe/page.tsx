@@ -24,7 +24,7 @@ const CHECKOUT_SESSION_KEY = "flowci_paymongo_checkout_id";
 const proPlan = {
   key: "pro" as const,
   title: "Pro Monthly",
-  amount: "0",
+  amount: "300",
   summary: "For builders shipping service pipelines every week.",
   features: [
     "Unlimited workflow generation",
@@ -471,7 +471,7 @@ function SubscribePageContent() {
                     Activate Pro Monthly
                   </h2>
                   <p style={{ color: "var(--text-secondary)", margin: 0, fontSize: "0.85rem" }}>
-                    <strong>&#8369;0/month</strong>. Cancel any time.
+                    <strong>&#8369;300/month</strong>. Cancel any time.
                   </p>
                 </div>
 
