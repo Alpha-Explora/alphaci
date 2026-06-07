@@ -102,7 +102,7 @@ export function SetupResultPanel({
     : null;
 
   return (
-    <aside className="result-panel">
+    <aside className={`result-panel${setupResult ? " result-panel--success" : ""}`}>
       <h2>{existingRepoResult ? "Latest Pull Request" : "Latest Project"}</h2>
       <AnimatePresence mode="wait">
         {existingRepoResult ? (
@@ -184,14 +184,21 @@ export function SetupResultPanel({
               <span className="branch-chip">{setupResult.workflowRecipeId}</span>
             </div>
 
-            <p className="helper-text" style={{ margin: 0 }}>
-              Workflow: <strong>{setupResult.outputFileName}</strong>
-            </p>
+            <div>
+              <p className="helper-text" style={{ margin: "0 0 0.3rem", fontSize: "0.72rem", color: "var(--text-muted)" }}>
+                Workflow file
+              </p>
+              <div className="terminal-path">{setupResult.workflowPath}</div>
+            </div>
             <WorkflowFilesList files={setupResult.workflowFiles} />
-            <p className="helper-text" style={{ margin: 0 }}>
-              Commit:{" "}
-              <CommitLink sha={setupResult.githubCommitSha} url={setupResult.githubCommitUrl} />
-            </p>
+            <div>
+              <p className="helper-text" style={{ margin: "0 0 0.3rem", fontSize: "0.72rem", color: "var(--text-muted)" }}>
+                Commit
+              </p>
+              <div className="terminal-hash">
+                <CommitLink sha={setupResult.githubCommitSha} url={setupResult.githubCommitUrl} />
+              </div>
+            </div>
             <SecondaryRepoSection
               url={setupResult.secondaryRepoUrl}
               fullName={setupResult.secondaryRepoFullName}

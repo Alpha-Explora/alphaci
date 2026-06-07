@@ -16,14 +16,14 @@ const containerVariants = {
   show: {
     opacity: 1,
     transition: {
-      staggerChildren: 0.06
+      staggerChildren: 0.04
     }
   }
 };
 
 const cardVariants = {
   hidden: { opacity: 0, y: 15 },
-  show: { opacity: 1, y: 0, transition: { type: "spring" as const, stiffness: 300, damping: 24 } }
+  show: { opacity: 1, y: 0, transition: { type: "spring" as const, stiffness: 280, damping: 22 } }
 };
 
 export function WorkflowAllTab({ allTemplates, onUseTemplate }: Readonly<WorkflowAllTabProps>) {
@@ -94,7 +94,7 @@ export function WorkflowAllTab({ allTemplates, onUseTemplate }: Readonly<Workflo
           <motion.article
             key={template.id}
             variants={cardVariants}
-            className="all-template-card glass-panel"
+            className="all-template-card glass-panel hud-glow-card"
             style={{
               background: "rgba(15, 23, 42, 0.45)",
               border: "1px solid var(--border-soft)",
@@ -109,6 +109,15 @@ export function WorkflowAllTab({ allTemplates, onUseTemplate }: Readonly<Workflo
               y: -3,
               borderColor: "rgba(56, 189, 248, 0.3)",
               boxShadow: "var(--shadow-card), 0 0 24px rgba(56, 189, 248, 0.05)"
+            }}
+            onMouseMove={(e) => {
+              const rect = e.currentTarget.getBoundingClientRect();
+              e.currentTarget.style.setProperty('--gx', String((e.clientX - rect.left) / rect.width));
+              e.currentTarget.style.setProperty('--gy', String((e.clientY - rect.top) / rect.height));
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.removeProperty('--gx');
+              e.currentTarget.style.removeProperty('--gy');
             }}
           >
             <div className="all-template-head" style={{ display: "flex", justifyContent: "space-between", alignItems: "start", gap: "0.5rem" }}>

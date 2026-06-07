@@ -58,6 +58,52 @@ function AlertTriangleIcon({ size = 16 }: { size?: number }) {
   );
 }
 
+/* ── HoverField helpers ────────────────────────────────────────────────────── */
+
+function PencilIcon() {
+  return (
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+    </svg>
+  );
+}
+
+function LockIcon() {
+  return (
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+      <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+    </svg>
+  );
+}
+
+function HoverField({
+  label,
+  value,
+  editable = false,
+}: {
+  label: string;
+  value: string;
+  editable?: boolean;
+}) {
+  return (
+    <div className="hover-field">
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.2rem" }}>
+        <span style={{ fontSize: "0.68rem", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.08em" }}>
+          {label}
+        </span>
+        <span className="hover-field-icon" aria-hidden="true">
+          {editable ? <PencilIcon /> : <LockIcon />}
+        </span>
+      </div>
+      <span style={{ fontSize: "0.88rem", fontWeight: 600, color: "var(--text-primary)" }}>
+        {value}
+      </span>
+    </div>
+  );
+}
+
 /* ── Settings section card ─────────────────────────────────────────────────── */
 
 function SettingsSection({
@@ -76,10 +122,15 @@ function SettingsSection({
   return (
     <div
       style={{
-        background: danger ? "rgba(248, 113, 113, 0.08)" : "rgba(30, 41, 59, 0.92)",
-        border: danger ? "1px solid rgba(248, 113, 113, 0.3)" : "1px solid rgba(255,255,255,0.12)",
+        background: danger
+          ? "linear-gradient(160deg, rgba(69, 10, 10, 0.85) 0%, rgba(69, 10, 10, 0.45) 100%)"
+          : "rgba(30, 41, 59, 0.92)",
+        border: danger ? "1px solid rgba(220, 38, 38, 0.45)" : "1px solid rgba(255,255,255,0.12)",
         borderRadius: "1rem",
         overflow: "hidden",
+        boxShadow: danger
+          ? "0 0 40px rgba(220, 38, 38, 0.07), inset 0 0 60px rgba(69, 10, 10, 0.3)"
+          : undefined,
       }}
     >
       {/* Section header */}
@@ -568,47 +619,14 @@ export default function SettingsPage() {
 
                   {/* ── Account identity section ───────────────────────────── */}
                   <SettingsSection icon={<UserIcon />} title="Account" index={0}>
-                    <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
-                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem" }}>
-                        <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
-                          <span style={{ fontSize: "0.7rem", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.08em" }}>
-                            Display name
-                          </span>
-                          <span style={{ fontSize: "0.92rem", fontWeight: 600, color: "var(--text-primary)" }}>
-                            {session?.user.name ?? "—"}
-                          </span>
-                        </div>
-                        <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
-                          <span style={{ fontSize: "0.7rem", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.08em" }}>
-                            GitHub login
-                          </span>
-                          <span
-                            style={{
-                              fontSize: "0.88rem",
-                              fontWeight: 600,
-                              color: "var(--text-primary)",
-                              fontFamily: "ui-monospace, monospace",
-                              display: "flex",
-                              alignItems: "center",
-                              gap: "0.35rem",
-                            }}
-                          >
-                            <GithubIcon size={13} />
-                            {session?.user.login ?? "—"}
-                          </span>
-                        </div>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.5rem" }}>
+                        <HoverField label="Display name" value={session?.user.name ?? "—"} editable={false} />
+                        <HoverField label="GitHub login" value={`@${session?.user.login ?? "—"}`} editable={false} />
                       </div>
-
-                      {session?.user.email && (
-                        <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
-                          <span style={{ fontSize: "0.7rem", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.08em" }}>
-                            Email
-                          </span>
-                          <span style={{ fontSize: "0.88rem", color: "var(--text-secondary)" }}>
-                            {session.user.email}
-                          </span>
-                        </div>
-                      )}
+                      {session?.user.email ? (
+                        <HoverField label="Email" value={session.user.email} editable={false} />
+                      ) : null}
                     </div>
                   </SettingsSection>
                 </>

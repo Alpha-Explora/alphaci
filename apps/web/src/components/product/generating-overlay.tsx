@@ -25,64 +25,139 @@ function AnimatedDots() {
   );
 }
 
-/** Dual concentric rings at different rotation speeds */
-function PremiumSpinner() {
+const PIPELINE_STAGES = ["Source", "Build", "Test", "Deploy"] as const;
+const NODE_CX = [28, 84, 140, 196];
+const CONNECTOR_X_START = [38, 94, 150];
+const CONNECTOR_WIDTH = 36;
+
+function PipelineProgressNodes() {
+  const [activeIdx, setActiveIdx] = useState(0);
+
+  useEffect(() => {
+    const id = setInterval(() => {
+      setActiveIdx((i) => (i + 1) % PIPELINE_STAGES.length);
+    }, 900);
+    return () => clearInterval(id);
+  }, []);
+
   return (
-    <div
-      style={{
-        position: "relative",
-        width: "72px",
-        height: "72px",
-        flexShrink: 0,
-      }}
+    <svg
+      width="224"
+      height="72"
+      viewBox="0 0 224 72"
       aria-hidden="true"
+      style={{ overflow: "visible" }}
     >
-      {/* Outer ring — slow */}
-      <motion.div
-        style={{
-          position: "absolute",
-          inset: 0,
-          borderRadius: "50%",
-          border: "2px solid transparent",
-          borderTopColor: "rgba(56, 189, 248, 0.9)",
-          borderRightColor: "rgba(56, 189, 248, 0.3)",
-        }}
-        animate={{ rotate: 360 }}
-        transition={{ duration: 1.8, ease: "linear", repeat: Infinity }}
-      />
+      {/* Connector lines */}
+      {CONNECTOR_X_START.map((x, i) => (
+        <line
+          key={`conn-${i}`}
+          x1={x}
+          y1={28}
+          x2={x + CONNECTOR_WIDTH}
+          y2={28}
+          stroke={i < activeIdx ? "rgba(56,189,248,0.7)" : "rgba(56,189,248,0.15)"}
+          strokeWidth="1.5"
+          strokeDasharray={i === activeIdx - 1 ? "4 3" : "none"}
+          style={{ transition: "stroke 0.3s ease" }}
+        />
+      ))}
 
-      {/* Inner ring — fast, counter-clockwise */}
-      <motion.div
-        style={{
-          position: "absolute",
-          inset: "12px",
-          borderRadius: "50%",
-          border: "2px solid transparent",
-          borderTopColor: "rgba(56, 189, 248, 0.6)",
-          borderBottomColor: "rgba(56, 189, 248, 0.2)",
-        }}
-        animate={{ rotate: -360 }}
-        transition={{ duration: 1.1, ease: "linear", repeat: Infinity }}
-      />
-
-      {/* Center dot pulse */}
-      <motion.div
-        style={{
-          position: "absolute",
-          top: "50%",
-          left: "50%",
-          marginTop: "-4px",
-          marginLeft: "-4px",
-          width: "8px",
-          height: "8px",
-          borderRadius: "50%",
-          background: "rgba(56, 189, 248, 0.85)",
-          boxShadow: "0 0 12px rgba(56, 189, 248, 0.6)",
-        }}
-        animate={{ scale: [1, 1.35, 1], opacity: [0.7, 1, 0.7] }}
-        transition={{ duration: 1.4, ease: "easeInOut", repeat: Infinity }}
-      />
-    </div>
+      {/* Nodes */}
+      {PIPELINE_STAGES.map((stage, i) => {
+        const isActive = i === activeIdx;
+        const isPassed = i < activeIdx;
+        return (
+          <g key={stage}>
+            {/* Outer glow ring — only on active */}
+            {isActive && (
+              <motion.circle
+                cx={NODE_CX[i]}
+                cy={28}
+                r={15}
+                fill="none"
+                stroke="rgba(56,189,248,0.25)"
+                strokeWidth="1"
+                initial={{ r: 12, opacity: 0.6 }}
+                animate={{ r: [12, 16, 12], opacity: [0.6, 0, 0.6] }}
+                transition={{ duration: 1.2, ease: "easeOut", repeat: Infinity }}
+              />
+            )}
+            {/* Main circle */}
+            <motion.circle
+              cx={NODE_CX[i]}
+              cy={28}
+              r={10}
+              fill={
+                isActive
+                  ? "rgba(56,189,248,0.15)"
+                  : isPassed
+                  ? "rgba(52,211,153,0.12)"
+                  : "rgba(15,23,42,0.6)"
+              }
+              stroke={
+                isActive
+                  ? "rgba(56,189,248,0.9)"
+                  : isPassed
+                  ? "rgba(52,211,153,0.6)"
+                  : "rgba(255,255,255,0.12)"
+              }
+              strokeWidth="1.5"
+              animate={{
+                filter: isActive
+                  ? "drop-shadow(0 0 6px rgba(56,189,248,0.8))"
+                  : "none",
+              }}
+              transition={{ duration: 0.28, ease: "easeOut" }}
+            />
+            {/* Check mark for passed nodes */}
+            {isPassed && (
+              <motion.path
+                d={`M ${NODE_CX[i] - 4} 28 L ${NODE_CX[i] - 1} 31 L ${NODE_CX[i] + 5} 24`}
+                fill="none"
+                stroke="rgba(52,211,153,0.9)"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                initial={{ pathLength: 0 }}
+                animate={{ pathLength: 1 }}
+                transition={{ duration: 0.22 }}
+              />
+            )}
+            {/* Active dot */}
+            {isActive && (
+              <motion.circle
+                cx={NODE_CX[i]}
+                cy={28}
+                r={3}
+                fill="rgba(56,189,248,0.9)"
+                animate={{ opacity: [1, 0.5, 1] }}
+                transition={{ duration: 0.8, repeat: Infinity }}
+              />
+            )}
+            {/* Label */}
+            <text
+              x={NODE_CX[i]}
+              y={50}
+              textAnchor="middle"
+              fontSize="9"
+              fontFamily="ui-monospace, monospace"
+              letterSpacing="0.05em"
+              fill={
+                isActive
+                  ? "rgba(56,189,248,0.9)"
+                  : isPassed
+                  ? "rgba(52,211,153,0.7)"
+                  : "rgba(100,116,139,0.6)"
+              }
+              style={{ transition: "fill 0.3s ease" }}
+            >
+              {stage.toUpperCase()}
+            </text>
+          </g>
+        );
+      })}
+    </svg>
   );
 }
 
@@ -130,7 +205,7 @@ export function GeneratingOverlay({ isVisible }: GeneratingOverlayProps) {
             exit={{ scale: 0.95, opacity: 0, y: -8 }}
             transition={{ type: "spring", stiffness: 320, damping: 26, mass: 0.9 }}
           >
-            <PremiumSpinner />
+            <PipelineProgressNodes />
 
             <div style={{ textAlign: "center" }}>
               <p
