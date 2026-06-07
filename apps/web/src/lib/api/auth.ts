@@ -15,6 +15,12 @@ export async function logout(): Promise<void> {
   });
 }
 
+export async function deleteAccount(): Promise<void> {
+  await request<{ ok: boolean }>("/auth/account", {
+    method: "DELETE",
+  });
+}
+
 export async function warmupBackend(): Promise<void> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 10_000);

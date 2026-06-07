@@ -10,7 +10,7 @@ import { AppNav } from "@/components/layout/app-nav";
 import { FlowBackground } from "@/components/layout/flow-background";
 import { PipelineLogo } from "@/components/layout/pipeline-logo";
 import { useAuthSession } from "@/hooks/use-auth-session";
-import { logout } from "@/lib/api/client";
+import { logout, deleteAccount, cancelMonthlySubscription } from "@/lib/api/client";
 import { isGuest } from "@/lib/auth/subscription";
 
 function GithubIcon({ size = 16 }: { size?: number }) {
@@ -138,6 +138,17 @@ export default function SettingsPage() {
   const [logoutMessage, setLogoutMessage] = useState<string | null>(null);
   const [activeSection, setActiveSection] = useState<"account" | "connections" | "billing" | "danger">("account");
 
+  // Cancel subscription state
+  const [isCanceling, setIsCanceling] = useState(false);
+  const [cancelMessage, setCancelMessage] = useState<string | null>(null);
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+
+  // Delete account state
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteMessage, setDeleteMessage] = useState<string | null>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleteConfirmInput, setDeleteConfirmInput] = useState("");
+
   useEffect(() => {
     if (status === "signed-out") {
       router.push("/login?next=/settings");
@@ -155,6 +166,33 @@ export default function SettingsPage() {
       setLogoutMessage("Sign out failed. Please retry, or use the Home link.");
     } finally {
       setIsLoggingOut(false);
+    }
+  }
+
+  async function handleCancelSubscription() {
+    setIsCanceling(true);
+    setCancelMessage(null);
+    try {
+      await cancelMonthlySubscription();
+      await refresh();
+      setCancelMessage("Your subscription has been canceled.");
+      setShowCancelConfirm(false);
+    } catch {
+      setCancelMessage("Failed to cancel subscription. Please try again.");
+    } finally {
+      setIsCanceling(false);
+    }
+  }
+
+  async function handleDeleteAccount() {
+    setIsDeleting(true);
+    setDeleteMessage(null);
+    try {
+      await deleteAccount();
+      router.push("/");
+    } catch {
+      setDeleteMessage("Failed to delete account. Please try again.");
+      setIsDeleting(false);
     }
   }
 
@@ -629,88 +667,337 @@ export default function SettingsPage() {
 
               {activeSection === "billing" && (
                 <SettingsSection icon={<CreditCardIcon />} title="Billing" index={0}>
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "1rem", flexWrap: "wrap" }}>
-                    <div style={{ display: "flex", flexDirection: "column", gap: "0.3rem" }}>
-                      <span style={{ fontSize: "0.9rem", fontWeight: 600, color: "var(--text-primary)" }}>
-                        {session?.subscription.plan
-                          ? `${session.subscription.plan.charAt(0).toUpperCase() + session.subscription.plan.slice(1)} plan`
-                          : "No active plan"}
-                      </span>
-                      {session?.subscription.status && (
-                        <span
-                          style={{
-                            fontSize: "0.78rem",
-                            color: session.subscription.status === "active" ? "var(--success)" : "var(--text-muted)",
-                            textTransform: "capitalize",
-                          }}
-                        >
-                          Status: {session.subscription.status}
+                  <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+                    {/* Current plan row */}
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "1rem", flexWrap: "wrap" }}>
+                      <div style={{ display: "flex", flexDirection: "column", gap: "0.3rem" }}>
+                        <span style={{ fontSize: "0.9rem", fontWeight: 600, color: "var(--text-primary)" }}>
+                          {session?.subscription.plan
+                            ? `${session.subscription.plan.charAt(0).toUpperCase() + session.subscription.plan.slice(1)} plan`
+                            : "No active plan"}
                         </span>
-                      )}
+                        {session?.subscription.status && (
+                          <span
+                            style={{
+                              fontSize: "0.78rem",
+                              color: session.subscription.status === "active" ? "var(--success)" : "var(--text-muted)",
+                              textTransform: "capitalize",
+                            }}
+                          >
+                            Status: {session.subscription.status}
+                          </span>
+                        )}
+                      </div>
+                      <Link
+                        href="/subscribe"
+                        style={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: "0.4rem",
+                          fontSize: "0.82rem",
+                          fontWeight: 600,
+                          color: "var(--brand)",
+                          textDecoration: "none",
+                          padding: "0.4rem 0.85rem",
+                          borderRadius: "0.5rem",
+                          border: "1px solid rgba(56, 189, 248, 0.25)",
+                          background: "rgba(56, 189, 248, 0.06)",
+                          transition: "all 0.2s ease",
+                          flexShrink: 0,
+                        }}
+                      >
+                        View plan
+                        <ExternalLinkIcon size={11} />
+                      </Link>
                     </div>
-                    <Link
-                      href="/subscribe"
-                      style={{
-                        display: "inline-flex",
-                        alignItems: "center",
-                        gap: "0.4rem",
-                        fontSize: "0.82rem",
-                        fontWeight: 600,
-                        color: "var(--brand)",
-                        textDecoration: "none",
-                        padding: "0.4rem 0.85rem",
-                        borderRadius: "0.5rem",
-                        border: "1px solid rgba(56, 189, 248, 0.25)",
-                        background: "rgba(56, 189, 248, 0.06)",
-                        transition: "all 0.2s ease",
-                        flexShrink: 0,
-                      }}
-                    >
-                      View plan
-                      <ExternalLinkIcon size={11} />
-                    </Link>
+
+                    {/* Cancel subscription — only shown when subscription is active */}
+                    {session?.subscription.plan === "pro" && session.subscription.status === "active" && (
+                      <div
+                        style={{
+                          borderTop: "1px solid rgba(255,255,255,0.07)",
+                          paddingTop: "1rem",
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: "0.6rem",
+                        }}
+                      >
+                        {!showCancelConfirm ? (
+                          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "1rem", flexWrap: "wrap" }}>
+                            <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
+                              <span style={{ fontSize: "0.88rem", fontWeight: 600, color: "var(--text-primary)" }}>
+                                Cancel subscription
+                              </span>
+                              <span style={{ fontSize: "0.78rem", color: "var(--text-muted)" }}>
+                                Your access will remain active until the end of the billing period.
+                              </span>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => setShowCancelConfirm(true)}
+                              style={{
+                                display: "inline-flex",
+                                alignItems: "center",
+                                gap: "0.4rem",
+                                fontSize: "0.82rem",
+                                fontWeight: 600,
+                                color: "var(--danger)",
+                                padding: "0.4rem 0.85rem",
+                                borderRadius: "0.5rem",
+                                border: "1px solid rgba(248, 113, 113, 0.3)",
+                                background: "rgba(248, 113, 113, 0.06)",
+                                cursor: "pointer",
+                                transition: "all 0.2s ease",
+                                flexShrink: 0,
+                              }}
+                            >
+                              Cancel plan
+                            </button>
+                          </div>
+                        ) : (
+                          <div
+                            style={{
+                              background: "rgba(248, 113, 113, 0.06)",
+                              border: "1px solid rgba(248, 113, 113, 0.2)",
+                              borderRadius: "0.75rem",
+                              padding: "1rem",
+                              display: "flex",
+                              flexDirection: "column",
+                              gap: "0.75rem",
+                            }}
+                          >
+                            <p style={{ margin: 0, fontSize: "0.85rem", color: "var(--text-primary)", fontWeight: 600 }}>
+                              Are you sure you want to cancel your Pro subscription?
+                            </p>
+                            <p style={{ margin: 0, fontSize: "0.78rem", color: "var(--text-muted)" }}>
+                              You will lose access to Pro features at the end of your current billing period. This action can be undone by resubscribing.
+                            </p>
+                            <div style={{ display: "flex", gap: "0.5rem" }}>
+                              <button
+                                type="button"
+                                onClick={() => void handleCancelSubscription()}
+                                disabled={isCanceling}
+                                style={{
+                                  fontSize: "0.82rem",
+                                  fontWeight: 600,
+                                  color: "var(--danger)",
+                                  padding: "0.4rem 0.85rem",
+                                  borderRadius: "0.5rem",
+                                  border: "1px solid rgba(248, 113, 113, 0.4)",
+                                  background: "rgba(248, 113, 113, 0.1)",
+                                  cursor: isCanceling ? "not-allowed" : "pointer",
+                                  opacity: isCanceling ? 0.6 : 1,
+                                  transition: "all 0.2s ease",
+                                }}
+                              >
+                                {isCanceling ? "Canceling..." : "Yes, cancel"}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => { setShowCancelConfirm(false); setCancelMessage(null); }}
+                                disabled={isCanceling}
+                                style={{
+                                  fontSize: "0.82rem",
+                                  fontWeight: 600,
+                                  color: "var(--text-secondary)",
+                                  padding: "0.4rem 0.85rem",
+                                  borderRadius: "0.5rem",
+                                  border: "1px solid rgba(255,255,255,0.1)",
+                                  background: "transparent",
+                                  cursor: "pointer",
+                                  transition: "all 0.2s ease",
+                                }}
+                              >
+                                Keep plan
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                        {cancelMessage && (
+                          <p style={{ margin: 0, fontSize: "0.8rem", color: cancelMessage.startsWith("Failed") ? "var(--danger)" : "var(--success)" }}>
+                            {cancelMessage}
+                          </p>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </SettingsSection>
               )}
 
               {activeSection === "danger" && (
                 <SettingsSection icon={<AlertTriangleIcon />} title="Danger Zone" index={0} danger>
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "1rem", flexWrap: "wrap" }}>
-                    <div style={{ display: "flex", flexDirection: "column", gap: "0.3rem" }}>
-                      <span style={{ fontSize: "0.9rem", fontWeight: 600, color: "var(--text-primary)" }}>
-                        Sign out of FlowCI Studio
-                      </span>
-                      <span style={{ fontSize: "0.8rem", color: "var(--text-muted)" }}>
-                        Your session will be terminated and you will be redirected to the home page.
-                      </span>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
+
+                    {/* Sign out */}
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "1rem", flexWrap: "wrap" }}>
+                      <div style={{ display: "flex", flexDirection: "column", gap: "0.3rem" }}>
+                        <span style={{ fontSize: "0.9rem", fontWeight: 600, color: "var(--text-primary)" }}>
+                          Sign out of FlowCI Studio
+                        </span>
+                        <span style={{ fontSize: "0.8rem", color: "var(--text-muted)" }}>
+                          Your session will be terminated and you will be redirected to the home page.
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => void handleLogout()}
+                        disabled={isLoggingOut}
+                        style={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: "0.4rem",
+                          fontSize: "0.82rem",
+                          fontWeight: 600,
+                          color: "var(--danger)",
+                          padding: "0.4rem 0.85rem",
+                          borderRadius: "0.5rem",
+                          border: "1px solid rgba(248, 113, 113, 0.3)",
+                          background: "rgba(248, 113, 113, 0.06)",
+                          cursor: isLoggingOut ? "not-allowed" : "pointer",
+                          opacity: isLoggingOut ? 0.6 : 1,
+                          transition: "all 0.2s ease",
+                          flexShrink: 0,
+                        }}
+                      >
+                        {isLoggingOut ? "Signing out..." : "Sign out"}
+                      </button>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => void handleLogout()}
-                      disabled={isLoggingOut}
-                      style={{
-                        display: "inline-flex",
-                        alignItems: "center",
-                        gap: "0.4rem",
-                        fontSize: "0.82rem",
-                        fontWeight: 600,
-                        color: "var(--danger)",
-                        padding: "0.4rem 0.85rem",
-                        borderRadius: "0.5rem",
-                        border: "1px solid rgba(248, 113, 113, 0.3)",
-                        background: "rgba(248, 113, 113, 0.06)",
-                        cursor: isLoggingOut ? "not-allowed" : "pointer",
-                        opacity: isLoggingOut ? 0.6 : 1,
-                        transition: "all 0.2s ease",
-                        flexShrink: 0,
-                      }}
-                    >
-                      {isLoggingOut ? "Signing out..." : "Sign out"}
-                    </button>
+                    {logoutMessage && (
+                      <p className="error-text" style={{ marginTop: "-0.5rem" }}>{logoutMessage}</p>
+                    )}
+
+                    {/* Divider */}
+                    <div style={{ borderTop: "1px solid rgba(248, 113, 113, 0.15)" }} />
+
+                    {/* Delete account */}
+                    {!showDeleteConfirm ? (
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "1rem", flexWrap: "wrap" }}>
+                        <div style={{ display: "flex", flexDirection: "column", gap: "0.3rem" }}>
+                          <span style={{ fontSize: "0.9rem", fontWeight: 600, color: "var(--text-primary)" }}>
+                            Delete account permanently
+                          </span>
+                          <span style={{ fontSize: "0.8rem", color: "var(--text-muted)" }}>
+                            All your data, projects, and workflows will be removed. This cannot be undone.
+                          </span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => { setShowDeleteConfirm(true); setDeleteMessage(null); setDeleteConfirmInput(""); }}
+                          style={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: "0.4rem",
+                            fontSize: "0.82rem",
+                            fontWeight: 600,
+                            color: "var(--danger)",
+                            padding: "0.4rem 0.85rem",
+                            borderRadius: "0.5rem",
+                            border: "1px solid rgba(248, 113, 113, 0.4)",
+                            background: "rgba(248, 113, 113, 0.08)",
+                            cursor: "pointer",
+                            transition: "all 0.2s ease",
+                            flexShrink: 0,
+                          }}
+                        >
+                          Delete account
+                        </button>
+                      </div>
+                    ) : (
+                      <div
+                        style={{
+                          background: "rgba(248, 113, 113, 0.06)",
+                          border: "1px solid rgba(248, 113, 113, 0.25)",
+                          borderRadius: "0.75rem",
+                          padding: "1.25rem",
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: "1rem",
+                        }}
+                      >
+                        <div>
+                          <p style={{ margin: "0 0 0.3rem", fontSize: "0.9rem", fontWeight: 700, color: "var(--danger)" }}>
+                            This will permanently delete your account.
+                          </p>
+                          <p style={{ margin: 0, fontSize: "0.8rem", color: "var(--text-muted)" }}>
+                            All projects, workflows, subscriptions, and session data will be erased and cannot be recovered.
+                          </p>
+                        </div>
+                        <div style={{ display: "flex", flexDirection: "column", gap: "0.4rem" }}>
+                          <label
+                            htmlFor="delete-confirm-input"
+                            style={{ fontSize: "0.78rem", color: "var(--text-secondary)" }}
+                          >
+                            Type your username <strong style={{ color: "var(--text-primary)", fontFamily: "ui-monospace, monospace" }}>{session?.user.login}</strong> to confirm:
+                          </label>
+                          <input
+                            id="delete-confirm-input"
+                            type="text"
+                            value={deleteConfirmInput}
+                            onChange={(e) => setDeleteConfirmInput(e.target.value)}
+                            placeholder={session?.user.login ?? "username"}
+                            autoComplete="off"
+                            style={{
+                              background: "rgba(15, 23, 42, 0.6)",
+                              border: "1px solid rgba(248, 113, 113, 0.3)",
+                              borderRadius: "0.5rem",
+                              padding: "0.5rem 0.75rem",
+                              fontSize: "0.85rem",
+                              color: "var(--text-primary)",
+                              fontFamily: "ui-monospace, monospace",
+                              outline: "none",
+                              width: "100%",
+                              boxSizing: "border-box",
+                            }}
+                          />
+                        </div>
+                        <div style={{ display: "flex", gap: "0.5rem" }}>
+                          <button
+                            type="button"
+                            onClick={() => void handleDeleteAccount()}
+                            disabled={isDeleting || deleteConfirmInput !== session?.user.login}
+                            style={{
+                              fontSize: "0.82rem",
+                              fontWeight: 700,
+                              color: "#fff",
+                              padding: "0.45rem 1rem",
+                              borderRadius: "0.5rem",
+                              border: "1px solid rgba(248, 113, 113, 0.6)",
+                              background: isDeleting || deleteConfirmInput !== session?.user.login
+                                ? "rgba(248, 113, 113, 0.2)"
+                                : "rgba(248, 113, 113, 0.7)",
+                              cursor: isDeleting || deleteConfirmInput !== session?.user.login ? "not-allowed" : "pointer",
+                              opacity: isDeleting ? 0.6 : 1,
+                              transition: "all 0.2s ease",
+                            }}
+                          >
+                            {isDeleting ? "Deleting..." : "Delete my account"}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => { setShowDeleteConfirm(false); setDeleteMessage(null); setDeleteConfirmInput(""); }}
+                            disabled={isDeleting}
+                            style={{
+                              fontSize: "0.82rem",
+                              fontWeight: 600,
+                              color: "var(--text-secondary)",
+                              padding: "0.45rem 0.85rem",
+                              borderRadius: "0.5rem",
+                              border: "1px solid rgba(255,255,255,0.1)",
+                              background: "transparent",
+                              cursor: "pointer",
+                              transition: "all 0.2s ease",
+                            }}
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                        {deleteMessage && (
+                          <p style={{ margin: 0, fontSize: "0.8rem", color: "var(--danger)" }}>{deleteMessage}</p>
+                        )}
+                      </div>
+                    )}
+
                   </div>
-                  {logoutMessage && (
-                    <p className="error-text" style={{ marginTop: "0.75rem" }}>{logoutMessage}</p>
-                  )}
                 </SettingsSection>
               )}
           </motion.div>

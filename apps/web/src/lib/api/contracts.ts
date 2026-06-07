@@ -291,7 +291,7 @@ export interface ProvisionedProject {
   serviceName: string;
   workflowPath: string;
   workflowFiles?: WorkflowFileMetadata[] | null;
-  status: "provisioning" | "provisioned" | "failed";
+  status: "provisioning" | "provisioned" | "failed" | "orphaned";
   githubCommitSha: string | null;
   githubCommitUrl: string | null;
   failureReason: string | null;

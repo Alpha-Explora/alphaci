@@ -1485,17 +1485,13 @@ h1, h2, h3 {
 /* ── Studio grid ─────────────────────────────────────────────────────────── */
 .studio-grid {
   display: grid;
-  gap: 0;
+  gap: 1rem;
+  padding: 1rem var(--layout-gutter) 1.5rem;
   grid-template-columns: minmax(220px, 280px) minmax(0, 1fr) minmax(280px, 360px);
 }
 
 .studio-grid > * {
   min-width: 0;
-  border-right: 1px solid rgba(255, 255, 255, 0.06);
-}
-
-.studio-grid > *:last-child {
-  border-right: none;
 }
 
 .controls-panel,
@@ -1503,6 +1499,11 @@ h1, h2, h3 {
 .result-panel,
 .tab-content-panel {
   padding: 1.5rem var(--panel-pad);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.controls-panel {
+  padding: 1.5rem 1.25rem;
 }
 
 .controls-panel h2,
@@ -1816,6 +1817,7 @@ select option {
 .result-panel {
   max-height: calc(100dvh - 12rem);
   overflow: auto;
+  height: fit-content;
 }
 
 .result-actions {
@@ -3302,16 +3304,22 @@ select option {
 
 .btn-spinner {
   display: inline-block;
-  width: 14px;
-  height: 14px;
+  width: 0.95rem;
+  height: 0.95rem;
   border: 2px solid rgba(255, 255, 255, 0.3);
   border-top-color: #fff;
   border-radius: 50%;
-  animation: spin 0.7s linear infinite;
+  animation: spin 0.75s linear infinite;
+  flex-shrink: 0;
 }
 
 @keyframes spin {
   to { transform: rotate(360deg); }
+}
+
+@keyframes glowSweep {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
 }
 
 .generate-workflow-row {
@@ -4137,7 +4145,7 @@ select option {
 .controls-panel-section {
   display: flex;
   flex-direction: column;
-  gap: 0;
+  gap: 0.1rem;
 }
 
 /* Enhancement chips (compact toggle pills) */
@@ -4202,6 +4210,7 @@ select option {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 0.6rem;
+  margin-bottom: 0.5rem;
 }
 
 @media (max-width: 600px) {
