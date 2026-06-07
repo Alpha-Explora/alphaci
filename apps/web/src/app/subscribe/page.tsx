@@ -108,7 +108,7 @@ function SubscribePageContent() {
   const [actionError, setActionError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showCongratsModal, setShowCongratsModal] = useState(false);
-  const [showMockFallback, setShowMockFallback] = useState(false);
+  const [showMockFallback, setShowMockFallback] = useState(true);
 
   useEffect(() => {
     if (status === "signed-in" && hasActiveSubscription(session)) {
@@ -180,7 +180,6 @@ function SubscribePageContent() {
   async function handleActivate() {
     setStatusMessage(null);
     setActionError(null);
-    setShowMockFallback(false);
     setIsSubmitting(true);
 
     try {
