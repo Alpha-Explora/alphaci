@@ -89,9 +89,14 @@ export function ProjectEnvPanel({ project }: Readonly<{ project: ProvisionedProj
   }
 
   return (
-    <div style={{ borderTop: "1px solid var(--border-soft)", display: "grid", gap: "0.75rem", paddingTop: "0.75rem" }}>
-      <div style={{ display: "grid", gap: "0.5rem" }}>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(11.5rem, 1fr))", gap: "0.5rem" }}>
+    <div className="env-provisioning-panel">
+      <section className="env-provisioning-section">
+        <div className="env-section-header">
+          <h4>Deployment target</h4>
+          {message ? <span>{message}</span> : null}
+        </div>
+
+        <div className="env-target-grid">
           <select
             aria-label="Target action"
             value={targetAction}
@@ -108,11 +113,11 @@ export function ProjectEnvPanel({ project }: Readonly<{ project: ProvisionedProj
             <option value="flowci_managed">FlowCI-managed</option>
             <option value="byo">Bring your own provider</option>
           </select>
-          <select value={provider} onChange={(event) => setProvider(event.target.value as EnvProvider)}>
+          <select aria-label="Provider" value={provider} onChange={(event) => setProvider(event.target.value as EnvProvider)}>
             <option value="render">Render</option>
             <option value="vercel">Vercel</option>
           </select>
-          <select value={slot} onChange={(event) => setSlot(event.target.value as EnvTargetSlot)}>
+          <select aria-label="Target slot" value={slot} onChange={(event) => setSlot(event.target.value as EnvTargetSlot)}>
             <option value="backend">Backend</option>
             <option value="frontend">Frontend</option>
             <option value="standalone">Standalone</option>
@@ -127,7 +132,7 @@ export function ProjectEnvPanel({ project }: Readonly<{ project: ProvisionedProj
               {matchingConnections.length ? (
                 matchingConnections.map((connection) => (
                   <option key={connection.id} value={connection.id}>
-                    {connection.label} · {connection.tokenLastFour}
+                    {connection.label} - {connection.tokenLastFour}
                   </option>
                 ))
               ) : (
@@ -163,26 +168,30 @@ export function ProjectEnvPanel({ project }: Readonly<{ project: ProvisionedProj
             }
             type="button"
             onClick={() => void handleSaveTarget()}
-            style={{ minHeight: "2.75rem" }}
           >
             {targetAction === "create" ? "Create target" : "Register target"}
           </button>
         </div>
-        <select value={activeTargetId} onChange={(event) => setTargetId(event.target.value)} disabled={!targets.length}>
+
+        <select aria-label="Active deployment target" value={activeTargetId} onChange={(event) => setTargetId(event.target.value)} disabled={!targets.length}>
           {targets.length ? (
             targets.map((target) => (
               <option key={target.id} value={target.id}>
-                {target.providerProjectName} · {target.provider}
+                {target.providerProjectName} - {target.provider}
               </option>
             ))
           ) : (
             <option value="">Create a target first</option>
           )}
         </select>
-      </div>
+      </section>
 
-      <form onSubmit={handleProvision} style={{ display: "grid", gap: "0.55rem" }}>
-        <div style={{ display: "flex", gap: "0.4rem", flexWrap: "wrap" }}>
+      <form className="env-provisioning-section" onSubmit={handleProvision}>
+        <div className="env-section-header">
+          <h4>Variables</h4>
+        </div>
+
+        <div className="env-environment-tabs">
           {(["test", "uat", "production"] as EnvEnvironment[]).map((env) => (
             <button
               key={env}
@@ -194,8 +203,9 @@ export function ProjectEnvPanel({ project }: Readonly<{ project: ProvisionedProj
             </button>
           ))}
         </div>
+
         {rows.map((row, index) => (
-          <div key={index} style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(9rem, 1fr))", gap: "0.45rem" }}>
+          <div key={index} className="env-var-row">
             <input
               value={row.key}
               onChange={(event) =>
@@ -216,7 +226,8 @@ export function ProjectEnvPanel({ project }: Readonly<{ project: ProvisionedProj
             </button>
           </div>
         ))}
-        <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
+
+        <div className="env-form-actions">
           <button className="ghost-button" type="button" onClick={() => setRows((current) => [...current, { key: "", value: "" }])}>
             Add row
           </button>
@@ -226,20 +237,26 @@ export function ProjectEnvPanel({ project }: Readonly<{ project: ProvisionedProj
         </div>
       </form>
 
-      {message ? <p style={{ color: "var(--success)", margin: 0, fontSize: "0.8rem" }}>{message}</p> : null}
-      {metadata.length ? (
-        <div style={{ display: "grid", gap: "0.25rem" }}>
-          {metadata.map((item) => (
-            <div key={item.id} style={{ color: "var(--text-secondary)", display: "flex", fontSize: "0.75rem", gap: "0.5rem", justifyContent: "space-between" }}>
-              <span>{item.key}</span>
-              <span>
-                {item.environment} · {item.status}
-                {item.errorSummary ? ` · ${item.errorSummary}` : ""}
-              </span>
-            </div>
-          ))}
+      <section className="env-provisioning-section">
+        <div className="env-section-header">
+          <h4>Provisioned variables</h4>
         </div>
-      ) : null}
+        {metadata.length ? (
+          <div className="env-metadata-list">
+            {metadata.map((item) => (
+              <div key={item.id} className={`env-metadata-row ${item.status}`}>
+                <span>{item.key}</span>
+                <span>
+                  {item.environment} - {item.status}
+                  {item.errorSummary ? ` - ${item.errorSummary}` : ""}
+                </span>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="env-empty-state">No variables provisioned yet.</p>
+        )}
+      </section>
     </div>
   );
 }

@@ -175,6 +175,51 @@ describe("Project env provisioning UI", () => {
     expect(rendered.container.textContent).not.toContain("Environment Variables");
   });
 
+  it("uses a split workspace and updates project details from the selector", () => {
+    mockCapabilities(true);
+    mockEnvHook();
+
+    const frontendProject: ProvisionedProject = {
+      ...provisionedProject,
+      id: "project-2",
+      repoFullName: "tone/web-client",
+      serviceName: "web-client",
+      status: "provisioned",
+      workflowPath: ".github/workflows/10-flowci-quality.yml",
+      githubCommitSha: "def456",
+    };
+
+    const rendered = render(
+      <WorkflowCurrentTab
+        history={[]}
+        latestResult={null}
+        loadingHistory={false}
+        loadingProjects={false}
+        onCopyYaml={jest.fn()}
+        onDownloadYaml={jest.fn()}
+        onOpenSetup={jest.fn()}
+        projects={[provisionedProject, frontendProject]}
+      />,
+    );
+    root = rendered.root;
+
+    expect(rendered.container.querySelector(".project-workspace")).not.toBeNull();
+    expect(rendered.container.querySelector(".project-list")).not.toBeNull();
+    expect(rendered.container.querySelector(".project-detail-panel")).not.toBeNull();
+    expect(rendered.container.querySelector(".project-detail-panel")?.textContent).toContain("orders-api");
+    expect(rendered.container.querySelector(".project-detail-panel")?.textContent).not.toContain("web-client");
+
+    const webClientSelector = rendered.container.querySelector<HTMLButtonElement>(
+      'button[data-project-id="project-2"]',
+    )!;
+    act(() => {
+      webClientSelector.click();
+    });
+
+    expect(rendered.container.querySelector(".project-detail-panel")?.textContent).toContain("web-client");
+    expect(rendered.container.querySelector(".project-detail-panel")?.textContent).not.toContain("orders-api");
+  });
+
   it("registers BYO existing targets from saved provider connections", async () => {
     const addTarget = jest.fn().mockResolvedValue({
       id: "target-1",
@@ -222,6 +267,33 @@ describe("Project env provisioning UI", () => {
         providerProjectName: "orders-api-render",
       }),
     );
+  });
+
+  it("groups env provisioning into target, variables, and provisioned sections", () => {
+    mockEnvHook({
+      metadata: [
+        {
+          id: "meta-1",
+          projectId: "project-1",
+          deploymentTargetId: "target-1",
+          environment: "test",
+          key: "DATABASE_URL",
+          provider: "render",
+          valueStored: false,
+          lastProvisionedAt: "2026-06-08T00:00:00.000Z",
+          lastProvisionedBy: "user-1",
+          status: "provisioned",
+          errorSummary: null,
+        },
+      ],
+    });
+
+    const rendered = render(<ProjectEnvPanel project={provisionedProject} />);
+    root = rendered.root;
+
+    expect(rendered.container.textContent).toContain("Deployment target");
+    expect(rendered.container.textContent).toContain("Variables");
+    expect(rendered.container.textContent).toContain("Provisioned variables");
   });
 
   it("clears submitted values and shows metadata without secret values", async () => {

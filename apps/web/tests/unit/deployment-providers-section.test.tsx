@@ -192,4 +192,46 @@ describe("DeploymentProvidersSection", () => {
 
     expect(revokeConnection).toHaveBeenCalledWith("connection-1");
   });
+
+  it("renders saved provider connections in a table layout", () => {
+    mockedUseCapabilities.mockReturnValue({
+      capabilities: {
+        envProvisioning: {
+          enabled: true,
+          providers: ["render", "vercel"],
+          environments: ["test", "uat", "production"],
+          modes: ["byo", "flowci_managed"],
+        },
+      },
+      envProvisioningEnabled: true,
+      loadCapabilities: jest.fn(),
+      loading: false,
+    });
+    mockedUseProviderConnections.mockReturnValue({
+      connections: [
+        {
+          id: "connection-1",
+          provider: "vercel",
+          label: "Vercel team",
+          tokenLastFour: "1234",
+          status: "active",
+          createdAt: "2026-06-08T00:00:00.000Z",
+          updatedAt: "2026-06-08T00:00:00.000Z",
+          lastUsedAt: null,
+        },
+      ],
+      loadConnections: jest.fn(),
+      loading: false,
+      revokeConnection: jest.fn(),
+      saveConnection: jest.fn(),
+      saving: false,
+    });
+
+    const rendered = renderComponent();
+    root = rendered.root;
+
+    expect(rendered.container.querySelector(".provider-connections-table")).not.toBeNull();
+    expect(rendered.container.textContent).toContain("Provider");
+    expect(rendered.container.textContent).toContain("Status");
+  });
 });
