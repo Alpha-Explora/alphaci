@@ -2,6 +2,7 @@
 
 import { AnimatePresence, motion } from "framer-motion";
 
+import { useCapabilities } from "@/hooks/use-capabilities";
 import type { CreateProjectResult, SetupExistingRepoPrResponse, WorkflowFileMetadata } from "@/lib/api/contracts";
 
 interface SetupResultPanelProps {
@@ -97,6 +98,7 @@ export function SetupResultPanel({
   setupResult,
   onViewProject,
 }: Readonly<SetupResultPanelProps>) {
+  const { envProvisioningEnabled } = useCapabilities();
   const repoUrl = existingRepoResult
     ? `https://github.com/${existingRepoResult.repoFullName}`
     : null;
@@ -217,6 +219,11 @@ export function SetupResultPanel({
                 View workflow
               </a>
               <SecondaryRepoLink url={setupResult.secondaryRepoUrl} />
+              {envProvisioningEnabled ? (
+                <button className="ghost-button" type="button" onClick={onViewProject}>
+                  Configure env vars
+                </button>
+              ) : null}
               <button className="ghost-button" type="button" onClick={onViewProject}>
                 View projects
               </button>

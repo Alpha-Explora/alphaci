@@ -1,5 +1,7 @@
 export * from "./auth";
+export * from "./capabilities";
 export * from "./catalog";
+export * from "./env-provisioning";
 export * from "./existing-repos";
 export * from "./github";
 export * from "./projects";

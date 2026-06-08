@@ -1,5 +1,9 @@
 export type SubscriptionPlan = "free" | "pro";
 export type SubscriptionStatus = "inactive" | "active" | "canceled";
+export type EnvProvider = "render" | "vercel";
+export type EnvEnvironment = "test" | "uat" | "production";
+export type EnvOwnershipMode = "byo" | "flowci_managed";
+export type EnvTargetSlot = "backend" | "frontend" | "standalone";
 
 export interface SessionUser {
   id: string;
@@ -26,6 +30,91 @@ export interface AuthMeResponse {
   authenticated: boolean;
   user: SessionUser;
   subscription: SubscriptionInfo;
+}
+
+export interface CapabilitiesResponse {
+  envProvisioning: {
+    enabled: boolean;
+    providers: EnvProvider[];
+    environments: EnvEnvironment[];
+    modes: EnvOwnershipMode[];
+  };
+}
+
+export interface ProviderConnection {
+  id: string;
+  provider: EnvProvider;
+  label: string;
+  tokenLastFour: string;
+  status: "active" | "revoked" | "failed";
+  createdAt: string;
+  updatedAt: string;
+  lastUsedAt: string | null;
+}
+
+export interface CreateProviderConnectionRequest {
+  provider: EnvProvider;
+  label: string;
+  token: string;
+}
+
+export interface DeploymentTarget {
+  id: string;
+  projectId: string;
+  slot: EnvTargetSlot;
+  ownershipMode: EnvOwnershipMode;
+  provider: EnvProvider;
+  providerConnectionId: string | null;
+  providerProjectId: string;
+  providerProjectName: string;
+  repoFullName: string;
+  branchName: string;
+  rootDirectory: string | null;
+  buildCommand: string | null;
+  startCommand: string | null;
+  environmentMap: Record<string, unknown>;
+  status: "active" | "missing" | "failed";
+}
+
+export interface CreateDeploymentTargetRequest {
+  action: "create" | "register_existing";
+  slot: EnvTargetSlot;
+  ownershipMode: EnvOwnershipMode;
+  provider: EnvProvider;
+  providerConnectionId?: string;
+  providerProjectId?: string;
+  providerProjectName?: string;
+  projectName?: string;
+  branchName?: string;
+  rootDirectory?: string;
+  buildCommand?: string;
+  startCommand?: string;
+  environmentMap?: Record<string, unknown>;
+}
+
+export interface EnvVarMetadata {
+  id: string;
+  projectId: string;
+  deploymentTargetId: string;
+  environment: EnvEnvironment;
+  key: string;
+  provider: EnvProvider;
+  valueStored: false;
+  lastProvisionedAt: string;
+  lastProvisionedBy: string;
+  status: "provisioned" | "failed";
+  errorSummary: string | null;
+}
+
+export interface ProvisionEnvVarsRequest {
+  deploymentTargetId: string;
+  environment: EnvEnvironment;
+  vars: Array<{ key: string; value: string }>;
+}
+
+export interface ProvisionEnvVarsResponse {
+  provisioned: Array<{ key: string; status: "provisioned" }>;
+  failed: Array<{ key: string; status: "failed"; errorSummary: string }>;
 }
 
 export interface CategorySummary {

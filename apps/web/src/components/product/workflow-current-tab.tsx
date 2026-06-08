@@ -3,7 +3,9 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 
+import { useCapabilities } from "@/hooks/use-capabilities";
 import type { CreateProjectResult, ProvisionedProject, WorkflowFileMetadata, WorkflowHistoryItem } from "@/lib/api/contracts";
+import { ProjectEnvPanel } from "./project-env-panel";
 
 import { formatDate, toSourcePath } from "./workflow-builder-utils";
 
@@ -84,6 +86,8 @@ export function WorkflowCurrentTab({
   projects,
 }: Readonly<WorkflowCurrentTabProps>) {
   const [subTab, setSubTab] = useState<SubTab>("projects");
+  const [openEnvProjectId, setOpenEnvProjectId] = useState<string | null>(null);
+  const { envProvisioningEnabled } = useCapabilities();
 
   return (
     <motion.section
@@ -501,6 +505,26 @@ export function WorkflowCurrentTab({
                         Commit
                       </a>
                     )}
+                    {envProvisioningEnabled && project.status === "provisioned" && (
+                      <button
+                        className="ghost-button"
+                        type="button"
+                        onClick={() =>
+                          setOpenEnvProjectId((current) => current === project.id ? null : project.id)
+                        }
+                        style={{
+                          padding: "0.4rem 0.8rem",
+                          fontSize: "0.78rem",
+                          minHeight: "2rem",
+                          borderRadius: "6px",
+                          border: "1px solid rgba(52, 211, 153, 0.25)",
+                          color: "var(--success)",
+                          background: "rgba(52, 211, 153, 0.05)"
+                        }}
+                      >
+                        Env
+                      </button>
+                    )}
                     <button
                       className="ghost-button"
                       type="button"
@@ -519,6 +543,7 @@ export function WorkflowCurrentTab({
                       New
                     </button>
                   </div>
+                  {openEnvProjectId === project.id ? <ProjectEnvPanel project={project} /> : null}
                 </motion.article>
               ))}
             </motion.div>

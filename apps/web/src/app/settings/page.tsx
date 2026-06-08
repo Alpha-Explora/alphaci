@@ -9,6 +9,7 @@ import { motion, useReducedMotion } from "framer-motion";
 import { AppNav } from "@/components/layout/app-nav";
 import { FlowBackground } from "@/components/layout/flow-background";
 import { PipelineLogo } from "@/components/layout/pipeline-logo";
+import { DeploymentProvidersSection } from "@/components/settings/deployment-providers-section";
 import { useAuthSession } from "@/hooks/use-auth-session";
 import { logout, deleteAccount, cancelMonthlySubscription } from "@/lib/api/client";
 import { isGuest } from "@/lib/auth/subscription";
@@ -131,6 +132,7 @@ function SettingsSection({
         boxShadow: danger
           ? "0 0 40px rgba(220, 38, 38, 0.07), inset 0 0 60px rgba(69, 10, 10, 0.3)"
           : undefined,
+        transitionDelay: `${index * 40}ms`,
       }}
     >
       {/* Section header */}
@@ -684,6 +686,7 @@ export default function SettingsPage() {
               )}
 
               {activeSection === "billing" && (
+                <>
                 <SettingsSection icon={<CreditCardIcon />} title="Billing" index={0}>
                   <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
                     {/* Current plan row */}
@@ -840,6 +843,8 @@ export default function SettingsPage() {
                     )}
                   </div>
                 </SettingsSection>
+                <DeploymentProvidersSection />
+                </>
               )}
 
               {activeSection === "danger" && (
