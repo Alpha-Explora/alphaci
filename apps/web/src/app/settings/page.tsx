@@ -201,12 +201,22 @@ export default function SettingsPage() {
   const [deleteMessage, setDeleteMessage] = useState<string | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteConfirmInput, setDeleteConfirmInput] = useState("");
+  const [isCompactLayout, setIsCompactLayout] = useState(false);
 
   useEffect(() => {
     if (status === "signed-out") {
       router.push("/login?next=/settings");
     }
   }, [status, router]);
+
+  useEffect(() => {
+    const media = window.matchMedia("(max-width: 720px)");
+    const updateLayout = () => setIsCompactLayout(media.matches);
+
+    updateLayout();
+    media.addEventListener("change", updateLayout);
+    return () => media.removeEventListener("change", updateLayout);
+  }, []);
 
   async function handleLogout() {
     setIsLoggingOut(true);
@@ -326,11 +336,13 @@ export default function SettingsPage() {
       />
 
       <div
+        className="settings-layout"
         id="main-content"
         style={{
-          padding: "1.5rem var(--layout-gutter) 2rem",
+          padding: isCompactLayout ? "1rem" : "1.5rem var(--layout-gutter) 2rem",
           flex: 1,
           display: "flex",
+          flexDirection: isCompactLayout ? "column" : "row",
           gap: "1.75rem",
           alignItems: "flex-start",
           width: "100%",
@@ -338,12 +350,13 @@ export default function SettingsPage() {
       >
         {/* ── Left sidebar ── */}
         <nav
+          className="settings-sidebar"
           aria-label="Settings sections"
           style={{
-            width: "220px",
+            width: isCompactLayout ? "100%" : "220px",
             flexShrink: 0,
-            position: "sticky",
-            top: "72px",
+            position: isCompactLayout ? "relative" : "sticky",
+            top: isCompactLayout ? "auto" : "72px",
             alignSelf: "flex-start",
             display: "flex",
             flexDirection: "column",
@@ -470,7 +483,17 @@ export default function SettingsPage() {
         </nav>
 
         {/* ── Right content ── */}
-        <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: "1.25rem" }}>
+        <div
+          className="settings-content"
+          style={{
+            flex: 1,
+            minWidth: 0,
+            width: isCompactLayout ? "100%" : undefined,
+            display: "flex",
+            flexDirection: "column",
+            gap: "1.25rem",
+          }}
+        >
           <motion.div
             key={activeSection}
             initial={{ opacity: 0, y: 6 }}

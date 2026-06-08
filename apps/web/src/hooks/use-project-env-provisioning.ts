@@ -6,18 +6,21 @@ import {
   createDeploymentTarget,
   listDeploymentTargets,
   listProjectEnvMetadata,
+  listProviderConnections,
   provisionProjectEnvVars,
 } from "@/lib/api/client";
 import type {
   CreateDeploymentTargetRequest,
   DeploymentTarget,
   EnvVarMetadata,
+  ProviderConnection,
   ProvisionEnvVarsRequest,
 } from "@/lib/api/contracts";
 
 export function useProjectEnvProvisioning(projectId: string, enabled = true) {
   const [targets, setTargets] = useState<DeploymentTarget[]>([]);
   const [metadata, setMetadata] = useState<EnvVarMetadata[]>([]);
+  const [providerConnections, setProviderConnections] = useState<ProviderConnection[]>([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
 
@@ -25,12 +28,14 @@ export function useProjectEnvProvisioning(projectId: string, enabled = true) {
     if (!enabled) return;
     setLoading(true);
     try {
-      const [nextTargets, nextMetadata] = await Promise.all([
+      const [nextTargets, nextMetadata, nextProviderConnections] = await Promise.all([
         listDeploymentTargets(projectId),
         listProjectEnvMetadata(projectId),
+        listProviderConnections(),
       ]);
       setTargets(nextTargets);
       setMetadata(nextMetadata);
+      setProviderConnections(nextProviderConnections.filter((connection) => connection.status === "active"));
     } finally {
       setLoading(false);
     }
@@ -67,6 +72,7 @@ export function useProjectEnvProvisioning(projectId: string, enabled = true) {
     load,
     loading,
     metadata,
+    providerConnections,
     provision,
     saving,
     targets,

@@ -52,7 +52,7 @@ export function DeploymentProvidersSection() {
       </div>
 
       <form onSubmit={handleSubmit} style={{ display: "grid", gap: "0.75rem" }}>
-        <div style={{ display: "grid", gridTemplateColumns: "minmax(8rem, 0.7fr) 1fr 1fr auto", gap: "0.6rem" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(9rem, 1fr))", gap: "0.6rem" }}>
           <select value={provider} onChange={(event) => setProvider(event.target.value as EnvProvider)} style={fieldStyle}>
             <option value="render">Render</option>
             <option value="vercel">Vercel</option>

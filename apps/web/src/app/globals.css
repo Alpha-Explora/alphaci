@@ -72,6 +72,25 @@ html::-webkit-scrollbar {
   box-sizing: border-box;
 }
 
+@media (max-width: 720px) {
+  .settings-layout {
+    flex-direction: column !important;
+    gap: 1rem !important;
+    overflow-x: hidden;
+    padding-inline: 1rem !important;
+  }
+
+  .settings-sidebar,
+  .settings-content {
+    width: 100% !important;
+  }
+
+  .settings-sidebar {
+    position: relative !important;
+    top: auto !important;
+  }
+}
+
 /* html holds the fallback dark background so FlowBackground (z-index:-1) never
    uncovers a white flash before React hydrates */
 html {

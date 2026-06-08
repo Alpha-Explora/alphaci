@@ -522,7 +522,7 @@ export function WorkflowCurrentTab({
                           background: "rgba(52, 211, 153, 0.05)"
                         }}
                       >
-                        Env
+                        Environment Variables
                       </button>
                     )}
                     <button

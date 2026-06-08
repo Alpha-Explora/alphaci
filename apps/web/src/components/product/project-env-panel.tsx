@@ -3,7 +3,13 @@
 import { FormEvent, useMemo, useState } from "react";
 
 import { useProjectEnvProvisioning } from "@/hooks/use-project-env-provisioning";
-import type { EnvEnvironment, EnvProvider, ProvisionedProject } from "@/lib/api/contracts";
+import type {
+  EnvEnvironment,
+  EnvOwnershipMode,
+  EnvProvider,
+  EnvTargetSlot,
+  ProvisionedProject,
+} from "@/lib/api/contracts";
 
 const ENV_KEY_PATTERN = /^[A-Z_][A-Z0-9_]{1,127}$/;
 
@@ -13,17 +19,28 @@ interface EnvRow {
 }
 
 export function ProjectEnvPanel({ project }: Readonly<{ project: ProvisionedProject }>) {
-  const { addTarget, loading, metadata, provision, saving, targets } =
+  const { addTarget, loading, metadata, providerConnections, provision, saving, targets } =
     useProjectEnvProvisioning(project.id, project.status === "provisioned");
   const [targetId, setTargetId] = useState("");
+  const [targetAction, setTargetAction] = useState<"create" | "register_existing">("create");
+  const [ownershipMode, setOwnershipMode] = useState<EnvOwnershipMode>("flowci_managed");
   const [provider, setProvider] = useState<EnvProvider>("render");
+  const [slot, setSlot] = useState<EnvTargetSlot>("backend");
   const [environment, setEnvironment] = useState<EnvEnvironment>("test");
   const [projectName, setProjectName] = useState(`${project.serviceName}-test`);
+  const [providerProjectId, setProviderProjectId] = useState("");
+  const [providerProjectName, setProviderProjectName] = useState(project.serviceName);
+  const [providerConnectionId, setProviderConnectionId] = useState("");
   const [branchName, setBranchName] = useState("test");
+  const [rootDirectory, setRootDirectory] = useState(".");
+  const [buildCommand, setBuildCommand] = useState("npm ci && npm run build");
+  const [startCommand, setStartCommand] = useState("npm run start:prod");
   const [rows, setRows] = useState<EnvRow[]>([{ key: "", value: "" }]);
   const [message, setMessage] = useState<string | null>(null);
 
   const activeTargetId = targetId || targets[0]?.id || "";
+  const matchingConnections = providerConnections.filter((connection) => connection.provider === provider);
+  const activeProviderConnectionId = providerConnectionId || matchingConnections[0]?.id || "";
   const invalid = useMemo(() => {
     const keys = new Set<string>();
     for (const row of rows) {
@@ -33,22 +50,30 @@ export function ProjectEnvPanel({ project }: Readonly<{ project: ProvisionedProj
     return rows.length === 0;
   }, [rows]);
 
-  async function handleCreateTarget() {
+  async function handleSaveTarget() {
     setMessage(null);
     const targetPayload = {
-      action: "create",
-      slot: provider === "render" ? "backend" : "frontend",
-      ownershipMode: "flowci_managed",
+      action: targetAction,
+      slot,
+      ownershipMode,
       provider,
-      projectName,
       branchName,
-      rootDirectory: ".",
-      buildCommand: provider === "render" ? "npm ci && npm run build" : "npm run build",
-      ...(provider === "render" ? { startCommand: "npm run start:prod" } : {}),
+      ...(ownershipMode === "byo" ? { providerConnectionId: activeProviderConnectionId } : {}),
+      ...(targetAction === "create"
+        ? {
+            projectName,
+            rootDirectory,
+            buildCommand,
+            ...(provider === "render" && startCommand ? { startCommand } : {}),
+          }
+        : {
+            providerProjectId,
+            providerProjectName,
+          }),
     } as const;
     const target = await addTarget(targetPayload);
     setTargetId(target.id);
-    setMessage("Deployment target created.");
+    setMessage(targetAction === "create" ? "Deployment target created." : "Deployment target registered.");
   }
 
   async function handleProvision(event: FormEvent<HTMLFormElement>) {
@@ -66,15 +91,81 @@ export function ProjectEnvPanel({ project }: Readonly<{ project: ProvisionedProj
   return (
     <div style={{ borderTop: "1px solid var(--border-soft)", display: "grid", gap: "0.75rem", paddingTop: "0.75rem" }}>
       <div style={{ display: "grid", gap: "0.5rem" }}>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.5rem" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(11.5rem, 1fr))", gap: "0.5rem" }}>
+          <select
+            aria-label="Target action"
+            value={targetAction}
+            onChange={(event) => setTargetAction(event.target.value as "create" | "register_existing")}
+          >
+            <option value="create">Create new target</option>
+            <option value="register_existing">Use existing target</option>
+          </select>
+          <select
+            aria-label="Ownership mode"
+            value={ownershipMode}
+            onChange={(event) => setOwnershipMode(event.target.value as EnvOwnershipMode)}
+          >
+            <option value="flowci_managed">FlowCI-managed</option>
+            <option value="byo">Bring your own provider</option>
+          </select>
           <select value={provider} onChange={(event) => setProvider(event.target.value as EnvProvider)}>
             <option value="render">Render</option>
             <option value="vercel">Vercel</option>
           </select>
-          <input value={projectName} onChange={(event) => setProjectName(event.target.value)} placeholder="Provider project name" />
+          <select value={slot} onChange={(event) => setSlot(event.target.value as EnvTargetSlot)}>
+            <option value="backend">Backend</option>
+            <option value="frontend">Frontend</option>
+            <option value="standalone">Standalone</option>
+          </select>
+          {ownershipMode === "byo" ? (
+            <select
+              aria-label="Provider connection"
+              value={activeProviderConnectionId}
+              onChange={(event) => setProviderConnectionId(event.target.value)}
+              disabled={!matchingConnections.length}
+            >
+              {matchingConnections.length ? (
+                matchingConnections.map((connection) => (
+                  <option key={connection.id} value={connection.id}>
+                    {connection.label} · {connection.tokenLastFour}
+                  </option>
+                ))
+              ) : (
+                <option value="">No saved {provider} connection</option>
+              )}
+            </select>
+          ) : null}
+          {targetAction === "create" ? (
+            <>
+              <input value={projectName} onChange={(event) => setProjectName(event.target.value)} placeholder="Provider project name" />
+              <input value={rootDirectory} onChange={(event) => setRootDirectory(event.target.value)} placeholder="Root directory" />
+              <input value={buildCommand} onChange={(event) => setBuildCommand(event.target.value)} placeholder="Build command" />
+              {provider === "render" ? (
+                <input value={startCommand} onChange={(event) => setStartCommand(event.target.value)} placeholder="Start command" />
+              ) : null}
+            </>
+          ) : (
+            <>
+              <input value={providerProjectId} onChange={(event) => setProviderProjectId(event.target.value)} placeholder="Provider project ID" />
+              <input value={providerProjectName} onChange={(event) => setProviderProjectName(event.target.value)} placeholder="Provider project name" />
+            </>
+          )}
           <input value={branchName} onChange={(event) => setBranchName(event.target.value)} placeholder="Branch" />
-          <button className="ghost-button" disabled={saving || !projectName || !branchName} type="button" onClick={() => void handleCreateTarget()}>
-            Create target
+          <button
+            className="ghost-button"
+            data-testid="save-target"
+            disabled={
+              saving ||
+              !branchName ||
+              (targetAction === "create" && !projectName) ||
+              (targetAction === "register_existing" && (!providerProjectId || !providerProjectName)) ||
+              (ownershipMode === "byo" && !activeProviderConnectionId)
+            }
+            type="button"
+            onClick={() => void handleSaveTarget()}
+            style={{ minHeight: "2.75rem" }}
+          >
+            {targetAction === "create" ? "Create target" : "Register target"}
           </button>
         </div>
         <select value={activeTargetId} onChange={(event) => setTargetId(event.target.value)} disabled={!targets.length}>
@@ -104,7 +195,7 @@ export function ProjectEnvPanel({ project }: Readonly<{ project: ProvisionedProj
           ))}
         </div>
         {rows.map((row, index) => (
-          <div key={index} style={{ display: "grid", gridTemplateColumns: "1fr 1.3fr auto", gap: "0.45rem" }}>
+          <div key={index} style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(9rem, 1fr))", gap: "0.45rem" }}>
             <input
               value={row.key}
               onChange={(event) =>
@@ -141,7 +232,10 @@ export function ProjectEnvPanel({ project }: Readonly<{ project: ProvisionedProj
           {metadata.map((item) => (
             <div key={item.id} style={{ color: "var(--text-secondary)", display: "flex", fontSize: "0.75rem", gap: "0.5rem", justifyContent: "space-between" }}>
               <span>{item.key}</span>
-              <span>{item.environment} · {item.status}</span>
+              <span>
+                {item.environment} · {item.status}
+                {item.errorSummary ? ` · ${item.errorSummary}` : ""}
+              </span>
             </div>
           ))}
         </div>
