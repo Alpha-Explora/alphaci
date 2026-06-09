@@ -69,16 +69,7 @@ const labelAccentStyle: React.CSSProperties = {
   textTransform: "uppercase",
 };
 
-const inputBaseStyle: React.CSSProperties = {
-  padding: "0.65rem 0.85rem",
-  background: "rgba(15, 23, 42, 0.6)",
-  border: "1px solid var(--border-soft)",
-  borderRadius: "0.5rem",
-  color: "var(--text-primary)",
-  fontSize: "0.85rem",
-  width: "100%",
-  transition: "all 0.2s ease",
-};
+// Using premium-input class from globals.css
 
 function inferProjectKind(
   selectedProjectType: ProjectOptionsCatalogState["selectedProjectType"],
@@ -200,7 +191,7 @@ export function WorkflowSetupTab({
       transition={{ duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] }}
     >
       {/* ── Left: GitHub App + Catalog ─────────────────────────────── */}
-      <aside className="controls-panel">
+      <aside className="controls-panel glass-panel-premium">
 
         {/* GitHub App section */}
         <div className="controls-panel-section">
@@ -307,7 +298,7 @@ export function WorkflowSetupTab({
                 value={github.installationId}
                 onChange={(event) => github.setInstallationId(event.target.value.replaceAll(/\D/g, ""))}
                 placeholder="12345678"
-                style={inputBaseStyle}
+                className="premium-input"
               />
               <button
                 type="button"
@@ -336,7 +327,7 @@ export function WorkflowSetupTab({
             value={projectCatalog.selectedRepoShapeId}
             onChange={(event) => projectCatalog.setSelectedRepoShapeId(event.target.value)}
             disabled={projectCatalog.loadingProjectOptions}
-            style={inputBaseStyle}
+            className="premium-input"
           >
             {projectCatalog.allRepoShapes.map((shape) => (
               <option key={shape.id} value={shape.id} disabled={!shape.enabled}>
@@ -360,7 +351,7 @@ export function WorkflowSetupTab({
                 value={projectCatalog.selectedProjectTypeId}
                 onChange={(event) => projectCatalog.setSelectedProjectTypeId(event.target.value)}
                 disabled={projectCatalog.loadingProjectOptions}
-                style={inputBaseStyle}
+                className="premium-input"
               >
                 {projectCatalog.projectTypesForShape.map((projectType) => (
                   <option key={projectType.id} value={projectType.id}>
@@ -380,7 +371,7 @@ export function WorkflowSetupTab({
                 value={projectCatalog.selectedWorkflowRecipeId}
                 onChange={(event) => projectCatalog.setSelectedWorkflowRecipeId(event.target.value)}
                 disabled={projectCatalog.loadingProjectOptions}
-                style={inputBaseStyle}
+                className="premium-input"
               >
                 {projectCatalog.recipesForSelectedProject.map((recipe) => (
                   <option key={recipe.id} value={recipe.id}>
@@ -414,7 +405,7 @@ export function WorkflowSetupTab({
                   value={form.backendProjectTypeId}
                   onChange={(event) => form.setBackendProjectTypeId(event.target.value)}
                   disabled={projectCatalog.loadingProjectOptions}
-                  style={inputBaseStyle}
+                  className="premium-input"
                 >
                   {projectCatalog.backendProjectTypes.map((pt) => (
                     <option key={pt.id} value={pt.id}>{pt.label}</option>
@@ -431,7 +422,7 @@ export function WorkflowSetupTab({
                   value={form.backendServiceName}
                   onChange={(event) => form.setBackendServiceName(event.target.value)}
                   placeholder={form.repoName ? `${form.repoName}-backend` : "my-app-backend"}
-                  style={inputBaseStyle}
+                  className="premium-input"
                 />
                 <label className="input-label" htmlFor="backend-service-path" style={{ ...labelAccentStyle, marginTop: "0.55rem", display: "block" }}>
                   Service path
@@ -441,7 +432,7 @@ export function WorkflowSetupTab({
                   value={form.backendServicePath}
                   onChange={(event) => form.setBackendServicePath(event.target.value)}
                   placeholder="backend/"
-                  style={inputBaseStyle}
+                  className="premium-input"
                 />
               </div>
 
@@ -458,7 +449,7 @@ export function WorkflowSetupTab({
                   value={form.frontendProjectTypeId}
                   onChange={(event) => form.setFrontendProjectTypeId(event.target.value)}
                   disabled={projectCatalog.loadingProjectOptions}
-                  style={inputBaseStyle}
+                  className="premium-input"
                 >
                   {projectCatalog.frontendProjectTypes.map((pt) => (
                     <option key={pt.id} value={pt.id}>{pt.label}</option>
@@ -475,7 +466,7 @@ export function WorkflowSetupTab({
                   value={form.frontendServiceName}
                   onChange={(event) => form.setFrontendServiceName(event.target.value)}
                   placeholder={form.repoName ? `${form.repoName}-frontend` : "my-app-frontend"}
-                  style={inputBaseStyle}
+                  className="premium-input"
                 />
                 <label className="input-label" htmlFor="frontend-service-path" style={{ ...labelAccentStyle, marginTop: "0.55rem", display: "block" }}>
                   Service path
@@ -485,7 +476,7 @@ export function WorkflowSetupTab({
                   value={form.frontendServicePath}
                   onChange={(event) => form.setFrontendServicePath(event.target.value)}
                   placeholder="frontend/"
-                  style={inputBaseStyle}
+                  className="premium-input"
                 />
               </div>
             </>
@@ -500,7 +491,7 @@ export function WorkflowSetupTab({
       </aside>
 
       {/* ── Center: Create Project form ────────────────────────────── */}
-      <section className="templates-panel">
+      <section className="templates-panel glass-panel-premium">
         <div className="templates-header">
           <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "1.25rem" }}>
             <h2 style={{ margin: 0, fontSize: "1.25rem" }}>
@@ -594,7 +585,7 @@ export function WorkflowSetupTab({
                     value={existingRepoFullName}
                     onChange={(event) => onChangeExistingRepoFullName(event.target.value)}
                     disabled={github.loadingLinkedRepos}
-                    style={inputBaseStyle}
+                    className="premium-input"
                   >
                     <option value="">
                       {github.loadingLinkedRepos ? "Loading linked repos..." : "Choose a repository"}
@@ -615,7 +606,7 @@ export function WorkflowSetupTab({
                     value={existingRepoBaseBranch}
                     onChange={(event) => onChangeExistingRepoBaseBranch(event.target.value)}
                     placeholder="main"
-                    style={inputBaseStyle}
+                    className="premium-input"
                   />
                 </div>
               </div>
@@ -639,7 +630,7 @@ export function WorkflowSetupTab({
                   </button>
                   <button
                     type="button"
-                    className="primary-button"
+                    className="primary-button create-repo-btn-premium"
                     disabled={existingSetupDisabled}
                     aria-describedby="existing-repo-disabled-help"
                     onClick={() => void onSetupExistingRepoPullRequest()}
@@ -682,7 +673,7 @@ export function WorkflowSetupTab({
                       value={form.repoName}
                       onChange={(event) => form.setRepoName(event.target.value)}
                       placeholder="my-next-app"
-                      style={inputBaseStyle}
+                      className="premium-input"
                     />
                   </div>
                   <div>
@@ -693,7 +684,7 @@ export function WorkflowSetupTab({
                       id="repo-visibility"
                       value={form.visibility}
                       onChange={(event) => form.setVisibility(event.target.value as "private" | "public")}
-                      style={inputBaseStyle}
+                      className="premium-input"
                     >
                       <option value="private">Private</option>
                       <option value="public">Public</option>
@@ -713,7 +704,7 @@ export function WorkflowSetupTab({
                         value={form.serviceName}
                         onChange={(event) => form.setServiceName(event.target.value)}
                         placeholder="my-next-app"
-                        style={inputBaseStyle}
+                        className="premium-input"
                       />
                     </div>
                     <div>
@@ -725,7 +716,7 @@ export function WorkflowSetupTab({
                         value={form.servicePath}
                         onChange={(event) => form.setServicePath(event.target.value)}
                         placeholder="."
-                        style={inputBaseStyle}
+                        className="premium-input"
                       />
                     </div>
                   </div>
@@ -741,7 +732,7 @@ export function WorkflowSetupTab({
                     value={form.outputFileName}
                     onChange={(event) => form.setOutputFileName(event.target.value)}
                     placeholder="ci.yml"
-                    style={{ ...inputBaseStyle, width: "100%" }}
+                    className="premium-input"
                   />
                 </div>
 
@@ -756,7 +747,7 @@ export function WorkflowSetupTab({
                       value={form.nodeVersion}
                       onChange={(event) => form.setNodeVersion(event.target.value)}
                       placeholder="24"
-                      style={inputBaseStyle}
+                      className="premium-input"
                     />
                   </div>
                   <div>
@@ -768,7 +759,7 @@ export function WorkflowSetupTab({
                       value={form.coverageThreshold}
                       onChange={(event) => form.setCoverageThreshold(event.target.value)}
                       placeholder="80"
-                      style={inputBaseStyle}
+                      className="premium-input"
                     />
                   </div>
                 </div>
@@ -793,7 +784,7 @@ export function WorkflowSetupTab({
                       {projectCatalog.supportedTestOptions.map((option) => (
                         <motion.label
                           key={option.key}
-                          className={`enhancement-chip-label${option.supported ? "" : " disabled"}${option.checked ? " enhancement-chip-label--active" : ""}`}
+                          className={`enhancement-chip-label-premium${option.supported ? "" : " disabled"}${option.checked ? " enhancement-chip-label--active" : ""}`}
                           htmlFor={`chip-${option.key}`}
                           title={projectOptionDescriptions[option.key]}
                           style={option.supported ? undefined : { opacity: 0.45, cursor: "not-allowed" }}
@@ -831,7 +822,7 @@ export function WorkflowSetupTab({
 
                 <button
                   type="button"
-                  className="primary-button create-repo-btn"
+                  className="primary-button create-repo-btn-premium"
                   data-testid="setup-project-button"
                   disabled={createDisabled}
                   onClick={() => void onCreateProject()}
