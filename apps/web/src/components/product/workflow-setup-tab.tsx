@@ -71,37 +71,6 @@ const labelAccentStyle: React.CSSProperties = {
 
 // Using premium-input class from globals.css
 
-function inferProjectKind(
-  selectedProjectType: ProjectOptionsCatalogState["selectedProjectType"],
-): "frontend" | "backend" | undefined {
-  if (selectedProjectType?.kind) {
-    return selectedProjectType.kind;
-  }
-
-  const text = [
-    selectedProjectType?.id,
-    selectedProjectType?.label,
-    selectedProjectType?.framework,
-    selectedProjectType?.runtime,
-  ]
-    .filter(Boolean)
-    .join(" ")
-    .toLowerCase();
-
-  if (/(next|react|frontend|web|vue|svelte)/.test(text)) {
-    return "frontend";
-  }
-  if (/(nest|node|api|backend|server)/.test(text)) {
-    return "backend";
-  }
-  return undefined;
-}
-
-function withTestSuffix(value: string) {
-  const base = value.trim() || "flowci-project";
-  return base.endsWith("-test") ? base : `${base}-test`;
-}
-
 export function WorkflowSetupTab({
   createResult,
   existingRepoBaseBranch,

@@ -1,4 +1,4 @@
-import type { Metadata, Viewport } from "next";
+import type { Metadata } from "next";
 import { Doto } from "next/font/google";
 import "./globals.css";
 
