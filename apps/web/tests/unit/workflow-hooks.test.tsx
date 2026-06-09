@@ -383,7 +383,7 @@ describe("workflow hooks", () => {
     expect(current?.serviceName).toBe("example-app");
 
     const result = current?.buildPayload({
-      isMicroservicesShape: false,
+      isMicroservicesShape: false, isMultiRepoShape: false,
       repoShapeId: "single-app",
       projectTypeId: "nextjs-app",
       workflowRecipeId: "frontend-standard-ci",
@@ -425,7 +425,7 @@ describe("workflow hooks", () => {
   it("reports create project form validation branches", async () => {
     let current = null as ReturnType<typeof useCreateProjectForm> | null;
     const baseInput = {
-      isMicroservicesShape: false,
+      isMicroservicesShape: false, isMultiRepoShape: false,
       repoShapeId: "single-app",
       projectTypeId: "nextjs-app",
       workflowRecipeId: "frontend-standard-ci",
@@ -542,7 +542,7 @@ describe("workflow hooks", () => {
 
     expect(
       current?.buildPayload({
-        isMicroservicesShape: true,
+        isMicroservicesShape: true, isMultiRepoShape: true,
         repoShapeId: "microservices",
         projectTypeId: "",
         workflowRecipeId: "",

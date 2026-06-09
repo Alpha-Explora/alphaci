@@ -1,13 +1,13 @@
 import type { Metadata } from "next";
-import { Manrope, Sora } from "next/font/google";
+import { Doto } from "next/font/google";
 import "./globals.css";
 
-const displayFont = Sora({
+const displayFont = Doto({
   variable: "--font-display",
   subsets: ["latin"],
 });
 
-const bodyFont = Manrope({
+const bodyFont = Doto({
   variable: "--font-body",
   subsets: ["latin"],
 });

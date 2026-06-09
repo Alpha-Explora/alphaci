@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { motion, useReducedMotion, useScroll, useSpring, useTransform } from "framer-motion";
+import { motion, useReducedMotion, useScroll, useSpring, useTransform, useMotionValueEvent, useAnimation } from "framer-motion";
 import { useRef, useState, useEffect } from "react";
 
 import { FlowBackground } from "@/components/layout/flow-background";
@@ -398,40 +398,45 @@ const mockupContainerVariants = {
 
 function HeroYamlTerminal({ reduced }: Readonly<{ reduced: boolean | null }>) {
   return (
-    <motion.div
-      className="hero-mockup"
-      style={{ width: "100%", maxWidth: 520 }}
-      initial={reduced ? undefined : { opacity: 0, y: 24, scale: 0.97 }}
-      animate={reduced ? undefined : { opacity: 1, y: 0, scale: 1 }}
-      transition={{ duration: 0.55, delay: 0.55, ease: [0.22, 1, 0.36, 1] }}
-    >
-      <div className="hero-mockup-bar">
-        <span className="mockup-dot mockup-dot-red" aria-hidden="true" />
-        <span className="mockup-dot mockup-dot-yellow" aria-hidden="true" />
-        <span className="mockup-dot mockup-dot-green" aria-hidden="true" />
-        <span style={{ fontFamily: "ui-monospace, monospace", fontSize: "0.65rem", color: "rgba(255,255,255,0.3)", marginLeft: "0.4rem" }}>
-          payments-service.yml
-        </span>
+    <>
+      <div style={{ marginBottom: "0.5rem" }}>
+        <p className="file-path-label" style={{ margin: 0 }}>workflow/generated-output.yml</p>
       </div>
-      <motion.pre
-        aria-label="Example generated YAML workflow"
-        variants={reduced ? undefined : mockupContainerVariants}
-        initial={reduced ? undefined : "hidden"}
-        animate={reduced ? undefined : "visible"}
-        style={{ fontSize: "0.75rem" }}
+      <motion.div
+        className="hero-mockup"
+        style={{ width: "100%", maxWidth: 520 }}
+        initial={reduced ? undefined : { opacity: 0, y: 24, scale: 0.97 }}
+        animate={reduced ? undefined : { opacity: 1, y: 0, scale: 1 }}
+        transition={{ duration: 0.55, delay: 0.55, ease: [0.22, 1, 0.36, 1] }}
       >
-        {heroYamlLines.map((line) => (
-          <motion.span
-            key={line.id}
-            variants={reduced ? undefined : yamlLineVariants}
-            transition={{ duration: 0.28, ease: "easeOut" }}
-            style={{ display: "block" }}
-          >
-            <YamlLineContent line={line} />
-          </motion.span>
-        ))}
-      </motion.pre>
-    </motion.div>
+        <div className="hero-mockup-bar">
+          <span className="mockup-dot mockup-dot-red" aria-hidden="true" />
+          <span className="mockup-dot mockup-dot-yellow" aria-hidden="true" />
+          <span className="mockup-dot mockup-dot-green" aria-hidden="true" />
+          <span style={{ fontFamily: "ui-monospace, monospace", fontSize: "0.65rem", color: "rgba(255,255,255,0.3)", marginLeft: "0.4rem" }}>
+            payments-service.yml
+          </span>
+        </div>
+        <motion.pre
+          aria-label="Example generated YAML workflow"
+          variants={reduced ? undefined : mockupContainerVariants}
+          initial={reduced ? undefined : "hidden"}
+          animate={reduced ? undefined : "visible"}
+          style={{ fontSize: "0.75rem" }}
+        >
+          {heroYamlLines.map((line) => (
+            <motion.span
+              key={line.id}
+              variants={reduced ? undefined : yamlLineVariants}
+              transition={{ duration: 0.28, ease: "easeOut" }}
+              style={{ display: "block" }}
+            >
+              <YamlLineContent line={line} />
+            </motion.span>
+          ))}
+        </motion.pre>
+      </motion.div>
+    </>
   );
 }
 
@@ -488,6 +493,182 @@ function resolveNavLinks(status: string, hasSubscription: boolean): NavLinks {
   };
 }
 
+
+/* ── Lusion-style Scroll Progress Line ──────────────────────────────────── */
+
+const SECTION_LABELS = ["01", "02", "03", "04"];
+
+function ScrollProgressLine({ progress }: Readonly<{ progress: any }>) {
+  const scaleY = useSpring(progress, { stiffness: 100, damping: 30, restDelta: 0.001 });
+  
+  return (
+    <div
+      aria-hidden="true"
+      style={{
+        position: "fixed",
+        left: "clamp(1.5rem, 3vw, 3.5rem)",
+        top: "50%",
+        transform: "translateY(-50%)",
+        zIndex: 90,
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        gap: "0",
+        height: "240px",
+        pointerEvents: "none",
+      }}
+    >
+      {SECTION_LABELS.map((label, i) => (
+        <motion.span
+          key={label}
+          style={{
+            fontSize: "0.6rem",
+            fontWeight: 700,
+            letterSpacing: "0.1em",
+            color: "rgba(255, 255, 255, 0.25)",
+            fontFamily: "ui-monospace, monospace",
+            lineHeight: 1,
+            position: "absolute",
+            top: `${(i / (SECTION_LABELS.length - 1)) * 100}%`,
+            left: "-1.5rem",
+            transform: "translateY(-50%)",
+          }}
+        >
+          {label}
+        </motion.span>
+      ))}
+      {/* Track */}
+      <div
+        style={{
+          width: "1px",
+          height: "100%",
+          background: "rgba(255, 255, 255, 0.08)",
+          position: "relative",
+          borderRadius: "1px",
+        }}
+      >
+        {/* Active fill */}
+        <motion.div
+          style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            width: "100%",
+            background: "rgba(255, 255, 255, 0.6)",
+            borderRadius: "1px",
+            transformOrigin: "top",
+            scaleY,
+            height: "100%",
+          }}
+        />
+        {/* Glowing dot at current position */}
+        <motion.div
+          style={{
+            position: "absolute",
+            left: "50%",
+            transform: "translateX(-50%)",
+            width: "5px",
+            height: "5px",
+            borderRadius: "50%",
+            background: "#fff",
+            boxShadow: "0 0 8px rgba(255,255,255,0.5), 0 0 20px rgba(56,189,248,0.3)",
+            top: useTransform(progress, [0, 1], ["0%", "100%"]),
+          }}
+        />
+      </div>
+    </div>
+  );
+}
+
+/* ── Corner Markers (Lusion viewport frame) ─────────────────────────────── */
+
+function CornerMarkers() {
+  return (
+    <div aria-hidden="true" style={{ position: "fixed", inset: 0, zIndex: 80, pointerEvents: "none" }}>
+      {[
+        { top: "1.5rem", left: "1.5rem" },
+        { top: "1.5rem", right: "1.5rem" },
+        { bottom: "1.5rem", left: "1.5rem" },
+        { bottom: "1.5rem", right: "1.5rem" },
+      ].map((pos, i) => (
+        <span
+          key={i}
+          style={{
+            position: "absolute",
+            ...pos,
+            color: "rgba(255, 255, 255, 0.12)",
+            fontSize: "0.85rem",
+            fontWeight: 300,
+            lineHeight: 1,
+            fontFamily: "ui-monospace, monospace",
+          }}
+        >
+          +
+        </span>
+      ))}
+    </div>
+  );
+}
+
+/* ── Scroll-to-Explore Indicator ─────────────────────────────────────────── */
+
+function ScrollHint({ progress }: Readonly<{ progress: any }>) {
+  const opacity = useTransform(progress, [0, 0.08], [1, 0]);
+  
+  return (
+    <motion.div
+      style={{
+        position: "fixed",
+        bottom: "2.5rem",
+        left: "50%",
+        transform: "translateX(-50%)",
+        zIndex: 80,
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        gap: "0.75rem",
+        opacity,
+        pointerEvents: "none",
+      }}
+    >
+      {/* Animated line */}
+      <motion.div
+        style={{
+          width: "1px",
+          height: "32px",
+          background: "linear-gradient(to bottom, transparent, rgba(255,255,255,0.5))",
+          position: "relative",
+          overflow: "hidden",
+        }}
+      >
+        <motion.div
+          style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            width: "100%",
+            height: "50%",
+            background: "#fff",
+          }}
+          animate={{ y: ["0%", "200%"] }}
+          transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
+        />
+      </motion.div>
+      <span
+        style={{
+          fontSize: "0.6rem",
+          fontWeight: 700,
+          letterSpacing: "0.25em",
+          textTransform: "uppercase",
+          color: "rgba(255, 255, 255, 0.4)",
+          fontFamily: "ui-monospace, monospace",
+        }}
+      >
+        Scroll to explore
+      </span>
+    </motion.div>
+  );
+}
 /* ── Page ────────────────────────────────────────────────────────────────── */
 
 export default function LandingPage() {
@@ -504,16 +685,57 @@ export default function LandingPage() {
   const { scrollYProgress: pageScrollYProgress } = useScroll();
   const scaleX = useSpring(pageScrollYProgress, { stiffness: 200, damping: 40 });
 
-  // Navbar scroll-state: intensify backdrop + border when scrolled
+  // Navbar auto-hide logic
+  const navControls = useAnimation();
+  const { scrollY } = useScroll();
+  const isHoveringNav = useRef(false);
+  const navState = useRef<"visible" | "hidden">("visible");
+
+  // Run initial entrance animation
   useEffect(() => {
+    if (!prefersReducedMotion) {
+      navControls.start({ y: 0, opacity: 1, transition: { duration: 0.8, ease: [0.25, 1, 0.5, 1], delay: 0.2 } });
+    } else {
+      navControls.start({ y: 0, opacity: 1 });
+    }
+  }, [navControls, prefersReducedMotion]);
+
+  useMotionValueEvent(scrollY, "change", (latest) => {
     const nav = navRef.current;
-    if (!nav) return;
-    const onScroll = () => {
-      nav.dataset.scrolled = window.scrollY > 10 ? "true" : "false";
+    if (nav) nav.dataset.scrolled = latest > 10 ? "true" : "false";
+    
+    if (isHoveringNav.current) return;
+    
+    if (latest > 150 && navState.current !== "hidden") {
+      navState.current = "hidden";
+      navControls.start({ y: "-100%", transition: { type: "spring", stiffness: 300, damping: 30 } });
+    } else if (latest <= 150 && navState.current !== "visible") {
+      navState.current = "visible";
+      navControls.start({ y: 0, transition: { type: "spring", stiffness: 300, damping: 30 } });
+    }
+  });
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      const isHovering = e.clientY < 120;
+      
+      if (isHovering && !isHoveringNav.current) {
+        isHoveringNav.current = true;
+        if (navState.current !== "visible") {
+          navState.current = "visible";
+          navControls.start({ y: 0, transition: { type: "spring", stiffness: 400, damping: 35 } });
+        }
+      } else if (!isHovering && isHoveringNav.current) {
+        isHoveringNav.current = false;
+        if (window.scrollY > 150 && navState.current !== "hidden") {
+          navState.current = "hidden";
+          navControls.start({ y: "-100%", transition: { type: "spring", stiffness: 300, damping: 30 } });
+        }
+      }
     };
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
-  }, []);
+    window.addEventListener("mousemove", handleMouseMove);
+    return () => window.removeEventListener("mousemove", handleMouseMove);
+  }, [navControls]);
 
   const {
     primaryHref,
@@ -539,224 +761,531 @@ export default function LandingPage() {
       )}
 
       {/* Navigation */}
-      <header ref={navRef} className="marketing-nav marketing-nav-enhanced">
-        <Link className="brand-mark" href="/" aria-label="FlowCI Studio home" style={{ gap: "0.55rem" }}>
-          <PipelineLogo size={24} />
-          <span style={{ fontWeight: 800, color: "var(--text-primary)", letterSpacing: "-0.02em" }}>
+      <motion.header 
+        ref={navRef} 
+        className="marketing-nav marketing-nav-enhanced" 
+        style={{ position: "fixed", top: 0, left: 0, right: 0, padding: "0 clamp(1.5rem, 5vw, 3rem)", height: "80px", borderBottom: "none", background: "transparent" }}
+        initial={prefersReducedMotion ? undefined : { y: -100, opacity: 0 }}
+        animate={navControls}
+      >
+        <Link className="brand-mark" href="/" aria-label="FlowCI Studio home" style={{ gap: "0.75rem", flex: 1, alignItems: "center" }}>
+          <PipelineLogo size={32} />
+          <span style={{ fontWeight: 800, fontSize: "1.75rem", color: "var(--text-primary)", letterSpacing: "-0.02em", lineHeight: 1 }}>
             FlowCI
           </span>
-          <span style={{ fontWeight: 600, color: "var(--text-primary)", letterSpacing: "-0.01em" }}>
+          <span style={{ fontWeight: 600, fontSize: "1.75rem", color: "var(--text-primary)", letterSpacing: "-0.01em", lineHeight: 1 }}>
             Studio
           </span>
         </Link>
 
-        {/* Center nav links — plain text, underline on hover */}
-        <nav aria-label="Primary" className="nav-links" style={{ gap: "2rem" }}>
-          {[
-            { href: "/workflows", label: "Workflows" },
-            { href: "#pipeline", label: "How it works" },
-          ].map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              style={{
-                fontSize: "0.875rem",
-                fontWeight: 500,
-                color: "var(--text-secondary)",
-                textDecoration: "none",
-                letterSpacing: "-0.01em",
-                paddingBottom: "2px",
-                borderBottom: "1px solid transparent",
-                transition: "color 0.18s ease, border-color 0.18s ease",
-              }}
-              onMouseEnter={(e) => {
-                const el = e.currentTarget as HTMLAnchorElement;
-                el.style.color = "var(--text-primary)";
-                el.style.borderBottomColor = "rgba(255,255,255,0.3)";
-              }}
-              onMouseLeave={(e) => {
-                const el = e.currentTarget as HTMLAnchorElement;
-                el.style.color = "var(--text-secondary)";
-                el.style.borderBottomColor = "transparent";
-              }}
-            >
-              {item.label}
-            </Link>
-          ))}
-        </nav>
+        {/* Removed center nav links to match Lusion minimalism */}
 
-        <div className="landing-nav-actions" style={{ gap: "1.25rem" }}>
-          {/* Plain "Log in" text link */}
+        <div className="landing-nav-actions" style={{ gap: "0.5rem", flex: 1, justifyContent: "flex-end", display: "flex" }}>
+          {/* Lusion style pill button for Login */}
           <Link
             href={navUtilityHref}
             style={{
-              fontSize: "0.875rem",
-              fontWeight: 500,
-              color: "var(--text-secondary)",
+              fontSize: "0.75rem",
+              fontWeight: 700,
+              color: "var(--text-primary)",
               textDecoration: "none",
-              transition: "color 0.18s ease",
-              whiteSpace: "nowrap",
+              textTransform: "uppercase",
+              letterSpacing: "0.1em",
+              padding: "0.6rem 1.5rem",
+              borderRadius: "999px",
+              border: "1px solid rgba(255, 255, 255, 0.15)",
+              transition: "background 0.2s ease",
             }}
-            onMouseEnter={(e) => { (e.currentTarget as HTMLAnchorElement).style.color = "var(--text-primary)"; }}
-            onMouseLeave={(e) => { (e.currentTarget as HTMLAnchorElement).style.color = "var(--text-secondary)"; }}
+            onMouseEnter={(e) => { (e.currentTarget as HTMLAnchorElement).style.background = "rgba(255, 255, 255, 0.05)"; }}
+            onMouseLeave={(e) => { (e.currentTarget as HTMLAnchorElement).style.background = "transparent"; }}
           >
             {navUtilityLabel}
           </Link>
-          {/* Gradient pill CTA */}
+          
+          {/* Lusion style pill CTA */}
           <Link
-            className="cta-gradient-button"
             href={appHref}
-            style={{ fontSize: "0.85rem", padding: "0.45rem 1.25rem" }}
+            style={{
+              fontSize: "0.75rem",
+              fontWeight: 700,
+              color: "#000",
+              background: "var(--text-primary)",
+              textDecoration: "none",
+              textTransform: "uppercase",
+              letterSpacing: "0.1em",
+              padding: "0.6rem 1.5rem",
+              borderRadius: "999px",
+              display: "flex",
+              alignItems: "center",
+              gap: "0.4rem",
+              transition: "transform 0.2s ease, background 0.2s ease",
+            }}
+            onMouseEnter={(e) => { (e.currentTarget as HTMLAnchorElement).style.transform = "scale(1.05)"; }}
+            onMouseLeave={(e) => { (e.currentTarget as HTMLAnchorElement).style.transform = "scale(1)"; }}
           >
-            <span className="cta-shimmer" aria-hidden="true" />
-            {appLabel} &rarr;
+            <span style={{ width: "4px", height: "4px", background: "#000", borderRadius: "50%" }} />
+            {appLabel}
           </Link>
         </div>
-      </header>
+      </motion.header>
 
       <div id="main-content">
-        {/* ── SECTION 1: Full-screen hero ──────────────────────────────── */}
-        <section className="hero-full" ref={heroRef} aria-label="Main message">
-          <div aria-hidden="true" className="hero-mesh-bg" />
-
-          <motion.div
-            className="hero-full-content"
-            style={prefersReducedMotion ? undefined : { y: heroY }}
+        {/* ── SECTION 1: Asymmetric Split Hero ──────────────────────────────── */}
+        <section className="raw-hero-grid" ref={heroRef} aria-label="Main message" style={{ position: "relative", minHeight: "100vh", display: "grid", gridTemplateColumns: "1fr 1fr", alignItems: "center", alignContent: "center", padding: "80px clamp(2rem, 7vw, 8rem) 4rem", gap: "4rem", overflow: "hidden", background: "#020617" }}>
+          <div aria-hidden="true" className="editorial-hero-bg" />
+          
+          {/* Massive Background Text */}
+          <motion.h1 
+            className="hero-massive-text"
+            style={prefersReducedMotion ? { opacity: 0.8 } : { 
+              opacity: useTransform(pageScrollYProgress, [0, 1], [0.8, 0.2]),
+              x: useTransform(pageScrollYProgress, [0, 1], ["0%", "-20%"])
+            }}
           >
-            <p className="file-path-label">workflows/generate.yml</p>
+            FLOWCI FLOWCI FLOWCI
+          </motion.h1>
 
+          {/* LEFT COLUMN — Text Content */}
+          <motion.div
+            className="raw-hero-content"
+            style={prefersReducedMotion ? { gridColumn: "1 / 2", gridRow: "1 / 2" } : { 
+              y: useTransform(pageScrollYProgress, [0, 1], [0, -150]),
+              position: "relative",
+              zIndex: 10,
+              textAlign: "left",
+              gridColumn: "1 / 2",
+              gridRow: "1 / 2"
+            }}
+            initial="hidden"
+            animate="visible"
+            variants={{
+              hidden: {},
+              visible: { transition: { staggerChildren: 0.15, delayChildren: 0.3 } }
+            }}
+          >
             <motion.p
-              className="hero-chip"
-              initial={prefersReducedMotion ? undefined : { opacity: 0, y: 10 }}
-              animate={prefersReducedMotion ? undefined : { opacity: 1, y: 0 }}
-              transition={{ duration: 0.38 }}
+              variants={prefersReducedMotion ? undefined : {
+                hidden: { opacity: 0, x: -30, filter: "blur(8px)" },
+                visible: { opacity: 1, x: 0, filter: "blur(0px)", transition: { duration: 0.8, ease: [0.25, 1, 0.5, 1] } }
+              }}
+              style={{ marginBottom: "1.5rem", display: "inline-flex", alignItems: "center", fontSize: "0.7rem", fontWeight: 700, letterSpacing: "0.2em", textTransform: "uppercase", color: "var(--brand)" }}
             >
-              <span
-                aria-hidden="true"
-                style={{
-                  width: "6px",
-                  height: "6px",
-                  borderRadius: "50%",
-                  background: "var(--brand-accent)",
-                  display: "inline-block",
-                  marginRight: "0.4rem",
-                  animation: "flowPulse 1.8s ease-in-out infinite",
-                }}
-              />
-              Powered by source-backed templates
+              <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "var(--brand)", marginRight: "0.75rem", boxShadow: "0 0 12px var(--brand)" }} />
+              POWERED BY SOURCE-BACKED TEMPLATES
             </motion.p>
-
-            <motion.h1
-              initial={prefersReducedMotion ? undefined : { opacity: 0, y: 20 }}
-              animate={prefersReducedMotion ? undefined : { opacity: 1, y: 0 }}
-              transition={{ duration: 0.42 }}
+            
+            <motion.h2
+              variants={prefersReducedMotion ? undefined : {
+                hidden: { opacity: 0, y: 60, filter: "blur(12px)" },
+                visible: { opacity: 1, y: 0, filter: "blur(0px)", transition: { duration: 1.2, ease: [0.25, 1, 0.5, 1] } }
+              }}
+              style={{ fontSize: "clamp(2.5rem, 4.5vw, 4.5rem)", letterSpacing: "-0.03em", lineHeight: 1.05, marginBottom: "0.5rem", color: "var(--text-primary)", fontWeight: 800 }}
             >
-              Build production-ready{" "}
-              <br className="hero-br-desktop" />
-              workflows{" "}
-              <span className="hero-highlight">instantly</span>
-            </motion.h1>
-
+              Build<br/>production-ready<br/>workflows<br/><span style={{ color: "var(--brand)" }}>instantly</span>
+            </motion.h2>
+            
             <motion.p
-              className="hero-description"
-              initial={prefersReducedMotion ? undefined : { opacity: 0, y: 18 }}
-              animate={prefersReducedMotion ? undefined : { opacity: 1, y: 0 }}
-              transition={{ duration: 0.48, delay: 0.08 }}
+              variants={prefersReducedMotion ? undefined : {
+                hidden: { opacity: 0, y: 30, filter: "blur(6px)" },
+                visible: { opacity: 1, y: 0, filter: "blur(0px)", transition: { duration: 0.9, ease: [0.25, 1, 0.5, 1] } }
+              }}
+              style={{ color: "var(--text-secondary)", fontSize: "clamp(0.95rem, 1.5vw, 1.15rem)", lineHeight: 1.7, marginBottom: "2.5rem", maxWidth: "480px" }}
             >
-              Transform service requirements into complete CI/CD pipelines with agent-guided
-              setup, generation, and export in one place.
+              Transform service requirements into complete CI/CD pipelines with agent-guided setup, generation, and export.
             </motion.p>
 
             <motion.div
-              className="stats-row stats-row-enhanced"
-              initial={prefersReducedMotion ? undefined : { opacity: 0, y: 14 }}
-              animate={prefersReducedMotion ? undefined : { opacity: 1, y: 0 }}
-              transition={{ duration: 0.42, delay: 0.12 }}
+              variants={prefersReducedMotion ? undefined : {
+                hidden: { opacity: 0, y: 30, scale: 0.95 },
+                visible: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.7, ease: [0.25, 1, 0.5, 1] } }
+              }}
+              style={{ display: "flex", gap: "1rem" }}
             >
+              <Link className="primary-button" href={primaryHref} style={{ background: "var(--text-primary)", color: "#020617", border: "none", fontWeight: 700, borderRadius: "999px", padding: "0.9rem 2rem", textTransform: "uppercase", letterSpacing: "0.1em", fontSize: "0.8rem" }}>
+                {primaryLabel}
+              </Link>
+              <Link className="ghost-button" href="/home" style={{ borderRadius: "999px", color: "var(--text-primary)", border: "1px solid rgba(255,255,255,0.15)", fontWeight: 600, padding: "0.9rem 2rem", textTransform: "uppercase", letterSpacing: "0.1em", fontSize: "0.8rem", background: "rgba(255,255,255,0.03)", backdropFilter: "blur(10px)" }}>
+                Preview as guest
+              </Link>
+            </motion.div>
+
+            {/* Stats row */}
+            <motion.div
+              variants={prefersReducedMotion ? undefined : {
+                hidden: { opacity: 0, y: 20 },
+                visible: { opacity: 1, y: 0, transition: { duration: 0.8, ease: [0.25, 1, 0.5, 1] } }
+              }}
+              style={{ display: "flex", gap: "3rem", marginTop: "3rem", paddingTop: "2rem", borderTop: "1px solid rgba(255,255,255,0.06)" }}
+            >
+              <div>
+                <span style={{ fontSize: "1.8rem", fontWeight: 800, color: "var(--text-primary)", lineHeight: 1, display: "block" }}>40+</span>
+                <span style={{ fontSize: "0.65rem", color: "var(--text-muted)", letterSpacing: "0.15em", textTransform: "uppercase", fontFamily: "ui-monospace, monospace" }}>Templates</span>
+              </div>
+              <div>
+                <span style={{ fontSize: "1.8rem", fontWeight: 800, color: "var(--brand)", lineHeight: 1, display: "block", textShadow: "0 0 20px rgba(56,189,248,0.3)" }}>&lt;2m</span>
+                <span style={{ fontSize: "0.65rem", color: "var(--text-muted)", letterSpacing: "0.15em", textTransform: "uppercase", fontFamily: "ui-monospace, monospace" }}>Setup Time</span>
+              </div>
+              <div>
+                <span style={{ fontSize: "1.8rem", fontWeight: 800, color: "var(--brand-accent)", lineHeight: 1, display: "block", textShadow: "0 0 20px rgba(52,211,153,0.3)" }}>100%</span>
+                <span style={{ fontSize: "0.65rem", color: "var(--text-muted)", letterSpacing: "0.15em", textTransform: "uppercase", fontFamily: "ui-monospace, monospace" }}>Open Source</span>
+              </div>
+            </motion.div>
+
+            {/* Removed Language Badges from here per user request */}
+          </motion.div>
+
+          {/* RIGHT COLUMN — Multi-layer floating dashboard */}
+          <motion.div
+            style={prefersReducedMotion ? { position: "relative", zIndex: 10, marginTop: "2rem", gridColumn: "2 / 3", gridRow: "1 / 2" } : {
+              y: useTransform(pageScrollYProgress, [0, 0.5], [0, -80]),
+              position: "relative",
+              zIndex: 10,
+              marginTop: "2rem",
+              gridColumn: "2 / 3",
+              gridRow: "1 / 2"
+            }}
+            initial={prefersReducedMotion ? undefined : { opacity: 0, x: 60, scale: 0.95 }}
+            animate={prefersReducedMotion ? undefined : { opacity: 1, x: 0, scale: 1 }}
+            transition={{ duration: 1.4, delay: 0.6, ease: [0.25, 1, 0.5, 1] }}
+          >
+            {/* ── STAGE STATUS FLOATING CARD — top-left, overlapping main card */}
+            <motion.div
+              initial={prefersReducedMotion ? undefined : { opacity: 0, x: -20, y: -10 }}
+              animate={prefersReducedMotion ? undefined : { opacity: 1, x: 0, y: 0 }}
+              transition={{ duration: 0.6, delay: 2.2, ease: [0.25, 1, 0.5, 1] }}
+              style={{
+                position: "absolute",
+                top: "-1.25rem",
+                left: "-1.5rem",
+                background: "rgba(15,23,42,0.85)",
+                backdropFilter: "blur(16px)",
+                WebkitBackdropFilter: "blur(16px)",
+                border: "1px solid rgba(255,255,255,0.1)",
+                borderRadius: "14px",
+                padding: "0.75rem 1rem",
+                zIndex: 30,
+                boxShadow: "0 8px 32px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.06)",
+                minWidth: "160px",
+              }}
+            >
+              <div style={{ fontSize: "0.55rem", color: "var(--text-muted)", letterSpacing: "0.15em", textTransform: "uppercase", fontFamily: "ui-monospace, monospace", marginBottom: "0.6rem" }}>Pipeline stages</div>
               {[
-                { value: "40+", label: "Templates", accent: "var(--brand)" },
-                { value: "< 2 min", label: "Setup time", accent: "var(--brand-accent)" },
-                { value: "100%", label: "GitHub native", accent: "var(--brand)" },
-                { value: "₱300/mo", label: "Pro plan", accent: "var(--brand-accent)" },
-              ].map((stat) => (
-                <div key={stat.label} className="stat-block stat-block-enhanced">
-                  <span
-                    className="stat-number"
-                    style={{
-                      background: `linear-gradient(135deg, var(--text-primary), ${stat.accent})`,
-                      WebkitBackgroundClip: "text",
-                      WebkitTextFillColor: "transparent",
-                      backgroundClip: "text",
-                      color: "var(--text-primary)",
-                    }}
-                  >
-                    {stat.value}
-                  </span>
-                  <span className="stat-label">{stat.label}</span>
+                { label: "Lint",  color: "#34d399", done: true },
+                { label: "Test",  color: "#34d399", done: true },
+                { label: "Build", color: "var(--brand)", done: false },
+              ].map((stage) => (
+                <div key={stage.label} style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.35rem" }}>
+                  <span style={{
+                    width: "7px",
+                    height: "7px",
+                    borderRadius: "50%",
+                    background: stage.color,
+                    boxShadow: `0 0 6px ${stage.color}`,
+                    flexShrink: 0,
+                    animation: stage.done ? undefined : "flowPulse 1.5s ease-in-out infinite",
+                  }} />
+                  <span style={{ fontSize: "0.72rem", fontWeight: 600, color: stage.done ? "var(--text-secondary)" : "var(--text-primary)", fontFamily: "ui-monospace, monospace" }}>{stage.label}</span>
+                  <span style={{ marginLeft: "auto", fontSize: "0.62rem", color: stage.done ? "#34d399" : "var(--brand)", fontWeight: 700 }}>{stage.done ? "✓" : "..."}</span>
                 </div>
               ))}
             </motion.div>
 
-            <motion.div
-              className="hero-actions"
-              initial={prefersReducedMotion ? undefined : { opacity: 0, y: 20 }}
-              animate={prefersReducedMotion ? undefined : { opacity: 1, y: 0 }}
-              transition={{ duration: 0.45, delay: 0.15 }}
-            >
-              <motion.div whileHover={prefersReducedMotion ? undefined : { scale: 1.04 }} whileTap={{ scale: 0.96 }}>
-                <Link className="primary-button" href={primaryHref}>{primaryLabel}</Link>
-              </motion.div>
-              <motion.div whileHover={prefersReducedMotion ? undefined : { scale: 1.04 }} whileTap={{ scale: 0.96 }}>
-                <Link className="ghost-button" href="#pricing">View pricing</Link>
-              </motion.div>
-              <motion.div whileHover={prefersReducedMotion ? undefined : { scale: 1.04 }} whileTap={{ scale: 0.96 }}>
-                <Link
-                  className="ghost-button"
-                  href="/home"
-                  style={{ color: "var(--text-muted)", borderColor: "var(--border-subtle)", fontSize: "0.9rem" }}
+            {/* ── MAIN PIPELINE CARD */}
+            <div style={{
+              position: "relative",
+              zIndex: 10,
+              background: "rgba(15, 23, 42, 0.6)",
+              backdropFilter: "blur(24px)",
+              WebkitBackdropFilter: "blur(24px)",
+              border: "1px solid rgba(255, 255, 255, 0.08)",
+              borderRadius: "20px",
+              padding: "2rem",
+              boxShadow: "0 24px 80px -12px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,255,255,0.06), 0 0 0 1px rgba(56,189,248,0.04)",
+            }}>
+              {/* Card radial glow */}
+              <div aria-hidden="true" style={{
+                position: "absolute",
+                inset: 0,
+                borderRadius: "20px",
+                background: "radial-gradient(ellipse 80% 60% at 50% 0%, rgba(56,189,248,0.07) 0%, transparent 70%)",
+                pointerEvents: "none",
+              }} />
+
+              {/* Top bar — with branch chip and commit hash */}
+              <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "1.25rem" }}>
+                <span style={{ width: "8px", height: "8px", borderRadius: "50%", background: "#ef4444" }} />
+                <span style={{ width: "8px", height: "8px", borderRadius: "50%", background: "#eab308" }} />
+                <span style={{ width: "8px", height: "8px", borderRadius: "50%", background: "#22c55e" }} />
+                {/* Branch chip */}
+                <span style={{
+                  marginLeft: "0.5rem",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "0.25rem",
+                  background: "rgba(56,189,248,0.08)",
+                  border: "1px solid rgba(56,189,248,0.2)",
+                  borderRadius: "6px",
+                  padding: "0.15rem 0.5rem",
+                  fontSize: "0.62rem",
+                  fontWeight: 700,
+                  color: "var(--brand)",
+                  fontFamily: "ui-monospace, monospace",
+                }}>
+                  <svg width="8" height="8" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M11.75 2.5a.75.75 0 100 1.5.75.75 0 000-1.5zm-2.25.75a2.25 2.25 0 113 2.122V6A2.5 2.5 0 0110 8.5H6a1 1 0 00-1 1v1.128a2.251 2.251 0 11-1.5 0V5.372a2.25 2.25 0 111.5 0v1.836A2.492 2.492 0 016 7h4a1 1 0 001-1v-.628A2.25 2.25 0 019.5 3.25zM4.25 12a.75.75 0 100 1.5.75.75 0 000-1.5z"/></svg>
+                  main
+                </span>
+                {/* Commit hash */}
+                <span style={{ fontSize: "0.6rem", color: "var(--text-muted)", fontFamily: "ui-monospace, monospace" }}>a3f9c12</span>
+                {/* Passing badge */}
+                <span style={{
+                  marginLeft: "auto",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "0.25rem",
+                  background: "rgba(52,211,153,0.1)",
+                  border: "1px solid rgba(52,211,153,0.25)",
+                  borderRadius: "6px",
+                  padding: "0.15rem 0.5rem",
+                  fontSize: "0.6rem",
+                  fontWeight: 700,
+                  color: "#34d399",
+                  fontFamily: "ui-monospace, monospace",
+                }}>
+                  <span style={{ width: "4px", height: "4px", borderRadius: "50%", background: "#34d399", display: "inline-block" }} />
+                  passing
+                </span>
+                <span style={{ fontSize: "0.65rem", color: "var(--text-muted)", fontFamily: "ui-monospace, monospace", letterSpacing: "0.05em" }}>pipeline.yml</span>
+              </div>
+
+              {/* Animated code lines */}
+              {[
+                { indent: 0, key: "name", value: "deploy-production", delay: 0.8 },
+                { indent: 0, key: "trigger", value: "push → main", delay: 1.0 },
+                { indent: 0, key: "steps", value: "", delay: 1.2 },
+                { indent: 1, key: "checkout", value: "v4", delay: 1.4 },
+                { indent: 1, key: "install", value: "npm ci", delay: 1.6 },
+                { indent: 1, key: "lint", value: "eslint .", delay: 1.8 },
+                { indent: 1, key: "test", value: "vitest run", delay: 2.0 },
+                { indent: 1, key: "build", value: "next build", delay: 2.2 },
+                { indent: 1, key: "deploy", value: "vercel --prod", delay: 2.4 },
+              ].map((line) => (
+                <motion.div
+                  key={line.key}
+                  initial={prefersReducedMotion ? undefined : { opacity: 0, x: 20 }}
+                  animate={prefersReducedMotion ? undefined : { opacity: 1, x: 0 }}
+                  transition={{ duration: 0.5, delay: line.delay, ease: [0.25, 1, 0.5, 1] }}
+                  style={{
+                    display: "flex",
+                    gap: "0.5rem",
+                    paddingLeft: `${line.indent * 1.5}rem`,
+                    marginBottom: "0.4rem",
+                    fontFamily: "ui-monospace, monospace",
+                    fontSize: "0.78rem",
+                    lineHeight: 1.8,
+                  }}
                 >
-                  Preview as guest &rarr;
-                </Link>
+                  <span style={{ color: "var(--brand)" }}>{line.key}</span>
+                  {line.value && <span style={{ color: "var(--text-muted)" }}>:</span>}
+                  {line.value && <span style={{ color: "var(--text-secondary)" }}>{line.value}</span>}
+                </motion.div>
+              ))}
+
+              {/* Pipeline completion progress bar */}
+              <motion.div
+                initial={prefersReducedMotion ? undefined : { opacity: 0 }}
+                animate={prefersReducedMotion ? undefined : { opacity: 1 }}
+                transition={{ duration: 0.4, delay: 2.5 }}
+                style={{ marginTop: "1.25rem", marginBottom: "0.75rem" }}
+              >
+                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.35rem" }}>
+                  <span style={{ fontSize: "0.6rem", color: "var(--text-muted)", fontFamily: "ui-monospace, monospace", letterSpacing: "0.1em", textTransform: "uppercase" }}>Progress</span>
+                  <span style={{ fontSize: "0.6rem", color: "var(--brand)", fontFamily: "ui-monospace, monospace", fontWeight: 700 }}>82%</span>
+                </div>
+                <div style={{ height: "3px", background: "rgba(255,255,255,0.06)", borderRadius: "999px", overflow: "hidden" }}>
+                  <motion.div
+                    initial={prefersReducedMotion ? undefined : { width: "0%" }}
+                    animate={prefersReducedMotion ? undefined : { width: "82%" }}
+                    transition={{ duration: 1.2, delay: 2.7, ease: [0.25, 1, 0.5, 1] }}
+                    style={{ height: "100%", background: "linear-gradient(90deg, var(--brand), var(--brand-accent))", borderRadius: "999px" }}
+                  />
+                </div>
               </motion.div>
+
+              {/* Status bar */}
+              <motion.div
+                initial={prefersReducedMotion ? undefined : { opacity: 0, scaleX: 0 }}
+                animate={prefersReducedMotion ? undefined : { opacity: 1, scaleX: 1 }}
+                transition={{ duration: 0.8, delay: 2.6, ease: [0.25, 1, 0.5, 1] }}
+                style={{
+                  padding: "0.6rem 1rem",
+                  background: "rgba(52, 211, 153, 0.08)",
+                  border: "1px solid rgba(52, 211, 153, 0.2)",
+                  borderRadius: "8px",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.5rem",
+                  transformOrigin: "left",
+                }}
+              >
+                <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#34d399", boxShadow: "0 0 8px rgba(52,211,153,0.5)" }} />
+                <span style={{ fontSize: "0.7rem", fontWeight: 700, color: "#34d399", letterSpacing: "0.1em", textTransform: "uppercase", fontFamily: "ui-monospace, monospace" }}>
+                  All checks passed — 2m 14s
+                </span>
+              </motion.div>
+            </div>
+
+            {/* Floating badge — top right, overlapping */}
+            <motion.div
+              initial={prefersReducedMotion ? undefined : { opacity: 0, scale: 0.8, y: 20 }}
+              animate={prefersReducedMotion ? undefined : { opacity: 1, scale: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 2.8, ease: [0.25, 1, 0.5, 1] }}
+              style={{
+                position: "absolute",
+                top: "-1rem",
+                right: "-1rem",
+                background: "rgba(56, 189, 248, 0.1)",
+                border: "1px solid rgba(56, 189, 248, 0.25)",
+                backdropFilter: "blur(12px)",
+                WebkitBackdropFilter: "blur(12px)",
+                borderRadius: "12px",
+                padding: "0.6rem 1rem",
+                display: "flex",
+                alignItems: "center",
+                gap: "0.4rem",
+                zIndex: 20,
+              }}
+            >
+              <span style={{ width: "5px", height: "5px", borderRadius: "50%", background: "var(--brand)", animation: "flowPulse 1.8s ease-in-out infinite" }} />
+              <span style={{ fontSize: "0.65rem", fontWeight: 700, color: "var(--brand)", letterSpacing: "0.1em", textTransform: "uppercase", fontFamily: "ui-monospace, monospace" }}>Live</span>
             </motion.div>
 
+            {/* Floating metric card — bottom left, overlapping — with sparkline */}
             <motion.div
-              style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "1rem", marginTop: "0.5rem" }}
-              initial={prefersReducedMotion ? undefined : { opacity: 0, y: 10 }}
-              animate={prefersReducedMotion ? undefined : { opacity: 1, y: 0 }}
-              transition={{ duration: 0.4, delay: 0.25 }}
+              initial={prefersReducedMotion ? undefined : { opacity: 0, x: -30, y: 20 }}
+              animate={prefersReducedMotion ? undefined : { opacity: 1, x: 0, y: 0 }}
+              transition={{ duration: 0.7, delay: 3.0, ease: [0.25, 1, 0.5, 1] }}
+              style={{
+                position: "absolute",
+                bottom: "-1.5rem",
+                left: "-2rem",
+                background: "rgba(15, 23, 42, 0.85)",
+                backdropFilter: "blur(16px)",
+                WebkitBackdropFilter: "blur(16px)",
+                border: "1px solid rgba(255, 255, 255, 0.08)",
+                borderRadius: "14px",
+                padding: "1rem 1.25rem",
+                zIndex: 20,
+                boxShadow: "0 12px 40px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.05)",
+              }}
             >
-              <div style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem", justifyContent: "center" }}>
-                {["Next.js", "NestJS", "React", "Node.js", "React Native", "Expo", "Kotlin"].map((stack) => (
-                  <span key={stack} style={{
-                    display: "inline-flex",
-                    alignItems: "center",
-                    padding: "0.3rem 0.75rem",
-                    borderRadius: "0.375rem",
-                    background: "rgba(255,255,255,0.04)",
-                    border: "1px solid rgba(255,255,255,0.08)",
-                    fontSize: "0.78rem",
-                    color: "var(--text-secondary)",
-                    fontFamily: "ui-monospace, monospace",
-                  }}>
-                    {stack}
-                  </span>
+              <div style={{ fontSize: "0.55rem", color: "var(--text-muted)", letterSpacing: "0.15em", textTransform: "uppercase", fontFamily: "ui-monospace, monospace", marginBottom: "0.3rem" }}>Deployments today</div>
+              <div style={{ display: "flex", alignItems: "baseline", gap: "0.4rem", marginBottom: "0.6rem" }}>
+                <span style={{ fontSize: "1.5rem", fontWeight: 800, color: "var(--text-primary)" }}>847</span>
+                <span style={{ fontSize: "0.7rem", fontWeight: 700, color: "#34d399" }}>+12.4%</span>
+              </div>
+              {/* Sparkline bars */}
+              <div style={{ display: "flex", alignItems: "flex-end", gap: "3px", height: "24px" }} aria-hidden="true">
+                {[40, 65, 50, 80, 55, 90, 70].map((h, i) => (
+                  <motion.div
+                    key={i}
+                    initial={prefersReducedMotion ? undefined : { scaleY: 0 }}
+                    animate={prefersReducedMotion ? undefined : { scaleY: 1 }}
+                    transition={{ duration: 0.4, delay: 3.2 + i * 0.06, ease: "easeOut" }}
+                    style={{
+                      width: "6px",
+                      height: `${h}%`,
+                      background: i === 5 ? "var(--brand-accent)" : "rgba(56,189,248,0.3)",
+                      borderRadius: "2px",
+                      transformOrigin: "bottom",
+                    }}
+                  />
                 ))}
               </div>
-              <button
-                type="button"
-                className="scroll-hint"
-                onClick={() => document.getElementById('pipeline')?.scrollIntoView({ behavior: 'smooth' })}
-                aria-label="Scroll to pipeline section"
-              >
-                <span className="scroll-hint-label">See it in action</span>
-                <svg className="scroll-hint-arrow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                  <line x1="12" y1="5" x2="12" y2="19"/>
-                  <polyline points="19 12 12 19 5 12"/>
-                </svg>
-              </button>
             </motion.div>
           </motion.div>
+
+          {/* Hero bottom edge — Lusion-style section markers */}
+          <motion.div
+            style={{
+              position: "absolute",
+              bottom: "2rem",
+              left: "5vw",
+              right: "5vw",
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              zIndex: 20,
+            }}
+            initial={prefersReducedMotion ? undefined : { opacity: 0 }}
+            animate={prefersReducedMotion ? undefined : { opacity: 1 }}
+            transition={{ duration: 1.5, delay: 1.8 }}
+          >
+            <span style={{ fontSize: "0.6rem", fontWeight: 700, letterSpacing: "0.2em", color: "rgba(255,255,255,0.2)", textTransform: "uppercase", fontFamily: "ui-monospace, monospace" }}>
+              01 / 04
+            </span>
+            <span style={{ fontSize: "0.6rem", fontWeight: 700, letterSpacing: "0.2em", color: "rgba(255,255,255,0.2)", textTransform: "uppercase", fontFamily: "ui-monospace, monospace" }}>
+              FlowCI Studio &mdash; {new Date().getFullYear()}
+            </span>
+          </motion.div>
+        </section>
+
+        {/* ── ECOSYSTEM MARQUEE ────────────────────────────────────────── */}
+        <section aria-label="Supported Ecosystems" style={{ position: "relative", paddingTop: "2rem", paddingBottom: "2rem" }}>
+          {/* Top divider */}
+          <div className="marquee-divider" />
+
+          {/* Section label */}
+          <p className="marquee-section-label" style={{ marginTop: "2rem" }}>Supported stacks</p>
+
+          <motion.div
+            className="marquee-container"
+            style={prefersReducedMotion ? undefined : {
+              x: useTransform(pageScrollYProgress, [0, 0.5], ["5%", "-15%"]),
+              opacity: useTransform(pageScrollYProgress, [0, 0.1, 0.2], [0, 0, 1])
+            }}
+          >
+            <div className="marquee-track">
+              {/* Double the list to create the infinite scroll illusion */}
+              {[
+                { name: "Next.js",       dot: "var(--brand)" },
+                { name: "NestJS",        dot: "#e0234e" },
+                { name: "React",         dot: "#61dafb" },
+                { name: "Node.js",       dot: "#68a063" },
+                { name: "React Native",  dot: "var(--brand)" },
+                { name: "Expo",          dot: "rgba(255,255,255,0.5)" },
+                { name: "Kotlin",        dot: "#7f52ff" },
+                { name: "Go",            dot: "#00acd7" },
+                { name: "Python",        dot: "#3572a5" },
+                { name: "Rust",          dot: "#ce422b" },
+                { name: "Vue.js",        dot: "#41b883" },
+                { name: "Svelte",        dot: "#ff3e00" },
+                { name: "Next.js",       dot: "var(--brand)" },
+                { name: "NestJS",        dot: "#e0234e" },
+                { name: "React",         dot: "#61dafb" },
+                { name: "Node.js",       dot: "#68a063" },
+                { name: "React Native",  dot: "var(--brand)" },
+                { name: "Expo",          dot: "rgba(255,255,255,0.5)" },
+                { name: "Kotlin",        dot: "#7f52ff" },
+                { name: "Go",            dot: "#00acd7" },
+                { name: "Python",        dot: "#3572a5" },
+                { name: "Rust",          dot: "#ce422b" },
+                { name: "Vue.js",        dot: "#41b883" },
+                { name: "Svelte",        dot: "#ff3e00" },
+              ].map((stack, idx) => (
+                <div key={`${stack.name}-${idx}`} className="marquee-badge">
+                  <span
+                    className="marquee-dot"
+                    style={{ background: stack.dot, boxShadow: `0 0 6px ${stack.dot}` }}
+                    aria-hidden="true"
+                  />
+                  {stack.name}
+                </div>
+              ))}
+            </div>
+          </motion.div>
+
+          {/* Bottom divider */}
+          <div className="marquee-divider" />
         </section>
 
         {/* ── SECTION 2: Pipeline visualization ────────────────────────── */}
@@ -768,6 +1297,22 @@ export default function LandingPage() {
             viewport={{ once: true, margin: "-80px" }}
             transition={{ duration: 0.45 }}
           >
+            {/* Live Demo badge */}
+            <div style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "0.4rem",
+              padding: "0.25rem 0.75rem",
+              borderRadius: "999px",
+              background: "rgba(56,189,248,0.08)",
+              border: "1px solid rgba(56,189,248,0.2)",
+              marginBottom: "0.25rem",
+            }}>
+              <span style={{ width: "5px", height: "5px", borderRadius: "50%", background: "var(--brand)", animation: "flowPulse 1.8s ease-in-out infinite" }} />
+              <span style={{ fontSize: "0.62rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.12em", color: "var(--brand)", fontFamily: "ui-monospace, monospace" }}>
+                Live Demo
+              </span>
+            </div>
             <p className="file-path-label">pipeline/live-demo.yml</p>
             <h2>From push to deploy in minutes</h2>
             <p>Watch a real pipeline run — source checkout, lint, test, build, security scan, then deploy. Every step animated live.</p>
@@ -780,8 +1325,12 @@ export default function LandingPage() {
             viewport={{ once: true, margin: "-60px" }}
             transition={{ duration: 0.55, delay: 0.1 }}
           >
-            <PipelineVisualization reduced={prefersReducedMotion} />
-            <HeroYamlTerminal reduced={prefersReducedMotion} />
+            <div style={{ alignSelf: "start" }}>
+              <PipelineVisualization reduced={prefersReducedMotion} />
+            </div>
+            <div style={{ alignSelf: "start" }}>
+              <HeroYamlTerminal reduced={prefersReducedMotion} />
+            </div>
           </motion.div>
         </section>
 
@@ -855,12 +1404,28 @@ export default function LandingPage() {
           ))}
         </section>
 
-        <hr className="section-gradient-divider" aria-hidden="true" />
+        <motion.hr
+          className="section-gradient-divider"
+          aria-hidden="true"
+          initial={prefersReducedMotion ? undefined : { scaleX: 0, opacity: 0 }}
+          whileInView={prefersReducedMotion ? undefined : { scaleX: 1, opacity: 1 }}
+          viewport={{ once: true, margin: "-40px" }}
+          transition={{ duration: 1.2, ease: [0.25, 1, 0.5, 1] }}
+          style={{ transformOrigin: "center" }}
+        />
 
         {/* ── SECTION 4: Activity strip ────────────────────────────────── */}
         <ActivityStrip />
 
-        <hr className="section-gradient-divider" aria-hidden="true" />
+        <motion.hr
+          className="section-gradient-divider"
+          aria-hidden="true"
+          initial={prefersReducedMotion ? undefined : { scaleX: 0, opacity: 0 }}
+          whileInView={prefersReducedMotion ? undefined : { scaleX: 1, opacity: 1 }}
+          viewport={{ once: true, margin: "-40px" }}
+          transition={{ duration: 1.2, ease: [0.25, 1, 0.5, 1] }}
+          style={{ transformOrigin: "center" }}
+        />
 
         {/* ── SECTION 5: Pricing ───────────────────────────────────────── */}
         <section
@@ -868,151 +1433,159 @@ export default function LandingPage() {
           className="pricing-section section-glow-center"
           aria-label="Pricing plans"
         >
-          <div style={{ maxWidth: 640, margin: "0 auto" }}>
-            <motion.div
-              initial={prefersReducedMotion ? undefined : { opacity: 0, y: 12 }}
-              whileInView={prefersReducedMotion ? undefined : { opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.4 }}
-            >
-              <p className="section-divider" style={{ marginBottom: "1.5rem" }}>pricing</p>
-              <p className="file-path-label" style={{ marginBottom: "0.75rem" }}>billing/plans.yml</p>
-              <h2 style={{ fontSize: "clamp(1.5rem, 3vw, 2.4rem)", marginBottom: "0.5rem" }}>
-                One plan. Everything included.
-              </h2>
-              <p style={{ color: "var(--text-secondary)", marginBottom: "2rem", fontSize: "0.95rem" }}>
-                No tiers, no seat limits, no hidden fees.
-              </p>
-            </motion.div>
+          <div className="pricing-split">
 
+            {/* LEFT — Headline, price hero, CTA */}
             <motion.div
-              className="pricing-plan-card glass-panel pricing-card-enhanced"
-              initial={prefersReducedMotion ? undefined : { opacity: 0, y: 20 }}
-              whileInView={prefersReducedMotion ? undefined : { opacity: 1, y: 0 }}
-              whileHover={prefersReducedMotion ? undefined : { scale: 1.015 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.45, delay: 0.1 }}
-              style={{ position: "relative", overflow: "hidden", padding: "2.5rem" }}
+              className="pricing-split-left"
+              initial={prefersReducedMotion ? undefined : { opacity: 0, x: -24 }}
+              whileInView={prefersReducedMotion ? undefined : { opacity: 1, x: 0 }}
+              viewport={{ once: true, margin: "-60px" }}
+              transition={{ duration: 0.6, ease: [0.25, 1, 0.5, 1] }}
             >
-              {/* Animated gradient top border */}
-              <div
-                aria-hidden="true"
-                style={{
-                  position: "absolute",
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  height: 2,
-                  background: "linear-gradient(90deg, transparent 0%, var(--brand) 30%, var(--brand-accent) 70%, transparent 100%)",
-                  animation: "gradient-shift 4s linear infinite",
-                  backgroundSize: "200% 100%",
-                }}
-              />
+              {/* Section label */}
+              <p className="file-path-label" style={{ marginBottom: "1.5rem" }}>billing/plans.yml</p>
 
-              {/* PRO badge — top-left, on its own line above pricing */}
-              <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "1rem" }}>
-                <div
-                  aria-label="Most popular plan"
-                  style={{
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: "0.3rem",
-                    padding: "0.2rem 0.65rem",
-                    borderRadius: "999px",
-                    background: "linear-gradient(135deg, rgba(56,189,248,0.15), rgba(52,211,153,0.1))",
-                    border: "1px solid rgba(56,189,248,0.25)",
-                    fontSize: "0.65rem",
-                    fontWeight: 700,
-                    textTransform: "uppercase" as const,
-                    letterSpacing: "0.08em",
-                    color: "var(--brand)",
-                  }}
-                >
-                  <span
-                    aria-hidden="true"
-                    style={{
-                      width: "5px",
-                      height: "5px",
-                      borderRadius: "50%",
-                      background: "var(--brand-accent)",
-                      animation: "flowPulse 1.8s ease-in-out infinite",
-                    }}
-                  />
-                  Pro
-                </div>
-                <span style={{ fontSize: "0.72rem", textTransform: "uppercase" as const, letterSpacing: "0.1em", color: "var(--text-muted)" }}>Monthly</span>
+              {/* Plan badge */}
+              <div style={{ display: "inline-flex", alignItems: "center", gap: "0.4rem", padding: "0.25rem 0.75rem", borderRadius: "999px", background: "linear-gradient(135deg, rgba(56,189,248,0.12), rgba(52,211,153,0.08))", border: "1px solid rgba(56,189,248,0.22)", marginBottom: "1.75rem", width: "fit-content" }}>
+                <span aria-hidden="true" style={{ width: "5px", height: "5px", borderRadius: "50%", background: "var(--brand-accent)", animation: prefersReducedMotion ? undefined : "flowPulse 1.8s ease-in-out infinite" }} />
+                <span style={{ fontSize: "0.62rem", fontWeight: 700, textTransform: "uppercase" as const, letterSpacing: "0.12em", color: "var(--brand)", fontFamily: "ui-monospace, monospace" }}>Pro Plan</span>
               </div>
 
-              {/* Price block */}
-              <div style={{ marginBottom: "1.5rem" }}>
-                <div style={{ display: "flex", alignItems: "baseline", gap: "0.35rem", marginBottom: "0.4rem" }}>
-                  <span
-                    className="pricing-table-price"
-                    style={{
-                      background: "linear-gradient(135deg, var(--text-primary), var(--brand))",
-                      WebkitBackgroundClip: "text",
-                      WebkitTextFillColor: "transparent",
-                      backgroundClip: "text",
-                      color: "var(--text-primary)",
-                    }}
-                  >
-                    &#8369;300
-                  </span>
-                  <span style={{ fontSize: "0.88rem", color: "var(--text-muted)" }}>/ month</span>
-                </div>
-                <p style={{ margin: "0 0 1.25rem", fontSize: "0.82rem", color: "var(--text-secondary)" }}>
-                  Cancel any time. No hidden fees.
-                </p>
-                {/* Get started button — full width, below the price */}
+              {/* Main heading */}
+              <h2 style={{ fontSize: "clamp(2rem, 3.5vw, 3.2rem)", fontWeight: 800, letterSpacing: "-0.03em", lineHeight: 1.1, marginBottom: "1rem", color: "var(--text-primary)" }}>
+                One plan,<br />everything included.
+              </h2>
+
+              <p style={{ color: "var(--text-secondary)", fontSize: "clamp(0.9rem, 1.2vw, 1.05rem)", lineHeight: 1.7, marginBottom: "2.5rem", maxWidth: "44ch" }}>
+                No tiers, no seat limits, no hidden fees. One flat monthly rate for developers and teams building on any stack.
+              </p>
+
+              {/* Hero price display */}
+              <div style={{ display: "flex", alignItems: "baseline", gap: "0.5rem", marginBottom: "0.5rem" }}>
+                <span
+                  className="pricing-hero-price"
+                  aria-label="PHP 300 per month"
+                >
+                  PHP 300
+                </span>
+                <span style={{ fontSize: "clamp(0.85rem, 1.2vw, 1rem)", color: "var(--text-muted)", fontFamily: "ui-monospace, monospace", letterSpacing: "0.04em" }}>/ month</span>
+              </div>
+
+              {/* Trust micro-copy */}
+              <div className="pricing-trust-row" style={{ marginBottom: "2.5rem" }}>
+                {["Cancel any time", "No seat limits", "Billed monthly"].map((item) => (
+                  <span key={item} className="pricing-trust-item">{item}</span>
+                ))}
+              </div>
+
+              {/* CTA buttons */}
+              <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap" }}>
                 <motion.div
-                  whileHover={prefersReducedMotion ? undefined : { scale: 1.02 }}
+                  whileHover={prefersReducedMotion ? undefined : { scale: 1.03 }}
                   whileTap={{ scale: 0.97 }}
-                  style={{ width: "100%" }}
                 >
                   <Link
                     className="primary-button"
                     href="/signup"
-                    style={{ fontSize: "0.9rem", padding: "0.75rem 1.5rem", width: "100%", justifyContent: "center" }}
+                    style={{ background: "var(--text-primary)", color: "#020617", border: "none", fontWeight: 700, borderRadius: "999px", padding: "0.9rem 2.25rem", textTransform: "uppercase" as const, letterSpacing: "0.1em", fontSize: "0.8rem" }}
                   >
                     Get started &rarr;
                   </Link>
                 </motion.div>
+                <motion.div
+                  whileHover={prefersReducedMotion ? undefined : { scale: 1.03 }}
+                  whileTap={{ scale: 0.97 }}
+                >
+                  <Link
+                    className="ghost-button"
+                    href="/home"
+                    style={{ borderRadius: "999px", color: "var(--text-primary)", border: "1px solid rgba(255,255,255,0.15)", fontWeight: 600, padding: "0.9rem 2rem", textTransform: "uppercase" as const, letterSpacing: "0.1em", fontSize: "0.8rem", background: "rgba(255,255,255,0.03)", backdropFilter: "blur(10px)" }}
+                  >
+                    Preview first
+                  </Link>
+                </motion.div>
               </div>
-
-              <div
-                aria-hidden="true"
-                style={{
-                  height: 1,
-                  background: "linear-gradient(90deg, transparent, var(--border), transparent)",
-                  margin: "1.5rem 0",
-                }}
-              />
-
-              <ul className="pricing-feature-list">
-                {featureRows.map((row) => (
-                  <li key={row.name} className="pricing-feature-item">
-                    <span
-                      style={{
-                        display: "inline-flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        width: "1.15rem",
-                        height: "1.15rem",
-                        borderRadius: "50%",
-                        background: "rgba(52, 211, 153, 0.12)",
-                        border: "1px solid rgba(52, 211, 153, 0.3)",
-                        flexShrink: 0,
-                        color: "var(--success)",
-                      }}
-                      aria-hidden="true"
-                    >
-                      <CheckIcon />
-                    </span>
-                    {row.name}
-                  </li>
-                ))}
-              </ul>
             </motion.div>
+
+            {/* RIGHT — Feature checklist glass card */}
+            <motion.div
+              className="pricing-split-right"
+              initial={prefersReducedMotion ? undefined : { opacity: 0, x: 24 }}
+              whileInView={prefersReducedMotion ? undefined : { opacity: 1, x: 0 }}
+              viewport={{ once: true, margin: "-60px" }}
+              transition={{ duration: 0.6, delay: 0.15, ease: [0.25, 1, 0.5, 1] }}
+            >
+              <div className="pricing-split-card">
+                {/* Animated gradient top border */}
+                <div
+                  aria-hidden="true"
+                  style={{
+                    position: "absolute",
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    height: "2px",
+                    background: "linear-gradient(90deg, transparent 0%, var(--brand) 30%, var(--brand-accent) 70%, transparent 100%)",
+                    animation: prefersReducedMotion ? undefined : "gradient-shift 4s linear infinite",
+                    backgroundSize: "200% 100%",
+                    borderRadius: "1.5rem 1.5rem 0 0",
+                  }}
+                />
+
+                {/* Card header */}
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "2rem" }}>
+                  <div>
+                    <p style={{ margin: 0, fontSize: "0.62rem", fontWeight: 700, textTransform: "uppercase" as const, letterSpacing: "0.15em", color: "var(--text-muted)", fontFamily: "ui-monospace, monospace", marginBottom: "0.35rem" }}>
+                      included in pro
+                    </p>
+                    <h3 style={{ margin: 0, fontSize: "1.15rem", fontWeight: 700, color: "var(--text-primary)", letterSpacing: "-0.02em" }}>
+                      Everything you need
+                    </h3>
+                  </div>
+                  {/* 40+ templates badge */}
+                  <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "0.2rem" }}>
+                    <span style={{ fontSize: "1.6rem", fontWeight: 800, color: "var(--brand)", lineHeight: 1, textShadow: "0 0 20px rgba(56,189,248,0.3)" }}>40+</span>
+                    <span style={{ fontSize: "0.6rem", color: "var(--text-muted)", fontFamily: "ui-monospace, monospace", letterSpacing: "0.1em", textTransform: "uppercase" as const }}>templates</span>
+                  </div>
+                </div>
+
+                {/* Feature rows */}
+                <div role="list" aria-label="Included features">
+                  {featureRows.map((row, i) => (
+                    <motion.div
+                      key={row.name}
+                      role="listitem"
+                      className="pricing-feature-row"
+                      initial={prefersReducedMotion ? undefined : { opacity: 0, x: 16 }}
+                      whileInView={prefersReducedMotion ? undefined : { opacity: 1, x: 0 }}
+                      viewport={{ once: true }}
+                      transition={{ duration: 0.35, delay: 0.25 + i * 0.06, ease: "easeOut" }}
+                    >
+                      <span className="pricing-check-icon" aria-hidden="true">
+                        <CheckIcon />
+                      </span>
+                      <span style={{ fontSize: "0.92rem", color: "var(--text-secondary)", flex: 1 }}>{row.name}</span>
+                      <span aria-hidden="true" style={{ width: "6px", height: "6px", borderRadius: "50%", background: "rgba(52,211,153,0.4)", flexShrink: 0 }} />
+                    </motion.div>
+                  ))}
+                </div>
+
+                {/* Divider */}
+                <div aria-hidden="true" style={{ height: "1px", background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.06), transparent)", margin: "1.75rem 0" }} />
+
+                {/* Stack support note */}
+                <div style={{ display: "flex", alignItems: "flex-start", gap: "0.75rem" }}>
+                  <span style={{ fontSize: "0.62rem", fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase" as const, color: "var(--text-muted)", fontFamily: "ui-monospace, monospace", paddingTop: "0.1rem", flexShrink: 0 }}>
+                    stacks
+                  </span>
+                  <p style={{ margin: 0, fontSize: "0.8rem", color: "var(--text-muted)", lineHeight: 1.7 }}>
+                    Next.js, NestJS, React, Node.js, React Native, Expo, Kotlin, Go, Python, Rust, Vue.js, Svelte — and more.
+                  </p>
+                </div>
+              </div>
+            </motion.div>
+
           </div>
         </section>
       </div>
