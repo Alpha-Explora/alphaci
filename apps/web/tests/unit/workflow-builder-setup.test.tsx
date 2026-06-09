@@ -6,6 +6,7 @@ import {
   createProject,
   createGithubRepo,
   generateWorkflow,
+  getCapabilities,
   getCategories,
   getGithubInstallationAccounts,
   getGithubAppInstallUrl,
@@ -27,7 +28,7 @@ jest.mock("framer-motion", () => {
         () =>
         ({ children, ...props }: { children?: React.ReactNode } & Record<string, unknown>) => {
           const domProps = { ...props };
-          for (const key of ["initial", "animate", "exit", "transition", "whileHover", "whileTap", "layout"]) {
+          for (const key of ["initial", "animate", "exit", "transition", "whileHover", "whileTap", "layout", "layoutId"]) {
             delete domProps[key];
           }
 
@@ -48,6 +49,7 @@ jest.mock("../../src/lib/api/client", () => ({
   createGithubRepo: jest.fn(),
   createProject: jest.fn(),
   generateWorkflow: jest.fn(),
+  getCapabilities: jest.fn(),
   getCategories: jest.fn(),
   getGithubInstallationAccounts: jest.fn(),
   getGithubAppInstallUrl: jest.fn(),
@@ -61,6 +63,7 @@ jest.mock("../../src/lib/api/client", () => ({
 const mockedCreateProject = createProject as jest.MockedFunction<typeof createProject>;
 const mockedCreateGithubRepo = createGithubRepo as jest.MockedFunction<typeof createGithubRepo>;
 const mockedGenerateWorkflow = generateWorkflow as jest.MockedFunction<typeof generateWorkflow>;
+const mockedGetCapabilities = getCapabilities as jest.MockedFunction<typeof getCapabilities>;
 const mockedGetCategories = getCategories as jest.MockedFunction<typeof getCategories>;
 const mockedGetGithubInstallationAccounts = getGithubInstallationAccounts as jest.MockedFunction<
   typeof getGithubInstallationAccounts
@@ -109,6 +112,7 @@ const projectOptions = {
     {
       id: "nextjs-app",
       label: "Next.js App",
+      kind: "frontend",
       runtime: "node",
       language: "typescript",
       framework: "nextjs",
@@ -128,6 +132,7 @@ const projectOptions = {
     {
       id: "nestjs-api",
       label: "NestJS API",
+      kind: "backend",
       runtime: "node",
       language: "typescript",
       framework: "nestjs",
@@ -248,11 +253,28 @@ function changeValue(element: HTMLInputElement | HTMLSelectElement, value: strin
   });
 }
 
+function changeChecked(element: HTMLInputElement, checked: boolean) {
+  act(() => {
+    const descriptor = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "checked");
+    descriptor?.set?.call(element, checked);
+    element.dispatchEvent(new Event("click", { bubbles: true }));
+    element.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+}
+
 describe("WorkflowBuilder project setup", () => {
   let container: HTMLDivElement;
   let root: Root;
 
   beforeEach(() => {
+    mockedGetCapabilities.mockResolvedValue({
+      envProvisioning: {
+        enabled: true,
+        providers: ["render", "vercel"],
+        environments: ["test", "uat", "production"],
+        modes: ["flowci_managed", "byo"],
+      },
+    });
     mockedGetCategories.mockResolvedValue({ categories: [] });
     mockedGetTemplates.mockResolvedValue({ templates: [template] });
     mockedGetWorkflowHistory.mockResolvedValue({ items: [] });
@@ -397,6 +419,116 @@ describe("WorkflowBuilder project setup", () => {
 
     expect(container.textContent).toContain("Repository name already exists");
     expect(mockedCreateGithubRepo).not.toHaveBeenCalled();
+  });
+
+  it("sends deployment provisioning payload and renders key-only provider results", async () => {
+    mockedCreateProject.mockResolvedValueOnce({
+      id: "project-1",
+      repoFullName: "tone/orders-api",
+      repoUrl: "https://github.com/tone/orders-api",
+      status: "provisioned",
+      workflowPath: ".github/workflows/00-flowci-access.yml",
+      workflowFiles: stagedWorkflowFiles,
+      githubCommitSha: "commit-sha",
+      githubCommitUrl: "https://github.com/tone/orders-api/commit/commit-sha",
+      projectTypeId: "nestjs-api",
+      workflowRecipeId: "backend-api-ci",
+      deploymentProvisioning: {
+        status: "partial",
+        targets: [
+          {
+            slot: "backend",
+            provider: "render",
+            status: "created",
+            deploymentTargetId: "target-1",
+            providerProjectId: "srv-1",
+            providerProjectName: "orders-api-test",
+            errorSummary: null,
+            env: [
+              {
+                environment: "test",
+                provisioned: [{ key: "DATABASE_URL", status: "provisioned" }],
+                failed: [
+                  {
+                    key: "JWT_SECRET",
+                    status: "failed",
+                    errorSummary: "Render env vars could not be updated: 403",
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    await renderBuilder();
+
+    const repoName = container.querySelector<HTMLInputElement>("#repo-name");
+    expect(repoName).not.toBeNull();
+    changeValue(repoName!, "orders-api");
+
+    const projectType = container.querySelector<HTMLSelectElement>("#project-type-select");
+    expect(projectType).not.toBeNull();
+    changeValue(projectType!, "nestjs-api");
+
+    await waitForCondition(() => container.textContent?.includes("Deployment provisioning") ?? false);
+
+    const toggle = container.querySelector<HTMLInputElement>("input[aria-label='Provision deployment target']");
+    expect(toggle).not.toBeNull();
+    changeChecked(toggle!, true);
+
+    await waitForCondition(() => container.textContent?.includes("backend target") ?? false);
+
+    const keyInput = container.querySelector<HTMLInputElement>("input[aria-label='Variable key 1']");
+    expect(keyInput).not.toBeNull();
+    changeValue(keyInput!, "DATABASE_URL");
+
+    await waitForCondition(
+      () => container.querySelector<HTMLInputElement>("input[aria-label='Variable key 1']")?.value === "DATABASE_URL",
+    );
+
+    const valueInput = container.querySelector<HTMLInputElement>("input[aria-label='Variable value 1']");
+    expect(valueInput).not.toBeNull();
+    changeValue(valueInput!, "postgres://secret");
+
+    await waitForCondition(
+      () => container.querySelector<HTMLInputElement>("input[aria-label='Variable value 1']")?.value === "postgres://secret",
+    );
+
+    await act(async () => {
+      container.querySelector<HTMLButtonElement>("[data-testid='setup-project-button']")?.click();
+      await Promise.resolve();
+    });
+
+    await waitForCondition(() => container.textContent?.includes("orders-api-test") ?? false);
+
+    expect(mockedCreateProject).toHaveBeenCalledWith(
+      expect.objectContaining({
+        deploymentProvisioning: expect.objectContaining({
+          enabled: true,
+          targets: [
+            expect.objectContaining({
+              slot: "backend",
+              provider: "render",
+              ownershipMode: "flowci_managed",
+              projectName: "orders-api-test",
+              env: [
+                expect.objectContaining({
+                  environment: "test",
+                  vars: [{ key: "DATABASE_URL", value: "postgres://secret" }],
+                }),
+              ],
+            }),
+          ],
+        }),
+      }),
+    );
+    expect(container.textContent).toContain("Deployment provisioning");
+    expect(container.textContent).toContain("Render");
+    expect(container.textContent).toContain("DATABASE_URL");
+    expect(container.textContent).toContain("JWT_SECRET");
+    expect(container.textContent).not.toContain("postgres://secret");
   });
 
   it("keeps Create GitHub Repository disabled when repo name is empty", async () => {

@@ -678,8 +678,6 @@ export default function LandingPage() {
 
   const heroRef = useRef<HTMLDivElement>(null);
   const navRef = useRef<HTMLElement>(null);
-  const { scrollYProgress: heroScrollYProgress } = useScroll({ target: heroRef, offset: ["start start", "end start"] });
-  const heroY = useTransform(heroScrollYProgress, [0, 1], ["0%", "12%"]);
 
   // Page-level scroll progress bar
   const { scrollYProgress: pageScrollYProgress } = useScroll();
@@ -758,6 +756,13 @@ export default function LandingPage() {
           style={{ scaleX, width: "100%" }}
           aria-hidden="true"
         />
+      )}
+      {!prefersReducedMotion && (
+        <>
+          <ScrollProgressLine progress={pageScrollYProgress} />
+          <CornerMarkers />
+          <ScrollHint progress={pageScrollYProgress} />
+        </>
       )}
 
       {/* Navigation */}

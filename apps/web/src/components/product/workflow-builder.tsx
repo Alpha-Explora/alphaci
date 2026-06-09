@@ -16,6 +16,7 @@ import type {
   SetupExistingRepoPrResponse,
 } from "@/lib/api/contracts";
 import { useCreateProjectForm } from "@/hooks/use-create-project-form";
+import { useDeploymentProvisioningForm } from "@/hooks/use-deployment-provisioning-form";
 import { useGithubInstallations } from "@/hooks/use-github-installations";
 import { useProjectOptionsCatalog } from "@/hooks/use-project-options-catalog";
 import { useProvisionedProjects } from "@/hooks/use-provisioned-projects";
@@ -63,6 +64,7 @@ export function WorkflowBuilder({ login, plan, guest = false }: Readonly<Workflo
   const history = useWorkflowHistory(setStatusMessage);
   const projects = useProvisionedProjects(setStatusMessage);
   const createForm = useCreateProjectForm();
+  const deploymentProvisioning = useDeploymentProvisioningForm();
   const github = useGithubInstallations(setStatusMessage, () => undefined);
 
   function handleUseTemplate(template: CatalogTemplate) {
@@ -104,6 +106,7 @@ export function WorkflowBuilder({ login, plan, guest = false }: Readonly<Workflo
       projectTypeId: projectCatalog.selectedProjectTypeId,
       workflowRecipeId: projectCatalog.selectedWorkflowRecipeId,
       tests: projectCatalog.tests,
+      deploymentProvisioning: deploymentProvisioning.payload,
     });
 
     if (!payloadResult.ok) {
@@ -135,6 +138,7 @@ export function WorkflowBuilder({ login, plan, guest = false }: Readonly<Workflo
         additionalWorkflowPaths: response.additionalWorkflowPaths,
         secondaryRepoFullName: response.secondaryRepoFullName,
         secondaryRepoUrl: response.secondaryRepoUrl,
+        deploymentProvisioning: response.deploymentProvisioning,
       };
 
       setCreateResult(result);
@@ -379,6 +383,7 @@ export function WorkflowBuilder({ login, plan, guest = false }: Readonly<Workflo
               isDiscoveringExistingRepo={isDiscoveringExistingRepo}
               isSettingUpExistingRepo={isSettingUpExistingRepo}
               setupMode={setupMode}
+              deploymentProvisioning={deploymentProvisioning}
               onChangeExistingRepoBaseBranch={setExistingRepoBaseBranch}
               onChangeExistingRepoFullName={setExistingRepoFullName}
               onChangeSetupMode={setSetupMode}

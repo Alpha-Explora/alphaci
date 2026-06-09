@@ -8,7 +8,9 @@ import type {
   MvpProjectOptionKey,
   SetupExistingRepoPrResponse,
 } from "@/lib/api/contracts";
+import { useCapabilities } from "@/hooks/use-capabilities";
 import type { CreateProjectFormState } from "@/hooks/use-create-project-form";
+import type { DeploymentProvisioningFormState } from "@/hooks/use-deployment-provisioning-form";
 import type { GithubInstallationsState } from "@/hooks/use-github-installations";
 import {
   projectOptionLabels,
@@ -16,6 +18,7 @@ import {
 } from "@/hooks/use-project-options-catalog";
 
 import { SetupResultPanel } from "./setup-result-panel";
+import { DeploymentProvisioningSetup } from "./deployment-provisioning-setup";
 
 interface WorkflowSetupTabProps {
   createResult: CreateProjectResult | null;
@@ -23,6 +26,7 @@ interface WorkflowSetupTabProps {
   existingRepoDiscovery: DiscoverExistingRepoResponse | null;
   existingRepoFullName: string;
   existingRepoResult: SetupExistingRepoPrResponse | null;
+  deploymentProvisioning: DeploymentProvisioningFormState;
   form: CreateProjectFormState;
   github: GithubInstallationsState;
   isCreatingProject: boolean;
@@ -73,6 +77,7 @@ export function WorkflowSetupTab({
   existingRepoDiscovery,
   existingRepoFullName,
   existingRepoResult,
+  deploymentProvisioning,
   form,
   github,
   isCreatingProject,
@@ -90,7 +95,9 @@ export function WorkflowSetupTab({
   projectCatalog,
   reducedMotion,
 }: Readonly<WorkflowSetupTabProps>) {
+  const { envProvisioningEnabled } = useCapabilities();
   const isExistingMode = setupMode === "existing";
+  const selectedProjectKind = inferProjectKind(projectCatalog.selectedProjectType);
   const createDisabled =
     isCreatingProject ||
     projectCatalog.loadingProjectOptions ||
@@ -122,6 +129,24 @@ export function WorkflowSetupTab({
     github.linkedReposLoaded &&
     !github.loadingLinkedRepos &&
     github.linkedRepos.length === 0;
+
+  function handleDeploymentProvisioningEnabled(enabled: boolean) {
+    if (!enabled) {
+      deploymentProvisioning.setEnabled(false);
+      return;
+    }
+
+    if (projectCatalog.isMicroservicesShape || projectCatalog.isMultiRepoShape) {
+      deploymentProvisioning.setDefaultTargets([
+        { slot: "backend", projectName: withTestSuffix(form.backendServiceName || `${form.repoName}-backend`) },
+        { slot: "frontend", projectName: withTestSuffix(form.frontendServiceName || `${form.repoName}-frontend`) },
+      ]);
+      return;
+    }
+
+    const slot = selectedProjectKind === "frontend" ? "frontend" : selectedProjectKind === "backend" ? "backend" : "standalone";
+    deploymentProvisioning.setDefaultTarget(slot, withTestSuffix(form.serviceName || form.repoName));
+  }
 
   return (
     <motion.section
@@ -750,6 +775,19 @@ export function WorkflowSetupTab({
                     </div>
                   </div>
                 </div>
+
+                {envProvisioningEnabled ? (
+                  <div style={{ marginTop: "1.5rem" }}>
+                    <DeploymentProvisioningSetup
+                      enabled={deploymentProvisioning.enabled}
+                      repoShape={projectCatalog.selectedRepoShapeId}
+                      selectedProjectKind={selectedProjectKind}
+                      value={deploymentProvisioning.request}
+                      onChange={deploymentProvisioning.setRequest}
+                      onEnabledChange={handleDeploymentProvisioningEnabled}
+                    />
+                  </div>
+                ) : null}
 
                 <button
                   type="button"

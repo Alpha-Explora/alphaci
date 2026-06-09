@@ -18,6 +18,11 @@ export const metadata: Metadata = {
     "Create GitHub projects with subscription-gated CI workflows, starter files, and managed Actions secrets.",
 };
 
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+};
+
 export default function RootLayout({
   children,
 }: Readonly<{
