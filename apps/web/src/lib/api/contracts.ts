@@ -117,6 +117,47 @@ export interface ProvisionEnvVarsResponse {
   failed: Array<{ key: string; status: "failed"; errorSummary: string }>;
 }
 
+export interface DeploymentProvisioningEnvSet {
+  environment: EnvEnvironment;
+  vars: Array<{ key: string; value: string }>;
+}
+
+export interface DeploymentProvisioningTargetRequest {
+  slot: EnvTargetSlot;
+  provider: EnvProvider;
+  ownershipMode: EnvOwnershipMode;
+  providerConnectionId?: string;
+  projectName?: string;
+  branchName?: string;
+  rootDirectory?: string;
+  buildCommand?: string;
+  startCommand?: string;
+  env?: DeploymentProvisioningEnvSet[];
+}
+
+export interface DeploymentProvisioningRequest {
+  enabled: boolean;
+  targets: DeploymentProvisioningTargetRequest[];
+}
+
+export interface DeploymentProvisioningResult {
+  status: "skipped" | "completed" | "partial" | "failed";
+  targets: Array<{
+    slot: EnvTargetSlot;
+    provider: EnvProvider;
+    status: "created" | "registered" | "failed";
+    deploymentTargetId: string | null;
+    providerProjectId: string | null;
+    providerProjectName: string | null;
+    errorSummary: string | null;
+    env: Array<{
+      environment: EnvEnvironment;
+      provisioned: Array<{ key: string; status: "provisioned" }>;
+      failed: Array<{ key: string; status: "failed"; errorSummary: string }>;
+    }>;
+  }>;
+}
+
 export interface CategorySummary {
   name: string;
   count: number;
@@ -222,6 +263,7 @@ export interface GenerateWorkflowRequest {
 export interface SetupProjectRequest extends GenerateWorkflowRequest {
   repoFullName: string;
   outputFileName?: string;
+  deploymentProvisioning?: DeploymentProvisioningRequest;
 }
 
 export interface GenerateWorkflowResponse {
@@ -327,6 +369,7 @@ export interface SetupProjectResponse {
   workflowFiles?: WorkflowFileMetadata[];
   githubCommitSha: string;
   githubCommitUrl: string | null;
+  deploymentProvisioning?: DeploymentProvisioningResult;
 }
 
 export interface MicroserviceSlotConfig {
@@ -355,6 +398,7 @@ export interface CreateProjectRequest {
   outputFileName?: string;
   microservicesConfig?: MicroservicesConfig;
   multiRepoConfig?: MicroservicesConfig;
+  deploymentProvisioning?: DeploymentProvisioningRequest;
 }
 
 export interface CreateProjectResponse {
@@ -371,6 +415,7 @@ export interface CreateProjectResponse {
   additionalWorkflowPaths?: string[];
   secondaryRepoFullName?: string;
   secondaryRepoUrl?: string;
+  deploymentProvisioning?: DeploymentProvisioningResult;
 }
 
 export interface ProvisionedProject {
@@ -468,4 +513,5 @@ export interface CreateProjectResult {
   additionalWorkflowPaths?: string[];
   secondaryRepoFullName?: string;
   secondaryRepoUrl?: string;
+  deploymentProvisioning?: DeploymentProvisioningResult;
 }

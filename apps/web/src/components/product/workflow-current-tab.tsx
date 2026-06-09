@@ -6,6 +6,7 @@ import { motion } from "framer-motion";
 import { useCapabilities } from "@/hooks/use-capabilities";
 import type { CreateProjectResult, ProvisionedProject, WorkflowFileMetadata, WorkflowHistoryItem } from "@/lib/api/contracts";
 import { ProjectEnvPanel } from "./project-env-panel";
+import { DeploymentProvisioningSummary } from "./setup-result-panel";
 
 import { formatDate, toSourcePath } from "./workflow-builder-utils";
 
@@ -165,6 +166,7 @@ export function WorkflowCurrentTab({
             )}
           </p>
           <WorkflowStageList files={latestResult.workflowFiles} />
+          <DeploymentProvisioningSummary result={latestResult.deploymentProvisioning} />
           <div className="result-actions" style={{ margin: "0.25rem 0", display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
             <a className="primary-button" href={latestResult.repoUrl} target="_blank" rel="noreferrer"
                style={{ padding: "0.4rem 1rem", fontSize: "0.8rem", minHeight: "2.2rem", display: "inline-flex", alignItems: "center" }}>

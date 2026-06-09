@@ -3,7 +3,12 @@
 import { AnimatePresence, motion } from "framer-motion";
 
 import { useCapabilities } from "@/hooks/use-capabilities";
-import type { CreateProjectResult, SetupExistingRepoPrResponse, WorkflowFileMetadata } from "@/lib/api/contracts";
+import type {
+  CreateProjectResult,
+  DeploymentProvisioningResult,
+  SetupExistingRepoPrResponse,
+  WorkflowFileMetadata,
+} from "@/lib/api/contracts";
 
 interface SetupResultPanelProps {
   existingRepoResult?: SetupExistingRepoPrResponse | null;
@@ -90,6 +95,71 @@ function WorkflowFilesList({ files }: Readonly<{ files?: WorkflowFileMetadata[] 
         </div>
       ))}
     </div>
+  );
+}
+
+function formatProvider(provider: string) {
+  return provider === "vercel" ? "Vercel" : provider === "render" ? "Render" : provider;
+}
+
+export function DeploymentProvisioningSummary({
+  result,
+}: Readonly<{ result?: DeploymentProvisioningResult }>) {
+  if (!result || result.status === "skipped" || result.targets.length === 0) {
+    return null;
+  }
+
+  return (
+    <section className="deployment-provisioning-summary">
+      <div className="env-section-header">
+        <div>
+          <h4>Deployment provisioning</h4>
+          <p className="helper-text" style={{ margin: "0.25rem 0 0" }}>
+            {result.status === "completed"
+              ? "Provider targets were created."
+              : result.status === "partial"
+                ? "Some provider provisioning steps need attention."
+                : "Provider provisioning failed."}
+          </p>
+        </div>
+        <span className={`deployment-provisioning-summary__status ${result.status}`}>
+          {result.status}
+        </span>
+      </div>
+      <div className="deployment-provisioning-summary__targets">
+        {result.targets.map((target, index) => (
+          <article
+            className={`deployment-provisioning-summary__target ${target.status}`}
+            key={`${target.slot}-${target.provider}-${target.deploymentTargetId ?? index}`}
+          >
+            <div>
+              <strong>{formatProvider(target.provider)}</strong>
+              <span>{target.providerProjectName ?? target.providerProjectId ?? target.slot}</span>
+            </div>
+            <p className="helper-text" style={{ margin: 0 }}>
+              {target.slot} - {target.status}
+              {target.errorSummary ? ` - ${target.errorSummary}` : ""}
+            </p>
+            {target.env.map((envSet) => (
+              <div className="deployment-provisioning-summary__env" key={`${target.slot}-${envSet.environment}`}>
+                <span>{envSet.environment}</span>
+                <div>
+                  {envSet.provisioned.map((variable) => (
+                    <code key={`${variable.key}-ok`}>{variable.key}</code>
+                  ))}
+                  {envSet.failed.map((variable) => (
+                    <code className="failed" key={`${variable.key}-failed`}>
+                      {variable.key}
+                      {variable.errorSummary ? ` failed: ${variable.errorSummary}` : " failed"}
+                    </code>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </article>
+        ))}
+      </div>
+    </section>
   );
 }
 
@@ -193,6 +263,7 @@ export function SetupResultPanel({
               <div className="terminal-path">{setupResult.workflowPath}</div>
             </div>
             <WorkflowFilesList files={setupResult.workflowFiles} />
+            <DeploymentProvisioningSummary result={setupResult.deploymentProvisioning} />
             <div>
               <p className="helper-text" style={{ margin: "0 0 0.3rem", fontSize: "0.72rem", color: "var(--text-muted)" }}>
                 Commit
