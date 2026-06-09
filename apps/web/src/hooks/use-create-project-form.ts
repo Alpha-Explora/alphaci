@@ -16,6 +16,7 @@ interface BuildPayloadInput {
   projectTypeId: string;
   workflowRecipeId: string;
   tests: Record<MvpProjectOptionKey, boolean>;
+  deploymentProvisioning?: CreateProjectRequest["deploymentProvisioning"];
 }
 
 function normalizeRepoName(value: string): string {
@@ -130,6 +131,7 @@ export function useCreateProjectForm() {
           coverageThreshold: coverage,
           tests: input.tests,
           outputFileName: normalizedOutputFileName,
+          ...(input.deploymentProvisioning ? { deploymentProvisioning: input.deploymentProvisioning } : {}),
           microservicesConfig: {
             backend: {
               projectTypeId: backendProjectTypeId,
@@ -170,6 +172,7 @@ export function useCreateProjectForm() {
           coverageThreshold: coverage,
           tests: input.tests,
           outputFileName: normalizedOutputFileName,
+          ...(input.deploymentProvisioning ? { deploymentProvisioning: input.deploymentProvisioning } : {}),
           multiRepoConfig: {
             backend: {
               projectTypeId: backendProjectTypeId,
@@ -212,6 +215,7 @@ export function useCreateProjectForm() {
         coverageThreshold: coverage,
         tests: input.tests,
         outputFileName: normalizedOutputFileName,
+        ...(input.deploymentProvisioning ? { deploymentProvisioning: input.deploymentProvisioning } : {}),
       },
     };
   }

@@ -1,13 +1,13 @@
-import type { Metadata } from "next";
-import { Manrope, Sora } from "next/font/google";
+import type { Metadata, Viewport } from "next";
+import { Doto } from "next/font/google";
 import "./globals.css";
 
-const displayFont = Sora({
+const displayFont = Doto({
   variable: "--font-display",
   subsets: ["latin"],
 });
 
-const bodyFont = Manrope({
+const bodyFont = Doto({
   variable: "--font-body",
   subsets: ["latin"],
 });
@@ -16,6 +16,11 @@ export const metadata: Metadata = {
   title: "Create Project | FlowCI Studio",
   description:
     "Create GitHub projects with subscription-gated CI workflows, starter files, and managed Actions secrets.",
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
 };
 
 export default function RootLayout({
