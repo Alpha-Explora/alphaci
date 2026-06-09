@@ -71,7 +71,7 @@ export default function WorkflowsPage() {
               background: 'radial-gradient(circle at 50% 0%, rgba(56, 189, 248, 0.15), transparent 50%)',
               animation: 'spin 15s linear infinite'
             }} />
-            
+
             {/* Spinner Container */}
             <div style={{ position: 'relative', width: '90px', height: '90px', marginBottom: '36px' }}>
               <div style={{
@@ -86,12 +86,12 @@ export default function WorkflowsPage() {
                 position: 'absolute', inset: '24px', borderRadius: '50%', border: '3px solid rgba(236, 72, 153, 0.1)',
                 borderTopColor: '#ec4899', animation: 'spin 2s cubic-bezier(0.5, 0, 0.5, 1) infinite'
               }} />
-              
+
               <div style={{
                 position: 'absolute', inset: 0, borderRadius: '50%', background: 'radial-gradient(circle, rgba(56,189,248,0.2) 0%, transparent 60%)',
                 animation: 'pulseOrb 2s ease-in-out infinite'
               }} />
-              
+
               {/* Center Logo */}
               <div style={{
                 position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
@@ -101,10 +101,10 @@ export default function WorkflowsPage() {
                 <PipelineLogo size={28} />
               </div>
             </div>
-            
-            <h1 style={{ 
-              fontSize: '2rem', 
-              fontWeight: 800, 
+
+            <h1 style={{
+              fontSize: '2rem',
+              fontWeight: 800,
               margin: '0 0 16px 0',
               letterSpacing: '-0.04em',
               background: 'linear-gradient(135deg, #fff 0%, #94a3b8 100%)',
@@ -114,10 +114,10 @@ export default function WorkflowsPage() {
             }}>
               Loading Create Project
             </h1>
-            
-            <p style={{ 
-              fontSize: '1.05rem', 
-              color: '#94a3b8', 
+
+            <p style={{
+              fontSize: '1.05rem',
+              color: '#94a3b8',
               margin: 0,
               display: 'flex',
               alignItems: 'center',

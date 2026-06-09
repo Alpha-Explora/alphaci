@@ -200,7 +200,7 @@ export function OAuthAuthPage({
             ))}
           </motion.div>
 
-          <motion.div 
+          <motion.div
             className="editorial-glass-panel"
             initial={prefersReducedMotion ? undefined : { opacity: 0, y: 16 }}
             animate={prefersReducedMotion ? undefined : { opacity: 1, y: 0 }}

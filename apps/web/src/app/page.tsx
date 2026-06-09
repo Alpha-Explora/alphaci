@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { motion, useReducedMotion, useScroll, useSpring, useTransform, useMotionValueEvent, useAnimation } from "framer-motion";
+import type { MotionValue } from "framer-motion";
 import { useRef, useState, useEffect } from "react";
 
 import { FlowBackground } from "@/components/layout/flow-background";
@@ -498,9 +499,10 @@ function resolveNavLinks(status: string, hasSubscription: boolean): NavLinks {
 
 const SECTION_LABELS = ["01", "02", "03", "04"];
 
-function ScrollProgressLine({ progress }: Readonly<{ progress: any }>) {
+function ScrollProgressLine({ progress }: Readonly<{ progress: MotionValue<number> }>) {
   const scaleY = useSpring(progress, { stiffness: 100, damping: 30, restDelta: 0.001 });
-  
+  const dotTop = useTransform(progress, [0, 1], ["0%", "100%"]);
+
   return (
     <div
       aria-hidden="true"
@@ -572,7 +574,7 @@ function ScrollProgressLine({ progress }: Readonly<{ progress: any }>) {
             borderRadius: "50%",
             background: "#fff",
             boxShadow: "0 0 8px rgba(255,255,255,0.5), 0 0 20px rgba(56,189,248,0.3)",
-            top: useTransform(progress, [0, 1], ["0%", "100%"]),
+            top: dotTop,
           }}
         />
       </div>
@@ -612,9 +614,9 @@ function CornerMarkers() {
 
 /* ── Scroll-to-Explore Indicator ─────────────────────────────────────────── */
 
-function ScrollHint({ progress }: Readonly<{ progress: any }>) {
+function ScrollHint({ progress }: Readonly<{ progress: MotionValue<number> }>) {
   const opacity = useTransform(progress, [0, 0.08], [1, 0]);
-  
+
   return (
     <motion.div
       style={{
@@ -682,6 +684,12 @@ export default function LandingPage() {
   // Page-level scroll progress bar
   const { scrollYProgress: pageScrollYProgress } = useScroll();
   const scaleX = useSpring(pageScrollYProgress, { stiffness: 200, damping: 40 });
+  const massiveTextOpacity = useTransform(pageScrollYProgress, [0, 1], [0.8, 0.2]);
+  const massiveTextX = useTransform(pageScrollYProgress, [0, 1], ["0%", "-20%"]);
+  const heroContentY = useTransform(pageScrollYProgress, [0, 1], [0, -150]);
+  const dashboardY = useTransform(pageScrollYProgress, [0, 0.5], [0, -80]);
+  const marqueeX = useTransform(pageScrollYProgress, [0, 0.5], ["5%", "-15%"]);
+  const marqueeOpacity = useTransform(pageScrollYProgress, [0, 0.1, 0.2], [0, 0, 1]);
 
   // Navbar auto-hide logic
   const navControls = useAnimation();
@@ -701,9 +709,9 @@ export default function LandingPage() {
   useMotionValueEvent(scrollY, "change", (latest) => {
     const nav = navRef.current;
     if (nav) nav.dataset.scrolled = latest > 10 ? "true" : "false";
-    
+
     if (isHoveringNav.current) return;
-    
+
     if (latest > 150 && navState.current !== "hidden") {
       navState.current = "hidden";
       navControls.start({ y: "-100%", transition: { type: "spring", stiffness: 300, damping: 30 } });
@@ -716,7 +724,7 @@ export default function LandingPage() {
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
       const isHovering = e.clientY < 120;
-      
+
       if (isHovering && !isHoveringNav.current) {
         isHoveringNav.current = true;
         if (navState.current !== "visible") {
@@ -766,9 +774,9 @@ export default function LandingPage() {
       )}
 
       {/* Navigation */}
-      <motion.header 
-        ref={navRef} 
-        className="marketing-nav marketing-nav-enhanced" 
+      <motion.header
+        ref={navRef}
+        className="marketing-nav marketing-nav-enhanced"
         style={{ position: "fixed", top: 0, left: 0, right: 0, padding: "0 clamp(1.5rem, 5vw, 3rem)", height: "80px", borderBottom: "none", background: "transparent" }}
         initial={prefersReducedMotion ? undefined : { y: -100, opacity: 0 }}
         animate={navControls}
@@ -806,7 +814,7 @@ export default function LandingPage() {
           >
             {navUtilityLabel}
           </Link>
-          
+
           {/* Lusion style pill CTA */}
           <Link
             href={appHref}
@@ -838,13 +846,13 @@ export default function LandingPage() {
         {/* ── SECTION 1: Asymmetric Split Hero ──────────────────────────────── */}
         <section className="raw-hero-grid" ref={heroRef} aria-label="Main message" style={{ position: "relative", minHeight: "100vh", display: "grid", gridTemplateColumns: "1fr 1fr", alignItems: "center", alignContent: "center", padding: "80px clamp(2rem, 7vw, 8rem) 4rem", gap: "4rem", overflow: "hidden", background: "#020617" }}>
           <div aria-hidden="true" className="editorial-hero-bg" />
-          
+
           {/* Massive Background Text */}
-          <motion.h1 
+          <motion.h1
             className="hero-massive-text"
-            style={prefersReducedMotion ? { opacity: 0.8 } : { 
-              opacity: useTransform(pageScrollYProgress, [0, 1], [0.8, 0.2]),
-              x: useTransform(pageScrollYProgress, [0, 1], ["0%", "-20%"])
+            style={prefersReducedMotion ? { opacity: 0.8 } : {
+              opacity: massiveTextOpacity,
+              x: massiveTextX
             }}
           >
             FLOWCI FLOWCI FLOWCI
@@ -853,8 +861,8 @@ export default function LandingPage() {
           {/* LEFT COLUMN — Text Content */}
           <motion.div
             className="raw-hero-content"
-            style={prefersReducedMotion ? { gridColumn: "1 / 2", gridRow: "1 / 2" } : { 
-              y: useTransform(pageScrollYProgress, [0, 1], [0, -150]),
+            style={prefersReducedMotion ? { gridColumn: "1 / 2", gridRow: "1 / 2" } : {
+              y: heroContentY,
               position: "relative",
               zIndex: 10,
               textAlign: "left",
@@ -878,7 +886,7 @@ export default function LandingPage() {
               <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "var(--brand)", marginRight: "0.75rem", boxShadow: "0 0 12px var(--brand)" }} />
               POWERED BY SOURCE-BACKED TEMPLATES
             </motion.p>
-            
+
             <motion.h2
               variants={prefersReducedMotion ? undefined : {
                 hidden: { opacity: 0, y: 60, filter: "blur(12px)" },
@@ -888,7 +896,7 @@ export default function LandingPage() {
             >
               Build<br/>production-ready<br/>workflows<br/><span style={{ color: "var(--brand)" }}>instantly</span>
             </motion.h2>
-            
+
             <motion.p
               variants={prefersReducedMotion ? undefined : {
                 hidden: { opacity: 0, y: 30, filter: "blur(6px)" },
@@ -942,7 +950,7 @@ export default function LandingPage() {
           {/* RIGHT COLUMN — Multi-layer floating dashboard */}
           <motion.div
             style={prefersReducedMotion ? { position: "relative", zIndex: 10, marginTop: "2rem", gridColumn: "2 / 3", gridRow: "1 / 2" } : {
-              y: useTransform(pageScrollYProgress, [0, 0.5], [0, -80]),
+              y: dashboardY,
               position: "relative",
               zIndex: 10,
               marginTop: "2rem",
@@ -1245,8 +1253,8 @@ export default function LandingPage() {
           <motion.div
             className="marquee-container"
             style={prefersReducedMotion ? undefined : {
-              x: useTransform(pageScrollYProgress, [0, 0.5], ["5%", "-15%"]),
-              opacity: useTransform(pageScrollYProgress, [0, 0.1, 0.2], [0, 0, 1])
+              x: marqueeX,
+              opacity: marqueeOpacity
             }}
           >
             <div className="marquee-track">
