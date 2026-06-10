@@ -216,7 +216,9 @@ h1, h2, h3 {
   padding: 0 0 2rem 0;
   display: flex;
   flex-direction: column;
-  gap: var(--stack-gap);
+  /* No flex gap: the sticky nav must sit flush against page content.
+     Each page section owns its top padding instead. */
+  gap: 0;
   background: var(--bg-base);
 }
 
@@ -6338,6 +6340,152 @@ select option {
   flex-shrink: 0;
 }
 
+/* ── Repo search bar — compact inline filter on the repositories tab ─────── */
+.repo-search {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  background: rgba(15, 23, 42, 0.55);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-pill);
+  padding: 0.3rem 0.75rem;
+  color: var(--text-muted);
+  min-width: min(260px, 100%);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.repo-search:focus-within {
+  border-color: rgba(56, 189, 248, 0.45);
+  box-shadow: 0 0 14px rgba(56, 189, 248, 0.12);
+  color: var(--brand);
+}
+
+.repo-search input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--text-primary);
+  font-size: 0.8rem;
+  font-family: inherit;
+  min-width: 0;
+}
+
+.repo-search input::placeholder {
+  color: var(--text-muted);
+}
+
+.repo-search input::-webkit-search-cancel-button {
+  display: none;
+}
+
+.repo-search button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  padding: 0.1rem;
+  color: var(--text-muted);
+  cursor: pointer;
+  border-radius: 50%;
+  transition: color 0.15s ease;
+}
+
+.repo-search button:hover {
+  color: var(--text-primary);
+}
+
+/* ── Compact repo list — one row per repository (dashboard tab) ──────────── */
+.dash-repo-list {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-card);
+  background: rgba(15, 23, 42, 0.4);
+  overflow: hidden;
+}
+
+.dash-repo-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.65rem 1.1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  transition: background 0.15s ease;
+  min-width: 0;
+}
+
+.dash-repo-row:last-child {
+  border-bottom: none;
+}
+
+.dash-repo-row:hover {
+  background: rgba(56, 189, 248, 0.05);
+}
+
+.dash-repo-row-icon {
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.dash-repo-row:hover .dash-repo-row-icon {
+  color: var(--brand);
+}
+
+.dash-repo-row-name {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  text-decoration: none;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 16rem;
+  flex-shrink: 0;
+}
+
+.dash-repo-row-name:hover {
+  color: var(--brand);
+}
+
+.dash-repo-row-chip {
+  flex-shrink: 0;
+}
+
+.dash-repo-row-desc {
+  flex: 1;
+  margin: 0;
+  font-size: 0.76rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+
+.dash-repo-row-browse {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--brand);
+  text-decoration: none;
+  flex-shrink: 0;
+  opacity: 0.75;
+  transition: opacity 0.15s ease;
+}
+
+.dash-repo-row:hover .dash-repo-row-browse {
+  opacity: 1;
+}
+
+@media (max-width: 640px) {
+  .dash-repo-row-desc { display: none; }
+  .dash-repo-row-name { max-width: none; flex: 1; }
+}
+
 /* ── Secondary accent badge — violet tint, for plan labels, highlights ───── */
 .dash-badge-violet {
   display: inline-flex;
@@ -6775,6 +6923,43 @@ select option {
   box-shadow: 0 4px 32px rgba(0, 0, 0, 0.55), 0 1px 0 rgba(56, 189, 248, 0.1);
 }
 
+/* Cursor spotlight — radial glow that tracks the pointer via --nav-mx/--nav-my */
+.nav-spotlight {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(
+    180px 70px at var(--nav-mx, 50%) var(--nav-my, 50%),
+    rgba(56, 189, 248, 0.1),
+    rgba(167, 139, 250, 0.04) 55%,
+    transparent 75%
+  );
+  opacity: 0;
+  transition: opacity 0.35s ease;
+  z-index: 0;
+}
+
+.app-nav-dock:hover .nav-spotlight {
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nav-spotlight { display: none; }
+}
+
+/* Scroll progress — thin gradient line pinned to the nav's bottom edge */
+.nav-progress {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--brand), var(--accent-violet), var(--accent-teal));
+  transform-origin: left;
+  opacity: 0.85;
+  pointer-events: none;
+}
+
 /* Gradient hairline at top of nav */
 .nav-hairline {
   display: block;
@@ -6826,6 +7011,8 @@ select option {
   background: linear-gradient(135deg, rgba(56,189,248,0.15) 0%, rgba(167,139,250,0.1) 100%);
   border: 1px solid rgba(56,189,248,0.25);
   flex-shrink: 0;
+  position: relative;
+  overflow: hidden;
 }
 
 .nav-brand-wordmark {
@@ -6937,6 +7124,104 @@ select option {
   border: 1px solid rgba(56,189,248,0.22);
   box-shadow: 0 0 14px rgba(56,189,248,0.1), inset 0 1px 0 rgba(255,255,255,0.06);
   z-index: -1;
+}
+
+/* Magnetic content wrapper inside each nav link */
+.nav-link-magnet {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.38rem;
+  will-change: transform;
+}
+
+/* Rolling label — two stacked copies; characters roll up on hover */
+.nav-roll {
+  position: relative;
+  display: inline-block;
+  overflow: hidden;
+  line-height: 1.2;
+}
+
+.nav-roll-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+.nav-roll-line {
+  display: block;
+  white-space: nowrap;
+}
+
+.nav-roll-bottom {
+  position: absolute;
+  inset: 0;
+  color: var(--brand);
+}
+
+.nav-roll-char {
+  display: inline-block;
+  transition: transform 0.34s cubic-bezier(0.76, 0, 0.24, 1);
+  white-space: pre;
+}
+
+.nav-roll-bottom .nav-roll-char {
+  transform: translateY(110%);
+}
+
+.nav-link:hover .nav-roll-top .nav-roll-char,
+.nav-link:focus-visible .nav-roll-top .nav-roll-char {
+  transform: translateY(-110%);
+}
+
+.nav-link:hover .nav-roll-bottom .nav-roll-char,
+.nav-link:focus-visible .nav-roll-bottom .nav-roll-char {
+  transform: translateY(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nav-roll-char { transition: none; }
+  .nav-roll-bottom { display: none; }
+  .nav-link:hover .nav-roll-top .nav-roll-char,
+  .nav-link:focus-visible .nav-roll-top .nav-roll-char {
+    transform: none;
+  }
+}
+
+/* Brand logo ring — conic shimmer sweep on hover */
+.nav-brand-logo-ring::after {
+  content: '';
+  position: absolute;
+  inset: -40%;
+  background: conic-gradient(
+    from 0deg,
+    transparent 0deg,
+    rgba(56, 189, 248, 0.35) 80deg,
+    transparent 160deg
+  );
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
+
+.nav-brand:hover .nav-brand-logo-ring::after {
+  opacity: 1;
+  animation: navRingSweep 1.6s linear infinite;
+}
+
+@keyframes navRingSweep {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nav-brand:hover .nav-brand-logo-ring::after { animation: none; opacity: 0; }
 }
 
 /* Right cluster */
@@ -7331,34 +7616,72 @@ select option {
   padding: 0.18rem 0.55rem;
 }
 
-/* Mini sparkbar chart in the dominant card */
+/* Value + trend chip on a single baseline row */
+.bento-value-row {
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+  margin-top: auto;
+}
+
+.bento-value-row .bento-card-value {
+  margin-top: 0;
+}
+
+.bento-value-row .bento-trend-up {
+  margin-top: 0;
+  transform: translateY(-0.3rem);
+}
+
+/* Dashboard counters use the dash display font — the global 'Sora' stack
+   falls back to the dot-matrix Doto display font and looks broken here. */
+.dash-shell .bento-card-value {
+  font-family: var(--font-dash-display), 'Outfit', sans-serif;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.03em;
+}
+
+/* Mini sparkbar chart in the dominant card — ambient backdrop, right-anchored
+   so it never collides with the value/description on the left. */
 .bento-sparkbar {
   position: absolute;
   bottom: 0;
-  left: 0;
-  right: 0;
-  height: 38%;
+  right: 1.25rem;
+  width: min(46%, 240px);
+  height: 58%;
   display: flex;
   align-items: flex-end;
-  padding: 0 1.5rem;
-  gap: 3px;
+  gap: 4px;
   pointer-events: none;
   z-index: 0;
+  mask-image: linear-gradient(180deg, transparent 0%, #000 55%);
+  -webkit-mask-image: linear-gradient(180deg, transparent 0%, #000 55%);
 }
 
 .bento-sparkbar-bar {
   display: block;
   flex: 1;
-  background: var(--brand);
-  border-radius: 2px 2px 0 0;
+  background: linear-gradient(180deg, rgba(56, 189, 248, 0.55) 0%, rgba(56, 189, 248, 0.05) 100%);
+  border-radius: 3px 3px 0 0;
   min-height: 4px;
   max-height: 100%;
-  opacity: 0.18;
-  transition: opacity 0.2s ease;
+  opacity: 0.5;
+  transform-origin: bottom;
+  animation: sparkbarRise 0.6s cubic-bezier(0.25, 0, 0, 1) backwards;
 }
 
 .bento-card-brand .bento-sparkbar-bar:last-child {
-  opacity: 0.55;
+  background: linear-gradient(180deg, rgba(56, 189, 248, 0.95) 0%, rgba(56, 189, 248, 0.2) 100%);
+  opacity: 1;
+}
+
+@keyframes sparkbarRise {
+  from { transform: scaleY(0); }
+  to   { transform: scaleY(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bento-sparkbar-bar { animation: none; }
 }
 
 /* Ensure content sits above sparkbar */

@@ -378,8 +378,9 @@ export function WorkflowBuilder({ login, plan, guest = false }: Readonly<Workflo
           onKeyDown={handleTabKeyDown}
         />
 
-        {/* Tab content */}
-        <div>
+        {/* Tab content — Setup manages its own full-bleed layout; the other
+            tabs need the page gutter so cards don't touch the viewport edges */}
+        <div style={activeTab === "setup" ? undefined : { padding: "0.5rem var(--layout-gutter) 2.5rem" }}>
           {activeTab === "setup" ? (
             <WorkflowSetupTab
               form={createForm}

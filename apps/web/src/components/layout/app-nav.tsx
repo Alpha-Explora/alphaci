@@ -3,8 +3,8 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { useEffect, useRef, useState, type MouseEvent as ReactMouseEvent } from "react";
+import { motion, AnimatePresence, useMotionValue, useReducedMotion, useScroll, useSpring } from "framer-motion";
 
 import { PipelineLogo } from "@/components/layout/pipeline-logo";
 import type { useAuthSession } from "@/hooks/use-auth-session";
@@ -92,6 +92,83 @@ function NavPipelineMotif() {
   );
 }
 
+/* ── Rolling label — lusion-style per-character text roll on hover ────────── */
+
+function RollingLabel({ text }: Readonly<{ text: string }>) {
+  const chars = text.split("");
+  return (
+    <span className="nav-roll">
+      <span className="nav-roll-sr">{text}</span>
+      <span className="nav-roll-line nav-roll-top" aria-hidden="true">
+        {chars.map((ch, i) => (
+          <span key={`t-${i}`} className="nav-roll-char" style={{ transitionDelay: `${i * 18}ms` }}>
+            {ch === " " ? " " : ch}
+          </span>
+        ))}
+      </span>
+      <span className="nav-roll-line nav-roll-bottom" aria-hidden="true">
+        {chars.map((ch, i) => (
+          <span key={`b-${i}`} className="nav-roll-char" style={{ transitionDelay: `${i * 18}ms` }}>
+            {ch === " " ? " " : ch}
+          </span>
+        ))}
+      </span>
+    </span>
+  );
+}
+
+/* ── Magnetic nav link — content gently pulls toward the cursor ───────────── */
+
+interface NavLinkItemProps {
+  href: string;
+  label: string;
+  icon: (props: { size?: number }) => React.ReactNode;
+  isActive: boolean;
+  reduced: boolean;
+}
+
+function NavLinkItem({ href, label, icon: NavIcon, isActive, reduced }: Readonly<NavLinkItemProps>) {
+  const x = useMotionValue(0);
+  const y = useMotionValue(0);
+  const springX = useSpring(x, { stiffness: 320, damping: 22, mass: 0.4 });
+  const springY = useSpring(y, { stiffness: 320, damping: 22, mass: 0.4 });
+
+  function handleMouseMove(event: ReactMouseEvent<HTMLAnchorElement>) {
+    if (reduced) return;
+    const bounds = event.currentTarget.getBoundingClientRect();
+    x.set((event.clientX - bounds.left - bounds.width / 2) * 0.18);
+    y.set((event.clientY - bounds.top - bounds.height / 2) * 0.28);
+  }
+
+  function handleMouseLeave() {
+    x.set(0);
+    y.set(0);
+  }
+
+  return (
+    <Link
+      href={href}
+      className={`nav-link${isActive ? " nav-link--active" : ""}`}
+      aria-current={isActive ? "page" : undefined}
+      onMouseMove={handleMouseMove}
+      onMouseLeave={handleMouseLeave}
+    >
+      {isActive && (
+        <motion.span
+          layoutId="app-nav-active-pill"
+          className="nav-link-bg"
+          transition={{ type: "spring", stiffness: 400, damping: 34 }}
+          aria-hidden="true"
+        />
+      )}
+      <motion.span className="nav-link-magnet" style={reduced ? undefined : { x: springX, y: springY }}>
+        <NavIcon size={12} />
+        <RollingLabel text={label} />
+      </motion.span>
+    </Link>
+  );
+}
+
 /* ── Tooltip ───────────────────────────────────────────────────────────────── */
 
 function Tooltip({ text, children }: { text: string; children: React.ReactNode }) {
@@ -143,8 +220,13 @@ function Tooltip({ text, children }: { text: string; children: React.ReactNode }
 
 export function AppNav({ guest, session, onLogout, isLoggingOut }: Readonly<AppNavProps>) {
   const pathname = usePathname();
-  const navRef = useRef<HTMLDivElement>(null);
+  const navRef = useRef<HTMLElement>(null);
   const [scrolled, setScrolled] = useState(false);
+  const prefersReducedMotion = useReducedMotion();
+  const reduced = prefersReducedMotion ?? false;
+
+  const { scrollYProgress } = useScroll();
+  const progressScale = useSpring(scrollYProgress, { stiffness: 140, damping: 28, mass: 0.4 });
 
   const avatarInitial = (session?.user.name ?? session?.user.login ?? "U").slice(0, 1).toUpperCase();
 
@@ -153,6 +235,15 @@ export function AppNav({ guest, session, onLogout, isLoggingOut }: Readonly<AppN
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
+
+  // Cursor spotlight — writes CSS vars directly on the nav element so the
+  // radial highlight tracks the pointer without triggering React re-renders.
+  function handleNavMouseMove(event: ReactMouseEvent<HTMLElement>) {
+    if (reduced || !navRef.current) return;
+    const bounds = navRef.current.getBoundingClientRect();
+    navRef.current.style.setProperty("--nav-mx", `${event.clientX - bounds.left}px`);
+    navRef.current.style.setProperty("--nav-my", `${event.clientY - bounds.top}px`);
+  }
 
   const navItems = [
     ...coreNavItems,
@@ -166,7 +257,11 @@ export function AppNav({ guest, session, onLogout, isLoggingOut }: Readonly<AppN
       ref={navRef}
       className={`app-nav-dock${scrolled ? " app-nav-dock--scrolled" : ""}`}
       role="banner"
+      onMouseMove={handleNavMouseMove}
     >
+      {/* Cursor spotlight layer */}
+      <span className="nav-spotlight" aria-hidden="true" />
+
       {/* Gradient hairline top border */}
       <span className="nav-hairline" aria-hidden="true" />
 
@@ -189,29 +284,16 @@ export function AppNav({ guest, session, onLogout, isLoggingOut }: Readonly<AppN
 
         {/* Primary nav — floating pill dock */}
         <nav className="nav-links" aria-label="Primary navigation">
-          {navItems.map((item) => {
-            const isActive = pathname === item.href;
-            const NavIcon  = item.icon;
-            return (
-              <Link
-                key={item.key}
-                href={item.href}
-                className={`nav-link${isActive ? " nav-link--active" : ""}`}
-                aria-current={isActive ? "page" : undefined}
-              >
-                {isActive && (
-                  <motion.span
-                    layoutId="app-nav-active-pill"
-                    className="nav-link-bg"
-                    transition={{ type: "spring", stiffness: 400, damping: 34 }}
-                    aria-hidden="true"
-                  />
-                )}
-                <NavIcon size={12} />
-                <span>{item.label}</span>
-              </Link>
-            );
-          })}
+          {navItems.map((item) => (
+            <NavLinkItem
+              key={item.key}
+              href={item.href}
+              label={item.label}
+              icon={item.icon}
+              isActive={pathname === item.href}
+              reduced={reduced}
+            />
+          ))}
         </nav>
 
         {/* Right: user identity + sign out */}
@@ -284,6 +366,15 @@ export function AppNav({ guest, session, onLogout, isLoggingOut }: Readonly<AppN
 
       {/* Gradient underline — transitions in on scroll */}
       <span className={`nav-underline${scrolled ? " nav-underline--visible" : ""}`} aria-hidden="true" />
+
+      {/* Scroll progress — thin gradient line tracking page scroll */}
+      {!reduced && (
+        <motion.span
+          className="nav-progress"
+          style={{ scaleX: progressScale }}
+          aria-hidden="true"
+        />
+      )}
     </header>
   );
 }

@@ -176,22 +176,24 @@ function BentoGrid({
           <span className="bento-pulse-dot bento-pulse-dot--brand" aria-hidden="true" />
           Workflows Generated
         </div>
-        <div className="bento-card-value counter-number bento-num-brand">
-          {historyLoading ? <SkeletonValue wide /> : displayHistory}
+        <div className="bento-value-row">
+          <div className="bento-card-value counter-number bento-num-brand">
+            {historyLoading ? <SkeletonValue wide /> : displayHistory}
+          </div>
+          {!historyLoading && historyLength > 0 && (
+            <span className="bento-trend-up">
+              <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" />
+                <polyline points="17 6 23 6 23 12" />
+              </svg>
+              Active
+            </span>
+          )}
         </div>
         <p className="bento-card-desc">GitHub Actions build &amp; test recipes</p>
-        {!historyLoading && historyLength > 0 && (
-          <span className="bento-trend-up">
-            <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-              <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" />
-              <polyline points="17 6 23 6 23 12" />
-            </svg>
-            Active
-          </span>
-        )}
         <div className="bento-sparkbar" aria-hidden="true">
           {[3,6,4,7,5,8,6,9,7,10,8,11].map((h, i) => (
-            <span key={i} className="bento-sparkbar-bar" style={{ height: `${h * 5}%`, opacity: i === 11 ? 1 : 0.35 + (i / 11) * 0.5 }} />
+            <span key={i} className="bento-sparkbar-bar" style={{ height: `${h * 8}%`, animationDelay: `${i * 0.05}s` }} />
           ))}
         </div>
         <svg className="bento-card-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -310,6 +312,7 @@ export default function HomeDashboardPage() {
   const [repos, setRepos]                   = useState<GitHubRepo[]>([]);
   const [reposLoading, setReposLoading]     = useState(true);
   const [reposError, setReposError]         = useState<string | null>(null);
+  const [repoQuery, setRepoQuery]           = useState("");
   const [disconnectingId, setDisconnectingId]     = useState<string | null>(null);
   const [confirmDisconnectId, setConfirmDisconnectId] = useState<string | null>(null);
   const [isSyncing, setIsSyncing]               = useState(false);
@@ -463,6 +466,13 @@ export default function HomeDashboardPage() {
 
   /* ── Signed-in or guest preview ─────────────────────────────────────────── */
   const guest = isGuest(session);
+
+  const normalizedRepoQuery = repoQuery.trim().toLowerCase();
+  const filteredRepos = normalizedRepoQuery
+    ? repos.filter((repo) =>
+        repo.fullName.toLowerCase().includes(normalizedRepoQuery) ||
+        (repo.description ?? "").toLowerCase().includes(normalizedRepoQuery))
+    : repos;
 
   const uniqueServices = new Set(history.map((h) => h.serviceName)).size;
   const lastActivityValue = history[0]
@@ -865,50 +875,72 @@ export default function HomeDashboardPage() {
                     )}
                   </section>
 
-                  {/* ── Connected GitHub repos ── */}
+                  {/* ── Connected GitHub repos — compact searchable list ── */}
                   {!reposLoading && repos.length > 0 && (
                     <section aria-label="GitHub repositories">
                       <div className="dash-section-label">
                         <div className="dash-section-label-left">
                           <p className="file-path-label" style={{ marginBottom: 0, color: "var(--brand)" }}>repos/github.yml</p>
-                          <span className="dash-count-chip">{repos.length} GitHub repos</span>
+                          <span className="dash-count-chip">
+                            {normalizedRepoQuery
+                              ? `${filteredRepos.length} of ${repos.length} repos`
+                              : `${repos.length} GitHub repos`}
+                          </span>
+                        </div>
+                        <div className="repo-search">
+                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                            <circle cx="11" cy="11" r="8" />
+                            <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                          </svg>
+                          <input
+                            type="search"
+                            value={repoQuery}
+                            onChange={(e) => setRepoQuery(e.target.value)}
+                            placeholder="Search repositories..."
+                            aria-label="Search GitHub repositories"
+                          />
+                          {repoQuery && (
+                            <button type="button" onClick={() => setRepoQuery("")} aria-label="Clear repository search">
+                              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden="true">
+                                <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+                              </svg>
+                            </button>
+                          )}
                         </div>
                       </div>
-                      <div className="repo-grid" aria-label="GitHub repositories">
-                        {repos.map((repo) => (
-                          <article key={repo.id} className="repo-card glass-panel">
-                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start", gap: "0.5rem" }}>
-                              <a href={repo.htmlUrl} target="_blank" rel="noreferrer" className="repo-card-title">
-                                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
-                                  <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22" />
-                                </svg>
-                                <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                                  {repo.fullName.split("/")[1]}
-                                </span>
+
+                      {filteredRepos.length === 0 ? (
+                        <div className="glass-panel" style={{ textAlign: "center", padding: "2.25rem 1.5rem", background: "rgba(15, 23, 42, 0.3)", borderRadius: "var(--radius-card)" }}>
+                          <p style={{ color: "var(--text-secondary)", margin: 0, fontSize: "0.88rem" }}>
+                            No repositories match &quot;{repoQuery}&quot;.
+                          </p>
+                        </div>
+                      ) : (
+                        <div className="dash-repo-list" aria-label="GitHub repositories">
+                          {filteredRepos.map((repo) => (
+                            <article key={repo.id} className="dash-repo-row">
+                              <svg className="dash-repo-row-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                                <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22" />
+                              </svg>
+                              <a href={repo.htmlUrl} target="_blank" rel="noreferrer" className="dash-repo-row-name">
+                                {repo.fullName.split("/")[1]}
                               </a>
-                              <span className={repo.private ? "status-chip status-chip-muted" : "status-chip status-chip-success"}>
+                              <span className={`dash-repo-row-chip ${repo.private ? "status-chip status-chip-muted" : "status-chip status-chip-success"}`}>
                                 {repo.private ? "private" : "public"}
                               </span>
-                            </div>
-                            {repo.description ? (
-                              <p style={{ color: "var(--text-secondary)", fontSize: "0.78rem", margin: 0, lineHeight: 1.4, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", textOverflow: "ellipsis" }}>
-                                {repo.description}
+                              <p className="dash-repo-row-desc">
+                                {repo.description ?? "No description provided."}
                               </p>
-                            ) : (
-                              <p style={{ color: "var(--text-muted)", fontSize: "0.78rem", margin: 0, fontStyle: "italic" }}>No description provided.</p>
-                            )}
-                            <div className="repo-card-meta">
-                              <span style={{ color: "var(--text-muted)", fontSize: "0.7rem", fontFamily: "ui-monospace, monospace" }}>ID: {repo.id}</span>
-                              <a href={repo.htmlUrl} target="_blank" rel="noreferrer" style={{ fontSize: "0.7rem", color: "var(--brand)", fontWeight: 600, textDecoration: "none", display: "flex", alignItems: "center", gap: "0.25rem" }}>
+                              <a href={repo.htmlUrl} target="_blank" rel="noreferrer" className="dash-repo-row-browse">
                                 Browse
-                                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden="true">
                                   <line x1="7" y1="17" x2="17" y2="7" /><polyline points="7 7 17 7 17 17" />
                                 </svg>
                               </a>
-                            </div>
-                          </article>
-                        ))}
-                      </div>
+                            </article>
+                          ))}
+                        </div>
+                      )}
                     </section>
                   )}
                   {reposError && !reposLoading && (
