@@ -21,13 +21,13 @@ interface AppNavProps {
 /* ── Nav items ─────────────────────────────────────────────────────────────── */
 
 const coreNavItems = [
-  { label: "Dashboard",  href: "/home",      icon: DashboardIcon },
-  { label: "Workflows",  href: "/workflows",  icon: WorkflowsIcon },
+  { label: "Dashboard",  href: "/home",      icon: DashboardIcon,  key: "dashboard" },
+  { label: "Workflows",  href: "/workflows",  icon: WorkflowsIcon,  key: "workflows" },
 ];
 
 /* ── Icons ─────────────────────────────────────────────────────────────────── */
 
-function DashboardIcon({ size = 14 }: { size?: number }) {
+function DashboardIcon({ size = 13 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       <rect x="3" y="3" width="7" height="7" rx="1" />
@@ -38,7 +38,7 @@ function DashboardIcon({ size = 14 }: { size?: number }) {
   );
 }
 
-function WorkflowsIcon({ size = 14 }: { size?: number }) {
+function WorkflowsIcon({ size = 13 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
@@ -46,7 +46,7 @@ function WorkflowsIcon({ size = 14 }: { size?: number }) {
   );
 }
 
-function BillingIcon({ size = 14 }: { size?: number }) {
+function BillingIcon({ size = 13 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       <rect x="1" y="4" width="22" height="16" rx="2" ry="2" />
@@ -55,7 +55,7 @@ function BillingIcon({ size = 14 }: { size?: number }) {
   );
 }
 
-function SettingsIcon({ size = 14 }: { size?: number }) {
+function SettingsIcon({ size = 13 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       <circle cx="12" cy="12" r="3" />
@@ -64,13 +64,31 @@ function SettingsIcon({ size = 14 }: { size?: number }) {
   );
 }
 
-function SignOutIcon({ size = 15 }: { size?: number }) {
+function SignOutIcon({ size = 14 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
       <polyline points="16 17 21 12 16 7" />
       <line x1="21" y1="12" x2="9" y2="12" />
     </svg>
+  );
+}
+
+/* ── Pipeline node motif — decorative, 5 stages ────────────────────────────── */
+
+function NavPipelineMotif() {
+  return (
+    <span className="nav-pipeline-motif" aria-hidden="true">
+      {[0, 1, 2, 3, 4].map((i) => (
+        <span key={i} className="nav-pipeline-motif-group">
+          <span
+            className="nav-pipeline-motif-dot"
+            style={{ animationDelay: `${i * 0.32}s` }}
+          />
+          {i < 4 && <span className="nav-pipeline-motif-connector" />}
+        </span>
+      ))}
+    </span>
   );
 }
 
@@ -130,288 +148,142 @@ export function AppNav({ guest, session, onLogout, isLoggingOut }: Readonly<AppN
 
   const avatarInitial = (session?.user.name ?? session?.user.login ?? "U").slice(0, 1).toUpperCase();
 
-  // Add scroll-shadow when page is scrolled
   useEffect(() => {
-    function onScroll() {
-      setScrolled(window.scrollY > 8);
-    }
+    function onScroll() { setScrolled(window.scrollY > 8); }
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  // Build nav items depending on auth state
   const navItems = [
     ...coreNavItems,
     guest
-      ? { label: "Billing",   href: "/subscribe", icon: BillingIcon }
-      : { label: "Settings",  href: "/settings",  icon: SettingsIcon },
+      ? { label: "Billing",  href: "/subscribe", icon: BillingIcon,  key: "billing" }
+      : { label: "Settings", href: "/settings",  icon: SettingsIcon, key: "settings" },
   ];
 
   return (
     <header
       ref={navRef}
-      className="app-nav-premium"
-      style={{
-        background: scrolled ? "rgba(2, 6, 23, 0.85)" : "rgba(2, 6, 23, 0.7)",
-        backdropFilter: "blur(32px) saturate(200%)",
-        WebkitBackdropFilter: "blur(32px) saturate(200%)",
-        borderBottom: scrolled
-          ? "1px solid rgba(56, 189, 248, 0.18)"
-          : "1px solid rgba(255, 255, 255, 0.07)",
-        boxShadow: scrolled
-          ? "0 4px 30px rgba(0, 0, 0, 0.5), 0 1px 0 rgba(56, 189, 248, 0.12)"
-          : "0 4px 30px rgba(0, 0, 0, 0.3)",
-        position: "sticky",
-        top: 0,
-        zIndex: 100,
-        borderRadius: 0,
-        margin: "0",
-        padding: "0 var(--layout-gutter)",
-        display: "flex",
-        alignItems: "center",
-        minHeight: "3.25rem",
-        gap: "0",
-        transition: "background 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease",
-      }}
+      className={`app-nav-dock${scrolled ? " app-nav-dock--scrolled" : ""}`}
+      role="banner"
     >
-      {/* Brand */}
-      <Link
-        className="brand-mark"
-        href="/home"
-        style={{ display: "flex", alignItems: "center", gap: "0.5rem", flexShrink: 0 }}
-      >
-        <PipelineLogo size={22} />
-        <span
-          style={{
-            fontWeight: 800,
-            background: "linear-gradient(to right, #fff, var(--text-secondary))",
-            WebkitBackgroundClip: "text",
-            WebkitTextFillColor: "transparent",
-            backgroundClip: "text",
-            color: "#fff",
-            fontSize: "0.88rem",
-          }}
-        >
-          FlowCI Studio
-        </span>
-      </Link>
+      {/* Gradient hairline top border */}
+      <span className="nav-hairline" aria-hidden="true" />
 
-      {/* Separator */}
-      <span
-        aria-hidden="true"
-        style={{
-          width: "1px",
-          height: "1.5rem",
-          background: "var(--border-soft)",
-          margin: "0 1rem",
-          flexShrink: 0,
-        }}
-      />
+      {/* Inner pill container */}
+      <div className="nav-inner">
 
-      {/* Primary nav */}
-      <nav aria-label="Primary" style={{ display: "flex", alignItems: "center", gap: "0.25rem", flex: 1 }}>
-        {navItems.map((item) => {
-          const isActive = pathname === item.href;
-          const NavIcon = item.icon;
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              aria-current={isActive ? "page" : undefined}
-              style={{
-                position: "relative",
-                display: "inline-flex",
-                alignItems: "center",
-                gap: "0.4rem",
-                padding: "0.4rem 0.9rem",
-                borderRadius: "0.5rem",
-                fontSize: "0.85rem",
-                fontWeight: 600,
-                color: isActive ? "var(--brand)" : "var(--text-secondary)",
-                textDecoration: "none",
-                transition: "color 0.2s ease",
-              }}
-            >
-              {isActive && (
-                <motion.span
-                  layoutId="app-nav-pill"
-                  style={{
-                    position: "absolute",
-                    inset: 0,
-                    borderRadius: "0.5rem",
-                    background: "rgba(56, 189, 248, 0.1)",
-                    border: "1px solid rgba(56, 189, 248, 0.25)",
-                    boxShadow: "0 0 12px rgba(56, 189, 248, 0.1)",
-                    zIndex: -1,
-                  }}
-                  transition={{ type: "spring", stiffness: 380, damping: 32 }}
-                />
-              )}
-              <NavIcon size={13} />
-              {item.label}
-            </Link>
-          );
-        })}
-      </nav>
+        {/* Brand mark */}
+        <Link className="nav-brand" href="/home" aria-label="FlowCI Studio — home">
+          <span className="nav-brand-logo-ring">
+            <PipelineLogo size={18} />
+          </span>
+          <span className="nav-brand-wordmark">
+            FlowCI<span className="nav-brand-accent">Studio</span>
+          </span>
+          <NavPipelineMotif />
+        </Link>
 
-      {/* Right: user pill + sign out */}
-      <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", flexShrink: 0 }}>
-        {!guest && (
-          <>
-            {/* User pill */}
-            <div
-              className="user-pill-premium"
-              aria-label={`Signed in as ${session?.user.login ?? "user"}`}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "0.45rem",
-                background: "rgba(15, 23, 42, 0.6)",
-                border: "1px solid var(--border)",
-                borderRadius: "var(--radius-pill)",
-                padding: "0.25rem 0.75rem 0.25rem 0.25rem",
-                position: "relative",
-              }}
-            >
-              {/* Avatar with gradient ring */}
-              <div
-                style={{
-                  position: "relative",
-                  borderRadius: "50%",
-                  padding: "1.5px",
-                  background: "linear-gradient(135deg, var(--brand), var(--brand-accent))",
-                  flexShrink: 0,
-                }}
+        {/* Separator */}
+        <span className="nav-sep" aria-hidden="true" />
+
+        {/* Primary nav — floating pill dock */}
+        <nav className="nav-links" aria-label="Primary navigation">
+          {navItems.map((item) => {
+            const isActive = pathname === item.href;
+            const NavIcon  = item.icon;
+            return (
+              <Link
+                key={item.key}
+                href={item.href}
+                className={`nav-link${isActive ? " nav-link--active" : ""}`}
+                aria-current={isActive ? "page" : undefined}
               >
-                {session?.user.avatarUrl ? (
-                  <Image
-                    src={session.user.avatarUrl}
-                    alt={session.user.name ?? session.user.login}
-                    width={22}
-                    height={22}
-                    style={{ borderRadius: "50%", display: "block" }}
-                    unoptimized
-                  />
-                ) : (
-                  <span
+                {isActive && (
+                  <motion.span
+                    layoutId="app-nav-active-pill"
+                    className="nav-link-bg"
+                    transition={{ type: "spring", stiffness: 400, damping: 34 }}
                     aria-hidden="true"
-                    style={{
-                      width: "22px",
-                      height: "22px",
-                      borderRadius: "50%",
-                      background: "var(--bg-elevated)",
-                      color: "var(--brand)",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      fontSize: "0.7rem",
-                      fontWeight: 700,
-                    }}
-                  >
-                    {avatarInitial}
+                  />
+                )}
+                <NavIcon size={12} />
+                <span>{item.label}</span>
+              </Link>
+            );
+          })}
+        </nav>
+
+        {/* Right: user identity + sign out */}
+        <div className="nav-right-cluster">
+          {!guest && (
+            <>
+              {/* User identity pill */}
+              <div className="nav-user-pill" aria-label={`Signed in as ${session?.user.login ?? "user"}`}>
+                <span className="nav-user-avatar-ring">
+                  {session?.user.avatarUrl ? (
+                    <Image
+                      src={session.user.avatarUrl}
+                      alt={session.user.name ?? session.user.login}
+                      width={20}
+                      height={20}
+                      className="nav-user-avatar-img"
+                      unoptimized
+                    />
+                  ) : (
+                    <span className="nav-user-avatar-fallback" aria-hidden="true">
+                      {avatarInitial}
+                    </span>
+                  )}
+                </span>
+
+                <span className="nav-user-login">
+                  {session?.user.login ?? "user"}
+                </span>
+
+                {session?.subscription.plan && (
+                  <span className="nav-user-plan-badge">
+                    {session.subscription.plan}
                   </span>
                 )}
+
+                {/* Status LED */}
+                <span className="nav-user-status-led" aria-hidden="true" />
               </div>
 
-              <span
-                style={{
-                  fontSize: "0.8rem",
-                  fontWeight: 600,
-                  color: "var(--text-primary)",
-                  maxWidth: "6rem",
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                  whiteSpace: "nowrap",
-                }}
-              >
-                {session?.user.login ?? "user"}
-              </span>
-
-              {session?.subscription.plan && (
-                <span
-                  style={{
-                    fontSize: "0.63rem",
-                    fontWeight: 700,
-                    textTransform: "uppercase",
-                    letterSpacing: "0.06em",
-                    padding: "0.1rem 0.4rem",
-                    borderRadius: "4px",
-                    background: "linear-gradient(135deg, rgba(56, 189, 248, 0.18), rgba(52, 211, 153, 0.1))",
-                    color: "var(--brand)",
-                    border: "1px solid rgba(56, 189, 248, 0.25)",
-                  }}
+              {/* Sign out */}
+              <Tooltip text={isLoggingOut ? "Signing out…" : "Sign out"}>
+                <button
+                  type="button"
+                  onClick={onLogout}
+                  disabled={isLoggingOut}
+                  aria-label={isLoggingOut ? "Signing out…" : "Sign out"}
+                  className="nav-signout-btn"
                 >
-                  {session.subscription.plan}
-                </span>
-              )}
-            </div>
+                  {isLoggingOut ? (
+                    <span className="nav-signout-spinner" aria-hidden="true" />
+                  ) : (
+                    <SignOutIcon />
+                  )}
+                </button>
+              </Tooltip>
+            </>
+          )}
 
-            {/* Sign out — icon-only with tooltip */}
-            <Tooltip text={isLoggingOut ? "Signing out…" : "Sign out"}>
-              <button
-                type="button"
-                onClick={onLogout}
-                disabled={isLoggingOut}
-                aria-label={isLoggingOut ? "Signing out…" : "Sign out"}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  width: "2rem",
-                  height: "2rem",
-                  borderRadius: "0.5rem",
-                  border: "1px solid var(--border)",
-                  background: "rgba(15, 23, 42, 0.4)",
-                  color: "var(--text-muted)",
-                  cursor: isLoggingOut ? "not-allowed" : "pointer",
-                  opacity: isLoggingOut ? 0.6 : 1,
-                  transition: "all 0.2s ease",
-                  outline: "none",
-                }}
-                onMouseEnter={(e) => {
-                  if (!isLoggingOut) {
-                    e.currentTarget.style.color = "var(--danger)";
-                    e.currentTarget.style.borderColor = "rgba(248, 113, 113, 0.4)";
-                    e.currentTarget.style.background = "rgba(248, 113, 113, 0.08)";
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.color = "var(--text-muted)";
-                  e.currentTarget.style.borderColor = "var(--border)";
-                  e.currentTarget.style.background = "rgba(15, 23, 42, 0.4)";
-                }}
-              >
-                {isLoggingOut ? (
-                  <span
-                    aria-hidden="true"
-                    style={{
-                      width: "13px",
-                      height: "13px",
-                      borderRadius: "50%",
-                      border: "1.5px solid rgba(255,255,255,0.15)",
-                      borderTopColor: "var(--brand)",
-                      display: "block",
-                      animation: "spin 0.7s linear infinite",
-                    }}
-                  />
-                ) : (
-                  <SignOutIcon />
-                )}
-              </button>
-            </Tooltip>
-          </>
-        )}
-
-        {guest && (
-          <Link
-            className="primary-button"
-            href="/signup"
-            style={{ padding: "0.4rem 1rem", fontSize: "0.82rem", minHeight: "2.2rem" }}
-          >
-            Sign up
-          </Link>
-        )}
+          {guest && (
+            <Link
+              className="primary-button"
+              href="/signup"
+              style={{ padding: "0.38rem 1rem", fontSize: "0.82rem", minHeight: "2.1rem" }}
+            >
+              Sign up
+            </Link>
+          )}
+        </div>
       </div>
+
+      {/* Gradient underline — transitions in on scroll */}
+      <span className={`nav-underline${scrolled ? " nav-underline--visible" : ""}`} aria-hidden="true" />
     </header>
   );
 }
