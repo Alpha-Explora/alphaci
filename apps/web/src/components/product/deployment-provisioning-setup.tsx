@@ -1,5 +1,7 @@
 "use client";
 
+import { useEffect, useMemo } from "react";
+
 import type {
   DeploymentProvisioningEnvSet,
   DeploymentProvisioningRequest,
@@ -8,6 +10,7 @@ import type {
   EnvProvider,
   EnvTargetSlot,
 } from "@/lib/api/contracts";
+import { useProviderConnections } from "@/hooks/use-provider-connections";
 
 interface DeploymentProvisioningSetupProps {
   enabled: boolean;
@@ -97,7 +100,51 @@ export function DeploymentProvisioningSetup({
   onChange,
   onEnabledChange,
 }: Readonly<DeploymentProvisioningSetupProps>) {
-  const targets = value.targets.length > 0 ? value.targets : [fallbackTarget(selectedProjectKind)];
+  const targets = useMemo(
+    () => (value.targets.length > 0 ? value.targets : [fallbackTarget(selectedProjectKind)]),
+    [selectedProjectKind, value.targets],
+  );
+  const needsProviderConnections = enabled && targets.some((target) => target.ownershipMode === "byo");
+  const { connections: providerConnections, loading: providerConnectionsLoading } =
+    useProviderConnections(needsProviderConnections);
+  const activeProviderConnections = useMemo(
+    () => providerConnections.filter((connection) => connection.status === "active"),
+    [providerConnections],
+  );
+
+  useEffect(() => {
+    if (!enabled || providerConnectionsLoading) {
+      return;
+    }
+
+    let changed = false;
+    const nextTargets = targets.map((target) => {
+      if (target.ownershipMode !== "byo") {
+        return target;
+      }
+
+      const matchingConnections = activeProviderConnections.filter(
+        (connection) => connection.provider === target.provider,
+      );
+      const selectedConnection = matchingConnections.find(
+        (connection) => connection.id === target.providerConnectionId,
+      );
+
+      if (selectedConnection) {
+        return target;
+      }
+
+      changed = true;
+      return {
+        ...target,
+        providerConnectionId: matchingConnections[0]?.id,
+      };
+    });
+
+    if (changed) {
+      onChange({ ...value, targets: nextTargets });
+    }
+  }, [activeProviderConnections, enabled, onChange, providerConnectionsLoading, targets, value]);
 
   return (
     <div className="deployment-provisioning-setup">
@@ -131,6 +178,10 @@ export function DeploymentProvisioningSetup({
           {targets.map((target, targetIndex) => {
             const envSet = target.env?.[0] ?? { environment: "test" as EnvEnvironment, vars: [] };
             const vars = envSet.vars.length > 0 ? envSet.vars : [{ key: "", value: "" }];
+            const matchingConnections = activeProviderConnections.filter(
+              (connection) => connection.provider === target.provider,
+            );
+            const selectedProviderConnectionId = target.providerConnectionId ?? matchingConnections[0]?.id ?? "";
 
             return (
               <section className="env-provisioning-section" key={`${target.slot}-${targetIndex}`}>
@@ -168,9 +219,14 @@ export function DeploymentProvisioningSetup({
                     <select
                       aria-label={targetIndex === 0 ? "Provider" : `Provider ${targetIndex + 1}`}
                       value={target.provider}
-                      onChange={(event) =>
-                        onChange(updateTargetAt(value, targetIndex, { provider: event.target.value as EnvProvider }))
-                      }
+                      onChange={(event) => {
+                        const provider = event.target.value as EnvProvider;
+                        const providerConnectionId =
+                          target.ownershipMode === "byo"
+                            ? activeProviderConnections.find((connection) => connection.provider === provider)?.id
+                            : undefined;
+                        onChange(updateTargetAt(value, targetIndex, { provider, providerConnectionId }));
+                      }}
                     >
                       <option value="render">Render</option>
                       <option value="vercel">Vercel</option>
@@ -181,13 +237,19 @@ export function DeploymentProvisioningSetup({
                     <select
                       aria-label={targetIndex === 0 ? "Provider ownership" : `Provider ownership ${targetIndex + 1}`}
                       value={target.ownershipMode}
-                      onChange={(event) =>
+                      onChange={(event) => {
+                        const ownershipMode = event.target.value as DeploymentProvisioningTargetRequest["ownershipMode"];
+                        const providerConnectionId =
+                          ownershipMode === "byo"
+                            ? matchingConnections[0]?.id ?? target.providerConnectionId
+                            : undefined;
                         onChange(
                           updateTargetAt(value, targetIndex, {
-                            ownershipMode: event.target.value as DeploymentProvisioningTargetRequest["ownershipMode"],
+                            ownershipMode,
+                            providerConnectionId,
                           }),
-                        )
-                      }
+                        );
+                      }}
                     >
                       <option value="flowci_managed">Managed by FlowCI</option>
                       <option value="byo">Use my Vercel account</option>
@@ -198,15 +260,25 @@ export function DeploymentProvisioningSetup({
                   </label>
                   {target.ownershipMode === "byo" ? (
                     <label>
-                      <span>Provider connection ID</span>
-                      <input
-                        aria-label={targetIndex === 0 ? "Provider connection ID" : `Provider connection ID ${targetIndex + 1}`}
-                        value={target.providerConnectionId ?? ""}
+                      <span>Provider connection</span>
+                      <select
+                        aria-label={targetIndex === 0 ? "Provider connection" : `Provider connection ${targetIndex + 1}`}
+                        value={selectedProviderConnectionId}
+                        disabled={providerConnectionsLoading || matchingConnections.length === 0}
                         onChange={(event) =>
                           onChange(updateTargetAt(value, targetIndex, { providerConnectionId: event.target.value }))
                         }
-                        placeholder={target.provider === "vercel" ? "Vercel connection UUID" : "Provider connection UUID"}
-                      />
+                      >
+                        {matchingConnections.length ? (
+                          matchingConnections.map((connection) => (
+                            <option key={connection.id} value={connection.id}>
+                              {connection.label} - {connection.tokenLastFour}
+                            </option>
+                          ))
+                        ) : (
+                          <option value="">No saved {target.provider} connection</option>
+                        )}
+                      </select>
                     </label>
                   ) : null}
                   <label>

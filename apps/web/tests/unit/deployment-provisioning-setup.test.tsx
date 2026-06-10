@@ -3,7 +3,14 @@ import type { ReactNode } from "react";
 import { createRoot } from "react-dom/client";
 
 import { DeploymentProvisioningSetup } from "../../src/components/product/deployment-provisioning-setup";
+import { useProviderConnections } from "../../src/hooks/use-provider-connections";
 import type { DeploymentProvisioningRequest } from "../../src/lib/api/contracts";
+
+jest.mock("../../src/hooks/use-provider-connections", () => ({
+  useProviderConnections: jest.fn(),
+}));
+
+const mockedUseProviderConnections = useProviderConnections as jest.MockedFunction<typeof useProviderConnections>;
 
 function render(ui: ReactNode) {
   const container = document.createElement("div");
@@ -36,6 +43,17 @@ function changeValue(element: HTMLInputElement | HTMLSelectElement, value: strin
 }
 
 describe("DeploymentProvisioningSetup", () => {
+  beforeEach(() => {
+    mockedUseProviderConnections.mockReturnValue({
+      connections: [],
+      loadConnections: jest.fn(),
+      loading: false,
+      revokeConnection: jest.fn(),
+      saveConnection: jest.fn(),
+      saving: false,
+    });
+  });
+
   it("builds a Render backend target with write-only env vars", () => {
     const onChange = jest.fn();
     const value: DeploymentProvisioningRequest = {
@@ -124,6 +142,70 @@ describe("DeploymentProvisioningSetup", () => {
         targets: [
           expect.objectContaining({ projectName: "demo-backend-test" }),
           expect.objectContaining({ projectName: "custom-frontend-test" }),
+        ],
+      }),
+    );
+
+    rendered.unmount();
+  });
+
+  it("selects saved provider connections for BYO Vercel setup", () => {
+    const onChange = jest.fn();
+    mockedUseProviderConnections.mockReturnValue({
+      connections: [
+        {
+          id: "connection-1",
+          provider: "vercel",
+          label: "Personal Vercel",
+          tokenLastFour: "abcd",
+          status: "active",
+          metadata: {},
+          createdAt: "2026-06-10T00:00:00.000Z",
+          updatedAt: "2026-06-10T00:00:00.000Z",
+          lastUsedAt: null,
+        },
+      ],
+      loadConnections: jest.fn(),
+      loading: false,
+      revokeConnection: jest.fn(),
+      saveConnection: jest.fn(),
+      saving: false,
+    });
+    const value: DeploymentProvisioningRequest = {
+      enabled: true,
+      targets: [
+        {
+          slot: "frontend",
+          provider: "vercel",
+          ownershipMode: "byo",
+          projectName: "orders-ui-test",
+          branchName: "test",
+          rootDirectory: ".",
+          buildCommand: "npm run build",
+          env: [{ environment: "test", vars: [] }],
+        },
+      ],
+    };
+
+    const rendered = render(
+      <DeploymentProvisioningSetup
+        enabled
+        repoShape="single-app"
+        selectedProjectKind="frontend"
+        value={value}
+        onChange={onChange}
+      />,
+    );
+
+    expect(rendered.container.querySelector<HTMLSelectElement>("select[aria-label='Provider connection']")).toHaveValue("connection-1");
+    expect(rendered.container.textContent).toContain("Personal Vercel - abcd");
+    expect(rendered.container.querySelector("input[placeholder='Vercel connection UUID']")).toBeNull();
+    expect(onChange).toHaveBeenCalledWith(
+      expect.objectContaining({
+        targets: [
+          expect.objectContaining({
+            providerConnectionId: "connection-1",
+          }),
         ],
       }),
     );

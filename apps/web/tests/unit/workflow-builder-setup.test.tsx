@@ -15,6 +15,7 @@ import {
   getProjects,
   getTemplates,
   getWorkflowHistory,
+  listProviderConnections,
 } from "../../src/lib/api/client";
 import type { ProjectOptionsResponse } from "../../src/lib/api/contracts";
 
@@ -58,6 +59,7 @@ jest.mock("../../src/lib/api/client", () => ({
   getProjects: jest.fn(),
   getTemplates: jest.fn(),
   getWorkflowHistory: jest.fn(),
+  listProviderConnections: jest.fn(),
 }));
 
 const mockedCreateProject = createProject as jest.MockedFunction<typeof createProject>;
@@ -79,6 +81,9 @@ const mockedGetProjects = getProjects as jest.MockedFunction<typeof getProjects>
 const mockedGetTemplates = getTemplates as jest.MockedFunction<typeof getTemplates>;
 const mockedGetWorkflowHistory = getWorkflowHistory as jest.MockedFunction<
   typeof getWorkflowHistory
+>;
+const mockedListProviderConnections = listProviderConnections as jest.MockedFunction<
+  typeof listProviderConnections
 >;
 
 const template = {
@@ -279,6 +284,7 @@ describe("WorkflowBuilder project setup", () => {
     mockedGetTemplates.mockResolvedValue({ templates: [template] });
     mockedGetWorkflowHistory.mockResolvedValue({ items: [] });
     mockedGetProjects.mockResolvedValue({ items: [] });
+    mockedListProviderConnections.mockResolvedValue([]);
     mockedGetGithubAppInstallUrl.mockResolvedValue({
       installUrl: "https://github.com/apps/cicd-example/installations/new",
     });
