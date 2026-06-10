@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type KeyboardEvent } from "react";
+import { useState, useEffect, type KeyboardEvent } from "react";
 import { MotionConfig, motion, useReducedMotion } from "framer-motion";
 
 import {
@@ -66,6 +66,16 @@ export function WorkflowBuilder({ login, plan, guest = false }: Readonly<Workflo
   const createForm = useCreateProjectForm();
   const deploymentProvisioning = useDeploymentProvisioningForm();
   const github = useGithubInstallations(setStatusMessage, () => undefined);
+
+  useEffect(() => {
+    const { defaultNodeVersion, nodeVersions } = projectCatalog;
+    if (!defaultNodeVersion) return;
+    if (!nodeVersions.some((v) => v.value === createForm.nodeVersion)) {
+      createForm.setNodeVersion(defaultNodeVersion);
+    }
+  // Only run when the catalog's version list loads — not on every render.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [projectCatalog.defaultNodeVersion]);
 
   function handleUseTemplate(template: CatalogTemplate) {
     catalog.setSelectedTemplate(template);

@@ -243,10 +243,16 @@ export interface SubscriptionCheckoutStatusResponse {
   subscription?: SubscriptionInfo;
 }
 
+export interface NodeVersionOption {
+  value: string;
+  label: string;
+}
+
 export interface ProjectOptionsResponse {
   repoShapes: RepoShapeOption[];
   projectTypes: ProjectTypeOption[];
   recipes: WorkflowRecipeOption[];
+  nodeVersions: NodeVersionOption[];
 }
 
 export interface GenerateWorkflowRequest {
