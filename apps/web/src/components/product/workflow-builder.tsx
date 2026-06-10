@@ -347,30 +347,29 @@ export function WorkflowBuilder({ login, plan, guest = false }: Readonly<Workflo
           </div>
         )}
 
-        {/* Context bar: login, plan, GitHub status — compact strip */}
-        <div style={{
-          padding: "0.65rem var(--layout-gutter)",
-          display: "flex",
-          alignItems: "center",
-          gap: "0.6rem",
-          borderBottom: "1px solid rgba(255,255,255,0.05)",
-          flexWrap: "wrap",
-        }}>
-          <div className="topbar-controls">
-            <p className="status-pill">@{login}</p>
-            <p className="status-pill">Plan: {plan}</p>
-            <span
-              className={`github-status-dot ${github.hasAllRepositoriesInstallation ? "" : "disconnected"}`}
-              title={
-                github.hasAllRepositoriesInstallation
-                  ? "GitHub App installed — all repositories access confirmed"
-                  : "GitHub App not installed. Install it to link existing repositories."
-              }
-            >
-              {github.hasAllRepositoriesInstallation ? "GitHub App: connected" : "GitHub App: not installed →"}
+        {/* GitHub App connection status — inline chip, no duplicate login/plan */}
+        {!github.hasAllRepositoriesInstallation && (
+          <div className="gh-app-status-bar">
+            <span className="gh-app-status-chip gh-app-status-chip--warn">
+              <span className="gh-app-status-dot" aria-hidden="true" />
+              GitHub App not installed
             </span>
+            {github.installUrl ? (
+              <a
+                href={github.installUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="gh-app-install-link"
+              >
+                Install GitHub App
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <line x1="7" y1="17" x2="17" y2="7" />
+                  <polyline points="7 7 17 7 17 17" />
+                </svg>
+              </a>
+            ) : null}
           </div>
-        </div>
+        )}
 
         {/* Tab bar */}
         <WorkflowStudioTabs

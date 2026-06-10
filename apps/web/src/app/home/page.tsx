@@ -9,6 +9,7 @@ import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { AppNav } from "@/components/layout/app-nav";
 import { FlowBackground } from "@/components/layout/flow-background";
 import { PipelineLogo } from "@/components/layout/pipeline-logo";
+import { PipelineLoader } from "@/components/layout/pipeline-loader";
 import { useAuthSession } from "@/hooks/use-auth-session";
 import { logout, getProjects, getWorkflowHistory, getGithubRepos, disconnectProject, syncProjects } from "@/lib/api/client";
 import type { ProvisionedProject, WorkflowHistoryItem, GitHubRepo } from "@/lib/api/contracts";
@@ -52,9 +53,9 @@ function useCountUp(target: number | null, duration = 900): number | null {
 /* ── Constants ─────────────────────────────────────────────────────────────── */
 
 const quickActions = [
-  { label: "create-project",  href: "/workflows", display: "Create Project" },
-  { label: "view-workflows",  href: "/workflows", display: "View Workflows" },
-  { label: "manage-plan",     href: "/subscribe", display: "Manage Plan" },
+  { cmd: "new-project",    href: "/workflows", display: "Create Project",  shortcut: "⌘N", accent: "var(--brand)" },
+  { cmd: "view-workflows", href: "/workflows", display: "View Workflows",  shortcut: "⌘W", accent: "var(--accent-violet)" },
+  { cmd: "manage-plan",    href: "/subscribe", display: "Manage Plan",     shortcut: "⌘P", accent: "var(--accent-teal)" },
 ];
 
 const pipelineStages = ["Source", "Lint", "Test", "Build", "Deploy"];
@@ -168,134 +169,125 @@ function BentoGrid({
 
   return (
     <div className="kpi-bento-grid">
-      {/* Cell 1: Workflows Generated — dominant / brand tint */}
-      <div className="bento-card bento-card-dominant">
-        <div className="bento-card-title">
-          <span
-            aria-hidden="true"
-            style={{
-              width: "6px",
-              height: "6px",
-              borderRadius: "50%",
-              background: "var(--brand)",
-              animation: "flowPulse 1.8s infinite",
-            }}
-          />
+
+      {/* Cell 1: Workflows Generated — dominant brand, asymmetric wide */}
+      <div className="bento-card bento-card-dominant bento-card-brand">
+        <div className="bento-card-eyebrow">
+          <span className="bento-pulse-dot bento-pulse-dot--brand" aria-hidden="true" />
           Workflows Generated
         </div>
-        <svg
-          className="bento-card-icon"
-          width="22"
-          height="22"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          aria-hidden="true"
-        >
-          <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
-        </svg>
-        <div className="bento-card-value counter-number">
+        <div className="bento-card-value counter-number bento-num-brand">
           {historyLoading ? <SkeletonValue wide /> : displayHistory}
         </div>
-        <p style={{ margin: "0.35rem 0 0", fontSize: "0.75rem", color: "var(--text-muted)" }}>
-          Managed GitHub Action build &amp; test recipes
-        </p>
+        <p className="bento-card-desc">GitHub Actions build &amp; test recipes</p>
         {!historyLoading && historyLength > 0 && (
-          <span className="trend-up" style={{ marginTop: "0.5rem" }}>
-            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <span className="bento-trend-up">
+            <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
               <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" />
               <polyline points="17 6 23 6 23 12" />
             </svg>
             Active
           </span>
         )}
+        <div className="bento-sparkbar" aria-hidden="true">
+          {[3,6,4,7,5,8,6,9,7,10,8,11].map((h, i) => (
+            <span key={i} className="bento-sparkbar-bar" style={{ height: `${h * 5}%`, opacity: i === 11 ? 1 : 0.35 + (i / 11) * 0.5 }} />
+          ))}
+        </div>
+        <svg className="bento-card-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+        </svg>
       </div>
 
-      {/* Cell 2: Projects Created — violet accent */}
-      <div className="bento-card bento-card-accent">
-        <div className="bento-card-title">Projects Created</div>
+      {/* Cell 2: Projects Created — violet tint */}
+      <div className="bento-card bento-card-accent bento-card-violet">
+        <div className="bento-card-eyebrow">
+          <span className="bento-pulse-dot bento-pulse-dot--violet" aria-hidden="true" />
+          Projects
+        </div>
+        <div className="bento-card-value counter-number bento-num-violet">
+          {projectsLoading ? <SkeletonValue /> : displayProjects}
+        </div>
+        <p className="bento-card-desc">Active repositories</p>
         <svg className="bento-card-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
           <rect x="2" y="2" width="20" height="8" rx="2" ry="2" />
           <rect x="2" y="14" width="20" height="8" rx="2" ry="2" />
           <line x1="6" y1="6" x2="6.01" y2="6" />
           <line x1="6" y1="18" x2="6.01" y2="18" />
         </svg>
-        <div className="bento-card-value counter-number" style={{ color: "var(--accent-violet)" }}>
-          {projectsLoading ? <SkeletonValue /> : displayProjects}
-        </div>
-        <p style={{ margin: "0.5rem 0 0", fontSize: "0.75rem", color: "var(--text-muted)" }}>
-          Active repositories
-        </p>
       </div>
 
-      {/* Cell 3: Services Configured — neutral */}
-      <div className="bento-card">
-        <div className="bento-card-title">Services</div>
+      {/* Cell 3: Services — teal accent */}
+      <div className="bento-card bento-card-teal">
+        <div className="bento-card-eyebrow">
+          <span className="bento-pulse-dot bento-pulse-dot--teal" aria-hidden="true" />
+          Services
+        </div>
+        <div className="bento-card-value counter-number bento-num-teal">
+          {historyLoading ? <SkeletonValue /> : displayServices}
+        </div>
+        <p className="bento-card-desc">Unique services</p>
         <svg className="bento-card-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
           <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
           <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
           <line x1="12" y1="22.08" x2="12" y2="12" />
         </svg>
-        <div className="bento-card-value counter-number">
-          {historyLoading ? <SkeletonValue /> : displayServices}
-        </div>
-        <p style={{ margin: "0.5rem 0 0", fontSize: "0.75rem", color: "var(--text-muted)" }}>
-          Unique services
-        </p>
       </div>
 
-      {/* Cell 4: Last Activity — neutral */}
-      <div className="bento-card">
-        <div className="bento-card-title">Last Activity</div>
-        <svg className="bento-card-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-          <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-          <line x1="16" y1="2" x2="16" y2="6" />
-          <line x1="8" y1="2" x2="8" y2="6" />
-          <line x1="3" y1="10" x2="21" y2="10" />
-        </svg>
-        <div className="bento-card-value" style={{ fontSize: "1.35rem", fontWeight: 700 }}>
-          {historyLoading ? (
-            <span
-              style={{
-                display: "block",
-                height: "2rem",
-                width: "6rem",
-                background: "var(--bg-elevated)",
-                borderRadius: "6px",
-                animation: "state-pulse 1.5s infinite",
-              }}
-            />
-          ) : lastActivityValue}
+      {/* Cell 4: Last Activity — vertical timeline treatment */}
+      <div className="bento-card bento-card-activity">
+        <div className="bento-card-eyebrow">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+            <line x1="16" y1="2" x2="16" y2="6" />
+            <line x1="8" y1="2" x2="8" y2="6" />
+            <line x1="3" y1="10" x2="21" y2="10" />
+          </svg>
+          Last Activity
         </div>
-        <p style={{ margin: "0.5rem 0 0", fontSize: "0.75rem", color: "var(--text-muted)" }}>
-          Latest compilation run
-        </p>
+        <div className="bento-timeline">
+          <span className="bento-timeline-dot" aria-hidden="true" />
+          <div className="bento-timeline-content">
+            {historyLoading ? (
+              <SkeletonValue wide />
+            ) : (
+              <span className="bento-timeline-date">{lastActivityValue}</span>
+            )}
+            <span className="bento-timeline-label">Latest run</span>
+          </div>
+        </div>
       </div>
 
-      {/* Cell 5: Quick Actions — full-width */}
+      {/* Cell 5: Quick Actions — terminal command rows */}
       <div className="bento-card bento-card-quick-actions">
-        <div className="bento-card-title" style={{ marginBottom: "0.75rem" }}>
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-            <polyline points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+        <div className="bento-card-eyebrow" style={{ marginBottom: "0.9rem" }}>
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <polyline points="4 17 10 11 4 5" />
+            <line x1="12" y1="19" x2="20" y2="19" />
           </svg>
           Quick actions
         </div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "0.75rem", width: "100%", marginTop: "auto" }}>
+        <div className="bento-cmd-list">
           {quickActions.map((action) => (
             <Link
-              key={action.label}
+              key={action.cmd}
               href={action.href}
-              className="quick-action-pill"
+              className="bento-cmd-row"
+              style={{ "--cmd-accent": action.accent } as React.CSSProperties}
             >
-              <span className="quick-action-key">{action.label}</span>
-              <span className="quick-action-label">{action.display}</span>
+              <span className="bento-cmd-prompt" aria-hidden="true">$</span>
+              <span className="bento-cmd-name">{action.cmd}</span>
+              <span className="bento-cmd-display">{action.display}</span>
+              <span className="bento-cmd-shortcut">{action.shortcut}</span>
+              <svg className="bento-cmd-arrow" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <line x1="5" y1="12" x2="19" y2="12" />
+                <polyline points="12 5 19 12 12 19" />
+              </svg>
             </Link>
           ))}
         </div>
       </div>
+
     </div>
   );
 }
@@ -429,24 +421,7 @@ export default function HomeDashboardPage() {
 
   /* ── Guard: loading ─────────────────────────────────────────────────────── */
   if (status === "loading") {
-    return (
-      <main className="dash-shell">
-        <FlowBackground />
-        <header className="dash-nav">
-          <Link className="brand-mark" href="/home">
-            <PipelineLogo size={22} />
-            <span>FlowCI Studio</span>
-          </Link>
-        </header>
-        <div className="state-body">
-          <div className="state-card">
-            <div className="state-spinner" role="status" aria-label="Loading dashboard" />
-            <h1>Loading your dashboard</h1>
-            <p>Verifying your session and fetching your data.</p>
-          </div>
-        </div>
-      </main>
-    );
+    return <PipelineLoader label="Loading your dashboard" />;
   }
 
   /* ── Guard: error ───────────────────────────────────────────────────────── */

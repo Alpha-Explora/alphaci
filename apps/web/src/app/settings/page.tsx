@@ -9,6 +9,7 @@ import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { AppNav } from "@/components/layout/app-nav";
 import { FlowBackground } from "@/components/layout/flow-background";
 import { PipelineLogo } from "@/components/layout/pipeline-logo";
+import { PipelineLoader } from "@/components/layout/pipeline-loader";
 import { DeploymentProvidersSection } from "@/components/settings/deployment-providers-section";
 import { useAuthSession } from "@/hooks/use-auth-session";
 import { logout, deleteAccount, cancelMonthlySubscription } from "@/lib/api/client";
@@ -294,24 +295,7 @@ export default function SettingsPage() {
 
   /* ── Loading ─────────────────────────────────────────────────────────────── */
   if (status === "loading") {
-    return (
-      <main className="flow-shell page-shell">
-        <FlowBackground />
-        <header className="marketing-nav">
-          <div className="brand-mark">
-            <PipelineLogo size={22} />
-            <span>FlowCI Studio</span>
-          </div>
-        </header>
-        <div className="state-body">
-          <div className="state-card">
-            <div className="state-spinner" role="status" aria-label="Loading settings" />
-            <h1>Loading settings</h1>
-            <p>Fetching your account configuration.</p>
-          </div>
-        </div>
-      </main>
-    );
+    return <PipelineLoader label="Loading settings" />;
   }
 
   /* ── Error ───────────────────────────────────────────────────────────────── */
