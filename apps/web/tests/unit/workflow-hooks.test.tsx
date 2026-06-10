@@ -63,6 +63,11 @@ const template: CatalogTemplate = {
 };
 
 const projectOptions: ProjectOptionsResponse = {
+  nodeVersions: [
+    { value: "20", label: "Node 20 LTS (Iron)" },
+    { value: "22", label: "Node 22 LTS (Jod)" },
+    { value: "24", label: "Node 24 (Latest)" },
+  ],
   repoShapes: [
     {
       id: "single-app",

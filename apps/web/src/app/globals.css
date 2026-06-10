@@ -35,6 +35,25 @@ html::-webkit-scrollbar {
   --warning:  #fbbf24;
   --danger:   #f87171;
 
+  /* ── Secondary accent: violet/purple ──────────────────────── */
+  /* Used for secondary actions, highlights, plan badges, hover accents */
+  --accent-violet:       #a78bfa;          /* #a78bfa — violet-400 */
+  --accent-violet-light: rgba(167, 139, 250, 0.12);
+  --accent-violet-mid:   rgba(167, 139, 250, 0.25);
+  --accent-violet-glow:  rgba(167, 139, 250, 0.4);
+  --border-violet:       rgba(167, 139, 250, 0.35);
+
+  /* ── Tertiary accent: amber — for warnings, "active" states ─ */
+  /* Used for status-active, GitHub-connected indicator, orphaned status */
+  --accent-amber:       #fbbf24;           /* same as --warning, aliased for semantic clarity */
+  --accent-amber-light: rgba(251, 191, 36, 0.12);
+  --border-amber:       rgba(251, 191, 36, 0.3);
+
+  /* ── Surface-level accent tints ───────────────────────────── */
+  /* Subtle background tints for section separators and hover states */
+  --surface-violet: rgba(167, 139, 250, 0.04);
+  --surface-brand:  rgba(56, 189, 248, 0.04);
+
   /* ── Borders ───────────────────────────────────────────────── */
   --border:        rgba(255, 255, 255, 0.12);
   --border-soft:   rgba(255, 255, 255, 0.06);
@@ -6262,4 +6281,463 @@ select option {
     padding: 1.5rem var(--layout-gutter);
   }
   .create-project-main { padding: 1.5rem var(--layout-gutter); }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   DASHBOARD LAYOUT REFACTOR — enhanced hierarchy, secondary color palette,
+   cleaner section rhythm. Scoped to .dash-shell to avoid bleeding.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Page-level content wrapper ─────────────────────────────────────────── */
+.dash-page-content {
+  padding: 1.75rem var(--layout-gutter) 2.5rem;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 1.75rem;
+}
+
+/* ── Section label / eyebrow row ─────────────────────────────────────────── */
+.dash-section-label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+.dash-section-label-left {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* ── Count chip — small neutral badge next to section titles ─────────────── */
+.dash-count-chip {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-pill);
+  padding: 0.1rem 0.5rem;
+  letter-spacing: 0;
+  flex-shrink: 0;
+}
+
+/* ── Secondary accent badge — violet tint, for plan labels, highlights ───── */
+.dash-badge-violet {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  padding: 0.15rem 0.55rem;
+  border-radius: var(--radius-pill);
+  background: var(--accent-violet-light);
+  color: var(--accent-violet);
+  border: 1px solid var(--border-violet);
+}
+
+/* ── Status chip — active/success ─────────────────────────────────────────── */
+.dash-status-active {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--success);
+  background: rgba(52, 211, 153, 0.08);
+  border: 1px solid rgba(52, 211, 153, 0.2);
+  border-radius: var(--radius-pill);
+  padding: 0.2rem 0.6rem;
+}
+
+.dash-status-active::before {
+  content: '';
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--success);
+  animation: flowPulse 2s ease-in-out infinite;
+  flex-shrink: 0;
+}
+
+/* ── Enhanced bento card — with violet accent variant ───────────────────── */
+.bento-card-accent {
+  background: linear-gradient(135deg, rgba(167, 139, 250, 0.07) 0%, rgba(15, 23, 42, 0.55) 100%);
+  border-color: rgba(167, 139, 250, 0.15);
+}
+
+.bento-card-accent:hover {
+  border-color: rgba(167, 139, 250, 0.3) !important;
+  box-shadow: var(--shadow-card), 0 0 30px rgba(167, 139, 250, 0.08) !important;
+}
+
+.bento-card-accent .bento-card-icon {
+  color: var(--accent-violet);
+  opacity: 0.55;
+}
+
+.bento-card-accent:hover .bento-card-icon {
+  color: var(--accent-violet);
+  opacity: 0.9;
+}
+
+/* ── Repo/activity card — enhanced left border colors ───────────────────── */
+.repo-card-brand     { border-left: 3px solid var(--brand) !important; }
+.repo-card-success   { border-left: 3px solid var(--success) !important; }
+.repo-card-danger    { border-left: 3px solid var(--danger) !important; }
+.repo-card-amber     { border-left: 3px solid var(--accent-amber) !important; }
+.repo-card-violet    { border-left: 3px solid var(--accent-violet) !important; }
+
+/* ── Status chip variants — consolidated from inline styles ─────────────── */
+.status-chip {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 0.12rem 0.45rem;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+.status-chip-brand {
+  background: rgba(56, 189, 248, 0.1);
+  color: var(--brand);
+  border: 1px solid rgba(56, 189, 248, 0.2);
+}
+
+.status-chip-success {
+  background: rgba(52, 211, 153, 0.1);
+  color: var(--success);
+  border: 1px solid rgba(52, 211, 153, 0.2);
+}
+
+.status-chip-danger {
+  background: rgba(248, 113, 113, 0.1);
+  color: var(--danger);
+  border: 1px solid rgba(248, 113, 113, 0.2);
+}
+
+.status-chip-amber {
+  background: rgba(251, 191, 36, 0.1);
+  color: var(--accent-amber);
+  border: 1px solid rgba(251, 191, 36, 0.25);
+}
+
+.status-chip-muted {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-muted);
+  border: 1px solid var(--border-soft);
+}
+
+/* ── Ghost action button — consolidated from inline styles ──────────────── */
+.dash-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 0.4rem 0.85rem;
+  border-radius: 0.5rem;
+  border: 1px solid rgba(56, 189, 248, 0.25);
+  background: rgba(56, 189, 248, 0.06);
+  color: var(--brand);
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.dash-action-btn:hover {
+  background: rgba(56, 189, 248, 0.12);
+  border-color: rgba(56, 189, 248, 0.4);
+  box-shadow: 0 0 14px rgba(56, 189, 248, 0.12);
+}
+
+.dash-action-btn:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
+.dash-action-btn-violet {
+  border-color: var(--border-violet);
+  background: var(--accent-violet-light);
+  color: var(--accent-violet);
+}
+
+.dash-action-btn-violet:hover {
+  background: var(--accent-violet-mid);
+  border-color: rgba(167, 139, 250, 0.5);
+  box-shadow: 0 0 14px rgba(167, 139, 250, 0.12);
+}
+
+/* ── Sync button — ghost variant ─────────────────────────────────────────── */
+.dash-sync-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.38rem 0.9rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  border-radius: 6px;
+  border: 1px solid rgba(56, 189, 248, 0.25);
+  background: rgba(56, 189, 248, 0.07);
+  color: var(--brand);
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+.dash-sync-btn:hover:not(:disabled) {
+  background: rgba(56, 189, 248, 0.13);
+  border-color: rgba(56, 189, 248, 0.4);
+}
+.dash-sync-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ── Disconnect danger link ───────────────────────────────────────────────── */
+.dash-disconnect-link {
+  font-size: 0.72rem;
+  color: rgba(248, 113, 113, 0.6);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  text-align: left;
+  transition: color 0.15s;
+}
+.dash-disconnect-link:hover { color: var(--danger); }
+.dash-disconnect-link:focus-visible { outline: 2px solid var(--danger); outline-offset: 2px; }
+
+/* ── Confirm row (inside repo card) ─────────────────────────────────────── */
+.repo-card-confirm-row {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  align-items: center;
+}
+.repo-card-confirm-label {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  flex: 1;
+  align-self: center;
+}
+
+/* ── Confirm action buttons ───────────────────────────────────────────────── */
+.confirm-btn-danger {
+  padding: 0.3rem 0.7rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  border-radius: 5px;
+  border: 1px solid rgba(248, 113, 113, 0.4);
+  background: rgba(248, 113, 113, 0.1);
+  color: var(--danger);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.confirm-btn-danger:hover:not(:disabled) { background: rgba(248, 113, 113, 0.18); }
+.confirm-btn-danger:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.confirm-btn-neutral {
+  padding: 0.3rem 0.7rem;
+  font-size: 0.72rem;
+  border-radius: 5px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.confirm-btn-neutral:hover { border-color: rgba(255, 255, 255, 0.2); color: var(--text-primary); }
+
+/* ── Workflow studio page header (Workflows page) ─────────────────────────── */
+.workflow-page-header {
+  padding: 1.75rem var(--layout-gutter) 1.25rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 1rem;
+  flex-wrap: wrap;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  background: linear-gradient(180deg, var(--surface-brand) 0%, transparent 100%);
+}
+
+.workflow-page-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0 0 0.3rem;
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--brand);
+}
+
+.workflow-page-breadcrumb-sep {
+  opacity: 0.4;
+}
+
+.workflow-page-studio-badge {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.85rem;
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 0.65rem;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+/* ── Settings page layout enhancements ─────────────────────────────────── */
+.settings-section-body {
+  padding: 1.25rem;
+}
+
+.settings-nav-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.6rem;
+  font-size: 0.83rem;
+  font-weight: 600;
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.settings-nav-btn:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
+/* ── Tab panel stagger animation ────────────────────────────────────────── */
+@keyframes dashReveal {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.dash-panel-enter {
+  animation: dashReveal 0.28s cubic-bezier(0.25, 0, 0, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dash-panel-enter { animation: none; }
+}
+
+/* ── Welcome banner: flatter, no outer border box ───────────────────────── */
+.welcome-banner-flat {
+  position: relative;
+  padding: 1.5rem 0 1.25rem;
+  border-bottom: 1px solid var(--border-soft);
+  overflow: hidden;
+}
+
+.welcome-banner-flat-accent {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--brand), var(--accent-violet), transparent);
+  opacity: 0.5;
+}
+
+/* ── Quick actions grid — monospace pill style ───────────────────────────── */
+.quick-action-pill {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.7rem 1rem;
+  background: rgba(15, 23, 42, 0.55);
+  border: 1px solid var(--border-soft);
+  border-radius: 0.75rem;
+  color: var(--text-primary);
+  text-decoration: none;
+  font-size: 0.82rem;
+  font-weight: 600;
+  transition: border-color 0.18s ease, background 0.18s ease, box-shadow 0.18s ease;
+}
+
+.quick-action-pill:hover {
+  border-color: rgba(56, 189, 248, 0.3);
+  background: rgba(56, 189, 248, 0.07);
+  box-shadow: 0 0 16px rgba(56, 189, 248, 0.08);
+}
+
+.quick-action-pill:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
+.quick-action-key {
+  font-family: ui-monospace, monospace;
+  color: var(--brand);
+  font-size: 0.8rem;
+}
+
+.quick-action-label {
+  color: var(--text-muted);
+  font-size: 0.74rem;
+  font-weight: 500;
+}
+
+/* ── Inline meta row inside bento quick-actions card ────────────────────── */
+.bento-card-quick-actions {
+  grid-column: span 3;
+  min-height: 160px;
+  background: rgba(15, 23, 42, 0.35);
+  border-color: var(--border-soft);
+}
+
+@media (max-width: 1024px) {
+  .bento-card-quick-actions { grid-column: span 2; }
+}
+
+@media (max-width: 640px) {
+  .bento-card-quick-actions { grid-column: span 1; }
+}
+
+/* ── Activity card monospace code block ──────────────────────────────────── */
+.activity-code-block {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  background: rgba(0, 0, 0, 0.18);
+  padding: 0.5rem 0.75rem;
+  border-radius: 6px;
+  border: 1px solid var(--border-subtle);
+}
+
+.activity-code-label {
+  font-size: 0.68rem;
+  color: var(--text-muted);
+}
+
+.activity-code-value {
+  font-size: 0.75rem;
+  font-family: ui-monospace, monospace;
+  color: var(--text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ── Route transition wrapper ─────────────────────────────────────────────── */
+/* Used by app/(dash)/template.tsx for page-level enter/exit */
+.page-transition-wrapper {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
 }

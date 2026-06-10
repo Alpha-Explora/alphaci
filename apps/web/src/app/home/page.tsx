@@ -4,7 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { motion, useReducedMotion } from "framer-motion";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 
 import { AppNav } from "@/components/layout/app-nav";
 import { FlowBackground } from "@/components/layout/flow-background";
@@ -23,7 +23,6 @@ function useCountUp(target: number | null, duration = 900): number | null {
   useEffect(() => {
     if (rafRef.current !== null) { cancelAnimationFrame(rafRef.current); }
 
-    // Route null/0 through rAF so all setState calls are async (avoids cascading render lint error)
     if (target === null || target === 0) {
       const safeTarget = target;
       rafRef.current = requestAnimationFrame(() => { setCount(safeTarget); });
@@ -62,19 +61,28 @@ const pipelineStages = ["Source", "Lint", "Test", "Build", "Deploy"];
 
 const pipelineContainerVariants = {
   hidden: {},
-  visible: { transition: { staggerChildren: 0.1, delayChildren: 0.2 } },
+  visible: { transition: { staggerChildren: 0.06, delayChildren: 0.15 } },
 };
+
+const EASE_OUT: [number, number, number, number] = [0.25, 0, 0, 1];
 
 const pipelineDotVariants = {
   hidden:  { opacity: 0, scale: 0.5 },
-  visible: { opacity: 1, scale: 1, transition: { duration: 0.3, ease: "easeOut" as const } },
+  visible: { opacity: 1, scale: 1, transition: { duration: 0.28, ease: EASE_OUT } },
+};
+
+const sectionVariants = {
+  hidden:  { opacity: 0, y: 16 },
+  visible: (delay: number) => ({
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.35, ease: EASE_OUT, delay: delay * 0.06 },
+  }),
 };
 
 type DashTab = "overview" | "repositories" | "activity";
 
 /* ── Sub-components ─────────────────────────────────────────────────────────── */
-
-// AppNav is now imported from @/components/layout/app-nav
 
 function PipelineTrack({ reduced }: Readonly<{ reduced: boolean | null }>) {
   return (
@@ -114,8 +122,6 @@ function PipelineTrack({ reduced }: Readonly<{ reduced: boolean | null }>) {
   );
 }
 
-/* ── Skeleton value placeholder (hoisted outside BentoGrid to avoid re-mount on every render) */
-
 function SkeletonValue({ wide = false }: { wide?: boolean }) {
   return (
     <span
@@ -131,7 +137,7 @@ function SkeletonValue({ wide = false }: { wide?: boolean }) {
   );
 }
 
-/* ── BentoGrid with animated counters ──────────────────────────────────────── */
+/* ── BentoGrid ──────────────────────────────────────────────────────────────── */
 
 interface BentoGridProps {
   historyLoading: boolean;
@@ -152,7 +158,6 @@ function BentoGrid({
   lastActivityValue,
   prefersReducedMotion,
 }: Readonly<BentoGridProps>) {
-  // Animated counters — only fire once values are loaded
   const animatedHistory  = useCountUp(prefersReducedMotion || historyLoading  ? null : historyLength);
   const animatedProjects = useCountUp(prefersReducedMotion || projectsLoading ? null : projectsLength);
   const animatedServices = useCountUp(prefersReducedMotion || historyLoading  ? null : uniqueServices);
@@ -163,7 +168,7 @@ function BentoGrid({
 
   return (
     <div className="kpi-bento-grid">
-      {/* Cell 1: Workflows Generated — dominant */}
+      {/* Cell 1: Workflows Generated — dominant / brand tint */}
       <div className="bento-card bento-card-dominant">
         <div className="bento-card-title">
           <span
@@ -209,8 +214,8 @@ function BentoGrid({
         )}
       </div>
 
-      {/* Cell 2: Projects Created */}
-      <div className="bento-card">
+      {/* Cell 2: Projects Created — violet accent */}
+      <div className="bento-card bento-card-accent">
         <div className="bento-card-title">Projects Created</div>
         <svg className="bento-card-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
           <rect x="2" y="2" width="20" height="8" rx="2" ry="2" />
@@ -218,7 +223,7 @@ function BentoGrid({
           <line x1="6" y1="6" x2="6.01" y2="6" />
           <line x1="6" y1="18" x2="6.01" y2="18" />
         </svg>
-        <div className="bento-card-value counter-number">
+        <div className="bento-card-value counter-number" style={{ color: "var(--accent-violet)" }}>
           {projectsLoading ? <SkeletonValue /> : displayProjects}
         </div>
         <p style={{ margin: "0.5rem 0 0", fontSize: "0.75rem", color: "var(--text-muted)" }}>
@@ -226,7 +231,7 @@ function BentoGrid({
         </p>
       </div>
 
-      {/* Cell 3: Services Configured */}
+      {/* Cell 3: Services Configured — neutral */}
       <div className="bento-card">
         <div className="bento-card-title">Services</div>
         <svg className="bento-card-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -242,7 +247,7 @@ function BentoGrid({
         </p>
       </div>
 
-      {/* Cell 4: Last Activity */}
+      {/* Cell 4: Last Activity — neutral */}
       <div className="bento-card">
         <div className="bento-card-title">Last Activity</div>
         <svg className="bento-card-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -270,8 +275,8 @@ function BentoGrid({
         </p>
       </div>
 
-      {/* Cell 5: Quick Actions */}
-      <div className="bento-card" style={{ gridColumn: "span 3", minHeight: "160px", background: "rgba(15, 23, 42, 0.4)" }}>
+      {/* Cell 5: Quick Actions — full-width */}
+      <div className="bento-card bento-card-quick-actions">
         <div className="bento-card-title" style={{ marginBottom: "0.75rem" }}>
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
             <polyline points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
@@ -283,32 +288,10 @@ function BentoGrid({
             <Link
               key={action.label}
               href={action.href}
-              className="command-item-bento"
-              style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                padding: "0.75rem 1rem",
-                background: "rgba(15, 23, 42, 0.6)",
-                border: "1px solid var(--border-soft)",
-                borderRadius: "0.75rem",
-                color: "var(--text-primary)",
-                textDecoration: "none",
-                fontSize: "0.82rem",
-                fontWeight: 600,
-                transition: "all 0.2s ease",
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.borderColor = "var(--brand)";
-                e.currentTarget.style.background = "var(--brand-light)";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.borderColor = "var(--border-soft)";
-                e.currentTarget.style.background = "rgba(15, 23, 42, 0.6)";
-              }}
+              className="quick-action-pill"
             >
-              <span style={{ fontFamily: "ui-monospace, monospace", color: "var(--brand)" }}>{action.label}</span>
-              <span style={{ color: "var(--text-muted)", fontSize: "0.75rem" }}>{action.display}</span>
+              <span className="quick-action-key">{action.label}</span>
+              <span className="quick-action-label">{action.display}</span>
             </Link>
           ))}
         </div>
@@ -374,8 +357,6 @@ export default function HomeDashboardPage() {
     loadRepos();
   }, [status]);
 
-  // Auto-sync when the repositories tab becomes active — runs silently in the
-  // background so orphaned repos appear immediately without a manual button click.
   useEffect(() => {
     if (activeTab !== "repositories") return;
     void (async () => {
@@ -409,7 +390,6 @@ export default function HomeDashboardPage() {
     try {
       const result = await syncProjects();
       setSyncResult(result);
-      // Refresh provisioned projects list
       const updated = await getProjects(25);
       setProjects(updated.items);
     } catch {
@@ -430,6 +410,21 @@ export default function HomeDashboardPage() {
     } finally {
       setDisconnectingId(null);
     }
+  }
+
+  /* ── Helpers ────────────────────────────────────────────────────────────── */
+  function projectBorderClass(status: string) {
+    if (status === "provisioned") return "repo-card-success";
+    if (status === "failed")      return "repo-card-danger";
+    if (status === "orphaned")    return "repo-card-amber";
+    return "repo-card-brand";
+  }
+
+  function projectStatusChipClass(status: string) {
+    if (status === "provisioned") return "status-chip status-chip-success";
+    if (status === "failed")      return "status-chip status-chip-danger";
+    if (status === "orphaned")    return "status-chip status-chip-amber";
+    return "status-chip status-chip-brand";
   }
 
   /* ── Guard: loading ─────────────────────────────────────────────────────── */
@@ -458,16 +453,16 @@ export default function HomeDashboardPage() {
   if (status === "error") {
     return (
       <main className="dash-shell">
-      <FlowBackground />
-      <header className="dash-nav">
-        <Link className="brand-mark" href="/home">
-          <PipelineLogo size={22} />
-          <span>FlowCI Studio</span>
-        </Link>
-        <div className="nav-right">
-          <Link className="ghost-button" href="/login?next=/home" style={{ padding: "0.2rem 0.75rem", fontSize: "0.82rem", minHeight: "1.8rem" }}>Sign in</Link>
-        </div>
-      </header>
+        <FlowBackground />
+        <header className="dash-nav">
+          <Link className="brand-mark" href="/home">
+            <PipelineLogo size={22} />
+            <span>FlowCI Studio</span>
+          </Link>
+          <div className="nav-right">
+            <Link className="ghost-button" href="/login?next=/home" style={{ padding: "0.2rem 0.75rem", fontSize: "0.82rem", minHeight: "1.8rem" }}>Sign in</Link>
+          </div>
+        </header>
         <div className="state-body">
           <div className="state-card">
             <div className="state-icon" style={{ background: "rgba(255,79,79,0.08)", border: "1px solid rgba(255,79,79,0.2)" }}>
@@ -515,22 +510,20 @@ export default function HomeDashboardPage() {
 
       {guest && (
         <div className="guest-banner glass-panel" role="alert" style={{
-          background: "linear-gradient(135deg, rgba(56, 189, 248, 0.1) 0%, rgba(15, 23, 42, 0.7) 100%)",
+          background: "linear-gradient(135deg, rgba(56, 189, 248, 0.08) 0%, rgba(15, 23, 42, 0.7) 100%)",
           border: "1px solid var(--border-brand)",
-          boxShadow: "0 4px 20px rgba(56, 189, 248, 0.05)",
           padding: "1rem var(--layout-gutter)",
-          borderRadius: "1rem",
+          borderRadius: "0",
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
           flexWrap: "wrap",
           gap: "1rem",
-          marginBottom: "1.5rem",
         }}>
-          <p className="guest-banner-text" style={{ margin: 0, color: "var(--text-primary)", fontWeight: 500 }}>
+          <p style={{ margin: 0, color: "var(--text-primary)", fontWeight: 500, fontSize: "0.88rem" }}>
             You are viewing FlowCI Studio in preview mode. Sign up to unlock all features.
           </p>
-          <div className="guest-banner-actions" style={{ display: "flex", gap: "0.5rem" }}>
+          <div style={{ display: "flex", gap: "0.5rem" }}>
             <Link className="primary-button" href="/signup" style={{ padding: "0.4rem 1rem", fontSize: "0.82rem" }}>
               Sign up free
             </Link>
@@ -541,29 +534,22 @@ export default function HomeDashboardPage() {
         </div>
       )}
 
-      <div id="main-content" style={{ padding: "1.5rem var(--layout-gutter) 2rem", flex: 1, display: "flex", flexDirection: "column", gap: "1.5rem" }}>
+      <div id="main-content" className="dash-page-content">
 
-        {/* ── Editorial welcome banner ──────────────────────────────── */}
-        <section className="welcome-editorial glass-panel" aria-label="Welcome" style={{
-          position: "relative",
-          background: "linear-gradient(135deg, rgba(15, 23, 42, 0.88) 0%, rgba(30, 41, 59, 0.80) 100%)",
-          border: "1px solid rgba(255,255,255,0.12)",
-          borderRadius: "var(--radius-card)",
-          padding: "1.5rem",
-          boxShadow: "var(--shadow-soft)",
-          overflow: "hidden",
-        }}>
-          {/* Thin gradient top accent bar */}
-          <div aria-hidden="true" style={{
-            position: "absolute",
-            top: 0,
-            left: 0,
-            right: 0,
-            height: 2,
-            background: "linear-gradient(90deg, var(--brand), var(--brand-accent))",
-          }} />
-          <div className="welcome-editorial-top" style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: "1.5rem", marginBottom: "1.25rem" }}>
-            <div className="welcome-editorial-identity" style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
+        {/* ── Welcome header — flat, no outer panel box ─────────────── */}
+        <motion.section
+          className="welcome-banner-flat"
+          aria-label="Welcome"
+          custom={0}
+          variants={sectionVariants}
+          initial={prefersReducedMotion ? false : "hidden"}
+          animate="visible"
+        >
+          <div className="welcome-banner-flat-accent" aria-hidden="true" />
+
+          <div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: "1.5rem", marginBottom: "1.25rem" }}>
+            {/* Identity */}
+            <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
               {!guest && (session?.user.avatarUrl ? (
                 <Image
                   src={session.user.avatarUrl}
@@ -575,10 +561,10 @@ export default function HomeDashboardPage() {
                   unoptimized
                 />
               ) : (
-                <span className="welcome-editorial-avatar-placeholder" aria-hidden="true" style={{
+                <span aria-hidden="true" style={{
                   width: 44,
                   height: 44,
-                  fontSize: '1.15rem',
+                  fontSize: "1.15rem",
                   fontWeight: 700,
                   display: "flex",
                   alignItems: "center",
@@ -590,8 +576,10 @@ export default function HomeDashboardPage() {
                 }}>{avatarInitial}</span>
               ))}
               <div style={{ display: "flex", flexDirection: "column", gap: "0.2rem" }}>
-                <p className="file-path-label" style={{ marginBottom: 0, fontSize: "0.72rem", color: "var(--brand)", letterSpacing: "0.08em" }}>SYSTEM.DASHBOARD</p>
-                <h1 className="welcome-editorial" style={{ padding: 0, border: "none", margin: 0, display: "block", fontSize: "clamp(1.4rem, 2.5vw, 1.85rem)", fontWeight: 800 }}>
+                <p style={{ margin: 0, fontSize: "0.7rem", color: "var(--brand)", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase" }}>
+                  SYSTEM.DASHBOARD
+                </p>
+                <h1 style={{ padding: 0, border: "none", margin: 0, fontSize: "clamp(1.4rem, 2.5vw, 1.85rem)", fontWeight: 800 }}>
                   {guest
                     ? "FlowCI Studio Dashboard"
                     : `Welcome back, ${session?.user.name ?? session?.user.login ?? "builder"}.`}
@@ -599,7 +587,7 @@ export default function HomeDashboardPage() {
               </div>
             </div>
 
-            {/* Right: pipeline track (visible on md+ only) */}
+            {/* Pipeline track */}
             <div style={{
               borderLeft: "1px solid var(--border)",
               paddingLeft: "clamp(0.75rem, 1.5vw, 1.25rem)",
@@ -608,18 +596,24 @@ export default function HomeDashboardPage() {
               flexDirection: "column",
               gap: "0.35rem",
             }} className="pipeline-track-aside">
-              <p className="eyebrow" style={{ fontSize: "0.7rem", textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--text-muted)" }}>LIVE STATUS PIPELINE</p>
+              <p className="eyebrow" style={{ fontSize: "0.7rem" }}>LIVE STATUS PIPELINE</p>
               <PipelineTrack reduced={prefersReducedMotion} />
             </div>
           </div>
 
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "0.75rem", borderTop: "1px solid var(--border-soft)", paddingTop: "1rem" }}>
-            <p className="welcome-editorial-sub" style={{ margin: 0, fontSize: "0.85rem", color: "var(--text-secondary)" }}>
+            <p style={{ margin: 0, fontSize: "0.85rem", color: "var(--text-secondary)" }}>
               {guest
                 ? "You are browsing in guest mode. Sign up to unlock all features."
-                : <>Connected on{" "}<strong style={{ color: "var(--brand)", textShadow: "0 0 10px rgba(56, 189, 248, 0.25)" }}>{session?.subscription.plan ?? "pro"}</strong>{" "}plan.</>}
+                : (
+                  <>Connected on{" "}
+                    <span className="dash-badge-violet" style={{ display: "inline-flex" }}>
+                      {session?.subscription.plan ?? "pro"}
+                    </span>
+                  </>
+                )}
             </p>
-            <div className="welcome-editorial-actions" style={{ display: "flex", gap: "0.5rem" }}>
+            <div style={{ display: "flex", gap: "0.5rem" }}>
               {guest ? (
                 <>
                   <Link className="primary-button" href="/signup" style={{ padding: "0.4rem 1rem", fontSize: "0.8rem", minHeight: "2.2rem" }}>Sign up free</Link>
@@ -636,419 +630,401 @@ export default function HomeDashboardPage() {
 
           {error        ? <p className="error-text" style={{ marginTop: "1rem" }}>{error}</p>         : null}
           {logoutMessage ? <p className="error-text" style={{ marginTop: "1rem" }}>{logoutMessage}</p> : null}
-        </section>
+        </motion.section>
 
         {/* ── Dashboard tab bar ─────────────────────────────────────── */}
-        <div className="dash-tab-bar" role="tablist" aria-label="Dashboard sections" style={{
-          position: "relative",
-          display: "flex",
-          gap: "0.25rem",
-          padding: "0.25rem",
-          background: "rgba(15, 23, 42, 0.4)",
-          border: "1px solid var(--border-soft)",
-          borderRadius: "0.6rem",
-          width: "fit-content",
-          marginBottom: "0.5rem"
-        }}>
-          {(["overview", "repositories", "activity"] as DashTab[]).map((tab) => (
-            <button
-              key={tab}
-              type="button"
-              role="tab"
-              id={`dash-tab-${tab}`}
-              aria-controls={`dash-panel-${tab}`}
-              aria-selected={activeTab === tab}
-              onClick={() => setActiveTab(tab)}
-              style={{
-                position: "relative",
-                padding: "0.45rem 1.2rem",
-                border: "none",
-                background: "transparent",
-                cursor: "pointer",
-                transition: "color 0.2s ease",
-                color: activeTab === tab ? "var(--text-primary)" : "var(--text-secondary)",
-                zIndex: 1,
-                fontWeight: 600,
-                fontSize: "0.85rem"
-              }}
+        <motion.div
+          custom={1}
+          variants={sectionVariants}
+          initial={prefersReducedMotion ? false : "hidden"}
+          animate="visible"
+        >
+          <div className="dash-tab-bar" role="tablist" aria-label="Dashboard sections" style={{
+            position: "relative",
+            display: "flex",
+            gap: "0.25rem",
+            padding: "0.25rem",
+            background: "rgba(15, 23, 42, 0.4)",
+            border: "1px solid var(--border-soft)",
+            borderRadius: "0.6rem",
+            width: "fit-content",
+          }}>
+            {(["overview", "repositories", "activity"] as DashTab[]).map((tab) => (
+              <button
+                key={tab}
+                type="button"
+                role="tab"
+                id={`dash-tab-${tab}`}
+                aria-controls={`dash-panel-${tab}`}
+                aria-selected={activeTab === tab}
+                onClick={() => setActiveTab(tab)}
+                style={{
+                  position: "relative",
+                  padding: "0.45rem 1.2rem",
+                  border: "none",
+                  background: "transparent",
+                  cursor: "pointer",
+                  transition: "color 0.2s ease",
+                  color: activeTab === tab ? "var(--text-primary)" : "var(--text-secondary)",
+                  zIndex: 1,
+                  fontWeight: 600,
+                  fontSize: "0.85rem",
+                  fontFamily: "inherit",
+                }}
+              >
+                {activeTab === tab && (
+                  <motion.span
+                    layoutId="dash-tab-indicator"
+                    style={{
+                      position: "absolute",
+                      inset: 0,
+                      borderRadius: "0.4rem",
+                      background: "rgba(56, 189, 248, 0.1)",
+                      border: "1px solid rgba(56, 189, 248, 0.3)",
+                      boxShadow: "0 0 12px rgba(56, 189, 248, 0.15)",
+                      zIndex: -1,
+                    }}
+                    transition={{ type: "spring", stiffness: 380, damping: 30 }}
+                  />
+                )}
+                {tab === "overview"      ? "Overview"
+                 : tab === "repositories" ? "Repositories"
+                 : "Activity"}
+              </button>
+            ))}
+          </div>
+        </motion.div>
+
+        {/* ── Tab panels ──────────────────────────────────────────────── */}
+        <AnimatePresence mode="wait">
+
+          {/* Overview tab */}
+          {activeTab === "overview" && (
+            <motion.div
+              key="overview"
+              id="dash-panel-overview"
+              role="tabpanel"
+              aria-labelledby="dash-tab-overview"
+              initial={prefersReducedMotion ? false : { opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={prefersReducedMotion ? undefined : { opacity: 0, y: -6 }}
+              transition={{ duration: 0.28, ease: EASE_OUT }}
+              style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}
             >
-              {activeTab === tab && (
-                <motion.span
-                  layoutId="dash-tab-indicator"
-                  style={{
-                    position: "absolute",
-                    inset: 0,
-                    borderRadius: "0.4rem",
-                    background: "rgba(56, 189, 248, 0.1)",
-                    border: "1px solid rgba(56, 189, 248, 0.3)",
-                    boxShadow: "0 0 12px rgba(56, 189, 248, 0.15)",
-                    zIndex: -1,
-                  }}
-                  transition={{ type: "spring", stiffness: 380, damping: 30 }}
+              <section aria-label="Release pulse">
+                <BentoGrid
+                  historyLoading={historyLoading}
+                  projectsLoading={projectsLoading}
+                  historyLength={history.length}
+                  projectsLength={projects.length}
+                  uniqueServices={uniqueServices}
+                  lastActivityValue={lastActivityValue}
+                  prefersReducedMotion={prefersReducedMotion}
                 />
-              )}
-              {tab === "overview"      ? "Overview"
-               : tab === "repositories" ? "Repositories"
-               : "Activity"}
-            </button>
-          ))}
-        </div>
+              </section>
 
-        {/* ── Overview tab ──────────────────────────────────────────── */}
-        {activeTab === "overview" && (
-          <motion.div
-            key="overview"
-            id="dash-panel-overview"
-            role="tabpanel"
-            aria-labelledby="dash-tab-overview"
-            initial={prefersReducedMotion ? false : { opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.25 }}
-            style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}
-          >
-            {/* Bento Grid layout */}
-            <section aria-label="Release pulse">
-              <BentoGrid
-                historyLoading={historyLoading}
-                projectsLoading={projectsLoading}
-                historyLength={history.length}
-                projectsLength={projects.length}
-                uniqueServices={uniqueServices}
-                lastActivityValue={lastActivityValue}
-                prefersReducedMotion={prefersReducedMotion}
-              />
-            </section>
-
-            {/* Error states */}
-            {!guest && projectsError ? (
-              <div className="error-inline glass-panel" role="alert" style={{ background: "rgba(248, 113, 113, 0.05)", border: "1px solid rgba(248, 113, 113, 0.2)", borderRadius: "10px" }}>
-                <span className="error-inline-icon" aria-hidden="true" style={{ color: "var(--danger)" }}>⚠</span>
-                <p className="error-inline-msg" style={{ margin: 0, fontSize: "0.82rem" }}>{projectsError}</p>
-                <button className="error-retry-btn" type="button" onClick={loadProjects}>Retry</button>
-              </div>
-            ) : null}
-            {!guest && historyError ? (
-              <div className="error-inline glass-panel" role="alert" style={{ background: "rgba(248, 113, 113, 0.05)", border: "1px solid rgba(248, 113, 113, 0.2)", borderRadius: "10px" }}>
-                <span className="error-inline-icon" aria-hidden="true" style={{ color: "var(--danger)" }}>⚠</span>
-                <p className="error-inline-msg" style={{ margin: 0, fontSize: "0.82rem" }}>{historyError}</p>
-                <button className="error-retry-btn" type="button" onClick={loadHistory}>Retry</button>
-              </div>
-            ) : null}
-          </motion.div>
-        )}
-
-        {/* ── Repositories tab ──────────────────────────────────────── */}
-        {activeTab === "repositories" && (
-          <motion.div
-            key="repositories"
-            id="dash-panel-repositories"
-            role="tabpanel"
-            aria-labelledby="dash-tab-repositories"
-            initial={prefersReducedMotion ? false : { opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.25 }}
-            style={{ display: "flex", flexDirection: "column", gap: "2rem" }}
-          >
-            {guest ? (
-              <div className="glass-panel" style={{ textAlign: "center", padding: "3rem 1.5rem", background: "rgba(15, 23, 42, 0.3)", borderRadius: "var(--radius-card)" }}>
-                <p style={{ color: "var(--text-secondary)", marginBottom: "1.25rem", fontSize: "0.9rem" }}>Sign in to see your repositories.</p>
-                <Link className="primary-button" href="/login" style={{ padding: "0.65rem 1.5rem", fontSize: "0.9rem" }}>Sign in</Link>
-              </div>
-            ) : (
-              <>
-                {/* ── Provisioned Projects (always shown for authenticated users) ── */}
-                <section aria-label="Provisioned projects">
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1rem", flexWrap: "wrap", gap: "0.5rem" }}>
-                    <p className="file-path-label" style={{ marginBottom: 0, color: "var(--brand)" }}>projects/provisioned.yml</p>
-                    {!projectsLoading && projects.length > 0 && (
-                      <span style={{ color: "var(--text-muted)", fontSize: "0.78rem", background: "rgba(255,255,255,0.04)", padding: "0.15rem 0.5rem", borderRadius: "999px", border: "1px solid var(--border-soft)" }}>
-                        {projects.length} project{projects.length !== 1 ? "s" : ""}
-                      </span>
-                    )}
-                  </div>
-
-                  {projectsLoading ? (
-                    <div className="repo-grid">
-                      {[0, 1, 2].map((i) => (
-                        <div key={i} className="skeleton-card glass-panel" style={{ minHeight: "6.5rem", background: "rgba(15, 23, 42, 0.3)", animation: "state-pulse 1.5s infinite" }} />
-                      ))}
-                    </div>
-                  ) : projectsError ? (
-                    <div className="error-inline glass-panel" role="alert" style={{ background: "rgba(248, 113, 113, 0.05)" }}>
-                      <span className="error-inline-icon" aria-hidden="true">⚠</span>
-                      <p className="error-inline-msg">{projectsError}</p>
-                      <button className="error-retry-btn" type="button" onClick={loadProjects}>Retry</button>
-                    </div>
-                  ) : projects.length === 0 ? (
-                    <div className="glass-panel" style={{ textAlign: "center", padding: "3rem 1.5rem", background: "rgba(15, 23, 42, 0.3)", borderRadius: "var(--radius-card)" }}>
-                      <p style={{ color: "var(--text-secondary)", marginBottom: "1.25rem", fontSize: "0.88rem" }}>No projects provisioned yet.</p>
-                      <Link className="primary-button" href="/workflows" style={{ padding: "0.65rem 1.5rem", fontSize: "0.9rem" }}>Create your first project</Link>
-                    </div>
-                  ) : (
-                    <>
-                      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '1rem', gap: '0.75rem', alignItems: 'center' }}>
-                        {syncResult && (
-                          <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
-                            Sync complete — {syncResult.orphaned} orphaned, {syncResult.reachable} reachable
-                          </span>
-                        )}
-                        <button
-                          onClick={() => void handleSync()}
-                          disabled={isSyncing}
-                          style={{
-                            padding: '0.4rem 0.9rem',
-                            fontSize: '0.78rem',
-                            fontWeight: 600,
-                            borderRadius: '6px',
-                            border: '1px solid rgba(56,189,248,0.3)',
-                            background: 'rgba(56,189,248,0.08)',
-                            color: 'var(--brand)',
-                            cursor: isSyncing ? 'not-allowed' : 'pointer',
-                            opacity: isSyncing ? 0.6 : 1,
-                          }}
-                        >
-                          {isSyncing ? 'Syncing...' : 'Sync with GitHub'}
-                        </button>
-                      </div>
-                    <div className="repo-grid" aria-label="Provisioned projects">
-                      {projects.map((project) => (
-                        <article key={project.id} className="repo-card glass-panel" style={{ borderLeft: project.status === "provisioned" ? "3px solid var(--success)" : project.status === "failed" ? "3px solid var(--danger)" : project.status === "orphaned" ? "3px solid rgba(251,146,60,0.8)" : "3px solid var(--brand)" }}>
-                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start", gap: "0.5rem" }}>
-                            <a
-                              href={project.repoUrl ?? `https://github.com/${project.repoFullName}`}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="repo-card-title"
-                            >
-                              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
-                                <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22" />
-                              </svg>
-                              <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                                {project.repoFullName.split("/")[1] ?? project.repoFullName}
-                              </span>
-                            </a>
-                            <span style={{
-                              fontSize: "0.65rem",
-                              fontWeight: 700,
-                              textTransform: "uppercase",
-                              padding: "0.1rem 0.4rem",
-                              borderRadius: "4px",
-                              background: project.status === "provisioned" ? "rgba(52, 211, 153, 0.1)" : project.status === "failed" ? "rgba(248, 113, 113, 0.1)" : project.status === "orphaned" ? "rgba(251, 146, 60, 0.1)" : "rgba(56, 189, 248, 0.1)",
-                              color: project.status === "provisioned" ? "var(--success)" : project.status === "failed" ? "var(--danger)" : project.status === "orphaned" ? "rgb(251,146,60)" : "var(--brand)",
-                              border: project.status === "provisioned" ? "1px solid rgba(52, 211, 153, 0.2)" : project.status === "failed" ? "1px solid rgba(248, 113, 113, 0.2)" : project.status === "orphaned" ? "1px solid rgba(251, 146, 60, 0.3)" : "1px solid rgba(56, 189, 248, 0.2)",
-                            }}>
-                              {project.status}
-                            </span>
-                          </div>
-
-                          <p style={{ color: "var(--text-secondary)", fontSize: "0.78rem", margin: 0, fontFamily: "ui-monospace, monospace", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                            {project.serviceName}
-                          </p>
-
-                          <div className="repo-card-meta">
-                            <span style={{ color: "var(--text-muted)", fontSize: "0.7rem", fontFamily: "ui-monospace, monospace" }}>
-                              {project.workflowPath}
-                            </span>
-                            {project.githubCommitUrl ? (
-                              <a href={project.githubCommitUrl} target="_blank" rel="noreferrer" style={{ fontSize: "0.7rem", color: "var(--brand)", fontWeight: 600, textDecoration: "none", display: "flex", alignItems: "center", gap: "0.25rem" }}>
-                                View commit
-                                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                                  <line x1="7" y1="17" x2="17" y2="7"></line>
-                                  <polyline points="7 7 17 7 17 17"></polyline>
-                                </svg>
-                              </a>
-                            ) : (
-                              <a href={project.repoUrl ?? `https://github.com/${project.repoFullName}`} target="_blank" rel="noreferrer" style={{ fontSize: "0.7rem", color: "var(--brand)", fontWeight: 600, textDecoration: "none", display: "flex", alignItems: "center", gap: "0.25rem" }}>
-                                Browse
-                                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                                  <line x1="7" y1="17" x2="17" y2="7"></line>
-                                  <polyline points="7 7 17 7 17 17"></polyline>
-                                </svg>
-                              </a>
-                            )}
-                          </div>
-
-                          {/* Disconnect confirmation or button */}
-                          {confirmDisconnectId === project.id ? (
-                            <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.75rem', paddingTop: '0.75rem', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
-                              <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', flex: 1, alignSelf: 'center' }}>
-                                Remove from FlowCI? GitHub repo is untouched.
-                              </span>
-                              <button
-                                onClick={() => void handleDisconnect(project.id)}
-                                disabled={disconnectingId === project.id}
-                                style={{ padding: '0.3rem 0.7rem', fontSize: '0.72rem', fontWeight: 600, borderRadius: '5px', border: '1px solid rgba(248,113,113,0.4)', background: 'rgba(248,113,113,0.1)', color: 'var(--danger)', cursor: 'pointer' }}
-                              >
-                                {disconnectingId === project.id ? 'Removing...' : 'Yes, remove'}
-                              </button>
-                              <button
-                                onClick={() => setConfirmDisconnectId(null)}
-                                style={{ padding: '0.3rem 0.7rem', fontSize: '0.72rem', borderRadius: '5px', border: '1px solid rgba(255,255,255,0.1)', background: 'transparent', color: 'var(--text-secondary)', cursor: 'pointer' }}
-                              >
-                                Cancel
-                              </button>
-                            </div>
-                          ) : (
-                            <button
-                              onClick={() => setConfirmDisconnectId(project.id)}
-                              style={{ marginTop: '0.5rem', fontSize: '0.72rem', color: 'rgba(248,113,113,0.7)', background: 'none', border: 'none', cursor: 'pointer', padding: 0, textAlign: 'left' }}
-                            >
-                              Disconnect
-                            </button>
-                          )}
-                        </article>
-                      ))}
-                    </div>
-                    </>
-                  )}
-                </section>
-
-                {/* ── Connected GitHub repos (only shown when available via OAuth token) ── */}
-                {!reposLoading && repos.length > 0 && (
-                  <section aria-label="GitHub repositories">
-                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1rem", flexWrap: "wrap", gap: "0.5rem" }}>
-                      <p className="file-path-label" style={{ marginBottom: 0, color: "var(--brand)" }}>repos/github.yml</p>
-                      <span style={{ color: "var(--text-muted)", fontSize: "0.78rem", background: "rgba(255,255,255,0.04)", padding: "0.15rem 0.5rem", borderRadius: "999px", border: "1px solid var(--border-soft)" }}>
-                        {repos.length} GitHub repos
-                      </span>
-                    </div>
-                    <div className="repo-grid" aria-label="GitHub repositories">
-                      {repos.map((repo) => (
-                        <article key={repo.id} className="repo-card glass-panel">
-                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start", gap: "0.5rem" }}>
-                            <a href={repo.htmlUrl} target="_blank" rel="noreferrer" className="repo-card-title">
-                              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
-                                <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22" />
-                              </svg>
-                              <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                                {repo.fullName.split("/")[1]}
-                              </span>
-                            </a>
-                            <span style={{
-                              fontSize: "0.65rem", fontWeight: 700, textTransform: "uppercase", padding: "0.1rem 0.4rem", borderRadius: "4px",
-                              background: repo.private ? "rgba(255, 255, 255, 0.05)" : "rgba(52, 211, 153, 0.1)",
-                              color: repo.private ? "var(--text-muted)" : "var(--success)",
-                              border: repo.private ? "1px solid var(--border-soft)" : "1px solid rgba(52, 211, 153, 0.2)",
-                            }}>
-                              {repo.private ? "private" : "public"}
-                            </span>
-                          </div>
-                          {repo.description ? (
-                            <p style={{ color: "var(--text-secondary)", fontSize: "0.78rem", margin: 0, lineHeight: 1.4, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", textOverflow: "ellipsis" }}>
-                              {repo.description}
-                            </p>
-                          ) : (
-                            <p style={{ color: "var(--text-muted)", fontSize: "0.78rem", margin: 0, fontStyle: "italic" }}>No description provided.</p>
-                          )}
-                          <div className="repo-card-meta">
-                            <span style={{ color: "var(--text-muted)", fontSize: "0.7rem", fontFamily: "ui-monospace, monospace" }}>ID: {repo.id}</span>
-                            <a href={repo.htmlUrl} target="_blank" rel="noreferrer" style={{ fontSize: "0.7rem", color: "var(--brand)", fontWeight: 600, textDecoration: "none", display: "flex", alignItems: "center", gap: "0.25rem" }}>
-                              Browse
-                              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                                <line x1="7" y1="17" x2="17" y2="7"></line>
-                                <polyline points="7 7 17 7 17 17"></polyline>
-                              </svg>
-                            </a>
-                          </div>
-                        </article>
-                      ))}
-                    </div>
-                  </section>
-                )}
-              </>
-            )}
-          </motion.div>
-        )}
-
-        {/* ── Activity tab ──────────────────────────────────────────── */}
-        {activeTab === "activity" && (
-          <motion.div
-            key="activity"
-            id="dash-panel-activity"
-            role="tabpanel"
-            aria-labelledby="dash-tab-activity"
-            initial={prefersReducedMotion ? false : { opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.25 }}
-          >
-            <section aria-label="Recent workflows">
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1rem", flexWrap: "wrap", gap: "0.5rem" }}>
-                <p className="file-path-label" style={{ marginBottom: 0, color: "var(--brand)" }}>workflows/recent.yml</p>
-                {!historyLoading && history.length > 0 && (
-                  <span style={{ color: "var(--text-muted)", fontSize: "0.78rem", background: "rgba(255,255,255,0.04)", padding: "0.15rem 0.5rem", borderRadius: "999px", border: "1px solid var(--border-soft)" }}>
-                    {history.length} generated workflows
-                  </span>
-                )}
-              </div>
-
-              {historyLoading ? (
-                <div className="repo-grid">
-                  {[0, 1, 2].map((i) => (
-                    <div key={i} className="skeleton-card glass-panel" style={{ minHeight: "8rem", background: "rgba(15, 23, 42, 0.3)", animation: "state-pulse 1.5s infinite" }} />
-                  ))}
+              {!guest && projectsError ? (
+                <div className="error-inline glass-panel" role="alert" style={{ background: "rgba(248, 113, 113, 0.05)", border: "1px solid rgba(248, 113, 113, 0.2)", borderRadius: "10px" }}>
+                  <span className="error-inline-icon" aria-hidden="true" style={{ color: "var(--danger)" }}>!</span>
+                  <p className="error-inline-msg" style={{ margin: 0, fontSize: "0.82rem" }}>{projectsError}</p>
+                  <button className="error-retry-btn" type="button" onClick={loadProjects}>Retry</button>
                 </div>
-              ) : historyError ? (
-                <div className="error-inline glass-panel" role="alert" style={{ background: "rgba(248, 113, 113, 0.05)" }}>
-                  <span className="error-inline-icon" aria-hidden="true">⚠</span>
-                  <p className="error-inline-msg">{historyError}</p>
+              ) : null}
+              {!guest && historyError ? (
+                <div className="error-inline glass-panel" role="alert" style={{ background: "rgba(248, 113, 113, 0.05)", border: "1px solid rgba(248, 113, 113, 0.2)", borderRadius: "10px" }}>
+                  <span className="error-inline-icon" aria-hidden="true" style={{ color: "var(--danger)" }}>!</span>
+                  <p className="error-inline-msg" style={{ margin: 0, fontSize: "0.82rem" }}>{historyError}</p>
                   <button className="error-retry-btn" type="button" onClick={loadHistory}>Retry</button>
                 </div>
-              ) : history.length === 0 ? (
-                <div className="glass-panel" style={{ textAlign: "center", padding: "3rem 1.5rem", background: "rgba(15, 23, 42, 0.3)" }}>
-                  <p style={{ color: "var(--text-secondary)", marginBottom: "1.25rem" }}>No workflow history yet.</p>
-                  <Link className="primary-button" href="/workflows" style={{ padding: "0.65rem 1.5rem", fontSize: "0.9rem" }}>Create your first project</Link>
+              ) : null}
+            </motion.div>
+          )}
+
+          {/* Repositories tab */}
+          {activeTab === "repositories" && (
+            <motion.div
+              key="repositories"
+              id="dash-panel-repositories"
+              role="tabpanel"
+              aria-labelledby="dash-tab-repositories"
+              initial={prefersReducedMotion ? false : { opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={prefersReducedMotion ? undefined : { opacity: 0, y: -6 }}
+              transition={{ duration: 0.28, ease: EASE_OUT }}
+              style={{ display: "flex", flexDirection: "column", gap: "2rem" }}
+            >
+              {guest ? (
+                <div className="glass-panel" style={{ textAlign: "center", padding: "3rem 1.5rem", background: "rgba(15, 23, 42, 0.3)", borderRadius: "var(--radius-card)" }}>
+                  <p style={{ color: "var(--text-secondary)", marginBottom: "1.25rem", fontSize: "0.9rem" }}>Sign in to see your repositories.</p>
+                  <Link className="primary-button" href="/login" style={{ padding: "0.65rem 1.5rem", fontSize: "0.9rem" }}>Sign in</Link>
                 </div>
               ) : (
-                <div className="repo-grid">
-                  {history.map((item) => (
-                    <article key={item.id} className="repo-card glass-panel" style={{ borderLeft: "3px solid var(--brand)" }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                        <span style={{
-                          fontSize: "0.65rem",
-                          fontWeight: 700,
-                          textTransform: "uppercase",
-                          letterSpacing: "0.05em",
-                          padding: "0.15rem 0.5rem",
-                          borderRadius: "4px",
-                          background: "rgba(56, 189, 248, 0.1)",
-                          color: "var(--brand)",
-                          border: "1px solid rgba(56, 189, 248, 0.15)",
-                        }}>
-                          {item.stack}
-                        </span>
-                        <span style={{ fontSize: "0.72rem", color: "var(--text-muted)" }}>
-                          {new Intl.DateTimeFormat("en-PH", { dateStyle: "short", timeStyle: "short" }).format(new Date(item.createdAt))}
-                        </span>
+                <>
+                  {/* ── Provisioned Projects ── */}
+                  <section aria-label="Provisioned projects">
+                    <div className="dash-section-label">
+                      <div className="dash-section-label-left">
+                        <p className="file-path-label" style={{ marginBottom: 0, color: "var(--brand)" }}>projects/provisioned.yml</p>
+                        {!projectsLoading && projects.length > 0 && (
+                          <span className="dash-count-chip">{projects.length} project{projects.length !== 1 ? "s" : ""}</span>
+                        )}
                       </div>
-                      
-                      <h3 style={{ fontSize: "1rem", margin: 0, fontWeight: 700 }}>{item.serviceName}</h3>
-                      
-                      <div style={{ display: "flex", flexDirection: "column", gap: "0.2rem", background: "rgba(0,0,0,0.15)", padding: "0.5rem 0.75rem", borderRadius: "6px", border: "1px solid var(--border-subtle)" }}>
-                        <span style={{ fontSize: "0.68rem", color: "var(--text-muted)" }}>Workflow File</span>
-                        <span style={{ fontSize: "0.75rem", fontFamily: "ui-monospace, monospace", color: "var(--text-secondary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                          {item.outputFileName}
-                        </span>
-                      </div>
+                    </div>
 
-                      <div className="repo-card-meta">
-                        <span style={{ color: "var(--text-muted)", fontSize: "0.7rem" }}>
-                          Actions config built
-                        </span>
-                        <Link href="/workflows" style={{ fontSize: "0.7rem", color: "var(--brand)", fontWeight: 600, textDecoration: "none", display: "flex", alignItems: "center", gap: "0.25rem" }}>
-                          View Studio
-                          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                            <line x1="5" y1="12" x2="19" y2="12"></line>
-                            <polyline points="12 5 19 12 12 19"></polyline>
-                          </svg>
-                        </Link>
+                    {projectsLoading ? (
+                      <div className="repo-grid">
+                        {[0, 1, 2].map((i) => (
+                          <div key={i} className="skeleton-card glass-panel" style={{ minHeight: "6.5rem", background: "rgba(15, 23, 42, 0.3)", animation: "state-pulse 1.5s infinite" }} />
+                        ))}
                       </div>
-                    </article>
-                  ))}
-                </div>
+                    ) : projectsError ? (
+                      <div className="error-inline glass-panel" role="alert" style={{ background: "rgba(248, 113, 113, 0.05)" }}>
+                        <span className="error-inline-icon" aria-hidden="true">!</span>
+                        <p className="error-inline-msg">{projectsError}</p>
+                        <button className="error-retry-btn" type="button" onClick={loadProjects}>Retry</button>
+                      </div>
+                    ) : projects.length === 0 ? (
+                      <div className="glass-panel" style={{ textAlign: "center", padding: "3rem 1.5rem", background: "rgba(15, 23, 42, 0.3)", borderRadius: "var(--radius-card)" }}>
+                        <p style={{ color: "var(--text-secondary)", marginBottom: "1.25rem", fontSize: "0.88rem" }}>No projects provisioned yet.</p>
+                        <Link className="primary-button" href="/workflows" style={{ padding: "0.65rem 1.5rem", fontSize: "0.9rem" }}>Create your first project</Link>
+                      </div>
+                    ) : (
+                      <>
+                        <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "1rem", gap: "0.75rem", alignItems: "center" }}>
+                          {syncResult && (
+                            <span style={{ fontSize: "0.78rem", color: "var(--text-secondary)" }}>
+                              Sync complete — {syncResult.orphaned} orphaned, {syncResult.reachable} reachable
+                            </span>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => void handleSync()}
+                            disabled={isSyncing}
+                            className="dash-sync-btn"
+                          >
+                            {isSyncing ? "Syncing..." : "Sync with GitHub"}
+                          </button>
+                        </div>
+                        <div className="repo-grid" aria-label="Provisioned projects">
+                          {projects.map((project) => (
+                            <article key={project.id} className={`repo-card glass-panel ${projectBorderClass(project.status)}`}>
+                              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start", gap: "0.5rem" }}>
+                                <a
+                                  href={project.repoUrl ?? `https://github.com/${project.repoFullName}`}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="repo-card-title"
+                                >
+                                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+                                    <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22" />
+                                  </svg>
+                                  <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                                    {project.repoFullName.split("/")[1] ?? project.repoFullName}
+                                  </span>
+                                </a>
+                                <span className={projectStatusChipClass(project.status)}>
+                                  {project.status}
+                                </span>
+                              </div>
+
+                              <p style={{ color: "var(--text-secondary)", fontSize: "0.78rem", margin: 0, fontFamily: "ui-monospace, monospace", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                                {project.serviceName}
+                              </p>
+
+                              <div className="repo-card-meta">
+                                <span style={{ color: "var(--text-muted)", fontSize: "0.7rem", fontFamily: "ui-monospace, monospace" }}>
+                                  {project.workflowPath}
+                                </span>
+                                {project.githubCommitUrl ? (
+                                  <a href={project.githubCommitUrl} target="_blank" rel="noreferrer" style={{ fontSize: "0.7rem", color: "var(--brand)", fontWeight: 600, textDecoration: "none", display: "flex", alignItems: "center", gap: "0.25rem" }}>
+                                    View commit
+                                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                                      <line x1="7" y1="17" x2="17" y2="7" /><polyline points="7 7 17 7 17 17" />
+                                    </svg>
+                                  </a>
+                                ) : (
+                                  <a href={project.repoUrl ?? `https://github.com/${project.repoFullName}`} target="_blank" rel="noreferrer" style={{ fontSize: "0.7rem", color: "var(--brand)", fontWeight: 600, textDecoration: "none", display: "flex", alignItems: "center", gap: "0.25rem" }}>
+                                    Browse
+                                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                                      <line x1="7" y1="17" x2="17" y2="7" /><polyline points="7 7 17 7 17 17" />
+                                    </svg>
+                                  </a>
+                                )}
+                              </div>
+
+                              {confirmDisconnectId === project.id ? (
+                                <div className="repo-card-confirm-row">
+                                  <span className="repo-card-confirm-label">
+                                    Remove from FlowCI? GitHub repo is untouched.
+                                  </span>
+                                  <button
+                                    type="button"
+                                    onClick={() => void handleDisconnect(project.id)}
+                                    disabled={disconnectingId === project.id}
+                                    className="confirm-btn-danger"
+                                  >
+                                    {disconnectingId === project.id ? "Removing..." : "Yes, remove"}
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => setConfirmDisconnectId(null)}
+                                    className="confirm-btn-neutral"
+                                  >
+                                    Cancel
+                                  </button>
+                                </div>
+                              ) : (
+                                <button
+                                  type="button"
+                                  onClick={() => setConfirmDisconnectId(project.id)}
+                                  className="dash-disconnect-link"
+                                  style={{ marginTop: "0.5rem" }}
+                                >
+                                  Disconnect
+                                </button>
+                              )}
+                            </article>
+                          ))}
+                        </div>
+                      </>
+                    )}
+                  </section>
+
+                  {/* ── Connected GitHub repos ── */}
+                  {!reposLoading && repos.length > 0 && (
+                    <section aria-label="GitHub repositories">
+                      <div className="dash-section-label">
+                        <div className="dash-section-label-left">
+                          <p className="file-path-label" style={{ marginBottom: 0, color: "var(--brand)" }}>repos/github.yml</p>
+                          <span className="dash-count-chip">{repos.length} GitHub repos</span>
+                        </div>
+                      </div>
+                      <div className="repo-grid" aria-label="GitHub repositories">
+                        {repos.map((repo) => (
+                          <article key={repo.id} className="repo-card glass-panel">
+                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start", gap: "0.5rem" }}>
+                              <a href={repo.htmlUrl} target="_blank" rel="noreferrer" className="repo-card-title">
+                                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+                                  <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22" />
+                                </svg>
+                                <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                                  {repo.fullName.split("/")[1]}
+                                </span>
+                              </a>
+                              <span className={repo.private ? "status-chip status-chip-muted" : "status-chip status-chip-success"}>
+                                {repo.private ? "private" : "public"}
+                              </span>
+                            </div>
+                            {repo.description ? (
+                              <p style={{ color: "var(--text-secondary)", fontSize: "0.78rem", margin: 0, lineHeight: 1.4, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", textOverflow: "ellipsis" }}>
+                                {repo.description}
+                              </p>
+                            ) : (
+                              <p style={{ color: "var(--text-muted)", fontSize: "0.78rem", margin: 0, fontStyle: "italic" }}>No description provided.</p>
+                            )}
+                            <div className="repo-card-meta">
+                              <span style={{ color: "var(--text-muted)", fontSize: "0.7rem", fontFamily: "ui-monospace, monospace" }}>ID: {repo.id}</span>
+                              <a href={repo.htmlUrl} target="_blank" rel="noreferrer" style={{ fontSize: "0.7rem", color: "var(--brand)", fontWeight: 600, textDecoration: "none", display: "flex", alignItems: "center", gap: "0.25rem" }}>
+                                Browse
+                                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                                  <line x1="7" y1="17" x2="17" y2="7" /><polyline points="7 7 17 7 17 17" />
+                                </svg>
+                              </a>
+                            </div>
+                          </article>
+                        ))}
+                      </div>
+                    </section>
+                  )}
+                  {reposError && !reposLoading && (
+                    <div className="error-inline glass-panel" role="alert" style={{ background: "rgba(248, 113, 113, 0.05)" }}>
+                      <span className="error-inline-icon" aria-hidden="true">!</span>
+                      <p className="error-inline-msg">{reposError}</p>
+                      <button className="error-retry-btn" type="button" onClick={loadRepos}>Retry</button>
+                    </div>
+                  )}
+                </>
               )}
-            </section>
-          </motion.div>
-        )}
+            </motion.div>
+          )}
+
+          {/* Activity tab */}
+          {activeTab === "activity" && (
+            <motion.div
+              key="activity"
+              id="dash-panel-activity"
+              role="tabpanel"
+              aria-labelledby="dash-tab-activity"
+              initial={prefersReducedMotion ? false : { opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={prefersReducedMotion ? undefined : { opacity: 0, y: -6 }}
+              transition={{ duration: 0.28, ease: EASE_OUT }}
+            >
+              <section aria-label="Recent workflows">
+                <div className="dash-section-label">
+                  <div className="dash-section-label-left">
+                    <p className="file-path-label" style={{ marginBottom: 0, color: "var(--brand)" }}>workflows/recent.yml</p>
+                    {!historyLoading && history.length > 0 && (
+                      <span className="dash-count-chip">{history.length} generated workflows</span>
+                    )}
+                  </div>
+                </div>
+
+                {historyLoading ? (
+                  <div className="repo-grid">
+                    {[0, 1, 2].map((i) => (
+                      <div key={i} className="skeleton-card glass-panel" style={{ minHeight: "8rem", background: "rgba(15, 23, 42, 0.3)", animation: "state-pulse 1.5s infinite" }} />
+                    ))}
+                  </div>
+                ) : historyError ? (
+                  <div className="error-inline glass-panel" role="alert" style={{ background: "rgba(248, 113, 113, 0.05)" }}>
+                    <span className="error-inline-icon" aria-hidden="true">!</span>
+                    <p className="error-inline-msg">{historyError}</p>
+                    <button className="error-retry-btn" type="button" onClick={loadHistory}>Retry</button>
+                  </div>
+                ) : history.length === 0 ? (
+                  <div className="glass-panel" style={{ textAlign: "center", padding: "3rem 1.5rem", background: "rgba(15, 23, 42, 0.3)" }}>
+                    <p style={{ color: "var(--text-secondary)", marginBottom: "1.25rem" }}>No workflow history yet.</p>
+                    <Link className="primary-button" href="/workflows" style={{ padding: "0.65rem 1.5rem", fontSize: "0.9rem" }}>Create your first project</Link>
+                  </div>
+                ) : (
+                  <div className="repo-grid">
+                    {history.map((item) => (
+                      <article key={item.id} className="repo-card glass-panel repo-card-brand">
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                          <span className="status-chip status-chip-brand">{item.stack}</span>
+                          <span style={{ fontSize: "0.72rem", color: "var(--text-muted)" }}>
+                            {new Intl.DateTimeFormat("en-PH", { dateStyle: "short", timeStyle: "short" }).format(new Date(item.createdAt))}
+                          </span>
+                        </div>
+
+                        <h3 style={{ fontSize: "1rem", margin: 0, fontWeight: 700 }}>{item.serviceName}</h3>
+
+                        <div className="activity-code-block">
+                          <span className="activity-code-label">Workflow File</span>
+                          <span className="activity-code-value">{item.outputFileName}</span>
+                        </div>
+
+                        <div className="repo-card-meta">
+                          <span style={{ color: "var(--text-muted)", fontSize: "0.7rem" }}>
+                            Actions config built
+                          </span>
+                          <Link href="/workflows" style={{ fontSize: "0.7rem", color: "var(--brand)", fontWeight: 600, textDecoration: "none", display: "flex", alignItems: "center", gap: "0.25rem" }}>
+                            View Studio
+                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                              <line x1="5" y1="12" x2="19" y2="12" /><polyline points="12 5 19 12 12 19" />
+                            </svg>
+                          </Link>
+                        </div>
+                      </article>
+                    ))}
+                  </div>
+                )}
+              </section>
+            </motion.div>
+          )}
+
+        </AnimatePresence>
 
       </div>
     </main>

@@ -16,6 +16,7 @@ const emptyCatalog: ProjectOptionsResponse = {
   repoShapes: [],
   projectTypes: [],
   recipes: [],
+  nodeVersions: [],
 };
 
 export const mvpProjectOptionKeys: MvpProjectOptionKey[] = [
@@ -252,14 +253,18 @@ export function useProjectOptionsCatalog() {
     [projectTypesForShape],
   );
 
+  const defaultNodeVersion = catalog.nodeVersions.at(-1)?.value;
+
   return {
     allRepoShapes: catalog.repoShapes,
     backendProjectTypes,
+    defaultNodeVersion,
     enabledRepoShapes,
     frontendProjectTypes,
     isMicroservicesShape,
     isMultiRepoShape,
     loadingProjectOptions,
+    nodeVersions: catalog.nodeVersions,
     projectOptionsError,
     projectTypesForShape,
     recipesForSelectedProject,
