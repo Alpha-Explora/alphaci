@@ -4,15 +4,18 @@ import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { motion, useReducedMotion } from "framer-motion";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 
 import { AppNav } from "@/components/layout/app-nav";
 import { FlowBackground } from "@/components/layout/flow-background";
 import { PipelineLogo } from "@/components/layout/pipeline-logo";
+import { PipelineLoader } from "@/components/layout/pipeline-loader";
 import { DeploymentProvidersSection } from "@/components/settings/deployment-providers-section";
 import { useAuthSession } from "@/hooks/use-auth-session";
 import { logout, deleteAccount, cancelMonthlySubscription } from "@/lib/api/client";
 import { isGuest } from "@/lib/auth/subscription";
+
+/* ── Icon components ─────────────────────────────────────────────────────── */
 
 function GithubIcon({ size = 16 }: { size?: number }) {
   return (
@@ -59,8 +62,6 @@ function AlertTriangleIcon({ size = 16 }: { size?: number }) {
   );
 }
 
-/* ── HoverField helpers ────────────────────────────────────────────────────── */
-
 function PencilIcon() {
   return (
     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -78,6 +79,8 @@ function LockIcon() {
     </svg>
   );
 }
+
+/* ── HoverField ──────────────────────────────────────────────────────────── */
 
 function HoverField({
   label,
@@ -105,7 +108,7 @@ function HoverField({
   );
 }
 
-/* ── Settings section card ─────────────────────────────────────────────────── */
+/* ── Settings section card — flatter, top-accent bar instead of heavy header box ── */
 
 function SettingsSection({
   icon,
@@ -124,26 +127,43 @@ function SettingsSection({
     <div
       style={{
         background: danger
-          ? "linear-gradient(160deg, rgba(69, 10, 10, 0.85) 0%, rgba(69, 10, 10, 0.45) 100%)"
-          : "rgba(30, 41, 59, 0.92)",
-        border: danger ? "1px solid rgba(220, 38, 38, 0.45)" : "1px solid rgba(255,255,255,0.12)",
+          ? "linear-gradient(160deg, rgba(69, 10, 10, 0.8) 0%, rgba(30, 10, 10, 0.5) 100%)"
+          : "rgba(15, 23, 42, 0.55)",
+        border: danger
+          ? "1px solid rgba(220, 38, 38, 0.35)"
+          : "1px solid var(--border-soft)",
         borderRadius: "1rem",
         overflow: "hidden",
-        boxShadow: danger
-          ? "0 0 40px rgba(220, 38, 38, 0.07), inset 0 0 60px rgba(69, 10, 10, 0.3)"
-          : undefined,
         transitionDelay: `${index * 40}ms`,
+        position: "relative",
       }}
     >
-      {/* Section header */}
+      {/* Top accent line instead of a heavy header block */}
+      <div
+        aria-hidden="true"
+        style={{
+          position: "absolute",
+          top: 0,
+          left: 0,
+          right: 0,
+          height: "1px",
+          background: danger
+            ? "linear-gradient(90deg, transparent, rgba(248, 113, 113, 0.6), transparent)"
+            : "linear-gradient(90deg, transparent, var(--brand), transparent)",
+          opacity: 0.5,
+        }}
+      />
+
+      {/* Section header row — lightweight */}
       <div
         style={{
           display: "flex",
           alignItems: "center",
           gap: "0.6rem",
-          padding: "0.85rem 1.25rem",
-          borderBottom: danger ? "1px solid rgba(248, 113, 113, 0.2)" : "1px solid rgba(255,255,255,0.08)",
-          background: danger ? "rgba(248, 113, 113, 0.06)" : "rgba(15, 23, 42, 0.7)",
+          padding: "0.8rem 1.25rem 0.7rem",
+          borderBottom: danger
+            ? "1px solid rgba(248, 113, 113, 0.12)"
+            : "1px solid var(--border-soft)",
         }}
       >
         <span
@@ -151,20 +171,21 @@ function SettingsSection({
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            width: "1.75rem",
-            height: "1.75rem",
-            borderRadius: "0.4rem",
-            background: danger ? "rgba(248, 113, 113, 0.12)" : "rgba(56, 189, 248, 0.1)",
+            width: "1.6rem",
+            height: "1.6rem",
+            borderRadius: "0.35rem",
+            background: danger ? "rgba(248, 113, 113, 0.1)" : "var(--surface-brand)",
             color: danger ? "var(--danger)" : "var(--brand)",
+            flexShrink: 0,
           }}
         >
           {icon}
         </span>
         <span
           style={{
-            fontSize: "0.8rem",
+            fontSize: "0.75rem",
             fontWeight: 700,
-            letterSpacing: "0.06em",
+            letterSpacing: "0.07em",
             textTransform: "uppercase",
             color: danger ? "var(--danger)" : "var(--text-secondary)",
           }}
@@ -173,15 +194,31 @@ function SettingsSection({
         </span>
       </div>
 
-      {/* Section body */}
-      <div style={{ padding: "1.25rem" }}>
+      <div className="settings-section-body">
         {children}
       </div>
     </div>
   );
 }
 
-/* ── Page ───────────────────────────────────────────────────────────────────── */
+/* ── Page ───────────────────────────────────────────────────────────────── */
+
+type SettingsSection = "account" | "connections" | "billing" | "danger";
+
+const SECTION_LABELS: Record<SettingsSection, string> = {
+  account:     "Account",
+  connections: "Connections",
+  billing:     "Billing",
+  danger:      "Danger Zone",
+};
+
+const EASE_OUT: [number, number, number, number] = [0.25, 0, 0, 1];
+
+const sectionVariants = {
+  hidden:  { opacity: 0, y: 10 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.28, ease: EASE_OUT } },
+  exit:    { opacity: 0, y: -6, transition: { duration: 0.18, ease: EASE_OUT } },
+};
 
 export default function SettingsPage() {
   const router = useRouter();
@@ -189,14 +226,12 @@ export default function SettingsPage() {
   const { status, session, error, refresh } = useAuthSession();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [logoutMessage, setLogoutMessage] = useState<string | null>(null);
-  const [activeSection, setActiveSection] = useState<"account" | "connections" | "billing" | "danger">("account");
+  const [activeSection, setActiveSection] = useState<SettingsSection>("account");
 
-  // Cancel subscription state
   const [isCanceling, setIsCanceling] = useState(false);
   const [cancelMessage, setCancelMessage] = useState<string | null>(null);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
 
-  // Delete account state
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteMessage, setDeleteMessage] = useState<string | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -212,7 +247,6 @@ export default function SettingsPage() {
   useEffect(() => {
     const media = window.matchMedia("(max-width: 720px)");
     const updateLayout = () => setIsCompactLayout(media.matches);
-
     updateLayout();
     media.addEventListener("change", updateLayout);
     return () => media.removeEventListener("change", updateLayout);
@@ -261,24 +295,7 @@ export default function SettingsPage() {
 
   /* ── Loading ─────────────────────────────────────────────────────────────── */
   if (status === "loading") {
-    return (
-      <main className="flow-shell page-shell">
-        <FlowBackground />
-        <header className="marketing-nav">
-          <div className="brand-mark">
-            <PipelineLogo size={22} />
-            <span>FlowCI Studio</span>
-          </div>
-        </header>
-        <div className="state-body">
-          <div className="state-card">
-            <div className="state-spinner" role="status" aria-label="Loading settings" />
-            <h1>Loading settings</h1>
-            <p>Fetching your account configuration.</p>
-          </div>
-        </div>
-      </main>
-    );
+    return <PipelineLoader label="Loading settings" />;
   }
 
   /* ── Error ───────────────────────────────────────────────────────────────── */
@@ -339,7 +356,7 @@ export default function SettingsPage() {
         className="settings-layout"
         id="main-content"
         style={{
-          padding: isCompactLayout ? "1rem" : "1.5rem var(--layout-gutter) 2rem",
+          padding: isCompactLayout ? "1rem" : "1.75rem var(--layout-gutter) 2.5rem",
           flex: 1,
           display: "flex",
           flexDirection: isCompactLayout ? "column" : "row",
@@ -348,7 +365,7 @@ export default function SettingsPage() {
           width: "100%",
         }}
       >
-        {/* ── Left sidebar ── */}
+        {/* ── Left sidebar nav ── */}
         <nav
           className="settings-sidebar"
           aria-label="Settings sections"
@@ -361,13 +378,13 @@ export default function SettingsPage() {
             display: "flex",
             flexDirection: "column",
             gap: "0.35rem",
-            background: "rgba(15, 23, 42, 0.72)",
-            border: "1px solid rgba(255,255,255,0.08)",
+            background: "rgba(15, 23, 42, 0.55)",
+            border: "1px solid var(--border-soft)",
             borderRadius: "1rem",
             padding: "1rem",
           }}
         >
-          {/* Mini profile summary in sidebar */}
+          {/* Mini profile summary */}
           <div
             style={{
               display: "flex",
@@ -375,16 +392,15 @@ export default function SettingsPage() {
               gap: "0.75rem",
               paddingBottom: "0.85rem",
               marginBottom: "0.5rem",
-              borderBottom: "1px solid rgba(255,255,255,0.07)",
+              borderBottom: "1px solid var(--border-soft)",
             }}
           >
-            {/* Avatar */}
             <div
               style={{
                 position: "relative",
                 borderRadius: "50%",
                 padding: "1.5px",
-                background: "linear-gradient(135deg, var(--brand), var(--brand-accent))",
+                background: "linear-gradient(135deg, var(--brand), var(--accent-violet))",
                 flexShrink: 0,
               }}
             >
@@ -423,12 +439,7 @@ export default function SettingsPage() {
                 {session?.user.name ?? session?.user.login ?? "Account"}
               </p>
               {session?.subscription.plan && (
-                <span style={{
-                  fontSize: "0.62rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em",
-                  padding: "0.1rem 0.4rem", borderRadius: "3px",
-                  background: "rgba(56,189,248,0.15)", color: "var(--brand)",
-                  border: "1px solid rgba(56,189,248,0.2)",
-                }}>
+                <span className="dash-badge-violet">
                   {session.subscription.plan}
                 </span>
               )}
@@ -436,47 +447,36 @@ export default function SettingsPage() {
           </div>
 
           {/* Section nav buttons */}
-          {(["account", "connections", "billing", "danger"] as const).map((sec) => {
+          {(["account", "connections", "billing", "danger"] as SettingsSection[]).map((sec) => {
             const isActive = activeSection === sec;
             const isDanger = sec === "danger";
-            const labels: Record<typeof sec, string> = {
-              account: "Account",
-              connections: "Connections",
-              billing: "Billing",
-              danger: "Danger Zone",
-            };
-            const icons: Record<typeof sec, React.ReactNode> = {
-              account: <UserIcon size={14} />,
+            const icons: Record<SettingsSection, React.ReactNode> = {
+              account:     <UserIcon size={14} />,
               connections: <GithubIcon size={14} />,
-              billing: <CreditCardIcon size={14} />,
-              danger: <AlertTriangleIcon size={14} />,
+              billing:     <CreditCardIcon size={14} />,
+              danger:      <AlertTriangleIcon size={14} />,
             };
             return (
               <button
                 key={sec}
                 type="button"
                 onClick={() => setActiveSection(sec)}
-                aria-current={isActive ? "page" : undefined}
+                aria-current={isActive ? "true" : undefined}
+                className="settings-nav-btn"
                 style={{
-                  display: "flex", alignItems: "center", gap: "0.5rem",
-                  padding: "0.5rem 0.75rem", borderRadius: "0.6rem",
-                  fontSize: "0.83rem", fontWeight: 600,
-                  width: "100%", textAlign: "left",
                   border: isActive
                     ? isDanger ? "1px solid rgba(248,113,113,0.3)" : "1px solid rgba(56,189,248,0.25)"
                     : "1px solid transparent",
                   background: isActive
-                    ? isDanger ? "rgba(248,113,113,0.08)" : "rgba(56,189,248,0.1)"
+                    ? isDanger ? "rgba(248,113,113,0.08)" : "rgba(56,189,248,0.09)"
                     : "transparent",
                   color: isActive
                     ? isDanger ? "var(--danger)" : "var(--brand)"
-                    : isDanger ? "rgba(248,113,113,0.7)" : "var(--text-secondary)",
-                  cursor: "pointer",
-                  transition: "all 0.15s ease",
+                    : isDanger ? "rgba(248,113,113,0.65)" : "var(--text-secondary)",
                 }}
               >
                 {icons[sec]}
-                {labels[sec]}
+                {SECTION_LABELS[sec]}
               </button>
             );
           })}
@@ -489,55 +489,54 @@ export default function SettingsPage() {
             flex: 1,
             minWidth: 0,
             width: isCompactLayout ? "100%" : undefined,
-            display: "flex",
-            flexDirection: "column",
-            gap: "1.25rem",
           }}
         >
-          <motion.div
-            key={activeSection}
-            initial={{ opacity: 0, y: 6 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.2, ease: "easeOut" }}
-            style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}
-          >
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={activeSection}
+              variants={prefersReducedMotion ? undefined : sectionVariants}
+              initial={prefersReducedMotion ? false : "hidden"}
+              animate="visible"
+              exit="exit"
+              style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}
+            >
+
+              {/* ── Account section ── */}
               {activeSection === "account" && (
                 <>
-                  {/* ── Profile header card ──────────────────────────────────────── */}
+                  {/* Profile header — flat with gradient accent */}
                   <motion.div
-                    initial={prefersReducedMotion ? undefined : { opacity: 0, y: 16 }}
+                    initial={prefersReducedMotion ? undefined : { opacity: 0, y: 14 }}
                     animate={prefersReducedMotion ? undefined : { opacity: 1, y: 0 }}
-                    transition={{ duration: 0.4 }}
+                    transition={{ duration: 0.35, ease: [0.25, 0, 0, 1] }}
                     style={{
                       position: "relative",
-                      borderRadius: "1.25rem",
+                      borderRadius: "1rem",
                       overflow: "hidden",
-                      background: "linear-gradient(135deg, rgba(56, 189, 248, 0.08) 0%, rgba(52, 211, 153, 0.04) 60%, rgba(15, 23, 42, 0.5) 100%)",
-                      border: "1px solid rgba(56, 189, 248, 0.2)",
-                      padding: "clamp(1.5rem, 3vw, 2rem)",
+                      background: "rgba(15, 23, 42, 0.5)",
+                      border: "1px solid var(--border-soft)",
+                      padding: "clamp(1.25rem, 3vw, 1.75rem)",
                     }}
                   >
-                    {/* Top gradient bar */}
+                    {/* Gradient top bar — brand + violet */}
                     <div
                       aria-hidden="true"
                       style={{
                         position: "absolute",
-                        top: 0,
-                        left: 0,
-                        right: 0,
+                        top: 0, left: 0, right: 0,
                         height: 2,
-                        background: "linear-gradient(90deg, var(--brand), var(--brand-accent))",
+                        background: "linear-gradient(90deg, var(--brand), var(--accent-violet))",
                       }}
                     />
 
                     <div style={{ display: "flex", alignItems: "center", gap: "1.25rem", flexWrap: "wrap" }}>
-                      {/* Avatar with gradient ring */}
+                      {/* Avatar with gradient ring — brand to violet */}
                       <div
                         style={{
                           position: "relative",
                           borderRadius: "50%",
                           padding: "2.5px",
-                          background: "linear-gradient(135deg, var(--brand), var(--brand-accent))",
+                          background: "linear-gradient(135deg, var(--brand), var(--accent-violet))",
                           flexShrink: 0,
                         }}
                       >
@@ -547,11 +546,7 @@ export default function SettingsPage() {
                             alt={session.user.name ?? session.user.login}
                             width={64}
                             height={64}
-                            style={{
-                              borderRadius: "50%",
-                              display: "block",
-                              border: "2px solid var(--bg-base)",
-                            }}
+                            style={{ borderRadius: "50%", display: "block", border: "2px solid var(--bg-base)" }}
                             unoptimized
                           />
                         ) : (
@@ -577,40 +572,15 @@ export default function SettingsPage() {
                       </div>
 
                       <div style={{ flex: 1, minWidth: 0 }}>
-                        <p
-                          style={{
-                            fontSize: "0.65rem",
-                            fontWeight: 700,
-                            textTransform: "uppercase",
-                            letterSpacing: "0.1em",
-                            color: "var(--brand)",
-                            margin: "0 0 0.25rem",
-                          }}
-                        >
+                        <p style={{ fontSize: "0.65rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", color: "var(--brand)", margin: "0 0 0.25rem" }}>
                           SETTINGS / ACCOUNT
                         </p>
-                        <h1
-                          style={{
-                            fontSize: "clamp(1.2rem, 2.5vw, 1.6rem)",
-                            fontWeight: 800,
-                            margin: "0 0 0.2rem",
-                            letterSpacing: "-0.02em",
-                          }}
-                        >
+                        <h1 style={{ fontSize: "clamp(1.2rem, 2.5vw, 1.6rem)", fontWeight: 800, margin: "0 0 0.2rem", letterSpacing: "-0.02em" }}>
                           {session?.user.name ?? session?.user.login ?? "Your account"}
                         </h1>
                         <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", flexWrap: "wrap" }}>
                           {session?.user.login && (
-                            <span
-                              style={{
-                                display: "flex",
-                                alignItems: "center",
-                                gap: "0.3rem",
-                                fontSize: "0.8rem",
-                                color: "var(--text-secondary)",
-                                fontFamily: "ui-monospace, monospace",
-                              }}
-                            >
+                            <span style={{ display: "flex", alignItems: "center", gap: "0.3rem", fontSize: "0.8rem", color: "var(--text-secondary)", fontFamily: "ui-monospace, monospace" }}>
                               <GithubIcon size={13} />
                               @{session.user.login}
                             </span>
@@ -621,19 +591,7 @@ export default function SettingsPage() {
                             </span>
                           )}
                           {session?.subscription.plan && (
-                            <span
-                              style={{
-                                fontSize: "0.68rem",
-                                fontWeight: 700,
-                                textTransform: "uppercase",
-                                letterSpacing: "0.06em",
-                                padding: "0.15rem 0.5rem",
-                                borderRadius: "4px",
-                                background: "linear-gradient(135deg, rgba(56, 189, 248, 0.15), rgba(52, 211, 153, 0.08))",
-                                color: "var(--brand)",
-                                border: "1px solid rgba(56, 189, 248, 0.25)",
-                              }}
-                            >
+                            <span className="dash-badge-violet">
                               {session.subscription.plan} plan
                             </span>
                           )}
@@ -642,7 +600,7 @@ export default function SettingsPage() {
                     </div>
                   </motion.div>
 
-                  {/* ── Account identity section ───────────────────────────── */}
+                  {/* Account identity */}
                   <SettingsSection icon={<UserIcon />} title="Account" index={0}>
                     <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
                       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.5rem" }}>
@@ -657,24 +615,13 @@ export default function SettingsPage() {
                 </>
               )}
 
+              {/* ── Connections section ── */}
               {activeSection === "connections" && (
                 <SettingsSection icon={<GithubIcon />} title="GitHub Connection" index={0}>
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "1rem", flexWrap: "wrap" }}>
                     <div style={{ display: "flex", flexDirection: "column", gap: "0.3rem" }}>
                       <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                        {/* Connected status indicator */}
-                        <span
-                          aria-hidden="true"
-                          style={{
-                            width: "7px",
-                            height: "7px",
-                            borderRadius: "50%",
-                            background: "var(--success)",
-                            boxShadow: "0 0 8px rgba(52, 211, 153, 0.6)",
-                            animation: "flowPulse 2s ease-in-out infinite",
-                            flexShrink: 0,
-                          }}
-                        />
+                        <span className="dash-status-active" />
                         <span style={{ fontSize: "0.9rem", fontWeight: 600, color: "var(--text-primary)" }}>
                           GitHub App connected
                         </span>
@@ -683,24 +630,7 @@ export default function SettingsPage() {
                         Manage your GitHub App connection from the Create Project page.
                       </p>
                     </div>
-                    <Link
-                      href="/workflows"
-                      style={{
-                        display: "inline-flex",
-                        alignItems: "center",
-                        gap: "0.4rem",
-                        fontSize: "0.82rem",
-                        fontWeight: 600,
-                        color: "var(--brand)",
-                        textDecoration: "none",
-                        padding: "0.4rem 0.85rem",
-                        borderRadius: "0.5rem",
-                        border: "1px solid rgba(56, 189, 248, 0.25)",
-                        background: "rgba(56, 189, 248, 0.06)",
-                        transition: "all 0.2s ease",
-                        flexShrink: 0,
-                      }}
-                    >
+                    <Link href="/workflows" className="dash-action-btn">
                       Manage
                       <ExternalLinkIcon size={11} />
                     </Link>
@@ -708,168 +638,81 @@ export default function SettingsPage() {
                 </SettingsSection>
               )}
 
+              {/* ── Billing section ── */}
               {activeSection === "billing" && (
                 <>
-                <SettingsSection icon={<CreditCardIcon />} title="Billing" index={0}>
-                  <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
-                    {/* Current plan row */}
-                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "1rem", flexWrap: "wrap" }}>
-                      <div style={{ display: "flex", flexDirection: "column", gap: "0.3rem" }}>
-                        <span style={{ fontSize: "0.9rem", fontWeight: 600, color: "var(--text-primary)" }}>
-                          {session?.subscription.plan
-                            ? `${session.subscription.plan.charAt(0).toUpperCase() + session.subscription.plan.slice(1)} plan`
-                            : "No active plan"}
-                        </span>
-                        {session?.subscription.status && (
-                          <span
-                            style={{
-                              fontSize: "0.78rem",
-                              color: session.subscription.status === "active" ? "var(--success)" : "var(--text-muted)",
-                              textTransform: "capitalize",
-                            }}
-                          >
-                            Status: {session.subscription.status}
+                  <SettingsSection icon={<CreditCardIcon />} title="Billing" index={0}>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+                      {/* Current plan row */}
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "1rem", flexWrap: "wrap" }}>
+                        <div style={{ display: "flex", flexDirection: "column", gap: "0.3rem" }}>
+                          <span style={{ fontSize: "0.9rem", fontWeight: 600, color: "var(--text-primary)" }}>
+                            {session?.subscription.plan
+                              ? `${session.subscription.plan.charAt(0).toUpperCase() + session.subscription.plan.slice(1)} plan`
+                              : "No active plan"}
                           </span>
-                        )}
+                          {session?.subscription.status && (
+                            <span style={{ fontSize: "0.78rem", color: session.subscription.status === "active" ? "var(--success)" : "var(--text-muted)", textTransform: "capitalize" }}>
+                              Status: {session.subscription.status}
+                            </span>
+                          )}
+                        </div>
+                        <Link href="/subscribe" className="dash-action-btn">
+                          View plan
+                          <ExternalLinkIcon size={11} />
+                        </Link>
                       </div>
-                      <Link
-                        href="/subscribe"
-                        style={{
-                          display: "inline-flex",
-                          alignItems: "center",
-                          gap: "0.4rem",
-                          fontSize: "0.82rem",
-                          fontWeight: 600,
-                          color: "var(--brand)",
-                          textDecoration: "none",
-                          padding: "0.4rem 0.85rem",
-                          borderRadius: "0.5rem",
-                          border: "1px solid rgba(56, 189, 248, 0.25)",
-                          background: "rgba(56, 189, 248, 0.06)",
-                          transition: "all 0.2s ease",
-                          flexShrink: 0,
-                        }}
-                      >
-                        View plan
-                        <ExternalLinkIcon size={11} />
-                      </Link>
-                    </div>
 
-                    {/* Cancel subscription — only shown when subscription is active */}
-                    {session?.subscription.plan === "pro" && session.subscription.status === "active" && (
-                      <div
-                        style={{
-                          borderTop: "1px solid rgba(255,255,255,0.07)",
-                          paddingTop: "1rem",
-                          display: "flex",
-                          flexDirection: "column",
-                          gap: "0.6rem",
-                        }}
-                      >
-                        {!showCancelConfirm ? (
-                          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "1rem", flexWrap: "wrap" }}>
-                            <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
-                              <span style={{ fontSize: "0.88rem", fontWeight: 600, color: "var(--text-primary)" }}>
-                                Cancel subscription
-                              </span>
-                              <span style={{ fontSize: "0.78rem", color: "var(--text-muted)" }}>
-                                Your access will remain active until the end of the billing period.
-                              </span>
-                            </div>
-                            <button
-                              type="button"
-                              onClick={() => setShowCancelConfirm(true)}
-                              style={{
-                                display: "inline-flex",
-                                alignItems: "center",
-                                gap: "0.4rem",
-                                fontSize: "0.82rem",
-                                fontWeight: 600,
-                                color: "var(--danger)",
-                                padding: "0.4rem 0.85rem",
-                                borderRadius: "0.5rem",
-                                border: "1px solid rgba(248, 113, 113, 0.3)",
-                                background: "rgba(248, 113, 113, 0.06)",
-                                cursor: "pointer",
-                                transition: "all 0.2s ease",
-                                flexShrink: 0,
-                              }}
-                            >
-                              Cancel plan
-                            </button>
-                          </div>
-                        ) : (
-                          <div
-                            style={{
-                              background: "rgba(248, 113, 113, 0.06)",
-                              border: "1px solid rgba(248, 113, 113, 0.2)",
-                              borderRadius: "0.75rem",
-                              padding: "1rem",
-                              display: "flex",
-                              flexDirection: "column",
-                              gap: "0.75rem",
-                            }}
-                          >
-                            <p style={{ margin: 0, fontSize: "0.85rem", color: "var(--text-primary)", fontWeight: 600 }}>
-                              Are you sure you want to cancel your Pro subscription?
-                            </p>
-                            <p style={{ margin: 0, fontSize: "0.78rem", color: "var(--text-muted)" }}>
-                              You will lose access to Pro features at the end of your current billing period. This action can be undone by resubscribing.
-                            </p>
-                            <div style={{ display: "flex", gap: "0.5rem" }}>
+                      {/* Cancel subscription */}
+                      {session?.subscription.plan === "pro" && session.subscription.status === "active" && (
+                        <div style={{ borderTop: "1px solid var(--border-soft)", paddingTop: "1rem", display: "flex", flexDirection: "column", gap: "0.6rem" }}>
+                          {!showCancelConfirm ? (
+                            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "1rem", flexWrap: "wrap" }}>
+                              <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
+                                <span style={{ fontSize: "0.88rem", fontWeight: 600, color: "var(--text-primary)" }}>Cancel subscription</span>
+                                <span style={{ fontSize: "0.78rem", color: "var(--text-muted)" }}>Your access will remain active until the end of the billing period.</span>
+                              </div>
                               <button
                                 type="button"
-                                onClick={() => void handleCancelSubscription()}
-                                disabled={isCanceling}
-                                style={{
-                                  fontSize: "0.82rem",
-                                  fontWeight: 600,
-                                  color: "var(--danger)",
-                                  padding: "0.4rem 0.85rem",
-                                  borderRadius: "0.5rem",
-                                  border: "1px solid rgba(248, 113, 113, 0.4)",
-                                  background: "rgba(248, 113, 113, 0.1)",
-                                  cursor: isCanceling ? "not-allowed" : "pointer",
-                                  opacity: isCanceling ? 0.6 : 1,
-                                  transition: "all 0.2s ease",
-                                }}
+                                onClick={() => setShowCancelConfirm(true)}
+                                className="confirm-btn-danger"
+                                style={{ padding: "0.4rem 0.85rem", fontSize: "0.82rem" }}
                               >
-                                {isCanceling ? "Canceling..." : "Yes, cancel"}
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => { setShowCancelConfirm(false); setCancelMessage(null); }}
-                                disabled={isCanceling}
-                                style={{
-                                  fontSize: "0.82rem",
-                                  fontWeight: 600,
-                                  color: "var(--text-secondary)",
-                                  padding: "0.4rem 0.85rem",
-                                  borderRadius: "0.5rem",
-                                  border: "1px solid rgba(255,255,255,0.1)",
-                                  background: "transparent",
-                                  cursor: "pointer",
-                                  transition: "all 0.2s ease",
-                                }}
-                              >
-                                Keep plan
+                                Cancel plan
                               </button>
                             </div>
-                          </div>
-                        )}
-                        {cancelMessage && (
-                          <p style={{ margin: 0, fontSize: "0.8rem", color: cancelMessage.startsWith("Failed") ? "var(--danger)" : "var(--success)" }}>
-                            {cancelMessage}
-                          </p>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                </SettingsSection>
-                <DeploymentProvidersSection />
+                          ) : (
+                            <div style={{ background: "rgba(248, 113, 113, 0.05)", border: "1px solid rgba(248, 113, 113, 0.18)", borderRadius: "0.75rem", padding: "1rem", display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+                              <p style={{ margin: 0, fontSize: "0.85rem", color: "var(--text-primary)", fontWeight: 600 }}>
+                                Are you sure you want to cancel your Pro subscription?
+                              </p>
+                              <p style={{ margin: 0, fontSize: "0.78rem", color: "var(--text-muted)" }}>
+                                You will lose access to Pro features at the end of your current billing period. This action can be undone by resubscribing.
+                              </p>
+                              <div style={{ display: "flex", gap: "0.5rem" }}>
+                                <button type="button" onClick={() => void handleCancelSubscription()} disabled={isCanceling} className="confirm-btn-danger">
+                                  {isCanceling ? "Canceling..." : "Yes, cancel"}
+                                </button>
+                                <button type="button" onClick={() => { setShowCancelConfirm(false); setCancelMessage(null); }} disabled={isCanceling} className="confirm-btn-neutral">
+                                  Keep plan
+                                </button>
+                              </div>
+                            </div>
+                          )}
+                          {cancelMessage && (
+                            <p style={{ margin: 0, fontSize: "0.8rem", color: cancelMessage.startsWith("Failed") ? "var(--danger)" : "var(--success)" }}>
+                              {cancelMessage}
+                            </p>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </SettingsSection>
+                  <DeploymentProvidersSection />
                 </>
               )}
 
+              {/* ── Danger Zone section ── */}
               {activeSection === "danger" && (
                 <SettingsSection icon={<AlertTriangleIcon />} title="Danger Zone" index={0} danger>
                   <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
@@ -888,22 +731,8 @@ export default function SettingsPage() {
                         type="button"
                         onClick={() => void handleLogout()}
                         disabled={isLoggingOut}
-                        style={{
-                          display: "inline-flex",
-                          alignItems: "center",
-                          gap: "0.4rem",
-                          fontSize: "0.82rem",
-                          fontWeight: 600,
-                          color: "var(--danger)",
-                          padding: "0.4rem 0.85rem",
-                          borderRadius: "0.5rem",
-                          border: "1px solid rgba(248, 113, 113, 0.3)",
-                          background: "rgba(248, 113, 113, 0.06)",
-                          cursor: isLoggingOut ? "not-allowed" : "pointer",
-                          opacity: isLoggingOut ? 0.6 : 1,
-                          transition: "all 0.2s ease",
-                          flexShrink: 0,
-                        }}
+                        className="confirm-btn-danger"
+                        style={{ padding: "0.4rem 0.85rem", fontSize: "0.82rem", flexShrink: 0, cursor: isLoggingOut ? "not-allowed" : "pointer", opacity: isLoggingOut ? 0.6 : 1 }}
                       >
                         {isLoggingOut ? "Signing out..." : "Sign out"}
                       </button>
@@ -912,8 +741,7 @@ export default function SettingsPage() {
                       <p className="error-text" style={{ marginTop: "-0.5rem" }}>{logoutMessage}</p>
                     )}
 
-                    {/* Divider */}
-                    <div style={{ borderTop: "1px solid rgba(248, 113, 113, 0.15)" }} />
+                    <div style={{ borderTop: "1px solid rgba(248, 113, 113, 0.12)" }} />
 
                     {/* Delete account */}
                     {!showDeleteConfirm ? (
@@ -929,37 +757,14 @@ export default function SettingsPage() {
                         <button
                           type="button"
                           onClick={() => { setShowDeleteConfirm(true); setDeleteMessage(null); setDeleteConfirmInput(""); }}
-                          style={{
-                            display: "inline-flex",
-                            alignItems: "center",
-                            gap: "0.4rem",
-                            fontSize: "0.82rem",
-                            fontWeight: 600,
-                            color: "var(--danger)",
-                            padding: "0.4rem 0.85rem",
-                            borderRadius: "0.5rem",
-                            border: "1px solid rgba(248, 113, 113, 0.4)",
-                            background: "rgba(248, 113, 113, 0.08)",
-                            cursor: "pointer",
-                            transition: "all 0.2s ease",
-                            flexShrink: 0,
-                          }}
+                          className="confirm-btn-danger"
+                          style={{ padding: "0.4rem 0.85rem", fontSize: "0.82rem", flexShrink: 0 }}
                         >
                           Delete account
                         </button>
                       </div>
                     ) : (
-                      <div
-                        style={{
-                          background: "rgba(248, 113, 113, 0.06)",
-                          border: "1px solid rgba(248, 113, 113, 0.25)",
-                          borderRadius: "0.75rem",
-                          padding: "1.25rem",
-                          display: "flex",
-                          flexDirection: "column",
-                          gap: "1rem",
-                        }}
-                      >
+                      <div style={{ background: "rgba(248, 113, 113, 0.05)", border: "1px solid rgba(248, 113, 113, 0.2)", borderRadius: "0.75rem", padding: "1.25rem", display: "flex", flexDirection: "column", gap: "1rem" }}>
                         <div>
                           <p style={{ margin: "0 0 0.3rem", fontSize: "0.9rem", fontWeight: 700, color: "var(--danger)" }}>
                             This will permanently delete your account.
@@ -969,11 +774,12 @@ export default function SettingsPage() {
                           </p>
                         </div>
                         <div style={{ display: "flex", flexDirection: "column", gap: "0.4rem" }}>
-                          <label
-                            htmlFor="delete-confirm-input"
-                            style={{ fontSize: "0.78rem", color: "var(--text-secondary)" }}
-                          >
-                            Type your username <strong style={{ color: "var(--text-primary)", fontFamily: "ui-monospace, monospace" }}>{session?.user.login}</strong> to confirm:
+                          <label htmlFor="delete-confirm-input" style={{ fontSize: "0.78rem", color: "var(--text-secondary)" }}>
+                            Type your username{" "}
+                            <strong style={{ color: "var(--text-primary)", fontFamily: "ui-monospace, monospace" }}>
+                              {session?.user.login}
+                            </strong>
+                            {" "}to confirm:
                           </label>
                           <input
                             id="delete-confirm-input"
@@ -1008,9 +814,7 @@ export default function SettingsPage() {
                               padding: "0.45rem 1rem",
                               borderRadius: "0.5rem",
                               border: "1px solid rgba(248, 113, 113, 0.6)",
-                              background: isDeleting || deleteConfirmInput !== session?.user.login
-                                ? "rgba(248, 113, 113, 0.2)"
-                                : "rgba(248, 113, 113, 0.7)",
+                              background: isDeleting || deleteConfirmInput !== session?.user.login ? "rgba(248, 113, 113, 0.2)" : "rgba(248, 113, 113, 0.7)",
                               cursor: isDeleting || deleteConfirmInput !== session?.user.login ? "not-allowed" : "pointer",
                               opacity: isDeleting ? 0.6 : 1,
                               transition: "all 0.2s ease",
@@ -1022,17 +826,8 @@ export default function SettingsPage() {
                             type="button"
                             onClick={() => { setShowDeleteConfirm(false); setDeleteMessage(null); setDeleteConfirmInput(""); }}
                             disabled={isDeleting}
-                            style={{
-                              fontSize: "0.82rem",
-                              fontWeight: 600,
-                              color: "var(--text-secondary)",
-                              padding: "0.45rem 0.85rem",
-                              borderRadius: "0.5rem",
-                              border: "1px solid rgba(255,255,255,0.1)",
-                              background: "transparent",
-                              cursor: "pointer",
-                              transition: "all 0.2s ease",
-                            }}
+                            className="confirm-btn-neutral"
+                            style={{ padding: "0.45rem 0.85rem", fontSize: "0.82rem" }}
                           >
                             Cancel
                           </button>
@@ -1046,7 +841,9 @@ export default function SettingsPage() {
                   </div>
                 </SettingsSection>
               )}
-          </motion.div>
+
+            </motion.div>
+          </AnimatePresence>
         </div>
       </div>
     </main>

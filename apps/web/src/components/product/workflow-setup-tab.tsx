@@ -727,9 +727,18 @@ export function WorkflowSetupTab({
                     onChange={(event) => form.setNodeVersion(event.target.value)}
                     className="premium-input"
                   >
-                    <option value="20">Node 20 LTS (Iron)</option>
-                    <option value="22">Node 22 LTS (Jod)</option>
-                    <option value="24">Node 24 (Latest)</option>
+                    {projectCatalog.nodeVersions.length > 0
+                      ? projectCatalog.nodeVersions.map((v) => (
+                          <option key={v.value} value={v.value}>{v.label}</option>
+                        ))
+                      : (
+                        <>
+                          <option value="20">Node 20 LTS (Iron)</option>
+                          <option value="22">Node 22 LTS (Jod)</option>
+                          <option value="24">Node 24 LTS (Noble)</option>
+                        </>
+                      )
+                    }
                   </select>
                 </div>
                 <div>
