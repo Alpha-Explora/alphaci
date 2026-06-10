@@ -99,6 +99,10 @@ const template = {
 };
 
 const projectOptions = {
+  nodeVersions: [
+    { value: "20", label: "Node.js 20 LTS" },
+    { value: "24", label: "Node.js 24 Current" },
+  ],
   repoShapes: [
     {
       id: "single-app",
@@ -351,13 +355,15 @@ describe("WorkflowBuilder project setup", () => {
     jest.clearAllMocks();
   });
 
-  async function renderBuilder(accessText = "GitHub App: connected") {
+  async function renderBuilder() {
     await act(async () => {
       root.render(<WorkflowBuilder login="tone" plan="pro" />);
     });
 
     await waitForCondition(() => container.textContent?.includes("Next.js App") ?? false);
-    await waitForCondition(() => container.textContent?.includes(accessText) ?? false);
+    await waitForCondition(
+      () => container.querySelector<HTMLButtonElement>("[data-testid='setup-project-button']") !== null,
+    );
   }
 
   it("creates a new project through the backend project endpoint", async () => {
