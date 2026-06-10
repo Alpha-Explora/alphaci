@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Doto } from "next/font/google";
+import { Doto, Plus_Jakarta_Sans, Outfit } from "next/font/google";
 import "./globals.css";
 
 const displayFont = Doto({
@@ -10,6 +10,18 @@ const displayFont = Doto({
 const bodyFont = Doto({
   variable: "--font-body",
   subsets: ["latin"],
+});
+
+const dashBodyFont = Plus_Jakarta_Sans({
+  variable: "--font-dash-body",
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+});
+
+const dashDisplayFont = Outfit({
+  variable: "--font-dash-display",
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700", "800"],
 });
 
 export const metadata: Metadata = {
@@ -30,7 +42,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${displayFont.variable} ${bodyFont.variable} antialiased`} suppressHydrationWarning>
+      <body className={`${displayFont.variable} ${bodyFont.variable} ${dashBodyFont.variable} ${dashDisplayFont.variable} antialiased`} suppressHydrationWarning>
         {children}
       </body>
     </html>
