@@ -102,6 +102,27 @@ function formatProvider(provider: string) {
   return provider === "vercel" ? "Vercel" : provider === "render" ? "Render" : provider;
 }
 
+function deploymentRouteLabel(target: DeploymentProvisioningResult["targets"][number]) {
+  switch (target.deploymentStrategy) {
+    case "vercel_git_connected":
+      return "Connected through Vercel Git";
+    case "vercel_ci_pushed":
+      return "Deploys through GitHub Actions";
+    case "provider_native":
+      return "Provider native";
+    default:
+      return target.ownershipMode === "byo" ? "Customer managed" : "Managed by FlowCI";
+  }
+}
+
+function githubSecretNames(metadata: Record<string, unknown> | undefined) {
+  const githubSecrets = metadata?.githubSecrets;
+  if (!githubSecrets || typeof githubSecrets !== "object") return [];
+  return Object.values(githubSecrets as Record<string, unknown>).filter(
+    (value): value is string => typeof value === "string" && value.length > 0,
+  );
+}
+
 export function DeploymentProvisioningSummary({
   result,
 }: Readonly<{ result?: DeploymentProvisioningResult }>) {
@@ -137,9 +158,19 @@ export function DeploymentProvisioningSummary({
               <span>{target.providerProjectName ?? target.providerProjectId ?? target.slot}</span>
             </div>
             <p className="helper-text" style={{ margin: 0 }}>
-              {target.slot} - {target.status}
+              {target.slot} - {target.status} - {deploymentRouteLabel(target)}
               {target.errorSummary ? ` - ${target.errorSummary}` : ""}
             </p>
+            {githubSecretNames(target.providerMetadata).length > 0 ? (
+              <div className="deployment-provisioning-summary__env">
+                <span>GitHub secrets</span>
+                <div>
+                  {githubSecretNames(target.providerMetadata).map((secretName) => (
+                    <code key={secretName}>{secretName}</code>
+                  ))}
+                </div>
+              </div>
+            ) : null}
             {target.env.map((envSet) => (
               <div className="deployment-provisioning-summary__env" key={`${target.slot}-${envSet.environment}`}>
                 <span>{envSet.environment}</span>

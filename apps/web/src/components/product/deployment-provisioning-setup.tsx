@@ -77,6 +77,18 @@ function defaultProjectPlaceholder(repoShape: string, target: DeploymentProvisio
   return "project-name-test";
 }
 
+function ownershipDescription(target: DeploymentProvisioningTargetRequest) {
+  if (target.provider !== "vercel") {
+    return target.ownershipMode === "byo"
+      ? "FlowCI uses your connected provider account for this target."
+      : "FlowCI creates and manages this provider target for you.";
+  }
+
+  return target.ownershipMode === "byo"
+    ? "FlowCI creates a Vercel project in your account and deploys through GitHub Actions. You do not need to install Vercel's GitHub integration."
+    : "FlowCI creates and connects the Vercel project from its managed workspace.";
+}
+
 export function DeploymentProvisioningSetup({
   enabled,
   repoShape,
@@ -165,6 +177,39 @@ export function DeploymentProvisioningSetup({
                     </select>
                   </label>
                   <label>
+                    <span>Ownership</span>
+                    <select
+                      aria-label={targetIndex === 0 ? "Provider ownership" : `Provider ownership ${targetIndex + 1}`}
+                      value={target.ownershipMode}
+                      onChange={(event) =>
+                        onChange(
+                          updateTargetAt(value, targetIndex, {
+                            ownershipMode: event.target.value as DeploymentProvisioningTargetRequest["ownershipMode"],
+                          }),
+                        )
+                      }
+                    >
+                      <option value="flowci_managed">Managed by FlowCI</option>
+                      <option value="byo">Use my Vercel account</option>
+                    </select>
+                    <span className="helper-text" style={{ marginTop: "0.3rem" }}>
+                      {ownershipDescription(target)}
+                    </span>
+                  </label>
+                  {target.ownershipMode === "byo" ? (
+                    <label>
+                      <span>Provider connection ID</span>
+                      <input
+                        aria-label={targetIndex === 0 ? "Provider connection ID" : `Provider connection ID ${targetIndex + 1}`}
+                        value={target.providerConnectionId ?? ""}
+                        onChange={(event) =>
+                          onChange(updateTargetAt(value, targetIndex, { providerConnectionId: event.target.value }))
+                        }
+                        placeholder={target.provider === "vercel" ? "Vercel connection UUID" : "Provider connection UUID"}
+                      />
+                    </label>
+                  ) : null}
+                  <label>
                     <span>Project name</span>
                     <input
                       aria-label={targetIndex === 0 ? "Provider project name" : `Provider project name ${targetIndex + 1}`}
@@ -250,6 +295,12 @@ export function DeploymentProvisioningSetup({
                     Add variable
                   </button>
                 </div>
+
+                {target.provider === "vercel" && target.ownershipMode === "byo" ? (
+                  <p className="helper-text" style={{ margin: "0 0 0.6rem" }}>
+                    FlowCI will install per-slot GitHub Actions secrets for Vercel deployment after the Vercel project is created.
+                  </p>
+                ) : null}
 
                 {vars.map((variable, variableIndex) => (
                   <div className="env-var-row" key={`${target.slot}-${targetIndex}-${variableIndex}`}>

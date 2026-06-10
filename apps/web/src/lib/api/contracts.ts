@@ -4,6 +4,7 @@ export type EnvProvider = "render" | "vercel";
 export type EnvEnvironment = "test" | "uat" | "production";
 export type EnvOwnershipMode = "byo" | "flowci_managed";
 export type EnvTargetSlot = "backend" | "frontend" | "standalone";
+export type DeploymentStrategy = "provider_native" | "vercel_git_connected" | "vercel_ci_pushed";
 
 export interface SessionUser {
   id: string;
@@ -47,6 +48,7 @@ export interface ProviderConnection {
   label: string;
   tokenLastFour: string;
   status: "active" | "revoked" | "failed";
+  metadata?: Record<string, unknown>;
   createdAt: string;
   updatedAt: string;
   lastUsedAt: string | null;
@@ -56,6 +58,8 @@ export interface CreateProviderConnectionRequest {
   provider: EnvProvider;
   label: string;
   token: string;
+  vercelTeamId?: string;
+  vercelTeamSlug?: string;
 }
 
 export interface DeploymentTarget {
@@ -73,6 +77,8 @@ export interface DeploymentTarget {
   buildCommand: string | null;
   startCommand: string | null;
   environmentMap: Record<string, unknown>;
+  deploymentStrategy?: DeploymentStrategy;
+  providerMetadata?: Record<string, unknown>;
   status: "active" | "missing" | "failed";
 }
 
@@ -145,10 +151,13 @@ export interface DeploymentProvisioningResult {
   targets: Array<{
     slot: EnvTargetSlot;
     provider: EnvProvider;
+    ownershipMode?: EnvOwnershipMode;
+    deploymentStrategy?: DeploymentStrategy | null;
     status: "created" | "registered" | "failed";
     deploymentTargetId: string | null;
     providerProjectId: string | null;
     providerProjectName: string | null;
+    providerMetadata?: Record<string, unknown>;
     errorSummary: string | null;
     env: Array<{
       environment: EnvEnvironment;
