@@ -9,6 +9,7 @@ import type {
   SetupExistingRepoPrResponse,
   WorkflowFileMetadata,
 } from "@/lib/api/contracts";
+import { cleanUserMessage } from "./workflow-builder-utils";
 
 interface SetupResultPanelProps {
   existingRepoResult?: SetupExistingRepoPrResponse | null;
@@ -159,7 +160,7 @@ export function DeploymentProvisioningSummary({
             </div>
             <p className="helper-text" style={{ margin: 0 }}>
               {target.slot} - {target.status} - {deploymentRouteLabel(target)}
-              {target.errorSummary ? ` - ${target.errorSummary}` : ""}
+              {target.errorSummary ? ` - ${cleanUserMessage(target.errorSummary)}` : ""}
             </p>
             {githubSecretNames(target.providerMetadata).length > 0 ? (
               <div className="deployment-provisioning-summary__env">
@@ -181,7 +182,7 @@ export function DeploymentProvisioningSummary({
                   {envSet.failed.map((variable) => (
                     <code className="failed" key={`${variable.key}-failed`}>
                       {variable.key}
-                      {variable.errorSummary ? ` failed: ${variable.errorSummary}` : " failed"}
+                      {variable.errorSummary ? ` failed: ${cleanUserMessage(variable.errorSummary)}` : " failed"}
                     </code>
                   ))}
                 </div>

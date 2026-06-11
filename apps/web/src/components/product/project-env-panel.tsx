@@ -10,6 +10,7 @@ import type {
   EnvTargetSlot,
   ProvisionedProject,
 } from "@/lib/api/contracts";
+import { cleanUserMessage, formatApiError } from "./workflow-builder-utils";
 
 const ENV_KEY_PATTERN = /^[A-Z_][A-Z0-9_]{1,127}$/;
 
@@ -71,21 +72,29 @@ export function ProjectEnvPanel({ project }: Readonly<{ project: ProvisionedProj
             providerProjectName,
           }),
     } as const;
-    const target = await addTarget(targetPayload);
-    setTargetId(target.id);
-    setMessage(targetAction === "create" ? "Deployment target created." : "Deployment target registered.");
+    try {
+      const target = await addTarget(targetPayload);
+      setTargetId(target.id);
+      setMessage(targetAction === "create" ? "Deployment target created." : "Deployment target registered.");
+    } catch (error) {
+      setMessage(formatApiError(error, "Deployment target setup failed"));
+    }
   }
 
   async function handleProvision(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setMessage(null);
-    await provision({
-      deploymentTargetId: activeTargetId,
-      environment,
-      vars: rows,
-    });
-    setRows([{ key: "", value: "" }]);
-    setMessage("Environment variables provisioned.");
+    try {
+      await provision({
+        deploymentTargetId: activeTargetId,
+        environment,
+        vars: rows,
+      });
+      setRows([{ key: "", value: "" }]);
+      setMessage("Environment variables provisioned.");
+    } catch (error) {
+      setMessage(formatApiError(error, "Environment variable provisioning failed"));
+    }
   }
 
   return (
@@ -248,7 +257,7 @@ export function ProjectEnvPanel({ project }: Readonly<{ project: ProvisionedProj
                 <span>{item.key}</span>
                 <span>
                   {item.environment} - {item.status}
-                  {item.errorSummary ? ` - ${item.errorSummary}` : ""}
+                  {item.errorSummary ? ` - ${cleanUserMessage(item.errorSummary)}` : ""}
                 </span>
               </div>
             ))}
