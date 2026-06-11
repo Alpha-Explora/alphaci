@@ -222,6 +222,8 @@ export function AppNav({ guest, session, onLogout, isLoggingOut }: Readonly<AppN
   const pathname = usePathname();
   const navRef = useRef<HTMLElement>(null);
   const [scrolled, setScrolled] = useState(false);
+  const [hidden, setHidden] = useState(false);
+  const lastScrollY = useRef(0);
   const prefersReducedMotion = useReducedMotion();
   const reduced = prefersReducedMotion ?? false;
 
@@ -231,7 +233,19 @@ export function AppNav({ guest, session, onLogout, isLoggingOut }: Readonly<AppN
   const avatarInitial = (session?.user.name ?? session?.user.login ?? "U").slice(0, 1).toUpperCase();
 
   useEffect(() => {
-    function onScroll() { setScrolled(window.scrollY > 8); }
+    function onScroll() {
+      const y = window.scrollY;
+      setScrolled(y > 8);
+
+      // Hide while scrolling down past the nav, reveal on any scroll up.
+      const delta = y - lastScrollY.current;
+      if (y < 64 || delta < -4) {
+        setHidden(false);
+      } else if (delta > 4) {
+        setHidden(true);
+      }
+      lastScrollY.current = y;
+    }
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
@@ -255,7 +269,7 @@ export function AppNav({ guest, session, onLogout, isLoggingOut }: Readonly<AppN
   return (
     <header
       ref={navRef}
-      className={`app-nav-dock${scrolled ? " app-nav-dock--scrolled" : ""}`}
+      className={`app-nav-dock${scrolled ? " app-nav-dock--scrolled" : ""}${hidden ? " app-nav-dock--hidden" : ""}`}
       role="banner"
       onMouseMove={handleNavMouseMove}
     >
