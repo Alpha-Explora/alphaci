@@ -41,7 +41,7 @@ interface WorkflowBuilderProps {
   guest?: boolean;
 }
 
-export function WorkflowBuilder({ login, plan, guest = false }: Readonly<WorkflowBuilderProps>) {
+export function WorkflowBuilder({ guest = false }: Readonly<WorkflowBuilderProps>) {
   const prefersReducedMotion = useReducedMotion();
   const reducedMotion = prefersReducedMotion ?? false;
 
