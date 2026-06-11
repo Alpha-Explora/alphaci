@@ -89,7 +89,7 @@ function ownershipDescription(target: DeploymentProvisioningTargetRequest) {
 
   return target.ownershipMode === "byo"
     ? "FlowCI creates a Vercel project in your account and deploys through GitHub Actions. You do not need to install Vercel's GitHub integration."
-    : "FlowCI creates and connects the Vercel project from its managed workspace.";
+    : "FlowCI creates the Vercel project and deploys it through GitHub Actions from the generated workflow.";
 }
 
 export function DeploymentProvisioningSetup({
@@ -195,7 +195,7 @@ export function DeploymentProvisioningSetup({
                 </div>
 
                 <div className="env-target-grid">
-                  <label>
+                  <label className="env-target-grid__field env-target-grid__field--compact">
                     <span>Slot</span>
                     <select
                       aria-label={targetIndex === 0 ? "Target slot" : `Target slot ${targetIndex + 1}`}
@@ -214,7 +214,7 @@ export function DeploymentProvisioningSetup({
                       <option value="frontend">Frontend</option>
                     </select>
                   </label>
-                  <label>
+                  <label className="env-target-grid__field env-target-grid__field--compact">
                     <span>Provider</span>
                     <select
                       aria-label={targetIndex === 0 ? "Provider" : `Provider ${targetIndex + 1}`}
@@ -232,7 +232,7 @@ export function DeploymentProvisioningSetup({
                       <option value="vercel">Vercel</option>
                     </select>
                   </label>
-                  <label>
+                  <label className="env-target-grid__field env-target-grid__field--wide">
                     <span>Ownership</span>
                     <select
                       aria-label={targetIndex === 0 ? "Provider ownership" : `Provider ownership ${targetIndex + 1}`}
@@ -254,12 +254,12 @@ export function DeploymentProvisioningSetup({
                       <option value="flowci_managed">Managed by FlowCI</option>
                       <option value="byo">Use my Vercel account</option>
                     </select>
-                    <span className="helper-text" style={{ marginTop: "0.3rem" }}>
+                    <span className="helper-text env-target-grid__note">
                       {ownershipDescription(target)}
                     </span>
                   </label>
                   {target.ownershipMode === "byo" ? (
-                    <label>
+                    <label className="env-target-grid__field env-target-grid__field--wide">
                       <span>Provider connection</span>
                       <select
                         aria-label={targetIndex === 0 ? "Provider connection" : `Provider connection ${targetIndex + 1}`}
@@ -281,7 +281,7 @@ export function DeploymentProvisioningSetup({
                       </select>
                     </label>
                   ) : null}
-                  <label>
+                  <label className="env-target-grid__field env-target-grid__field--wide">
                     <span>Project name</span>
                     <input
                       aria-label={targetIndex === 0 ? "Provider project name" : `Provider project name ${targetIndex + 1}`}
@@ -290,7 +290,7 @@ export function DeploymentProvisioningSetup({
                       placeholder={defaultProjectPlaceholder(repoShape, target)}
                     />
                   </label>
-                  <label>
+                  <label className="env-target-grid__field env-target-grid__field--compact">
                     <span>Branch</span>
                     <input
                       aria-label={targetIndex === 0 ? "Provider branch" : `Provider branch ${targetIndex + 1}`}
@@ -298,7 +298,7 @@ export function DeploymentProvisioningSetup({
                       onChange={(event) => onChange(updateTargetAt(value, targetIndex, { branchName: event.target.value }))}
                     />
                   </label>
-                  <label>
+                  <label className="env-target-grid__field env-target-grid__field--compact">
                     <span>Root directory</span>
                     <input
                       aria-label={targetIndex === 0 ? "Provider root directory" : `Provider root directory ${targetIndex + 1}`}
@@ -306,7 +306,7 @@ export function DeploymentProvisioningSetup({
                       onChange={(event) => onChange(updateTargetAt(value, targetIndex, { rootDirectory: event.target.value }))}
                     />
                   </label>
-                  <label>
+                  <label className="env-target-grid__field env-target-grid__field--wide">
                     <span>Build command</span>
                     <input
                       aria-label={targetIndex === 0 ? "Provider build command" : `Provider build command ${targetIndex + 1}`}
@@ -315,7 +315,7 @@ export function DeploymentProvisioningSetup({
                     />
                   </label>
                   {target.provider === "render" ? (
-                    <label>
+                    <label className="env-target-grid__field env-target-grid__field--wide">
                       <span>Start command</span>
                       <input
                         aria-label={targetIndex === 0 ? "Provider start command" : `Provider start command ${targetIndex + 1}`}
@@ -324,7 +324,7 @@ export function DeploymentProvisioningSetup({
                       />
                     </label>
                   ) : null}
-                  <label>
+                  <label className="env-target-grid__field env-target-grid__field--compact">
                     <span>Environment</span>
                     <select
                       aria-label={targetIndex === 0 ? "Provisioning environment" : `Provisioning environment ${targetIndex + 1}`}
@@ -368,7 +368,7 @@ export function DeploymentProvisioningSetup({
                   </button>
                 </div>
 
-                {target.provider === "vercel" && target.ownershipMode === "byo" ? (
+                {target.provider === "vercel" ? (
                   <p className="helper-text" style={{ margin: "0 0 0.6rem" }}>
                     FlowCI will install per-slot GitHub Actions secrets for Vercel deployment after the Vercel project is created.
                   </p>
@@ -376,33 +376,58 @@ export function DeploymentProvisioningSetup({
 
                 {vars.map((variable, variableIndex) => (
                   <div className="env-var-row" key={`${target.slot}-${targetIndex}-${variableIndex}`}>
-                    <input
+                    <label>
+                      <span>Key</span>
+                      <input
+                        aria-label={
+                          targetIndex === 0
+                            ? `Variable key ${variableIndex + 1}`
+                            : `Variable key ${targetIndex + 1}-${variableIndex + 1}`
+                        }
+                        value={variable.key}
+                        onChange={(event) => {
+                          const nextEnvSet = updateEnvVar(envSet, variableIndex, { key: event.target.value.toUpperCase() });
+                          onChange(updateTargetAt(value, targetIndex, updateEnvSet(target, nextEnvSet)));
+                        }}
+                        placeholder="DATABASE_URL"
+                      />
+                    </label>
+                    <label>
+                      <span>Value</span>
+                      <input
+                        aria-label={
+                          targetIndex === 0
+                            ? `Variable value ${variableIndex + 1}`
+                            : `Variable value ${targetIndex + 1}-${variableIndex + 1}`
+                        }
+                        type="password"
+                        value={variable.value}
+                        onChange={(event) => {
+                          const nextEnvSet = updateEnvVar(envSet, variableIndex, { value: event.target.value });
+                          onChange(updateTargetAt(value, targetIndex, updateEnvSet(target, nextEnvSet)));
+                        }}
+                        placeholder="value"
+                      />
+                    </label>
+                    <button
                       aria-label={
                         targetIndex === 0
-                          ? `Variable key ${variableIndex + 1}`
-                          : `Variable key ${targetIndex + 1}-${variableIndex + 1}`
+                          ? `Remove variable ${variableIndex + 1}`
+                          : `Remove variable ${targetIndex + 1}-${variableIndex + 1}`
                       }
-                      value={variable.key}
-                      onChange={(event) => {
-                        const nextEnvSet = updateEnvVar(envSet, variableIndex, { key: event.target.value.toUpperCase() });
-                        onChange(updateTargetAt(value, targetIndex, updateEnvSet(target, nextEnvSet)));
-                      }}
-                      placeholder="DATABASE_URL"
-                    />
-                    <input
-                      aria-label={
-                        targetIndex === 0
-                          ? `Variable value ${variableIndex + 1}`
-                          : `Variable value ${targetIndex + 1}-${variableIndex + 1}`
+                      className="env-var-row__remove"
+                      disabled={vars.length === 1}
+                      type="button"
+                      onClick={() =>
+                        onChange(
+                          updateTargetAt(value, targetIndex, {
+                            env: [{ ...envSet, vars: vars.filter((_, currentIndex) => currentIndex !== variableIndex) }],
+                          }),
+                        )
                       }
-                      type="password"
-                      value={variable.value}
-                      onChange={(event) => {
-                        const nextEnvSet = updateEnvVar(envSet, variableIndex, { value: event.target.value });
-                        onChange(updateTargetAt(value, targetIndex, updateEnvSet(target, nextEnvSet)));
-                      }}
-                      placeholder="value"
-                    />
+                    >
+                      x
+                    </button>
                   </div>
                 ))}
               </section>
