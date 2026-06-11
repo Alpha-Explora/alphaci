@@ -159,11 +159,40 @@ export function cleanUserMessage(value: unknown): string {
   const message = String(value);
   const knownMessage =
     parseDuplicateRepositoryMessage(message) ??
+    parseRenderProvisioningMessage(message) ??
     parseProviderIntegrationMessage(message) ??
     parseGenericServerMessage(message);
   if (knownMessage) return knownMessage;
 
   return stripNoisyApiPayload(message);
+}
+
+function parseRenderProvisioningMessage(message: string): string | null {
+  if (
+    /Render billing is not configured|selected instance type requires payment/i.test(
+      message,
+    )
+  ) {
+    return "Render billing is not configured for this workspace or the selected plan requires payment.";
+  }
+
+  if (/A Render service with this name already exists/i.test(message)) {
+    return "A Render service with this name already exists. Choose a different service name or attach the existing service.";
+  }
+
+  if (/Render API key is invalid|missing required workspace access/i.test(message)) {
+    return "The Render API key cannot access the selected workspace.";
+  }
+
+  if (/Render provider metadata is missing|Render deployment secrets/i.test(message)) {
+    return "Render service was created, but FlowCI could not install the deployment secrets.";
+  }
+
+  if (/image pull|registry|GHCR/i.test(message)) {
+    return "Render could not pull the deployment image. Check registry access and retry.";
+  }
+
+  return null;
 }
 
 function parseDuplicateRepositoryMessage(message: string): string | null {
