@@ -40,7 +40,7 @@ describe("hasActiveSubscription", () => {
     expect(hasActiveSubscription(buildSession({ authenticated: false }))).toBe(false);
   });
 
-  it("returns true for authenticated users while the subscription gate is bypassed", () => {
+  it("returns false for authenticated users on the free plan", () => {
     expect(
       hasActiveSubscription(
         buildSession({
@@ -52,10 +52,10 @@ describe("hasActiveSubscription", () => {
           },
         }),
       ),
-    ).toBe(true);
+    ).toBe(false);
   });
 
-  it("returns true for inactive paid plan while the subscription gate is bypassed", () => {
+  it("returns false for inactive paid plans", () => {
     expect(
       hasActiveSubscription(
         buildSession({
@@ -67,7 +67,7 @@ describe("hasActiveSubscription", () => {
           },
         }),
       ),
-    ).toBe(true);
+    ).toBe(false);
   });
 
   it("returns true for active paid plans", () => {

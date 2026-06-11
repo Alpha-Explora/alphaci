@@ -1,0 +1,361 @@
+import { act } from "react";
+import { createRoot, type Root } from "react-dom/client";
+
+import { useDeploymentProvisioningForm } from "../../src/hooks/use-deployment-provisioning-form";
+import { useProjectEnvProvisioning } from "../../src/hooks/use-project-env-provisioning";
+import { useProviderConnections } from "../../src/hooks/use-provider-connections";
+import {
+  createDeploymentTarget,
+  createProviderConnection,
+  listDeploymentTargets,
+  listProjectEnvMetadata,
+  listProviderConnections,
+  provisionProjectEnvVars,
+  revokeProviderConnection,
+} from "../../src/lib/api/client";
+import type {
+  DeploymentTarget,
+  EnvVarMetadata,
+  ProviderConnection,
+} from "../../src/lib/api/contracts";
+
+jest.mock("../../src/lib/api/client", () => ({
+  createDeploymentTarget: jest.fn(),
+  createProviderConnection: jest.fn(),
+  listDeploymentTargets: jest.fn(),
+  listProjectEnvMetadata: jest.fn(),
+  listProviderConnections: jest.fn(),
+  provisionProjectEnvVars: jest.fn(),
+  revokeProviderConnection: jest.fn(),
+}));
+
+const mockedCreateDeploymentTarget = createDeploymentTarget as jest.MockedFunction<typeof createDeploymentTarget>;
+const mockedCreateProviderConnection = createProviderConnection as jest.MockedFunction<typeof createProviderConnection>;
+const mockedListDeploymentTargets = listDeploymentTargets as jest.MockedFunction<typeof listDeploymentTargets>;
+const mockedListProjectEnvMetadata = listProjectEnvMetadata as jest.MockedFunction<typeof listProjectEnvMetadata>;
+const mockedListProviderConnections = listProviderConnections as jest.MockedFunction<typeof listProviderConnections>;
+const mockedProvisionProjectEnvVars = provisionProjectEnvVars as jest.MockedFunction<typeof provisionProjectEnvVars>;
+const mockedRevokeProviderConnection = revokeProviderConnection as jest.MockedFunction<typeof revokeProviderConnection>;
+
+const activeConnection: ProviderConnection = {
+  id: "connection-1",
+  provider: "vercel",
+  label: "Vercel Team",
+  tokenLastFour: "1234",
+  status: "active",
+  createdAt: "2026-06-10T00:00:00.000Z",
+  updatedAt: "2026-06-10T00:00:00.000Z",
+  lastUsedAt: null,
+  metadata: {
+    vercelOrgId: "team_1",
+    vercelTeamId: "team_1",
+    vercelTeamSlug: "flowci",
+  },
+};
+
+const revokedConnection: ProviderConnection = {
+  ...activeConnection,
+  id: "connection-2",
+  label: "Old Vercel",
+  status: "revoked",
+};
+
+const deploymentTarget: DeploymentTarget = {
+  id: "target-1",
+  projectId: "project-1",
+  slot: "frontend",
+  ownershipMode: "byo",
+  provider: "vercel",
+  providerConnectionId: "connection-1",
+  providerTargetId: "prj_1",
+  projectName: "web",
+  serviceName: "web",
+  status: "active",
+  providerMetadata: {
+    vercelOrgId: "team_1",
+    vercelProjectId: "prj_1",
+  },
+  deploymentStrategy: "vercel_ci_pushed",
+  lastProvisionedAt: null,
+  lastProvisionedBy: null,
+  createdAt: "2026-06-10T00:00:00.000Z",
+  updatedAt: "2026-06-10T00:00:00.000Z",
+};
+
+const envMetadata: EnvVarMetadata = {
+  id: "env-1",
+  projectId: "project-1",
+  targetId: "target-1",
+  provider: "vercel",
+  environment: "test",
+  key: "NEXT_PUBLIC_API_URL",
+  valueFingerprint: "fp",
+  lastProvisionedAt: "2026-06-10T00:00:00.000Z",
+  lastProvisionedBy: "user-1",
+};
+
+async function flushEffects() {
+  await act(async () => {
+    await Promise.resolve();
+  });
+}
+
+describe("env provisioning hooks", () => {
+  let root: Root | null = null;
+
+  afterEach(() => {
+    if (root) {
+      act(() => root?.unmount());
+    }
+    root = null;
+    document.body.innerHTML = "";
+    jest.clearAllMocks();
+  });
+
+  function renderProjectHook(enabled = true) {
+    const snapshots: ReturnType<typeof useProjectEnvProvisioning>[] = [];
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    root = createRoot(container);
+
+    function Probe() {
+      snapshots.push(useProjectEnvProvisioning("project-1", enabled));
+      return null;
+    }
+
+    act(() => {
+      root?.render(<Probe />);
+    });
+
+    return snapshots;
+  }
+
+  function renderConnectionsHook(enabled = true) {
+    const snapshots: ReturnType<typeof useProviderConnections>[] = [];
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    root = createRoot(container);
+
+    function Probe() {
+      snapshots.push(useProviderConnections(enabled));
+      return null;
+    }
+
+    act(() => {
+      root?.render(<Probe />);
+    });
+
+    return snapshots;
+  }
+
+  function renderDeploymentProvisioningForm() {
+    const snapshots: ReturnType<typeof useDeploymentProvisioningForm>[] = [];
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    root = createRoot(container);
+
+    function Probe() {
+      snapshots.push(useDeploymentProvisioningForm());
+      return null;
+    }
+
+    act(() => {
+      root?.render(<Probe />);
+    });
+
+    return snapshots;
+  }
+
+  it("loads project targets, env metadata, and active provider connections", async () => {
+    mockedListDeploymentTargets.mockResolvedValue([deploymentTarget]);
+    mockedListProjectEnvMetadata.mockResolvedValue([envMetadata]);
+    mockedListProviderConnections.mockResolvedValue([activeConnection, revokedConnection]);
+
+    const snapshots = renderProjectHook();
+    await flushEffects();
+
+    const latest = snapshots.at(-1);
+    expect(mockedListDeploymentTargets).toHaveBeenCalledWith("project-1");
+    expect(mockedListProjectEnvMetadata).toHaveBeenCalledWith("project-1");
+    expect(latest?.targets).toEqual([deploymentTarget]);
+    expect(latest?.metadata).toEqual([envMetadata]);
+    expect(latest?.providerConnections).toEqual([activeConnection]);
+    expect(latest?.loading).toBe(false);
+  });
+
+  it("skips project env loading when disabled", async () => {
+    const snapshots = renderProjectHook(false);
+    await flushEffects();
+
+    expect(mockedListDeploymentTargets).not.toHaveBeenCalled();
+    expect(snapshots.at(-1)?.targets).toEqual([]);
+  });
+
+  it("adds deployment targets and reloads after provisioning env vars", async () => {
+    mockedListDeploymentTargets.mockResolvedValue([deploymentTarget]);
+    mockedListProjectEnvMetadata.mockResolvedValue([]);
+    mockedListProviderConnections.mockResolvedValue([activeConnection]);
+    mockedCreateDeploymentTarget.mockResolvedValue({ ...deploymentTarget, id: "target-2" });
+    mockedProvisionProjectEnvVars.mockResolvedValue({
+      metadata: [envMetadata],
+      targetId: "target-2",
+    });
+
+    const snapshots = renderProjectHook();
+    await flushEffects();
+
+    await act(async () => {
+      await snapshots.at(-1)?.addTarget({
+        slot: "frontend",
+        ownershipMode: "byo",
+        provider: "vercel",
+        providerConnectionId: "connection-1",
+        projectName: "web",
+      });
+    });
+
+    expect(snapshots.at(-1)?.targets[0]?.id).toBe("target-2");
+
+    await act(async () => {
+      await snapshots.at(-1)?.provision({
+        targetId: "target-2",
+        environment: "test",
+        variables: [{ key: "NEXT_PUBLIC_API_URL", value: "https://api.example.com" }],
+      });
+    });
+
+    expect(mockedProvisionProjectEnvVars).toHaveBeenCalledWith("project-1", {
+      targetId: "target-2",
+      environment: "test",
+      variables: [{ key: "NEXT_PUBLIC_API_URL", value: "https://api.example.com" }],
+    });
+    expect(mockedListDeploymentTargets).toHaveBeenCalledTimes(2);
+    expect(snapshots.at(-1)?.saving).toBe(false);
+  });
+
+  it("loads, saves, and revokes provider connections", async () => {
+    mockedListProviderConnections.mockResolvedValue([activeConnection]);
+    mockedCreateProviderConnection.mockResolvedValue({ ...activeConnection, id: "connection-3" });
+    mockedRevokeProviderConnection.mockResolvedValue(undefined);
+
+    const snapshots = renderConnectionsHook();
+    await flushEffects();
+
+    expect(snapshots.at(-1)?.connections).toEqual([activeConnection]);
+
+    await act(async () => {
+      await snapshots.at(-1)?.saveConnection({
+        provider: "vercel",
+        label: "Vercel Team",
+        token: "token",
+        vercelTeamId: "team_1",
+      });
+    });
+
+    expect(snapshots.at(-1)?.connections[0]?.id).toBe("connection-3");
+
+    await act(async () => {
+      await snapshots.at(-1)?.revokeConnection("connection-3");
+    });
+
+    expect(mockedRevokeProviderConnection).toHaveBeenCalledWith("connection-3");
+    expect(snapshots.at(-1)?.connections[0]?.status).toBe("revoked");
+  });
+
+  it("skips provider connection loading when disabled", async () => {
+    const snapshots = renderConnectionsHook(false);
+    await flushEffects();
+
+    expect(mockedListProviderConnections).not.toHaveBeenCalled();
+    expect(snapshots.at(-1)?.connections).toEqual([]);
+  });
+
+  it("builds deployment provisioning payloads only when enabled", async () => {
+    const snapshots = renderDeploymentProvisioningForm();
+
+    expect(snapshots.at(-1)?.enabled).toBe(false);
+    expect(snapshots.at(-1)?.payload).toBeUndefined();
+
+    act(() => {
+      snapshots.at(-1)?.setDefaultTarget("frontend", "web-app");
+    });
+
+    expect(snapshots.at(-1)?.payload).toMatchObject({
+      enabled: true,
+      targets: [
+        {
+          slot: "frontend",
+          provider: "vercel",
+          ownershipMode: "flowci_managed",
+          projectName: "web-app",
+          branchName: "test",
+          rootDirectory: ".",
+          buildCommand: "npm run build",
+          startCommand: undefined,
+        },
+      ],
+    });
+  });
+
+  it("normalizes deployment provisioning targets and filters blank env vars", async () => {
+    const snapshots = renderDeploymentProvisioningForm();
+
+    act(() => {
+      snapshots.at(-1)?.setDefaultTargets([
+        { slot: "backend", projectName: "api" },
+        { slot: "frontend", projectName: "web" },
+      ]);
+    });
+
+    act(() => {
+      snapshots.at(-1)?.setRequest({
+        enabled: true,
+        targets: [
+          {
+            slot: "backend",
+            provider: "render",
+            ownershipMode: "flowci_managed",
+            projectName: "   ",
+            branchName: "   ",
+            rootDirectory: "   ",
+            buildCommand: "   ",
+            startCommand: "   ",
+            env: [
+              {
+                environment: "test",
+                vars: [
+                  { key: "API_URL", value: "https://api.example.com" },
+                  { key: "   ", value: "ignored" },
+                  { key: "EMPTY_VALUE", value: "" },
+                ],
+              },
+            ],
+          },
+        ],
+      });
+      snapshots.at(-1)?.setEnabled(true);
+    });
+
+    expect(snapshots.at(-1)?.payload).toEqual({
+      enabled: true,
+      targets: [
+        {
+          slot: "backend",
+          provider: "render",
+          ownershipMode: "flowci_managed",
+          projectName: undefined,
+          branchName: "test",
+          rootDirectory: undefined,
+          buildCommand: undefined,
+          startCommand: undefined,
+          env: [
+            {
+              environment: "test",
+              vars: [{ key: "API_URL", value: "https://api.example.com" }],
+            },
+          ],
+        },
+      ],
+    });
+  });
+});

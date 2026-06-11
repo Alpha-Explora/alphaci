@@ -587,6 +587,80 @@ describe("workflow hooks", () => {
     });
   });
 
+  it("builds multi-repo create project payloads", async () => {
+    let current = null as ReturnType<typeof useCreateProjectForm> | null;
+
+    function Probe() {
+      const value = useCreateProjectForm();
+      useEffect(() => {
+        current = value;
+      }, [value]);
+      return null;
+    }
+
+    await act(async () => {
+      hookRoot.root.render(<Probe />);
+    });
+
+    act(() => {
+      current?.setRepoName("Example Platform");
+      current?.setBackendProjectTypeId("nestjs");
+      current?.setBackendWorkflowRecipeId("backend-api-ci");
+      current?.setFrontendProjectTypeId("nextjs");
+      current?.setFrontendWorkflowRecipeId("frontend-standard-ci");
+      current?.setBackendServicePath("");
+      current?.setFrontendServicePath("");
+    });
+    await flushMicrotasks();
+
+    expect(
+      current?.buildPayload({
+        isMicroservicesShape: false, isMultiRepoShape: true,
+        repoShapeId: "multi-repo",
+        projectTypeId: "",
+        workflowRecipeId: "",
+        tests: {
+          lint: true,
+          unit: true,
+          build: true,
+          coverage: true,
+          security: true,
+          docker: true,
+        },
+        deploymentProvisioning: {
+          enabled: true,
+          targets: [],
+        },
+      }),
+    ).toEqual({
+      ok: true,
+      payload: expect.objectContaining({
+        repoName: "example-platform",
+        repoShape: "multi-repo",
+        serviceName: "example-platform-backend",
+        servicePath: "backend/",
+        deploymentProvisioning: {
+          enabled: true,
+          targets: [],
+        },
+        multiRepoConfig: {
+          backend: {
+            projectTypeId: "nestjs",
+            workflowRecipeId: "backend-api-ci",
+            serviceName: "example-platform-backend",
+            servicePath: "backend/",
+          },
+          frontend: {
+            projectTypeId: "nextjs",
+            workflowRecipeId: "frontend-standard-ci",
+            serviceName: "example-platform-frontend",
+            servicePath: "frontend/",
+          },
+        },
+      }),
+    });
+  });
+
   it("falls back to template categories and reports catalog load failures", async () => {
     let current = null as ReturnType<typeof useWorkflowCatalog> | null;
 
@@ -937,5 +1011,42 @@ describe("workflow hooks", () => {
         "Workflow history is temporarily unavailable.",
       ]),
     );
+  });
+
+  it("keeps silent project and workflow reload failures quiet", async () => {
+    const statusMessages: string[] = [];
+    const pushStatus = (message: string) => statusMessages.push(message);
+    let projects = null as ReturnType<typeof useProvisionedProjects> | null;
+    let history = null as ReturnType<typeof useWorkflowHistory> | null;
+
+    mockedGetProjects.mockResolvedValueOnce({ items: [] });
+    mockedGetWorkflowHistory.mockResolvedValueOnce({ items: [] });
+
+    function Probe() {
+      const projectState = useProvisionedProjects(pushStatus);
+      const historyState = useWorkflowHistory(pushStatus);
+      useEffect(() => {
+        projects = projectState;
+        history = historyState;
+      }, [historyState, projectState]);
+      return null;
+    }
+
+    await act(async () => {
+      hookRoot.root.render(<Probe />);
+    });
+
+    await waitForCondition(() => projects !== null && history !== null);
+    mockedGetProjects.mockRejectedValueOnce(new Error("projects unavailable"));
+    mockedGetWorkflowHistory.mockRejectedValueOnce(new Error("history unavailable"));
+
+    await act(async () => {
+      await projects?.loadProjects(true);
+      await history?.loadHistory(true);
+    });
+
+    expect(statusMessages).toEqual([]);
+    expect(projects?.loadingProjects).toBe(false);
+    expect(history?.loadingHistory).toBe(false);
   });
 });

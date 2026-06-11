@@ -15,6 +15,7 @@ import {
   getProjects,
   getTemplates,
   getWorkflowHistory,
+  listProviderConnections,
 } from "../../src/lib/api/client";
 import type { ProjectOptionsResponse } from "../../src/lib/api/contracts";
 
@@ -58,6 +59,7 @@ jest.mock("../../src/lib/api/client", () => ({
   getProjects: jest.fn(),
   getTemplates: jest.fn(),
   getWorkflowHistory: jest.fn(),
+  listProviderConnections: jest.fn(),
 }));
 
 const mockedCreateProject = createProject as jest.MockedFunction<typeof createProject>;
@@ -80,6 +82,9 @@ const mockedGetTemplates = getTemplates as jest.MockedFunction<typeof getTemplat
 const mockedGetWorkflowHistory = getWorkflowHistory as jest.MockedFunction<
   typeof getWorkflowHistory
 >;
+const mockedListProviderConnections = listProviderConnections as jest.MockedFunction<
+  typeof listProviderConnections
+>;
 
 const template = {
   id: "frontend-react",
@@ -94,6 +99,10 @@ const template = {
 };
 
 const projectOptions = {
+  nodeVersions: [
+    { value: "20", label: "Node.js 20 LTS" },
+    { value: "24", label: "Node.js 24 Current" },
+  ],
   repoShapes: [
     {
       id: "single-app",
@@ -279,6 +288,7 @@ describe("WorkflowBuilder project setup", () => {
     mockedGetTemplates.mockResolvedValue({ templates: [template] });
     mockedGetWorkflowHistory.mockResolvedValue({ items: [] });
     mockedGetProjects.mockResolvedValue({ items: [] });
+    mockedListProviderConnections.mockResolvedValue([]);
     mockedGetGithubAppInstallUrl.mockResolvedValue({
       installUrl: "https://github.com/apps/cicd-example/installations/new",
     });
@@ -345,13 +355,15 @@ describe("WorkflowBuilder project setup", () => {
     jest.clearAllMocks();
   });
 
-  async function renderBuilder(accessText = "GitHub App: connected") {
+  async function renderBuilder() {
     await act(async () => {
       root.render(<WorkflowBuilder login="tone" plan="pro" />);
     });
 
     await waitForCondition(() => container.textContent?.includes("Next.js App") ?? false);
-    await waitForCondition(() => container.textContent?.includes(accessText) ?? false);
+    await waitForCondition(
+      () => container.querySelector<HTMLButtonElement>("[data-testid='setup-project-button']") !== null,
+    );
   }
 
   it("creates a new project through the backend project endpoint", async () => {
