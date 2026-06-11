@@ -23,8 +23,6 @@ interface DeploymentProvisioningSetupProps {
 
 const environments: EnvEnvironment[] = ["test", "uat", "production"];
 
-/* Info icon with a hover/focus tooltip — keeps field descriptions out of the
-   grid flow so columns stay aligned. */
 function fallbackTarget(selectedProjectKind?: "frontend" | "backend"): DeploymentProvisioningTargetRequest {
   const slot: EnvTargetSlot =
     selectedProjectKind === "frontend" ? "frontend" : selectedProjectKind === "backend" ? "backend" : "standalone";
