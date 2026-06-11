@@ -347,39 +347,40 @@ export function WorkflowBuilder({ guest = false }: Readonly<WorkflowBuilderProps
           </div>
         )}
 
-        {/* GitHub App connection status — inline chip, no duplicate login/plan */}
-        {!github.hasAllRepositoriesInstallation && (
-          <div className="gh-app-status-bar">
-            <span className="gh-app-status-chip gh-app-status-chip--warn">
-              <span className="gh-app-status-dot" aria-hidden="true" />
-              GitHub App not installed
-            </span>
-            {github.installUrl ? (
-              <a
-                href={github.installUrl}
-                target="_blank"
-                rel="noreferrer"
-                className="gh-app-install-link"
-              >
-                Install GitHub App
-                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                  <line x1="7" y1="17" x2="17" y2="7" />
-                  <polyline points="7 7 17 7 17 17" />
-                </svg>
-              </a>
-            ) : null}
-          </div>
-        )}
-
-        {/* Tab bar */}
+        {/* Tab bar — GitHub App status sits right-aligned on the same row */}
         <WorkflowStudioTabs
           activeTab={activeTab}
           onChange={setActiveTab}
           onKeyDown={handleTabKeyDown}
+          trailing={
+            !github.hasAllRepositoriesInstallation ? (
+              <>
+                <span className="gh-app-status-chip gh-app-status-chip--warn">
+                  <span className="gh-app-status-dot" aria-hidden="true" />
+                  GitHub App not installed
+                </span>
+                {github.installUrl ? (
+                  <a
+                    href={github.installUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="gh-app-install-link"
+                  >
+                    Install GitHub App
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                      <line x1="7" y1="17" x2="17" y2="7" />
+                      <polyline points="7 7 17 7 17 17" />
+                    </svg>
+                  </a>
+                ) : null}
+              </>
+            ) : null
+          }
         />
 
-        {/* Tab content */}
-        <div>
+        {/* Tab content — Setup manages its own full-bleed layout; the other
+            tabs need the page gutter so cards don't touch the viewport edges */}
+        <div style={activeTab === "setup" ? undefined : { padding: "0.5rem var(--layout-gutter) 2.5rem" }}>
           {activeTab === "setup" ? (
             <WorkflowSetupTab
               form={createForm}

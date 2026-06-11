@@ -314,27 +314,85 @@ export function WorkflowSetupTab({
         <div>
           <span className="cp-section-heading">Catalog</span>
 
-          <label className="input-label" htmlFor="repo-shape-select" style={labelAccentStyle}>
-            Repository shape
-          </label>
-          <select
-            id="repo-shape-select"
-            value={projectCatalog.selectedRepoShapeId}
-            onChange={(event) => projectCatalog.setSelectedRepoShapeId(event.target.value)}
-            disabled={projectCatalog.loadingProjectOptions}
-            className="premium-input"
-          >
-            {projectCatalog.allRepoShapes.map((shape) => (
-              <option key={shape.id} value={shape.id} disabled={!shape.enabled}>
-                {shape.label}{shape.enabled ? "" : " (coming soon)"}
-              </option>
-            ))}
-          </select>
-          {projectCatalog.selectedRepoShape?.description ? (
-            <p style={{ color: "var(--text-muted)", fontSize: "0.75rem", margin: "0.3rem 0 0", lineHeight: 1.5 }}>
-              {projectCatalog.selectedRepoShape.description}
-            </p>
-          ) : null}
+          <fieldset style={{ border: "none", margin: 0, padding: 0, minInlineSize: "auto" }}>
+            <legend className="input-label" style={{ ...labelAccentStyle, padding: 0 }}>
+              Repository shape
+            </legend>
+            <div style={{ display: "grid", gap: "0.5rem", marginTop: "0.35rem" }}>
+              {projectCatalog.allRepoShapes.map((shape) => {
+                const selected = shape.id === projectCatalog.selectedRepoShapeId;
+                const disabled = !shape.enabled || projectCatalog.loadingProjectOptions;
+                return (
+                  <label
+                    key={shape.id}
+                    style={{
+                      position: "relative",
+                      display: "block",
+                      padding: "0.6rem 0.75rem",
+                      border: `1px solid ${selected ? "var(--border-brand)" : "var(--border)"}`,
+                      borderRadius: "8px",
+                      background: selected ? "color-mix(in srgb, var(--border-brand) 8%, transparent)" : "transparent",
+                      cursor: disabled ? "not-allowed" : "pointer",
+                      opacity: shape.enabled ? 1 : 0.55,
+                      transition: "border-color 0.15s, background 0.15s",
+                    }}
+                  >
+                    <input
+                      type="radio"
+                      name="repo-shape"
+                      value={shape.id}
+                      checked={selected}
+                      disabled={disabled}
+                      onChange={() => projectCatalog.setSelectedRepoShapeId(shape.id)}
+                      style={{ position: "absolute", opacity: 0, inset: 0, margin: 0, cursor: "inherit" }}
+                    />
+                    <span style={{ display: "flex", alignItems: "center", gap: "0.4rem", flexWrap: "wrap" }}>
+                      <strong style={{ color: "var(--text-primary)", fontSize: "0.82rem" }}>{shape.label}</strong>
+                      {shape.id === "standalone" ? (
+                        <span style={{
+                          fontSize: "0.58rem",
+                          fontWeight: 700,
+                          letterSpacing: "0.06em",
+                          textTransform: "uppercase",
+                          color: "var(--border-brand)",
+                          border: "1px solid var(--border-brand)",
+                          borderRadius: "999px",
+                          padding: "0.08rem 0.45rem",
+                        }}>
+                          Recommended
+                        </span>
+                      ) : null}
+                      {!shape.enabled ? (
+                        <span style={{
+                          fontSize: "0.58rem",
+                          fontWeight: 700,
+                          letterSpacing: "0.06em",
+                          textTransform: "uppercase",
+                          color: "var(--text-muted)",
+                          border: "1px solid var(--border)",
+                          borderRadius: "999px",
+                          padding: "0.08rem 0.45rem",
+                        }}>
+                          Coming soon
+                        </span>
+                      ) : null}
+                    </span>
+                    {shape.description ? (
+                      <span style={{
+                        display: "block",
+                        color: "var(--text-muted)",
+                        fontSize: "0.72rem",
+                        lineHeight: 1.45,
+                        marginTop: "0.25rem",
+                      }}>
+                        {shape.description}
+                      </span>
+                    ) : null}
+                  </label>
+                );
+              })}
+            </div>
+          </fieldset>
 
           {!projectCatalog.isMicroservicesShape && !projectCatalog.isMultiRepoShape ? (
             <>
@@ -418,16 +476,20 @@ export function WorkflowSetupTab({
                   placeholder={form.repoName ? `${form.repoName}-backend` : "my-app-backend"}
                   className="premium-input"
                 />
-                <label className="input-label" htmlFor="backend-service-path" style={{ ...labelAccentStyle, marginTop: "0.55rem", display: "block" }}>
-                  Service path
-                </label>
-                <input
-                  id="backend-service-path"
-                  value={form.backendServicePath}
-                  onChange={(event) => form.setBackendServicePath(event.target.value)}
-                  placeholder="backend/"
-                  className="premium-input"
-                />
+                {projectCatalog.isMicroservicesShape ? (
+                  <>
+                    <label className="input-label" htmlFor="backend-service-path" style={{ ...labelAccentStyle, marginTop: "0.55rem", display: "block" }}>
+                      Service path
+                    </label>
+                    <input
+                      id="backend-service-path"
+                      value={form.backendServicePath}
+                      onChange={(event) => form.setBackendServicePath(event.target.value)}
+                      placeholder="backend/"
+                      className="premium-input"
+                    />
+                  </>
+                ) : null}
               </div>
 
               {/* Frontend service — no container box */}
@@ -460,16 +522,20 @@ export function WorkflowSetupTab({
                   placeholder={form.repoName ? `${form.repoName}-frontend` : "my-app-frontend"}
                   className="premium-input"
                 />
-                <label className="input-label" htmlFor="frontend-service-path" style={{ ...labelAccentStyle, marginTop: "0.55rem", display: "block" }}>
-                  Service path
-                </label>
-                <input
-                  id="frontend-service-path"
-                  value={form.frontendServicePath}
-                  onChange={(event) => form.setFrontendServicePath(event.target.value)}
-                  placeholder="frontend/"
-                  className="premium-input"
-                />
+                {projectCatalog.isMicroservicesShape ? (
+                  <>
+                    <label className="input-label" htmlFor="frontend-service-path" style={{ ...labelAccentStyle, marginTop: "0.55rem", display: "block" }}>
+                      Service path
+                    </label>
+                    <input
+                      id="frontend-service-path"
+                      value={form.frontendServicePath}
+                      onChange={(event) => form.setFrontendServicePath(event.target.value)}
+                      placeholder="frontend/"
+                      className="premium-input"
+                    />
+                  </>
+                ) : null}
               </div>
             </>
           )}

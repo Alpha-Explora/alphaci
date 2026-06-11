@@ -1,24 +1,11 @@
 import { Suspense } from "react";
 
 import { OAuthAuthPage } from "@/components/auth/oauth-auth-page";
-import { FlowBackground } from "@/components/layout/flow-background";
-
-function SignupFallback() {
-  return (
-    <main className="flow-shell page-shell auth-shell">
-      <FlowBackground />
-      <section className="section-card auth-card glass-panel">
-        <p className="hero-kicker">OAuth Sign Up</p>
-        <h1>Loading sign up page</h1>
-        <p className="helper-text">Preparing your secure registration route.</p>
-      </section>
-    </main>
-  );
-}
+import { PipelineLoader } from "@/components/layout/pipeline-loader";
 
 export default function SignupPage() {
   return (
-    <Suspense fallback={<SignupFallback />}>
+    <Suspense fallback={<PipelineLoader label="Preparing your sign up" />}>
       <OAuthAuthPage
         mode="signup"
         title="Create your workflow workspace"

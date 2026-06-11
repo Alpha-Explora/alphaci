@@ -23,6 +23,8 @@ interface DeploymentProvisioningSetupProps {
 
 const environments: EnvEnvironment[] = ["test", "uat", "production"];
 
+/* Info icon with a hover/focus tooltip — keeps field descriptions out of the
+   grid flow so columns stay aligned. */
 function fallbackTarget(selectedProjectKind?: "frontend" | "backend"): DeploymentProvisioningTargetRequest {
   const slot: EnvTargetSlot =
     selectedProjectKind === "frontend" ? "frontend" : selectedProjectKind === "backend" ? "backend" : "standalone";
@@ -410,23 +412,26 @@ export function DeploymentProvisioningSetup({
                       />
                     </label>
                     <button
+                      type="button"
+                      className="env-var-row__remove env-var-remove"
                       aria-label={
                         targetIndex === 0
                           ? `Remove variable ${variableIndex + 1}`
                           : `Remove variable ${targetIndex + 1}-${variableIndex + 1}`
                       }
-                      className="env-var-row__remove"
-                      disabled={vars.length === 1}
-                      type="button"
-                      onClick={() =>
+                      disabled={vars.length === 1 && !variable.key && !variable.value}
+                      onClick={() => {
+                        const nextVars = vars.filter((_, currentIndex) => currentIndex !== variableIndex);
                         onChange(
                           updateTargetAt(value, targetIndex, {
-                            env: [{ ...envSet, vars: vars.filter((_, currentIndex) => currentIndex !== variableIndex) }],
+                            env: [{ ...envSet, vars: nextVars.length ? nextVars : [{ key: "", value: "" }] }],
                           }),
-                        )
-                      }
+                        );
+                      }}
                     >
-                      x
+                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden="true">
+                        <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+                      </svg>
                     </button>
                   </div>
                 ))}

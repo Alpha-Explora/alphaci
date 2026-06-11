@@ -40,7 +40,7 @@ describe("hasActiveSubscription", () => {
     expect(hasActiveSubscription(buildSession({ authenticated: false }))).toBe(false);
   });
 
-  it("returns false for authenticated free-plan users", () => {
+  it("returns false for authenticated users on the free plan", () => {
     expect(
       hasActiveSubscription(
         buildSession({
