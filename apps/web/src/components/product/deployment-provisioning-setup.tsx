@@ -20,6 +20,26 @@ interface DeploymentProvisioningSetupProps {
 
 const environments: EnvEnvironment[] = ["test", "uat", "production"];
 
+/* Info icon with a hover/focus tooltip — keeps field descriptions out of the
+   grid flow so columns stay aligned. */
+function FieldInfo({ text }: Readonly<{ text: string }>) {
+  return (
+    <button type="button" className="field-info" aria-label={text}>
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <circle cx="12" cy="12" r="10" />
+        <line x1="12" y1="16" x2="12" y2="12" />
+        <line x1="12" y1="8" x2="12.01" y2="8" />
+      </svg>
+      <span className="field-info-bubble" role="tooltip" aria-hidden="true">{text}</span>
+    </button>
+  );
+}
+
+function ownershipDescription(provider: EnvProvider): string {
+  const projectNoun = provider === "vercel" ? "Vercel project" : "Render service";
+  return `FlowCI creates and connects the ${projectNoun} from its managed workspace. To use your own provider account instead, add a provider connection in Settings.`;
+}
+
 function fallbackTarget(selectedProjectKind?: "frontend" | "backend"): DeploymentProvisioningTargetRequest {
   const slot: EnvTargetSlot =
     selectedProjectKind === "frontend" ? "frontend" : selectedProjectKind === "backend" ? "backend" : "standalone";
@@ -165,6 +185,28 @@ export function DeploymentProvisioningSetup({
                     </select>
                   </label>
                   <label>
+                    <span className="env-field-label">
+                      Ownership
+                      <FieldInfo text={ownershipDescription(target.provider)} />
+                    </span>
+                    <select
+                      aria-label={targetIndex === 0 ? "Ownership mode" : `Ownership mode ${targetIndex + 1}`}
+                      value={target.ownershipMode}
+                      onChange={(event) =>
+                        onChange(
+                          updateTargetAt(value, targetIndex, {
+                            ownershipMode: event.target.value as DeploymentProvisioningTargetRequest["ownershipMode"],
+                          }),
+                        )
+                      }
+                    >
+                      <option value="flowci_managed">Managed by FlowCI</option>
+                      <option value="byo" disabled>
+                        Bring your own provider (connect in Settings)
+                      </option>
+                    </select>
+                  </label>
+                  <label>
                     <span>Project name</span>
                     <input
                       aria-label={targetIndex === 0 ? "Provider project name" : `Provider project name ${targetIndex + 1}`}
@@ -280,6 +322,28 @@ export function DeploymentProvisioningSetup({
                       }}
                       placeholder="value"
                     />
+                    <button
+                      type="button"
+                      className="env-var-remove"
+                      aria-label={
+                        targetIndex === 0
+                          ? `Remove variable ${variableIndex + 1}`
+                          : `Remove variable ${targetIndex + 1}-${variableIndex + 1}`
+                      }
+                      disabled={vars.length === 1 && !variable.key && !variable.value}
+                      onClick={() => {
+                        const nextVars = vars.filter((_, currentIndex) => currentIndex !== variableIndex);
+                        onChange(
+                          updateTargetAt(value, targetIndex, {
+                            env: [{ ...envSet, vars: nextVars.length ? nextVars : [{ key: "", value: "" }] }],
+                          }),
+                        );
+                      }}
+                    >
+                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden="true">
+                        <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+                      </svg>
+                    </button>
                   </div>
                 ))}
               </section>

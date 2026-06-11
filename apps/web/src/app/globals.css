@@ -1500,6 +1500,16 @@ h1, h2, h3 {
   display: none;
 }
 
+/* Right-aligned cluster after the tabs (GitHub App status, etc.) */
+.studio-tab-trailing {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-left: auto;
+  padding-left: 1rem;
+  flex-shrink: 0;
+}
+
 .studio-tab-button {
   padding: 0.85rem 1.25rem;
   border: none;
@@ -4890,6 +4900,8 @@ select option {
   color: var(--text-primary);
   font-size: 0.84rem;
   font-weight: 700;
+  /* Per-target headings come from data ("frontend target") — capitalize */
+  text-transform: capitalize;
 }
 
 .env-section-header span {
@@ -4915,6 +4927,105 @@ select option {
   background: rgba(15, 23, 42, 0.54);
   color: var(--text-primary);
   padding: 0.55rem 0.65rem;
+}
+
+/* Field label row — label text + optional info icon, single line */
+.env-field-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+/* Info icon with hover/focus tooltip — replaces inline field descriptions */
+.field-info {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1rem;
+  height: 1rem;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: help;
+  transition: color 0.15s ease;
+}
+
+.field-info:hover,
+.field-info:focus-visible {
+  color: var(--brand);
+}
+
+.field-info:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
+.field-info-bubble {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%) translateY(4px);
+  width: max-content;
+  max-width: 240px;
+  background: rgba(15, 23, 42, 0.97);
+  border: 1px solid rgba(56, 189, 248, 0.25);
+  border-radius: 0.5rem;
+  padding: 0.5rem 0.65rem;
+  font-size: 0.72rem;
+  font-weight: 500;
+  line-height: 1.45;
+  color: var(--text-secondary);
+  text-align: left;
+  text-transform: none;
+  letter-spacing: 0;
+  white-space: normal;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.18s ease, transform 0.18s ease, visibility 0.18s;
+  pointer-events: none;
+  z-index: 50;
+}
+
+.field-info:hover .field-info-bubble,
+.field-info:focus-visible .field-info-bubble {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(-50%) translateY(0);
+}
+
+/* Var rows inside the setup form: key + value + remove button */
+.deployment-provisioning-setup .env-var-row {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+  align-items: center;
+}
+
+.env-var-remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.45rem;
+  height: 2.45rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: rgba(15, 23, 42, 0.54);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: color 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+}
+
+.env-var-remove:hover:not(:disabled) {
+  color: var(--danger);
+  border-color: rgba(248, 113, 113, 0.4);
+  background: rgba(248, 113, 113, 0.08);
+}
+
+.env-var-remove:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
 }
 
 .env-target-grid .ghost-button,
@@ -6915,7 +7026,17 @@ select option {
   background: rgba(2, 6, 23, 0.72);
   backdrop-filter: blur(32px) saturate(180%);
   -webkit-backdrop-filter: blur(32px) saturate(180%);
-  transition: background 0.25s ease, box-shadow 0.25s ease;
+  transition: background 0.25s ease, box-shadow 0.25s ease,
+    transform 0.38s cubic-bezier(0.25, 0, 0, 1);
+}
+
+/* Hidden while scrolling down — slides up out of view; scrolling up reveals it */
+.app-nav-dock--hidden {
+  transform: translateY(-100%);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app-nav-dock { transition: background 0.25s ease, box-shadow 0.25s ease; }
 }
 
 .app-nav-dock--scrolled {

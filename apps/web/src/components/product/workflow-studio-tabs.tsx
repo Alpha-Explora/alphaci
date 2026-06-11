@@ -9,6 +9,8 @@ interface WorkflowStudioTabsProps {
   activeTab: WorkflowTab;
   onChange: (tab: WorkflowTab) => void;
   onKeyDown: (event: KeyboardEvent<HTMLButtonElement>, tab: WorkflowTab) => void;
+  /** Right-aligned content after the tabs (e.g. GitHub App status). */
+  trailing?: React.ReactNode;
 }
 
 const TABS: { id: WorkflowTab; label: string; icon: React.ReactNode }[] = [
@@ -45,7 +47,7 @@ const TABS: { id: WorkflowTab; label: string; icon: React.ReactNode }[] = [
   },
 ];
 
-export function WorkflowStudioTabs({ activeTab, onChange, onKeyDown }: Readonly<WorkflowStudioTabsProps>) {
+export function WorkflowStudioTabs({ activeTab, onChange, onKeyDown, trailing }: Readonly<WorkflowStudioTabsProps>) {
   return (
     <div
       className="studio-tab-bar glass-panel"
@@ -97,6 +99,7 @@ export function WorkflowStudioTabs({ activeTab, onChange, onKeyDown }: Readonly<
           </span>
         </button>
       ))}
+      {trailing ? <div className="studio-tab-trailing">{trailing}</div> : null}
     </div>
   );
 }
