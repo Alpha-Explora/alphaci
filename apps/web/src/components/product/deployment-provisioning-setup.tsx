@@ -38,11 +38,6 @@ function FieldInfo({ text }: Readonly<{ text: string }>) {
   );
 }
 
-function ownershipDescription(provider: EnvProvider): string {
-  const projectNoun = provider === "vercel" ? "Vercel project" : "Render service";
-  return `FlowCI creates and connects the ${projectNoun} from its managed workspace. To use your own provider account instead, add a provider connection in Settings.`;
-}
-
 function fallbackTarget(selectedProjectKind?: "frontend" | "backend"): DeploymentProvisioningTargetRequest {
   const slot: EnvTargetSlot =
     selectedProjectKind === "frontend" ? "frontend" : selectedProjectKind === "backend" ? "backend" : "standalone";
