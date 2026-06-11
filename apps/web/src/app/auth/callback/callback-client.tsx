@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
 import { FlowBackground } from "@/components/layout/flow-background";
+import { PipelineLoader } from "@/components/layout/pipeline-loader";
 import { ApiError, createGitHubLoginUrl, getAuthSession } from "@/lib/api/client";
 import { hasActiveSubscription } from "@/lib/auth/subscription";
 
@@ -125,35 +126,40 @@ export function AuthCallbackClient() {
     };
   }, [authStatus, nextPath, providerName, router]);
 
+  if (state === "checking") {
+    return <PipelineLoader label={message} />;
+  }
+
   return (
-    <main className="flow-shell page-shell">
+    <main className="dash-shell">
       <FlowBackground />
 
-      <section className="section-card callback-card glass-panel">
-        <p className="hero-kicker">{providerName} {intent === "signup" ? "Sign Up" : "Login"}</p>
-        <h1>{state === "checking" ? "Completing authentication" : "Authentication needs retry"}</h1>
-
-        {state === "checking" ? (
-          <div style={{ display: "flex", alignItems: "center", gap: "0.6rem" }}>
-            <span className="callback-pulse-dot" aria-hidden="true" />
-            <p style={{ margin: 0 }}>{message}</p>
+      <div className="state-body">
+        <div className="state-card">
+          <div
+            className="state-icon"
+            style={{ background: "rgba(251, 191, 36, 0.08)", border: "1px solid rgba(251, 191, 36, 0.25)" }}
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent-amber)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M21 12a9 9 0 1 1-2.64-6.36" />
+              <polyline points="21 3 21 9 15 9" />
+            </svg>
           </div>
-        ) : (
+          <p className="hero-kicker" style={{ margin: 0 }}>
+            {providerName} {intent === "signup" ? "Sign Up" : "Login"}
+          </p>
+          <h1>Authentication needs retry</h1>
           <p>{message}</p>
-        )}
-
-        <div className="hero-actions">
-          {state === "failed" ? (
+          <div className="hero-actions">
             <Link className="primary-button" href={retryLoginHref}>
               Retry {providerName} sign in
             </Link>
-          ) : null}
-
-          <Link className="ghost-button" href="/">
-            Return to Home
-          </Link>
+            <Link className="ghost-button" href="/">
+              Return to Home
+            </Link>
+          </div>
         </div>
-      </section>
+      </div>
     </main>
   );
 }
