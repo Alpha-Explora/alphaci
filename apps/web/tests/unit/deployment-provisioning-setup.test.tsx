@@ -132,6 +132,12 @@ describe("DeploymentProvisioningSetup", () => {
 
     expect(rendered.container.textContent).toContain("backend target");
     expect(rendered.container.textContent).toContain("frontend target");
+    expect(rendered.container.textContent).toContain(
+      "FlowCI creates the Vercel project and deploys it through GitHub Actions from the generated workflow.",
+    );
+    expect(rendered.container.textContent).toContain(
+      "FlowCI will install per-slot GitHub Actions secrets for Vercel deployment after the Vercel project is created.",
+    );
 
     const frontendProjectName = rendered.container.querySelector<HTMLInputElement>("input[aria-label='Provider project name 2']");
     expect(frontendProjectName).not.toBeNull();

@@ -9,6 +9,7 @@ import type {
   SetupExistingRepoPrResponse,
   WorkflowFileMetadata,
 } from "@/lib/api/contracts";
+import { cleanUserMessage } from "./workflow-builder-utils";
 
 interface SetupResultPanelProps {
   existingRepoResult?: SetupExistingRepoPrResponse | null;
@@ -103,6 +104,19 @@ function formatProvider(provider: string) {
 }
 
 function deploymentRouteLabel(target: DeploymentProvisioningResult["targets"][number]) {
+  if (target.provider === "render") {
+    switch (target.deploymentStrategy) {
+      case "render_image_pushed":
+        return target.ownershipMode === "byo" ? "GitHub Actions image deploy" : "Managed image deploy";
+      case "render_git_connected":
+        return "Native Render build";
+      case "render_existing_service":
+        return "Existing Render service";
+      default:
+        break;
+    }
+  }
+
   switch (target.deploymentStrategy) {
     case "vercel_git_connected":
       return "Connected through Vercel Git";
@@ -120,6 +134,29 @@ function githubSecretNames(metadata: Record<string, unknown> | undefined) {
   if (!githubSecrets || typeof githubSecrets !== "object") return [];
   return Object.values(githubSecrets as Record<string, unknown>).filter(
     (value): value is string => typeof value === "string" && value.length > 0,
+  );
+}
+
+function formatRenderServiceType(value: string | null | undefined) {
+  if (!value) return null;
+  return value.replace(/_/g, " ");
+}
+
+function renderTargetDetails(target: DeploymentProvisioningResult["targets"][number]) {
+  if (target.provider !== "render") return [];
+  return [
+    formatRenderServiceType(target.renderServiceType),
+    target.renderInstanceType,
+    target.renderRegion,
+    target.renderEnvironmentName,
+  ].filter((value): value is string => Boolean(value));
+}
+
+function hasRenderDeploymentSecrets(target: DeploymentProvisioningResult["targets"][number]) {
+  if (target.provider !== "render") return false;
+  const secrets = githubSecretNames(target.providerMetadata);
+  return ["API_KEY", "SERVICE_ID", "OWNER_ID"].every((suffix) =>
+    secrets.some((secretName) => secretName.endsWith(suffix)),
   );
 }
 
@@ -159,8 +196,18 @@ export function DeploymentProvisioningSummary({
             </div>
             <p className="helper-text" style={{ margin: 0 }}>
               {target.slot} - {target.status} - {deploymentRouteLabel(target)}
-              {target.errorSummary ? ` - ${target.errorSummary}` : ""}
+              {target.errorSummary ? ` - ${cleanUserMessage(target.errorSummary)}` : ""}
             </p>
+            {renderTargetDetails(target).length > 0 ? (
+              <p className="helper-text" style={{ margin: 0 }}>
+                {renderTargetDetails(target).join(" - ")}
+              </p>
+            ) : null}
+            {hasRenderDeploymentSecrets(target) ? (
+              <p className="helper-text" style={{ margin: 0 }}>
+                Render API deployment secrets installed
+              </p>
+            ) : null}
             {githubSecretNames(target.providerMetadata).length > 0 ? (
               <div className="deployment-provisioning-summary__env">
                 <span>GitHub secrets</span>
@@ -181,7 +228,7 @@ export function DeploymentProvisioningSummary({
                   {envSet.failed.map((variable) => (
                     <code className="failed" key={`${variable.key}-failed`}>
                       {variable.key}
-                      {variable.errorSummary ? ` failed: ${variable.errorSummary}` : " failed"}
+                      {variable.errorSummary ? ` failed: ${cleanUserMessage(variable.errorSummary)}` : " failed"}
                     </code>
                   ))}
                 </div>

@@ -4,7 +4,23 @@ export type EnvProvider = "render" | "vercel";
 export type EnvEnvironment = "test" | "uat" | "production";
 export type EnvOwnershipMode = "byo" | "flowci_managed";
 export type EnvTargetSlot = "backend" | "frontend" | "standalone";
-export type DeploymentStrategy = "provider_native" | "vercel_git_connected" | "vercel_ci_pushed";
+export type DeploymentStrategy =
+  | "provider_native"
+  | "vercel_git_connected"
+  | "vercel_ci_pushed"
+  | "render_git_connected"
+  | "render_image_pushed"
+  | "render_existing_service";
+export type RenderServiceType =
+  | "web_service"
+  | "private_service"
+  | "background_worker"
+  | "cron_job";
+export type RenderDeployMethod =
+  | "managed_image"
+  | "byo_image"
+  | "native_git"
+  | "existing_service";
 
 export interface SessionUser {
   id: string;
@@ -77,6 +93,13 @@ export interface DeploymentTarget {
   rootDirectory: string | null;
   buildCommand: string | null;
   startCommand: string | null;
+  renderServiceType?: RenderServiceType | null;
+  renderInstanceType?: string | null;
+  renderRegion?: string | null;
+  renderEnvironmentName?: EnvEnvironment | null;
+  dockerContext?: string | null;
+  dockerfilePath?: string | null;
+  imageUrl?: string | null;
   environmentMap: Record<string, unknown>;
   deploymentStrategy?: DeploymentStrategy;
   providerMetadata?: Record<string, unknown>;
@@ -96,6 +119,14 @@ export interface CreateDeploymentTargetRequest {
   rootDirectory?: string;
   buildCommand?: string;
   startCommand?: string;
+  renderDeployMethod?: RenderDeployMethod;
+  renderServiceType?: RenderServiceType;
+  renderInstanceType?: string;
+  renderRegion?: string;
+  renderEnvironmentName?: EnvEnvironment;
+  dockerContext?: string;
+  dockerfilePath?: string;
+  imageUrl?: string;
   environmentMap?: Record<string, unknown>;
 }
 
@@ -130,15 +161,26 @@ export interface DeploymentProvisioningEnvSet {
 }
 
 export interface DeploymentProvisioningTargetRequest {
+  action?: "create" | "register_existing";
   slot: EnvTargetSlot;
   provider: EnvProvider;
   ownershipMode: EnvOwnershipMode;
   providerConnectionId?: string;
   projectName?: string;
+  providerProjectId?: string;
+  providerProjectName?: string;
   branchName?: string;
   rootDirectory?: string;
   buildCommand?: string;
   startCommand?: string;
+  renderDeployMethod?: RenderDeployMethod;
+  renderServiceType?: RenderServiceType;
+  renderInstanceType?: string;
+  renderRegion?: string;
+  renderEnvironmentName?: EnvEnvironment;
+  dockerContext?: string;
+  dockerfilePath?: string;
+  imageUrl?: string;
   env?: DeploymentProvisioningEnvSet[];
 }
 
@@ -159,6 +201,13 @@ export interface DeploymentProvisioningResult {
     providerProjectId: string | null;
     providerProjectName: string | null;
     providerMetadata?: Record<string, unknown>;
+    renderServiceType?: RenderServiceType | null;
+    renderInstanceType?: string | null;
+    renderRegion?: string | null;
+    renderEnvironmentName?: EnvEnvironment | null;
+    dockerContext?: string | null;
+    dockerfilePath?: string | null;
+    imageUrl?: string | null;
     errorSummary: string | null;
     env: Array<{
       environment: EnvEnvironment;

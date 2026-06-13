@@ -138,19 +138,117 @@ export function formatApiError(error: unknown, fallback: string): string {
   }
 
   if (typeof details === "string") {
-    return `${fallback}: ${details}`;
+    return `${fallback}: ${cleanUserMessage(details)}`;
   }
 
   if (typeof details === "object" && details !== null && "message" in details) {
     const message = (details as { message?: unknown }).message;
     if (Array.isArray(message)) {
-      return `${fallback}: ${message.join(", ")}`;
+      return `${fallback}: ${message.map(cleanUserMessage).join(", ")}`;
     }
 
     if (typeof message === "string") {
-      return `${fallback}: ${message}`;
+      return `${fallback}: ${cleanUserMessage(message)}`;
     }
   }
 
-  return `${fallback}: ${JSON.stringify(details)}`;
+  return `${fallback}: ${cleanUserMessage(JSON.stringify(details))}`;
+}
+
+export function cleanUserMessage(value: unknown): string {
+  const message = String(value);
+  const knownMessage =
+    parseDuplicateRepositoryMessage(message) ??
+    parseRenderProvisioningMessage(message) ??
+    parseProviderIntegrationMessage(message) ??
+    parseGenericServerMessage(message);
+  if (knownMessage) return knownMessage;
+
+  return stripNoisyApiPayload(message);
+}
+
+function parseRenderProvisioningMessage(message: string): string | null {
+  if (
+    /Render billing is not configured|selected instance type requires payment/i.test(
+      message,
+    )
+  ) {
+    return "Render billing is not configured for this workspace or the selected plan requires payment.";
+  }
+
+  if (/A Render service with this name already exists/i.test(message)) {
+    return "A Render service with this name already exists. Choose a different service name or attach the existing service.";
+  }
+
+  if (/Render API key is invalid|missing required workspace access/i.test(message)) {
+    return "The Render API key cannot access the selected workspace.";
+  }
+
+  if (/Render provider metadata is missing|Render deployment secrets/i.test(message)) {
+    return "Render service was created, but FlowCI could not install the deployment secrets.";
+  }
+
+  if (/image pull|registry|GHCR/i.test(message)) {
+    return "Render could not pull the deployment image. Check registry access and retry.";
+  }
+
+  return null;
+}
+
+function parseDuplicateRepositoryMessage(message: string): string | null {
+  if (
+    message.includes("name already exists on this account") ||
+    message.includes("Repository already exists or name is invalid")
+  ) {
+    return "A repository with this name already exists on this GitHub account. Choose another repository name and try again.";
+  }
+
+  return null;
+}
+
+function parseProviderIntegrationMessage(message: string): string | null {
+  if (
+    message.includes("install the GitHub integration") ||
+    message.includes("Install GitHub App")
+  ) {
+    return "Vercel cannot access this GitHub repository yet. Install or update the Vercel GitHub integration for the repository owner, then retry.";
+  }
+
+  if (
+    message.includes("invalid_root_directory") ||
+    message.includes("Root Directory must be a relative path")
+  ) {
+    return "The root directory must be a relative path, for example \"frontend\". Do not use \"./\" or \"../\".";
+  }
+
+  if (message.includes("Missing team access")) {
+    return "The configured Vercel token does not have access to the selected team or project.";
+  }
+
+  return null;
+}
+
+function parseGenericServerMessage(message: string): string | null {
+  if (message === "Internal Server Error" || message.includes("Request failed with status 500")) {
+    return "Something went wrong while processing the request. Please retry, then check the backend logs if it happens again.";
+  }
+
+  if (message.includes("Request failed with status 401")) {
+    return "Your session has expired. Sign in again and retry.";
+  }
+
+  if (message.includes("Request failed with status 403")) {
+    return "You do not have access to perform this action.";
+  }
+
+  return null;
+}
+
+function stripNoisyApiPayload(message: string): string {
+  return message
+    .replaceAll(/https:\/\/docs\.github\.com\/[^\s"'}]+/g, "GitHub API docs")
+    .replaceAll(/"documentation_url":"[^"]+",?/g, "")
+    .replaceAll(/"status":"?\d+"?,?/g, "")
+    .replaceAll(/\s+/g, " ")
+    .trim();
 }

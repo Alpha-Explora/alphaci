@@ -269,6 +269,29 @@ describe("Project env provisioning UI", () => {
     );
   });
 
+  it("shows clean deployment target setup errors", async () => {
+    const addTarget = jest.fn().mockRejectedValueOnce({
+      details: {
+        message:
+          'Vercel project could not be created: 400 {"error":{"code":"invalid_root_directory","message":"If defined, the Root Directory must be a relative path not starting with `./` and not including `../` or other special characters."}}',
+      },
+    });
+    mockEnvHook({ addTarget });
+
+    const rendered = render(<ProjectEnvPanel project={provisionedProject} />);
+    root = rendered.root;
+
+    await act(async () => {
+      rendered.container.querySelector<HTMLButtonElement>('button[data-testid="save-target"]')!.click();
+      await Promise.resolve();
+    });
+
+    expect(rendered.container.textContent).toContain(
+      'Deployment target setup failed: The root directory must be a relative path, for example "frontend". Do not use "./" or "../".',
+    );
+    expect(rendered.container.textContent).not.toContain("invalid_root_directory");
+  });
+
   it("groups env provisioning into target, variables, and provisioned sections", () => {
     mockEnvHook({
       metadata: [
@@ -374,7 +397,8 @@ describe("Project env provisioning UI", () => {
           lastProvisionedAt: "2026-06-08T00:00:00.000Z",
           lastProvisionedBy: "user-1",
           status: "failed",
-          errorSummary: "Provider rejected key",
+          errorSummary:
+            'Vercel project could not be created: 400 {"error":{"code":"bad_request","message":"To link a GitHub repository, you need to install the GitHub integration first.","action":"Install GitHub App","repo":"tone/web"}}',
         },
       ],
     });
@@ -383,7 +407,10 @@ describe("Project env provisioning UI", () => {
     root = rendered.root;
 
     expect(rendered.container.textContent).toContain("API_KEY");
-    expect(rendered.container.textContent).toContain("Provider rejected key");
+    expect(rendered.container.textContent).toContain(
+      "Vercel cannot access this GitHub repository yet. Install or update the Vercel GitHub integration for the repository owner, then retry.",
+    );
+    expect(rendered.container.textContent).not.toContain("Install GitHub App");
     expect(rendered.container.textContent).not.toContain("secret");
   });
 });

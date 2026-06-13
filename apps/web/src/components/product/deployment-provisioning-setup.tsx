@@ -9,6 +9,8 @@ import type {
   EnvEnvironment,
   EnvProvider,
   EnvTargetSlot,
+  RenderDeployMethod,
+  RenderServiceType,
 } from "@/lib/api/contracts";
 import { useProviderConnections } from "@/hooks/use-provider-connections";
 
@@ -23,21 +25,6 @@ interface DeploymentProvisioningSetupProps {
 
 const environments: EnvEnvironment[] = ["test", "uat", "production"];
 
-/* Info icon with a hover/focus tooltip — keeps field descriptions out of the
-   grid flow so columns stay aligned. */
-function FieldInfo({ text }: Readonly<{ text: string }>) {
-  return (
-    <button type="button" className="field-info" aria-label={text}>
-      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-        <circle cx="12" cy="12" r="10" />
-        <line x1="12" y1="16" x2="12" y2="12" />
-        <line x1="12" y1="8" x2="12.01" y2="8" />
-      </svg>
-      <span className="field-info-bubble" role="tooltip" aria-hidden="true">{text}</span>
-    </button>
-  );
-}
-
 function fallbackTarget(selectedProjectKind?: "frontend" | "backend"): DeploymentProvisioningTargetRequest {
   const slot: EnvTargetSlot =
     selectedProjectKind === "frontend" ? "frontend" : selectedProjectKind === "backend" ? "backend" : "standalone";
@@ -47,9 +34,16 @@ function fallbackTarget(selectedProjectKind?: "frontend" | "backend"): Deploymen
     provider,
     ownershipMode: "flowci_managed",
     branchName: "test",
-    rootDirectory: ".",
-    buildCommand: provider === "render" ? "npm ci && npm run build" : "npm run build",
-    startCommand: provider === "render" ? "npm run start:prod" : undefined,
+    rootDirectory: provider === "render" && slot === "backend" ? "backend" : ".",
+    buildCommand: "npm run build",
+    startCommand: provider === "render" ? "npm run start" : undefined,
+    renderDeployMethod: provider === "render" ? "managed_image" : undefined,
+    renderServiceType: provider === "render" ? "web_service" : undefined,
+    renderInstanceType: provider === "render" ? "free" : undefined,
+    renderRegion: provider === "render" ? "singapore" : undefined,
+    renderEnvironmentName: "test",
+    dockerContext: provider === "render" && slot === "backend" ? "backend" : provider === "render" ? "." : undefined,
+    dockerfilePath: provider === "render" && slot === "backend" ? "backend/Dockerfile" : provider === "render" ? "Dockerfile" : undefined,
     env: [{ environment: "test", vars: [] }],
   };
 }
@@ -96,15 +90,45 @@ function defaultProjectPlaceholder(repoShape: string, target: DeploymentProvisio
 }
 
 function ownershipDescription(target: DeploymentProvisioningTargetRequest) {
-  if (target.provider !== "vercel") {
-    return target.ownershipMode === "byo"
-      ? "FlowCI uses your connected provider account for this target."
-      : "FlowCI creates and manages this provider target for you.";
+  if (target.provider === "render") {
+    if (target.ownershipMode === "byo") {
+      return target.renderDeployMethod === "native_git"
+        ? "FlowCI creates a Render service in your account using Render's native Git build. Render must have access to the repository."
+        : "FlowCI uses your Render account and deploys through the generated GitHub Actions image workflow.";
+    }
+
+    return "FlowCI packages and deploys this backend automatically.";
   }
 
   return target.ownershipMode === "byo"
     ? "FlowCI creates a Vercel project in your account and deploys through GitHub Actions. You do not need to install Vercel's GitHub integration."
-    : "FlowCI creates and connects the Vercel project from its managed workspace.";
+    : "FlowCI creates the Vercel project and deploys it through GitHub Actions from the generated workflow.";
+}
+
+function withRenderDefaults(
+  target: DeploymentProvisioningTargetRequest,
+  patch: Partial<DeploymentProvisioningTargetRequest>,
+): Partial<DeploymentProvisioningTargetRequest> {
+  const nextProvider = patch.provider ?? target.provider;
+  const nextSlot = patch.slot ?? target.slot;
+  if (nextProvider !== "render") {
+    return patch;
+  }
+
+  const isBackendSubdir = nextSlot === "backend";
+  const rootDirectory = patch.rootDirectory ?? target.rootDirectory ?? (isBackendSubdir ? "backend" : ".");
+
+  return {
+    renderDeployMethod: target.renderDeployMethod ?? "managed_image",
+    renderServiceType: target.renderServiceType ?? "web_service",
+    renderInstanceType: target.renderInstanceType ?? "free",
+    renderRegion: target.renderRegion ?? "singapore",
+    renderEnvironmentName: target.renderEnvironmentName ?? "test",
+    dockerContext: target.dockerContext ?? rootDirectory,
+    dockerfilePath: target.dockerfilePath ?? (rootDirectory === "." ? "Dockerfile" : `${rootDirectory}/Dockerfile`),
+    startCommand: target.startCommand ?? "npm run start",
+    ...patch,
+  };
 }
 
 export function DeploymentProvisioningSetup({
@@ -210,7 +234,7 @@ export function DeploymentProvisioningSetup({
                 </div>
 
                 <div className="env-target-grid">
-                  <label>
+                  <label className="env-target-grid__field env-target-grid__field--compact">
                     <span>Slot</span>
                     <select
                       aria-label={targetIndex === 0 ? "Target slot" : `Target slot ${targetIndex + 1}`}
@@ -220,6 +244,13 @@ export function DeploymentProvisioningSetup({
                           updateTargetAt(value, targetIndex, {
                             slot: event.target.value as EnvTargetSlot,
                             provider: event.target.value === "frontend" ? "vercel" : target.provider,
+                            ...(event.target.value === "backend" && target.provider === "render"
+                              ? {
+                                  rootDirectory: "backend",
+                                  dockerContext: "backend",
+                                  dockerfilePath: "backend/Dockerfile",
+                                }
+                              : {}),
                           }),
                         )
                       }
@@ -229,7 +260,7 @@ export function DeploymentProvisioningSetup({
                       <option value="frontend">Frontend</option>
                     </select>
                   </label>
-                  <label>
+                  <label className="env-target-grid__field env-target-grid__field--compact">
                     <span>Provider</span>
                     <select
                       aria-label={targetIndex === 0 ? "Provider" : `Provider ${targetIndex + 1}`}
@@ -240,14 +271,34 @@ export function DeploymentProvisioningSetup({
                           target.ownershipMode === "byo"
                             ? activeProviderConnections.find((connection) => connection.provider === provider)?.id
                             : undefined;
-                        onChange(updateTargetAt(value, targetIndex, { provider, providerConnectionId }));
+                        onChange(
+                          updateTargetAt(
+                            value,
+                            targetIndex,
+                            withRenderDefaults(target, {
+                              provider,
+                              providerConnectionId,
+                              ...(provider === "vercel"
+                                ? {
+                                    renderDeployMethod: undefined,
+                                    renderServiceType: undefined,
+                                    renderInstanceType: undefined,
+                                    renderRegion: undefined,
+                                    renderEnvironmentName: undefined,
+                                    dockerContext: undefined,
+                                    dockerfilePath: undefined,
+                                  }
+                                : {}),
+                            }),
+                          ),
+                        );
                       }}
                     >
                       <option value="render">Render</option>
                       <option value="vercel">Vercel</option>
                     </select>
                   </label>
-                  <label>
+                  <label className="env-target-grid__field env-target-grid__field--wide">
                     <span>Ownership</span>
                     <select
                       aria-label={targetIndex === 0 ? "Provider ownership" : `Provider ownership ${targetIndex + 1}`}
@@ -267,14 +318,14 @@ export function DeploymentProvisioningSetup({
                       }}
                     >
                       <option value="flowci_managed">Managed by FlowCI</option>
-                      <option value="byo">Use my Vercel account</option>
+                      <option value="byo">Use my {target.provider === "render" ? "Render" : "Vercel"} account</option>
                     </select>
-                    <span className="helper-text" style={{ marginTop: "0.3rem" }}>
+                    <span className="helper-text env-target-grid__note">
                       {ownershipDescription(target)}
                     </span>
                   </label>
                   {target.ownershipMode === "byo" ? (
-                    <label>
+                    <label className="env-target-grid__field env-target-grid__field--wide">
                       <span>Provider connection</span>
                       <select
                         aria-label={targetIndex === 0 ? "Provider connection" : `Provider connection ${targetIndex + 1}`}
@@ -296,7 +347,7 @@ export function DeploymentProvisioningSetup({
                       </select>
                     </label>
                   ) : null}
-                  <label>
+                  <label className="env-target-grid__field env-target-grid__field--wide">
                     <span>Project name</span>
                     <input
                       aria-label={targetIndex === 0 ? "Provider project name" : `Provider project name ${targetIndex + 1}`}
@@ -305,7 +356,7 @@ export function DeploymentProvisioningSetup({
                       placeholder={defaultProjectPlaceholder(repoShape, target)}
                     />
                   </label>
-                  <label>
+                  <label className="env-target-grid__field env-target-grid__field--compact">
                     <span>Branch</span>
                     <input
                       aria-label={targetIndex === 0 ? "Provider branch" : `Provider branch ${targetIndex + 1}`}
@@ -313,7 +364,7 @@ export function DeploymentProvisioningSetup({
                       onChange={(event) => onChange(updateTargetAt(value, targetIndex, { branchName: event.target.value }))}
                     />
                   </label>
-                  <label>
+                  <label className="env-target-grid__field env-target-grid__field--compact">
                     <span>Root directory</span>
                     <input
                       aria-label={targetIndex === 0 ? "Provider root directory" : `Provider root directory ${targetIndex + 1}`}
@@ -321,7 +372,7 @@ export function DeploymentProvisioningSetup({
                       onChange={(event) => onChange(updateTargetAt(value, targetIndex, { rootDirectory: event.target.value }))}
                     />
                   </label>
-                  <label>
+                  <label className="env-target-grid__field env-target-grid__field--wide">
                     <span>Build command</span>
                     <input
                       aria-label={targetIndex === 0 ? "Provider build command" : `Provider build command ${targetIndex + 1}`}
@@ -330,16 +381,138 @@ export function DeploymentProvisioningSetup({
                     />
                   </label>
                   {target.provider === "render" ? (
-                    <label>
-                      <span>Start command</span>
-                      <input
-                        aria-label={targetIndex === 0 ? "Provider start command" : `Provider start command ${targetIndex + 1}`}
-                        value={target.startCommand ?? ""}
-                        onChange={(event) => onChange(updateTargetAt(value, targetIndex, { startCommand: event.target.value }))}
-                      />
-                    </label>
+                    <>
+                      <label className="env-target-grid__field env-target-grid__field--wide">
+                        <span>Deployment method</span>
+                        <select
+                          aria-label={targetIndex === 0 ? "Render deployment method" : `Render deployment method ${targetIndex + 1}`}
+                          value={target.renderDeployMethod ?? (target.ownershipMode === "byo" ? "native_git" : "managed_image")}
+                          onChange={(event) =>
+                            onChange(
+                              updateTargetAt(value, targetIndex, {
+                                renderDeployMethod: event.target.value as RenderDeployMethod,
+                                action:
+                                  event.target.value === "existing_service"
+                                    ? "register_existing"
+                                    : "create",
+                              }),
+                            )
+                          }
+                        >
+                          {target.ownershipMode === "flowci_managed" ? (
+                            <option value="managed_image">Automatic package deploy</option>
+                          ) : null}
+                          {target.ownershipMode === "byo" ? (
+                            <>
+                              <option value="native_git">Native Render build</option>
+                              <option value="byo_image">GitHub Actions image deploy</option>
+                              <option value="existing_service">Existing Render service</option>
+                            </>
+                          ) : null}
+                        </select>
+                        <span className="helper-text env-target-grid__note">
+                          {target.renderDeployMethod === "native_git"
+                            ? "Uses Render build/start commands and requires Render repository access."
+                            : "FlowCI packages and deploys this backend automatically."}
+                        </span>
+                      </label>
+                      <label className="env-target-grid__field env-target-grid__field--compact">
+                        <span>Service type</span>
+                        <select
+                          aria-label={targetIndex === 0 ? "Render service type" : `Render service type ${targetIndex + 1}`}
+                          value={target.renderServiceType ?? "web_service"}
+                          onChange={(event) =>
+                            onChange(
+                              updateTargetAt(value, targetIndex, {
+                                renderServiceType: event.target.value as RenderServiceType,
+                              }),
+                            )
+                          }
+                        >
+                          <option value="web_service">Web service</option>
+                          <option value="private_service">Private service</option>
+                          <option value="background_worker">Worker</option>
+                          <option value="cron_job">Cron job</option>
+                        </select>
+                      </label>
+                      <label className="env-target-grid__field env-target-grid__field--compact">
+                        <span>Instance</span>
+                        <input
+                          aria-label={targetIndex === 0 ? "Render instance type" : `Render instance type ${targetIndex + 1}`}
+                          value={target.renderInstanceType ?? "free"}
+                          onChange={(event) => onChange(updateTargetAt(value, targetIndex, { renderInstanceType: event.target.value }))}
+                        />
+                      </label>
+                      <label className="env-target-grid__field env-target-grid__field--compact">
+                        <span>Region</span>
+                        <input
+                          aria-label={targetIndex === 0 ? "Render region" : `Render region ${targetIndex + 1}`}
+                          value={target.renderRegion ?? "singapore"}
+                          onChange={(event) => onChange(updateTargetAt(value, targetIndex, { renderRegion: event.target.value }))}
+                        />
+                      </label>
+                      {target.renderDeployMethod === "native_git" ? (
+                        <label className="env-target-grid__field env-target-grid__field--wide">
+                          <span>Start command</span>
+                          <input
+                            aria-label={targetIndex === 0 ? "Provider start command" : `Provider start command ${targetIndex + 1}`}
+                            value={target.startCommand ?? ""}
+                            onChange={(event) => onChange(updateTargetAt(value, targetIndex, { startCommand: event.target.value }))}
+                          />
+                        </label>
+                      ) : null}
+                      {target.renderDeployMethod === "existing_service" ? (
+                        <>
+                          <label className="env-target-grid__field env-target-grid__field--wide">
+                            <span>Service ID</span>
+                            <input
+                              aria-label={targetIndex === 0 ? "Render service ID" : `Render service ID ${targetIndex + 1}`}
+                              value={target.providerProjectId ?? ""}
+                              onChange={(event) => onChange(updateTargetAt(value, targetIndex, { providerProjectId: event.target.value }))}
+                              placeholder="srv-..."
+                            />
+                          </label>
+                          <label className="env-target-grid__field env-target-grid__field--wide">
+                            <span>Service name</span>
+                            <input
+                              aria-label={targetIndex === 0 ? "Render service name" : `Render service name ${targetIndex + 1}`}
+                              value={target.providerProjectName ?? ""}
+                              onChange={(event) => onChange(updateTargetAt(value, targetIndex, { providerProjectName: event.target.value }))}
+                              placeholder="api-test"
+                            />
+                          </label>
+                        </>
+                      ) : null}
+                      {target.ownershipMode === "flowci_managed" && (target.renderInstanceType ?? "free") !== "free" ? (
+                        <p className="helper-text env-target-grid__field env-target-grid__field--wide" style={{ margin: 0 }}>
+                          Paid managed Render services require FlowCI approval. Use free or connect your own Render account.
+                        </p>
+                      ) : null}
+                      {target.renderDeployMethod !== "native_git" && target.renderDeployMethod !== "existing_service" ? (
+                        <details className="env-target-grid__field env-target-grid__field--wide">
+                          <summary>Packaging details</summary>
+                          <p className="helper-text">Uses a generated Dockerfile and GitHub Actions image deployment.</p>
+                          <label>
+                            <span>Docker context</span>
+                            <input
+                              aria-label={targetIndex === 0 ? "Docker context" : `Docker context ${targetIndex + 1}`}
+                              value={target.dockerContext ?? target.rootDirectory ?? "."}
+                              onChange={(event) => onChange(updateTargetAt(value, targetIndex, { dockerContext: event.target.value }))}
+                            />
+                          </label>
+                          <label>
+                            <span>Dockerfile path</span>
+                            <input
+                              aria-label={targetIndex === 0 ? "Dockerfile path" : `Dockerfile path ${targetIndex + 1}`}
+                              value={target.dockerfilePath ?? "Dockerfile"}
+                              onChange={(event) => onChange(updateTargetAt(value, targetIndex, { dockerfilePath: event.target.value }))}
+                            />
+                          </label>
+                        </details>
+                      ) : null}
+                    </>
                   ) : null}
-                  <label>
+                  <label className="env-target-grid__field env-target-grid__field--compact">
                     <span>Environment</span>
                     <select
                       aria-label={targetIndex === 0 ? "Provisioning environment" : `Provisioning environment ${targetIndex + 1}`}
@@ -383,7 +556,7 @@ export function DeploymentProvisioningSetup({
                   </button>
                 </div>
 
-                {target.provider === "vercel" && target.ownershipMode === "byo" ? (
+                {target.provider === "vercel" ? (
                   <p className="helper-text" style={{ margin: "0 0 0.6rem" }}>
                     FlowCI will install per-slot GitHub Actions secrets for Vercel deployment after the Vercel project is created.
                   </p>
@@ -391,36 +564,42 @@ export function DeploymentProvisioningSetup({
 
                 {vars.map((variable, variableIndex) => (
                   <div className="env-var-row" key={`${target.slot}-${targetIndex}-${variableIndex}`}>
-                    <input
-                      aria-label={
-                        targetIndex === 0
-                          ? `Variable key ${variableIndex + 1}`
-                          : `Variable key ${targetIndex + 1}-${variableIndex + 1}`
-                      }
-                      value={variable.key}
-                      onChange={(event) => {
-                        const nextEnvSet = updateEnvVar(envSet, variableIndex, { key: event.target.value.toUpperCase() });
-                        onChange(updateTargetAt(value, targetIndex, updateEnvSet(target, nextEnvSet)));
-                      }}
-                      placeholder="DATABASE_URL"
-                    />
-                    <input
-                      aria-label={
-                        targetIndex === 0
-                          ? `Variable value ${variableIndex + 1}`
-                          : `Variable value ${targetIndex + 1}-${variableIndex + 1}`
-                      }
-                      type="password"
-                      value={variable.value}
-                      onChange={(event) => {
-                        const nextEnvSet = updateEnvVar(envSet, variableIndex, { value: event.target.value });
-                        onChange(updateTargetAt(value, targetIndex, updateEnvSet(target, nextEnvSet)));
-                      }}
-                      placeholder="value"
-                    />
+                    <label>
+                      <span>Key</span>
+                      <input
+                        aria-label={
+                          targetIndex === 0
+                            ? `Variable key ${variableIndex + 1}`
+                            : `Variable key ${targetIndex + 1}-${variableIndex + 1}`
+                        }
+                        value={variable.key}
+                        onChange={(event) => {
+                          const nextEnvSet = updateEnvVar(envSet, variableIndex, { key: event.target.value.toUpperCase() });
+                          onChange(updateTargetAt(value, targetIndex, updateEnvSet(target, nextEnvSet)));
+                        }}
+                        placeholder="DATABASE_URL"
+                      />
+                    </label>
+                    <label>
+                      <span>Value</span>
+                      <input
+                        aria-label={
+                          targetIndex === 0
+                            ? `Variable value ${variableIndex + 1}`
+                            : `Variable value ${targetIndex + 1}-${variableIndex + 1}`
+                        }
+                        type="password"
+                        value={variable.value}
+                        onChange={(event) => {
+                          const nextEnvSet = updateEnvVar(envSet, variableIndex, { value: event.target.value });
+                          onChange(updateTargetAt(value, targetIndex, updateEnvSet(target, nextEnvSet)));
+                        }}
+                        placeholder="value"
+                      />
+                    </label>
                     <button
                       type="button"
-                      className="env-var-remove"
+                      className="env-var-row__remove env-var-remove"
                       aria-label={
                         targetIndex === 0
                           ? `Remove variable ${variableIndex + 1}`

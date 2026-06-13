@@ -414,7 +414,10 @@ describe("WorkflowBuilder project setup", () => {
 
   it("shows a create project error when createProject rejects", async () => {
     mockedCreateProject.mockRejectedValueOnce({
-      details: { message: "Repository name already exists" },
+      details: {
+        message:
+          'Repository already exists or name is invalid: {"message":"Repository creation failed.","errors":[{"resource":"Repository","code":"custom","field":"name","message":"name already exists on this account"}],"documentation_url":"https://docs.github.com/rest/repos/repos#create-a-repository-for-the-authenticated-user","status":"422"}',
+      },
     });
 
     await renderBuilder();
@@ -434,7 +437,10 @@ describe("WorkflowBuilder project setup", () => {
 
     await waitForCondition(() => container.textContent?.includes("Project creation failed") ?? false);
 
-    expect(container.textContent).toContain("Repository name already exists");
+    expect(container.textContent).toContain(
+      "A repository with this name already exists on this GitHub account. Choose another repository name and try again.",
+    );
+    expect(container.textContent).not.toContain("documentation_url");
     expect(mockedCreateGithubRepo).not.toHaveBeenCalled();
   });
 
