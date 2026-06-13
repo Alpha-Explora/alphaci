@@ -504,6 +504,14 @@ export interface CreateGithubRepoResponse {
   branchesCreated: string[];
 }
 
+export interface PendingAccountResponse {
+  pending: boolean;
+  login?: string;
+  archivedAt?: string;
+  purgeAt?: string;
+  retentionDays?: number;
+}
+
 /**
  * UI state type for the result of POST /api/v1/projects (unified endpoint).
  * Derived from CreateProjectResponse plus helpers computed on the client side.

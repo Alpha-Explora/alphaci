@@ -743,15 +743,15 @@ export default function SettingsPage() {
 
                     <div style={{ borderTop: "1px solid rgba(248, 113, 113, 0.12)" }} />
 
-                    {/* Delete account */}
+                    {/* Archive account */}
                     {!showDeleteConfirm ? (
                       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "1rem", flexWrap: "wrap" }}>
                         <div style={{ display: "flex", flexDirection: "column", gap: "0.3rem" }}>
                           <span style={{ fontSize: "0.9rem", fontWeight: 600, color: "var(--text-primary)" }}>
-                            Delete account permanently
+                            Archive your account
                           </span>
                           <span style={{ fontSize: "0.8rem", color: "var(--text-muted)" }}>
-                            All your data, projects, and workflows will be removed. This cannot be undone.
+                            Your account and data are archived for 30 days. You can restore everything by signing in again within that window.
                           </span>
                         </div>
                         <button
@@ -760,17 +760,21 @@ export default function SettingsPage() {
                           className="confirm-btn-danger"
                           style={{ padding: "0.4rem 0.85rem", fontSize: "0.82rem", flexShrink: 0 }}
                         >
-                          Delete account
+                          Archive my account
                         </button>
                       </div>
                     ) : (
                       <div style={{ background: "rgba(248, 113, 113, 0.05)", border: "1px solid rgba(248, 113, 113, 0.2)", borderRadius: "0.75rem", padding: "1.25rem", display: "flex", flexDirection: "column", gap: "1rem" }}>
-                        <div>
-                          <p style={{ margin: "0 0 0.3rem", fontSize: "0.9rem", fontWeight: 700, color: "var(--danger)" }}>
-                            This will permanently delete your account.
+                        <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+                          <p style={{ margin: 0, fontSize: "0.9rem", fontWeight: 700, color: "var(--danger)" }}>
+                            This will archive your account.
                           </p>
                           <p style={{ margin: 0, fontSize: "0.8rem", color: "var(--text-muted)" }}>
-                            All projects, workflows, subscriptions, and session data will be erased and cannot be recovered.
+                            Your account and all associated data will be archived — not immediately deleted. You can sign in with GitHub within{" "}
+                            <strong style={{ color: "var(--text-secondary)" }}>30 days</strong> to fully restore your account. After 30 days the archived account is permanently deleted.
+                          </p>
+                          <p style={{ margin: 0, fontSize: "0.8rem", color: "var(--text-muted)" }}>
+                            <strong style={{ color: "var(--text-secondary)" }}>Your GitHub repositories and any workflow files committed to them are not affected</strong> — they remain on GitHub regardless of what you choose here.
                           </p>
                         </div>
                         <div style={{ display: "flex", flexDirection: "column", gap: "0.4rem" }}>
@@ -820,7 +824,7 @@ export default function SettingsPage() {
                               transition: "all 0.2s ease",
                             }}
                           >
-                            {isDeleting ? "Deleting..." : "Delete my account"}
+                            {isDeleting ? "Archiving..." : "Archive my account"}
                           </button>
                           <button
                             type="button"
