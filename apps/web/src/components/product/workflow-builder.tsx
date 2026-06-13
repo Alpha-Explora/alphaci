@@ -44,7 +44,7 @@ interface WorkflowBuilderProps {
   session?: import("@/lib/api/contracts").AuthMeResponse | null;
 }
 
-export function WorkflowBuilder({ guest = false }: Readonly<WorkflowBuilderProps>) {
+export function WorkflowBuilder({ guest = false, session, onboardingCompleted }: Readonly<WorkflowBuilderProps>) {
   const prefersReducedMotion = useReducedMotion();
   const reducedMotion = prefersReducedMotion ?? false;
 
