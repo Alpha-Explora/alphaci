@@ -1,4 +1,4 @@
-import type { AuthMeResponse } from "./contracts";
+import type { AuthMeResponse, PendingAccountResponse } from "./contracts";
 import { getApiBaseUrl, request } from "./request";
 
 export function createGitHubLoginUrl(returnTo: string): string {
@@ -18,6 +18,28 @@ export async function logout(): Promise<void> {
 export async function deleteAccount(): Promise<void> {
   await request<{ ok: boolean }>("/auth/account", {
     method: "DELETE",
+  });
+}
+
+export async function completeOnboarding(): Promise<{ ok: boolean; onboardingCompleted: boolean }> {
+  return request<{ ok: boolean; onboardingCompleted: boolean }>("/auth/onboarding/complete", {
+    method: "POST",
+  });
+}
+
+export async function getPendingAccount(): Promise<PendingAccountResponse> {
+  return request<PendingAccountResponse>("/auth/account/pending");
+}
+
+export async function restoreAccount(): Promise<{ ok: boolean; restored: boolean }> {
+  return request<{ ok: boolean; restored: boolean }>("/auth/account/restore", {
+    method: "POST",
+  });
+}
+
+export async function startFreshAccount(): Promise<{ ok: boolean; created: boolean }> {
+  return request<{ ok: boolean; created: boolean }>("/auth/account/start-fresh", {
+    method: "POST",
   });
 }
 

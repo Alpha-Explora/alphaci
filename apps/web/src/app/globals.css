@@ -8133,3 +8133,269 @@ select option {
 @media (prefers-reduced-motion: reduce) {
   .workflow-studio-led { animation: none; }
 }
+
+/* ── driver.js onboarding tour — dark glass theme overrides ────────────── */
+.driver-popover {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-strong);
+  border-radius: 10px;
+  color: var(--text-primary);
+  box-shadow: var(--shadow-card);
+  max-width: 360px;
+  padding: 1.1rem 1.25rem 1rem;
+}
+
+.driver-popover-title {
+  font-family: var(--font-dash-display), 'Outfit', sans-serif;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--brand);
+  margin-bottom: 0.45rem;
+}
+
+.driver-popover-description {
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  line-height: 1.55;
+}
+
+.driver-popover-progress-text {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
+.driver-popover-footer {
+  margin-top: 0.85rem;
+  gap: 0.45rem;
+}
+
+.driver-popover-btn-base {
+  font-size: 0.8rem;
+  font-weight: 600;
+  border-radius: 6px;
+  padding: 0.38rem 0.85rem;
+  cursor: pointer;
+  border: 1px solid var(--border-strong);
+  background: transparent;
+  color: var(--text-secondary);
+  transition: border-color 0.15s, color 0.15s;
+}
+
+.driver-popover-btn-base:hover {
+  border-color: var(--brand);
+  color: var(--brand);
+}
+
+.driver-popover-next-btn {
+  background: var(--brand);
+  color: var(--bg-base);
+  border-color: var(--brand);
+}
+
+.driver-popover-next-btn:hover {
+  background: var(--brand-strong);
+  border-color: var(--brand-strong);
+  color: var(--bg-base);
+}
+
+.driver-popover-close-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-size: 1rem;
+  line-height: 1;
+  padding: 0.2rem 0.35rem;
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+.driver-popover-close-btn:hover {
+  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.driver-popover-arrow-side-left.driver-popover-arrow {
+  border-left-color: var(--bg-elevated);
+}
+
+.driver-popover-arrow-side-right.driver-popover-arrow {
+  border-right-color: var(--bg-elevated);
+}
+
+.driver-popover-arrow-side-top.driver-popover-arrow {
+  border-top-color: var(--bg-elevated);
+}
+
+.driver-popover-arrow-side-bottom.driver-popover-arrow {
+  border-bottom-color: var(--bg-elevated);
+}
+
+.driver-overlay {
+  background: rgba(2, 6, 23, 0.65);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .driver-popover {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+/* ── Guide / Manual page ─────────────────────────────────────────────────────── */
+
+.guide-layout {
+  display: grid;
+  grid-template-columns: 220px minmax(0, 1fr);
+  gap: 2rem;
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0.5rem var(--layout-gutter) 3rem;
+  align-items: start;
+}
+
+.guide-toc {
+  position: sticky;
+  top: 6rem;
+  display: flex;
+  flex-direction: column;
+}
+
+.guide-toc-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-secondary, rgba(255, 255, 255, 0.55));
+  margin-bottom: 0.6rem;
+}
+
+.guide-toc ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.12rem;
+  border-left: 1px solid var(--border-strong, rgba(255, 255, 255, 0.1));
+}
+
+.guide-toc a {
+  display: block;
+  padding: 0.38rem 0.7rem;
+  font-size: 0.84rem;
+  color: var(--text-secondary, rgba(255, 255, 255, 0.62));
+  text-decoration: none;
+  border-left: 2px solid transparent;
+  margin-left: -1px;
+  transition: color 0.18s ease, border-color 0.18s ease, background 0.18s ease;
+  border-radius: 0 0.3rem 0.3rem 0;
+}
+
+.guide-toc a:hover,
+.guide-toc a:focus-visible {
+  color: var(--text-primary);
+  border-left-color: var(--brand);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.guide-prose {
+  font-size: 0.92rem;
+  line-height: 1.65;
+  color: var(--text-secondary, rgba(255, 255, 255, 0.78));
+}
+
+.guide-prose p { margin: 0 0 0.7rem; }
+.guide-prose p:last-child { margin-bottom: 0; }
+
+.guide-prose ul,
+.guide-prose ol {
+  margin: 0.2rem 0 0.7rem;
+  padding-left: 1.2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.32rem;
+}
+
+.guide-prose li { padding-left: 0.15rem; }
+.guide-prose strong { color: var(--text-primary); font-weight: 650; }
+
+.guide-prose code {
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 0.82em;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--border-strong, rgba(255, 255, 255, 0.08));
+  border-radius: 0.3rem;
+  padding: 0.06rem 0.36rem;
+  color: var(--text-primary);
+}
+
+.guide-code {
+  margin: 0.2rem 0 0;
+  padding: 0.9rem 1rem;
+  background: rgba(2, 6, 23, 0.55);
+  border: 1px solid var(--border-strong, rgba(255, 255, 255, 0.1));
+  border-radius: 0.55rem;
+  overflow-x: auto;
+}
+
+.guide-code code {
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: 0.82rem;
+  line-height: 1.6;
+  color: var(--text-primary);
+  white-space: pre;
+}
+
+.guide-callout {
+  margin-top: 1rem;
+  padding: 0.8rem 1rem;
+  border-radius: 0.55rem;
+  font-size: 0.88rem;
+  color: var(--text-primary);
+  background: color-mix(in srgb, var(--brand) 10%, transparent);
+  border: 1px solid color-mix(in srgb, var(--brand) 35%, transparent);
+}
+
+.guide-faq-item {
+  border-bottom: 1px solid var(--border-strong, rgba(255, 255, 255, 0.08));
+  padding: 0.6rem 0;
+}
+
+.guide-faq-item:last-child { border-bottom: none; }
+
+.guide-faq-item summary {
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--text-primary);
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.guide-faq-item summary::before {
+  content: "+";
+  display: inline-flex;
+  width: 1rem;
+  justify-content: center;
+  color: var(--brand);
+  font-weight: 700;
+  transition: transform 0.2s ease;
+}
+
+.guide-faq-item[open] summary::before { content: "\2212"; }
+.guide-faq-item summary::-webkit-details-marker { display: none; }
+
+@media (max-width: 860px) {
+  .guide-layout {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .guide-toc {
+    position: static;
+    top: auto;
+  }
+}
