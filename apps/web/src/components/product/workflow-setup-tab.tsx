@@ -314,7 +314,7 @@ export function WorkflowSetupTab({
         <div>
           <span className="cp-section-heading">Catalog</span>
 
-          <fieldset style={{ border: "none", margin: 0, padding: 0, minInlineSize: "auto" }}>
+          <fieldset data-tour="repo-shape" style={{ border: "none", margin: 0, padding: 0, minInlineSize: "auto" }}>
             <legend className="input-label" style={{ ...labelAccentStyle, padding: 0 }}>
               Repository shape
             </legend>
@@ -834,7 +834,7 @@ export function WorkflowSetupTab({
                 >
                   Workflow checks
                 </span>
-                <div className="enhancement-chips" aria-label="Workflow checks" role="group" style={{ gap: "0.5rem", flexWrap: "wrap" }}>
+                <div data-tour="test-toggles" className="enhancement-chips" aria-label="Workflow checks" role="group" style={{ gap: "0.5rem", flexWrap: "wrap" }}>
                   {projectCatalog.supportedTestOptions.map((option) => (
                     <motion.label
                       key={option.key}

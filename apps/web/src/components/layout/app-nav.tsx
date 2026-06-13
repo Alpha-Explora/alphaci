@@ -23,6 +23,7 @@ interface AppNavProps {
 const coreNavItems = [
   { label: "Dashboard",  href: "/home",      icon: DashboardIcon,  key: "dashboard" },
   { label: "Workflows",  href: "/workflows",  icon: WorkflowsIcon,  key: "workflows" },
+  { label: "Guide",      href: "/guide",      icon: GuideIcon,      key: "guide"     },
 ];
 
 /* ── Icons ─────────────────────────────────────────────────────────────────── */
@@ -42,6 +43,15 @@ function WorkflowsIcon({ size = 13 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+    </svg>
+  );
+}
+
+function GuideIcon({ size = 13 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+      <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
     </svg>
   );
 }

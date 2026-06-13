@@ -46,6 +46,11 @@ jest.mock("framer-motion", () => {
   };
 });
 
+// The onboarding tour hook (rendered inside WorkflowBuilder) reads useSearchParams.
+jest.mock("next/navigation", () => ({
+  useSearchParams: () => ({ get: () => null }),
+}));
+
 jest.mock("../../src/lib/api/client", () => ({
   createGithubRepo: jest.fn(),
   createProject: jest.fn(),

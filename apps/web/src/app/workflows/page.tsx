@@ -133,6 +133,8 @@ export default function WorkflowsPage() {
           login={session?.user.login ?? "builder"}
           plan={session?.subscription.plan ?? "pro"}
           guest={guest}
+          session={session}
+          onboardingCompleted={session?.user.onboardingCompleted}
         />
       </div>
     </main>

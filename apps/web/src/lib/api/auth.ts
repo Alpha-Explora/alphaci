@@ -21,6 +21,12 @@ export async function deleteAccount(): Promise<void> {
   });
 }
 
+export async function completeOnboarding(): Promise<{ ok: boolean; onboardingCompleted: boolean }> {
+  return request<{ ok: boolean; onboardingCompleted: boolean }>("/auth/onboarding/complete", {
+    method: "POST",
+  });
+}
+
 export async function warmupBackend(): Promise<void> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 10_000);
