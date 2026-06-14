@@ -10,8 +10,10 @@ import { AppNav } from "@/components/layout/app-nav";
 import { FlowBackground } from "@/components/layout/flow-background";
 import { PipelineLogo } from "@/components/layout/pipeline-logo";
 import { PipelineLoader } from "@/components/layout/pipeline-loader";
+import { WelcomeModal } from "@/components/product/welcome-modal";
 import { useAuthSession } from "@/hooks/use-auth-session";
 import { logout, getProjects, getWorkflowHistory, getGithubRepos, disconnectProject, syncProjects } from "@/lib/api/client";
+import { completeOnboarding } from "@/lib/api/auth";
 import type { ProvisionedProject, WorkflowHistoryItem, GitHubRepo } from "@/lib/api/contracts";
 import { isGuest } from "@/lib/auth/subscription";
 
@@ -317,6 +319,9 @@ export default function HomeDashboardPage() {
   const [confirmDisconnectId, setConfirmDisconnectId] = useState<string | null>(null);
   const [isSyncing, setIsSyncing]               = useState(false);
   const [syncResult, setSyncResult]             = useState<{ orphaned: number; reachable: number; total: number } | null>(null);
+  // Welcome modal: shown once for new users (onboardingCompleted === false).
+  // Local flag dismisses immediately without waiting for a network response.
+  const [welcomeDismissed, setWelcomeDismissed] = useState(false);
 
   function loadHistory() {
     setHistoryLoading(true);
@@ -407,6 +412,15 @@ export default function HomeDashboardPage() {
     }
   }
 
+  function handleWelcomeDismiss() {
+    setWelcomeDismissed(true);
+    // Fire-and-forget: mark complete server-side. Idempotent if the tour also
+    // calls completeOnboarding later.
+    completeOnboarding().catch(() => {
+      // Non-fatal — the modal is already hidden optimistically.
+    });
+  }
+
   /* ── Helpers ────────────────────────────────────────────────────────────── */
   function projectBorderClass(status: string) {
     if (status === "provisioned") return "repo-card-success";
@@ -467,6 +481,14 @@ export default function HomeDashboardPage() {
   /* ── Signed-in or guest preview ─────────────────────────────────────────── */
   const guest = isGuest(session);
 
+  // Show the welcome modal for authenticated new users who have not yet
+  // completed onboarding and have not dismissed it this session.
+  const showWelcome =
+    status === "signed-in" &&
+    !guest &&
+    !welcomeDismissed &&
+    session?.user.onboardingCompleted === false;
+
   const normalizedRepoQuery = repoQuery.trim().toLowerCase();
   const filteredRepos = normalizedRepoQuery
     ? repos.filter((repo) =>
@@ -492,6 +514,14 @@ export default function HomeDashboardPage() {
         onLogout={() => void handleLogout()}
         isLoggingOut={isLoggingOut}
       />
+
+      {/* Welcome modal — shown once for new authenticated users */}
+      {showWelcome && (
+        <WelcomeModal
+          displayName={session?.user.login ?? session?.user.name ?? "there"}
+          onDismiss={handleWelcomeDismiss}
+        />
+      )}
 
       {guest && (
         <div className="guest-banner glass-panel" role="alert" style={{
