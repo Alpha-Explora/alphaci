@@ -561,6 +561,42 @@ export interface PendingAccountResponse {
   retentionDays?: number;
 }
 
+/* ── CI Runs ─────────────────────────────────────────────────────────────── */
+
+export type RunOverallStatus = "success" | "failure" | "running" | "cancelled" | "partial";
+export type StageId = "access" | "quality" | "package";
+export type StageStatus = "success" | "failure" | "running" | "cancelled" | "pending";
+export type MessageSeverity = "info" | "warning" | "error" | "success";
+
+export interface FriendlyMessage {
+  severity: MessageSeverity;
+  title: string;
+  detail: string;
+  hint: string;
+}
+
+export interface StageReport {
+  stage: StageId;
+  status: StageStatus;
+  friendlyMessages: FriendlyMessage[];
+  githubRunUrl: string;
+  updatedAt: string;
+}
+
+export interface RunGroup {
+  runId: number;
+  repoFullName: string;
+  branch: string;
+  commitSha: string;
+  startedAt: string;
+  overallStatus: RunOverallStatus;
+  stages: StageReport[];
+}
+
+export interface RunsResponse {
+  runs: RunGroup[];
+}
+
 /**
  * UI state type for the result of POST /api/v1/projects (unified endpoint).
  * Derived from CreateProjectResponse plus helpers computed on the client side.

@@ -160,6 +160,19 @@ h1, h2, h3 {
   letter-spacing: -0.02em;
 }
 
+/* ── Auth pages (login/signup): match the dashboard typography ──────────── */
+.auth-shell-split {
+  font-family: var(--font-dash-body), 'Plus Jakarta Sans', sans-serif;
+}
+
+.auth-shell-split h1,
+.auth-shell-split h2,
+.auth-shell-split h3,
+.auth-shell-split h4 {
+  font-family: var(--font-dash-display), 'Outfit', sans-serif;
+  letter-spacing: -0.02em;
+}
+
 /* ── Skip-to-content ───────────────────────────────────────────────────── */
 .skip-link {
   position: absolute;
@@ -8509,4 +8522,51 @@ select option {
     position: static;
     top: auto;
   }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   PIPELINE RUNS PAGE
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Spinner for running stage node */
+@keyframes runs-spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+/* Stage node focus ring — shown on :focus-visible */
+.runs-stage-node:focus-visible .runs-stage-focus-ring {
+  opacity: 1 !important;
+}
+
+/* Stage node base button reset */
+.runs-stage-node {
+  font-family: inherit;
+}
+
+/* Transition for all interactive states */
+.runs-stage-node:hover {
+  box-shadow: 0 0 24px var(--brand-glow), inset 0 1px 0 rgba(255,255,255,0.08) !important;
+}
+
+/* GitHub link hover */
+.runs-gh-link:hover {
+  text-decoration: underline;
+  color: var(--brand-strong);
+}
+
+/* Run card hover */
+.runs-run-card:hover {
+  border-color: rgba(255, 255, 255, 0.18);
+  box-shadow:
+    0 12px 40px rgba(0, 0, 0, 0.5),
+    0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+/* Intro blurb */
+.runs-intro-blurb {
+  padding: 0.85rem 1.1rem;
+  background: rgba(56, 189, 248, 0.04);
+  border: 1px solid rgba(56, 189, 248, 0.12);
+  border-radius: 0.75rem;
 }
