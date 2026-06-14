@@ -12,7 +12,11 @@ import { PipelineLogo } from "@/components/layout/pipeline-logo";
 import { PipelineLoader } from "@/components/layout/pipeline-loader";
 import { DeploymentProvidersSection } from "@/components/settings/deployment-providers-section";
 import { useAuthSession } from "@/hooks/use-auth-session";
-import { logout, deleteAccount, cancelMonthlySubscription } from "@/lib/api/client";
+import { useCapabilities } from "@/hooks/use-capabilities";
+import { logout, deleteAccount, cancelMonthlySubscription, getMyUsage } from "@/lib/api/client";
+import type { NotificationsResponse, UsageMeResponse, WorkspacesMeResponse } from "@/lib/api/contracts";
+import { getNotifications, markNotificationRead } from "@/lib/api/notifications";
+import { getMyWorkspaces } from "@/lib/api/workspaces";
 import { isGuest } from "@/lib/auth/subscription";
 
 /* ── Icon components ─────────────────────────────────────────────────────── */
@@ -234,6 +238,7 @@ export default function SettingsPage() {
   const router = useRouter();
   const prefersReducedMotion = useReducedMotion();
   const { status, session, error, refresh } = useAuthSession();
+  const { workspacesEnabled, notificationsEnabled } = useCapabilities();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [logoutMessage, setLogoutMessage] = useState<string | null>(null);
   const [activeSection, setActiveSection] = useState<SettingsSection>("account");
@@ -247,6 +252,13 @@ export default function SettingsPage() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteConfirmInput, setDeleteConfirmInput] = useState("");
   const [isCompactLayout, setIsCompactLayout] = useState(false);
+  const [usage, setUsage] = useState<UsageMeResponse | null>(null);
+  const [usageError, setUsageError] = useState<string | null>(null);
+  const [workspaces, setWorkspaces] = useState<WorkspacesMeResponse | null>(null);
+  const [workspacesError, setWorkspacesError] = useState<string | null>(null);
+  const [notifications, setNotifications] = useState<NotificationsResponse | null>(null);
+  const [notificationsError, setNotificationsError] = useState<string | null>(null);
+  const [markingNotificationId, setMarkingNotificationId] = useState<string | null>(null);
 
   useEffect(() => {
     if (status === "signed-out") {
@@ -261,6 +273,66 @@ export default function SettingsPage() {
     media.addEventListener("change", updateLayout);
     return () => media.removeEventListener("change", updateLayout);
   }, []);
+
+  useEffect(() => {
+    if (activeSection !== "billing") return;
+    let active = true;
+    void getMyUsage()
+      .then((response) => {
+        if (active) {
+          setUsage(response);
+          setUsageError(null);
+        }
+      })
+      .catch(() => {
+        if (active) {
+          setUsageError("Usage limits are unavailable right now.");
+        }
+      });
+    return () => {
+      active = false;
+    };
+  }, [activeSection]);
+
+  useEffect(() => {
+    if (activeSection !== "account" || !workspacesEnabled) return;
+    let active = true;
+    void getMyWorkspaces()
+      .then((response) => {
+        if (active) {
+          setWorkspaces(response);
+          setWorkspacesError(null);
+        }
+      })
+      .catch(() => {
+        if (active) {
+          setWorkspacesError("Workspaces are unavailable right now.");
+        }
+      });
+    return () => {
+      active = false;
+    };
+  }, [activeSection, workspacesEnabled]);
+
+  useEffect(() => {
+    if (activeSection !== "account" || !notificationsEnabled) return;
+    let active = true;
+    void getNotifications()
+      .then((response) => {
+        if (active) {
+          setNotifications(response);
+          setNotificationsError(null);
+        }
+      })
+      .catch(() => {
+        if (active) {
+          setNotificationsError("Notifications are unavailable right now.");
+        }
+      });
+    return () => {
+      active = false;
+    };
+  }, [activeSection, notificationsEnabled]);
 
   async function handleLogout() {
     setIsLoggingOut(true);
@@ -300,6 +372,31 @@ export default function SettingsPage() {
     } catch {
       setDeleteMessage("Failed to delete account. Please try again.");
       setIsDeleting(false);
+    }
+  }
+
+  async function handleMarkNotificationRead(id: string) {
+    setMarkingNotificationId(id);
+    setNotificationsError(null);
+    try {
+      await markNotificationRead(id);
+      setNotifications((current) =>
+        current
+          ? {
+              ...current,
+              unreadCount: Math.max(0, current.unreadCount - 1),
+              items: current.items.map((item) =>
+                item.id === id
+                  ? { ...item, readAt: item.readAt ?? new Date().toISOString() }
+                  : item,
+              ),
+            }
+          : current,
+      );
+    } catch {
+      setNotificationsError("Notification update failed.");
+    } finally {
+      setMarkingNotificationId(null);
     }
   }
 
@@ -623,6 +720,94 @@ export default function SettingsPage() {
                       ) : null}
                     </div>
                   </SettingsSection>
+                  {workspacesEnabled ? (
+                    <SettingsSection icon={<UserIcon />} title="Workspace" index={1}>
+                      {workspacesError ? (
+                        <p className="error-text" style={{ margin: 0 }}>{workspacesError}</p>
+                      ) : workspaces?.items.length ? (
+                        <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+                          {workspaces.items.map((workspace) => (
+                            <div
+                              key={workspace.id}
+                              className="hover-field"
+                              style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "1rem", flexWrap: "wrap" }}
+                            >
+                              <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
+                                <span style={{ fontSize: "0.9rem", fontWeight: 700, color: "var(--text-primary)" }}>
+                                  {workspace.name}
+                                </span>
+                                <span style={{ fontSize: "0.78rem", color: "var(--text-muted)", textTransform: "capitalize" }}>
+                                  {workspace.kind} / {workspace.role}
+                                </span>
+                              </div>
+                              <button type="button" disabled className="confirm-btn-neutral" style={{ opacity: 0.65, cursor: "not-allowed" }}>
+                                Members
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p style={{ margin: 0, fontSize: "0.8rem", color: "var(--text-muted)" }}>
+                          Loading workspace...
+                        </p>
+                      )}
+                    </SettingsSection>
+                  ) : null}
+
+                  {notificationsEnabled ? (
+                    <SettingsSection icon={<AlertTriangleIcon />} title="Notifications" index={2}>
+                      {notificationsError ? (
+                        <p className="error-text" style={{ margin: 0 }}>{notificationsError}</p>
+                      ) : notifications ? (
+                        <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+                          <span style={{ fontSize: "0.88rem", fontWeight: 700, color: "var(--text-primary)" }}>
+                            {notifications.unreadCount} unread
+                          </span>
+                          {notifications.items.length ? (
+                            notifications.items.map((notification) => (
+                              <div
+                                key={notification.id}
+                                className="hover-field"
+                                style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "1rem", flexWrap: "wrap" }}
+                              >
+                                <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem", maxWidth: "min(100%, 560px)" }}>
+                                  <span style={{ fontSize: "0.9rem", fontWeight: 700, color: "var(--text-primary)" }}>
+                                    {notification.title}
+                                  </span>
+                                  <span style={{ fontSize: "0.8rem", color: "var(--text-secondary)" }}>
+                                    {notification.body}
+                                  </span>
+                                  <span style={{ fontSize: "0.72rem", color: "var(--text-muted)", fontFamily: "ui-monospace, monospace" }}>
+                                    {notification.eventCode}
+                                  </span>
+                                </div>
+                                {notification.readAt ? (
+                                  <span className="dash-badge-violet">Read</span>
+                                ) : (
+                                  <button
+                                    type="button"
+                                    className="dash-action-btn"
+                                    disabled={markingNotificationId === notification.id}
+                                    onClick={() => void handleMarkNotificationRead(notification.id)}
+                                  >
+                                    {markingNotificationId === notification.id ? "Saving..." : "Mark read"}
+                                  </button>
+                                )}
+                              </div>
+                            ))
+                          ) : (
+                            <p style={{ margin: 0, fontSize: "0.8rem", color: "var(--text-muted)" }}>
+                              No notifications.
+                            </p>
+                          )}
+                        </div>
+                      ) : (
+                        <p style={{ margin: 0, fontSize: "0.8rem", color: "var(--text-muted)" }}>
+                          Loading notifications...
+                        </p>
+                      )}
+                    </SettingsSection>
+                  ) : null}
                 </>
               )}
 
@@ -717,6 +902,31 @@ export default function SettingsPage() {
                           )}
                         </div>
                       )}
+                      <div style={{ borderTop: "1px solid var(--border-soft)", paddingTop: "1rem", display: "flex", flexDirection: "column", gap: "0.6rem" }}>
+                        <span style={{ fontSize: "0.88rem", fontWeight: 700, color: "var(--text-primary)" }}>
+                          Usage
+                        </span>
+                        {usageError ? (
+                          <p className="error-text" style={{ margin: 0 }}>{usageError}</p>
+                        ) : usage ? (
+                          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "0.5rem" }}>
+                            {usage.items.map((item) => (
+                              <div key={item.code} className="hover-field">
+                                <span style={{ fontSize: "0.68rem", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.08em" }}>
+                                  {item.code.replaceAll("_", " ")}
+                                </span>
+                                <span style={{ fontSize: "0.9rem", fontWeight: 700, color: item.upgradeRequired ? "var(--danger)" : "var(--text-primary)" }}>
+                                  {item.current} / {item.limit}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <p style={{ margin: 0, fontSize: "0.8rem", color: "var(--text-muted)" }}>
+                            Loading usage...
+                          </p>
+                        )}
+                      </div>
                     </div>
                   </SettingsSection>
                   <DeploymentProvidersSection />

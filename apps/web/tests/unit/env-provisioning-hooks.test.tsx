@@ -7,11 +7,13 @@ import { useProviderConnections } from "../../src/hooks/use-provider-connections
 import {
   createDeploymentTarget,
   createProviderConnection,
+  deleteProjectEnvMetadata,
   listDeploymentTargets,
   listProjectEnvMetadata,
   listProviderConnections,
   provisionProjectEnvVars,
   revokeProviderConnection,
+  validateProjectEnvVars,
 } from "../../src/lib/api/client";
 import type {
   DeploymentTarget,
@@ -22,20 +24,24 @@ import type {
 jest.mock("../../src/lib/api/client", () => ({
   createDeploymentTarget: jest.fn(),
   createProviderConnection: jest.fn(),
+  deleteProjectEnvMetadata: jest.fn(),
   listDeploymentTargets: jest.fn(),
   listProjectEnvMetadata: jest.fn(),
   listProviderConnections: jest.fn(),
   provisionProjectEnvVars: jest.fn(),
   revokeProviderConnection: jest.fn(),
+  validateProjectEnvVars: jest.fn(),
 }));
 
 const mockedCreateDeploymentTarget = createDeploymentTarget as jest.MockedFunction<typeof createDeploymentTarget>;
 const mockedCreateProviderConnection = createProviderConnection as jest.MockedFunction<typeof createProviderConnection>;
+const mockedDeleteProjectEnvMetadata = deleteProjectEnvMetadata as jest.MockedFunction<typeof deleteProjectEnvMetadata>;
 const mockedListDeploymentTargets = listDeploymentTargets as jest.MockedFunction<typeof listDeploymentTargets>;
 const mockedListProjectEnvMetadata = listProjectEnvMetadata as jest.MockedFunction<typeof listProjectEnvMetadata>;
 const mockedListProviderConnections = listProviderConnections as jest.MockedFunction<typeof listProviderConnections>;
 const mockedProvisionProjectEnvVars = provisionProjectEnvVars as jest.MockedFunction<typeof provisionProjectEnvVars>;
 const mockedRevokeProviderConnection = revokeProviderConnection as jest.MockedFunction<typeof revokeProviderConnection>;
+const mockedValidateProjectEnvVars = validateProjectEnvVars as jest.MockedFunction<typeof validateProjectEnvVars>;
 
 const activeConnection: ProviderConnection = {
   id: "connection-1",
@@ -230,6 +236,50 @@ describe("env provisioning hooks", () => {
       variables: [{ key: "NEXT_PUBLIC_API_URL", value: "https://api.example.com" }],
     });
     expect(mockedListDeploymentTargets).toHaveBeenCalledTimes(2);
+    expect(snapshots.at(-1)?.saving).toBe(false);
+  });
+
+  it("validates env text and removes metadata through the project hook", async () => {
+    mockedListDeploymentTargets.mockResolvedValue([deploymentTarget]);
+    mockedListProjectEnvMetadata.mockResolvedValue([envMetadata]);
+    mockedListProviderConnections.mockResolvedValue([activeConnection]);
+    mockedValidateProjectEnvVars.mockResolvedValue({
+      keyCount: 2,
+      keys: ["DATABASE_URL", "API_KEY"],
+      duplicates: [],
+      invalidKeys: [],
+      warnings: [],
+    });
+    mockedDeleteProjectEnvMetadata.mockResolvedValue({
+      removed: true,
+      key: "DATABASE_URL",
+    });
+
+    const snapshots = renderProjectHook();
+    await flushEffects();
+
+    await expect(
+      snapshots.at(-1)?.validateEnvText({
+        deploymentTargetId: "target-1",
+        environment: "test",
+        text: "DATABASE_URL=postgres://secret\nAPI_KEY=secret",
+      }),
+    ).resolves.toMatchObject({
+      keyCount: 2,
+      keys: ["DATABASE_URL", "API_KEY"],
+    });
+    expect(mockedValidateProjectEnvVars).toHaveBeenCalledWith("project-1", {
+      deploymentTargetId: "target-1",
+      environment: "test",
+      text: "DATABASE_URL=postgres://secret\nAPI_KEY=secret",
+    });
+
+    await act(async () => {
+      await snapshots.at(-1)?.removeMetadata("env-1");
+    });
+
+    expect(mockedDeleteProjectEnvMetadata).toHaveBeenCalledWith("project-1", "env-1");
+    expect(mockedListProjectEnvMetadata).toHaveBeenCalledTimes(2);
     expect(snapshots.at(-1)?.saving).toBe(false);
   });
 

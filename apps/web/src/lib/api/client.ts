@@ -7,4 +7,7 @@ export * from "./github";
 export * from "./projects";
 export * from "./request";
 export * from "./subscription";
+export * from "./usage";
+export * from "./workspaces";
+export * from "./notifications";
 export * from "./workflows";

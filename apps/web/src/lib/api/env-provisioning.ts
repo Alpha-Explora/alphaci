@@ -1,11 +1,14 @@
 import type {
   CreateDeploymentTargetRequest,
   CreateProviderConnectionRequest,
+  DeleteEnvVarMetadataResponse,
   DeploymentTarget,
   EnvVarMetadata,
   ProviderConnection,
   ProvisionEnvVarsRequest,
   ProvisionEnvVarsResponse,
+  ValidateEnvVarsRequest,
+  ValidateEnvVarsResponse,
 } from "./contracts";
 import { request } from "./request";
 
@@ -62,6 +65,31 @@ export function provisionProjectEnvVars(
     {
       method: "POST",
       body: JSON.stringify(payload),
+    },
+  );
+}
+
+export function validateProjectEnvVars(
+  projectId: string,
+  payload: ValidateEnvVarsRequest,
+): Promise<ValidateEnvVarsResponse> {
+  return request<ValidateEnvVarsResponse>(
+    `/projects/${encodeURIComponent(projectId)}/env-vars/validate`,
+    {
+      method: "POST",
+      body: JSON.stringify(payload),
+    },
+  );
+}
+
+export function deleteProjectEnvMetadata(
+  projectId: string,
+  metadataId: string,
+): Promise<DeleteEnvVarMetadataResponse> {
+  return request<DeleteEnvVarMetadataResponse>(
+    `/projects/${encodeURIComponent(projectId)}/env-vars/${encodeURIComponent(metadataId)}`,
+    {
+      method: "DELETE",
     },
   );
 }

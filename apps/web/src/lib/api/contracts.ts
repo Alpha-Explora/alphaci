@@ -57,6 +57,53 @@ export interface CapabilitiesResponse {
     environments: EnvEnvironment[];
     modes: EnvOwnershipMode[];
   };
+  projectSyncSnapshots: {
+    enabled: boolean;
+    liveGithubEnabled?: boolean;
+    liveProvidersEnabled?: boolean;
+    mode: "local_snapshot";
+  };
+  workflowSettingsPreview: {
+    enabled: boolean;
+  };
+  workflowUpdatePr: {
+    enabled: boolean;
+  };
+  projectTargetManagement?: {
+    enabled: boolean;
+  };
+  ciRunTracking?: {
+    enabled: boolean;
+    liveGithubEnabled: boolean;
+    mode: "local_mock";
+  };
+  deploymentHistory?: {
+    enabled: boolean;
+    liveProvidersEnabled: boolean;
+    mode: "local_mock";
+  };
+  driftDetection?: {
+    enabled: boolean;
+    liveProviderChecksEnabled?: boolean;
+    mode: "local_snapshot";
+  };
+  driftRepair?: {
+    enabled: boolean;
+    liveRepairEnabled?: boolean;
+    mode: "local_safe";
+  };
+  usageQuotas?: {
+    enabled: boolean;
+  };
+  workspaces?: {
+    enabled: boolean;
+  };
+  auditEvents?: {
+    enabled: boolean;
+  };
+  notifications?: {
+    enabled: boolean;
+  };
 }
 
 export interface ProviderConnection {
@@ -130,6 +177,49 @@ export interface CreateDeploymentTargetRequest {
   environmentMap?: Record<string, unknown>;
 }
 
+export interface UpdateDeploymentTargetRequest {
+  slot?: EnvTargetSlot;
+  providerProjectName?: string;
+  branchName?: string;
+  rootDirectory?: string | null;
+  buildCommand?: string | null;
+  startCommand?: string | null;
+  renderEnvironmentName?: EnvEnvironment | null;
+}
+
+export interface DeploymentTargetSyncResponse {
+  mode: "local_metadata";
+  status: DeploymentTarget["status"];
+  findings: Array<{
+    code: string;
+    severity: "warning";
+    message: string;
+  }>;
+  target: DeploymentTarget;
+}
+
+export interface DeploymentTargetActionsResponse {
+  targetId: string;
+  provider: EnvProvider;
+  actions: {
+    sync: {
+      enabled: boolean;
+      mode: "local_metadata";
+    };
+    detach: {
+      enabled: boolean;
+    };
+    reinstallDeploymentSecrets: {
+      enabled: boolean;
+      reason?: string;
+    };
+    openProviderDashboard: {
+      enabled: boolean;
+      url: string | null;
+    };
+  };
+}
+
 export interface EnvVarMetadata {
   id: string;
   projectId: string;
@@ -142,6 +232,7 @@ export interface EnvVarMetadata {
   lastProvisionedBy: string;
   status: "provisioned" | "failed";
   errorSummary: string | null;
+  removedAt?: string | null;
 }
 
 export interface ProvisionEnvVarsRequest {
@@ -153,6 +244,25 @@ export interface ProvisionEnvVarsRequest {
 export interface ProvisionEnvVarsResponse {
   provisioned: Array<{ key: string; status: "provisioned" }>;
   failed: Array<{ key: string; status: "failed"; errorSummary: string }>;
+}
+
+export interface ValidateEnvVarsRequest {
+  deploymentTargetId: string;
+  environment: EnvEnvironment;
+  text: string;
+}
+
+export interface ValidateEnvVarsResponse {
+  keyCount: number;
+  keys: string[];
+  duplicates: string[];
+  invalidKeys: string[];
+  warnings: Array<{ code: string; message: string }>;
+}
+
+export interface DeleteEnvVarMetadataResponse {
+  removed: true;
+  key: string;
 }
 
 export interface DeploymentProvisioningEnvSet {
@@ -300,6 +410,67 @@ export interface SubscriptionCheckoutResponse {
 export interface SubscriptionCheckoutStatusResponse {
   status: string;
   subscription?: SubscriptionInfo;
+}
+
+export type UsageLimitCode =
+  | "projects"
+  | "managed_render_services"
+  | "managed_vercel_projects"
+  | "deployment_targets"
+  | "env_keys"
+  | "workflow_prs";
+
+export interface UsageLimitItem {
+  code: UsageLimitCode;
+  current: number;
+  limit: number;
+  upgradeRequired: boolean;
+}
+
+export interface UsageMeResponse {
+  enabled: boolean;
+  plan: "free" | "pro";
+  items: UsageLimitItem[];
+}
+
+export interface WorkspaceSummary {
+  id: string;
+  name: string;
+  kind: "personal" | "team";
+  role: "owner" | "admin" | "developer" | "viewer";
+}
+
+export interface WorkspacesMeResponse {
+  enabled: boolean;
+  items: WorkspaceSummary[];
+}
+
+export interface NotificationItem {
+  id: string;
+  title: string;
+  body: string;
+  eventCode: string;
+  readAt: string | null;
+  createdAt: string;
+}
+
+export interface NotificationsResponse {
+  enabled: boolean;
+  items: NotificationItem[];
+  unreadCount: number;
+}
+
+export interface ProjectAuditEvent {
+  id: string;
+  eventCode: string;
+  message: string;
+  actorUserId: string | null;
+  createdAt: string;
+}
+
+export interface ProjectAuditEventsResponse {
+  enabled: boolean;
+  items: ProjectAuditEvent[];
 }
 
 export interface NodeVersionOption {
@@ -500,6 +671,252 @@ export interface ProvisionedProject {
   projectTypeId?: string | null;
   workflowRecipeId?: string | null;
   projectOptions?: Record<string, unknown> | null;
+}
+
+export type ProjectOverviewHealthStatus = "ok" | "warning" | "error";
+
+export interface ProjectDashboardSnapshotFinding {
+  code: string;
+  severity: ProjectOverviewHealthStatus;
+  message?: string;
+  source?: "local_snapshot";
+}
+
+export interface ProjectDashboardSnapshot {
+  id: string;
+  projectId: string;
+  status: ProjectOverviewHealthStatus;
+  summary: Record<string, unknown>;
+  findings: ProjectDashboardSnapshotFinding[];
+  startedAt: string;
+  completedAt: string;
+  createdBy: string | null;
+  createdAt: string;
+}
+
+export interface ProjectOverviewResponse {
+  project: ProvisionedProject & {
+    createdAt: string;
+    updatedAt: string;
+  };
+  workflow: {
+    path: string;
+    files: WorkflowFileMetadata[];
+    stageCount: number;
+    history: WorkflowHistoryItem[];
+  };
+  deploymentTargets: {
+    items: DeploymentTarget[];
+    count: number;
+  };
+  environment: {
+    items: EnvVarMetadata[];
+    count: number;
+    failedCount: number;
+  };
+  ciAuth: {
+    status: "active" | "revoked" | "missing";
+    tokenPresent: boolean;
+    tokenPrefix: string | null;
+    createdAt: string | null;
+    updatedAt: string | null;
+    revokedAt: string | null;
+  };
+  health: {
+    summary: ProjectOverviewHealthStatus;
+    checks: Array<{
+      key: string;
+      label: string;
+      status: ProjectOverviewHealthStatus;
+      message: string;
+    }>;
+  };
+  syncSnapshot: {
+    enabled: boolean;
+    mode: "local_snapshot";
+    latest: ProjectDashboardSnapshot | null;
+  };
+  capabilities: {
+    envProvisioning: boolean;
+    workflowSettings: boolean;
+    syncSnapshots: boolean;
+    ciRunTracking: boolean;
+    deploymentHistory: boolean;
+    driftDetection: boolean;
+  };
+}
+
+export type ProjectCiRunStage =
+  | "access_gate"
+  | "quality"
+  | "package"
+  | "deploy_render"
+  | "deploy_vercel"
+  | "unknown";
+
+export interface ProjectCiRun {
+  id: string;
+  stage: ProjectCiRunStage;
+  workflowName: string;
+  branch: string;
+  commitSha: string | null;
+  actor: string;
+  status: "queued" | "in_progress" | "completed";
+  conclusion: "success" | "failure" | "cancelled" | "skipped" | null;
+  createdAt: string;
+  updatedAt: string;
+  htmlUrl: string;
+  canRerun: boolean;
+}
+
+export interface ProjectCiRunsResponse {
+  enabled: boolean;
+  mode: "local_mock";
+  liveGithubEnabled: boolean;
+  githubActionsUrl: string;
+  runs: ProjectCiRun[];
+}
+
+export interface ProjectCiRunRerunResponse {
+  enabled: false;
+  runId: string;
+  reason: string;
+}
+
+export type DeploymentHistoryStatus =
+  | "queued"
+  | "building"
+  | "ready"
+  | "failed"
+  | "canceled"
+  | "unknown";
+
+export interface ProjectDeploymentHistoryItem {
+  id: string;
+  targetId: string;
+  targetName: string;
+  provider: EnvProvider;
+  environment: string | null;
+  branch: string | null;
+  commitSha: string | null;
+  status: DeploymentHistoryStatus;
+  createdAt: string;
+  readyAt: string | null;
+  providerUrl: string;
+}
+
+export interface ProjectDeploymentsResponse {
+  enabled: boolean;
+  mode: "local_mock";
+  liveProvidersEnabled: boolean;
+  deployments: ProjectDeploymentHistoryItem[];
+}
+
+export type ProjectDriftSeverity = "info" | "warning" | "error";
+export type ProjectDriftStatus = "active" | "resolved" | "ignored";
+
+export interface ProjectDriftFinding {
+  id: string;
+  projectId: string;
+  targetId: string | null;
+  source: "local_snapshot";
+  severity: ProjectDriftSeverity;
+  code: string;
+  message: string;
+  details: Record<string, unknown>;
+  status: ProjectDriftStatus;
+  detectedAt: string;
+  resolvedAt: string | null;
+}
+
+export interface ProjectDriftResponse {
+  enabled: boolean;
+  mode: "local_snapshot";
+  findings: ProjectDriftFinding[];
+}
+
+export type ProjectDriftRepairAction =
+  | "regenerate_workflow_preview"
+  | "create_workflow_update_pr"
+  | "rotate_ci_token"
+  | "detach_target"
+  | "mark_ignored";
+
+export interface ProjectDriftRepairResponse {
+  enabled: boolean;
+  mode: "local_safe";
+  findingId: string;
+  action: ProjectDriftRepairAction;
+  status: "completed" | "disabled";
+  message: string;
+  result?: Record<string, unknown>;
+}
+
+export interface ProjectSyncSnapshotResponse {
+  snapshot: ProjectDashboardSnapshot;
+  overview: ProjectOverviewResponse;
+}
+
+export interface WorkflowSettings {
+  projectId: string;
+  templateId: string;
+  projectTypeId: string | null;
+  workflowRecipeId: string | null;
+  serviceName: string;
+  servicePath: string;
+  nodeVersion: string;
+  packageManager: "npm";
+  coverageThreshold: number;
+  centralWorkflowRef: string;
+  checks: {
+    lint: boolean;
+    unit: boolean;
+    build: boolean;
+    security: boolean;
+  };
+}
+
+export interface WorkflowSettingsResponse {
+  enabled: boolean;
+  source: "stored" | "project_options";
+  settings: WorkflowSettings;
+}
+
+export interface WorkflowSettingsPreviewRequest {
+  templateId?: string;
+  projectTypeId?: string | null;
+  workflowRecipeId?: string | null;
+  serviceName?: string;
+  servicePath?: string;
+  nodeVersion?: string;
+  packageManager?: "npm";
+  coverageThreshold?: number;
+  centralWorkflowRef?: string;
+  checks?: Partial<WorkflowSettings["checks"]>;
+}
+
+export interface WorkflowSettingsPreviewResponse {
+  settings: WorkflowSettings;
+  workflowFiles: Array<WorkflowFileMetadata & { yaml: string }>;
+  diffSummary: Array<{
+    path: string;
+    status: "new" | "changed" | "unchanged";
+  }>;
+  validationWarnings: Array<{
+    field: string;
+    message: string;
+  }>;
+}
+
+export interface WorkflowUpdatePullRequestResponse {
+  projectId: string;
+  repoFullName: string;
+  branchName: string;
+  workflowPath: string;
+  workflowFiles: WorkflowFileMetadata[];
+  pullRequestNumber: number;
+  pullRequestUrl: string;
+  status: "created";
 }
 
 export interface ProvisionedProjectsResponse {
