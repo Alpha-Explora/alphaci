@@ -28,6 +28,7 @@ export interface SessionUser {
   name?: string;
   avatarUrl?: string;
   email?: string;
+  onboardingCompleted: boolean;
 }
 
 export interface SubscriptionInfo {
@@ -967,6 +968,14 @@ export interface CreateGithubRepoResponse {
   cloneUrl: string;
   defaultBranch: string;
   branchesCreated: string[];
+}
+
+export interface PendingAccountResponse {
+  pending: boolean;
+  login?: string;
+  archivedAt?: string;
+  purgeAt?: string;
+  retentionDays?: number;
 }
 
 /**

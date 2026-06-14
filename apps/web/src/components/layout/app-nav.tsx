@@ -21,8 +21,8 @@ interface AppNavProps {
 /* ── Nav items ─────────────────────────────────────────────────────────────── */
 
 const coreNavItems = [
-  { label: "Dashboard",  href: "/home",      icon: DashboardIcon,  key: "dashboard" },
-  { label: "Workflows",  href: "/workflows",  icon: WorkflowsIcon,  key: "workflows" },
+  { label: "Dashboard", href: "/home",      icon: DashboardIcon, key: "dashboard" },
+  { label: "Workflows", href: "/workflows", icon: WorkflowsIcon, key: "workflows" },
 ];
 
 /* ── Icons ─────────────────────────────────────────────────────────────────── */

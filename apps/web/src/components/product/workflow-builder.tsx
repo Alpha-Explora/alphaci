@@ -22,6 +22,7 @@ import { useProjectOptionsCatalog } from "@/hooks/use-project-options-catalog";
 import { useProvisionedProjects } from "@/hooks/use-provisioned-projects";
 import { useWorkflowCatalog } from "@/hooks/use-workflow-catalog";
 import { useWorkflowHistory } from "@/hooks/use-workflow-history";
+import { useOnboardingTour } from "@/hooks/use-onboarding-tour";
 
 import { WorkflowAllTab } from "./workflow-all-tab";
 import {
@@ -39,9 +40,11 @@ interface WorkflowBuilderProps {
   login: string;
   plan: string;
   guest?: boolean;
+  onboardingCompleted?: boolean;
+  session?: import("@/lib/api/contracts").AuthMeResponse | null;
 }
 
-export function WorkflowBuilder({ guest = false }: Readonly<WorkflowBuilderProps>) {
+export function WorkflowBuilder({ guest = false, session, onboardingCompleted }: Readonly<WorkflowBuilderProps>) {
   const prefersReducedMotion = useReducedMotion();
   const reducedMotion = prefersReducedMotion ?? false;
 
@@ -66,6 +69,13 @@ export function WorkflowBuilder({ guest = false }: Readonly<WorkflowBuilderProps
   const createForm = useCreateProjectForm();
   const deploymentProvisioning = useDeploymentProvisioningForm();
   const github = useGithubInstallations(setStatusMessage, () => undefined);
+
+  const { startTour } = useOnboardingTour({
+    session: session ?? null,
+    guest,
+    isSetupTabActive: activeTab === "setup",
+    onboardingCompleted,
+  });
 
   useEffect(() => {
     const { defaultNodeVersion, nodeVersions } = projectCatalog;
@@ -353,28 +363,46 @@ export function WorkflowBuilder({ guest = false }: Readonly<WorkflowBuilderProps
           onChange={setActiveTab}
           onKeyDown={handleTabKeyDown}
           trailing={
-            !github.hasAllRepositoriesInstallation ? (
-              <>
-                <span className="gh-app-status-chip gh-app-status-chip--warn">
-                  <span className="gh-app-status-dot" aria-hidden="true" />
-                  GitHub App not installed
-                </span>
-                {github.installUrl ? (
-                  <a
-                    href={github.installUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="gh-app-install-link"
-                  >
-                    Install GitHub App
-                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                      <line x1="7" y1="17" x2="17" y2="7" />
-                      <polyline points="7 7 17 7 17 17" />
-                    </svg>
-                  </a>
-                ) : null}
-              </>
-            ) : null
+            <>
+              {!guest && activeTab === "setup" ? (
+                <button
+                  type="button"
+                  className="gh-app-install-link"
+                  style={{ background: "none", border: "none", cursor: "pointer", padding: 0 }}
+                  aria-label="Show guided tour for the Create Project form"
+                  onClick={startTour}
+                >
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <circle cx="12" cy="12" r="10" />
+                    <line x1="12" y1="8" x2="12" y2="12" />
+                    <line x1="12" y1="16" x2="12.01" y2="16" />
+                  </svg>
+                  Show guide
+                </button>
+              ) : null}
+              {!github.hasAllRepositoriesInstallation ? (
+                <>
+                  <span className="gh-app-status-chip gh-app-status-chip--warn">
+                    <span className="gh-app-status-dot" aria-hidden="true" />
+                    GitHub App not installed
+                  </span>
+                  {github.installUrl ? (
+                    <a
+                      href={github.installUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="gh-app-install-link"
+                    >
+                      Install GitHub App
+                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                        <line x1="7" y1="17" x2="17" y2="7" />
+                        <polyline points="7 7 17 7 17 17" />
+                      </svg>
+                    </a>
+                  ) : null}
+                </>
+              ) : null}
+            </>
           }
         />
 

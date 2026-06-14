@@ -56,6 +56,15 @@ function UserIcon({ size = 16 }: { size?: number }) {
   );
 }
 
+function BookOpenIcon({ size = 16 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" />
+      <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
+    </svg>
+  );
+}
+
 function AlertTriangleIcon({ size = 16 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -207,12 +216,13 @@ function SettingsSection({
 
 /* ── Page ───────────────────────────────────────────────────────────────── */
 
-type SettingsSection = "account" | "connections" | "billing" | "danger";
+type SettingsSection = "account" | "connections" | "billing" | "guide" | "danger";
 
 const SECTION_LABELS: Record<SettingsSection, string> = {
   account:     "Account",
   connections: "Connections",
   billing:     "Billing",
+  guide:       "Guide",
   danger:      "Danger Zone",
 };
 
@@ -544,13 +554,14 @@ export default function SettingsPage() {
           </div>
 
           {/* Section nav buttons */}
-          {(["account", "connections", "billing", "danger"] as SettingsSection[]).map((sec) => {
+          {(["account", "connections", "billing", "guide", "danger"] as SettingsSection[]).map((sec) => {
             const isActive = activeSection === sec;
             const isDanger = sec === "danger";
             const icons: Record<SettingsSection, React.ReactNode> = {
               account:     <UserIcon size={14} />,
               connections: <GithubIcon size={14} />,
               billing:     <CreditCardIcon size={14} />,
+              guide:       <BookOpenIcon size={14} />,
               danger:      <AlertTriangleIcon size={14} />,
             };
             return (
@@ -922,6 +933,79 @@ export default function SettingsPage() {
                 </>
               )}
 
+              {/* ── Guide section ── */}
+              {activeSection === "guide" && (
+                <SettingsSection icon={<BookOpenIcon />} title="Guide" index={0}>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
+
+                    <p style={{ margin: 0, fontSize: "0.88rem", color: "var(--text-secondary)", lineHeight: 1.6 }}>
+                      FlowCI Studio turns a blank idea into a working repository in one step — GitHub repo, protected branches, and a ready-to-run CI/CD pipeline, all committed automatically.
+                    </p>
+
+                    {/* Topic overview */}
+                    <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+                      <p style={{ margin: 0, fontSize: "0.72rem", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--text-muted)" }}>
+                        What is covered
+                      </p>
+                      <div style={{ display: "flex", flexDirection: "column", gap: "0.3rem" }}>
+                        {[
+                          "Getting started — sign in, install the GitHub App",
+                          "Creating a project — repo shapes, framework, recipe",
+                          "Branch strategy — test → uat → main promotion flow",
+                          "CI/CD quality gates — lint, tests, security, E2E",
+                          "Managing projects — current projects and catalog",
+                          "FAQ and troubleshooting",
+                        ].map((topic) => (
+                          <div
+                            key={topic}
+                            style={{
+                              display: "flex",
+                              alignItems: "flex-start",
+                              gap: "0.55rem",
+                              fontSize: "0.84rem",
+                              color: "var(--text-secondary)",
+                              lineHeight: 1.45,
+                            }}
+                          >
+                            <span
+                              aria-hidden="true"
+                              style={{
+                                width: "5px",
+                                height: "5px",
+                                borderRadius: "50%",
+                                background: "var(--brand)",
+                                marginTop: "0.45em",
+                                flexShrink: 0,
+                              }}
+                            />
+                            {topic}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Action row */}
+                    <div style={{ display: "flex", gap: "0.6rem", flexWrap: "wrap", paddingTop: "0.25rem", borderTop: "1px solid var(--border-soft)" }}>
+                      <Link
+                        href="/guide"
+                        className="primary-button"
+                        style={{ fontSize: "0.82rem", padding: "0.45rem 1.1rem" }}
+                      >
+                        Open full guide
+                      </Link>
+                      <Link
+                        href="/workflows?tour=1"
+                        className="ghost-button"
+                        style={{ fontSize: "0.82rem", padding: "0.45rem 1.1rem" }}
+                        aria-label="Replay the guided product tour on the Workflows Setup tab"
+                      >
+                        Replay guided tour
+                      </Link>
+                    </div>
+                  </div>
+                </SettingsSection>
+              )}
+
               {/* ── Danger Zone section ── */}
               {activeSection === "danger" && (
                 <SettingsSection icon={<AlertTriangleIcon />} title="Danger Zone" index={0} danger>
@@ -953,15 +1037,15 @@ export default function SettingsPage() {
 
                     <div style={{ borderTop: "1px solid rgba(248, 113, 113, 0.12)" }} />
 
-                    {/* Delete account */}
+                    {/* Archive account */}
                     {!showDeleteConfirm ? (
                       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "1rem", flexWrap: "wrap" }}>
                         <div style={{ display: "flex", flexDirection: "column", gap: "0.3rem" }}>
                           <span style={{ fontSize: "0.9rem", fontWeight: 600, color: "var(--text-primary)" }}>
-                            Delete account permanently
+                            Archive your account
                           </span>
                           <span style={{ fontSize: "0.8rem", color: "var(--text-muted)" }}>
-                            All your data, projects, and workflows will be removed. This cannot be undone.
+                            Your account and data are archived for 30 days. You can restore everything by signing in again within that window.
                           </span>
                         </div>
                         <button
@@ -970,17 +1054,21 @@ export default function SettingsPage() {
                           className="confirm-btn-danger"
                           style={{ padding: "0.4rem 0.85rem", fontSize: "0.82rem", flexShrink: 0 }}
                         >
-                          Delete account
+                          Archive my account
                         </button>
                       </div>
                     ) : (
                       <div style={{ background: "rgba(248, 113, 113, 0.05)", border: "1px solid rgba(248, 113, 113, 0.2)", borderRadius: "0.75rem", padding: "1.25rem", display: "flex", flexDirection: "column", gap: "1rem" }}>
-                        <div>
-                          <p style={{ margin: "0 0 0.3rem", fontSize: "0.9rem", fontWeight: 700, color: "var(--danger)" }}>
-                            This will permanently delete your account.
+                        <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+                          <p style={{ margin: 0, fontSize: "0.9rem", fontWeight: 700, color: "var(--danger)" }}>
+                            This will archive your account.
                           </p>
                           <p style={{ margin: 0, fontSize: "0.8rem", color: "var(--text-muted)" }}>
-                            All projects, workflows, subscriptions, and session data will be erased and cannot be recovered.
+                            Your account and all associated data will be archived — not immediately deleted. You can sign in with GitHub within{" "}
+                            <strong style={{ color: "var(--text-secondary)" }}>30 days</strong> to fully restore your account. After 30 days the archived account is permanently deleted.
+                          </p>
+                          <p style={{ margin: 0, fontSize: "0.8rem", color: "var(--text-muted)" }}>
+                            <strong style={{ color: "var(--text-secondary)" }}>Your GitHub repositories and any workflow files committed to them are not affected</strong> — they remain on GitHub regardless of what you choose here.
                           </p>
                         </div>
                         <div style={{ display: "flex", flexDirection: "column", gap: "0.4rem" }}>
@@ -1030,7 +1118,7 @@ export default function SettingsPage() {
                               transition: "all 0.2s ease",
                             }}
                           >
-                            {isDeleting ? "Deleting..." : "Delete my account"}
+                            {isDeleting ? "Archiving..." : "Archive my account"}
                           </button>
                           <button
                             type="button"
