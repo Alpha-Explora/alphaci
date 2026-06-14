@@ -1354,6 +1354,165 @@ describe("Project env provisioning UI", () => {
     ).toBe("test");
   });
 
+  it("saves edited deployment target metadata and syncs local findings", async () => {
+    mockCapabilities(true, true, false, false, true);
+    mockEnvHook();
+    mockedProjectApi.getProjectOverview.mockResolvedValue(projectOverviewWithTargets([renderTarget]));
+    mockedProjectApi.updateDeploymentTarget.mockResolvedValue({
+      ...renderTarget,
+      providerProjectName: "orders-api-uat",
+      branchName: "uat",
+      rootDirectory: null,
+      buildCommand: null,
+      startCommand: null,
+      renderEnvironmentName: "uat",
+    });
+    mockedProjectApi.syncDeploymentTarget.mockResolvedValue({
+      mode: "local_metadata",
+      status: "warning",
+      findings: [{ code: "render_service_missing", message: "Service not found" }],
+      target: {
+        ...renderTarget,
+        status: "warning",
+      },
+    });
+
+    const rendered = render(
+      <WorkflowCurrentTab
+        history={[]}
+        latestResult={null}
+        loadingHistory={false}
+        loadingProjects={false}
+        onCopyYaml={jest.fn()}
+        onDownloadYaml={jest.fn()}
+        onOpenSetup={jest.fn()}
+        projects={[provisionedProject]}
+      />,
+    );
+    root = rendered.root;
+
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    act(() => {
+      Array.from(rendered.container.querySelectorAll("button"))
+        .find((button) => button.textContent === "Deployments")!
+        .click();
+    });
+    act(() => {
+      Array.from(rendered.container.querySelectorAll("button"))
+        .find((button) => button.textContent === "Edit")!
+        .click();
+    });
+
+    changeValue(rendered.container.querySelector<HTMLInputElement>('input[aria-label="Target display name"]')!, "orders-api-uat");
+    changeValue(rendered.container.querySelector<HTMLSelectElement>('select[aria-label="Target slot"]')!, "standalone");
+    changeValue(rendered.container.querySelector<HTMLInputElement>('input[aria-label="Target branch"]')!, "uat");
+    changeValue(rendered.container.querySelector<HTMLInputElement>('input[aria-label="Target root directory"]')!, "   ");
+    changeValue(rendered.container.querySelector<HTMLInputElement>('input[aria-label="Target build command"]')!, "   ");
+    changeValue(rendered.container.querySelector<HTMLInputElement>('input[aria-label="Target start command"]')!, "   ");
+    changeValue(rendered.container.querySelector<HTMLSelectElement>('select[aria-label="Target provider environment"]')!, "uat");
+
+    await act(async () => {
+      Array.from(rendered.container.querySelectorAll("button"))
+        .find((button) => button.textContent === "Save metadata")!
+        .click();
+      await Promise.resolve();
+    });
+
+    expect(mockedProjectApi.updateDeploymentTarget).toHaveBeenCalledWith(
+      "project-1",
+      "target-render",
+      expect.objectContaining({
+        branchName: "uat",
+        buildCommand: null,
+        providerProjectName: "orders-api-uat",
+        renderEnvironmentName: "uat",
+        rootDirectory: null,
+        slot: "standalone",
+        startCommand: null,
+      }),
+    );
+    expect(rendered.container.textContent).toContain("orders-api-uat");
+
+    await act(async () => {
+      Array.from(rendered.container.querySelectorAll("button"))
+        .find((button) => button.textContent === "Sync target")!
+        .click();
+      await Promise.resolve();
+    });
+
+    expect(mockedProjectApi.syncDeploymentTarget).toHaveBeenCalledWith("project-1", "target-render");
+  });
+
+  it("shows clean messages when deployment target actions fail", async () => {
+    mockCapabilities(true, true, false, false, true);
+    mockEnvHook();
+    mockedProjectApi.getProjectOverview.mockResolvedValue(projectOverviewWithTargets([renderTarget]));
+    mockedProjectApi.updateDeploymentTarget.mockRejectedValueOnce(new Error("update failed"));
+    mockedProjectApi.syncDeploymentTarget.mockRejectedValueOnce(new Error("sync failed"));
+    mockedProjectApi.detachDeploymentTarget.mockRejectedValueOnce(new Error("detach failed"));
+
+    const rendered = render(
+      <WorkflowCurrentTab
+        history={[]}
+        latestResult={null}
+        loadingHistory={false}
+        loadingProjects={false}
+        onCopyYaml={jest.fn()}
+        onDownloadYaml={jest.fn()}
+        onOpenSetup={jest.fn()}
+        projects={[provisionedProject]}
+      />,
+    );
+    root = rendered.root;
+
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    act(() => {
+      Array.from(rendered.container.querySelectorAll("button"))
+        .find((button) => button.textContent === "Deployments")!
+        .click();
+    });
+    act(() => {
+      Array.from(rendered.container.querySelectorAll("button"))
+        .find((button) => button.textContent === "Edit")!
+        .click();
+    });
+
+    await act(async () => {
+      Array.from(rendered.container.querySelectorAll("button"))
+        .find((button) => button.textContent === "Save metadata")!
+        .click();
+      await Promise.resolve();
+    });
+    expect(rendered.container.textContent).toContain("Unable to update target metadata.");
+
+    await act(async () => {
+      Array.from(rendered.container.querySelectorAll("button"))
+        .find((button) => button.textContent === "Sync target")!
+        .click();
+      await Promise.resolve();
+    });
+    expect(rendered.container.textContent).toContain("Unable to sync target metadata.");
+
+    act(() => {
+      Array.from(rendered.container.querySelectorAll("button"))
+        .find((button) => button.textContent === "Detach from FlowCI")!
+        .click();
+    });
+    await act(async () => {
+      Array.from(rendered.container.querySelectorAll("button"))
+        .find((button) => button.textContent === "Confirm detach")!
+        .click();
+      await Promise.resolve();
+    });
+    expect(rendered.container.textContent).toContain("Unable to detach deployment target.");
+  });
+
   it("requires confirmation before detaching a target from FlowCI", async () => {
     mockCapabilities(true, true, false, false, true);
     mockEnvHook();
@@ -1662,6 +1821,451 @@ describe("Project env provisioning UI", () => {
     expect(rendered.container.textContent).toContain("Unable to create workflow update PR.");
   });
 
+  it("renders project detail load errors from async project APIs", async () => {
+    mockCapabilities(true, true, true, false, true, true, true, true, false);
+    mockEnvHook();
+    const overview = projectOverviewWithTargets([
+      renderTarget,
+      {
+        ...vercelTarget,
+        id: "target-unknown",
+        provider: "railway",
+        providerMetadata: {},
+      } as typeof vercelTarget,
+    ]);
+    overview.capabilities = {
+      ...overview.capabilities,
+      ciRunTracking: true,
+      deploymentHistory: true,
+      driftDetection: true,
+      workflowSettings: true,
+    };
+    mockedProjectApi.getProjectOverview.mockResolvedValue(overview);
+    mockedProjectApi.getProjectDrift.mockRejectedValueOnce(new Error("drift unavailable"));
+    mockedProjectApi.getProjectCiRuns.mockRejectedValueOnce(new Error("runs unavailable"));
+    mockedProjectApi.getProjectDeployments.mockRejectedValueOnce(new Error("deployments unavailable"));
+    mockedProjectApi.getProjectAuditEvents.mockRejectedValueOnce(new Error("audit unavailable"));
+    mockedProjectApi.getWorkflowSettings.mockRejectedValueOnce(new Error("settings unavailable"));
+    mockedProjectApi.syncProjectSnapshot.mockRejectedValueOnce(new Error("sync unavailable"));
+    mockedProjectApi.runProjectDriftDetection.mockRejectedValueOnce(new Error("drift run unavailable"));
+
+    const rendered = render(
+      <WorkflowCurrentTab
+        history={[]}
+        latestResult={null}
+        loadingHistory={false}
+        loadingProjects={false}
+        onCopyYaml={jest.fn()}
+        onDownloadYaml={jest.fn()}
+        onOpenSetup={jest.fn()}
+        projects={[provisionedProject]}
+      />,
+    );
+    root = rendered.root;
+
+    await act(async () => {
+      await Promise.resolve();
+    });
+    await act(async () => {
+      await Promise.resolve();
+    });
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    expect(rendered.container.textContent).toContain("Unable to load drift findings.");
+
+    await act(async () => {
+      Array.from(rendered.container.querySelectorAll("button"))
+        .find((button) => button.textContent === "Sync now")!
+        .click();
+      await Promise.resolve();
+    });
+    expect(rendered.container.textContent).toContain("Unable to create local snapshot right now.");
+
+    await act(async () => {
+      Array.from(rendered.container.querySelectorAll("button"))
+        .find((button) => button.textContent === "Workflow")!
+        .click();
+      await Promise.resolve();
+    });
+    expect(rendered.container.textContent).toContain("Unable to load workflow settings.");
+
+    await act(async () => {
+      Array.from(rendered.container.querySelectorAll("button"))
+        .find((button) => button.textContent === "Runs")!
+        .click();
+      await Promise.resolve();
+    });
+    expect(rendered.container.textContent).toContain("Unable to load CI runs.");
+
+    await act(async () => {
+      Array.from(rendered.container.querySelectorAll("button"))
+        .find((button) => button.textContent === "Deployments")!
+        .click();
+      await Promise.resolve();
+    });
+    expect(rendered.container.textContent).toContain("Unable to load deployment history.");
+    expect(rendered.container.querySelector('a[href*="railway"]')).toBeNull();
+
+    await act(async () => {
+      Array.from(rendered.container.querySelectorAll("button"))
+        .find((button) => button.textContent === "Activity")!
+        .click();
+      await Promise.resolve();
+    });
+    expect(rendered.container.textContent).toContain("Unable to load audit events.");
+  });
+
+  it("renders project overview and workflow preview failures", async () => {
+    mockCapabilities(true, true, true, false);
+    mockEnvHook();
+    mockedProjectApi.getProjectOverview.mockRejectedValueOnce(new Error("overview unavailable"));
+
+    const overviewErrorRendered = render(
+      <WorkflowCurrentTab
+        history={[]}
+        latestResult={null}
+        loadingHistory={false}
+        loadingProjects={false}
+        onCopyYaml={jest.fn()}
+        onDownloadYaml={jest.fn()}
+        onOpenSetup={jest.fn()}
+        projects={[provisionedProject]}
+      />,
+    );
+    root = overviewErrorRendered.root;
+
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    expect(overviewErrorRendered.container.textContent).toContain("Unable to load project overview.");
+
+    act(() => root?.unmount());
+    root = null;
+    document.body.innerHTML = "";
+
+    mockedProjectApi.getProjectOverview.mockResolvedValue(projectOverviewWithTargets([]));
+    mockedProjectApi.getWorkflowSettings.mockReset();
+    mockedProjectApi.getWorkflowSettings.mockResolvedValue({
+      enabled: true,
+      source: "project_options",
+      settings: {
+        projectId: "project-1",
+        templateId: "be-nestjs",
+        projectTypeId: "nestjs-api",
+        workflowRecipeId: "backend-api-ci",
+        serviceName: "orders-api",
+        servicePath: ".",
+        nodeVersion: "24",
+        packageManager: "npm",
+        coverageThreshold: 80,
+        centralWorkflowRef: "v1",
+        checks: { lint: true, unit: true, build: true, security: true },
+      },
+    });
+    mockedProjectApi.previewWorkflowSettings.mockReset();
+    mockedProjectApi.previewWorkflowSettings.mockRejectedValueOnce(new Error("preview unavailable"));
+
+    const previewErrorRendered = render(
+      <WorkflowCurrentTab
+        history={[]}
+        latestResult={null}
+        loadingHistory={false}
+        loadingProjects={false}
+        onCopyYaml={jest.fn()}
+        onDownloadYaml={jest.fn()}
+        onOpenSetup={jest.fn()}
+        projects={[provisionedProject]}
+      />,
+    );
+    root = previewErrorRendered.root;
+
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    await act(async () => {
+      Array.from(previewErrorRendered.container.querySelectorAll("button"))
+        .find((button) => button.textContent === "Workflow")!
+        .click();
+      await Promise.resolve();
+    });
+    await act(async () => {
+      Array.from(previewErrorRendered.container.querySelectorAll("button"))
+        .find((button) => button.textContent === "Preview")!
+        .click();
+      await Promise.resolve();
+    });
+
+    expect(previewErrorRendered.container.textContent).toContain("Unable to preview workflow settings.");
+  });
+
+  it("shows a clean drift repair failure message", async () => {
+    mockCapabilities(true, true, false, false, false, false, false, true, true);
+    mockEnvHook();
+    const overview = projectOverviewWithTargets([]);
+    overview.capabilities = {
+      ...overview.capabilities,
+      driftDetection: true,
+    };
+    mockedProjectApi.getProjectOverview.mockResolvedValue(overview);
+    mockedProjectApi.getProjectDrift.mockResolvedValue({
+      enabled: true,
+      mode: "local_snapshot",
+      findings: [
+        {
+          id: "finding-1",
+          code: "ci_token_missing",
+          severity: "error",
+          source: "flowci",
+          message: "CI token missing",
+          detectedAt: "2026-06-12T00:00:00.000Z",
+        },
+      ],
+    });
+    mockedProjectApi.repairProjectDriftFinding.mockRejectedValueOnce(new Error("repair failed"));
+
+    const rendered = render(
+      <WorkflowCurrentTab
+        history={[]}
+        latestResult={null}
+        loadingHistory={false}
+        loadingProjects={false}
+        onCopyYaml={jest.fn()}
+        onDownloadYaml={jest.fn()}
+        onOpenSetup={jest.fn()}
+        projects={[provisionedProject]}
+      />,
+    );
+    root = rendered.root;
+
+    await act(async () => {
+      await Promise.resolve();
+    });
+    await act(async () => {
+      await Promise.resolve();
+    });
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    act(() => {
+      Array.from(rendered.container.querySelectorAll("button"))
+        .find((button) => button.textContent === "Rotate CI token")!
+        .click();
+    });
+    await act(async () => {
+      Array.from(rendered.container.querySelectorAll("button"))
+        .find((button) => button.textContent === "Confirm repair")!
+        .click();
+      await Promise.resolve();
+    });
+
+    expect(rendered.container.textContent).toContain("Unable to run repair action.");
+  });
+
+  it("previews workflow settings after editing all workflow inputs", async () => {
+    mockCapabilities(true, true, true, false);
+    mockEnvHook();
+    mockedProjectApi.getProjectOverview.mockResolvedValue(projectOverviewWithTargets([]));
+
+    const rendered = render(
+      <WorkflowCurrentTab
+        history={[]}
+        latestResult={null}
+        loadingHistory={false}
+        loadingProjects={false}
+        onCopyYaml={jest.fn()}
+        onDownloadYaml={jest.fn()}
+        onOpenSetup={jest.fn()}
+        projects={[provisionedProject]}
+      />,
+    );
+    root = rendered.root;
+
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    const workflowTab = Array.from(rendered.container.querySelectorAll("button")).find(
+      (button) => button.textContent === "Workflow",
+    ) as HTMLButtonElement;
+    await act(async () => {
+      workflowTab.click();
+      await Promise.resolve();
+    });
+
+    changeValue(rendered.container.querySelector<HTMLInputElement>('input[aria-label="Node version"]')!, "22");
+    changeValue(rendered.container.querySelector<HTMLInputElement>('input[aria-label="Coverage threshold"]')!, "95");
+    changeValue(rendered.container.querySelector<HTMLInputElement>('input[aria-label="Service path"]')!, "apps/api");
+    changeValue(rendered.container.querySelector<HTMLInputElement>('input[aria-label="Central workflow ref"]')!, "v2");
+
+    const previewButton = Array.from(rendered.container.querySelectorAll("button")).find(
+      (button) => button.textContent === "Preview",
+    ) as HTMLButtonElement;
+    await act(async () => {
+      previewButton.click();
+      await Promise.resolve();
+    });
+
+    expect(mockedProjectApi.previewWorkflowSettings).toHaveBeenCalledWith(
+      "project-1",
+      expect.objectContaining({
+        centralWorkflowRef: "v2",
+        coverageThreshold: 95,
+        nodeVersion: "22",
+        servicePath: "apps/api",
+      }),
+    );
+  });
+
+  it("renders workflow history cards and wires history actions", () => {
+    mockCapabilities(false);
+    mockEnvHook();
+    const onCopyYaml = jest.fn();
+    const onDownloadYaml = jest.fn();
+    const onOpenSetup = jest.fn();
+
+    const rendered = render(
+      <WorkflowCurrentTab
+        history={[
+          {
+            id: "history-1",
+            createdAt: "2026-06-12T00:00:00.000Z",
+            templateId: "frontend-react",
+            templateName: "React CI",
+            stack: "react",
+            serviceName: "orders-web",
+            outputFileName: "frontend.yml",
+            sourceWorkflowFile: "workflow-templates/frontend-react.yml",
+            sourcePropertiesFile: "workflow-templates/frontend-react.properties.json",
+            lineCount: 12,
+            yaml: "name: CI\n",
+          },
+        ]}
+        latestResult={null}
+        loadingHistory={false}
+        loadingProjects={false}
+        onCopyYaml={onCopyYaml}
+        onDownloadYaml={onDownloadYaml}
+        onOpenSetup={onOpenSetup}
+        projects={[]}
+      />,
+    );
+    root = rendered.root;
+
+    act(() => {
+      rendered.container.querySelector<HTMLButtonElement>("#subtab-history")!.click();
+    });
+
+    expect(rendered.container.textContent).toContain("React CI");
+    expect(rendered.container.textContent).toContain("orders-web");
+    expect(rendered.container.textContent).toContain("frontend.yml");
+    expect(rendered.container.textContent).toContain("workflow-templates/frontend-react.yml");
+
+    const card = rendered.container.querySelector<HTMLElement>(".repo-card")!;
+    card.getBoundingClientRect = jest.fn(() => ({
+      bottom: 100,
+      height: 100,
+      left: 0,
+      right: 100,
+      top: 0,
+      width: 100,
+      x: 0,
+      y: 0,
+      toJSON: () => ({}),
+    }));
+    act(() => {
+      card.dispatchEvent(new MouseEvent("mousemove", { bubbles: true, clientX: 25, clientY: 50 }));
+    });
+    expect(card.style.getPropertyValue("--gx")).toBe("0.25");
+    expect(card.style.getPropertyValue("--gy")).toBe("0.5");
+    act(() => {
+      card.dispatchEvent(
+        new MouseEvent("mouseout", {
+          bubbles: true,
+          relatedTarget: document.body,
+        }),
+      );
+    });
+    expect(card.style.getPropertyValue("--gx")).toBe("");
+    expect(card.style.getPropertyValue("--gy")).toBe("");
+
+    act(() => {
+      Array.from(rendered.container.querySelectorAll("button"))
+        .find((button) => button.textContent === "Copy YAML")!
+        .click();
+      Array.from(rendered.container.querySelectorAll("button"))
+        .find((button) => button.textContent === "Download")!
+        .click();
+      Array.from(rendered.container.querySelectorAll("button"))
+        .find((button) => button.textContent === "New")!
+        .click();
+    });
+
+    expect(onCopyYaml).toHaveBeenCalledWith("name: CI\n");
+    expect(onDownloadYaml).toHaveBeenCalledWith("name: CI\n", "frontend.yml");
+    expect(onOpenSetup).toHaveBeenCalledTimes(1);
+  });
+
+  it("shows empty and loading states for project and history panels", () => {
+    mockCapabilities(false);
+    mockEnvHook();
+    const onOpenSetup = jest.fn();
+
+    const emptyRendered = render(
+      <WorkflowCurrentTab
+        history={[]}
+        latestResult={null}
+        loadingHistory={false}
+        loadingProjects={false}
+        onCopyYaml={jest.fn()}
+        onDownloadYaml={jest.fn()}
+        onOpenSetup={onOpenSetup}
+        projects={[]}
+      />,
+    );
+    root = emptyRendered.root;
+
+    expect(emptyRendered.container.textContent).toContain("No provisioned projects yet.");
+    act(() => {
+      emptyRendered.container.querySelector<HTMLButtonElement>("#subtab-history")!.click();
+    });
+    expect(emptyRendered.container.textContent).toContain("No generated workflow history yet.");
+    act(() => {
+      Array.from(emptyRendered.container.querySelectorAll("button"))
+        .find((button) => button.textContent === "Generate your first workflow")!
+        .click();
+    });
+    expect(onOpenSetup).toHaveBeenCalledTimes(1);
+
+    act(() => root?.unmount());
+    root = null;
+    document.body.innerHTML = "";
+
+    const loadingRendered = render(
+      <WorkflowCurrentTab
+        history={[]}
+        latestResult={null}
+        loadingHistory
+        loadingProjects
+        onCopyYaml={jest.fn()}
+        onDownloadYaml={jest.fn()}
+        onOpenSetup={jest.fn()}
+        projects={[]}
+      />,
+    );
+    root = loadingRendered.root;
+
+    expect(loadingRendered.container.querySelectorAll(".skeleton-card")).toHaveLength(3);
+    act(() => {
+      loadingRendered.container.querySelector<HTMLButtonElement>("#subtab-history")!.click();
+    });
+    expect(loadingRendered.container.querySelectorAll(".skeleton-card")).toHaveLength(3);
+  });
+
   it("registers BYO existing targets from saved provider connections", async () => {
     const addTarget = jest.fn().mockResolvedValue({
       id: "target-1",
@@ -1759,6 +2363,107 @@ describe("Project env provisioning UI", () => {
     expect(rendered.container.textContent).toContain("Deployment target");
     expect(rendered.container.textContent).toContain("Variables");
     expect(rendered.container.textContent).toContain("Provisioned variables");
+  });
+
+  it("updates target creation fields and env row controls", () => {
+    mockEnvHook({ targets: [renderTarget] });
+
+    const rendered = render(<ProjectEnvPanel project={provisionedProject} />);
+    root = rendered.root;
+
+    changeValue(rendered.container.querySelector<HTMLSelectElement>('select[aria-label="Provider"]')!, "vercel");
+    changeValue(rendered.container.querySelector<HTMLSelectElement>('select[aria-label="Target slot"]')!, "frontend");
+    changeValue(rendered.container.querySelector<HTMLInputElement>('input[placeholder="Provider project name"]')!, "orders-web");
+    changeValue(rendered.container.querySelector<HTMLInputElement>('input[placeholder="Root directory"]')!, "apps/web");
+    changeValue(rendered.container.querySelector<HTMLInputElement>('input[placeholder="Build command"]')!, "npm run build");
+    changeValue(rendered.container.querySelector<HTMLInputElement>('input[placeholder="Branch"]')!, "uat");
+    changeValue(rendered.container.querySelector<HTMLSelectElement>('select[aria-label="Active deployment target"]')!, "target-render");
+
+    act(() => {
+      Array.from(rendered.container.querySelectorAll("button"))
+        .find((button) => button.textContent === "uat")!
+        .click();
+      Array.from(rendered.container.querySelectorAll("button"))
+        .find((button) => button.textContent === "Add row")!
+        .click();
+    });
+    expect(rendered.container.querySelectorAll<HTMLInputElement>('input[placeholder="DATABASE_URL"]')).toHaveLength(2);
+
+    act(() => {
+      Array.from(rendered.container.querySelectorAll("button"))
+        .filter((button) => button.textContent === "Remove")[1]!
+        .click();
+    });
+    expect(rendered.container.querySelectorAll<HTMLInputElement>('input[placeholder="DATABASE_URL"]')).toHaveLength(1);
+    expect(rendered.container.querySelector<HTMLInputElement>('input[placeholder="Branch"]')?.value).toBe("uat");
+    expect(rendered.container.querySelector<HTMLInputElement>('input[placeholder="Start command"]')).toBeNull();
+  });
+
+  it("shows clean errors for env validation, provisioning, and deletion failures", async () => {
+    const provision = jest.fn().mockRejectedValueOnce({
+      details: { message: "provider rejected secret" },
+    });
+    const validateEnvText = jest.fn().mockRejectedValueOnce({
+      details: { message: "invalid .env line" },
+    });
+    const removeMetadata = jest.fn().mockRejectedValueOnce({
+      details: { message: "provider delete failed" },
+    });
+    mockEnvHook({
+      targets: [renderTarget],
+      provision,
+      validateEnvText,
+      removeMetadata,
+      metadata: [
+        {
+          id: "meta-1",
+          projectId: "project-1",
+          deploymentTargetId: "target-render",
+          environment: "test",
+          key: "DATABASE_URL",
+          provider: "render",
+          valueStored: false,
+          lastProvisionedAt: "2026-06-08T00:00:00.000Z",
+          lastProvisionedBy: "user-1",
+          status: "provisioned",
+          errorSummary: null,
+        },
+      ],
+    });
+
+    const rendered = render(<ProjectEnvPanel project={provisionedProject} />);
+    root = rendered.root;
+
+    const textarea = rendered.container.querySelector<HTMLTextAreaElement>('textarea[aria-label="Bulk env text"]')!;
+    changeValue(textarea, "BROKEN");
+    await act(async () => {
+      Array.from(rendered.container.querySelectorAll("button"))
+        .find((button) => button.textContent === "Validate .env")!
+        .click();
+      await Promise.resolve();
+    });
+    expect(rendered.container.textContent).toContain("Environment variable validation failed: invalid .env line");
+
+    changeValue(rendered.container.querySelector<HTMLInputElement>('input[placeholder="DATABASE_URL"]')!, "DATABASE_URL");
+    changeValue(rendered.container.querySelector<HTMLInputElement>('input[placeholder="Value"]')!, "secret");
+    await act(async () => {
+      rendered.container.querySelector<HTMLButtonElement>('button[type="submit"]')!.click();
+      await Promise.resolve();
+    });
+    expect(rendered.container.textContent).toContain("Environment variable provisioning failed: provider rejected secret");
+
+    act(() => {
+      Array.from(rendered.container.querySelectorAll("button"))
+        .find((button) => button.textContent === "Delete")!
+        .click();
+    });
+    await act(async () => {
+      Array.from(rendered.container.querySelectorAll("button"))
+        .find((button) => button.textContent === "Confirm delete")!
+        .click();
+      await Promise.resolve();
+    });
+    expect(rendered.container.textContent).toContain("Environment variable delete failed: provider delete failed");
   });
 
   it("clears submitted values and shows metadata without secret values", async () => {

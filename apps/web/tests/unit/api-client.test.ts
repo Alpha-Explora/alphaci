@@ -1,6 +1,8 @@
 import {
   createProject,
+  createProviderConnection,
   createSubscriptionCheckout,
+  createDeploymentTarget,
   getCheckoutStatus,
   getGithubInstallationAccounts,
   getGithubAppInstallUrl,
@@ -30,8 +32,15 @@ import {
   repairProjectDriftFinding,
   runProjectDriftDetection,
   markNotificationRead,
+  listDeploymentTargets,
+  listProjectEnvMetadata,
+  listProviderConnections,
+  provisionProjectEnvVars,
+  revokeProviderConnection,
   updateDeploymentTarget,
   validateProjectEnvVars,
+  disconnectProject,
+  syncProjects,
 } from "../../src/lib/api/client";
 
 describe("API client project setup helpers", () => {
@@ -796,6 +805,103 @@ describe("API client project setup helpers", () => {
     );
   });
 
+  it("covers provider connection and deployment target route helpers", async () => {
+    fetchMock
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => ([
+          { id: "connection-1", provider: "render", status: "active" },
+        ]),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 201,
+        json: async () => ({ id: "connection-2", provider: "vercel" }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => ({ revoked: true }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => ([{ id: "target-1", provider: "render" }]),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 201,
+        json: async () => ({ id: "target-2", provider: "vercel" }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => ([{ id: "meta-1", key: "DATABASE_URL" }]),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 201,
+        json: async () => ({ provisioned: [{ key: "DATABASE_URL" }], failed: [] }),
+      });
+
+    await expect(listProviderConnections()).resolves.toEqual([
+      { id: "connection-1", provider: "render", status: "active" },
+    ]);
+    await expect(
+      createProviderConnection({
+        provider: "vercel",
+        label: "Vercel team",
+        token: "secret",
+      }),
+    ).resolves.toMatchObject({ id: "connection-2" });
+    await expect(revokeProviderConnection("connection/2")).resolves.toEqual({ revoked: true });
+    await expect(listDeploymentTargets("project/1")).resolves.toEqual([
+      { id: "target-1", provider: "render" },
+    ]);
+    await expect(
+      createDeploymentTarget("project/1", {
+        action: "create",
+        slot: "frontend",
+        ownershipMode: "flowci_managed",
+        provider: "vercel",
+        projectName: "web",
+        branchName: "test",
+      }),
+    ).resolves.toMatchObject({ id: "target-2" });
+    await expect(listProjectEnvMetadata("project/1")).resolves.toEqual([
+      { id: "meta-1", key: "DATABASE_URL" },
+    ]);
+    await expect(
+      provisionProjectEnvVars("project/1", {
+        deploymentTargetId: "target-2",
+        environment: "test",
+        vars: [{ key: "DATABASE_URL", value: "postgres://secret" }],
+      }),
+    ).resolves.toMatchObject({ provisioned: [{ key: "DATABASE_URL" }] });
+
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      3,
+      "http://localhost:4000/api/v1/provider-connections/connection%2F2",
+      expect.objectContaining({ method: "DELETE" }),
+    );
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      4,
+      "http://localhost:4000/api/v1/projects/project%2F1/deployment-targets",
+      expect.any(Object),
+    );
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      5,
+      "http://localhost:4000/api/v1/projects/project%2F1/deployment-targets",
+      expect.objectContaining({ method: "POST" }),
+    );
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      7,
+      "http://localhost:4000/api/v1/projects/project%2F1/env-vars/provision",
+      expect.objectContaining({ method: "POST" }),
+    );
+  });
+
   it("deletes env metadata by id", async () => {
     fetchMock.mockResolvedValueOnce({
       ok: true,
@@ -814,6 +920,38 @@ describe("API client project setup helpers", () => {
         credentials: "include",
         method: "DELETE",
       }),
+    );
+  });
+
+  it("disconnects projects and syncs reachable project state", async () => {
+    fetchMock
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => ({ ok: true }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 201,
+        json: async () => ({ orphaned: 1, reachable: 3, total: 4 }),
+      });
+
+    await expect(disconnectProject("project/1")).resolves.toBeUndefined();
+    await expect(syncProjects()).resolves.toEqual({
+      orphaned: 1,
+      reachable: 3,
+      total: 4,
+    });
+
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      1,
+      "http://localhost:4000/api/v1/projects/project%2F1",
+      expect.objectContaining({ method: "DELETE" }),
+    );
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      2,
+      "http://localhost:4000/api/v1/projects/sync",
+      expect.objectContaining({ method: "POST" }),
     );
   });
 
