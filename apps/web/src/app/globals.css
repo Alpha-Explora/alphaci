@@ -8135,108 +8135,219 @@ select option {
 }
 
 /* ── driver.js onboarding tour — dark glass theme overrides ────────────── */
+
+/* Popover shell — dark glass, brand border accent, elevated shadow */
 .driver-popover {
-  background: var(--bg-elevated);
-  border: 1px solid var(--border-strong);
-  border-radius: 10px;
+  background: rgba(10, 18, 36, 0.97);
+  border: 1px solid rgba(56, 189, 248, 0.2);
+  border-radius: 12px;
   color: var(--text-primary);
-  box-shadow: var(--shadow-card);
-  max-width: 360px;
+  box-shadow:
+    0 0 0 1px rgba(56, 189, 248, 0.06),
+    0 16px 48px rgba(0, 0, 0, 0.65),
+    0 4px 16px rgba(0, 0, 0, 0.4);
+  max-width: 380px;
+  padding: 0;
+  overflow: hidden;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  /* Smooth entry — driver.js adds/removes the popover in the DOM */
+  animation: driverPopoverIn 0.22s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes driverPopoverIn {
+  from { opacity: 0; transform: scale(0.96) translateY(4px); }
+  to   { opacity: 1; transform: scale(1)    translateY(0);   }
+}
+
+/* Brand hairline along the top of every popover */
+.driver-popover::before {
+  content: "";
+  display: block;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--brand), var(--accent-violet), transparent);
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+/* Inner content padding — separate from the shell so ::before is flush */
+.driver-popover-inner-content {
   padding: 1.1rem 1.25rem 1rem;
 }
 
+/* Title */
 .driver-popover-title {
   font-family: var(--font-dash-display), 'Outfit', sans-serif;
-  font-size: 0.95rem;
+  font-size: 0.97rem;
   font-weight: 700;
   color: var(--brand);
-  margin-bottom: 0.45rem;
+  margin: 0 0 0.4rem;
+  letter-spacing: -0.01em;
+  line-height: 1.3;
 }
 
+/* Description */
 .driver-popover-description {
-  font-size: 0.82rem;
+  font-size: 0.83rem;
   color: var(--text-secondary);
-  line-height: 1.55;
+  line-height: 1.6;
+  margin: 0;
 }
 
+/* Progress indicator row — step N of M */
 .driver-popover-progress-text {
-  font-size: 0.72rem;
+  font-size: 0.7rem;
+  font-weight: 600;
   color: var(--text-muted);
+  letter-spacing: 0.04em;
 }
 
+/* Footer — button row */
 .driver-popover-footer {
-  margin-top: 0.85rem;
-  gap: 0.45rem;
+  margin-top: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid rgba(56, 189, 248, 0.08);
 }
 
+/* Base ghost button (Previous / Close) */
 .driver-popover-btn-base {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: inherit;
   font-size: 0.8rem;
   font-weight: 600;
   border-radius: 6px;
-  padding: 0.38rem 0.85rem;
+  padding: 0.38rem 0.9rem;
+  min-height: 2rem;
   cursor: pointer;
-  border: 1px solid var(--border-strong);
-  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.04);
   color: var(--text-secondary);
-  transition: border-color 0.15s, color 0.15s;
+  transition: border-color 0.14s ease, color 0.14s ease, background 0.14s ease;
 }
 
 .driver-popover-btn-base:hover {
-  border-color: var(--brand);
+  border-color: rgba(56, 189, 248, 0.4);
   color: var(--brand);
+  background: rgba(56, 189, 248, 0.06);
 }
 
+.driver-popover-btn-base:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
+/* Next / primary button */
 .driver-popover-next-btn {
   background: var(--brand);
   color: var(--bg-base);
   border-color: var(--brand);
+  font-weight: 700;
 }
 
 .driver-popover-next-btn:hover {
-  background: var(--brand-strong);
-  border-color: var(--brand-strong);
+  background: var(--brand-strong, #38bdf8cc);
+  border-color: var(--brand-strong, #38bdf8cc);
   color: var(--bg-base);
 }
 
+.driver-popover-next-btn:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
+/* Close (X) button */
 .driver-popover-close-btn {
   background: transparent;
   border: none;
   color: var(--text-muted);
   font-size: 1rem;
   line-height: 1;
-  padding: 0.2rem 0.35rem;
+  padding: 0.25rem 0.4rem;
   cursor: pointer;
   border-radius: 4px;
+  transition: color 0.14s ease, background 0.14s ease;
 }
 
 .driver-popover-close-btn:hover {
   color: var(--text-primary);
-  background: rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.07);
 }
 
+.driver-popover-close-btn:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
+/* Arrow — match the glass background */
 .driver-popover-arrow-side-left.driver-popover-arrow {
-  border-left-color: var(--bg-elevated);
+  border-left-color: rgba(10, 18, 36, 0.97);
 }
 
 .driver-popover-arrow-side-right.driver-popover-arrow {
-  border-right-color: var(--bg-elevated);
+  border-right-color: rgba(10, 18, 36, 0.97);
 }
 
 .driver-popover-arrow-side-top.driver-popover-arrow {
-  border-top-color: var(--bg-elevated);
+  border-top-color: rgba(10, 18, 36, 0.97);
 }
 
 .driver-popover-arrow-side-bottom.driver-popover-arrow {
-  border-bottom-color: var(--bg-elevated);
+  border-bottom-color: rgba(10, 18, 36, 0.97);
 }
 
+/* Overlay */
 .driver-overlay {
-  background: rgba(2, 6, 23, 0.65);
+  background: rgba(2, 6, 23, 0.72);
 }
 
+/* Highlighted element — crisp brand outline */
+.driver-active-element,
+.driver-active-element:focus {
+  outline: 2px solid var(--brand) !important;
+  outline-offset: 3px !important;
+  border-radius: 4px;
+}
+
+/* Mobile adjustments */
+@media (max-width: 600px) {
+  .driver-popover {
+    max-width: calc(100vw - 2rem);
+  }
+
+  .driver-popover-title {
+    font-size: 0.92rem;
+  }
+
+  .driver-popover-description {
+    font-size: 0.8rem;
+  }
+
+  .driver-popover-btn-base,
+  .driver-popover-next-btn {
+    padding: 0.35rem 0.75rem;
+    font-size: 0.78rem;
+  }
+}
+
+/* Reduced motion — disable the entry animation and all button transitions */
 @media (prefers-reduced-motion: reduce) {
   .driver-popover {
     animation: none !important;
+    transition: none !important;
+  }
+
+  .driver-popover-btn-base,
+  .driver-popover-next-btn,
+  .driver-popover-close-btn {
     transition: none !important;
   }
 }

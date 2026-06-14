@@ -52,6 +52,15 @@ function UserIcon({ size = 16 }: { size?: number }) {
   );
 }
 
+function BookOpenIcon({ size = 16 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" />
+      <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
+    </svg>
+  );
+}
+
 function AlertTriangleIcon({ size = 16 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -203,12 +212,13 @@ function SettingsSection({
 
 /* ── Page ───────────────────────────────────────────────────────────────── */
 
-type SettingsSection = "account" | "connections" | "billing" | "danger";
+type SettingsSection = "account" | "connections" | "billing" | "guide" | "danger";
 
 const SECTION_LABELS: Record<SettingsSection, string> = {
   account:     "Account",
   connections: "Connections",
   billing:     "Billing",
+  guide:       "Guide",
   danger:      "Danger Zone",
 };
 
@@ -447,13 +457,14 @@ export default function SettingsPage() {
           </div>
 
           {/* Section nav buttons */}
-          {(["account", "connections", "billing", "danger"] as SettingsSection[]).map((sec) => {
+          {(["account", "connections", "billing", "guide", "danger"] as SettingsSection[]).map((sec) => {
             const isActive = activeSection === sec;
             const isDanger = sec === "danger";
             const icons: Record<SettingsSection, React.ReactNode> = {
               account:     <UserIcon size={14} />,
               connections: <GithubIcon size={14} />,
               billing:     <CreditCardIcon size={14} />,
+              guide:       <BookOpenIcon size={14} />,
               danger:      <AlertTriangleIcon size={14} />,
             };
             return (
@@ -710,6 +721,79 @@ export default function SettingsPage() {
                   </SettingsSection>
                   <DeploymentProvidersSection />
                 </>
+              )}
+
+              {/* ── Guide section ── */}
+              {activeSection === "guide" && (
+                <SettingsSection icon={<BookOpenIcon />} title="Guide" index={0}>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
+
+                    <p style={{ margin: 0, fontSize: "0.88rem", color: "var(--text-secondary)", lineHeight: 1.6 }}>
+                      FlowCI Studio turns a blank idea into a working repository in one step — GitHub repo, protected branches, and a ready-to-run CI/CD pipeline, all committed automatically.
+                    </p>
+
+                    {/* Topic overview */}
+                    <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+                      <p style={{ margin: 0, fontSize: "0.72rem", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--text-muted)" }}>
+                        What is covered
+                      </p>
+                      <div style={{ display: "flex", flexDirection: "column", gap: "0.3rem" }}>
+                        {[
+                          "Getting started — sign in, install the GitHub App",
+                          "Creating a project — repo shapes, framework, recipe",
+                          "Branch strategy — test → uat → main promotion flow",
+                          "CI/CD quality gates — lint, tests, security, E2E",
+                          "Managing projects — current projects and catalog",
+                          "FAQ and troubleshooting",
+                        ].map((topic) => (
+                          <div
+                            key={topic}
+                            style={{
+                              display: "flex",
+                              alignItems: "flex-start",
+                              gap: "0.55rem",
+                              fontSize: "0.84rem",
+                              color: "var(--text-secondary)",
+                              lineHeight: 1.45,
+                            }}
+                          >
+                            <span
+                              aria-hidden="true"
+                              style={{
+                                width: "5px",
+                                height: "5px",
+                                borderRadius: "50%",
+                                background: "var(--brand)",
+                                marginTop: "0.45em",
+                                flexShrink: 0,
+                              }}
+                            />
+                            {topic}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Action row */}
+                    <div style={{ display: "flex", gap: "0.6rem", flexWrap: "wrap", paddingTop: "0.25rem", borderTop: "1px solid var(--border-soft)" }}>
+                      <Link
+                        href="/guide"
+                        className="primary-button"
+                        style={{ fontSize: "0.82rem", padding: "0.45rem 1.1rem" }}
+                      >
+                        Open full guide
+                      </Link>
+                      <Link
+                        href="/workflows?tour=1"
+                        className="ghost-button"
+                        style={{ fontSize: "0.82rem", padding: "0.45rem 1.1rem" }}
+                        aria-label="Replay the guided product tour on the Workflows Setup tab"
+                      >
+                        Replay guided tour
+                      </Link>
+                    </div>
+                  </div>
+                </SettingsSection>
               )}
 
               {/* ── Danger Zone section ── */}
