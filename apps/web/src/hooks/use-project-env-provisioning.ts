@@ -4,10 +4,12 @@ import { useCallback, useEffect, useState } from "react";
 
 import {
   createDeploymentTarget,
+  deleteProjectEnvMetadata,
   listDeploymentTargets,
   listProjectEnvMetadata,
   listProviderConnections,
   provisionProjectEnvVars,
+  validateProjectEnvVars,
 } from "@/lib/api/client";
 import type {
   CreateDeploymentTargetRequest,
@@ -15,6 +17,7 @@ import type {
   EnvVarMetadata,
   ProviderConnection,
   ProvisionEnvVarsRequest,
+  ValidateEnvVarsRequest,
 } from "@/lib/api/contracts";
 
 export function useProjectEnvProvisioning(projectId: string, enabled = true) {
@@ -67,6 +70,21 @@ export function useProjectEnvProvisioning(projectId: string, enabled = true) {
     }
   }
 
+  async function validateEnvText(payload: ValidateEnvVarsRequest) {
+    return validateProjectEnvVars(projectId, payload);
+  }
+
+  async function removeMetadata(metadataId: string) {
+    setSaving(true);
+    try {
+      const result = await deleteProjectEnvMetadata(projectId, metadataId);
+      await load();
+      return result;
+    } finally {
+      setSaving(false);
+    }
+  }
+
   return {
     addTarget,
     load,
@@ -74,7 +92,9 @@ export function useProjectEnvProvisioning(projectId: string, enabled = true) {
     metadata,
     providerConnections,
     provision,
+    removeMetadata,
     saving,
     targets,
+    validateEnvText,
   };
 }

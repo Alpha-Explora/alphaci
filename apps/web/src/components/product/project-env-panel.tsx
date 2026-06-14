@@ -8,7 +8,9 @@ import type {
   EnvOwnershipMode,
   EnvProvider,
   EnvTargetSlot,
+  EnvVarMetadata,
   ProvisionedProject,
+  ValidateEnvVarsResponse,
 } from "@/lib/api/contracts";
 import { cleanUserMessage, formatApiError } from "./workflow-builder-utils";
 
@@ -20,7 +22,7 @@ interface EnvRow {
 }
 
 export function ProjectEnvPanel({ project }: Readonly<{ project: ProvisionedProject }>) {
-  const { addTarget, loading, metadata, providerConnections, provision, saving, targets } =
+  const { addTarget, loading, metadata, providerConnections, provision, removeMetadata, saving, targets, validateEnvText } =
     useProjectEnvProvisioning(project.id, project.status === "provisioned");
   const [targetId, setTargetId] = useState("");
   const [targetAction, setTargetAction] = useState<"create" | "register_existing">("create");
@@ -38,6 +40,12 @@ export function ProjectEnvPanel({ project }: Readonly<{ project: ProvisionedProj
   const [startCommand, setStartCommand] = useState("npm run start:prod");
   const [rows, setRows] = useState<EnvRow[]>([{ key: "", value: "" }]);
   const [message, setMessage] = useState<string | null>(null);
+  const [bulkEnvText, setBulkEnvText] = useState("");
+  const [bulkValidation, setBulkValidation] = useState<ValidateEnvVarsResponse | null>(null);
+  const [filterTargetId, setFilterTargetId] = useState("all");
+  const [filterEnvironment, setFilterEnvironment] = useState<"all" | EnvEnvironment>("all");
+  const [filterStatus, setFilterStatus] = useState<"all" | EnvVarMetadata["status"]>("all");
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
   const activeTargetId = targetId || targets[0]?.id || "";
   const matchingConnections = providerConnections.filter((connection) => connection.provider === provider);
@@ -50,6 +58,14 @@ export function ProjectEnvPanel({ project }: Readonly<{ project: ProvisionedProj
     }
     return rows.length === 0;
   }, [rows]);
+  const filteredMetadata = useMemo(() => {
+    return metadata.filter((item) => {
+      if (filterTargetId !== "all" && item.deploymentTargetId !== filterTargetId) return false;
+      if (filterEnvironment !== "all" && item.environment !== filterEnvironment) return false;
+      if (filterStatus !== "all" && item.status !== filterStatus) return false;
+      return true;
+    });
+  }, [filterEnvironment, filterStatus, filterTargetId, metadata]);
 
   async function handleSaveTarget() {
     setMessage(null);
@@ -95,6 +111,52 @@ export function ProjectEnvPanel({ project }: Readonly<{ project: ProvisionedProj
     } catch (error) {
       setMessage(formatApiError(error, "Environment variable provisioning failed"));
     }
+  }
+
+  async function handleBulkValidate() {
+    if (!activeTargetId) return;
+    setMessage(null);
+    try {
+      const result = await validateEnvText({
+        deploymentTargetId: activeTargetId,
+        environment,
+        text: bulkEnvText,
+      });
+      setBulkValidation(result);
+      setBulkEnvText("");
+      setMessage(`Parsed ${result.keyCount} env ${result.keyCount === 1 ? "line" : "lines"}. Values were cleared.`);
+    } catch (error) {
+      setMessage(formatApiError(error, "Environment variable validation failed"));
+    }
+  }
+
+  function useParsedKeys() {
+    if (!bulkValidation?.keys.length) return;
+    setRows(bulkValidation.keys.map((key) => ({ key, value: "" })));
+  }
+
+  async function handleDeleteMetadata(item: EnvVarMetadata) {
+    if (confirmDeleteId !== item.id) {
+      setConfirmDeleteId(item.id);
+      setMessage("Confirm delete to remove this key from the provider and FlowCI metadata.");
+      return;
+    }
+
+    setMessage(null);
+    try {
+      await removeMetadata(item.id);
+      setConfirmDeleteId(null);
+      setMessage(`${item.key} deleted.`);
+    } catch (error) {
+      setMessage(formatApiError(error, "Environment variable delete failed"));
+    }
+  }
+
+  function startReProvision(item: EnvVarMetadata) {
+    setTargetId(item.deploymentTargetId);
+    setEnvironment(item.environment);
+    setRows([{ key: item.key, value: "" }]);
+    setMessage(`Re-enter the value for ${item.key} before provisioning.`);
   }
 
   return (
@@ -213,6 +275,45 @@ export function ProjectEnvPanel({ project }: Readonly<{ project: ProvisionedProj
           ))}
         </div>
 
+        <div className="env-var-row" style={{ alignItems: "stretch" }}>
+          <textarea
+            aria-label="Bulk env text"
+            value={bulkEnvText}
+            onChange={(event) => setBulkEnvText(event.target.value)}
+            placeholder={"DATABASE_URL=...\nAPI_KEY=..."}
+            rows={4}
+            style={{ minHeight: "6rem", resize: "vertical" }}
+          />
+          <button
+            className="ghost-button"
+            disabled={saving || loading || !activeTargetId || bulkEnvText.trim() === ""}
+            type="button"
+            onClick={() => void handleBulkValidate()}
+          >
+            Validate .env
+          </button>
+        </div>
+
+        {bulkValidation ? (
+          <div className="env-metadata-row provisioned" style={{ alignItems: "center" }}>
+            <span>
+              <strong>Parsed keys</strong>
+              <br />
+              {bulkValidation.keys.length ? bulkValidation.keys.join(", ") : "No valid keys"}
+              {bulkValidation.duplicates.length ? ` - duplicates: ${bulkValidation.duplicates.join(", ")}` : ""}
+              {bulkValidation.invalidKeys.length ? ` - invalid: ${bulkValidation.invalidKeys.join(", ")}` : ""}
+            </span>
+            <button
+              className="ghost-button"
+              disabled={!bulkValidation.keys.length}
+              type="button"
+              onClick={useParsedKeys}
+            >
+              Use parsed keys
+            </button>
+          </div>
+        ) : null}
+
         {rows.map((row, index) => (
           <div key={index} className="env-var-row">
             <input
@@ -251,13 +352,52 @@ export function ProjectEnvPanel({ project }: Readonly<{ project: ProvisionedProj
           <h4>Provisioned variables</h4>
         </div>
         {metadata.length ? (
+          <div className="env-target-grid">
+            <select aria-label="Filter target" value={filterTargetId} onChange={(event) => setFilterTargetId(event.target.value)}>
+              <option value="all">All targets</option>
+              {targets.map((target) => (
+                <option key={target.id} value={target.id}>
+                  {target.providerProjectName} - {target.provider}
+                </option>
+              ))}
+            </select>
+            <select
+              aria-label="Filter environment"
+              value={filterEnvironment}
+              onChange={(event) => setFilterEnvironment(event.target.value as "all" | EnvEnvironment)}
+            >
+              <option value="all">All environments</option>
+              <option value="test">test</option>
+              <option value="uat">uat</option>
+              <option value="production">production</option>
+            </select>
+            <select
+              aria-label="Filter status"
+              value={filterStatus}
+              onChange={(event) => setFilterStatus(event.target.value as "all" | EnvVarMetadata["status"])}
+            >
+              <option value="all">All statuses</option>
+              <option value="provisioned">provisioned</option>
+              <option value="failed">failed</option>
+            </select>
+          </div>
+        ) : null}
+        {filteredMetadata.length ? (
           <div className="env-metadata-list">
-            {metadata.map((item) => (
+            {filteredMetadata.map((item) => (
               <div key={item.id} className={`env-metadata-row ${item.status}`}>
                 <span>{item.key}</span>
                 <span>
                   {item.environment} - {item.status}
                   {item.errorSummary ? ` - ${cleanUserMessage(item.errorSummary)}` : ""}
+                </span>
+                <span style={{ display: "flex", gap: "0.4rem", flexWrap: "wrap", justifyContent: "flex-end" }}>
+                  <button className="ghost-button" type="button" onClick={() => startReProvision(item)}>
+                    Re-provision
+                  </button>
+                  <button className="ghost-button" type="button" onClick={() => void handleDeleteMetadata(item)}>
+                    {confirmDeleteId === item.id ? "Confirm delete" : "Delete"}
+                  </button>
                 </span>
               </div>
             ))}

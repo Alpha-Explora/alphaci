@@ -1,10 +1,45 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 
 import { useCapabilities } from "@/hooks/use-capabilities";
-import type { CreateProjectResult, ProvisionedProject, WorkflowFileMetadata, WorkflowHistoryItem } from "@/lib/api/contracts";
+import {
+  createWorkflowUpdatePullRequest,
+  detachDeploymentTarget,
+  getProjectCiRuns,
+  getProjectDeployments,
+  getProjectDrift,
+  getProjectAuditEvents,
+  getProjectOverview,
+  getWorkflowSettings,
+  previewWorkflowSettings,
+  repairProjectDriftFinding,
+  runProjectDriftDetection,
+  syncDeploymentTarget,
+  syncProjectSnapshot,
+  updateDeploymentTarget,
+} from "@/lib/api/projects";
+import type {
+  CreateProjectResult,
+  DeploymentTarget,
+  EnvEnvironment,
+  EnvTargetSlot,
+  EnvVarMetadata,
+  ProjectOverviewResponse,
+  ProjectCiRunsResponse,
+  ProjectDeploymentsResponse,
+  ProjectDriftResponse,
+  ProjectDriftRepairAction,
+  ProjectAuditEventsResponse,
+  UpdateDeploymentTargetRequest,
+  WorkflowSettings,
+  WorkflowSettingsPreviewResponse,
+  WorkflowUpdatePullRequestResponse,
+  ProvisionedProject,
+  WorkflowFileMetadata,
+  WorkflowHistoryItem,
+} from "@/lib/api/contracts";
 import { ProjectEnvPanel } from "./project-env-panel";
 import { DeploymentProvisioningSummary } from "./setup-result-panel";
 
@@ -22,6 +57,17 @@ interface WorkflowCurrentTabProps {
 }
 
 type SubTab = "projects" | "history";
+type ProjectDetailTab = "overview" | "workflow" | "runs" | "deployments" | "environment" | "activity" | "settings";
+
+const PROJECT_DETAIL_TABS: Array<{ id: ProjectDetailTab; label: string }> = [
+  { id: "overview", label: "Overview" },
+  { id: "workflow", label: "Workflow" },
+  { id: "runs", label: "Runs" },
+  { id: "deployments", label: "Deployments" },
+  { id: "environment", label: "Environment" },
+  { id: "activity", label: "Activity" },
+  { id: "settings", label: "Settings" },
+];
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -76,6 +122,560 @@ function WorkflowStageList({ files }: Readonly<{ files?: WorkflowFileMetadata[] 
   );
 }
 
+function providerDashboardUrl(target: DeploymentTarget): string | null {
+  if (target.provider === "vercel") {
+    const teamSlug =
+      typeof target.providerMetadata?.vercelTeamSlug === "string"
+        ? target.providerMetadata.vercelTeamSlug.trim()
+        : "";
+    return teamSlug
+      ? `https://vercel.com/${teamSlug}/${target.providerProjectName}`
+      : `https://vercel.com/dashboard/project/${target.providerProjectId}`;
+  }
+
+  if (target.provider === "render") {
+    return `https://dashboard.render.com/web/${target.providerProjectId}`;
+  }
+
+  return null;
+}
+
+function DeploymentTargetsList({
+  managementEnabled,
+  onDetached,
+  onTargetChanged,
+  projectId,
+  targets,
+}: Readonly<{
+  managementEnabled: boolean;
+  onDetached: (targetId: string) => void;
+  onTargetChanged: (target: DeploymentTarget) => void;
+  projectId: string;
+  targets: DeploymentTarget[];
+}>) {
+  const [editingTarget, setEditingTarget] = useState<DeploymentTarget | null>(null);
+  const [editValues, setEditValues] = useState<UpdateDeploymentTargetRequest>({});
+  const [savingTargetId, setSavingTargetId] = useState<string | null>(null);
+  const [syncingTargetId, setSyncingTargetId] = useState<string | null>(null);
+  const [detachConfirmTargetId, setDetachConfirmTargetId] = useState<string | null>(null);
+  const [detachingTargetId, setDetachingTargetId] = useState<string | null>(null);
+  const [targetMessage, setTargetMessage] = useState<string | null>(null);
+
+  if (!targets.length) {
+    return <p className="env-empty-state">No deployment targets configured.</p>;
+  }
+
+  const openEdit = (target: DeploymentTarget) => {
+    setEditingTarget(target);
+    setEditValues({
+      slot: target.slot,
+      providerProjectName: target.providerProjectName,
+      branchName: target.branchName,
+      rootDirectory: target.rootDirectory ?? "",
+      buildCommand: target.buildCommand ?? "",
+      startCommand: target.startCommand ?? "",
+      renderEnvironmentName: target.renderEnvironmentName ?? null,
+    });
+    setTargetMessage(null);
+  };
+
+  const updateEditValue = <K extends keyof UpdateDeploymentTargetRequest>(
+    key: K,
+    value: UpdateDeploymentTargetRequest[K],
+  ) => {
+    setEditValues((current) => ({
+      ...current,
+      [key]: value,
+    }));
+  };
+
+  const saveEdit = async () => {
+    if (!editingTarget) return;
+    setSavingTargetId(editingTarget.id);
+    setTargetMessage(null);
+    try {
+      const updatedTarget = await updateDeploymentTarget(projectId, editingTarget.id, {
+        ...editValues,
+        rootDirectory: editValues.rootDirectory?.trim() || null,
+        buildCommand: editValues.buildCommand?.trim() || null,
+        startCommand: editValues.startCommand?.trim() || null,
+      });
+      onTargetChanged(updatedTarget);
+      setEditingTarget(null);
+      setTargetMessage("Target metadata updated.");
+    } catch {
+      setTargetMessage("Unable to update target metadata.");
+    } finally {
+      setSavingTargetId(null);
+    }
+  };
+
+  const runSync = async (target: DeploymentTarget) => {
+    setSyncingTargetId(target.id);
+    setTargetMessage(null);
+    try {
+      const response = await syncDeploymentTarget(projectId, target.id);
+      onTargetChanged(response.target);
+      setTargetMessage(
+        response.findings.length
+          ? `Local metadata sync completed with ${response.findings.length} finding${response.findings.length === 1 ? "" : "s"}.`
+          : "Local metadata sync completed.",
+      );
+    } catch {
+      setTargetMessage("Unable to sync target metadata.");
+    } finally {
+      setSyncingTargetId(null);
+    }
+  };
+
+  const detachTarget = async (target: DeploymentTarget) => {
+    if (detachConfirmTargetId !== target.id) {
+      setDetachConfirmTargetId(target.id);
+      setTargetMessage("Confirm detach to remove this target from FlowCI only.");
+      return;
+    }
+
+    setDetachingTargetId(target.id);
+    setTargetMessage(null);
+    try {
+      await detachDeploymentTarget(projectId, target.id);
+      onDetached(target.id);
+      setDetachConfirmTargetId(null);
+      setTargetMessage("Target detached from FlowCI. Provider resource was not deleted.");
+    } catch {
+      setTargetMessage("Unable to detach deployment target.");
+    } finally {
+      setDetachingTargetId(null);
+    }
+  };
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "0.85rem" }}>
+      {targetMessage ? <p className="env-empty-state">{targetMessage}</p> : null}
+      <div className="env-metadata-list">
+        {targets.map((target) => {
+          const dashboardUrl = providerDashboardUrl(target);
+          return (
+            <div key={target.id} className={`env-metadata-row ${target.status}`} style={{ alignItems: "flex-start" }}>
+              <span style={{ display: "flex", flexDirection: "column", gap: "0.2rem" }}>
+                <strong>{target.providerProjectName}</strong>
+                <small>
+                  {target.provider} - {target.slot} - {target.branchName}
+                </small>
+                <small>
+                  Root {target.rootDirectory || "."} - Build {target.buildCommand || "Not configured"} - Start{" "}
+                  {target.startCommand || "Not configured"}
+                </small>
+                {target.renderEnvironmentName ? <small>Render environment {target.renderEnvironmentName}</small> : null}
+                <small>Provider ID {target.providerProjectId}</small>
+              </span>
+              <span style={{ display: "flex", gap: "0.4rem", flexWrap: "wrap", justifyContent: "flex-end" }}>
+                <button
+                  className="ghost-button"
+                  type="button"
+                  disabled={!managementEnabled}
+                  onClick={() => openEdit(target)}
+                  style={{ minHeight: "2rem", padding: "0.35rem 0.7rem", fontSize: "0.76rem" }}
+                >
+                  Edit
+                </button>
+                <button
+                  className="ghost-button"
+                  type="button"
+                  disabled={!managementEnabled || syncingTargetId === target.id}
+                  onClick={() => void runSync(target)}
+                  style={{ minHeight: "2rem", padding: "0.35rem 0.7rem", fontSize: "0.76rem" }}
+                >
+                  {syncingTargetId === target.id ? "Syncing..." : "Sync target"}
+                </button>
+                <button
+                  className="ghost-button"
+                  type="button"
+                  disabled
+                  title="Provider activation required"
+                  style={{ minHeight: "2rem", padding: "0.35rem 0.7rem", fontSize: "0.76rem" }}
+                >
+                  Provider activation required
+                </button>
+                {dashboardUrl ? (
+                  <a
+                    className="ghost-button"
+                    href={dashboardUrl}
+                    rel="noreferrer"
+                    target="_blank"
+                    style={{ minHeight: "2rem", padding: "0.35rem 0.7rem", fontSize: "0.76rem" }}
+                  >
+                    Open provider dashboard
+                  </a>
+                ) : null}
+                <button
+                  className="ghost-button"
+                  type="button"
+                  disabled={!managementEnabled || detachingTargetId === target.id}
+                  onClick={() => void detachTarget(target)}
+                  style={{ minHeight: "2rem", padding: "0.35rem 0.7rem", fontSize: "0.76rem" }}
+                >
+                  {detachingTargetId === target.id
+                    ? "Detaching..."
+                    : detachConfirmTargetId === target.id
+                      ? "Confirm detach"
+                      : "Detach from FlowCI"}
+                </button>
+              </span>
+            </div>
+          );
+        })}
+      </div>
+      {editingTarget ? (
+        <div className="env-card" data-testid="target-edit-drawer" style={{ gap: "0.85rem" }}>
+          <div>
+            <h4 style={{ margin: 0 }}>Edit deployment target</h4>
+            <p className="env-empty-state" style={{ margin: "0.25rem 0 0" }}>
+              Metadata edits only. Provider resources and secrets are unchanged.
+            </p>
+          </div>
+          <div className="env-form-grid">
+            <label>
+              Display name
+              <input
+                aria-label="Target display name"
+                value={editValues.providerProjectName ?? ""}
+                onChange={(event) => updateEditValue("providerProjectName", event.target.value)}
+              />
+            </label>
+            <label>
+              Slot
+              <select
+                aria-label="Target slot"
+                value={editValues.slot ?? "backend"}
+                onChange={(event) => updateEditValue("slot", event.target.value as EnvTargetSlot)}
+              >
+                <option value="backend">Backend</option>
+                <option value="frontend">Frontend</option>
+                <option value="standalone">Standalone</option>
+              </select>
+            </label>
+            <label>
+              Branch
+              <input
+                aria-label="Target branch"
+                value={editValues.branchName ?? ""}
+                onChange={(event) => updateEditValue("branchName", event.target.value)}
+              />
+            </label>
+            <label>
+              Root directory
+              <input
+                aria-label="Target root directory"
+                value={editValues.rootDirectory ?? ""}
+                onChange={(event) => updateEditValue("rootDirectory", event.target.value)}
+              />
+            </label>
+            <label>
+              Build command
+              <input
+                aria-label="Target build command"
+                value={editValues.buildCommand ?? ""}
+                onChange={(event) => updateEditValue("buildCommand", event.target.value)}
+              />
+            </label>
+            <label>
+              Start command
+              <input
+                aria-label="Target start command"
+                value={editValues.startCommand ?? ""}
+                onChange={(event) => updateEditValue("startCommand", event.target.value)}
+              />
+            </label>
+            {editingTarget.provider === "render" ? (
+              <label>
+                Provider environment
+                <select
+                  aria-label="Target provider environment"
+                  value={editValues.renderEnvironmentName ?? ""}
+                  onChange={(event) => updateEditValue("renderEnvironmentName", event.target.value as EnvEnvironment)}
+                >
+                  <option value="">Not configured</option>
+                  <option value="test">Test</option>
+                  <option value="uat">UAT</option>
+                  <option value="production">Production</option>
+                </select>
+              </label>
+            ) : null}
+          </div>
+          <div style={{ display: "flex", gap: "0.5rem", justifyContent: "flex-end", flexWrap: "wrap" }}>
+            <button className="ghost-button" type="button" onClick={() => setEditingTarget(null)}>
+              Cancel
+            </button>
+            <button
+              className="primary-button"
+              type="button"
+              disabled={savingTargetId === editingTarget.id}
+              onClick={() => void saveEdit()}
+            >
+              {savingTargetId === editingTarget.id ? "Saving..." : "Save metadata"}
+            </button>
+          </div>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function EnvMetadataList({ metadata }: Readonly<{ metadata: EnvVarMetadata[] }>) {
+  if (!metadata.length) {
+    return <p className="env-empty-state">No variables provisioned yet.</p>;
+  }
+
+  return (
+    <div className="env-metadata-list">
+      {metadata.map((item) => (
+        <div key={item.id} className={`env-metadata-row ${item.status}`}>
+          <span>{item.key}</span>
+          <span>
+            {item.environment} - {item.status}
+          </span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function CiRunsList({ response }: Readonly<{ response: ProjectCiRunsResponse | null }>) {
+  if (!response) {
+    return <p className="env-empty-state">Loading CI runs...</p>;
+  }
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "0.85rem" }}>
+      {!response.liveGithubEnabled ? (
+        <p className="env-empty-state" style={{ margin: 0 }}>
+          Live GitHub run sync is not enabled
+        </p>
+      ) : null}
+      {response.runs.length ? (
+        <div className="env-metadata-list">
+          {response.runs.map((run) => (
+            <div key={run.id} className={`env-metadata-row ${run.conclusion === "failure" ? "failed" : "provisioned"}`}>
+              <span style={{ display: "flex", flexDirection: "column", gap: "0.2rem" }}>
+                <strong>{run.workflowName}</strong>
+                <small>
+                  {run.stage} - {run.branch} - {run.status}
+                  {run.conclusion ? ` - ${run.conclusion}` : ""}
+                </small>
+                <small>
+                  Commit {run.commitSha ?? "not available"} - Actor {run.actor}
+                </small>
+                <small>
+                  {formatDate(run.createdAt)} - {formatDate(run.updatedAt)}
+                </small>
+              </span>
+              <span style={{ display: "flex", gap: "0.4rem", flexWrap: "wrap", justifyContent: "flex-end" }}>
+                <a className="ghost-button" href={run.htmlUrl} rel="noreferrer" target="_blank">
+                  GitHub run
+                </a>
+                {run.canRerun ? (
+                  <button className="ghost-button" type="button">
+                    Rerun
+                  </button>
+                ) : null}
+              </span>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <p className="env-empty-state">No CI runs tracked yet.</p>
+      )}
+    </div>
+  );
+}
+
+function DeploymentHistoryList({
+  response,
+}: Readonly<{ response: ProjectDeploymentsResponse | null }>) {
+  if (!response) {
+    return <p className="env-empty-state">Loading deployment history...</p>;
+  }
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "0.85rem" }}>
+      {!response.liveProvidersEnabled ? (
+        <p className="env-empty-state" style={{ margin: 0 }}>
+          Live deployment sync is not enabled
+        </p>
+      ) : null}
+      {response.deployments.length ? (
+        <div className="env-metadata-list">
+          {response.deployments.map((deployment) => (
+            <div
+              key={deployment.id}
+              className={`env-metadata-row ${
+                deployment.status === "failed" ? "failed" : "provisioned"
+              }`}
+              style={{ alignItems: "flex-start" }}
+            >
+              <span style={{ display: "flex", flexDirection: "column", gap: "0.2rem" }}>
+                <strong>{deployment.targetName}</strong>
+                <small>
+                  {deployment.provider} - {deployment.environment ?? "environment not tracked"} - {deployment.status}
+                </small>
+                <small>
+                  Branch {deployment.branch ?? "not available"} - Commit {deployment.commitSha ?? "not available"}
+                </small>
+                <small>
+                  Created {formatDate(deployment.createdAt)} - Ready{" "}
+                  {deployment.readyAt ? formatDate(deployment.readyAt) : "not ready"}
+                </small>
+              </span>
+              <span style={{ display: "flex", gap: "0.4rem", flexWrap: "wrap", justifyContent: "flex-end" }}>
+                <a className="ghost-button" href={deployment.providerUrl} rel="noreferrer" target="_blank">
+                  Provider deployment
+                </a>
+              </span>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <p className="env-empty-state">No deployment history tracked yet.</p>
+      )}
+    </div>
+  );
+}
+
+function DriftFindingsPanel({
+  onRun,
+  onRepair,
+  repairEnabled,
+  response,
+  running,
+  workflowUpdatePrEnabled,
+}: Readonly<{
+  onRun: () => void;
+  onRepair: (findingId: string, action: ProjectDriftRepairAction) => Promise<string>;
+  repairEnabled: boolean;
+  response: ProjectDriftResponse | null;
+  running: boolean;
+  workflowUpdatePrEnabled: boolean;
+}>) {
+  const [pendingRepair, setPendingRepair] = useState<{
+    findingId: string;
+    action: ProjectDriftRepairAction;
+  } | null>(null);
+  const [repairingFindingId, setRepairingFindingId] = useState<string | null>(null);
+  const [repairMessage, setRepairMessage] = useState<string | null>(null);
+
+  if (!response) {
+    return <p className="env-empty-state">Loading drift findings...</p>;
+  }
+
+  const actionForCode = (code: string): ProjectDriftRepairAction | null => {
+    if (code === "ci_token_missing" || code === "ci_token_revoked") return "rotate_ci_token";
+    if (code === "deployment_target_metadata_missing") return "detach_target";
+    if (code === "workflow_files_missing" || code === "central_workflow_ref_outdated") {
+      return workflowUpdatePrEnabled ? "create_workflow_update_pr" : "regenerate_workflow_preview";
+    }
+    return null;
+  };
+  const labelForAction = (action: ProjectDriftRepairAction) => {
+    if (action === "rotate_ci_token") return "Rotate CI token";
+    if (action === "detach_target") return "Detach target";
+    if (action === "regenerate_workflow_preview") return "Preview workflow";
+    if (action === "create_workflow_update_pr") return "Create update PR";
+    return "Ignore finding";
+  };
+
+  return (
+    <div className="glass-panel" style={{ padding: "1rem", display: "flex", flexDirection: "column", gap: "0.85rem" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", gap: "0.75rem", alignItems: "center", flexWrap: "wrap" }}>
+        <div>
+          <h4 style={{ margin: 0, fontSize: "0.95rem" }}>Health findings</h4>
+          <p className="env-empty-state" style={{ margin: "0.25rem 0 0" }}>
+            Local snapshot
+          </p>
+        </div>
+        <button
+          className="ghost-button"
+          type="button"
+          disabled={running}
+          onClick={onRun}
+          style={{ minHeight: "2rem", padding: "0.35rem 0.85rem", fontSize: "0.78rem" }}
+        >
+          {running ? "Checking..." : "Run drift check"}
+        </button>
+      </div>
+      {repairMessage ? <p className="env-empty-state" style={{ margin: 0 }}>{repairMessage}</p> : null}
+
+      {response.findings.length ? (
+        <div className="env-metadata-list">
+          {response.findings.map((finding) => {
+            const action = actionForCode(finding.code);
+            const isConfirming =
+              pendingRepair?.findingId === finding.id && pendingRepair.action === action;
+            return (
+              <div
+                key={finding.id}
+                className={`env-metadata-row ${finding.severity === "error" ? "failed" : "provisioned"}`}
+                style={{ alignItems: "flex-start" }}
+              >
+                <span style={{ display: "flex", flexDirection: "column", gap: "0.2rem" }}>
+                  <strong>{finding.code}</strong>
+                  <small>
+                    {finding.severity} - {finding.source} - {formatDate(finding.detectedAt)}
+                  </small>
+                  <small>{finding.message}</small>
+                </span>
+                {repairEnabled && action ? (
+                  <button
+                    className="ghost-button"
+                    type="button"
+                    disabled={repairingFindingId === finding.id}
+                    onClick={() => {
+                      if (!isConfirming) {
+                        setPendingRepair({ findingId: finding.id, action });
+                        setRepairMessage("Confirm repair to run this local-safe action.");
+                        return;
+                      }
+                      setRepairingFindingId(finding.id);
+                      void onRepair(finding.id, action)
+                        .then((message) => {
+                          setRepairMessage(`${message}. Run drift check again to refresh findings.`);
+                          setPendingRepair(null);
+                        })
+                        .catch(() => {
+                          setRepairMessage("Unable to run repair action.");
+                        })
+                        .finally(() => setRepairingFindingId(null));
+                    }}
+                    style={{ minHeight: "2rem", padding: "0.35rem 0.7rem", fontSize: "0.76rem" }}
+                  >
+                    {repairingFindingId === finding.id
+                      ? "Repairing..."
+                      : isConfirming
+                        ? "Confirm repair"
+                        : labelForAction(action)}
+                  </button>
+                ) : action ? (
+                  <button
+                    className="ghost-button"
+                    type="button"
+                    disabled
+                    title="Repair actions coming in the next phase"
+                    style={{ minHeight: "2rem", padding: "0.35rem 0.7rem", fontSize: "0.76rem" }}
+                  >
+                    Repair actions coming in the next phase
+                  </button>
+                ) : null}
+              </div>
+            );
+          })}
+        </div>
+      ) : (
+        <p className="env-empty-state">No active drift findings.</p>
+      )}
+    </div>
+  );
+}
+
 export function WorkflowCurrentTab({
   history,
   latestResult,
@@ -87,12 +687,406 @@ export function WorkflowCurrentTab({
   projects,
 }: Readonly<WorkflowCurrentTabProps>) {
   const [subTab, setSubTab] = useState<SubTab>("projects");
-  const [openEnvProjectId, setOpenEnvProjectId] = useState<string | null>(null);
+  const [projectDetailTab, setProjectDetailTab] = useState<ProjectDetailTab>("overview");
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
-  const { envProvisioningEnabled } = useCapabilities();
+  const [projectOverview, setProjectOverview] = useState<ProjectOverviewResponse | null>(null);
+  const [projectOverviewError, setProjectOverviewError] = useState<{
+    projectId: string;
+    message: string;
+  } | null>(null);
+  const {
+    envProvisioningEnabled,
+    ciRunTrackingEnabled,
+    deploymentHistoryEnabled,
+    driftDetectionEnabled,
+    driftRepairEnabled,
+    projectTargetManagementEnabled,
+    projectSyncSnapshotsEnabled,
+    workflowSettingsPreviewEnabled,
+    workflowUpdatePrEnabled,
+  } = useCapabilities();
+  const [syncingProjectId, setSyncingProjectId] = useState<string | null>(null);
+  const [syncMessage, setSyncMessage] = useState<string | null>(null);
+  const [workflowSettings, setWorkflowSettings] = useState<WorkflowSettings | null>(null);
+  const [workflowSettingsProjectId, setWorkflowSettingsProjectId] = useState<string | null>(null);
+  const [workflowSettingsError, setWorkflowSettingsError] = useState<string | null>(null);
+  const [workflowPreview, setWorkflowPreview] = useState<WorkflowSettingsPreviewResponse | null>(null);
+  const [workflowUpdatePr, setWorkflowUpdatePr] = useState<WorkflowUpdatePullRequestResponse | null>(null);
+  const [workflowUpdatePrError, setWorkflowUpdatePrError] = useState<string | null>(null);
+  const [creatingWorkflowPr, setCreatingWorkflowPr] = useState(false);
+  const [previewingWorkflow, setPreviewingWorkflow] = useState(false);
+  const [ciRunsResponse, setCiRunsResponse] = useState<ProjectCiRunsResponse | null>(null);
+  const [ciRunsProjectId, setCiRunsProjectId] = useState<string | null>(null);
+  const [ciRunsError, setCiRunsError] = useState<string | null>(null);
+  const [deploymentsResponse, setDeploymentsResponse] = useState<ProjectDeploymentsResponse | null>(null);
+  const [deploymentsProjectId, setDeploymentsProjectId] = useState<string | null>(null);
+  const [deploymentsError, setDeploymentsError] = useState<string | null>(null);
+  const [driftResponse, setDriftResponse] = useState<ProjectDriftResponse | null>(null);
+  const [driftProjectId, setDriftProjectId] = useState<string | null>(null);
+  const [driftError, setDriftError] = useState<string | null>(null);
+  const [runningDriftCheck, setRunningDriftCheck] = useState(false);
+  const [auditResponse, setAuditResponse] = useState<ProjectAuditEventsResponse | null>(null);
+  const [auditProjectId, setAuditProjectId] = useState<string | null>(null);
+  const [auditError, setAuditError] = useState<string | null>(null);
   const selectedProject = useMemo(() => {
     return projects.find((project) => project.id === selectedProjectId) ?? projects[0] ?? null;
   }, [projects, selectedProjectId]);
+  const selectedOverview = selectedProject && projectOverview?.project.id === selectedProject.id
+    ? projectOverview
+    : null;
+  const selectedOverviewError = selectedProject && projectOverviewError?.projectId === selectedProject.id
+    ? projectOverviewError.message
+    : null;
+  const loadingProjectOverview = Boolean(selectedProject && !selectedOverview && !selectedOverviewError);
+  const selectedWorkflowFiles = selectedOverview?.workflow.files ?? selectedProject?.workflowFiles ?? [];
+  const deploymentTargets = selectedOverview?.deploymentTargets.items ?? [];
+  const envMetadata = selectedOverview?.environment.items ?? [];
+  const syncSnapshot = selectedOverview?.syncSnapshot ?? null;
+  const syncAvailable =
+    projectSyncSnapshotsEnabled &&
+    selectedOverview?.capabilities.syncSnapshots === true &&
+    syncSnapshot?.enabled === true;
+
+  const handleTargetChanged = (target: DeploymentTarget) => {
+    if (!selectedProject) return;
+    setProjectOverview((current) => {
+      if (!current || current.project.id !== selectedProject.id) return current;
+      const items = current.deploymentTargets.items.map((item) =>
+        item.id === target.id ? target : item,
+      );
+      return {
+        ...current,
+        deploymentTargets: {
+          ...current.deploymentTargets,
+          items,
+        },
+      };
+    });
+  };
+
+  const handleTargetDetached = (targetId: string) => {
+    if (!selectedProject) return;
+    setProjectOverview((current) => {
+      if (!current || current.project.id !== selectedProject.id) return current;
+      const items = current.deploymentTargets.items.filter((item) => item.id !== targetId);
+      return {
+        ...current,
+        deploymentTargets: {
+          ...current.deploymentTargets,
+          items,
+          count: items.length,
+        },
+      };
+    });
+  };
+
+  useEffect(() => {
+    if (!selectedProject) {
+      return;
+    }
+
+    let active = true;
+    void getProjectOverview(selectedProject.id)
+      .then((overview) => {
+        if (active) {
+          setProjectOverview(overview);
+          setProjectOverviewError(null);
+        }
+      })
+      .catch(() => {
+        if (active) {
+          setProjectOverviewError({
+            projectId: selectedProject.id,
+            message: "Unable to load project overview.",
+          });
+        }
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [selectedProject]);
+
+  useEffect(() => {
+    if (!selectedProject || projectDetailTab !== "workflow" || !workflowSettingsPreviewEnabled) {
+      return;
+    }
+
+    if (workflowSettingsProjectId === selectedProject.id && workflowSettings) {
+      return;
+    }
+
+    let active = true;
+    void getWorkflowSettings(selectedProject.id)
+      .then((response) => {
+        if (active) {
+          setWorkflowSettings(response.settings);
+          setWorkflowSettingsProjectId(selectedProject.id);
+          setWorkflowSettingsError(null);
+          setWorkflowPreview(null);
+          setWorkflowUpdatePr(null);
+          setWorkflowUpdatePrError(null);
+        }
+      })
+      .catch(() => {
+        if (active) {
+          setWorkflowSettingsError("Unable to load workflow settings.");
+        }
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [
+    projectDetailTab,
+    selectedProject,
+    workflowSettings,
+    workflowSettingsPreviewEnabled,
+    workflowSettingsProjectId,
+  ]);
+
+  useEffect(() => {
+    if (!selectedProject || projectDetailTab !== "activity") {
+      return;
+    }
+    if (auditProjectId === selectedProject.id && auditResponse) {
+      return;
+    }
+
+    let active = true;
+    setAuditResponse(null);
+    setAuditError(null);
+    void getProjectAuditEvents(selectedProject.id)
+      .then((response) => {
+        if (active) {
+          setAuditResponse(response);
+          setAuditProjectId(selectedProject.id);
+        }
+      })
+      .catch(() => {
+        if (active) {
+          setAuditError("Unable to load audit events.");
+        }
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [auditProjectId, auditResponse, projectDetailTab, selectedProject]);
+
+  useEffect(() => {
+    if (
+      !selectedProject ||
+      projectDetailTab !== "overview" ||
+      !driftDetectionEnabled ||
+      selectedOverview?.capabilities.driftDetection !== true
+    ) {
+      return;
+    }
+
+    if (driftProjectId === selectedProject.id && driftResponse) {
+      return;
+    }
+
+    let active = true;
+    setDriftResponse(null);
+    setDriftError(null);
+    void getProjectDrift(selectedProject.id)
+      .then((response) => {
+        if (active) {
+          setDriftResponse(response);
+          setDriftProjectId(selectedProject.id);
+        }
+      })
+      .catch(() => {
+        if (active) {
+          setDriftError("Unable to load drift findings.");
+        }
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [
+    driftDetectionEnabled,
+    driftProjectId,
+    driftResponse,
+    projectDetailTab,
+    selectedOverview,
+    selectedProject,
+  ]);
+
+  useEffect(() => {
+    if (
+      !selectedProject ||
+      projectDetailTab !== "deployments" ||
+      !deploymentHistoryEnabled ||
+      selectedOverview?.capabilities.deploymentHistory !== true
+    ) {
+      return;
+    }
+
+    if (deploymentsProjectId === selectedProject.id && deploymentsResponse) {
+      return;
+    }
+
+    let active = true;
+    setDeploymentsResponse(null);
+    setDeploymentsError(null);
+    void getProjectDeployments(selectedProject.id)
+      .then((response) => {
+        if (active) {
+          setDeploymentsResponse(response);
+          setDeploymentsProjectId(selectedProject.id);
+        }
+      })
+      .catch(() => {
+        if (active) {
+          setDeploymentsError("Unable to load deployment history.");
+        }
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [
+    deploymentHistoryEnabled,
+    deploymentsProjectId,
+    deploymentsResponse,
+    projectDetailTab,
+    selectedOverview,
+    selectedProject,
+  ]);
+
+  useEffect(() => {
+    if (
+      !selectedProject ||
+      projectDetailTab !== "runs" ||
+      !ciRunTrackingEnabled ||
+      selectedOverview?.capabilities.ciRunTracking !== true
+    ) {
+      return;
+    }
+
+    if (ciRunsProjectId === selectedProject.id && ciRunsResponse) {
+      return;
+    }
+
+    let active = true;
+    setCiRunsResponse(null);
+    setCiRunsError(null);
+    void getProjectCiRuns(selectedProject.id)
+      .then((response) => {
+        if (active) {
+          setCiRunsResponse(response);
+          setCiRunsProjectId(selectedProject.id);
+        }
+      })
+      .catch(() => {
+        if (active) {
+          setCiRunsError("Unable to load CI runs.");
+        }
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [
+    ciRunTrackingEnabled,
+    ciRunsProjectId,
+    ciRunsResponse,
+    projectDetailTab,
+    selectedOverview,
+    selectedProject,
+  ]);
+
+  async function handleProjectSync() {
+    if (!selectedProject || !syncAvailable) {
+      return;
+    }
+
+    setSyncingProjectId(selectedProject.id);
+    setSyncMessage(null);
+    try {
+      const result = await syncProjectSnapshot(selectedProject.id);
+      setProjectOverview(result.overview);
+    } catch {
+      setSyncMessage("Unable to create local snapshot right now.");
+    } finally {
+      setSyncingProjectId(null);
+    }
+  }
+
+  async function handleRunDriftDetection() {
+    if (!selectedProject) {
+      return;
+    }
+
+    setRunningDriftCheck(true);
+    setDriftError(null);
+    try {
+      const response = await runProjectDriftDetection(selectedProject.id);
+      setDriftResponse(response);
+      setDriftProjectId(selectedProject.id);
+    } catch {
+      setDriftError("Unable to run drift detection.");
+    } finally {
+      setRunningDriftCheck(false);
+    }
+  }
+
+  async function handleRepairDriftFinding(
+    findingId: string,
+    action: ProjectDriftRepairAction,
+  ): Promise<string> {
+    if (!selectedProject) {
+      throw new Error("Project is not selected.");
+    }
+
+    const response = await repairProjectDriftFinding(
+      selectedProject.id,
+      findingId,
+      action,
+    );
+    return response.message;
+  }
+
+  async function handleWorkflowPreview() {
+    if (!selectedProject || !workflowSettings) {
+      return;
+    }
+
+    setPreviewingWorkflow(true);
+    setWorkflowSettingsError(null);
+    try {
+      const result = await previewWorkflowSettings(selectedProject.id, workflowSettings);
+      setWorkflowPreview(result);
+      setWorkflowSettings(result.settings);
+      setWorkflowUpdatePr(null);
+      setWorkflowUpdatePrError(null);
+    } catch {
+      setWorkflowSettingsError("Unable to preview workflow settings.");
+    } finally {
+      setPreviewingWorkflow(false);
+    }
+  }
+
+  async function handleCreateWorkflowPr() {
+    if (!selectedProject || !workflowSettings || !workflowPreview) {
+      return;
+    }
+
+    setCreatingWorkflowPr(true);
+    setWorkflowUpdatePrError(null);
+    try {
+      const result = await createWorkflowUpdatePullRequest(selectedProject.id, workflowSettings);
+      setWorkflowUpdatePr(result);
+    } catch {
+      setWorkflowUpdatePrError("Unable to create workflow update PR.");
+    } finally {
+      setCreatingWorkflowPr(false);
+    }
+  }
 
   return (
     <motion.section
@@ -309,7 +1303,7 @@ export function WorkflowCurrentTab({
                       aria-pressed={isSelected}
                       onClick={() => {
                         setSelectedProjectId(project.id);
-                        setOpenEnvProjectId(null);
+                        setProjectDetailTab("overview");
                       }}
                     >
                       <span className="project-list-title">
@@ -339,37 +1333,6 @@ export function WorkflowCurrentTab({
                   </span>
                 </div>
 
-                <dl className="project-detail-grid">
-                  <div>
-                    <dt>Workflow</dt>
-                    <dd>{selectedProject.workflowPath}</dd>
-                  </div>
-                  <div>
-                    <dt>Checks</dt>
-                    <dd>{selectedChecks(selectedProject)}</dd>
-                  </div>
-                  {selectedProject.githubCommitSha ? (
-                    <div>
-                      <dt>Commit</dt>
-                      <dd>{selectedProject.githubCommitSha.slice(0, 10)}</dd>
-                    </div>
-                  ) : null}
-                  {selectedProject.workflowFiles?.length ? (
-                    <div>
-                      <dt>Stages</dt>
-                      <dd>{selectedProject.workflowFiles.length} gated workflow stages</dd>
-                    </div>
-                  ) : null}
-                </dl>
-
-                {selectedProject.failureReason ? (
-                  <p className="error-text" style={{ margin: 0 }}>
-                    {selectedProject.failureReason}
-                  </p>
-                ) : null}
-
-                <WorkflowStageList files={selectedProject.workflowFiles} />
-
                 <div className="project-detail-actions">
                   {selectedProject.repoUrl ? (
                     <>
@@ -390,19 +1353,365 @@ export function WorkflowCurrentTab({
                     <button
                       className="ghost-button env-action-button"
                       type="button"
-                      onClick={() =>
-                        setOpenEnvProjectId((current) =>
-                          current === selectedProject.id ? null : selectedProject.id,
-                        )
-                      }
+                      onClick={() => {
+                        setProjectDetailTab("environment");
+                      }}
                     >
                       Environment Variables
                     </button>
                   ) : null}
                 </div>
 
-                {openEnvProjectId === selectedProject.id ? (
-                  <ProjectEnvPanel project={selectedProject} />
+                <div className="subtab-bar" role="tablist" aria-label="Project detail sections" style={{ marginBottom: "1rem" }}>
+                  {PROJECT_DETAIL_TABS.map((tab) => (
+                    <button
+                      key={tab.id}
+                      type="button"
+                      role="tab"
+                      aria-selected={projectDetailTab === tab.id}
+                      className={projectDetailTab === tab.id ? "primary-button" : "ghost-button"}
+                      onClick={() => setProjectDetailTab(tab.id)}
+                      style={{ minHeight: "2rem", padding: "0.35rem 0.75rem", fontSize: "0.78rem" }}
+                    >
+                      {tab.label}
+                    </button>
+                  ))}
+                </div>
+
+                {loadingProjectOverview ? (
+                  <p className="env-empty-state">Loading project overview...</p>
+                ) : null}
+                {selectedOverviewError ? (
+                  <p className="error-text" style={{ margin: 0 }}>{selectedOverviewError}</p>
+                ) : null}
+
+                {projectDetailTab === "overview" ? (
+                  <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+                    <dl className="project-detail-grid">
+                      <div>
+                        <dt>Workflow</dt>
+                        <dd>{selectedOverview?.workflow.path ?? selectedProject.workflowPath}</dd>
+                      </div>
+                      <div>
+                        <dt>Checks</dt>
+                        <dd>{selectedChecks(selectedProject)}</dd>
+                      </div>
+                      {selectedProject.githubCommitSha ? (
+                        <div>
+                          <dt>Commit</dt>
+                          <dd>{selectedProject.githubCommitSha.slice(0, 10)}</dd>
+                        </div>
+                      ) : null}
+                      <div>
+                        <dt>Stages</dt>
+                        <dd>{selectedWorkflowFiles.length ? `${selectedWorkflowFiles.length} gated workflow stages` : "Not configured"}</dd>
+                      </div>
+                      <div>
+                        <dt>CI token</dt>
+                        <dd>{selectedOverview?.ciAuth.status ?? "Not loaded"}</dd>
+                      </div>
+                      <div>
+                        <dt>Targets</dt>
+                        <dd>{selectedOverview ? selectedOverview.deploymentTargets.count : "Not loaded"}</dd>
+                      </div>
+                    </dl>
+
+                    {syncSnapshot ? (
+                      <div className="env-metadata-row provisioned" style={{ alignItems: "center" }}>
+                        <span>
+                          <strong>Local snapshot</strong>
+                          <br />
+                          {syncSnapshot.latest
+                            ? `${syncSnapshot.latest.status} - ${syncSnapshot.latest.findings.length} finding${syncSnapshot.latest.findings.length === 1 ? "" : "s"} - ${formatDate(syncSnapshot.latest.completedAt)}`
+                            : "Not synced yet"}
+                        </span>
+                        {syncAvailable ? (
+                          <button
+                            className="ghost-button"
+                            type="button"
+                            disabled={syncingProjectId === selectedProject.id}
+                            onClick={handleProjectSync}
+                            style={{ minHeight: "2rem", padding: "0.35rem 0.75rem", fontSize: "0.78rem" }}
+                          >
+                            {syncingProjectId === selectedProject.id ? "Syncing..." : "Sync now"}
+                          </button>
+                        ) : null}
+                      </div>
+                    ) : null}
+
+                    {syncMessage ? (
+                      <p className="error-text" style={{ margin: 0 }}>{syncMessage}</p>
+                    ) : null}
+
+                    {selectedProject.failureReason ? (
+                      <p className="error-text" style={{ margin: 0 }}>
+                        {selectedProject.failureReason}
+                      </p>
+                    ) : null}
+
+                    {selectedOverview?.health.checks.length ? (
+                      <div className="env-metadata-list">
+                        {selectedOverview.health.checks.map((check) => (
+                          <div key={check.key} className={`env-metadata-row ${check.status === "error" ? "failed" : "provisioned"}`}>
+                            <span>{check.label}</span>
+                            <span>{check.message}</span>
+                          </div>
+                        ))}
+                      </div>
+                    ) : null}
+
+                    {driftDetectionEnabled && selectedOverview?.capabilities.driftDetection ? (
+                      driftError ? (
+                        <p className="error-text" style={{ margin: 0 }}>{driftError}</p>
+                      ) : (
+                        <DriftFindingsPanel
+                          onRun={() => void handleRunDriftDetection()}
+                          onRepair={handleRepairDriftFinding}
+                          repairEnabled={driftRepairEnabled}
+                          response={driftResponse}
+                          running={runningDriftCheck}
+                          workflowUpdatePrEnabled={workflowUpdatePrEnabled}
+                        />
+                      )
+                    ) : null}
+                  </div>
+                ) : null}
+
+                {projectDetailTab === "workflow" ? (
+                  <div style={{ display: "flex", flexDirection: "column", gap: "0.85rem" }}>
+                    {workflowSettingsPreviewEnabled && selectedOverview?.capabilities.workflowSettings ? (
+                      <div className="glass-panel" style={{ padding: "1rem", display: "flex", flexDirection: "column", gap: "0.85rem" }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", gap: "0.75rem", alignItems: "center", flexWrap: "wrap" }}>
+                          <div>
+                            <h4 style={{ margin: 0, fontSize: "0.95rem" }}>Workflow settings</h4>
+                            <p style={{ margin: "0.25rem 0 0", color: "var(--text-secondary)", fontSize: "0.78rem" }}>
+                              Preview only
+                            </p>
+                          </div>
+                          <button
+                            className="ghost-button"
+                            type="button"
+                            disabled={!workflowSettings || previewingWorkflow}
+                            onClick={handleWorkflowPreview}
+                            style={{ minHeight: "2rem", padding: "0.35rem 0.85rem", fontSize: "0.78rem" }}
+                          >
+                            {previewingWorkflow ? "Previewing..." : "Preview"}
+                          </button>
+                        </div>
+
+                        {workflowSettings ? (
+                          <div className="project-detail-grid">
+                            <label>
+                              <dt>Node version</dt>
+                              <input
+                                aria-label="Node version"
+                                value={workflowSettings.nodeVersion}
+                                onChange={(event) => {
+                                  setWorkflowSettings({
+                                    ...workflowSettings,
+                                    nodeVersion: event.target.value,
+                                  });
+                                }}
+                              />
+                            </label>
+                            <label>
+                              <dt>Coverage threshold</dt>
+                              <input
+                                aria-label="Coverage threshold"
+                                type="number"
+                                min={0}
+                                max={100}
+                                value={workflowSettings.coverageThreshold}
+                                onChange={(event) => {
+                                  setWorkflowSettings({
+                                    ...workflowSettings,
+                                    coverageThreshold: Number(event.target.value),
+                                  });
+                                }}
+                              />
+                            </label>
+                            <label>
+                              <dt>Service path</dt>
+                              <input
+                                aria-label="Service path"
+                                value={workflowSettings.servicePath}
+                                onChange={(event) => {
+                                  setWorkflowSettings({
+                                    ...workflowSettings,
+                                    servicePath: event.target.value,
+                                  });
+                                }}
+                              />
+                            </label>
+                            <label>
+                              <dt>Central workflow ref</dt>
+                              <input
+                                aria-label="Central workflow ref"
+                                value={workflowSettings.centralWorkflowRef}
+                                onChange={(event) => {
+                                  setWorkflowSettings({
+                                    ...workflowSettings,
+                                    centralWorkflowRef: event.target.value,
+                                  });
+                                }}
+                              />
+                            </label>
+                          </div>
+                        ) : (
+                          <p className="env-empty-state">Loading workflow settings...</p>
+                        )}
+
+                        {workflowSettingsError ? (
+                          <p className="error-text" style={{ margin: 0 }}>{workflowSettingsError}</p>
+                        ) : null}
+
+                        {workflowPreview?.validationWarnings.length ? (
+                          <div className="env-metadata-list">
+                            {workflowPreview.validationWarnings.map((warning) => (
+                              <div key={`${warning.field}-${warning.message}`} className="env-metadata-row failed">
+                                <span>{warning.field}</span>
+                                <span>{warning.message}</span>
+                              </div>
+                            ))}
+                          </div>
+                        ) : null}
+
+                        {workflowPreview ? (
+                          <>
+                            <div className="env-metadata-list">
+                              {workflowPreview.diffSummary.map((item) => (
+                                <div key={item.path} className="env-metadata-row provisioned">
+                                  <span>{item.path}</span>
+                                  <span>{item.status}</span>
+                                </div>
+                              ))}
+                            </div>
+                            {workflowUpdatePrEnabled ? (
+                              <div style={{ display: "flex", gap: "0.75rem", alignItems: "center", flexWrap: "wrap" }}>
+                                <button
+                                  className="primary-button"
+                                  type="button"
+                                  disabled={creatingWorkflowPr}
+                                  onClick={handleCreateWorkflowPr}
+                                  style={{ minHeight: "2rem", padding: "0.35rem 0.85rem", fontSize: "0.78rem" }}
+                                >
+                                  {creatingWorkflowPr ? "Creating..." : "Create update PR"}
+                                </button>
+                                {workflowUpdatePr ? (
+                                  <a
+                                    className="ghost-button"
+                                    href={workflowUpdatePr.pullRequestUrl}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    style={{ minHeight: "2rem", padding: "0.35rem 0.85rem", fontSize: "0.78rem" }}
+                                  >
+                                    {workflowUpdatePr.pullRequestUrl}
+                                  </a>
+                                ) : null}
+                              </div>
+                            ) : null}
+                            {workflowUpdatePrError ? (
+                              <p className="error-text" style={{ margin: 0 }}>{workflowUpdatePrError}</p>
+                            ) : null}
+                          </>
+                        ) : null}
+                      </div>
+                    ) : null}
+                    {selectedWorkflowFiles.length ? (
+                      <WorkflowStageList files={selectedWorkflowFiles} />
+                    ) : (
+                      <p className="env-empty-state">No workflow file metadata is tracked yet.</p>
+                    )}
+                  </div>
+                ) : null}
+
+                {projectDetailTab === "runs" ? (
+                  ciRunTrackingEnabled && selectedOverview?.capabilities.ciRunTracking ? (
+                    ciRunsError ? (
+                      <p className="error-text" style={{ margin: 0 }}>{ciRunsError}</p>
+                    ) : (
+                      <CiRunsList response={ciRunsResponse} />
+                    )
+                  ) : (
+                    <p className="env-empty-state">CI run tracking is not enabled.</p>
+                  )
+                ) : null}
+
+                {projectDetailTab === "deployments" ? (
+                  <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+                    {deploymentHistoryEnabled && selectedOverview?.capabilities.deploymentHistory ? (
+                      deploymentsError ? (
+                        <p className="error-text" style={{ margin: 0 }}>{deploymentsError}</p>
+                      ) : (
+                        <DeploymentHistoryList response={deploymentsResponse} />
+                      )
+                    ) : (
+                      <p className="env-empty-state">Deployment history is not enabled.</p>
+                    )}
+                    <DeploymentTargetsList
+                      managementEnabled={projectTargetManagementEnabled}
+                      onDetached={handleTargetDetached}
+                      onTargetChanged={handleTargetChanged}
+                      projectId={selectedProject.id}
+                      targets={deploymentTargets}
+                    />
+                  </div>
+                ) : null}
+
+                {projectDetailTab === "environment" ? (
+                  <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+                    {envProvisioningEnabled && selectedProject.status === "provisioned" ? (
+                      <ProjectEnvPanel project={selectedProject} />
+                    ) : (
+                      <EnvMetadataList metadata={envMetadata} />
+                    )}
+                  </div>
+                ) : null}
+
+                {projectDetailTab === "activity" ? (
+                  auditError ? (
+                    <p className="error-text" style={{ margin: 0 }}>{auditError}</p>
+                  ) : auditResponse?.items.length ? (
+                    <div className="env-metadata-list">
+                      {auditResponse.items.map((event) => (
+                        <div key={event.id} className="env-metadata-row provisioned">
+                          <span>{event.eventCode}</span>
+                          <span>{event.message}</span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="env-empty-state">No activity events yet.</p>
+                  )
+                ) : null}
+
+                {projectDetailTab === "settings" ? (
+                  <dl className="project-detail-grid">
+                    <div>
+                      <dt>Project ID</dt>
+                      <dd>{selectedProject.id}</dd>
+                    </div>
+                    <div>
+                      <dt>Repository</dt>
+                      <dd>{selectedProject.repoFullName}</dd>
+                    </div>
+                    <div>
+                      <dt>Project type</dt>
+                      <dd>{selectedProject.projectTypeId ?? "Not configured"}</dd>
+                    </div>
+                    <div>
+                      <dt>Workflow recipe</dt>
+                      <dd>{selectedProject.workflowRecipeId ?? "Not configured"}</dd>
+                    </div>
+                    <div>
+                      <dt>Visibility</dt>
+                      <dd>{selectedProject.visibility ?? "Not configured"}</dd>
+                    </div>
+                    <div>
+                      <dt>Repo shape</dt>
+                      <dd>{selectedProject.repoShape ?? "Not configured"}</dd>
+                    </div>
+                  </dl>
                 ) : null}
               </motion.article>
             </motion.div>
