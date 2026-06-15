@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 
 import { getProjects } from "@/lib/api/client";
+import { useWorkspaceSelection } from "@/components/layout/workspace-context";
 import type {
   CreateProjectRequest,
   CreateProjectResponse,
@@ -14,6 +15,7 @@ import type {
 export function useProvisionedProjects(setStatusMessage: (message: string) => void) {
   const [projects, setProjects] = useState<ProvisionedProject[]>([]);
   const [loadingProjects, setLoadingProjects] = useState(false);
+  const { selectedWorkspaceId } = useWorkspaceSelection();
 
   const loadProjects = useCallback(async (silent = false) => {
     if (!silent) {
@@ -21,7 +23,7 @@ export function useProvisionedProjects(setStatusMessage: (message: string) => vo
     }
 
     try {
-      const response = await getProjects(25);
+      const response = await getProjects(25, { workspaceId: selectedWorkspaceId });
       setProjects(response.items);
     } catch {
       if (!silent) {
@@ -32,7 +34,7 @@ export function useProvisionedProjects(setStatusMessage: (message: string) => vo
         setLoadingProjects(false);
       }
     }
-  }, [setStatusMessage]);
+  }, [selectedWorkspaceId, setStatusMessage]);
 
   useEffect(() => {
     void loadProjects();

@@ -39,9 +39,16 @@ export async function createProject(payload: CreateProjectRequest): Promise<Crea
   });
 }
 
-export async function getProjects(limit = 25): Promise<ProvisionedProjectsResponse> {
+export async function getProjects(
+  limit = 25,
+  input?: { workspaceId?: string | null },
+): Promise<ProvisionedProjectsResponse> {
   const safeLimit = Math.max(1, Math.min(100, Math.trunc(limit)));
-  return request<ProvisionedProjectsResponse>(`/projects?limit=${safeLimit}`);
+  const params = new URLSearchParams({ limit: String(safeLimit) });
+  if (input?.workspaceId) {
+    params.set("workspaceId", input.workspaceId);
+  }
+  return request<ProvisionedProjectsResponse>(`/projects?${params.toString()}`);
 }
 
 export async function getProjectOverview(projectId: string): Promise<ProjectOverviewResponse> {

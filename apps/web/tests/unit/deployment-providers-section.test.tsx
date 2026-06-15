@@ -35,6 +35,21 @@ function renderComponent() {
   };
 }
 
+function renderComponentWithRole(workspaceRole: "owner" | "admin" | "developer" | "viewer") {
+  const container = document.createElement("div");
+  document.body.appendChild(container);
+  const root = createRoot(container);
+
+  act(() => {
+    root.render(<DeploymentProvidersSection workspaceRole={workspaceRole} />);
+  });
+
+  return {
+    container,
+    root,
+  };
+}
+
 function changeValue(element: HTMLInputElement | HTMLSelectElement, value: string) {
   act(() => {
     const descriptor = Object.getOwnPropertyDescriptor(
@@ -233,5 +248,66 @@ describe("DeploymentProvidersSection", () => {
     expect(rendered.container.querySelector(".provider-connections-table")).not.toBeNull();
     expect(rendered.container.textContent).toContain("Provider");
     expect(rendered.container.textContent).toContain("Status");
+  });
+
+  it("shows provider connections read-only for viewer workspaces", async () => {
+    const saveConnection = jest.fn();
+    const revokeConnection = jest.fn();
+    mockedUseCapabilities.mockReturnValue({
+      capabilities: {
+        envProvisioning: {
+          enabled: true,
+          providers: ["render", "vercel"],
+          environments: ["test", "uat", "production"],
+          modes: ["byo", "flowci_managed"],
+        },
+      },
+      envProvisioningEnabled: true,
+      loadCapabilities: jest.fn(),
+      loading: false,
+    });
+    mockedUseProviderConnections.mockReturnValue({
+      connections: [
+        {
+          id: "connection-1",
+          provider: "vercel",
+          label: "Vercel team",
+          tokenLastFour: "1234",
+          status: "active",
+          createdAt: "2026-06-08T00:00:00.000Z",
+          updatedAt: "2026-06-08T00:00:00.000Z",
+          lastUsedAt: null,
+        },
+      ],
+      loadConnections: jest.fn(),
+      loading: false,
+      revokeConnection,
+      saveConnection,
+      saving: false,
+    });
+
+    const rendered = renderComponentWithRole("viewer");
+    root = rendered.root;
+
+    expect(rendered.container.textContent).toContain("Provider management requires owner or admin access.");
+    expect(rendered.container.querySelector<HTMLInputElement>('input[placeholder="Label"]')?.disabled).toBe(true);
+    expect(rendered.container.querySelector<HTMLInputElement>('input[placeholder="Provider token"]')?.disabled).toBe(true);
+
+    const saveButton = Array.from(rendered.container.querySelectorAll("button")).find(
+      (button) => button.textContent === "Save",
+    );
+    const revokeButton = Array.from(rendered.container.querySelectorAll("button")).find(
+      (button) => button.textContent === "Revoke",
+    );
+    expect(saveButton?.disabled).toBe(true);
+    expect(revokeButton?.disabled).toBe(true);
+
+    await act(async () => {
+      rendered.container.querySelector("form")!.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
+      revokeButton?.click();
+    });
+
+    expect(saveConnection).not.toHaveBeenCalled();
+    expect(revokeConnection).not.toHaveBeenCalled();
   });
 });

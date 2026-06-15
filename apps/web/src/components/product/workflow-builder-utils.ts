@@ -130,7 +130,26 @@ export function formatDate(value: string): string {
   }).format(date);
 }
 
+export function formatQuotaStatus(input: {
+  current: number;
+  limit: number;
+  upgradeRequired: boolean;
+}): string {
+  if (input.limit <= 0) return "Unavailable";
+  const remaining = Math.max(0, input.limit - input.current);
+  if (remaining === 0) {
+    return input.upgradeRequired
+      ? "Limit reached. Upgrade to continue."
+      : "Limit reached.";
+  }
+  return `${remaining} remaining`;
+}
+
 export function formatApiError(error: unknown, fallback: string): string {
+  if (isQuotaError(error)) {
+    return "Quota reached. Upgrade your plan or remove unused resources.";
+  }
+
   const details = (error as ApiError)?.details;
 
   if (!details) {
@@ -229,6 +248,14 @@ function parseProviderIntegrationMessage(message: string): string | null {
 }
 
 function parseGenericServerMessage(message: string): string | null {
+  if (
+    message.includes("quota_exceeded") ||
+    message.includes("Request failed with status 402") ||
+    message.includes("Request failed with status 403")
+  ) {
+    return "Quota reached. Upgrade your plan or remove unused resources.";
+  }
+
   if (message === "Internal Server Error" || message.includes("Request failed with status 500")) {
     return "Something went wrong while processing the request. Please retry, then check the backend logs if it happens again.";
   }
@@ -242,6 +269,32 @@ function parseGenericServerMessage(message: string): string | null {
   }
 
   return null;
+}
+
+function isQuotaError(error: unknown): boolean {
+  const apiError = error as Partial<ApiError>;
+  if (apiError.status === 402 || apiError.status === 403) {
+    return true;
+  }
+
+  const details = apiError.details;
+  if (typeof details === "string") {
+    return details.includes("quota_exceeded");
+  }
+
+  if (typeof details === "object" && details !== null) {
+    const code = (details as { code?: unknown }).code;
+    if (code === "quota_exceeded") {
+      return true;
+    }
+
+    const message = (details as { message?: unknown }).message;
+    if (typeof message === "string" && message.includes("quota_exceeded")) {
+      return true;
+    }
+  }
+
+  return false;
 }
 
 function stripNoisyApiPayload(message: string): string {

@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 
 import { useProjectEnvProvisioning } from "@/hooks/use-project-env-provisioning";
 import type {
@@ -10,11 +10,22 @@ import type {
   EnvTargetSlot,
   EnvVarMetadata,
   ProvisionedProject,
+  UsageLimitItem,
   ValidateEnvVarsResponse,
 } from "@/lib/api/contracts";
-import { cleanUserMessage, formatApiError } from "./workflow-builder-utils";
+import { getMyUsage } from "@/lib/api/usage";
+import { cleanUserMessage, formatApiError, formatQuotaStatus } from "./workflow-builder-utils";
 
 const ENV_KEY_PATTERN = /^[A-Z_][A-Z0-9_]{1,127}$/;
+
+const USAGE_LABELS: Record<string, string> = {
+  projects: "Projects",
+  managed_render_services: "Managed Render services",
+  managed_vercel_projects: "Managed Vercel projects",
+  deployment_targets: "Deployment targets",
+  env_keys: "Env keys",
+  workflow_prs: "Workflow update PRs",
+};
 
 interface EnvRow {
   key: string;
@@ -46,10 +57,24 @@ export function ProjectEnvPanel({ project }: Readonly<{ project: ProvisionedProj
   const [filterEnvironment, setFilterEnvironment] = useState<"all" | EnvEnvironment>("all");
   const [filterStatus, setFilterStatus] = useState<"all" | EnvVarMetadata["status"]>("all");
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [usageItems, setUsageItems] = useState<UsageLimitItem[]>([]);
 
   const activeTargetId = targetId || targets[0]?.id || "";
   const matchingConnections = providerConnections.filter((connection) => connection.provider === provider);
   const activeProviderConnectionId = providerConnectionId || matchingConnections[0]?.id || "";
+  const envKeyQuota = useMemo(
+    () => usageItems.find((item) => item.code === "env_keys") ?? null,
+    [usageItems],
+  );
+  const envKeyQuotaReached = Boolean(
+    envKeyQuota &&
+      envKeyQuota.limit > 0 &&
+      envKeyQuota.current >= envKeyQuota.limit,
+  );
+  const resourceUsageItems = useMemo(
+    () => usageItems.filter((item) => item.limit > 0),
+    [usageItems],
+  );
   const invalid = useMemo(() => {
     const keys = new Set<string>();
     for (const row of rows) {
@@ -66,6 +91,25 @@ export function ProjectEnvPanel({ project }: Readonly<{ project: ProvisionedProj
       return true;
     });
   }, [filterEnvironment, filterStatus, filterTargetId, metadata]);
+
+  useEffect(() => {
+    let cancelled = false;
+    void getMyUsage()
+      .then((usage) => {
+        if (!cancelled && usage.enabled) {
+          setUsageItems(usage.items);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setUsageItems([]);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   async function handleSaveTarget() {
     setMessage(null);
@@ -255,6 +299,17 @@ export function ProjectEnvPanel({ project }: Readonly<{ project: ProvisionedProj
             <option value="">Create a target first</option>
           )}
         </select>
+
+        {resourceUsageItems.length ? (
+          <div className="env-metadata-list" aria-label="Resource usage">
+            {resourceUsageItems.map((item) => (
+              <div key={item.code} className="env-metadata-row provisioned">
+                <span>{USAGE_LABELS[item.code] ?? item.code.replaceAll("_", " ")}</span>
+                <span>{item.current} / {item.limit}</span>
+              </div>
+            ))}
+          </div>
+        ) : null}
       </section>
 
       <form className="env-provisioning-section" onSubmit={handleProvision}>
@@ -337,11 +392,17 @@ export function ProjectEnvPanel({ project }: Readonly<{ project: ProvisionedProj
           </div>
         ))}
 
+        {envKeyQuota ? (
+          <div className="env-empty-state" role="status">
+            Env key quota: {formatQuotaStatus(envKeyQuota)}
+          </div>
+        ) : null}
+
         <div className="env-form-actions">
           <button className="ghost-button" type="button" onClick={() => setRows((current) => [...current, { key: "", value: "" }])}>
             Add row
           </button>
-          <button className="primary-button" disabled={saving || loading || !activeTargetId || invalid} type="submit">
+          <button className="primary-button" disabled={saving || loading || !activeTargetId || invalid || envKeyQuotaReached} type="submit">
             Provision
           </button>
         </div>

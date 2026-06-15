@@ -4,7 +4,7 @@ import { FormEvent, useState } from "react";
 
 import { useCapabilities } from "@/hooks/use-capabilities";
 import { useProviderConnections } from "@/hooks/use-provider-connections";
-import type { EnvProvider } from "@/lib/api/contracts";
+import type { EnvProvider, WorkspaceRole } from "@/lib/api/contracts";
 
 const fieldStyle = {
   width: "100%",
@@ -16,7 +16,11 @@ const fieldStyle = {
   padding: "0.55rem 0.7rem",
 } as const;
 
-export function DeploymentProvidersSection() {
+export function DeploymentProvidersSection({
+  workspaceRole = "owner",
+}: {
+  workspaceRole?: WorkspaceRole | null;
+}) {
   const { envProvisioningEnabled, loading: loadingCapabilities } = useCapabilities();
   const { connections, loading, revokeConnection, saveConnection, saving } =
     useProviderConnections(envProvisioningEnabled);
@@ -29,8 +33,13 @@ export function DeploymentProvidersSection() {
     return null;
   }
 
+  const canManageProviders = workspaceRole === "owner" || workspaceRole === "admin";
+
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (!canManageProviders) {
+      return;
+    }
     setError(null);
     try {
       await saveConnection({ provider, label, token });
@@ -46,11 +55,21 @@ export function DeploymentProvidersSection() {
       <div className="provider-settings-header">
         <h2>Deployment Providers</h2>
         <p>Provider tokens are encrypted. Env var values are sent to the provider and are not stored by FlowCI.</p>
+        {!canManageProviders ? (
+          <p className="provider-empty-state" style={{ margin: 0 }}>
+            Provider management requires owner or admin access.
+          </p>
+        ) : null}
       </div>
 
       <form className="provider-connection-form" onSubmit={handleSubmit}>
         <div className="provider-connection-fields">
-          <select value={provider} onChange={(event) => setProvider(event.target.value as EnvProvider)} style={fieldStyle}>
+          <select
+            value={provider}
+            onChange={(event) => setProvider(event.target.value as EnvProvider)}
+            style={fieldStyle}
+            disabled={!canManageProviders}
+          >
             <option value="render">Render</option>
             <option value="vercel">Vercel</option>
           </select>
@@ -59,6 +78,7 @@ export function DeploymentProvidersSection() {
             onChange={(event) => setLabel(event.target.value)}
             placeholder="Label"
             style={fieldStyle}
+            disabled={!canManageProviders}
           />
           <input
             value={token}
@@ -66,8 +86,9 @@ export function DeploymentProvidersSection() {
             placeholder="Provider token"
             type="password"
             style={fieldStyle}
+            disabled={!canManageProviders}
           />
-          <button className="primary-button" disabled={saving || !label || !token} type="submit">
+          <button className="primary-button" disabled={!canManageProviders || saving || !label || !token} type="submit">
             Save
           </button>
         </div>
@@ -97,7 +118,16 @@ export function DeploymentProvidersSection() {
                   <td data-label="Status">{connection.status}</td>
                   <td data-label="Action">
                     {connection.status === "active" ? (
-                      <button className="ghost-button" type="button" onClick={() => void revokeConnection(connection.id)}>
+                      <button
+                        className="ghost-button"
+                        type="button"
+                        disabled={!canManageProviders}
+                        onClick={() => {
+                          if (canManageProviders) {
+                            void revokeConnection(connection.id);
+                          }
+                        }}
+                      >
                         Revoke
                       </button>
                     ) : null}

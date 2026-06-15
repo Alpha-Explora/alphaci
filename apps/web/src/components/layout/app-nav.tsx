@@ -8,6 +8,12 @@ import { motion, AnimatePresence, useMotionValue, useReducedMotion, useScroll, u
 
 import { PipelineLogo } from "@/components/layout/pipeline-logo";
 import type { useAuthSession } from "@/hooks/use-auth-session";
+import type { NotificationsResponse, WorkspacesMeResponse } from "@/lib/api/contracts";
+import { getNotifications, markNotificationRead } from "@/lib/api/notifications";
+import { getMyWorkspaces } from "@/lib/api/workspaces";
+import { NotificationCenter } from "./notification-center";
+import { useWorkspaceSelection } from "./workspace-context";
+import { WorkspaceSwitcher } from "./workspace-switcher";
 
 /* ── Types ─────────────────────────────────────────────────────────────────── */
 
@@ -234,7 +240,10 @@ export function AppNav({ guest, session, onLogout, isLoggingOut }: Readonly<AppN
   const navRef = useRef<HTMLElement>(null);
   const [scrolled, setScrolled] = useState(false);
   const [hidden, setHidden] = useState(false);
+  const [workspaces, setWorkspacesState] = useState<WorkspacesMeResponse | null>(null);
+  const [notifications, setNotifications] = useState<NotificationsResponse | null>(null);
   const lastScrollY = useRef(0);
+  const { setWorkspaces } = useWorkspaceSelection();
   const prefersReducedMotion = useReducedMotion();
   const reduced = prefersReducedMotion ?? false;
 
@@ -244,22 +253,71 @@ export function AppNav({ guest, session, onLogout, isLoggingOut }: Readonly<AppN
   const avatarInitial = (session?.user.name ?? session?.user.login ?? "U").slice(0, 1).toUpperCase();
 
   useEffect(() => {
+    lastScrollY.current = window.scrollY;
+    setHidden(false);
+    setScrolled(window.scrollY > 8);
+  }, [pathname]);
+
+  useEffect(() => {
     function onScroll() {
       const y = window.scrollY;
       setScrolled(y > 8);
-
-      // Hide while scrolling down past the nav, reveal on any scroll up.
-      const delta = y - lastScrollY.current;
-      if (y < 64 || delta < -4) {
-        setHidden(false);
-      } else if (delta > 4) {
-        setHidden(true);
-      }
       lastScrollY.current = y;
     }
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
+
+  useEffect(() => {
+    if (guest) return;
+    let active = true;
+    void getMyWorkspaces()
+      .then((response) => {
+        if (!active) return;
+        setWorkspacesState(response);
+        setWorkspaces(response);
+      })
+      .catch(() => {
+        if (!active) return;
+        setWorkspacesState({ enabled: false, items: [] });
+        setWorkspaces(null);
+      });
+    return () => {
+      active = false;
+    };
+  }, [guest, setWorkspaces]);
+
+  useEffect(() => {
+    if (guest) return;
+    let active = true;
+    void getNotifications()
+      .then((response) => {
+        if (active) setNotifications(response);
+      })
+      .catch(() => {
+        if (active) setNotifications({ enabled: false, items: [], unreadCount: 0 });
+      });
+    return () => {
+      active = false;
+    };
+  }, [guest]);
+
+  async function handleMarkNotificationRead(id: string) {
+    await markNotificationRead(id);
+    setNotifications((current) =>
+      current
+        ? {
+            ...current,
+            unreadCount: Math.max(0, current.unreadCount - 1),
+            items: current.items.map((item) =>
+              item.id === id
+                ? { ...item, readAt: item.readAt ?? new Date().toISOString() }
+                : item,
+            ),
+          }
+        : current,
+    );
+  }
 
   // Cursor spotlight — writes CSS vars directly on the nav element so the
   // radial highlight tracks the pointer without triggering React re-renders.
@@ -325,6 +383,11 @@ export function AppNav({ guest, session, onLogout, isLoggingOut }: Readonly<AppN
         <div className="nav-right-cluster">
           {!guest && (
             <>
+              <WorkspaceSwitcher workspaces={workspaces} />
+              <NotificationCenter
+                notifications={notifications}
+                onMarkRead={handleMarkNotificationRead}
+              />
               {/* User identity pill */}
               <div className="nav-user-pill" aria-label={`Signed in as ${session?.user.login ?? "user"}`}>
                 <span className="nav-user-avatar-ring">

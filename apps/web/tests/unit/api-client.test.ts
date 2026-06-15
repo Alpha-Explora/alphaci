@@ -7,7 +7,13 @@ import {
   getGithubInstallationAccounts,
   getGithubAppInstallUrl,
   getMyWorkspaces,
+  getWorkspaceMembers,
+  addWorkspaceMember,
+  updateWorkspaceMemberRole,
+  removeWorkspaceMember,
   getNotifications,
+  getNotificationPreferences,
+  updateNotificationPreferences,
   getLinkedGithubRepos,
   getMyUsage,
   getProjectAuditEvents,
@@ -155,6 +161,20 @@ describe("API client project setup helpers", () => {
       "http://localhost:4000/api/v1/catalog/project-options",
       expect.objectContaining({ credentials: "include" }),
     );
+  });
+
+  it("preserves plain text API error details", async () => {
+    fetchMock.mockResolvedValueOnce({
+      ok: false,
+      status: 404,
+      text: async () => "No fixture for /projects",
+    });
+
+    await expect(getProjects()).rejects.toMatchObject({
+      name: "ApiError",
+      status: 404,
+      details: "No fixture for /projects",
+    });
   });
 
   it("creates a new GitHub project from a catalog payload", async () => {
@@ -333,6 +353,38 @@ describe("API client project setup helpers", () => {
       2,
       "http://localhost:4000/api/v1/projects?limit=25",
       expect.any(Object),
+    );
+  });
+
+  it("loads provisioned projects for a selected workspace", async () => {
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: async () => ({ items: [] }),
+    });
+
+    await expect(getProjects(25, { workspaceId: "workspace-1" })).resolves.toEqual({
+      items: [],
+    });
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      "http://localhost:4000/api/v1/projects?limit=25&workspaceId=workspace-1",
+      expect.objectContaining({ credentials: "include" }),
+    );
+  });
+
+  it("uses the default project list limit when no limit is provided", async () => {
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: async () => ({ items: [] }),
+    });
+
+    await expect(getProjects()).resolves.toEqual({ items: [] });
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      "http://localhost:4000/api/v1/projects?limit=25",
+      expect.objectContaining({ credentials: "include" }),
     );
   });
 
@@ -578,6 +630,46 @@ describe("API client project setup helpers", () => {
         ok: true,
         status: 200,
         json: async () => ({ enabled: true, items: [] }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => ([{ id: "member-1", role: "owner", login: "tone" }]),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 201,
+        json: async () => ({ id: "member-2", role: "developer", login: "dev" }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => ({ id: "member-2", role: "admin", login: "dev" }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => ({ id: "member-2", removed: true }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => ({
+          userId: "user-1",
+          inAppEnabled: true,
+          emailEnabled: false,
+          updatedAt: "2026-06-15T00:00:00.000Z",
+        }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => ({
+          userId: "user-1",
+          inAppEnabled: false,
+          emailEnabled: false,
+          updatedAt: "2026-06-15T00:01:00.000Z",
+        }),
       });
 
     await expect(getMyWorkspaces()).resolves.toMatchObject({
@@ -591,6 +683,28 @@ describe("API client project setup helpers", () => {
     await expect(getProjectAuditEvents("project-1")).resolves.toMatchObject({
       items: [],
     });
+    await expect(getWorkspaceMembers("workspace-1")).resolves.toEqual([
+      { id: "member-1", role: "owner", login: "tone" },
+    ]);
+    await expect(
+      addWorkspaceMember("workspace-1", {
+        loginOrEmail: "dev",
+        role: "developer",
+      }),
+    ).resolves.toMatchObject({ id: "member-2", role: "developer" });
+    await expect(
+      updateWorkspaceMemberRole("workspace-1", "member-2", { role: "admin" }),
+    ).resolves.toMatchObject({ id: "member-2", role: "admin" });
+    await expect(removeWorkspaceMember("workspace-1", "member-2")).resolves.toEqual({
+      id: "member-2",
+      removed: true,
+    });
+    await expect(getNotificationPreferences()).resolves.toMatchObject({
+      inAppEnabled: true,
+    });
+    await expect(
+      updateNotificationPreferences({ inAppEnabled: false }),
+    ).resolves.toMatchObject({ inAppEnabled: false });
 
     expect(fetchMock).toHaveBeenNthCalledWith(
       1,
@@ -611,6 +725,36 @@ describe("API client project setup helpers", () => {
       4,
       "http://localhost:4000/api/v1/projects/project-1/audit",
       expect.objectContaining({ credentials: "include" }),
+    );
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      5,
+      "http://localhost:4000/api/v1/workspaces/workspace-1/members",
+      expect.objectContaining({ credentials: "include" }),
+    );
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      6,
+      "http://localhost:4000/api/v1/workspaces/workspace-1/members",
+      expect.objectContaining({ method: "POST" }),
+    );
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      7,
+      "http://localhost:4000/api/v1/workspaces/workspace-1/members/member-2",
+      expect.objectContaining({ method: "PATCH" }),
+    );
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      8,
+      "http://localhost:4000/api/v1/workspaces/workspace-1/members/member-2",
+      expect.objectContaining({ method: "DELETE" }),
+    );
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      9,
+      "http://localhost:4000/api/v1/notifications/preferences",
+      expect.objectContaining({ credentials: "include" }),
+    );
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      10,
+      "http://localhost:4000/api/v1/notifications/preferences",
+      expect.objectContaining({ method: "PATCH" }),
     );
   });
 

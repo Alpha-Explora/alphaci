@@ -38,10 +38,15 @@ export async function request<T>(path: string, init?: RequestInit): Promise<T> {
 
   if (!response.ok) {
     let details: unknown;
-    try {
+    if (typeof response.text === "function") {
+      const responseText = await response.text();
+      try {
+        details = responseText ? JSON.parse(responseText) : undefined;
+      } catch {
+        details = responseText;
+      }
+    } else if (typeof response.json === "function") {
       details = await response.json();
-    } catch {
-      details = await response.text();
     }
 
     throw new ApiError(`Request failed with status ${response.status}`, response.status, details);

@@ -8,6 +8,7 @@ import { motion, useReducedMotion } from "framer-motion";
 import { AppNav } from "@/components/layout/app-nav";
 import { FlowBackground } from "@/components/layout/flow-background";
 import { PipelineLoader } from "@/components/layout/pipeline-loader";
+import { WorkspaceProvider } from "@/components/layout/workspace-context";
 import { WorkflowBuilder } from "../../components/product/workflow-builder";
 import { useAuthSession } from "@/hooks/use-auth-session";
 import { logout } from "@/lib/api/client";
@@ -74,6 +75,7 @@ export default function WorkflowsPage() {
   const guest = isGuest(session);
 
   return (
+    <WorkspaceProvider>
     <main className="dash-shell" suppressHydrationWarning>
       <a href="#main-content" className="skip-link">Skip to main content</a>
       <FlowBackground />
@@ -138,5 +140,6 @@ export default function WorkflowsPage() {
         />
       </div>
     </main>
+    </WorkspaceProvider>
   );
 }

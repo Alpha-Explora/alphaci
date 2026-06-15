@@ -9,6 +9,7 @@ import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { AppNav } from "@/components/layout/app-nav";
 import { FlowBackground } from "@/components/layout/flow-background";
 import { PipelineLoader } from "@/components/layout/pipeline-loader";
+import { WorkspaceProvider, useWorkspaceSelection } from "@/components/layout/workspace-context";
 import { WelcomeModal } from "@/components/product/welcome-modal";
 import { useAuthSession } from "@/hooks/use-auth-session";
 import { logout, getProjects, getWorkflowHistory, getGithubRepos, disconnectProject, syncProjects } from "@/lib/api/client";
@@ -297,9 +298,10 @@ function BentoGrid({
 
 /* ── Page ───────────────────────────────────────────────────────────────────── */
 
-export default function HomeDashboardPage() {
+function HomeDashboardContent() {
   const router = useRouter();
   const { status, session, error, refresh } = useAuthSession();
+  const { selectedWorkspaceId } = useWorkspaceSelection();
   const prefersReducedMotion = useReducedMotion();
   const [isLoggingOut, setIsLoggingOut]     = useState(false);
   const [logoutMessage, setLogoutMessage]   = useState<string | null>(null);
@@ -334,7 +336,8 @@ export default function HomeDashboardPage() {
   function loadProjects() {
     setProjectsLoading(true);
     setProjectsError(null);
-    getProjects(25)
+    setProjects([]);
+    getProjects(25, { workspaceId: selectedWorkspaceId })
       .then((response) => { setProjects(response.items); setProjectsError(null); })
       .catch(() => setProjectsError("Could not load projects."))
       .finally(() => setProjectsLoading(false));
@@ -354,20 +357,20 @@ export default function HomeDashboardPage() {
     loadHistory();
     loadProjects();
     loadRepos();
-  }, [status]);
+  }, [status, selectedWorkspaceId]);
 
   useEffect(() => {
     if (activeTab !== "repositories") return;
     void (async () => {
       try {
         await syncProjects();
-        const updated = await getProjects(25);
+        const updated = await getProjects(25, { workspaceId: selectedWorkspaceId });
         setProjects(updated.items);
       } catch {
         // silently ignore — the manual "Sync with GitHub" button is still available
       }
     })();
-  }, [activeTab]);
+  }, [activeTab, selectedWorkspaceId]);
 
   async function handleLogout() {
     setIsLoggingOut(true);
@@ -389,7 +392,7 @@ export default function HomeDashboardPage() {
     try {
       const result = await syncProjects();
       setSyncResult(result);
-      const updated = await getProjects(25);
+      const updated = await getProjects(25, { workspaceId: selectedWorkspaceId });
       setProjects(updated.items);
     } catch {
       // silently ignore
@@ -1055,5 +1058,13 @@ export default function HomeDashboardPage() {
 
       </div>
     </main>
+  );
+}
+
+export default function HomeDashboardPage() {
+  return (
+    <WorkspaceProvider>
+      <HomeDashboardContent />
+    </WorkspaceProvider>
   );
 }

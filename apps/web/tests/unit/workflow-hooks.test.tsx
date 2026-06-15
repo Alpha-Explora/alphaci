@@ -985,6 +985,40 @@ describe("workflow hooks", () => {
       id: "project-2",
       serviceName: "next-app",
     });
+
+    act(() => {
+      projects?.prependCreateResult(
+        {
+          id: "project-3",
+          repoFullName: "tone/api",
+          repoUrl: "https://github.com/tone/api",
+          status: "provisioned",
+          workflowPath: ".github/workflows/api.yml",
+          githubCommitSha: "commit-3",
+          githubCommitUrl: null,
+          projectTypeId: "nestjs-api",
+          workflowRecipeId: "backend-api-ci",
+        },
+        {
+          repoName: "api",
+          visibility: "private",
+          projectTypeId: "nestjs-api",
+          workflowRecipeId: "backend-api-ci",
+          serviceName: "api",
+          servicePath: ".",
+          nodeVersion: "24",
+          coverageThreshold: 80,
+          outputFileName: "api.yml",
+        },
+      );
+    });
+    await flushMicrotasks();
+
+    expect(projects?.projects[0]).toMatchObject({
+      id: "project-3",
+      repoShape: "single-app",
+      projectOptions: {},
+    });
   });
 
   it("reports project and workflow history load failures", async () => {

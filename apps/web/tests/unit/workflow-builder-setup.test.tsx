@@ -11,6 +11,7 @@ import {
   getGithubInstallationAccounts,
   getGithubAppInstallUrl,
   getLinkedGithubRepos,
+  getMyUsage,
   getProjectOptions,
   getProjects,
   getTemplates,
@@ -60,6 +61,7 @@ jest.mock("../../src/lib/api/client", () => ({
   getGithubInstallationAccounts: jest.fn(),
   getGithubAppInstallUrl: jest.fn(),
   getLinkedGithubRepos: jest.fn(),
+  getMyUsage: jest.fn(),
   getProjectOptions: jest.fn(),
   getProjects: jest.fn(),
   getTemplates: jest.fn(),
@@ -81,6 +83,7 @@ const mockedGetGithubAppInstallUrl = getGithubAppInstallUrl as jest.MockedFuncti
 const mockedGetLinkedGithubRepos = getLinkedGithubRepos as jest.MockedFunction<
   typeof getLinkedGithubRepos
 >;
+const mockedGetMyUsage = getMyUsage as jest.MockedFunction<typeof getMyUsage>;
 const mockedGetProjectOptions = getProjectOptions as jest.MockedFunction<typeof getProjectOptions>;
 const mockedGetProjects = getProjects as jest.MockedFunction<typeof getProjects>;
 const mockedGetTemplates = getTemplates as jest.MockedFunction<typeof getTemplates>;
@@ -310,6 +313,14 @@ describe("WorkflowBuilder project setup", () => {
     mockedGetLinkedGithubRepos.mockResolvedValue({
       repos: [{ installationId: 12345, repoFullName: "tone/example-app" }],
     });
+    mockedGetMyUsage.mockResolvedValue({
+      enabled: true,
+      plan: "free",
+      items: [
+        { code: "projects", current: 0, limit: 5, upgradeRequired: false },
+        { code: "env_keys", current: 0, limit: 25, upgradeRequired: false },
+      ],
+    });
     mockedGetProjectOptions.mockResolvedValue(projectOptions as unknown as ProjectOptionsResponse);
     mockedCreateGithubRepo.mockResolvedValue({
       repoUrl: "https://github.com/tone/demo-next-app",
@@ -410,6 +421,22 @@ describe("WorkflowBuilder project setup", () => {
     expect(container.textContent).toContain("10-flowci-quality.yml");
     expect(container.textContent).toContain("20-flowci-package.yml");
     expect(container.textContent).toContain("3 gated workflow stages");
+  });
+
+  it("shows project quota and disables repository creation when the limit is reached", async () => {
+    mockedGetMyUsage.mockResolvedValueOnce({
+      enabled: true,
+      plan: "free",
+      items: [
+        { code: "projects", current: 5, limit: 5, upgradeRequired: true },
+        { code: "env_keys", current: 0, limit: 25, upgradeRequired: false },
+      ],
+    });
+
+    await renderBuilder();
+
+    expect(container.textContent).toContain("Project quota: Limit reached. Upgrade to continue.");
+    expect(container.querySelector<HTMLButtonElement>("[data-testid='setup-project-button']")?.disabled).toBe(true);
   });
 
   it("shows a create project error when createProject rejects", async () => {

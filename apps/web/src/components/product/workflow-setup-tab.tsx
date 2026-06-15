@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
 import type {
@@ -7,7 +8,9 @@ import type {
   DiscoverExistingRepoResponse,
   MvpProjectOptionKey,
   SetupExistingRepoPrResponse,
+  UsageLimitItem,
 } from "@/lib/api/contracts";
+import { getMyUsage } from "@/lib/api/client";
 import { useCapabilities } from "@/hooks/use-capabilities";
 import type { CreateProjectFormState } from "@/hooks/use-create-project-form";
 import type { DeploymentProvisioningFormState } from "@/hooks/use-deployment-provisioning-form";
@@ -19,6 +22,7 @@ import {
 
 import { SetupResultPanel } from "./setup-result-panel";
 import { DeploymentProvisioningSetup } from "./deployment-provisioning-setup";
+import { formatQuotaStatus } from "./workflow-builder-utils";
 
 interface WorkflowSetupTabProps {
   createResult: CreateProjectResult | null;
@@ -119,11 +123,22 @@ export function WorkflowSetupTab({
   reducedMotion,
 }: Readonly<WorkflowSetupTabProps>) {
   const { envProvisioningEnabled } = useCapabilities();
+  const [usageItems, setUsageItems] = useState<UsageLimitItem[]>([]);
   const isExistingMode = setupMode === "existing";
   const selectedProjectKind = inferProjectKind(projectCatalog.selectedProjectType);
+  const projectQuota = useMemo(
+    () => usageItems.find((item) => item.code === "projects") ?? null,
+    [usageItems],
+  );
+  const projectQuotaReached = Boolean(
+    projectQuota &&
+      projectQuota.limit > 0 &&
+      projectQuota.current >= projectQuota.limit,
+  );
 
   const createDisabled =
     isCreatingProject ||
+    projectQuotaReached ||
     projectCatalog.loadingProjectOptions ||
     !form.repoName.trim() ||
     (!projectCatalog.isMicroservicesShape && !projectCatalog.isMultiRepoShape && !projectCatalog.selectedProjectType);
@@ -154,6 +169,25 @@ export function WorkflowSetupTab({
     github.linkedReposLoaded &&
     !github.loadingLinkedRepos &&
     github.linkedRepos.length === 0;
+
+  useEffect(() => {
+    let cancelled = false;
+    void getMyUsage()
+      .then((usage) => {
+        if (!cancelled && usage.enabled) {
+          setUsageItems(usage.items);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setUsageItems([]);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   function handleDeploymentProvisioningEnabled(enabled: boolean) {
     if (!enabled) {
@@ -870,6 +904,12 @@ export function WorkflowSetupTab({
                     onChange={deploymentProvisioning.setRequest}
                     onEnabledChange={handleDeploymentProvisioningEnabled}
                   />
+                </div>
+              ) : null}
+
+              {projectQuota ? (
+                <div className="env-empty-state" role="status" style={{ marginTop: "1.25rem" }}>
+                  Project quota: {formatQuotaStatus(projectQuota)}
                 </div>
               ) : null}
 

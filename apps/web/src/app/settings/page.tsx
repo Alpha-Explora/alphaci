@@ -9,7 +9,10 @@ import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { AppNav } from "@/components/layout/app-nav";
 import { FlowBackground } from "@/components/layout/flow-background";
 import { PipelineLoader } from "@/components/layout/pipeline-loader";
+import { WorkspaceProvider, useWorkspaceSelection } from "@/components/layout/workspace-context";
 import { DeploymentProvidersSection } from "@/components/settings/deployment-providers-section";
+import { NotificationPreferencesSection } from "@/components/settings/notification-preferences-section";
+import { WorkspaceMembersSection } from "@/components/settings/workspace-members-section";
 import { useAuthSession } from "@/hooks/use-auth-session";
 import { useCapabilities } from "@/hooks/use-capabilities";
 import { logout, deleteAccount, cancelMonthlySubscription, getMyUsage } from "@/lib/api/client";
@@ -233,11 +236,12 @@ const sectionVariants = {
   exit:    { opacity: 0, y: -6, transition: { duration: 0.18, ease: EASE_OUT } },
 };
 
-export default function SettingsPage() {
+function SettingsPageContent() {
   const router = useRouter();
   const prefersReducedMotion = useReducedMotion();
   const { status, session, error, refresh } = useAuthSession();
   const { workspacesEnabled, notificationsEnabled } = useCapabilities();
+  const { selectedWorkspace, setWorkspaces: setWorkspaceContext } = useWorkspaceSelection();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [logoutMessage, setLogoutMessage] = useState<string | null>(null);
   const [activeSection, setActiveSection] = useState<SettingsSection>("account");
@@ -294,12 +298,13 @@ export default function SettingsPage() {
   }, [activeSection]);
 
   useEffect(() => {
-    if (activeSection !== "account" || !workspacesEnabled) return;
+    if (!["account", "billing"].includes(activeSection) || !workspacesEnabled) return;
     let active = true;
     void getMyWorkspaces()
       .then((response) => {
         if (active) {
           setWorkspaces(response);
+          setWorkspaceContext(response);
           setWorkspacesError(null);
         }
       })
@@ -311,7 +316,7 @@ export default function SettingsPage() {
     return () => {
       active = false;
     };
-  }, [activeSection, workspacesEnabled]);
+  }, [activeSection, setWorkspaceContext, workspacesEnabled]);
 
   useEffect(() => {
     if (activeSection !== "account" || !notificationsEnabled) return;
@@ -348,6 +353,11 @@ export default function SettingsPage() {
   }
 
   async function handleCancelSubscription() {
+    if (selectedWorkspaceRole !== "owner" && selectedWorkspaceRole !== "admin") {
+      setCancelMessage("Billing management requires owner or admin workspace access.");
+      return;
+    }
+
     setIsCanceling(true);
     setCancelMessage(null);
     try {
@@ -438,6 +448,8 @@ export default function SettingsPage() {
 
   const guest = isGuest(session);
   const avatarInitial = (session?.user.name ?? session?.user.login ?? "U").slice(0, 1).toUpperCase();
+  const selectedWorkspaceRole = selectedWorkspace?.role ?? workspaces?.items[0]?.role ?? null;
+  const canManageBilling = selectedWorkspaceRole === "owner" || selectedWorkspaceRole === "admin";
 
   return (
     <main className="dash-shell" suppressHydrationWarning>
@@ -719,11 +731,11 @@ export default function SettingsPage() {
                       ) : workspaces?.items.length ? (
                         <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
                           {workspaces.items.map((workspace) => (
-                            <div
-                              key={workspace.id}
-                              className="hover-field"
-                              style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "1rem", flexWrap: "wrap" }}
-                            >
+                            <div key={workspace.id} style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+                              <div
+                                className="hover-field"
+                                style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "1rem", flexWrap: "wrap" }}
+                              >
                               <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
                                 <span style={{ fontSize: "0.9rem", fontWeight: 700, color: "var(--text-primary)" }}>
                                   {workspace.name}
@@ -732,9 +744,11 @@ export default function SettingsPage() {
                                   {workspace.kind} / {workspace.role}
                                 </span>
                               </div>
-                              <button type="button" disabled className="confirm-btn-neutral" style={{ opacity: 0.65, cursor: "not-allowed" }}>
-                                Members
-                              </button>
+                              </div>
+                              <WorkspaceMembersSection
+                                workspace={workspace}
+                                currentUserId={session?.user.id ?? ""}
+                              />
                             </div>
                           ))}
                         </div>
@@ -792,6 +806,9 @@ export default function SettingsPage() {
                               No notifications.
                             </p>
                           )}
+                          <div style={{ borderTop: "1px solid var(--border-soft)", paddingTop: "0.75rem" }}>
+                            <NotificationPreferencesSection />
+                          </div>
                         </div>
                       ) : (
                         <p style={{ margin: 0, fontSize: "0.8rem", color: "var(--text-muted)" }}>
@@ -845,11 +862,23 @@ export default function SettingsPage() {
                             </span>
                           )}
                         </div>
-                        <Link href="/subscribe" className="dash-action-btn">
+                        <Link
+                          href={canManageBilling ? "/subscribe" : "#"}
+                          className="dash-action-btn"
+                          aria-disabled={!canManageBilling}
+                          onClick={(event) => {
+                            if (!canManageBilling) event.preventDefault();
+                          }}
+                        >
                           View plan
                           <ExternalLinkIcon size={11} />
                         </Link>
                       </div>
+                      {!canManageBilling ? (
+                        <p className="helper-text" style={{ margin: 0 }}>
+                          Billing management requires owner or admin workspace access.
+                        </p>
+                      ) : null}
 
                       {/* Cancel subscription */}
                       {session?.subscription.plan === "pro" && session.subscription.status === "active" && (
@@ -863,6 +892,7 @@ export default function SettingsPage() {
                               <button
                                 type="button"
                                 onClick={() => setShowCancelConfirm(true)}
+                                disabled={!canManageBilling}
                                 className="confirm-btn-danger"
                                 style={{ padding: "0.4rem 0.85rem", fontSize: "0.82rem" }}
                               >
@@ -878,7 +908,7 @@ export default function SettingsPage() {
                                 You will lose access to Pro features at the end of your current billing period. This action can be undone by resubscribing.
                               </p>
                               <div style={{ display: "flex", gap: "0.5rem" }}>
-                                <button type="button" onClick={() => void handleCancelSubscription()} disabled={isCanceling} className="confirm-btn-danger">
+                                <button type="button" onClick={() => void handleCancelSubscription()} disabled={isCanceling || !canManageBilling} className="confirm-btn-danger">
                                   {isCanceling ? "Canceling..." : "Yes, cancel"}
                                 </button>
                                 <button type="button" onClick={() => { setShowCancelConfirm(false); setCancelMessage(null); }} disabled={isCanceling} className="confirm-btn-neutral">
@@ -921,7 +951,7 @@ export default function SettingsPage() {
                       </div>
                     </div>
                   </SettingsSection>
-                  <DeploymentProvidersSection />
+                  <DeploymentProvidersSection workspaceRole={selectedWorkspaceRole} />
                 </>
               )}
 
@@ -1137,5 +1167,13 @@ export default function SettingsPage() {
         </div>
       </div>
     </main>
+  );
+}
+
+export default function SettingsPage() {
+  return (
+    <WorkspaceProvider>
+      <SettingsPageContent />
+    </WorkspaceProvider>
   );
 }

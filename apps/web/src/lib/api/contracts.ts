@@ -437,12 +437,35 @@ export interface WorkspaceSummary {
   id: string;
   name: string;
   kind: "personal" | "team";
-  role: "owner" | "admin" | "developer" | "viewer";
+  role: WorkspaceRole;
 }
+
+export type WorkspaceRole = "owner" | "admin" | "developer" | "viewer";
 
 export interface WorkspacesMeResponse {
   enabled: boolean;
   items: WorkspaceSummary[];
+}
+
+export interface WorkspaceMemberSummary {
+  id: string;
+  workspaceId: string;
+  userId: string;
+  role: WorkspaceRole;
+  login: string;
+  name: string;
+  email: string | null;
+  avatarUrl: string | null;
+  createdAt: string;
+}
+
+export interface AddWorkspaceMemberRequest {
+  loginOrEmail: string;
+  role: WorkspaceRole;
+}
+
+export interface UpdateWorkspaceMemberRoleRequest {
+  role: WorkspaceRole;
 }
 
 export interface NotificationItem {
@@ -458,6 +481,18 @@ export interface NotificationsResponse {
   enabled: boolean;
   items: NotificationItem[];
   unreadCount: number;
+}
+
+export interface NotificationPreferences {
+  userId: string;
+  inAppEnabled: boolean;
+  emailEnabled: boolean;
+  updatedAt: string;
+}
+
+export interface UpdateNotificationPreferencesRequest {
+  inAppEnabled?: boolean;
+  emailEnabled?: boolean;
 }
 
 export interface ProjectAuditEvent {

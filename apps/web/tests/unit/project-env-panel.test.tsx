@@ -6,6 +6,7 @@ import { WorkflowCurrentTab } from "../../src/components/product/workflow-curren
 import { useCapabilities } from "../../src/hooks/use-capabilities";
 import { useProjectEnvProvisioning } from "../../src/hooks/use-project-env-provisioning";
 import type { ProvisionedProject } from "../../src/lib/api/contracts";
+import { getMyUsage } from "../../src/lib/api/usage";
 
 jest.mock("framer-motion", () => {
   const React = jest.requireActual("react");
@@ -69,10 +70,15 @@ jest.mock("../../src/lib/api/projects", () => ({
   getDeploymentTargetActions: jest.fn(),
 }));
 
+jest.mock("../../src/lib/api/usage", () => ({
+  getMyUsage: jest.fn(),
+}));
+
 const mockedUseCapabilities = useCapabilities as jest.MockedFunction<typeof useCapabilities>;
 const mockedUseProjectEnvProvisioning = useProjectEnvProvisioning as jest.MockedFunction<
   typeof useProjectEnvProvisioning
 >;
+const mockedGetMyUsage = getMyUsage as jest.MockedFunction<typeof getMyUsage>;
 const mockedProjectApi = jest.requireMock("../../src/lib/api/projects") as {
   getProjectOverview: jest.Mock;
   getWorkflowSettings: jest.Mock;
@@ -316,8 +322,16 @@ describe("Project env provisioning UI", () => {
     mockedProjectApi.previewWorkflowSettings.mockResolvedValue({
       settings: {
         projectId: "project-1",
+        templateId: "be-nestjs",
+        projectTypeId: "nestjs-api",
+        workflowRecipeId: "backend-api-ci",
+        serviceName: "orders-api",
+        servicePath: ".",
         nodeVersion: "22",
+        packageManager: "npm",
         coverageThreshold: 90,
+        centralWorkflowRef: "v1",
+        checks: { lint: true, unit: true, build: true, security: true },
       },
       workflowFiles: [
         {
@@ -433,6 +447,14 @@ describe("Project env provisioning UI", () => {
           url: "https://dashboard.render.com/web/srv-1",
         },
       },
+    });
+    mockedGetMyUsage.mockResolvedValue({
+      enabled: true,
+      plan: "free",
+      items: [
+        { code: "projects", current: 1, limit: 5, upgradeRequired: false },
+        { code: "env_keys", current: 4, limit: 25, upgradeRequired: false },
+      ],
     });
     mockedProjectApi.syncProjectSnapshot.mockResolvedValue({
       snapshot: {
@@ -1634,6 +1656,13 @@ describe("Project env provisioning UI", () => {
 
     expect(mockedProjectApi.getWorkflowSettings).toHaveBeenCalledWith("project-1");
     expect(rendered.container.textContent).toContain("Workflow settings");
+    expect(rendered.container.textContent).toContain("Workflow recipe");
+    expect(rendered.container.textContent).toContain("Package manager");
+    expect(rendered.container.textContent).toContain("Lint");
+    expect(rendered.container.textContent).toContain("Unit tests");
+    expect(rendered.container.textContent).toContain("Build");
+    expect(rendered.container.textContent).toContain("Security");
+    expect(rendered.container.textContent).toContain("Deploy target mappings");
     expect(rendered.container.textContent).toContain("Node version");
     expect(rendered.container.textContent).toContain("Preview");
     expect(rendered.container.textContent).not.toContain("Create update PR");
@@ -1910,7 +1939,7 @@ describe("Project env provisioning UI", () => {
 
     await act(async () => {
       Array.from(rendered.container.querySelectorAll("button"))
-        .find((button) => button.textContent === "Activity")!
+        .find((button) => button.textContent === "Audit")!
         .click();
       await Promise.resolve();
     });
@@ -2336,6 +2365,39 @@ describe("Project env provisioning UI", () => {
       'Deployment target setup failed: The root directory must be a relative path, for example "frontend". Do not use "./" or "../".',
     );
     expect(rendered.container.textContent).not.toContain("invalid_root_directory");
+  });
+
+  it("shows env key quota and disables provisioning when the limit is reached", async () => {
+    mockedGetMyUsage.mockResolvedValueOnce({
+      enabled: true,
+      plan: "free",
+      items: [
+        { code: "projects", current: 1, limit: 5, upgradeRequired: false },
+        { code: "managed_render_services", current: 1, limit: 1, upgradeRequired: true },
+        { code: "managed_vercel_projects", current: 0, limit: 1, upgradeRequired: false },
+        { code: "deployment_targets", current: 2, limit: 5, upgradeRequired: false },
+        { code: "env_keys", current: 25, limit: 25, upgradeRequired: true },
+      ],
+    });
+    mockEnvHook({ targets: [renderTarget] });
+
+    const rendered = render(<ProjectEnvPanel project={provisionedProject} />);
+    root = rendered.root;
+
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    expect(rendered.container.textContent).toContain("Env key quota: Limit reached. Upgrade to continue.");
+    expect(rendered.container.textContent).toContain("Managed Render services");
+    expect(rendered.container.textContent).toContain("1 / 1");
+    expect(rendered.container.textContent).toContain("Managed Vercel projects");
+    expect(rendered.container.textContent).toContain("Deployment targets");
+    expect(rendered.container.textContent).toContain("2 / 5");
+    expect(
+      Array.from(rendered.container.querySelectorAll("button")).find((button) => button.textContent === "Provision")
+        ?.disabled,
+    ).toBe(true);
   });
 
   it("groups env provisioning into target, variables, and provisioned sections", () => {
