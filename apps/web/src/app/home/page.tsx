@@ -8,7 +8,6 @@ import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 
 import { AppNav } from "@/components/layout/app-nav";
 import { FlowBackground } from "@/components/layout/flow-background";
-import { PipelineLogo } from "@/components/layout/pipeline-logo";
 import { PipelineLoader } from "@/components/layout/pipeline-loader";
 import { WelcomeModal } from "@/components/product/welcome-modal";
 import { useAuthSession } from "@/hooks/use-auth-session";
@@ -446,15 +445,6 @@ export default function HomeDashboardPage() {
     return (
       <main className="dash-shell">
         <FlowBackground />
-        <header className="dash-nav">
-          <Link className="brand-mark" href="/home">
-            <PipelineLogo size={22} />
-            <span>FlowCI Studio</span>
-          </Link>
-          <div className="nav-right">
-            <Link className="ghost-button" href="/login?next=/home" style={{ padding: "0.2rem 0.75rem", fontSize: "0.82rem", minHeight: "1.8rem" }}>Sign in</Link>
-          </div>
-        </header>
         <div className="state-body">
           <div className="state-card">
             <div className="state-icon" style={{ background: "rgba(255,79,79,0.08)", border: "1px solid rgba(255,79,79,0.2)" }}>

@@ -48,19 +48,19 @@ const valueCards = [
     icon: "gen" as const,
     eyebrow: "features/generation",
     title: "Source-backed generation",
-    body: "Generate workflow files from templates mapped to real source files in your repos.",
+    body: "Templates are mapped to real source files in your repo. FlowCI reads your stack and generates YAML that actually matches your project — not a boilerplate copy-paste.",
   },
   {
     icon: "cicd" as const,
     eyebrow: "features/automation",
-    title: "Automated CI/CD setup",
-    body: "Apply service settings and output production-ready YAML in a single guided flow.",
+    title: "Guided setup to export",
+    body: "Configure your service in three tabs: choose a template, set environment variables, and export production-ready GitHub Actions YAML. No manual editing required.",
   },
   {
     icon: "agnt" as const,
-    eyebrow: "features/agents",
-    title: "Multi-agent workflow system",
-    body: "Use guided tabs to move from setup to generated workflows and exported templates.",
+    eyebrow: "features/deployment",
+    title: "Deploy to Vercel or Render",
+    body: "Connect your hosting provider token once. FlowCI provisions environment variables and triggers deployment to Vercel or Render as part of the generated pipeline.",
   },
 ];
 
@@ -88,19 +88,20 @@ const YAML_INDENT: Record<YamlLineType, string> = {
 };
 
 const recentActivity = [
-  { repo: "payments-api", action: "Deployed to production",    time: "2m ago",  status: "success" },
-  { repo: "auth-service",  action: "Tests passed (142/142)",   time: "8m ago",  status: "success" },
-  { repo: "frontend",      action: "Build completed",          time: "15m ago", status: "success" },
-  { repo: "worker",        action: "Lint + security check",    time: "23m ago", status: "success" },
+  { repo: "payments-api",  action: "Deployed to Vercel (prod)", time: "2m ago",  status: "success" },
+  { repo: "auth-service",  action: "Tests passed (142/142)",    time: "8m ago",  status: "success" },
+  { repo: "frontend",      action: "Deployed to Render",        time: "15m ago", status: "success" },
+  { repo: "worker",        action: "Lint + security check",     time: "23m ago", status: "success" },
 ];
 
 const featureRows = [
-  { name: "Workflow generation",   pro: true },
-  { name: "Template access",       pro: true },
-  { name: "Workflow history",      pro: true },
-  { name: "GitHub integration",    pro: true },
-  { name: "Priority support",      pro: true },
-  { name: "Governance defaults",   pro: true },
+  { name: "Workflow generation",         pro: true },
+  { name: "Template access (40+ stacks)", pro: true },
+  { name: "Workflow history",            pro: true },
+  { name: "GitHub integration",          pro: true },
+  { name: "Vercel + Render deployment",  pro: true },
+  { name: "Priority support",            pro: true },
+  { name: "Governance defaults",         pro: true },
 ];
 
 const LOG_LINES = [
@@ -441,6 +442,173 @@ function HeroYamlTerminal({ reduced }: Readonly<{ reduced: boolean | null }>) {
   );
 }
 
+/* ── Deploy anywhere section ─────────────────────────────────────────────── */
+
+function VercelLogo() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 116 100" fill="currentColor" aria-hidden="true">
+      <path d="M57.5 0L115 100H0L57.5 0z"/>
+    </svg>
+  );
+}
+
+function RenderLogo() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+      <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+    </svg>
+  );
+}
+
+function DeploySection({ reduced }: Readonly<{ reduced: boolean | null }>) {
+  const deploySteps = [
+    {
+      num: "01",
+      label: "Connect provider",
+      detail: "Add your Vercel or Render token in settings. FlowCI encrypts it and stores it per workspace.",
+    },
+    {
+      num: "02",
+      label: "Generate workflow",
+      detail: "FlowCI reads your stack, selects a source-backed template, and outputs a GitHub Actions YAML file.",
+    },
+    {
+      num: "03",
+      label: "Provision env vars",
+      detail: "Environment variables are injected into your Vercel project or Render service automatically during the pipeline run.",
+    },
+    {
+      num: "04",
+      label: "Deploy fires on merge",
+      detail: "Merge to your target branch and the deploy step runs — vercel --prod or a Render image push, depending on your provider.",
+    },
+  ];
+
+  return (
+    <section id="deploy" className="deploy-section" aria-label="Deployment hosting">
+      {/* Section header */}
+      <motion.div
+        className="deploy-section-header"
+        initial={reduced ? undefined : { opacity: 0, y: 20 }}
+        whileInView={reduced ? undefined : { opacity: 1, y: 0 }}
+        viewport={{ once: true, margin: "-80px" }}
+        transition={{ duration: 0.45 }}
+      >
+        <div style={{
+          display: "inline-flex",
+          alignItems: "center",
+          gap: "0.4rem",
+          padding: "0.25rem 0.75rem",
+          borderRadius: "999px",
+          background: "rgba(52,211,153,0.08)",
+          border: "1px solid rgba(52,211,153,0.2)",
+          marginBottom: "1.25rem",
+        }}>
+          <span style={{ width: "5px", height: "5px", borderRadius: "50%", background: "var(--brand-accent)", animation: reduced ? undefined : "flowPulse 1.8s ease-in-out infinite" }} />
+          <span style={{ fontSize: "0.62rem", fontWeight: 700, textTransform: "uppercase" as const, letterSpacing: "0.12em", color: "var(--brand-accent)", fontFamily: "ui-monospace, monospace" }}>
+            Hosting
+          </span>
+        </div>
+        <p className="file-path-label">deploy/providers.yml</p>
+        <h2>Deploy to Vercel or Render</h2>
+        <p>FlowCI manages the full deployment leg of your pipeline. Connect your hosting token once — every merge triggers a deploy automatically.</p>
+      </motion.div>
+
+      {/* Provider cards */}
+      <motion.div
+        className="deploy-providers-row"
+        initial={reduced ? undefined : { opacity: 0, y: 24 }}
+        whileInView={reduced ? undefined : { opacity: 1, y: 0 }}
+        viewport={{ once: true, margin: "-60px" }}
+        transition={{ duration: 0.55, delay: 0.1 }}
+      >
+        {/* Vercel card */}
+        <div className="deploy-provider-card deploy-provider-card--vercel">
+          {/* Noise grain overlay */}
+          <div aria-hidden="true" className="deploy-provider-grain" />
+          <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "1.25rem" }}>
+            <span className="deploy-provider-logo deploy-provider-logo--vercel" aria-hidden="true">
+              <VercelLogo />
+            </span>
+            <div>
+              <p style={{ margin: 0, fontSize: "0.62rem", fontFamily: "ui-monospace, monospace", color: "rgba(255,255,255,0.4)", letterSpacing: "0.12em", textTransform: "uppercase" as const }}>Provider</p>
+              <p style={{ margin: 0, fontSize: "1rem", fontWeight: 700, color: "#fff", letterSpacing: "-0.01em" }}>Vercel</p>
+            </div>
+            <span className="deploy-provider-badge" style={{ marginLeft: "auto", background: "rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.7)" }}>
+              vercel --prod
+            </span>
+          </div>
+          <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: "0.55rem" }}>
+            {["Token-based authentication", "Env vars provisioned per project", "Team ID support", "Preview + production deploys"].map((item) => (
+              <li key={item} style={{ display: "flex", alignItems: "center", gap: "0.6rem", fontSize: "0.82rem", color: "rgba(255,255,255,0.6)" }}>
+                <span aria-hidden="true" style={{ width: "4px", height: "4px", borderRadius: "50%", background: "#fff", flexShrink: 0, opacity: 0.5 }} />
+                {item}
+              </li>
+            ))}
+          </ul>
+          <div style={{ marginTop: "1.5rem", paddingTop: "1rem", borderTop: "1px solid rgba(255,255,255,0.07)", display: "flex", alignItems: "center", gap: "0.5rem" }}>
+            <span style={{ fontSize: "0.62rem", fontFamily: "ui-monospace, monospace", color: "rgba(255,255,255,0.3)", letterSpacing: "0.1em", textTransform: "uppercase" as const }}>Method</span>
+            <code style={{ fontSize: "0.72rem", fontFamily: "ui-monospace, monospace", color: "rgba(255,255,255,0.55)", background: "rgba(255,255,255,0.05)", padding: "0.15rem 0.5rem", borderRadius: "4px" }}>vercel_git_connected</code>
+          </div>
+        </div>
+
+        {/* Render card */}
+        <div className="deploy-provider-card deploy-provider-card--render">
+          <div aria-hidden="true" className="deploy-provider-grain" />
+          <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "1.25rem" }}>
+            <span className="deploy-provider-logo deploy-provider-logo--render" aria-hidden="true">
+              <RenderLogo />
+            </span>
+            <div>
+              <p style={{ margin: 0, fontSize: "0.62rem", fontFamily: "ui-monospace, monospace", color: "rgba(52,211,153,0.5)", letterSpacing: "0.12em", textTransform: "uppercase" as const }}>Provider</p>
+              <p style={{ margin: 0, fontSize: "1rem", fontWeight: 700, color: "#34d399", letterSpacing: "-0.01em" }}>Render</p>
+            </div>
+            <span className="deploy-provider-badge" style={{ marginLeft: "auto", background: "rgba(52,211,153,0.1)", color: "#34d399", border: "1px solid rgba(52,211,153,0.25)" }}>
+              image push
+            </span>
+          </div>
+          <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: "0.55rem" }}>
+            {["Git-connected or image deploy", "Service type + region config", "Env vars injected automatically", "Multiple deploy methods"].map((item) => (
+              <li key={item} style={{ display: "flex", alignItems: "center", gap: "0.6rem", fontSize: "0.82rem", color: "rgba(255,255,255,0.55)" }}>
+                <span aria-hidden="true" style={{ width: "4px", height: "4px", borderRadius: "50%", background: "#34d399", flexShrink: 0, opacity: 0.6 }} />
+                {item}
+              </li>
+            ))}
+          </ul>
+          <div style={{ marginTop: "1.5rem", paddingTop: "1rem", borderTop: "1px solid rgba(52,211,153,0.1)", display: "flex", alignItems: "center", gap: "0.5rem" }}>
+            <span style={{ fontSize: "0.62rem", fontFamily: "ui-monospace, monospace", color: "rgba(52,211,153,0.35)", letterSpacing: "0.1em", textTransform: "uppercase" as const }}>Method</span>
+            <code style={{ fontSize: "0.72rem", fontFamily: "ui-monospace, monospace", color: "rgba(52,211,153,0.6)", background: "rgba(52,211,153,0.06)", padding: "0.15rem 0.5rem", borderRadius: "4px" }}>render_git_connected</code>
+          </div>
+        </div>
+      </motion.div>
+
+      {/* Flow steps */}
+      <motion.div
+        className="deploy-steps-row"
+        initial={reduced ? undefined : { opacity: 0, y: 20 }}
+        whileInView={reduced ? undefined : { opacity: 1, y: 0 }}
+        viewport={{ once: true, margin: "-60px" }}
+        transition={{ duration: 0.5, delay: 0.2 }}
+      >
+        {deploySteps.map((step, i) => (
+          <motion.div
+            key={step.num}
+            className="deploy-step"
+            initial={reduced ? undefined : { opacity: 0, y: 12 }}
+            whileInView={reduced ? undefined : { opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.4, delay: 0.3 + i * 0.08 }}
+          >
+            <span className="deploy-step-num">{step.num}</span>
+            <p className="deploy-step-label">{step.label}</p>
+            <p className="deploy-step-detail">{step.detail}</p>
+          </motion.div>
+        ))}
+      </motion.div>
+    </section>
+  );
+}
+
 /* ── Activity strip ──────────────────────────────────────────────────────── */
 
 function ActivityStrip() {
@@ -497,11 +665,52 @@ function resolveNavLinks(status: string, hasSubscription: boolean): NavLinks {
 
 /* ── Lusion-style Scroll Progress Line ──────────────────────────────────── */
 
-const SECTION_LABELS = ["01", "02", "03", "04"];
+const SECTION_LABELS = ["01", "02", "03", "04", "05"];
+
+// Sub-component so hooks are called at component level, not inside a callback
+function SpineLabel({
+  label,
+  position,
+  progress,
+}: Readonly<{ label: string; position: number; progress: MotionValue<number> }>) {
+  const lo = Math.max(0, position - 0.15);
+  const hi = Math.min(1, position + 0.15);
+  const loC = Math.max(0, position - 0.12);
+  const hiC = Math.min(1, position + 0.12);
+
+  const labelOpacity = useTransform(progress, [lo, position, hi], [0.2, 0.9, 0.2]);
+  const labelColor = useTransform(
+    progress,
+    [loC, position, hiC],
+    ["rgba(255,255,255,0.2)", "rgba(56,189,248,1)", "rgba(255,255,255,0.2)"]
+  );
+
+  return (
+    <motion.span
+      style={{
+        fontSize: "0.58rem",
+        fontWeight: 700,
+        letterSpacing: "0.12em",
+        fontFamily: "ui-monospace, monospace",
+        lineHeight: 1,
+        position: "absolute",
+        top: `${position * 100}%`,
+        left: "-1.75rem",
+        transform: "translateY(-50%)",
+        opacity: labelOpacity,
+        color: labelColor,
+      }}
+    >
+      {label}
+    </motion.span>
+  );
+}
 
 function ScrollProgressLine({ progress }: Readonly<{ progress: MotionValue<number> }>) {
-  const scaleY = useSpring(progress, { stiffness: 100, damping: 30, restDelta: 0.001 });
+  // Tighter spring for a more Lusion-like responsive feel
+  const scaleY = useSpring(progress, { stiffness: 180, damping: 28, restDelta: 0.0005 });
   const dotTop = useTransform(progress, [0, 1], ["0%", "100%"]);
+  const lastIdx = SECTION_LABELS.length - 1;
 
   return (
     <div
@@ -516,51 +725,56 @@ function ScrollProgressLine({ progress }: Readonly<{ progress: MotionValue<numbe
         flexDirection: "column",
         alignItems: "center",
         gap: "0",
-        height: "240px",
+        height: "260px",
         pointerEvents: "none",
       }}
     >
       {SECTION_LABELS.map((label, i) => (
-        <motion.span
+        <SpineLabel
           key={label}
-          style={{
-            fontSize: "0.6rem",
-            fontWeight: 700,
-            letterSpacing: "0.1em",
-            color: "rgba(255, 255, 255, 0.25)",
-            fontFamily: "ui-monospace, monospace",
-            lineHeight: 1,
-            position: "absolute",
-            top: `${(i / (SECTION_LABELS.length - 1)) * 100}%`,
-            left: "-1.5rem",
-            transform: "translateY(-50%)",
-          }}
-        >
-          {label}
-        </motion.span>
+          label={label}
+          position={i / lastIdx}
+          progress={progress}
+        />
       ))}
-      {/* Track */}
+      {/* Track — thin spine */}
       <div
         style={{
           width: "1px",
           height: "100%",
-          background: "rgba(255, 255, 255, 0.08)",
+          background: "rgba(255, 255, 255, 0.06)",
           position: "relative",
           borderRadius: "1px",
         }}
       >
-        {/* Active fill */}
+        {/* Section tick marks */}
+        {SECTION_LABELS.map((label, i) => (
+          <div
+            key={`tick-${label}`}
+            style={{
+              position: "absolute",
+              left: "50%",
+              top: `${(i / lastIdx) * 100}%`,
+              transform: "translate(-50%, -50%)",
+              width: "3px",
+              height: "1px",
+              background: "rgba(255,255,255,0.15)",
+            }}
+          />
+        ))}
+        {/* Active fill — brand colour gradient */}
         <motion.div
           style={{
             position: "absolute",
             top: 0,
             left: 0,
             width: "100%",
-            background: "rgba(255, 255, 255, 0.6)",
+            background: "linear-gradient(to bottom, var(--brand), rgba(52,211,153,0.7))",
             borderRadius: "1px",
             transformOrigin: "top",
             scaleY,
             height: "100%",
+            boxShadow: "0 0 4px rgba(56,189,248,0.4)",
           }}
         />
         {/* Glowing dot at current position */}
@@ -569,12 +783,13 @@ function ScrollProgressLine({ progress }: Readonly<{ progress: MotionValue<numbe
             position: "absolute",
             left: "50%",
             transform: "translateX(-50%)",
-            width: "5px",
-            height: "5px",
+            width: "6px",
+            height: "6px",
             borderRadius: "50%",
             background: "#fff",
-            boxShadow: "0 0 8px rgba(255,255,255,0.5), 0 0 20px rgba(56,189,248,0.3)",
+            boxShadow: "0 0 0 2px rgba(56,189,248,0.25), 0 0 10px rgba(56,189,248,0.6), 0 0 20px rgba(56,189,248,0.3)",
             top: dotTop,
+            zIndex: 2,
           }}
         />
       </div>
@@ -904,7 +1119,7 @@ export default function LandingPage() {
               }}
               style={{ color: "var(--text-secondary)", fontSize: "clamp(0.95rem, 1.5vw, 1.15rem)", lineHeight: 1.7, marginBottom: "2.5rem", maxWidth: "480px" }}
             >
-              Transform service requirements into complete CI/CD pipelines with agent-guided setup, generation, and export.
+              Connect your GitHub repo, configure once, and get a production-ready CI/CD workflow generated from source-backed templates — then deploy directly to Vercel or Render.
             </motion.p>
 
             <motion.div
@@ -1007,28 +1222,39 @@ export default function LandingPage() {
             <div style={{
               position: "relative",
               zIndex: 10,
-              background: "rgba(15, 23, 42, 0.6)",
-              backdropFilter: "blur(24px)",
-              WebkitBackdropFilter: "blur(24px)",
-              border: "1px solid rgba(255, 255, 255, 0.08)",
+              background: "rgba(10, 14, 26, 0.72)",
+              backdropFilter: "blur(28px)",
+              WebkitBackdropFilter: "blur(28px)",
+              border: "1px solid rgba(255, 255, 255, 0.09)",
               borderRadius: "20px",
-              padding: "2rem",
-              boxShadow: "0 24px 80px -12px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,255,255,0.06), 0 0 0 1px rgba(56,189,248,0.04)",
+              padding: "1.75rem",
+              boxShadow: "0 32px 96px -16px rgba(0,0,0,0.8), inset 0 1px 0 rgba(255,255,255,0.07), 0 0 0 1px rgba(56,189,248,0.05)",
             }}>
+              {/* Top gradient accent line */}
+              <div aria-hidden="true" style={{
+                position: "absolute",
+                top: 0,
+                left: "10%",
+                right: "10%",
+                height: "1px",
+                background: "linear-gradient(90deg, transparent, rgba(56,189,248,0.5), rgba(52,211,153,0.3), transparent)",
+                borderRadius: "1px",
+              }} />
+
               {/* Card radial glow */}
               <div aria-hidden="true" style={{
                 position: "absolute",
                 inset: 0,
                 borderRadius: "20px",
-                background: "radial-gradient(ellipse 80% 60% at 50% 0%, rgba(56,189,248,0.07) 0%, transparent 70%)",
+                background: "radial-gradient(ellipse 70% 50% at 50% -10%, rgba(56,189,248,0.09) 0%, transparent 70%)",
                 pointerEvents: "none",
               }} />
 
               {/* Top bar — with branch chip and commit hash */}
               <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "1.25rem" }}>
-                <span style={{ width: "8px", height: "8px", borderRadius: "50%", background: "#ef4444" }} />
-                <span style={{ width: "8px", height: "8px", borderRadius: "50%", background: "#eab308" }} />
-                <span style={{ width: "8px", height: "8px", borderRadius: "50%", background: "#22c55e" }} />
+                <span style={{ width: "8px", height: "8px", borderRadius: "50%", background: "#ef4444", opacity: 0.8 }} />
+                <span style={{ width: "8px", height: "8px", borderRadius: "50%", background: "#eab308", opacity: 0.8 }} />
+                <span style={{ width: "8px", height: "8px", borderRadius: "50%", background: "#22c55e", opacity: 0.8 }} />
                 {/* Branch chip */}
                 <span style={{
                   marginLeft: "0.5rem",
@@ -1056,7 +1282,7 @@ export default function LandingPage() {
                   alignItems: "center",
                   gap: "0.25rem",
                   background: "rgba(52,211,153,0.1)",
-                  border: "1px solid rgba(52,211,153,0.25)",
+                  border: "1px solid rgba(52,211,153,0.2)",
                   borderRadius: "6px",
                   padding: "0.15rem 0.5rem",
                   fontSize: "0.6rem",
@@ -1064,7 +1290,7 @@ export default function LandingPage() {
                   color: "#34d399",
                   fontFamily: "ui-monospace, monospace",
                 }}>
-                  <span style={{ width: "4px", height: "4px", borderRadius: "50%", background: "#34d399", display: "inline-block" }} />
+                  <span style={{ width: "4px", height: "4px", borderRadius: "50%", background: "#34d399", display: "inline-block", animation: prefersReducedMotion ? undefined : "flowPulse 2s ease-in-out infinite" }} />
                   passing
                 </span>
                 <span style={{ fontSize: "0.65rem", color: "var(--text-muted)", fontFamily: "ui-monospace, monospace", letterSpacing: "0.05em" }}>pipeline.yml</span>
@@ -1072,15 +1298,15 @@ export default function LandingPage() {
 
               {/* Animated code lines */}
               {[
-                { indent: 0, key: "name", value: "deploy-production", delay: 0.8 },
-                { indent: 0, key: "trigger", value: "push → main", delay: 1.0 },
-                { indent: 0, key: "steps", value: "", delay: 1.2 },
-                { indent: 1, key: "checkout", value: "v4", delay: 1.4 },
-                { indent: 1, key: "install", value: "npm ci", delay: 1.6 },
-                { indent: 1, key: "lint", value: "eslint .", delay: 1.8 },
-                { indent: 1, key: "test", value: "vitest run", delay: 2.0 },
-                { indent: 1, key: "build", value: "next build", delay: 2.2 },
-                { indent: 1, key: "deploy", value: "vercel --prod", delay: 2.4 },
+                { indent: 0, key: "name",     value: "deploy-production",       delay: 0.8,  highlight: false },
+                { indent: 0, key: "trigger",  value: "push → main",          delay: 1.0,  highlight: false },
+                { indent: 0, key: "steps",    value: "",                         delay: 1.2,  highlight: false },
+                { indent: 1, key: "checkout", value: "v4",                       delay: 1.4,  highlight: false },
+                { indent: 1, key: "install",  value: "npm ci",                   delay: 1.6,  highlight: false },
+                { indent: 1, key: "lint",     value: "eslint .",                 delay: 1.8,  highlight: false },
+                { indent: 1, key: "test",     value: "vitest run",               delay: 2.0,  highlight: false },
+                { indent: 1, key: "build",    value: "next build",               delay: 2.2,  highlight: false },
+                { indent: 1, key: "deploy",   value: "vercel --prod",            delay: 2.4,  highlight: true  },
               ].map((line) => (
                 <motion.div
                   key={line.key}
@@ -1091,15 +1317,20 @@ export default function LandingPage() {
                     display: "flex",
                     gap: "0.5rem",
                     paddingLeft: `${line.indent * 1.5}rem`,
-                    marginBottom: "0.4rem",
+                    marginBottom: "0.35rem",
                     fontFamily: "ui-monospace, monospace",
-                    fontSize: "0.78rem",
-                    lineHeight: 1.8,
+                    fontSize: "0.76rem",
+                    lineHeight: 1.75,
+                    borderRadius: line.highlight ? "4px" : undefined,
+                    background: line.highlight ? "rgba(56,189,248,0.05)" : undefined,
+                    padding: line.highlight ? "0.1rem 0.4rem 0.1rem " + `${line.indent * 1.5 + 0.4}rem` : `0 0 0 ${line.indent * 1.5}rem`,
+                    marginLeft: line.highlight ? "-0.4rem" : undefined,
+                    marginRight: line.highlight ? "-0.4rem" : undefined,
                   }}
                 >
-                  <span style={{ color: "var(--brand)" }}>{line.key}</span>
+                  <span style={{ color: line.highlight ? "var(--brand-accent)" : "var(--brand)" }}>{line.key}</span>
                   {line.value && <span style={{ color: "var(--text-muted)" }}>:</span>}
-                  {line.value && <span style={{ color: "var(--text-secondary)" }}>{line.value}</span>}
+                  {line.value && <span style={{ color: line.highlight ? "#34d399" : "var(--text-secondary)" }}>{line.value}</span>}
                 </motion.div>
               ))}
 
@@ -1111,28 +1342,55 @@ export default function LandingPage() {
                 style={{ marginTop: "1.25rem", marginBottom: "0.75rem" }}
               >
                 <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.35rem" }}>
-                  <span style={{ fontSize: "0.6rem", color: "var(--text-muted)", fontFamily: "ui-monospace, monospace", letterSpacing: "0.1em", textTransform: "uppercase" }}>Progress</span>
+                  <span style={{ fontSize: "0.6rem", color: "var(--text-muted)", fontFamily: "ui-monospace, monospace", letterSpacing: "0.1em", textTransform: "uppercase" }}>Pipeline progress</span>
                   <span style={{ fontSize: "0.6rem", color: "var(--brand)", fontFamily: "ui-monospace, monospace", fontWeight: 700 }}>82%</span>
                 </div>
-                <div style={{ height: "3px", background: "rgba(255,255,255,0.06)", borderRadius: "999px", overflow: "hidden" }}>
+                <div style={{ height: "2px", background: "rgba(255,255,255,0.05)", borderRadius: "999px", overflow: "hidden" }}>
                   <motion.div
                     initial={prefersReducedMotion ? undefined : { width: "0%" }}
                     animate={prefersReducedMotion ? undefined : { width: "82%" }}
-                    transition={{ duration: 1.2, delay: 2.7, ease: [0.25, 1, 0.5, 1] }}
-                    style={{ height: "100%", background: "linear-gradient(90deg, var(--brand), var(--brand-accent))", borderRadius: "999px" }}
+                    transition={{ duration: 1.4, delay: 2.7, ease: [0.25, 1, 0.5, 1] }}
+                    style={{ height: "100%", background: "linear-gradient(90deg, var(--brand), var(--brand-accent))", borderRadius: "999px", boxShadow: "0 0 8px rgba(56,189,248,0.4)" }}
                   />
                 </div>
+              </motion.div>
+
+              {/* Deploy target row */}
+              <motion.div
+                initial={prefersReducedMotion ? undefined : { opacity: 0, y: 8 }}
+                animate={prefersReducedMotion ? undefined : { opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 2.55, ease: [0.25, 1, 0.5, 1] }}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.5rem",
+                  marginBottom: "0.75rem",
+                  padding: "0.5rem 0.75rem",
+                  background: "rgba(255,255,255,0.025)",
+                  border: "1px solid rgba(255,255,255,0.06)",
+                  borderRadius: "8px",
+                }}
+              >
+                <span style={{ fontSize: "0.58rem", fontFamily: "ui-monospace, monospace", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.1em" }}>Deploy target</span>
+                <span style={{ marginLeft: "auto", display: "inline-flex", alignItems: "center", gap: "0.35rem" }}>
+                  {/* Vercel triangle motif */}
+                  <svg width="10" height="10" viewBox="0 0 116 100" fill="white" aria-hidden="true" style={{ opacity: 0.85 }}>
+                    <path d="M57.5 0L115 100H0L57.5 0z"/>
+                  </svg>
+                  <span style={{ fontSize: "0.72rem", fontWeight: 700, color: "var(--text-primary)", fontFamily: "ui-monospace, monospace" }}>Vercel</span>
+                  <span style={{ fontSize: "0.62rem", color: "var(--text-muted)", marginLeft: "0.1rem" }}>prod</span>
+                </span>
               </motion.div>
 
               {/* Status bar */}
               <motion.div
                 initial={prefersReducedMotion ? undefined : { opacity: 0, scaleX: 0 }}
                 animate={prefersReducedMotion ? undefined : { opacity: 1, scaleX: 1 }}
-                transition={{ duration: 0.8, delay: 2.6, ease: [0.25, 1, 0.5, 1] }}
+                transition={{ duration: 0.8, delay: 2.7, ease: [0.25, 1, 0.5, 1] }}
                 style={{
-                  padding: "0.6rem 1rem",
-                  background: "rgba(52, 211, 153, 0.08)",
-                  border: "1px solid rgba(52, 211, 153, 0.2)",
+                  padding: "0.55rem 1rem",
+                  background: "rgba(52, 211, 153, 0.07)",
+                  border: "1px solid rgba(52, 211, 153, 0.18)",
                   borderRadius: "8px",
                   display: "flex",
                   alignItems: "center",
@@ -1140,9 +1398,9 @@ export default function LandingPage() {
                   transformOrigin: "left",
                 }}
               >
-                <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#34d399", boxShadow: "0 0 8px rgba(52,211,153,0.5)" }} />
-                <span style={{ fontSize: "0.7rem", fontWeight: 700, color: "#34d399", letterSpacing: "0.1em", textTransform: "uppercase", fontFamily: "ui-monospace, monospace" }}>
-                  All checks passed — 2m 14s
+                <span style={{ width: "5px", height: "5px", borderRadius: "50%", background: "#34d399", boxShadow: "0 0 8px rgba(52,211,153,0.6)" }} />
+                <span style={{ fontSize: "0.68rem", fontWeight: 700, color: "#34d399", letterSpacing: "0.08em", textTransform: "uppercase", fontFamily: "ui-monospace, monospace" }}>
+                  All checks passed &mdash; 2m 14s
                 </span>
               </motion.div>
             </div>
@@ -1192,12 +1450,18 @@ export default function LandingPage() {
               }}
             >
               <div style={{ fontSize: "0.55rem", color: "var(--text-muted)", letterSpacing: "0.15em", textTransform: "uppercase", fontFamily: "ui-monospace, monospace", marginBottom: "0.3rem" }}>Deployments today</div>
-              <div style={{ display: "flex", alignItems: "baseline", gap: "0.4rem", marginBottom: "0.6rem" }}>
+              <div style={{ display: "flex", alignItems: "baseline", gap: "0.4rem", marginBottom: "0.4rem" }}>
                 <span style={{ fontSize: "1.5rem", fontWeight: 800, color: "var(--text-primary)" }}>847</span>
                 <span style={{ fontSize: "0.7rem", fontWeight: 700, color: "#34d399" }}>+12.4%</span>
               </div>
+              {/* Provider split */}
+              <div style={{ display: "flex", gap: "0.5rem", marginBottom: "0.5rem" }}>
+                <span style={{ fontSize: "0.58rem", color: "var(--text-muted)", fontFamily: "ui-monospace, monospace" }}>Vercel <span style={{ color: "var(--brand)" }}>521</span></span>
+                <span style={{ fontSize: "0.58rem", color: "rgba(255,255,255,0.15)" }}>|</span>
+                <span style={{ fontSize: "0.58rem", color: "var(--text-muted)", fontFamily: "ui-monospace, monospace" }}>Render <span style={{ color: "var(--brand-accent)" }}>326</span></span>
+              </div>
               {/* Sparkline bars */}
-              <div style={{ display: "flex", alignItems: "flex-end", gap: "3px", height: "24px" }} aria-hidden="true">
+              <div style={{ display: "flex", alignItems: "flex-end", gap: "3px", height: "22px" }} aria-hidden="true">
                 {[40, 65, 50, 80, 55, 90, 70].map((h, i) => (
                   <motion.div
                     key={i}
@@ -1234,7 +1498,7 @@ export default function LandingPage() {
             transition={{ duration: 1.5, delay: 1.8 }}
           >
             <span style={{ fontSize: "0.6rem", fontWeight: 700, letterSpacing: "0.2em", color: "rgba(255,255,255,0.2)", textTransform: "uppercase", fontFamily: "ui-monospace, monospace" }}>
-              01 / 04
+              01 / 05
             </span>
             <span style={{ fontSize: "0.6rem", fontWeight: 700, letterSpacing: "0.2em", color: "rgba(255,255,255,0.2)", textTransform: "uppercase", fontFamily: "ui-monospace, monospace" }}>
               FlowCI Studio &mdash; {new Date().getFullYear()}
@@ -1328,7 +1592,7 @@ export default function LandingPage() {
             </div>
             <p className="file-path-label">pipeline/live-demo.yml</p>
             <h2>From push to deploy in minutes</h2>
-            <p>Watch a real pipeline run — source checkout, lint, test, build, security scan, then deploy. Every step animated live.</p>
+            <p>FlowCI generates a GitHub Actions workflow from a template tied to your source files. Every stage — checkout, lint, test, build, security scan, deploy — runs in sequence. Watch it live.</p>
           </motion.div>
 
           <motion.div
@@ -1427,7 +1691,20 @@ export default function LandingPage() {
           style={{ transformOrigin: "center" }}
         />
 
-        {/* ── SECTION 4: Activity strip ────────────────────────────────── */}
+        {/* ── SECTION 4: Deploy anywhere ───────────────────────────────── */}
+        <DeploySection reduced={prefersReducedMotion} />
+
+        <motion.hr
+          className="section-gradient-divider"
+          aria-hidden="true"
+          initial={prefersReducedMotion ? undefined : { scaleX: 0, opacity: 0 }}
+          whileInView={prefersReducedMotion ? undefined : { scaleX: 1, opacity: 1 }}
+          viewport={{ once: true, margin: "-40px" }}
+          transition={{ duration: 1.2, ease: [0.25, 1, 0.5, 1] }}
+          style={{ transformOrigin: "center" }}
+        />
+
+        {/* ── SECTION 5: Activity strip ────────────────────────────────── */}
         <ActivityStrip />
 
         <motion.hr
@@ -1440,7 +1717,7 @@ export default function LandingPage() {
           style={{ transformOrigin: "center" }}
         />
 
-        {/* ── SECTION 5: Pricing ───────────────────────────────────────── */}
+        {/* ── SECTION 6: Pricing ───────────────────────────────────────── */}
         <section
           id="pricing"
           className="pricing-section section-glow-center"

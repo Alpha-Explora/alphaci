@@ -6,6 +6,7 @@ export * from "./existing-repos";
 export * from "./github";
 export * from "./projects";
 export * from "./request";
+export * from "./runs";
 export * from "./subscription";
 export * from "./usage";
 export * from "./workspaces";

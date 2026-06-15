@@ -19,8 +19,17 @@ interface BuildPayloadInput {
   deploymentProvisioning?: CreateProjectRequest["deploymentProvisioning"];
 }
 
+// GitHub repository names allow letters, digits, '.', '_' and '-'. We keep the
+// existing lowercase convention and now also permit '.' and '_' (previously
+// stripped). Anything else (including '/', which separates owner/repo) is
+// dropped; spaces become hyphens; leading/trailing separators are trimmed.
 function normalizeRepoName(value: string): string {
-  return toSlug(value).replaceAll(/^-+|-+$/g, "");
+  return value
+    .toLowerCase()
+    .trim()
+    .replaceAll(/\s+/g, "-")
+    .replaceAll(/[^a-z0-9._-]/g, "")
+    .replaceAll(/^[-._]+|[-._]+$/g, "");
 }
 
 export function useCreateProjectForm() {
@@ -50,7 +59,9 @@ export function useCreateProjectForm() {
       const normalized = normalizeRepoName(value);
       setRepoNameState(normalized);
       if (!serviceNameTouched) {
-        setServiceNameState(normalized);
+        // Service name feeds the workflow YAML as an identifier — keep it a
+        // strict slug even though the repo name may contain '.'/'_'.
+        setServiceNameState(toSlug(normalized));
       }
     },
     [serviceNameTouched],
@@ -74,12 +85,12 @@ export function useCreateProjectForm() {
   const effectiveBackendServiceName = backendServiceNameTouched
     ? backendServiceName
     : repoName
-      ? `${repoName}-backend`
+      ? `${toSlug(repoName)}-backend`
       : "";
   const effectiveFrontendServiceName = frontendServiceNameTouched
     ? frontendServiceName
     : repoName
-      ? `${repoName}-frontend`
+      ? `${toSlug(repoName)}-frontend`
       : "";
 
   function buildPayload(input: BuildPayloadInput): CreateProjectPayloadResult {
