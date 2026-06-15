@@ -8,7 +8,6 @@ import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 
 import { AppNav } from "@/components/layout/app-nav";
 import { FlowBackground } from "@/components/layout/flow-background";
-import { PipelineLogo } from "@/components/layout/pipeline-logo";
 import { PipelineLoader } from "@/components/layout/pipeline-loader";
 import { DeploymentProvidersSection } from "@/components/settings/deployment-providers-section";
 import { useAuthSession } from "@/hooks/use-auth-session";
@@ -313,13 +312,6 @@ export default function SettingsPage() {
     return (
       <main className="flow-shell page-shell">
         <FlowBackground />
-        <header className="marketing-nav">
-          <div className="brand-mark">
-            <PipelineLogo size={22} />
-            <span>FlowCI Studio</span>
-          </div>
-          <Link className="ghost-button" href="/login?next=/settings">Sign in</Link>
-        </header>
         <div className="state-body">
           <div className="state-card">
             <div
