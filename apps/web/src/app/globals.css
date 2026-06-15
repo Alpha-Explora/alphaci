@@ -5073,6 +5073,306 @@ select option {
   letter-spacing: 0;
 }
 
+/* ── Project detail inner tab bar ────────────────────────────────────────── */
+.project-inner-tabs {
+  display: flex;
+  gap: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+  border-bottom: 1px solid var(--border-soft);
+  margin-bottom: 1rem;
+}
+
+.project-inner-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.project-inner-tab {
+  padding: 0.55rem 0.88rem;
+  border: none;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: color 0.18s ease, border-color 0.18s ease;
+}
+
+.project-inner-tab:hover {
+  color: var(--text-primary);
+}
+
+.project-inner-tab.active {
+  color: var(--brand);
+  border-bottom-color: var(--brand);
+}
+
+.project-inner-tab:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: -2px;
+}
+
+/* ── Deployment target action clusters ───────────────────────────────────── */
+.target-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.6rem;
+}
+
+/* Primary actions: Edit + Sync */
+.target-actions-primary {
+  display: flex;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+/* Secondary actions: Dashboard link */
+.target-actions-secondary {
+  display: flex;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+/* Destructive action (Detach) — visually separated */
+.target-actions-destructive {
+  display: flex;
+  gap: 0.35rem;
+  justify-content: flex-end;
+}
+
+/* Small ghost button inside target action rows */
+.target-action-btn {
+  min-height: 2rem;
+  padding: 0.35rem 0.7rem;
+  font-size: 0.76rem;
+}
+
+/* "Coming soon" hint — replaces a full disabled button */
+.target-upcoming-hint {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  font-style: italic;
+  padding: 0.25rem 0.4rem;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px dashed var(--border-soft);
+  white-space: nowrap;
+  align-self: center;
+}
+
+/* Detach button — danger tint */
+.target-action-btn--detach {
+  border-color: rgba(248, 113, 113, 0.3);
+  color: var(--danger);
+}
+
+.target-action-btn--detach:hover {
+  background: rgba(248, 113, 113, 0.07);
+  border-color: rgba(248, 113, 113, 0.55);
+  color: var(--danger);
+}
+
+/* Confirm-detach state emphasis */
+.target-action-btn--confirm {
+  border-color: rgba(248, 113, 113, 0.55);
+  color: var(--danger);
+  background: rgba(248, 113, 113, 0.06);
+}
+
+/* ── Result banner (latest project created) ──────────────────────────────── */
+.latest-result-banner {
+  margin-bottom: 1.5rem;
+  padding: 1.25rem;
+  border-radius: var(--radius-card);
+  background: linear-gradient(135deg, rgba(52, 211, 153, 0.06) 0%, rgba(15, 23, 42, 0.6) 100%);
+  border: 1px solid rgba(52, 211, 153, 0.25);
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  box-shadow: var(--shadow-card);
+  position: relative;
+  overflow: hidden;
+}
+
+.latest-result-banner__header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.latest-result-banner__dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--success);
+  flex-shrink: 0;
+}
+
+.latest-result-banner__repo {
+  font-weight: 800;
+  font-size: 0.95rem;
+  color: var(--text-primary);
+  font-family: ui-monospace, monospace;
+}
+
+.latest-result-banner__actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.latest-result-banner__action-btn {
+  padding: 0.4rem 1rem;
+  font-size: 0.8rem;
+  min-height: 2.2rem;
+  display: inline-flex;
+  align-items: center;
+}
+
+.latest-result-banner__meta {
+  font-size: 0.76rem;
+  color: var(--text-muted);
+  margin: 0;
+  line-height: 1.4;
+}
+
+.latest-result-banner__eyebrow {
+  color: var(--success);
+  margin: 0;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.latest-result-banner__sep {
+  color: var(--text-muted);
+  font-size: 0.78rem;
+}
+
+.latest-result-banner__chips {
+  margin: 0;
+  display: flex;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+}
+
+.latest-result-banner__filename {
+  color: var(--brand);
+  font-family: ui-monospace, monospace;
+}
+
+.latest-result-banner__commit-link {
+  margin-left: 0.75rem;
+  color: var(--text-muted);
+  font-family: ui-monospace, monospace;
+  font-size: 0.75rem;
+  text-decoration: none;
+}
+
+.latest-result-banner__sha {
+  color: var(--brand);
+  border-bottom: 1px dashed var(--brand);
+}
+
+.latest-result-banner__sha-plain {
+  margin-left: 0.75rem;
+  color: var(--text-muted);
+  font-size: 0.75rem;
+}
+
+.latest-result-banner__footer {
+  font-size: 0.76rem;
+  color: var(--text-muted);
+  margin: 0;
+  line-height: 1.4;
+}
+
+.latest-result-banner__action-btn--primary {
+  background: var(--brand);
+  color: #0f172a;
+  border-color: var(--brand);
+  font-weight: 600;
+}
+
+.latest-result-banner__action-btn--primary:hover {
+  filter: brightness(1.1);
+}
+
+.branch-chip--mono {
+  font-family: ui-monospace, monospace;
+  font-size: 0.7rem;
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-secondary);
+  border-color: var(--border-soft);
+}
+
+/* ── Sub-tab bar ─────────────────────────────────────────────────────────── */
+.current-subtab-bar {
+  position: relative;
+  display: flex;
+  gap: 0.25rem;
+  padding: 0.25rem;
+  background: rgba(15, 23, 42, 0.4);
+  border: 1px solid var(--border-soft);
+  border-radius: 0.6rem;
+  width: fit-content;
+  margin-bottom: 1.25rem;
+}
+
+.current-subtab-btn {
+  position: relative;
+  padding: 0.4rem 1.1rem;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  color: var(--text-secondary);
+  z-index: 1;
+  font-weight: 600;
+  font-size: 0.82rem;
+  transition: color 0.2s ease;
+}
+
+.current-subtab-btn.active {
+  color: var(--text-primary);
+}
+
+.current-subtab-count {
+  margin-left: 0.35rem;
+  font-size: 0.75rem;
+}
+
+.current-subtab-indicator {
+  position: absolute;
+  inset: 0;
+  border-radius: 0.4rem;
+  background: rgba(56, 189, 248, 0.1);
+  border: 1px solid rgba(56, 189, 248, 0.25);
+  box-shadow: 0 0 12px rgba(56, 189, 248, 0.15);
+  z-index: -1;
+}
+
+/* ── Tab section heading ─────────────────────────────────────────────────── */
+.tab-section-heading {
+  margin: 0 0 0.65rem;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.tab-section-subtext {
+  margin: 0.25rem 0 0;
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+}
+
 .env-provisioning-panel {
   display: grid;
   gap: 0.85rem;

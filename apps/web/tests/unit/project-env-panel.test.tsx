@@ -1223,11 +1223,11 @@ describe("Project env provisioning UI", () => {
     });
 
     expect(rendered.container.textContent).toContain("orders-api-test");
-    expect(rendered.container.textContent).toContain("render - backend - test");
+    expect(rendered.container.textContent).toContain("render · backend · test");
     expect(rendered.container.textContent).toContain("orders-web");
-    expect(rendered.container.textContent).toContain("vercel - frontend - main");
-    expect(rendered.container.textContent).toContain("Provider activation required");
-    expect(rendered.container.textContent).toContain("Open provider dashboard");
+    expect(rendered.container.textContent).toContain("vercel · frontend · main");
+    expect(rendered.container.textContent).toContain("Provider activation — coming soon");
+    expect(rendered.container.textContent).toContain("Provider dashboard");
   });
 
   it("renders mixed Render and Vercel deployment history from the local contract", async () => {
@@ -1314,7 +1314,7 @@ describe("Project env provisioning UI", () => {
     expect(rendered.container.textContent).toContain("def456");
     expect(rendered.container.querySelector('a[href="https://dashboard.render.com/web/srv-1"]')).not.toBeNull();
     expect(rendered.container.querySelector('a[href="https://vercel.com/flowci-team/orders-web"]')).not.toBeNull();
-    expect(rendered.container.textContent).toContain("Provider activation required");
+    expect(rendered.container.textContent).toContain("Provider activation — coming soon");
   });
 
   it("opens target edit drawer with the current metadata values", async () => {
@@ -1460,7 +1460,7 @@ describe("Project env provisioning UI", () => {
 
     await act(async () => {
       Array.from(rendered.container.querySelectorAll("button"))
-        .find((button) => button.textContent === "Sync target")!
+        .find((button) => button.textContent === "Sync")!
         .click();
       await Promise.resolve();
     });
@@ -1515,7 +1515,7 @@ describe("Project env provisioning UI", () => {
 
     await act(async () => {
       Array.from(rendered.container.querySelectorAll("button"))
-        .find((button) => button.textContent === "Sync target")!
+        .find((button) => button.textContent === "Sync")!
         .click();
       await Promise.resolve();
     });
@@ -1523,7 +1523,7 @@ describe("Project env provisioning UI", () => {
 
     act(() => {
       Array.from(rendered.container.querySelectorAll("button"))
-        .find((button) => button.textContent === "Detach from FlowCI")!
+        .find((button) => button.textContent === "Detach")!
         .click();
     });
     await act(async () => {
@@ -1566,7 +1566,7 @@ describe("Project env provisioning UI", () => {
     });
 
     const detachButton = Array.from(rendered.container.querySelectorAll("button")).find(
-      (button) => button.textContent === "Detach from FlowCI",
+      (button) => button.textContent === "Detach",
     ) as HTMLButtonElement;
     act(() => {
       detachButton.click();
