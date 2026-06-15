@@ -261,76 +261,83 @@ function DeploymentTargetsList({
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "0.85rem" }}>
       {targetMessage ? <p className="env-empty-state">{targetMessage}</p> : null}
-      <div className="env-metadata-list">
+      <div className="env-metadata-list" data-tour="deployment-targets">
         {targets.map((target) => {
           const dashboardUrl = providerDashboardUrl(target);
+          const isDetachConfirm = detachConfirmTargetId === target.id;
           return (
             <div key={target.id} className={`env-metadata-row ${target.status}`} style={{ alignItems: "flex-start" }}>
               <span style={{ display: "flex", flexDirection: "column", gap: "0.2rem" }}>
                 <strong>{target.providerProjectName}</strong>
                 <small>
-                  {target.provider} - {target.slot} - {target.branchName}
+                  {target.provider} · {target.slot} · {target.branchName}
                 </small>
-                <small>
-                  Root {target.rootDirectory || "."} - Build {target.buildCommand || "Not configured"} - Start{" "}
-                  {target.startCommand || "Not configured"}
+                <small style={{ color: "var(--text-muted)" }}>
+                  Root: {target.rootDirectory || "."} · Build: {target.buildCommand || "—"} · Start: {target.startCommand || "—"}
                 </small>
-                {target.renderEnvironmentName ? <small>Render environment {target.renderEnvironmentName}</small> : null}
-                <small>Provider ID {target.providerProjectId}</small>
-              </span>
-              <span style={{ display: "flex", gap: "0.4rem", flexWrap: "wrap", justifyContent: "flex-end" }}>
-                <button
-                  className="ghost-button"
-                  type="button"
-                  disabled={!managementEnabled}
-                  onClick={() => openEdit(target)}
-                  style={{ minHeight: "2rem", padding: "0.35rem 0.7rem", fontSize: "0.76rem" }}
-                >
-                  Edit
-                </button>
-                <button
-                  className="ghost-button"
-                  type="button"
-                  disabled={!managementEnabled || syncingTargetId === target.id}
-                  onClick={() => void runSync(target)}
-                  style={{ minHeight: "2rem", padding: "0.35rem 0.7rem", fontSize: "0.76rem" }}
-                >
-                  {syncingTargetId === target.id ? "Syncing..." : "Sync target"}
-                </button>
-                <button
-                  className="ghost-button"
-                  type="button"
-                  disabled
-                  title="Provider activation required"
-                  style={{ minHeight: "2rem", padding: "0.35rem 0.7rem", fontSize: "0.76rem" }}
-                >
-                  Provider activation required
-                </button>
-                {dashboardUrl ? (
-                  <a
-                    className="ghost-button"
-                    href={dashboardUrl}
-                    rel="noreferrer"
-                    target="_blank"
-                    style={{ minHeight: "2rem", padding: "0.35rem 0.7rem", fontSize: "0.76rem" }}
-                  >
-                    Open provider dashboard
-                  </a>
+                {target.renderEnvironmentName ? (
+                  <small style={{ color: "var(--text-muted)" }}>Render env: {target.renderEnvironmentName}</small>
                 ) : null}
-                <button
-                  className="ghost-button"
-                  type="button"
-                  disabled={!managementEnabled || detachingTargetId === target.id}
-                  onClick={() => void detachTarget(target)}
-                  style={{ minHeight: "2rem", padding: "0.35rem 0.7rem", fontSize: "0.76rem" }}
-                >
-                  {detachingTargetId === target.id
-                    ? "Detaching..."
-                    : detachConfirmTargetId === target.id
-                      ? "Confirm detach"
-                      : "Detach from FlowCI"}
-                </button>
+                <small style={{ color: "var(--text-muted)" }}>ID: {target.providerProjectId}</small>
               </span>
+
+              {/* Hierarchical action cluster */}
+              <div className="target-actions">
+                {/* Primary: Edit + Sync */}
+                <div className="target-actions-primary">
+                  <button
+                    className="ghost-button target-action-btn"
+                    type="button"
+                    disabled={!managementEnabled}
+                    onClick={() => openEdit(target)}
+                  >
+                    Edit
+                  </button>
+                  <button
+                    className="ghost-button target-action-btn"
+                    type="button"
+                    disabled={!managementEnabled || syncingTargetId === target.id}
+                    onClick={() => void runSync(target)}
+                  >
+                    {syncingTargetId === target.id ? "Syncing…" : "Sync"}
+                  </button>
+                </div>
+
+                {/* Secondary: external provider dashboard */}
+                {dashboardUrl ? (
+                  <div className="target-actions-secondary">
+                    <a
+                      className="ghost-button target-action-btn"
+                      href={dashboardUrl}
+                      rel="noreferrer"
+                      target="_blank"
+                    >
+                      Provider dashboard ↗
+                    </a>
+                  </div>
+                ) : null}
+
+                {/* Coming soon hint — replaces a full disabled button */}
+                <span className="target-upcoming-hint" title="Provider activation will be available in the next phase">
+                  Provider activation — coming soon
+                </span>
+
+                {/* Destructive: Detach — visually separated */}
+                <div className="target-actions-destructive">
+                  <button
+                    className={`ghost-button target-action-btn ${isDetachConfirm ? "target-action-btn--confirm" : "target-action-btn--detach"}`}
+                    type="button"
+                    disabled={!managementEnabled || detachingTargetId === target.id}
+                    onClick={() => void detachTarget(target)}
+                  >
+                    {detachingTargetId === target.id
+                      ? "Detaching…"
+                      : isDetachConfirm
+                        ? "Confirm detach"
+                        : "Detach"}
+                  </button>
+                </div>
+              </div>
             </div>
           );
         })}
@@ -1111,107 +1118,71 @@ export function WorkflowCurrentTab({
     >
       {/* ── Latest result banner ──────────────────────────────────── */}
       {latestResult ? (
-        <div className="glass-panel" style={{
-          marginBottom: "1.5rem",
-          padding: "1.25rem",
-          borderRadius: "var(--radius-card)",
-          background: "linear-gradient(135deg, rgba(52, 211, 153, 0.06) 0%, rgba(15, 23, 42, 0.6) 100%)",
-          border: "1px solid rgba(52, 211, 153, 0.25)",
-          display: "flex",
-          flexDirection: "column",
-          gap: "0.75rem",
-          boxShadow: "var(--shadow-card)",
-          position: "relative",
-          overflow: "hidden"
-        }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", flexWrap: "wrap" }}>
-            <span style={{ display: "inline-block", width: "6px", height: "6px", borderRadius: "50%", background: "var(--success)" }} />
-            <p className="eyebrow" style={{ color: "var(--success)", margin: 0, fontSize: "0.72rem", textTransform: "uppercase", letterSpacing: "0.08em" }}>Project Created Successfully</p>
-            <span style={{ color: "var(--text-muted)", fontSize: "0.78rem" }}>·</span>
-            <span style={{ fontWeight: 800, fontSize: "0.95rem", color: "var(--text-primary)", fontFamily: "ui-monospace, monospace" }}>
-              {latestResult.repoFullName}
-            </span>
+        <div className="latest-result-banner glass-panel">
+          <div className="latest-result-banner__header">
+            <span className="latest-result-banner__dot" aria-hidden="true" />
+            <p className="eyebrow latest-result-banner__eyebrow">Project Created Successfully</p>
+            <span className="latest-result-banner__sep" aria-hidden="true">·</span>
+            <span className="latest-result-banner__repo">{latestResult.repoFullName}</span>
           </div>
-          <div className="result-branches" style={{ margin: 0, display: "flex", gap: "0.35rem" }}>
+
+          <div className="result-branches latest-result-banner__chips">
             <span className="branch-chip">{latestResult.status}</span>
             <span className="branch-chip">{latestResult.projectTypeId}</span>
             <span className="branch-chip">{latestResult.workflowRecipeId}</span>
             {latestResult.branchesCreated.map((branch) => (
-              <span key={branch} className="branch-chip" style={{
-                fontSize: "0.7rem",
-                padding: "0.15rem 0.5rem",
-                borderRadius: "4px",
-                background: "rgba(255, 255, 255, 0.04)",
-                color: "var(--text-secondary)",
-                border: "1px solid var(--border-soft)",
-                fontFamily: "ui-monospace, monospace"
-              }}>{branch}</span>
+              <span key={branch} className="branch-chip branch-chip--mono">{branch}</span>
             ))}
           </div>
-          <p style={{ fontSize: "0.8rem", color: "var(--text-secondary)", margin: 0, lineHeight: 1.45 }}>
+
+          <p className="latest-result-banner__meta">
             Workflow file:{" "}
-            <strong style={{ color: "var(--brand)", fontFamily: "ui-monospace, monospace" }}>
-              {latestResult.outputFileName}
-            </strong>
+            <strong className="latest-result-banner__filename">{latestResult.outputFileName}</strong>
             {latestResult.githubCommitUrl ? (
               <a
                 href={latestResult.githubCommitUrl}
                 target="_blank"
                 rel="noreferrer"
-                style={{ marginLeft: "0.75rem", color: "var(--text-muted)", fontFamily: "ui-monospace, monospace", fontSize: "0.75rem", textDecoration: "none" }}
+                className="latest-result-banner__commit-link"
               >
-                commit: <span style={{ color: "var(--brand)", borderBottom: "1px dashed var(--brand)" }}>{latestResult.githubCommitSha.slice(0, 10)}</span>
+                commit: <span className="latest-result-banner__sha">{latestResult.githubCommitSha.slice(0, 10)}</span>
               </a>
             ) : (
-              <code style={{ marginLeft: "0.75rem", color: "var(--text-muted)", fontSize: "0.75rem" }}>
-                {latestResult.githubCommitSha.slice(0, 10)}
-              </code>
+              <code className="latest-result-banner__sha-plain">{latestResult.githubCommitSha.slice(0, 10)}</code>
             )}
           </p>
+
           <WorkflowStageList files={latestResult.workflowFiles} />
           <DeploymentProvisioningSummary result={latestResult.deploymentProvisioning} />
-          <div className="result-actions" style={{ margin: "0.25rem 0", display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
-            <a className="primary-button" href={latestResult.repoUrl} target="_blank" rel="noreferrer"
-               style={{ padding: "0.4rem 1rem", fontSize: "0.8rem", minHeight: "2.2rem", display: "inline-flex", alignItems: "center" }}>
+
+          <div className="latest-result-banner__actions">
+            <a className="latest-result-banner__action-btn latest-result-banner__action-btn--primary" href={latestResult.repoUrl} target="_blank" rel="noreferrer">
               Open Repository
             </a>
-            <a className="ghost-button" href={`${latestResult.repoUrl}/actions`} target="_blank" rel="noreferrer"
-               style={{ padding: "0.4rem 1rem", fontSize: "0.8rem", minHeight: "2.2rem", display: "inline-flex", alignItems: "center" }}>
+            <a className="latest-result-banner__action-btn" href={`${latestResult.repoUrl}/actions`} target="_blank" rel="noreferrer">
               Open Actions
             </a>
             <a
-              className="ghost-button"
+              className="latest-result-banner__action-btn"
               href={`${latestResult.repoUrl}/blob/main/${latestResult.workflowPath}`}
               target="_blank"
               rel="noreferrer"
-              style={{ padding: "0.4rem 1rem", fontSize: "0.8rem", minHeight: "2.2rem", display: "inline-flex", alignItems: "center" }}
             >
               View Workflow File
             </a>
           </div>
-          <p style={{ fontSize: "0.76rem", color: "var(--text-muted)", margin: 0, lineHeight: 1.4 }}>
+
+          <p className="latest-result-banner__footer">
             Workflow committed to{" "}
-            <code style={{ fontFamily: "ui-monospace, monospace", background: "rgba(0,0,0,0.15)", padding: "0.1rem 0.35rem", borderRadius: "0.3rem", border: "1px solid var(--border-soft)" }}>
-              {latestResult.workflowPath}
-            </code>{" "}
-            on <code style={{ fontFamily: "ui-monospace, monospace", background: "rgba(0,0,0,0.15)", padding: "0.1rem 0.35rem", borderRadius: "0.3rem", border: "1px solid var(--border-soft)" }}>main</code>.
-            Push to <code style={{ fontFamily: "ui-monospace, monospace", background: "rgba(0,0,0,0.15)", padding: "0.1rem 0.35rem", borderRadius: "0.3rem", border: "1px solid var(--border-soft)" }}>test</code> to trigger your first CI run.
+            <code className="file-path-label">{latestResult.workflowPath}</code>{" "}
+            on <code className="file-path-label">main</code>.
+            Push to <code className="file-path-label">test</code> to trigger your first CI run.
           </p>
         </div>
       ) : null}
 
       {/* ── Sub-tab bar ───────────────────────────────────────────── */}
-      <div className="subtab-bar" role="tablist" aria-label="Current tab sections" style={{
-        position: "relative",
-        display: "flex",
-        gap: "0.25rem",
-        padding: "0.25rem",
-        background: "rgba(15, 23, 42, 0.4)",
-        border: "1px solid var(--border-soft)",
-        borderRadius: "0.6rem",
-        width: "fit-content",
-        marginBottom: "1.25rem"
-      }}>
+      <div className="current-subtab-bar" role="tablist" aria-label="Current tab sections" data-tour="subtab-bar">
         {(["projects", "history"] as SubTab[]).map((tab) => (
           <button
             key={tab}
@@ -1221,44 +1192,24 @@ export function WorkflowCurrentTab({
             aria-controls={`subtab-panel-${tab}`}
             aria-selected={subTab === tab}
             onClick={() => setSubTab(tab)}
-            style={{
-              position: "relative",
-              padding: "0.4rem 1.1rem",
-              border: "none",
-              background: "transparent",
-              cursor: "pointer",
-              transition: "color 0.2s ease",
-              color: subTab === tab ? "var(--text-primary)" : "var(--text-secondary)",
-              zIndex: 1,
-              fontWeight: 600,
-              fontSize: "0.82rem"
-            }}
+            className={`current-subtab-btn${subTab === tab ? " active" : ""}`}
           >
             {subTab === tab && (
               <motion.span
                 layoutId="current-subtab-indicator"
-                style={{
-                  position: "absolute",
-                  inset: 0,
-                  borderRadius: "0.4rem",
-                  background: "rgba(56, 189, 248, 0.1)",
-                  border: "1px solid rgba(56, 189, 248, 0.25)",
-                  boxShadow: "0 0 12px rgba(56, 189, 248, 0.15)",
-                  zIndex: -1,
-                }}
+                className="current-subtab-indicator"
                 transition={{ type: "spring", stiffness: 380, damping: 30 }}
+                aria-hidden="true"
               />
             )}
-            {tab === "projects" ? "Projects" : "History"}
+            <span style={{ position: "relative", zIndex: 1 }}>
+              {tab === "projects" ? "Projects" : "History"}
+            </span>
             {tab === "projects" && !loadingProjects && projects.length > 0 && (
-              <span style={{ marginLeft: "0.35rem", color: subTab === "projects" ? "var(--brand)" : "var(--text-muted)", fontSize: "0.75rem" }}>
-                {projects.length}
-              </span>
+              <span className="current-subtab-count">{projects.length}</span>
             )}
             {tab === "history" && !loadingHistory && history.length > 0 && (
-              <span style={{ marginLeft: "0.35rem", color: subTab === "history" ? "var(--brand)" : "var(--text-muted)", fontSize: "0.75rem" }}>
-                {history.length}
-              </span>
+              <span className="current-subtab-count">{history.length}</span>
             )}
           </button>
         ))}
@@ -1294,7 +1245,7 @@ export function WorkflowCurrentTab({
               initial="hidden"
               animate="show"
             >
-              <aside className="project-list" aria-label="Provisioned projects">
+              <aside className="project-list" aria-label="Provisioned projects" data-tour="projects-list">
                 <div className="project-list-header">
                   <span>Projects</span>
                   <button className="ghost-button" type="button" onClick={onOpenSetup}>
@@ -1371,16 +1322,15 @@ export function WorkflowCurrentTab({
                   ) : null}
                 </div>
 
-                <div className="subtab-bar" role="tablist" aria-label="Project detail sections" style={{ marginBottom: "1rem" }}>
+                <div className="project-inner-tabs" role="tablist" aria-label="Project detail sections" data-tour="project-detail-tabs">
                   {PROJECT_DETAIL_TABS.map((tab) => (
                     <button
                       key={tab.id}
                       type="button"
                       role="tab"
                       aria-selected={projectDetailTab === tab.id}
-                      className={projectDetailTab === tab.id ? "primary-button" : "ghost-button"}
+                      className={`project-inner-tab${projectDetailTab === tab.id ? " active" : ""}`}
                       onClick={() => setProjectDetailTab(tab.id)}
-                      style={{ minHeight: "2rem", padding: "0.35rem 0.75rem", fontSize: "0.78rem" }}
                     >
                       {tab.label}
                     </button>
@@ -1436,13 +1386,12 @@ export function WorkflowCurrentTab({
                         </span>
                         {syncAvailable ? (
                           <button
-                            className="ghost-button"
+                            className="ghost-button target-action-btn"
                             type="button"
                             disabled={syncingProjectId === selectedProject.id}
                             onClick={handleProjectSync}
-                            style={{ minHeight: "2rem", padding: "0.35rem 0.75rem", fontSize: "0.78rem" }}
                           >
-                            {syncingProjectId === selectedProject.id ? "Syncing..." : "Sync now"}
+                            {syncingProjectId === selectedProject.id ? "Syncing…" : "Sync now"}
                           </button>
                         ) : null}
                       </div>
@@ -1459,7 +1408,7 @@ export function WorkflowCurrentTab({
                     ) : null}
 
                     {selectedOverview?.health.checks.length ? (
-                      <div className="env-metadata-list">
+                      <div className="env-metadata-list" data-tour="sync-health">
                         {selectedOverview.health.checks.map((check) => (
                           <div key={check.key} className={`env-metadata-row ${check.status === "error" ? "failed" : "provisioned"}`}>
                             <span>{check.label}</span>

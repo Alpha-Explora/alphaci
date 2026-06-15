@@ -23,6 +23,7 @@ import { useProvisionedProjects } from "@/hooks/use-provisioned-projects";
 import { useWorkflowCatalog } from "@/hooks/use-workflow-catalog";
 import { useWorkflowHistory } from "@/hooks/use-workflow-history";
 import { useOnboardingTour } from "@/hooks/use-onboarding-tour";
+import { useCurrentProjectsTour } from "@/hooks/use-current-projects-tour";
 
 import { WorkflowAllTab } from "./workflow-all-tab";
 import {
@@ -74,6 +75,13 @@ export function WorkflowBuilder({ guest = false, session, onboardingCompleted }:
     session: session ?? null,
     guest,
     isSetupTabActive: activeTab === "setup",
+    onboardingCompleted,
+  });
+
+  const { startTour: startCurrentProjectsTour } = useCurrentProjectsTour({
+    session: session ?? null,
+    guest,
+    isCurrentTabActive: activeTab === "current",
     onboardingCompleted,
   });
 
@@ -371,6 +379,22 @@ export function WorkflowBuilder({ guest = false, session, onboardingCompleted }:
                   style={{ background: "none", border: "none", cursor: "pointer", padding: 0 }}
                   aria-label="Show guided tour for the Create Project form"
                   onClick={startTour}
+                >
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <circle cx="12" cy="12" r="10" />
+                    <line x1="12" y1="8" x2="12" y2="12" />
+                    <line x1="12" y1="16" x2="12.01" y2="16" />
+                  </svg>
+                  Show guide
+                </button>
+              ) : null}
+              {!guest && activeTab === "current" ? (
+                <button
+                  type="button"
+                  className="gh-app-install-link"
+                  style={{ background: "none", border: "none", cursor: "pointer", padding: 0 }}
+                  aria-label="Show guided tour for Current Projects"
+                  onClick={startCurrentProjectsTour}
                 >
                   <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                     <circle cx="12" cy="12" r="10" />
