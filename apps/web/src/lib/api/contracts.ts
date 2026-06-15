@@ -990,6 +990,16 @@ export interface FriendlyMessage {
   title: string;
   detail: string;
   hint: string;
+  /**
+   * Optional list of concrete failure details already humanized by the backend.
+   * Each item is one discrete failure: a failing test, a lint rule violation,
+   * or a vulnerable dependency. Rendered as a friendly visual list inside the
+   * message card — never as raw log output.
+   *
+   * `label`  — the primary identifier (test name, rule name, package name)
+   * `sub`    — optional secondary context (failure reason, file:line, severity)
+   */
+  items?: { label: string; sub?: string }[];
 }
 
 export interface StageReport {
@@ -998,6 +1008,8 @@ export interface StageReport {
   friendlyMessages: FriendlyMessage[];
   githubRunUrl: string;
   updatedAt: string;
+  /** Raw CI log output for this stage. Present only when the backend includes it. */
+  rawLogs?: string;
 }
 
 export interface RunGroup {

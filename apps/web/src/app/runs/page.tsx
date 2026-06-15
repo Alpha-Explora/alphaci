@@ -10,15 +10,17 @@ import { FlowBackground } from "@/components/layout/flow-background";
 import { PipelineLoader } from "@/components/layout/pipeline-loader";
 import { useAuthSession } from "@/hooks/use-auth-session";
 import { logout, getRuns } from "@/lib/api/client";
+import { ApiError } from "@/lib/api/request";
 import type { RunGroup } from "@/lib/api/contracts";
 import { isGuest } from "@/lib/auth/subscription";
 import { RunCard } from "@/components/product/runs/RunCard";
 import { RunsSkeleton } from "@/components/product/runs/RunsSkeleton";
 
-/* ── Use mock fixture until BE is live ──────────────────────────────────────
-   Swap the line below to `false` once GET /api/v1/ci/runs is deployed.
+/* ── Mock toggle ─────────────────────────────────────────────────────────────
+   Set NEXT_PUBLIC_USE_MOCK=true in .env.local to use the local fixture instead
+   of the real backend. Defaults to false (real API) when the var is absent.
 ─────────────────────────────────────────────────────────────────────────── */
-const USE_MOCK = true;
+const USE_MOCK = process.env.NEXT_PUBLIC_USE_MOCK === "true";
 
 /* ── Motion constants ────────────────────────────────────────────────────── */
 
@@ -163,7 +165,21 @@ function RunsContent({ guest, session, onLogout, isLoggingOut, prefersReducedMot
 
     getRuns(repoFullName)
       .then((res) => { setRuns(res.runs); })
-      .catch(() => setError("Could not load pipeline runs. Check your connection and try again."))
+      .catch((err: unknown) => {
+        if (err instanceof ApiError) {
+          if (err.status === 401) {
+            setError("Your session expired. Please sign in again.");
+          } else if (err.status === 403) {
+            setError("You don't have access to this repository's runs.");
+          } else if (err.status === 404) {
+            setError("This repository hasn't been set up for CI yet.");
+          } else {
+            setError("Could not load pipeline runs. Check your connection and try again.");
+          }
+        } else {
+          setError("Could not load pipeline runs. Check your connection and try again.");
+        }
+      })
       .finally(() => setLoading(false));
 
     return undefined;

@@ -97,6 +97,66 @@ export function MessageCard({ message, githubRunUrl }: MessageCardProps) {
         {message.detail}
       </p>
 
+      {/* Failure items list */}
+      {message.items && message.items.length > 0 && (
+        <ul
+          role="list"
+          style={{
+            margin: "0.15rem 0 0",
+            padding: 0,
+            paddingLeft: "1.1rem",
+            listStyle: "none",
+            display: "grid",
+            gap: "0.25rem",
+          }}
+        >
+          {message.items.map((item, i) => (
+            <li
+              key={i}
+              style={{
+                display: "flex",
+                alignItems: "baseline",
+                gap: "0.45rem",
+                fontSize: "0.78rem",
+                lineHeight: 1.45,
+              }}
+            >
+              {/* Severity-colored dot marker */}
+              <span
+                aria-hidden="true"
+                style={{
+                  flexShrink: 0,
+                  width: "5px",
+                  height: "5px",
+                  borderRadius: "50%",
+                  background: colors.icon,
+                  opacity: 0.65,
+                  marginTop: "0.38em",
+                }}
+              />
+              <span style={{ minWidth: 0 }}>
+                <span style={{ color: "var(--text-primary)", fontWeight: 500 }}>
+                  {item.label}
+                </span>
+                {item.sub && (
+                  <span
+                    style={{
+                      marginLeft: "0.4rem",
+                      color: "var(--text-muted)",
+                      fontFamily: "ui-monospace, 'Cascadia Code', 'Fira Code', monospace",
+                      fontSize: "0.73rem",
+                      letterSpacing: "0.01em",
+                    }}
+                  >
+                    {item.sub}
+                  </span>
+                )}
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+
       {/* Hint */}
       {message.hint && (
         <p style={{

@@ -96,9 +96,23 @@ export const MOCK_RUNS: RunsResponse = {
               severity: "error",
               title: "3 tests failed",
               detail:
-                "UserProfile.test.tsx: Expected 'John' but received undefined. CartTotal.test.tsx: TypeError — Cannot read properties of null. CheckoutFlow.test.tsx: Async timeout after 5000ms.",
+                "Jest completed with 3 failures across 2 test suites. The failures are listed below.",
               hint:
                 "Run `npm test -- --watch` locally to debug. Check that mocks return the shape your component expects.",
+              items: [
+                {
+                  label: "UserProfile › renders user display name",
+                  sub: "Expected 'John' but received undefined",
+                },
+                {
+                  label: "CartTotal › calculates discount correctly",
+                  sub: "TypeError: Cannot read properties of null (reading 'price')",
+                },
+                {
+                  label: "CheckoutFlow › submits order on confirmation",
+                  sub: "Async timeout after 5000ms — awaited promise never resolved",
+                },
+              ],
             },
             {
               severity: "warning",
@@ -107,6 +121,20 @@ export const MOCK_RUNS: RunsResponse = {
                 "Statement coverage is 61% (threshold: 80%). Branches coverage is 54% (threshold: 80%).",
               hint:
                 "Add tests for the new checkout module. Focus on the untested branch paths in `src/checkout/`.",
+              items: [
+                {
+                  label: "no-unused-vars",
+                  sub: "src/checkout/CartContext.tsx:42",
+                },
+                {
+                  label: "react-hooks/exhaustive-deps",
+                  sub: "src/checkout/useOrderSummary.ts:18",
+                },
+                {
+                  label: "@typescript-eslint/no-explicit-any",
+                  sub: "src/utils/apiAdapter.ts:7",
+                },
+              ],
             },
           ],
         },

@@ -106,6 +106,66 @@ export function RunPipeline({ run, reduced }: RunPipelineProps) {
                   />
                 ))
               )}
+
+              {/* Raw logs — rendered only when the backend provides them */}
+              {expandedStageData.rawLogs && (
+                <details
+                  style={{
+                    marginTop: "0.35rem",
+                    border: "1px solid var(--border-soft)",
+                    borderRadius: "0.5rem",
+                    overflow: "hidden",
+                  }}
+                >
+                  <summary
+                    style={{
+                      padding: "0.5rem 0.75rem",
+                      fontSize: "0.76rem",
+                      fontWeight: 600,
+                      color: "var(--text-muted)",
+                      cursor: "pointer",
+                      userSelect: "none",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "0.4rem",
+                      listStyle: "none",
+                      background: "rgba(255,255,255,0.02)",
+                    }}
+                  >
+                    <svg
+                      width="11"
+                      height="11"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      aria-hidden="true"
+                    >
+                      <polyline points="4 17 10 11 4 5" />
+                      <line x1="12" y1="19" x2="20" y2="19" />
+                    </svg>
+                    View raw logs
+                  </summary>
+                  <pre
+                    style={{
+                      margin: 0,
+                      padding: "0.75rem",
+                      fontSize: "0.72rem",
+                      lineHeight: 1.6,
+                      fontFamily: "ui-monospace, 'Cascadia Code', 'Fira Code', monospace",
+                      color: "var(--text-secondary)",
+                      background: "rgba(0,0,0,0.3)",
+                      overflowX: "auto",
+                      whiteSpace: "pre-wrap",
+                      wordBreak: "break-word",
+                    }}
+                  >
+                    {expandedStageData.rawLogs}
+                  </pre>
+                </details>
+              )}
             </div>
           </motion.div>
         )}
