@@ -9,7 +9,7 @@ import { FlowBackground } from "@/components/layout/flow-background";
 import { PipelineLogo } from "@/components/layout/pipeline-logo";
 import { useAuthSession } from "@/hooks/use-auth-session";
 import { createGitHubLoginUrl, warmupBackend } from "@/lib/api/client";
-import { hasActiveSubscription } from "@/lib/auth/subscription";
+import { getAuthenticatedRedirectPath } from "@/lib/auth/subscription";
 
 interface OAuthAuthPageProps {
   mode: "login" | "signup";
@@ -120,11 +120,8 @@ export function OAuthAuthPage({
 
   useEffect(() => {
     if (status !== "signed-in") return;
-    if (hasActiveSubscription(session)) {
-      router.replace(nextPath);
-      return;
-    }
-    router.replace("/subscribe");
+    const redirectPath = getAuthenticatedRedirectPath(session, nextPath);
+    if (redirectPath) router.replace(redirectPath);
   }, [nextPath, router, session, status]);
 
   function handleCardPointerMove(event: MouseEvent<HTMLDivElement>) {

@@ -1,5 +1,9 @@
 import type { AuthMeResponse } from "@/lib/api/contracts";
-import { hasActiveSubscription, isGuest } from "@/lib/auth/subscription";
+import {
+  getAuthenticatedRedirectPath,
+  hasActiveSubscription,
+  isGuest,
+} from "@/lib/auth/subscription";
 
 const baseSession: AuthMeResponse = {
   authenticated: true,
@@ -115,5 +119,45 @@ describe("isGuest", () => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       isGuest(buildSession({ subscription: { plan: "enterprise" as any, status: "active", provider: "mock", updatedAt: "2026-01-01T00:00:00.000Z" } })),
     ).toBe(false);
+  });
+});
+
+describe("getAuthenticatedRedirectPath", () => {
+  it("sends authenticated free users to the requested app path", () => {
+    expect(
+      getAuthenticatedRedirectPath(
+        buildSession({
+          subscription: {
+            plan: "free",
+            status: "active",
+            provider: "mock",
+            updatedAt: "2026-01-01T00:00:00.000Z",
+          },
+        }),
+        "/home",
+      ),
+    ).toBe("/home");
+  });
+
+  it("sends inactive paid users to subscription management", () => {
+    expect(
+      getAuthenticatedRedirectPath(
+        buildSession({
+          subscription: {
+            plan: "pro",
+            status: "inactive",
+            provider: "mock",
+            updatedAt: "2026-01-01T00:00:00.000Z",
+          },
+        }),
+        "/home",
+      ),
+    ).toBe("/subscribe");
+  });
+
+  it("returns null for unauthenticated users", () => {
+    expect(
+      getAuthenticatedRedirectPath(buildSession({ authenticated: false }), "/home"),
+    ).toBeNull();
   });
 });

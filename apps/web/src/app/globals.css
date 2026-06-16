@@ -384,6 +384,505 @@ h1, h2, h3 {
   overflow-x: clip;
 }
 
+.public-site-nav {
+  position: relative;
+  z-index: 50;
+  display: grid;
+  grid-template-columns: minmax(12rem, 1fr) auto minmax(12rem, 1fr);
+  align-items: center;
+  gap: 1.5rem;
+  width: min(100%, 1320px);
+  margin: 0 auto;
+  padding: 1.25rem clamp(1rem, 3vw, 2rem);
+}
+
+.public-site-nav--fixed {
+  position: fixed;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(100%, 1440px);
+}
+
+.public-site-brand,
+.public-site-links,
+.public-site-actions {
+  display: inline-flex;
+  align-items: center;
+}
+
+.public-site-brand {
+  gap: 0.65rem;
+  color: var(--text-primary);
+  font-size: 0.98rem;
+  font-weight: 720;
+  line-height: 1;
+  text-decoration: none;
+}
+
+.public-site-brand-mark {
+  display: inline-grid;
+  width: 2rem;
+  height: 2rem;
+  place-items: center;
+  border: 1px solid var(--border-soft);
+  border-radius: 0.65rem;
+  background: rgba(15, 23, 42, 0.64);
+}
+
+.public-site-links {
+  justify-content: center;
+  gap: clamp(1rem, 3vw, 2.4rem);
+}
+
+.public-site-links a,
+.public-site-login {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  font-weight: 650;
+  font-family: var(--font-dash-body), 'Plus Jakarta Sans', sans-serif;
+  text-decoration: none;
+}
+
+.public-site-links a:hover,
+.public-site-links a:focus-visible,
+.public-site-links a[aria-current="page"],
+.public-site-login:hover,
+.public-site-login:focus-visible {
+  color: var(--text-primary);
+}
+
+.public-site-actions {
+  justify-self: end;
+  gap: 0.75rem;
+}
+
+.public-site-cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.35rem;
+  padding: 0 1rem;
+  border: 1px solid var(--border-brand);
+  border-radius: 0.72rem;
+  background: var(--brand);
+  color: #020617;
+  font-size: 0.9rem;
+  font-weight: 720;
+  font-family: var(--font-dash-body), 'Plus Jakarta Sans', sans-serif;
+  text-decoration: none;
+}
+
+@media (max-width: 820px) {
+  .public-site-nav {
+    grid-template-columns: 1fr auto;
+    align-items: start;
+    gap: 0.9rem;
+  }
+
+  .public-site-links {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    justify-content: flex-start;
+    width: 100%;
+    overflow-x: auto;
+    padding-bottom: 0.1rem;
+  }
+}
+
+@media (max-width: 520px) {
+  .public-site-nav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.85rem;
+  }
+
+  .public-site-links {
+    order: 3;
+    width: 100%;
+  }
+
+  .public-site-actions {
+    margin-left: auto;
+  }
+
+  .public-site-login {
+    display: none;
+  }
+
+  .public-site-brand {
+    font-size: 0.94rem;
+  }
+}
+
+.public-guide-shell {
+  position: relative;
+  min-height: 100dvh;
+  overflow-x: hidden;
+  background: var(--bg-base);
+  color: var(--text-primary);
+  font-family: var(--font-dash-body), 'Plus Jakarta Sans', sans-serif;
+}
+
+.public-guide-content {
+  position: relative;
+  z-index: 1;
+  width: min(100%, 1320px);
+  margin: 0 auto;
+  padding: clamp(2.25rem, 5vw, 4.5rem) clamp(1rem, 3vw, 2rem) 4rem;
+}
+
+.public-guide-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 2rem;
+  margin-bottom: clamp(1.8rem, 4vw, 3rem);
+}
+
+.public-guide-hero h1 {
+  max-width: 58rem;
+  margin: 0;
+  color: var(--text-primary);
+  font-size: clamp(2.8rem, 7vw, 5.8rem);
+  font-weight: 680;
+  letter-spacing: 0;
+  line-height: 0.98;
+}
+
+.public-guide-hero p {
+  max-width: 46rem;
+  margin: 1rem 0 0;
+  color: var(--text-secondary);
+  font-size: clamp(1rem, 1.45vw, 1.22rem);
+  font-family: var(--font-dash-body), 'Plus Jakarta Sans', sans-serif;
+  line-height: 1.65;
+}
+
+.public-guide-actions,
+.public-guide-final > div {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.9rem;
+  flex-wrap: wrap;
+}
+
+.public-guide-link {
+  color: var(--text-secondary);
+  font-size: 0.94rem;
+  font-weight: 680;
+  font-family: var(--font-dash-body), 'Plus Jakarta Sans', sans-serif;
+  text-decoration: none;
+}
+
+.public-guide-link:hover,
+.public-guide-link:focus-visible {
+  color: var(--text-primary);
+}
+
+.public-guide-status {
+  max-width: 42rem;
+  margin: 0 0 1.5rem;
+  color: var(--text-secondary);
+}
+
+.public-guide-workflow {
+  overflow: hidden;
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-card);
+  background:
+    linear-gradient(135deg, rgba(30, 64, 111, 0.5), rgba(15, 23, 42, 0.8) 44%, rgba(6, 78, 118, 0.34)),
+    rgba(15, 23, 42, 0.7);
+  box-shadow: var(--shadow-card);
+}
+
+.public-guide-workflow-head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 1.5rem;
+  padding: clamp(1.2rem, 2.5vw, 1.8rem);
+  border-bottom: 1px solid rgba(148, 163, 184, 0.18);
+}
+
+.public-guide-workflow-head p {
+  margin: 0 0 0.45rem;
+  color: var(--brand);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.78rem;
+  font-weight: 740;
+}
+
+.public-guide-workflow-head h2,
+.public-guide-flow h2,
+.public-guide-final h2 {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: clamp(1.2rem, 2vw, 1.65rem);
+  font-weight: 720;
+  letter-spacing: 0;
+  line-height: 1.15;
+}
+
+.public-guide-branch-flow {
+  display: inline-grid;
+  grid-template-columns: auto 2.75rem auto 2.75rem auto;
+  align-items: center;
+  min-height: 2.4rem;
+  padding: 0.35rem 0.55rem;
+  border: 1px solid rgba(75, 174, 255, 0.3);
+  border-radius: 0.75rem;
+  background: rgba(7, 12, 27, 0.48);
+  color: #d7e5f7;
+  font-size: 0.82rem;
+  font-weight: 760;
+}
+
+.public-guide-branch-flow i {
+  display: block;
+  width: 100%;
+  height: 1px;
+  background: linear-gradient(90deg, rgba(75, 174, 255, 0.2), rgba(75, 174, 255, 0.78));
+}
+
+.public-guide-workflow-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(20rem, 0.85fr);
+  gap: 1px;
+  background: rgba(148, 163, 184, 0.16);
+}
+
+.public-guide-step-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1px;
+}
+
+.public-guide-step {
+  position: relative;
+  min-height: 13rem;
+  padding: clamp(1.1rem, 2vw, 1.5rem);
+  background: rgba(12, 20, 39, 0.72);
+}
+
+.public-guide-step::after {
+  content: "";
+  position: absolute;
+  right: 1.4rem;
+  top: 1.8rem;
+  width: clamp(2.75rem, 5vw, 4.8rem);
+  height: 1px;
+  background: linear-gradient(90deg, rgba(75, 174, 255, 0.18), rgba(75, 174, 255, 0.72));
+}
+
+.public-guide-step-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: clamp(2rem, 4vw, 3.15rem);
+}
+
+.public-guide-step-top span {
+  color: var(--brand);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.8rem;
+  font-weight: 740;
+}
+
+.public-guide-step-top strong {
+  color: #d7e5f7;
+  font-size: 0.78rem;
+  font-weight: 760;
+}
+
+.public-guide-step h3 {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: clamp(1.08rem, 1.8vw, 1.42rem);
+  font-weight: 720;
+  letter-spacing: 0;
+  line-height: 1.18;
+}
+
+.public-guide-step p,
+.public-guide-flow p {
+  margin: 0.8rem 0 0;
+  color: #b6c2d6;
+  font-size: 0.96rem;
+  font-family: var(--font-dash-body), 'Plus Jakarta Sans', sans-serif;
+  line-height: 1.6;
+}
+
+.public-guide-workflow-panel {
+  display: flex;
+  min-height: 100%;
+  flex-direction: column;
+  padding: clamp(1rem, 2vw, 1.35rem);
+  background: rgba(4, 9, 22, 0.72);
+}
+
+.public-guide-panel-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  padding-bottom: 0.85rem;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.18);
+}
+
+.public-guide-panel-top span {
+  color: #d7e5f7;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.82rem;
+  font-weight: 760;
+}
+
+.public-guide-panel-top strong {
+  color: #77d6a3;
+  font-size: 0.78rem;
+  font-weight: 760;
+}
+
+.public-guide-workflow-panel pre {
+  overflow: auto;
+  margin: 0;
+  color: #bcd2eb;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: clamp(0.76rem, 1.05vw, 0.86rem);
+  line-height: 1.75;
+  white-space: pre;
+}
+
+.public-guide-flow,
+.public-guide-final {
+  display: grid;
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+  align-items: center;
+  gap: clamp(1.5rem, 4vw, 3rem);
+  margin-top: 2rem;
+  padding: clamp(1.4rem, 3vw, 2rem);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-card);
+  background: rgba(15, 23, 42, 0.58);
+  box-shadow: var(--shadow-card);
+}
+
+.public-guide-final {
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+@media (max-width: 920px) {
+  .public-guide-hero,
+  .public-guide-flow,
+  .public-guide-final {
+    grid-template-columns: 1fr;
+    align-items: start;
+  }
+
+  .public-guide-workflow-head,
+  .public-guide-workflow-body {
+    grid-template-columns: 1fr;
+  }
+
+  .public-guide-branch-flow {
+    width: min(100%, 20rem);
+  }
+}
+
+@media (max-width: 640px) {
+  .raw-hero-grid {
+    display: block !important;
+    min-height: auto !important;
+    padding: 7.25rem 1rem 3rem !important;
+    overflow: hidden !important;
+  }
+
+  .raw-hero-content {
+    transform: none !important;
+    max-width: 100% !important;
+  }
+
+  .raw-hero-content h2 {
+    font-size: clamp(2.6rem, 13vw, 3.6rem) !important;
+    line-height: 1.02 !important;
+  }
+
+  .raw-hero-content p {
+    max-width: 21rem !important;
+    font-family: var(--font-dash-body), 'Plus Jakarta Sans', sans-serif !important;
+    color: #b6c2d6 !important;
+    font-size: 1rem !important;
+    line-height: 1.65 !important;
+  }
+
+  .raw-hero-actions {
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+
+  .raw-hero-actions a {
+    justify-content: center !important;
+    width: 100% !important;
+  }
+
+  .raw-hero-stats {
+    display: none !important;
+  }
+
+  .raw-hero-visual {
+    display: none !important;
+  }
+
+  .hero-massive-text {
+    display: none !important;
+  }
+
+  .scroll-hint {
+    display: none !important;
+  }
+
+  .landing-page-shell .scroll-hint,
+  .landing-page-shell .scroll-hint-label,
+  .landing-page-shell .scroll-hint-arrow {
+    display: none !important;
+  }
+
+  .public-guide-content {
+    padding-top: 2.25rem;
+  }
+
+  .public-guide-step-list {
+    grid-template-columns: 1fr;
+  }
+
+  .public-guide-step {
+    min-height: auto;
+  }
+
+  .public-guide-step::after {
+    right: auto;
+    left: 1.45rem;
+    top: 3.2rem;
+    width: 1px;
+    height: 2.1rem;
+    background: linear-gradient(180deg, rgba(75, 174, 255, 0.68), rgba(75, 174, 255, 0.12));
+  }
+
+  .public-guide-step-top {
+    margin-bottom: 1.25rem;
+  }
+
+  .public-guide-branch-flow {
+    grid-template-columns: auto 1fr auto 1fr auto;
+  }
+
+  .public-guide-workflow-panel pre {
+    max-height: 18rem;
+  }
+}
+
 .landing-content {
   position: relative;
   z-index: 1;

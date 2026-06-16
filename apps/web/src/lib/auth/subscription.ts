@@ -8,3 +8,12 @@ export function hasActiveSubscription(session: AuthMeResponse | null | undefined
 export function isGuest(session: AuthMeResponse | null | undefined): boolean {
   return !session?.authenticated;
 }
+
+export function getAuthenticatedRedirectPath(
+  session: AuthMeResponse | null | undefined,
+  nextPath: string,
+): string | null {
+  if (!session?.authenticated) return null;
+  if (session.subscription.plan === "free") return nextPath;
+  return hasActiveSubscription(session) ? nextPath : "/subscribe";
+}

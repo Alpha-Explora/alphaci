@@ -1,12 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { motion, useReducedMotion, useScroll, useSpring, useTransform, useMotionValueEvent, useAnimation } from "framer-motion";
+import { motion, useReducedMotion, useScroll, useSpring, useTransform } from "framer-motion";
 import type { MotionValue } from "framer-motion";
 import { useRef, useState, useEffect } from "react";
 
 import { FlowBackground } from "@/components/layout/flow-background";
-import { PipelineLogo } from "@/components/layout/pipeline-logo";
+import { PublicSiteNav } from "@/components/layout/public-site-nav";
 
 import { useAuthSession } from "@/hooks/use-auth-session";
 import { hasActiveSubscription } from "@/lib/auth/subscription";
@@ -30,15 +30,6 @@ interface PipelineStage {
   status: StageStatus;
   duration: string;
   icon: React.ReactNode;
-}
-
-interface NavLinks {
-  primaryHref: string;
-  primaryLabel: string;
-  appHref: string;
-  appLabel: string;
-  navUtilityHref: string;
-  navUtilityLabel: string;
 }
 
 /* ── Data ──────────────────────────────────────────────────────────────────── */
@@ -637,32 +628,6 @@ function ActivityStrip() {
 
 /* ── Nav link resolver ───────────────────────────────────────────────────── */
 
-function resolveNavLinks(status: string, hasSubscription: boolean): NavLinks {
-  if (status !== "signed-in") {
-    return {
-      primaryHref:     "/signup",
-      primaryLabel:    "Sign up with GitHub",
-      appHref:         "/subscribe",
-      appLabel:        "Pricing",
-      navUtilityHref:  "/login",
-      navUtilityLabel: "Login",
-    };
-  }
-
-  const primaryHref  = hasSubscription ? "/home"                : "/subscribe";
-  const primaryLabel = hasSubscription ? "Open your workspace"  : "Activate plan";
-
-  return {
-    primaryHref,
-    primaryLabel,
-    appHref:         "/home",
-    appLabel:        "Dashboard",
-    navUtilityHref:  "/home",
-    navUtilityLabel: "Home",
-  };
-}
-
-
 /* ── Lusion-style Scroll Progress Line ──────────────────────────────────── */
 
 const SECTION_LABELS = ["01", "02", "03", "04", "05"];
@@ -834,6 +799,7 @@ function ScrollHint({ progress }: Readonly<{ progress: MotionValue<number> }>) {
 
   return (
     <motion.div
+      className="scroll-hint"
       style={{
         position: "fixed",
         bottom: "2.5rem",
@@ -894,7 +860,6 @@ export default function LandingPage() {
   const hasSubscription = hasActiveSubscription(session);
 
   const heroRef = useRef<HTMLDivElement>(null);
-  const navRef = useRef<HTMLElement>(null);
 
   // Page-level scroll progress bar
   const { scrollYProgress: pageScrollYProgress } = useScroll();
@@ -906,66 +871,8 @@ export default function LandingPage() {
   const marqueeX = useTransform(pageScrollYProgress, [0, 0.5], ["5%", "-15%"]);
   const marqueeOpacity = useTransform(pageScrollYProgress, [0, 0.1, 0.2], [0, 0, 1]);
 
-  // Navbar auto-hide logic
-  const navControls = useAnimation();
-  const { scrollY } = useScroll();
-  const isHoveringNav = useRef(false);
-  const navState = useRef<"visible" | "hidden">("visible");
-
-  // Run initial entrance animation
-  useEffect(() => {
-    if (!prefersReducedMotion) {
-      navControls.start({ y: 0, opacity: 1, transition: { duration: 0.8, ease: [0.25, 1, 0.5, 1], delay: 0.2 } });
-    } else {
-      navControls.start({ y: 0, opacity: 1 });
-    }
-  }, [navControls, prefersReducedMotion]);
-
-  useMotionValueEvent(scrollY, "change", (latest) => {
-    const nav = navRef.current;
-    if (nav) nav.dataset.scrolled = latest > 10 ? "true" : "false";
-
-    if (isHoveringNav.current) return;
-
-    if (latest > 150 && navState.current !== "hidden") {
-      navState.current = "hidden";
-      navControls.start({ y: "-100%", transition: { type: "spring", stiffness: 300, damping: 30 } });
-    } else if (latest <= 150 && navState.current !== "visible") {
-      navState.current = "visible";
-      navControls.start({ y: 0, transition: { type: "spring", stiffness: 300, damping: 30 } });
-    }
-  });
-
-  useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      const isHovering = e.clientY < 120;
-
-      if (isHovering && !isHoveringNav.current) {
-        isHoveringNav.current = true;
-        if (navState.current !== "visible") {
-          navState.current = "visible";
-          navControls.start({ y: 0, transition: { type: "spring", stiffness: 400, damping: 35 } });
-        }
-      } else if (!isHovering && isHoveringNav.current) {
-        isHoveringNav.current = false;
-        if (window.scrollY > 150 && navState.current !== "hidden") {
-          navState.current = "hidden";
-          navControls.start({ y: "-100%", transition: { type: "spring", stiffness: 300, damping: 30 } });
-        }
-      }
-    };
-    window.addEventListener("mousemove", handleMouseMove);
-    return () => window.removeEventListener("mousemove", handleMouseMove);
-  }, [navControls]);
-
-  const {
-    primaryHref,
-    primaryLabel,
-    appHref,
-    appLabel,
-    navUtilityHref,
-    navUtilityLabel,
-  } = resolveNavLinks(status, hasSubscription);
+  const primaryHref = status === "signed-in" ? (hasSubscription ? "/home" : "/subscribe") : "/signup";
+  const primaryLabel = status === "signed-in" ? (hasSubscription ? "Open your workspace" : "View plans") : "Sign up with GitHub";
 
   return (
     <main className="landing-page-shell">
@@ -988,74 +895,7 @@ export default function LandingPage() {
         </>
       )}
 
-      {/* Navigation */}
-      <motion.header
-        ref={navRef}
-        className="marketing-nav marketing-nav-enhanced"
-        style={{ position: "fixed", top: 0, left: 0, right: 0, padding: "0 clamp(1.5rem, 5vw, 3rem)", height: "80px", borderBottom: "none", background: "transparent" }}
-        initial={prefersReducedMotion ? undefined : { y: -100, opacity: 0 }}
-        animate={navControls}
-      >
-        <Link className="brand-mark" href="/" aria-label="FlowCI Studio home" style={{ gap: "0.75rem", flex: 1, alignItems: "center" }}>
-          <PipelineLogo size={32} />
-          <span style={{ fontWeight: 800, fontSize: "1.75rem", color: "var(--text-primary)", letterSpacing: "-0.02em", lineHeight: 1 }}>
-            FlowCI
-          </span>
-          <span style={{ fontWeight: 600, fontSize: "1.75rem", color: "var(--text-primary)", letterSpacing: "-0.01em", lineHeight: 1 }}>
-            Studio
-          </span>
-        </Link>
-
-        {/* Removed center nav links to match Lusion minimalism */}
-
-        <div className="landing-nav-actions" style={{ gap: "0.5rem", flex: 1, justifyContent: "flex-end", display: "flex" }}>
-          {/* Lusion style pill button for Login */}
-          <Link
-            href={navUtilityHref}
-            style={{
-              fontSize: "0.75rem",
-              fontWeight: 700,
-              color: "var(--text-primary)",
-              textDecoration: "none",
-              textTransform: "uppercase",
-              letterSpacing: "0.1em",
-              padding: "0.6rem 1.5rem",
-              borderRadius: "999px",
-              border: "1px solid rgba(255, 255, 255, 0.15)",
-              transition: "background 0.2s ease",
-            }}
-            onMouseEnter={(e) => { (e.currentTarget as HTMLAnchorElement).style.background = "rgba(255, 255, 255, 0.05)"; }}
-            onMouseLeave={(e) => { (e.currentTarget as HTMLAnchorElement).style.background = "transparent"; }}
-          >
-            {navUtilityLabel}
-          </Link>
-
-          {/* Lusion style pill CTA */}
-          <Link
-            href={appHref}
-            style={{
-              fontSize: "0.75rem",
-              fontWeight: 700,
-              color: "#000",
-              background: "var(--text-primary)",
-              textDecoration: "none",
-              textTransform: "uppercase",
-              letterSpacing: "0.1em",
-              padding: "0.6rem 1.5rem",
-              borderRadius: "999px",
-              display: "flex",
-              alignItems: "center",
-              gap: "0.4rem",
-              transition: "transform 0.2s ease, background 0.2s ease",
-            }}
-            onMouseEnter={(e) => { (e.currentTarget as HTMLAnchorElement).style.transform = "scale(1.05)"; }}
-            onMouseLeave={(e) => { (e.currentTarget as HTMLAnchorElement).style.transform = "scale(1)"; }}
-          >
-            <span style={{ width: "4px", height: "4px", background: "#000", borderRadius: "50%" }} />
-            {appLabel}
-          </Link>
-        </div>
-      </motion.header>
+      <PublicSiteNav active="features" fixed />
 
       <div id="main-content">
         {/* ── SECTION 1: Asymmetric Split Hero ──────────────────────────────── */}
@@ -1123,6 +963,7 @@ export default function LandingPage() {
             </motion.p>
 
             <motion.div
+              className="raw-hero-actions"
               variants={prefersReducedMotion ? undefined : {
                 hidden: { opacity: 0, y: 30, scale: 0.95 },
                 visible: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.7, ease: [0.25, 1, 0.5, 1] } }
@@ -1139,6 +980,7 @@ export default function LandingPage() {
 
             {/* Stats row */}
             <motion.div
+              className="raw-hero-stats"
               variants={prefersReducedMotion ? undefined : {
                 hidden: { opacity: 0, y: 20 },
                 visible: { opacity: 1, y: 0, transition: { duration: 0.8, ease: [0.25, 1, 0.5, 1] } }
@@ -1164,6 +1006,7 @@ export default function LandingPage() {
 
           {/* RIGHT COLUMN — Multi-layer floating dashboard */}
           <motion.div
+            className="raw-hero-visual"
             style={prefersReducedMotion ? { position: "relative", zIndex: 10, marginTop: "2rem", gridColumn: "2 / 3", gridRow: "1 / 2" } : {
               y: dashboardY,
               position: "relative",
@@ -1739,32 +1582,32 @@ export default function LandingPage() {
               {/* Plan badge */}
               <div style={{ display: "inline-flex", alignItems: "center", gap: "0.4rem", padding: "0.25rem 0.75rem", borderRadius: "999px", background: "linear-gradient(135deg, rgba(56,189,248,0.12), rgba(52,211,153,0.08))", border: "1px solid rgba(56,189,248,0.22)", marginBottom: "1.75rem", width: "fit-content" }}>
                 <span aria-hidden="true" style={{ width: "5px", height: "5px", borderRadius: "50%", background: "var(--brand-accent)", animation: prefersReducedMotion ? undefined : "flowPulse 1.8s ease-in-out infinite" }} />
-                <span style={{ fontSize: "0.62rem", fontWeight: 700, textTransform: "uppercase" as const, letterSpacing: "0.12em", color: "var(--brand)", fontFamily: "ui-monospace, monospace" }}>Pro Plan</span>
+                <span style={{ fontSize: "0.62rem", fontWeight: 700, textTransform: "uppercase" as const, letterSpacing: "0.12em", color: "var(--brand)", fontFamily: "ui-monospace, monospace" }}>Plans</span>
               </div>
 
               {/* Main heading */}
               <h2 style={{ fontSize: "clamp(2rem, 3.5vw, 3.2rem)", fontWeight: 800, letterSpacing: "-0.03em", lineHeight: 1.1, marginBottom: "1rem", color: "var(--text-primary)" }}>
-                One plan,<br />everything included.
+                Start free,<br />get Pro when ready.
               </h2>
 
               <p style={{ color: "var(--text-secondary)", fontSize: "clamp(0.9rem, 1.2vw, 1.05rem)", lineHeight: 1.7, marginBottom: "2.5rem", maxWidth: "44ch" }}>
-                No tiers, no seat limits, no hidden fees. One flat monthly rate for developers and teams building on any stack.
+                Free gives you room to try FlowCI. Pro raises your project, deployment, environment, and workflow limits when you are shipping for real.
               </p>
 
               {/* Hero price display */}
-              <div style={{ display: "flex", alignItems: "baseline", gap: "0.5rem", marginBottom: "0.5rem" }}>
+              <div style={{ display: "flex", alignItems: "baseline", gap: "0.75rem", marginBottom: "0.5rem", flexWrap: "wrap" }}>
                 <span
                   className="pricing-hero-price"
                   aria-label="PHP 300 per month"
                 >
                   PHP 300
                 </span>
-                <span style={{ fontSize: "clamp(0.85rem, 1.2vw, 1rem)", color: "var(--text-muted)", fontFamily: "ui-monospace, monospace", letterSpacing: "0.04em" }}>/ month</span>
+                <span style={{ fontSize: "clamp(0.85rem, 1.2vw, 1rem)", color: "var(--text-muted)", fontFamily: "ui-monospace, monospace", letterSpacing: "0.04em" }}>/ month for Pro</span>
               </div>
 
               {/* Trust micro-copy */}
               <div className="pricing-trust-row" style={{ marginBottom: "2.5rem" }}>
-                {["Cancel any time", "No seat limits", "Billed monthly"].map((item) => (
+                {["Free account included", "Pro monthly", "Team custom"].map((item) => (
                   <span key={item} className="pricing-trust-item">{item}</span>
                 ))}
               </div>
@@ -1777,10 +1620,10 @@ export default function LandingPage() {
                 >
                   <Link
                     className="primary-button"
-                    href="/signup"
+                    href="/subscribe"
                     style={{ background: "var(--text-primary)", color: "#020617", border: "none", fontWeight: 700, borderRadius: "999px", padding: "0.9rem 2.25rem", textTransform: "uppercase" as const, letterSpacing: "0.1em", fontSize: "0.8rem" }}
                   >
-                    Get started &rarr;
+                    View plans &rarr;
                   </Link>
                 </motion.div>
                 <motion.div

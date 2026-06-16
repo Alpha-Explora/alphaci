@@ -330,9 +330,8 @@ export function AppNav({ guest, session, onLogout, isLoggingOut }: Readonly<AppN
 
   const navItems = [
     ...coreNavItems,
-    guest
-      ? { label: "Billing",  href: "/subscribe", icon: BillingIcon,  key: "billing" }
-      : { label: "Settings", href: "/settings",  icon: SettingsIcon, key: "settings" },
+    { label: "Billing", href: "/subscribe", icon: BillingIcon, key: "billing" },
+    ...(guest ? [] : [{ label: "Settings", href: "/settings", icon: SettingsIcon, key: "settings" }]),
   ];
 
   return (

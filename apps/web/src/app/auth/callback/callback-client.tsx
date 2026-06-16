@@ -16,7 +16,7 @@ import {
   startFreshAccount,
 } from "@/lib/api/client";
 import type { PendingAccountResponse } from "@/lib/api/contracts";
-import { hasActiveSubscription } from "@/lib/auth/subscription";
+import { getAuthenticatedRedirectPath } from "@/lib/auth/subscription";
 
 type CallbackState = "checking" | "failed" | "archived_choice";
 type OAuthProvider = "github" | "google";
@@ -510,11 +510,8 @@ export function AuthCallbackClient() {
 
         if (disposedRef.current) return;
 
-        if (hasActiveSubscription(session)) {
-          router.replace(nextPath);
-        } else {
-          router.replace("/subscribe");
-        }
+        const redirectPath = getAuthenticatedRedirectPath(session, nextPath);
+        if (redirectPath) router.replace(redirectPath);
       } catch (error) {
         if (disposedRef.current) return;
 

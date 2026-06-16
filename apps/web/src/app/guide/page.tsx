@@ -7,6 +7,7 @@ import { motion, useReducedMotion } from "framer-motion";
 import { AppNav } from "@/components/layout/app-nav";
 import { FlowBackground } from "@/components/layout/flow-background";
 import { PipelineLoader } from "@/components/layout/pipeline-loader";
+import { PublicSiteNav } from "@/components/layout/public-site-nav";
 import { FlowExplainer } from "@/components/product/flow-explainer";
 import { useAuthSession } from "@/hooks/use-auth-session";
 import { logout } from "@/lib/api/client";
@@ -90,6 +91,154 @@ function FaqItem({ q, children }: Readonly<{ q: string; children: React.ReactNod
 
 /* ── Page ──────────────────────────────────────────────────────────────────── */
 
+function PublicGuidePage({ error }: Readonly<{ error: string | null }>) {
+  const prefersReducedMotion = useReducedMotion();
+  const reduced = prefersReducedMotion ?? false;
+  const steps = [
+    {
+      label: "Stack",
+      title: "Choose your stack",
+      body: "Pick the repository shape, framework, runtime, and checks that match the project you want to ship.",
+    },
+    {
+      label: "Repo",
+      title: "Generate the repository",
+      body: "FlowCI creates the GitHub repository, starter project, protected branches, and workflow files.",
+    },
+    {
+      label: "Gates",
+      title: "Promote safely",
+      body: "Changes move through test, uat, and main with pull requests, quality gates, and approvals.",
+    },
+    {
+      label: "Deploy",
+      title: "Deploy to hosting",
+      body: "Connect Vercel or Render and deploy from the same governed pipeline.",
+    },
+  ];
+
+  return (
+    <main className="public-guide-shell" suppressHydrationWarning>
+      <a href="#guide-main" className="skip-link">Skip to guide content</a>
+      <FlowBackground />
+      <PublicSiteNav active="guide" />
+
+      <div id="guide-main" className="public-guide-content">
+        <motion.section
+          className="public-guide-hero"
+          initial={reduced ? false : { opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.32, ease: EASE_OUT }}
+        >
+          <div>
+            <h1>How FlowCI works</h1>
+            <p>
+              FlowCI turns a project idea into a governed GitHub repository with CI/CD,
+              branch promotion, quality gates, and deployment targets already wired in.
+            </p>
+          </div>
+          <div className="public-guide-actions">
+            <Link className="public-site-cta" href="/signup">Start free</Link>
+            <Link className="public-guide-link" href="/subscribe">View plans</Link>
+          </div>
+        </motion.section>
+
+        {error && (
+          <p className="public-guide-status" role="status">
+            Session check failed, but the public guide is still available.
+          </p>
+        )}
+
+        <section className="public-guide-workflow" aria-label="FlowCI workflow">
+          <div className="public-guide-workflow-head">
+            <div>
+              <p>Workflow setup preview</p>
+              <h2>From setup to governed deploy</h2>
+            </div>
+            <div className="public-guide-branch-flow" aria-label="Branch promotion path">
+              <span>test</span>
+              <i aria-hidden="true" />
+              <span>uat</span>
+              <i aria-hidden="true" />
+              <span>main</span>
+            </div>
+          </div>
+
+          <div className="public-guide-workflow-body">
+            <div className="public-guide-step-list">
+              {steps.map((step, index) => (
+                <motion.article
+                  key={step.title}
+                  className="public-guide-step"
+                  initial={reduced ? false : { opacity: 0, y: 12 }}
+                  whileInView={reduced ? undefined : { opacity: 1, y: 0 }}
+                  viewport={{ once: true, margin: "-80px" }}
+                  transition={{ duration: 0.28, ease: EASE_OUT, delay: index * 0.04 }}
+                >
+                  <div className="public-guide-step-top">
+                    <span>{String(index + 1).padStart(2, "0")}</span>
+                    <strong>{step.label}</strong>
+                  </div>
+                  <h3>{step.title}</h3>
+                  <p>{step.body}</p>
+                </motion.article>
+              ))}
+            </div>
+
+            <motion.aside
+              className="public-guide-workflow-panel"
+              aria-label="Generated workflow preview"
+              initial={reduced ? false : { opacity: 0, y: 12 }}
+              whileInView={reduced ? undefined : { opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: "-80px" }}
+              transition={{ duration: 0.28, ease: EASE_OUT, delay: 0.12 }}
+            >
+              <div className="public-guide-panel-top">
+                <span>flowci.yml</span>
+                <strong>ready</strong>
+              </div>
+              <pre aria-hidden="true">{`repo:
+  runtime: next
+  branches:
+    - test
+    - uat
+    - main
+
+checks:
+  install: npm ci
+  quality: npm test
+  build: npm run build
+
+deploy:
+  provider: vercel
+  promote: on_approval`}</pre>
+            </motion.aside>
+          </div>
+        </section>
+
+        <section className="public-guide-flow" aria-label="Branch promotion model">
+          <div>
+            <h2>Built around promotion, not just generation</h2>
+            <p>
+              FlowCI does not just produce a YAML file. It gives teams a repeatable path from
+              feature work to production so every repo follows the same release discipline.
+            </p>
+          </div>
+          <FlowExplainer heading={null} variant="compact" />
+        </section>
+
+        <section className="public-guide-final">
+          <h2>Ready to build your first workflow?</h2>
+          <div>
+            <Link className="public-site-cta" href="/signup">Start free</Link>
+            <Link className="public-guide-link" href="/subscribe">Compare limits</Link>
+          </div>
+        </section>
+      </div>
+    </main>
+  );
+}
+
 export default function GuidePage() {
   const router = useRouter();
   const prefersReducedMotion = useReducedMotion();
@@ -126,6 +275,10 @@ export default function GuidePage() {
     return <PipelineLoader label="Loading Guide" />;
   }
 
+  if (status !== "signed-in") {
+    return <PublicGuidePage error={status === "error" ? error : null} />;
+  }
+
   const guest = isGuest(session);
 
   return (
@@ -139,12 +292,6 @@ export default function GuidePage() {
         onLogout={() => void handleLogout()}
         isLoggingOut={isLoggingOut}
       />
-
-      {status === "error" && error ? (
-        <p className="error-text" style={{ textAlign: "center", marginTop: "1rem" }}>
-          Session check failed, but the guide is still available to read.
-        </p>
-      ) : null}
 
       <div id="guide-main" style={{ padding: 0 }}>
         {/* Header band */}
