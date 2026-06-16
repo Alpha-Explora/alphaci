@@ -7,6 +7,7 @@ import { motion, useReducedMotion } from "framer-motion";
 import { AppNav } from "@/components/layout/app-nav";
 import { FlowBackground } from "@/components/layout/flow-background";
 import { PipelineLoader } from "@/components/layout/pipeline-loader";
+import { FlowExplainer } from "@/components/product/flow-explainer";
 import { useAuthSession } from "@/hooks/use-auth-session";
 import { logout } from "@/lib/api/client";
 import { isGuest } from "@/lib/auth/subscription";
@@ -239,6 +240,9 @@ export default function GuidePage() {
             </GuideCard>
 
             <GuideCard id="branch-strategy" index={3} title="Branch strategy" reduced={reduced}>
+              <div style={{ marginBottom: "1rem" }}>
+                <FlowExplainer heading={null} />
+              </div>
               <p>
                 Every repository ships with a strict promotion flow: <code>test &rarr; uat &rarr; main</code>.
                 Changes always move forward — never backward. All three branches are protected, so you work on
@@ -257,7 +261,10 @@ docs: update the guide page`}</code></pre>
             </GuideCard>
 
             <GuideCard id="quality-gates" index={4} title="CI/CD quality gates" reduced={reduced}>
-              <p>Every pipeline run enforces these gates before code can be promoted:</p>
+              <div style={{ marginBottom: "1rem" }}>
+                <FlowExplainer heading={null} variant="compact" />
+              </div>
+              <p>The <strong>Quality</strong> stage above is where these specific checks run, gating every promotion:</p>
               <ul>
                 <li><strong>Lint</strong> — zero errors.</li>
                 <li><strong>TypeScript</strong> — strict mode, <code>tsc --noEmit</code> passes.</li>
