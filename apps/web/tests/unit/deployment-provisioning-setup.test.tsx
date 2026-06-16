@@ -142,14 +142,21 @@ describe("DeploymentProvisioningSetup", () => {
     rendered.unmount();
   });
 
-  it("updates shared variable groups separately from branch-specific variables", () => {
+  it("updates reusable variable groups separately from branch-specific variables", () => {
     const onChange = jest.fn();
     const value: DeploymentProvisioningRequest = {
       enabled: true,
-      sharedEnv: [
+      variableGroups: [
         {
-          environment: "test",
-          vars: [{ key: "API_URL", value: "" }],
+          name: "Shared API",
+          appliesTo: "selected",
+          targetBranches: ["frontend:vercel:test"],
+          env: [
+            {
+              environment: "test",
+              vars: [{ key: "API_URL", value: "" }],
+            },
+          ],
         },
       ],
       targets: [
@@ -161,6 +168,16 @@ describe("DeploymentProvisioningSetup", () => {
           branchName: "test",
           rootDirectory: ".",
           buildCommand: "npm ci && npm run build",
+          env: [{ environment: "test", vars: [] }],
+        },
+        {
+          slot: "frontend",
+          provider: "vercel",
+          ownershipMode: "flowci_managed",
+          projectName: "orders-web-test",
+          branchName: "test",
+          rootDirectory: ".",
+          buildCommand: "npm run build",
           env: [{ environment: "test", vars: [] }],
         },
       ],
@@ -176,26 +193,37 @@ describe("DeploymentProvisioningSetup", () => {
       />,
     );
 
-    expect(rendered.container.textContent).toContain("Shared branch group");
-    expect(rendered.container.textContent).toContain("backend:test");
-    expect(rendered.container.querySelector<HTMLInputElement>("input[aria-label='Shared variable key 1']")).toHaveValue("API_URL");
+    expect(rendered.container.textContent).toContain("Variable groups");
+    expect(rendered.container.textContent).toContain("frontend / vercel / test");
+    expect(rendered.container.querySelector<HTMLInputElement>("input[aria-label='Group variable key 1-1']")).toHaveValue("API_URL");
 
     changeValue(
-      rendered.container.querySelector<HTMLInputElement>("input[aria-label='Shared variable value 1']")!,
+      rendered.container.querySelector<HTMLInputElement>("input[aria-label='Group variable value 1-1']")!,
       "https://api.example.com",
     );
 
     expect(onChange).toHaveBeenCalledWith(
       expect.objectContaining({
-        sharedEnv: [
-          {
-            environment: "test",
-            vars: [{ key: "API_URL", value: "https://api.example.com" }],
-          },
+        sharedEnv: undefined,
+        variableGroups: [
+          expect.objectContaining({
+            name: "Shared API",
+            appliesTo: "selected",
+            targetBranches: ["frontend:vercel:test"],
+            env: [
+              {
+                environment: "test",
+                vars: [{ key: "API_URL", value: "https://api.example.com" }],
+              },
+            ],
+          }),
         ],
         targets: [
           expect.objectContaining({
             env: [{ environment: "test", vars: [] }],
+          }),
+          expect.objectContaining({
+            provider: "vercel",
           }),
         ],
       }),
