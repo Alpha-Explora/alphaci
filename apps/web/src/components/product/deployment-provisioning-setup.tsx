@@ -35,6 +35,10 @@ const renderRuntimeOptions: Array<{ value: RenderRuntime; label: string }> = [
   { value: "elixir", label: "Elixir" },
 ];
 
+function blankEnvSet(environment: EnvEnvironment = "test"): DeploymentProvisioningEnvSet {
+  return { environment, vars: [] };
+}
+
 function fallbackTarget(selectedProjectKind?: "frontend" | "backend"): DeploymentProvisioningTargetRequest {
   const slot: EnvTargetSlot =
     selectedProjectKind === "frontend" ? "frontend" : selectedProjectKind === "backend" ? "backend" : "standalone";
@@ -91,6 +95,49 @@ function updateEnvVar(
   const current = vars[index] ?? { key: "", value: "" };
   vars[index] = { ...current, ...patch };
   return { ...envSet, vars };
+}
+
+function envVarsForDisplay(envSet: DeploymentProvisioningEnvSet): Array<{ key: string; value: string }> {
+  return envSet.vars.length > 0 ? envSet.vars : [{ key: "", value: "" }];
+}
+
+function updateSharedEnvSetAt(
+  value: DeploymentProvisioningRequest,
+  index: number,
+  envSet: DeploymentProvisioningEnvSet,
+): DeploymentProvisioningRequest {
+  const current = value.sharedEnv?.length ? value.sharedEnv : [blankEnvSet()];
+  const nextSharedEnv = [...current];
+  nextSharedEnv[index] = envSet;
+  return { ...value, sharedEnv: nextSharedEnv };
+}
+
+function addSharedEnvGroup(value: DeploymentProvisioningRequest): DeploymentProvisioningRequest {
+  const current = value.sharedEnv?.length ? value.sharedEnv : [blankEnvSet()];
+  const nextEnvironment =
+    environments.find((environment) => !current.some((envSet) => envSet.environment === environment)) ?? "test";
+  return { ...value, sharedEnv: [...current, blankEnvSet(nextEnvironment)] };
+}
+
+function removeSharedEnvGroup(
+  value: DeploymentProvisioningRequest,
+  index: number,
+): DeploymentProvisioningRequest {
+  const current = value.sharedEnv?.length ? value.sharedEnv : [blankEnvSet()];
+  const nextSharedEnv = current.filter((_, currentIndex) => currentIndex !== index);
+  return { ...value, sharedEnv: nextSharedEnv.length ? nextSharedEnv : [blankEnvSet()] };
+}
+
+function countVars(envSets: DeploymentProvisioningEnvSet[] | undefined): number {
+  return (envSets ?? []).reduce(
+    (total, envSet) => total + envSet.vars.filter((variable) => variable.key.trim() && variable.value).length,
+    0,
+  );
+}
+
+function targetBranchLabel(target: DeploymentProvisioningTargetRequest): string {
+  const branch = target.branchName?.trim() || "test";
+  return `${target.slot}:${branch}`;
 }
 
 function defaultProjectPlaceholder(repoShape: string, target: DeploymentProvisioningTargetRequest) {
@@ -162,6 +209,16 @@ export function DeploymentProvisioningSetup({
     () => providerConnections.filter((connection) => connection.status === "active"),
     [providerConnections],
   );
+  const sharedEnvSets = useMemo(
+    () => (value.sharedEnv?.length ? value.sharedEnv : [blankEnvSet()]),
+    [value.sharedEnv],
+  );
+  const branchLabels = useMemo(
+    () => [...new Set(targets.map((target) => targetBranchLabel(target)))],
+    [targets],
+  );
+  const sharedVarCount = countVars(value.sharedEnv);
+  const branchVarCount = targets.reduce((total, target) => total + countVars(target.env), 0);
 
   useEffect(() => {
     if (!enabled || providerConnectionsLoading) {
@@ -226,9 +283,173 @@ export function DeploymentProvisioningSetup({
 
       {enabled ? (
         <div className="deployment-provisioning-setup__body">
+          <section className="deployment-provisioning-flow" aria-label="Deployment provisioning flow">
+            <div className="deployment-flow-step">
+              <span className="deployment-flow-step__index">1</span>
+              <div>
+                <strong>Target map</strong>
+                <div className="deployment-flow-branches">
+                  {targets.map((target, targetIndex) => (
+                    <span className="deployment-flow-branch" key={`${target.slot}-${targetIndex}`}>
+                      {target.slot} / {target.provider} / {target.branchName?.trim() || "test"}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            </div>
+            <div className="deployment-flow-step">
+              <span className="deployment-flow-step__index">2</span>
+              <div>
+                <strong>Shared branch group</strong>
+                <span>{sharedVarCount} shared variable{sharedVarCount === 1 ? "" : "s"}</span>
+              </div>
+            </div>
+            <div className="deployment-flow-step">
+              <span className="deployment-flow-step__index">3</span>
+              <div>
+                <strong>Branch variables</strong>
+                <span>{branchVarCount} branch-specific variable{branchVarCount === 1 ? "" : "s"}</span>
+              </div>
+            </div>
+          </section>
+
+          <section className="env-provisioning-section deployment-variable-groups">
+            <div className="env-section-header">
+              <div>
+                <h4>Variable groups</h4>
+                <p className="helper-text" style={{ margin: "0.25rem 0 0" }}>
+                  Shared groups apply to every configured target branch. Target rows below can still override or add keys.
+                </p>
+              </div>
+              <button
+                type="button"
+                className="ghost-button"
+                onClick={() => onChange(addSharedEnvGroup(value))}
+              >
+                Add group
+              </button>
+            </div>
+
+            {sharedEnvSets.map((envSet, envSetIndex) => {
+              const sharedVars = envVarsForDisplay(envSet);
+
+              return (
+                <div className="deployment-variable-panel" key={`shared-${envSet.environment}-${envSetIndex}`}>
+                  <div className="deployment-variable-panel__header">
+                    <div className="deployment-variable-panel__scope">
+                      <strong>Shared across target branches</strong>
+                      <div className="deployment-flow-branches">
+                        {branchLabels.map((label) => (
+                          <span className="deployment-flow-branch" key={label}>
+                            {label}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                    <label className="deployment-variable-panel__environment">
+                      <span>Environment</span>
+                      <select
+                        aria-label={`Shared variable environment ${envSetIndex + 1}`}
+                        value={envSet.environment}
+                        onChange={(event) =>
+                          onChange(
+                            updateSharedEnvSetAt(value, envSetIndex, {
+                              ...envSet,
+                              environment: event.target.value as EnvEnvironment,
+                            }),
+                          )
+                        }
+                      >
+                        {environments.map((environment) => (
+                          <option key={environment} value={environment}>
+                            {environment}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <button
+                      type="button"
+                      className="ghost-button deployment-variable-panel__button"
+                      onClick={() =>
+                        onChange(
+                          updateSharedEnvSetAt(value, envSetIndex, {
+                            ...envSet,
+                            vars: [...sharedVars, { key: "", value: "" }],
+                          }),
+                        )
+                      }
+                    >
+                      Add variable
+                    </button>
+                    <button
+                      type="button"
+                      className="env-var-row__remove env-var-remove"
+                      aria-label={`Remove shared variable group ${envSetIndex + 1}`}
+                      disabled={sharedEnvSets.length === 1 && sharedVars.length === 1 && !sharedVars[0]?.key && !sharedVars[0]?.value}
+                      onClick={() => onChange(removeSharedEnvGroup(value, envSetIndex))}
+                    >
+                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden="true">
+                        <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+                      </svg>
+                    </button>
+                  </div>
+
+                  {sharedVars.map((variable, variableIndex) => (
+                    <div className="env-var-row" key={`shared-${envSetIndex}-${variableIndex}`}>
+                      <label>
+                        <span>Key</span>
+                        <input
+                          aria-label={`Shared variable key ${variableIndex + 1}`}
+                          value={variable.key}
+                          onChange={(event) => {
+                            const nextEnvSet = updateEnvVar(envSet, variableIndex, { key: event.target.value.toUpperCase() });
+                            onChange(updateSharedEnvSetAt(value, envSetIndex, nextEnvSet));
+                          }}
+                          placeholder="DATABASE_URL"
+                        />
+                      </label>
+                      <label>
+                        <span>Value</span>
+                        <input
+                          aria-label={`Shared variable value ${variableIndex + 1}`}
+                          type="password"
+                          value={variable.value}
+                          onChange={(event) => {
+                            const nextEnvSet = updateEnvVar(envSet, variableIndex, { value: event.target.value });
+                            onChange(updateSharedEnvSetAt(value, envSetIndex, nextEnvSet));
+                          }}
+                          placeholder="value"
+                        />
+                      </label>
+                      <button
+                        type="button"
+                        className="env-var-row__remove env-var-remove"
+                        aria-label={`Remove shared variable ${variableIndex + 1}`}
+                        disabled={sharedVars.length === 1 && !variable.key && !variable.value}
+                        onClick={() => {
+                          const nextVars = sharedVars.filter((_, currentIndex) => currentIndex !== variableIndex);
+                          onChange(
+                            updateSharedEnvSetAt(value, envSetIndex, {
+                              ...envSet,
+                              vars: nextVars.length ? nextVars : [{ key: "", value: "" }],
+                            }),
+                          );
+                        }}
+                      >
+                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden="true">
+                          <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+                        </svg>
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              );
+            })}
+          </section>
+
           {targets.map((target, targetIndex) => {
             const envSet = target.env?.[0] ?? { environment: "test" as EnvEnvironment, vars: [] };
-            const vars = envSet.vars.length > 0 ? envSet.vars : [{ key: "", value: "" }];
+            const vars = envVarsForDisplay(envSet);
             const matchingConnections = activeProviderConnections.filter(
               (connection) => connection.provider === target.provider,
             );
@@ -574,9 +795,9 @@ export function DeploymentProvisioningSetup({
 
                 <div className="env-section-header deployment-provisioning-setup__vars-header">
                   <div>
-                    <strong>Initial variables</strong>
+                    <strong>Branch-specific variables</strong>
                     <p className="helper-text" style={{ margin: "0.25rem 0 0" }}>
-                      Values are sent to the provider during setup and are not stored by FlowCI.
+                      {targetBranchLabel(target)} can override shared keys or add its own values. Values are sent to the provider during setup and are not stored by FlowCI.
                     </p>
                   </div>
                   <button

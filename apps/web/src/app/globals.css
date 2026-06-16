@@ -5464,6 +5464,74 @@ select option {
   gap: 0.75rem;
 }
 
+.deployment-provisioning-flow {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.6rem;
+  align-items: stretch;
+}
+
+.deployment-flow-step {
+  display: flex;
+  gap: 0.6rem;
+  align-items: flex-start;
+  min-width: 0;
+  min-height: 4.25rem;
+  padding: 0.75rem;
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  background: rgba(15, 23, 42, 0.42);
+}
+
+.deployment-flow-step__index {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 1.6rem;
+  height: 1.6rem;
+  border: 1px solid rgba(56, 189, 248, 0.32);
+  border-radius: 999px;
+  color: var(--brand);
+  font-family: ui-monospace, monospace;
+  font-size: 0.76rem;
+  font-weight: 800;
+}
+
+.deployment-flow-step strong,
+.deployment-variable-panel strong {
+  display: block;
+  color: var(--text-primary);
+  font-size: 0.78rem;
+}
+
+.deployment-flow-step span:not(.deployment-flow-step__index):not(.deployment-flow-branch) {
+  color: var(--text-muted);
+  font-size: 0.74rem;
+}
+
+.deployment-flow-branches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-top: 0.4rem;
+}
+
+.deployment-flow-branch {
+  display: inline-flex;
+  align-items: center;
+  min-height: 1.35rem;
+  max-width: 100%;
+  padding: 0.15rem 0.45rem;
+  border: 1px solid rgba(56, 189, 248, 0.2);
+  border-radius: 999px;
+  background: rgba(56, 189, 248, 0.07);
+  color: var(--brand);
+  font-family: ui-monospace, monospace;
+  font-size: 0.68rem;
+  overflow-wrap: anywhere;
+}
+
 .deployment-provisioning-setup__vars-header {
   align-items: end;
   padding-top: 0.8rem;
@@ -5483,11 +5551,44 @@ select option {
 }
 
 .env-target-grid label,
+.deployment-variable-panel label,
 .env-var-row label {
   display: grid;
   gap: 0.3rem;
   color: var(--text-muted);
   font-size: 0.72rem;
+}
+
+.deployment-variable-groups {
+  background: rgba(2, 6, 23, 0.24);
+}
+
+.deployment-variable-panel {
+  display: grid;
+  gap: 0.6rem;
+  padding: 0.7rem;
+  border: 1px solid var(--border-soft);
+  border-radius: 8px;
+  background: rgba(15, 23, 42, 0.34);
+}
+
+.deployment-variable-panel__header {
+  display: grid;
+  grid-template-columns: minmax(12rem, 1fr) minmax(8rem, 0.32fr) auto auto;
+  gap: 0.6rem;
+  align-items: end;
+}
+
+.deployment-variable-panel__scope {
+  min-width: 0;
+}
+
+.deployment-variable-panel__environment {
+  min-width: 0;
+}
+
+.deployment-variable-panel__button {
+  align-self: end;
 }
 
 .env-provisioning-section {
@@ -5556,6 +5657,7 @@ select option {
 
 .env-target-grid input,
 .env-target-grid select,
+.deployment-variable-panel select,
 .env-provisioning-section > select,
 .env-var-row input {
   width: 100%;
@@ -5702,8 +5804,13 @@ select option {
 }
 
 @media (max-width: 980px) {
+  .deployment-provisioning-flow,
   .env-target-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .deployment-variable-panel__header {
+    grid-template-columns: minmax(0, 1fr) minmax(8rem, 0.6fr);
   }
 
   .env-target-grid__field--wide {
@@ -5722,6 +5829,8 @@ select option {
     min-width: 0;
   }
 
+  .deployment-provisioning-flow,
+  .deployment-variable-panel__header,
   .env-target-grid,
   .env-var-row {
     grid-template-columns: 1fr;

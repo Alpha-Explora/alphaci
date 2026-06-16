@@ -307,6 +307,7 @@ export interface DeploymentProvisioningTargetRequest {
 
 export interface DeploymentProvisioningRequest {
   enabled: boolean;
+  sharedEnv?: DeploymentProvisioningEnvSet[];
   targets: DeploymentProvisioningTargetRequest[];
 }
 
