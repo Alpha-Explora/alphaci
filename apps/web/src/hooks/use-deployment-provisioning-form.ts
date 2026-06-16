@@ -27,6 +27,7 @@ function defaultTarget(
     rootDirectory: slot === "frontend" ? "." : ".",
     buildCommand: provider === "render" ? "npm ci && npm run build" : "npm run build",
     startCommand: provider === "render" ? "npm run start:prod" : undefined,
+    renderRuntime: provider === "render" ? "docker" : undefined,
     env: [{ environment: "test", vars: [] }],
   };
 }

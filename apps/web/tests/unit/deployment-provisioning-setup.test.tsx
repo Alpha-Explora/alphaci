@@ -86,8 +86,58 @@ describe("DeploymentProvisioningSetup", () => {
     expect(rendered.container.textContent).toContain("Deployment provisioning");
     expect(rendered.container.querySelector<HTMLInputElement>("input[aria-label='Provision deployment target']")).toBeChecked();
     expect(rendered.container.querySelector<HTMLSelectElement>("select[aria-label='Provider']")).toHaveValue("render");
+    expect(rendered.container.querySelector<HTMLSelectElement>("select[aria-label='Render runtime']")).toHaveValue("docker");
+    expect(rendered.container.textContent).toContain("Node.js / Bun");
+    expect(rendered.container.textContent).toContain("Python");
+    expect(rendered.container.textContent).toContain("Go");
     expect(rendered.container.querySelector<HTMLInputElement>("input[aria-label='Variable value 1']")).toHaveAttribute("type", "password");
     expect(rendered.container.textContent).toContain("Values are sent to the provider during setup and are not stored by FlowCI.");
+
+    rendered.unmount();
+  });
+
+  it("updates the Render runtime choice", () => {
+    const onChange = jest.fn();
+    const value: DeploymentProvisioningRequest = {
+      enabled: true,
+      targets: [
+        {
+          slot: "backend",
+          provider: "render",
+          ownershipMode: "byo",
+          renderDeployMethod: "native_git",
+          renderRuntime: "node",
+          projectName: "orders-api-test",
+          branchName: "test",
+          rootDirectory: ".",
+          buildCommand: "npm ci && npm run build",
+          startCommand: "npm run start:prod",
+          env: [{ environment: "test", vars: [] }],
+        },
+      ],
+    };
+
+    const rendered = render(
+      <DeploymentProvisioningSetup
+        enabled
+        repoShape="single-app"
+        selectedProjectKind="backend"
+        value={value}
+        onChange={onChange}
+      />,
+    );
+
+    changeValue(rendered.container.querySelector<HTMLSelectElement>("select[aria-label='Render runtime']")!, "python");
+
+    expect(onChange).toHaveBeenCalledWith(
+      expect.objectContaining({
+        targets: [
+          expect.objectContaining({
+            renderRuntime: "python",
+          }),
+        ],
+      }),
+    );
 
     rendered.unmount();
   });

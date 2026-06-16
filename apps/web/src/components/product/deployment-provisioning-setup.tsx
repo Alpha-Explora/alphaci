@@ -10,6 +10,7 @@ import type {
   EnvProvider,
   EnvTargetSlot,
   RenderDeployMethod,
+  RenderRuntime,
   RenderServiceType,
 } from "@/lib/api/contracts";
 import { useProviderConnections } from "@/hooks/use-provider-connections";
@@ -24,6 +25,15 @@ interface DeploymentProvisioningSetupProps {
 }
 
 const environments: EnvEnvironment[] = ["test", "uat", "production"];
+const renderRuntimeOptions: Array<{ value: RenderRuntime; label: string }> = [
+  { value: "docker", label: "Dockerfile" },
+  { value: "node", label: "Node.js / Bun" },
+  { value: "python", label: "Python" },
+  { value: "ruby", label: "Ruby" },
+  { value: "go", label: "Go" },
+  { value: "rust", label: "Rust" },
+  { value: "elixir", label: "Elixir" },
+];
 
 function fallbackTarget(selectedProjectKind?: "frontend" | "backend"): DeploymentProvisioningTargetRequest {
   const slot: EnvTargetSlot =
@@ -39,6 +49,7 @@ function fallbackTarget(selectedProjectKind?: "frontend" | "backend"): Deploymen
     startCommand: provider === "render" ? "npm run start" : undefined,
     renderDeployMethod: provider === "render" ? "managed_image" : undefined,
     renderServiceType: provider === "render" ? "web_service" : undefined,
+    renderRuntime: provider === "render" ? "docker" : undefined,
     renderInstanceType: provider === "render" ? "free" : undefined,
     renderRegion: provider === "render" ? "singapore" : undefined,
     renderEnvironmentName: "test",
@@ -121,6 +132,7 @@ function withRenderDefaults(
   return {
     renderDeployMethod: target.renderDeployMethod ?? "managed_image",
     renderServiceType: target.renderServiceType ?? "web_service",
+    renderRuntime: target.renderRuntime ?? "docker",
     renderInstanceType: target.renderInstanceType ?? "free",
     renderRegion: target.renderRegion ?? "singapore",
     renderEnvironmentName: target.renderEnvironmentName ?? "test",
@@ -282,6 +294,7 @@ export function DeploymentProvisioningSetup({
                                 ? {
                                     renderDeployMethod: undefined,
                                     renderServiceType: undefined,
+                                    renderRuntime: undefined,
                                     renderInstanceType: undefined,
                                     renderRegion: undefined,
                                     renderEnvironmentName: undefined,
@@ -434,6 +447,31 @@ export function DeploymentProvisioningSetup({
                           <option value="background_worker">Worker</option>
                           <option value="cron_job">Cron job</option>
                         </select>
+                      </label>
+                      <label className="env-target-grid__field env-target-grid__field--compact">
+                        <span>Runtime</span>
+                        <select
+                          aria-label={targetIndex === 0 ? "Render runtime" : `Render runtime ${targetIndex + 1}`}
+                          value={target.renderRuntime ?? "docker"}
+                          onChange={(event) =>
+                            onChange(
+                              updateTargetAt(value, targetIndex, {
+                                renderRuntime: event.target.value as RenderRuntime,
+                              }),
+                            )
+                          }
+                        >
+                          {renderRuntimeOptions.map((option) => (
+                            <option key={option.value} value={option.value}>
+                              {option.label}
+                            </option>
+                          ))}
+                        </select>
+                        <span className="helper-text env-target-grid__note">
+                          {target.renderDeployMethod === "native_git"
+                            ? "Render uses this runtime for its native Git build."
+                            : "Image-backed deploys run as a Docker image; this records the service runtime intent."}
+                        </span>
                       </label>
                       <label className="env-target-grid__field env-target-grid__field--compact">
                         <span>Instance</span>
