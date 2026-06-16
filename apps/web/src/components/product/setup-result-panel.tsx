@@ -142,10 +142,18 @@ function formatRenderServiceType(value: string | null | undefined) {
   return value.replace(/_/g, " ");
 }
 
+function formatRenderRuntime(value: string | null | undefined) {
+  if (!value) return null;
+  if (value === "node") return "Node.js / Bun";
+  if (value === "docker") return "Dockerfile";
+  return value.charAt(0).toUpperCase() + value.slice(1);
+}
+
 function renderTargetDetails(target: DeploymentProvisioningResult["targets"][number]) {
   if (target.provider !== "render") return [];
   return [
     formatRenderServiceType(target.renderServiceType),
+    formatRenderRuntime(target.renderRuntime),
     target.renderInstanceType,
     target.renderRegion,
     target.renderEnvironmentName,

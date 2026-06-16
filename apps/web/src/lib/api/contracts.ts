@@ -16,6 +16,14 @@ export type RenderServiceType =
   | "private_service"
   | "background_worker"
   | "cron_job";
+export type RenderRuntime =
+  | "node"
+  | "python"
+  | "ruby"
+  | "go"
+  | "rust"
+  | "elixir"
+  | "docker";
 export type RenderDeployMethod =
   | "managed_image"
   | "byo_image"
@@ -141,6 +149,7 @@ export interface DeploymentTarget {
   buildCommand: string | null;
   startCommand: string | null;
   renderServiceType?: RenderServiceType | null;
+  renderRuntime?: RenderRuntime | null;
   renderInstanceType?: string | null;
   renderRegion?: string | null;
   renderEnvironmentName?: EnvEnvironment | null;
@@ -168,6 +177,7 @@ export interface CreateDeploymentTargetRequest {
   startCommand?: string;
   renderDeployMethod?: RenderDeployMethod;
   renderServiceType?: RenderServiceType;
+  renderRuntime?: RenderRuntime;
   renderInstanceType?: string;
   renderRegion?: string;
   renderEnvironmentName?: EnvEnvironment;
@@ -285,6 +295,7 @@ export interface DeploymentProvisioningTargetRequest {
   startCommand?: string;
   renderDeployMethod?: RenderDeployMethod;
   renderServiceType?: RenderServiceType;
+  renderRuntime?: RenderRuntime;
   renderInstanceType?: string;
   renderRegion?: string;
   renderEnvironmentName?: EnvEnvironment;
@@ -312,6 +323,7 @@ export interface DeploymentProvisioningResult {
     providerProjectName: string | null;
     providerMetadata?: Record<string, unknown>;
     renderServiceType?: RenderServiceType | null;
+    renderRuntime?: RenderRuntime | null;
     renderInstanceType?: string | null;
     renderRegion?: string | null;
     renderEnvironmentName?: EnvEnvironment | null;
