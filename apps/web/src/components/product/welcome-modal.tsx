@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { useRouter } from "next/navigation";
+import { FlowExplainer } from "@/components/product/flow-explainer";
 
 export interface WelcomeModalProps {
   displayName: string;
@@ -350,6 +351,18 @@ export function WelcomeModal({ displayName, onDismiss }: WelcomeModalProps) {
                 </motion.li>
               ))}
             </motion.ol>
+
+            {/* What happens after you push — gated stages + promotion ladder */}
+            <div
+              style={{
+                padding: "0.9rem 1rem",
+                borderRadius: "0.7rem",
+                background: "rgba(255, 255, 255, 0.02)",
+                border: "1px solid var(--border-soft)",
+              }}
+            >
+              <FlowExplainer variant="compact" heading="Once you push, every change runs through" />
+            </div>
 
             {/* Action buttons */}
             <footer style={{ display: "flex", gap: "0.6rem", flexWrap: "wrap" }}>

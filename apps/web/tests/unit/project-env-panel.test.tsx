@@ -39,6 +39,7 @@ jest.mock("framer-motion", () => {
   return {
     AnimatePresence: passthrough,
     motion,
+    useReducedMotion: () => false,
   };
 });
 

@@ -23,6 +23,7 @@ import {
 import { SetupResultPanel } from "./setup-result-panel";
 import { DeploymentProvisioningSetup } from "./deployment-provisioning-setup";
 import { formatQuotaStatus } from "./workflow-builder-utils";
+import { HelpTip } from "./help-tip";
 
 interface WorkflowSetupTabProps {
   createResult: CreateProjectResult | null;
@@ -514,6 +515,7 @@ export function WorkflowSetupTab({
                   <>
                     <label className="input-label" htmlFor="backend-service-path" style={{ ...labelAccentStyle, marginTop: "0.55rem", display: "block" }}>
                       Service path
+                      <HelpTip text="The folder inside the repository where the backend service's code lives. Build commands run from this path, and only changes under it trigger this service's pipeline." />
                     </label>
                     <input
                       id="backend-service-path"
@@ -560,6 +562,7 @@ export function WorkflowSetupTab({
                   <>
                     <label className="input-label" htmlFor="frontend-service-path" style={{ ...labelAccentStyle, marginTop: "0.55rem", display: "block" }}>
                       Service path
+                      <HelpTip text="The folder inside the repository where the frontend service's code lives. Build commands run from this path, and only changes under it trigger this service's pipeline." />
                     </label>
                     <input
                       id="frontend-service-path"
@@ -789,6 +792,7 @@ export function WorkflowSetupTab({
                   <div>
                     <label className="input-label" htmlFor="service-path" style={labelAccentStyle}>
                       Service path
+                      <HelpTip text="The folder inside the repository where this service's code lives. Use '.' if the app sits at the repository root. Build commands run from this path." />
                     </label>
                     <input
                       id="service-path"
@@ -844,6 +848,7 @@ export function WorkflowSetupTab({
                 <div>
                   <label className="input-label" htmlFor="coverage-threshold" style={labelAccentStyle}>
                     Coverage
+                    <HelpTip text="The minimum percentage of code that unit tests must exercise. Pipeline runs fail the Quality stage if coverage drops below this number." />
                   </label>
                   <select
                     id="coverage-threshold"
@@ -875,6 +880,7 @@ export function WorkflowSetupTab({
                       className={`enhancement-chip-label-premium${option.supported ? "" : " disabled"}${option.checked ? " enhancement-chip-label--active" : ""}`}
                       htmlFor={`chip-${option.key}`}
                       title={projectOptionDescriptions[option.key]}
+                      aria-label={`${projectOptionLabels[option.key]} — ${projectOptionDescriptions[option.key]}`}
                       style={option.supported ? undefined : { opacity: 0.45, cursor: "not-allowed" }}
                       whileTap={option.supported ? { scale: 0.95 } : undefined}
                       animate={option.checked ? { scale: 1 } : { scale: 1 }}

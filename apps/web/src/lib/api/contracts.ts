@@ -706,6 +706,8 @@ export interface ProvisionedProject {
   projectTypeId?: string | null;
   workflowRecipeId?: string | null;
   projectOptions?: Record<string, unknown> | null;
+  /** True for the system-seeded read-only demo project shown to every user. */
+  isExample?: boolean;
 }
 
 export type ProjectOverviewHealthStatus = "ok" | "warning" | "error";
