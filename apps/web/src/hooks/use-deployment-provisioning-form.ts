@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 
 import type {
+  DeploymentProvisioningEnvSet,
   DeploymentProvisioningRequest,
   DeploymentProvisioningTargetRequest,
   EnvProvider,
@@ -30,6 +31,15 @@ function defaultTarget(
     renderRuntime: provider === "render" ? "docker" : undefined,
     env: [{ environment: "test", vars: [] }],
   };
+}
+
+function sanitizedEnvSets(envSets: DeploymentProvisioningEnvSet[] | undefined): DeploymentProvisioningEnvSet[] {
+  return (envSets ?? [])
+    .map((envSet) => ({
+      ...envSet,
+      vars: envSet.vars.filter((variable) => variable.key.trim() && variable.value),
+    }))
+    .filter((envSet) => envSet.vars.length > 0);
 }
 
 export function useDeploymentProvisioningForm() {
@@ -60,9 +70,12 @@ export function useDeploymentProvisioningForm() {
       return undefined;
     }
 
+    const sharedEnv = sanitizedEnvSets(request.sharedEnv);
+
     return {
       ...request,
       enabled: true,
+      ...(sharedEnv.length ? { sharedEnv } : { sharedEnv: undefined }),
       targets: request.targets.map((target) => ({
         ...target,
         projectName: target.projectName?.trim() || undefined,
@@ -70,10 +83,7 @@ export function useDeploymentProvisioningForm() {
         rootDirectory: target.rootDirectory?.trim() || undefined,
         buildCommand: target.buildCommand?.trim() || undefined,
         startCommand: target.startCommand?.trim() || undefined,
-        env: target.env?.map((envSet) => ({
-          ...envSet,
-          vars: envSet.vars.filter((variable) => variable.key.trim() && variable.value),
-        })),
+        env: sanitizedEnvSets(target.env),
       })),
     };
   }, [enabled, request]);

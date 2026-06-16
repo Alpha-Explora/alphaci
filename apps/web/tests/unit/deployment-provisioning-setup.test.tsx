@@ -142,6 +142,68 @@ describe("DeploymentProvisioningSetup", () => {
     rendered.unmount();
   });
 
+  it("updates shared variable groups separately from branch-specific variables", () => {
+    const onChange = jest.fn();
+    const value: DeploymentProvisioningRequest = {
+      enabled: true,
+      sharedEnv: [
+        {
+          environment: "test",
+          vars: [{ key: "API_URL", value: "" }],
+        },
+      ],
+      targets: [
+        {
+          slot: "backend",
+          provider: "render",
+          ownershipMode: "flowci_managed",
+          projectName: "orders-api-test",
+          branchName: "test",
+          rootDirectory: ".",
+          buildCommand: "npm ci && npm run build",
+          env: [{ environment: "test", vars: [] }],
+        },
+      ],
+    };
+
+    const rendered = render(
+      <DeploymentProvisioningSetup
+        enabled
+        repoShape="single-app"
+        selectedProjectKind="backend"
+        value={value}
+        onChange={onChange}
+      />,
+    );
+
+    expect(rendered.container.textContent).toContain("Shared branch group");
+    expect(rendered.container.textContent).toContain("backend:test");
+    expect(rendered.container.querySelector<HTMLInputElement>("input[aria-label='Shared variable key 1']")).toHaveValue("API_URL");
+
+    changeValue(
+      rendered.container.querySelector<HTMLInputElement>("input[aria-label='Shared variable value 1']")!,
+      "https://api.example.com",
+    );
+
+    expect(onChange).toHaveBeenCalledWith(
+      expect.objectContaining({
+        sharedEnv: [
+          {
+            environment: "test",
+            vars: [{ key: "API_URL", value: "https://api.example.com" }],
+          },
+        ],
+        targets: [
+          expect.objectContaining({
+            env: [{ environment: "test", vars: [] }],
+          }),
+        ],
+      }),
+    );
+
+    rendered.unmount();
+  });
+
   it("keeps backend and frontend targets editable in multi-repo setup", () => {
     const onChange = jest.fn();
     const value: DeploymentProvisioningRequest = {
