@@ -280,6 +280,13 @@ export interface DeploymentProvisioningEnvSet {
   vars: Array<{ key: string; value: string }>;
 }
 
+export interface DeploymentProvisioningVariableGroup {
+  name?: string;
+  appliesTo?: "all" | "selected";
+  targetBranches?: string[];
+  env: DeploymentProvisioningEnvSet[];
+}
+
 export interface DeploymentProvisioningTargetRequest {
   action?: "create" | "register_existing";
   slot: EnvTargetSlot;
@@ -307,6 +314,7 @@ export interface DeploymentProvisioningTargetRequest {
 
 export interface DeploymentProvisioningRequest {
   enabled: boolean;
+  variableGroups?: DeploymentProvisioningVariableGroup[];
   sharedEnv?: DeploymentProvisioningEnvSet[];
   targets: DeploymentProvisioningTargetRequest[];
 }

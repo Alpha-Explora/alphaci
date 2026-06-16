@@ -5520,6 +5520,7 @@ select option {
 .deployment-flow-branch {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   min-height: 1.35rem;
   max-width: 100%;
   padding: 0.15rem 0.45rem;
@@ -5530,6 +5531,21 @@ select option {
   font-family: ui-monospace, monospace;
   font-size: 0.68rem;
   overflow-wrap: anywhere;
+}
+
+.deployment-flow-branch--button {
+  cursor: pointer;
+}
+
+.deployment-flow-branch--button.active {
+  border-color: rgba(45, 212, 191, 0.35);
+  background: rgba(45, 212, 191, 0.1);
+  color: var(--success);
+}
+
+.deployment-flow-branch--button:disabled {
+  cursor: default;
+  opacity: 0.9;
 }
 
 .deployment-provisioning-setup__vars-header {
@@ -5574,7 +5590,7 @@ select option {
 
 .deployment-variable-panel__header {
   display: grid;
-  grid-template-columns: minmax(12rem, 1fr) minmax(8rem, 0.32fr) auto auto;
+  grid-template-columns: minmax(12rem, 1fr) minmax(9rem, 0.45fr) minmax(9rem, 0.4fr) auto auto;
   gap: 0.6rem;
   align-items: end;
 }
@@ -5589,6 +5605,14 @@ select option {
 
 .deployment-variable-panel__button {
   align-self: end;
+}
+
+.deployment-variable-panel__targets {
+  display: grid;
+  gap: 0.35rem;
+  min-width: 0;
+  color: var(--text-muted);
+  font-size: 0.72rem;
 }
 
 .env-provisioning-section {
@@ -5657,6 +5681,7 @@ select option {
 
 .env-target-grid input,
 .env-target-grid select,
+.deployment-variable-panel input,
 .deployment-variable-panel select,
 .env-provisioning-section > select,
 .env-var-row input {
