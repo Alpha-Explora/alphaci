@@ -45,21 +45,29 @@ function sanitizedEnvSets(envSets: DeploymentProvisioningEnvSet[] | undefined): 
 
 function sanitizedVariableGroups(
   groups: DeploymentProvisioningVariableGroup[] | undefined,
+  activeProviders: Set<EnvProvider>,
 ): DeploymentProvisioningVariableGroup[] {
   return (groups ?? [])
     .map((group, index) => {
+      const provider = group.provider ?? [...activeProviders][0] ?? "render";
       const appliesTo = group.appliesTo ?? "all";
       const env = sanitizedEnvSets(group.env);
       const targetBranches = [...new Set(group.targetBranches ?? [])].filter(Boolean);
 
       return {
         name: group.name?.trim() || `Variable group ${index + 1}`,
+        provider,
         appliesTo,
         ...(appliesTo === "selected" ? { targetBranches } : {}),
         env,
       };
     })
-    .filter((group) => group.env.length > 0 && (group.appliesTo !== "selected" || (group.targetBranches?.length ?? 0) > 0));
+    .filter(
+      (group) =>
+        activeProviders.has(group.provider) &&
+        group.env.length > 0 &&
+        (group.appliesTo !== "selected" || (group.targetBranches?.length ?? 0) > 0),
+    );
 }
 
 export function useDeploymentProvisioningForm() {
@@ -91,7 +99,8 @@ export function useDeploymentProvisioningForm() {
     }
 
     const sharedEnv = sanitizedEnvSets(request.sharedEnv);
-    const variableGroups = sanitizedVariableGroups(request.variableGroups);
+    const activeProviders = new Set(request.targets.map((target) => target.provider));
+    const variableGroups = sanitizedVariableGroups(request.variableGroups, activeProviders);
 
     return {
       ...request,
