@@ -282,6 +282,7 @@ export interface DeploymentProvisioningEnvSet {
 
 export interface DeploymentProvisioningVariableGroup {
   name?: string;
+  provider: EnvProvider;
   appliesTo?: "all" | "selected";
   targetBranches?: string[];
   env: DeploymentProvisioningEnvSet[];

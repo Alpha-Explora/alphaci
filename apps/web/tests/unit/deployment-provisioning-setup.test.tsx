@@ -149,6 +149,7 @@ describe("DeploymentProvisioningSetup", () => {
       variableGroups: [
         {
           name: "Shared API",
+          provider: "vercel",
           appliesTo: "selected",
           targetBranches: ["frontend:vercel:test"],
           env: [
@@ -208,6 +209,7 @@ describe("DeploymentProvisioningSetup", () => {
         variableGroups: [
           expect.objectContaining({
             name: "Shared API",
+            provider: "vercel",
             appliesTo: "selected",
             targetBranches: ["frontend:vercel:test"],
             env: [

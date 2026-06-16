@@ -5579,6 +5579,27 @@ select option {
   background: rgba(2, 6, 23, 0.24);
 }
 
+.deployment-provider-groups {
+  display: grid;
+  gap: 0.7rem;
+  padding: 0.7rem;
+  border: 1px solid var(--border-soft);
+  border-radius: 8px;
+  background: rgba(15, 23, 42, 0.24);
+}
+
+.deployment-provider-groups__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.deployment-provider-groups__header strong {
+  color: var(--text-primary);
+  font-size: 0.82rem;
+}
+
 .deployment-variable-panel {
   display: grid;
   gap: 0.6rem;
@@ -5845,6 +5866,7 @@ select option {
 
 @media (max-width: 640px) {
   .deployment-provisioning-setup__header,
+  .deployment-provider-groups__header,
   .env-section-header {
     align-items: flex-start;
     flex-direction: column;
