@@ -3,8 +3,10 @@
 import { useMemo, useState } from "react";
 
 import type {
+  DeploymentProvisioningEnvSet,
   DeploymentProvisioningRequest,
   DeploymentProvisioningTargetRequest,
+  DeploymentProvisioningVariableGroup,
   EnvProvider,
   EnvTargetSlot,
 } from "@/lib/api/contracts";
@@ -27,8 +29,37 @@ function defaultTarget(
     rootDirectory: slot === "frontend" ? "." : ".",
     buildCommand: provider === "render" ? "npm ci && npm run build" : "npm run build",
     startCommand: provider === "render" ? "npm run start:prod" : undefined,
+    renderRuntime: provider === "render" ? "docker" : undefined,
     env: [{ environment: "test", vars: [] }],
   };
+}
+
+function sanitizedEnvSets(envSets: DeploymentProvisioningEnvSet[] | undefined): DeploymentProvisioningEnvSet[] {
+  return (envSets ?? [])
+    .map((envSet) => ({
+      ...envSet,
+      vars: envSet.vars.filter((variable) => variable.key.trim() && variable.value),
+    }))
+    .filter((envSet) => envSet.vars.length > 0);
+}
+
+function sanitizedVariableGroups(
+  groups: DeploymentProvisioningVariableGroup[] | undefined,
+): DeploymentProvisioningVariableGroup[] {
+  return (groups ?? [])
+    .map((group, index) => {
+      const appliesTo = group.appliesTo ?? "all";
+      const env = sanitizedEnvSets(group.env);
+      const targetBranches = [...new Set(group.targetBranches ?? [])].filter(Boolean);
+
+      return {
+        name: group.name?.trim() || `Variable group ${index + 1}`,
+        appliesTo,
+        ...(appliesTo === "selected" ? { targetBranches } : {}),
+        env,
+      };
+    })
+    .filter((group) => group.env.length > 0 && (group.appliesTo !== "selected" || (group.targetBranches?.length ?? 0) > 0));
 }
 
 export function useDeploymentProvisioningForm() {
@@ -59,9 +90,14 @@ export function useDeploymentProvisioningForm() {
       return undefined;
     }
 
+    const sharedEnv = sanitizedEnvSets(request.sharedEnv);
+    const variableGroups = sanitizedVariableGroups(request.variableGroups);
+
     return {
       ...request,
       enabled: true,
+      ...(variableGroups.length ? { variableGroups } : { variableGroups: undefined }),
+      ...(sharedEnv.length ? { sharedEnv } : { sharedEnv: undefined }),
       targets: request.targets.map((target) => ({
         ...target,
         projectName: target.projectName?.trim() || undefined,
@@ -69,10 +105,7 @@ export function useDeploymentProvisioningForm() {
         rootDirectory: target.rootDirectory?.trim() || undefined,
         buildCommand: target.buildCommand?.trim() || undefined,
         startCommand: target.startCommand?.trim() || undefined,
-        env: target.env?.map((envSet) => ({
-          ...envSet,
-          vars: envSet.vars.filter((variable) => variable.key.trim() && variable.value),
-        })),
+        env: sanitizedEnvSets(target.env),
       })),
     };
   }, [enabled, request]);

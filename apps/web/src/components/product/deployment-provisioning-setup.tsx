@@ -6,10 +6,12 @@ import type {
   DeploymentProvisioningEnvSet,
   DeploymentProvisioningRequest,
   DeploymentProvisioningTargetRequest,
+  DeploymentProvisioningVariableGroup,
   EnvEnvironment,
   EnvProvider,
   EnvTargetSlot,
   RenderDeployMethod,
+  RenderRuntime,
   RenderServiceType,
 } from "@/lib/api/contracts";
 import { useProviderConnections } from "@/hooks/use-provider-connections";
@@ -24,6 +26,19 @@ interface DeploymentProvisioningSetupProps {
 }
 
 const environments: EnvEnvironment[] = ["test", "uat", "production"];
+const renderRuntimeOptions: Array<{ value: RenderRuntime; label: string }> = [
+  { value: "docker", label: "Dockerfile" },
+  { value: "node", label: "Node.js / Bun" },
+  { value: "python", label: "Python" },
+  { value: "ruby", label: "Ruby" },
+  { value: "go", label: "Go" },
+  { value: "rust", label: "Rust" },
+  { value: "elixir", label: "Elixir" },
+];
+
+function blankEnvSet(environment: EnvEnvironment = "test"): DeploymentProvisioningEnvSet {
+  return { environment, vars: [] };
+}
 
 function fallbackTarget(selectedProjectKind?: "frontend" | "backend"): DeploymentProvisioningTargetRequest {
   const slot: EnvTargetSlot =
@@ -39,6 +54,7 @@ function fallbackTarget(selectedProjectKind?: "frontend" | "backend"): Deploymen
     startCommand: provider === "render" ? "npm run start" : undefined,
     renderDeployMethod: provider === "render" ? "managed_image" : undefined,
     renderServiceType: provider === "render" ? "web_service" : undefined,
+    renderRuntime: provider === "render" ? "docker" : undefined,
     renderInstanceType: provider === "render" ? "free" : undefined,
     renderRegion: provider === "render" ? "singapore" : undefined,
     renderEnvironmentName: "test",
@@ -82,6 +98,98 @@ function updateEnvVar(
   return { ...envSet, vars };
 }
 
+function envVarsForDisplay(envSet: DeploymentProvisioningEnvSet): Array<{ key: string; value: string }> {
+  return envSet.vars.length > 0 ? envSet.vars : [{ key: "", value: "" }];
+}
+
+function blankVariableGroup(index = 1): DeploymentProvisioningVariableGroup {
+  return {
+    name: `Variable group ${index}`,
+    appliesTo: "all",
+    env: [blankEnvSet()],
+  };
+}
+
+function variableGroupsForValue(value: DeploymentProvisioningRequest): DeploymentProvisioningVariableGroup[] {
+  if (value.variableGroups?.length) {
+    return value.variableGroups;
+  }
+
+  if (value.sharedEnv?.length) {
+    return [
+      {
+        name: "Shared variables",
+        appliesTo: "all",
+        env: value.sharedEnv,
+      },
+    ];
+  }
+
+  return [blankVariableGroup()];
+}
+
+function updateVariableGroupAt(
+  value: DeploymentProvisioningRequest,
+  index: number,
+  group: DeploymentProvisioningVariableGroup,
+): DeploymentProvisioningRequest {
+  const current = variableGroupsForValue(value);
+  const nextGroups = [...current];
+  nextGroups[index] = group;
+  return { ...value, variableGroups: nextGroups, sharedEnv: undefined };
+}
+
+function addVariableGroup(value: DeploymentProvisioningRequest): DeploymentProvisioningRequest {
+  const current = variableGroupsForValue(value);
+  return { ...value, variableGroups: [...current, blankVariableGroup(current.length + 1)], sharedEnv: undefined };
+}
+
+function removeVariableGroup(value: DeploymentProvisioningRequest, index: number): DeploymentProvisioningRequest {
+  const current = variableGroupsForValue(value);
+  const nextGroups = current.filter((_, currentIndex) => currentIndex !== index);
+  return { ...value, variableGroups: nextGroups.length ? nextGroups : [blankVariableGroup()], sharedEnv: undefined };
+}
+
+function countVars(envSets: DeploymentProvisioningEnvSet[] | undefined): number {
+  return (envSets ?? []).reduce(
+    (total, envSet) => total + envSet.vars.filter((variable) => variable.key.trim() && variable.value).length,
+    0,
+  );
+}
+
+function targetBranchKey(target: DeploymentProvisioningTargetRequest): string {
+  const branch = target.branchName?.trim() || "test";
+  return `${target.slot}:${target.provider}:${branch}`;
+}
+
+function targetBranchLabel(target: DeploymentProvisioningTargetRequest): string {
+  const branch = target.branchName?.trim() || "test";
+  return `${target.slot} / ${target.provider} / ${branch}`;
+}
+
+function targetScopeIncludes(group: DeploymentProvisioningVariableGroup, targetKey: string): boolean {
+  return group.appliesTo !== "selected" || (group.targetBranches ?? []).includes(targetKey);
+}
+
+function toggleGroupTargetBranch(
+  group: DeploymentProvisioningVariableGroup,
+  targetKey: string,
+  allTargetKeys: string[],
+): DeploymentProvisioningVariableGroup {
+  const selected = new Set(group.targetBranches?.length ? group.targetBranches : allTargetKeys);
+  if (selected.has(targetKey)) {
+    selected.delete(targetKey);
+  } else {
+    selected.add(targetKey);
+  }
+
+  return {
+    ...group,
+    appliesTo: "selected",
+    targetBranches: [...selected],
+  };
+}
+
 function defaultProjectPlaceholder(repoShape: string, target: DeploymentProvisioningTargetRequest) {
   if (repoShape === "multi" || repoShape === "microservices") {
     return target.slot === "frontend" ? "app-frontend-test" : "app-backend-test";
@@ -121,6 +229,7 @@ function withRenderDefaults(
   return {
     renderDeployMethod: target.renderDeployMethod ?? "managed_image",
     renderServiceType: target.renderServiceType ?? "web_service",
+    renderRuntime: target.renderRuntime ?? "docker",
     renderInstanceType: target.renderInstanceType ?? "free",
     renderRegion: target.renderRegion ?? "singapore",
     renderEnvironmentName: target.renderEnvironmentName ?? "test",
@@ -150,6 +259,20 @@ export function DeploymentProvisioningSetup({
     () => providerConnections.filter((connection) => connection.status === "active"),
     [providerConnections],
   );
+  const variableGroups = useMemo(
+    () => variableGroupsForValue(value),
+    [value],
+  );
+  const targetBranchOptions = useMemo(
+    () =>
+      targets.map((target) => ({
+        key: targetBranchKey(target),
+        label: targetBranchLabel(target),
+      })),
+    [targets],
+  );
+  const groupVarCount = variableGroups.reduce((total, group) => total + countVars(group.env), 0);
+  const branchVarCount = targets.reduce((total, target) => total + countVars(target.env), 0);
 
   useEffect(() => {
     if (!enabled || providerConnectionsLoading) {
@@ -214,9 +337,236 @@ export function DeploymentProvisioningSetup({
 
       {enabled ? (
         <div className="deployment-provisioning-setup__body">
+          <section className="deployment-provisioning-flow" aria-label="Deployment provisioning flow">
+            <div className="deployment-flow-step">
+              <span className="deployment-flow-step__index">1</span>
+              <div>
+                <strong>Target map</strong>
+                <div className="deployment-flow-branches">
+                  {targets.map((target, targetIndex) => (
+                    <span className="deployment-flow-branch" key={`${target.slot}-${targetIndex}`}>
+                      {target.slot} / {target.provider} / {target.branchName?.trim() || "test"}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            </div>
+            <div className="deployment-flow-step">
+              <span className="deployment-flow-step__index">2</span>
+              <div>
+                <strong>Variable groups</strong>
+                <span>
+                  {variableGroups.length} group{variableGroups.length === 1 ? "" : "s"} / {groupVarCount} variable{groupVarCount === 1 ? "" : "s"}
+                </span>
+              </div>
+            </div>
+            <div className="deployment-flow-step">
+              <span className="deployment-flow-step__index">3</span>
+              <div>
+                <strong>Branch variables</strong>
+                <span>{branchVarCount} branch-specific variable{branchVarCount === 1 ? "" : "s"}</span>
+              </div>
+            </div>
+          </section>
+
+          <section className="env-provisioning-section deployment-variable-groups">
+            <div className="env-section-header">
+              <div>
+                <h4>Variable groups</h4>
+                <p className="helper-text" style={{ margin: "0.25rem 0 0" }}>
+                  Create reusable groups for Render and Vercel, then apply each one to all target branches or selected branches.
+                </p>
+              </div>
+              <button
+                type="button"
+                className="ghost-button"
+                onClick={() => onChange(addVariableGroup(value))}
+              >
+                Create group
+              </button>
+            </div>
+
+            {variableGroups.map((group, groupIndex) => {
+              const envSet = group.env[0] ?? blankEnvSet();
+              const sharedVars = envVarsForDisplay(envSet);
+
+              return (
+                <div className="deployment-variable-panel" key={`group-${groupIndex}`}>
+                  <div className="deployment-variable-panel__header">
+                    <div className="deployment-variable-panel__scope">
+                      <label>
+                        <span>Group name</span>
+                        <input
+                          aria-label={`Variable group name ${groupIndex + 1}`}
+                          value={group.name ?? `Variable group ${groupIndex + 1}`}
+                          onChange={(event) =>
+                            onChange(
+                              updateVariableGroupAt(value, groupIndex, {
+                                ...group,
+                                name: event.target.value,
+                              }),
+                            )
+                          }
+                        />
+                      </label>
+                    </div>
+                    <label className="deployment-variable-panel__environment">
+                      <span>Apply to</span>
+                      <select
+                        aria-label={`Variable group scope ${groupIndex + 1}`}
+                        value={group.appliesTo ?? "all"}
+                        onChange={(event) =>
+                          onChange(
+                            updateVariableGroupAt(value, groupIndex, {
+                              ...group,
+                              appliesTo: event.target.value as "all" | "selected",
+                              targetBranches:
+                                event.target.value === "selected"
+                                  ? group.targetBranches?.length
+                                    ? group.targetBranches
+                                    : targetBranchOptions.map((option) => option.key)
+                                  : undefined,
+                            }),
+                          )
+                        }
+                      >
+                        <option value="all">All target branches</option>
+                        <option value="selected">Selected branches</option>
+                      </select>
+                    </label>
+                    <label className="deployment-variable-panel__environment">
+                      <span>Provider environment</span>
+                      <select
+                        aria-label={`Variable group environment ${groupIndex + 1}`}
+                        value={envSet.environment}
+                        onChange={(event) =>
+                          onChange(
+                            updateVariableGroupAt(value, groupIndex, {
+                              ...group,
+                              env: [{ ...envSet, environment: event.target.value as EnvEnvironment }],
+                            }),
+                          )
+                        }
+                      >
+                        {environments.map((environment) => (
+                          <option key={environment} value={environment}>
+                            {environment}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <button
+                      type="button"
+                      className="ghost-button deployment-variable-panel__button"
+                      onClick={() =>
+                        onChange(
+                          updateVariableGroupAt(value, groupIndex, {
+                            ...group,
+                            env: [{ ...envSet, vars: [...sharedVars, { key: "", value: "" }] }],
+                          }),
+                        )
+                      }
+                    >
+                      Add variable
+                    </button>
+                    <button
+                      type="button"
+                      className="env-var-row__remove env-var-remove"
+                      aria-label={`Remove variable group ${groupIndex + 1}`}
+                      disabled={variableGroups.length === 1 && sharedVars.length === 1 && !sharedVars[0]?.key && !sharedVars[0]?.value}
+                      onClick={() => onChange(removeVariableGroup(value, groupIndex))}
+                    >
+                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden="true">
+                        <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+                      </svg>
+                    </button>
+                  </div>
+
+                  <div className="deployment-variable-panel__targets" aria-label={`Variable group targets ${groupIndex + 1}`}>
+                    <span>{group.appliesTo === "selected" ? "Selected target branches" : "Applies to all target branches"}</span>
+                      <div className="deployment-flow-branches">
+                        {targetBranchOptions.map((option) => (
+                          <button
+                            type="button"
+                            className={[
+                              "deployment-flow-branch",
+                              "deployment-flow-branch--button",
+                              targetScopeIncludes(group, option.key) ? "active" : "",
+                            ].filter(Boolean).join(" ")}
+                            key={option.key}
+                            disabled={group.appliesTo !== "selected"}
+                            onClick={() =>
+                              onChange(
+                                updateVariableGroupAt(
+                                  value,
+                                  groupIndex,
+                                  toggleGroupTargetBranch(group, option.key, targetBranchOptions.map((target) => target.key)),
+                                ),
+                              )
+                            }
+                          >
+                            {option.label}
+                          </button>
+                        ))}
+                      </div>
+                  </div>
+
+                  {sharedVars.map((variable, variableIndex) => (
+                    <div className="env-var-row" key={`group-${groupIndex}-${variableIndex}`}>
+                      <label>
+                        <span>Key</span>
+                        <input
+                          aria-label={`Group variable key ${groupIndex + 1}-${variableIndex + 1}`}
+                          value={variable.key}
+                          onChange={(event) => {
+                            const nextEnvSet = updateEnvVar(envSet, variableIndex, { key: event.target.value.toUpperCase() });
+                            onChange(updateVariableGroupAt(value, groupIndex, { ...group, env: [nextEnvSet] }));
+                          }}
+                          placeholder="DATABASE_URL"
+                        />
+                      </label>
+                      <label>
+                        <span>Value</span>
+                        <input
+                          aria-label={`Group variable value ${groupIndex + 1}-${variableIndex + 1}`}
+                          type="password"
+                          value={variable.value}
+                          onChange={(event) => {
+                            const nextEnvSet = updateEnvVar(envSet, variableIndex, { value: event.target.value });
+                            onChange(updateVariableGroupAt(value, groupIndex, { ...group, env: [nextEnvSet] }));
+                          }}
+                          placeholder="value"
+                        />
+                      </label>
+                      <button
+                        type="button"
+                        className="env-var-row__remove env-var-remove"
+                        aria-label={`Remove group variable ${groupIndex + 1}-${variableIndex + 1}`}
+                        disabled={sharedVars.length === 1 && !variable.key && !variable.value}
+                        onClick={() => {
+                          const nextVars = sharedVars.filter((_, currentIndex) => currentIndex !== variableIndex);
+                          onChange(
+                            updateVariableGroupAt(value, groupIndex, {
+                              ...group,
+                              env: [{ ...envSet, vars: nextVars.length ? nextVars : [{ key: "", value: "" }] }],
+                            }),
+                          );
+                        }}
+                      >
+                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden="true">
+                          <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+                        </svg>
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              );
+            })}
+          </section>
+
           {targets.map((target, targetIndex) => {
             const envSet = target.env?.[0] ?? { environment: "test" as EnvEnvironment, vars: [] };
-            const vars = envSet.vars.length > 0 ? envSet.vars : [{ key: "", value: "" }];
+            const vars = envVarsForDisplay(envSet);
             const matchingConnections = activeProviderConnections.filter(
               (connection) => connection.provider === target.provider,
             );
@@ -282,6 +632,7 @@ export function DeploymentProvisioningSetup({
                                 ? {
                                     renderDeployMethod: undefined,
                                     renderServiceType: undefined,
+                                    renderRuntime: undefined,
                                     renderInstanceType: undefined,
                                     renderRegion: undefined,
                                     renderEnvironmentName: undefined,
@@ -436,6 +787,31 @@ export function DeploymentProvisioningSetup({
                         </select>
                       </label>
                       <label className="env-target-grid__field env-target-grid__field--compact">
+                        <span>Runtime</span>
+                        <select
+                          aria-label={targetIndex === 0 ? "Render runtime" : `Render runtime ${targetIndex + 1}`}
+                          value={target.renderRuntime ?? "docker"}
+                          onChange={(event) =>
+                            onChange(
+                              updateTargetAt(value, targetIndex, {
+                                renderRuntime: event.target.value as RenderRuntime,
+                              }),
+                            )
+                          }
+                        >
+                          {renderRuntimeOptions.map((option) => (
+                            <option key={option.value} value={option.value}>
+                              {option.label}
+                            </option>
+                          ))}
+                        </select>
+                        <span className="helper-text env-target-grid__note">
+                          {target.renderDeployMethod === "native_git"
+                            ? "Render uses this runtime for its native Git build."
+                            : "Image-backed deploys run as a Docker image; this records the service runtime intent."}
+                        </span>
+                      </label>
+                      <label className="env-target-grid__field env-target-grid__field--compact">
                         <span>Instance</span>
                         <input
                           aria-label={targetIndex === 0 ? "Render instance type" : `Render instance type ${targetIndex + 1}`}
@@ -536,9 +912,9 @@ export function DeploymentProvisioningSetup({
 
                 <div className="env-section-header deployment-provisioning-setup__vars-header">
                   <div>
-                    <strong>Initial variables</strong>
+                    <strong>Branch-specific variables</strong>
                     <p className="helper-text" style={{ margin: "0.25rem 0 0" }}>
-                      Values are sent to the provider during setup and are not stored by FlowCI.
+                      {targetBranchLabel(target)} can override shared keys or add its own values. Values are sent to the provider during setup and are not stored by FlowCI.
                     </p>
                   </div>
                   <button

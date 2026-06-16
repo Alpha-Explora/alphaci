@@ -7,6 +7,7 @@ import type {
   EnvEnvironment,
   EnvOwnershipMode,
   EnvProvider,
+  RenderRuntime,
   EnvTargetSlot,
   EnvVarMetadata,
   ProvisionedProject,
@@ -26,6 +27,23 @@ const USAGE_LABELS: Record<string, string> = {
   env_keys: "Env keys",
   workflow_prs: "Workflow update PRs",
 };
+
+const RENDER_RUNTIME_OPTIONS: Array<{ value: RenderRuntime; label: string }> = [
+  { value: "docker", label: "Dockerfile" },
+  { value: "node", label: "Node.js / Bun" },
+  { value: "python", label: "Python" },
+  { value: "ruby", label: "Ruby" },
+  { value: "go", label: "Go" },
+  { value: "rust", label: "Rust" },
+  { value: "elixir", label: "Elixir" },
+];
+
+function formatRenderRuntime(value: RenderRuntime | string | null | undefined): string {
+  if (!value) return "Not configured";
+  if (value === "node") return "Node.js / Bun";
+  if (value === "docker") return "Dockerfile";
+  return `${value.slice(0, 1).toUpperCase()}${value.slice(1)}`;
+}
 
 interface EnvRow {
   key: string;
@@ -49,6 +67,7 @@ export function ProjectEnvPanel({ project }: Readonly<{ project: ProvisionedProj
   const [rootDirectory, setRootDirectory] = useState(".");
   const [buildCommand, setBuildCommand] = useState("npm ci && npm run build");
   const [startCommand, setStartCommand] = useState("npm run start:prod");
+  const [renderRuntime, setRenderRuntime] = useState<RenderRuntime>("docker");
   const [rows, setRows] = useState<EnvRow[]>([{ key: "", value: "" }]);
   const [message, setMessage] = useState<string | null>(null);
   const [bulkEnvText, setBulkEnvText] = useState("");
@@ -126,6 +145,7 @@ export function ProjectEnvPanel({ project }: Readonly<{ project: ProvisionedProj
             rootDirectory,
             buildCommand,
             ...(provider === "render" && startCommand ? { startCommand } : {}),
+            ...(provider === "render" ? { renderRuntime } : {}),
           }
         : {
             providerProjectId,
@@ -261,7 +281,20 @@ export function ProjectEnvPanel({ project }: Readonly<{ project: ProvisionedProj
               <input value={rootDirectory} onChange={(event) => setRootDirectory(event.target.value)} placeholder="Root directory" />
               <input value={buildCommand} onChange={(event) => setBuildCommand(event.target.value)} placeholder="Build command" />
               {provider === "render" ? (
-                <input value={startCommand} onChange={(event) => setStartCommand(event.target.value)} placeholder="Start command" />
+                <>
+                  <select
+                    aria-label="Render runtime"
+                    value={renderRuntime}
+                    onChange={(event) => setRenderRuntime(event.target.value as RenderRuntime)}
+                  >
+                    {RENDER_RUNTIME_OPTIONS.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                  <input value={startCommand} onChange={(event) => setStartCommand(event.target.value)} placeholder="Start command" />
+                </>
               ) : null}
             </>
           ) : (
@@ -293,6 +326,7 @@ export function ProjectEnvPanel({ project }: Readonly<{ project: ProvisionedProj
             targets.map((target) => (
               <option key={target.id} value={target.id}>
                 {target.providerProjectName} - {target.provider}
+                {target.provider === "render" && target.renderRuntime ? ` - ${formatRenderRuntime(target.renderRuntime)}` : ""}
               </option>
             ))
           ) : (
