@@ -248,6 +248,7 @@ export function AppNav({ guest, session, onLogout, isLoggingOut }: Readonly<AppN
   const pathname = usePathname();
   const navRef = useRef<HTMLElement>(null);
   const [scrolled, setScrolled] = useState(false);
+  const [hidden, setHidden] = useState(false);
   const [workspaces, setWorkspacesState] = useState<WorkspacesMeResponse | null>(null);
   const [notifications, setNotifications] = useState<NotificationsResponse | null>(null);
   const lastScrollY = useRef(0);
@@ -264,6 +265,7 @@ export function AppNav({ guest, session, onLogout, isLoggingOut }: Readonly<AppN
     const frame = window.requestAnimationFrame(() => {
       lastScrollY.current = window.scrollY;
       setScrolled(window.scrollY > 8);
+      setHidden(false);
     });
     return () => window.cancelAnimationFrame(frame);
   }, [pathname]);
@@ -271,12 +273,16 @@ export function AppNav({ guest, session, onLogout, isLoggingOut }: Readonly<AppN
   useEffect(() => {
     function onScroll() {
       const y = window.scrollY;
+      const delta = y - lastScrollY.current;
       setScrolled(y > 8);
+      if (Math.abs(delta) > 4) {
+        setHidden(!reduced && delta > 0 && y > 96);
+      }
       lastScrollY.current = y;
     }
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
-  }, []);
+  }, [reduced]);
 
   useEffect(() => {
     if (guest) return;
@@ -351,7 +357,7 @@ export function AppNav({ guest, session, onLogout, isLoggingOut }: Readonly<AppN
   return (
     <header
       ref={navRef}
-      className={`app-nav-dock${scrolled ? " app-nav-dock--scrolled" : ""}`}
+      className={`app-nav-dock${scrolled ? " app-nav-dock--scrolled" : ""}${hidden ? " app-nav-dock--hidden" : ""}`}
       role="banner"
       onMouseMove={handleNavMouseMove}
     >
