@@ -53,6 +53,7 @@ describe("API client project setup helpers", () => {
   const fetchMock = jest.fn();
   const originalApiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
   const originalApiUrl = process.env.NEXT_PUBLIC_API_URL;
+  const originalNodeEnv = process.env.NODE_ENV;
 
   beforeEach(() => {
     fetchMock.mockReset();
@@ -70,6 +71,12 @@ describe("API client project setup helpers", () => {
       delete process.env.NEXT_PUBLIC_API_URL;
     } else {
       process.env.NEXT_PUBLIC_API_URL = originalApiUrl;
+    }
+
+    if (originalNodeEnv === undefined) {
+      delete process.env.NODE_ENV;
+    } else {
+      process.env.NODE_ENV = originalNodeEnv;
     }
     jest.resetModules();
   });
@@ -1260,13 +1267,25 @@ describe("API client project setup helpers", () => {
     );
   });
 
-  it("accepts NEXT_PUBLIC_API_URL and appends the API prefix", async () => {
+  it("accepts NEXT_PUBLIC_API_URL for non-production local development", async () => {
     delete process.env.NEXT_PUBLIC_API_BASE_URL;
     process.env.NEXT_PUBLIC_API_URL = "http://127.0.0.1:4500";
+    process.env.NODE_ENV = "test";
     jest.resetModules();
 
     const { getApiBaseUrl } = await import("../../src/lib/api/client");
 
     expect(getApiBaseUrl()).toBe("http://127.0.0.1:4500/api/v1");
+  });
+
+  it("rejects the legacy API alias in production builds", async () => {
+    delete process.env.NEXT_PUBLIC_API_BASE_URL;
+    process.env.NEXT_PUBLIC_API_URL = "https://flowci-be-test.onrender.com";
+    process.env.NODE_ENV = "production";
+    jest.resetModules();
+
+    await expect(import("../../src/lib/api/client")).rejects.toThrow(
+      "NEXT_PUBLIC_API_URL is a legacy local-development alias",
+    );
   });
 });

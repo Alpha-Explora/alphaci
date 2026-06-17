@@ -3,11 +3,25 @@ function normalizeApiBaseUrl(value: string): string {
   return trimmed.endsWith("/api/v1") ? trimmed : `${trimmed}/api/v1`;
 }
 
-const API_BASE_URL = normalizeApiBaseUrl(
-  process.env.NEXT_PUBLIC_API_BASE_URL ||
-    process.env.NEXT_PUBLIC_API_URL ||
-    "http://localhost:4000/api/v1",
-);
+function resolveApiBaseUrl(): string {
+  const canonicalApiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
+  if (canonicalApiBaseUrl) {
+    return normalizeApiBaseUrl(canonicalApiBaseUrl);
+  }
+
+  if (process.env.NODE_ENV === "production" && process.env.NEXT_PUBLIC_API_URL) {
+    throw new Error(
+      "NEXT_PUBLIC_API_URL is a legacy local-development alias and is ignored in production. " +
+        "Set NEXT_PUBLIC_API_BASE_URL to the active AlphaCI backend URL instead.",
+    );
+  }
+
+  return normalizeApiBaseUrl(
+    process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api/v1",
+  );
+}
+
+const API_BASE_URL = resolveApiBaseUrl();
 
 export class ApiError extends Error {
   status: number;

@@ -93,6 +93,7 @@ export function OAuthAuthPage({
   const prefersReducedMotion = useReducedMotion();
 
   const [isWarming, setIsWarming] = useState<boolean>(false);
+  const [browserOrigin, setBrowserOrigin] = useState<string | null>(null);
 
   const { status, session } = useAuthSession();
 
@@ -103,8 +104,11 @@ export function OAuthAuthPage({
       next: nextPath,
       provider: "github",
     });
-    return `/auth/callback?${callbackPath.toString()}`;
-  }, [mode, nextPath]);
+    const relativeCallbackPath = `/auth/callback?${callbackPath.toString()}`;
+    return browserOrigin
+      ? `${browserOrigin}${relativeCallbackPath}`
+      : relativeCallbackPath;
+  }, [browserOrigin, mode, nextPath]);
 
   const githubLoginHref = useMemo(() => createGitHubLoginUrl(githubCallbackReturnTo), [githubCallbackReturnTo]);
 
@@ -117,6 +121,10 @@ export function OAuthAuthPage({
   const rotateY = useSpring(useTransform(pointerX, [-0.5, 0.5], [-3.2, 3.2]), {
     stiffness: 190, damping: 24, mass: 0.45,
   });
+
+  useEffect(() => {
+    setBrowserOrigin(window.location.origin);
+  }, []);
 
   useEffect(() => {
     if (status !== "signed-in") return;
