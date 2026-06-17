@@ -357,6 +357,8 @@ function HomeDashboardContent() {
     loadHistory();
     loadProjects();
     loadRepos();
+    // Intentionally re-run only on auth/workspace change, not on loader identity.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status, selectedWorkspaceId]);
 
   useEffect(() => {

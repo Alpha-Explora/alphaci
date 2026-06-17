@@ -408,4 +408,206 @@ describe("env provisioning hooks", () => {
       ],
     });
   });
+
+  it("sanitizes variable groups with defaulted optional fields", async () => {
+    const snapshots = renderDeploymentProvisioningForm();
+
+    act(() => {
+      snapshots.at(-1)?.setRequest({
+        enabled: true,
+        targets: [
+          {
+            slot: "backend",
+            provider: "render",
+            ownershipMode: "flowci_managed",
+            projectName: "api",
+            branchName: "test",
+            rootDirectory: ".",
+            buildCommand: "npm ci && npm run build",
+            env: [],
+          },
+        ],
+        variableGroups: [
+          {
+            // name and appliesTo and targetBranches all omitted — all optional
+            provider: "render",
+            env: [{ environment: "test", vars: [{ key: "SECRET", value: "abc" }] }],
+          },
+        ],
+      });
+      snapshots.at(-1)?.setEnabled(true);
+    });
+
+    const group = snapshots.at(-1)?.payload?.variableGroups?.[0];
+    expect(group).toBeDefined();
+    expect(group?.name).toBe("Variable group 1");
+    expect(group?.appliesTo).toBe("all");
+    // "all" groups must not carry a targetBranches key
+    expect(group).not.toHaveProperty("targetBranches");
+  });
+
+  it("sanitizes variable groups with appliesTo=selected and valid targetBranches", async () => {
+    const snapshots = renderDeploymentProvisioningForm();
+
+    act(() => {
+      snapshots.at(-1)?.setRequest({
+        enabled: true,
+        targets: [
+          {
+            slot: "backend",
+            provider: "render",
+            ownershipMode: "flowci_managed",
+            projectName: "api",
+            branchName: "test",
+            rootDirectory: ".",
+            buildCommand: "npm ci && npm run build",
+            env: [],
+          },
+        ],
+        variableGroups: [
+          {
+            name: "Named Group",
+            provider: "render",
+            appliesTo: "selected",
+            targetBranches: ["backend:render:test"],
+            env: [{ environment: "test", vars: [{ key: "DB_URL", value: "postgres://x" }] }],
+          },
+        ],
+      });
+      snapshots.at(-1)?.setEnabled(true);
+    });
+
+    const group = snapshots.at(-1)?.payload?.variableGroups?.[0];
+    expect(group?.name).toBe("Named Group");
+    expect(group?.appliesTo).toBe("selected");
+    expect(group?.targetBranches).toEqual(["backend:render:test"]);
+  });
+
+  it("filters out variable groups whose provider is not in the active target set", async () => {
+    const snapshots = renderDeploymentProvisioningForm();
+
+    act(() => {
+      snapshots.at(-1)?.setRequest({
+        enabled: true,
+        targets: [
+          {
+            slot: "backend",
+            provider: "render",
+            ownershipMode: "flowci_managed",
+            projectName: "api",
+            branchName: "test",
+            rootDirectory: ".",
+            buildCommand: "npm run build",
+            env: [],
+          },
+        ],
+        variableGroups: [
+          {
+            name: "Vercel Only",
+            provider: "vercel", // render is the only active provider — vercel gets filtered
+            appliesTo: "all",
+            env: [{ environment: "test", vars: [{ key: "X", value: "y" }] }],
+          },
+        ],
+      });
+      snapshots.at(-1)?.setEnabled(true);
+    });
+
+    expect(snapshots.at(-1)?.payload?.variableGroups).toBeUndefined();
+  });
+
+  it("filters out variable groups whose env vars are all blank after sanitization", async () => {
+    const snapshots = renderDeploymentProvisioningForm();
+
+    act(() => {
+      snapshots.at(-1)?.setRequest({
+        enabled: true,
+        targets: [
+          {
+            slot: "backend",
+            provider: "render",
+            ownershipMode: "flowci_managed",
+            projectName: "api",
+            branchName: "test",
+            rootDirectory: ".",
+            buildCommand: "npm run build",
+            env: [],
+          },
+        ],
+        variableGroups: [
+          {
+            name: "Empty",
+            provider: "render",
+            appliesTo: "all",
+            env: [{ environment: "test", vars: [{ key: "", value: "ignored" }] }],
+          },
+        ],
+      });
+      snapshots.at(-1)?.setEnabled(true);
+    });
+
+    expect(snapshots.at(-1)?.payload?.variableGroups).toBeUndefined();
+  });
+
+  it("filters out selected-appliesTo variable groups with no targetBranches after dedup", async () => {
+    const snapshots = renderDeploymentProvisioningForm();
+
+    act(() => {
+      snapshots.at(-1)?.setRequest({
+        enabled: true,
+        targets: [
+          {
+            slot: "backend",
+            provider: "render",
+            ownershipMode: "flowci_managed",
+            projectName: "api",
+            branchName: "test",
+            rootDirectory: ".",
+            buildCommand: "npm run build",
+            env: [],
+          },
+        ],
+        variableGroups: [
+          {
+            name: "Selected No Branches",
+            provider: "render",
+            appliesTo: "selected",
+            targetBranches: [], // empty — gets filtered
+            env: [{ environment: "test", vars: [{ key: "X", value: "y" }] }],
+          },
+        ],
+      });
+      snapshots.at(-1)?.setEnabled(true);
+    });
+
+    expect(snapshots.at(-1)?.payload?.variableGroups).toBeUndefined();
+  });
+
+  it("includes sharedEnv in payload when at least one env set has valid vars", async () => {
+    const snapshots = renderDeploymentProvisioningForm();
+
+    act(() => {
+      snapshots.at(-1)?.setRequest({
+        enabled: true,
+        targets: [
+          {
+            slot: "backend",
+            provider: "render",
+            ownershipMode: "flowci_managed",
+            projectName: "api",
+            branchName: "test",
+            rootDirectory: ".",
+            buildCommand: "npm run build",
+            env: [],
+          },
+        ],
+        sharedEnv: [{ environment: "test", vars: [{ key: "GLOBAL", value: "global-value" }] }],
+      });
+      snapshots.at(-1)?.setEnabled(true);
+    });
+
+    expect(snapshots.at(-1)?.payload?.sharedEnv).toEqual([
+      { environment: "test", vars: [{ key: "GLOBAL", value: "global-value" }] },
+    ]);
+  });
 });
