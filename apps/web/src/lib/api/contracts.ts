@@ -52,10 +52,14 @@ export interface SubscriptionInfo {
   interval?: "month" | "year";
 }
 
+export type PlatformRole = "admin" | "super_admin";
+
 export interface AuthMeResponse {
   authenticated: boolean;
   user: SessionUser;
   subscription: SubscriptionInfo;
+  /** null for ordinary users; set for platform admins. Gates the /admin surface. */
+  platformRole?: PlatformRole | null;
 }
 
 export interface CapabilitiesResponse {
