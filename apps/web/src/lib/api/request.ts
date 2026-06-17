@@ -9,16 +9,23 @@ function resolveApiBaseUrl(): string {
     return normalizeApiBaseUrl(canonicalApiBaseUrl);
   }
 
-  if (process.env.NODE_ENV === "production" && process.env.NEXT_PUBLIC_API_URL) {
-    throw new Error(
-      "NEXT_PUBLIC_API_URL is a legacy local-development alias and is ignored in production. " +
-        "Set NEXT_PUBLIC_API_BASE_URL to the active AlphaCI backend URL instead.",
-    );
+  const legacyApiUrl = process.env.NEXT_PUBLIC_API_URL;
+  if (legacyApiUrl) {
+    // NEXT_PUBLIC_API_BASE_URL is the canonical var. NEXT_PUBLIC_API_URL is a
+    // legacy alias we still honor so existing deployments keep working — but we
+    // warn so the env can be migrated. We deliberately do NOT throw here:
+    // this runs at module load, including during `next build` prerendering, so
+    // throwing would crash the entire production build instead of degrading.
+    if (process.env.NODE_ENV === "production") {
+      console.warn(
+        "NEXT_PUBLIC_API_URL is a legacy alias; set NEXT_PUBLIC_API_BASE_URL " +
+          "to the active backend URL to silence this warning.",
+      );
+    }
+    return normalizeApiBaseUrl(legacyApiUrl);
   }
 
-  return normalizeApiBaseUrl(
-    process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api/v1",
-  );
+  return normalizeApiBaseUrl("http://localhost:4000/api/v1");
 }
 
 const API_BASE_URL = resolveApiBaseUrl();
