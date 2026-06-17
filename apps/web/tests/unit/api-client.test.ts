@@ -1278,14 +1278,37 @@ describe("API client project setup helpers", () => {
     expect(getApiBaseUrl()).toBe("http://127.0.0.1:4500/api/v1");
   });
 
-  it("rejects the legacy API alias in production builds", async () => {
+  it("falls back to the legacy API alias in production but warns (no throw)", async () => {
     delete process.env.NEXT_PUBLIC_API_BASE_URL;
     process.env.NEXT_PUBLIC_API_URL = "https://flowci-be-test.onrender.com";
     process.env.NODE_ENV = "production";
     jest.resetModules();
 
-    await expect(import("../../src/lib/api/client")).rejects.toThrow(
-      "NEXT_PUBLIC_API_URL is a legacy local-development alias",
-    );
+    const warnSpy = jest.spyOn(console, "warn").mockImplementation(() => {});
+    try {
+      const { getApiBaseUrl } = await import("../../src/lib/api/client");
+      expect(getApiBaseUrl()).toBe("https://flowci-be-test.onrender.com/api/v1");
+      expect(warnSpy).toHaveBeenCalledWith(
+        expect.stringContaining("NEXT_PUBLIC_API_URL is a legacy alias"),
+      );
+    } finally {
+      warnSpy.mockRestore();
+    }
+  });
+
+  it("prefers NEXT_PUBLIC_API_BASE_URL over the legacy alias in production", async () => {
+    process.env.NEXT_PUBLIC_API_BASE_URL = "https://alphaci-be-test.onrender.com";
+    process.env.NEXT_PUBLIC_API_URL = "https://flowci-be-test.onrender.com";
+    process.env.NODE_ENV = "production";
+    jest.resetModules();
+
+    const warnSpy = jest.spyOn(console, "warn").mockImplementation(() => {});
+    try {
+      const { getApiBaseUrl } = await import("../../src/lib/api/client");
+      expect(getApiBaseUrl()).toBe("https://alphaci-be-test.onrender.com/api/v1");
+      expect(warnSpy).not.toHaveBeenCalled();
+    } finally {
+      warnSpy.mockRestore();
+    }
   });
 });
