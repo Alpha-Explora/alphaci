@@ -22,6 +22,22 @@ const eslintConfig = defineConfig([
       "@typescript-eslint/no-require-imports": "off",
     },
   },
+  // Honor the underscore-prefix convention already used in the codebase for
+  // intentionally-unused bindings (e.g. stripping framer-motion-only props in
+  // test mocks). Without this, those `_`-prefixed names trip no-unused-vars and
+  // fail the CI lint gate (which runs with --max-warnings=0).
+  {
+    rules: {
+      "@typescript-eslint/no-unused-vars": [
+        "warn",
+        {
+          argsIgnorePattern: "^_",
+          varsIgnorePattern: "^_",
+          caughtErrorsIgnorePattern: "^_",
+        },
+      ],
+    },
+  },
 ]);
 
 export default eslintConfig;

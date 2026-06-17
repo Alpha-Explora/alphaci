@@ -157,9 +157,9 @@ describe("SubscribePage", () => {
     await flushMicrotasks();
 
     expect(container.textContent).toContain("Plans for CI/CD builders");
-    expect(container.textContent).toContain("Start free");
+    expect(container.textContent).toContain("Start on Free");
     expect(container.textContent).toContain("Get Pro");
-    expect(container.textContent).toContain("Log in");
+    expect(container.textContent).toContain("Login");
     expect(container.textContent).not.toContain("Plans & Billing");
     expect(container.textContent).not.toContain("Cancel subscription");
   });
