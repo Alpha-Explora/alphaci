@@ -58,8 +58,8 @@ Smoke path:
 2. Activate mock Pro at `/subscribe`.
 3. Open `/workflows`.
 4. Install/link the GitHub App installation ID.
-5. Create `flowci-mvp-nextjs-YYYYMMDD-HHMM` as a private Next.js project.
-6. Repeat with `flowci-mvp-nestjs-YYYYMMDD-HHMM`.
+5. Create `alphaci-mvp-nextjs-YYYYMMDD-HHMM` as a private Next.js project.
+6. Repeat with `alphaci-mvp-nestjs-YYYYMMDD-HHMM`.
 7. Open the created repo Actions tab and confirm `validate-access` reaches the
    backend callback.
 

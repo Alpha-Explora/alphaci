@@ -90,7 +90,7 @@ export default function WorkflowsPage() {
       {guest && (
         <div className="guest-banner" role="alert">
           <p className="guest-banner-text">
-            You are viewing FlowCI Studio in preview mode. Sign up to unlock all features.
+            You are viewing AlphaCI in preview mode. Sign up to unlock all features.
           </p>
           <div className="guest-banner-actions">
             <Link className="primary-button" href="/signup" style={{ padding: "0.4rem 1rem", fontSize: "0.82rem" }}>
@@ -115,7 +115,7 @@ export default function WorkflowsPage() {
         >
           <div className="workflow-page-header-left">
             <p className="workflow-page-breadcrumb">
-              <span style={{ opacity: 0.55 }}>FlowCI</span>
+              <span style={{ opacity: 0.55 }}>AlphaCI</span>
               <span className="workflow-page-breadcrumb-sep">/</span>
               <span>Workflows</span>
             </p>

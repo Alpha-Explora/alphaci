@@ -445,7 +445,7 @@ describe("API client project setup helpers", () => {
       json: async () => ({
         id: "local-project-1-quality",
         stage: "quality",
-        workflowName: "FlowCI Quality",
+        workflowName: "AlphaCI Quality",
       }),
     });
 
@@ -562,7 +562,7 @@ describe("API client project setup helpers", () => {
         findingId: "finding-1",
         action: "rotate_ci_token",
         status: "completed",
-        message: "CI token rotated in FlowCI",
+        message: "CI token rotated in AlphaCI",
         result: { tokenPrefix: "fci_prefix" },
       }),
     });
@@ -571,7 +571,7 @@ describe("API client project setup helpers", () => {
       repairProjectDriftFinding("project-1", "finding-1", "rotate_ci_token"),
     ).resolves.toMatchObject({
       status: "completed",
-      message: "CI token rotated in FlowCI",
+      message: "CI token rotated in AlphaCI",
     });
 
     expect(fetchMock).toHaveBeenCalledWith(
@@ -893,7 +893,7 @@ describe("API client project setup helpers", () => {
     );
   });
 
-  it("detaches a deployment target from FlowCI only", async () => {
+  it("detaches a deployment target from AlphaCI only", async () => {
     fetchMock.mockResolvedValueOnce({
       ok: true,
       status: 200,
@@ -1144,10 +1144,10 @@ describe("API client project setup helpers", () => {
         workflowFiles: [
           {
             stage: "access",
-            name: "FlowCI Access Gate",
+            name: "AlphaCI Access Gate",
             path: ".github/workflows/00-flowci-access.yml",
             gated: true,
-            yaml: "name: FlowCI Access Gate",
+            yaml: "name: AlphaCI Access Gate",
           },
         ],
         diffSummary: [

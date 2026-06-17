@@ -54,7 +54,7 @@ export function DeploymentProvidersSection({
     <section className="provider-settings-panel">
       <div className="provider-settings-header">
         <h2>Deployment Providers</h2>
-        <p>Provider tokens are encrypted. Env var values are sent to the provider and are not stored by FlowCI.</p>
+        <p>Provider tokens are encrypted. Env var values are sent to the provider and are not stored by AlphaCI.</p>
         {!canManageProviders ? (
           <p className="provider-empty-state" style={{ margin: 0 }}>
             Provider management requires owner or admin access.

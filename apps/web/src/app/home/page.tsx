@@ -529,7 +529,7 @@ function HomeDashboardContent() {
           gap: "1rem",
         }}>
           <p style={{ margin: 0, color: "var(--text-primary)", fontWeight: 500, fontSize: "0.88rem" }}>
-            You are viewing FlowCI Studio in preview mode. Sign up to unlock all features.
+            You are viewing AlphaCI in preview mode. Sign up to unlock all features.
           </p>
           <div style={{ display: "flex", gap: "0.5rem" }}>
             <Link className="primary-button" href="/signup" style={{ padding: "0.4rem 1rem", fontSize: "0.82rem" }}>
@@ -589,7 +589,7 @@ function HomeDashboardContent() {
                 </p>
                 <h1 style={{ padding: 0, border: "none", margin: 0, fontSize: "clamp(1.4rem, 2.5vw, 1.85rem)", fontWeight: 800 }}>
                   {guest
-                    ? "FlowCI Studio Dashboard"
+                    ? "AlphaCI Dashboard"
                     : `Welcome back, ${session?.user.name ?? session?.user.login ?? "builder"}.`}
                 </h1>
               </div>
@@ -863,7 +863,7 @@ function HomeDashboardContent() {
                               {confirmDisconnectId === project.id ? (
                                 <div className="repo-card-confirm-row">
                                   <span className="repo-card-confirm-label">
-                                    Remove from FlowCI? GitHub repo is untouched.
+                                    Remove from AlphaCI? GitHub repo is untouched.
                                   </span>
                                   <button
                                     type="button"

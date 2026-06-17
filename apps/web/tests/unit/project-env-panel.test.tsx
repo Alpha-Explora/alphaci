@@ -337,24 +337,24 @@ describe("Project env provisioning UI", () => {
       workflowFiles: [
         {
           stage: "access",
-          name: "FlowCI Access Gate",
+          name: "AlphaCI Access Gate",
           path: ".github/workflows/00-flowci-access.yml",
           gated: true,
-          yaml: "name: FlowCI Access Gate",
+          yaml: "name: AlphaCI Access Gate",
         },
         {
           stage: "quality",
-          name: "FlowCI Quality",
+          name: "AlphaCI Quality",
           path: ".github/workflows/10-flowci-quality.yml",
           gated: true,
-          yaml: "name: FlowCI Quality",
+          yaml: "name: AlphaCI Quality",
         },
         {
           stage: "package",
-          name: "FlowCI Package",
+          name: "AlphaCI Package",
           path: ".github/workflows/20-flowci-package.yml",
           gated: true,
-          yaml: "name: FlowCI Package",
+          yaml: "name: AlphaCI Package",
         },
       ],
       diffSummary: [
@@ -407,13 +407,13 @@ describe("Project env provisioning UI", () => {
       findingId: "finding-1",
       action: "rotate_ci_token",
       status: "completed",
-      message: "CI token rotated in FlowCI",
+      message: "CI token rotated in AlphaCI",
       result: { tokenPrefix: "fci_prefix" },
     });
     mockedProjectApi.getProjectCiRun.mockResolvedValue({
       id: "local-project-1-quality",
       stage: "quality",
-      workflowName: "FlowCI Quality",
+      workflowName: "AlphaCI Quality",
     });
     mockedProjectApi.rerunProjectCiRun.mockResolvedValue({
       enabled: false,
@@ -1144,7 +1144,7 @@ describe("Project env provisioning UI", () => {
         {
           id: "local-project-1-quality",
           stage: "quality",
-          workflowName: "FlowCI Quality",
+          workflowName: "AlphaCI Quality",
           branch: "test",
           commitSha: "abc123",
           actor: "flowci-local",
@@ -1184,7 +1184,7 @@ describe("Project env provisioning UI", () => {
       await Promise.resolve();
     });
 
-    expect(rendered.container.textContent).toContain("FlowCI Quality");
+    expect(rendered.container.textContent).toContain("AlphaCI Quality");
     expect(rendered.container.textContent).toContain("quality");
     expect(rendered.container.textContent).toContain("test");
     expect(rendered.container.textContent).toContain("abc123");
@@ -1536,7 +1536,7 @@ describe("Project env provisioning UI", () => {
     expect(rendered.container.textContent).toContain("Unable to detach deployment target.");
   });
 
-  it("requires confirmation before detaching a target from FlowCI", async () => {
+  it("requires confirmation before detaching a target from AlphaCI", async () => {
     mockCapabilities(true, true, false, false, true);
     mockEnvHook();
     mockedProjectApi.getProjectOverview.mockResolvedValue(projectOverviewWithTargets([renderTarget]));

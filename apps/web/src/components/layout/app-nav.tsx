@@ -239,7 +239,6 @@ export function AppNav({ guest, session, onLogout, isLoggingOut }: Readonly<AppN
   const pathname = usePathname();
   const navRef = useRef<HTMLElement>(null);
   const [scrolled, setScrolled] = useState(false);
-  const [hidden, setHidden] = useState(false);
   const [workspaces, setWorkspacesState] = useState<WorkspacesMeResponse | null>(null);
   const [notifications, setNotifications] = useState<NotificationsResponse | null>(null);
   const lastScrollY = useRef(0);
@@ -253,9 +252,11 @@ export function AppNav({ guest, session, onLogout, isLoggingOut }: Readonly<AppN
   const avatarInitial = (session?.user.name ?? session?.user.login ?? "U").slice(0, 1).toUpperCase();
 
   useEffect(() => {
-    lastScrollY.current = window.scrollY;
-    setHidden(false);
-    setScrolled(window.scrollY > 8);
+    const frame = window.requestAnimationFrame(() => {
+      lastScrollY.current = window.scrollY;
+      setScrolled(window.scrollY > 8);
+    });
+    return () => window.cancelAnimationFrame(frame);
   }, [pathname]);
 
   useEffect(() => {
@@ -337,7 +338,7 @@ export function AppNav({ guest, session, onLogout, isLoggingOut }: Readonly<AppN
   return (
     <header
       ref={navRef}
-      className={`app-nav-dock${scrolled ? " app-nav-dock--scrolled" : ""}${hidden ? " app-nav-dock--hidden" : ""}`}
+      className={`app-nav-dock${scrolled ? " app-nav-dock--scrolled" : ""}`}
       role="banner"
       onMouseMove={handleNavMouseMove}
     >
@@ -351,12 +352,12 @@ export function AppNav({ guest, session, onLogout, isLoggingOut }: Readonly<AppN
       <div className="nav-inner">
 
         {/* Brand mark */}
-        <Link className="nav-brand" href="/home" aria-label="FlowCI Studio — home">
+        <Link className="nav-brand" href="/home" aria-label="AlphaCI — home">
           <span className="nav-brand-logo-ring">
             <PipelineLogo size={18} />
           </span>
           <span className="nav-brand-wordmark">
-            FlowCI<span className="nav-brand-accent">Studio</span>
+            Alpha<span className="nav-brand-accent">CI</span>
           </span>
           <NavPipelineMotif />
         </Link>

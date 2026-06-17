@@ -36,7 +36,7 @@ interface GuideSection {
 }
 
 const SECTIONS: GuideSection[] = [
-  { id: "welcome", title: "What is FlowCI Studio" },
+  { id: "welcome", title: "What is AlphaCI" },
   { id: "getting-started", title: "Getting started" },
   { id: "creating-a-project", title: "Creating a project" },
   { id: "branch-strategy", title: "Branch strategy" },
@@ -103,7 +103,7 @@ function PublicGuidePage({ error }: Readonly<{ error: string | null }>) {
     {
       label: "Repo",
       title: "Generate the repository",
-      body: "FlowCI creates the GitHub repository, starter project, protected branches, and workflow files.",
+      body: "AlphaCI creates the GitHub repository, starter project, protected branches, and workflow files.",
     },
     {
       label: "Gates",
@@ -131,9 +131,9 @@ function PublicGuidePage({ error }: Readonly<{ error: string | null }>) {
           transition={{ duration: 0.32, ease: EASE_OUT }}
         >
           <div>
-            <h1>How FlowCI works</h1>
+            <h1>How AlphaCI works</h1>
             <p>
-              FlowCI turns a project idea into a governed GitHub repository with CI/CD,
+              AlphaCI turns a project idea into a governed GitHub repository with CI/CD,
               branch promotion, quality gates, and deployment targets already wired in.
             </p>
           </div>
@@ -149,7 +149,7 @@ function PublicGuidePage({ error }: Readonly<{ error: string | null }>) {
           </p>
         )}
 
-        <section className="public-guide-workflow" aria-label="FlowCI workflow">
+        <section className="public-guide-workflow" aria-label="AlphaCI workflow">
           <div className="public-guide-workflow-head">
             <div>
               <p>Workflow setup preview</p>
@@ -194,7 +194,7 @@ function PublicGuidePage({ error }: Readonly<{ error: string | null }>) {
               transition={{ duration: 0.28, ease: EASE_OUT, delay: 0.12 }}
             >
               <div className="public-guide-panel-top">
-                <span>flowci.yml</span>
+                <span>alphaci.yml</span>
                 <strong>ready</strong>
               </div>
               <pre aria-hidden="true">{`repo:
@@ -220,7 +220,7 @@ deploy:
           <div>
             <h2>Built around promotion, not just generation</h2>
             <p>
-              FlowCI does not just produce a YAML file. It gives teams a repeatable path from
+              AlphaCI does not just produce a YAML file. It gives teams a repeatable path from
               feature work to production so every repo follows the same release discipline.
             </p>
           </div>
@@ -303,12 +303,12 @@ export default function GuidePage() {
         >
           <div className="workflow-page-header-left">
             <p className="workflow-page-breadcrumb">
-              <span style={{ opacity: 0.55 }}>FlowCI</span>
+              <span style={{ opacity: 0.55 }}>AlphaCI</span>
               <span className="workflow-page-breadcrumb-sep">/</span>
               <span>Guide</span>
             </p>
             <div className="workflow-page-title-row">
-              <h1 className="workflow-page-title">How to use FlowCI Studio</h1>
+              <h1 className="workflow-page-title">How to use AlphaCI</h1>
             </div>
           </div>
         </motion.div>
@@ -337,9 +337,9 @@ export default function GuidePage() {
           </nav>
 
           <div className="guide-content">
-            <GuideCard id="welcome" index={0} title="What is FlowCI Studio" reduced={reduced}>
+            <GuideCard id="welcome" index={0} title="What is AlphaCI" reduced={reduced}>
               <p>
-                FlowCI Studio turns a blank idea into a working repository in one step. It creates a
+                AlphaCI turns a blank idea into a working repository in one step. It creates a
                 GitHub repository, sets up the <code>main</code>, <code>uat</code>, and <code>test</code> branches,
                 scaffolds a starter project, and commits a ready-to-run CI/CD pipeline — so you can start
                 coding immediately instead of wiring up infrastructure.
@@ -352,7 +352,7 @@ export default function GuidePage() {
                 <li>
                   <strong>Install the GitHub App.</strong> On the Workflows page, if you see an
                   <em> &ldquo;Install GitHub App&rdquo;</em> chip, click it and grant access to the repositories
-                  (or organisation) you want FlowCI to manage. This is what lets FlowCI create repos and commit
+                  (or organisation) you want AlphaCI to manage. This is what lets AlphaCI create repos and commit
                   workflows on your behalf.
                 </li>
                 <li><strong>Open Workflows</strong> and head to the <strong>Setup</strong> tab to create your first project.</li>

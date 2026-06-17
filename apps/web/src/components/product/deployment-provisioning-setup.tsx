@@ -224,16 +224,16 @@ function ownershipDescription(target: DeploymentProvisioningTargetRequest) {
   if (target.provider === "render") {
     if (target.ownershipMode === "byo") {
       return target.renderDeployMethod === "native_git"
-        ? "FlowCI creates a Render service in your account using Render's native Git build. Render must have access to the repository."
-        : "FlowCI uses your Render account and deploys through the generated GitHub Actions image workflow.";
+        ? "AlphaCI creates a Render service in your account using Render's native Git build. Render must have access to the repository."
+        : "AlphaCI uses your Render account and deploys through the generated GitHub Actions image workflow.";
     }
 
-    return "FlowCI packages and deploys this backend automatically.";
+    return "AlphaCI packages and deploys this backend automatically.";
   }
 
   return target.ownershipMode === "byo"
-    ? "FlowCI creates a Vercel project in your account and deploys through GitHub Actions. You do not need to install Vercel's GitHub integration."
-    : "FlowCI creates the Vercel project and deploys it through GitHub Actions from the generated workflow.";
+    ? "AlphaCI creates a Vercel project in your account and deploys through GitHub Actions. You do not need to install Vercel's GitHub integration."
+    : "AlphaCI creates the Vercel project and deploys it through GitHub Actions from the generated workflow.";
 }
 
 function withRenderDefaults(
@@ -289,6 +289,13 @@ export function DeploymentProvisioningSetup({
   const variableGroups = useMemo(
     () => variableGroupsForValue(value, targetProviders),
     [targetProviders, value],
+  );
+  // Always show a provider's group block when either a target uses that provider
+  // OR a group already exists for it. Without this, editing a target's provider
+  // would orphan previously-created groups and make them silently disappear.
+  const displayProviders = useMemo(
+    () => [...new Set([...targetProviders, ...variableGroups.map((group) => group.provider)])],
+    [targetProviders, variableGroups],
   );
   const targetBranchOptions = useMemo(
     () =>
@@ -407,11 +414,12 @@ export function DeploymentProvisioningSetup({
               </div>
             </div>
 
-            {targetProviders.map((provider) => {
+            {displayProviders.map((provider) => {
               const providerTargets = targetBranchOptions.filter((option) => option.provider === provider);
               const providerGroups = variableGroups
                 .map((group, groupIndex) => ({ group, groupIndex }))
                 .filter(({ group }) => group.provider === provider);
+              const hasTargets = providerTargets.length > 0;
               return (
                 <div className="deployment-provider-groups" key={provider}>
                   <div className="deployment-provider-groups__header">
@@ -430,6 +438,12 @@ export function DeploymentProvisioningSetup({
                     </button>
                   </div>
 
+                  {!hasTargets && providerGroups.length > 0 ? (
+                    <p className="env-orphan-warning">
+                      No {providerLabel(provider)} target uses this provider anymore. These groups will not be applied until a {providerLabel(provider)} target is added, or remove them below.
+                    </p>
+                  ) : null}
+
                   {providerGroups.length === 0 ? (
                     <p className="env-empty-state">No {providerLabel(provider)} variable groups yet.</p>
                   ) : null}
@@ -441,24 +455,35 @@ export function DeploymentProvisioningSetup({
 
                     return (
                       <div className="deployment-variable-panel" key={`group-${groupIndex}`}>
-                        <div className="deployment-variable-panel__header">
-                          <div className="deployment-variable-panel__scope">
-                            <label>
-                              <span>Group name</span>
-                              <input
-                                aria-label={`Variable group name ${groupIndex + 1}`}
-                                value={group.name ?? `${providerLabel(provider)} variable group ${groupIndex + 1}`}
-                                onChange={(event) =>
-                                  onChange(
-                                    updateVariableGroupAt(value, variableGroups, groupIndex, {
-                                      ...group,
-                                      name: event.target.value,
-                                    }),
-                                  )
-                                }
-                              />
-                            </label>
-                          </div>
+                        <div className="deployment-variable-panel__title-row">
+                          <label className="deployment-variable-panel__scope">
+                            <span>Group name</span>
+                            <input
+                              aria-label={`Variable group name ${groupIndex + 1}`}
+                              value={group.name ?? `${providerLabel(provider)} variable group ${groupIndex + 1}`}
+                              onChange={(event) =>
+                                onChange(
+                                  updateVariableGroupAt(value, variableGroups, groupIndex, {
+                                    ...group,
+                                    name: event.target.value,
+                                  }),
+                                )
+                              }
+                            />
+                          </label>
+                          <button
+                            type="button"
+                            className="env-var-row__remove env-var-remove"
+                            aria-label={`Remove variable group ${groupIndex + 1}`}
+                            disabled={providerGroups.length === 1 && sharedVars.length === 1 && !sharedVars[0]?.key && !sharedVars[0]?.value}
+                            onClick={() => onChange(removeVariableGroup(value, variableGroups, groupIndex))}
+                          >
+                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden="true">
+                              <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+                            </svg>
+                          </button>
+                        </div>
+                        <div className="deployment-variable-panel__scope-row">
                           <label className="deployment-variable-panel__environment">
                             <span>Apply to</span>
                             <select
@@ -517,17 +542,6 @@ export function DeploymentProvisioningSetup({
                             }
                           >
                             Add variable
-                          </button>
-                          <button
-                            type="button"
-                            className="env-var-row__remove env-var-remove"
-                            aria-label={`Remove variable group ${groupIndex + 1}`}
-                            disabled={providerGroups.length === 1 && sharedVars.length === 1 && !sharedVars[0]?.key && !sharedVars[0]?.value}
-                            onClick={() => onChange(removeVariableGroup(value, variableGroups, groupIndex))}
-                          >
-                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden="true">
-                              <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
-                            </svg>
                           </button>
                         </div>
 
@@ -721,7 +735,7 @@ export function DeploymentProvisioningSetup({
                         );
                       }}
                     >
-                      <option value="flowci_managed">Managed by FlowCI</option>
+                      <option value="flowci_managed">Managed by AlphaCI</option>
                       <option value="byo">Use my {target.provider === "render" ? "Render" : "Vercel"} account</option>
                     </select>
                     <span className="helper-text env-target-grid__note">
@@ -817,7 +831,7 @@ export function DeploymentProvisioningSetup({
                         <span className="helper-text env-target-grid__note">
                           {target.renderDeployMethod === "native_git"
                             ? "Uses Render build/start commands and requires Render repository access."
-                            : "FlowCI packages and deploys this backend automatically."}
+                            : "AlphaCI packages and deploys this backend automatically."}
                         </span>
                       </label>
                       <label className="env-target-grid__field env-target-grid__field--compact">
@@ -914,7 +928,7 @@ export function DeploymentProvisioningSetup({
                       ) : null}
                       {target.ownershipMode === "flowci_managed" && (target.renderInstanceType ?? "free") !== "free" ? (
                         <p className="helper-text env-target-grid__field env-target-grid__field--wide" style={{ margin: 0 }}>
-                          Paid managed Render services require FlowCI approval. Use free or connect your own Render account.
+                          Paid managed Render services require AlphaCI approval. Use free or connect your own Render account.
                         </p>
                       ) : null}
                       {target.renderDeployMethod !== "native_git" && target.renderDeployMethod !== "existing_service" ? (
@@ -967,7 +981,7 @@ export function DeploymentProvisioningSetup({
                   <div>
                     <strong>Branch-specific variables</strong>
                     <p className="helper-text" style={{ margin: "0.25rem 0 0" }}>
-                      {targetBranchLabel(target)} can override shared keys or add its own values. Values are sent to the provider during setup and are not stored by FlowCI.
+                      {targetBranchLabel(target)} can override shared keys or add its own values. Values are sent to the provider during setup and are not stored by AlphaCI.
                     </p>
                   </div>
                   <button
@@ -987,7 +1001,7 @@ export function DeploymentProvisioningSetup({
 
                 {target.provider === "vercel" ? (
                   <p className="helper-text" style={{ margin: "0 0 0.6rem" }}>
-                    FlowCI will install per-slot GitHub Actions secrets for Vercel deployment after the Vercel project is created.
+                    AlphaCI will install per-slot GitHub Actions secrets for Vercel deployment after the Vercel project is created.
                   </p>
                 ) : null}
 

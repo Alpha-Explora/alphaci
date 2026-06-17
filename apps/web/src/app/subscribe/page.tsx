@@ -152,7 +152,7 @@ function PublicSubscribePage({ error }: { error: string | null }) {
         <section className={`${styles.grid} ${styles.publicGrid}`} aria-label="Public subscription plans">
           <PlanCard
             title="Free"
-            description="For trying FlowCI with small projects."
+            description="For trying AlphaCI with small projects."
             price="PHP 0"
             period="/ month"
             action={
@@ -198,7 +198,7 @@ function PublicSubscribePage({ error }: { error: string | null }) {
             description="For shared governance and higher limits."
             price="Custom"
             action={
-              <a className={`${styles.button} ${styles.buttonPrimary}`} href="mailto:sales@flowci.studio">
+              <a className={`${styles.button} ${styles.buttonPrimary}`} href="mailto:sales@alphaci.dev">
                 Contact us
               </a>
             }
@@ -464,7 +464,7 @@ function SubscribePageContent() {
         >
           <div className="workflow-page-header-left">
             <p className="workflow-page-breadcrumb">
-              <span style={{ opacity: 0.55 }}>FlowCI</span>
+              <span style={{ opacity: 0.55 }}>AlphaCI</span>
               <span className="workflow-page-breadcrumb-sep">/</span>
               <span>Billing</span>
             </p>
@@ -537,7 +537,7 @@ function SubscribePageContent() {
             description="Shared CI/CD governance for teams."
             price="Custom"
             action={
-              <a className={`${styles.button} ${styles.buttonPrimary}`} href="mailto:sales@flowci.studio">
+              <a className={`${styles.button} ${styles.buttonPrimary}`} href="mailto:sales@alphaci.dev">
                 Contact us
               </a>
             }

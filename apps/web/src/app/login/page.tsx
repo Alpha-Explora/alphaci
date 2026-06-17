@@ -8,8 +8,8 @@ export default function LoginPage() {
     <Suspense fallback={<PipelineLoader label="Preparing your sign in" />}>
       <OAuthAuthPage
         mode="login"
-        title="Sign in to your pipeline workspace."
-        subtitle="Connect your GitHub account to continue to Create Project."
+        title="Sign in to your AlphaCI workspace."
+        subtitle="Connect GitHub to keep building, exporting, and deploying workflows."
         switchText="New here?"
         switchHref="/signup"
         switchCta="Create your account"

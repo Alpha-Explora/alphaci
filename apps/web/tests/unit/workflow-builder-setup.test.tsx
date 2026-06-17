@@ -220,19 +220,19 @@ const projectOptions = {
 const stagedWorkflowFiles = [
   {
     stage: "access" as const,
-    name: "FlowCI Access Gate",
+    name: "AlphaCI Access Gate",
     path: ".github/workflows/00-flowci-access.yml",
     gated: true,
   },
   {
     stage: "quality" as const,
-    name: "FlowCI Quality",
+    name: "AlphaCI Quality",
     path: ".github/workflows/10-flowci-quality.yml",
     gated: true,
   },
   {
     stage: "package" as const,
-    name: "FlowCI Package",
+    name: "AlphaCI Package",
     path: ".github/workflows/20-flowci-package.yml",
     gated: true,
   },
@@ -417,7 +417,7 @@ describe("WorkflowBuilder project setup", () => {
     expect(mockedGenerateWorkflow).not.toHaveBeenCalled();
     expect(container.textContent).toContain("tone/demo-next-app");
     expect(container.textContent).toContain("00-flowci-access.yml");
-    expect(container.textContent).toContain("FlowCI Access Gate");
+    expect(container.textContent).toContain("AlphaCI Access Gate");
     expect(container.textContent).toContain("10-flowci-quality.yml");
     expect(container.textContent).toContain("20-flowci-package.yml");
     expect(container.textContent).toContain("3 gated workflow stages");

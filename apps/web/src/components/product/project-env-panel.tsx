@@ -202,7 +202,7 @@ export function ProjectEnvPanel({ project }: Readonly<{ project: ProvisionedProj
   async function handleDeleteMetadata(item: EnvVarMetadata) {
     if (confirmDeleteId !== item.id) {
       setConfirmDeleteId(item.id);
-      setMessage("Confirm delete to remove this key from the provider and FlowCI metadata.");
+      setMessage("Confirm delete to remove this key from the provider and AlphaCI metadata.");
       return;
     }
 
@@ -245,7 +245,7 @@ export function ProjectEnvPanel({ project }: Readonly<{ project: ProvisionedProj
             value={ownershipMode}
             onChange={(event) => setOwnershipMode(event.target.value as EnvOwnershipMode)}
           >
-            <option value="flowci_managed">FlowCI-managed</option>
+            <option value="flowci_managed">AlphaCI-managed</option>
             <option value="byo">Bring your own provider</option>
           </select>
           <select aria-label="Provider" value={provider} onChange={(event) => setProvider(event.target.value as EnvProvider)}>

@@ -961,7 +961,7 @@ function SettingsPageContent() {
                   <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
 
                     <p style={{ margin: 0, fontSize: "0.88rem", color: "var(--text-secondary)", lineHeight: 1.6 }}>
-                      FlowCI Studio turns a blank idea into a working repository in one step — GitHub repo, protected branches, and a ready-to-run CI/CD pipeline, all committed automatically.
+                      AlphaCI turns a blank idea into a working repository in one step — GitHub repo, protected branches, and a ready-to-run CI/CD pipeline, all committed automatically.
                     </p>
 
                     {/* Topic overview */}
@@ -1037,7 +1037,7 @@ function SettingsPageContent() {
                     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "1rem", flexWrap: "wrap" }}>
                       <div style={{ display: "flex", flexDirection: "column", gap: "0.3rem" }}>
                         <span style={{ fontSize: "0.9rem", fontWeight: 600, color: "var(--text-primary)" }}>
-                          Sign out of FlowCI Studio
+                          Sign out of AlphaCI
                         </span>
                         <span style={{ fontSize: "0.8rem", color: "var(--text-muted)" }}>
                           Your session will be terminated and you will be redirected to the home page.
