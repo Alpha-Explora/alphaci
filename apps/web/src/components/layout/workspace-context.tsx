@@ -4,7 +4,6 @@ import {
   createContext,
   useCallback,
   useContext,
-  useEffect,
   useMemo,
   useState,
   type ReactNode,
@@ -31,12 +30,11 @@ const WorkspaceSelectionContext = createContext<WorkspaceSelectionContextValue>(
 });
 
 export function WorkspaceProvider({ children }: { children: ReactNode }) {
-  const [selectedWorkspaceId, setSelectedWorkspaceIdState] = useState<string | null>(null);
+  const [selectedWorkspaceId, setSelectedWorkspaceIdState] = useState<string | null>(() => {
+    if (typeof window === "undefined") return null;
+    return window.localStorage.getItem(STORAGE_KEY);
+  });
   const [workspaces, setWorkspacesState] = useState<WorkspacesMeResponse | null>(null);
-
-  useEffect(() => {
-    setSelectedWorkspaceIdState(window.localStorage.getItem(STORAGE_KEY));
-  }, []);
 
   const setSelectedWorkspaceId = useCallback((workspaceId: string | null) => {
     setSelectedWorkspaceIdState(workspaceId);

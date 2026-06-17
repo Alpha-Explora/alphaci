@@ -7,7 +7,7 @@ type BrowserName = 'chromium' | 'firefox' | 'webkit';
 
 const LOCAL_PAGE_MARKERS = [
   'Ship with calm, not chaos.',
-  'FlowCI Studio',
+  'AlphaCI',
   'Pro subscription is 300 pesos per month',
 ];
 
@@ -117,19 +117,19 @@ const project = {
   workflowFiles: [
     {
       stage: 'access',
-      name: 'FlowCI Access Gate',
+      name: 'AlphaCI Access Gate',
       path: '.github/workflows/00-flowci-access.yml',
       gated: true,
     },
     {
       stage: 'quality',
-      name: 'FlowCI Quality',
+      name: 'AlphaCI Quality',
       path: '.github/workflows/10-flowci-quality.yml',
       gated: true,
     },
     {
       stage: 'package',
-      name: 'FlowCI Package',
+      name: 'AlphaCI Package',
       path: '.github/workflows/20-flowci-package.yml',
       gated: true,
     },
@@ -247,7 +247,7 @@ async function installDashboardAuditApi(page: Page) {
           {
             id: 'notification-1',
             title: 'Project created',
-            body: 'tone/orders-api is now tracked by FlowCI.',
+            body: 'tone/orders-api is now tracked by AlphaCI.',
             eventCode: 'project_created',
             readAt: null,
             createdAt: '2026-06-15T00:00:00.000Z',

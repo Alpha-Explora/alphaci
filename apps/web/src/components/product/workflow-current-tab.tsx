@@ -243,7 +243,7 @@ function DeploymentTargetsList({
   const detachTarget = async (target: DeploymentTarget) => {
     if (detachConfirmTargetId !== target.id) {
       setDetachConfirmTargetId(target.id);
-      setTargetMessage("Confirm detach to remove this target from FlowCI only.");
+      setTargetMessage("Confirm detach to remove this target from AlphaCI only.");
       return;
     }
 
@@ -253,7 +253,7 @@ function DeploymentTargetsList({
       await detachDeploymentTarget(projectId, target.id);
       onDetached(target.id);
       setDetachConfirmTargetId(null);
-      setTargetMessage("Target detached from FlowCI. Provider resource was not deleted.");
+      setTargetMessage("Target detached from AlphaCI. Provider resource was not deleted.");
     } catch {
       setTargetMessage("Unable to detach deployment target.");
     } finally {
@@ -1238,7 +1238,7 @@ export function WorkflowCurrentTab({
                   No provisioned projects yet.
                 </p>
                 <p style={{ color: "var(--text-secondary)", margin: 0, fontSize: "0.85rem", maxWidth: "32rem" }}>
-                  When you create one, FlowCI provisions the repository and commits a workflow that runs through
+                  When you create one, AlphaCI provisions the repository and commits a workflow that runs through
                   the gated stages below on every change. A read-only demo project normally appears here too —
                   open the <Link href="/guide" className="inline-link">guide</Link> to see how it all fits together.
                 </p>
@@ -1316,7 +1316,7 @@ export function WorkflowCurrentTab({
 
                 {selectedProject.isExample ? (
                   <p className="project-demo-note">
-                    This is a read-only demo project FlowCI seeds for every account. It shows how a
+                    This is a read-only demo project AlphaCI seeds for every account. It shows how a
                     provisioned project looks end to end — the gated stages, promotion flow, and deploys
                     explained in the <Link href="/guide#branch-strategy" className="inline-link">guide</Link> —
                     but it is not connected to a real GitHub repository. Create your own project to run a

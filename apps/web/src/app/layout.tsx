@@ -25,7 +25,7 @@ const dashDisplayFont = Outfit({
 });
 
 export const metadata: Metadata = {
-  title: "Create Project | FlowCI Studio",
+  title: "Create Project | AlphaCI",
   description:
     "Create GitHub projects with subscription-gated CI workflows, starter files, and managed Actions secrets.",
 };

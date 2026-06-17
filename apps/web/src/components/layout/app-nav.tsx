@@ -81,6 +81,15 @@ function SettingsIcon({ size = 13 }: { size?: number }) {
   );
 }
 
+function AdminIcon({ size = 13 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+      <path d="M9 12l2 2 4-4" />
+    </svg>
+  );
+}
+
 function SignOutIcon({ size = 14 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -239,7 +248,6 @@ export function AppNav({ guest, session, onLogout, isLoggingOut }: Readonly<AppN
   const pathname = usePathname();
   const navRef = useRef<HTMLElement>(null);
   const [scrolled, setScrolled] = useState(false);
-  const [hidden, setHidden] = useState(false);
   const [workspaces, setWorkspacesState] = useState<WorkspacesMeResponse | null>(null);
   const [notifications, setNotifications] = useState<NotificationsResponse | null>(null);
   const lastScrollY = useRef(0);
@@ -253,9 +261,11 @@ export function AppNav({ guest, session, onLogout, isLoggingOut }: Readonly<AppN
   const avatarInitial = (session?.user.name ?? session?.user.login ?? "U").slice(0, 1).toUpperCase();
 
   useEffect(() => {
-    lastScrollY.current = window.scrollY;
-    setHidden(false);
-    setScrolled(window.scrollY > 8);
+    const frame = window.requestAnimationFrame(() => {
+      lastScrollY.current = window.scrollY;
+      setScrolled(window.scrollY > 8);
+    });
+    return () => window.cancelAnimationFrame(frame);
   }, [pathname]);
 
   useEffect(() => {
@@ -328,16 +338,20 @@ export function AppNav({ guest, session, onLogout, isLoggingOut }: Readonly<AppN
     navRef.current.style.setProperty("--nav-my", `${event.clientY - bounds.top}px`);
   }
 
+  // Only platform admins (role 'admin' | 'super_admin') see the Admin entry.
+  const isPlatformAdmin = !guest && Boolean(session?.platformRole);
+
   const navItems = [
     ...coreNavItems,
     { label: "Billing", href: "/subscribe", icon: BillingIcon, key: "billing" },
     ...(guest ? [] : [{ label: "Settings", href: "/settings", icon: SettingsIcon, key: "settings" }]),
+    ...(isPlatformAdmin ? [{ label: "Admin", href: "/admin", icon: AdminIcon, key: "admin" }] : []),
   ];
 
   return (
     <header
       ref={navRef}
-      className={`app-nav-dock${scrolled ? " app-nav-dock--scrolled" : ""}${hidden ? " app-nav-dock--hidden" : ""}`}
+      className={`app-nav-dock${scrolled ? " app-nav-dock--scrolled" : ""}`}
       role="banner"
       onMouseMove={handleNavMouseMove}
     >
@@ -351,12 +365,12 @@ export function AppNav({ guest, session, onLogout, isLoggingOut }: Readonly<AppN
       <div className="nav-inner">
 
         {/* Brand mark */}
-        <Link className="nav-brand" href="/home" aria-label="FlowCI Studio — home">
+        <Link className="nav-brand" href="/home" aria-label="AlphaCI — home">
           <span className="nav-brand-logo-ring">
             <PipelineLogo size={18} />
           </span>
           <span className="nav-brand-wordmark">
-            FlowCI<span className="nav-brand-accent">Studio</span>
+            Alpha<span className="nav-brand-accent">CI</span>
           </span>
           <NavPipelineMotif />
         </Link>

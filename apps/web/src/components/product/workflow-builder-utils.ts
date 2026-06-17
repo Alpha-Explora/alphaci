@@ -204,7 +204,7 @@ function parseRenderProvisioningMessage(message: string): string | null {
   }
 
   if (/Render provider metadata is missing|Render deployment secrets/i.test(message)) {
-    return "Render service was created, but FlowCI could not install the deployment secrets.";
+    return "Render service was created, but AlphaCI could not install the deployment secrets.";
   }
 
   if (/image pull|registry|GHCR/i.test(message)) {

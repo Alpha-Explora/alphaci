@@ -58,7 +58,7 @@ export function NotificationPreferencesSection() {
             In-app notifications
           </strong>
           <span style={{ color: "var(--text-muted)", fontSize: "0.78rem" }}>
-            Show product events in FlowCI Studio.
+            Show product events in AlphaCI.
           </span>
         </span>
         <input

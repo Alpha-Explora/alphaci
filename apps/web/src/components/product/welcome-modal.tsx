@@ -11,9 +11,9 @@ export interface WelcomeModalProps {
 }
 
 const FLOW_STEPS = [
-  { label: "Connect GitHub", detail: "Install the GitHub App to grant FlowCI access to your account." },
+  { label: "Connect GitHub", detail: "Install the GitHub App to grant AlphaCI access to your account." },
   { label: "Create a project", detail: "Choose a repo shape, stack, and CI recipe in the Setup form." },
-  { label: "We provision everything", detail: "FlowCI creates the repo, branches, and commits the workflow file." },
+  { label: "We provision everything", detail: "AlphaCI creates the repo, branches, and commits the workflow file." },
   { label: "Push and ship", detail: "Open a pull request and your CI pipeline runs automatically." },
 ] as const;
 
@@ -275,7 +275,7 @@ export function WelcomeModal({ displayName, onDismiss }: WelcomeModalProps) {
                 }}
               >
                 {"Welcome to "}
-                <span style={{ color: "var(--brand)" }}>FlowCI Studio</span>
+                <span style={{ color: "var(--brand)" }}>AlphaCI</span>
                 {", "}
                 <span style={{ color: "var(--text-primary)" }}>@{displayName}</span>
               </h2>
@@ -294,7 +294,7 @@ export function WelcomeModal({ displayName, onDismiss }: WelcomeModalProps) {
 
             {/* Flow steps */}
             <motion.ol
-              aria-label="How FlowCI Studio works"
+              aria-label="How AlphaCI works"
               variants={prefersReducedMotion ? undefined : stepListVariants}
               initial={prefersReducedMotion ? "visible" : "hidden"}
               animate="visible"

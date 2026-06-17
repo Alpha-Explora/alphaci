@@ -91,7 +91,7 @@ describe("DeploymentProvisioningSetup", () => {
     expect(rendered.container.textContent).toContain("Python");
     expect(rendered.container.textContent).toContain("Go");
     expect(rendered.container.querySelector<HTMLInputElement>("input[aria-label='Variable value 1']")).toHaveAttribute("type", "password");
-    expect(rendered.container.textContent).toContain("Values are sent to the provider during setup and are not stored by FlowCI.");
+    expect(rendered.container.textContent).toContain("Values are sent to the provider during setup and are not stored by AlphaCI.");
 
     rendered.unmount();
   });
@@ -275,10 +275,10 @@ describe("DeploymentProvisioningSetup", () => {
     expect(rendered.container.textContent).toContain("backend target");
     expect(rendered.container.textContent).toContain("frontend target");
     expect(rendered.container.textContent).toContain(
-      "FlowCI creates the Vercel project and deploys it through GitHub Actions from the generated workflow.",
+      "AlphaCI creates the Vercel project and deploys it through GitHub Actions from the generated workflow.",
     );
     expect(rendered.container.textContent).toContain(
-      "FlowCI will install per-slot GitHub Actions secrets for Vercel deployment after the Vercel project is created.",
+      "AlphaCI will install per-slot GitHub Actions secrets for Vercel deployment after the Vercel project is created.",
     );
 
     const frontendProjectName = rendered.container.querySelector<HTMLInputElement>("input[aria-label='Provider project name 2']");

@@ -125,7 +125,7 @@ function deploymentRouteLabel(target: DeploymentProvisioningResult["targets"][nu
     case "provider_native":
       return "Provider native";
     default:
-      return target.ownershipMode === "byo" ? "Customer managed" : "Managed by FlowCI";
+      return target.ownershipMode === "byo" ? "Customer managed" : "Managed by AlphaCI";
   }
 }
 

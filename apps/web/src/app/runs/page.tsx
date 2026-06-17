@@ -209,7 +209,7 @@ function RunsContent({ guest, session, onLogout, isLoggingOut, prefersReducedMot
       {guest && (
         <div className="guest-banner" role="alert">
           <p className="guest-banner-text">
-            You are viewing FlowCI Studio in preview mode. Sign up to see your pipeline runs.
+            You are viewing AlphaCI in preview mode. Sign up to see your pipeline runs.
           </p>
           <div className="guest-banner-actions">
             <Link className="primary-button" href="/signup" style={{ padding: "0.4rem 1rem", fontSize: "0.82rem" }}>
@@ -233,7 +233,7 @@ function RunsContent({ guest, session, onLogout, isLoggingOut, prefersReducedMot
         >
           <div className="workflow-page-header-left">
             <p className="workflow-page-breadcrumb">
-              <span style={{ opacity: 0.55 }}>FlowCI</span>
+              <span style={{ opacity: 0.55 }}>AlphaCI</span>
               <span className="workflow-page-breadcrumb-sep">/</span>
               <span>Pipeline Runs</span>
             </p>
@@ -281,7 +281,7 @@ function RunsContent({ guest, session, onLogout, isLoggingOut, prefersReducedMot
             <p style={{ margin: 0, fontSize: "0.84rem", color: "var(--text-secondary)", lineHeight: 1.65 }}>
               Every push to a connected repository runs three stages:
               {" "}
-              <strong style={{ color: "var(--text-primary)" }}>Access</strong> (can FlowCI reach your repo?),
+              <strong style={{ color: "var(--text-primary)" }}>Access</strong> (can AlphaCI reach your repo?),
               {" "}
               <strong style={{ color: "var(--text-primary)" }}>Quality</strong> (do your tests pass?), and
               {" "}

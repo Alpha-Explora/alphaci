@@ -167,17 +167,17 @@ export const MOCK_RUNS: RunsResponse = {
               severity: "error",
               title: "GitHub App installation not found",
               detail:
-                "The FlowCI GitHub App is not installed on acme-org/infra-scripts. The pipeline cannot read or write files in this repository.",
+                "The AlphaCI GitHub App is not installed on acme-org/infra-scripts. The pipeline cannot read or write files in this repository.",
               hint:
-                "Go to your GitHub organisation settings → Installed GitHub Apps and grant FlowCI access to this repository. Then re-trigger the pipeline.",
+                "Go to your GitHub organisation settings → Installed GitHub Apps and grant AlphaCI access to this repository. Then re-trigger the pipeline.",
             },
             {
               severity: "info",
-              title: "Secret FLOWCI_TOKEN may be missing",
+              title: "Required CI token may be missing",
               detail:
                 "The FLOWCI_TOKEN repository secret was not found. This secret is required for the access stage to authenticate.",
               hint:
-                "In GitHub, go to Settings → Secrets → Actions and add FLOWCI_TOKEN. Copy the value from your FlowCI dashboard.",
+                "In GitHub, go to Settings → Secrets → Actions and add FLOWCI_TOKEN. Copy the value from your AlphaCI dashboard.",
             },
           ],
         },
