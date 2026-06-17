@@ -141,7 +141,7 @@ export function OAuthAuthPage({
   return (
     <main className="auth-shell-split">
       <FlowBackground />
-      <PublicSiteNav active="pricing" fixed />
+      <PublicSiteNav active="pricing" fixed showActions={false} />
       <div className="auth-shell-grid" aria-hidden="true" />
       <div className="auth-scanline" aria-hidden="true" />
 
