@@ -1,22 +1,60 @@
-# ──────────────────────────────────────────────────────────────
-# FE Pipeline Caller (unified)
-# Copy this file into the target repo at:
-#   .github/workflows/master-pipeline-fe.yml
+# ─────────────────────────────────────────────────────────────────────────────
+# fe-pipeline-caller.yml  —  cicd-workflow-fe (cicd-external-project org)
 #
-# Works for both single-system and multi-system FE repositories.
-# The pipeline_mode input controls which SYSTEMS_JSON variable
-# is read (auto = picks multi if available, else single).
+# Calls the unified frontend orchestrator in cicd-external-project/cicd-workflow.
+# The FE is deployed to Vercel (NOT Render). The orchestrator calls vercel-deploy.yml
+# for both preview (test/uat) and production (main) environments.
 #
-# Required repo secret:
-# - GH_PR_TOKEN (used for auto-promotion PRs and Vercel deploy PR comments)
-# ──────────────────────────────────────────────────────────────
-name: "Master Pipeline — FE"
+# Triggers:
+#   push         → test, uat, main   (full pipeline: quality + security + deploy + promote)
+#   pull_request → test, uat, main   (quality gate + preview Vercel deploy for PR review)
+#   workflow_dispatch                 (manual with override inputs)
+#
+# Orchestrator called:
+#   cicd-external-project/cicd-workflow/.github/workflows/master-pipeline-fe.yml@main
+#
+# Required repository variables (set in cicd-workflow-fe repo settings):
+#   FE_SINGLE_SYSTEMS_JSON — JSON describing this frontend, e.g.:
+#     {
+#       "name": "cicd-workflow-fe",
+#       "dir": ".",
+#       "image": "ghcr.io/cicd-external-project/cicd-workflow-fe",
+#       "vercel_project_secret": "VERCEL_PROJECT_ID"
+#     }
+#   Note: "vercel_project_secret" is the NAME of the secret that holds the
+#   Vercel project ID for this system. The orchestrator resolves it via
+#   secrets[matrix.system.vercel_project_secret].
+#
+# Required repository secrets:
+#   GH_PR_TOKEN       — GitHub PAT for promotion PRs, release tags, and PR comments
+#   VERCEL_TOKEN      — Vercel API token (shared across org)
+#   VERCEL_ORG_ID     — Vercel org/team ID
+#   VERCEL_PROJECT_ID — Vercel project ID for this frontend (referenced by
+#                       vercel_project_secret in FE_SINGLE_SYSTEMS_JSON)
+#
+# Optional secrets (for SonarCloud, Playwright, k6):
+#   SONAR_TOKEN, SONAR_ORGANIZATION, SONAR_PROJECT_KEY
+#   K6_CLOUD_TOKEN
+#
+# Permission ceiling note:
+#   contents: write        — versioning.yml creates git tags
+#   pull-requests: write   — promotion.yml creates PRs; Vercel PR comment
+#   security-events: write — docker-build.yml uploads SARIF scan results
+#   packages: write        — docker-build.yml pushes GHCR image on main
+# ─────────────────────────────────────────────────────────────────────────────
+name: "FE Pipeline — cicd-workflow-fe"
 
 on:
   push:
-    branches: [test, uat, main]
+    branches:
+      - test
+      - uat
+      - main
   pull_request:
-    branches: [test, uat, main]
+    branches:
+      - test
+      - uat
+      - main
   workflow_dispatch:
     inputs:
       pipeline_mode:
@@ -69,20 +107,27 @@ on:
         type: boolean
         default: false
 
+# ── Concurrency ────────────────────────────────────────────────────────────────
+# Separate push and PR concurrency groups to avoid cross-event cancellation.
+# cancel-in-progress: false ensures the authoritative push run always completes.
 concurrency:
-  group: ${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.head_ref || github.ref_name }}
   cancel-in-progress: false
 
+# ── Permission ceiling ─────────────────────────────────────────────────────────
 permissions:
-  contents: write
-  pull-requests: write
-  packages: write
-  security-events: write
+  contents: write        # versioning.yml creates annotated git tags
+  pull-requests: write   # promotion.yml creates PRs; Vercel PR comment
+  security-events: write # docker-build.yml uploads SARIF to Security tab
+  packages: write        # docker-build.yml pushes GHCR image on main
 
 jobs:
   call-orchestrator:
-    # Track latest central workflow updates from central-workflow main
-    uses: ImplementSprint/central-workflow/.github/workflows/master-pipeline-fe.yml@main
+    # Calls the forked central workflow orchestrator for frontend.
+    # Uses @main because cicd-external-project/cicd-workflow has not yet published a v1 tag.
+    # The orchestrator uses vercel-deploy.yml internally — NOT render-deploy.yml.
+    # TODO: Pin to @v1 once a stable release tag exists.
+    uses: cicd-external-project/central-workflow/.github/workflows/master-pipeline-fe.yml@main
     with:
       pipeline_mode: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.pipeline_mode || 'auto' }}
       enable_playwright: ${{ github.event_name == 'workflow_dispatch' && fromJSON(github.event.inputs.enable_playwright || 'true') || true }}

@@ -16,9 +16,13 @@
 # next.js
 /.next/
 /out/
+.swc/
+.turbo/
+.cache/
 
 # production
 /build
+/dist
 
 # misc
 .DS_Store
