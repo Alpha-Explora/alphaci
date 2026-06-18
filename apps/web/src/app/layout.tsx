@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Doto, Plus_Jakarta_Sans, Outfit } from "next/font/google";
 import "./globals.css";
+import { ThemeProvider } from "@/lib/theme-context";
 
 const displayFont = Doto({
   variable: "--font-display",
@@ -42,8 +43,15 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var t=localStorage.getItem('alphaci-theme');if(t==='light')document.documentElement.setAttribute('data-theme','light');}catch(e){}})();`,
+          }}
+        />
+      </head>
       <body className={`${displayFont.variable} ${bodyFont.variable} ${dashBodyFont.variable} ${dashDisplayFont.variable} antialiased`} suppressHydrationWarning>
-        {children}
+        <ThemeProvider>{children}</ThemeProvider>
       </body>
     </html>
   );

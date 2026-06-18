@@ -3,10 +3,11 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { useEffect, useRef, useState, type MouseEvent as ReactMouseEvent } from "react";
+import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 
 import { PipelineLogo } from "@/components/layout/pipeline-logo";
+import { ThemeToggle } from "@/components/layout/theme-toggle";
 import type { useAuthSession } from "@/hooks/use-auth-session";
 import type { NotificationsResponse, WorkspacesMeResponse } from "@/lib/api/contracts";
 import { getNotifications, markNotificationRead } from "@/lib/api/notifications";
@@ -125,8 +126,8 @@ function SidebarTooltip({ text, children }: { text: string; children: React.Reac
               left: "calc(100% + 10px)",
               top: "50%",
               transform: "translateY(-50%)",
-              background: "rgba(15, 23, 42, 0.97)",
-              border: "1px solid rgba(255,255,255,0.12)",
+              background: "var(--bg-panel)",
+              border: "1px solid var(--border)",
               borderRadius: "0.45rem",
               padding: "0.35rem 0.7rem",
               fontSize: "0.75rem",
@@ -137,7 +138,7 @@ function SidebarTooltip({ text, children }: { text: string; children: React.Reac
               WebkitBackdropFilter: "blur(12px)",
               pointerEvents: "none",
               zIndex: 300,
-              boxShadow: "0 4px 16px rgba(0,0,0,0.4)",
+              boxShadow: "var(--shadow-card)",
             }}
           >
             {text}
@@ -157,40 +158,61 @@ interface SidebarNavItemProps {
   isActive: boolean;
   collapsed: boolean;
   reduced: boolean;
+  itemIndex?: number;
 }
 
-function SidebarNavItem({ href, label, icon: NavIcon, isActive, collapsed, reduced }: Readonly<SidebarNavItemProps>) {
+function SidebarNavItem({ href, label, icon: NavIcon, isActive, collapsed, reduced, itemIndex = 0 }: Readonly<SidebarNavItemProps>) {
+  const expandDelay  = itemIndex * 0.04;
+  const collapseDelay = itemIndex * 0.018;
+
   const inner = (
-    <Link
-      href={href}
-      className={`sidebar-nav-item${isActive ? " sidebar-nav-item--active" : ""}`}
-      aria-current={isActive ? "page" : undefined}
+    <motion.div
+      className="sidebar-nav-item-wrapper"
+      initial={false}
+      animate={{ opacity: 1, x: 0 }}
+      whileHover={reduced ? undefined : { x: 2 }}
+      transition={{ type: "spring", stiffness: 340, damping: 28 }}
     >
-      {isActive && (
-        <motion.span
-          layoutId="sidebar-active-pill"
-          className="sidebar-nav-item-bg"
-          transition={reduced ? { duration: 0 } : { type: "spring", stiffness: 420, damping: 36 }}
-          aria-hidden="true"
-        />
-      )}
-      <span className="sidebar-nav-item-icon">
-        <NavIcon size={16} />
-      </span>
-      <AnimatePresence initial={false}>
-        {!collapsed && (
+      <Link
+        href={href}
+        className={`sidebar-nav-item${isActive ? " sidebar-nav-item--active" : ""}`}
+        aria-current={isActive ? "page" : undefined}
+      >
+        {isActive && (
           <motion.span
-            className="sidebar-nav-item-label"
-            initial={reduced ? false : { opacity: 0, x: -8 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={reduced ? undefined : { opacity: 0, x: -8 }}
-            transition={{ duration: 0.18, ease: [0.25, 0, 0, 1] }}
-          >
-            {label}
-          </motion.span>
+            layoutId="sidebar-active-pill"
+            className="sidebar-nav-item-bg"
+            transition={reduced ? { duration: 0 } : { type: "spring", stiffness: 420, damping: 36 }}
+            aria-hidden="true"
+          />
         )}
-      </AnimatePresence>
-    </Link>
+        <motion.span
+          className="sidebar-nav-item-icon"
+          animate={isActive ? { color: "var(--accent-indigo)" } : { color: "var(--text-secondary)" }}
+          whileHover={reduced ? undefined : { scale: 1.12 }}
+          transition={{ duration: 0.2 }}
+        >
+          <NavIcon size={16} />
+        </motion.span>
+        <AnimatePresence initial={false}>
+          {!collapsed && (
+            <motion.span
+              className="sidebar-nav-item-label"
+              initial={reduced ? false : { opacity: 0, x: -10, width: 0 }}
+              animate={{ opacity: 1, x: 0, width: "auto" }}
+              exit={reduced ? undefined : { opacity: 0, x: -6, width: 0 }}
+              transition={{
+                duration: 0.2,
+                ease: [0.25, 0, 0, 1],
+                delay: collapsed ? collapseDelay : expandDelay,
+              }}
+            >
+              {label}
+            </motion.span>
+          )}
+        </AnimatePresence>
+      </Link>
+    </motion.div>
   );
 
   if (collapsed) {
@@ -321,41 +343,44 @@ export function AppNav({ guest, session, onLogout, isLoggingOut }: Readonly<AppN
           </AnimatePresence>
         </Link>
 
-        <button
+        <motion.button
           type="button"
           className="sidebar-collapse-btn"
           onClick={() => setCollapsed((c) => !c)}
           aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
           aria-expanded={!collapsed}
+          whileHover={reduced ? undefined : { scale: 1.12, backgroundColor: "rgba(99,102,241,0.18)" }}
+          whileTap={reduced ? undefined : { scale: 0.88 }}
+          transition={{ type: "spring", stiffness: 420, damping: 24 }}
         >
           <motion.span
             animate={{ rotate: collapsed ? 180 : 0 }}
-            transition={reduced ? { duration: 0 } : { type: "spring", stiffness: 400, damping: 30 }}
+            transition={reduced ? { duration: 0 } : { type: "spring", stiffness: 380, damping: 28 }}
             style={{ display: "flex" }}
           >
             <ChevronLeftIcon size={14} />
           </motion.span>
-        </button>
+        </motion.button>
       </div>
 
       {/* ── Primary nav ───────────────────────────────────────── */}
       <nav className="sidebar-nav" aria-label="Primary">
         <SidebarSectionLabel text="Main" collapsed={collapsed} />
 
-        <SidebarNavItem href="/home"      label="Dashboard" icon={DashboardIcon} isActive={pathname === "/home"}      collapsed={collapsed} reduced={reduced} />
-        <SidebarNavItem href="/workflows" label="Workflows" icon={WorkflowsIcon} isActive={pathname === "/workflows"} collapsed={collapsed} reduced={reduced} />
-        <SidebarNavItem href="/runs"      label="Runs"      icon={RunsIcon}      isActive={pathname === "/runs"}      collapsed={collapsed} reduced={reduced} />
+        <SidebarNavItem href="/home"      label="Dashboard" icon={DashboardIcon} isActive={pathname === "/home"}      collapsed={collapsed} reduced={reduced} itemIndex={0} />
+        <SidebarNavItem href="/workflows" label="Workflows" icon={WorkflowsIcon} isActive={pathname === "/workflows"} collapsed={collapsed} reduced={reduced} itemIndex={1} />
+        <SidebarNavItem href="/runs"      label="Runs"      icon={RunsIcon}      isActive={pathname === "/runs"}      collapsed={collapsed} reduced={reduced} itemIndex={2} />
 
         <SidebarSectionLabel text="Account" collapsed={collapsed} />
 
-        <SidebarNavItem href="/subscribe" label="Billing"  icon={BillingIcon}  isActive={pathname === "/subscribe"} collapsed={collapsed} reduced={reduced} />
+        <SidebarNavItem href="/subscribe" label="Billing"  icon={BillingIcon}  isActive={pathname === "/subscribe"} collapsed={collapsed} reduced={reduced} itemIndex={3} />
 
         {!guest && (
-          <SidebarNavItem href="/settings" label="Settings" icon={SettingsIcon} isActive={pathname === "/settings"} collapsed={collapsed} reduced={reduced} />
+          <SidebarNavItem href="/settings" label="Settings" icon={SettingsIcon} isActive={pathname === "/settings"} collapsed={collapsed} reduced={reduced} itemIndex={4} />
         )}
 
         {isPlatformAdmin && (
-          <SidebarNavItem href="/admin" label="Admin" icon={AdminIcon} isActive={pathname.startsWith("/admin")} collapsed={collapsed} reduced={reduced} />
+          <SidebarNavItem href="/admin" label="Admin" icon={AdminIcon} isActive={pathname.startsWith("/admin")} collapsed={collapsed} reduced={reduced} itemIndex={5} />
         )}
       </nav>
 
@@ -369,6 +394,7 @@ export function AppNav({ guest, session, onLogout, isLoggingOut }: Readonly<AppN
                 notifications={notifications}
                 onMarkRead={handleMarkNotificationRead}
               />
+              <ThemeToggle />
             </div>
 
             <div className="sidebar-user-chip" aria-label={`Signed in as ${session?.user.login ?? "user"}`}>

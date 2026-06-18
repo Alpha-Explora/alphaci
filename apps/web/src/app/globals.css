@@ -119,6 +119,395 @@ html::-webkit-scrollbar {
   --surface:         var(--bg-surface);
 }
 
+[data-theme="light"] {
+  --bg-base:      #f1f5f9;
+  --bg-soft:      #ffffff;
+  --bg-frost:     rgba(255, 255, 255, 0.7);
+  --bg-surface:   rgba(255, 255, 255, 0.85);
+  --bg-panel:     #ffffff;
+  --bg-elevated:  #f8fafc;
+
+  --text-primary:   #0f172a;
+  --text-secondary: #475569;
+  --text-muted:     #94a3b8;
+
+  --brand:          #0284c7;
+  --brand-light:    rgba(2, 132, 199, 0.1);
+  --brand-strong:   #0369a1;
+  --brand-accent:   #059669;
+  --brand-glow:     rgba(2, 132, 199, 0.25);
+
+  --success:  #059669;
+  --warning:  #d97706;
+  --danger:   #dc2626;
+
+  --accent-violet:       #7c3aed;
+  --accent-violet-light: rgba(124, 58, 237, 0.08);
+  --accent-violet-mid:   rgba(124, 58, 237, 0.15);
+  --accent-violet-glow:  rgba(124, 58, 237, 0.2);
+  --border-violet:       rgba(124, 58, 237, 0.25);
+
+  --accent-amber:       #d97706;
+  --accent-amber-light: rgba(217, 119, 6, 0.08);
+  --border-amber:       rgba(217, 119, 6, 0.25);
+
+  --accent-teal:        #0d9488;
+  --accent-teal-light:  rgba(13, 148, 136, 0.08);
+  --accent-teal-glow:   rgba(13, 148, 136, 0.2);
+  --border-teal:        rgba(13, 148, 136, 0.2);
+
+  --accent-coral:       #e11d48;
+  --accent-coral-light: rgba(225, 29, 72, 0.08);
+  --accent-coral-glow:  rgba(225, 29, 72, 0.15);
+  --border-coral:       rgba(225, 29, 72, 0.2);
+
+  --accent-indigo:       #4f46e5;
+  --accent-indigo-light: rgba(79, 70, 229, 0.08);
+  --accent-indigo-glow:  rgba(79, 70, 229, 0.2);
+
+  --accent-rose:         #e11d48;
+  --accent-rose-light:   rgba(225, 29, 72, 0.07);
+  --accent-rose-glow:    rgba(225, 29, 72, 0.15);
+
+  --accent-emerald:       #059669;
+  --accent-emerald-light: rgba(5, 150, 105, 0.08);
+
+  --accent-gold:         #d97706;
+  --accent-gold-light:   rgba(217, 119, 6, 0.08);
+
+  --accent-purple:       #6d28d9;
+  --accent-purple-light: rgba(109, 40, 217, 0.08);
+
+  --surface-violet: rgba(79, 70, 229, 0.03);
+  --surface-brand:  rgba(2, 132, 199, 0.03);
+
+  --border:        rgba(0, 0, 0, 0.08);
+  --border-soft:   rgba(0, 0, 0, 0.05);
+  --border-subtle: rgba(0, 0, 0, 0.03);
+  --border-strong: rgba(0, 0, 0, 0.15);
+  --border-brand:  rgba(2, 132, 199, 0.4);
+
+  --shadow-soft:     0 2px 8px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.04);
+  --shadow-card:     0 4px 20px rgba(0, 0, 0, 0.1), 0 2px 6px rgba(0, 0, 0, 0.06);
+  --shadow-elevated: 0 8px 32px rgba(0, 0, 0, 0.14), 0 4px 12px rgba(0, 0, 0, 0.08);
+  --shadow-hard:     0 16px 48px rgba(0, 0, 0, 0.2), 0 6px 16px rgba(0, 0, 0, 0.12);
+  --glow-brand:      0 0 30px rgba(2, 132, 199, 0.15);
+  --glow-success:    0 0 24px rgba(5, 150, 105, 0.15);
+}
+
+/* ── Light mode component overrides ────────────────────────────── */
+html[data-theme="light"] {
+  background: var(--bg-base);
+}
+
+[data-theme="light"] .app-sidebar {
+  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+  box-shadow:
+    inset -1px 0 0 rgba(0, 0, 0, 0.06),
+    2px 0 20px rgba(79, 70, 229, 0.06),
+    4px 0 12px rgba(0, 0, 0, 0.04);
+}
+
+[data-theme="light"] .sidebar-nav-item:hover {
+  background: rgba(79, 70, 229, 0.05);
+  color: var(--text-primary);
+}
+
+[data-theme="light"] .sidebar-nav-item-bg {
+  background: linear-gradient(135deg, rgba(79, 70, 229, 0.1) 0%, rgba(2, 132, 199, 0.06) 100%);
+  border-left-color: var(--accent-indigo);
+}
+
+[data-theme="light"] .notification-center-button {
+  background: rgba(0, 0, 0, 0.04);
+  border-color: rgba(0, 0, 0, 0.1);
+}
+
+[data-theme="light"] .notification-center-panel {
+  background: rgba(255, 255, 255, 0.99);
+  border-color: rgba(79, 70, 229, 0.15);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.14), 0 0 0 1px rgba(0, 0, 0, 0.04);
+}
+
+[data-theme="light"] .glass-panel {
+  background: rgba(255, 255, 255, 0.85);
+  border-color: rgba(0, 0, 0, 0.08);
+  backdrop-filter: blur(12px);
+}
+
+[data-theme="light"] .public-site-nav {
+  background: rgba(255, 255, 255, 0.92);
+  border-bottom-color: rgba(0, 0, 0, 0.07);
+  color: var(--text-primary);
+}
+
+[data-theme="light"] .public-site-nav--scrolled {
+  background: rgba(255, 255, 255, 0.97);
+  box-shadow: 0 1px 12px rgba(0, 0, 0, 0.08);
+}
+
+[data-theme="light"] .flow-shell,
+[data-theme="light"] .dash-shell,
+[data-theme="light"] .product-shell {
+  background: var(--bg-base);
+}
+
+[data-theme="light"] .bento-card-dominant,
+[data-theme="light"] .bento-card-accent,
+[data-theme="light"] .bento-card-teal,
+[data-theme="light"] .bento-card-activity,
+[data-theme="light"] .bento-card-quick-actions,
+[data-theme="light"] .bento-card {
+  background: rgba(255, 255, 255, 0.9);
+  border-color: rgba(0, 0, 0, 0.07);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+}
+
+[data-theme="light"] .repo-card {
+  background: rgba(255, 255, 255, 0.9);
+  border-color: rgba(0, 0, 0, 0.08);
+}
+
+[data-theme="light"] .dash-repo-row {
+  background: rgba(255, 255, 255, 0.7);
+  border-color: rgba(0, 0, 0, 0.06);
+}
+
+[data-theme="light"] .sidebar-brand-zone {
+  border-bottom-color: rgba(0, 0, 0, 0.06);
+}
+
+[data-theme="light"] .sidebar-collapse-btn {
+  background: rgba(0, 0, 0, 0.04);
+  border-color: rgba(0, 0, 0, 0.1);
+  color: var(--text-secondary);
+}
+
+[data-theme="light"] .sidebar-signout-btn {
+  color: var(--text-secondary);
+  border-color: rgba(0, 0, 0, 0.08);
+}
+
+[data-theme="light"] .sidebar-signout-btn:hover:not(:disabled) {
+  background: rgba(220, 38, 38, 0.06);
+  border-color: rgba(220, 38, 38, 0.2);
+  color: var(--danger);
+}
+
+[data-theme="light"] .sidebar-user-chip {
+  background: rgba(0, 0, 0, 0.04);
+  border-color: rgba(0, 0, 0, 0.08);
+}
+
+[data-theme="light"] .admin-shell {
+  background: var(--bg-base);
+  color: var(--text-primary);
+}
+
+[data-theme="light"] .primary-button {
+  background: var(--brand);
+  color: #ffffff;
+}
+
+[data-theme="light"] .ghost-button {
+  background: rgba(0, 0, 0, 0.04);
+  border-color: rgba(0, 0, 0, 0.12);
+  color: var(--text-primary);
+}
+
+[data-theme="light"] .ghost-button:hover {
+  background: rgba(0, 0, 0, 0.08);
+}
+
+[data-theme="light"] input,
+[data-theme="light"] select,
+[data-theme="light"] textarea {
+  background: rgba(255, 255, 255, 0.9);
+  border-color: rgba(0, 0, 0, 0.12);
+  color: var(--text-primary);
+}
+
+[data-theme="light"] input::placeholder,
+[data-theme="light"] textarea::placeholder {
+  color: var(--text-muted);
+}
+
+[data-theme="light"] .dash-tab-bar {
+  background: rgba(0, 0, 0, 0.04);
+  border-color: rgba(0, 0, 0, 0.07);
+}
+
+[data-theme="light"] .template-tag {
+  background: rgba(79, 70, 229, 0.08);
+  color: var(--accent-indigo);
+  border-color: rgba(79, 70, 229, 0.18);
+}
+
+[data-theme="light"] .activity-code-block {
+  background: rgba(0, 0, 0, 0.04);
+  border-color: rgba(0, 0, 0, 0.07);
+}
+
+[data-theme="light"] .file-path-label {
+  color: var(--brand);
+}
+
+[data-theme="light"] .eyebrow {
+  color: var(--brand);
+}
+
+[data-theme="light"] .flow-bg {
+  opacity: 0.18;
+}
+
+/* ── Status chips in light mode ─────────────────────────────── */
+[data-theme="light"] .status-chip-brand {
+  background: rgba(2, 132, 199, 0.08);
+  border-color: rgba(2, 132, 199, 0.25);
+}
+
+[data-theme="light"] .status-chip-success {
+  background: rgba(5, 150, 105, 0.08);
+  color: #047857;
+  border-color: rgba(5, 150, 105, 0.25);
+}
+
+[data-theme="light"] .status-chip-danger {
+  background: rgba(220, 38, 38, 0.08);
+  color: #dc2626;
+  border-color: rgba(220, 38, 38, 0.2);
+}
+
+[data-theme="light"] .status-chip-amber {
+  background: rgba(217, 119, 6, 0.08);
+  color: #b45309;
+  border-color: rgba(217, 119, 6, 0.2);
+}
+
+[data-theme="light"] .status-chip-muted {
+  background: rgba(0, 0, 0, 0.04);
+  color: var(--text-muted);
+  border-color: rgba(0, 0, 0, 0.1);
+}
+
+/* ── Skeleton cards ──────────────────────────────────────────── */
+[data-theme="light"] .skeleton-card {
+  background: rgba(0, 0, 0, 0.04) !important;
+}
+
+/* ── Welcome banner ──────────────────────────────────────────── */
+[data-theme="light"] .welcome-banner-flat {
+  border-bottom-color: var(--border);
+}
+
+/* ── Dash section + count chips ─────────────────────────────── */
+[data-theme="light"] .dash-count-chip {
+  background: rgba(79, 70, 229, 0.07);
+  color: var(--accent-indigo);
+  border-color: rgba(79, 70, 229, 0.15);
+}
+
+[data-theme="light"] .dash-badge-violet {
+  background: rgba(124, 58, 237, 0.08);
+  color: var(--accent-violet);
+  border-color: rgba(124, 58, 237, 0.2);
+}
+
+/* ── Guest banner ────────────────────────────────────────────── */
+[data-theme="light"] .guest-banner {
+  background: linear-gradient(135deg, rgba(2, 132, 199, 0.06) 0%, rgba(255, 255, 255, 0.8) 100%) !important;
+  border-color: rgba(2, 132, 199, 0.2) !important;
+}
+
+/* ── Bento sparkbar ──────────────────────────────────────────── */
+[data-theme="light"] .bento-sparkbar-bar {
+  background: rgba(79, 70, 229, 0.25);
+}
+
+/* ── Counter numbers in bento ───────────────────────────────── */
+[data-theme="light"] .bento-num-brand { color: var(--brand); }
+[data-theme="light"] .bento-num-violet { color: var(--accent-violet); }
+[data-theme="light"] .bento-num-teal { color: var(--accent-teal); }
+
+/* ── Pipeline dots ───────────────────────────────────────────── */
+[data-theme="light"] .pipeline-dot {
+  background: rgba(0, 0, 0, 0.12);
+  border-color: rgba(0, 0, 0, 0.2);
+}
+[data-theme="light"] .pipeline-dot.active {
+  background: var(--brand);
+  border-color: var(--brand);
+}
+[data-theme="light"] .pipeline-connector {
+  background: rgba(0, 0, 0, 0.1);
+}
+
+/* ── Error/retry inline blocks ───────────────────────────────── */
+[data-theme="light"] .error-inline {
+  background: rgba(220, 38, 38, 0.04) !important;
+  border-color: rgba(220, 38, 38, 0.15) !important;
+}
+
+/* ── Code / monospace blocks ─────────────────────────────────── */
+[data-theme="light"] code,
+[data-theme="light"] .activity-code-value {
+  background: rgba(0, 0, 0, 0.04);
+  color: var(--accent-indigo);
+}
+
+/* ── Repo search input ───────────────────────────────────────── */
+[data-theme="light"] .repo-search {
+  background: rgba(255, 255, 255, 0.8);
+  border-color: rgba(0, 0, 0, 0.1);
+}
+
+/* ── Tab indicator (active pill inside dash-tab-bar) ─────────── */
+[data-theme="light"] .dash-tab-bar button[aria-selected="true"] {
+  color: var(--text-primary);
+}
+
+/* ── Subscribe / plan cards ──────────────────────────────────── */
+[data-theme="light"] .plan-card {
+  background: rgba(255, 255, 255, 0.9);
+  border-color: rgba(0, 0, 0, 0.08);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+}
+
+/* ── Settings panels ─────────────────────────────────────────── */
+[data-theme="light"] .settings-sidebar-nav-item:hover {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+/* ── Public site nav text ────────────────────────────────────── */
+[data-theme="light"] .public-site-brand,
+[data-theme="light"] .public-site-login {
+  color: var(--text-primary);
+}
+
+[data-theme="light"] .public-site-login:hover {
+  color: var(--brand);
+}
+
+/* ── Landing hero YAML block ─────────────────────────────────── */
+[data-theme="light"] .hero-yaml-block {
+  background: rgba(255, 255, 255, 0.9);
+  border-color: rgba(0, 0, 0, 0.08);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.1);
+}
+
+/* ── Workspace switcher ──────────────────────────────────────── */
+[data-theme="light"] .workspace-switcher-btn {
+  background: rgba(0, 0, 0, 0.04);
+  border-color: rgba(0, 0, 0, 0.1);
+  color: var(--text-secondary);
+}
+
+[data-theme="light"] .workspace-switcher-panel {
+  background: rgba(255, 255, 255, 0.99);
+  border-color: rgba(0, 0, 0, 0.1);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+}
+
 @theme inline {
   --color-background: var(--bg-base);
   --color-foreground: var(--text-primary);
@@ -9322,11 +9711,19 @@ select option {
   background: rgba(15,23,42,0.65);
   color: var(--text-secondary);
   cursor: pointer;
+  transition: color 0.18s ease, border-color 0.18s ease, background 0.18s ease;
 }
 
 .notification-center-button:hover {
   color: var(--text-primary);
-  border-color: rgba(255,255,255,0.18);
+  border-color: rgba(255,255,255,0.2);
+  background: rgba(99,102,241,0.1);
+}
+
+.notification-center-button--unread {
+  border-color: rgba(99,102,241,0.35);
+  color: var(--accent-indigo);
+  box-shadow: 0 0 12px rgba(99,102,241,0.18);
 }
 
 .notification-center-count {
@@ -9337,11 +9734,13 @@ select option {
   height: 1rem;
   padding: 0 0.25rem;
   border-radius: 999px;
-  background: var(--danger);
+  background: var(--accent-indigo);
   color: white;
-  font-size: 0.66rem;
+  font-size: 0.62rem;
   line-height: 1rem;
   font-weight: 800;
+  text-align: center;
+  pointer-events: none;
 }
 
 .notification-center-panel {
@@ -9350,13 +9749,42 @@ select option {
   right: 0;
   width: min(360px, calc(100vw - 2rem));
   max-height: min(420px, calc(100vh - 5rem));
-  overflow: auto;
-  padding: 0.5rem;
-  border: 1px solid rgba(255,255,255,0.12);
-  border-radius: 0.65rem;
-  background: rgba(15, 23, 42, 0.98);
-  box-shadow: 0 8px 24px rgba(0,0,0,0.22);
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 0;
+  border: 1px solid rgba(99,102,241,0.2);
+  border-radius: 0.75rem;
+  background: rgba(10, 14, 33, 0.98);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow: 0 16px 48px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.04);
   z-index: 300;
+  transform-origin: top right;
+}
+
+.notification-center-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 0.85rem 0.5rem;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+
+.notification-center-title {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: 0.02em;
+}
+
+.notification-center-unread-chip {
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 0.15rem 0.45rem;
+  border-radius: 999px;
+  background: rgba(99,102,241,0.18);
+  color: var(--accent-indigo);
+  border: 1px solid rgba(99,102,241,0.3);
 }
 
 .notification-center-item {
@@ -9364,52 +9792,81 @@ select option {
   align-items: flex-start;
   justify-content: space-between;
   gap: 0.75rem;
-  padding: 0.65rem;
-  border-bottom: 1px solid rgba(255,255,255,0.08);
+  padding: 0.65rem 0.85rem;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  transition: background 0.15s ease;
+}
+
+.notification-center-item:hover {
+  background: rgba(255,255,255,0.03);
 }
 
 .notification-center-item:last-child {
   border-bottom: 0;
 }
 
+.notification-center-item--read {
+  opacity: 0.55;
+}
+
+.notification-center-item-body {
+  min-width: 0;
+  flex: 1;
+}
+
 .notification-center-item strong {
   display: block;
   color: var(--text-primary);
-  font-size: 0.82rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  margin-bottom: 0.15rem;
 }
 
 .notification-center-item p {
-  margin: 0.25rem 0;
+  margin: 0 0 0.2rem;
   color: var(--text-secondary);
-  font-size: 0.76rem;
-  line-height: 1.4;
+  font-size: 0.74rem;
+  line-height: 1.45;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .notification-center-item span {
   color: var(--text-muted);
-  font-size: 0.7rem;
+  font-size: 0.67rem;
+  font-family: ui-monospace, monospace;
 }
 
 .notification-center-action,
 .notification-center-state {
   flex-shrink: 0;
-  border: 1px solid rgba(255,255,255,0.12);
-  border-radius: 0.45rem;
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 0.4rem;
   background: transparent;
   color: var(--text-secondary);
-  padding: 0.25rem 0.45rem;
-  font-size: 0.72rem;
+  padding: 0.22rem 0.5rem;
+  font-size: 0.7rem;
+  white-space: nowrap;
 }
 
 .notification-center-action {
   cursor: pointer;
+  transition: color 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+}
+
+.notification-center-action:hover {
+  color: var(--accent-indigo);
+  border-color: rgba(99,102,241,0.4);
+  background: rgba(99,102,241,0.08);
 }
 
 .notification-center-empty {
   margin: 0;
-  padding: 0.75rem;
+  padding: 1.5rem 0.85rem;
   color: var(--text-muted);
   font-size: 0.8rem;
+  text-align: center;
 }
 
 /* User identity pill */
@@ -10905,6 +11362,11 @@ select option {
   flex-shrink: 0;
 }
 
+/* Nav item wrapper (motion.div) */
+.sidebar-nav-item-wrapper {
+  width: 100%;
+}
+
 /* Nav item */
 .sidebar-nav-item {
   position: relative;
@@ -11135,8 +11597,10 @@ select option {
 /* Notification panel — shift to the right of sidebar when sidebar is present */
 .app-sidebar .notification-center-panel {
   right: auto;
-  left: calc(100% + 8px);
-  top: 0;
+  left: calc(100% + 10px);
+  top: auto;
+  bottom: 0;
+  transform-origin: bottom left;
 }
 
 /* Workspace switcher in sidebar context — more compact */

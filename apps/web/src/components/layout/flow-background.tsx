@@ -8,6 +8,7 @@ export function FlowBackground() {
 
   return (
     <div
+      className="flow-bg"
       aria-hidden="true"
       style={{
         position: "fixed",
