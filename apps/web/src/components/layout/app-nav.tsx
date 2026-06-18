@@ -315,6 +315,7 @@ export function AppNav({ guest, session, onLogout, isLoggingOut }: Readonly<AppN
     <motion.aside
       ref={sidebarRef}
       className="app-sidebar"
+      data-collapsed={collapsed ? "true" : "false"}
       animate={{ width: sidebarWidth }}
       transition={reduced ? { duration: 0 } : { type: "spring", stiffness: 360, damping: 34, mass: 0.8 }}
       style={{ width: sidebarWidth }}
@@ -390,11 +391,13 @@ export function AppNav({ guest, session, onLogout, isLoggingOut }: Readonly<AppN
           <>
             <div className="sidebar-bottom-utilities">
               <WorkspaceSwitcher workspaces={workspaces} />
-              <NotificationCenter
-                notifications={notifications}
-                onMarkRead={handleMarkNotificationRead}
-              />
-              <ThemeToggle />
+              <div className="sidebar-utility-actions">
+                <NotificationCenter
+                  notifications={notifications}
+                  onMarkRead={handleMarkNotificationRead}
+                />
+                <ThemeToggle />
+              </div>
             </div>
 
             <div className="sidebar-user-chip" aria-label={`Signed in as ${session?.user.login ?? "user"}`}>

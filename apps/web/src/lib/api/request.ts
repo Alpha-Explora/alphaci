@@ -25,6 +25,24 @@ function resolveApiBaseUrl(): string {
     return normalizeApiBaseUrl(legacyApiUrl);
   }
 
+  // Neither var was present AT BUILD TIME. NEXT_PUBLIC_* values are inlined by
+  // Next.js during `next build`, so this localhost default gets permanently
+  // baked into the deployed bundle — every API call and the login button then
+  // point at the visitor's own machine (ERR_CONNECTION_REFUSED). We can't throw
+  // here (this module loads during prerender and throwing would fail the whole
+  // build), so we surface it as loudly as possible instead: this shows in both
+  // the Vercel build log and the browser console.
+  if (process.env.NODE_ENV === "production") {
+    console.error(
+      "[api] Neither NEXT_PUBLIC_API_BASE_URL nor NEXT_PUBLIC_API_URL was set " +
+        "at build time — falling back to http://localhost:4000. Login and all " +
+        "API calls will fail in this deployment. Set NEXT_PUBLIC_API_BASE_URL " +
+        "to the backend URL in this environment's settings and REDEPLOY " +
+        "(the value is inlined at build time, so setting it without rebuilding " +
+        "has no effect).",
+    );
+  }
+
   return normalizeApiBaseUrl("http://localhost:4000/api/v1");
 }
 

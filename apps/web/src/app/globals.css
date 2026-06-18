@@ -298,6 +298,16 @@ html[data-theme="light"] {
   border-color: rgba(0, 0, 0, 0.08);
 }
 
+[data-theme="light"] .app-sidebar .workspace-switcher {
+  background: rgba(0, 0, 0, 0.04);
+  border-color: rgba(0, 0, 0, 0.1);
+}
+
+[data-theme="light"] .app-sidebar .notification-center-button {
+  background: rgba(0, 0, 0, 0.04);
+  border-color: rgba(0, 0, 0, 0.1);
+}
+
 [data-theme="light"] .admin-shell {
   background: var(--bg-base);
   color: var(--text-primary);
@@ -12056,13 +12066,33 @@ select option {
   overflow: hidden;
 }
 
-/* Utilities row (workspace + notifications) */
+/* Utilities (workspace on its own row + notifications/theme below) */
 .sidebar-bottom-utilities {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.4rem;
+  padding: 0 0.15rem;
+}
+
+/* Notification + theme-toggle sub-row */
+.sidebar-utility-actions {
   display: flex;
   align-items: center;
   gap: 0.4rem;
-  justify-content: flex-start;
-  padding: 0 0.15rem;
+}
+
+/* Collapsed sidebar: hide the workspace chip, stack the action buttons */
+.app-sidebar[data-collapsed="true"] .sidebar-bottom-utilities {
+  align-items: center;
+}
+
+.app-sidebar[data-collapsed="true"] .workspace-switcher {
+  display: none;
+}
+
+.app-sidebar[data-collapsed="true"] .sidebar-utility-actions {
+  flex-direction: column;
 }
 
 /* User chip */
@@ -12209,10 +12239,30 @@ select option {
   transform-origin: bottom left;
 }
 
-/* Workspace switcher in sidebar context — more compact */
+/* Workspace switcher in sidebar context — full-width row, truncates cleanly */
 .app-sidebar .workspace-switcher {
+  display: flex;
+  width: 100%;
   max-width: none;
+  min-width: 0;
+  justify-content: flex-start;
+  overflow: hidden;
+}
+
+/* Let the workspace name absorb leftover space and ellipsize */
+.app-sidebar .workspace-switcher-name {
   flex: 1;
   min-width: 0;
+  max-width: none;
+}
+
+/* Role should never be squeezed into the name */
+.app-sidebar .workspace-switcher-role {
+  flex-shrink: 0;
+}
+
+/* The standalone "Workspace" label is redundant in the chip — reclaim the space */
+.app-sidebar .workspace-switcher-label {
+  display: none;
 }
 
