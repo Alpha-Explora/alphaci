@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Doto, Plus_Jakarta_Sans, Outfit } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/lib/theme-context";
+import { ThemeToggle } from "@/components/layout/theme-toggle";
 
 const displayFont = Doto({
   variable: "--font-display",
@@ -42,16 +43,21 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
-      <head>
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `(function(){try{var t=localStorage.getItem('alphaci-theme');if(t==='light')document.documentElement.setAttribute('data-theme','light');}catch(e){}})();`,
-          }}
-        />
-      </head>
+    <html lang="en" data-theme="dark" suppressHydrationWarning>
       <body className={`${displayFont.variable} ${bodyFont.variable} ${dashBodyFont.variable} ${dashDisplayFont.variable} antialiased`} suppressHydrationWarning>
-        <ThemeProvider>{children}</ThemeProvider>
+        <ThemeProvider>
+          {children}
+          <div
+            style={{
+              position: "fixed",
+              bottom: "1.5rem",
+              right: "1.5rem",
+              zIndex: 9999,
+            }}
+          >
+            <ThemeToggle />
+          </div>
+        </ThemeProvider>
       </body>
     </html>
   );

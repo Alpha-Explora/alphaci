@@ -399,3 +399,117 @@
     flex-direction: column;
   }
 }
+
+/* ── Light mode overrides ───────────────────────────────────────────────────── */
+
+:global([data-theme="light"]) .publicShell {
+  background: var(--bg-base);
+}
+
+:global([data-theme="light"]) .publicHeader h1 {
+  color: var(--text-primary) !important;
+}
+
+:global([data-theme="light"]) .publicHeader p {
+  color: var(--text-secondary) !important;
+}
+
+/* Plan cards: white background, dark text */
+:global([data-theme="light"]) .card {
+  background: rgba(255, 255, 255, 0.95) !important;
+  border-color: rgba(15, 23, 42, 0.1) !important;
+  box-shadow: 0 4px 24px rgba(15, 23, 42, 0.08), 0 1px 4px rgba(15, 23, 42, 0.04) !important;
+}
+
+:global([data-theme="light"]) .cardFeatured {
+  border-color: rgba(2, 132, 199, 0.4) !important;
+  box-shadow: 0 4px 24px rgba(15, 23, 42, 0.1), 0 0 0 1px rgba(2, 132, 199, 0.12) inset !important;
+}
+
+/* Card titles ("Free", "Pro Monthly", "Team") */
+:global([data-theme="light"]) .card h2 {
+  color: var(--text-primary) !important;
+}
+
+/* Card description */
+:global([data-theme="light"]) .description {
+  color: var(--text-secondary) !important;
+}
+
+/* Price ("PHP 0", "PHP 300", "Custom") */
+:global([data-theme="light"]) .price span {
+  color: var(--text-primary) !important;
+}
+
+:global([data-theme="light"]) .price em {
+  color: var(--text-secondary) !important;
+}
+
+/* Feature list items */
+:global([data-theme="light"]) .featureList li {
+  color: var(--text-primary) !important;
+}
+
+/* Secondary button */
+:global([data-theme="light"]) .buttonSecondary {
+  background: rgba(15, 23, 42, 0.04) !important;
+  border-color: rgba(15, 23, 42, 0.15) !important;
+  color: var(--text-secondary) !important;
+}
+
+/* Card rule divider */
+:global([data-theme="light"]) .cardRule {
+  background: rgba(15, 23, 42, 0.08) !important;
+}
+
+/* Account summary panel */
+:global([data-theme="light"]) .accountSummary > div {
+  background: rgba(255, 255, 255, 0.9) !important;
+}
+
+:global([data-theme="light"]) .accountSummary p {
+  color: var(--text-primary) !important;
+}
+
+/* Comparison table */
+:global([data-theme="light"]) .tableWrap {
+  background: rgba(255, 255, 255, 0.95) !important;
+  border-color: rgba(15, 23, 42, 0.1) !important;
+}
+
+:global([data-theme="light"]) .table {
+  color: var(--text-primary) !important;
+}
+
+:global([data-theme="light"]) .table thead th {
+  color: var(--text-secondary) !important;
+}
+
+:global([data-theme="light"]) .table tbody th {
+  color: var(--text-primary) !important;
+}
+
+:global([data-theme="light"]) .table tbody td {
+  color: var(--text-secondary) !important;
+}
+
+:global([data-theme="light"]) .table th,
+:global([data-theme="light"]) .table td {
+  border-bottom-color: rgba(15, 23, 42, 0.08) !important;
+}
+
+/* Comparison and notes section headings */
+:global([data-theme="light"]) .comparison h2,
+:global([data-theme="light"]) .notes h2 {
+  color: var(--text-primary) !important;
+}
+
+/* Notes panel */
+:global([data-theme="light"]) .notes {
+  background: rgba(255, 255, 255, 0.95) !important;
+  border-color: rgba(15, 23, 42, 0.1) !important;
+}
+
+:global([data-theme="light"]) .notes p {
+  color: var(--text-secondary) !important;
+}

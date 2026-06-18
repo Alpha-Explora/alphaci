@@ -1,7 +1,6 @@
 @import "tailwindcss";
 
 html {
-  scroll-behavior: smooth;
   scrollbar-width: none;
 }
 
@@ -593,6 +592,526 @@ html[data-theme="light"] {
 /* Corner + markers in hero editorial bg — reduce when light */
 [data-theme="light"] .editorial-hero-bg {
   opacity: 0.04;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   LIGHT MODE — comprehensive section polish (landing + dashboard + auth)
+   Added to make light mode a coherent, distinct surface — not dark-with-patches.
+   Every rule below is light-only and uses !important where it competes with an
+   inline style or an existing !important dark rule.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Hero floating + main cards: make them read as distinct elevated surfaces ── */
+[data-theme="light"] .hero-float-card {
+  background: rgba(255, 255, 255, 0.98) !important;
+  border: 1px solid rgba(15, 23, 42, 0.1) !important;
+  box-shadow:
+    0 6px 28px rgba(15, 23, 42, 0.12),
+    0 1px 4px rgba(15, 23, 42, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
+}
+
+[data-theme="light"] .hero-main-card {
+  background: rgba(255, 255, 255, 0.97) !important;
+  border: 1px solid rgba(15, 23, 42, 0.09) !important;
+  box-shadow:
+    0 16px 50px rgba(15, 23, 42, 0.13),
+    0 4px 14px rgba(15, 23, 42, 0.07),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
+}
+
+/* Inner accent surfaces inside the hero main card (branch chip, badges, rows)
+   read fine on dark but vanish on white — give them subtle tinted fills */
+[data-theme="light"] .hero-main-card .hero-progress-track {
+  background: rgba(15, 23, 42, 0.08) !important;
+}
+
+/* The terminal-y YAML body row highlight inside hero card */
+[data-theme="light"] .hero-deploy-row {
+  background: rgba(15, 23, 42, 0.035) !important;
+  border-color: rgba(15, 23, 42, 0.08) !important;
+}
+
+/* ── Feature value cards (Source-backed generation, etc.) ── */
+[data-theme="light"] .feature-strip-item,
+[data-theme="light"] .feature-card-enhanced {
+  background: rgba(255, 255, 255, 0.92) !important;
+  border-color: rgba(15, 23, 42, 0.09) !important;
+  box-shadow: 0 2px 14px rgba(15, 23, 42, 0.06) !important;
+}
+
+[data-theme="light"] .feature-strip-item:last-child {
+  border-right: 1px solid rgba(15, 23, 42, 0.09) !important;
+}
+
+[data-theme="light"] .feature-strip-item:hover,
+[data-theme="light"] .feature-card-enhanced:hover {
+  border-color: rgba(2, 132, 199, 0.35) !important;
+  box-shadow:
+    0 12px 36px rgba(15, 23, 42, 0.12),
+    0 0 24px rgba(2, 132, 199, 0.08) !important;
+}
+
+@media (max-width: 700px) {
+  [data-theme="light"] .feature-strip-item {
+    border-right: 1px solid rgba(15, 23, 42, 0.09) !important;
+  }
+}
+
+/* ── Pricing split card (the dark glass card on the right of pricing) ── */
+[data-theme="light"] .pricing-split-card {
+  background: rgba(255, 255, 255, 0.95) !important;
+  border: 1px solid rgba(2, 132, 199, 0.22) !important;
+  box-shadow:
+    0 16px 50px rgba(15, 23, 42, 0.1),
+    0 0 0 0.5px rgba(15, 23, 42, 0.04) inset !important;
+}
+
+[data-theme="light"] .pricing-split-card:hover {
+  border-color: rgba(2, 132, 199, 0.38) !important;
+  box-shadow:
+    0 22px 64px rgba(15, 23, 42, 0.14),
+    0 0 60px rgba(2, 132, 199, 0.08) !important;
+}
+
+/* Pricing feature row dividers were rgba(255,255,255,0.04) — invisible on white */
+[data-theme="light"] .pricing-feature-row {
+  border-bottom-color: rgba(15, 23, 42, 0.08) !important;
+}
+
+/* ── Deploy provider cards: Vercel stays near-black (it IS the brand), but
+   soften the Render card border for the light page and keep both legible.
+   These cards are intentionally dark "brand chips" — a deliberate color-drama
+   moment in the light layout, so we keep them dark but tighten the framing. ── */
+[data-theme="light"] .deploy-provider-card--vercel {
+  box-shadow:
+    0 14px 40px rgba(15, 23, 42, 0.22),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 0 0 1px rgba(15, 23, 42, 0.06) !important;
+}
+
+[data-theme="light"] .deploy-provider-card--render {
+  box-shadow:
+    0 14px 40px rgba(6, 78, 59, 0.2),
+    inset 0 1px 0 rgba(52, 211, 153, 0.08),
+    0 0 0 1px rgba(15, 23, 42, 0.05) !important;
+}
+
+/* ── Bento KPI cards (dashboard) ──────────────────────────────────────────
+   The per-accent variants use !important dark gradients, so the generic
+   light .bento-card rule loses. Re-declare each variant with !important and a
+   crisp white surface + a faint accent wash for identity. ── */
+[data-theme="light"] .bento-card {
+  background: #ffffff !important;
+  border: 1px solid rgba(15, 23, 42, 0.08) !important;
+  box-shadow: 0 2px 14px rgba(15, 23, 42, 0.06) !important;
+}
+
+[data-theme="light"] .bento-card::before {
+  background: linear-gradient(135deg, rgba(15, 23, 42, 0.05), transparent 60%) !important;
+}
+
+[data-theme="light"] .bento-card-dominant {
+  background:
+    linear-gradient(140deg, rgba(2, 132, 199, 0.06) 0%, #ffffff 55%) !important;
+  border-color: rgba(2, 132, 199, 0.22) !important;
+}
+
+[data-theme="light"] .bento-card-brand {
+  background:
+    linear-gradient(140deg, rgba(2, 132, 199, 0.07) 0%, #ffffff 60%) !important;
+  border-color: rgba(2, 132, 199, 0.2) !important;
+}
+
+[data-theme="light"] .bento-card-violet {
+  background:
+    linear-gradient(140deg, rgba(124, 58, 237, 0.06) 0%, #ffffff 60%) !important;
+  border-color: rgba(124, 58, 237, 0.18) !important;
+}
+
+[data-theme="light"] .bento-card-teal {
+  background:
+    linear-gradient(140deg, rgba(13, 148, 136, 0.06) 0%, #ffffff 60%) !important;
+  border-color: rgba(13, 148, 136, 0.18) !important;
+}
+
+[data-theme="light"] .bento-card-activity,
+[data-theme="light"] .bento-card-quick-actions,
+[data-theme="light"] .bento-card-accent {
+  background: #ffffff !important;
+  border-color: rgba(15, 23, 42, 0.08) !important;
+}
+
+[data-theme="light"] .bento-card:hover {
+  border-color: rgba(2, 132, 199, 0.3) !important;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.1), 0 0 24px rgba(2, 132, 199, 0.05) !important;
+}
+
+/* Bento gradient numbers: in light the gradient ends in a near-white tint and
+   washes out. Force solid accent colors for legibility. */
+[data-theme="light"] .bento-num-brand {
+  background: none !important;
+  -webkit-background-clip: initial !important;
+  background-clip: initial !important;
+  -webkit-text-fill-color: var(--brand) !important;
+  color: var(--brand) !important;
+}
+
+[data-theme="light"] .bento-num-violet {
+  background: none !important;
+  -webkit-background-clip: initial !important;
+  background-clip: initial !important;
+  -webkit-text-fill-color: var(--accent-violet) !important;
+  color: var(--accent-violet) !important;
+}
+
+[data-theme="light"] .bento-num-teal {
+  background: none !important;
+  -webkit-background-clip: initial !important;
+  background-clip: initial !important;
+  -webkit-text-fill-color: var(--accent-teal) !important;
+  color: var(--accent-teal) !important;
+}
+
+/* Dashboard inline glass/empty/skeleton panels that hardcode rgba(15,23,42,*) */
+[data-theme="light"] .dash-shell .glass-panel,
+[data-theme="light"] .dash-shell .skeleton-card {
+  background: rgba(255, 255, 255, 0.92) !important;
+  border-color: rgba(15, 23, 42, 0.08) !important;
+}
+
+/* ── Auth / login page (screenshot 2) ──────────────────────────────────────
+   The auth card and its supporting panels use hardcoded dark navy fills. ── */
+[data-theme="light"] .auth-card-shell {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(248, 250, 252, 0.96)) !important;
+  border: 1px solid rgba(2, 132, 199, 0.18) !important;
+  box-shadow:
+    0 20px 60px rgba(15, 23, 42, 0.12),
+    0 6px 18px rgba(15, 23, 42, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
+}
+
+[data-theme="light"] .auth-card-sweep {
+  background: linear-gradient(90deg, transparent, rgba(2, 132, 199, 0.06), transparent) !important;
+}
+
+/* GitHub CTA button inside the auth card (inline rgba white fill + border) */
+[data-theme="light"] .auth-github-cta {
+  background: rgba(15, 23, 42, 0.03) !important;
+  border-color: rgba(15, 23, 42, 0.14) !important;
+}
+
+[data-theme="light"] .auth-access-showcase {
+  background:
+    linear-gradient(135deg, rgba(2, 132, 199, 0.07), rgba(13, 148, 136, 0.04)),
+    rgba(255, 255, 255, 0.85) !important;
+  border-color: rgba(2, 132, 199, 0.18) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    0 12px 36px rgba(15, 23, 42, 0.08) !important;
+}
+
+[data-theme="light"] .auth-access-node {
+  background: linear-gradient(135deg, rgba(2, 132, 199, 0.14), rgba(13, 148, 136, 0.1)) !important;
+  border-color: rgba(2, 132, 199, 0.28) !important;
+  box-shadow: 0 0 22px rgba(2, 132, 199, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.8) !important;
+}
+
+[data-theme="light"] .auth-pipeline-stage-shell {
+  background: rgba(255, 255, 255, 0.85) !important;
+  border-color: rgba(15, 23, 42, 0.08) !important;
+}
+
+[data-theme="light"] .auth-trust-strip span {
+  background: rgba(15, 23, 42, 0.03) !important;
+  border-color: rgba(15, 23, 42, 0.1) !important;
+}
+
+[data-theme="light"] .editorial-glass-panel {
+  background: rgba(255, 255, 255, 0.9) !important;
+  border-color: rgba(15, 23, 42, 0.08) !important;
+}
+
+[data-theme="light"] .auth-code-sheen {
+  background: linear-gradient(115deg, transparent 0 42%, rgba(2, 132, 199, 0.06) 50%, transparent 58% 100%) !important;
+}
+
+/* Quick-action terminal command rows inside the bento card: dark fills →
+   light tinted rows with a correct (darkening) hover. */
+[data-theme="light"] .bento-cmd-row {
+  background: rgba(15, 23, 42, 0.035) !important;
+  border-color: rgba(15, 23, 42, 0.08) !important;
+}
+
+[data-theme="light"] .bento-cmd-row:hover {
+  background: rgba(15, 23, 42, 0.06) !important;
+  border-color: rgba(2, 132, 199, 0.2) !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   LIGHT MODE — targeted fixes (proof strip, scrolled nav, hero kicker, auth)
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Problem 1: Hero proof-strip pills ───────────────────────────────────────
+   Dark navy fills + muted gray text are illegible on white. Turn them into
+   clean, soft sky-tinted pill badges. ── */
+[data-theme="light"] .hero-proof-strip span {
+  background: rgba(2, 132, 199, 0.08) !important;
+  border-color: rgba(2, 132, 199, 0.2) !important;
+  color: var(--text-secondary) !important;
+}
+
+[data-theme="light"] .hero-proof-strip span::before {
+  background: var(--brand-accent);
+  box-shadow: 0 0 8px rgba(13, 148, 136, 0.35);
+}
+
+/* ── Problem 2: Scrolled / fixed public nav ──────────────────────────────────
+   The two-class .public-site-nav--fixed.public-site-nav--scrolled rule (higher
+   specificity) kept the dark frosted glass in light mode. Override both states
+   with light-transparent frosted glass. ── */
+[data-theme="light"] .public-site-nav--fixed {
+  background: linear-gradient(180deg, rgba(248, 250, 252, 0.72), rgba(248, 250, 252, 0)) !important;
+}
+
+[data-theme="light"] .public-site-nav--fixed.public-site-nav--scrolled {
+  background: rgba(255, 255, 255, 0.92) !important;
+  border-bottom-color: rgba(0, 0, 0, 0.07) !important;
+  box-shadow: 0 2px 16px rgba(0, 0, 0, 0.08), inset 0 -1px 0 rgba(15, 23, 42, 0.03) !important;
+}
+
+[data-theme="light"] .public-site-brand,
+[data-theme="light"] .public-site-nav a {
+  color: var(--text-primary);
+}
+
+/* Tone down the cyan brand glow that looks muddy on white */
+[data-theme="light"] .public-site-brand,
+[data-theme="light"] .public-site-nav--scrolled .public-site-brand {
+  text-shadow: 0 0 18px rgba(2, 132, 199, 0.1);
+}
+
+[data-theme="light"] .public-site-brand-mark,
+[data-theme="light"] .public-site-nav--scrolled .public-site-brand-mark {
+  box-shadow: 0 0 24px rgba(2, 132, 199, 0.12);
+}
+
+/* ── Problem 3: Hero system kicker ───────────────────────────────────────────
+   Color uses var(--brand) (adapts) but the hardcoded cyan text-shadow glow
+   looks bad on white — remove it. ── */
+[data-theme="light"] .hero-system-kicker {
+  text-shadow: none;
+}
+
+[data-theme="light"] .hero-system-kicker span {
+  box-shadow: 0 0 10px rgba(2, 132, 199, 0.45);
+}
+
+/* The hero brand chip glass fill is tuned for dark — give it a light tint */
+[data-theme="light"] .hero-brand-chip {
+  background: rgba(2, 132, 199, 0.07) !important;
+  border-color: rgba(2, 132, 199, 0.2) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6), 0 0 20px rgba(2, 132, 199, 0.06) !important;
+}
+
+/* ── Problem 4: Auth page shell + card ───────────────────────────────────────
+   .auth-card-shell already has a light override, but the panels AROUND it
+   (.auth-right-panel holds the LOG IN card, .auth-left-panel is the showcase)
+   had hardcoded dark gradients with no light override — that dark slate was
+   bleeding through. Make both panels light. ── */
+[data-theme="light"] .auth-right-panel {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.6), rgba(248, 250, 252, 0.92)),
+    var(--bg-base) !important;
+}
+
+[data-theme="light"] .auth-right-panel::before {
+  background:
+    radial-gradient(ellipse 70% 45% at 50% 28%, rgba(2, 132, 199, 0.08) 0%, transparent 72%),
+    linear-gradient(135deg, rgba(2, 132, 199, 0.03), transparent 52%, rgba(13, 148, 136, 0.03)) !important;
+}
+
+[data-theme="light"] .auth-left-panel {
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.96) 0%, rgba(241, 245, 249, 0.94) 100%),
+    var(--bg-soft) !important;
+  border-right: 1px solid rgba(15, 23, 42, 0.08) !important;
+}
+
+[data-theme="light"] .auth-left-panel::before {
+  background:
+    linear-gradient(110deg, transparent 0 32%, rgba(2, 132, 199, 0.06) 48%, transparent 64%),
+    radial-gradient(ellipse 70% 55% at 18% 22%, rgba(2, 132, 199, 0.1), transparent 65%),
+    radial-gradient(ellipse 55% 45% at 78% 82%, rgba(13, 148, 136, 0.08), transparent 70%) !important;
+  opacity: 0.7 !important;
+}
+
+/* Grid + scanline overlays use cyan tuned for dark — soften on light */
+[data-theme="light"] .auth-shell-grid {
+  background-image:
+    linear-gradient(rgba(2, 132, 199, 0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(2, 132, 199, 0.06) 1px, transparent 1px) !important;
+  opacity: 0.5 !important;
+}
+
+[data-theme="light"] .auth-scanline {
+  background: repeating-linear-gradient(180deg, transparent 0 18px, rgba(2, 132, 199, 0.05) 19px, transparent 20px) !important;
+  opacity: 0.4 !important;
+}
+
+/* Card hover currently resets border-color to a near-white (dark-mode) value —
+   keep the resting light border on hover too. */
+[data-theme="light"] :where(.auth-right-panel) .auth-card-shell:hover {
+  box-shadow:
+    0 24px 70px rgba(15, 23, 42, 0.16),
+    0 8px 24px rgba(15, 23, 42, 0.08),
+    0 0 52px rgba(2, 132, 199, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
+  border-color: rgba(2, 132, 199, 0.3) !important;
+}
+
+/* The auth-card-modern backdrop frame uses var(--bg-panel) (adapts) — its
+   border should read on light too */
+[data-theme="light"] .auth-card-modern::before {
+  border-color: rgba(15, 23, 42, 0.08);
+}
+
+/* GitHub CTA inside the card sets inline rgba(255,255,255,...) fill/border via
+   JSX. The structural override exists; reinforce border so the resting state
+   reads on the light card. */
+[data-theme="light"] .auth-github-cta {
+  background: rgba(15, 23, 42, 0.035) !important;
+  border-color: rgba(15, 23, 42, 0.14) !important;
+}
+
+/* ── Problems 3 & 4 — Doto/display headings and pricing on light pages ────── */
+
+/* Landing page pricing split — the "PHP 300" hero price display */
+[data-theme="light"] .pricing-hero-price {
+  background: linear-gradient(135deg, var(--text-primary) 0%, var(--brand) 60%, var(--brand-accent) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  color: var(--text-primary);
+}
+
+/* "Start free, get Pro when ready." heading in the pricing split left column */
+[data-theme="light"] .pricing-split-left h2 {
+  color: var(--text-primary) !important;
+}
+
+/* Pricing split: feature checklist text on the right card */
+[data-theme="light"] .pricing-split-right {
+  color: var(--text-primary);
+}
+
+/* Pricing split: feature row labels */
+[data-theme="light"] .pricing-feature-label {
+  color: var(--text-primary) !important;
+}
+
+/* Deploy section heading */
+[data-theme="light"] .deploy-section-header h2 {
+  color: var(--text-primary) !important;
+}
+
+[data-theme="light"] .deploy-section-header p {
+  color: var(--text-secondary) !important;
+}
+
+/* Pipeline section heading */
+[data-theme="light"] .pipeline-section-header h2 {
+  color: var(--text-primary) !important;
+}
+
+[data-theme="light"] .pipeline-section-header p {
+  color: var(--text-secondary) !important;
+}
+
+/* Features strip headings */
+[data-theme="light"] .features-strip h2 {
+  color: var(--text-primary) !important;
+}
+
+/* Landing page shell — all h1/h2 headings that may have hardcoded white */
+[data-theme="light"] .landing-page-shell h1,
+[data-theme="light"] .landing-page-shell h2 {
+  color: var(--text-primary);
+}
+
+/* Ghost button on hero has hardcoded white border/bg — fix for light mode */
+[data-theme="light"] .hero-ghost-btn {
+  border-color: rgba(15, 23, 42, 0.2) !important;
+  background: rgba(15, 23, 42, 0.03) !important;
+  color: var(--text-primary) !important;
+}
+
+/* ── "VIEW PLANS →" CTA button in pricing split ─────────────────────────────
+   Inline style sets background:var(--text-primary) + color:#020617.
+   In light mode --text-primary is dark navy so text is invisible.
+   Make it a solid brand button with white text instead. ── */
+[data-theme="light"] .pricing-view-plans-btn {
+  background: var(--text-primary) !important;
+  color: #f8fafc !important;
+}
+[data-theme="light"] .pricing-view-plans-btn:hover {
+  background: var(--brand) !important;
+  color: #ffffff !important;
+}
+
+/* ── "Preview first" ghost CTA in pricing split ─────────────────────────────
+   Same hardcoded rgba(255,255,255,...) border/bg as the hero ghost btn. ── */
+[data-theme="light"] .pricing-split-left .ghost-button {
+  border-color: rgba(15, 23, 42, 0.18) !important;
+  background: rgba(15, 23, 42, 0.04) !important;
+  color: var(--text-primary) !important;
+}
+
+/* ── Pricing trust-row chips ─────────────────────────────────────────────────
+   "Free account included • Pro monthly • Team custom" pills ── */
+[data-theme="light"] .pricing-trust-item {
+  background: rgba(2, 132, 199, 0.06) !important;
+  border-color: rgba(2, 132, 199, 0.16) !important;
+  color: var(--text-secondary) !important;
+}
+
+/* ── Supported stacks marquee ────────────────────────────────────────────────
+   Badges use rgba(255,255,255,0.75) text + near-transparent dark fills —
+   completely invisible on a light page background. ── */
+[data-theme="light"] .marquee-badge {
+  background: rgba(255, 255, 255, 0.92) !important;
+  border-color: rgba(15, 23, 42, 0.1) !important;
+  color: var(--text-secondary) !important;
+  box-shadow: 0 2px 10px rgba(15, 23, 42, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.8) !important;
+}
+
+[data-theme="light"] .marquee-badge:nth-child(odd) {
+  background: rgba(2, 132, 199, 0.05) !important;
+  border-color: rgba(2, 132, 199, 0.14) !important;
+}
+
+[data-theme="light"] .marquee-badge:nth-child(even) {
+  background: rgba(16, 185, 129, 0.05) !important;
+  border-color: rgba(16, 185, 129, 0.14) !important;
+}
+
+[data-theme="light"] .marquee-badge:hover {
+  background: rgba(2, 132, 199, 0.1) !important;
+  border-color: rgba(2, 132, 199, 0.3) !important;
+  color: var(--brand) !important;
+}
+
+/* Marquee horizontal divider lines: white-transparent is invisible on light */
+[data-theme="light"] .marquee-divider {
+  background: linear-gradient(
+    to right,
+    transparent,
+    rgba(15, 23, 42, 0.1) 30%,
+    rgba(2, 132, 199, 0.15) 50%,
+    rgba(15, 23, 42, 0.1) 70%,
+    transparent
+  ) !important;
 }
 
 @theme inline {

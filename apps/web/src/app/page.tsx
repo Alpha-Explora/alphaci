@@ -1641,7 +1641,7 @@ export default function LandingPage() {
                   whileTap={{ scale: 0.97 }}
                 >
                   <Link
-                    className="primary-button"
+                    className="primary-button pricing-view-plans-btn"
                     href="/subscribe"
                     style={{ background: "var(--text-primary)", color: "#020617", border: "none", fontWeight: 700, borderRadius: "999px", padding: "0.9rem 2.25rem", textTransform: "uppercase" as const, letterSpacing: "0.1em", fontSize: "0.8rem" }}
                   >
