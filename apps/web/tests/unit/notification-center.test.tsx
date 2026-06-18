@@ -76,6 +76,6 @@ describe("NotificationCenter", () => {
       container.querySelector<HTMLButtonElement>('button[aria-label="Notifications"]')!.click();
     });
 
-    expect(container.textContent).toContain("No notifications.");
+    expect(container.textContent).toContain("All caught up.");
   });
 });

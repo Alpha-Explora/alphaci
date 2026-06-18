@@ -17,45 +17,49 @@ jest.mock("next/navigation", () => ({
 }));
 
 jest.mock("framer-motion", () => {
-  const React = jest.requireActual("react");
+  const React = jest.requireActual("react") as typeof import("react");
+
+  // Strip framer-only props so any motion.<tag> renders as a plain DOM element.
+  // A Proxy covers every element (div, span, aside, button, …) the page tree
+  // uses without enumerating each one.
+  const framerOnlyProps = new Set([
+    "layoutId",
+    "initial",
+    "animate",
+    "exit",
+    "transition",
+    "whileInView",
+    "whileHover",
+    "whileTap",
+    "viewport",
+    "variants",
+    "drag",
+    "layout",
+  ]);
+
+  const motion = new Proxy(
+    {},
+    {
+      get(_target, tag) {
+        return function MotionMock({
+          children,
+          ...props
+        }: { children?: React.ReactNode } & Record<string, unknown>) {
+          const domProps: Record<string, unknown> = {};
+          for (const [key, value] of Object.entries(props)) {
+            if (!framerOnlyProps.has(key)) {
+              domProps[key] = value;
+            }
+          }
+          return React.createElement(String(tag), domProps, children);
+        };
+      },
+    },
+  );
 
   return {
     AnimatePresence: ({ children }: { children: React.ReactNode }) => children,
-    motion: {
-      span: ({
-        children,
-        layoutId: _layoutId,
-        initial: _initial,
-        animate: _animate,
-        exit: _exit,
-        transition: _transition,
-        style,
-        ...props
-      }: React.HTMLAttributes<HTMLSpanElement> & {
-        layoutId?: unknown;
-        initial?: unknown;
-        animate?: unknown;
-        exit?: unknown;
-        transition?: unknown;
-      }) => React.createElement("span", { ...props, style }, children),
-      div: ({
-        children,
-        initial: _initial,
-        whileInView: _whileInView,
-        animate: _animate,
-        exit: _exit,
-        viewport: _viewport,
-        transition: _transition,
-        ...props
-      }: React.HTMLAttributes<HTMLDivElement> & {
-        initial?: unknown;
-        whileInView?: unknown;
-        animate?: unknown;
-        exit?: unknown;
-        viewport?: unknown;
-        transition?: unknown;
-      }) => React.createElement("div", props, children),
-    },
+    motion,
     useMotionValue: (initial: number) => ({ get: () => initial, set: jest.fn() }),
     useReducedMotion: () => true,
     useScroll: () => ({ scrollYProgress: { get: () => 0, set: jest.fn() } }),

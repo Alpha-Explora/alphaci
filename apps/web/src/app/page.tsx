@@ -900,7 +900,7 @@ export default function LandingPage() {
 
       <div id="main-content">
         {/* ── SECTION 1: Asymmetric Split Hero ──────────────────────────────── */}
-        <section className="raw-hero-grid" ref={heroRef} aria-label="Main message" style={{ position: "relative", minHeight: "100vh", display: "grid", gridTemplateColumns: "1fr 1fr", alignItems: "center", alignContent: "center", padding: "80px clamp(2rem, 7vw, 8rem) 4rem", gap: "4rem", overflow: "hidden", background: "#020617" }}>
+        <section className="raw-hero-grid" ref={heroRef} aria-label="Main message" style={{ position: "relative", minHeight: "100vh", display: "grid", gridTemplateColumns: "1fr 1fr", alignItems: "center", alignContent: "center", padding: "80px clamp(2rem, 7vw, 8rem) 4rem", gap: "4rem", overflow: "hidden" }}>
           <div aria-hidden="true" className="editorial-hero-bg" />
 
           {/* Massive Background Text */}
@@ -975,7 +975,7 @@ export default function LandingPage() {
               <Link className="primary-button" href={primaryHref} style={{ background: "var(--text-primary)", color: "#020617", border: "none", fontWeight: 700, borderRadius: "999px", padding: "0.9rem 2rem", textTransform: "uppercase", letterSpacing: "0.1em", fontSize: "0.8rem" }}>
                 {primaryLabel}
               </Link>
-              <Link className="ghost-button" href="/home" style={{ borderRadius: "999px", color: "var(--text-primary)", border: "1px solid rgba(255,255,255,0.15)", fontWeight: 600, padding: "0.9rem 2rem", textTransform: "uppercase", letterSpacing: "0.1em", fontSize: "0.8rem", background: "rgba(255,255,255,0.03)", backdropFilter: "blur(10px)" }}>
+              <Link className="ghost-button hero-ghost-btn" href="/home" style={{ borderRadius: "999px", color: "var(--text-primary)", border: "1px solid rgba(255,255,255,0.15)", fontWeight: 600, padding: "0.9rem 2rem", textTransform: "uppercase", letterSpacing: "0.1em", fontSize: "0.8rem", background: "rgba(255,255,255,0.03)", backdropFilter: "blur(10px)" }}>
                 Preview as guest
               </Link>
             </motion.div>
@@ -1036,6 +1036,7 @@ export default function LandingPage() {
           >
             {/* ── STAGE STATUS FLOATING CARD — top-left, overlapping main card */}
             <motion.div
+              className="hero-float-card"
               initial={prefersReducedMotion ? undefined : { opacity: 0, x: -20, y: -10 }}
               animate={prefersReducedMotion ? undefined : { opacity: 1, x: 0, y: 0 }}
               transition={{ duration: 0.6, delay: 2.2, ease: [0.25, 1, 0.5, 1] }}
@@ -1077,7 +1078,7 @@ export default function LandingPage() {
             </motion.div>
 
             {/* ── MAIN PIPELINE CARD */}
-            <div style={{
+            <div className="hero-main-card" style={{
               position: "relative",
               zIndex: 10,
               background: "rgba(10, 14, 26, 0.72)",
@@ -1207,7 +1208,7 @@ export default function LandingPage() {
                   <span style={{ fontSize: "0.6rem", color: "var(--text-muted)", fontFamily: "ui-monospace, monospace", letterSpacing: "0.1em", textTransform: "uppercase" }}>Pipeline progress</span>
                   <span style={{ fontSize: "0.6rem", color: "var(--brand)", fontFamily: "ui-monospace, monospace", fontWeight: 700 }}>82%</span>
                 </div>
-                <div style={{ height: "2px", background: "rgba(255,255,255,0.05)", borderRadius: "999px", overflow: "hidden" }}>
+                <div className="hero-progress-track" style={{ height: "2px", background: "rgba(255,255,255,0.05)", borderRadius: "999px", overflow: "hidden" }}>
                   <motion.div
                     initial={prefersReducedMotion ? undefined : { width: "0%" }}
                     animate={prefersReducedMotion ? undefined : { width: "82%" }}
@@ -1222,7 +1223,8 @@ export default function LandingPage() {
                 initial={prefersReducedMotion ? undefined : { opacity: 0, y: 8 }}
                 animate={prefersReducedMotion ? undefined : { opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: 2.55, ease: [0.25, 1, 0.5, 1] }}
-                style={{
+                className="hero-deploy-row"
+              style={{
                   display: "flex",
                   alignItems: "center",
                   gap: "0.5rem",
@@ -1236,7 +1238,7 @@ export default function LandingPage() {
                 <span style={{ fontSize: "0.58rem", fontFamily: "ui-monospace, monospace", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.1em" }}>Deploy target</span>
                 <span style={{ marginLeft: "auto", display: "inline-flex", alignItems: "center", gap: "0.35rem" }}>
                   {/* Vercel triangle motif */}
-                  <svg width="10" height="10" viewBox="0 0 116 100" fill="white" aria-hidden="true" style={{ opacity: 0.85 }}>
+                  <svg width="10" height="10" viewBox="0 0 116 100" fill="currentColor" aria-hidden="true" className="hero-deploy-vercel-icon">
                     <path d="M57.5 0L115 100H0L57.5 0z"/>
                   </svg>
                   <span style={{ fontSize: "0.72rem", fontWeight: 700, color: "var(--text-primary)", fontFamily: "ui-monospace, monospace" }}>Vercel</span>
@@ -1294,6 +1296,7 @@ export default function LandingPage() {
 
             {/* Floating metric card — bottom left, overlapping — with sparkline */}
             <motion.div
+              className="hero-float-card"
               initial={prefersReducedMotion ? undefined : { opacity: 0, x: -30, y: 20 }}
               animate={prefersReducedMotion ? undefined : { opacity: 1, x: 0, y: 0 }}
               transition={{ duration: 0.7, delay: 3.0, ease: [0.25, 1, 0.5, 1] }}
@@ -1638,7 +1641,7 @@ export default function LandingPage() {
                   whileTap={{ scale: 0.97 }}
                 >
                   <Link
-                    className="primary-button"
+                    className="primary-button pricing-view-plans-btn"
                     href="/subscribe"
                     style={{ background: "var(--text-primary)", color: "#020617", border: "none", fontWeight: 700, borderRadius: "999px", padding: "0.9rem 2.25rem", textTransform: "uppercase" as const, letterSpacing: "0.1em", fontSize: "0.8rem" }}
                   >
