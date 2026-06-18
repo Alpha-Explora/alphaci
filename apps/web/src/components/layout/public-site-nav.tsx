@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 
 import { PipelineLogo } from "@/components/layout/pipeline-logo";
+import { ThemeToggle } from "@/components/layout/theme-toggle";
 
 interface PublicSiteNavProps {
   active?: "features" | "guide" | "pricing";
@@ -47,6 +48,7 @@ export function PublicSiteNav({ active, fixed = false, showActions = true }: Rea
       {showActions && (
         <div className="public-site-actions">
           <Link className="public-site-login" href="/login">Login</Link>
+          <ThemeToggle />
           <Link className="public-site-cta" href="/subscribe"><span aria-hidden="true" />Pricing</Link>
         </div>
       )}
