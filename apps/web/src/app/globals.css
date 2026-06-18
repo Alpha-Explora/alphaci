@@ -508,6 +508,93 @@ html[data-theme="light"] {
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
 }
 
+/* ── Hero section — light mode overrides ─────────────────────────────────── */
+
+/* Hero floating cards (stages + deployments metric) */
+[data-theme="light"] .hero-float-card {
+  background: rgba(255, 255, 255, 0.97) !important;
+  border-color: rgba(0, 0, 0, 0.08) !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
+}
+
+/* Hero main pipeline card */
+[data-theme="light"] .hero-main-card {
+  background: rgba(255, 255, 255, 0.96) !important;
+  border-color: rgba(0, 0, 0, 0.07) !important;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
+}
+
+/* Hero YAML terminal mockup */
+[data-theme="light"] .hero-mockup {
+  background: #f6f8fa !important;
+  border-color: rgba(0, 0, 0, 0.1) !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1) !important;
+}
+
+[data-theme="light"] .hero-mockup-bar {
+  background: #eaecef !important;
+  border-bottom-color: rgba(0, 0, 0, 0.08) !important;
+}
+
+[data-theme="light"] .hero-mockup pre {
+  color: #1f2937 !important;
+}
+
+/* Syntax tokens for light terminal */
+[data-theme="light"] .mockup-keyword { color: #c2185b !important; }
+[data-theme="light"] .mockup-string  { color: #0550ae !important; }
+[data-theme="light"] .mockup-comment { color: #6c757d !important; }
+[data-theme="light"] .mockup-key     { color: #0366d6 !important; }
+
+/* Hero progress bar track */
+[data-theme="light"] .hero-progress-track {
+  background: rgba(0, 0, 0, 0.08) !important;
+}
+
+/* Hero deploy target row */
+[data-theme="light"] .hero-deploy-row {
+  background: rgba(0, 0, 0, 0.03) !important;
+  border-color: rgba(0, 0, 0, 0.07) !important;
+}
+
+/* Vercel icon inside hero — light mode: show as dark */
+[data-theme="light"] .hero-deploy-vercel-icon {
+  color: var(--text-primary);
+  opacity: 0.85;
+}
+
+/* Ghost button inside hero */
+[data-theme="light"] .hero-ghost-btn {
+  border-color: rgba(0, 0, 0, 0.15) !important;
+  background: rgba(0, 0, 0, 0.04) !important;
+}
+
+/* Hero stats separator */
+[data-theme="light"] .raw-hero-stats {
+  border-top-color: rgba(0, 0, 0, 0.08) !important;
+}
+
+/* Primary button inside hero — text must stay white on dark button */
+[data-theme="light"] .raw-hero-grid .primary-button {
+  color: #ffffff !important;
+}
+
+/* Hero massive bg text — ultra subtle in light */
+[data-theme="light"] .hero-massive-text {
+  color: rgba(15, 23, 42, 0.04);
+  text-shadow: none;
+}
+
+/* Hero corner markers + scroll hint — adapt to light */
+[data-theme="light"] .scroll-progress {
+  background: var(--brand);
+}
+
+/* Corner + markers in hero editorial bg — reduce when light */
+[data-theme="light"] .editorial-hero-bg {
+  opacity: 0.04;
+}
+
 @theme inline {
   --color-background: var(--bg-base);
   --color-foreground: var(--text-primary);
