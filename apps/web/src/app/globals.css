@@ -61,6 +61,32 @@ html::-webkit-scrollbar {
   --accent-coral-glow:  rgba(251, 113, 133, 0.35);
   --border-coral:       rgba(251, 113, 133, 0.3);
 
+  /* ── Indigo accent ────────────────────────────────────────── */
+  --accent-indigo:        #6366f1;
+  --accent-indigo-light:  rgba(99, 102, 241, 0.12);
+  --accent-indigo-glow:   rgba(99, 102, 241, 0.35);
+
+  /* ── Rose accent ───────────────────────────────────────────── */
+  --accent-rose:          #f43f5e;
+  --accent-rose-light:    rgba(244, 63, 94, 0.1);
+  --accent-rose-glow:     rgba(244, 63, 94, 0.3);
+
+  /* ── Emerald accent ────────────────────────────────────────── */
+  --accent-emerald:       #10b981;
+  --accent-emerald-light: rgba(16, 185, 129, 0.1);
+
+  /* ── Gold accent ───────────────────────────────────────────── */
+  --accent-gold:          #f59e0b;
+  --accent-gold-light:    rgba(245, 158, 11, 0.1);
+
+  /* ── Purple deep accent ────────────────────────────────────── */
+  --accent-purple:        #7c3aed;
+  --accent-purple-light:  rgba(124, 58, 237, 0.1);
+
+  /* ── Sidebar layout ────────────────────────────────────────── */
+  --sidebar-width:        220px;
+  --sidebar-collapsed:    64px;
+
   /* ── Surface-level accent tints ───────────────────────────── */
   /* Subtle background tints for section separators and hover states */
   --surface-violet: rgba(167, 139, 250, 0.04);
@@ -195,7 +221,6 @@ h1, h2, h3 {
   position: relative;
   min-height: 100dvh;
   width: 100%;
-
   margin: 0 auto;
   padding: clamp(0.95rem, 2vw, 1.8rem) var(--layout-gutter) clamp(1.25rem, 2.5vw, 2rem);
   display: flex;
@@ -224,15 +249,13 @@ h1, h2, h3 {
   position: relative;
   min-height: 100dvh;
   width: 100%;
-
   margin: 0 auto;
-  padding: 0 0 2rem 0;
+  padding: 0 0 2rem var(--sidebar-width, 220px);
   display: flex;
   flex-direction: column;
-  /* No flex gap: the sticky nav must sit flush against page content.
-     Each page section owns its top padding instead. */
   gap: 0;
   background: var(--bg-base);
+  transition: padding-left 0.35s cubic-bezier(0.25, 0, 0, 1);
 }
 
 .dash-shell h1 {
@@ -10709,3 +10732,417 @@ select option {
   border: 1px solid rgba(56, 189, 248, 0.12);
   border-radius: 0.75rem;
 }
+
+/* ════════════════════════════════════════════════════════════════════════════
+   APP SIDEBAR — fixed left sidebar replacing the top nav dock
+   ════════════════════════════════════════════════════════════════════════════ */
+
+@keyframes sidebarStatusPulse {
+  0%, 100% { opacity: 1; box-shadow: 0 0 6px var(--accent-emerald); }
+  50%       { opacity: 0.6; box-shadow: 0 0 12px var(--accent-emerald); }
+}
+
+@keyframes sidebarEdgePulse {
+  0%, 100% { opacity: 0.7; }
+  50%       { opacity: 1; }
+}
+
+.app-sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 100dvh;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  /* Frosted glass dark background */
+  background: linear-gradient(180deg, rgba(15, 23, 42, 0.97) 0%, rgba(7, 10, 25, 0.99) 100%);
+  backdrop-filter: blur(20px) saturate(160%);
+  -webkit-backdrop-filter: blur(20px) saturate(160%);
+  /* Subtle inner shadow + right edge glow */
+  box-shadow:
+    inset -1px 0 0 rgba(255, 255, 255, 0.06),
+    2px 0 40px rgba(99, 102, 241, 0.08),
+    4px 0 20px rgba(0, 0, 0, 0.3);
+}
+
+/* Left edge gradient stripe */
+.sidebar-edge-gradient {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 2px;
+  height: 100%;
+  background: linear-gradient(180deg,
+    var(--accent-indigo) 0%,
+    var(--brand) 45%,
+    var(--accent-violet) 100%
+  );
+  opacity: 0.9;
+  animation: sidebarEdgePulse 4s ease-in-out infinite;
+  pointer-events: none;
+  flex-shrink: 0;
+}
+
+/* ── Brand zone ─────────────────────────────────────────────────────────── */
+.sidebar-brand-zone {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.1rem 0.75rem 0.75rem 1rem;
+  min-height: 60px;
+  flex-shrink: 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.sidebar-brand-link {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  text-decoration: none;
+  color: var(--text-primary);
+  flex: 1;
+  min-width: 0;
+}
+
+.sidebar-brand-logo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.18) 0%, rgba(56, 189, 248, 0.12) 100%);
+  border: 1px solid rgba(99, 102, 241, 0.3);
+  box-shadow: 0 0 18px rgba(99, 102, 241, 0.2);
+  flex-shrink: 0;
+  transition: box-shadow 0.25s ease, border-color 0.25s ease;
+}
+
+.sidebar-brand-link:hover .sidebar-brand-logo {
+  box-shadow: 0 0 28px rgba(99, 102, 241, 0.4);
+  border-color: rgba(99, 102, 241, 0.55);
+}
+
+.sidebar-brand-wordmark {
+  font-size: 1.05rem;
+  font-weight: 800;
+  letter-spacing: -0.025em;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.sidebar-brand-accent {
+  background: linear-gradient(135deg, var(--brand), var(--accent-indigo));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: var(--brand);
+}
+
+.sidebar-collapse-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-muted);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: color 0.18s ease, border-color 0.18s ease, background 0.18s ease;
+  outline: none;
+}
+
+.sidebar-collapse-btn:hover {
+  color: var(--text-primary);
+  border-color: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.sidebar-collapse-btn:focus-visible {
+  outline: 2px solid var(--accent-indigo);
+  outline-offset: 2px;
+}
+
+/* ── Navigation section ─────────────────────────────────────────────────── */
+.sidebar-nav {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 0.75rem 0.5rem;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: none;
+}
+
+.sidebar-nav::-webkit-scrollbar {
+  display: none;
+}
+
+/* Section label — subtle uppercase divider text */
+.sidebar-section-label {
+  padding: 0.35rem 0.5rem 0.2rem;
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  margin-top: 0.25rem;
+}
+
+/* Collapsed: just a thin rule */
+.sidebar-section-divider {
+  height: 1px;
+  background: rgba(255, 255, 255, 0.06);
+  margin: 0.5rem 0.5rem;
+  flex-shrink: 0;
+}
+
+/* Nav item */
+.sidebar-nav-item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.55rem 0.65rem;
+  border-radius: 0.55rem;
+  text-decoration: none;
+  color: var(--text-secondary);
+  font-size: 0.84rem;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  transition: color 0.18s ease;
+  width: 100%;
+}
+
+.sidebar-nav-item:hover {
+  color: var(--text-primary);
+}
+
+.sidebar-nav-item:hover .sidebar-nav-item-icon {
+  color: var(--brand);
+  filter: drop-shadow(0 0 6px rgba(56, 189, 248, 0.5));
+}
+
+.sidebar-nav-item:focus-visible {
+  outline: 2px solid var(--accent-indigo);
+  outline-offset: 2px;
+}
+
+/* Active pill background — animated via Framer Motion layoutId */
+.sidebar-nav-item-bg {
+  position: absolute;
+  inset: 0;
+  border-radius: 0.55rem;
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.2) 0%, rgba(56, 189, 248, 0.12) 100%);
+  border-left: 3px solid var(--accent-indigo);
+  pointer-events: none;
+}
+
+.sidebar-nav-item--active {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.sidebar-nav-item--active .sidebar-nav-item-icon {
+  color: var(--brand);
+}
+
+.sidebar-nav-item-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  position: relative;
+  z-index: 1;
+  color: inherit;
+  transition: color 0.18s ease, filter 0.18s ease;
+}
+
+.sidebar-nav-item-label {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  position: relative;
+  z-index: 1;
+}
+
+/* ── Bottom zone ────────────────────────────────────────────────────────── */
+.sidebar-bottom-zone {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  padding: 0.75rem 0.5rem 1rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+/* Utilities row (workspace + notifications) */
+.sidebar-bottom-utilities {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  justify-content: flex-start;
+  padding: 0 0.15rem;
+}
+
+/* User chip */
+.sidebar-user-chip {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.45rem 0.55rem;
+  border-radius: 0.6rem;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  overflow: hidden;
+  cursor: default;
+}
+
+.sidebar-user-avatar-ring {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent-indigo), var(--accent-violet));
+  padding: 1.5px;
+  flex-shrink: 0;
+}
+
+.sidebar-user-avatar-img {
+  border-radius: 50%;
+  display: block;
+  width: 27px;
+  height: 27px;
+}
+
+.sidebar-user-avatar-fallback {
+  width: 27px;
+  height: 27px;
+  border-radius: 50%;
+  background: var(--bg-elevated);
+  color: var(--accent-indigo);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+.sidebar-user-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+}
+
+.sidebar-user-login {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sidebar-user-plan-badge {
+  display: inline-flex;
+  align-self: flex-start;
+  font-size: 0.58rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  padding: 0.08rem 0.38rem;
+  border-radius: 4px;
+  background: linear-gradient(135deg, rgba(167, 139, 250, 0.18), rgba(99, 102, 241, 0.12));
+  color: var(--accent-violet);
+  border: 1px solid rgba(167, 139, 250, 0.28);
+}
+
+/* Sign-out button */
+.sidebar-signout-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.48rem 0.65rem;
+  border-radius: 0.55rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 0.82rem;
+  font-weight: 500;
+  cursor: pointer;
+  width: 100%;
+  text-align: left;
+  overflow: hidden;
+  white-space: nowrap;
+  transition: color 0.18s ease, border-color 0.18s ease, background 0.18s ease;
+  outline: none;
+}
+
+.sidebar-signout-btn:hover:not(:disabled) {
+  color: var(--accent-rose);
+  border-color: var(--accent-rose-glow);
+  background: var(--accent-rose-light);
+}
+
+.sidebar-signout-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.sidebar-signout-btn:focus-visible {
+  outline: 2px solid var(--accent-indigo);
+  outline-offset: 2px;
+}
+
+.sidebar-signout-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sidebar-signout-spinner {
+  display: block;
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(255, 255, 255, 0.15);
+  border-top-color: var(--brand);
+  animation: spin 0.7s linear infinite;
+  flex-shrink: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sidebar-signout-spinner { animation: none; opacity: 0.6; }
+  .sidebar-edge-gradient { animation: none; opacity: 0.8; }
+}
+
+/* Notification panel — shift to the right of sidebar when sidebar is present */
+.app-sidebar .notification-center-panel {
+  right: auto;
+  left: calc(100% + 8px);
+  top: 0;
+}
+
+/* Workspace switcher in sidebar context — more compact */
+.app-sidebar .workspace-switcher {
+  max-width: none;
+  flex: 1;
+  min-width: 0;
+}
+

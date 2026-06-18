@@ -4,7 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState, type MouseEvent as ReactMouseEvent } from "react";
-import { motion, AnimatePresence, useMotionValue, useReducedMotion, useScroll, useSpring } from "framer-motion";
+import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 
 import { PipelineLogo } from "@/components/layout/pipeline-logo";
 import type { useAuthSession } from "@/hooks/use-auth-session";
@@ -24,17 +24,9 @@ interface AppNavProps {
   isLoggingOut: boolean;
 }
 
-/* ── Nav items ─────────────────────────────────────────────────────────────── */
-
-const coreNavItems = [
-  { label: "Dashboard", href: "/home",      icon: DashboardIcon, key: "dashboard" },
-  { label: "Workflows", href: "/workflows", icon: WorkflowsIcon, key: "workflows" },
-  { label: "Runs",      href: "/runs",      icon: RunsIcon,      key: "runs" },
-];
-
 /* ── Icons ─────────────────────────────────────────────────────────────────── */
 
-function DashboardIcon({ size = 13 }: { size?: number }) {
+function DashboardIcon({ size = 16 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       <rect x="3" y="3" width="7" height="7" rx="1" />
@@ -45,7 +37,7 @@ function DashboardIcon({ size = 13 }: { size?: number }) {
   );
 }
 
-function WorkflowsIcon({ size = 13 }: { size?: number }) {
+function WorkflowsIcon({ size = 16 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
@@ -53,7 +45,7 @@ function WorkflowsIcon({ size = 13 }: { size?: number }) {
   );
 }
 
-function RunsIcon({ size = 13 }: { size?: number }) {
+function RunsIcon({ size = 16 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       <circle cx="12" cy="12" r="3" />
@@ -63,7 +55,7 @@ function RunsIcon({ size = 13 }: { size?: number }) {
   );
 }
 
-function BillingIcon({ size = 13 }: { size?: number }) {
+function BillingIcon({ size = 16 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       <rect x="1" y="4" width="22" height="16" rx="2" ry="2" />
@@ -72,7 +64,7 @@ function BillingIcon({ size = 13 }: { size?: number }) {
   );
 }
 
-function SettingsIcon({ size = 13 }: { size?: number }) {
+function SettingsIcon({ size = 16 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       <circle cx="12" cy="12" r="3" />
@@ -81,7 +73,7 @@ function SettingsIcon({ size = 13 }: { size?: number }) {
   );
 }
 
-function AdminIcon({ size = 13 }: { size?: number }) {
+function AdminIcon({ size = 16 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
@@ -90,7 +82,7 @@ function AdminIcon({ size = 13 }: { size?: number }) {
   );
 }
 
-function SignOutIcon({ size = 14 }: { size?: number }) {
+function SignOutIcon({ size = 15 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
@@ -100,108 +92,21 @@ function SignOutIcon({ size = 14 }: { size?: number }) {
   );
 }
 
-/* ── Pipeline node motif — decorative, 5 stages ────────────────────────────── */
-
-function NavPipelineMotif() {
+function ChevronLeftIcon({ size = 14 }: { size?: number }) {
   return (
-    <span className="nav-pipeline-motif" aria-hidden="true">
-      {[0, 1, 2, 3, 4].map((i) => (
-        <span key={i} className="nav-pipeline-motif-group">
-          <span
-            className="nav-pipeline-motif-dot"
-            style={{ animationDelay: `${i * 0.32}s` }}
-          />
-          {i < 4 && <span className="nav-pipeline-motif-connector" />}
-        </span>
-      ))}
-    </span>
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <polyline points="15 18 9 12 15 6" />
+    </svg>
   );
 }
 
-/* ── Rolling label — lusion-style per-character text roll on hover ────────── */
+/* ── Tooltip — appears to the right of the icon when sidebar is collapsed ─── */
 
-function RollingLabel({ text }: Readonly<{ text: string }>) {
-  const chars = text.split("");
-  return (
-    <span className="nav-roll">
-      <span className="nav-roll-sr">{text}</span>
-      <span className="nav-roll-line nav-roll-top" aria-hidden="true">
-        {chars.map((ch, i) => (
-          <span key={`t-${i}`} className="nav-roll-char" style={{ transitionDelay: `${i * 18}ms` }}>
-            {ch === " " ? " " : ch}
-          </span>
-        ))}
-      </span>
-      <span className="nav-roll-line nav-roll-bottom" aria-hidden="true">
-        {chars.map((ch, i) => (
-          <span key={`b-${i}`} className="nav-roll-char" style={{ transitionDelay: `${i * 18}ms` }}>
-            {ch === " " ? " " : ch}
-          </span>
-        ))}
-      </span>
-    </span>
-  );
-}
-
-/* ── Magnetic nav link — content gently pulls toward the cursor ───────────── */
-
-interface NavLinkItemProps {
-  href: string;
-  label: string;
-  icon: (props: { size?: number }) => React.ReactNode;
-  isActive: boolean;
-  reduced: boolean;
-}
-
-function NavLinkItem({ href, label, icon: NavIcon, isActive, reduced }: Readonly<NavLinkItemProps>) {
-  const x = useMotionValue(0);
-  const y = useMotionValue(0);
-  const springX = useSpring(x, { stiffness: 320, damping: 22, mass: 0.4 });
-  const springY = useSpring(y, { stiffness: 320, damping: 22, mass: 0.4 });
-
-  function handleMouseMove(event: ReactMouseEvent<HTMLAnchorElement>) {
-    if (reduced) return;
-    const bounds = event.currentTarget.getBoundingClientRect();
-    x.set((event.clientX - bounds.left - bounds.width / 2) * 0.18);
-    y.set((event.clientY - bounds.top - bounds.height / 2) * 0.28);
-  }
-
-  function handleMouseLeave() {
-    x.set(0);
-    y.set(0);
-  }
-
-  return (
-    <Link
-      href={href}
-      className={`nav-link${isActive ? " nav-link--active" : ""}`}
-      aria-current={isActive ? "page" : undefined}
-      onMouseMove={handleMouseMove}
-      onMouseLeave={handleMouseLeave}
-    >
-      {isActive && (
-        <motion.span
-          layoutId="app-nav-active-pill"
-          className="nav-link-bg"
-          transition={{ type: "spring", stiffness: 400, damping: 34 }}
-          aria-hidden="true"
-        />
-      )}
-      <motion.span className="nav-link-magnet" style={reduced ? undefined : { x: springX, y: springY }}>
-        <NavIcon size={12} />
-        <RollingLabel text={label} />
-      </motion.span>
-    </Link>
-  );
-}
-
-/* ── Tooltip ───────────────────────────────────────────────────────────────── */
-
-function Tooltip({ text, children }: { text: string; children: React.ReactNode }) {
+function SidebarTooltip({ text, children }: { text: string; children: React.ReactNode }) {
   const [visible, setVisible] = useState(false);
   return (
     <div
-      style={{ position: "relative", display: "inline-flex" }}
+      style={{ position: "relative", display: "flex", width: "100%" }}
       onMouseEnter={() => setVisible(true)}
       onMouseLeave={() => setVisible(false)}
       onFocus={() => setVisible(true)}
@@ -211,27 +116,28 @@ function Tooltip({ text, children }: { text: string; children: React.ReactNode }
       <AnimatePresence>
         {visible && (
           <motion.div
-            initial={{ opacity: 0, y: 4, scale: 0.92 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 4, scale: 0.92 }}
-            transition={{ duration: 0.15 }}
+            initial={{ opacity: 0, x: -6, scale: 0.92 }}
+            animate={{ opacity: 1, x: 0, scale: 1 }}
+            exit={{ opacity: 0, x: -6, scale: 0.92 }}
+            transition={{ duration: 0.14 }}
             style={{
               position: "absolute",
-              bottom: "calc(100% + 8px)",
-              left: "50%",
-              transform: "translateX(-50%)",
-              background: "rgba(15, 23, 42, 0.95)",
+              left: "calc(100% + 10px)",
+              top: "50%",
+              transform: "translateY(-50%)",
+              background: "rgba(15, 23, 42, 0.97)",
               border: "1px solid rgba(255,255,255,0.12)",
-              borderRadius: "0.4rem",
-              padding: "0.3rem 0.6rem",
-              fontSize: "0.72rem",
+              borderRadius: "0.45rem",
+              padding: "0.35rem 0.7rem",
+              fontSize: "0.75rem",
               fontWeight: 600,
               color: "var(--text-primary)",
               whiteSpace: "nowrap",
               backdropFilter: "blur(12px)",
               WebkitBackdropFilter: "blur(12px)",
               pointerEvents: "none",
-              zIndex: 200,
+              zIndex: 300,
+              boxShadow: "0 4px 16px rgba(0,0,0,0.4)",
             }}
           >
             {text}
@@ -242,47 +148,103 @@ function Tooltip({ text, children }: { text: string; children: React.ReactNode }
   );
 }
 
-/* ── AppNav ─────────────────────────────────────────────────────────────────── */
+/* ── Sidebar nav item ───────────────────────────────────────────────────────── */
+
+interface SidebarNavItemProps {
+  href: string;
+  label: string;
+  icon: (props: { size?: number }) => React.ReactNode;
+  isActive: boolean;
+  collapsed: boolean;
+  reduced: boolean;
+}
+
+function SidebarNavItem({ href, label, icon: NavIcon, isActive, collapsed, reduced }: Readonly<SidebarNavItemProps>) {
+  const inner = (
+    <Link
+      href={href}
+      className={`sidebar-nav-item${isActive ? " sidebar-nav-item--active" : ""}`}
+      aria-current={isActive ? "page" : undefined}
+    >
+      {isActive && (
+        <motion.span
+          layoutId="sidebar-active-pill"
+          className="sidebar-nav-item-bg"
+          transition={reduced ? { duration: 0 } : { type: "spring", stiffness: 420, damping: 36 }}
+          aria-hidden="true"
+        />
+      )}
+      <span className="sidebar-nav-item-icon">
+        <NavIcon size={16} />
+      </span>
+      <AnimatePresence initial={false}>
+        {!collapsed && (
+          <motion.span
+            className="sidebar-nav-item-label"
+            initial={reduced ? false : { opacity: 0, x: -8 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={reduced ? undefined : { opacity: 0, x: -8 }}
+            transition={{ duration: 0.18, ease: [0.25, 0, 0, 1] }}
+          >
+            {label}
+          </motion.span>
+        )}
+      </AnimatePresence>
+    </Link>
+  );
+
+  if (collapsed) {
+    return <SidebarTooltip text={label}>{inner}</SidebarTooltip>;
+  }
+
+  return inner;
+}
+
+/* ── Section divider label ──────────────────────────────────────────────────── */
+
+function SidebarSectionLabel({ text, collapsed }: { text: string; collapsed: boolean }) {
+  if (collapsed) {
+    return <div className="sidebar-section-divider" aria-hidden="true" />;
+  }
+  return (
+    <div className="sidebar-section-label" aria-hidden="true">
+      {text}
+    </div>
+  );
+}
+
+/* ── AppNav (sidebar) ───────────────────────────────────────────────────────── */
 
 export function AppNav({ guest, session, onLogout, isLoggingOut }: Readonly<AppNavProps>) {
   const pathname = usePathname();
-  const navRef = useRef<HTMLElement>(null);
-  const [scrolled, setScrolled] = useState(false);
-  const [hidden, setHidden] = useState(false);
+  const [collapsed, setCollapsed] = useState(false);
   const [workspaces, setWorkspacesState] = useState<WorkspacesMeResponse | null>(null);
   const [notifications, setNotifications] = useState<NotificationsResponse | null>(null);
-  const lastScrollY = useRef(0);
   const { setWorkspaces } = useWorkspaceSelection();
   const prefersReducedMotion = useReducedMotion();
   const reduced = prefersReducedMotion ?? false;
-
-  const { scrollYProgress } = useScroll();
-  const progressScale = useSpring(scrollYProgress, { stiffness: 140, damping: 28, mass: 0.4 });
+  const sidebarRef = useRef<HTMLElement>(null);
 
   const avatarInitial = (session?.user.name ?? session?.user.login ?? "U").slice(0, 1).toUpperCase();
+  const isPlatformAdmin = !guest && Boolean(session?.platformRole);
 
   useEffect(() => {
-    const frame = window.requestAnimationFrame(() => {
-      lastScrollY.current = window.scrollY;
-      setScrolled(window.scrollY > 8);
-      setHidden(false);
-    });
-    return () => window.cancelAnimationFrame(frame);
-  }, [pathname]);
-
-  useEffect(() => {
-    function onScroll() {
-      const y = window.scrollY;
-      const delta = y - lastScrollY.current;
-      setScrolled(y > 8);
-      if (Math.abs(delta) > 4) {
-        setHidden(!reduced && delta > 0 && y > 96);
+    function handleResize() {
+      if (window.innerWidth <= 768) {
+        setCollapsed(true);
       }
-      lastScrollY.current = y;
     }
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
-  }, [reduced]);
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  useEffect(() => {
+    document.documentElement.style.setProperty(
+      "--sidebar-width",
+      collapsed ? "64px" : "220px",
+    );
+  }, [collapsed]);
 
   useEffect(() => {
     if (guest) return;
@@ -298,24 +260,16 @@ export function AppNav({ guest, session, onLogout, isLoggingOut }: Readonly<AppN
         setWorkspacesState({ enabled: false, items: [] });
         setWorkspaces(null);
       });
-    return () => {
-      active = false;
-    };
+    return () => { active = false; };
   }, [guest, setWorkspaces]);
 
   useEffect(() => {
     if (guest) return;
     let active = true;
     void getNotifications()
-      .then((response) => {
-        if (active) setNotifications(response);
-      })
-      .catch(() => {
-        if (active) setNotifications({ enabled: false, items: [], unreadCount: 0 });
-      });
-    return () => {
-      active = false;
-    };
+      .then((response) => { if (active) setNotifications(response); })
+      .catch(() => { if (active) setNotifications({ enabled: false, items: [], unreadCount: 0 }); });
+    return () => { active = false; };
   }, [guest]);
 
   async function handleMarkNotificationRead(id: string) {
@@ -326,162 +280,172 @@ export function AppNav({ guest, session, onLogout, isLoggingOut }: Readonly<AppN
             ...current,
             unreadCount: Math.max(0, current.unreadCount - 1),
             items: current.items.map((item) =>
-              item.id === id
-                ? { ...item, readAt: item.readAt ?? new Date().toISOString() }
-                : item,
+              item.id === id ? { ...item, readAt: item.readAt ?? new Date().toISOString() } : item,
             ),
           }
         : current,
     );
   }
 
-  // Cursor spotlight — writes CSS vars directly on the nav element so the
-  // radial highlight tracks the pointer without triggering React re-renders.
-  function handleNavMouseMove(event: ReactMouseEvent<HTMLElement>) {
-    if (reduced || !navRef.current) return;
-    const bounds = navRef.current.getBoundingClientRect();
-    navRef.current.style.setProperty("--nav-mx", `${event.clientX - bounds.left}px`);
-    navRef.current.style.setProperty("--nav-my", `${event.clientY - bounds.top}px`);
-  }
-
-  // Only platform admins (role 'admin' | 'super_admin') see the Admin entry.
-  const isPlatformAdmin = !guest && Boolean(session?.platformRole);
-
-  const navItems = [
-    ...coreNavItems,
-    { label: "Billing", href: "/subscribe", icon: BillingIcon, key: "billing" },
-    ...(guest ? [] : [{ label: "Settings", href: "/settings", icon: SettingsIcon, key: "settings" }]),
-    ...(isPlatformAdmin ? [{ label: "Admin", href: "/admin", icon: AdminIcon, key: "admin" }] : []),
-  ];
+  const sidebarWidth = collapsed ? 64 : 220;
 
   return (
-    <header
-      ref={navRef}
-      className={`app-nav-dock${scrolled ? " app-nav-dock--scrolled" : ""}${hidden ? " app-nav-dock--hidden" : ""}`}
-      role="banner"
-      onMouseMove={handleNavMouseMove}
+    <motion.aside
+      ref={sidebarRef}
+      className="app-sidebar"
+      animate={{ width: sidebarWidth }}
+      transition={reduced ? { duration: 0 } : { type: "spring", stiffness: 360, damping: 34, mass: 0.8 }}
+      style={{ width: sidebarWidth }}
+      aria-label="Primary navigation"
     >
-      {/* Cursor spotlight layer */}
-      <span className="nav-spotlight" aria-hidden="true" />
+      <div className="sidebar-edge-gradient" aria-hidden="true" />
 
-      {/* Gradient hairline top border */}
-      <span className="nav-hairline" aria-hidden="true" />
-
-      {/* Inner pill container */}
-      <div className="nav-inner">
-
-        {/* Brand mark */}
-        <Link className="nav-brand" href="/home" aria-label="AlphaCI — home">
-          <span className="nav-brand-logo-ring">
-            <PipelineLogo size={18} />
+      {/* ── Brand zone ────────────────────────────────────────── */}
+      <div className="sidebar-brand-zone">
+        <Link href="/home" className="sidebar-brand-link" aria-label="AlphaCI — home">
+          <span className="sidebar-brand-logo">
+            <PipelineLogo size={22} />
           </span>
-          <span className="nav-brand-wordmark">
-            Alpha<span className="nav-brand-accent">CI</span>
-          </span>
-          <NavPipelineMotif />
+          <AnimatePresence initial={false}>
+            {!collapsed && (
+              <motion.span
+                className="sidebar-brand-wordmark"
+                initial={reduced ? false : { opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={reduced ? undefined : { opacity: 0, x: -10 }}
+                transition={{ duration: 0.18 }}
+              >
+                Alpha<span className="sidebar-brand-accent">CI</span>
+              </motion.span>
+            )}
+          </AnimatePresence>
         </Link>
 
-        {/* Separator */}
-        <span className="nav-sep" aria-hidden="true" />
+        <button
+          type="button"
+          className="sidebar-collapse-btn"
+          onClick={() => setCollapsed((c) => !c)}
+          aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+          aria-expanded={!collapsed}
+        >
+          <motion.span
+            animate={{ rotate: collapsed ? 180 : 0 }}
+            transition={reduced ? { duration: 0 } : { type: "spring", stiffness: 400, damping: 30 }}
+            style={{ display: "flex" }}
+          >
+            <ChevronLeftIcon size={14} />
+          </motion.span>
+        </button>
+      </div>
 
-        {/* Primary nav — floating pill dock */}
-        <nav className="nav-links" aria-label="Primary navigation">
-          {navItems.map((item) => (
-            <NavLinkItem
-              key={item.key}
-              href={item.href}
-              label={item.label}
-              icon={item.icon}
-              isActive={pathname === item.href}
-              reduced={reduced}
-            />
-          ))}
-        </nav>
+      {/* ── Primary nav ───────────────────────────────────────── */}
+      <nav className="sidebar-nav" aria-label="Primary">
+        <SidebarSectionLabel text="Main" collapsed={collapsed} />
 
-        {/* Right: user identity + sign out */}
-        <div className="nav-right-cluster">
-          {!guest && (
-            <>
+        <SidebarNavItem href="/home"      label="Dashboard" icon={DashboardIcon} isActive={pathname === "/home"}      collapsed={collapsed} reduced={reduced} />
+        <SidebarNavItem href="/workflows" label="Workflows" icon={WorkflowsIcon} isActive={pathname === "/workflows"} collapsed={collapsed} reduced={reduced} />
+        <SidebarNavItem href="/runs"      label="Runs"      icon={RunsIcon}      isActive={pathname === "/runs"}      collapsed={collapsed} reduced={reduced} />
+
+        <SidebarSectionLabel text="Account" collapsed={collapsed} />
+
+        <SidebarNavItem href="/subscribe" label="Billing"  icon={BillingIcon}  isActive={pathname === "/subscribe"} collapsed={collapsed} reduced={reduced} />
+
+        {!guest && (
+          <SidebarNavItem href="/settings" label="Settings" icon={SettingsIcon} isActive={pathname === "/settings"} collapsed={collapsed} reduced={reduced} />
+        )}
+
+        {isPlatformAdmin && (
+          <SidebarNavItem href="/admin" label="Admin" icon={AdminIcon} isActive={pathname.startsWith("/admin")} collapsed={collapsed} reduced={reduced} />
+        )}
+      </nav>
+
+      {/* ── Bottom zone — user identity + actions ─────────────── */}
+      <div className="sidebar-bottom-zone">
+        {!guest && (
+          <>
+            <div className="sidebar-bottom-utilities">
               <WorkspaceSwitcher workspaces={workspaces} />
               <NotificationCenter
                 notifications={notifications}
                 onMarkRead={handleMarkNotificationRead}
               />
-              {/* User identity pill */}
-              <div className="nav-user-pill" aria-label={`Signed in as ${session?.user.login ?? "user"}`}>
-                <span className="nav-user-avatar-ring">
-                  {session?.user.avatarUrl ? (
-                    <Image
-                      src={session.user.avatarUrl}
-                      alt={session.user.name ?? session.user.login}
-                      width={20}
-                      height={20}
-                      className="nav-user-avatar-img"
-                      unoptimized
-                    />
-                  ) : (
-                    <span className="nav-user-avatar-fallback" aria-hidden="true">
-                      {avatarInitial}
-                    </span>
-                  )}
-                </span>
+            </div>
 
-                <span className="nav-user-login">
-                  {session?.user.login ?? "user"}
-                </span>
-
-                {session?.subscription.plan && (
-                  <span className="nav-user-plan-badge">
-                    {session.subscription.plan}
+            <div className="sidebar-user-chip" aria-label={`Signed in as ${session?.user.login ?? "user"}`}>
+              <span className="sidebar-user-avatar-ring">
+                {session?.user.avatarUrl ? (
+                  <Image
+                    src={session.user.avatarUrl}
+                    alt={session.user.name ?? session.user.login}
+                    width={28}
+                    height={28}
+                    className="sidebar-user-avatar-img"
+                    unoptimized
+                  />
+                ) : (
+                  <span className="sidebar-user-avatar-fallback" aria-hidden="true">
+                    {avatarInitial}
                   </span>
                 )}
+              </span>
 
-                {/* Status LED */}
-                <span className="nav-user-status-led" aria-hidden="true" />
-              </div>
+              <AnimatePresence initial={false}>
+                {!collapsed && (
+                  <motion.div
+                    className="sidebar-user-info"
+                    initial={reduced ? false : { opacity: 0, x: -8 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={reduced ? undefined : { opacity: 0, x: -8 }}
+                    transition={{ duration: 0.16 }}
+                  >
+                    <span className="sidebar-user-login">{session?.user.login ?? "user"}</span>
+                    {session?.subscription.plan && (
+                      <span className="sidebar-user-plan-badge">{session.subscription.plan}</span>
+                    )}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
 
-              {/* Sign out */}
-              <Tooltip text={isLoggingOut ? "Signing out…" : "Sign out"}>
-                <button
-                  type="button"
-                  onClick={onLogout}
-                  disabled={isLoggingOut}
-                  aria-label={isLoggingOut ? "Signing out…" : "Sign out"}
-                  className="nav-signout-btn"
-                >
-                  {isLoggingOut ? (
-                    <span className="nav-signout-spinner" aria-hidden="true" />
-                  ) : (
-                    <SignOutIcon />
-                  )}
-                </button>
-              </Tooltip>
-            </>
-          )}
-
-          {guest && (
-            <Link
-              className="primary-button"
-              href="/signup"
-              style={{ padding: "0.38rem 1rem", fontSize: "0.82rem", minHeight: "2.1rem" }}
+            <button
+              type="button"
+              onClick={onLogout}
+              disabled={isLoggingOut}
+              aria-label={isLoggingOut ? "Signing out…" : "Sign out"}
+              className="sidebar-signout-btn"
             >
-              Sign up
-            </Link>
-          )}
-        </div>
+              {isLoggingOut ? (
+                <span className="sidebar-signout-spinner" aria-hidden="true" />
+              ) : (
+                <SignOutIcon size={15} />
+              )}
+              <AnimatePresence initial={false}>
+                {!collapsed && (
+                  <motion.span
+                    initial={reduced ? false : { opacity: 0, x: -8 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={reduced ? undefined : { opacity: 0, x: -8 }}
+                    transition={{ duration: 0.16 }}
+                    className="sidebar-signout-label"
+                  >
+                    {isLoggingOut ? "Signing out…" : "Sign out"}
+                  </motion.span>
+                )}
+              </AnimatePresence>
+            </button>
+          </>
+        )}
+
+        {guest && (
+          <Link
+            className="primary-button"
+            href="/signup"
+            style={{ width: "100%", justifyContent: "center", fontSize: "0.82rem", padding: "0.5rem 0.75rem", minHeight: "2.2rem" }}
+          >
+            {collapsed ? "↑" : "Sign up"}
+          </Link>
+        )}
       </div>
-
-      {/* Gradient underline — transitions in on scroll */}
-      <span className={`nav-underline${scrolled ? " nav-underline--visible" : ""}`} aria-hidden="true" />
-
-      {/* Scroll progress — thin gradient line tracking page scroll */}
-      {!reduced && (
-        <motion.span
-          className="nav-progress"
-          style={{ scaleX: progressScale }}
-          aria-hidden="true"
-        />
-      )}
-    </header>
+    </motion.aside>
   );
 }
