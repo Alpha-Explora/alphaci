@@ -140,71 +140,21 @@ function SettingsSection({
 }) {
   return (
     <div
-      style={{
-        background: danger
-          ? "linear-gradient(160deg, rgba(69, 10, 10, 0.8) 0%, rgba(30, 10, 10, 0.5) 100%)"
-          : "rgba(15, 23, 42, 0.55)",
-        border: danger
-          ? "1px solid rgba(220, 38, 38, 0.35)"
-          : "1px solid var(--border-soft)",
-        borderRadius: "1rem",
-        overflow: "hidden",
-        transitionDelay: `${index * 40}ms`,
-        position: "relative",
-      }}
+      className={`settings-card${danger ? " settings-card--danger" : ""}`}
+      style={{ transitionDelay: `${index * 40}ms` }}
     >
       {/* Top accent line instead of a heavy header block */}
       <div
         aria-hidden="true"
-        style={{
-          position: "absolute",
-          top: 0,
-          left: 0,
-          right: 0,
-          height: "1px",
-          background: danger
-            ? "linear-gradient(90deg, transparent, rgba(248, 113, 113, 0.6), transparent)"
-            : "linear-gradient(90deg, transparent, var(--brand), transparent)",
-          opacity: 0.5,
-        }}
+        className={`settings-card-accent${danger ? " settings-card-accent--danger" : ""}`}
       />
 
       {/* Section header row — lightweight */}
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: "0.6rem",
-          padding: "0.8rem 1.25rem 0.7rem",
-          borderBottom: danger
-            ? "1px solid rgba(248, 113, 113, 0.12)"
-            : "1px solid var(--border-soft)",
-        }}
-      >
-        <span
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            width: "1.6rem",
-            height: "1.6rem",
-            borderRadius: "0.35rem",
-            background: danger ? "rgba(248, 113, 113, 0.1)" : "var(--surface-brand)",
-            color: danger ? "var(--danger)" : "var(--brand)",
-            flexShrink: 0,
-          }}
-        >
+      <div className={`settings-card-header${danger ? " settings-card-header--danger" : ""}`}>
+        <span className={`settings-card-icon${danger ? " settings-card-icon--danger" : ""}`}>
           {icon}
         </span>
-        <span
-          style={{
-            fontSize: "0.75rem",
-            fontWeight: 700,
-            letterSpacing: "0.07em",
-            textTransform: "uppercase",
-            color: danger ? "var(--danger)" : "var(--text-secondary)",
-          }}
-        >
+        <span className={`settings-card-title${danger ? " settings-card-title--danger" : ""}`}>
           {title}
         </span>
       </div>
@@ -478,7 +428,7 @@ function SettingsPageContent() {
       >
         {/* ── Left sidebar nav ── */}
         <nav
-          className="settings-sidebar"
+          className="settings-sidebar settings-sidebar-surface"
           aria-label="Settings sections"
           style={{
             width: isCompactLayout ? "100%" : "220px",
@@ -489,21 +439,18 @@ function SettingsPageContent() {
             display: "flex",
             flexDirection: "column",
             gap: "0.35rem",
-            background: "rgba(15, 23, 42, 0.55)",
-            border: "1px solid var(--border-soft)",
-            borderRadius: "1rem",
             padding: "1rem",
           }}
         >
           {/* Mini profile summary */}
           <div
+            className="settings-sidebar-profile"
             style={{
               display: "flex",
               alignItems: "center",
               gap: "0.75rem",
               paddingBottom: "0.85rem",
               marginBottom: "0.5rem",
-              borderBottom: "1px solid var(--border-soft)",
             }}
           >
             <div
@@ -568,24 +515,16 @@ function SettingsPageContent() {
               guide:       <BookOpenIcon size={14} />,
               danger:      <AlertTriangleIcon size={14} />,
             };
+            const stateClass = isActive
+              ? isDanger ? "settings-nav-btn--active-danger" : "settings-nav-btn--active"
+              : isDanger ? "settings-nav-btn--inactive-danger" : "settings-nav-btn--inactive";
             return (
               <button
                 key={sec}
                 type="button"
                 onClick={() => setActiveSection(sec)}
                 aria-current={isActive ? "true" : undefined}
-                className="settings-nav-btn"
-                style={{
-                  border: isActive
-                    ? isDanger ? "1px solid rgba(248,113,113,0.3)" : "1px solid rgba(56,189,248,0.25)"
-                    : "1px solid transparent",
-                  background: isActive
-                    ? isDanger ? "rgba(248,113,113,0.08)" : "rgba(56,189,248,0.09)"
-                    : "transparent",
-                  color: isActive
-                    ? isDanger ? "var(--danger)" : "var(--brand)"
-                    : isDanger ? "rgba(248,113,113,0.65)" : "var(--text-secondary)",
-                }}
+                className={`settings-nav-btn ${stateClass}`}
               >
                 {icons[sec]}
                 {SECTION_LABELS[sec]}
@@ -618,6 +557,7 @@ function SettingsPageContent() {
                 <>
                   {/* Profile header — flat with gradient accent */}
                   <motion.div
+                    className="settings-profile-header"
                     initial={prefersReducedMotion ? undefined : { opacity: 0, y: 14 }}
                     animate={prefersReducedMotion ? undefined : { opacity: 1, y: 0 }}
                     transition={{ duration: 0.35, ease: [0.25, 0, 0, 1] }}
@@ -625,8 +565,6 @@ function SettingsPageContent() {
                       position: "relative",
                       borderRadius: "1rem",
                       overflow: "hidden",
-                      background: "rgba(15, 23, 42, 0.5)",
-                      border: "1px solid var(--border-soft)",
                       padding: "clamp(1.25rem, 3vw, 1.75rem)",
                     }}
                   >

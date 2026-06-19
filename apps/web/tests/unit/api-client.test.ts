@@ -1296,6 +1296,26 @@ describe("API client project setup helpers", () => {
     }
   });
 
+  it("loudly errors (but does not throw) when no API URL is set in production", async () => {
+    delete process.env.NEXT_PUBLIC_API_BASE_URL;
+    delete process.env.NEXT_PUBLIC_API_URL;
+    process.env.NODE_ENV = "production";
+    jest.resetModules();
+
+    const errorSpy = jest.spyOn(console, "error").mockImplementation(() => {});
+    try {
+      const { getApiBaseUrl } = await import("../../src/lib/api/client");
+      // Build must not crash — it degrades to localhost...
+      expect(getApiBaseUrl()).toBe("http://localhost:4000/api/v1");
+      // ...but the misconfiguration is surfaced loudly for the operator.
+      expect(errorSpy).toHaveBeenCalledWith(
+        expect.stringContaining("Neither NEXT_PUBLIC_API_BASE_URL"),
+      );
+    } finally {
+      errorSpy.mockRestore();
+    }
+  });
+
   it("prefers NEXT_PUBLIC_API_BASE_URL over the legacy alias in production", async () => {
     process.env.NEXT_PUBLIC_API_BASE_URL = "https://alphaci-be-test.onrender.com";
     process.env.NEXT_PUBLIC_API_URL = "https://flowci-be-test.onrender.com";
