@@ -48,10 +48,11 @@ describe("NotificationCenter", () => {
     await act(async () => {
       container.querySelector<HTMLButtonElement>('button[aria-label="Notifications"]')!.click();
     });
-    expect(container.textContent).toContain("Project created");
+    // Panel is portaled to document.body, not inside the local container.
+    expect(document.body.textContent).toContain("Project created");
 
     await act(async () => {
-      Array.from(container.querySelectorAll("button"))
+      Array.from(document.body.querySelectorAll("button"))
         .find((button) => button.textContent === "Mark read")!
         .click();
     });
@@ -76,6 +77,7 @@ describe("NotificationCenter", () => {
       container.querySelector<HTMLButtonElement>('button[aria-label="Notifications"]')!.click();
     });
 
-    expect(container.textContent).toContain("All caught up.");
+    // Panel is portaled to document.body, not inside the local container.
+    expect(document.body.textContent).toContain("All caught up.");
   });
 });

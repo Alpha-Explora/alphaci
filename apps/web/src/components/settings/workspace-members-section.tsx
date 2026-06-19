@@ -111,26 +111,15 @@ export function WorkspaceMembersSection({
   }
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "0.8rem" }}>
-      <div style={{ display: "flex", flexDirection: "column", gap: "0.55rem" }}>
+    <div className="workspace-members">
+      <div className="workspace-members-list">
         {members.map((member) => {
           const isLastOwner = member.role === "owner" && ownerCount <= 1;
           return (
-            <div
-              key={member.id}
-              className="hover-field"
-              style={{
-                display: "grid",
-                gridTemplateColumns: "minmax(0, 1fr) auto auto",
-                gap: "0.65rem",
-                alignItems: "center",
-              }}
-            >
-              <div style={{ minWidth: 0 }}>
-                <strong style={{ display: "block", color: "var(--text-primary)", fontSize: "0.9rem" }}>
-                  {member.name || member.login}
-                </strong>
-                <span style={{ color: "var(--text-muted)", fontSize: "0.76rem" }}>
+            <div key={member.id} className="hover-field workspace-member-row">
+              <div className="workspace-member-identity">
+                <strong>{member.name || member.login}</strong>
+                <span>
                   @{member.login}{member.email ? ` / ${member.email}` : ""}
                 </span>
               </div>
@@ -141,14 +130,7 @@ export function WorkspaceMembersSection({
                 onChange={(event) =>
                   void handleRoleChange(member, event.target.value as WorkspaceRole)
                 }
-                style={{
-                  background: "rgba(15, 23, 42, 0.55)",
-                  border: "1px solid var(--border-soft)",
-                  borderRadius: "0.45rem",
-                  color: "var(--text-primary)",
-                  padding: "0.35rem 0.5rem",
-                  fontSize: "0.78rem",
-                }}
+                className="workspace-member-select"
               >
                 {ROLE_OPTIONS.map((option) => (
                   <option key={option} value={option}>
@@ -158,7 +140,7 @@ export function WorkspaceMembersSection({
               </select>
               <button
                 type="button"
-                className="confirm-btn-neutral"
+                className="workspace-member-btn workspace-member-btn--neutral"
                 disabled={!canManage || saving || isLastOwner || member.userId === currentUserId}
                 onClick={() => void handleRemove(member)}
               >
@@ -170,32 +152,19 @@ export function WorkspaceMembersSection({
       </div>
 
       {canManage ? (
-        <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) auto auto", gap: "0.5rem" }}>
+        <div className="workspace-member-add">
           <input
             aria-label="GitHub login or email"
             value={loginOrEmail}
             onChange={(event) => setLoginOrEmail(event.target.value)}
             placeholder="GitHub login or email"
-            style={{
-              background: "rgba(15, 23, 42, 0.55)",
-              border: "1px solid var(--border-soft)",
-              borderRadius: "0.5rem",
-              color: "var(--text-primary)",
-              padding: "0.48rem 0.65rem",
-              minWidth: 0,
-            }}
+            className="workspace-member-input"
           />
           <select
             aria-label="New member role"
             value={role}
             onChange={(event) => setRole(event.target.value as WorkspaceRole)}
-            style={{
-              background: "rgba(15, 23, 42, 0.55)",
-              border: "1px solid var(--border-soft)",
-              borderRadius: "0.5rem",
-              color: "var(--text-primary)",
-              padding: "0.48rem 0.65rem",
-            }}
+            className="workspace-member-select"
           >
             {ROLE_OPTIONS.map((option) => (
               <option key={option} value={option}>
@@ -205,7 +174,7 @@ export function WorkspaceMembersSection({
           </select>
           <button
             type="button"
-            className="dash-action-btn"
+            className="workspace-member-btn workspace-member-btn--add"
             disabled={saving || !loginOrEmail.trim()}
             onClick={() => void handleAddMember()}
           >
