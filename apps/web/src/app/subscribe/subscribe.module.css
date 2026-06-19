@@ -416,7 +416,7 @@
 
 /* Plan cards: white background, dark text */
 :global([data-theme="light"]) .card {
-  background: rgba(255, 255, 255, 0.95) !important;
+  background: rgba(246, 248, 252, 0.95) !important;
   border-color: rgba(15, 23, 42, 0.1) !important;
   box-shadow: 0 4px 24px rgba(15, 23, 42, 0.08), 0 1px 4px rgba(15, 23, 42, 0.04) !important;
 }
@@ -464,7 +464,7 @@
 
 /* Account summary panel */
 :global([data-theme="light"]) .accountSummary > div {
-  background: rgba(255, 255, 255, 0.9) !important;
+  background: rgba(246, 248, 252, 0.9) !important;
 }
 
 :global([data-theme="light"]) .accountSummary p {
@@ -473,7 +473,7 @@
 
 /* Comparison table */
 :global([data-theme="light"]) .tableWrap {
-  background: rgba(255, 255, 255, 0.95) !important;
+  background: rgba(246, 248, 252, 0.95) !important;
   border-color: rgba(15, 23, 42, 0.1) !important;
 }
 
@@ -506,7 +506,7 @@
 
 /* Notes panel */
 :global([data-theme="light"]) .notes {
-  background: rgba(255, 255, 255, 0.95) !important;
+  background: rgba(246, 248, 252, 0.95) !important;
   border-color: rgba(15, 23, 42, 0.1) !important;
 }
 
