@@ -104,12 +104,12 @@ export function PipelineLoader({ label = "Loading" }: Readonly<PipelineLoaderPro
                             ? stage.color
                             : isActive
                             ? stage.color
-                            : "rgba(255,255,255,0.08)",
+                            : "var(--loader-track-mid)",
                           borderColor: isDone
                             ? stage.color
                             : isActive
                             ? stage.color
-                            : "rgba(255,255,255,0.12)",
+                            : "var(--loader-track-strong)",
                           boxShadow: isActive && pulsing
                             ? `0 0 14px ${stage.glow}`
                             : "none",
@@ -152,7 +152,7 @@ export function PipelineLoader({ label = "Loading" }: Readonly<PipelineLoaderPro
                         : {
                             background: isDone
                               ? `linear-gradient(90deg, ${stage.color}, ${STAGES[i + 1]?.color ?? stage.color})`
-                              : "rgba(255,255,255,0.08)",
+                              : "var(--loader-track-mid)",
                             transition: "background 0.4s ease",
                           }
                     }

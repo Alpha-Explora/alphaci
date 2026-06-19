@@ -17,6 +17,25 @@ html::-webkit-scrollbar {
   --bg-panel:     #0f172a;
   --bg-elevated:  #1e293b;
 
+  /* ── Surface elevation ladder (dark) ───────────────────────── */
+  /* Opaque, stepped values so shell < card < nested tile reads as
+     distinct layers with real contrast. Use these for any container
+     hierarchy instead of stacking low-alpha rgba(15,23,42,...) values. */
+  --layer-0:        #020617;   /* shell / page background      */
+  --layer-1:        #0d1526;   /* card surface (above shell)   */
+  --layer-1-hover:  #111c33;   /* card hover                   */
+  --layer-2:        #18233b;   /* nested tile (elevated)       */
+  --layer-2-hover:  #1f2d49;   /* nested tile hover            */
+  --border-layer:   rgba(148, 163, 184, 0.16);  /* card edge   */
+  --border-tile:    rgba(148, 163, 184, 0.22);  /* tile edge   */
+
+  /* ── Pipeline loader idle/track surfaces (theme-aware) ─────── */
+  /* Idle dots, connectors and the pulse track on the full-screen
+     loader. White-alpha on the dark shell; dark-alpha in light mode. */
+  --loader-track-strong: rgba(255, 255, 255, 0.15);  /* idle node border        */
+  --loader-track-mid:    rgba(255, 255, 255, 0.08);  /* idle node fill / line   */
+  --loader-track-faint:  rgba(255, 255, 255, 0.04);  /* pulse-line track        */
+
   /* ── Text ──────────────────────────────────────────────────── */
   --text-primary:   #f8fafc;
   --text-secondary: #94a3b8;
@@ -125,6 +144,20 @@ html::-webkit-scrollbar {
   --bg-surface:   rgba(255, 255, 255, 0.85);
   --bg-panel:     #ffffff;
   --bg-elevated:  #f8fafc;
+
+  /* ── Surface elevation ladder (light) ──────────────────────── */
+  --layer-0:        #eef2f7;   /* shell / page background       */
+  --layer-1:        #ffffff;   /* card surface                  */
+  --layer-1-hover:  #fbfcff;   /* card hover                    */
+  --layer-2:        #f6f8fc;   /* nested tile (slightly recessed)*/
+  --layer-2-hover:  #eef3fb;   /* nested tile hover             */
+  --border-layer:   rgba(15, 23, 42, 0.10);   /* card edge      */
+  --border-tile:    rgba(15, 23, 42, 0.08);   /* tile edge      */
+
+  /* Loader idle/track surfaces — dark-alpha so they read on the light shell */
+  --loader-track-strong: rgba(15, 23, 42, 0.18);
+  --loader-track-mid:    rgba(15, 23, 42, 0.10);
+  --loader-track-faint:  rgba(15, 23, 42, 0.06);
 
   --text-primary:   #0f172a;
   --text-secondary: #475569;
@@ -6909,9 +6942,10 @@ select option {
 
 .project-list,
 .project-detail-panel {
-  border: 1px solid var(--border-soft);
+  border: 1px solid var(--border-layer);
   border-radius: 8px;
-  background: rgba(15, 23, 42, 0.58);
+  background: var(--layer-1);
+  box-shadow: var(--shadow-soft);
 }
 
 .project-list {
@@ -6957,8 +6991,13 @@ select option {
 
 .project-list-item:hover,
 .project-list-item.selected {
-  border-color: var(--border);
-  background: rgba(255, 255, 255, 0.04);
+  border-color: var(--border-tile);
+  background: var(--layer-2);
+}
+
+.project-list-item.selected {
+  border-color: var(--border-brand);
+  box-shadow: inset 2px 0 0 var(--brand);
 }
 
 .project-list-item.selected {
@@ -7034,15 +7073,23 @@ select option {
 .project-detail-grid div {
   min-width: 0;
   padding: 0.75rem;
-  border: 1px solid var(--border-subtle);
+  border: 1px solid var(--border-tile);
   border-radius: 6px;
-  background: rgba(0, 0, 0, 0.16);
+  background: var(--layer-2);
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.project-detail-grid div:hover {
+  background: var(--layer-2-hover);
+  border-color: var(--border-strong);
 }
 
 .project-detail-grid dt {
   margin-bottom: 0.3rem;
-  color: var(--text-muted);
+  color: var(--text-secondary);
   font-size: 0.74rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
 .project-detail-grid dd {
@@ -10985,6 +11032,10 @@ select option {
   align-items: center;
   justify-content: center;
   min-height: 100dvh;
+  /* The full-screen loader has no sidebar, so cancel the .dash-shell
+     left gutter (var(--sidebar-width)) that would otherwise push the
+     centred content right of the true viewport centre. */
+  padding: 0;
 }
 
 .pipeline-loader-center {
@@ -11044,7 +11095,7 @@ select option {
   width: 10px;
   height: 10px;
   border-radius: 50%;
-  border: 1.5px solid rgba(255,255,255,0.15);
+  border: 1.5px solid var(--loader-track-strong);
   flex-shrink: 0;
 }
 
@@ -11067,7 +11118,7 @@ select option {
   display: inline-block;
   width: clamp(2.5rem, 6vw, 4rem);
   height: 1px;
-  background: rgba(255,255,255,0.08);
+  background: var(--loader-track-mid);
   flex-shrink: 0;
   margin-bottom: 0;
 }
@@ -11077,7 +11128,7 @@ select option {
   position: relative;
   width: clamp(200px, 50vw, 360px);
   height: 2px;
-  background: rgba(255,255,255,0.04);
+  background: var(--loader-track-faint);
   border-radius: 1px;
   overflow: hidden;
   margin-top: 0.5rem;
