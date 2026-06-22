@@ -25,6 +25,7 @@ export function useGithubInstallations(
   const [installUrl, setInstallUrl] = useState<string | null>(null);
   const [loadingInstallUrl, setLoadingInstallUrl] = useState(false);
   const [installationId, setInstallationId] = useState("");
+  const [selectedOwner, setSelectedOwner] = useState("personal");
   const [linkingInstallation, setLinkingInstallation] = useState(false);
   const autoLinkFiredRef = useRef(false);
 
@@ -184,6 +185,13 @@ export function useGithubInstallations(
       ? "GitHub App is linked for selected repositories only. Reinstall or update it with all repositories access to create new repos."
       : "Link the GitHub App with all repositories access to create new repos.";
 
+  const selectedInstallationId = selectedOwner.startsWith("organization:")
+    ? Number(selectedOwner.slice("organization:".length))
+    : undefined;
+  const selectedOwnerType: "organization" | "personal" = selectedInstallationId
+    ? "organization"
+    : "personal";
+
   return {
     allRepositoriesAccount,
     handleLinkInstallation,
@@ -203,7 +211,11 @@ export function useGithubInstallations(
     loadingInstallUrl,
     loadingLinkedRepos,
     selectedRepoFullName,
+    selectedInstallationId,
+    selectedOwner,
+    selectedOwnerType,
     setInstallationId,
+    setSelectedOwner,
   };
 }
 

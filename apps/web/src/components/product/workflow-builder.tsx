@@ -134,6 +134,8 @@ export function WorkflowBuilder({ guest = false, session, onboardingCompleted }:
       projectTypeId: projectCatalog.selectedProjectTypeId,
       workflowRecipeId: projectCatalog.selectedWorkflowRecipeId,
       tests: projectCatalog.tests,
+      ownerType: github.selectedOwnerType,
+      installationId: github.selectedInstallationId,
       deploymentProvisioning: deploymentProvisioning.payload,
     });
 

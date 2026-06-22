@@ -425,6 +425,33 @@ describe("workflow hooks", () => {
         outputFileName: "ci.yml",
       },
     });
+
+    const organizationResult = current?.buildPayload({
+      isMicroservicesShape: false,
+      isMultiRepoShape: false,
+      repoShapeId: "single-app",
+      projectTypeId: "nextjs-app",
+      workflowRecipeId: "frontend-standard-ci",
+      ownerType: "organization",
+      installationId: 12345,
+      tests: {
+        lint: true,
+        unit: true,
+        build: true,
+        coverage: true,
+        security: true,
+        docker: false,
+      },
+    });
+    expect(organizationResult).toEqual(
+      expect.objectContaining({
+        ok: true,
+        payload: expect.objectContaining({
+          ownerType: "organization",
+          installationId: 12345,
+        }),
+      }),
+    );
   });
 
   it("reports create project form validation branches", async () => {

@@ -312,7 +312,8 @@ export function AppNav({ guest, session, onLogout, isLoggingOut }: Readonly<AppN
   const sidebarWidth = collapsed ? 64 : 220;
 
   return (
-    <motion.aside
+    <>
+      <motion.aside
       ref={sidebarRef}
       className="app-sidebar"
       data-collapsed={collapsed ? "true" : "false"}
@@ -344,24 +345,6 @@ export function AppNav({ guest, session, onLogout, isLoggingOut }: Readonly<AppN
           </AnimatePresence>
         </Link>
 
-        <motion.button
-          type="button"
-          className="sidebar-collapse-btn"
-          onClick={() => setCollapsed((c) => !c)}
-          aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-          aria-expanded={!collapsed}
-          whileHover={reduced ? undefined : { scale: 1.12, backgroundColor: "rgba(99,102,241,0.18)" }}
-          whileTap={reduced ? undefined : { scale: 0.88 }}
-          transition={{ type: "spring", stiffness: 420, damping: 24 }}
-        >
-          <motion.span
-            animate={{ rotate: collapsed ? 180 : 0 }}
-            transition={reduced ? { duration: 0 } : { type: "spring", stiffness: 380, damping: 28 }}
-            style={{ display: "flex" }}
-          >
-            <ChevronLeftIcon size={14} />
-          </motion.span>
-        </motion.button>
       </div>
 
       {/* ── Primary nav ───────────────────────────────────────── */}
@@ -475,6 +458,27 @@ export function AppNav({ guest, session, onLogout, isLoggingOut }: Readonly<AppN
           </Link>
         )}
       </div>
-    </motion.aside>
+      </motion.aside>
+
+      <motion.button
+        type="button"
+        className="sidebar-collapse-btn sidebar-collapse-btn--edge"
+        onClick={() => setCollapsed((current) => !current)}
+        aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+        aria-expanded={!collapsed}
+        animate={{ left: sidebarWidth - 1 }}
+        whileHover={reduced ? undefined : { x: 2, backgroundColor: "rgba(30, 41, 59, 0.98)" }}
+        whileTap={reduced ? undefined : { scale: 0.94 }}
+        transition={reduced ? { duration: 0 } : { type: "spring", stiffness: 360, damping: 34, mass: 0.8 }}
+      >
+        <motion.span
+          animate={{ rotate: collapsed ? 180 : 0 }}
+          transition={reduced ? { duration: 0 } : { type: "spring", stiffness: 380, damping: 28 }}
+          className="sidebar-collapse-icon"
+        >
+          <ChevronLeftIcon size={15} />
+        </motion.span>
+      </motion.button>
+    </>
   );
 }

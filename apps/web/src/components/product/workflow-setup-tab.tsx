@@ -142,6 +142,7 @@ export function WorkflowSetupTab({
     projectQuotaReached ||
     projectCatalog.loadingProjectOptions ||
     !form.repoName.trim() ||
+    (github.selectedOwnerType === "organization" && !github.selectedInstallationId) ||
     (!projectCatalog.isMicroservicesShape && !projectCatalog.isMultiRepoShape && !projectCatalog.selectedProjectType);
 
   const generateDisabled =
@@ -744,6 +745,36 @@ export function WorkflowSetupTab({
               style={{ overflow: "hidden" }}
               transition={{ duration: 0.28, ease: [0.25, 0.46, 0.45, 0.94] }}
             >
+              <label className="input-label" htmlFor="repository-owner" style={labelAccentStyle}>
+                Repository owner
+              </label>
+              <select
+                id="repository-owner"
+                className="premium-input"
+                value={github.selectedOwner}
+                onChange={(event) => github.setSelectedOwner(event.target.value)}
+              >
+                <option value="personal">My personal GitHub account</option>
+                {github.installationAccounts
+                  .filter(
+                    (account) =>
+                      account.accountType === "Organization" &&
+                      account.repositorySelection === "all" &&
+                      account.accountLogin,
+                  )
+                  .map((account) => (
+                    <option
+                      key={account.installationId}
+                      value={`organization:${account.installationId}`}
+                    >
+                      {account.accountLogin} organization
+                    </option>
+                  ))}
+              </select>
+              <p style={{ color: "var(--text-muted)", fontSize: "0.72rem", margin: "0.3rem 0 0.9rem", lineHeight: 1.4 }}>
+                Organization destinations require this environment&apos;s GitHub App with all-repositories access.
+              </p>
+
               {/* Repository name + Visibility */}
               <div className="form-pair-row" style={{ gap: "1rem" }}>
                 <div>

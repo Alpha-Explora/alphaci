@@ -12257,7 +12257,7 @@ select option {
 .sidebar-brand-zone {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-start;
   padding: 1.1rem 0.75rem 0.75rem 1rem;
   min-height: 60px;
   flex-shrink: 0;
@@ -12323,6 +12323,39 @@ select option {
   flex-shrink: 0;
   transition: color 0.18s ease, border-color 0.18s ease, background 0.18s ease;
   outline: none;
+}
+
+.sidebar-collapse-btn--edge {
+  position: fixed;
+  top: 50%;
+  z-index: 110;
+  width: 27px;
+  height: 52px;
+  margin-top: -26px;
+  border-left: 0;
+  border-radius: 0 11px 11px 0;
+  background: rgba(15, 23, 42, 0.96);
+  border-color: rgba(99, 102, 241, 0.3);
+  color: var(--text-secondary);
+  box-shadow:
+    8px 0 22px rgba(0, 0, 0, 0.28),
+    0 0 18px rgba(99, 102, 241, 0.12);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+.sidebar-collapse-btn.sidebar-collapse-btn--edge:hover {
+  color: var(--brand);
+  border-color: rgba(56, 189, 248, 0.48);
+  box-shadow:
+    10px 0 26px rgba(0, 0, 0, 0.32),
+    0 0 22px rgba(56, 189, 248, 0.18);
+}
+
+.sidebar-collapse-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .sidebar-collapse-btn:hover {
@@ -12470,7 +12503,7 @@ select option {
   padding: 0 0.15rem;
 }
 
-/* Notification + theme-toggle sub-row */
+/* Notification and appearance actions row */
 .sidebar-utility-actions {
   display: flex;
   align-items: center;
