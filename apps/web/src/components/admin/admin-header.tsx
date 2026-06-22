@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { ThemeToggle } from "@/components/layout/theme-toggle";
 
 export function AdminHeader() {
   return (
@@ -29,7 +28,6 @@ export function AdminHeader() {
         </nav>
       </div>
       <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-        <ThemeToggle />
         <Link href="/home" style={{ color: "var(--text-secondary)", textDecoration: "none", fontSize: "0.85rem" }}>
           ← Back to app
         </Link>

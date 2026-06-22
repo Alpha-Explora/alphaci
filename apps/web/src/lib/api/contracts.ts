@@ -651,6 +651,7 @@ export interface GithubInstallationAccount {
   installationId: number;
   accountLogin: string | null;
   accountId: number | null;
+  accountType?: "Organization" | "User" | null;
   repositorySelection: "all" | "selected";
 }
 
@@ -684,6 +685,8 @@ export interface MicroservicesConfig {
 export interface CreateProjectRequest {
   repoName: string;
   visibility: "private" | "public";
+  ownerType?: "personal" | "organization";
+  installationId?: number;
   repoShape?: string;
   projectTypeId: string;
   workflowRecipeId?: string;

@@ -16,6 +16,8 @@ interface BuildPayloadInput {
   projectTypeId: string;
   workflowRecipeId: string;
   tests: Record<MvpProjectOptionKey, boolean>;
+  ownerType?: "personal" | "organization";
+  installationId?: number;
   deploymentProvisioning?: CreateProjectRequest["deploymentProvisioning"];
 }
 
@@ -117,6 +119,21 @@ export function useCreateProjectForm() {
       return { ok: false, message: "Workflow file name must be a .yml or .yaml basename." };
     }
 
+    const ownerType = input.ownerType ?? "personal";
+    if (ownerType === "organization" && !input.installationId) {
+      return { ok: false, message: "Choose a linked GitHub organization." };
+    }
+
+    const ownerFields: Pick<CreateProjectRequest, "ownerType" | "installationId"> =
+      input.ownerType
+        ? {
+            ownerType,
+            ...(ownerType === "organization" && input.installationId
+              ? { installationId: input.installationId }
+              : {}),
+          }
+        : {};
+
     if (input.isMicroservicesShape) {
       const normalizedBackendName = toSlug(
         effectiveBackendServiceName || `${normalizedRepoName}-backend`,
@@ -130,6 +147,7 @@ export function useCreateProjectForm() {
         payload: {
           repoName: normalizedRepoName,
           visibility,
+          ...ownerFields,
           repoShape: input.repoShapeId,
           // projectTypeId is required on the contract; use backend as the primary slot.
           projectTypeId: backendProjectTypeId,
@@ -174,6 +192,7 @@ export function useCreateProjectForm() {
         payload: {
           repoName: normalizedRepoName,
           visibility,
+          ...ownerFields,
           repoShape: input.repoShapeId,
           projectTypeId: backendProjectTypeId,
           workflowRecipeId: backendWorkflowRecipeId,
@@ -217,6 +236,7 @@ export function useCreateProjectForm() {
       payload: {
         repoName: normalizedRepoName,
         visibility,
+        ...ownerFields,
         repoShape: input.repoShapeId,
         projectTypeId: input.projectTypeId,
         workflowRecipeId: input.workflowRecipeId,
