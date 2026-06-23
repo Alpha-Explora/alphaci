@@ -261,10 +261,10 @@ export function WorkflowSetupTab({
           ) : null}
 
           {github.installUrl ? (
-            <a
-              href={github.installUrl}
-              target="_blank"
-              rel="noreferrer"
+            <button
+              type="button"
+              onClick={() => void github.handleInstallApp()}
+              disabled={github.loadingInstallUrl}
               style={{
                 display: "flex",
                 alignItems: "center",
@@ -280,10 +280,11 @@ export function WorkflowSetupTab({
                 marginBottom: "0.65rem",
                 fontWeight: 600,
                 transition: "border-color 0.15s, color 0.15s",
+                cursor: github.loadingInstallUrl ? "wait" : "pointer",
               }}
             >
-              Install GitHub App
-            </a>
+              {github.loadingInstallUrl ? "Refreshing install link…" : "Install GitHub App"}
+            </button>
           ) : (
             <button
               type="button"
@@ -305,6 +306,12 @@ export function WorkflowSetupTab({
               {github.loadingInstallUrl ? "Loading install link…" : "Install link unavailable"}
             </button>
           )}
+
+          {github.appSlug ? (
+            <p style={{ color: "var(--text-muted)", fontSize: "0.72rem", margin: "0 0 0.65rem" }}>
+              Backend GitHub App: <strong>@{github.appSlug}</strong>
+            </p>
+          ) : null}
 
           <details>
             <summary style={{

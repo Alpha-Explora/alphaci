@@ -223,6 +223,7 @@ describe("workflow hooks", () => {
     mockedGetProjects.mockResolvedValue({ items: [] });
     mockedGetGithubAppInstallUrl.mockResolvedValue({
       installUrl: "https://github.com/apps/cicd-example/installations/new",
+      appSlug: "cicd-example",
     });
     mockedGetGithubInstallationAccounts.mockResolvedValue({
       accounts: [
@@ -745,6 +746,28 @@ describe("workflow hooks", () => {
     expect(current?.linkedRepos).toEqual([{ installationId: 12345, repoFullName: "tone/example-app" }]);
     expect(current?.hasAllRepositoriesInstallation).toBe(true);
     expect(current?.allRepositoriesAccount?.accountLogin).toBe("tone");
+    expect(current?.appSlug).toBe("cicd-example");
+
+    const popup = {
+      opener: window,
+      location: { href: "about:blank" },
+      close: jest.fn(),
+    };
+    const openSpy = jest.spyOn(window, "open").mockReturnValue(popup as unknown as Window);
+    mockedGetGithubAppInstallUrl.mockResolvedValueOnce({
+      installUrl: "https://github.com/apps/alphaci-test/installations/new",
+      appSlug: "alphaci-test",
+    });
+
+    await act(async () => {
+      await current?.handleInstallApp();
+    });
+
+    expect(mockedGetGithubAppInstallUrl).toHaveBeenCalledTimes(2);
+    expect(popup.opener).toBeNull();
+    expect(popup.location.href).toBe("https://github.com/apps/alphaci-test/installations/new");
+    expect(current?.appSlug).toBe("alphaci-test");
+    openSpy.mockRestore();
 
     act(() => {
       current?.handleRepoSelect({
