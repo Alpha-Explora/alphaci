@@ -242,11 +242,13 @@ describe("API client project setup helpers", () => {
       status: 200,
       json: async () => ({
         installUrl: "https://github.com/apps/cicd-example/installations/new",
+        appSlug: "cicd-example",
       }),
     });
 
     await expect(getGithubAppInstallUrl()).resolves.toEqual({
       installUrl: "https://github.com/apps/cicd-example/installations/new",
+      appSlug: "cicd-example",
     });
 
     expect(fetchMock).toHaveBeenCalledWith(

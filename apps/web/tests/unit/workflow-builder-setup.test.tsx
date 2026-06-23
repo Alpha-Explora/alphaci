@@ -299,6 +299,7 @@ describe("WorkflowBuilder project setup", () => {
     mockedListProviderConnections.mockResolvedValue([]);
     mockedGetGithubAppInstallUrl.mockResolvedValue({
       installUrl: "https://github.com/apps/cicd-example/installations/new",
+      appSlug: "cicd-example",
     });
     mockedGetGithubInstallationAccounts.mockResolvedValue({
       accounts: [

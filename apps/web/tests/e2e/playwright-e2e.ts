@@ -482,7 +482,10 @@ async function installDashboardAuditApi(page: Page) {
     }
 
     if (path === '/github/app/install-url') {
-      return json(route, { installUrl: 'https://github.com/apps/flowci-studio/installations/new' });
+      return json(route, {
+        installUrl: 'https://github.com/apps/flowci-studio/installations/new',
+        appSlug: 'flowci-studio',
+      });
     }
 
     if (path === '/github/installations/accounts') {
