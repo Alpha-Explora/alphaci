@@ -30,17 +30,18 @@ export function useGithubInstallations(
   const [linkingInstallation, setLinkingInstallation] = useState(false);
   const autoLinkFiredRef = useRef(false);
 
-  const applyInstallConfig = useCallback((response: { installUrl: string; appSlug: string }) => {
+  const applyInstallConfig = useCallback((response: { installUrl: string; appSlug?: string }) => {
     const url = new URL(response.installUrl);
     const match = url.pathname.match(/^\/apps\/([a-z0-9-]+)\/installations\/new\/?$/);
     if (url.protocol !== "https:" || url.hostname !== "github.com" || !match) {
       throw new Error("Backend returned an invalid GitHub App installation URL.");
     }
-    if (!response.appSlug || response.appSlug !== match[1]) {
+    const normalizedAppSlug = response.appSlug?.trim().toLowerCase() || match[1];
+    if (normalizedAppSlug !== match[1]) {
       throw new Error("Backend GitHub App slug does not match its installation URL.");
     }
     setInstallUrl(response.installUrl);
-    setAppSlug(response.appSlug);
+    setAppSlug(normalizedAppSlug);
   }, []);
 
   const loadLinkedRepos = useCallback(async (silent = false) => {
