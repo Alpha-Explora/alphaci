@@ -853,6 +853,78 @@ describe("workflow hooks", () => {
     expect(current).not.toBeNull();
   });
 
+  it("derives the GitHub App slug from older install-url responses", async () => {
+    let current = null as ReturnType<typeof useGithubInstallations> | null;
+    const pushStatus = jest.fn();
+    const applyRepo = jest.fn();
+
+    mockedGetGithubAppInstallUrl.mockResolvedValueOnce({
+      installUrl: "https://github.com/apps/alphaci-test/installations/new",
+    });
+
+    function Probe() {
+      const value = useGithubInstallations(pushStatus, applyRepo);
+      useEffect(() => {
+        current = value;
+      }, [value]);
+      return null;
+    }
+
+    await act(async () => {
+      hookRoot.root.render(<Probe />);
+    });
+
+    await flushMicrotasks(8);
+    expect(current?.appSlug).toBe("alphaci-test");
+    expect(current?.installUrl).toBe("https://github.com/apps/alphaci-test/installations/new");
+  });
+
+  it("can retry GitHub App install after the initial preload fails", async () => {
+    const statusMessages: string[] = [];
+    const pushStatus = (message: string) => statusMessages.push(message);
+    const popup = {
+      opener: window,
+      location: { href: "about:blank" },
+      close: jest.fn(),
+    };
+    const openSpy = jest.spyOn(window, "open").mockReturnValue(popup as unknown as Window);
+    let current = null as ReturnType<typeof useGithubInstallations> | null;
+    const applyRepo = jest.fn();
+
+    mockedGetGithubAppInstallUrl
+      .mockRejectedValueOnce(new Error("cold start"))
+      .mockResolvedValueOnce({
+        installUrl: "https://github.com/apps/alphaci-test/installations/new",
+      });
+
+    function Probe() {
+      const value = useGithubInstallations(pushStatus, applyRepo);
+      useEffect(() => {
+        current = value;
+      }, [value]);
+      return null;
+    }
+
+    await act(async () => {
+      hookRoot.root.render(<Probe />);
+    });
+
+    await flushMicrotasks(8);
+    expect(current?.installUrl).toBeNull();
+
+    await act(async () => {
+      await current?.handleInstallApp();
+    });
+
+    expect(mockedGetGithubAppInstallUrl).toHaveBeenCalledTimes(2);
+    expect(popup.location.href).toBe("https://github.com/apps/alphaci-test/installations/new");
+    expect(current?.installUrl).toBe("https://github.com/apps/alphaci-test/installations/new");
+    expect(current?.appSlug).toBe("alphaci-test");
+    expect(statusMessages).toEqual([]);
+
+    openSpy.mockRestore();
+  });
+
   it("rejects an invalid installation_id from the URL callback param", async () => {
     const statusMessages: string[] = [];
     const pushStatus = (message: string) => statusMessages.push(message);

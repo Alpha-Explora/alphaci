@@ -260,52 +260,35 @@ export function WorkflowSetupTab({
             </p>
           ) : null}
 
-          {github.installUrl ? (
-            <button
-              type="button"
-              onClick={() => void github.handleInstallApp()}
-              disabled={github.loadingInstallUrl}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: "0.4rem",
-                padding: "0.5rem 0.85rem",
-                border: "1px solid var(--border-strong)",
-                background: "transparent",
-                color: "var(--text-secondary)",
-                fontSize: "0.82rem",
-                borderRadius: "6px",
-                textDecoration: "none",
-                marginBottom: "0.65rem",
-                fontWeight: 600,
-                transition: "border-color 0.15s, color 0.15s",
-                cursor: github.loadingInstallUrl ? "wait" : "pointer",
-              }}
-            >
-              {github.loadingInstallUrl ? "Refreshing install link…" : "Install GitHub App"}
-            </button>
-          ) : (
-            <button
-              type="button"
-              disabled
-              style={{
-                display: "block",
-                width: "100%",
-                padding: "0.5rem 0.85rem",
-                border: "1px solid var(--border)",
-                background: "transparent",
-                color: "var(--text-muted)",
-                fontSize: "0.82rem",
-                borderRadius: "6px",
-                textAlign: "center",
-                cursor: "not-allowed",
-                marginBottom: "0.65rem",
-              }}
-            >
-              {github.loadingInstallUrl ? "Loading install link…" : "Install link unavailable"}
-            </button>
-          )}
+          <button
+            type="button"
+            onClick={() => void github.handleInstallApp()}
+            disabled={github.loadingInstallUrl}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: "0.4rem",
+              width: "100%",
+              padding: "0.5rem 0.85rem",
+              border: github.installUrl ? "1px solid var(--border-strong)" : "1px solid rgba(14, 165, 233, 0.45)",
+              background: github.installUrl ? "transparent" : "rgba(14, 165, 233, 0.08)",
+              color: github.installUrl ? "var(--text-secondary)" : "var(--brand)",
+              fontSize: "0.82rem",
+              borderRadius: "6px",
+              textDecoration: "none",
+              marginBottom: "0.65rem",
+              fontWeight: 600,
+              transition: "border-color 0.15s, color 0.15s, background 0.15s",
+              cursor: github.loadingInstallUrl ? "wait" : "pointer",
+            }}
+          >
+            {github.loadingInstallUrl
+              ? "Refreshing install link…"
+              : github.installUrl
+                ? "Install GitHub App"
+                : "Retry install link"}
+          </button>
 
           {github.appSlug ? (
             <p style={{ color: "var(--text-muted)", fontSize: "0.72rem", margin: "0 0 0.65rem" }}>

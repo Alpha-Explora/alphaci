@@ -616,7 +616,7 @@ export interface WorkflowHistoryResponse {
 
 export interface GithubAppInstallUrlResponse {
   installUrl: string;
-  appSlug: string;
+  appSlug?: string;
 }
 
 export interface LinkGithubInstallationResponse {
