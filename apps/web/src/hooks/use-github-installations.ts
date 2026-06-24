@@ -126,6 +126,7 @@ export function useGithubInstallations(
     try {
       const response = await getGithubAppInstallUrl();
       applyInstallConfig(response);
+      setStatusMessage("");
       if (popup) {
         popup.location.href = response.installUrl;
       } else {
