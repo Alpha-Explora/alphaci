@@ -10,6 +10,7 @@ import {
 } from "@/lib/api/client";
 import type { GithubInstallationAccount, LinkedGitHubRepo } from "@/lib/api/contracts";
 import { formatApiError } from "@/components/product/workflow-builder-utils";
+import { navigateToExternalUrl } from "@/lib/navigation";
 
 export function useGithubInstallations(
   setStatusMessage: (message: string) => void,
@@ -42,6 +43,13 @@ export function useGithubInstallations(
     }
     setInstallUrl(response.installUrl);
     setAppSlug(normalizedAppSlug);
+  }, []);
+
+  const buildInstallRedirectUrl = useCallback((installUrl: string) => {
+    const url = new URL(installUrl);
+    const returnPath = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+    url.searchParams.set("state", returnPath || "/");
+    return url.toString();
   }, []);
 
   const loadLinkedRepos = useCallback(async (silent = false) => {
@@ -119,21 +127,14 @@ export function useGithubInstallations(
   }, [applyInstallConfig]);
 
   async function handleInstallApp() {
-    const popup = window.open("about:blank", "alphaci-github-app-install");
-    if (popup) popup.opener = null;
     setLoadingInstallUrl(true);
 
     try {
       const response = await getGithubAppInstallUrl();
       applyInstallConfig(response);
       setStatusMessage("");
-      if (popup) {
-        popup.location.href = response.installUrl;
-      } else {
-        window.location.assign(response.installUrl);
-      }
+      navigateToExternalUrl(buildInstallRedirectUrl(response.installUrl));
     } catch (error) {
-      popup?.close();
       setInstallUrl(null);
       setAppSlug(null);
       setStatusMessage(formatApiError(error, "GitHub App install link unavailable"));
@@ -153,6 +154,8 @@ export function useGithubInstallations(
     setInstallationId(urlInstallationId);
 
     params.delete("installation_id");
+    params.delete("setup_action");
+    params.delete("state");
     const remaining = params.toString();
     const cleanUrl = remaining ? `${window.location.pathname}?${remaining}` : window.location.pathname;
     window.history.replaceState(null, "", cleanUrl);

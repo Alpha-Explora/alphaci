@@ -12,6 +12,7 @@ import {
   getWorkflowHistory,
   linkGithubInstallation,
 } from "../../src/lib/api/client";
+import { navigateToExternalUrl } from "../../src/lib/navigation";
 import type { CatalogTemplate, ProjectOptionsResponse } from "../../src/lib/api/contracts";
 import { useCreateProjectForm } from "../../src/hooks/use-create-project-form";
 import { useGithubInstallations } from "../../src/hooks/use-github-installations";
@@ -32,6 +33,10 @@ jest.mock("../../src/lib/api/client", () => ({
   linkGithubInstallation: jest.fn(),
 }));
 
+jest.mock("../../src/lib/navigation", () => ({
+  navigateToExternalUrl: jest.fn(),
+}));
+
 const mockedGetCategories = getCategories as jest.MockedFunction<typeof getCategories>;
 const mockedGetGithubInstallationAccounts = getGithubInstallationAccounts as jest.MockedFunction<
   typeof getGithubInstallationAccounts
@@ -48,6 +53,9 @@ const mockedGetTemplates = getTemplates as jest.MockedFunction<typeof getTemplat
 const mockedGetWorkflowHistory = getWorkflowHistory as jest.MockedFunction<typeof getWorkflowHistory>;
 const mockedLinkGithubInstallation = linkGithubInstallation as jest.MockedFunction<
   typeof linkGithubInstallation
+>;
+const mockedNavigateToExternalUrl = navigateToExternalUrl as jest.MockedFunction<
+  typeof navigateToExternalUrl
 >;
 
 const template: CatalogTemplate = {
@@ -748,12 +756,7 @@ describe("workflow hooks", () => {
     expect(current?.allRepositoriesAccount?.accountLogin).toBe("tone");
     expect(current?.appSlug).toBe("cicd-example");
 
-    const popup = {
-      opener: window,
-      location: { href: "about:blank" },
-      close: jest.fn(),
-    };
-    const openSpy = jest.spyOn(window, "open").mockReturnValue(popup as unknown as Window);
+    window.history.pushState({}, "", "/workflows");
     mockedGetGithubAppInstallUrl.mockResolvedValueOnce({
       installUrl: "https://github.com/apps/alphaci-test/installations/new",
       appSlug: "alphaci-test",
@@ -764,10 +767,11 @@ describe("workflow hooks", () => {
     });
 
     expect(mockedGetGithubAppInstallUrl).toHaveBeenCalledTimes(2);
-    expect(popup.opener).toBeNull();
-    expect(popup.location.href).toBe("https://github.com/apps/alphaci-test/installations/new");
+    expect(mockedNavigateToExternalUrl).toHaveBeenCalledWith(
+      "https://github.com/apps/alphaci-test/installations/new?state=%2Fworkflows",
+    );
     expect(current?.appSlug).toBe("alphaci-test");
-    openSpy.mockRestore();
+    window.history.pushState({}, "", "/");
 
     act(() => {
       current?.handleRepoSelect({
@@ -833,7 +837,11 @@ describe("workflow hooks", () => {
     let current = null as ReturnType<typeof useGithubInstallations> | null;
     const replaceSpy = jest.spyOn(window.history, "replaceState");
 
-    window.history.pushState({}, "", "/workflows?installation_id=99999");
+    window.history.pushState(
+      {},
+      "",
+      "/workflows?installation_id=99999&setup_action=install&state=%2Fworkflows",
+    );
 
     function Probe() {
       const value = useGithubInstallations(pushStatus, applyRepo);
@@ -882,12 +890,7 @@ describe("workflow hooks", () => {
   it("can retry GitHub App install after the initial preload fails", async () => {
     const statusMessages: string[] = [];
     const pushStatus = (message: string) => statusMessages.push(message);
-    const popup = {
-      opener: window,
-      location: { href: "about:blank" },
-      close: jest.fn(),
-    };
-    const openSpy = jest.spyOn(window, "open").mockReturnValue(popup as unknown as Window);
+    window.history.pushState({}, "", "/workflows?tab=setup");
     let current = null as ReturnType<typeof useGithubInstallations> | null;
     const applyRepo = jest.fn();
 
@@ -917,12 +920,14 @@ describe("workflow hooks", () => {
     });
 
     expect(mockedGetGithubAppInstallUrl).toHaveBeenCalledTimes(2);
-    expect(popup.location.href).toBe("https://github.com/apps/alphaci-test/installations/new");
+    expect(mockedNavigateToExternalUrl).toHaveBeenCalledWith(
+      "https://github.com/apps/alphaci-test/installations/new?state=%2Fworkflows%3Ftab%3Dsetup",
+    );
     expect(current?.installUrl).toBe("https://github.com/apps/alphaci-test/installations/new");
     expect(current?.appSlug).toBe("alphaci-test");
-    expect(statusMessages).toEqual([]);
+    expect(statusMessages).toEqual([""]);
 
-    openSpy.mockRestore();
+    window.history.pushState({}, "", "/");
   });
 
   it("rejects an invalid installation_id from the URL callback param", async () => {
