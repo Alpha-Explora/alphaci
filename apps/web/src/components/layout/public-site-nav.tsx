@@ -1,9 +1,8 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-
-import { PipelineLogo } from "@/components/layout/pipeline-logo";
 
 interface PublicSiteNavProps {
   active?: "features" | "guide" | "pricing";
@@ -42,10 +41,22 @@ export function PublicSiteNav({
   return (
     <header className={className} data-active-section={active ?? undefined}>
       <Link className="public-site-brand" href="/" aria-label="Alphaexplora home">
-        <span className="public-site-brand-mark">
-          <PipelineLogo size={44} />
-        </span>
-        <span>Alphaexplora</span>
+        <Image
+          src="/brand-logo.png"
+          alt="AlphaCI"
+          width={132}
+          height={44}
+          priority
+          unoptimized
+          className="public-site-brand-image"
+          style={{
+            display: "block",
+            height: 44,
+            width: "auto",
+            maxWidth: "100%",
+            objectFit: "contain",
+          }}
+        />
       </Link>
 
       {showActions && (

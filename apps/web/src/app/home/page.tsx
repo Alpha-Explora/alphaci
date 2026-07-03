@@ -908,28 +908,18 @@ function HomeDashboardContent() {
               paddingTop: "1rem",
             }}
           >
-            <p
-              style={{
-                margin: 0,
-                fontSize: "0.85rem",
-                color: "var(--text-secondary)",
-              }}
-            >
-              {guest ? (
-                "You are browsing in guest mode. Sign up to unlock all features."
-              ) : (
-                <>
-                  Connected on{" "}
-                  <span
-                    className="dash-badge-violet"
-                    style={{ display: "inline-flex" }}
-                  >
-                    {session?.subscription.plan ?? "pro"}
-                  </span>
-                </>
-              )}
-            </p>
-            <div style={{ display: "flex", gap: "0.5rem" }}>
+            {guest && (
+              <p
+                style={{
+                  margin: 0,
+                  fontSize: "0.85rem",
+                  color: "var(--text-secondary)",
+                }}
+              >
+                You are browsing in guest mode. Sign up to unlock all features.
+              </p>
+            )}
+            <div style={{ display: "flex", gap: "0.5rem", marginLeft: "auto" }}>
               {guest ? (
                 <>
                   <Link
