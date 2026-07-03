@@ -9,7 +9,8 @@ import {
 } from "@/lib/api/notifications";
 
 export function NotificationPreferencesSection() {
-  const [preferences, setPreferences] = useState<NotificationPreferences | null>(null);
+  const [preferences, setPreferences] =
+    useState<NotificationPreferences | null>(null);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
 
@@ -22,7 +23,8 @@ export function NotificationPreferencesSection() {
         setMessage(null);
       })
       .catch(() => {
-        if (active) setMessage("Notification preferences are unavailable right now.");
+        if (active)
+          setMessage("Notification preferences are unavailable right now.");
       });
     return () => {
       active = false;
@@ -33,7 +35,9 @@ export function NotificationPreferencesSection() {
     setSaving(true);
     setMessage(null);
     try {
-      const updated = await updateNotificationPreferences({ inAppEnabled: enabled });
+      const updated = await updateNotificationPreferences({
+        inAppEnabled: enabled,
+      });
       setPreferences(updated);
     } catch {
       setMessage("Notification preferences could not be saved.");
@@ -44,42 +48,61 @@ export function NotificationPreferencesSection() {
 
   if (!preferences) {
     return (
-      <p style={{ margin: 0, fontSize: "0.8rem", color: "var(--text-muted)" }}>
-        Loading notification preferences...
-      </p>
+      <div className="notification-preferences-card notification-preferences-card--loading">
+        <span className="notification-preferences-skeleton" />
+        <span className="notification-preferences-skeleton notification-preferences-skeleton--short" />
+      </div>
     );
   }
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
-      <label className="hover-field" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "1rem" }}>
-        <span>
-          <strong style={{ display: "block", color: "var(--text-primary)", fontSize: "0.9rem" }}>
+    <div className="notification-preferences">
+      <label
+        className={`notification-preferences-card ${
+          preferences.inAppEnabled
+            ? "notification-preferences-card--enabled"
+            : ""
+        }`}
+      >
+        <span className="notification-preferences-copy">
+          <span className="notification-preferences-kicker">Live inbox</span>
+          <strong>
             In-app notifications
           </strong>
-          <span style={{ color: "var(--text-muted)", fontSize: "0.78rem" }}>
-            Show product events in AlphaCI.
+          <span>
+            Show workflow PRs, project updates, and account events in the
+            product notification center.
           </span>
         </span>
-        <input
-          type="checkbox"
-          checked={preferences.inAppEnabled}
-          disabled={saving}
-          onChange={(event) => void handleInAppChange(event.target.checked)}
-        />
+        <span className="notification-preferences-toggle">
+          <input
+            type="checkbox"
+            checked={preferences.inAppEnabled}
+            disabled={saving}
+            onChange={(event) => void handleInAppChange(event.target.checked)}
+          />
+          <span aria-hidden="true" />
+        </span>
       </label>
-      <label className="hover-field" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "1rem", opacity: 0.7 }}>
-        <span>
-          <strong style={{ display: "block", color: "var(--text-primary)", fontSize: "0.9rem" }}>
+      <label
+        className="notification-preferences-card notification-preferences-card--disabled"
+      >
+        <span className="notification-preferences-copy">
+          <span className="notification-preferences-kicker">Digest</span>
+          <strong>
             Email notifications
           </strong>
-          <span style={{ color: "var(--text-muted)", fontSize: "0.78rem" }}>
-            Email delivery unavailable.
+          <span>
+            Reserved for workflow digests and failed-run summaries.
           </span>
         </span>
-        <input type="checkbox" checked={preferences.emailEnabled} disabled readOnly />
+        <span className="notification-preferences-state">Soon</span>
       </label>
-      {message ? <p className="error-text" style={{ margin: 0 }}>{message}</p> : null}
+      {message ? (
+        <p className="error-text" style={{ margin: 0 }}>
+          {message}
+        </p>
+      ) : null}
     </div>
   );
 }

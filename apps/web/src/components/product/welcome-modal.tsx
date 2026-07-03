@@ -11,10 +11,23 @@ export interface WelcomeModalProps {
 }
 
 const FLOW_STEPS = [
-  { label: "Connect GitHub", detail: "Install the GitHub App to grant AlphaCI access to your account." },
-  { label: "Create a project", detail: "Choose a repo shape, stack, and CI recipe in the Setup form." },
-  { label: "We provision everything", detail: "AlphaCI creates the repo, branches, and commits the workflow file." },
-  { label: "Push and ship", detail: "Open a pull request and your CI pipeline runs automatically." },
+  {
+    label: "Connect GitHub",
+    detail: "Install the GitHub App to grant Alphaexplora access to your account.",
+  },
+  {
+    label: "Create a project",
+    detail: "Choose a repo shape, stack, and CI recipe in the Setup form.",
+  },
+  {
+    label: "We provision everything",
+    detail:
+      "Alphaexplora creates the repo, branches, and commits the workflow file.",
+  },
+  {
+    label: "Push and ship",
+    detail: "Open a pull request and your CI pipeline runs automatically.",
+  },
 ] as const;
 
 const EASE_SPRING: [number, number, number, number] = [0.16, 1, 0.3, 1];
@@ -118,12 +131,24 @@ export function WelcomeModal({ displayName, onDismiss }: WelcomeModalProps) {
 
   const stepListVariants = {
     hidden: {},
-    visible: { transition: { staggerChildren: prefersReducedMotion ? 0 : 0.06, delayChildren: prefersReducedMotion ? 0 : 0.18 } },
+    visible: {
+      transition: {
+        staggerChildren: prefersReducedMotion ? 0 : 0.06,
+        delayChildren: prefersReducedMotion ? 0 : 0.18,
+      },
+    },
   };
 
   const stepItemVariants = {
     hidden: { opacity: 0, x: -8 },
-    visible: { opacity: 1, x: 0, transition: { duration: 0.25, ease: [0.25, 0, 0, 1] as [number, number, number, number] } },
+    visible: {
+      opacity: 1,
+      x: 0,
+      transition: {
+        duration: 0.25,
+        ease: [0.25, 0, 0, 1] as [number, number, number, number],
+      },
+    },
   };
 
   return (
@@ -168,7 +193,8 @@ export function WelcomeModal({ displayName, onDismiss }: WelcomeModalProps) {
             background: "rgba(15, 23, 42, 0.97)",
             border: "1px solid var(--border-strong)",
             borderRadius: "var(--radius-card)",
-            boxShadow: "0 24px 64px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(56, 189, 248, 0.08)",
+            boxShadow:
+              "0 24px 64px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(56, 189, 248, 0.08)",
             width: "100%",
             maxWidth: 520,
             display: "flex",
@@ -186,13 +212,21 @@ export function WelcomeModal({ displayName, onDismiss }: WelcomeModalProps) {
               left: 0,
               right: 0,
               height: "2px",
-              background: "linear-gradient(90deg, var(--brand), var(--accent-violet))",
+              background:
+                "linear-gradient(90deg, var(--brand), var(--accent-violet))",
             }}
           />
 
           {/* Inner padding wrapper */}
-          <div style={{ padding: "clamp(1.75rem, 4vw, 2.25rem)", paddingTop: "calc(clamp(1.75rem, 4vw, 2.25rem) + 2px)", display: "flex", flexDirection: "column", gap: "1.5rem" }}>
-
+          <div
+            style={{
+              padding: "clamp(1.75rem, 4vw, 2.25rem)",
+              paddingTop: "calc(clamp(1.75rem, 4vw, 2.25rem) + 2px)",
+              display: "flex",
+              flexDirection: "column",
+              gap: "1.5rem",
+            }}
+          >
             {/* Close button */}
             <button
               type="button"
@@ -212,7 +246,8 @@ export function WelcomeModal({ displayName, onDismiss }: WelcomeModalProps) {
                 justifyContent: "center",
                 cursor: "pointer",
                 color: "var(--text-muted)",
-                transition: "background 0.15s ease, border-color 0.15s ease, color 0.15s ease",
+                transition:
+                  "background 0.15s ease, border-color 0.15s ease, color 0.15s ease",
                 flexShrink: 0,
               }}
               onMouseEnter={(e) => {
@@ -228,14 +263,31 @@ export function WelcomeModal({ displayName, onDismiss }: WelcomeModalProps) {
                 t.style.color = "var(--text-muted)";
               }}
             >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
                 <line x1="18" y1="6" x2="6" y2="18" />
                 <line x1="6" y1="6" x2="18" y2="18" />
               </svg>
             </button>
 
             {/* Header */}
-            <header style={{ display: "flex", flexDirection: "column", gap: "0.5rem", paddingRight: "2.5rem" }}>
+            <header
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                gap: "0.5rem",
+                paddingRight: "2.5rem",
+              }}
+            >
               <span
                 style={{
                   display: "inline-flex",
@@ -275,9 +327,11 @@ export function WelcomeModal({ displayName, onDismiss }: WelcomeModalProps) {
                 }}
               >
                 {"Welcome to "}
-                <span style={{ color: "var(--brand)" }}>AlphaCI</span>
+                <span style={{ color: "var(--brand)" }}>Alphaexplora</span>
                 {", "}
-                <span style={{ color: "var(--text-primary)" }}>@{displayName}</span>
+                <span style={{ color: "var(--text-primary)" }}>
+                  @{displayName}
+                </span>
               </h2>
 
               <p
@@ -288,13 +342,14 @@ export function WelcomeModal({ displayName, onDismiss }: WelcomeModalProps) {
                   lineHeight: 1.6,
                 }}
               >
-                From a blank slate to a GitHub repository with CI/CD in one step. Here is how it works:
+                From a blank slate to a GitHub repository with CI/CD in one
+                step. Here is how it works:
               </p>
             </header>
 
             {/* Flow steps */}
             <motion.ol
-              aria-label="How AlphaCI works"
+              aria-label="How Alphaexplora works"
               variants={prefersReducedMotion ? undefined : stepListVariants}
               initial={prefersReducedMotion ? "visible" : "hidden"}
               animate="visible"
@@ -340,11 +395,29 @@ export function WelcomeModal({ displayName, onDismiss }: WelcomeModalProps) {
                   >
                     {index + 1}
                   </span>
-                  <div style={{ display: "flex", flexDirection: "column", gap: "0.1rem" }}>
-                    <span style={{ fontSize: "0.88rem", fontWeight: 700, color: "var(--text-primary)" }}>
+                  <div
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: "0.1rem",
+                    }}
+                  >
+                    <span
+                      style={{
+                        fontSize: "0.88rem",
+                        fontWeight: 700,
+                        color: "var(--text-primary)",
+                      }}
+                    >
                       {step.label}
                     </span>
-                    <span style={{ fontSize: "0.78rem", color: "var(--text-secondary)", lineHeight: 1.45 }}>
+                    <span
+                      style={{
+                        fontSize: "0.78rem",
+                        color: "var(--text-secondary)",
+                        lineHeight: 1.45,
+                      }}
+                    >
                       {step.detail}
                     </span>
                   </div>
@@ -361,11 +434,16 @@ export function WelcomeModal({ displayName, onDismiss }: WelcomeModalProps) {
                 border: "1px solid var(--border-soft)",
               }}
             >
-              <FlowExplainer variant="compact" heading="Once you push, every change runs through" />
+              <FlowExplainer
+                variant="compact"
+                heading="Once you push, every change runs through"
+              />
             </div>
 
             {/* Action buttons */}
-            <footer style={{ display: "flex", gap: "0.6rem", flexWrap: "wrap" }}>
+            <footer
+              style={{ display: "flex", gap: "0.6rem", flexWrap: "wrap" }}
+            >
               <button
                 type="button"
                 className="primary-button"

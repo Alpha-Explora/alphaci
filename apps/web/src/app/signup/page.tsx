@@ -8,7 +8,7 @@ export default function SignupPage() {
     <Suspense fallback={<PipelineLoader label="Preparing your sign up" />}>
       <OAuthAuthPage
         mode="signup"
-        title="Create your AlphaCI workspace."
+        title="Create your Alphaexplora workspace."
         subtitle="Start with GitHub and generate your first governed workflow in minutes."
         switchText="Already have an account?"
         switchHref="/login"

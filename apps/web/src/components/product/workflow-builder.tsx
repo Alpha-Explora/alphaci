@@ -134,8 +134,8 @@ export function WorkflowBuilder({ guest = false, session, onboardingCompleted }:
       projectTypeId: projectCatalog.selectedProjectTypeId,
       workflowRecipeId: projectCatalog.selectedWorkflowRecipeId,
       tests: projectCatalog.tests,
-      ownerType: github.selectedOwnerType,
-      installationId: github.selectedInstallationId,
+      // Repository ownership is enforced server-side (all repos are created in
+      // the configured organization), so the client no longer selects an owner.
       deploymentProvisioning: deploymentProvisioning.payload,
     });
 

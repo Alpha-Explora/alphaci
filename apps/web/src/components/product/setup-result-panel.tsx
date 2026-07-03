@@ -25,7 +25,11 @@ interface CommitLinkProps {
 function CommitLink({ sha, url }: Readonly<CommitLinkProps>) {
   const short = sha.slice(0, 10);
   if (url) {
-    return <a href={url} target="_blank" rel="noreferrer"><code>{short}</code></a>;
+    return (
+      <a href={url} target="_blank" rel="noreferrer">
+        <code>{short}</code>
+      </a>
+    );
   }
   return <code>{short}</code>;
 }
@@ -35,12 +39,17 @@ interface SecondaryRepoSectionProps {
   fullName: string | undefined;
 }
 
-function SecondaryRepoSection({ url, fullName }: Readonly<SecondaryRepoSectionProps>) {
+function SecondaryRepoSection({
+  url,
+  fullName,
+}: Readonly<SecondaryRepoSectionProps>) {
   if (!url) return null;
   return (
     <p className="helper-text" style={{ margin: 0 }}>
       Secondary repo:{" "}
-      <a href={url} target="_blank" rel="noreferrer">{fullName}</a>
+      <a href={url} target="_blank" rel="noreferrer">
+        {fullName}
+      </a>
     </p>
   );
 }
@@ -58,7 +67,9 @@ function SecondaryRepoLink({ url }: Readonly<SecondaryRepoLinkProps>) {
   );
 }
 
-function WorkflowFilesList({ files }: Readonly<{ files?: WorkflowFileMetadata[] }>) {
+function WorkflowFilesList({
+  files,
+}: Readonly<{ files?: WorkflowFileMetadata[] }>) {
   if (!files?.length) return null;
 
   return (
@@ -100,14 +111,22 @@ function WorkflowFilesList({ files }: Readonly<{ files?: WorkflowFileMetadata[] 
 }
 
 function formatProvider(provider: string) {
-  return provider === "vercel" ? "Vercel" : provider === "render" ? "Render" : provider;
+  return provider === "vercel"
+    ? "Vercel"
+    : provider === "render"
+      ? "Render"
+      : provider;
 }
 
-function deploymentRouteLabel(target: DeploymentProvisioningResult["targets"][number]) {
+function deploymentRouteLabel(
+  target: DeploymentProvisioningResult["targets"][number],
+) {
   if (target.provider === "render") {
     switch (target.deploymentStrategy) {
       case "render_image_pushed":
-        return target.ownershipMode === "byo" ? "GitHub Actions image deploy" : "Managed image deploy";
+        return target.ownershipMode === "byo"
+          ? "GitHub Actions image deploy"
+          : "Archived managed image deploy";
       case "render_git_connected":
         return "Native Render build";
       case "render_existing_service":
@@ -125,7 +144,9 @@ function deploymentRouteLabel(target: DeploymentProvisioningResult["targets"][nu
     case "provider_native":
       return "Provider native";
     default:
-      return target.ownershipMode === "byo" ? "Customer managed" : "Managed by AlphaCI";
+      return target.ownershipMode === "byo"
+        ? "Customer managed"
+        : "Archived Alphaexplora-managed";
   }
 }
 
@@ -149,7 +170,9 @@ function formatRenderRuntime(value: string | null | undefined) {
   return value.charAt(0).toUpperCase() + value.slice(1);
 }
 
-function renderTargetDetails(target: DeploymentProvisioningResult["targets"][number]) {
+function renderTargetDetails(
+  target: DeploymentProvisioningResult["targets"][number],
+) {
   if (target.provider !== "render") return [];
   return [
     formatRenderServiceType(target.renderServiceType),
@@ -160,7 +183,9 @@ function renderTargetDetails(target: DeploymentProvisioningResult["targets"][num
   ].filter((value): value is string => Boolean(value));
 }
 
-function hasRenderDeploymentSecrets(target: DeploymentProvisioningResult["targets"][number]) {
+function hasRenderDeploymentSecrets(
+  target: DeploymentProvisioningResult["targets"][number],
+) {
   if (target.provider !== "render") return false;
   const secrets = githubSecretNames(target.providerMetadata);
   return ["API_KEY", "SERVICE_ID", "OWNER_ID"].every((suffix) =>
@@ -188,7 +213,9 @@ export function DeploymentProvisioningSummary({
                 : "Provider provisioning failed."}
           </p>
         </div>
-        <span className={`deployment-provisioning-summary__status ${result.status}`}>
+        <span
+          className={`deployment-provisioning-summary__status ${result.status}`}
+        >
           {result.status}
         </span>
       </div>
@@ -200,11 +227,17 @@ export function DeploymentProvisioningSummary({
           >
             <div>
               <strong>{formatProvider(target.provider)}</strong>
-              <span>{target.providerProjectName ?? target.providerProjectId ?? target.slot}</span>
+              <span>
+                {target.providerProjectName ??
+                  target.providerProjectId ??
+                  target.slot}
+              </span>
             </div>
             <p className="helper-text" style={{ margin: 0 }}>
               {target.slot} - {target.status} - {deploymentRouteLabel(target)}
-              {target.errorSummary ? ` - ${cleanUserMessage(target.errorSummary)}` : ""}
+              {target.errorSummary
+                ? ` - ${cleanUserMessage(target.errorSummary)}`
+                : ""}
             </p>
             {renderTargetDetails(target).length > 0 ? (
               <p className="helper-text" style={{ margin: 0 }}>
@@ -220,14 +253,19 @@ export function DeploymentProvisioningSummary({
               <div className="deployment-provisioning-summary__env">
                 <span>GitHub secrets</span>
                 <div>
-                  {githubSecretNames(target.providerMetadata).map((secretName) => (
-                    <code key={secretName}>{secretName}</code>
-                  ))}
+                  {githubSecretNames(target.providerMetadata).map(
+                    (secretName) => (
+                      <code key={secretName}>{secretName}</code>
+                    ),
+                  )}
                 </div>
               </div>
             ) : null}
             {target.env.map((envSet) => (
-              <div className="deployment-provisioning-summary__env" key={`${target.slot}-${envSet.environment}`}>
+              <div
+                className="deployment-provisioning-summary__env"
+                key={`${target.slot}-${envSet.environment}`}
+              >
                 <span>{envSet.environment}</span>
                 <div>
                   {envSet.provisioned.map((variable) => (
@@ -236,7 +274,9 @@ export function DeploymentProvisioningSummary({
                   {envSet.failed.map((variable) => (
                     <code className="failed" key={`${variable.key}-failed`}>
                       {variable.key}
-                      {variable.errorSummary ? ` failed: ${cleanUserMessage(variable.errorSummary)}` : " failed"}
+                      {variable.errorSummary
+                        ? ` failed: ${cleanUserMessage(variable.errorSummary)}`
+                        : " failed"}
                     </code>
                   ))}
                 </div>
@@ -263,7 +303,9 @@ export function SetupResultPanel({
     : null;
 
   return (
-    <aside className={`result-panel${setupResult ? " result-panel--success" : ""}`}>
+    <aside
+      className={`result-panel${setupResult ? " result-panel--success" : ""}`}
+    >
       <p className="cp-section-heading" style={{ marginBottom: "1rem" }}>
         {existingRepoResult ? "Pull request created" : "Project created"}
       </p>
@@ -290,8 +332,12 @@ export function SetupResultPanel({
 
             <div className="result-branches">
               <span className="branch-chip">pull request</span>
-              <span className="branch-chip">#{existingRepoResult.pullRequestNumber}</span>
-              <span className="branch-chip">{existingRepoResult.branchName}</span>
+              <span className="branch-chip">
+                #{existingRepoResult.pullRequestNumber}
+              </span>
+              <span className="branch-chip">
+                {existingRepoResult.branchName}
+              </span>
             </div>
 
             <p className="helper-text" style={{ margin: 0 }}>
@@ -299,7 +345,12 @@ export function SetupResultPanel({
             </p>
 
             <div className="result-actions">
-              <a className="primary-button" href={existingRepoResult.pullRequestUrl} target="_blank" rel="noreferrer">
+              <a
+                className="primary-button"
+                href={existingRepoResult.pullRequestUrl}
+                target="_blank"
+                rel="noreferrer"
+              >
                 Open PR
               </a>
               {repoUrl ? (
@@ -312,13 +363,25 @@ export function SetupResultPanel({
                   View branch
                 </a>
               ) : null}
-              <button className="ghost-button" type="button" onClick={onViewProject}>
+              <button
+                className="ghost-button"
+                type="button"
+                onClick={onViewProject}
+              >
                 View projects
               </button>
             </div>
 
-            <p className="helper-text" style={{ fontSize: "0.78rem", color: "var(--text-muted)", margin: 0 }}>
-              Workflow added on <code>{existingRepoResult.branchName}</code>. Merge the PR to apply it to the selected base branch.
+            <p
+              className="helper-text"
+              style={{
+                fontSize: "0.78rem",
+                color: "var(--text-muted)",
+                margin: 0,
+              }}
+            >
+              Workflow added on <code>{existingRepoResult.branchName}</code>.
+              Merge the PR to apply it to the selected base branch.
             </p>
           </motion.div>
         ) : setupResult ? (
@@ -344,23 +407,44 @@ export function SetupResultPanel({
             <div className="result-branches">
               <span className="branch-chip">{setupResult.status}</span>
               <span className="branch-chip">{setupResult.projectTypeId}</span>
-              <span className="branch-chip">{setupResult.workflowRecipeId}</span>
+              <span className="branch-chip">
+                {setupResult.workflowRecipeId}
+              </span>
             </div>
 
             <div>
-              <p className="helper-text" style={{ margin: "0 0 0.3rem", fontSize: "0.72rem", color: "var(--text-muted)" }}>
+              <p
+                className="helper-text"
+                style={{
+                  margin: "0 0 0.3rem",
+                  fontSize: "0.72rem",
+                  color: "var(--text-muted)",
+                }}
+              >
                 Workflow file
               </p>
               <div className="terminal-path">{setupResult.workflowPath}</div>
             </div>
             <WorkflowFilesList files={setupResult.workflowFiles} />
-            <DeploymentProvisioningSummary result={setupResult.deploymentProvisioning} />
+            <DeploymentProvisioningSummary
+              result={setupResult.deploymentProvisioning}
+            />
             <div>
-              <p className="helper-text" style={{ margin: "0 0 0.3rem", fontSize: "0.72rem", color: "var(--text-muted)" }}>
+              <p
+                className="helper-text"
+                style={{
+                  margin: "0 0 0.3rem",
+                  fontSize: "0.72rem",
+                  color: "var(--text-muted)",
+                }}
+              >
                 Commit
               </p>
               <div className="terminal-hash">
-                <CommitLink sha={setupResult.githubCommitSha} url={setupResult.githubCommitUrl} />
+                <CommitLink
+                  sha={setupResult.githubCommitSha}
+                  url={setupResult.githubCommitUrl}
+                />
               </div>
             </div>
             <SecondaryRepoSection
@@ -369,7 +453,12 @@ export function SetupResultPanel({
             />
 
             <div className="result-actions">
-              <a className="primary-button" href={setupResult.repoUrl} target="_blank" rel="noreferrer">
+              <a
+                className="primary-button"
+                href={setupResult.repoUrl}
+                target="_blank"
+                rel="noreferrer"
+              >
                 Open repo
               </a>
               <a
@@ -382,18 +471,34 @@ export function SetupResultPanel({
               </a>
               <SecondaryRepoLink url={setupResult.secondaryRepoUrl} />
               {envProvisioningEnabled ? (
-                <button className="ghost-button" type="button" onClick={onViewProject}>
+                <button
+                  className="ghost-button"
+                  type="button"
+                  onClick={onViewProject}
+                >
                   Configure env vars
                 </button>
               ) : null}
-              <button className="ghost-button" type="button" onClick={onViewProject}>
+              <button
+                className="ghost-button"
+                type="button"
+                onClick={onViewProject}
+              >
                 View projects
               </button>
             </div>
 
-            <p className="helper-text" style={{ fontSize: "0.78rem", color: "var(--text-muted)", margin: 0 }}>
-              Workflow committed to <code>{setupResult.workflowPath}</code> on <code>main</code>.
-              Push to <code>test</code> to trigger your first CI run.
+            <p
+              className="helper-text"
+              style={{
+                fontSize: "0.78rem",
+                color: "var(--text-muted)",
+                margin: 0,
+              }}
+            >
+              Workflow committed to <code>{setupResult.workflowPath}</code> on{" "}
+              <code>main</code>. Push to <code>test</code> to trigger your first
+              CI run.
             </p>
           </motion.div>
         ) : null}

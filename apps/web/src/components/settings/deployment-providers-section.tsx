@@ -21,7 +21,8 @@ export function DeploymentProvidersSection({
 }: {
   workspaceRole?: WorkspaceRole | null;
 }) {
-  const { envProvisioningEnabled, loading: loadingCapabilities } = useCapabilities();
+  const { envProvisioningEnabled, loading: loadingCapabilities } =
+    useCapabilities();
   const { connections, loading, revokeConnection, saveConnection, saving } =
     useProviderConnections(envProvisioningEnabled);
   const [provider, setProvider] = useState<EnvProvider>("render");
@@ -33,7 +34,8 @@ export function DeploymentProvidersSection({
     return null;
   }
 
-  const canManageProviders = workspaceRole === "owner" || workspaceRole === "admin";
+  const canManageProviders =
+    workspaceRole === "owner" || workspaceRole === "admin";
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -54,7 +56,10 @@ export function DeploymentProvidersSection({
     <section className="provider-settings-panel">
       <div className="provider-settings-header">
         <h2>Deployment Providers</h2>
-        <p>Provider tokens are encrypted. Env var values are sent to the provider and are not stored by AlphaCI.</p>
+        <p>
+          Provider tokens are encrypted. Env var values are sent to the provider
+          and are not stored by Alphaexplora.
+        </p>
         {!canManageProviders ? (
           <p className="provider-empty-state" style={{ margin: 0 }}>
             Provider management requires owner or admin access.
@@ -88,11 +93,19 @@ export function DeploymentProvidersSection({
             style={fieldStyle}
             disabled={!canManageProviders}
           />
-          <button className="primary-button" disabled={!canManageProviders || saving || !label || !token} type="submit">
+          <button
+            className="primary-button"
+            disabled={!canManageProviders || saving || !label || !token}
+            type="submit"
+          >
             Save
           </button>
         </div>
-        {error ? <p className="error-text" style={{ margin: 0 }}>{error}</p> : null}
+        {error ? (
+          <p className="error-text" style={{ margin: 0 }}>
+            {error}
+          </p>
+        ) : null}
       </form>
 
       <div className="provider-connections-wrap">
@@ -114,7 +127,10 @@ export function DeploymentProvidersSection({
                 <tr key={connection.id}>
                   <td data-label="Label">{connection.label}</td>
                   <td data-label="Provider">{connection.provider}</td>
-                  <td data-label="Token">{connection.provider} token ending {connection.tokenLastFour}</td>
+                  <td data-label="Token">
+                    {connection.provider} token ending{" "}
+                    {connection.tokenLastFour}
+                  </td>
                   <td data-label="Status">{connection.status}</td>
                   <td data-label="Action">
                     {connection.status === "active" ? (

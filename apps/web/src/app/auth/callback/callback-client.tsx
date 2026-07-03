@@ -66,10 +66,62 @@ function statusMessage(authStatus: string, provider: OAuthProvider): string {
       return "The OAuth state token was invalid. Please retry sign in.";
     case "unavailable":
       return `${providerName} OAuth is unavailable in this environment.`;
+    case "not_authorized":
+      return "This workspace is limited to members of the company GitHub organization. Ask an administrator to add you to the org, then sign in again.";
+    case "org_verification_failed":
+      // Distinct from not_authorized: this is NOT a confirmed non-member —
+      // GitHub could not confirm org membership (e.g. a permissions issue on
+      // our side), so telling the user to "ask to be added" would be wrong.
+      return "We could not verify your GitHub organization membership right now. Please retry sign-in in a moment. If this keeps happening, contact an administrator.";
     case "archived_choice":
       return "Checking archived account...";
     default:
       return "Finalizing sign in...";
+  }
+}
+
+/* ── Failure screen content (reason-aware) ──────────────────────────────────
+ * The auth callback can fail for meaningfully different reasons. Each gets its
+ * own headline, ghost word, and accent so the full-canvas screen reads as a
+ * deliberate state, not a generic error. */
+interface FailedContent {
+  ghost: string;
+  label: string;
+  accent: string;
+  accentSoft: string;
+  headline: string;
+  body: string;
+}
+
+function failedContent(authStatus: string, message: string): FailedContent {
+  switch (authStatus) {
+    case "not_authorized":
+      return {
+        ghost: "ACCESS",
+        label: "Access restricted",
+        accent: "var(--accent-amber)",
+        accentSoft: "rgba(251, 191, 36, 0.12)",
+        headline: "This workspace is members-only",
+        body: "Access is limited to members of the company GitHub organization. Ask an administrator to add you to the org, then sign in again.",
+      };
+    case "org_verification_failed":
+      return {
+        ghost: "VERIFY",
+        label: "Verification failed",
+        accent: "var(--accent-amber)",
+        accentSoft: "rgba(251, 191, 36, 0.12)",
+        headline: "We couldn't verify your membership",
+        body: "GitHub didn't confirm your organization membership just now. Retry in a moment — if this keeps happening, contact an administrator.",
+      };
+    default:
+      return {
+        ghost: "RETRY",
+        label: "Sign-in interrupted",
+        accent: "var(--brand)",
+        accentSoft: "rgba(56, 189, 248, 0.12)",
+        headline: "Authentication needs a retry",
+        body: message,
+      };
   }
 }
 
@@ -434,6 +486,7 @@ export function AuthCallbackClient() {
   const nextPath = toSafeNextPath(searchParams.get("next"));
   const provider = toSafeProvider(searchParams.get("provider"));
   const providerName = providerDisplayName(provider);
+  const prefersReducedMotion = useReducedMotion();
 
   const [state, setState] = useState<CallbackState>("checking");
   const [message, setMessage] = useState<string>(statusMessage(authStatus, provider));
@@ -471,7 +524,9 @@ export function AuthCallbackClient() {
     if (
       authStatus === "failed" ||
       authStatus === "invalid_state" ||
-      authStatus === "unavailable"
+      authStatus === "unavailable" ||
+      authStatus === "not_authorized" ||
+      authStatus === "org_verification_failed"
     ) {
       setState("failed");
       return;
@@ -553,36 +608,214 @@ export function AuthCallbackClient() {
   }
 
   // ── Failed / error ────────────────────────────────────────────────────────
+  const fc = failedContent(authStatus, message);
+  const staggerContainer = {
+    hidden: {},
+    visible: { transition: { staggerChildren: 0.07, delayChildren: 0.08 } },
+  };
+  const rise = {
+    hidden: { opacity: 0, y: 18 },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: { duration: 0.55, ease: [0.22, 1, 0.36, 1] as const },
+    },
+  };
+
   return (
-    <main className="dash-shell">
+    <main
+      style={{
+        position: "relative",
+        minHeight: "100vh",
+        overflow: "hidden",
+        display: "flex",
+        alignItems: "center",
+        background: "var(--bg-base)",
+      }}
+    >
       <FlowBackground />
 
-      <div className="state-body">
-        <div className="state-card">
-          <div
-            className="state-icon"
-            style={{ background: "rgba(251, 191, 36, 0.08)", border: "1px solid rgba(251, 191, 36, 0.25)" }}
+      {/* Corner frame markers — Lusion-style viewport frame */}
+      <div aria-hidden="true" style={{ position: "fixed", inset: 0, zIndex: 2, pointerEvents: "none" }}>
+        {[
+          { top: "1.5rem", left: "1.5rem" },
+          { top: "1.5rem", right: "1.5rem" },
+          { bottom: "1.5rem", left: "1.5rem" },
+          { bottom: "1.5rem", right: "1.5rem" },
+        ].map((pos, i) => (
+          <span
+            key={i}
+            style={{
+              position: "absolute",
+              ...pos,
+              color: "rgba(255,255,255,0.14)",
+              fontSize: "0.9rem",
+              fontFamily: "ui-monospace, monospace",
+              lineHeight: 1,
+            }}
           >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent-amber)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-              <path d="M21 12a9 9 0 1 1-2.64-6.36" />
-              <polyline points="21 3 21 9 15 9" />
-            </svg>
-          </div>
-          <p className="hero-kicker" style={{ margin: 0 }}>
-            {providerName} {intent === "signup" ? "Sign Up" : "Login"}
-          </p>
-          <h1>Authentication needs retry</h1>
-          <p>{message}</p>
-          <div className="hero-actions">
-            <Link className="primary-button" href={retryLoginHref}>
-              Retry {providerName} sign in
-            </Link>
-            <Link className="ghost-button" href="/">
-              Return to Home
-            </Link>
-          </div>
-        </div>
+            +
+          </span>
+        ))}
       </div>
+
+      {/* Oversized ghost word — fills the empty canvas on the right.
+          Hidden on narrow viewports (see globals.css) where the full-width
+          content would otherwise sit on top of it. */}
+      <span
+        aria-hidden="true"
+        className="auth-gate-ghost"
+        style={{
+          position: "absolute",
+          right: "clamp(-3rem, -3vw, -1rem)",
+          top: "50%",
+          transform: "translateY(-50%)",
+          fontSize: "clamp(6rem, 27vw, 26rem)",
+          fontWeight: 800,
+          letterSpacing: "-0.06em",
+          lineHeight: 0.8,
+          color: fc.accent,
+          opacity: 0.08,
+          whiteSpace: "nowrap",
+          userSelect: "none",
+          zIndex: 1,
+        }}
+      >
+        {fc.ghost}
+      </span>
+
+      {/* Content — anchored left, using the full canvas height */}
+      <motion.div
+        initial={prefersReducedMotion ? false : "hidden"}
+        animate="visible"
+        variants={prefersReducedMotion ? undefined : staggerContainer}
+        style={{
+          position: "relative",
+          zIndex: 3,
+          width: "100%",
+          maxWidth: "760px",
+          padding: "0 clamp(1.75rem, 7vw, 7rem)",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "flex-start",
+          gap: "1.4rem",
+        }}
+      >
+        <motion.p
+          variants={prefersReducedMotion ? undefined : rise}
+          className="file-path-label"
+          style={{ margin: 0 }}
+        >
+          auth / access-gate
+        </motion.p>
+
+        <motion.div
+          variants={prefersReducedMotion ? undefined : rise}
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: "0.55rem",
+            padding: "0.35rem 0.9rem",
+            borderRadius: "999px",
+            background: fc.accentSoft,
+            border: `1px solid ${fc.accent}`,
+          }}
+        >
+          <span
+            style={{
+              width: "6px",
+              height: "6px",
+              borderRadius: "50%",
+              background: fc.accent,
+              boxShadow: `0 0 8px ${fc.accent}`,
+              animation: prefersReducedMotion ? undefined : "flowPulse 1.8s ease-in-out infinite",
+            }}
+          />
+          <span
+            style={{
+              fontFamily: "ui-monospace, monospace",
+              fontSize: "0.66rem",
+              fontWeight: 700,
+              letterSpacing: "0.14em",
+              textTransform: "uppercase",
+              color: fc.accent,
+            }}
+          >
+            {fc.label}
+          </span>
+        </motion.div>
+
+        <motion.h1
+          variants={prefersReducedMotion ? undefined : rise}
+          style={{
+            margin: 0,
+            fontSize: "clamp(2.25rem, 5.5vw, 4.5rem)",
+            fontWeight: 800,
+            lineHeight: 1.04,
+            letterSpacing: "-0.02em",
+            color: "var(--text-primary)",
+            maxWidth: "18ch",
+          }}
+        >
+          {fc.headline}
+        </motion.h1>
+
+        <motion.p
+          variants={prefersReducedMotion ? undefined : rise}
+          style={{
+            margin: 0,
+            fontSize: "clamp(1rem, 1.4vw, 1.15rem)",
+            lineHeight: 1.7,
+            color: "var(--text-secondary)",
+            maxWidth: "540px",
+          }}
+        >
+          {fc.body}
+        </motion.p>
+
+        <motion.div
+          variants={prefersReducedMotion ? undefined : rise}
+          style={{ display: "flex", gap: "0.85rem", flexWrap: "wrap", marginTop: "0.4rem" }}
+        >
+          <Link
+            className="primary-button"
+            href={retryLoginHref}
+            style={{ borderRadius: "999px", padding: "0.9rem 1.9rem", fontWeight: 700 }}
+          >
+            Retry {providerName} sign in
+          </Link>
+          <Link
+            className="ghost-button"
+            href="/"
+            style={{ borderRadius: "999px", padding: "0.9rem 1.75rem", fontWeight: 600 }}
+          >
+            Return to sign-in
+          </Link>
+        </motion.div>
+
+        <motion.div
+          variants={prefersReducedMotion ? undefined : rise}
+          style={{
+            marginTop: "1.6rem",
+            paddingTop: "1.25rem",
+            borderTop: "1px solid var(--border-subtle)",
+            width: "100%",
+            maxWidth: "540px",
+            display: "flex",
+            gap: "1.75rem",
+            flexWrap: "wrap",
+            fontFamily: "ui-monospace, monospace",
+            fontSize: "0.7rem",
+            letterSpacing: "0.1em",
+            color: "var(--text-muted)",
+            textTransform: "uppercase",
+          }}
+        >
+          <span>Provider · {providerName}</span>
+          <span>Intent · {intent === "signup" ? "Sign up" : "Login"}</span>
+          <span>Gate · GitHub org</span>
+        </motion.div>
+      </motion.div>
     </main>
   );
 }

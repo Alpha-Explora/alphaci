@@ -50,18 +50,9 @@ const TABS: { id: WorkflowTab; label: string; icon: React.ReactNode }[] = [
 export function WorkflowStudioTabs({ activeTab, onChange, onKeyDown, trailing }: Readonly<WorkflowStudioTabsProps>) {
   return (
     <div
-      className="studio-tab-bar glass-panel"
+      className="studio-tab-bar studio-tab-bar--enhanced glass-panel"
       role="tablist"
       aria-label="Create project functions"
-      style={{
-        borderRadius: "0",
-        borderLeft: "none",
-        borderRight: "none",
-        borderTop: "none",
-        background: "rgba(10,15,30,0.6)",
-        backdropFilter: "blur(24px)",
-        WebkitBackdropFilter: "blur(24px)",
-      }}
     >
       {TABS.map((tab) => (
         <button
@@ -80,16 +71,8 @@ export function WorkflowStudioTabs({ activeTab, onChange, onKeyDown, trailing }:
           {activeTab === tab.id && (
             <motion.span
               layoutId="tab-indicator"
+              className="studio-tab-indicator"
               aria-hidden="true"
-              style={{
-                position: "absolute",
-                inset: 0,
-                borderRadius: "0.5rem",
-                background: "rgba(56, 189, 248, 0.08)",
-                border: "1px solid rgba(56, 189, 248, 0.25)",
-                boxShadow: "0 0 16px rgba(56, 189, 248, 0.1), inset 0 0 0 1px rgba(56, 189, 248, 0.1)",
-                zIndex: 0,
-              }}
               transition={{ type: "spring", stiffness: 420, damping: 34 }}
             />
           )}

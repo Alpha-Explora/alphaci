@@ -26,9 +26,12 @@ const dashDisplayFont = Outfit({
 });
 
 export const metadata: Metadata = {
-  title: "Create Project | AlphaCI",
+  title: {
+    default: "Alphaexplora CI/CD Platform",
+    template: "%s | Alphaexplora CI/CD Platform",
+  },
   description:
-    "Create GitHub projects with subscription-gated CI workflows, starter files, and managed Actions secrets.",
+    "Internal employee workspace for provisioning GitHub projects with governed CI/CD workflows, starter files, and managed Actions secrets.",
 };
 
 export const viewport: Viewport = {
@@ -43,10 +46,11 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" data-theme="dark" suppressHydrationWarning>
-      <body className={`${displayFont.variable} ${bodyFont.variable} ${dashBodyFont.variable} ${dashDisplayFont.variable} antialiased`} suppressHydrationWarning>
-        <ThemeProvider>
-          {children}
-        </ThemeProvider>
+      <body
+        className={`${displayFont.variable} ${bodyFont.variable} ${dashBodyFont.variable} ${dashDisplayFont.variable} antialiased`}
+        suppressHydrationWarning
+      >
+        <ThemeProvider>{children}</ThemeProvider>
       </body>
     </html>
   );
