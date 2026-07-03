@@ -3,6 +3,7 @@ import {
   getAuthenticatedRedirectPath,
   hasActiveSubscription,
   isGuest,
+  isInternalUser,
 } from "@/lib/auth/subscription";
 
 const baseSession: AuthMeResponse = {
@@ -119,6 +120,32 @@ describe("isGuest", () => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       isGuest(buildSession({ subscription: { plan: "enterprise" as any, status: "active", provider: "mock", updatedAt: "2026-01-01T00:00:00.000Z" } })),
     ).toBe(false);
+  });
+});
+
+describe("internal users", () => {
+  const internalInactive = buildSession({
+    user: { id: "u-int", login: "employee", isInternal: true },
+    subscription: {
+      plan: "free",
+      status: "inactive",
+      provider: "mock",
+      updatedAt: "2026-01-01T00:00:00.000Z",
+    },
+  });
+
+  it("isInternalUser reflects the session flag", () => {
+    expect(isInternalUser(internalInactive)).toBe(true);
+    expect(isInternalUser(buildSession())).toBe(false);
+    expect(isInternalUser(null)).toBe(false);
+  });
+
+  it("hasActiveSubscription is true for internal users regardless of plan/status", () => {
+    expect(hasActiveSubscription(internalInactive)).toBe(true);
+  });
+
+  it("never routes internal users to the paywall", () => {
+    expect(getAuthenticatedRedirectPath(internalInactive, "/home")).toBe("/home");
   });
 });
 

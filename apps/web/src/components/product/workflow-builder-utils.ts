@@ -1,4 +1,8 @@
-import type { CatalogTemplate, CategorySummary, SetupProjectRequest } from "@/lib/api/contracts";
+import type {
+  CatalogTemplate,
+  CategorySummary,
+  SetupProjectRequest,
+} from "@/lib/api/contracts";
 import type { ApiError } from "@/lib/api/request";
 
 export type WorkflowTab = "setup" | "current" | "all";
@@ -32,7 +36,9 @@ export const enhancementLabels: Array<{
   },
 ];
 
-export function statusBannerVariant(message: string): "error" | "success" | "info" {
+export function statusBannerVariant(
+  message: string,
+): "error" | "success" | "info" {
   const lower = message.toLowerCase();
   if (lower.includes("fail") || lower.includes("error")) return "error";
   if (
@@ -41,7 +47,8 @@ export function statusBannerVariant(message: string): "error" | "success" | "inf
     lower.includes("download") ||
     lower.includes("completed") ||
     lower.includes("linked")
-  ) return "success";
+  )
+    return "success";
   return "info";
 }
 
@@ -104,7 +111,9 @@ export function chooseSelectedTemplate(
   return templates[0];
 }
 
-export function categoryFallbacks(templates: CatalogTemplate[]): CategorySummary[] {
+export function categoryFallbacks(
+  templates: CatalogTemplate[],
+): CategorySummary[] {
   const counts = new Map<string, number>();
 
   for (const template of templates) {
@@ -199,12 +208,18 @@ function parseRenderProvisioningMessage(message: string): string | null {
     return "A Render service with this name already exists. Choose a different service name or attach the existing service.";
   }
 
-  if (/Render API key is invalid|missing required workspace access/i.test(message)) {
+  if (
+    /Render API key is invalid|missing required workspace access/i.test(message)
+  ) {
     return "The Render API key cannot access the selected workspace.";
   }
 
-  if (/Render provider metadata is missing|Render deployment secrets/i.test(message)) {
-    return "Render service was created, but AlphaCI could not install the deployment secrets.";
+  if (
+    /Render provider metadata is missing|Render deployment secrets/i.test(
+      message,
+    )
+  ) {
+    return "Render service was created, but Alphaexplora could not install the deployment secrets.";
   }
 
   if (/image pull|registry|GHCR/i.test(message)) {
@@ -237,7 +252,7 @@ function parseProviderIntegrationMessage(message: string): string | null {
     message.includes("invalid_root_directory") ||
     message.includes("Root Directory must be a relative path")
   ) {
-    return "The root directory must be a relative path, for example \"frontend\". Do not use \"./\" or \"../\".";
+    return 'The root directory must be a relative path, for example "frontend". Do not use "./" or "../".';
   }
 
   if (message.includes("Missing team access")) {
@@ -250,13 +265,16 @@ function parseProviderIntegrationMessage(message: string): string | null {
 function parseGenericServerMessage(message: string): string | null {
   if (
     message.includes("quota_exceeded") ||
-    message.includes("Request failed with status 402") ||
-    message.includes("Request failed with status 403")
+    /Usage quota exceeded/i.test(message) ||
+    message.includes("Request failed with status 402")
   ) {
     return "Quota reached. Upgrade your plan or remove unused resources.";
   }
 
-  if (message === "Internal Server Error" || message.includes("Request failed with status 500")) {
+  if (
+    message === "Internal Server Error" ||
+    message.includes("Request failed with status 500")
+  ) {
     return "Something went wrong while processing the request. Please retry, then check the backend logs if it happens again.";
   }
 
@@ -272,25 +290,35 @@ function parseGenericServerMessage(message: string): string | null {
 }
 
 function isQuotaError(error: unknown): boolean {
+  // Detect quotas by explicit signal, never by bare HTTP status. A 403 usually
+  // means "no access" (e.g. the GitHub App is not installed on the org), not
+  // "quota reached", and mislabeling it as a quota error hides the real,
+  // actionable message and prompts a pointless upgrade.
   const apiError = error as Partial<ApiError>;
-  if (apiError.status === 402 || apiError.status === 403) {
-    return true;
-  }
-
   const details = apiError.details;
+
   if (typeof details === "string") {
     return details.includes("quota_exceeded");
   }
 
   if (typeof details === "object" && details !== null) {
-    const code = (details as { code?: unknown }).code;
-    if (code === "quota_exceeded") {
-      return true;
-    }
+    const record = details as {
+      code?: unknown;
+      message?: unknown;
+      limitCode?: unknown;
+      upgradeRequired?: unknown;
+    };
 
-    const message = (details as { message?: unknown }).message;
-    if (typeof message === "string" && message.includes("quota_exceeded")) {
-      return true;
+    // The backend quota guard (BadRequestException) carries these fields.
+    if (record.code === "quota_exceeded") return true;
+    if (typeof record.limitCode === "string") return true;
+    if (typeof record.upgradeRequired === "boolean") return true;
+
+    if (typeof record.message === "string") {
+      return (
+        record.message.includes("quota_exceeded") ||
+        /quota/i.test(record.message)
+      );
     }
   }
 

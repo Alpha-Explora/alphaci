@@ -7,10 +7,15 @@ import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 
 import { PipelineLogo } from "@/components/layout/pipeline-logo";
-import { ThemeToggle } from "@/components/layout/theme-toggle";
 import type { useAuthSession } from "@/hooks/use-auth-session";
-import type { NotificationsResponse, WorkspacesMeResponse } from "@/lib/api/contracts";
-import { getNotifications, markNotificationRead } from "@/lib/api/notifications";
+import type {
+  NotificationsResponse,
+  WorkspacesMeResponse,
+} from "@/lib/api/contracts";
+import {
+  getNotifications,
+  markNotificationRead,
+} from "@/lib/api/notifications";
 import { getMyWorkspaces } from "@/lib/api/workspaces";
 import { NotificationCenter } from "./notification-center";
 import { useWorkspaceSelection } from "./workspace-context";
@@ -29,7 +34,17 @@ interface AppNavProps {
 
 function DashboardIcon({ size = 16 }: { size?: number }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
       <rect x="3" y="3" width="7" height="7" rx="1" />
       <rect x="14" y="3" width="7" height="7" rx="1" />
       <rect x="3" y="14" width="7" height="7" rx="1" />
@@ -40,7 +55,17 @@ function DashboardIcon({ size = 16 }: { size?: number }) {
 
 function WorkflowsIcon({ size = 16 }: { size?: number }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
       <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
     </svg>
   );
@@ -48,7 +73,17 @@ function WorkflowsIcon({ size = 16 }: { size?: number }) {
 
 function RunsIcon({ size = 16 }: { size?: number }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
       <circle cx="12" cy="12" r="3" />
       <path d="M12 3v3M12 18v3M3 12h3M18 12h3" />
       <path d="M5.64 5.64l2.12 2.12M16.24 16.24l2.12 2.12M5.64 18.36l2.12-2.12M16.24 7.76l2.12-2.12" />
@@ -56,18 +91,19 @@ function RunsIcon({ size = 16 }: { size?: number }) {
   );
 }
 
-function BillingIcon({ size = 16 }: { size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <rect x="1" y="4" width="22" height="16" rx="2" ry="2" />
-      <line x1="1" y1="10" x2="23" y2="10" />
-    </svg>
-  );
-}
-
 function SettingsIcon({ size = 16 }: { size?: number }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
       <circle cx="12" cy="12" r="3" />
       <path d="M19.07 4.93a10 10 0 0 1 0 14.14M16.24 7.76a6 6 0 0 1 0 8.49M4.93 4.93a10 10 0 0 0 0 14.14M7.76 7.76a6 6 0 0 0 0 8.49" />
     </svg>
@@ -76,7 +112,17 @@ function SettingsIcon({ size = 16 }: { size?: number }) {
 
 function AdminIcon({ size = 16 }: { size?: number }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
       <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
       <path d="M9 12l2 2 4-4" />
     </svg>
@@ -85,7 +131,17 @@ function AdminIcon({ size = 16 }: { size?: number }) {
 
 function SignOutIcon({ size = 15 }: { size?: number }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
       <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
       <polyline points="16 17 21 12 16 7" />
       <line x1="21" y1="12" x2="9" y2="12" />
@@ -95,7 +151,17 @@ function SignOutIcon({ size = 15 }: { size?: number }) {
 
 function ChevronLeftIcon({ size = 14 }: { size?: number }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
       <polyline points="15 18 9 12 15 6" />
     </svg>
   );
@@ -103,7 +169,13 @@ function ChevronLeftIcon({ size = 14 }: { size?: number }) {
 
 /* ── Tooltip — appears to the right of the icon when sidebar is collapsed ─── */
 
-function SidebarTooltip({ text, children }: { text: string; children: React.ReactNode }) {
+function SidebarTooltip({
+  text,
+  children,
+}: {
+  text: string;
+  children: React.ReactNode;
+}) {
   const [visible, setVisible] = useState(false);
   return (
     <div
@@ -161,8 +233,16 @@ interface SidebarNavItemProps {
   itemIndex?: number;
 }
 
-function SidebarNavItem({ href, label, icon: NavIcon, isActive, collapsed, reduced, itemIndex = 0 }: Readonly<SidebarNavItemProps>) {
-  const expandDelay  = itemIndex * 0.04;
+function SidebarNavItem({
+  href,
+  label,
+  icon: NavIcon,
+  isActive,
+  collapsed,
+  reduced,
+  itemIndex = 0,
+}: Readonly<SidebarNavItemProps>) {
+  const expandDelay = itemIndex * 0.04;
   const collapseDelay = itemIndex * 0.018;
 
   const inner = (
@@ -182,13 +262,21 @@ function SidebarNavItem({ href, label, icon: NavIcon, isActive, collapsed, reduc
           <motion.span
             layoutId="sidebar-active-pill"
             className="sidebar-nav-item-bg"
-            transition={reduced ? { duration: 0 } : { type: "spring", stiffness: 420, damping: 36 }}
+            transition={
+              reduced
+                ? { duration: 0 }
+                : { type: "spring", stiffness: 420, damping: 36 }
+            }
             aria-hidden="true"
           />
         )}
         <motion.span
           className="sidebar-nav-item-icon"
-          animate={isActive ? { color: "var(--accent-indigo)" } : { color: "var(--text-secondary)" }}
+          animate={
+            isActive
+              ? { color: "var(--accent-indigo)" }
+              : { color: "var(--text-secondary)" }
+          }
           whileHover={reduced ? undefined : { scale: 1.12 }}
           transition={{ duration: 0.2 }}
         >
@@ -224,7 +312,13 @@ function SidebarNavItem({ href, label, icon: NavIcon, isActive, collapsed, reduc
 
 /* ── Section divider label ──────────────────────────────────────────────────── */
 
-function SidebarSectionLabel({ text, collapsed }: { text: string; collapsed: boolean }) {
+function SidebarSectionLabel({
+  text,
+  collapsed,
+}: {
+  text: string;
+  collapsed: boolean;
+}) {
   if (collapsed) {
     return <div className="sidebar-section-divider" aria-hidden="true" />;
   }
@@ -237,17 +331,26 @@ function SidebarSectionLabel({ text, collapsed }: { text: string; collapsed: boo
 
 /* ── AppNav (sidebar) ───────────────────────────────────────────────────────── */
 
-export function AppNav({ guest, session, onLogout, isLoggingOut }: Readonly<AppNavProps>) {
+export function AppNav({
+  guest,
+  session,
+  onLogout,
+  isLoggingOut,
+}: Readonly<AppNavProps>) {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
-  const [workspaces, setWorkspacesState] = useState<WorkspacesMeResponse | null>(null);
-  const [notifications, setNotifications] = useState<NotificationsResponse | null>(null);
+  const [workspaces, setWorkspacesState] =
+    useState<WorkspacesMeResponse | null>(null);
+  const [notifications, setNotifications] =
+    useState<NotificationsResponse | null>(null);
   const { setWorkspaces } = useWorkspaceSelection();
   const prefersReducedMotion = useReducedMotion();
   const reduced = prefersReducedMotion ?? false;
   const sidebarRef = useRef<HTMLElement>(null);
 
-  const avatarInitial = (session?.user.name ?? session?.user.login ?? "U").slice(0, 1).toUpperCase();
+  const avatarInitial = (session?.user.name ?? session?.user.login ?? "U")
+    .slice(0, 1)
+    .toUpperCase();
   const isPlatformAdmin = !guest && Boolean(session?.platformRole);
 
   useEffect(() => {
@@ -282,16 +385,25 @@ export function AppNav({ guest, session, onLogout, isLoggingOut }: Readonly<AppN
         setWorkspacesState({ enabled: false, items: [] });
         setWorkspaces(null);
       });
-    return () => { active = false; };
+    return () => {
+      active = false;
+    };
   }, [guest, setWorkspaces]);
 
   useEffect(() => {
     if (guest) return;
     let active = true;
     void getNotifications()
-      .then((response) => { if (active) setNotifications(response); })
-      .catch(() => { if (active) setNotifications({ enabled: false, items: [], unreadCount: 0 }); });
-    return () => { active = false; };
+      .then((response) => {
+        if (active) setNotifications(response);
+      })
+      .catch(() => {
+        if (active)
+          setNotifications({ enabled: false, items: [], unreadCount: 0 });
+      });
+    return () => {
+      active = false;
+    };
   }, [guest]);
 
   async function handleMarkNotificationRead(id: string) {
@@ -302,7 +414,9 @@ export function AppNav({ guest, session, onLogout, isLoggingOut }: Readonly<AppN
             ...current,
             unreadCount: Math.max(0, current.unreadCount - 1),
             items: current.items.map((item) =>
-              item.id === id ? { ...item, readAt: item.readAt ?? new Date().toISOString() } : item,
+              item.id === id
+                ? { ...item, readAt: item.readAt ?? new Date().toISOString() }
+                : item,
             ),
           }
         : current,
@@ -314,150 +428,208 @@ export function AppNav({ guest, session, onLogout, isLoggingOut }: Readonly<AppN
   return (
     <>
       <motion.aside
-      ref={sidebarRef}
-      className="app-sidebar"
-      data-collapsed={collapsed ? "true" : "false"}
-      animate={{ width: sidebarWidth }}
-      transition={reduced ? { duration: 0 } : { type: "spring", stiffness: 360, damping: 34, mass: 0.8 }}
-      style={{ width: sidebarWidth }}
-      aria-label="Primary navigation"
-    >
-      <div className="sidebar-edge-gradient" aria-hidden="true" />
+        ref={sidebarRef}
+        className="app-sidebar"
+        data-collapsed={collapsed ? "true" : "false"}
+        animate={{ width: sidebarWidth }}
+        transition={
+          reduced
+            ? { duration: 0 }
+            : { type: "spring", stiffness: 360, damping: 34, mass: 0.8 }
+        }
+        style={{ width: sidebarWidth }}
+        aria-label="Primary navigation"
+      >
+        <div className="sidebar-edge-gradient" aria-hidden="true" />
 
-      {/* ── Brand zone ────────────────────────────────────────── */}
-      <div className="sidebar-brand-zone">
-        <Link href="/home" className="sidebar-brand-link" aria-label="AlphaCI — home">
-          <span className="sidebar-brand-logo">
-            <PipelineLogo size={22} />
-          </span>
-          <AnimatePresence initial={false}>
-            {!collapsed && (
-              <motion.span
-                className="sidebar-brand-wordmark"
-                initial={reduced ? false : { opacity: 0, x: -10 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={reduced ? undefined : { opacity: 0, x: -10 }}
-                transition={{ duration: 0.18 }}
-              >
-                Alpha<span className="sidebar-brand-accent">CI</span>
-              </motion.span>
-            )}
-          </AnimatePresence>
-        </Link>
+        {/* ── Brand zone ────────────────────────────────────────── */}
+        <div className="sidebar-brand-zone">
+          <Link
+            href="/home"
+            className="sidebar-brand-link"
+            aria-label="Alphaexplora — home"
+          >
+            <span className="sidebar-brand-logo">
+              <PipelineLogo size={22} />
+            </span>
+            <AnimatePresence initial={false}>
+              {!collapsed && (
+                <motion.span
+                  className="sidebar-brand-wordmark"
+                  initial={reduced ? false : { opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={reduced ? undefined : { opacity: 0, x: -10 }}
+                  transition={{ duration: 0.18 }}
+                >
+                  Alpha<span className="sidebar-brand-accent">CI</span>
+                </motion.span>
+              )}
+            </AnimatePresence>
+          </Link>
+        </div>
 
-      </div>
+        {/* ── Primary nav ───────────────────────────────────────── */}
+        <nav className="sidebar-nav" aria-label="Primary">
+          <SidebarSectionLabel text="Main" collapsed={collapsed} />
 
-      {/* ── Primary nav ───────────────────────────────────────── */}
-      <nav className="sidebar-nav" aria-label="Primary">
-        <SidebarSectionLabel text="Main" collapsed={collapsed} />
+          <SidebarNavItem
+            href="/home"
+            label="Dashboard"
+            icon={DashboardIcon}
+            isActive={pathname === "/home"}
+            collapsed={collapsed}
+            reduced={reduced}
+            itemIndex={0}
+          />
+          <SidebarNavItem
+            href="/workflows"
+            label="Workflows"
+            icon={WorkflowsIcon}
+            isActive={pathname === "/workflows"}
+            collapsed={collapsed}
+            reduced={reduced}
+            itemIndex={1}
+          />
+          <SidebarNavItem
+            href="/runs"
+            label="Runs"
+            icon={RunsIcon}
+            isActive={pathname === "/runs"}
+            collapsed={collapsed}
+            reduced={reduced}
+            itemIndex={2}
+          />
 
-        <SidebarNavItem href="/home"      label="Dashboard" icon={DashboardIcon} isActive={pathname === "/home"}      collapsed={collapsed} reduced={reduced} itemIndex={0} />
-        <SidebarNavItem href="/workflows" label="Workflows" icon={WorkflowsIcon} isActive={pathname === "/workflows"} collapsed={collapsed} reduced={reduced} itemIndex={1} />
-        <SidebarNavItem href="/runs"      label="Runs"      icon={RunsIcon}      isActive={pathname === "/runs"}      collapsed={collapsed} reduced={reduced} itemIndex={2} />
+          <SidebarSectionLabel text="Account" collapsed={collapsed} />
 
-        <SidebarSectionLabel text="Account" collapsed={collapsed} />
+          {!guest && (
+            <SidebarNavItem
+              href="/settings"
+              label="Settings"
+              icon={SettingsIcon}
+              isActive={pathname === "/settings"}
+              collapsed={collapsed}
+              reduced={reduced}
+              itemIndex={4}
+            />
+          )}
 
-        <SidebarNavItem href="/subscribe" label="Billing"  icon={BillingIcon}  isActive={pathname === "/subscribe"} collapsed={collapsed} reduced={reduced} itemIndex={3} />
+          {isPlatformAdmin && (
+            <SidebarNavItem
+              href="/admin"
+              label="Admin"
+              icon={AdminIcon}
+              isActive={pathname.startsWith("/admin")}
+              collapsed={collapsed}
+              reduced={reduced}
+              itemIndex={5}
+            />
+          )}
+        </nav>
 
-        {!guest && (
-          <SidebarNavItem href="/settings" label="Settings" icon={SettingsIcon} isActive={pathname === "/settings"} collapsed={collapsed} reduced={reduced} itemIndex={4} />
-        )}
-
-        {isPlatformAdmin && (
-          <SidebarNavItem href="/admin" label="Admin" icon={AdminIcon} isActive={pathname.startsWith("/admin")} collapsed={collapsed} reduced={reduced} itemIndex={5} />
-        )}
-      </nav>
-
-      {/* ── Bottom zone — user identity + actions ─────────────── */}
-      <div className="sidebar-bottom-zone">
-        {!guest && (
-          <>
-            <div className="sidebar-bottom-utilities">
-              <WorkspaceSwitcher workspaces={workspaces} />
-              <div className="sidebar-utility-actions">
-                <NotificationCenter
-                  notifications={notifications}
-                  onMarkRead={handleMarkNotificationRead}
-                />
-                <ThemeToggle />
+        {/* ── Bottom zone — user identity + actions ─────────────── */}
+        <div className="sidebar-bottom-zone">
+          {!guest && (
+            <>
+              <div className="sidebar-bottom-utilities">
+                <WorkspaceSwitcher workspaces={workspaces} />
+                <div className="sidebar-utility-actions">
+                  <NotificationCenter
+                    notifications={notifications}
+                    onMarkRead={handleMarkNotificationRead}
+                  />
+                </div>
               </div>
-            </div>
 
-            <div className="sidebar-user-chip" aria-label={`Signed in as ${session?.user.login ?? "user"}`}>
-              <span className="sidebar-user-avatar-ring">
-                {session?.user.avatarUrl ? (
-                  <Image
-                    src={session.user.avatarUrl}
-                    alt={session.user.name ?? session.user.login}
-                    width={28}
-                    height={28}
-                    className="sidebar-user-avatar-img"
-                    unoptimized
+              <div
+                className="sidebar-user-chip"
+                aria-label={`Signed in as ${session?.user.login ?? "user"}`}
+              >
+                <span className="sidebar-user-avatar-ring">
+                  {session?.user.avatarUrl ? (
+                    <Image
+                      src={session.user.avatarUrl}
+                      alt={session.user.name ?? session.user.login}
+                      width={28}
+                      height={28}
+                      className="sidebar-user-avatar-img"
+                      unoptimized
+                    />
+                  ) : (
+                    <span
+                      className="sidebar-user-avatar-fallback"
+                      aria-hidden="true"
+                    >
+                      {avatarInitial}
+                    </span>
+                  )}
+                </span>
+
+                <AnimatePresence initial={false}>
+                  {!collapsed && (
+                    <motion.div
+                      className="sidebar-user-info"
+                      initial={reduced ? false : { opacity: 0, x: -8 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={reduced ? undefined : { opacity: 0, x: -8 }}
+                      transition={{ duration: 0.16 }}
+                    >
+                      <span className="sidebar-user-login">
+                        {session?.user.login ?? "user"}
+                      </span>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+
+              <button
+                type="button"
+                onClick={onLogout}
+                disabled={isLoggingOut}
+                aria-label={isLoggingOut ? "Signing out…" : "Sign out"}
+                className="sidebar-signout-btn"
+              >
+                {isLoggingOut ? (
+                  <span
+                    className="sidebar-signout-spinner"
+                    aria-hidden="true"
                   />
                 ) : (
-                  <span className="sidebar-user-avatar-fallback" aria-hidden="true">
-                    {avatarInitial}
-                  </span>
+                  <SignOutIcon size={15} />
                 )}
-              </span>
+                <AnimatePresence initial={false}>
+                  {!collapsed && (
+                    <motion.span
+                      initial={reduced ? false : { opacity: 0, x: -8 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={reduced ? undefined : { opacity: 0, x: -8 }}
+                      transition={{ duration: 0.16 }}
+                      className="sidebar-signout-label"
+                    >
+                      {isLoggingOut ? "Signing out…" : "Sign out"}
+                    </motion.span>
+                  )}
+                </AnimatePresence>
+              </button>
+            </>
+          )}
 
-              <AnimatePresence initial={false}>
-                {!collapsed && (
-                  <motion.div
-                    className="sidebar-user-info"
-                    initial={reduced ? false : { opacity: 0, x: -8 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={reduced ? undefined : { opacity: 0, x: -8 }}
-                    transition={{ duration: 0.16 }}
-                  >
-                    <span className="sidebar-user-login">{session?.user.login ?? "user"}</span>
-                    {session?.subscription.plan && (
-                      <span className="sidebar-user-plan-badge">{session.subscription.plan}</span>
-                    )}
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
-
-            <button
-              type="button"
-              onClick={onLogout}
-              disabled={isLoggingOut}
-              aria-label={isLoggingOut ? "Signing out…" : "Sign out"}
-              className="sidebar-signout-btn"
+          {guest && (
+            <Link
+              className="primary-button"
+              href="/signup"
+              style={{
+                width: "100%",
+                justifyContent: "center",
+                fontSize: "0.82rem",
+                padding: "0.5rem 0.75rem",
+                minHeight: "2.2rem",
+              }}
             >
-              {isLoggingOut ? (
-                <span className="sidebar-signout-spinner" aria-hidden="true" />
-              ) : (
-                <SignOutIcon size={15} />
-              )}
-              <AnimatePresence initial={false}>
-                {!collapsed && (
-                  <motion.span
-                    initial={reduced ? false : { opacity: 0, x: -8 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={reduced ? undefined : { opacity: 0, x: -8 }}
-                    transition={{ duration: 0.16 }}
-                    className="sidebar-signout-label"
-                  >
-                    {isLoggingOut ? "Signing out…" : "Sign out"}
-                  </motion.span>
-                )}
-              </AnimatePresence>
-            </button>
-          </>
-        )}
-
-        {guest && (
-          <Link
-            className="primary-button"
-            href="/signup"
-            style={{ width: "100%", justifyContent: "center", fontSize: "0.82rem", padding: "0.5rem 0.75rem", minHeight: "2.2rem" }}
-          >
-            {collapsed ? "↑" : "Sign up"}
-          </Link>
-        )}
-      </div>
+              {collapsed ? "↑" : "Sign up"}
+            </Link>
+          )}
+        </div>
       </motion.aside>
 
       <motion.button
@@ -467,13 +639,25 @@ export function AppNav({ guest, session, onLogout, isLoggingOut }: Readonly<AppN
         aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
         aria-expanded={!collapsed}
         animate={{ left: sidebarWidth - 1 }}
-        whileHover={reduced ? undefined : { x: 2, backgroundColor: "rgba(30, 41, 59, 0.98)" }}
+        whileHover={
+          reduced
+            ? undefined
+            : { x: 2, backgroundColor: "rgba(30, 41, 59, 0.98)" }
+        }
         whileTap={reduced ? undefined : { scale: 0.94 }}
-        transition={reduced ? { duration: 0 } : { type: "spring", stiffness: 360, damping: 34, mass: 0.8 }}
+        transition={
+          reduced
+            ? { duration: 0 }
+            : { type: "spring", stiffness: 360, damping: 34, mass: 0.8 }
+        }
       >
         <motion.span
           animate={{ rotate: collapsed ? 180 : 0 }}
-          transition={reduced ? { duration: 0 } : { type: "spring", stiffness: 380, damping: 28 }}
+          transition={
+            reduced
+              ? { duration: 0 }
+              : { type: "spring", stiffness: 380, damping: 28 }
+          }
           className="sidebar-collapse-icon"
         >
           <ChevronLeftIcon size={15} />

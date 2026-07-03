@@ -37,6 +37,12 @@ export interface SessionUser {
   avatarUrl?: string;
   email?: string;
   onboardingCompleted: boolean;
+  /**
+   * True when the user is a member of the internal company GitHub org.
+   * Internal users bypass the subscription/payment gate entirely. Optional so
+   * older cached sessions (pre-rollout) deserialize safely.
+   */
+  isInternal?: boolean;
 }
 
 export interface SubscriptionInfo {

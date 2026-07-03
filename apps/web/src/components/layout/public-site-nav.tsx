@@ -11,7 +11,11 @@ interface PublicSiteNavProps {
   showActions?: boolean;
 }
 
-export function PublicSiteNav({ active, fixed = false, showActions = true }: Readonly<PublicSiteNavProps>) {
+export function PublicSiteNav({
+  active,
+  fixed = false,
+  showActions = true,
+}: Readonly<PublicSiteNavProps>) {
   const [scrolled, setScrolled] = useState(false);
 
   useEffect(() => {
@@ -37,17 +41,22 @@ export function PublicSiteNav({ active, fixed = false, showActions = true }: Rea
 
   return (
     <header className={className} data-active-section={active ?? undefined}>
-      <Link className="public-site-brand" href="/" aria-label="AlphaCI home">
+      <Link className="public-site-brand" href="/" aria-label="Alphaexplora home">
         <span className="public-site-brand-mark">
           <PipelineLogo size={44} />
         </span>
-        <span>AlphaCI</span>
+        <span>Alphaexplora</span>
       </Link>
 
       {showActions && (
         <div className="public-site-actions">
-          <Link className="public-site-login" href="/login">Login</Link>
-          <Link className="public-site-cta" href="/subscribe"><span aria-hidden="true" />Pricing</Link>
+          <Link className="public-site-login" href="/login">
+            Login
+          </Link>
+          <Link className="public-site-cta" href="/subscribe">
+            <span aria-hidden="true" />
+            Pricing
+          </Link>
         </div>
       )}
     </header>

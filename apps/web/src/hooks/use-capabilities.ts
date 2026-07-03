@@ -46,6 +46,13 @@ export function useCapabilities() {
   return {
     capabilities,
     envProvisioningEnabled: capabilities?.envProvisioning?.enabled === true,
+    // Single ownership mode this deployment offers. 'flowci_managed' = deploys
+    // are centralized on the organization's Render/Vercel; 'byo' = users connect
+    // their own provider accounts.
+    deploymentOwnershipMode:
+      capabilities?.envProvisioning?.modes?.[0] === "flowci_managed"
+        ? ("flowci_managed" as const)
+        : ("byo" as const),
     projectSyncSnapshotsEnabled: capabilities?.projectSyncSnapshots?.enabled === true,
     workflowSettingsPreviewEnabled: capabilities?.workflowSettingsPreview?.enabled === true,
     workflowUpdatePrEnabled: capabilities?.workflowUpdatePr?.enabled === true,

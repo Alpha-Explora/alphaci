@@ -53,4 +53,35 @@ describe("workflow-builder-utils error formatting", () => {
       "Quota reached. Upgrade your plan or remove unused resources.",
     );
   });
+
+  it("detects the backend quota guard shape (BadRequestException with limitCode)", () => {
+    expect(
+      formatApiError(
+        {
+          status: 400,
+          details: {
+            message: "Usage quota exceeded",
+            limitCode: "projects",
+            upgradeRequired: true,
+          },
+        },
+        "Project creation failed",
+      ),
+    ).toBe("Quota reached. Upgrade your plan or remove unused resources.");
+  });
+
+  it("does not mislabel a permission 403 as a quota error", () => {
+    const message =
+      "The GitHub App is not installed on the Alpha-Explora organization for this account. Install it on Alpha-Explora with access to all repositories, then try again.";
+
+    expect(
+      formatApiError({ status: 403, details: { message } }, "Project creation failed"),
+    ).toBe(`Project creation failed: ${message}`);
+  });
+
+  it("maps a bare 403 with no useful body to an access message, not a quota message", () => {
+    expect(cleanUserMessage("Request failed with status 403")).toBe(
+      "You do not have access to perform this action.",
+    );
+  });
 });

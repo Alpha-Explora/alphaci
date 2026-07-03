@@ -23,22 +23,28 @@ function defaultTarget(
   return {
     slot,
     provider,
-    ownershipMode: "flowci_managed",
+    ownershipMode: "byo",
     projectName,
     branchName: "test",
     rootDirectory: slot === "frontend" ? "." : ".",
-    buildCommand: provider === "render" ? "npm ci && npm run build" : "npm run build",
+    buildCommand:
+      provider === "render" ? "npm ci && npm run build" : "npm run build",
     startCommand: provider === "render" ? "npm run start:prod" : undefined,
+    renderDeployMethod: provider === "render" ? "native_git" : undefined,
     renderRuntime: provider === "render" ? "docker" : undefined,
     env: [{ environment: "test", vars: [] }],
   };
 }
 
-function sanitizedEnvSets(envSets: DeploymentProvisioningEnvSet[] | undefined): DeploymentProvisioningEnvSet[] {
+function sanitizedEnvSets(
+  envSets: DeploymentProvisioningEnvSet[] | undefined,
+): DeploymentProvisioningEnvSet[] {
   return (envSets ?? [])
     .map((envSet) => ({
       ...envSet,
-      vars: envSet.vars.filter((variable) => variable.key.trim() && variable.value),
+      vars: envSet.vars.filter(
+        (variable) => variable.key.trim() && variable.value,
+      ),
     }))
     .filter((envSet) => envSet.vars.length > 0);
 }
@@ -52,7 +58,9 @@ function sanitizedVariableGroups(
       const provider = group.provider ?? [...activeProviders][0] ?? "render";
       const appliesTo = group.appliesTo ?? "all";
       const env = sanitizedEnvSets(group.env);
-      const targetBranches = [...new Set(group.targetBranches ?? [])].filter(Boolean);
+      const targetBranches = [...new Set(group.targetBranches ?? [])].filter(
+        Boolean,
+      );
 
       return {
         name: group.name?.trim() || `Variable group ${index + 1}`,
@@ -66,7 +74,8 @@ function sanitizedVariableGroups(
       (group) =>
         activeProviders.has(group.provider) &&
         group.env.length > 0 &&
-        (group.appliesTo !== "selected" || (group.targetBranches?.length ?? 0) > 0),
+        (group.appliesTo !== "selected" ||
+          (group.targetBranches?.length ?? 0) > 0),
     );
 }
 
@@ -85,10 +94,14 @@ export function useDeploymentProvisioningForm() {
     setEnabled(true);
   }
 
-  function setDefaultTargets(targets: Array<{ slot: EnvTargetSlot; projectName: string }>) {
+  function setDefaultTargets(
+    targets: Array<{ slot: EnvTargetSlot; projectName: string }>,
+  ) {
     setRequest({
       enabled: true,
-      targets: targets.map((target) => defaultTarget(target.slot, target.projectName)),
+      targets: targets.map((target) =>
+        defaultTarget(target.slot, target.projectName),
+      ),
     });
     setEnabled(true);
   }
@@ -99,13 +112,20 @@ export function useDeploymentProvisioningForm() {
     }
 
     const sharedEnv = sanitizedEnvSets(request.sharedEnv);
-    const activeProviders = new Set(request.targets.map((target) => target.provider));
-    const variableGroups = sanitizedVariableGroups(request.variableGroups, activeProviders);
+    const activeProviders = new Set(
+      request.targets.map((target) => target.provider),
+    );
+    const variableGroups = sanitizedVariableGroups(
+      request.variableGroups,
+      activeProviders,
+    );
 
     return {
       ...request,
       enabled: true,
-      ...(variableGroups.length ? { variableGroups } : { variableGroups: undefined }),
+      ...(variableGroups.length
+        ? { variableGroups }
+        : { variableGroups: undefined }),
       ...(sharedEnv.length ? { sharedEnv } : { sharedEnv: undefined }),
       targets: request.targets.map((target) => ({
         ...target,

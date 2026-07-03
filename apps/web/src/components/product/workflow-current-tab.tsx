@@ -86,14 +86,18 @@ const containerVariants = {
   show: {
     opacity: 1,
     transition: {
-      staggerChildren: 0.04
-    }
-  }
+      staggerChildren: 0.04,
+    },
+  },
 };
 
 const cardVariants = {
   hidden: { opacity: 0, y: 12 },
-  show: { opacity: 1, y: 0, transition: { type: "spring" as const, stiffness: 280, damping: 22 } }
+  show: {
+    opacity: 1,
+    y: 0,
+    transition: { type: "spring" as const, stiffness: 280, damping: 22 },
+  },
 };
 
 function selectedChecks(project: ProvisionedProject): string {
@@ -110,21 +114,50 @@ function statusVariant(status: string): string {
   return "failed";
 }
 
-function WorkflowStageList({ files }: Readonly<{ files?: WorkflowFileMetadata[] | null }>) {
+function WorkflowStageList({
+  files,
+}: Readonly<{ files?: WorkflowFileMetadata[] | null }>) {
   if (!files?.length) return null;
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "0.35rem" }}>
-      <p style={{ fontSize: "0.78rem", color: "var(--text-secondary)", margin: 0, fontWeight: 700 }}>
+      <p
+        style={{
+          fontSize: "0.78rem",
+          color: "var(--text-secondary)",
+          margin: 0,
+          fontWeight: 700,
+        }}
+      >
         {files.length} gated workflow stages
       </p>
       <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
         {files.map((file) => (
-          <div key={file.path} style={{ display: "flex", gap: "0.5rem", alignItems: "baseline", flexWrap: "wrap" }}>
-            <span style={{ fontSize: "0.76rem", color: "var(--text-primary)", fontWeight: 700 }}>
+          <div
+            key={file.path}
+            style={{
+              display: "flex",
+              gap: "0.5rem",
+              alignItems: "baseline",
+              flexWrap: "wrap",
+            }}
+          >
+            <span
+              style={{
+                fontSize: "0.76rem",
+                color: "var(--text-primary)",
+                fontWeight: 700,
+              }}
+            >
               {file.name}
             </span>
-            <code style={{ fontSize: "0.72rem", color: "var(--text-muted)", wordBreak: "break-all" }}>
+            <code
+              style={{
+                fontSize: "0.72rem",
+                color: "var(--text-muted)",
+                wordBreak: "break-all",
+              }}
+            >
               {file.path}
             </code>
           </div>
@@ -165,12 +198,20 @@ function DeploymentTargetsList({
   projectId: string;
   targets: DeploymentTarget[];
 }>) {
-  const [editingTarget, setEditingTarget] = useState<DeploymentTarget | null>(null);
-  const [editValues, setEditValues] = useState<UpdateDeploymentTargetRequest>({});
+  const [editingTarget, setEditingTarget] = useState<DeploymentTarget | null>(
+    null,
+  );
+  const [editValues, setEditValues] = useState<UpdateDeploymentTargetRequest>(
+    {},
+  );
   const [savingTargetId, setSavingTargetId] = useState<string | null>(null);
   const [syncingTargetId, setSyncingTargetId] = useState<string | null>(null);
-  const [detachConfirmTargetId, setDetachConfirmTargetId] = useState<string | null>(null);
-  const [detachingTargetId, setDetachingTargetId] = useState<string | null>(null);
+  const [detachConfirmTargetId, setDetachConfirmTargetId] = useState<
+    string | null
+  >(null);
+  const [detachingTargetId, setDetachingTargetId] = useState<string | null>(
+    null,
+  );
   const [targetMessage, setTargetMessage] = useState<string | null>(null);
 
   if (!targets.length) {
@@ -206,12 +247,16 @@ function DeploymentTargetsList({
     setSavingTargetId(editingTarget.id);
     setTargetMessage(null);
     try {
-      const updatedTarget = await updateDeploymentTarget(projectId, editingTarget.id, {
-        ...editValues,
-        rootDirectory: editValues.rootDirectory?.trim() || null,
-        buildCommand: editValues.buildCommand?.trim() || null,
-        startCommand: editValues.startCommand?.trim() || null,
-      });
+      const updatedTarget = await updateDeploymentTarget(
+        projectId,
+        editingTarget.id,
+        {
+          ...editValues,
+          rootDirectory: editValues.rootDirectory?.trim() || null,
+          buildCommand: editValues.buildCommand?.trim() || null,
+          startCommand: editValues.startCommand?.trim() || null,
+        },
+      );
       onTargetChanged(updatedTarget);
       setEditingTarget(null);
       setTargetMessage("Target metadata updated.");
@@ -243,7 +288,9 @@ function DeploymentTargetsList({
   const detachTarget = async (target: DeploymentTarget) => {
     if (detachConfirmTargetId !== target.id) {
       setDetachConfirmTargetId(target.id);
-      setTargetMessage("Confirm detach to remove this target from AlphaCI only.");
+      setTargetMessage(
+        "Confirm detach to remove this target from Alphaexplora only.",
+      );
       return;
     }
 
@@ -253,7 +300,9 @@ function DeploymentTargetsList({
       await detachDeploymentTarget(projectId, target.id);
       onDetached(target.id);
       setDetachConfirmTargetId(null);
-      setTargetMessage("Target detached from AlphaCI. Provider resource was not deleted.");
+      setTargetMessage(
+        "Target detached from Alphaexplora. Provider resource was not deleted.",
+      );
     } catch {
       setTargetMessage("Unable to detach deployment target.");
     } finally {
@@ -263,25 +312,43 @@ function DeploymentTargetsList({
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "0.85rem" }}>
-      {targetMessage ? <p className="env-empty-state">{targetMessage}</p> : null}
+      {targetMessage ? (
+        <p className="env-empty-state">{targetMessage}</p>
+      ) : null}
       <div className="env-metadata-list" data-tour="deployment-targets">
         {targets.map((target) => {
           const dashboardUrl = providerDashboardUrl(target);
           const isDetachConfirm = detachConfirmTargetId === target.id;
           return (
-            <div key={target.id} className={`env-metadata-row ${target.status}`} style={{ alignItems: "flex-start" }}>
-              <span style={{ display: "flex", flexDirection: "column", gap: "0.2rem" }}>
+            <div
+              key={target.id}
+              className={`env-metadata-row ${target.status}`}
+              style={{ alignItems: "flex-start" }}
+            >
+              <span
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "0.2rem",
+                }}
+              >
                 <strong>{target.providerProjectName}</strong>
                 <small>
                   {target.provider} · {target.slot} · {target.branchName}
                 </small>
                 <small style={{ color: "var(--text-muted)" }}>
-                  Root: {target.rootDirectory || "."} · Build: {target.buildCommand || "—"} · Start: {target.startCommand || "—"}
+                  Root: {target.rootDirectory || "."} · Build:{" "}
+                  {target.buildCommand || "—"} · Start:{" "}
+                  {target.startCommand || "—"}
                 </small>
                 {target.renderEnvironmentName ? (
-                  <small style={{ color: "var(--text-muted)" }}>Render env: {target.renderEnvironmentName}</small>
+                  <small style={{ color: "var(--text-muted)" }}>
+                    Render env: {target.renderEnvironmentName}
+                  </small>
                 ) : null}
-                <small style={{ color: "var(--text-muted)" }}>ID: {target.providerProjectId}</small>
+                <small style={{ color: "var(--text-muted)" }}>
+                  ID: {target.providerProjectId}
+                </small>
               </span>
 
               {/* Hierarchical action cluster */}
@@ -299,7 +366,9 @@ function DeploymentTargetsList({
                   <button
                     className="ghost-button target-action-btn"
                     type="button"
-                    disabled={!managementEnabled || syncingTargetId === target.id}
+                    disabled={
+                      !managementEnabled || syncingTargetId === target.id
+                    }
                     onClick={() => void runSync(target)}
                   >
                     {syncingTargetId === target.id ? "Syncing…" : "Sync"}
@@ -321,7 +390,10 @@ function DeploymentTargetsList({
                 ) : null}
 
                 {/* Coming soon hint — replaces a full disabled button */}
-                <span className="target-upcoming-hint" title="Provider activation will be available in the next phase">
+                <span
+                  className="target-upcoming-hint"
+                  title="Provider activation will be available in the next phase"
+                >
                   Provider activation — coming soon
                 </span>
 
@@ -330,7 +402,9 @@ function DeploymentTargetsList({
                   <button
                     className={`ghost-button target-action-btn ${isDetachConfirm ? "target-action-btn--confirm" : "target-action-btn--detach"}`}
                     type="button"
-                    disabled={!managementEnabled || detachingTargetId === target.id}
+                    disabled={
+                      !managementEnabled || detachingTargetId === target.id
+                    }
                     onClick={() => void detachTarget(target)}
                   >
                     {detachingTargetId === target.id
@@ -346,7 +420,11 @@ function DeploymentTargetsList({
         })}
       </div>
       {editingTarget ? (
-        <div className="env-card" data-testid="target-edit-drawer" style={{ gap: "0.85rem" }}>
+        <div
+          className="env-card"
+          data-testid="target-edit-drawer"
+          style={{ gap: "0.85rem" }}
+        >
           <div>
             <h4 style={{ margin: 0 }}>Edit deployment target</h4>
             <p className="env-empty-state" style={{ margin: "0.25rem 0 0" }}>
@@ -359,7 +437,9 @@ function DeploymentTargetsList({
               <input
                 aria-label="Target display name"
                 value={editValues.providerProjectName ?? ""}
-                onChange={(event) => updateEditValue("providerProjectName", event.target.value)}
+                onChange={(event) =>
+                  updateEditValue("providerProjectName", event.target.value)
+                }
               />
             </label>
             <label>
@@ -367,7 +447,9 @@ function DeploymentTargetsList({
               <select
                 aria-label="Target slot"
                 value={editValues.slot ?? "backend"}
-                onChange={(event) => updateEditValue("slot", event.target.value as EnvTargetSlot)}
+                onChange={(event) =>
+                  updateEditValue("slot", event.target.value as EnvTargetSlot)
+                }
               >
                 <option value="backend">Backend</option>
                 <option value="frontend">Frontend</option>
@@ -379,7 +461,9 @@ function DeploymentTargetsList({
               <input
                 aria-label="Target branch"
                 value={editValues.branchName ?? ""}
-                onChange={(event) => updateEditValue("branchName", event.target.value)}
+                onChange={(event) =>
+                  updateEditValue("branchName", event.target.value)
+                }
               />
             </label>
             <label>
@@ -387,7 +471,9 @@ function DeploymentTargetsList({
               <input
                 aria-label="Target root directory"
                 value={editValues.rootDirectory ?? ""}
-                onChange={(event) => updateEditValue("rootDirectory", event.target.value)}
+                onChange={(event) =>
+                  updateEditValue("rootDirectory", event.target.value)
+                }
               />
             </label>
             <label>
@@ -395,7 +481,9 @@ function DeploymentTargetsList({
               <input
                 aria-label="Target build command"
                 value={editValues.buildCommand ?? ""}
-                onChange={(event) => updateEditValue("buildCommand", event.target.value)}
+                onChange={(event) =>
+                  updateEditValue("buildCommand", event.target.value)
+                }
               />
             </label>
             <label>
@@ -403,7 +491,9 @@ function DeploymentTargetsList({
               <input
                 aria-label="Target start command"
                 value={editValues.startCommand ?? ""}
-                onChange={(event) => updateEditValue("startCommand", event.target.value)}
+                onChange={(event) =>
+                  updateEditValue("startCommand", event.target.value)
+                }
               />
             </label>
             {editingTarget.provider === "render" ? (
@@ -412,7 +502,12 @@ function DeploymentTargetsList({
                 <select
                   aria-label="Target provider environment"
                   value={editValues.renderEnvironmentName ?? ""}
-                  onChange={(event) => updateEditValue("renderEnvironmentName", event.target.value as EnvEnvironment)}
+                  onChange={(event) =>
+                    updateEditValue(
+                      "renderEnvironmentName",
+                      event.target.value as EnvEnvironment,
+                    )
+                  }
                 >
                   <option value="">Not configured</option>
                   <option value="test">Test</option>
@@ -422,8 +517,19 @@ function DeploymentTargetsList({
               </label>
             ) : null}
           </div>
-          <div style={{ display: "flex", gap: "0.5rem", justifyContent: "flex-end", flexWrap: "wrap" }}>
-            <button className="ghost-button" type="button" onClick={() => setEditingTarget(null)}>
+          <div
+            style={{
+              display: "flex",
+              gap: "0.5rem",
+              justifyContent: "flex-end",
+              flexWrap: "wrap",
+            }}
+          >
+            <button
+              className="ghost-button"
+              type="button"
+              onClick={() => setEditingTarget(null)}
+            >
               Cancel
             </button>
             <button
@@ -432,7 +538,9 @@ function DeploymentTargetsList({
               disabled={savingTargetId === editingTarget.id}
               onClick={() => void saveEdit()}
             >
-              {savingTargetId === editingTarget.id ? "Saving..." : "Save metadata"}
+              {savingTargetId === editingTarget.id
+                ? "Saving..."
+                : "Save metadata"}
             </button>
           </div>
         </div>
@@ -441,7 +549,9 @@ function DeploymentTargetsList({
   );
 }
 
-function EnvMetadataList({ metadata }: Readonly<{ metadata: EnvVarMetadata[] }>) {
+function EnvMetadataList({
+  metadata,
+}: Readonly<{ metadata: EnvVarMetadata[] }>) {
   if (!metadata.length) {
     return <p className="env-empty-state">No variables provisioned yet.</p>;
   }
@@ -460,7 +570,9 @@ function EnvMetadataList({ metadata }: Readonly<{ metadata: EnvVarMetadata[] }>)
   );
 }
 
-function CiRunsList({ response }: Readonly<{ response: ProjectCiRunsResponse | null }>) {
+function CiRunsList({
+  response,
+}: Readonly<{ response: ProjectCiRunsResponse | null }>) {
   if (!response) {
     return <p className="env-empty-state">Loading CI runs...</p>;
   }
@@ -475,8 +587,17 @@ function CiRunsList({ response }: Readonly<{ response: ProjectCiRunsResponse | n
       {response.runs.length ? (
         <div className="env-metadata-list">
           {response.runs.map((run) => (
-            <div key={run.id} className={`env-metadata-row ${run.conclusion === "failure" ? "failed" : "provisioned"}`}>
-              <span style={{ display: "flex", flexDirection: "column", gap: "0.2rem" }}>
+            <div
+              key={run.id}
+              className={`env-metadata-row ${run.conclusion === "failure" ? "failed" : "provisioned"}`}
+            >
+              <span
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "0.2rem",
+                }}
+              >
                 <strong>{run.workflowName}</strong>
                 <small>
                   {run.stage} - {run.branch} - {run.status}
@@ -489,8 +610,20 @@ function CiRunsList({ response }: Readonly<{ response: ProjectCiRunsResponse | n
                   {formatDate(run.createdAt)} - {formatDate(run.updatedAt)}
                 </small>
               </span>
-              <span style={{ display: "flex", gap: "0.4rem", flexWrap: "wrap", justifyContent: "flex-end" }}>
-                <a className="ghost-button" href={run.htmlUrl} rel="noreferrer" target="_blank">
+              <span
+                style={{
+                  display: "flex",
+                  gap: "0.4rem",
+                  flexWrap: "wrap",
+                  justifyContent: "flex-end",
+                }}
+              >
+                <a
+                  className="ghost-button"
+                  href={run.htmlUrl}
+                  rel="noreferrer"
+                  target="_blank"
+                >
                   GitHub run
                 </a>
                 {run.canRerun ? (
@@ -533,21 +666,44 @@ function DeploymentHistoryList({
               }`}
               style={{ alignItems: "flex-start" }}
             >
-              <span style={{ display: "flex", flexDirection: "column", gap: "0.2rem" }}>
+              <span
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "0.2rem",
+                }}
+              >
                 <strong>{deployment.targetName}</strong>
                 <small>
-                  {deployment.provider} - {deployment.environment ?? "environment not tracked"} - {deployment.status}
+                  {deployment.provider} -{" "}
+                  {deployment.environment ?? "environment not tracked"} -{" "}
+                  {deployment.status}
                 </small>
                 <small>
-                  Branch {deployment.branch ?? "not available"} - Commit {deployment.commitSha ?? "not available"}
+                  Branch {deployment.branch ?? "not available"} - Commit{" "}
+                  {deployment.commitSha ?? "not available"}
                 </small>
                 <small>
                   Created {formatDate(deployment.createdAt)} - Ready{" "}
-                  {deployment.readyAt ? formatDate(deployment.readyAt) : "not ready"}
+                  {deployment.readyAt
+                    ? formatDate(deployment.readyAt)
+                    : "not ready"}
                 </small>
               </span>
-              <span style={{ display: "flex", gap: "0.4rem", flexWrap: "wrap", justifyContent: "flex-end" }}>
-                <a className="ghost-button" href={deployment.providerUrl} rel="noreferrer" target="_blank">
+              <span
+                style={{
+                  display: "flex",
+                  gap: "0.4rem",
+                  flexWrap: "wrap",
+                  justifyContent: "flex-end",
+                }}
+              >
+                <a
+                  className="ghost-button"
+                  href={deployment.providerUrl}
+                  rel="noreferrer"
+                  target="_blank"
+                >
                   Provider deployment
                 </a>
               </span>
@@ -570,7 +726,10 @@ function DriftFindingsPanel({
   workflowUpdatePrEnabled,
 }: Readonly<{
   onRun: () => void;
-  onRepair: (findingId: string, action: ProjectDriftRepairAction) => Promise<string>;
+  onRepair: (
+    findingId: string,
+    action: ProjectDriftRepairAction,
+  ) => Promise<string>;
   repairEnabled: boolean;
   response: ProjectDriftResponse | null;
   running: boolean;
@@ -580,7 +739,9 @@ function DriftFindingsPanel({
     findingId: string;
     action: ProjectDriftRepairAction;
   } | null>(null);
-  const [repairingFindingId, setRepairingFindingId] = useState<string | null>(null);
+  const [repairingFindingId, setRepairingFindingId] = useState<string | null>(
+    null,
+  );
   const [repairMessage, setRepairMessage] = useState<string | null>(null);
 
   if (!response) {
@@ -588,10 +749,16 @@ function DriftFindingsPanel({
   }
 
   const actionForCode = (code: string): ProjectDriftRepairAction | null => {
-    if (code === "ci_token_missing" || code === "ci_token_revoked") return "rotate_ci_token";
+    if (code === "ci_token_missing" || code === "ci_token_revoked")
+      return "rotate_ci_token";
     if (code === "deployment_target_metadata_missing") return "detach_target";
-    if (code === "workflow_files_missing" || code === "central_workflow_ref_outdated") {
-      return workflowUpdatePrEnabled ? "create_workflow_update_pr" : "regenerate_workflow_preview";
+    if (
+      code === "workflow_files_missing" ||
+      code === "central_workflow_ref_outdated"
+    ) {
+      return workflowUpdatePrEnabled
+        ? "create_workflow_update_pr"
+        : "regenerate_workflow_preview";
     }
     return null;
   };
@@ -604,8 +771,24 @@ function DriftFindingsPanel({
   };
 
   return (
-    <div className="glass-panel" style={{ padding: "1rem", display: "flex", flexDirection: "column", gap: "0.85rem" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", gap: "0.75rem", alignItems: "center", flexWrap: "wrap" }}>
+    <div
+      className="glass-panel"
+      style={{
+        padding: "1rem",
+        display: "flex",
+        flexDirection: "column",
+        gap: "0.85rem",
+      }}
+    >
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          gap: "0.75rem",
+          alignItems: "center",
+          flexWrap: "wrap",
+        }}
+      >
         <div>
           <h4 style={{ margin: 0, fontSize: "0.95rem" }}>Health findings</h4>
           <p className="env-empty-state" style={{ margin: "0.25rem 0 0" }}>
@@ -617,29 +800,45 @@ function DriftFindingsPanel({
           type="button"
           disabled={running}
           onClick={onRun}
-          style={{ minHeight: "2rem", padding: "0.35rem 0.85rem", fontSize: "0.78rem" }}
+          style={{
+            minHeight: "2rem",
+            padding: "0.35rem 0.85rem",
+            fontSize: "0.78rem",
+          }}
         >
           {running ? "Checking..." : "Run drift check"}
         </button>
       </div>
-      {repairMessage ? <p className="env-empty-state" style={{ margin: 0 }}>{repairMessage}</p> : null}
+      {repairMessage ? (
+        <p className="env-empty-state" style={{ margin: 0 }}>
+          {repairMessage}
+        </p>
+      ) : null}
 
       {response.findings.length ? (
         <div className="env-metadata-list">
           {response.findings.map((finding) => {
             const action = actionForCode(finding.code);
             const isConfirming =
-              pendingRepair?.findingId === finding.id && pendingRepair.action === action;
+              pendingRepair?.findingId === finding.id &&
+              pendingRepair.action === action;
             return (
               <div
                 key={finding.id}
                 className={`env-metadata-row ${finding.severity === "error" ? "failed" : "provisioned"}`}
                 style={{ alignItems: "flex-start" }}
               >
-                <span style={{ display: "flex", flexDirection: "column", gap: "0.2rem" }}>
+                <span
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "0.2rem",
+                  }}
+                >
                   <strong>{finding.code}</strong>
                   <small>
-                    {finding.severity} - {finding.source} - {formatDate(finding.detectedAt)}
+                    {finding.severity} - {finding.source} -{" "}
+                    {formatDate(finding.detectedAt)}
                   </small>
                   <small>{finding.message}</small>
                 </span>
@@ -651,13 +850,17 @@ function DriftFindingsPanel({
                     onClick={() => {
                       if (!isConfirming) {
                         setPendingRepair({ findingId: finding.id, action });
-                        setRepairMessage("Confirm repair to run this local-safe action.");
+                        setRepairMessage(
+                          "Confirm repair to run this local-safe action.",
+                        );
                         return;
                       }
                       setRepairingFindingId(finding.id);
                       void onRepair(finding.id, action)
                         .then((message) => {
-                          setRepairMessage(`${message}. Run drift check again to refresh findings.`);
+                          setRepairMessage(
+                            `${message}. Run drift check again to refresh findings.`,
+                          );
                           setPendingRepair(null);
                         })
                         .catch(() => {
@@ -665,7 +868,11 @@ function DriftFindingsPanel({
                         })
                         .finally(() => setRepairingFindingId(null));
                     }}
-                    style={{ minHeight: "2rem", padding: "0.35rem 0.7rem", fontSize: "0.76rem" }}
+                    style={{
+                      minHeight: "2rem",
+                      padding: "0.35rem 0.7rem",
+                      fontSize: "0.76rem",
+                    }}
                   >
                     {repairingFindingId === finding.id
                       ? "Repairing..."
@@ -679,7 +886,11 @@ function DriftFindingsPanel({
                     type="button"
                     disabled
                     title="Repair actions coming in the next phase"
-                    style={{ minHeight: "2rem", padding: "0.35rem 0.7rem", fontSize: "0.76rem" }}
+                    style={{
+                      minHeight: "2rem",
+                      padding: "0.35rem 0.7rem",
+                      fontSize: "0.76rem",
+                    }}
                   >
                     Repair actions coming in the next phase
                   </button>
@@ -706,9 +917,13 @@ export function WorkflowCurrentTab({
   projects,
 }: Readonly<WorkflowCurrentTabProps>) {
   const [subTab, setSubTab] = useState<SubTab>("projects");
-  const [projectDetailTab, setProjectDetailTab] = useState<ProjectDetailTab>("overview");
-  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
-  const [projectOverview, setProjectOverview] = useState<ProjectOverviewResponse | null>(null);
+  const [projectDetailTab, setProjectDetailTab] =
+    useState<ProjectDetailTab>("overview");
+  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(
+    null,
+  );
+  const [projectOverview, setProjectOverview] =
+    useState<ProjectOverviewResponse | null>(null);
   const [projectOverviewError, setProjectOverviewError] = useState<{
     projectId: string;
     message: string;
@@ -726,38 +941,62 @@ export function WorkflowCurrentTab({
   } = useCapabilities();
   const [syncingProjectId, setSyncingProjectId] = useState<string | null>(null);
   const [syncMessage, setSyncMessage] = useState<string | null>(null);
-  const [workflowSettings, setWorkflowSettings] = useState<WorkflowSettings | null>(null);
-  const [workflowSettingsProjectId, setWorkflowSettingsProjectId] = useState<string | null>(null);
-  const [workflowSettingsError, setWorkflowSettingsError] = useState<string | null>(null);
-  const [workflowPreview, setWorkflowPreview] = useState<WorkflowSettingsPreviewResponse | null>(null);
-  const [workflowUpdatePr, setWorkflowUpdatePr] = useState<WorkflowUpdatePullRequestResponse | null>(null);
-  const [workflowUpdatePrError, setWorkflowUpdatePrError] = useState<string | null>(null);
+  const [workflowSettings, setWorkflowSettings] =
+    useState<WorkflowSettings | null>(null);
+  const [workflowSettingsProjectId, setWorkflowSettingsProjectId] = useState<
+    string | null
+  >(null);
+  const [workflowSettingsError, setWorkflowSettingsError] = useState<
+    string | null
+  >(null);
+  const [workflowPreview, setWorkflowPreview] =
+    useState<WorkflowSettingsPreviewResponse | null>(null);
+  const [workflowUpdatePr, setWorkflowUpdatePr] =
+    useState<WorkflowUpdatePullRequestResponse | null>(null);
+  const [workflowUpdatePrError, setWorkflowUpdatePrError] = useState<
+    string | null
+  >(null);
   const [creatingWorkflowPr, setCreatingWorkflowPr] = useState(false);
   const [previewingWorkflow, setPreviewingWorkflow] = useState(false);
-  const [ciRunsResponse, setCiRunsResponse] = useState<ProjectCiRunsResponse | null>(null);
+  const [ciRunsResponse, setCiRunsResponse] =
+    useState<ProjectCiRunsResponse | null>(null);
   const [ciRunsProjectId, setCiRunsProjectId] = useState<string | null>(null);
   const [ciRunsError, setCiRunsError] = useState<string | null>(null);
-  const [deploymentsResponse, setDeploymentsResponse] = useState<ProjectDeploymentsResponse | null>(null);
-  const [deploymentsProjectId, setDeploymentsProjectId] = useState<string | null>(null);
+  const [deploymentsResponse, setDeploymentsResponse] =
+    useState<ProjectDeploymentsResponse | null>(null);
+  const [deploymentsProjectId, setDeploymentsProjectId] = useState<
+    string | null
+  >(null);
   const [deploymentsError, setDeploymentsError] = useState<string | null>(null);
-  const [driftResponse, setDriftResponse] = useState<ProjectDriftResponse | null>(null);
+  const [driftResponse, setDriftResponse] =
+    useState<ProjectDriftResponse | null>(null);
   const [driftProjectId, setDriftProjectId] = useState<string | null>(null);
   const [driftError, setDriftError] = useState<string | null>(null);
   const [runningDriftCheck, setRunningDriftCheck] = useState(false);
-  const [auditResponse, setAuditResponse] = useState<ProjectAuditEventsResponse | null>(null);
+  const [auditResponse, setAuditResponse] =
+    useState<ProjectAuditEventsResponse | null>(null);
   const [auditProjectId, setAuditProjectId] = useState<string | null>(null);
   const [auditError, setAuditError] = useState<string | null>(null);
   const selectedProject = useMemo(() => {
-    return projects.find((project) => project.id === selectedProjectId) ?? projects[0] ?? null;
+    return (
+      projects.find((project) => project.id === selectedProjectId) ??
+      projects[0] ??
+      null
+    );
   }, [projects, selectedProjectId]);
-  const selectedOverview = selectedProject && projectOverview?.project.id === selectedProject.id
-    ? projectOverview
-    : null;
-  const selectedOverviewError = selectedProject && projectOverviewError?.projectId === selectedProject.id
-    ? projectOverviewError.message
-    : null;
-  const loadingProjectOverview = Boolean(selectedProject && !selectedOverview && !selectedOverviewError);
-  const selectedWorkflowFiles = selectedOverview?.workflow.files ?? selectedProject?.workflowFiles ?? [];
+  const selectedOverview =
+    selectedProject && projectOverview?.project.id === selectedProject.id
+      ? projectOverview
+      : null;
+  const selectedOverviewError =
+    selectedProject && projectOverviewError?.projectId === selectedProject.id
+      ? projectOverviewError.message
+      : null;
+  const loadingProjectOverview = Boolean(
+    selectedProject && !selectedOverview && !selectedOverviewError,
+  );
+  const selectedWorkflowFiles =
+    selectedOverview?.workflow.files ?? selectedProject?.workflowFiles ?? [];
   const deploymentTargets = selectedOverview?.deploymentTargets.items ?? [];
   const envMetadata = selectedOverview?.environment.items ?? [];
   const syncSnapshot = selectedOverview?.syncSnapshot ?? null;
@@ -787,7 +1026,9 @@ export function WorkflowCurrentTab({
     if (!selectedProject) return;
     setProjectOverview((current) => {
       if (!current || current.project.id !== selectedProject.id) return current;
-      const items = current.deploymentTargets.items.filter((item) => item.id !== targetId);
+      const items = current.deploymentTargets.items.filter(
+        (item) => item.id !== targetId,
+      );
       return {
         ...current,
         deploymentTargets: {
@@ -827,7 +1068,11 @@ export function WorkflowCurrentTab({
   }, [selectedProject]);
 
   useEffect(() => {
-    if (!selectedProject || projectDetailTab !== "workflow" || !workflowSettingsPreviewEnabled) {
+    if (
+      !selectedProject ||
+      projectDetailTab !== "workflow" ||
+      !workflowSettingsPreviewEnabled
+    ) {
       return;
     }
 
@@ -1078,7 +1323,10 @@ export function WorkflowCurrentTab({
     setPreviewingWorkflow(true);
     setWorkflowSettingsError(null);
     try {
-      const result = await previewWorkflowSettings(selectedProject.id, workflowSettings);
+      const result = await previewWorkflowSettings(
+        selectedProject.id,
+        workflowSettings,
+      );
       setWorkflowPreview(result);
       setWorkflowSettings(result.settings);
       setWorkflowUpdatePr(null);
@@ -1098,7 +1346,10 @@ export function WorkflowCurrentTab({
     setCreatingWorkflowPr(true);
     setWorkflowUpdatePrError(null);
     try {
-      const result = await createWorkflowUpdatePullRequest(selectedProject.id, workflowSettings);
+      const result = await createWorkflowUpdatePullRequest(
+        selectedProject.id,
+        workflowSettings,
+      );
       setWorkflowUpdatePr(result);
     } catch {
       setWorkflowUpdatePrError("Unable to create workflow update PR.");
@@ -1117,16 +1368,27 @@ export function WorkflowCurrentTab({
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
-      style={{ background: "transparent", border: "none", boxShadow: "none", padding: 0 }}
+      style={{
+        background: "transparent",
+        border: "none",
+        boxShadow: "none",
+        padding: 0,
+      }}
     >
       {/* ── Latest result banner ──────────────────────────────────── */}
       {latestResult ? (
         <div className="latest-result-banner glass-panel">
           <div className="latest-result-banner__header">
             <span className="latest-result-banner__dot" aria-hidden="true" />
-            <p className="eyebrow latest-result-banner__eyebrow">Project Created Successfully</p>
-            <span className="latest-result-banner__sep" aria-hidden="true">·</span>
-            <span className="latest-result-banner__repo">{latestResult.repoFullName}</span>
+            <p className="eyebrow latest-result-banner__eyebrow">
+              Project Created Successfully
+            </p>
+            <span className="latest-result-banner__sep" aria-hidden="true">
+              ·
+            </span>
+            <span className="latest-result-banner__repo">
+              {latestResult.repoFullName}
+            </span>
           </div>
 
           <div className="result-branches latest-result-banner__chips">
@@ -1134,13 +1396,17 @@ export function WorkflowCurrentTab({
             <span className="branch-chip">{latestResult.projectTypeId}</span>
             <span className="branch-chip">{latestResult.workflowRecipeId}</span>
             {latestResult.branchesCreated.map((branch) => (
-              <span key={branch} className="branch-chip branch-chip--mono">{branch}</span>
+              <span key={branch} className="branch-chip branch-chip--mono">
+                {branch}
+              </span>
             ))}
           </div>
 
           <p className="latest-result-banner__meta">
             Workflow file:{" "}
-            <strong className="latest-result-banner__filename">{latestResult.outputFileName}</strong>
+            <strong className="latest-result-banner__filename">
+              {latestResult.outputFileName}
+            </strong>
             {latestResult.githubCommitUrl ? (
               <a
                 href={latestResult.githubCommitUrl}
@@ -1148,21 +1414,38 @@ export function WorkflowCurrentTab({
                 rel="noreferrer"
                 className="latest-result-banner__commit-link"
               >
-                commit: <span className="latest-result-banner__sha">{latestResult.githubCommitSha.slice(0, 10)}</span>
+                commit:{" "}
+                <span className="latest-result-banner__sha">
+                  {latestResult.githubCommitSha.slice(0, 10)}
+                </span>
               </a>
             ) : (
-              <code className="latest-result-banner__sha-plain">{latestResult.githubCommitSha.slice(0, 10)}</code>
+              <code className="latest-result-banner__sha-plain">
+                {latestResult.githubCommitSha.slice(0, 10)}
+              </code>
             )}
           </p>
 
           <WorkflowStageList files={latestResult.workflowFiles} />
-          <DeploymentProvisioningSummary result={latestResult.deploymentProvisioning} />
+          <DeploymentProvisioningSummary
+            result={latestResult.deploymentProvisioning}
+          />
 
           <div className="latest-result-banner__actions">
-            <a className="latest-result-banner__action-btn latest-result-banner__action-btn--primary" href={latestResult.repoUrl} target="_blank" rel="noreferrer">
+            <a
+              className="latest-result-banner__action-btn latest-result-banner__action-btn--primary"
+              href={latestResult.repoUrl}
+              target="_blank"
+              rel="noreferrer"
+            >
               Open Repository
             </a>
-            <a className="latest-result-banner__action-btn" href={`${latestResult.repoUrl}/actions`} target="_blank" rel="noreferrer">
+            <a
+              className="latest-result-banner__action-btn"
+              href={`${latestResult.repoUrl}/actions`}
+              target="_blank"
+              rel="noreferrer"
+            >
               Open Actions
             </a>
             <a
@@ -1178,14 +1461,20 @@ export function WorkflowCurrentTab({
           <p className="latest-result-banner__footer">
             Workflow committed to{" "}
             <code className="file-path-label">{latestResult.workflowPath}</code>{" "}
-            on <code className="file-path-label">main</code>.
-            Push to <code className="file-path-label">test</code> to trigger your first CI run.
+            on <code className="file-path-label">main</code>. Push to{" "}
+            <code className="file-path-label">test</code> to trigger your first
+            CI run.
           </p>
         </div>
       ) : null}
 
       {/* ── Sub-tab bar ───────────────────────────────────────────── */}
-      <div className="current-subtab-bar" role="tablist" aria-label="Current tab sections" data-tour="subtab-bar">
+      <div
+        className="current-subtab-bar"
+        role="tablist"
+        aria-label="Current tab sections"
+        data-tour="subtab-bar"
+      >
         {(["projects", "history"] as SubTab[]).map((tab) => (
           <button
             key={tab}
@@ -1228,26 +1517,81 @@ export function WorkflowCurrentTab({
           {loadingProjects ? (
             <div className="repo-grid">
               {[0, 1, 2].map((i) => (
-                <div key={i} className="skeleton-card glass-panel" style={{ minHeight: "12rem", background: "rgba(15, 23, 42, 0.3)", animation: "state-pulse 1.5s infinite" }} />
+                <div
+                  key={i}
+                  className="skeleton-card glass-panel"
+                  style={{
+                    minHeight: "12rem",
+                    background: "rgba(15, 23, 42, 0.3)",
+                    animation: "state-pulse 1.5s infinite",
+                  }}
+                />
               ))}
             </div>
           ) : projects.length === 0 ? (
-            <div className="glass-panel" style={{ padding: "2.5rem 1.5rem", textAlign: "center", background: "rgba(15, 23, 42, 0.3)", display: "flex", flexDirection: "column", gap: "1.5rem", alignItems: "center" }}>
+            <div
+              className="glass-panel"
+              style={{
+                padding: "2.5rem 1.5rem",
+                textAlign: "center",
+                background: "rgba(15, 23, 42, 0.3)",
+                display: "flex",
+                flexDirection: "column",
+                gap: "1.5rem",
+                alignItems: "center",
+              }}
+            >
               <div>
-                <p style={{ color: "var(--text-primary)", margin: "0 0 0.5rem", fontSize: "0.95rem", fontWeight: 700 }}>
+                <p
+                  style={{
+                    color: "var(--text-primary)",
+                    margin: "0 0 0.5rem",
+                    fontSize: "0.95rem",
+                    fontWeight: 700,
+                  }}
+                >
                   No provisioned projects yet.
                 </p>
-                <p style={{ color: "var(--text-secondary)", margin: 0, fontSize: "0.85rem", maxWidth: "32rem" }}>
-                  When you create one, AlphaCI provisions the repository and commits a workflow that runs through
-                  the gated stages below on every change. A read-only demo project normally appears here too —
-                  open the <Link href="/guide" className="inline-link">guide</Link> to see how it all fits together.
+                <p
+                  style={{
+                    color: "var(--text-secondary)",
+                    margin: 0,
+                    fontSize: "0.85rem",
+                    maxWidth: "32rem",
+                  }}
+                >
+                  When you create one, Alphaexplora provisions the repository and
+                  commits a workflow that runs through the gated stages below on
+                  every change. A read-only demo project normally appears here
+                  too — open the{" "}
+                  <Link href="/guide" className="inline-link">
+                    guide
+                  </Link>{" "}
+                  to see how it all fits together.
                 </p>
               </div>
-              <div style={{ width: "100%", maxWidth: "32rem", padding: "1rem", borderRadius: "var(--radius-card)", background: "rgba(255, 255, 255, 0.02)", border: "1px solid var(--border-soft)" }}>
+              <div
+                style={{
+                  width: "100%",
+                  maxWidth: "32rem",
+                  padding: "1rem",
+                  borderRadius: "var(--radius-card)",
+                  background: "rgba(255, 255, 255, 0.02)",
+                  border: "1px solid var(--border-soft)",
+                }}
+              >
                 <FlowExplainer variant="compact" />
               </div>
-              <button className="primary-button" type="button" onClick={onOpenSetup}
-                      style={{ padding: "0.6rem 1.4rem", fontSize: "0.88rem", minHeight: "2.5rem" }}>
+              <button
+                className="primary-button"
+                type="button"
+                onClick={onOpenSetup}
+                style={{
+                  padding: "0.6rem 1.4rem",
+                  fontSize: "0.88rem",
+                  minHeight: "2.5rem",
+                }}
+              >
                 Create your first project
               </button>
             </div>
@@ -1258,10 +1602,18 @@ export function WorkflowCurrentTab({
               initial="hidden"
               animate="show"
             >
-              <aside className="project-list" aria-label="Provisioned projects" data-tour="projects-list">
+              <aside
+                className="project-list"
+                aria-label="Provisioned projects"
+                data-tour="projects-list"
+              >
                 <div className="project-list-header">
                   <span>Projects</span>
-                  <button className="ghost-button" type="button" onClick={onOpenSetup}>
+                  <button
+                    className="ghost-button"
+                    type="button"
+                    onClick={onOpenSetup}
+                  >
                     New
                   </button>
                 </div>
@@ -1280,12 +1632,19 @@ export function WorkflowCurrentTab({
                       }}
                     >
                       <span className="project-list-title">
-                        {project.repoFullName.split("/")[1] ?? project.repoFullName}
+                        {project.repoFullName.split("/")[1] ??
+                          project.repoFullName}
                       </span>
-                      <span className="project-list-meta">{project.serviceName}</span>
+                      <span className="project-list-meta">
+                        {project.serviceName}
+                      </span>
                       <span className="project-list-badges">
-                        {project.isExample ? <span className="project-demo-badge">Demo</span> : null}
-                        <span className={`project-status-badge ${statusVariant(project.status)}`}>
+                        {project.isExample ? (
+                          <span className="project-demo-badge">Demo</span>
+                        ) : null}
+                        <span
+                          className={`project-status-badge ${statusVariant(project.status)}`}
+                        >
                           {project.status}
                         </span>
                       </span>
@@ -1306,9 +1665,13 @@ export function WorkflowCurrentTab({
                   </div>
                   <span className="project-detail-header-badges">
                     {selectedProject.isExample ? (
-                      <span className="project-demo-badge">Demo · read-only</span>
+                      <span className="project-demo-badge">
+                        Demo · read-only
+                      </span>
                     ) : null}
-                    <span className={`project-status-badge ${statusVariant(selectedProject.status)}`}>
+                    <span
+                      className={`project-status-badge ${statusVariant(selectedProject.status)}`}
+                    >
                       {selectedProject.status}
                     </span>
                   </span>
@@ -1316,31 +1679,52 @@ export function WorkflowCurrentTab({
 
                 {selectedProject.isExample ? (
                   <p className="project-demo-note">
-                    This is a read-only demo project AlphaCI seeds for every account. It shows how a
-                    provisioned project looks end to end — the gated stages, promotion flow, and deploys
-                    explained in the <Link href="/guide#branch-strategy" className="inline-link">guide</Link> —
-                    but it is not connected to a real GitHub repository. Create your own project to run a
-                    live pipeline.
+                    This is a read-only demo project Alphaexplora seeds for every
+                    account. It shows how a provisioned project looks end to end
+                    — the gated stages, promotion flow, and deploys explained in
+                    the{" "}
+                    <Link href="/guide#branch-strategy" className="inline-link">
+                      guide
+                    </Link>{" "}
+                    — but it is not connected to a real GitHub repository.
+                    Create your own project to run a live pipeline.
                   </p>
                 ) : null}
 
                 <div className="project-detail-actions">
                   {selectedProject.repoUrl ? (
                     <>
-                      <a className="ghost-button" href={selectedProject.repoUrl} target="_blank" rel="noreferrer">
+                      <a
+                        className="ghost-button"
+                        href={selectedProject.repoUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                      >
                         Repo
                       </a>
-                      <a className="ghost-button" href={`${selectedProject.repoUrl}/actions`} target="_blank" rel="noreferrer">
+                      <a
+                        className="ghost-button"
+                        href={`${selectedProject.repoUrl}/actions`}
+                        target="_blank"
+                        rel="noreferrer"
+                      >
                         Actions
                       </a>
                     </>
                   ) : null}
                   {selectedProject.githubCommitUrl ? (
-                    <a className="ghost-button" href={selectedProject.githubCommitUrl} target="_blank" rel="noreferrer">
+                    <a
+                      className="ghost-button"
+                      href={selectedProject.githubCommitUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
                       Commit
                     </a>
                   ) : null}
-                  {envProvisioningEnabled && selectedProject.status === "provisioned" && !selectedProject.isExample ? (
+                  {envProvisioningEnabled &&
+                  selectedProject.status === "provisioned" &&
+                  !selectedProject.isExample ? (
                     <button
                       className="ghost-button env-action-button"
                       type="button"
@@ -1353,7 +1737,12 @@ export function WorkflowCurrentTab({
                   ) : null}
                 </div>
 
-                <div className="project-inner-tabs" role="tablist" aria-label="Project detail sections" data-tour="project-detail-tabs">
+                <div
+                  className="project-inner-tabs"
+                  role="tablist"
+                  aria-label="Project detail sections"
+                  data-tour="project-detail-tabs"
+                >
                   {PROJECT_DETAIL_TABS.map((tab) => (
                     <button
                       key={tab.id}
@@ -1372,15 +1761,26 @@ export function WorkflowCurrentTab({
                   <p className="env-empty-state">Loading project overview...</p>
                 ) : null}
                 {selectedOverviewError ? (
-                  <p className="error-text" style={{ margin: 0 }}>{selectedOverviewError}</p>
+                  <p className="error-text" style={{ margin: 0 }}>
+                    {selectedOverviewError}
+                  </p>
                 ) : null}
 
                 {projectDetailTab === "overview" ? (
-                  <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+                  <div
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: "1rem",
+                    }}
+                  >
                     <dl className="project-detail-grid">
                       <div>
                         <dt>Workflow</dt>
-                        <dd>{selectedOverview?.workflow.path ?? selectedProject.workflowPath}</dd>
+                        <dd>
+                          {selectedOverview?.workflow.path ??
+                            selectedProject.workflowPath}
+                        </dd>
                       </div>
                       <div>
                         <dt>Checks</dt>
@@ -1389,25 +1789,40 @@ export function WorkflowCurrentTab({
                       {selectedProject.githubCommitSha ? (
                         <div>
                           <dt>Commit</dt>
-                          <dd>{selectedProject.githubCommitSha.slice(0, 10)}</dd>
+                          <dd>
+                            {selectedProject.githubCommitSha.slice(0, 10)}
+                          </dd>
                         </div>
                       ) : null}
                       <div>
                         <dt>Stages</dt>
-                        <dd>{selectedWorkflowFiles.length ? `${selectedWorkflowFiles.length} gated workflow stages` : "Not configured"}</dd>
+                        <dd>
+                          {selectedWorkflowFiles.length
+                            ? `${selectedWorkflowFiles.length} gated workflow stages`
+                            : "Not configured"}
+                        </dd>
                       </div>
                       <div>
                         <dt>CI token</dt>
-                        <dd>{selectedOverview?.ciAuth.status ?? "Not loaded"}</dd>
+                        <dd>
+                          {selectedOverview?.ciAuth.status ?? "Not loaded"}
+                        </dd>
                       </div>
                       <div>
                         <dt>Targets</dt>
-                        <dd>{selectedOverview ? selectedOverview.deploymentTargets.count : "Not loaded"}</dd>
+                        <dd>
+                          {selectedOverview
+                            ? selectedOverview.deploymentTargets.count
+                            : "Not loaded"}
+                        </dd>
                       </div>
                     </dl>
 
                     {syncSnapshot ? (
-                      <div className="env-metadata-row provisioned" style={{ alignItems: "center" }}>
+                      <div
+                        className="env-metadata-row provisioned"
+                        style={{ alignItems: "center" }}
+                      >
                         <span>
                           <strong>Local snapshot</strong>
                           <br />
@@ -1422,14 +1837,18 @@ export function WorkflowCurrentTab({
                             disabled={syncingProjectId === selectedProject.id}
                             onClick={handleProjectSync}
                           >
-                            {syncingProjectId === selectedProject.id ? "Syncing…" : "Sync now"}
+                            {syncingProjectId === selectedProject.id
+                              ? "Syncing…"
+                              : "Sync now"}
                           </button>
                         ) : null}
                       </div>
                     ) : null}
 
                     {syncMessage ? (
-                      <p className="error-text" style={{ margin: 0 }}>{syncMessage}</p>
+                      <p className="error-text" style={{ margin: 0 }}>
+                        {syncMessage}
+                      </p>
                     ) : null}
 
                     {selectedProject.failureReason ? (
@@ -1439,9 +1858,15 @@ export function WorkflowCurrentTab({
                     ) : null}
 
                     {selectedOverview?.health.checks.length ? (
-                      <div className="env-metadata-list" data-tour="sync-health">
+                      <div
+                        className="env-metadata-list"
+                        data-tour="sync-health"
+                      >
                         {selectedOverview.health.checks.map((check) => (
-                          <div key={check.key} className={`env-metadata-row ${check.status === "error" ? "failed" : "provisioned"}`}>
+                          <div
+                            key={check.key}
+                            className={`env-metadata-row ${check.status === "error" ? "failed" : "provisioned"}`}
+                          >
                             <span>{check.label}</span>
                             <span>{check.message}</span>
                           </div>
@@ -1449,9 +1874,12 @@ export function WorkflowCurrentTab({
                       </div>
                     ) : null}
 
-                    {driftDetectionEnabled && selectedOverview?.capabilities.driftDetection ? (
+                    {driftDetectionEnabled &&
+                    selectedOverview?.capabilities.driftDetection ? (
                       driftError ? (
-                        <p className="error-text" style={{ margin: 0 }}>{driftError}</p>
+                        <p className="error-text" style={{ margin: 0 }}>
+                          {driftError}
+                        </p>
                       ) : (
                         <DriftFindingsPanel
                           onRun={() => void handleRunDriftDetection()}
@@ -1467,13 +1895,44 @@ export function WorkflowCurrentTab({
                 ) : null}
 
                 {projectDetailTab === "workflow" ? (
-                  <div style={{ display: "flex", flexDirection: "column", gap: "0.85rem" }}>
-                    {workflowSettingsPreviewEnabled && selectedOverview?.capabilities.workflowSettings ? (
-                      <div className="glass-panel" style={{ padding: "1rem", display: "flex", flexDirection: "column", gap: "0.85rem" }}>
-                        <div style={{ display: "flex", justifyContent: "space-between", gap: "0.75rem", alignItems: "center", flexWrap: "wrap" }}>
+                  <div
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: "0.85rem",
+                    }}
+                  >
+                    {workflowSettingsPreviewEnabled &&
+                    selectedOverview?.capabilities.workflowSettings ? (
+                      <div
+                        className="glass-panel"
+                        style={{
+                          padding: "1rem",
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: "0.85rem",
+                        }}
+                      >
+                        <div
+                          style={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            gap: "0.75rem",
+                            alignItems: "center",
+                            flexWrap: "wrap",
+                          }}
+                        >
                           <div>
-                            <h4 style={{ margin: 0, fontSize: "0.95rem" }}>Workflow settings</h4>
-                            <p style={{ margin: "0.25rem 0 0", color: "var(--text-secondary)", fontSize: "0.78rem" }}>
+                            <h4 style={{ margin: 0, fontSize: "0.95rem" }}>
+                              Workflow settings
+                            </h4>
+                            <p
+                              style={{
+                                margin: "0.25rem 0 0",
+                                color: "var(--text-secondary)",
+                                fontSize: "0.78rem",
+                              }}
+                            >
                               Preview only
                             </p>
                           </div>
@@ -1482,7 +1941,11 @@ export function WorkflowCurrentTab({
                             type="button"
                             disabled={!workflowSettings || previewingWorkflow}
                             onClick={handleWorkflowPreview}
-                            style={{ minHeight: "2rem", padding: "0.35rem 0.85rem", fontSize: "0.78rem" }}
+                            style={{
+                              minHeight: "2rem",
+                              padding: "0.35rem 0.85rem",
+                              fontSize: "0.78rem",
+                            }}
                           >
                             {previewingWorkflow ? "Previewing..." : "Preview"}
                           </button>
@@ -1517,7 +1980,9 @@ export function WorkflowCurrentTab({
                                 onChange={(event) => {
                                   setWorkflowSettings({
                                     ...workflowSettings,
-                                    coverageThreshold: Number(event.target.value),
+                                    coverageThreshold: Number(
+                                      event.target.value,
+                                    ),
                                   });
                                 }}
                               />
@@ -1562,14 +2027,19 @@ export function WorkflowCurrentTab({
                                 onChange={(event) => {
                                   setWorkflowSettings({
                                     ...workflowSettings,
-                                    workflowRecipeId: event.target.value || null,
+                                    workflowRecipeId:
+                                      event.target.value || null,
                                   });
                                 }}
                               />
                             </label>
                             <label>
                               <dt>Package manager</dt>
-                              <select aria-label="Package manager" value={workflowSettings.packageManager} disabled>
+                              <select
+                                aria-label="Package manager"
+                                value={workflowSettings.packageManager}
+                                disabled
+                              >
                                 <option value="npm">npm</option>
                               </select>
                             </label>
@@ -1643,37 +2113,61 @@ export function WorkflowCurrentTab({
                             </label>
                           </div>
                         ) : (
-                          <p className="env-empty-state">Loading workflow settings...</p>
+                          <p className="env-empty-state">
+                            Loading workflow settings...
+                          </p>
                         )}
 
                         <div>
-                          <h4 style={{ margin: "0 0 0.5rem", fontSize: "0.85rem" }}>Deploy target mappings</h4>
+                          <h4
+                            style={{
+                              margin: "0 0 0.5rem",
+                              fontSize: "0.85rem",
+                            }}
+                          >
+                            Deploy target mappings
+                          </h4>
                           {deploymentTargets.length ? (
                             <div className="env-metadata-list">
                               {deploymentTargets.map((target) => (
-                                <div key={target.id} className="env-metadata-row provisioned">
+                                <div
+                                  key={target.id}
+                                  className="env-metadata-row provisioned"
+                                >
                                   <span>{target.slot}</span>
-                                  <span>{target.providerProjectName} / {target.branchName}</span>
+                                  <span>
+                                    {target.providerProjectName} /{" "}
+                                    {target.branchName}
+                                  </span>
                                 </div>
                               ))}
                             </div>
                           ) : (
-                            <p className="env-empty-state">No deployment target mappings.</p>
+                            <p className="env-empty-state">
+                              No deployment target mappings.
+                            </p>
                           )}
                         </div>
 
                         {workflowSettingsError ? (
-                          <p className="error-text" style={{ margin: 0 }}>{workflowSettingsError}</p>
+                          <p className="error-text" style={{ margin: 0 }}>
+                            {workflowSettingsError}
+                          </p>
                         ) : null}
 
                         {workflowPreview?.validationWarnings.length ? (
                           <div className="env-metadata-list">
-                            {workflowPreview.validationWarnings.map((warning) => (
-                              <div key={`${warning.field}-${warning.message}`} className="env-metadata-row failed">
-                                <span>{warning.field}</span>
-                                <span>{warning.message}</span>
-                              </div>
-                            ))}
+                            {workflowPreview.validationWarnings.map(
+                              (warning) => (
+                                <div
+                                  key={`${warning.field}-${warning.message}`}
+                                  className="env-metadata-row failed"
+                                >
+                                  <span>{warning.field}</span>
+                                  <span>{warning.message}</span>
+                                </div>
+                              ),
+                            )}
                           </div>
                         ) : null}
 
@@ -1681,24 +2175,46 @@ export function WorkflowCurrentTab({
                           <>
                             <div className="env-metadata-list">
                               {workflowPreview.diffSummary.map((item) => (
-                                <div key={item.path} className="env-metadata-row provisioned">
+                                <div
+                                  key={item.path}
+                                  className="env-metadata-row provisioned"
+                                >
                                   <span>{item.path}</span>
-                                  <span className={item.status === "changed" ? "dash-badge-violet" : "branch-chip"}>
+                                  <span
+                                    className={
+                                      item.status === "changed"
+                                        ? "dash-badge-violet"
+                                        : "branch-chip"
+                                    }
+                                  >
                                     {item.status}
                                   </span>
                                 </div>
                               ))}
                             </div>
                             {workflowUpdatePrEnabled ? (
-                              <div style={{ display: "flex", gap: "0.75rem", alignItems: "center", flexWrap: "wrap" }}>
+                              <div
+                                style={{
+                                  display: "flex",
+                                  gap: "0.75rem",
+                                  alignItems: "center",
+                                  flexWrap: "wrap",
+                                }}
+                              >
                                 <button
                                   className="primary-button"
                                   type="button"
                                   disabled={creatingWorkflowPr}
                                   onClick={handleCreateWorkflowPr}
-                                  style={{ minHeight: "2rem", padding: "0.35rem 0.85rem", fontSize: "0.78rem" }}
+                                  style={{
+                                    minHeight: "2rem",
+                                    padding: "0.35rem 0.85rem",
+                                    fontSize: "0.78rem",
+                                  }}
                                 >
-                                  {creatingWorkflowPr ? "Creating..." : "Create update PR"}
+                                  {creatingWorkflowPr
+                                    ? "Creating..."
+                                    : "Create update PR"}
                                 </button>
                                 {workflowUpdatePr ? (
                                   <a
@@ -1706,7 +2222,11 @@ export function WorkflowCurrentTab({
                                     href={workflowUpdatePr.pullRequestUrl}
                                     target="_blank"
                                     rel="noreferrer"
-                                    style={{ minHeight: "2rem", padding: "0.35rem 0.85rem", fontSize: "0.78rem" }}
+                                    style={{
+                                      minHeight: "2rem",
+                                      padding: "0.35rem 0.85rem",
+                                      fontSize: "0.78rem",
+                                    }}
                                   >
                                     {workflowUpdatePr.pullRequestUrl}
                                   </a>
@@ -1714,7 +2234,9 @@ export function WorkflowCurrentTab({
                               </div>
                             ) : null}
                             {workflowUpdatePrError ? (
-                              <p className="error-text" style={{ margin: 0 }}>{workflowUpdatePrError}</p>
+                              <p className="error-text" style={{ margin: 0 }}>
+                                {workflowUpdatePrError}
+                              </p>
                             ) : null}
                           </>
                         ) : null}
@@ -1723,33 +2245,51 @@ export function WorkflowCurrentTab({
                     {selectedWorkflowFiles.length ? (
                       <WorkflowStageList files={selectedWorkflowFiles} />
                     ) : (
-                      <p className="env-empty-state">No workflow file metadata is tracked yet.</p>
+                      <p className="env-empty-state">
+                        No workflow file metadata is tracked yet.
+                      </p>
                     )}
                   </div>
                 ) : null}
 
                 {projectDetailTab === "runs" ? (
-                  ciRunTrackingEnabled && selectedOverview?.capabilities.ciRunTracking ? (
+                  ciRunTrackingEnabled &&
+                  selectedOverview?.capabilities.ciRunTracking ? (
                     ciRunsError ? (
-                      <p className="error-text" style={{ margin: 0 }}>{ciRunsError}</p>
+                      <p className="error-text" style={{ margin: 0 }}>
+                        {ciRunsError}
+                      </p>
                     ) : (
                       <CiRunsList response={ciRunsResponse} />
                     )
                   ) : (
-                    <p className="env-empty-state">CI run tracking is not enabled.</p>
+                    <p className="env-empty-state">
+                      CI run tracking is not enabled.
+                    </p>
                   )
                 ) : null}
 
                 {projectDetailTab === "deployments" ? (
-                  <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
-                    {deploymentHistoryEnabled && selectedOverview?.capabilities.deploymentHistory ? (
+                  <div
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: "1rem",
+                    }}
+                  >
+                    {deploymentHistoryEnabled &&
+                    selectedOverview?.capabilities.deploymentHistory ? (
                       deploymentsError ? (
-                        <p className="error-text" style={{ margin: 0 }}>{deploymentsError}</p>
+                        <p className="error-text" style={{ margin: 0 }}>
+                          {deploymentsError}
+                        </p>
                       ) : (
                         <DeploymentHistoryList response={deploymentsResponse} />
                       )
                     ) : (
-                      <p className="env-empty-state">Deployment history is not enabled.</p>
+                      <p className="env-empty-state">
+                        Deployment history is not enabled.
+                      </p>
                     )}
                     <DeploymentTargetsList
                       managementEnabled={projectTargetManagementEnabled}
@@ -1762,8 +2302,15 @@ export function WorkflowCurrentTab({
                 ) : null}
 
                 {projectDetailTab === "environment" ? (
-                  <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
-                    {envProvisioningEnabled && selectedProject.status === "provisioned" ? (
+                  <div
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: "1rem",
+                    }}
+                  >
+                    {envProvisioningEnabled &&
+                    selectedProject.status === "provisioned" ? (
                       <ProjectEnvPanel project={selectedProject} />
                     ) : (
                       <EnvMetadataList metadata={envMetadata} />
@@ -1776,16 +2323,22 @@ export function WorkflowCurrentTab({
                     {selectedProject.githubCommitUrl ? (
                       <div className="env-metadata-row provisioned">
                         <span>Latest workflow commit</span>
-                        <span>{selectedProject.githubCommitSha?.slice(0, 10) ?? "Unknown"}</span>
+                        <span>
+                          {selectedProject.githubCommitSha?.slice(0, 10) ??
+                            "Unknown"}
+                        </span>
                       </div>
                     ) : null}
                     {syncSnapshot?.latest ? (
                       <div className="env-metadata-row provisioned">
                         <span>Last local snapshot</span>
-                        <span>{formatDate(syncSnapshot.latest.completedAt)}</span>
+                        <span>
+                          {formatDate(syncSnapshot.latest.completedAt)}
+                        </span>
                       </div>
                     ) : null}
-                    {!selectedProject.githubCommitUrl && !syncSnapshot?.latest ? (
+                    {!selectedProject.githubCommitUrl &&
+                    !syncSnapshot?.latest ? (
                       <p className="env-empty-state">No activity events yet.</p>
                     ) : null}
                   </div>
@@ -1793,11 +2346,16 @@ export function WorkflowCurrentTab({
 
                 {projectDetailTab === "audit" ? (
                   auditError ? (
-                    <p className="error-text" style={{ margin: 0 }}>{auditError}</p>
+                    <p className="error-text" style={{ margin: 0 }}>
+                      {auditError}
+                    </p>
                   ) : auditResponse?.items.length ? (
                     <div className="env-metadata-list">
                       {auditResponse.items.map((event) => (
-                        <div key={event.id} className="env-metadata-row provisioned">
+                        <div
+                          key={event.id}
+                          className="env-metadata-row provisioned"
+                        >
                           <span>{event.eventCode}</span>
                           <span>{event.message}</span>
                         </div>
@@ -1820,11 +2378,15 @@ export function WorkflowCurrentTab({
                     </div>
                     <div>
                       <dt>Project type</dt>
-                      <dd>{selectedProject.projectTypeId ?? "Not configured"}</dd>
+                      <dd>
+                        {selectedProject.projectTypeId ?? "Not configured"}
+                      </dd>
                     </div>
                     <div>
                       <dt>Workflow recipe</dt>
-                      <dd>{selectedProject.workflowRecipeId ?? "Not configured"}</dd>
+                      <dd>
+                        {selectedProject.workflowRecipeId ?? "Not configured"}
+                      </dd>
                     </div>
                     <div>
                       <dt>Visibility</dt>
@@ -1852,16 +2414,45 @@ export function WorkflowCurrentTab({
           {loadingHistory ? (
             <div className="repo-grid">
               {[0, 1, 2].map((i) => (
-                <div key={i} className="skeleton-card glass-panel" style={{ minHeight: "10rem", background: "rgba(15, 23, 42, 0.3)", animation: "state-pulse 1.5s infinite" }} />
+                <div
+                  key={i}
+                  className="skeleton-card glass-panel"
+                  style={{
+                    minHeight: "10rem",
+                    background: "rgba(15, 23, 42, 0.3)",
+                    animation: "state-pulse 1.5s infinite",
+                  }}
+                />
               ))}
             </div>
           ) : history.length === 0 ? (
-            <div className="glass-panel" style={{ padding: "3rem 1.5rem", textAlign: "center", background: "rgba(15, 23, 42, 0.3)" }}>
-              <p style={{ color: "var(--text-secondary)", margin: "0 0 1.25rem", fontSize: "0.88rem" }}>
+            <div
+              className="glass-panel"
+              style={{
+                padding: "3rem 1.5rem",
+                textAlign: "center",
+                background: "rgba(15, 23, 42, 0.3)",
+              }}
+            >
+              <p
+                style={{
+                  color: "var(--text-secondary)",
+                  margin: "0 0 1.25rem",
+                  fontSize: "0.88rem",
+                }}
+              >
                 No generated workflow history yet.
               </p>
-              <button className="primary-button" type="button" onClick={onOpenSetup}
-                      style={{ padding: "0.6rem 1.4rem", fontSize: "0.88rem", minHeight: "2.5rem" }}>
+              <button
+                className="primary-button"
+                type="button"
+                onClick={onOpenSetup}
+                style={{
+                  padding: "0.6rem 1.4rem",
+                  fontSize: "0.88rem",
+                  minHeight: "2.5rem",
+                }}
+              >
                 Generate your first workflow
               </button>
             </div>
@@ -1890,70 +2481,123 @@ export function WorkflowCurrentTab({
                   whileHover={{
                     y: -3,
                     borderColor: "rgba(56, 189, 248, 0.3)",
-                    boxShadow: "var(--shadow-card), 0 0 24px rgba(56, 189, 248, 0.05)"
+                    boxShadow:
+                      "var(--shadow-card), 0 0 24px rgba(56, 189, 248, 0.05)",
                   }}
                   onMouseMove={(e) => {
                     const rect = e.currentTarget.getBoundingClientRect();
-                    e.currentTarget.style.setProperty('--gx', String((e.clientX - rect.left) / rect.width));
-                    e.currentTarget.style.setProperty('--gy', String((e.clientY - rect.top) / rect.height));
+                    e.currentTarget.style.setProperty(
+                      "--gx",
+                      String((e.clientX - rect.left) / rect.width),
+                    );
+                    e.currentTarget.style.setProperty(
+                      "--gy",
+                      String((e.clientY - rect.top) / rect.height),
+                    );
                   }}
                   onMouseLeave={(e) => {
-                    e.currentTarget.style.removeProperty('--gx');
-                    e.currentTarget.style.removeProperty('--gy');
+                    e.currentTarget.style.removeProperty("--gx");
+                    e.currentTarget.style.removeProperty("--gy");
                   }}
                 >
                   {/* Header */}
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start", gap: "0.5rem" }}>
-                    <h3 style={{ fontSize: "1rem", fontWeight: 700, margin: 0 }}>{entry.templateName}</h3>
-                    <p style={{ fontSize: "0.72rem", color: "var(--text-muted)", margin: 0 }}>{formatDate(entry.createdAt)}</p>
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "start",
+                      gap: "0.5rem",
+                    }}
+                  >
+                    <h3
+                      style={{ fontSize: "1rem", fontWeight: 700, margin: 0 }}
+                    >
+                      {entry.templateName}
+                    </h3>
+                    <p
+                      style={{
+                        fontSize: "0.72rem",
+                        color: "var(--text-muted)",
+                        margin: 0,
+                      }}
+                    >
+                      {formatDate(entry.createdAt)}
+                    </p>
                   </div>
 
                   {/* Meta tags: stack + file name */}
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: "0.35rem" }}>
+                  <div
+                    style={{
+                      display: "flex",
+                      flexWrap: "wrap",
+                      gap: "0.35rem",
+                    }}
+                  >
                     {entry.stack && (
-                      <span className="template-stack-badge" style={{
-                        fontSize: "0.68rem",
-                        fontWeight: 700,
-                        textTransform: "uppercase",
-                        padding: "0.15rem 0.5rem",
-                        borderRadius: "4px",
-                        background: "rgba(56, 189, 248, 0.1)",
-                        color: "var(--brand)",
-                        border: "1px solid rgba(56, 189, 248, 0.15)"
-                      }}>{entry.stack}</span>
+                      <span
+                        className="template-stack-badge"
+                        style={{
+                          fontSize: "0.68rem",
+                          fontWeight: 700,
+                          textTransform: "uppercase",
+                          padding: "0.15rem 0.5rem",
+                          borderRadius: "4px",
+                          background: "rgba(56, 189, 248, 0.1)",
+                          color: "var(--brand)",
+                          border: "1px solid rgba(56, 189, 248, 0.15)",
+                        }}
+                      >
+                        {entry.stack}
+                      </span>
                     )}
-                    <span className="project-card-tag" style={{
-                      fontSize: "0.68rem",
-                      padding: "0.15rem 0.45rem",
-                      borderRadius: "4px",
-                      background: "rgba(255, 255, 255, 0.04)",
-                      color: "var(--text-secondary)",
-                      border: "1px solid var(--border-soft)",
-                      fontFamily: "ui-monospace, monospace"
-                    }}>
+                    <span
+                      className="project-card-tag"
+                      style={{
+                        fontSize: "0.68rem",
+                        padding: "0.15rem 0.45rem",
+                        borderRadius: "4px",
+                        background: "rgba(255, 255, 255, 0.04)",
+                        color: "var(--text-secondary)",
+                        border: "1px solid var(--border-soft)",
+                        fontFamily: "ui-monospace, monospace",
+                      }}
+                    >
                       {entry.outputFileName}
                     </span>
                   </div>
 
                   {/* Key-value row */}
-                  <dl style={{
-                    display: "grid",
-                    gridTemplateColumns: "auto 1fr",
-                    gap: "0.45rem 1rem",
-                    background: "rgba(0,0,0,0.15)",
-                    padding: "0.75rem",
-                    borderRadius: "8px",
-                    border: "1px solid var(--border-subtle)",
-                    fontSize: "0.78rem",
-                    margin: "0.1rem 0"
-                  }}>
+                  <dl
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "auto 1fr",
+                      gap: "0.45rem 1rem",
+                      background: "rgba(0,0,0,0.15)",
+                      padding: "0.75rem",
+                      borderRadius: "8px",
+                      border: "1px solid var(--border-subtle)",
+                      fontSize: "0.78rem",
+                      margin: "0.1rem 0",
+                    }}
+                  >
                     <dt style={{ color: "var(--text-muted)" }}>Service</dt>
-                    <dd style={{ color: "var(--text-primary)", fontWeight: 600 }}>{entry.serviceName}</dd>
+                    <dd
+                      style={{ color: "var(--text-primary)", fontWeight: 600 }}
+                    >
+                      {entry.serviceName}
+                    </dd>
 
                     {entry.sourceWorkflowFile && (
                       <>
                         <dt style={{ color: "var(--text-muted)" }}>Source</dt>
-                        <dd style={{ color: "var(--text-secondary)", fontFamily: "ui-monospace, monospace", fontSize: "0.72rem", wordBreak: "break-all" }}>
+                        <dd
+                          style={{
+                            color: "var(--text-secondary)",
+                            fontFamily: "ui-monospace, monospace",
+                            fontSize: "0.72rem",
+                            wordBreak: "break-all",
+                          }}
+                        >
                           {toSourcePath(entry.sourceWorkflowFile)}
                         </dd>
                       </>
@@ -1961,7 +2605,15 @@ export function WorkflowCurrentTab({
                   </dl>
 
                   {/* Actions */}
-                  <div style={{ display: "flex", gap: "0.35rem", marginTop: "auto", borderTop: "1px solid var(--border-soft)", paddingTop: "0.75rem" }}>
+                  <div
+                    style={{
+                      display: "flex",
+                      gap: "0.35rem",
+                      marginTop: "auto",
+                      borderTop: "1px solid var(--border-soft)",
+                      paddingTop: "0.75rem",
+                    }}
+                  >
                     <button
                       className="ghost-button"
                       type="button"
@@ -1980,7 +2632,9 @@ export function WorkflowCurrentTab({
                     <button
                       className="ghost-button"
                       type="button"
-                      onClick={() => onDownloadYaml(entry.yaml, entry.outputFileName)}
+                      onClick={() =>
+                        onDownloadYaml(entry.yaml, entry.outputFileName)
+                      }
                       style={{
                         padding: "0.4rem 0.8rem",
                         fontSize: "0.78rem",
@@ -2004,7 +2658,7 @@ export function WorkflowCurrentTab({
                         borderRadius: "6px",
                         border: "1px solid rgba(56, 189, 248, 0.2)",
                         color: "var(--brand)",
-                        background: "rgba(56, 189, 248, 0.04)"
+                        background: "rgba(56, 189, 248, 0.04)",
                       }}
                     >
                       New
@@ -2013,21 +2667,34 @@ export function WorkflowCurrentTab({
 
                   {/* YAML preview */}
                   <details style={{ marginTop: "0.25rem" }}>
-                    <summary style={{ cursor: "pointer", color: "var(--brand)", fontWeight: 700, fontSize: "0.82rem", outline: "none", userSelect: "none" }}>
+                    <summary
+                      style={{
+                        cursor: "pointer",
+                        color: "var(--brand)",
+                        fontWeight: 700,
+                        fontSize: "0.82rem",
+                        outline: "none",
+                        userSelect: "none",
+                      }}
+                    >
                       Preview YAML config
                     </summary>
-                    <pre style={{
-                      marginTop: "0.5rem",
-                      padding: "0.75rem",
-                      background: "rgba(0, 0, 0, 0.35)",
-                      border: "1px solid var(--border-soft)",
-                      borderRadius: "6px",
-                      fontFamily: "ui-monospace, monospace",
-                      fontSize: "0.75rem",
-                      color: "var(--text-secondary)",
-                      overflowX: "auto",
-                      maxHeight: "150px"
-                    }}>{entry.yaml}</pre>
+                    <pre
+                      style={{
+                        marginTop: "0.5rem",
+                        padding: "0.75rem",
+                        background: "rgba(0, 0, 0, 0.35)",
+                        border: "1px solid var(--border-soft)",
+                        borderRadius: "6px",
+                        fontFamily: "ui-monospace, monospace",
+                        fontSize: "0.75rem",
+                        color: "var(--text-secondary)",
+                        overflowX: "auto",
+                        maxHeight: "150px",
+                      }}
+                    >
+                      {entry.yaml}
+                    </pre>
                   </details>
                 </motion.article>
               ))}

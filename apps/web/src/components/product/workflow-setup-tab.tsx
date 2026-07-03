@@ -95,7 +95,7 @@ function inferProjectKind(
 }
 
 function withTestSuffix(value: string) {
-  const base = value.trim() || "flowci-project";
+  const base = value.trim() || "alphaexplora-project";
   return base.endsWith("-test") ? base : `${base}-test`;
 }
 
@@ -123,7 +123,7 @@ export function WorkflowSetupTab({
   projectCatalog,
   reducedMotion,
 }: Readonly<WorkflowSetupTabProps>) {
-  const { envProvisioningEnabled } = useCapabilities();
+  const { envProvisioningEnabled, deploymentOwnershipMode } = useCapabilities();
   const [usageItems, setUsageItems] = useState<UsageLimitItem[]>([]);
   const isExistingMode = setupMode === "existing";
   const selectedProjectKind = inferProjectKind(projectCatalog.selectedProjectType);
@@ -142,7 +142,6 @@ export function WorkflowSetupTab({
     projectQuotaReached ||
     projectCatalog.loadingProjectOptions ||
     !form.repoName.trim() ||
-    (github.selectedOwnerType === "organization" && !github.selectedInstallationId) ||
     (!projectCatalog.isMicroservicesShape && !projectCatalog.isMultiRepoShape && !projectCatalog.selectedProjectType);
 
   const generateDisabled =
@@ -735,34 +734,16 @@ export function WorkflowSetupTab({
               style={{ overflow: "hidden" }}
               transition={{ duration: 0.28, ease: [0.25, 0.46, 0.45, 0.94] }}
             >
-              <label className="input-label" htmlFor="repository-owner" style={labelAccentStyle}>
+              <label className="input-label" style={labelAccentStyle}>
                 Repository owner
               </label>
-              <select
-                id="repository-owner"
-                className="premium-input"
-                value={github.selectedOwner}
-                onChange={(event) => github.setSelectedOwner(event.target.value)}
-              >
-                <option value="personal">My personal GitHub account</option>
-                {github.installationAccounts
-                  .filter(
-                    (account) =>
-                      account.accountType === "Organization" &&
-                      account.repositorySelection === "all" &&
-                      account.accountLogin,
-                  )
-                  .map((account) => (
-                    <option
-                      key={account.installationId}
-                      value={`organization:${account.installationId}`}
-                    >
-                      {account.accountLogin} organization
-                    </option>
-                  ))}
-              </select>
+              <div className="premium-input" aria-readonly="true" style={{ display: "flex", alignItems: "center" }}>
+                {github.allRepositoriesAccount?.accountLogin ?? "Alpha-Explora"} organization
+              </div>
               <p style={{ color: "var(--text-muted)", fontSize: "0.72rem", margin: "0.3rem 0 0.9rem", lineHeight: 1.4 }}>
-                Organization destinations require this environment&apos;s GitHub App with all-repositories access.
+                All repositories are created in the{" "}
+                <strong>{github.allRepositoriesAccount?.accountLogin ?? "Alpha-Explora"}</strong> organization. This
+                requires this environment&apos;s GitHub App installed there with all-repositories access.
               </p>
 
               {/* Repository name + Visibility */}
@@ -927,6 +908,7 @@ export function WorkflowSetupTab({
                     enabled={deploymentProvisioning.enabled}
                     repoShape={projectCatalog.selectedRepoShapeId}
                     selectedProjectKind={selectedProjectKind}
+                    ownershipMode={deploymentOwnershipMode}
                     value={deploymentProvisioning.request}
                     onChange={deploymentProvisioning.setRequest}
                     onEnabledChange={handleDeploymentProvisioningEnabled}
