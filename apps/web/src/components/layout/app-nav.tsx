@@ -6,7 +6,6 @@ import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 
-import { PipelineLogo } from "@/components/layout/pipeline-logo";
 import type { useAuthSession } from "@/hooks/use-auth-session";
 import type {
   NotificationsResponse,
@@ -449,22 +448,22 @@ export function AppNav({
             className="sidebar-brand-link"
             aria-label="Alphaexplora — home"
           >
-            <span className="sidebar-brand-logo">
-              <PipelineLogo size={22} />
-            </span>
-            <AnimatePresence initial={false}>
-              {!collapsed && (
-                <motion.span
-                  className="sidebar-brand-wordmark"
-                  initial={reduced ? false : { opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={reduced ? undefined : { opacity: 0, x: -10 }}
-                  transition={{ duration: 0.18 }}
-                >
-                  Alpha<span className="sidebar-brand-accent">CI</span>
-                </motion.span>
-              )}
-            </AnimatePresence>
+            <Image
+              src="/brand-logo.png"
+              alt="AlphaCI"
+              width={138}
+              height={46}
+              unoptimized
+              priority
+              className="sidebar-brand-image"
+              style={{
+                display: "block",
+                height: 46,
+                width: "auto",
+                maxWidth: "100%",
+                objectFit: "contain",
+              }}
+            />
           </Link>
         </div>
 
