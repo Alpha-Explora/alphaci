@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import { motion, useReducedMotion, AnimatePresence } from "framer-motion";
 
 import { AppNav } from "@/components/layout/app-nav";
@@ -11,10 +11,11 @@ import { PipelineLoader } from "@/components/layout/pipeline-loader";
 import { useAuthSession } from "@/hooks/use-auth-session";
 import { logout, getRuns } from "@/lib/api/client";
 import { ApiError } from "@/lib/api/request";
-import type { RunGroup } from "@/lib/api/contracts";
+import type { RunGroup, RunOverallStatus } from "@/lib/api/contracts";
 import { isGuest } from "@/lib/auth/subscription";
 import { RunCard } from "@/components/product/runs/RunCard";
 import { RunsSkeleton } from "@/components/product/runs/RunsSkeleton";
+import { relativeTime } from "@/lib/runs/utils";
 
 /* ── Mock toggle ─────────────────────────────────────────────────────────────
    Set NEXT_PUBLIC_USE_MOCK=true in .env.local to use the local fixture instead
@@ -35,35 +36,94 @@ const sectionVariants = {
   }),
 };
 
+const STATUS_LABELS: Record<RunOverallStatus, string> = {
+  success: "Passed",
+  failure: "Failed",
+  running: "Running",
+  cancelled: "Cancelled",
+  partial: "Partial",
+};
+
+function RunsSummaryStrip({
+  runs,
+  repoFullName,
+}: {
+  runs: RunGroup[];
+  repoFullName?: string;
+}) {
+  const summary = useMemo(() => {
+    const counts = runs.reduce(
+      (acc, run) => {
+        acc[run.overallStatus] += 1;
+        return acc;
+      },
+      {
+        success: 0,
+        failure: 0,
+        running: 0,
+        cancelled: 0,
+        partial: 0,
+      } satisfies Record<RunOverallStatus, number>,
+    );
+
+    const latestRun = runs.reduce<RunGroup | null>((latest, run) => {
+      if (!latest) return run;
+      return new Date(run.startedAt).getTime() >
+        new Date(latest.startedAt).getTime()
+        ? run
+        : latest;
+    }, null);
+
+    return {
+      total: runs.length,
+      counts,
+      latestRun,
+      needsAttention: counts.failure + counts.partial + counts.cancelled,
+    };
+  }, [runs]);
+
+  const latestStatus = summary.latestRun
+    ? STATUS_LABELS[summary.latestRun.overallStatus]
+    : "None";
+
+  return (
+    <section className="runs-summary-strip" aria-label="Pipeline run summary">
+      <div className="runs-summary-card runs-summary-card--primary">
+        <span>Total runs</span>
+        <strong>{summary.total}</strong>
+        <p>{repoFullName ? "Filtered repository" : "Across all repositories"}</p>
+      </div>
+      <div className="runs-summary-card">
+        <span>Running</span>
+        <strong>{summary.counts.running}</strong>
+        <p>Active GitHub Actions</p>
+      </div>
+      <div className="runs-summary-card">
+        <span>Needs review</span>
+        <strong>{summary.needsAttention}</strong>
+        <p>Failed, partial, or cancelled</p>
+      </div>
+      <div className="runs-summary-card">
+        <span>Latest</span>
+        <strong>{latestStatus}</strong>
+        <p>
+          {summary.latestRun
+            ? relativeTime(summary.latestRun.startedAt)
+            : "No runs yet"}
+        </p>
+      </div>
+    </section>
+  );
+}
+
 /* ── Empty state ─────────────────────────────────────────────────────────── */
 
 function EmptyState() {
   return (
     <div
-      className="glass-panel"
-      style={{
-        textAlign: "center",
-        padding: "4rem 2rem",
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        gap: "1.25rem",
-      }}
+      className="runs-empty-state"
     >
-      {/* Decorative pipeline icon */}
-      <div
-        style={{
-          width: 56,
-          height: 56,
-          borderRadius: "1rem",
-          background: "rgba(56,189,248,0.08)",
-          border: "1px solid var(--border-brand)",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          color: "var(--brand)",
-        }}
-      >
+      <div className="runs-empty-icon">
         <svg
           width="24"
           height="24"
@@ -79,24 +139,9 @@ function EmptyState() {
         </svg>
       </div>
 
-      <div style={{ maxWidth: "36ch" }}>
-        <h2
-          style={{
-            fontSize: "clamp(1.1rem, 2vw, 1.4rem)",
-            fontWeight: 700,
-            marginBottom: "0.5rem",
-          }}
-        >
-          No pipeline runs yet
-        </h2>
-        <p
-          style={{
-            color: "var(--text-secondary)",
-            fontSize: "0.88rem",
-            lineHeight: 1.6,
-            margin: 0,
-          }}
-        >
+      <div>
+        <h2>No pipeline runs yet</h2>
+        <p>
           Push a commit to a connected repository to see your pipeline results
           here. Each run shows exactly what passed, what failed, and how to fix
           it.
@@ -129,27 +174,10 @@ function ErrorState({
 }) {
   return (
     <div
-      className="error-inline glass-panel"
+      className="runs-error-state"
       role="alert"
-      style={{
-        background: "rgba(248,113,113,0.05)",
-        border: "1px solid rgba(248,113,113,0.2)",
-        borderRadius: "var(--radius-card)",
-        padding: "1.5rem",
-        display: "flex",
-        alignItems: "center",
-        gap: "1rem",
-        flexWrap: "wrap",
-      }}
     >
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: "0.6rem",
-          flex: 1,
-        }}
-      >
+      <div className="runs-error-body">
         <svg
           width="16"
           height="16"
@@ -165,15 +193,7 @@ function ErrorState({
           <line x1="15" y1="9" x2="9" y2="15" />
           <line x1="9" y1="9" x2="15" y2="15" />
         </svg>
-        <p
-          style={{
-            margin: 0,
-            fontSize: "0.85rem",
-            color: "var(--text-secondary)",
-          }}
-        >
-          {message}
-        </p>
+        <p>{message}</p>
       </div>
       <button
         type="button"
@@ -274,6 +294,7 @@ function RunsContent({
   }, [repoFullName, guest]);
 
   const reduced = prefersReducedMotion ?? false;
+  const visibleRepoName = repoFullName?.split("/")[1] ?? repoFullName;
 
   return (
     <main
@@ -335,7 +356,7 @@ function RunsContent({
             <div className="workflow-page-title-row">
               <h1 className="workflow-page-title">
                 {repoFullName
-                  ? `Runs for ${repoFullName.split("/")[1]}`
+                  ? `Runs for ${visibleRepoName}`
                   : "All Pipeline Runs"}
               </h1>
               <div className="workflow-page-studio-badge">
@@ -375,36 +396,6 @@ function RunsContent({
             )}
           </div>
         </motion.div>
-
-        {/* ── Intro blurb — beginner-friendly context ─────────────────── */}
-        <motion.section
-          aria-label="Page introduction"
-          custom={1}
-          variants={sectionVariants}
-          initial={reduced ? false : "hidden"}
-          animate="visible"
-        >
-          <div className="runs-intro-blurb">
-            <p
-              style={{
-                margin: 0,
-                fontSize: "0.84rem",
-                color: "var(--text-secondary)",
-                lineHeight: 1.65,
-              }}
-            >
-              Every push to a connected repository runs three stages:{" "}
-              <strong style={{ color: "var(--text-primary)" }}>Access</strong>{" "}
-              (can Alphaexplora reach your repo?),{" "}
-              <strong style={{ color: "var(--text-primary)" }}>Quality</strong>{" "}
-              (do your tests pass?), and{" "}
-              <strong style={{ color: "var(--text-primary)" }}>Package</strong>{" "}
-              (is the Docker image built?). Click any stage ring to see
-              plain-English explanations of what went wrong — and exactly how to
-              fix it.
-            </p>
-          </div>
-        </motion.section>
 
         {/* ── Guest gate ──────────────────────────────────────────────── */}
         {guest ? (
@@ -484,8 +475,18 @@ function RunsContent({
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
                   transition={{ duration: 0.2 }}
-                  style={{ display: "grid", gap: "1rem" }}
+                  className="runs-list-stack"
                 >
+                  <RunsSummaryStrip runs={runs} repoFullName={repoFullName} />
+                  <div className="runs-list-toolbar">
+                    <div>
+                      <span>Run history</span>
+                      <strong>
+                        {repoFullName ?? "All connected repositories"}
+                      </strong>
+                    </div>
+                    <p>{runs.length} visible</p>
+                  </div>
                   {runs.map((run, i) => (
                     <RunCard
                       key={run.runId}

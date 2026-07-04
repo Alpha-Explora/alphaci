@@ -38,19 +38,13 @@ export function RunPipeline({ run, reduced }: RunPipelineProps) {
         className="runs-pipeline-row"
         role="group"
         aria-label="Pipeline stages"
-        style={{
-          display: "flex",
-          alignItems: "flex-start",
-          gap: 0,
-          paddingBottom: "0.25rem",
-        }}
       >
         {STAGE_ORDER.map((stageName, index) => {
           const stage = stageMap.get(stageName);
           if (!stage) return null;
 
           return (
-            <div key={stageName} style={{ display: "flex", alignItems: "center", flex: 1, minWidth: 0 }}>
+            <div key={stageName} className="runs-stage-wrap">
               <StageNode
                 stage={stage}
                 index={index}
@@ -83,15 +77,6 @@ export function RunPipeline({ run, reduced }: RunPipelineProps) {
           >
             <div
               className="runs-messages-panel"
-              style={{
-                marginTop: "0.85rem",
-                display: "grid",
-                gap: "0.6rem",
-                padding: "0.75rem",
-                background: "rgba(0,0,0,0.2)",
-                borderRadius: "0.75rem",
-                border: "1px solid var(--border-soft)",
-              }}
             >
               {expandedStageData.friendlyMessages.length === 0 ? (
                 <p style={{ margin: 0, fontSize: "0.8rem", color: "var(--text-muted)" }}>
