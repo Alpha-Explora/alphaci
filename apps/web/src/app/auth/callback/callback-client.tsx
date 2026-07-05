@@ -68,6 +68,8 @@ function statusMessage(authStatus: string, provider: OAuthProvider): string {
       return `${providerName} OAuth is unavailable in this environment.`;
     case "not_authorized":
       return "This workspace is limited to members of the company GitHub organization. Ask an administrator to add you to the org, then sign in again.";
+    case "org_invite_pending":
+      return "You have a pending invitation to the company GitHub organization. Accept the invitation on GitHub, then sign in again.";
     case "org_verification_failed":
       // Distinct from not_authorized: this is NOT a confirmed non-member —
       // GitHub could not confirm org membership (e.g. a permissions issue on
@@ -91,9 +93,22 @@ interface FailedContent {
   accentSoft: string;
   headline: string;
   body: string;
+  /** Optional external call-to-action rendered as the primary button. */
+  actionHref?: string;
+  actionLabel?: string;
 }
 
-function failedContent(authStatus: string, message: string): FailedContent {
+/** Org logins are alphanumerics and hyphens; anything else is dropped so a
+ * tampered ?org= query param can never steer the invitation link. */
+function safeOrgLogin(org: string | null): string | null {
+  return org && /^[a-zA-Z0-9-]+$/.test(org) ? org : null;
+}
+
+function failedContent(
+  authStatus: string,
+  message: string,
+  orgLogin: string | null,
+): FailedContent {
   switch (authStatus) {
     case "not_authorized":
       return {
@@ -104,6 +119,21 @@ function failedContent(authStatus: string, message: string): FailedContent {
         headline: "This workspace is members-only",
         body: "Access is limited to members of the company GitHub organization. Ask an administrator to add you to the org, then sign in again.",
       };
+    case "org_invite_pending": {
+      const org = safeOrgLogin(orgLogin);
+      return {
+        ghost: "INVITE",
+        label: "Invitation pending",
+        accent: "var(--accent-amber)",
+        accentSoft: "rgba(251, 191, 36, 0.12)",
+        headline: "Accept your GitHub invitation",
+        body: "You've been invited to the company GitHub organization, but the invitation hasn't been accepted yet. Open it on GitHub, accept it, then sign in again.",
+        actionHref: org
+          ? `https://github.com/orgs/${org}/invitation`
+          : "https://github.com/settings/organizations",
+        actionLabel: "Open GitHub invitation",
+      };
+    }
     case "org_verification_failed":
       return {
         ghost: "VERIFY",
@@ -608,7 +638,7 @@ export function AuthCallbackClient() {
   }
 
   // ── Failed / error ────────────────────────────────────────────────────────
-  const fc = failedContent(authStatus, message);
+  const fc = failedContent(authStatus, message, searchParams.get("org"));
   const staggerContainer = {
     hidden: {},
     visible: { transition: { staggerChildren: 0.07, delayChildren: 0.08 } },
@@ -777,10 +807,21 @@ export function AuthCallbackClient() {
           variants={prefersReducedMotion ? undefined : rise}
           style={{ display: "flex", gap: "0.85rem", flexWrap: "wrap", marginTop: "0.4rem" }}
         >
+          {fc.actionHref ? (
+            <a
+              className="primary-button"
+              href={fc.actionHref}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ borderRadius: "999px", padding: "0.9rem 1.9rem", fontWeight: 700 }}
+            >
+              {fc.actionLabel}
+            </a>
+          ) : null}
           <Link
-            className="primary-button"
+            className={fc.actionHref ? "ghost-button" : "primary-button"}
             href={retryLoginHref}
-            style={{ borderRadius: "999px", padding: "0.9rem 1.9rem", fontWeight: 700 }}
+            style={{ borderRadius: "999px", padding: "0.9rem 1.9rem", fontWeight: fc.actionHref ? 600 : 700 }}
           >
             Retry {providerName} sign in
           </Link>
