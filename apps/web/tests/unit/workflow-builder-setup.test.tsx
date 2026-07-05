@@ -559,12 +559,12 @@ describe("WorkflowBuilder project setup", () => {
         deploymentProvisioning: expect.objectContaining({
           enabled: true,
           targets: [
-            expect.objectContaining({
-              slot: "backend",
-              provider: "render",
-              ownershipMode: "flowci_managed",
-              projectName: "orders-api-test",
-              env: [
+                  expect.objectContaining({
+                    slot: "backend",
+                    provider: "render",
+                    ownershipMode: "byo",
+                    projectName: "orders-api-test",
+                    env: [
                 expect.objectContaining({
                   environment: "test",
                   vars: [{ key: "DATABASE_URL", value: "postgres://secret" }],

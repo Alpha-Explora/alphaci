@@ -2357,6 +2357,11 @@ describe("Project env provisioning UI", () => {
     const rendered = render(<ProjectEnvPanel project={provisionedProject} />);
     root = rendered.root;
 
+    const ownershipSelect = rendered.container.querySelector<HTMLSelectElement>('[aria-label="Ownership mode"]')!;
+    const projectName = rendered.container.querySelector<HTMLInputElement>('input[placeholder="Provider project name"]')!;
+    changeValue(ownershipSelect, "flowci_managed");
+    changeValue(projectName, "orders-api-render");
+
     await act(async () => {
       rendered.container.querySelector<HTMLButtonElement>('button[data-testid="save-target"]')!.click();
       await Promise.resolve();
@@ -2390,9 +2395,9 @@ describe("Project env provisioning UI", () => {
     });
 
     expect(rendered.container.textContent).toContain("Env key quota: Limit reached. Upgrade to continue.");
-    expect(rendered.container.textContent).toContain("Managed Render services");
+    expect(rendered.container.textContent).toContain("Archived managed Render services");
     expect(rendered.container.textContent).toContain("1 / 1");
-    expect(rendered.container.textContent).toContain("Managed Vercel projects");
+    expect(rendered.container.textContent).toContain("Archived managed Vercel projects");
     expect(rendered.container.textContent).toContain("Deployment targets");
     expect(rendered.container.textContent).toContain("2 / 5");
     expect(

@@ -416,10 +416,15 @@ export function DeploymentProvisioningSetup({
         return target;
       }
 
+      const nextConnectionId = matchingConnections[0]?.id;
+      if (target.providerConnectionId === nextConnectionId) {
+        return target;
+      }
+
       changed = true;
       return {
         ...target,
-        providerConnectionId: matchingConnections[0]?.id,
+        providerConnectionId: nextConnectionId,
       };
     });
 

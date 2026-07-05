@@ -74,8 +74,11 @@ describe("NotificationPreferencesSection", () => {
       await Promise.resolve();
     });
 
-    expect(container.textContent).toContain("Email delivery unavailable.");
+    expect(container.textContent).toContain("Soon");
     const checkboxes = container.querySelectorAll<HTMLInputElement>('input[type="checkbox"]');
-    expect(checkboxes[1]?.disabled).toBe(true);
+    expect(checkboxes).toHaveLength(1);
+    expect(container.querySelector(".notification-preferences-card--disabled")?.textContent).toContain(
+      "Email notifications",
+    );
   });
 });
