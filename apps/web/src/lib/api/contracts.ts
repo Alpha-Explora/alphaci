@@ -589,7 +589,9 @@ export interface GenerateWorkflowResponse {
   };
 }
 
-export type WorkflowStage = "access" | "quality" | "package";
+// "guard" is the standalone env-guard workflow seeded alongside the staged
+// access/quality/package chain; it never reports run stages (see StageId).
+export type WorkflowStage = "access" | "quality" | "package" | "guard";
 
 export interface WorkflowFileMetadata {
   stage: WorkflowStage;

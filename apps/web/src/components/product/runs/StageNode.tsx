@@ -1,6 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
+import type { CSSProperties } from "react";
 import type { StageReport } from "@/lib/api/contracts";
 import { stageStatusColors, stageLabel } from "@/lib/runs/utils";
 
@@ -67,36 +68,6 @@ function StageIcon({ status, iconColor }: { status: StageReport["status"]; iconC
   }
 }
 
-/* ── Stage node motif icons (access / quality / package) ────────────────── */
-
-function AccessMotif() {
-  return (
-    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-      <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-    </svg>
-  );
-}
-
-function QualityMotif() {
-  return (
-    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
-    </svg>
-  );
-}
-
-function PackageMotif() {
-  return (
-    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <line x1="16.5" y1="9.4" x2="7.5" y2="4.21" />
-      <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
-      <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
-      <line x1="12" y1="22.08" x2="12" y2="12" />
-    </svg>
-  );
-}
-
 /* ── Connector SVG with animated draw-on ────────────────────────────────── */
 
 interface ConnectorProps {
@@ -108,51 +79,18 @@ interface ConnectorProps {
 export function StageConnector({ active, reduced, delay }: ConnectorProps) {
   return (
     <div
-      className="runs-connector"
+      className={`runs-connector ${active ? "runs-connector--active" : ""}`}
       aria-hidden="true"
-      style={{ position: "relative", flex: "1 1 0%", minWidth: 32, maxWidth: 72, height: 2 }}
     >
-      {/* base track */}
-      <div
-        style={{
-          position: "absolute",
-          inset: "50% 0 50% 0",
-          transform: "translateY(-50%)",
-          height: 2,
-          background: "var(--border-soft)",
-          borderRadius: 1,
-        }}
-      />
-      {/* animated fill */}
       {!reduced && active ? (
         <motion.div
-          style={{
-            position: "absolute",
-            top: "50%",
-            left: 0,
-            height: 2,
-            borderRadius: 1,
-            background: "linear-gradient(90deg, var(--brand), var(--success))",
-            transformOrigin: "left center",
-            transform: "translateY(-50%)",
-          }}
+          className="runs-connector-fill"
           initial={{ scaleX: 0 }}
           animate={{ scaleX: 1 }}
           transition={{ duration: 0.5, ease: [0.25, 0, 0, 1], delay }}
         />
       ) : active ? (
-        <div
-          style={{
-            position: "absolute",
-            top: "50%",
-            left: 0,
-            right: 0,
-            height: 2,
-            borderRadius: 1,
-            background: "linear-gradient(90deg, var(--brand), var(--success))",
-            transform: "translateY(-50%)",
-          }}
-        />
+        <div className="runs-connector-fill" />
       ) : null}
     </div>
   );
@@ -174,91 +112,53 @@ export function StageNode({ stage, index, isExpanded, reduced, onToggle }: Stage
   const delay = index * 0.1;
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "0.5rem" }}>
-      {/* The clickable ring node */}
-      <motion.button
-        type="button"
-        className="runs-stage-node"
-        aria-label={`${label} stage — ${stage.status}. ${isExpanded ? "Collapse" : "Expand"} details`}
-        aria-expanded={isExpanded}
-        onClick={onToggle}
-        onKeyDown={(e) => {
-          if (e.key === "Enter" || e.key === " ") {
-            e.preventDefault();
-            onToggle();
-          }
-        }}
-        initial={reduced ? false : { opacity: 0, scale: 0.7 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.3, ease: [0.25, 0, 0, 1], delay }}
-        whileHover={reduced ? undefined : { scale: 1.08 }}
-        whileTap={reduced ? undefined : { scale: 0.94 }}
-        style={{
-          position: "relative",
-          width: 48,
-          height: 48,
-          borderRadius: "50%",
-          border: `2.5px solid ${colors.ring}`,
-          background: colors.bg,
-          boxShadow: `0 0 18px ${colors.glow}, inset 0 1px 0 rgba(255,255,255,0.06)`,
-          cursor: "pointer",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          color: colors.iconColor,
-          flexShrink: 0,
-          outline: "none",
-          transition: "box-shadow 0.18s ease, border-color 0.18s ease",
-        }}
-      >
-        {/* Focus ring */}
-        <span
-          className="runs-stage-focus-ring"
-          aria-hidden="true"
-          style={{
-            position: "absolute",
-            inset: -4,
-            borderRadius: "50%",
-            border: `2px solid ${colors.ring}`,
-            opacity: 0,
-            transition: "opacity 0.15s ease",
-          }}
-        />
-        {/* Stage motif icon (top-left corner) */}
-        <span
-          style={{
-            position: "absolute",
-            top: 3,
-            left: 4,
-            color: colors.iconColor,
-            opacity: 0.6,
-          }}
-        >
-          {stage.stage === "access" && <AccessMotif />}
-          {stage.stage === "quality" && <QualityMotif />}
-          {stage.stage === "package" && <PackageMotif />}
-        </span>
-        {/* Status icon */}
+    <motion.button
+      type="button"
+      className={`runs-stage-node ${isExpanded ? "runs-stage-node--expanded" : ""}`}
+      aria-label={`${label} stage: ${stage.status}. ${isExpanded ? "Collapse" : "Expand"} details`}
+      aria-expanded={isExpanded}
+      onClick={onToggle}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onToggle();
+        }
+      }}
+      initial={reduced ? false : { opacity: 0, y: 6 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.24, ease: [0.25, 0, 0, 1], delay }}
+      whileHover={reduced ? undefined : { y: -1 }}
+      whileTap={reduced ? undefined : { scale: 0.99 }}
+      style={
+        {
+          "--stage-ring": colors.ring,
+          "--stage-bg": colors.bg,
+          "--stage-glow": colors.glow,
+          "--stage-icon": colors.iconColor,
+        } as CSSProperties
+      }
+    >
+      <span className="runs-stage-icon" aria-hidden="true">
         <StageIcon status={stage.status} iconColor={colors.iconColor} />
-      </motion.button>
-
-      {/* Label below */}
-      <motion.span
-        initial={reduced ? false : { opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: delay + 0.1, duration: 0.25 }}
-        style={{
-          fontSize: "0.68rem",
-          fontWeight: 700,
-          letterSpacing: "0.08em",
-          textTransform: "uppercase",
-          color: isExpanded ? colors.ring : "var(--text-muted)",
-          transition: "color 0.18s ease",
-          userSelect: "none",
-        }}
-      >
-        {label}
-      </motion.span>
-    </div>
+      </span>
+      <span className="runs-stage-text">
+        <span>{label}</span>
+        <strong>{stage.status}</strong>
+      </span>
+      <span className="runs-stage-open-indicator" aria-hidden="true">
+        <svg
+          width="12"
+          height="12"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <polyline points="9 18 15 12 9 6" />
+        </svg>
+      </span>
+    </motion.button>
   );
 }
