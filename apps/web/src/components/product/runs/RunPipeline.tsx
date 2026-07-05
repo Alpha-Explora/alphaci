@@ -44,7 +44,7 @@ export function RunPipeline({ run, reduced }: RunPipelineProps) {
           if (!stage) return null;
 
           return (
-            <div key={stageName} className="runs-stage-wrap">
+            <div key={stageName} className="runs-stage-segment">
               <StageNode
                 stage={stage}
                 index={index}
