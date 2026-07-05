@@ -450,7 +450,7 @@ export function AppNav({
           >
             <Image
               src="/brand-logo.png"
-              alt="AlphaCI"
+              alt="Alphaexplora"
               width={138}
               height={46}
               unoptimized
