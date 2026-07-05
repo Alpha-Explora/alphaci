@@ -94,7 +94,7 @@ describe("DeploymentProvisioningSummary", () => {
     const rendered = render(<DeploymentProvisioningSummary result={result} />);
     root = rendered.root;
 
-    expect(rendered.container.textContent).toContain("Managed image deploy");
+    expect(rendered.container.textContent).toContain("Archived managed image deploy");
     expect(rendered.container.textContent).toContain("web service - free - singapore - test");
     expect(rendered.container.textContent).toContain("Render API deployment secrets installed");
     expect(rendered.container.textContent).not.toContain("Deploy succeeded");
