@@ -1,8 +1,8 @@
 "use client";
 
+import Image from "next/image";
 import { useEffect, useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
-import { PipelineLogo } from "@/components/layout/pipeline-logo";
 import { FlowBackground } from "@/components/layout/flow-background";
 
 /* ── Types ─────────────────────────────────────────────────────────────────── */
@@ -59,13 +59,36 @@ export function PipelineLoader({ label = "Loading" }: Readonly<PipelineLoaderPro
         >
           <div
             className="pipeline-loader-logo-ring"
-            style={prefersReducedMotion ? {} : {
-              boxShadow: `0 0 28px ${activeStage?.glow ?? "rgba(56,189,248,0.45)"}`,
-              borderColor: activeStage?.color ?? "var(--brand)",
-              transition: "box-shadow 0.52s ease, border-color 0.52s ease",
+            style={{
+              // The Alphaexplora wordmark is wide, so the ring stretches into
+              // a pill instead of the old 56px square app-icon tile.
+              width: "auto",
+              height: "auto",
+              padding: "0.85rem 1.6rem",
+              borderRadius: "999px",
+              ...(prefersReducedMotion
+                ? {}
+                : {
+                    boxShadow: `0 0 28px ${activeStage?.glow ?? "rgba(56,189,248,0.45)"}`,
+                    borderColor: activeStage?.color ?? "var(--brand)",
+                    transition: "box-shadow 0.52s ease, border-color 0.52s ease",
+                  }),
             }}
           >
-            <PipelineLogo size={28} />
+            <Image
+              src="/brand-logo.png"
+              alt="Alphaexplora"
+              width={138}
+              height={46}
+              unoptimized
+              priority
+              style={{
+                display: "block",
+                height: 30,
+                width: "auto",
+                objectFit: "contain",
+              }}
+            />
           </div>
         </motion.div>
 
