@@ -42,10 +42,6 @@ const RENDER_RUNTIME_OPTIONS: Array<{ value: RenderRuntime; label: string }> = [
   { value: "elixir", label: "Elixir" },
 ];
 
-function providerForSlot(slot: EnvTargetSlot): EnvProvider {
-  return slot === "frontend" ? "vercel" : "render";
-}
-
 function slotForProvider(provider: EnvProvider): EnvTargetSlot {
   return provider === "vercel" ? "frontend" : "backend";
 }
@@ -82,7 +78,7 @@ export function ProjectEnvPanel({
   const [targetAction, setTargetAction] = useState<
     "create" | "register_existing"
   >("create");
-  const [ownershipMode, setOwnershipMode] = useState<EnvOwnershipMode>("byo");
+  const [ownershipMode] = useState<EnvOwnershipMode>("byo");
   const [provider, setProvider] = useState<EnvProvider>("render");
   const [slot, setSlot] = useState<EnvTargetSlot>("backend");
   const [environment, setEnvironment] = useState<EnvEnvironment>("test");
@@ -290,6 +286,24 @@ export function ProjectEnvPanel({
     setMessage(`Re-enter the value for ${item.key} before provisioning.`);
   }
 
+  function setDeploymentKind(nextProvider: EnvProvider) {
+    setProvider(nextProvider);
+    setSlot(slotForProvider(nextProvider));
+    setProviderConnectionId("");
+    if (nextProvider === "render") {
+      setRootDirectory((current) =>
+        !current || current === "." ? "backend" : current,
+      );
+      setBuildCommand((current) => current || "npm ci && npm run build");
+      setStartCommand((current) => current || "npm run start:prod");
+    } else {
+      setRootDirectory((current) =>
+        !current || current === "backend" ? "." : current,
+      );
+      setBuildCommand((current) => current || "npm run build");
+    }
+  }
+
   return (
     <div className="env-provisioning-panel">
       <section className="env-provisioning-section">
@@ -311,39 +325,33 @@ export function ProjectEnvPanel({
             <option value="create">Create new target</option>
             <option value="register_existing">Use existing target</option>
           </select>
-          <select
-            aria-label="Ownership mode"
-            value={ownershipMode}
-            onChange={(event) =>
-              setOwnershipMode(event.target.value as EnvOwnershipMode)
-            }
-          >
-            <option value="byo">Bring your own provider</option>
-          </select>
-          <select
-            aria-label="Provider"
-            value={provider}
-            onChange={(event) => {
-              const nextProvider = event.target.value as EnvProvider;
-              setProvider(nextProvider);
-              setSlot(slotForProvider(nextProvider));
-            }}
-          >
-            <option value="render">Render backend</option>
-            <option value="vercel">Vercel frontend</option>
-          </select>
-          <select
-            aria-label="Target slot"
-            value={slot}
-            onChange={(event) => {
-              const nextSlot = event.target.value as EnvTargetSlot;
-              setSlot(nextSlot);
-              setProvider(providerForSlot(nextSlot));
-            }}
-          >
-            <option value="backend">Backend</option>
-            <option value="frontend">Frontend</option>
-          </select>
+          <div className="env-target-grid__field env-target-grid__field--wide">
+            <span>Deployment</span>
+            <div className="env-segmented-actions" role="group">
+              <button
+                className={
+                  provider === "render" ? "primary-button" : "ghost-button"
+                }
+                type="button"
+                onClick={() => setDeploymentKind("render")}
+              >
+                Render backend
+              </button>
+              <button
+                className={
+                  provider === "vercel" ? "primary-button" : "ghost-button"
+                }
+                type="button"
+                onClick={() => setDeploymentKind("vercel")}
+              >
+                Vercel frontend
+              </button>
+            </div>
+          </div>
+          <div className="env-target-grid__field env-target-grid__field--wide">
+            <span>Ownership</span>
+            <span className="env-static-field">Bring your own provider</span>
+          </div>
           {ownershipMode === "byo" ? (
             <select
               aria-label="Provider connection"

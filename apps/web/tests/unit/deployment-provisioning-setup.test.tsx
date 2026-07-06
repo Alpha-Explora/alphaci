@@ -10,7 +10,8 @@ jest.mock("../../src/hooks/use-provider-connections", () => ({
   useProviderConnections: jest.fn(),
 }));
 
-const mockedUseProviderConnections = useProviderConnections as jest.MockedFunction<typeof useProviderConnections>;
+const mockedUseProviderConnections =
+  useProviderConnections as jest.MockedFunction<typeof useProviderConnections>;
 
 function render(ui: ReactNode) {
   const container = document.createElement("div");
@@ -30,10 +31,15 @@ function render(ui: ReactNode) {
   };
 }
 
-function changeValue(element: HTMLInputElement | HTMLSelectElement, value: string) {
+function changeValue(
+  element: HTMLInputElement | HTMLSelectElement,
+  value: string,
+) {
   act(() => {
     const descriptor = Object.getOwnPropertyDescriptor(
-      element instanceof HTMLSelectElement ? HTMLSelectElement.prototype : HTMLInputElement.prototype,
+      element instanceof HTMLSelectElement
+        ? HTMLSelectElement.prototype
+        : HTMLInputElement.prototype,
       "value",
     );
     descriptor?.set?.call(element, value);
@@ -68,7 +74,9 @@ describe("DeploymentProvisioningSetup", () => {
           rootDirectory: ".",
           buildCommand: "npm ci && npm run build",
           startCommand: "npm run start:prod",
-          env: [{ environment: "test", vars: [{ key: "DATABASE_URL", value: "" }] }],
+          env: [
+            { environment: "test", vars: [{ key: "DATABASE_URL", value: "" }] },
+          ],
         },
       ],
     };
@@ -84,14 +92,33 @@ describe("DeploymentProvisioningSetup", () => {
     );
 
     expect(rendered.container.textContent).toContain("Deployment provisioning");
-    expect(rendered.container.querySelector<HTMLInputElement>("input[aria-label='Provision deployment target']")).toBeChecked();
-    expect(rendered.container.querySelector<HTMLSelectElement>("select[aria-label='Provider']")).toHaveValue("render");
-    expect(rendered.container.querySelector<HTMLSelectElement>("select[aria-label='Render runtime']")).toHaveValue("docker");
+    expect(
+      rendered.container.querySelector<HTMLInputElement>(
+        "input[aria-label='Provision deployment target']",
+      ),
+    ).toBeChecked();
+    expect(rendered.container.textContent).toContain("Render backend");
+    expect(
+      rendered.container.querySelector<HTMLSelectElement>(
+        "select[aria-label='Provider']",
+      ),
+    ).toBeNull();
+    expect(
+      rendered.container.querySelector<HTMLSelectElement>(
+        "select[aria-label='Render runtime']",
+      ),
+    ).toHaveValue("docker");
     expect(rendered.container.textContent).toContain("Node.js / Bun");
     expect(rendered.container.textContent).toContain("Python");
     expect(rendered.container.textContent).toContain("Go");
-    expect(rendered.container.querySelector<HTMLInputElement>("input[aria-label='Variable value 1']")).toHaveAttribute("type", "password");
-    expect(rendered.container.textContent).toContain("Values are sent to the provider during setup and are not stored by Alphaexplora.");
+    expect(
+      rendered.container.querySelector<HTMLInputElement>(
+        "input[aria-label='Variable value 1']",
+      ),
+    ).toHaveAttribute("type", "password");
+    expect(rendered.container.textContent).toContain(
+      "Values are sent to the provider during setup and are not stored by Alphaexplora.",
+    );
 
     rendered.unmount();
   });
@@ -127,7 +154,12 @@ describe("DeploymentProvisioningSetup", () => {
       />,
     );
 
-    changeValue(rendered.container.querySelector<HTMLSelectElement>("select[aria-label='Render runtime']")!, "python");
+    changeValue(
+      rendered.container.querySelector<HTMLSelectElement>(
+        "select[aria-label='Render runtime']",
+      )!,
+      "python",
+    );
 
     expect(onChange).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -195,11 +227,19 @@ describe("DeploymentProvisioningSetup", () => {
     );
 
     expect(rendered.container.textContent).toContain("Variable groups");
-    expect(rendered.container.textContent).toContain("frontend / vercel / test");
-    expect(rendered.container.querySelector<HTMLInputElement>("input[aria-label='Group variable key 1-1']")).toHaveValue("API_URL");
+    expect(rendered.container.textContent).toContain(
+      "frontend / vercel / test",
+    );
+    expect(
+      rendered.container.querySelector<HTMLInputElement>(
+        "input[aria-label='Group variable key 1-1']",
+      ),
+    ).toHaveValue("API_URL");
 
     changeValue(
-      rendered.container.querySelector<HTMLInputElement>("input[aria-label='Group variable value 1-1']")!,
+      rendered.container.querySelector<HTMLInputElement>(
+        "input[aria-label='Group variable value 1-1']",
+      )!,
       "https://api.example.com",
     );
 
@@ -258,7 +298,12 @@ describe("DeploymentProvisioningSetup", () => {
           branchName: "test",
           rootDirectory: ".",
           buildCommand: "npm run build",
-          env: [{ environment: "test", vars: [{ key: "NEXT_PUBLIC_API_URL", value: "" }] }],
+          env: [
+            {
+              environment: "test",
+              vars: [{ key: "NEXT_PUBLIC_API_URL", value: "" }],
+            },
+          ],
         },
       ],
     };
@@ -281,7 +326,10 @@ describe("DeploymentProvisioningSetup", () => {
       "Alphaexplora will install per-slot GitHub Actions secrets for Vercel deployment after the Vercel project is created.",
     );
 
-    const frontendProjectName = rendered.container.querySelector<HTMLInputElement>("input[aria-label='Provider project name 2']");
+    const frontendProjectName =
+      rendered.container.querySelector<HTMLInputElement>(
+        "input[aria-label='Provider project name 2']",
+      );
     expect(frontendProjectName).not.toBeNull();
     changeValue(frontendProjectName!, "custom-frontend-test");
 
@@ -345,9 +393,17 @@ describe("DeploymentProvisioningSetup", () => {
       />,
     );
 
-    expect(rendered.container.querySelector<HTMLSelectElement>("select[aria-label='Provider connection']")).toHaveValue("connection-1");
+    expect(
+      rendered.container.querySelector<HTMLSelectElement>(
+        "select[aria-label='Provider connection']",
+      ),
+    ).toHaveValue("connection-1");
     expect(rendered.container.textContent).toContain("Personal Vercel - abcd");
-    expect(rendered.container.querySelector("input[placeholder='Vercel connection UUID']")).toBeNull();
+    expect(
+      rendered.container.querySelector(
+        "input[placeholder='Vercel connection UUID']",
+      ),
+    ).toBeNull();
     expect(onChange).toHaveBeenCalledWith(
       expect.objectContaining({
         targets: [

@@ -130,12 +130,12 @@ function providerLabel(provider: EnvProvider): string {
   return provider === "render" ? "Render" : "Vercel";
 }
 
-function providerForSlot(slot: EnvTargetSlot): EnvProvider {
-  return slot === "frontend" ? "vercel" : "render";
+function targetKindLabel(target: DeploymentProvisioningTargetRequest): string {
+  return target.provider === "vercel" ? "Vercel frontend" : "Render backend";
 }
 
-function slotForProvider(provider: EnvProvider): EnvTargetSlot {
-  return provider === "vercel" ? "frontend" : "backend";
+function readonlyValueLabel(value: string): string {
+  return value.trim() || "Not set";
 }
 
 function blankVariableGroup(
@@ -296,38 +296,6 @@ function ownershipDescription(target: DeploymentProvisioningTargetRequest) {
   return target.ownershipMode === "byo"
     ? "Alphaexplora creates a Vercel project in your account and deploys through GitHub Actions. You do not need to install Vercel's GitHub integration."
     : "Alphaexplora creates the Vercel project on the organization's Vercel account and deploys it through GitHub Actions from the generated workflow.";
-}
-
-function withRenderDefaults(
-  target: DeploymentProvisioningTargetRequest,
-  patch: Partial<DeploymentProvisioningTargetRequest>,
-): Partial<DeploymentProvisioningTargetRequest> {
-  const nextProvider = patch.provider ?? target.provider;
-  const nextSlot = patch.slot ?? target.slot;
-  if (nextProvider !== "render") {
-    return patch;
-  }
-
-  const isBackendSubdir = nextSlot === "backend";
-  const rootDirectory =
-    patch.rootDirectory ??
-    target.rootDirectory ??
-    (isBackendSubdir ? "backend" : ".");
-
-  return {
-    renderDeployMethod: target.renderDeployMethod ?? "native_git",
-    renderServiceType: "web_service",
-    renderRuntime: target.renderRuntime ?? "docker",
-    renderInstanceType: "free",
-    renderRegion: target.renderRegion ?? "singapore",
-    renderEnvironmentName: target.renderEnvironmentName ?? "test",
-    dockerContext: target.dockerContext ?? rootDirectory,
-    dockerfilePath:
-      target.dockerfilePath ??
-      (rootDirectory === "." ? "Dockerfile" : `${rootDirectory}/Dockerfile`),
-    startCommand: target.startCommand ?? "npm run start",
-    ...patch,
-  };
 }
 
 export function DeploymentProvisioningSetup({
@@ -522,12 +490,33 @@ export function DeploymentProvisioningSetup({
               <div>
                 <h4>Variable groups</h4>
                 <p className="helper-text" style={{ margin: "0.25rem 0 0" }}>
-                  Create provider-specific groups. Render groups only apply to
-                  Render targets, and Vercel groups only apply to Vercel
-                  targets.
+                  Create reusable variables for the deployment targets below.
                 </p>
               </div>
+              <div className="deployment-variable-actions">
+                {targetProviders.map((provider) => (
+                  <button
+                    type="button"
+                    className="ghost-button deployment-variable-panel__button"
+                    key={provider}
+                    onClick={() =>
+                      onChange(
+                        addVariableGroup(value, variableGroups, provider),
+                      )
+                    }
+                  >
+                    New {providerLabel(provider)} variable group
+                  </button>
+                ))}
+              </div>
             </div>
+
+            {variableGroups.length === 0 ? (
+              <p className="env-empty-state">
+                No variable groups yet. Add one when the same key should apply
+                to more than one branch target.
+              </p>
+            ) : null}
 
             {displayProviders.map((provider) => {
               const providerTargets = targetBranchOptions.filter(
@@ -537,6 +526,9 @@ export function DeploymentProvisioningSetup({
                 .map((group, groupIndex) => ({ group, groupIndex }))
                 .filter(({ group }) => group.provider === provider);
               const hasTargets = providerTargets.length > 0;
+              if (providerGroups.length === 0) {
+                return null;
+              }
               return (
                 <div className="deployment-provider-groups" key={provider}>
                   <div className="deployment-provider-groups__header">
@@ -551,17 +543,6 @@ export function DeploymentProvisioningSetup({
                         available.
                       </p>
                     </div>
-                    <button
-                      type="button"
-                      className="ghost-button deployment-variable-panel__button"
-                      onClick={() =>
-                        onChange(
-                          addVariableGroup(value, variableGroups, provider),
-                        )
-                      }
-                    >
-                      Create {providerLabel(provider)} group
-                    </button>
                   </div>
 
                   {!hasTargets && providerGroups.length > 0 ? (
@@ -570,12 +551,6 @@ export function DeploymentProvisioningSetup({
                       anymore. These groups will not be applied until a{" "}
                       {providerLabel(provider)} target is added, or remove them
                       below.
-                    </p>
-                  ) : null}
-
-                  {providerGroups.length === 0 ? (
-                    <p className="env-empty-state">
-                      No {providerLabel(provider)} variable groups yet.
                     </p>
                   ) : null}
 
@@ -943,115 +918,23 @@ export function DeploymentProvisioningSetup({
                 </div>
 
                 <div className="env-target-grid">
-                  <label className="env-target-grid__field env-target-grid__field--compact">
-                    <span>Slot</span>
-                    <select
-                      aria-label={
-                        targetIndex === 0
-                          ? "Target slot"
-                          : `Target slot ${targetIndex + 1}`
-                      }
-                      value={target.slot}
-                      onChange={(event) =>
-                        onChange(
-                          updateTargetAt(value, targetIndex, {
-                            slot: event.target.value as EnvTargetSlot,
-                            provider: providerForSlot(
-                              event.target.value as EnvTargetSlot,
-                            ),
-                            ...(event.target.value === "backend" &&
-                            providerForSlot(
-                              event.target.value as EnvTargetSlot,
-                            ) === "render"
-                              ? {
-                                  rootDirectory: "backend",
-                                  dockerContext: "backend",
-                                  dockerfilePath: "backend/Dockerfile",
-                                }
-                              : {}),
-                          }),
-                        )
-                      }
-                    >
-                      <option value="backend">Backend</option>
-                      <option value="frontend">Frontend</option>
-                    </select>
-                  </label>
-                  <label className="env-target-grid__field env-target-grid__field--compact">
-                    <span>Provider</span>
-                    <select
-                      aria-label={
-                        targetIndex === 0
-                          ? "Provider"
-                          : `Provider ${targetIndex + 1}`
-                      }
-                      value={target.provider}
-                      onChange={(event) => {
-                        const provider = event.target.value as EnvProvider;
-                        const providerConnectionId =
-                          target.ownershipMode === "byo"
-                            ? activeProviderConnections.find(
-                                (connection) =>
-                                  connection.provider === provider,
-                              )?.id
-                            : undefined;
-                        onChange(
-                          updateTargetAt(
-                            value,
-                            targetIndex,
-                            withRenderDefaults(target, {
-                              provider,
-                              slot: slotForProvider(provider),
-                              providerConnectionId,
-                              ...(provider === "vercel"
-                                ? {
-                                    renderDeployMethod: undefined,
-                                    renderServiceType: undefined,
-                                    renderRuntime: undefined,
-                                    renderInstanceType: undefined,
-                                    renderRegion: undefined,
-                                    renderEnvironmentName: undefined,
-                                    dockerContext: undefined,
-                                    dockerfilePath: undefined,
-                                  }
-                                : {}),
-                            }),
-                          ),
-                        );
-                      }}
-                    >
-                      <option value="render">Render</option>
-                      <option value="vercel">Vercel</option>
-                    </select>
-                  </label>
-                  <label className="env-target-grid__field env-target-grid__field--wide">
+                  <div className="env-target-grid__field env-target-grid__field--compact">
+                    <span>Deployment</span>
+                    <span className="env-static-field">
+                      {targetKindLabel(target)}
+                    </span>
+                  </div>
+                  <div className="env-target-grid__field env-target-grid__field--wide">
                     <span>Ownership</span>
-                    <select
-                      aria-label={
-                        targetIndex === 0
-                          ? "Provider ownership"
-                          : `Provider ownership ${targetIndex + 1}`
-                      }
-                      value={ownershipMode}
-                      disabled
-                    >
-                      {ownershipMode === "flowci_managed" ? (
-                        <option value="flowci_managed">
-                          Centralized on Alphaexplora{" "}
-                          {target.provider === "render" ? "Render" : "Vercel"}
-                        </option>
-                      ) : (
-                        <option value="byo">
-                          Use my{" "}
-                          {target.provider === "render" ? "Render" : "Vercel"}{" "}
-                          account
-                        </option>
-                      )}
-                    </select>
+                    <span className="env-static-field">
+                      {ownershipMode === "flowci_managed"
+                        ? "Centralized on Alphaexplora"
+                        : `Use my ${providerLabel(target.provider)} account`}
+                    </span>
                     <span className="helper-text env-target-grid__note">
                       {ownershipDescription(target)}
                     </span>
-                  </label>
+                  </div>
                   {target.ownershipMode === "byo" ? (
                     <label className="env-target-grid__field env-target-grid__field--wide">
                       <span>Provider connection</span>
@@ -1207,24 +1090,14 @@ export function DeploymentProvisioningSetup({
                             : "Alphaexplora packages and deploys this backend automatically."}
                         </span>
                       </label>
-                      <label className="env-target-grid__field env-target-grid__field--compact">
+                      <div className="env-target-grid__field env-target-grid__field--compact">
                         <span>Service type</span>
-                        <select
-                          aria-label={
-                            targetIndex === 0
-                              ? "Render service type"
-                              : `Render service type ${targetIndex + 1}`
-                          }
-                          value={target.renderServiceType ?? "web_service"}
-                          disabled
-                        >
-                          <option value="web_service">Web service</option>
-                        </select>
+                        <span className="env-static-field">Web service</span>
                         <span className="helper-text env-target-grid__note">
                           Render is limited to backend web services on the free
                           plan.
                         </span>
-                      </label>
+                      </div>
                       <label className="env-target-grid__field env-target-grid__field--compact">
                         <span>Runtime</span>
                         <select
@@ -1255,20 +1128,14 @@ export function DeploymentProvisioningSetup({
                             : "Image-backed deploys run as a Docker image; this records the service runtime intent."}
                         </span>
                       </label>
-                      <label className="env-target-grid__field env-target-grid__field--compact">
+                      <div className="env-target-grid__field env-target-grid__field--compact">
                         <span>Instance</span>
-                        <select
-                          aria-label={
-                            targetIndex === 0
-                              ? "Render instance type"
-                              : `Render instance type ${targetIndex + 1}`
-                          }
-                          value={target.renderInstanceType ?? "free"}
-                          disabled
-                        >
-                          <option value="free">Free</option>
-                        </select>
-                      </label>
+                        <span className="env-static-field">
+                          {readonlyValueLabel(
+                            target.renderInstanceType ?? "free",
+                          )}
+                        </span>
+                      </div>
                       <label className="env-target-grid__field env-target-grid__field--compact">
                         <span>Region</span>
                         <input
