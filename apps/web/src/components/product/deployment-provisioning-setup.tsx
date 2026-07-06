@@ -13,7 +13,6 @@ import type {
   EnvTargetSlot,
   RenderDeployMethod,
   RenderRuntime,
-  RenderServiceType,
 } from "@/lib/api/contracts";
 import { useProviderConnections } from "@/hooks/use-provider-connections";
 
@@ -54,11 +53,7 @@ function fallbackTarget(
   ownershipMode: EnvOwnershipMode = "byo",
 ): DeploymentProvisioningTargetRequest {
   const slot: EnvTargetSlot =
-    selectedProjectKind === "frontend"
-      ? "frontend"
-      : selectedProjectKind === "backend"
-        ? "backend"
-        : "standalone";
+    selectedProjectKind === "frontend" ? "frontend" : "backend";
   const provider: EnvProvider = slot === "frontend" ? "vercel" : "render";
   return {
     slot,
@@ -133,6 +128,14 @@ function envVarsForDisplay(
 
 function providerLabel(provider: EnvProvider): string {
   return provider === "render" ? "Render" : "Vercel";
+}
+
+function providerForSlot(slot: EnvTargetSlot): EnvProvider {
+  return slot === "frontend" ? "vercel" : "render";
+}
+
+function slotForProvider(provider: EnvProvider): EnvTargetSlot {
+  return provider === "vercel" ? "frontend" : "backend";
 }
 
 function blankVariableGroup(
@@ -313,9 +316,9 @@ function withRenderDefaults(
 
   return {
     renderDeployMethod: target.renderDeployMethod ?? "native_git",
-    renderServiceType: target.renderServiceType ?? "web_service",
+    renderServiceType: "web_service",
     renderRuntime: target.renderRuntime ?? "docker",
-    renderInstanceType: target.renderInstanceType ?? "free",
+    renderInstanceType: "free",
     renderRegion: target.renderRegion ?? "singapore",
     renderEnvironmentName: target.renderEnvironmentName ?? "test",
     dockerContext: target.dockerContext ?? rootDirectory,
@@ -953,12 +956,13 @@ export function DeploymentProvisioningSetup({
                         onChange(
                           updateTargetAt(value, targetIndex, {
                             slot: event.target.value as EnvTargetSlot,
-                            provider:
-                              event.target.value === "frontend"
-                                ? "vercel"
-                                : target.provider,
+                            provider: providerForSlot(
+                              event.target.value as EnvTargetSlot,
+                            ),
                             ...(event.target.value === "backend" &&
-                            target.provider === "render"
+                            providerForSlot(
+                              event.target.value as EnvTargetSlot,
+                            ) === "render"
                               ? {
                                   rootDirectory: "backend",
                                   dockerContext: "backend",
@@ -969,7 +973,6 @@ export function DeploymentProvisioningSetup({
                         )
                       }
                     >
-                      <option value="standalone">Standalone</option>
                       <option value="backend">Backend</option>
                       <option value="frontend">Frontend</option>
                     </select>
@@ -998,6 +1001,7 @@ export function DeploymentProvisioningSetup({
                             targetIndex,
                             withRenderDefaults(target, {
                               provider,
+                              slot: slotForProvider(provider),
                               providerConnectionId,
                               ...(provider === "vercel"
                                 ? {
@@ -1191,9 +1195,6 @@ export function DeploymentProvisioningSetup({
                               <option value="native_git">
                                 Native Render build
                               </option>
-                              <option value="byo_image">
-                                GitHub Actions image deploy
-                              </option>
                               <option value="existing_service">
                                 Existing Render service
                               </option>
@@ -1215,22 +1216,14 @@ export function DeploymentProvisioningSetup({
                               : `Render service type ${targetIndex + 1}`
                           }
                           value={target.renderServiceType ?? "web_service"}
-                          onChange={(event) =>
-                            onChange(
-                              updateTargetAt(value, targetIndex, {
-                                renderServiceType: event.target
-                                  .value as RenderServiceType,
-                              }),
-                            )
-                          }
+                          disabled
                         >
                           <option value="web_service">Web service</option>
-                          <option value="private_service">
-                            Private service
-                          </option>
-                          <option value="background_worker">Worker</option>
-                          <option value="cron_job">Cron job</option>
                         </select>
+                        <span className="helper-text env-target-grid__note">
+                          Render is limited to backend web services on the free
+                          plan.
+                        </span>
                       </label>
                       <label className="env-target-grid__field env-target-grid__field--compact">
                         <span>Runtime</span>
@@ -1264,21 +1257,17 @@ export function DeploymentProvisioningSetup({
                       </label>
                       <label className="env-target-grid__field env-target-grid__field--compact">
                         <span>Instance</span>
-                        <input
+                        <select
                           aria-label={
                             targetIndex === 0
                               ? "Render instance type"
                               : `Render instance type ${targetIndex + 1}`
                           }
                           value={target.renderInstanceType ?? "free"}
-                          onChange={(event) =>
-                            onChange(
-                              updateTargetAt(value, targetIndex, {
-                                renderInstanceType: event.target.value,
-                              }),
-                            )
-                          }
-                        />
+                          disabled
+                        >
+                          <option value="free">Free</option>
+                        </select>
                       </label>
                       <label className="env-target-grid__field env-target-grid__field--compact">
                         <span>Region</span>
@@ -1359,16 +1348,6 @@ export function DeploymentProvisioningSetup({
                             />
                           </label>
                         </>
-                      ) : null}
-                      {target.ownershipMode === "flowci_managed" &&
-                      (target.renderInstanceType ?? "free") !== "free" ? (
-                        <p
-                          className="helper-text env-target-grid__field env-target-grid__field--wide"
-                          style={{ margin: 0 }}
-                        >
-                          Paid managed Render services require Alphaexplora approval.
-                          Use free or connect your own Render account.
-                        </p>
                       ) : null}
                       {target.renderDeployMethod !== "native_git" &&
                       target.renderDeployMethod !== "existing_service" ? (
@@ -1488,8 +1467,8 @@ export function DeploymentProvisioningSetup({
 
                 {target.provider === "vercel" ? (
                   <p className="helper-text" style={{ margin: "0 0 0.6rem" }}>
-                    Alphaexplora will install per-slot GitHub Actions secrets for
-                    Vercel deployment after the Vercel project is created.
+                    Alphaexplora will install per-slot GitHub Actions secrets
+                    for Vercel deployment after the Vercel project is created.
                   </p>
                 ) : null}
 

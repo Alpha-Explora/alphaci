@@ -12,23 +12,11 @@ export type DeploymentStrategy =
   | "render_image_pushed"
   | "render_existing_service";
 export type RenderServiceType =
-  | "web_service"
-  | "private_service"
-  | "background_worker"
-  | "cron_job";
+  "web_service" | "private_service" | "background_worker" | "cron_job";
 export type RenderRuntime =
-  | "node"
-  | "python"
-  | "ruby"
-  | "go"
-  | "rust"
-  | "elixir"
-  | "docker";
+  "node" | "python" | "ruby" | "go" | "rust" | "elixir" | "docker";
 export type RenderDeployMethod =
-  | "managed_image"
-  | "byo_image"
-  | "native_git"
-  | "existing_service";
+  "managed_image" | "byo_image" | "native_git" | "existing_service";
 
 export interface SessionUser {
   id: string;
@@ -237,6 +225,10 @@ export interface DeploymentTargetActionsResponse {
       enabled: boolean;
       url: string | null;
     };
+    openProviderConsole: {
+      enabled: boolean;
+      url: string | null;
+    };
   };
 }
 
@@ -385,13 +377,7 @@ export interface CatalogCategoriesResponse {
 }
 
 export type ProjectOptionKey =
-  | "lint"
-  | "unit"
-  | "build"
-  | "coverage"
-  | "security"
-  | "docker"
-  | "e2e";
+  "lint" | "unit" | "build" | "coverage" | "security" | "docker" | "e2e";
 
 export type MvpProjectOptionKey = Exclude<ProjectOptionKey, "e2e">;
 
@@ -559,7 +545,10 @@ export interface GenerateWorkflowRequest {
   nodeVersion?: string;
   coverageThreshold?: number;
   enhancements?: Array<
-    "strictProductionApproval" | "enableUatApproval" | "disablePlaywright" | "disableK6"
+    | "strictProductionApproval"
+    | "enableUatApproval"
+    | "disablePlaywright"
+    | "disableK6"
   >;
 }
 
@@ -859,12 +848,7 @@ export interface ProjectCiRunRerunResponse {
 }
 
 export type DeploymentHistoryStatus =
-  | "queued"
-  | "building"
-  | "ready"
-  | "failed"
-  | "canceled"
-  | "unknown";
+  "queued" | "building" | "ready" | "failed" | "canceled" | "unknown";
 
 export interface ProjectDeploymentHistoryItem {
   id: string;
@@ -878,6 +862,7 @@ export interface ProjectDeploymentHistoryItem {
   createdAt: string;
   readyAt: string | null;
   providerUrl: string;
+  consoleUrl: string;
 }
 
 export interface ProjectDeploymentsResponse {
@@ -1055,9 +1040,11 @@ export interface PendingAccountResponse {
 
 /* ── CI Runs ─────────────────────────────────────────────────────────────── */
 
-export type RunOverallStatus = "success" | "failure" | "running" | "cancelled" | "partial";
+export type RunOverallStatus =
+  "success" | "failure" | "running" | "cancelled" | "partial";
 export type StageId = "access" | "quality" | "package";
-export type StageStatus = "success" | "failure" | "running" | "cancelled" | "pending";
+export type StageStatus =
+  "success" | "failure" | "running" | "cancelled" | "pending";
 export type MessageSeverity = "info" | "warning" | "error" | "success";
 
 export interface FriendlyMessage {

@@ -42,6 +42,14 @@ const RENDER_RUNTIME_OPTIONS: Array<{ value: RenderRuntime; label: string }> = [
   { value: "elixir", label: "Elixir" },
 ];
 
+function providerForSlot(slot: EnvTargetSlot): EnvProvider {
+  return slot === "frontend" ? "vercel" : "render";
+}
+
+function slotForProvider(provider: EnvProvider): EnvTargetSlot {
+  return provider === "vercel" ? "frontend" : "backend";
+}
+
 function formatRenderRuntime(
   value: RenderRuntime | string | null | undefined,
 ): string {
@@ -186,7 +194,13 @@ export function ProjectEnvPanel({
             rootDirectory,
             buildCommand,
             ...(provider === "render" && startCommand ? { startCommand } : {}),
-            ...(provider === "render" ? { renderRuntime } : {}),
+            ...(provider === "render"
+              ? {
+                  renderRuntime,
+                  renderServiceType: "web_service" as const,
+                  renderInstanceType: "free",
+                }
+              : {}),
           }
         : {
             providerProjectId,
@@ -309,19 +323,26 @@ export function ProjectEnvPanel({
           <select
             aria-label="Provider"
             value={provider}
-            onChange={(event) => setProvider(event.target.value as EnvProvider)}
+            onChange={(event) => {
+              const nextProvider = event.target.value as EnvProvider;
+              setProvider(nextProvider);
+              setSlot(slotForProvider(nextProvider));
+            }}
           >
-            <option value="render">Render</option>
-            <option value="vercel">Vercel</option>
+            <option value="render">Render backend</option>
+            <option value="vercel">Vercel frontend</option>
           </select>
           <select
             aria-label="Target slot"
             value={slot}
-            onChange={(event) => setSlot(event.target.value as EnvTargetSlot)}
+            onChange={(event) => {
+              const nextSlot = event.target.value as EnvTargetSlot;
+              setSlot(nextSlot);
+              setProvider(providerForSlot(nextSlot));
+            }}
           >
             <option value="backend">Backend</option>
             <option value="frontend">Frontend</option>
-            <option value="standalone">Standalone</option>
           </select>
           {ownershipMode === "byo" ? (
             <select

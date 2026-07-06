@@ -19,19 +19,23 @@ function defaultTarget(
   slot: EnvTargetSlot,
   projectName: string,
 ): DeploymentProvisioningTargetRequest {
-  const provider = defaultProviderForSlot(slot);
+  const normalizedSlot: EnvTargetSlot =
+    slot === "frontend" ? "frontend" : "backend";
+  const provider = defaultProviderForSlot(normalizedSlot);
   return {
-    slot,
+    slot: normalizedSlot,
     provider,
     ownershipMode: "byo",
     projectName,
     branchName: "test",
-    rootDirectory: slot === "frontend" ? "." : ".",
+    rootDirectory: normalizedSlot === "backend" ? "backend" : ".",
     buildCommand:
       provider === "render" ? "npm ci && npm run build" : "npm run build",
     startCommand: provider === "render" ? "npm run start:prod" : undefined,
     renderDeployMethod: provider === "render" ? "native_git" : undefined,
+    renderServiceType: provider === "render" ? "web_service" : undefined,
     renderRuntime: provider === "render" ? "docker" : undefined,
+    renderInstanceType: provider === "render" ? "free" : undefined,
     env: [{ environment: "test", vars: [] }],
   };
 }
@@ -83,7 +87,7 @@ export function useDeploymentProvisioningForm() {
   const [enabled, setEnabled] = useState(false);
   const [request, setRequest] = useState<DeploymentProvisioningRequest>({
     enabled: false,
-    targets: [defaultTarget("standalone", "")],
+    targets: [defaultTarget("backend", "")],
   });
 
   function setDefaultTarget(slot: EnvTargetSlot, projectName: string) {

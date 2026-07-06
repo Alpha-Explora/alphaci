@@ -10,13 +10,18 @@ import { getMyUsage } from "../../src/lib/api/usage";
 
 jest.mock("framer-motion", () => {
   const React = jest.requireActual("react");
-  const passthrough = ({ children }: { children: React.ReactNode }) => <>{children}</>;
+  const passthrough = ({ children }: { children: React.ReactNode }) => (
+    <>{children}</>
+  );
   const motion = new Proxy(
     {},
     {
       get:
         () =>
-        ({ children, ...props }: { children?: React.ReactNode } & Record<string, unknown>) => {
+        ({
+          children,
+          ...props
+        }: { children?: React.ReactNode } & Record<string, unknown>) => {
           const domProps = { ...props };
           for (const key of [
             "initial",
@@ -75,10 +80,13 @@ jest.mock("../../src/lib/api/usage", () => ({
   getMyUsage: jest.fn(),
 }));
 
-const mockedUseCapabilities = useCapabilities as jest.MockedFunction<typeof useCapabilities>;
-const mockedUseProjectEnvProvisioning = useProjectEnvProvisioning as jest.MockedFunction<
-  typeof useProjectEnvProvisioning
+const mockedUseCapabilities = useCapabilities as jest.MockedFunction<
+  typeof useCapabilities
 >;
+const mockedUseProjectEnvProvisioning =
+  useProjectEnvProvisioning as jest.MockedFunction<
+    typeof useProjectEnvProvisioning
+  >;
 const mockedGetMyUsage = getMyUsage as jest.MockedFunction<typeof getMyUsage>;
 const mockedProjectApi = jest.requireMock("../../src/lib/api/projects") as {
   getProjectOverview: jest.Mock;
@@ -163,7 +171,10 @@ function render(ui: React.ReactNode) {
   return { container, root };
 }
 
-function changeValue(element: HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement, value: string) {
+function changeValue(
+  element: HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement,
+  value: string,
+) {
   act(() => {
     const prototype =
       element instanceof HTMLSelectElement
@@ -171,10 +182,7 @@ function changeValue(element: HTMLInputElement | HTMLSelectElement | HTMLTextAre
         : element instanceof HTMLTextAreaElement
           ? HTMLTextAreaElement.prototype
           : HTMLInputElement.prototype;
-    const descriptor = Object.getOwnPropertyDescriptor(
-      prototype,
-      "value",
-    );
+    const descriptor = Object.getOwnPropertyDescriptor(prototype, "value");
     descriptor?.set?.call(element, value);
     element.dispatchEvent(new Event("input", { bubbles: true }));
     element.dispatchEvent(new Event("change", { bubbles: true }));
@@ -246,7 +254,9 @@ function mockCapabilities(
   });
 }
 
-function mockEnvHook(overrides: Partial<ReturnType<typeof useProjectEnvProvisioning>> = {}) {
+function mockEnvHook(
+  overrides: Partial<ReturnType<typeof useProjectEnvProvisioning>> = {},
+) {
   mockedUseProjectEnvProvisioning.mockReturnValue({
     addTarget: jest.fn(),
     load: jest.fn(),
@@ -286,7 +296,11 @@ function projectOverviewWithTargets(targets = [renderTarget, vercelTarget]) {
       revokedAt: null,
     },
     health: { summary: "ok" as const, checks: [] },
-    syncSnapshot: { enabled: true, mode: "local_snapshot" as const, latest: null },
+    syncSnapshot: {
+      enabled: true,
+      mode: "local_snapshot" as const,
+      latest: null,
+    },
     capabilities: {
       envProvisioning: true,
       workflowSettings: true,
@@ -302,7 +316,9 @@ describe("Project env provisioning UI", () => {
   let root: Root | null = null;
 
   beforeEach(() => {
-    mockedProjectApi.getProjectOverview.mockReturnValue(new Promise(() => undefined));
+    mockedProjectApi.getProjectOverview.mockReturnValue(
+      new Promise(() => undefined),
+    );
     mockedProjectApi.getWorkflowSettings.mockResolvedValue({
       enabled: true,
       source: "project_options",
@@ -421,7 +437,11 @@ describe("Project env provisioning UI", () => {
       reason: "Live GitHub run sync is not enabled",
     });
     mockedProjectApi.updateDeploymentTarget.mockImplementation(
-      async (_projectId: string, _targetId: string, payload: Record<string, unknown>) => ({
+      async (
+        _projectId: string,
+        _targetId: string,
+        payload: Record<string, unknown>,
+      ) => ({
         ...renderTarget,
         ...payload,
       }),
@@ -432,7 +452,9 @@ describe("Project env provisioning UI", () => {
       findings: [],
       target: renderTarget,
     });
-    mockedProjectApi.detachDeploymentTarget.mockResolvedValue({ detached: true });
+    mockedProjectApi.detachDeploymentTarget.mockResolvedValue({
+      detached: true,
+    });
     mockedProjectApi.getDeploymentTargetActions.mockResolvedValue({
       targetId: "target-render",
       provider: "render",
@@ -446,6 +468,10 @@ describe("Project env provisioning UI", () => {
         openProviderDashboard: {
           enabled: true,
           url: "https://dashboard.render.com/web/srv-1",
+        },
+        openProviderConsole: {
+          enabled: true,
+          url: "https://dashboard.render.com/web/srv-1/logs",
         },
       },
     });
@@ -525,7 +551,11 @@ describe("Project env provisioning UI", () => {
     mockCapabilities(true);
     mockEnvHook();
 
-    const failedProject = { ...provisionedProject, id: "project-2", status: "failed" as const };
+    const failedProject = {
+      ...provisionedProject,
+      id: "project-2",
+      status: "failed" as const,
+    };
     const rendered = render(
       <WorkflowCurrentTab
         history={[]}
@@ -540,7 +570,9 @@ describe("Project env provisioning UI", () => {
     );
     root = rendered.root;
 
-    expect(rendered.container.textContent?.match(/Environment Variables/g) ?? []).toHaveLength(1);
+    expect(
+      rendered.container.textContent?.match(/Environment Variables/g) ?? [],
+    ).toHaveLength(1);
   });
 
   it("hides Environment Variables action when capability is disabled", () => {
@@ -561,7 +593,9 @@ describe("Project env provisioning UI", () => {
     );
     root = rendered.root;
 
-    expect(rendered.container.textContent).not.toContain("Environment Variables");
+    expect(rendered.container.textContent).not.toContain(
+      "Environment Variables",
+    );
   });
 
   it("uses a split workspace and updates project details from the selector", () => {
@@ -592,21 +626,34 @@ describe("Project env provisioning UI", () => {
     );
     root = rendered.root;
 
-    expect(rendered.container.querySelector(".project-workspace")).not.toBeNull();
+    expect(
+      rendered.container.querySelector(".project-workspace"),
+    ).not.toBeNull();
     expect(rendered.container.querySelector(".project-list")).not.toBeNull();
-    expect(rendered.container.querySelector(".project-detail-panel")).not.toBeNull();
-    expect(rendered.container.querySelector(".project-detail-panel")?.textContent).toContain("orders-api");
-    expect(rendered.container.querySelector(".project-detail-panel")?.textContent).not.toContain("web-client");
+    expect(
+      rendered.container.querySelector(".project-detail-panel"),
+    ).not.toBeNull();
+    expect(
+      rendered.container.querySelector(".project-detail-panel")?.textContent,
+    ).toContain("orders-api");
+    expect(
+      rendered.container.querySelector(".project-detail-panel")?.textContent,
+    ).not.toContain("web-client");
 
-    const webClientSelector = rendered.container.querySelector<HTMLButtonElement>(
-      'button[data-project-id="project-2"]',
-    )!;
+    const webClientSelector =
+      rendered.container.querySelector<HTMLButtonElement>(
+        'button[data-project-id="project-2"]',
+      )!;
     act(() => {
       webClientSelector.click();
     });
 
-    expect(rendered.container.querySelector(".project-detail-panel")?.textContent).toContain("web-client");
-    expect(rendered.container.querySelector(".project-detail-panel")?.textContent).not.toContain("orders-api");
+    expect(
+      rendered.container.querySelector(".project-detail-panel")?.textContent,
+    ).toContain("web-client");
+    expect(
+      rendered.container.querySelector(".project-detail-panel")?.textContent,
+    ).not.toContain("orders-api");
   });
 
   it("loads the project overview and renders control-center tabs with empty states", async () => {
@@ -678,7 +725,9 @@ describe("Project env provisioning UI", () => {
       await Promise.resolve();
     });
 
-    expect(mockedProjectApi.getProjectOverview).toHaveBeenCalledWith("project-1");
+    expect(mockedProjectApi.getProjectOverview).toHaveBeenCalledWith(
+      "project-1",
+    );
     expect(rendered.container.textContent).toContain("Overview");
     expect(rendered.container.textContent).toContain("Local snapshot");
     expect(rendered.container.textContent).toContain("Not synced yet");
@@ -688,16 +737,22 @@ describe("Project env provisioning UI", () => {
     expect(rendered.container.textContent).toContain("Environment");
     expect(rendered.container.textContent).toContain("Activity");
     expect(rendered.container.textContent).toContain("Settings");
-    expect(rendered.container.textContent).toContain("No workflow file metadata is tracked yet.");
+    expect(rendered.container.textContent).toContain(
+      "No workflow file metadata is tracked yet.",
+    );
 
-    const deploymentsTab = Array.from(rendered.container.querySelectorAll("button")).find(
+    const deploymentsTab = Array.from(
+      rendered.container.querySelectorAll("button"),
+    ).find(
       (button) => button.textContent === "Deployments",
     ) as HTMLButtonElement;
     act(() => {
       deploymentsTab.click();
     });
 
-    expect(rendered.container.textContent).toContain("No deployment targets configured.");
+    expect(rendered.container.textContent).toContain(
+      "No deployment targets configured.",
+    );
   });
 
   it("runs local project sync and renders the latest snapshot state", async () => {
@@ -759,16 +814,18 @@ describe("Project env provisioning UI", () => {
       await Promise.resolve();
     });
 
-    const syncButton = Array.from(rendered.container.querySelectorAll("button")).find(
-      (button) => button.textContent === "Sync now",
-    ) as HTMLButtonElement;
+    const syncButton = Array.from(
+      rendered.container.querySelectorAll("button"),
+    ).find((button) => button.textContent === "Sync now") as HTMLButtonElement;
 
     await act(async () => {
       syncButton.click();
       await Promise.resolve();
     });
 
-    expect(mockedProjectApi.syncProjectSnapshot).toHaveBeenCalledWith("project-1");
+    expect(mockedProjectApi.syncProjectSnapshot).toHaveBeenCalledWith(
+      "project-1",
+    );
     expect(rendered.container.textContent).toContain("warning");
     expect(rendered.container.textContent).toContain("1 finding");
   });
@@ -848,12 +905,17 @@ describe("Project env provisioning UI", () => {
     expect(rendered.container.textContent).toContain("Health findings");
     expect(rendered.container.textContent).toContain("workflow_files_missing");
     expect(rendered.container.textContent).toContain("local_snapshot");
-    const repairButton = Array.from(rendered.container.querySelectorAll("button")).find(
-      (button) => button.textContent === "Repair actions coming in the next phase",
+    const repairButton = Array.from(
+      rendered.container.querySelectorAll("button"),
+    ).find(
+      (button) =>
+        button.textContent === "Repair actions coming in the next phase",
     ) as HTMLButtonElement;
     expect(repairButton.disabled).toBe(true);
 
-    const runButton = Array.from(rendered.container.querySelectorAll("button")).find(
+    const runButton = Array.from(
+      rendered.container.querySelectorAll("button"),
+    ).find(
       (button) => button.textContent === "Run drift check",
     ) as HTMLButtonElement;
     await act(async () => {
@@ -861,7 +923,9 @@ describe("Project env provisioning UI", () => {
       await Promise.resolve();
     });
 
-    expect(mockedProjectApi.runProjectDriftDetection).toHaveBeenCalledWith("project-1");
+    expect(mockedProjectApi.runProjectDriftDetection).toHaveBeenCalledWith(
+      "project-1",
+    );
     expect(rendered.container.textContent).toContain("ci_token_missing");
   });
 
@@ -917,7 +981,9 @@ describe("Project env provisioning UI", () => {
       await Promise.resolve();
     });
 
-    const rotateButton = Array.from(rendered.container.querySelectorAll("button")).find(
+    const rotateButton = Array.from(
+      rendered.container.querySelectorAll("button"),
+    ).find(
       (button) => button.textContent === "Rotate CI token",
     ) as HTMLButtonElement;
     act(() => {
@@ -925,9 +991,13 @@ describe("Project env provisioning UI", () => {
     });
 
     expect(mockedProjectApi.repairProjectDriftFinding).not.toHaveBeenCalled();
-    expect(rendered.container.textContent).toContain("Confirm repair to run this local-safe action.");
+    expect(rendered.container.textContent).toContain(
+      "Confirm repair to run this local-safe action.",
+    );
 
-    const confirmButton = Array.from(rendered.container.querySelectorAll("button")).find(
+    const confirmButton = Array.from(
+      rendered.container.querySelectorAll("button"),
+    ).find(
       (button) => button.textContent === "Confirm repair",
     ) as HTMLButtonElement;
     await act(async () => {
@@ -940,7 +1010,9 @@ describe("Project env provisioning UI", () => {
       "finding-1",
       "rotate_ci_token",
     );
-    expect(rendered.container.textContent).toContain("Run drift check again to refresh findings.");
+    expect(rendered.container.textContent).toContain(
+      "Run drift check again to refresh findings.",
+    );
   });
 
   it("exposes workflow update PR repair for central workflow drift", async () => {
@@ -995,7 +1067,9 @@ describe("Project env provisioning UI", () => {
       await Promise.resolve();
     });
 
-    expect(rendered.container.textContent).toContain("central_workflow_ref_outdated");
+    expect(rendered.container.textContent).toContain(
+      "central_workflow_ref_outdated",
+    );
     expect(rendered.container.textContent).toContain("Create update PR");
     expect(rendered.container.textContent).not.toContain("Preview workflow");
   });
@@ -1052,7 +1126,9 @@ describe("Project env provisioning UI", () => {
       await Promise.resolve();
     });
 
-    expect(rendered.container.textContent).toContain("provider_env_key_missing_live");
+    expect(rendered.container.textContent).toContain(
+      "provider_env_key_missing_live",
+    );
     expect(rendered.container.textContent).not.toContain("Confirm repair");
     expect(rendered.container.textContent).not.toContain("Rotate CI token");
     expect(mockedProjectApi.repairProjectDriftFinding).not.toHaveBeenCalled();
@@ -1067,7 +1143,12 @@ describe("Project env provisioning UI", () => {
         createdAt: "2026-06-12T00:00:00.000Z",
         updatedAt: "2026-06-12T00:00:00.000Z",
       },
-      workflow: { path: provisionedProject.workflowPath, files: [], stageCount: 0, history: [] },
+      workflow: {
+        path: provisionedProject.workflowPath,
+        files: [],
+        stageCount: 0,
+        history: [],
+      },
       deploymentTargets: { items: [], count: 0 },
       environment: { items: [], count: 0, failedCount: 0 },
       ciAuth: {
@@ -1108,16 +1189,18 @@ describe("Project env provisioning UI", () => {
       await Promise.resolve();
     });
 
-    const runsTab = Array.from(rendered.container.querySelectorAll("button")).find(
-      (button) => button.textContent === "Runs",
-    ) as HTMLButtonElement;
+    const runsTab = Array.from(
+      rendered.container.querySelectorAll("button"),
+    ).find((button) => button.textContent === "Runs") as HTMLButtonElement;
     await act(async () => {
       runsTab.click();
       await Promise.resolve();
     });
 
     expect(mockedProjectApi.getProjectCiRuns).toHaveBeenCalledWith("project-1");
-    expect(rendered.container.textContent).toContain("Live GitHub run sync is not enabled");
+    expect(rendered.container.textContent).toContain(
+      "Live GitHub run sync is not enabled",
+    );
     expect(rendered.container.textContent).toContain("No CI runs tracked yet.");
   });
 
@@ -1176,9 +1259,9 @@ describe("Project env provisioning UI", () => {
       await Promise.resolve();
     });
 
-    const runsTab = Array.from(rendered.container.querySelectorAll("button")).find(
-      (button) => button.textContent === "Runs",
-    ) as HTMLButtonElement;
+    const runsTab = Array.from(
+      rendered.container.querySelectorAll("button"),
+    ).find((button) => button.textContent === "Runs") as HTMLButtonElement;
     await act(async () => {
       runsTab.click();
       await Promise.resolve();
@@ -1190,13 +1273,19 @@ describe("Project env provisioning UI", () => {
     expect(rendered.container.textContent).toContain("abc123");
     expect(rendered.container.textContent).toContain("failure");
     expect(rendered.container.textContent).not.toContain("Rerun");
-    expect(rendered.container.querySelector('a[href="https://github.com/tone/orders-api/actions/runs/1"]')).not.toBeNull();
+    expect(
+      rendered.container.querySelector(
+        'a[href="https://github.com/tone/orders-api/actions/runs/1"]',
+      ),
+    ).not.toBeNull();
   });
 
   it("renders Vercel and Render deployment target cards", async () => {
     mockCapabilities(true, true, false, false, true);
     mockEnvHook();
-    mockedProjectApi.getProjectOverview.mockResolvedValue(projectOverviewWithTargets());
+    mockedProjectApi.getProjectOverview.mockResolvedValue(
+      projectOverviewWithTargets(),
+    );
 
     const rendered = render(
       <WorkflowCurrentTab
@@ -1216,7 +1305,9 @@ describe("Project env provisioning UI", () => {
       await Promise.resolve();
     });
 
-    const deploymentsTab = Array.from(rendered.container.querySelectorAll("button")).find(
+    const deploymentsTab = Array.from(
+      rendered.container.querySelectorAll("button"),
+    ).find(
       (button) => button.textContent === "Deployments",
     ) as HTMLButtonElement;
     act(() => {
@@ -1226,9 +1317,14 @@ describe("Project env provisioning UI", () => {
     expect(rendered.container.textContent).toContain("orders-api-test");
     expect(rendered.container.textContent).toContain("render · backend · test");
     expect(rendered.container.textContent).toContain("orders-web");
-    expect(rendered.container.textContent).toContain("vercel · frontend · main");
-    expect(rendered.container.textContent).toContain("Provider activation — coming soon");
+    expect(rendered.container.textContent).toContain(
+      "vercel · frontend · main",
+    );
+    expect(rendered.container.textContent).toContain(
+      "Provider activation — coming soon",
+    );
     expect(rendered.container.textContent).toContain("Provider dashboard");
+    expect(rendered.container.textContent).toContain("Live console");
   });
 
   it("renders mixed Render and Vercel deployment history from the local contract", async () => {
@@ -1262,6 +1358,7 @@ describe("Project env provisioning UI", () => {
           createdAt: "2026-06-12T00:00:00.000Z",
           readyAt: "2026-06-12T00:05:00.000Z",
           providerUrl: "https://dashboard.render.com/web/srv-1",
+          consoleUrl: "https://dashboard.render.com/web/srv-1/logs",
         },
         {
           id: "deploy-vercel-1",
@@ -1275,6 +1372,7 @@ describe("Project env provisioning UI", () => {
           createdAt: "2026-06-12T00:10:00.000Z",
           readyAt: null,
           providerUrl: "https://vercel.com/flowci-team/orders-web",
+          consoleUrl: "https://vercel.com/flowci-team/orders-web/deployments",
         },
       ],
     });
@@ -1297,7 +1395,9 @@ describe("Project env provisioning UI", () => {
       await Promise.resolve();
     });
 
-    const deploymentsTab = Array.from(rendered.container.querySelectorAll("button")).find(
+    const deploymentsTab = Array.from(
+      rendered.container.querySelectorAll("button"),
+    ).find(
       (button) => button.textContent === "Deployments",
     ) as HTMLButtonElement;
     await act(async () => {
@@ -1305,23 +1405,41 @@ describe("Project env provisioning UI", () => {
       await Promise.resolve();
     });
 
-    expect(mockedProjectApi.getProjectDeployments).toHaveBeenCalledWith("project-1");
-    expect(rendered.container.textContent).toContain("Live deployment sync is not enabled");
+    expect(mockedProjectApi.getProjectDeployments).toHaveBeenCalledWith(
+      "project-1",
+    );
+    expect(rendered.container.textContent).toContain(
+      "Live deployment sync is not enabled",
+    );
     expect(rendered.container.textContent).toContain("orders-api-test");
     expect(rendered.container.textContent).toContain("render - test - ready");
     expect(rendered.container.textContent).toContain("abc123");
     expect(rendered.container.textContent).toContain("orders-web");
-    expect(rendered.container.textContent).toContain("vercel - production - building");
+    expect(rendered.container.textContent).toContain(
+      "vercel - production - building",
+    );
     expect(rendered.container.textContent).toContain("def456");
-    expect(rendered.container.querySelector('a[href="https://dashboard.render.com/web/srv-1"]')).not.toBeNull();
-    expect(rendered.container.querySelector('a[href="https://vercel.com/flowci-team/orders-web"]')).not.toBeNull();
-    expect(rendered.container.textContent).toContain("Provider activation — coming soon");
+    expect(
+      rendered.container.querySelector(
+        'a[href="https://dashboard.render.com/web/srv-1"]',
+      ),
+    ).not.toBeNull();
+    expect(
+      rendered.container.querySelector(
+        'a[href="https://vercel.com/flowci-team/orders-web"]',
+      ),
+    ).not.toBeNull();
+    expect(rendered.container.textContent).toContain(
+      "Provider activation — coming soon",
+    );
   });
 
   it("opens target edit drawer with the current metadata values", async () => {
     mockCapabilities(true, true, false, false, true);
     mockEnvHook();
-    mockedProjectApi.getProjectOverview.mockResolvedValue(projectOverviewWithTargets());
+    mockedProjectApi.getProjectOverview.mockResolvedValue(
+      projectOverviewWithTargets(),
+    );
 
     const rendered = render(
       <WorkflowCurrentTab
@@ -1341,46 +1459,68 @@ describe("Project env provisioning UI", () => {
       await Promise.resolve();
     });
 
-    const deploymentsTab = Array.from(rendered.container.querySelectorAll("button")).find(
+    const deploymentsTab = Array.from(
+      rendered.container.querySelectorAll("button"),
+    ).find(
       (button) => button.textContent === "Deployments",
     ) as HTMLButtonElement;
     act(() => {
       deploymentsTab.click();
     });
 
-    const editButton = Array.from(rendered.container.querySelectorAll("button")).find(
-      (button) => button.textContent === "Edit",
-    ) as HTMLButtonElement;
+    const editButton = Array.from(
+      rendered.container.querySelectorAll("button"),
+    ).find((button) => button.textContent === "Edit") as HTMLButtonElement;
     act(() => {
       editButton.click();
     });
 
-    expect(rendered.container.querySelector('[data-testid="target-edit-drawer"]')).not.toBeNull();
-    expect(rendered.container.querySelector<HTMLInputElement>('input[aria-label="Target display name"]')?.value).toBe(
-      "orders-api-test",
-    );
-    expect(rendered.container.querySelector<HTMLSelectElement>('select[aria-label="Target slot"]')?.value).toBe(
-      "backend",
-    );
-    expect(rendered.container.querySelector<HTMLInputElement>('input[aria-label="Target branch"]')?.value).toBe("test");
-    expect(rendered.container.querySelector<HTMLInputElement>('input[aria-label="Target root directory"]')?.value).toBe(
-      "apps/api",
-    );
-    expect(rendered.container.querySelector<HTMLInputElement>('input[aria-label="Target build command"]')?.value).toBe(
-      "npm run build",
-    );
-    expect(rendered.container.querySelector<HTMLInputElement>('input[aria-label="Target start command"]')?.value).toBe(
-      "npm run start:prod",
-    );
     expect(
-      rendered.container.querySelector<HTMLSelectElement>('select[aria-label="Target provider environment"]')?.value,
+      rendered.container.querySelector('[data-testid="target-edit-drawer"]'),
+    ).not.toBeNull();
+    expect(
+      rendered.container.querySelector<HTMLInputElement>(
+        'input[aria-label="Target display name"]',
+      )?.value,
+    ).toBe("orders-api-test");
+    expect(
+      rendered.container.querySelector<HTMLSelectElement>(
+        'select[aria-label="Target slot"]',
+      )?.value,
+    ).toBe("backend");
+    expect(
+      rendered.container.querySelector<HTMLInputElement>(
+        'input[aria-label="Target branch"]',
+      )?.value,
+    ).toBe("test");
+    expect(
+      rendered.container.querySelector<HTMLInputElement>(
+        'input[aria-label="Target root directory"]',
+      )?.value,
+    ).toBe("apps/api");
+    expect(
+      rendered.container.querySelector<HTMLInputElement>(
+        'input[aria-label="Target build command"]',
+      )?.value,
+    ).toBe("npm run build");
+    expect(
+      rendered.container.querySelector<HTMLInputElement>(
+        'input[aria-label="Target start command"]',
+      )?.value,
+    ).toBe("npm run start:prod");
+    expect(
+      rendered.container.querySelector<HTMLSelectElement>(
+        'select[aria-label="Target provider environment"]',
+      )?.value,
     ).toBe("test");
   });
 
   it("saves edited deployment target metadata and syncs local findings", async () => {
     mockCapabilities(true, true, false, false, true);
     mockEnvHook();
-    mockedProjectApi.getProjectOverview.mockResolvedValue(projectOverviewWithTargets([renderTarget]));
+    mockedProjectApi.getProjectOverview.mockResolvedValue(
+      projectOverviewWithTargets([renderTarget]),
+    );
     mockedProjectApi.updateDeploymentTarget.mockResolvedValue({
       ...renderTarget,
       providerProjectName: "orders-api-uat",
@@ -1393,7 +1533,9 @@ describe("Project env provisioning UI", () => {
     mockedProjectApi.syncDeploymentTarget.mockResolvedValue({
       mode: "local_metadata",
       status: "warning",
-      findings: [{ code: "render_service_missing", message: "Service not found" }],
+      findings: [
+        { code: "render_service_missing", message: "Service not found" },
+      ],
       target: {
         ...renderTarget,
         status: "warning",
@@ -1429,13 +1571,48 @@ describe("Project env provisioning UI", () => {
         .click();
     });
 
-    changeValue(rendered.container.querySelector<HTMLInputElement>('input[aria-label="Target display name"]')!, "orders-api-uat");
-    changeValue(rendered.container.querySelector<HTMLSelectElement>('select[aria-label="Target slot"]')!, "standalone");
-    changeValue(rendered.container.querySelector<HTMLInputElement>('input[aria-label="Target branch"]')!, "uat");
-    changeValue(rendered.container.querySelector<HTMLInputElement>('input[aria-label="Target root directory"]')!, "   ");
-    changeValue(rendered.container.querySelector<HTMLInputElement>('input[aria-label="Target build command"]')!, "   ");
-    changeValue(rendered.container.querySelector<HTMLInputElement>('input[aria-label="Target start command"]')!, "   ");
-    changeValue(rendered.container.querySelector<HTMLSelectElement>('select[aria-label="Target provider environment"]')!, "uat");
+    changeValue(
+      rendered.container.querySelector<HTMLInputElement>(
+        'input[aria-label="Target display name"]',
+      )!,
+      "orders-api-uat",
+    );
+    changeValue(
+      rendered.container.querySelector<HTMLSelectElement>(
+        'select[aria-label="Target slot"]',
+      )!,
+      "backend",
+    );
+    changeValue(
+      rendered.container.querySelector<HTMLInputElement>(
+        'input[aria-label="Target branch"]',
+      )!,
+      "uat",
+    );
+    changeValue(
+      rendered.container.querySelector<HTMLInputElement>(
+        'input[aria-label="Target root directory"]',
+      )!,
+      "   ",
+    );
+    changeValue(
+      rendered.container.querySelector<HTMLInputElement>(
+        'input[aria-label="Target build command"]',
+      )!,
+      "   ",
+    );
+    changeValue(
+      rendered.container.querySelector<HTMLInputElement>(
+        'input[aria-label="Target start command"]',
+      )!,
+      "   ",
+    );
+    changeValue(
+      rendered.container.querySelector<HTMLSelectElement>(
+        'select[aria-label="Target provider environment"]',
+      )!,
+      "uat",
+    );
 
     await act(async () => {
       Array.from(rendered.container.querySelectorAll("button"))
@@ -1453,7 +1630,7 @@ describe("Project env provisioning UI", () => {
         providerProjectName: "orders-api-uat",
         renderEnvironmentName: "uat",
         rootDirectory: null,
-        slot: "standalone",
+        slot: "backend",
         startCommand: null,
       }),
     );
@@ -1466,16 +1643,27 @@ describe("Project env provisioning UI", () => {
       await Promise.resolve();
     });
 
-    expect(mockedProjectApi.syncDeploymentTarget).toHaveBeenCalledWith("project-1", "target-render");
+    expect(mockedProjectApi.syncDeploymentTarget).toHaveBeenCalledWith(
+      "project-1",
+      "target-render",
+    );
   });
 
   it("shows clean messages when deployment target actions fail", async () => {
     mockCapabilities(true, true, false, false, true);
     mockEnvHook();
-    mockedProjectApi.getProjectOverview.mockResolvedValue(projectOverviewWithTargets([renderTarget]));
-    mockedProjectApi.updateDeploymentTarget.mockRejectedValueOnce(new Error("update failed"));
-    mockedProjectApi.syncDeploymentTarget.mockRejectedValueOnce(new Error("sync failed"));
-    mockedProjectApi.detachDeploymentTarget.mockRejectedValueOnce(new Error("detach failed"));
+    mockedProjectApi.getProjectOverview.mockResolvedValue(
+      projectOverviewWithTargets([renderTarget]),
+    );
+    mockedProjectApi.updateDeploymentTarget.mockRejectedValueOnce(
+      new Error("update failed"),
+    );
+    mockedProjectApi.syncDeploymentTarget.mockRejectedValueOnce(
+      new Error("sync failed"),
+    );
+    mockedProjectApi.detachDeploymentTarget.mockRejectedValueOnce(
+      new Error("detach failed"),
+    );
 
     const rendered = render(
       <WorkflowCurrentTab
@@ -1512,7 +1700,9 @@ describe("Project env provisioning UI", () => {
         .click();
       await Promise.resolve();
     });
-    expect(rendered.container.textContent).toContain("Unable to update target metadata.");
+    expect(rendered.container.textContent).toContain(
+      "Unable to update target metadata.",
+    );
 
     await act(async () => {
       Array.from(rendered.container.querySelectorAll("button"))
@@ -1520,7 +1710,9 @@ describe("Project env provisioning UI", () => {
         .click();
       await Promise.resolve();
     });
-    expect(rendered.container.textContent).toContain("Unable to sync target metadata.");
+    expect(rendered.container.textContent).toContain(
+      "Unable to sync target metadata.",
+    );
 
     act(() => {
       Array.from(rendered.container.querySelectorAll("button"))
@@ -1533,13 +1725,17 @@ describe("Project env provisioning UI", () => {
         .click();
       await Promise.resolve();
     });
-    expect(rendered.container.textContent).toContain("Unable to detach deployment target.");
+    expect(rendered.container.textContent).toContain(
+      "Unable to detach deployment target.",
+    );
   });
 
   it("requires confirmation before detaching a target from AlphaCI", async () => {
     mockCapabilities(true, true, false, false, true);
     mockEnvHook();
-    mockedProjectApi.getProjectOverview.mockResolvedValue(projectOverviewWithTargets([renderTarget]));
+    mockedProjectApi.getProjectOverview.mockResolvedValue(
+      projectOverviewWithTargets([renderTarget]),
+    );
 
     const rendered = render(
       <WorkflowCurrentTab
@@ -1559,16 +1755,18 @@ describe("Project env provisioning UI", () => {
       await Promise.resolve();
     });
 
-    const deploymentsTab = Array.from(rendered.container.querySelectorAll("button")).find(
+    const deploymentsTab = Array.from(
+      rendered.container.querySelectorAll("button"),
+    ).find(
       (button) => button.textContent === "Deployments",
     ) as HTMLButtonElement;
     act(() => {
       deploymentsTab.click();
     });
 
-    const detachButton = Array.from(rendered.container.querySelectorAll("button")).find(
-      (button) => button.textContent === "Detach",
-    ) as HTMLButtonElement;
+    const detachButton = Array.from(
+      rendered.container.querySelectorAll("button"),
+    ).find((button) => button.textContent === "Detach") as HTMLButtonElement;
     act(() => {
       detachButton.click();
     });
@@ -1576,7 +1774,9 @@ describe("Project env provisioning UI", () => {
     expect(mockedProjectApi.detachDeploymentTarget).not.toHaveBeenCalled();
     expect(rendered.container.textContent).toContain("Confirm detach");
 
-    const confirmButton = Array.from(rendered.container.querySelectorAll("button")).find(
+    const confirmButton = Array.from(
+      rendered.container.querySelectorAll("button"),
+    ).find(
       (button) => button.textContent === "Confirm detach",
     ) as HTMLButtonElement;
     await act(async () => {
@@ -1584,8 +1784,13 @@ describe("Project env provisioning UI", () => {
       await Promise.resolve();
     });
 
-    expect(mockedProjectApi.detachDeploymentTarget).toHaveBeenCalledWith("project-1", "target-render");
-    expect(rendered.container.textContent).toContain("No deployment targets configured.");
+    expect(mockedProjectApi.detachDeploymentTarget).toHaveBeenCalledWith(
+      "project-1",
+      "target-render",
+    );
+    expect(rendered.container.textContent).toContain(
+      "No deployment targets configured.",
+    );
   });
 
   it("loads workflow settings and previews generated files without showing PR actions", async () => {
@@ -1647,15 +1852,17 @@ describe("Project env provisioning UI", () => {
       await Promise.resolve();
     });
 
-    const workflowTab = Array.from(rendered.container.querySelectorAll("button")).find(
-      (button) => button.textContent === "Workflow",
-    ) as HTMLButtonElement;
+    const workflowTab = Array.from(
+      rendered.container.querySelectorAll("button"),
+    ).find((button) => button.textContent === "Workflow") as HTMLButtonElement;
     await act(async () => {
       workflowTab.click();
       await Promise.resolve();
     });
 
-    expect(mockedProjectApi.getWorkflowSettings).toHaveBeenCalledWith("project-1");
+    expect(mockedProjectApi.getWorkflowSettings).toHaveBeenCalledWith(
+      "project-1",
+    );
     expect(rendered.container.textContent).toContain("Workflow settings");
     expect(rendered.container.textContent).toContain("Workflow recipe");
     expect(rendered.container.textContent).toContain("Package manager");
@@ -1668,12 +1875,14 @@ describe("Project env provisioning UI", () => {
     expect(rendered.container.textContent).toContain("Preview");
     expect(rendered.container.textContent).not.toContain("Create update PR");
 
-    const nodeVersionInput = rendered.container.querySelector<HTMLInputElement>('input[aria-label="Node version"]')!;
+    const nodeVersionInput = rendered.container.querySelector<HTMLInputElement>(
+      'input[aria-label="Node version"]',
+    )!;
     changeValue(nodeVersionInput, "22");
 
-    const previewButton = Array.from(rendered.container.querySelectorAll("button")).find(
-      (button) => button.textContent === "Preview",
-    ) as HTMLButtonElement;
+    const previewButton = Array.from(
+      rendered.container.querySelectorAll("button"),
+    ).find((button) => button.textContent === "Preview") as HTMLButtonElement;
     await act(async () => {
       previewButton.click();
       await Promise.resolve();
@@ -1685,7 +1894,9 @@ describe("Project env provisioning UI", () => {
         nodeVersion: "22",
       }),
     );
-    expect(rendered.container.textContent).toContain(".github/workflows/00-flowci-access.yml");
+    expect(rendered.container.textContent).toContain(
+      ".github/workflows/00-flowci-access.yml",
+    );
     expect(rendered.container.textContent).toContain("changed");
     expect(rendered.container.textContent).toContain("new");
   });
@@ -1699,7 +1910,12 @@ describe("Project env provisioning UI", () => {
         createdAt: "2026-06-12T00:00:00.000Z",
         updatedAt: "2026-06-12T00:00:00.000Z",
       },
-      workflow: { path: provisionedProject.workflowPath, files: [], stageCount: 0, history: [] },
+      workflow: {
+        path: provisionedProject.workflowPath,
+        files: [],
+        stageCount: 0,
+        history: [],
+      },
       deploymentTargets: { items: [], count: 0 },
       environment: { items: [], count: 0, failedCount: 0 },
       ciAuth: {
@@ -1740,17 +1956,17 @@ describe("Project env provisioning UI", () => {
       await Promise.resolve();
     });
 
-    const workflowTab = Array.from(rendered.container.querySelectorAll("button")).find(
-      (button) => button.textContent === "Workflow",
-    ) as HTMLButtonElement;
+    const workflowTab = Array.from(
+      rendered.container.querySelectorAll("button"),
+    ).find((button) => button.textContent === "Workflow") as HTMLButtonElement;
     await act(async () => {
       workflowTab.click();
       await Promise.resolve();
     });
 
-    const previewButton = Array.from(rendered.container.querySelectorAll("button")).find(
-      (button) => button.textContent === "Preview",
-    ) as HTMLButtonElement;
+    const previewButton = Array.from(
+      rendered.container.querySelectorAll("button"),
+    ).find((button) => button.textContent === "Preview") as HTMLButtonElement;
     await act(async () => {
       previewButton.click();
       await Promise.resolve();
@@ -1758,7 +1974,9 @@ describe("Project env provisioning UI", () => {
 
     expect(rendered.container.textContent).toContain("Create update PR");
 
-    const createPrButton = Array.from(rendered.container.querySelectorAll("button")).find(
+    const createPrButton = Array.from(
+      rendered.container.querySelectorAll("button"),
+    ).find(
       (button) => button.textContent === "Create update PR",
     ) as HTMLButtonElement;
     await act(async () => {
@@ -1766,24 +1984,35 @@ describe("Project env provisioning UI", () => {
       await Promise.resolve();
     });
 
-    expect(mockedProjectApi.createWorkflowUpdatePullRequest).toHaveBeenCalledWith(
+    expect(
+      mockedProjectApi.createWorkflowUpdatePullRequest,
+    ).toHaveBeenCalledWith(
       "project-1",
       expect.objectContaining({ nodeVersion: "22" }),
     );
-    expect(rendered.container.textContent).toContain("https://github.com/tone/orders-api/pull/42");
+    expect(rendered.container.textContent).toContain(
+      "https://github.com/tone/orders-api/pull/42",
+    );
   });
 
   it("shows clean copy when workflow update PR creation fails", async () => {
     mockCapabilities(true, true, true, true);
     mockEnvHook();
-    mockedProjectApi.createWorkflowUpdatePullRequest.mockRejectedValueOnce(new Error("422"));
+    mockedProjectApi.createWorkflowUpdatePullRequest.mockRejectedValueOnce(
+      new Error("422"),
+    );
     mockedProjectApi.getProjectOverview.mockResolvedValue({
       project: {
         ...provisionedProject,
         createdAt: "2026-06-12T00:00:00.000Z",
         updatedAt: "2026-06-12T00:00:00.000Z",
       },
-      workflow: { path: provisionedProject.workflowPath, files: [], stageCount: 0, history: [] },
+      workflow: {
+        path: provisionedProject.workflowPath,
+        files: [],
+        stageCount: 0,
+        history: [],
+      },
       deploymentTargets: { items: [], count: 0 },
       environment: { items: [], count: 0, failedCount: 0 },
       ciAuth: {
@@ -1824,23 +2053,25 @@ describe("Project env provisioning UI", () => {
       await Promise.resolve();
     });
 
-    const workflowTab = Array.from(rendered.container.querySelectorAll("button")).find(
-      (button) => button.textContent === "Workflow",
-    ) as HTMLButtonElement;
+    const workflowTab = Array.from(
+      rendered.container.querySelectorAll("button"),
+    ).find((button) => button.textContent === "Workflow") as HTMLButtonElement;
     await act(async () => {
       workflowTab.click();
       await Promise.resolve();
     });
 
-    const previewButton = Array.from(rendered.container.querySelectorAll("button")).find(
-      (button) => button.textContent === "Preview",
-    ) as HTMLButtonElement;
+    const previewButton = Array.from(
+      rendered.container.querySelectorAll("button"),
+    ).find((button) => button.textContent === "Preview") as HTMLButtonElement;
     await act(async () => {
       previewButton.click();
       await Promise.resolve();
     });
 
-    const createPrButton = Array.from(rendered.container.querySelectorAll("button")).find(
+    const createPrButton = Array.from(
+      rendered.container.querySelectorAll("button"),
+    ).find(
       (button) => button.textContent === "Create update PR",
     ) as HTMLButtonElement;
     await act(async () => {
@@ -1848,7 +2079,9 @@ describe("Project env provisioning UI", () => {
       await Promise.resolve();
     });
 
-    expect(rendered.container.textContent).toContain("Unable to create workflow update PR.");
+    expect(rendered.container.textContent).toContain(
+      "Unable to create workflow update PR.",
+    );
   });
 
   it("renders project detail load errors from async project APIs", async () => {
@@ -1871,13 +2104,27 @@ describe("Project env provisioning UI", () => {
       workflowSettings: true,
     };
     mockedProjectApi.getProjectOverview.mockResolvedValue(overview);
-    mockedProjectApi.getProjectDrift.mockRejectedValueOnce(new Error("drift unavailable"));
-    mockedProjectApi.getProjectCiRuns.mockRejectedValueOnce(new Error("runs unavailable"));
-    mockedProjectApi.getProjectDeployments.mockRejectedValueOnce(new Error("deployments unavailable"));
-    mockedProjectApi.getProjectAuditEvents.mockRejectedValueOnce(new Error("audit unavailable"));
-    mockedProjectApi.getWorkflowSettings.mockRejectedValueOnce(new Error("settings unavailable"));
-    mockedProjectApi.syncProjectSnapshot.mockRejectedValueOnce(new Error("sync unavailable"));
-    mockedProjectApi.runProjectDriftDetection.mockRejectedValueOnce(new Error("drift run unavailable"));
+    mockedProjectApi.getProjectDrift.mockRejectedValueOnce(
+      new Error("drift unavailable"),
+    );
+    mockedProjectApi.getProjectCiRuns.mockRejectedValueOnce(
+      new Error("runs unavailable"),
+    );
+    mockedProjectApi.getProjectDeployments.mockRejectedValueOnce(
+      new Error("deployments unavailable"),
+    );
+    mockedProjectApi.getProjectAuditEvents.mockRejectedValueOnce(
+      new Error("audit unavailable"),
+    );
+    mockedProjectApi.getWorkflowSettings.mockRejectedValueOnce(
+      new Error("settings unavailable"),
+    );
+    mockedProjectApi.syncProjectSnapshot.mockRejectedValueOnce(
+      new Error("sync unavailable"),
+    );
+    mockedProjectApi.runProjectDriftDetection.mockRejectedValueOnce(
+      new Error("drift run unavailable"),
+    );
 
     const rendered = render(
       <WorkflowCurrentTab
@@ -1903,7 +2150,9 @@ describe("Project env provisioning UI", () => {
       await Promise.resolve();
     });
 
-    expect(rendered.container.textContent).toContain("Unable to load drift findings.");
+    expect(rendered.container.textContent).toContain(
+      "Unable to load drift findings.",
+    );
 
     await act(async () => {
       Array.from(rendered.container.querySelectorAll("button"))
@@ -1911,7 +2160,9 @@ describe("Project env provisioning UI", () => {
         .click();
       await Promise.resolve();
     });
-    expect(rendered.container.textContent).toContain("Unable to create local snapshot right now.");
+    expect(rendered.container.textContent).toContain(
+      "Unable to create local snapshot right now.",
+    );
 
     await act(async () => {
       Array.from(rendered.container.querySelectorAll("button"))
@@ -1919,7 +2170,9 @@ describe("Project env provisioning UI", () => {
         .click();
       await Promise.resolve();
     });
-    expect(rendered.container.textContent).toContain("Unable to load workflow settings.");
+    expect(rendered.container.textContent).toContain(
+      "Unable to load workflow settings.",
+    );
 
     await act(async () => {
       Array.from(rendered.container.querySelectorAll("button"))
@@ -1935,7 +2188,9 @@ describe("Project env provisioning UI", () => {
         .click();
       await Promise.resolve();
     });
-    expect(rendered.container.textContent).toContain("Unable to load deployment history.");
+    expect(rendered.container.textContent).toContain(
+      "Unable to load deployment history.",
+    );
     expect(rendered.container.querySelector('a[href*="railway"]')).toBeNull();
 
     await act(async () => {
@@ -1944,13 +2199,17 @@ describe("Project env provisioning UI", () => {
         .click();
       await Promise.resolve();
     });
-    expect(rendered.container.textContent).toContain("Unable to load audit events.");
+    expect(rendered.container.textContent).toContain(
+      "Unable to load audit events.",
+    );
   });
 
   it("renders project overview and workflow preview failures", async () => {
     mockCapabilities(true, true, true, false);
     mockEnvHook();
-    mockedProjectApi.getProjectOverview.mockRejectedValueOnce(new Error("overview unavailable"));
+    mockedProjectApi.getProjectOverview.mockRejectedValueOnce(
+      new Error("overview unavailable"),
+    );
 
     const overviewErrorRendered = render(
       <WorkflowCurrentTab
@@ -1970,13 +2229,17 @@ describe("Project env provisioning UI", () => {
       await Promise.resolve();
     });
 
-    expect(overviewErrorRendered.container.textContent).toContain("Unable to load project overview.");
+    expect(overviewErrorRendered.container.textContent).toContain(
+      "Unable to load project overview.",
+    );
 
     act(() => root?.unmount());
     root = null;
     document.body.innerHTML = "";
 
-    mockedProjectApi.getProjectOverview.mockResolvedValue(projectOverviewWithTargets([]));
+    mockedProjectApi.getProjectOverview.mockResolvedValue(
+      projectOverviewWithTargets([]),
+    );
     mockedProjectApi.getWorkflowSettings.mockReset();
     mockedProjectApi.getWorkflowSettings.mockResolvedValue({
       enabled: true,
@@ -1996,7 +2259,9 @@ describe("Project env provisioning UI", () => {
       },
     });
     mockedProjectApi.previewWorkflowSettings.mockReset();
-    mockedProjectApi.previewWorkflowSettings.mockRejectedValueOnce(new Error("preview unavailable"));
+    mockedProjectApi.previewWorkflowSettings.mockRejectedValueOnce(
+      new Error("preview unavailable"),
+    );
 
     const previewErrorRendered = render(
       <WorkflowCurrentTab
@@ -2029,7 +2294,9 @@ describe("Project env provisioning UI", () => {
       await Promise.resolve();
     });
 
-    expect(previewErrorRendered.container.textContent).toContain("Unable to preview workflow settings.");
+    expect(previewErrorRendered.container.textContent).toContain(
+      "Unable to preview workflow settings.",
+    );
   });
 
   it("shows a clean drift repair failure message", async () => {
@@ -2055,7 +2322,9 @@ describe("Project env provisioning UI", () => {
         },
       ],
     });
-    mockedProjectApi.repairProjectDriftFinding.mockRejectedValueOnce(new Error("repair failed"));
+    mockedProjectApi.repairProjectDriftFinding.mockRejectedValueOnce(
+      new Error("repair failed"),
+    );
 
     const rendered = render(
       <WorkflowCurrentTab
@@ -2093,13 +2362,17 @@ describe("Project env provisioning UI", () => {
       await Promise.resolve();
     });
 
-    expect(rendered.container.textContent).toContain("Unable to run repair action.");
+    expect(rendered.container.textContent).toContain(
+      "Unable to run repair action.",
+    );
   });
 
   it("previews workflow settings after editing all workflow inputs", async () => {
     mockCapabilities(true, true, true, false);
     mockEnvHook();
-    mockedProjectApi.getProjectOverview.mockResolvedValue(projectOverviewWithTargets([]));
+    mockedProjectApi.getProjectOverview.mockResolvedValue(
+      projectOverviewWithTargets([]),
+    );
 
     const rendered = render(
       <WorkflowCurrentTab
@@ -2119,22 +2392,42 @@ describe("Project env provisioning UI", () => {
       await Promise.resolve();
     });
 
-    const workflowTab = Array.from(rendered.container.querySelectorAll("button")).find(
-      (button) => button.textContent === "Workflow",
-    ) as HTMLButtonElement;
+    const workflowTab = Array.from(
+      rendered.container.querySelectorAll("button"),
+    ).find((button) => button.textContent === "Workflow") as HTMLButtonElement;
     await act(async () => {
       workflowTab.click();
       await Promise.resolve();
     });
 
-    changeValue(rendered.container.querySelector<HTMLInputElement>('input[aria-label="Node version"]')!, "22");
-    changeValue(rendered.container.querySelector<HTMLInputElement>('input[aria-label="Coverage threshold"]')!, "95");
-    changeValue(rendered.container.querySelector<HTMLInputElement>('input[aria-label="Service path"]')!, "apps/api");
-    changeValue(rendered.container.querySelector<HTMLInputElement>('input[aria-label="Central workflow ref"]')!, "v2");
+    changeValue(
+      rendered.container.querySelector<HTMLInputElement>(
+        'input[aria-label="Node version"]',
+      )!,
+      "22",
+    );
+    changeValue(
+      rendered.container.querySelector<HTMLInputElement>(
+        'input[aria-label="Coverage threshold"]',
+      )!,
+      "95",
+    );
+    changeValue(
+      rendered.container.querySelector<HTMLInputElement>(
+        'input[aria-label="Service path"]',
+      )!,
+      "apps/api",
+    );
+    changeValue(
+      rendered.container.querySelector<HTMLInputElement>(
+        'input[aria-label="Central workflow ref"]',
+      )!,
+      "v2",
+    );
 
-    const previewButton = Array.from(rendered.container.querySelectorAll("button")).find(
-      (button) => button.textContent === "Preview",
-    ) as HTMLButtonElement;
+    const previewButton = Array.from(
+      rendered.container.querySelectorAll("button"),
+    ).find((button) => button.textContent === "Preview") as HTMLButtonElement;
     await act(async () => {
       previewButton.click();
       await Promise.resolve();
@@ -2170,7 +2463,8 @@ describe("Project env provisioning UI", () => {
             serviceName: "orders-web",
             outputFileName: "frontend.yml",
             sourceWorkflowFile: "workflow-templates/frontend-react.yml",
-            sourcePropertiesFile: "workflow-templates/frontend-react.properties.json",
+            sourcePropertiesFile:
+              "workflow-templates/frontend-react.properties.json",
             lineCount: 12,
             yaml: "name: CI\n",
           },
@@ -2187,13 +2481,17 @@ describe("Project env provisioning UI", () => {
     root = rendered.root;
 
     act(() => {
-      rendered.container.querySelector<HTMLButtonElement>("#subtab-history")!.click();
+      rendered.container
+        .querySelector<HTMLButtonElement>("#subtab-history")!
+        .click();
     });
 
     expect(rendered.container.textContent).toContain("React CI");
     expect(rendered.container.textContent).toContain("orders-web");
     expect(rendered.container.textContent).toContain("frontend.yml");
-    expect(rendered.container.textContent).toContain("workflow-templates/frontend-react.yml");
+    expect(rendered.container.textContent).toContain(
+      "workflow-templates/frontend-react.yml",
+    );
 
     const card = rendered.container.querySelector<HTMLElement>(".repo-card")!;
     card.getBoundingClientRect = jest.fn(() => ({
@@ -2208,7 +2506,13 @@ describe("Project env provisioning UI", () => {
       toJSON: () => ({}),
     }));
     act(() => {
-      card.dispatchEvent(new MouseEvent("mousemove", { bubbles: true, clientX: 25, clientY: 50 }));
+      card.dispatchEvent(
+        new MouseEvent("mousemove", {
+          bubbles: true,
+          clientX: 25,
+          clientY: 50,
+        }),
+      );
     });
     expect(card.style.getPropertyValue("--gx")).toBe("0.25");
     expect(card.style.getPropertyValue("--gy")).toBe("0.5");
@@ -2259,14 +2563,22 @@ describe("Project env provisioning UI", () => {
     );
     root = emptyRendered.root;
 
-    expect(emptyRendered.container.textContent).toContain("No provisioned projects yet.");
+    expect(emptyRendered.container.textContent).toContain(
+      "No provisioned projects yet.",
+    );
     act(() => {
-      emptyRendered.container.querySelector<HTMLButtonElement>("#subtab-history")!.click();
+      emptyRendered.container
+        .querySelector<HTMLButtonElement>("#subtab-history")!
+        .click();
     });
-    expect(emptyRendered.container.textContent).toContain("No generated workflow history yet.");
+    expect(emptyRendered.container.textContent).toContain(
+      "No generated workflow history yet.",
+    );
     act(() => {
       Array.from(emptyRendered.container.querySelectorAll("button"))
-        .find((button) => button.textContent === "Generate your first workflow")!
+        .find(
+          (button) => button.textContent === "Generate your first workflow",
+        )!
         .click();
     });
     expect(onOpenSetup).toHaveBeenCalledTimes(1);
@@ -2289,11 +2601,17 @@ describe("Project env provisioning UI", () => {
     );
     root = loadingRendered.root;
 
-    expect(loadingRendered.container.querySelectorAll(".skeleton-card")).toHaveLength(3);
+    expect(
+      loadingRendered.container.querySelectorAll(".skeleton-card"),
+    ).toHaveLength(3);
     act(() => {
-      loadingRendered.container.querySelector<HTMLButtonElement>("#subtab-history")!.click();
+      loadingRendered.container
+        .querySelector<HTMLButtonElement>("#subtab-history")!
+        .click();
     });
-    expect(loadingRendered.container.querySelectorAll(".skeleton-card")).toHaveLength(3);
+    expect(
+      loadingRendered.container.querySelectorAll(".skeleton-card"),
+    ).toHaveLength(3);
   });
 
   it("registers BYO existing targets from saved provider connections", async () => {
@@ -2321,17 +2639,29 @@ describe("Project env provisioning UI", () => {
     const rendered = render(<ProjectEnvPanel project={provisionedProject} />);
     root = rendered.root;
 
-    const modeSelect = rendered.container.querySelector<HTMLSelectElement>('[aria-label="Target action"]')!;
-    const ownershipSelect = rendered.container.querySelector<HTMLSelectElement>('[aria-label="Ownership mode"]')!;
+    const modeSelect = rendered.container.querySelector<HTMLSelectElement>(
+      '[aria-label="Target action"]',
+    )!;
+    const ownershipSelect = rendered.container.querySelector<HTMLSelectElement>(
+      '[aria-label="Ownership mode"]',
+    )!;
 
     changeValue(modeSelect, "register_existing");
     changeValue(ownershipSelect, "byo");
-    const providerProjectId = rendered.container.querySelector<HTMLInputElement>('input[placeholder="Provider project ID"]')!;
-    const providerProjectName = rendered.container.querySelector<HTMLInputElement>('input[placeholder="Provider project name"]')!;
+    const providerProjectId =
+      rendered.container.querySelector<HTMLInputElement>(
+        'input[placeholder="Provider project ID"]',
+      )!;
+    const providerProjectName =
+      rendered.container.querySelector<HTMLInputElement>(
+        'input[placeholder="Provider project name"]',
+      )!;
     changeValue(providerProjectId, "srv-123");
     changeValue(providerProjectName, "orders-api-render");
     await act(async () => {
-      rendered.container.querySelector<HTMLButtonElement>('button[data-testid="save-target"]')!.click();
+      rendered.container
+        .querySelector<HTMLButtonElement>('button[data-testid="save-target"]')!
+        .click();
     });
 
     expect(addTarget).toHaveBeenCalledWith(
@@ -2357,20 +2687,28 @@ describe("Project env provisioning UI", () => {
     const rendered = render(<ProjectEnvPanel project={provisionedProject} />);
     root = rendered.root;
 
-    const ownershipSelect = rendered.container.querySelector<HTMLSelectElement>('[aria-label="Ownership mode"]')!;
-    const projectName = rendered.container.querySelector<HTMLInputElement>('input[placeholder="Provider project name"]')!;
+    const ownershipSelect = rendered.container.querySelector<HTMLSelectElement>(
+      '[aria-label="Ownership mode"]',
+    )!;
+    const projectName = rendered.container.querySelector<HTMLInputElement>(
+      'input[placeholder="Provider project name"]',
+    )!;
     changeValue(ownershipSelect, "flowci_managed");
     changeValue(projectName, "orders-api-render");
 
     await act(async () => {
-      rendered.container.querySelector<HTMLButtonElement>('button[data-testid="save-target"]')!.click();
+      rendered.container
+        .querySelector<HTMLButtonElement>('button[data-testid="save-target"]')!
+        .click();
       await Promise.resolve();
     });
 
     expect(rendered.container.textContent).toContain(
       'Deployment target setup failed: The root directory must be a relative path, for example "frontend". Do not use "./" or "../".',
     );
-    expect(rendered.container.textContent).not.toContain("invalid_root_directory");
+    expect(rendered.container.textContent).not.toContain(
+      "invalid_root_directory",
+    );
   });
 
   it("shows env key quota and disables provisioning when the limit is reached", async () => {
@@ -2379,9 +2717,24 @@ describe("Project env provisioning UI", () => {
       plan: "free",
       items: [
         { code: "projects", current: 1, limit: 5, upgradeRequired: false },
-        { code: "managed_render_services", current: 1, limit: 1, upgradeRequired: true },
-        { code: "managed_vercel_projects", current: 0, limit: 1, upgradeRequired: false },
-        { code: "deployment_targets", current: 2, limit: 5, upgradeRequired: false },
+        {
+          code: "managed_render_services",
+          current: 1,
+          limit: 1,
+          upgradeRequired: true,
+        },
+        {
+          code: "managed_vercel_projects",
+          current: 0,
+          limit: 1,
+          upgradeRequired: false,
+        },
+        {
+          code: "deployment_targets",
+          current: 2,
+          limit: 5,
+          upgradeRequired: false,
+        },
         { code: "env_keys", current: 25, limit: 25, upgradeRequired: true },
       ],
     });
@@ -2394,15 +2747,22 @@ describe("Project env provisioning UI", () => {
       await Promise.resolve();
     });
 
-    expect(rendered.container.textContent).toContain("Env key quota: Limit reached. Upgrade to continue.");
-    expect(rendered.container.textContent).toContain("Archived managed Render services");
+    expect(rendered.container.textContent).toContain(
+      "Env key quota: Limit reached. Upgrade to continue.",
+    );
+    expect(rendered.container.textContent).toContain(
+      "Archived managed Render services",
+    );
     expect(rendered.container.textContent).toContain("1 / 1");
-    expect(rendered.container.textContent).toContain("Archived managed Vercel projects");
+    expect(rendered.container.textContent).toContain(
+      "Archived managed Vercel projects",
+    );
     expect(rendered.container.textContent).toContain("Deployment targets");
     expect(rendered.container.textContent).toContain("2 / 5");
     expect(
-      Array.from(rendered.container.querySelectorAll("button")).find((button) => button.textContent === "Provision")
-        ?.disabled,
+      Array.from(rendered.container.querySelectorAll("button")).find(
+        (button) => button.textContent === "Provision",
+      )?.disabled,
     ).toBe(true);
   });
 
@@ -2439,13 +2799,48 @@ describe("Project env provisioning UI", () => {
     const rendered = render(<ProjectEnvPanel project={provisionedProject} />);
     root = rendered.root;
 
-    changeValue(rendered.container.querySelector<HTMLSelectElement>('select[aria-label="Provider"]')!, "vercel");
-    changeValue(rendered.container.querySelector<HTMLSelectElement>('select[aria-label="Target slot"]')!, "frontend");
-    changeValue(rendered.container.querySelector<HTMLInputElement>('input[placeholder="Provider project name"]')!, "orders-web");
-    changeValue(rendered.container.querySelector<HTMLInputElement>('input[placeholder="Root directory"]')!, "apps/web");
-    changeValue(rendered.container.querySelector<HTMLInputElement>('input[placeholder="Build command"]')!, "npm run build");
-    changeValue(rendered.container.querySelector<HTMLInputElement>('input[placeholder="Branch"]')!, "uat");
-    changeValue(rendered.container.querySelector<HTMLSelectElement>('select[aria-label="Active deployment target"]')!, "target-render");
+    changeValue(
+      rendered.container.querySelector<HTMLSelectElement>(
+        'select[aria-label="Provider"]',
+      )!,
+      "vercel",
+    );
+    changeValue(
+      rendered.container.querySelector<HTMLSelectElement>(
+        'select[aria-label="Target slot"]',
+      )!,
+      "frontend",
+    );
+    changeValue(
+      rendered.container.querySelector<HTMLInputElement>(
+        'input[placeholder="Provider project name"]',
+      )!,
+      "orders-web",
+    );
+    changeValue(
+      rendered.container.querySelector<HTMLInputElement>(
+        'input[placeholder="Root directory"]',
+      )!,
+      "apps/web",
+    );
+    changeValue(
+      rendered.container.querySelector<HTMLInputElement>(
+        'input[placeholder="Build command"]',
+      )!,
+      "npm run build",
+    );
+    changeValue(
+      rendered.container.querySelector<HTMLInputElement>(
+        'input[placeholder="Branch"]',
+      )!,
+      "uat",
+    );
+    changeValue(
+      rendered.container.querySelector<HTMLSelectElement>(
+        'select[aria-label="Active deployment target"]',
+      )!,
+      "target-render",
+    );
 
     act(() => {
       Array.from(rendered.container.querySelectorAll("button"))
@@ -2455,16 +2850,32 @@ describe("Project env provisioning UI", () => {
         .find((button) => button.textContent === "Add row")!
         .click();
     });
-    expect(rendered.container.querySelectorAll<HTMLInputElement>('input[placeholder="DATABASE_URL"]')).toHaveLength(2);
+    expect(
+      rendered.container.querySelectorAll<HTMLInputElement>(
+        'input[placeholder="DATABASE_URL"]',
+      ),
+    ).toHaveLength(2);
 
     act(() => {
       Array.from(rendered.container.querySelectorAll("button"))
         .filter((button) => button.textContent === "Remove")[1]!
         .click();
     });
-    expect(rendered.container.querySelectorAll<HTMLInputElement>('input[placeholder="DATABASE_URL"]')).toHaveLength(1);
-    expect(rendered.container.querySelector<HTMLInputElement>('input[placeholder="Branch"]')?.value).toBe("uat");
-    expect(rendered.container.querySelector<HTMLInputElement>('input[placeholder="Start command"]')).toBeNull();
+    expect(
+      rendered.container.querySelectorAll<HTMLInputElement>(
+        'input[placeholder="DATABASE_URL"]',
+      ),
+    ).toHaveLength(1);
+    expect(
+      rendered.container.querySelector<HTMLInputElement>(
+        'input[placeholder="Branch"]',
+      )?.value,
+    ).toBe("uat");
+    expect(
+      rendered.container.querySelector<HTMLInputElement>(
+        'input[placeholder="Start command"]',
+      ),
+    ).toBeNull();
   });
 
   it("shows clean errors for env validation, provisioning, and deletion failures", async () => {
@@ -2502,7 +2913,9 @@ describe("Project env provisioning UI", () => {
     const rendered = render(<ProjectEnvPanel project={provisionedProject} />);
     root = rendered.root;
 
-    const textarea = rendered.container.querySelector<HTMLTextAreaElement>('textarea[aria-label="Bulk env text"]')!;
+    const textarea = rendered.container.querySelector<HTMLTextAreaElement>(
+      'textarea[aria-label="Bulk env text"]',
+    )!;
     changeValue(textarea, "BROKEN");
     await act(async () => {
       Array.from(rendered.container.querySelectorAll("button"))
@@ -2510,15 +2923,31 @@ describe("Project env provisioning UI", () => {
         .click();
       await Promise.resolve();
     });
-    expect(rendered.container.textContent).toContain("Environment variable validation failed: invalid .env line");
+    expect(rendered.container.textContent).toContain(
+      "Environment variable validation failed: invalid .env line",
+    );
 
-    changeValue(rendered.container.querySelector<HTMLInputElement>('input[placeholder="DATABASE_URL"]')!, "DATABASE_URL");
-    changeValue(rendered.container.querySelector<HTMLInputElement>('input[placeholder="Value"]')!, "secret");
+    changeValue(
+      rendered.container.querySelector<HTMLInputElement>(
+        'input[placeholder="DATABASE_URL"]',
+      )!,
+      "DATABASE_URL",
+    );
+    changeValue(
+      rendered.container.querySelector<HTMLInputElement>(
+        'input[placeholder="Value"]',
+      )!,
+      "secret",
+    );
     await act(async () => {
-      rendered.container.querySelector<HTMLButtonElement>('button[type="submit"]')!.click();
+      rendered.container
+        .querySelector<HTMLButtonElement>('button[type="submit"]')!
+        .click();
       await Promise.resolve();
     });
-    expect(rendered.container.textContent).toContain("Environment variable provisioning failed: provider rejected secret");
+    expect(rendered.container.textContent).toContain(
+      "Environment variable provisioning failed: provider rejected secret",
+    );
 
     act(() => {
       Array.from(rendered.container.querySelectorAll("button"))
@@ -2531,7 +2960,9 @@ describe("Project env provisioning UI", () => {
         .click();
       await Promise.resolve();
     });
-    expect(rendered.container.textContent).toContain("Environment variable delete failed: provider delete failed");
+    expect(rendered.container.textContent).toContain(
+      "Environment variable delete failed: provider delete failed",
+    );
   });
 
   it("clears submitted values and shows metadata without secret values", async () => {
@@ -2579,13 +3010,19 @@ describe("Project env provisioning UI", () => {
 
     const rendered = render(<ProjectEnvPanel project={provisionedProject} />);
     root = rendered.root;
-    const keyInput = rendered.container.querySelector<HTMLInputElement>('input[placeholder="DATABASE_URL"]')!;
-    const valueInput = rendered.container.querySelector<HTMLInputElement>('input[placeholder="Value"]')!;
+    const keyInput = rendered.container.querySelector<HTMLInputElement>(
+      'input[placeholder="DATABASE_URL"]',
+    )!;
+    const valueInput = rendered.container.querySelector<HTMLInputElement>(
+      'input[placeholder="Value"]',
+    )!;
 
     changeValue(keyInput, "DATABASE_URL");
     changeValue(valueInput, "postgres://secret");
     await act(async () => {
-      rendered.container.querySelector<HTMLButtonElement>('button[type="submit"]')!.click();
+      rendered.container
+        .querySelector<HTMLButtonElement>('button[type="submit"]')!
+        .click();
     });
 
     expect(provision).toHaveBeenCalledWith({
@@ -2614,8 +3051,13 @@ describe("Project env provisioning UI", () => {
     const rendered = render(<ProjectEnvPanel project={provisionedProject} />);
     root = rendered.root;
 
-    const textarea = rendered.container.querySelector<HTMLTextAreaElement>('textarea[aria-label="Bulk env text"]')!;
-    changeValue(textarea, 'DATABASE_URL=postgres://secret\nAPI_KEY="super-secret"');
+    const textarea = rendered.container.querySelector<HTMLTextAreaElement>(
+      'textarea[aria-label="Bulk env text"]',
+    )!;
+    changeValue(
+      textarea,
+      'DATABASE_URL=postgres://secret\nAPI_KEY="super-secret"',
+    );
     await act(async () => {
       Array.from(rendered.container.querySelectorAll("button"))
         .find((button) => button.textContent === "Validate .env")!
@@ -2639,7 +3081,11 @@ describe("Project env provisioning UI", () => {
         .click();
     });
 
-    const valueInputs = Array.from(rendered.container.querySelectorAll<HTMLInputElement>('input[placeholder="Value"]'));
+    const valueInputs = Array.from(
+      rendered.container.querySelectorAll<HTMLInputElement>(
+        'input[placeholder="Value"]',
+      ),
+    );
     expect(valueInputs).toHaveLength(2);
     expect(valueInputs.every((input) => input.value === "")).toBe(true);
   });
@@ -2680,16 +3126,33 @@ describe("Project env provisioning UI", () => {
     const rendered = render(<ProjectEnvPanel project={provisionedProject} />);
     root = rendered.root;
 
-    changeValue(rendered.container.querySelector<HTMLSelectElement>('select[aria-label="Filter target"]')!, "target-vercel");
-    changeValue(rendered.container.querySelector<HTMLSelectElement>('select[aria-label="Filter environment"]')!, "production");
-    changeValue(rendered.container.querySelector<HTMLSelectElement>('select[aria-label="Filter status"]')!, "failed");
+    changeValue(
+      rendered.container.querySelector<HTMLSelectElement>(
+        'select[aria-label="Filter target"]',
+      )!,
+      "target-vercel",
+    );
+    changeValue(
+      rendered.container.querySelector<HTMLSelectElement>(
+        'select[aria-label="Filter environment"]',
+      )!,
+      "production",
+    );
+    changeValue(
+      rendered.container.querySelector<HTMLSelectElement>(
+        'select[aria-label="Filter status"]',
+      )!,
+      "failed",
+    );
 
     expect(rendered.container.textContent).toContain("API_KEY");
     expect(rendered.container.textContent).not.toContain("DATABASE_URL");
   });
 
   it("requires confirmation before deleting env metadata", async () => {
-    const removeMetadata = jest.fn().mockResolvedValue({ removed: true, key: "DATABASE_URL" });
+    const removeMetadata = jest
+      .fn()
+      .mockResolvedValue({ removed: true, key: "DATABASE_URL" });
     mockEnvHook({
       targets: [renderTarget],
       removeMetadata,
@@ -2766,14 +3229,26 @@ describe("Project env provisioning UI", () => {
         .click();
     });
 
-    expect(rendered.container.querySelector<HTMLInputElement>('input[placeholder="DATABASE_URL"]')?.value).toBe("API_KEY");
-    const valueInput = rendered.container.querySelector<HTMLInputElement>('input[placeholder="Value"]')!;
+    expect(
+      rendered.container.querySelector<HTMLInputElement>(
+        'input[placeholder="DATABASE_URL"]',
+      )?.value,
+    ).toBe("API_KEY");
+    const valueInput = rendered.container.querySelector<HTMLInputElement>(
+      'input[placeholder="Value"]',
+    )!;
     expect(valueInput.value).toBe("");
-    expect(rendered.container.querySelector<HTMLButtonElement>('button[type="submit"]')?.disabled).toBe(true);
+    expect(
+      rendered.container.querySelector<HTMLButtonElement>(
+        'button[type="submit"]',
+      )?.disabled,
+    ).toBe(true);
 
     changeValue(valueInput, "new-secret");
     await act(async () => {
-      rendered.container.querySelector<HTMLButtonElement>('button[type="submit"]')!.click();
+      rendered.container
+        .querySelector<HTMLButtonElement>('button[type="submit"]')!
+        .click();
       await Promise.resolve();
     });
 
