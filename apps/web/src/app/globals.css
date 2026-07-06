@@ -8278,6 +8278,7 @@ select option {
 }
 
 .env-target-grid label,
+.env-target-grid__field,
 .deployment-variable-panel label,
 .env-var-row label {
   display: grid;
@@ -8309,6 +8310,15 @@ select option {
 .deployment-provider-groups__header strong {
   color: var(--text-primary);
   font-size: 0.82rem;
+}
+
+.deployment-variable-actions,
+.env-segmented-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  align-items: center;
+  justify-content: flex-end;
 }
 
 .deployment-variable-panel {
@@ -8435,6 +8445,20 @@ select option {
   max-width: 26rem;
   margin-top: 0.15rem;
   line-height: 1.45;
+}
+
+.env-static-field {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.45rem;
+  width: 100%;
+  min-width: 0;
+  padding: 0.55rem 0.65rem;
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  background: rgba(15, 23, 42, 0.32);
+  color: var(--text-primary);
+  font-size: 0.78rem;
 }
 
 .env-var-row {

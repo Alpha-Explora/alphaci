@@ -2642,12 +2642,8 @@ describe("Project env provisioning UI", () => {
     const modeSelect = rendered.container.querySelector<HTMLSelectElement>(
       '[aria-label="Target action"]',
     )!;
-    const ownershipSelect = rendered.container.querySelector<HTMLSelectElement>(
-      '[aria-label="Ownership mode"]',
-    )!;
 
     changeValue(modeSelect, "register_existing");
-    changeValue(ownershipSelect, "byo");
     const providerProjectId =
       rendered.container.querySelector<HTMLInputElement>(
         'input[placeholder="Provider project ID"]',
@@ -2682,18 +2678,28 @@ describe("Project env provisioning UI", () => {
           'Vercel project could not be created: 400 {"error":{"code":"invalid_root_directory","message":"If defined, the Root Directory must be a relative path not starting with `./` and not including `../` or other special characters."}}',
       },
     });
-    mockEnvHook({ addTarget });
+    mockEnvHook({
+      addTarget,
+      providerConnections: [
+        {
+          id: "connection-1",
+          provider: "render",
+          label: "Render main",
+          tokenLastFour: "cret",
+          status: "active",
+          createdAt: "2026-06-08T00:00:00.000Z",
+          updatedAt: "2026-06-08T00:00:00.000Z",
+          lastUsedAt: null,
+        },
+      ],
+    });
 
     const rendered = render(<ProjectEnvPanel project={provisionedProject} />);
     root = rendered.root;
 
-    const ownershipSelect = rendered.container.querySelector<HTMLSelectElement>(
-      '[aria-label="Ownership mode"]',
-    )!;
     const projectName = rendered.container.querySelector<HTMLInputElement>(
       'input[placeholder="Provider project name"]',
     )!;
-    changeValue(ownershipSelect, "flowci_managed");
     changeValue(projectName, "orders-api-render");
 
     await act(async () => {
@@ -2799,18 +2805,11 @@ describe("Project env provisioning UI", () => {
     const rendered = render(<ProjectEnvPanel project={provisionedProject} />);
     root = rendered.root;
 
-    changeValue(
-      rendered.container.querySelector<HTMLSelectElement>(
-        'select[aria-label="Provider"]',
-      )!,
-      "vercel",
-    );
-    changeValue(
-      rendered.container.querySelector<HTMLSelectElement>(
-        'select[aria-label="Target slot"]',
-      )!,
-      "frontend",
-    );
+    act(() => {
+      Array.from(rendered.container.querySelectorAll("button"))
+        .find((button) => button.textContent === "Vercel frontend")!
+        .click();
+    });
     changeValue(
       rendered.container.querySelector<HTMLInputElement>(
         'input[placeholder="Provider project name"]',
