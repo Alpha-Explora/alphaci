@@ -91,7 +91,8 @@ describe("API client project setup helpers", () => {
         status: "provisioned",
         workflowPath: ".github/workflows/example.yml",
         githubCommitSha: "commit-sha",
-        githubCommitUrl: "https://github.com/tone/example-app/commit/commit-sha",
+        githubCommitUrl:
+          "https://github.com/tone/example-app/commit/commit-sha",
       }),
     });
 
@@ -142,7 +143,12 @@ describe("API client project setup helpers", () => {
             repoShapes: ["single-app"],
             defaultRecipe: "frontend-standard-ci",
             allowedRecipes: ["frontend-standard-ci"],
-            defaultOptions: { lint: true, unit: true, build: true, coverage: true },
+            defaultOptions: {
+              lint: true,
+              unit: true,
+              build: true,
+              coverage: true,
+            },
           },
         ],
         recipes: [
@@ -151,7 +157,12 @@ describe("API client project setup helpers", () => {
             label: "Frontend Standard CI",
             supportedProjectTypes: ["nextjs-app"],
             templateByProjectType: { "nextjs-app": "fe-nextjs" },
-            supportedOptions: { lint: true, unit: true, build: true, coverage: true },
+            supportedOptions: {
+              lint: true,
+              unit: true,
+              build: true,
+              coverage: true,
+            },
             optionJobs: { lint: "lint", unit: "unit-tests" },
           },
         ],
@@ -216,7 +227,8 @@ describe("API client project setup helpers", () => {
         status: "provisioned",
         workflowPath: ".github/workflows/ci.yml",
         githubCommitSha: "commit-sha",
-        githubCommitUrl: "https://github.com/tone/example-app/commit/commit-sha",
+        githubCommitUrl:
+          "https://github.com/tone/example-app/commit/commit-sha",
         projectTypeId: "nextjs-app",
         workflowRecipeId: "frontend-standard-ci",
       }),
@@ -339,7 +351,8 @@ describe("API client project setup helpers", () => {
               workflowPath: ".github/workflows/example.yml",
               status: "provisioned",
               githubCommitSha: "commit-sha",
-              githubCommitUrl: "https://github.com/tone/example-app/commit/commit-sha",
+              githubCommitUrl:
+                "https://github.com/tone/example-app/commit/commit-sha",
               failureReason: null,
             },
           ],
@@ -372,7 +385,9 @@ describe("API client project setup helpers", () => {
       json: async () => ({ items: [] }),
     });
 
-    await expect(getProjects(25, { workspaceId: "workspace-1" })).resolves.toEqual({
+    await expect(
+      getProjects(25, { workspaceId: "workspace-1" }),
+    ).resolves.toEqual({
       items: [],
     });
 
@@ -458,7 +473,9 @@ describe("API client project setup helpers", () => {
       }),
     });
 
-    await expect(getProjectCiRun("project-1", "local-project-1-quality")).resolves.toMatchObject({
+    await expect(
+      getProjectCiRun("project-1", "local-project-1-quality"),
+    ).resolves.toMatchObject({
       id: "local-project-1-quality",
       stage: "quality",
     });
@@ -480,7 +497,9 @@ describe("API client project setup helpers", () => {
       }),
     });
 
-    await expect(rerunProjectCiRun("project-1", "local-project-1-quality")).resolves.toMatchObject({
+    await expect(
+      rerunProjectCiRun("project-1", "local-project-1-quality"),
+    ).resolves.toMatchObject({
       enabled: false,
       reason: "Live GitHub run sync is not enabled",
     });
@@ -600,7 +619,9 @@ describe("API client project setup helpers", () => {
       json: async () => ({
         enabled: true,
         plan: "free",
-        items: [{ code: "projects", current: 2, limit: 3, upgradeRequired: false }],
+        items: [
+          { code: "projects", current: 2, limit: 3, upgradeRequired: false },
+        ],
       }),
     });
 
@@ -622,7 +643,14 @@ describe("API client project setup helpers", () => {
         status: 200,
         json: async () => ({
           enabled: true,
-          items: [{ id: "personal-user-1", name: "Personal", kind: "personal", role: "owner" }],
+          items: [
+            {
+              id: "personal-user-1",
+              name: "Personal",
+              kind: "personal",
+              role: "owner",
+            },
+          ],
         }),
       })
       .mockResolvedValueOnce({
@@ -643,7 +671,7 @@ describe("API client project setup helpers", () => {
       .mockResolvedValueOnce({
         ok: true,
         status: 200,
-        json: async () => ([{ id: "member-1", role: "owner", login: "tone" }]),
+        json: async () => [{ id: "member-1", role: "owner", login: "tone" }],
       })
       .mockResolvedValueOnce({
         ok: true,
@@ -704,7 +732,9 @@ describe("API client project setup helpers", () => {
     await expect(
       updateWorkspaceMemberRole("workspace-1", "member-2", { role: "admin" }),
     ).resolves.toMatchObject({ id: "member-2", role: "admin" });
-    await expect(removeWorkspaceMember("workspace-1", "member-2")).resolves.toEqual({
+    await expect(
+      removeWorkspaceMember("workspace-1", "member-2"),
+    ).resolves.toEqual({
       id: "member-2",
       removed: true,
     });
@@ -824,7 +854,9 @@ describe("API client project setup helpers", () => {
       }),
     });
 
-    await expect(updateDeploymentTarget("project-1", "target-1", payload)).resolves.toMatchObject({
+    await expect(
+      updateDeploymentTarget("project-1", "target-1", payload),
+    ).resolves.toMatchObject({
       id: "target-1",
       branchName: "uat",
     });
@@ -851,7 +883,9 @@ describe("API client project setup helpers", () => {
       }),
     });
 
-    await expect(syncDeploymentTarget("project-1", "target-1")).resolves.toMatchObject({
+    await expect(
+      syncDeploymentTarget("project-1", "target-1"),
+    ).resolves.toMatchObject({
       mode: "local_metadata",
       target: { id: "target-1" },
     });
@@ -883,11 +917,17 @@ describe("API client project setup helpers", () => {
             enabled: true,
             url: "https://vercel.com/flowci-team/orders-web",
           },
+          openProviderConsole: {
+            enabled: true,
+            url: "https://vercel.com/flowci-team/orders-web/deployments",
+          },
         },
       }),
     });
 
-    await expect(getDeploymentTargetActions("project-1", "target-1")).resolves.toMatchObject({
+    await expect(
+      getDeploymentTargetActions("project-1", "target-1"),
+    ).resolves.toMatchObject({
       targetId: "target-1",
       actions: {
         reinstallDeploymentSecrets: {
@@ -909,7 +949,9 @@ describe("API client project setup helpers", () => {
       json: async () => ({ detached: true }),
     });
 
-    await expect(detachDeploymentTarget("project-1", "target-1")).resolves.toEqual({
+    await expect(
+      detachDeploymentTarget("project-1", "target-1"),
+    ).resolves.toEqual({
       detached: true,
     });
 
@@ -940,13 +982,15 @@ describe("API client project setup helpers", () => {
       }),
     });
 
-    await expect(validateProjectEnvVars("project-1", payload)).resolves.toEqual({
-      keyCount: 1,
-      keys: ["DATABASE_URL"],
-      duplicates: [],
-      invalidKeys: [],
-      warnings: [],
-    });
+    await expect(validateProjectEnvVars("project-1", payload)).resolves.toEqual(
+      {
+        keyCount: 1,
+        keys: ["DATABASE_URL"],
+        duplicates: [],
+        invalidKeys: [],
+        warnings: [],
+      },
+    );
 
     expect(fetchMock).toHaveBeenCalledWith(
       "http://localhost:4000/api/v1/projects/project-1/env-vars/validate",
@@ -963,9 +1007,9 @@ describe("API client project setup helpers", () => {
       .mockResolvedValueOnce({
         ok: true,
         status: 200,
-        json: async () => ([
+        json: async () => [
           { id: "connection-1", provider: "render", status: "active" },
-        ]),
+        ],
       })
       .mockResolvedValueOnce({
         ok: true,
@@ -980,7 +1024,7 @@ describe("API client project setup helpers", () => {
       .mockResolvedValueOnce({
         ok: true,
         status: 200,
-        json: async () => ([{ id: "target-1", provider: "render" }]),
+        json: async () => [{ id: "target-1", provider: "render" }],
       })
       .mockResolvedValueOnce({
         ok: true,
@@ -990,12 +1034,15 @@ describe("API client project setup helpers", () => {
       .mockResolvedValueOnce({
         ok: true,
         status: 200,
-        json: async () => ([{ id: "meta-1", key: "DATABASE_URL" }]),
+        json: async () => [{ id: "meta-1", key: "DATABASE_URL" }],
       })
       .mockResolvedValueOnce({
         ok: true,
         status: 201,
-        json: async () => ({ provisioned: [{ key: "DATABASE_URL" }], failed: [] }),
+        json: async () => ({
+          provisioned: [{ key: "DATABASE_URL" }],
+          failed: [],
+        }),
       });
 
     await expect(listProviderConnections()).resolves.toEqual([
@@ -1008,7 +1055,9 @@ describe("API client project setup helpers", () => {
         token: "secret",
       }),
     ).resolves.toMatchObject({ id: "connection-2" });
-    await expect(revokeProviderConnection("connection/2")).resolves.toEqual({ revoked: true });
+    await expect(revokeProviderConnection("connection/2")).resolves.toEqual({
+      revoked: true,
+    });
     await expect(listDeploymentTargets("project/1")).resolves.toEqual([
       { id: "target-1", provider: "render" },
     ]);
@@ -1062,7 +1111,9 @@ describe("API client project setup helpers", () => {
       json: async () => ({ removed: true, key: "DATABASE_URL" }),
     });
 
-    await expect(deleteProjectEnvMetadata("project-1", "meta-1")).resolves.toEqual({
+    await expect(
+      deleteProjectEnvMetadata("project-1", "meta-1"),
+    ).resolves.toEqual({
       removed: true,
       key: "DATABASE_URL",
     });
@@ -1169,7 +1220,9 @@ describe("API client project setup helpers", () => {
       }),
     });
 
-    await expect(previewWorkflowSettings("project-1", payload)).resolves.toMatchObject({
+    await expect(
+      previewWorkflowSettings("project-1", payload),
+    ).resolves.toMatchObject({
       workflowFiles: [
         expect.objectContaining({
           path: ".github/workflows/00-flowci-access.yml",
@@ -1203,7 +1256,9 @@ describe("API client project setup helpers", () => {
       }),
     });
 
-    await expect(createWorkflowUpdatePullRequest("project-1", payload)).resolves.toMatchObject({
+    await expect(
+      createWorkflowUpdatePullRequest("project-1", payload),
+    ).resolves.toMatchObject({
       pullRequestNumber: 42,
       pullRequestUrl: "https://github.com/tone/example-app/pull/42",
     });
@@ -1289,7 +1344,9 @@ describe("API client project setup helpers", () => {
     const warnSpy = jest.spyOn(console, "warn").mockImplementation(() => {});
     try {
       const { getApiBaseUrl } = await import("../../src/lib/api/client");
-      expect(getApiBaseUrl()).toBe("https://flowci-be-test.onrender.com/api/v1");
+      expect(getApiBaseUrl()).toBe(
+        "https://flowci-be-test.onrender.com/api/v1",
+      );
       expect(warnSpy).toHaveBeenCalledWith(
         expect.stringContaining("NEXT_PUBLIC_API_URL is a legacy alias"),
       );
@@ -1319,7 +1376,8 @@ describe("API client project setup helpers", () => {
   });
 
   it("prefers NEXT_PUBLIC_API_BASE_URL over the legacy alias in production", async () => {
-    process.env.NEXT_PUBLIC_API_BASE_URL = "https://alphaci-be-test.onrender.com";
+    process.env.NEXT_PUBLIC_API_BASE_URL =
+      "https://alphaci-be-test.onrender.com";
     process.env.NEXT_PUBLIC_API_URL = "https://flowci-be-test.onrender.com";
     process.env.NODE_ENV = "production";
     jest.resetModules();
@@ -1327,7 +1385,9 @@ describe("API client project setup helpers", () => {
     const warnSpy = jest.spyOn(console, "warn").mockImplementation(() => {});
     try {
       const { getApiBaseUrl } = await import("../../src/lib/api/client");
-      expect(getApiBaseUrl()).toBe("https://alphaci-be-test.onrender.com/api/v1");
+      expect(getApiBaseUrl()).toBe(
+        "https://alphaci-be-test.onrender.com/api/v1",
+      );
       expect(warnSpy).not.toHaveBeenCalled();
     } finally {
       warnSpy.mockRestore();

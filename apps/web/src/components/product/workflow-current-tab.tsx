@@ -185,6 +185,28 @@ function providerDashboardUrl(target: DeploymentTarget): string | null {
   return null;
 }
 
+function providerConsoleUrl(target: DeploymentTarget): string | null {
+  if (target.provider === "vercel") {
+    const teamSlug =
+      typeof target.providerMetadata?.vercelTeamSlug === "string"
+        ? target.providerMetadata.vercelTeamSlug.trim()
+        : "";
+    return teamSlug
+      ? `https://vercel.com/${teamSlug}/${target.providerProjectName}/deployments`
+      : `https://vercel.com/dashboard/project/${target.providerProjectId}/deployments`;
+  }
+
+  if (target.provider === "render") {
+    return `https://dashboard.render.com/web/${target.providerProjectId}/logs`;
+  }
+
+  return null;
+}
+
+function allowedSlotForProvider(provider: DeploymentTarget["provider"]) {
+  return provider === "vercel" ? "frontend" : "backend";
+}
+
 function DeploymentTargetsList({
   managementEnabled,
   onDetached,
@@ -318,6 +340,7 @@ function DeploymentTargetsList({
       <div className="env-metadata-list" data-tour="deployment-targets">
         {targets.map((target) => {
           const dashboardUrl = providerDashboardUrl(target);
+          const consoleUrl = providerConsoleUrl(target);
           const isDetachConfirm = detachConfirmTargetId === target.id;
           return (
             <div
@@ -386,6 +409,16 @@ function DeploymentTargetsList({
                     >
                       Provider dashboard ↗
                     </a>
+                    {consoleUrl ? (
+                      <a
+                        className="ghost-button target-action-btn"
+                        href={consoleUrl}
+                        rel="noreferrer"
+                        target="_blank"
+                      >
+                        Live console ↗
+                      </a>
+                    ) : null}
                   </div>
                 ) : null}
 
@@ -446,14 +479,19 @@ function DeploymentTargetsList({
               Slot
               <select
                 aria-label="Target slot"
-                value={editValues.slot ?? "backend"}
+                value={
+                  editValues.slot ??
+                  allowedSlotForProvider(editingTarget.provider)
+                }
                 onChange={(event) =>
                   updateEditValue("slot", event.target.value as EnvTargetSlot)
                 }
               >
-                <option value="backend">Backend</option>
-                <option value="frontend">Frontend</option>
-                <option value="standalone">Standalone</option>
+                {editingTarget.provider === "render" ? (
+                  <option value="backend">Backend</option>
+                ) : (
+                  <option value="frontend">Frontend</option>
+                )}
               </select>
             </label>
             <label>
@@ -705,6 +743,14 @@ function DeploymentHistoryList({
                   target="_blank"
                 >
                   Provider deployment
+                </a>
+                <a
+                  className="ghost-button"
+                  href={deployment.consoleUrl}
+                  rel="noreferrer"
+                  target="_blank"
+                >
+                  Live console
                 </a>
               </span>
             </div>
@@ -1560,10 +1606,10 @@ export function WorkflowCurrentTab({
                     maxWidth: "32rem",
                   }}
                 >
-                  When you create one, Alphaexplora provisions the repository and
-                  commits a workflow that runs through the gated stages below on
-                  every change. A read-only demo project normally appears here
-                  too — open the{" "}
+                  When you create one, Alphaexplora provisions the repository
+                  and commits a workflow that runs through the gated stages
+                  below on every change. A read-only demo project normally
+                  appears here too — open the{" "}
                   <Link href="/guide" className="inline-link">
                     guide
                   </Link>{" "}
@@ -1679,10 +1725,10 @@ export function WorkflowCurrentTab({
 
                 {selectedProject.isExample ? (
                   <p className="project-demo-note">
-                    This is a read-only demo project Alphaexplora seeds for every
-                    account. It shows how a provisioned project looks end to end
-                    — the gated stages, promotion flow, and deploys explained in
-                    the{" "}
+                    This is a read-only demo project Alphaexplora seeds for
+                    every account. It shows how a provisioned project looks end
+                    to end — the gated stages, promotion flow, and deploys
+                    explained in the{" "}
                     <Link href="/guide#branch-strategy" className="inline-link">
                       guide
                     </Link>{" "}
