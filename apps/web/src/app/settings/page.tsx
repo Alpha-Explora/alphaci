@@ -14,7 +14,6 @@ import {
   WorkspaceProvider,
   useWorkspaceSelection,
 } from "@/components/layout/workspace-context";
-import { DeploymentProvidersSection } from "@/components/settings/deployment-providers-section";
 import { NotificationPreferencesSection } from "@/components/settings/notification-preferences-section";
 import { WorkspaceMembersSection } from "@/components/settings/workspace-members-section";
 import { useAuthSession } from "@/hooks/use-auth-session";
@@ -286,7 +285,11 @@ function SettingsSection({
 /* ── Page ───────────────────────────────────────────────────────────────── */
 
 type SettingsSection =
-  "account" | "appearance" | "connections" | "guide" | "danger";
+  | "account"
+  | "appearance"
+  | "connections"
+  | "guide"
+  | "danger";
 
 const SECTION_LABELS: Record<SettingsSection, string> = {
   account: "Account",
@@ -308,10 +311,8 @@ function SettingsPageContent() {
   const router = useRouter();
   const prefersReducedMotion = useReducedMotion();
   const { status, session, error, refresh } = useAuthSession();
-  const { workspacesEnabled, notificationsEnabled, deploymentOwnershipMode } =
-    useCapabilities();
-  const { selectedWorkspace, setWorkspaces: setWorkspaceContext } =
-    useWorkspaceSelection();
+  const { workspacesEnabled, notificationsEnabled } = useCapabilities();
+  const { setWorkspaces: setWorkspaceContext } = useWorkspaceSelection();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [logoutMessage, setLogoutMessage] = useState<string | null>(null);
   const [activeSection, setActiveSection] =
@@ -509,9 +510,6 @@ function SettingsPageContent() {
   const avatarInitial = (session?.user.name ?? session?.user.login ?? "U")
     .slice(0, 1)
     .toUpperCase();
-  const selectedWorkspaceRole =
-    selectedWorkspace?.role ?? workspaces?.items[0]?.role ?? null;
-
   return (
     <main className="dash-shell" suppressHydrationWarning>
       <a href="#main-content" className="skip-link">
@@ -1137,7 +1135,6 @@ function SettingsPageContent() {
 
               {/* ── Connections section ── */}
               {activeSection === "connections" && (
-                <>
                 <SettingsSection
                   icon={<GithubIcon />}
                   title="GitHub Connection"
@@ -1194,18 +1191,7 @@ function SettingsPageContent() {
                     </Link>
                   </div>
                 </SettingsSection>
-                  {/* BYO provider connections are only relevant when this
-                      deployment lets users bring their own Render/Vercel. The
-                      internal deployment centralizes on the org accounts
-                      (flowci_managed), so this is hidden. */}
-                  {deploymentOwnershipMode === "byo" && (
-                    <DeploymentProvidersSection
-                      workspaceRole={selectedWorkspaceRole}
-                    />
-                  )}
-                </>
               )}
-
 
               {/* ── Guide section ── */}
               {activeSection === "guide" && (
