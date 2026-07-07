@@ -7,6 +7,7 @@ import type {
   EnvEnvironment,
   EnvOwnershipMode,
   EnvProvider,
+  DeploymentTarget,
   RenderRuntime,
   EnvTargetSlot,
   EnvVarMetadata,
@@ -60,9 +61,33 @@ interface EnvRow {
   value: string;
 }
 
+interface ProjectEnvPanelProps {
+  project: ProvisionedProject;
+  onTargetCreated?: (target: DeploymentTarget) => void;
+  section?: "all" | "hosting" | "variables";
+}
+
+function targetOptionLabel(target: {
+  providerProjectName: string;
+  provider: EnvProvider;
+  slot: EnvTargetSlot;
+  branchName: string;
+  renderRuntime?: RenderRuntime | string | null;
+}): string {
+  const provider = target.provider === "render" ? "Render" : "Vercel";
+  const branch = target.branchName || "test";
+  const runtime =
+    target.provider === "render" && target.renderRuntime
+      ? ` - ${formatRenderRuntime(target.renderRuntime)}`
+      : "";
+  return `${target.providerProjectName} - ${provider} ${target.slot} - ${branch}${runtime}`;
+}
+
 export function ProjectEnvPanel({
+  onTargetCreated,
   project,
-}: Readonly<{ project: ProvisionedProject }>) {
+  section = "all",
+}: Readonly<ProjectEnvPanelProps>) {
   const {
     addTarget,
     loading,
@@ -109,6 +134,7 @@ export function ProjectEnvPanel({
   const [usageItems, setUsageItems] = useState<UsageLimitItem[]>([]);
 
   const activeTargetId = targetId || targets[0]?.id || "";
+  const activeTarget = targets.find((target) => target.id === activeTargetId);
   const matchingConnections = providerConnections.filter(
     (connection) => connection.provider === provider,
   );
@@ -153,6 +179,8 @@ export function ProjectEnvPanel({
       return true;
     });
   }, [filterEnvironment, filterStatus, filterTargetId, metadata]);
+  const showHosting = section !== "variables";
+  const showVariables = section !== "hosting";
 
   useEffect(() => {
     let cancelled = false;
@@ -206,6 +234,7 @@ export function ProjectEnvPanel({
     try {
       const target = await addTarget(targetPayload);
       setTargetId(target.id);
+      onTargetCreated?.(target);
       setMessage(
         targetAction === "create"
           ? "Deployment target created."
@@ -306,9 +335,10 @@ export function ProjectEnvPanel({
 
   return (
     <div className="env-provisioning-panel">
+      {showHosting ? (
       <section className="env-provisioning-section">
         <div className="env-section-header">
-          <h4>Deployment target</h4>
+          <h4>Hosting service</h4>
           {message ? <span>{message}</span> : null}
         </div>
 
@@ -456,10 +486,7 @@ export function ProjectEnvPanel({
           {targets.length ? (
             targets.map((target) => (
               <option key={target.id} value={target.id}>
-                {target.providerProjectName} - {target.provider}
-                {target.provider === "render" && target.renderRuntime
-                  ? ` - ${formatRenderRuntime(target.renderRuntime)}`
-                  : ""}
+                {targetOptionLabel(target)}
               </option>
             ))
           ) : (
@@ -482,11 +509,52 @@ export function ProjectEnvPanel({
           </div>
         ) : null}
       </section>
+      ) : null}
 
+      {showVariables ? (
       <form className="env-provisioning-section" onSubmit={handleProvision}>
         <div className="env-section-header">
-          <h4>Variables</h4>
+          <div>
+            <h4>Branch variables</h4>
+            <p className="helper-text" style={{ margin: "0.25rem 0 0" }}>
+              Variables are provisioned to the selected hosting service and its
+              branch. Use a different hosting target to keep branch values
+              separate.
+            </p>
+          </div>
         </div>
+
+        {targets.length ? (
+          <div className="env-target-grid__field env-target-grid__field--wide">
+            <span>Branch target</span>
+            <div className="env-segmented-actions" role="group">
+              {targets.map((target) => (
+                <button
+                  key={target.id}
+                  className={
+                    activeTargetId === target.id
+                      ? "primary-button"
+                      : "ghost-button"
+                  }
+                  type="button"
+                  onClick={() => setTargetId(target.id)}
+                >
+                  {target.provider === "render" ? "Render" : "Vercel"}{" "}
+                  {target.branchName || "test"}
+                </button>
+              ))}
+            </div>
+            {activeTarget ? (
+              <span className="helper-text env-target-grid__note">
+                {targetOptionLabel(activeTarget)}
+              </span>
+            ) : null}
+          </div>
+        ) : (
+          <p className="env-empty-state">
+            Add a hosting service before provisioning branch variables.
+          </p>
+        )}
 
         <div className="env-environment-tabs">
           {(["test", "uat", "production"] as EnvEnvironment[]).map((env) => (
@@ -623,7 +691,9 @@ export function ProjectEnvPanel({
           </button>
         </div>
       </form>
+      ) : null}
 
+      {showVariables ? (
       <section className="env-provisioning-section">
         <div className="env-section-header">
           <h4>Provisioned variables</h4>
@@ -638,7 +708,7 @@ export function ProjectEnvPanel({
               <option value="all">All targets</option>
               {targets.map((target) => (
                 <option key={target.id} value={target.id}>
-                  {target.providerProjectName} - {target.provider}
+                  {targetOptionLabel(target)}
                 </option>
               ))}
             </select>
@@ -677,7 +747,9 @@ export function ProjectEnvPanel({
               <div key={item.id} className={`env-metadata-row ${item.status}`}>
                 <span>{item.key}</span>
                 <span>
-                  {item.environment} - {item.status}
+                  {targets.find((target) => target.id === item.deploymentTargetId)
+                    ?.branchName ?? "unknown branch"}{" "}
+                  - {item.environment} - {item.status}
                   {item.errorSummary
                     ? ` - ${cleanUserMessage(item.errorSummary)}`
                     : ""}
@@ -712,6 +784,7 @@ export function ProjectEnvPanel({
           <p className="env-empty-state">No variables provisioned yet.</p>
         )}
       </section>
+      ) : null}
     </div>
   );
 }
