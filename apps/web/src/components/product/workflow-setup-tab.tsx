@@ -9,7 +9,7 @@ import type {
   EnvOwnershipMode,
   EnvTargetSlot,
   MvpProjectOptionKey,
-  SetupExistingRepoPrResponse,
+  SetupProjectResponse,
   UsageLimitItem,
 } from "@/lib/api/contracts";
 import { getMyUsage } from "@/lib/api/client";
@@ -34,7 +34,7 @@ interface WorkflowSetupTabProps {
   existingRepoBaseBranch: string;
   existingRepoDiscovery: DiscoverExistingRepoResponse | null;
   existingRepoFullName: string;
-  existingRepoResult: SetupExistingRepoPrResponse | null;
+  existingRepoResult: SetupProjectResponse | null;
   form: CreateProjectFormState;
   github: GithubInstallationsState;
   isCreatingProject: boolean;
@@ -47,7 +47,7 @@ interface WorkflowSetupTabProps {
   onCreateProject: () => void;
   onDiscoverExistingRepo: () => void;
   onGenerateWorkflow: () => void;
-  onSetupExistingRepoPullRequest: () => void;
+  onSetupExistingRepo: () => void;
   onViewProject: () => void;
   projectCatalog: ProjectOptionsCatalogState;
   reducedMotion: boolean;
@@ -128,7 +128,7 @@ export function WorkflowSetupTab({
   onCreateProject,
   onDiscoverExistingRepo,
   onGenerateWorkflow,
-  onSetupExistingRepoPullRequest,
+  onSetupExistingRepo,
   onViewProject,
   projectCatalog,
   reducedMotion,
@@ -596,7 +596,7 @@ export function WorkflowSetupTab({
               </div>
 
               <p className="helper-text" id="existing-repo-disabled-help" style={{ margin: 0, fontSize: "0.82rem" }}>
-                Scan the repository to detect its project type, then open a setup PR to add CI/CD workflows.
+                Scan the repository to detect its project type, then commit CI/CD workflows directly to the repository&apos;s default branch.
               </p>
 
               {/* Action buttons — flat row, no container box */}
@@ -617,9 +617,9 @@ export function WorkflowSetupTab({
                   style={{ flex: "1", fontSize: "0.875rem", minHeight: "2.6rem", padding: "0.6rem 1.25rem" }}
                   disabled={existingSetupDisabled}
                   aria-describedby="existing-repo-disabled-help"
-                  onClick={() => void onSetupExistingRepoPullRequest()}
+                  onClick={() => void onSetupExistingRepo()}
                 >
-                  {isSettingUpExistingRepo ? "Opening PR..." : "Open setup PR"}
+                  {isSettingUpExistingRepo ? "Setting up..." : "Set up CI/CD"}
                 </button>
               </div>
 

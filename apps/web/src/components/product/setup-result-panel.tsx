@@ -6,13 +6,13 @@ import { useCapabilities } from "@/hooks/use-capabilities";
 import type {
   CreateProjectResult,
   DeploymentProvisioningResult,
-  SetupExistingRepoPrResponse,
+  SetupProjectResponse,
   WorkflowFileMetadata,
 } from "@/lib/api/contracts";
 import { cleanUserMessage } from "./workflow-builder-utils";
 
 interface SetupResultPanelProps {
-  existingRepoResult?: SetupExistingRepoPrResponse | null;
+  existingRepoResult?: SetupProjectResponse | null;
   setupResult: CreateProjectResult | null;
   onViewProject: () => void;
 }
@@ -307,12 +307,12 @@ export function SetupResultPanel({
       className={`result-panel${setupResult ? " result-panel--success" : ""}`}
     >
       <p className="cp-section-heading" style={{ marginBottom: "1rem" }}>
-        {existingRepoResult ? "Pull request created" : "Project created"}
+        {existingRepoResult ? "CI/CD added" : "Project created"}
       </p>
       <AnimatePresence mode="wait">
         {existingRepoResult ? (
           <motion.div
-            key={existingRepoResult.pullRequestUrl}
+            key={existingRepoResult.githubCommitSha}
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
@@ -321,7 +321,7 @@ export function SetupResultPanel({
             <div className="result-repo-header">
               <span className="result-status-dot" aria-hidden="true" />
               <a
-                href={repoUrl ?? existingRepoResult.pullRequestUrl}
+                href={repoUrl ?? undefined}
                 target="_blank"
                 rel="noreferrer"
                 className="result-repo-name"
@@ -331,36 +331,64 @@ export function SetupResultPanel({
             </div>
 
             <div className="result-branches">
-              <span className="branch-chip">pull request</span>
-              <span className="branch-chip">
-                #{existingRepoResult.pullRequestNumber}
-              </span>
-              <span className="branch-chip">
-                {existingRepoResult.branchName}
-              </span>
+              <span className="branch-chip">{existingRepoResult.status}</span>
             </div>
 
-            <p className="helper-text" style={{ margin: 0 }}>
-              Workflow: <strong>{existingRepoResult.workflowPath}</strong>
-            </p>
+            <div>
+              <p
+                className="helper-text"
+                style={{
+                  margin: "0 0 0.3rem",
+                  fontSize: "0.72rem",
+                  color: "var(--text-muted)",
+                }}
+              >
+                Workflow file
+              </p>
+              <div className="terminal-path">{existingRepoResult.workflowPath}</div>
+            </div>
+            <WorkflowFilesList files={existingRepoResult.workflowFiles} />
+            <DeploymentProvisioningSummary
+              result={existingRepoResult.deploymentProvisioning}
+            />
+            <div>
+              <p
+                className="helper-text"
+                style={{
+                  margin: "0 0 0.3rem",
+                  fontSize: "0.72rem",
+                  color: "var(--text-muted)",
+                }}
+              >
+                Commit
+              </p>
+              <div className="terminal-hash">
+                <CommitLink
+                  sha={existingRepoResult.githubCommitSha}
+                  url={existingRepoResult.githubCommitUrl}
+                />
+              </div>
+            </div>
 
             <div className="result-actions">
-              <a
-                className="primary-button"
-                href={existingRepoResult.pullRequestUrl}
-                target="_blank"
-                rel="noreferrer"
-              >
-                Open PR
-              </a>
               {repoUrl ? (
                 <a
-                  className="ghost-button"
-                  href={`${repoUrl}/tree/${existingRepoResult.branchName}`}
+                  className="primary-button"
+                  href={repoUrl}
                   target="_blank"
                   rel="noreferrer"
                 >
-                  View branch
+                  Open repo
+                </a>
+              ) : null}
+              {repoUrl ? (
+                <a
+                  className="ghost-button"
+                  href={`${repoUrl}/blob/${existingRepoResult.githubCommitSha}/${existingRepoResult.workflowPath}`}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  View workflow
                 </a>
               ) : null}
               <button
@@ -380,8 +408,9 @@ export function SetupResultPanel({
                 margin: 0,
               }}
             >
-              Workflow added on <code>{existingRepoResult.branchName}</code>.
-              Merge the PR to apply it to the selected base branch.
+              Workflow committed to <code>{existingRepoResult.workflowPath}</code>{" "}
+              on the repository&apos;s default branch. Push to <code>test</code>{" "}
+              to trigger your first CI run.
             </p>
           </motion.div>
         ) : setupResult ? (

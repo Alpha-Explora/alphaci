@@ -7,13 +7,14 @@ import {
   createProject,
   discoverExistingRepo,
   generateWorkflow,
-  setupExistingRepoPullRequest,
+  setupProject,
 } from "@/lib/api/client";
 import type {
   CatalogTemplate,
   CreateProjectResult,
   DiscoverExistingRepoResponse,
-  SetupExistingRepoPrResponse,
+  SetupProjectRequest,
+  SetupProjectResponse,
 } from "@/lib/api/contracts";
 import { useCreateProjectForm } from "@/hooks/use-create-project-form";
 import { useCapabilities } from "@/hooks/use-capabilities";
@@ -58,7 +59,7 @@ export function WorkflowBuilder({ guest = false, session, onboardingCompleted }:
   const [existingRepoDiscovery, setExistingRepoDiscovery] =
     useState<DiscoverExistingRepoResponse | null>(null);
   const [existingRepoResult, setExistingRepoResult] =
-    useState<SetupExistingRepoPrResponse | null>(null);
+    useState<SetupProjectResponse | null>(null);
   const [setupMode, setSetupMode] = useState<"new" | "existing">("new");
   const [existingRepoFullName, setExistingRepoFullName] = useState("");
   const [existingRepoBaseBranch, setExistingRepoBaseBranch] = useState("main");
@@ -231,14 +232,14 @@ export function WorkflowBuilder({ guest = false, session, onboardingCompleted }:
     }
   }
 
-  async function handleSetupExistingRepoPullRequest() {
+  async function handleSetupExistingRepo() {
     const repoFullName = existingRepoFullName.trim();
     if (!repoFullName) {
-      setStatusMessage("Choose a linked repository before opening a setup PR.");
+      setStatusMessage("Choose a linked repository before setting up CI/CD.");
       return;
     }
     if (!projectCatalog.selectedProjectTypeId) {
-      setStatusMessage("Choose a project type before opening a setup PR.");
+      setStatusMessage("Choose a project type before setting up CI/CD.");
       return;
     }
 
@@ -247,25 +248,41 @@ export function WorkflowBuilder({ guest = false, session, onboardingCompleted }:
       Number.isFinite(coverage) && coverage >= 0 && coverage <= 100 ? coverage : 80;
     const fallbackServiceName = repoFullName.split("/").at(-1) ?? "service";
 
+    // Mirror the backend's resolveTemplateId formula (existing-repos.service.ts /
+    // projects.service.ts): look up the selected recipe's per-project-type
+    // template mapping, falling back to the conventional `${projectType}-${recipe}`
+    // naming used on disk when no explicit mapping exists.
+    const recipeId = projectCatalog.selectedWorkflowRecipeId || "standard";
+    const recipe = projectCatalog.recipesForSelectedProject.find((item) => item.id === recipeId);
+    const templateId =
+      recipe?.templateByProjectType[projectCatalog.selectedProjectTypeId] ??
+      `${projectCatalog.selectedProjectTypeId}-${recipeId}`;
+
+    const payload: SetupProjectRequest = {
+      templateId,
+      repoFullName,
+      serviceName: createForm.serviceName || existingRepoDiscovery?.serviceName || fallbackServiceName,
+      servicePath: createForm.servicePath || existingRepoDiscovery?.servicePath || ".",
+      nodeVersion: createForm.nodeVersion || "24",
+      coverageThreshold: safeCoverage,
+      outputFileName: createForm.outputFileName || "ci.yml",
+      deploymentProvisioning: deploymentProvisioning.payload,
+    };
+
     setIsSettingUpExistingRepo(true);
-    setStatusMessage(`Creating a workflow branch and PR for ${repoFullName}...`);
+    setStatusMessage(`Committing CI/CD workflow to ${repoFullName}...`);
 
     try {
-      const response = await setupExistingRepoPullRequest({
-        repoFullName,
-        baseBranch: existingRepoBaseBranch.trim() || "main",
-        projectTypeId: projectCatalog.selectedProjectTypeId,
-        workflowRecipeId: projectCatalog.selectedWorkflowRecipeId || "standard",
-        serviceName: createForm.serviceName || existingRepoDiscovery?.serviceName || fallbackServiceName,
-        servicePath: createForm.servicePath || existingRepoDiscovery?.servicePath || ".",
-        nodeVersion: createForm.nodeVersion || "24",
-        coverageThreshold: safeCoverage,
-        outputFileName: createForm.outputFileName || "ci.yml",
-      });
+      const response = await setupProject(payload);
 
       setExistingRepoResult(response);
       setCreateResult(null);
-      setStatusMessage(`Setup PR opened for ${response.repoFullName}: #${response.pullRequestNumber}.`);
+      projects.prependSetupResult(response, payload);
+      void projects.loadProjects(true);
+      setActiveTab("current");
+      setStatusMessage(
+        `CI/CD added to "${response.repoFullName}". Workflow committed to ${response.workflowPath}.`,
+      );
     } catch (error) {
       setStatusMessage(formatApiError(error, "Existing repository setup failed"));
     } finally {
@@ -439,7 +456,7 @@ export function WorkflowBuilder({ guest = false, session, onboardingCompleted }:
               onCreateProject={guest ? () => { window.location.href = "/signup"; } : handleCreateProject}
               onDiscoverExistingRepo={guest ? () => { window.location.href = "/signup"; } : handleDiscoverExistingRepo}
               onGenerateWorkflow={guest ? () => { window.location.href = "/signup"; } : handleGenerateWorkflow}
-              onSetupExistingRepoPullRequest={guest ? () => { window.location.href = "/signup"; } : handleSetupExistingRepoPullRequest}
+              onSetupExistingRepo={guest ? () => { window.location.href = "/signup"; } : handleSetupExistingRepo}
               projectCatalog={projectCatalog}
               onViewProject={() => setActiveTab("current")}
               reducedMotion={reducedMotion}

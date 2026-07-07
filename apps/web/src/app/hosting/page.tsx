@@ -12,9 +12,11 @@ import {
   WorkspaceProvider,
   useWorkspaceSelection,
 } from "@/components/layout/workspace-context";
+import { DeploymentProvisioningSetup } from "@/components/product/deployment-provisioning-setup";
 import { DeploymentProvidersSection } from "@/components/settings/deployment-providers-section";
 import { useAuthSession } from "@/hooks/use-auth-session";
 import { useCapabilities } from "@/hooks/use-capabilities";
+import { useDeploymentProvisioningForm } from "@/hooks/use-deployment-provisioning-form";
 import { logout } from "@/lib/api/client";
 import type { WorkspacesMeResponse } from "@/lib/api/contracts";
 import { getMyWorkspaces } from "@/lib/api/workspaces";
@@ -29,8 +31,10 @@ function HostingPageContent() {
   const { deploymentOwnershipMode, workspacesEnabled } = useCapabilities();
   const { selectedWorkspace, setWorkspaces: setWorkspaceContext } =
     useWorkspaceSelection();
+  const hostingSetup = useDeploymentProvisioningForm();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [logoutMessage, setLogoutMessage] = useState<string | null>(null);
+  const [setupInitialized, setSetupInitialized] = useState(false);
   const [workspaces, setWorkspaces] = useState<WorkspacesMeResponse | null>(
     null,
   );
@@ -61,6 +65,15 @@ function HostingPageContent() {
       active = false;
     };
   }, [setWorkspaceContext, status, workspacesEnabled]);
+
+  useEffect(() => {
+    if (status !== "signed-in" || setupInitialized) return;
+    hostingSetup.setDefaultTargets([
+      { slot: "backend", projectName: "backend-service" },
+      { slot: "frontend", projectName: "frontend-app" },
+    ]);
+    setSetupInitialized(true);
+  }, [hostingSetup, setupInitialized, status]);
 
   async function handleLogout() {
     setIsLoggingOut(true);
@@ -162,12 +175,13 @@ function HostingPageContent() {
                 margin: "0.4rem 0 0",
                 color: "var(--text-secondary)",
                 fontSize: "0.86rem",
-                maxWidth: "46rem",
+                maxWidth: "48rem",
                 lineHeight: 1.55,
               }}
             >
-              Connect the provider accounts used when Alphaexplora provisions
-              backend hosting on Render and frontend hosting on Vercel.
+              Choose the Render backend and Vercel frontend setup, branches,
+              variable groups, and branch-specific variables used when creating
+              repositories.
             </p>
           </div>
         </motion.div>
@@ -183,19 +197,39 @@ function HostingPageContent() {
           </p>
         ) : null}
 
-        {deploymentOwnershipMode === "byo" ? (
-          <DeploymentProvidersSection workspaceRole={selectedWorkspaceRole} />
-        ) : (
-          <section className="provider-settings-panel">
-            <div className="provider-settings-header">
-              <h2>Hosting Services</h2>
-              <p>
-                Hosting is managed through the organization Render and Vercel
-                accounts for this deployment.
-              </p>
-            </div>
-          </section>
-        )}
+        <div style={{ display: "grid", gap: "1.25rem" }}>
+          <DeploymentProvisioningSetup
+            enabled={hostingSetup.enabled}
+            ownershipMode={deploymentOwnershipMode}
+            repoShape="microservices"
+            value={hostingSetup.request}
+            onChange={hostingSetup.setRequest}
+            onEnabledChange={(enabled) => {
+              if (enabled) {
+                hostingSetup.setDefaultTargets([
+                  { slot: "backend", projectName: "backend-service" },
+                  { slot: "frontend", projectName: "frontend-app" },
+                ]);
+              } else {
+                hostingSetup.setEnabled(false);
+              }
+            }}
+          />
+
+          {deploymentOwnershipMode === "byo" ? (
+            <DeploymentProvidersSection workspaceRole={selectedWorkspaceRole} />
+          ) : (
+            <section className="provider-settings-panel">
+              <div className="provider-settings-header">
+                <h2>Provider Accounts</h2>
+                <p>
+                  Hosting is managed through the organization Render and Vercel
+                  accounts for this deployment.
+                </p>
+              </div>
+            </section>
+          )}
+        </div>
       </div>
     </main>
   );
