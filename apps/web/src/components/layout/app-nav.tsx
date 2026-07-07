@@ -90,6 +90,29 @@ function RunsIcon({ size = 16 }: { size?: number }) {
   );
 }
 
+function HostingIcon({ size = 16 }: { size?: number }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <rect x="3" y="4" width="18" height="6" rx="2" />
+      <rect x="3" y="14" width="18" height="6" rx="2" />
+      <path d="M7 7h.01" />
+      <path d="M7 17h.01" />
+      <path d="M11 7h6" />
+      <path d="M11 17h6" />
+    </svg>
+  );
+}
+
 function SettingsIcon({ size = 16 }: { size?: number }) {
   return (
     <svg
@@ -498,6 +521,17 @@ export function AppNav({
             reduced={reduced}
             itemIndex={2}
           />
+          {!guest && (
+            <SidebarNavItem
+              href="/hosting"
+              label="Hosting Services"
+              icon={HostingIcon}
+              isActive={pathname === "/hosting"}
+              collapsed={collapsed}
+              reduced={reduced}
+              itemIndex={3}
+            />
+          )}
 
           <SidebarSectionLabel text="Account" collapsed={collapsed} />
 
