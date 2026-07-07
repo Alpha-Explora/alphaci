@@ -463,7 +463,7 @@ describe("WorkflowBuilder project setup", () => {
     expect(mockedCreateGithubRepo).not.toHaveBeenCalled();
   });
 
-  it("keeps hosting provisioning out of project creation", async () => {
+  it("includes hosting provisioning in project creation when enabled", async () => {
     mockedCreateProject.mockResolvedValueOnce({
       id: "project-1",
       repoFullName: "tone/orders-api",
@@ -485,14 +485,17 @@ describe("WorkflowBuilder project setup", () => {
 
     const projectType = container.querySelector<HTMLSelectElement>("#project-type-select");
     expect(projectType).not.toBeNull();
-    changeValue(projectType!, "nestjs-api");
+    changeValue(projectType!, "nextjs-app");
 
-    expect(container.textContent).not.toContain("Deployment provisioning");
-    expect(
-      container.querySelector<HTMLInputElement>(
-        "input[aria-label='Provision deployment target']",
-      ),
-    ).toBeNull();
+    expect(container.textContent).toContain("Deployment provisioning");
+    const provisioningToggle = container.querySelector<HTMLInputElement>(
+      "input[aria-label='Provision deployment target']",
+    );
+    expect(provisioningToggle).not.toBeNull();
+
+    act(() => {
+      provisioningToggle!.click();
+    });
 
     await act(async () => {
       container.querySelector<HTMLButtonElement>("[data-testid='setup-project-button']")?.click();
@@ -502,8 +505,18 @@ describe("WorkflowBuilder project setup", () => {
     await waitForCondition(() => container.textContent?.includes("tone/orders-api") ?? false);
 
     expect(mockedCreateProject).toHaveBeenCalledWith(
-      expect.not.objectContaining({
-        deploymentProvisioning: expect.anything(),
+      expect.objectContaining({
+        deploymentProvisioning: expect.objectContaining({
+          enabled: true,
+          targets: [
+            expect.objectContaining({
+              provider: "vercel",
+              slot: "frontend",
+              projectName: "orders-api",
+              branchName: "test",
+            }),
+          ],
+        }),
       }),
     );
     expect(container.textContent).toContain("Current Projects");

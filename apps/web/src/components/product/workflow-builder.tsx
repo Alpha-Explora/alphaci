@@ -16,6 +16,8 @@ import type {
   SetupExistingRepoPrResponse,
 } from "@/lib/api/contracts";
 import { useCreateProjectForm } from "@/hooks/use-create-project-form";
+import { useCapabilities } from "@/hooks/use-capabilities";
+import { useDeploymentProvisioningForm } from "@/hooks/use-deployment-provisioning-form";
 import { useGithubInstallations } from "@/hooks/use-github-installations";
 import { useProjectOptionsCatalog } from "@/hooks/use-project-options-catalog";
 import { useProvisionedProjects } from "@/hooks/use-provisioned-projects";
@@ -67,6 +69,11 @@ export function WorkflowBuilder({ guest = false, session, onboardingCompleted }:
   const history = useWorkflowHistory(setStatusMessage);
   const projects = useProvisionedProjects(setStatusMessage);
   const createForm = useCreateProjectForm();
+  const deploymentProvisioning = useDeploymentProvisioningForm();
+  const {
+    deploymentOwnershipMode,
+    envProvisioningEnabled,
+  } = useCapabilities();
   const github = useGithubInstallations(setStatusMessage, () => undefined);
 
   const { startTour } = useOnboardingTour({
@@ -132,6 +139,7 @@ export function WorkflowBuilder({ guest = false, session, onboardingCompleted }:
       projectTypeId: projectCatalog.selectedProjectTypeId,
       workflowRecipeId: projectCatalog.selectedWorkflowRecipeId,
       tests: projectCatalog.tests,
+      deploymentProvisioning: deploymentProvisioning.payload,
       // Repository ownership is enforced server-side (all repos are created in
       // the configured organization), so the client no longer selects an owner.
     });
@@ -413,6 +421,9 @@ export function WorkflowBuilder({ guest = false, session, onboardingCompleted }:
           {activeTab === "setup" ? (
             <WorkflowSetupTab
               form={createForm}
+              deploymentOwnershipMode={deploymentOwnershipMode}
+              deploymentProvisioning={deploymentProvisioning}
+              envProvisioningEnabled={envProvisioningEnabled}
               github={github}
               existingRepoBaseBranch={existingRepoBaseBranch}
               existingRepoDiscovery={existingRepoDiscovery}
