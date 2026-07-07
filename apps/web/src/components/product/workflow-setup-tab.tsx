@@ -6,24 +6,31 @@ import { motion, AnimatePresence } from "framer-motion";
 import type {
   CreateProjectResult,
   DiscoverExistingRepoResponse,
+  EnvOwnershipMode,
+  EnvTargetSlot,
   MvpProjectOptionKey,
   SetupExistingRepoPrResponse,
   UsageLimitItem,
 } from "@/lib/api/contracts";
 import { getMyUsage } from "@/lib/api/client";
 import type { CreateProjectFormState } from "@/hooks/use-create-project-form";
+import type { DeploymentProvisioningFormState } from "@/hooks/use-deployment-provisioning-form";
 import type { GithubInstallationsState } from "@/hooks/use-github-installations";
 import {
   projectOptionLabels,
   type ProjectOptionsCatalogState,
 } from "@/hooks/use-project-options-catalog";
 
+import { DeploymentProvisioningSetup } from "./deployment-provisioning-setup";
 import { SetupResultPanel } from "./setup-result-panel";
 import { formatQuotaStatus } from "./workflow-builder-utils";
 import { HelpTip } from "./help-tip";
 
 interface WorkflowSetupTabProps {
   createResult: CreateProjectResult | null;
+  deploymentOwnershipMode: EnvOwnershipMode;
+  deploymentProvisioning: DeploymentProvisioningFormState;
+  envProvisioningEnabled: boolean;
   existingRepoBaseBranch: string;
   existingRepoDiscovery: DiscoverExistingRepoResponse | null;
   existingRepoFullName: string;
@@ -64,8 +71,47 @@ const labelAccentStyle: React.CSSProperties = {
   textTransform: "uppercase",
 };
 
+function projectKindToSlot(kind?: "frontend" | "backend"): EnvTargetSlot {
+  return kind === "frontend" ? "frontend" : "backend";
+}
+
+function inferSingleProjectKind(
+  projectCatalog: ProjectOptionsCatalogState,
+): "frontend" | "backend" {
+  const selectedProjectType = projectCatalog.selectedProjectType;
+  if (selectedProjectType?.kind) {
+    return selectedProjectType.kind;
+  }
+
+  const id = projectCatalog.selectedProjectTypeId.toLowerCase();
+  if (id.includes("next") || id.includes("react") || id.includes("frontend")) {
+    return "frontend";
+  }
+
+  return "backend";
+}
+
+function defaultProjectName(
+  fallback: string,
+  repoName: string,
+  suffix?: string,
+): string {
+  if (fallback.trim()) {
+    return fallback.trim();
+  }
+
+  if (!repoName.trim()) {
+    return "";
+  }
+
+  return suffix ? `${repoName.trim()}-${suffix}` : repoName.trim();
+}
+
 export function WorkflowSetupTab({
   createResult,
+  deploymentOwnershipMode,
+  deploymentProvisioning,
+  envProvisioningEnabled,
   existingRepoBaseBranch,
   existingRepoDiscovery,
   existingRepoFullName,
@@ -132,6 +178,42 @@ export function WorkflowSetupTab({
     github.linkedReposLoaded &&
     !github.loadingLinkedRepos &&
     github.linkedRepos.length === 0;
+
+  const selectedProjectKind = inferSingleProjectKind(projectCatalog);
+
+  function handleDeploymentProvisioningEnabledChange(enabled: boolean) {
+    if (!enabled) {
+      deploymentProvisioning.setEnabled(false);
+      return;
+    }
+
+    if (projectCatalog.isMicroservicesShape || projectCatalog.isMultiRepoShape) {
+      deploymentProvisioning.setDefaultTargets([
+        {
+          slot: "backend",
+          projectName: defaultProjectName(
+            form.backendServiceName,
+            form.repoName,
+            "backend",
+          ),
+        },
+        {
+          slot: "frontend",
+          projectName: defaultProjectName(
+            form.frontendServiceName,
+            form.repoName,
+            "frontend",
+          ),
+        },
+      ]);
+      return;
+    }
+
+    deploymentProvisioning.setDefaultTarget(
+      projectKindToSlot(selectedProjectKind),
+      defaultProjectName(form.serviceName, form.repoName),
+    );
+  }
 
   useEffect(() => {
     let cancelled = false;
@@ -732,6 +814,20 @@ export function WorkflowSetupTab({
                   ))}
                 </div>
               </div>
+
+              {envProvisioningEnabled ? (
+                <div style={{ marginTop: "1.5rem" }}>
+                  <DeploymentProvisioningSetup
+                    enabled={deploymentProvisioning.enabled}
+                    ownershipMode={deploymentOwnershipMode}
+                    repoShape={projectCatalog.selectedRepoShapeId}
+                    selectedProjectKind={selectedProjectKind}
+                    value={deploymentProvisioning.request}
+                    onChange={deploymentProvisioning.setRequest}
+                    onEnabledChange={handleDeploymentProvisioningEnabledChange}
+                  />
+                </div>
+              ) : null}
 
               {projectQuota ? (
                 <div className="env-empty-state" role="status" style={{ marginTop: "1.25rem" }}>
