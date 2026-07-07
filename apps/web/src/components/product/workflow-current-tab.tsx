@@ -64,7 +64,7 @@ type ProjectDetailTab =
   | "overview"
   | "workflow"
   | "runs"
-  | "deployments"
+  | "hosting"
   | "environment"
   | "activity"
   | "audit"
@@ -74,7 +74,7 @@ const PROJECT_DETAIL_TABS: Array<{ id: ProjectDetailTab; label: string }> = [
   { id: "overview", label: "Overview" },
   { id: "workflow", label: "Workflow" },
   { id: "runs", label: "Runs" },
-  { id: "deployments", label: "Deployments" },
+  { id: "hosting", label: "Hosting" },
   { id: "environment", label: "Environment" },
   { id: "activity", label: "Activity" },
   { id: "audit", label: "Audit" },
@@ -1068,6 +1068,29 @@ export function WorkflowCurrentTab({
     });
   };
 
+  const handleTargetCreated = (target: DeploymentTarget) => {
+    if (!selectedProject) return;
+    setProjectOverview((current) => {
+      if (!current || current.project.id !== selectedProject.id) return current;
+      const exists = current.deploymentTargets.items.some(
+        (item) => item.id === target.id,
+      );
+      const items = exists
+        ? current.deploymentTargets.items.map((item) =>
+            item.id === target.id ? target : item,
+          )
+        : [target, ...current.deploymentTargets.items];
+      return {
+        ...current,
+        deploymentTargets: {
+          ...current.deploymentTargets,
+          items,
+          count: items.length,
+        },
+      };
+    });
+  };
+
   const handleTargetDetached = (targetId: string) => {
     if (!selectedProject) return;
     setProjectOverview((current) => {
@@ -1229,7 +1252,7 @@ export function WorkflowCurrentTab({
   useEffect(() => {
     if (
       !selectedProject ||
-      projectDetailTab !== "deployments" ||
+      projectDetailTab !== "hosting" ||
       !deploymentHistoryEnabled ||
       selectedOverview?.capabilities.deploymentHistory !== true
     ) {
@@ -2315,7 +2338,7 @@ export function WorkflowCurrentTab({
                   )
                 ) : null}
 
-                {projectDetailTab === "deployments" ? (
+                {projectDetailTab === "hosting" ? (
                   <div
                     style={{
                       display: "flex",
@@ -2323,6 +2346,18 @@ export function WorkflowCurrentTab({
                       gap: "1rem",
                     }}
                   >
+                    {envProvisioningEnabled &&
+                    selectedProject.status === "provisioned" ? (
+                      <ProjectEnvPanel
+                        onTargetCreated={handleTargetCreated}
+                        project={selectedProject}
+                        section="hosting"
+                      />
+                    ) : (
+                      <p className="env-empty-state">
+                        Hosting service provisioning is not enabled.
+                      </p>
+                    )}
                     {deploymentHistoryEnabled &&
                     selectedOverview?.capabilities.deploymentHistory ? (
                       deploymentsError ? (
@@ -2357,7 +2392,10 @@ export function WorkflowCurrentTab({
                   >
                     {envProvisioningEnabled &&
                     selectedProject.status === "provisioned" ? (
-                      <ProjectEnvPanel project={selectedProject} />
+                      <ProjectEnvPanel
+                        project={selectedProject}
+                        section="variables"
+                      />
                     ) : (
                       <EnvMetadataList metadata={envMetadata} />
                     )}

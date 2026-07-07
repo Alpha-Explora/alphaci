@@ -733,7 +733,7 @@ describe("Project env provisioning UI", () => {
     expect(rendered.container.textContent).toContain("Not synced yet");
     expect(rendered.container.textContent).toContain("Sync now");
     expect(rendered.container.textContent).toContain("Workflow");
-    expect(rendered.container.textContent).toContain("Deployments");
+    expect(rendered.container.textContent).toContain("Hosting");
     expect(rendered.container.textContent).toContain("Environment");
     expect(rendered.container.textContent).toContain("Activity");
     expect(rendered.container.textContent).toContain("Settings");
@@ -744,7 +744,7 @@ describe("Project env provisioning UI", () => {
     const deploymentsTab = Array.from(
       rendered.container.querySelectorAll("button"),
     ).find(
-      (button) => button.textContent === "Deployments",
+      (button) => button.textContent === "Hosting",
     ) as HTMLButtonElement;
     act(() => {
       deploymentsTab.click();
@@ -1308,7 +1308,7 @@ describe("Project env provisioning UI", () => {
     const deploymentsTab = Array.from(
       rendered.container.querySelectorAll("button"),
     ).find(
-      (button) => button.textContent === "Deployments",
+      (button) => button.textContent === "Hosting",
     ) as HTMLButtonElement;
     act(() => {
       deploymentsTab.click();
@@ -1398,7 +1398,7 @@ describe("Project env provisioning UI", () => {
     const deploymentsTab = Array.from(
       rendered.container.querySelectorAll("button"),
     ).find(
-      (button) => button.textContent === "Deployments",
+      (button) => button.textContent === "Hosting",
     ) as HTMLButtonElement;
     await act(async () => {
       deploymentsTab.click();
@@ -1462,7 +1462,7 @@ describe("Project env provisioning UI", () => {
     const deploymentsTab = Array.from(
       rendered.container.querySelectorAll("button"),
     ).find(
-      (button) => button.textContent === "Deployments",
+      (button) => button.textContent === "Hosting",
     ) as HTMLButtonElement;
     act(() => {
       deploymentsTab.click();
@@ -1562,7 +1562,7 @@ describe("Project env provisioning UI", () => {
 
     act(() => {
       Array.from(rendered.container.querySelectorAll("button"))
-        .find((button) => button.textContent === "Deployments")!
+        .find((button) => button.textContent === "Hosting")!
         .click();
     });
     act(() => {
@@ -1685,7 +1685,7 @@ describe("Project env provisioning UI", () => {
 
     act(() => {
       Array.from(rendered.container.querySelectorAll("button"))
-        .find((button) => button.textContent === "Deployments")!
+        .find((button) => button.textContent === "Hosting")!
         .click();
     });
     act(() => {
@@ -1758,7 +1758,7 @@ describe("Project env provisioning UI", () => {
     const deploymentsTab = Array.from(
       rendered.container.querySelectorAll("button"),
     ).find(
-      (button) => button.textContent === "Deployments",
+      (button) => button.textContent === "Hosting",
     ) as HTMLButtonElement;
     act(() => {
       deploymentsTab.click();
@@ -2184,7 +2184,7 @@ describe("Project env provisioning UI", () => {
 
     await act(async () => {
       Array.from(rendered.container.querySelectorAll("button"))
-        .find((button) => button.textContent === "Deployments")!
+        .find((button) => button.textContent === "Hosting")!
         .click();
       await Promise.resolve();
     });
@@ -2794,8 +2794,8 @@ describe("Project env provisioning UI", () => {
     const rendered = render(<ProjectEnvPanel project={provisionedProject} />);
     root = rendered.root;
 
-    expect(rendered.container.textContent).toContain("Deployment target");
-    expect(rendered.container.textContent).toContain("Variables");
+    expect(rendered.container.textContent).toContain("Hosting service");
+    expect(rendered.container.textContent).toContain("Branch variables");
     expect(rendered.container.textContent).toContain("Provisioned variables");
   });
 
