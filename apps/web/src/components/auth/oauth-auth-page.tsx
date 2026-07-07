@@ -21,9 +21,9 @@ interface OAuthAuthPageProps {
   mode: "login" | "signup";
   title: string;
   subtitle: string;
-  switchText: string;
-  switchHref: string;
-  switchCta: string;
+  switchText?: string;
+  switchHref?: string;
+  switchCta?: string;
 }
 
 function GitHubGlyph() {
@@ -41,116 +41,6 @@ function toSafeNextPath(raw: string | null): string {
   if (!raw) return "/home";
   if (raw.startsWith("/") && !raw.startsWith("//")) return raw;
   return "/home";
-}
-
-const pipelineStages = [
-  { label: "Source", color: "#1a56db", done: true },
-  { label: "Build", color: "#1a56db", done: true },
-  { label: "Test", color: "#1a56db", done: true },
-  { label: "Deploy", color: "#12b76a", done: true },
-];
-
-function PipelineStagesVisual() {
-  return (
-    <div style={{ display: "flex", alignItems: "center", gap: 0 }}>
-      {pipelineStages.map((stage, i) => (
-        <div
-          key={stage.label}
-          style={{
-            display: "flex",
-            alignItems: "center",
-            flex: i < pipelineStages.length - 1 ? 1 : "none",
-          }}
-        >
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              gap: "0.35rem",
-              flexShrink: 0,
-            }}
-          >
-            <div
-              style={{
-                width: 32,
-                height: 32,
-                borderRadius: "50%",
-                background: stage.color,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                boxShadow: `0 0 0 4px ${stage.color}22`,
-              }}
-            >
-              <svg
-                width="12"
-                height="12"
-                viewBox="0 0 12 12"
-                fill="none"
-                aria-hidden="true"
-              >
-                <polyline
-                  points="2,6 5,9 10,3"
-                  stroke="white"
-                  strokeWidth="1.8"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-            </div>
-            <span
-              style={{
-                fontSize: "0.65rem",
-                color: "var(--text-muted)",
-                letterSpacing: "0.06em",
-                textTransform: "uppercase",
-                whiteSpace: "nowrap",
-              }}
-            >
-              {stage.label}
-            </span>
-          </div>
-          {i < pipelineStages.length - 1 && (
-            <div
-              style={{
-                flex: 1,
-                margin: "0 0.3rem",
-                marginBottom: "1.1rem",
-                position: "relative",
-                height: 2,
-              }}
-            >
-              <div
-                style={{
-                  position: "absolute",
-                  inset: 0,
-                  background: `linear-gradient(90deg, ${stage.color}30, ${pipelineStages[i + 1].color}30)`,
-                  borderRadius: 999,
-                }}
-              />
-              <motion.div
-                initial={{ scaleX: 0, transformOrigin: "left" }}
-                animate={{ scaleX: 1 }}
-                transition={{
-                  duration: 0.8,
-                  delay: 0.4 + i * 0.3,
-                  ease: "easeInOut",
-                }}
-                style={{
-                  position: "absolute",
-                  inset: 0,
-                  background: `linear-gradient(90deg, ${stage.color}, ${pipelineStages[i + 1].color})`,
-                  borderRadius: 999,
-                  boxShadow: `0 0 8px ${stage.color}`,
-                }}
-              />
-            </div>
-          )}
-        </div>
-      ))}
-    </div>
-  );
 }
 
 export function OAuthAuthPage({
@@ -244,18 +134,9 @@ export function OAuthAuthPage({
           <span className="auth-signal auth-signal-b" />
         </div>
 
-        <div
-          style={{
-            flex: 1,
-            display: "flex",
-            flexDirection: "column",
-            justifyContent: "center",
-            gap: "1rem",
-            padding: "1rem 0",
-          }}
-        >
+        <div className="auth-internal-welcome">
           <motion.div
-            className="auth-access-showcase"
+            className="auth-internal-eyebrow"
             initial={
               prefersReducedMotion
                 ? undefined
@@ -270,10 +151,10 @@ export function OAuthAuthPage({
               ease: [0.25, 1, 0.5, 1],
             }}
           >
-            <span className="auth-access-node" aria-hidden="true">
+            <span className="auth-internal-seal" aria-hidden="true">
               <svg
-                width="22"
-                height="22"
+                width="26"
+                height="26"
                 viewBox="0 0 24 24"
                 fill="none"
                 focusable="false"
@@ -295,51 +176,53 @@ export function OAuthAuthPage({
               </svg>
             </span>
             <div>
-              <span>Secure workspace access</span>
-              <strong>
-                {mode === "login"
-                  ? "GitHub authorization stays connected to your pipelines."
-                  : "Start from a protected, GitHub-backed workflow path."}
-              </strong>
+              <span>Internal workspace</span>
+              <strong>GitHub verifies Alpha-Explora membership before entry.</strong>
             </div>
           </motion.div>
 
           <motion.div
-            initial={prefersReducedMotion ? undefined : { opacity: 0, y: 12 }}
+            className="auth-internal-copy"
+            initial={prefersReducedMotion ? undefined : { opacity: 0, y: 16 }}
             animate={prefersReducedMotion ? undefined : { opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.3 }}
-            className="auth-pipeline-stage-shell"
           >
-            <PipelineStagesVisual />
+            <p className="auth-internal-kicker">Welcome back</p>
+            <h2>Alpha-Explora internal access</h2>
+            <p>
+              Sign in with GitHub to continue managing governed delivery
+              workflows, organization repositories, provider connections, and
+              deployment activity from one secure control surface.
+            </p>
           </motion.div>
 
-          {/* Feature bullets — staggered reveal */}
           <motion.div
-            style={{ display: "flex", flexDirection: "column", gap: "0.45rem" }}
+            className="auth-internal-system-list"
             initial={prefersReducedMotion ? undefined : { opacity: 0 }}
             animate={prefersReducedMotion ? undefined : { opacity: 1 }}
             transition={{ duration: 0.4, delay: 0.5 }}
           >
             {[
               {
-                label: "Source-backed YAML generation",
-                accent: "var(--brand)",
+                label: "Generate and update CI/CD workflow files",
+                meta: "Central templates with repository-aware setup.",
               },
               {
-                label: "40+ framework templates ready",
-                accent: "var(--brand-accent)",
+                label: "Create repositories inside Alpha-Explora",
+                meta: "Organization provisioning stays locked to the company org.",
               },
               {
-                label: "GitHub repo + branch rules setup",
-                accent: "var(--brand)",
+                label: "Manage deployment provider connections",
+                meta: "Tokens and environment values stay encrypted server-side.",
               },
               {
-                label: "Export and push in under 2 minutes",
-                accent: "var(--brand-accent)",
+                label: "Track projects, runs, and access state",
+                meta: "Operational status stays visible for internal users.",
               },
-            ].map((bullet, i) => (
+            ].map((item, i) => (
               <motion.div
-                key={bullet.label}
+                key={item.label}
+                className="auth-internal-system-item"
                 initial={
                   prefersReducedMotion ? undefined : { opacity: 0, x: -12 }
                 }
@@ -347,124 +230,14 @@ export function OAuthAuthPage({
                   prefersReducedMotion ? undefined : { opacity: 1, x: 0 }
                 }
                 transition={{ duration: 0.35, delay: 0.55 + i * 0.08 }}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "0.55rem",
-                }}
               >
-                <span
-                  aria-hidden="true"
-                  style={{
-                    width: "6px",
-                    height: "6px",
-                    borderRadius: "50%",
-                    background: bullet.accent,
-                    flexShrink: 0,
-                    boxShadow: `0 0 8px ${bullet.accent}`,
-                  }}
-                />
-                <span
-                  style={{
-                    fontSize: "0.82rem",
-                    color: "var(--text-secondary)",
-                    lineHeight: 1.4,
-                  }}
-                >
-                  {bullet.label}
-                </span>
+                <span aria-hidden="true" />
+                <div>
+                  <strong>{item.label}</strong>
+                  <p>{item.meta}</p>
+                </div>
               </motion.div>
             ))}
-          </motion.div>
-
-          <motion.div
-            className="editorial-glass-panel"
-            initial={prefersReducedMotion ? undefined : { opacity: 0, y: 16 }}
-            animate={prefersReducedMotion ? undefined : { opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.7 }}
-            style={{
-              marginBottom: "0",
-              marginTop: "0.5rem",
-              marginLeft: "0",
-              maxWidth: "100%",
-              padding: "1.25rem",
-              borderRadius: "2px",
-            }}
-          >
-            <div className="auth-code-sheen" aria-hidden="true" />
-            <div
-              className="hero-mockup-bar"
-              style={{ marginBottom: "0.75rem", opacity: 0.5 }}
-            >
-              <span className="mockup-dot mockup-dot-red" aria-hidden="true" />
-              <span
-                className="mockup-dot mockup-dot-yellow"
-                aria-hidden="true"
-              />
-              <span
-                className="mockup-dot mockup-dot-green"
-                aria-hidden="true"
-              />
-              <span
-                style={{
-                  fontFamily: "ui-monospace, monospace",
-                  fontSize: "0.7rem",
-                  color: "var(--text-muted)",
-                  marginLeft: "0.5rem",
-                }}
-              >
-                payments-service.yml
-              </span>
-            </div>
-            <pre
-              style={{
-                background: "transparent",
-                color: "var(--text-primary)",
-                padding: 0,
-                margin: 0,
-                fontSize: "0.75rem",
-                lineHeight: 1.6,
-                fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace",
-                overflow: "hidden",
-              }}
-              aria-hidden="true"
-            >
-              <span
-                style={{ color: "var(--text-muted)" }}
-              >{`# Generated by Alphaexplora\n`}</span>
-              <span style={{ color: "var(--brand)" }}>name</span>
-              <span style={{ color: "var(--text-primary)" }}>: </span>
-              <span
-                style={{ color: "var(--brand-accent)" }}
-              >{`payments-service-ci\n`}</span>
-              <span style={{ color: "var(--brand)" }}>on</span>
-              <span style={{ color: "var(--text-primary)" }}>{`:\n`}</span>
-              <span style={{ color: "var(--text-primary)" }}>{"  "}</span>
-              <span style={{ color: "var(--brand)" }}>push</span>
-              <span style={{ color: "var(--text-primary)" }}>{`:\n`}</span>
-              <span style={{ color: "var(--text-primary)" }}>{"    "}</span>
-              <span style={{ color: "var(--brand)" }}>branches</span>
-              <span style={{ color: "var(--text-primary)" }}>: [</span>
-              <span style={{ color: "var(--brand-accent)" }}>
-                &quot;main&quot;
-              </span>
-              <span style={{ color: "var(--text-primary)" }}>, </span>
-              <span style={{ color: "var(--brand-accent)" }}>
-                &quot;develop&quot;
-              </span>
-              <span style={{ color: "var(--text-primary)" }}>{`]\n`}</span>
-              <span style={{ color: "var(--brand)" }}>jobs</span>
-              <span style={{ color: "var(--text-primary)" }}>{`:\n`}</span>
-              <span style={{ color: "var(--text-primary)" }}>{"  "}</span>
-              <span style={{ color: "var(--brand)" }}>build</span>
-              <span style={{ color: "var(--text-primary)" }}>{`:\n`}</span>
-              <span style={{ color: "var(--text-primary)" }}>{"    "}</span>
-              <span style={{ color: "var(--brand)" }}>runs-on</span>
-              <span style={{ color: "var(--text-primary)" }}>: </span>
-              <span style={{ color: "var(--brand-accent)" }}>
-                ubuntu-latest
-              </span>
-            </pre>
           </motion.div>
         </div>
       </div>
@@ -618,9 +391,11 @@ export function OAuthAuthPage({
             <span>Encrypted provider tokens</span>
           </div>
 
-          <p className="auth-switch-text">
-            {switchText} <Link href={switchHref}>{switchCta}</Link>
-          </p>
+          {switchText && switchHref && switchCta ? (
+            <p className="auth-switch-text">
+              {switchText} <Link href={switchHref}>{switchCta}</Link>
+            </p>
+          ) : null}
         </motion.div>
       </div>
     </main>
