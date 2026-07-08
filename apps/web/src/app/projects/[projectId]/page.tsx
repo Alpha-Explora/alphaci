@@ -8,9 +8,11 @@ import { motion, useReducedMotion } from "framer-motion";
 import { AppNav } from "@/components/layout/app-nav";
 import { FlowBackground } from "@/components/layout/flow-background";
 import { PipelineLoader } from "@/components/layout/pipeline-loader";
+import { ProjectEnvPanel } from "@/components/product/project-env-panel";
 import { RunCard } from "@/components/product/runs/RunCard";
 import { RunsSkeleton } from "@/components/product/runs/RunsSkeleton";
 import { useAuthSession } from "@/hooks/use-auth-session";
+import { useCapabilities } from "@/hooks/use-capabilities";
 import { logout } from "@/lib/api/client";
 import type {
   DeploymentTarget,
@@ -163,6 +165,7 @@ function ProjectPageContent() {
   const projectId = params?.projectId ?? "";
   const prefersReducedMotion = useReducedMotion();
   const { status, session, error: sessionError, refresh } = useAuthSession();
+  const { envProvisioningEnabled } = useCapabilities();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [logoutMessage, setLogoutMessage] = useState<string | null>(null);
 
@@ -438,9 +441,10 @@ function ProjectPageContent() {
               </p>
             ) : null}
 
-            {/* Hosting services — intentionally absent when the project has
-                no deployment targets attached. */}
-            {targets.length > 0 ? (
+            {!isExample &&
+            envProvisioningEnabled &&
+            project &&
+            project.status === "provisioned" ? (
               <section aria-label="Hosting services">
                 <div
                   style={{
@@ -453,29 +457,42 @@ function ProjectPageContent() {
                   <h2 style={{ margin: 0, fontSize: "1.05rem" }}>
                     Hosting services
                   </h2>
-                  <span
-                    style={{ fontSize: "0.78rem", color: "var(--text-muted)" }}
+                  {targets.length > 0 ? (
+                    <span
+                      style={{
+                        fontSize: "0.78rem",
+                        color: "var(--text-muted)",
+                      }}
+                    >
+                      {targets.length}{" "}
+                      {targets.length === 1 ? "service" : "services"} attached
+                    </span>
+                  ) : null}
+                </div>
+                {targets.length > 0 ? (
+                  <div
+                    style={{
+                      display: "grid",
+                      gap: "1rem",
+                      gridTemplateColumns:
+                        "repeat(auto-fit, minmax(min(20rem, 100%), 1fr))",
+                      marginBottom: "1rem",
+                    }}
                   >
-                    {targets.length}{" "}
-                    {targets.length === 1 ? "service" : "services"} attached
-                  </span>
-                </div>
-                <div
-                  style={{
-                    display: "grid",
-                    gap: "1rem",
-                    gridTemplateColumns:
-                      "repeat(auto-fit, minmax(min(20rem, 100%), 1fr))",
-                  }}
-                >
-                  {targets.map((target) => (
-                    <HostingServiceCard
-                      key={target.id}
-                      reduced={reduced}
-                      target={target}
-                    />
-                  ))}
-                </div>
+                    {targets.map((target) => (
+                      <HostingServiceCard
+                        key={target.id}
+                        reduced={reduced}
+                        target={target}
+                      />
+                    ))}
+                  </div>
+                ) : null}
+                <ProjectEnvPanel
+                  onTargetCreated={() => void loadOverview()}
+                  project={project}
+                  section="hosting"
+                />
               </section>
             ) : null}
 
