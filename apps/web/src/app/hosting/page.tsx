@@ -159,7 +159,7 @@ function HostingPageContent() {
         >
           <div className="workflow-page-header-left">
             <p className="workflow-page-breadcrumb">
-              <span style={{ opacity: 0.55 }}>Alphaexplora</span>
+              <span style={{ opacity: 0.55 }}>ALPHACI</span>
               <span className="workflow-page-breadcrumb-sep">/</span>
               <span>Hosting Services</span>
             </p>

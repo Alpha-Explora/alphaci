@@ -30,7 +30,7 @@ function buildSteps(): DriveStep[] {
       popover: {
         title: "Your provisioned projects",
         description:
-          "This sidebar lists every GitHub repository Alphaexplora has provisioned for you. Click any project to open its detail view on the right. Use the New button at the top to set up another project.",
+          "This sidebar lists every GitHub repository ALPHACI has provisioned for you. Click any project to open its detail view on the right. Use the New button at the top to set up another project.",
         side: "right",
         align: "start",
       },
@@ -60,7 +60,7 @@ function buildSteps(): DriveStep[] {
       popover: {
         title: "Deployment targets",
         description:
-          "Deployment targets link your repository to a hosting provider such as Render. Each target shows which slot (test/uat/main) and branch it tracks. Use Edit to update settings, Sync to pull the latest provider state, or Detach to disconnect Alphaexplora from a provider project.",
+          "Deployment targets link your repository to a hosting provider such as Render. Each target shows which slot (test/uat/main) and branch it tracks. Use Edit to update settings, Sync to pull the latest provider state, or Detach to disconnect ALPHACI from a provider project.",
         side: "top",
         align: "start",
       },
@@ -70,7 +70,7 @@ function buildSteps(): DriveStep[] {
       popover: {
         title: "Health checks",
         description:
-          "Alphaexplora runs a set of automated checks against each project — CI token validity, workflow file presence, branch protection rules, and more. Green rows mean everything is in order. Red rows show what needs attention before your pipeline will work correctly.",
+          "ALPHACI runs a set of automated checks against each project — CI token validity, workflow file presence, branch protection rules, and more. Green rows mean everything is in order. Red rows show what needs attention before your pipeline will work correctly.",
         side: "top",
         align: "start",
       },

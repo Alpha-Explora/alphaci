@@ -120,7 +120,7 @@ export default function WorkflowsPage() {
         {guest && (
           <div className="guest-banner" role="alert">
             <p className="guest-banner-text">
-              You are viewing Alphaexplora in preview mode. Sign up to unlock all
+              You are viewing ALPHACI in preview mode. Sign up to unlock all
               features.
             </p>
             <div className="guest-banner-actions">
@@ -157,7 +157,7 @@ export default function WorkflowsPage() {
           >
             <div className="workflow-page-header-left">
               <p className="workflow-page-breadcrumb">
-                <span style={{ opacity: 0.55 }}>Alphaexplora</span>
+                <span style={{ opacity: 0.55 }}>ALPHACI</span>
                 <span className="workflow-page-breadcrumb-sep">/</span>
                 <span>Workflows</span>
               </p>

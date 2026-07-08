@@ -72,7 +72,7 @@ describe("workflow-builder-utils error formatting", () => {
 
   it("does not mislabel a permission 403 as a quota error", () => {
     const message =
-      "The GitHub App is not installed on the Alpha-Explora organization for this account. Install it on Alpha-Explora with access to all repositories, then try again.";
+      "The GitHub App is not installed on the ALPHACI organization for this account. Install it on ALPHACI with access to all repositories, then try again.";
 
     expect(
       formatApiError({ status: 403, details: { message } }, "Project creation failed"),

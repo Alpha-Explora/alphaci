@@ -13,7 +13,7 @@ export interface WelcomeModalProps {
 const FLOW_STEPS = [
   {
     label: "Connect GitHub",
-    detail: "Install the GitHub App to grant Alphaexplora access to your account.",
+    detail: "Install the GitHub App to grant ALPHACI access to your account.",
   },
   {
     label: "Create a project",
@@ -22,7 +22,7 @@ const FLOW_STEPS = [
   {
     label: "We provision everything",
     detail:
-      "Alphaexplora creates the repo, branches, and commits the workflow file.",
+      "ALPHACI creates the repo, branches, and commits the workflow file.",
   },
   {
     label: "Push and ship",
@@ -327,7 +327,7 @@ export function WelcomeModal({ displayName, onDismiss }: WelcomeModalProps) {
                 }}
               >
                 {"Welcome to "}
-                <span style={{ color: "var(--brand)" }}>Alphaexplora</span>
+                <span style={{ color: "var(--brand)" }}>ALPHACI</span>
                 {", "}
                 <span style={{ color: "var(--text-primary)" }}>
                   @{displayName}
@@ -349,7 +349,7 @@ export function WelcomeModal({ displayName, onDismiss }: WelcomeModalProps) {
 
             {/* Flow steps */}
             <motion.ol
-              aria-label="How Alphaexplora works"
+              aria-label="How ALPHACI works"
               variants={prefersReducedMotion ? undefined : stepListVariants}
               initial={prefersReducedMotion ? "visible" : "hidden"}
               animate="visible"

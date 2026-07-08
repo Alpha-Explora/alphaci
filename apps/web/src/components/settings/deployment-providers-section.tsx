@@ -58,7 +58,7 @@ export function DeploymentProvidersSection({
         <h2>Deployment Providers</h2>
         <p>
           Provider tokens are encrypted. Env var values are sent to the provider
-          and are not stored by Alphaexplora.
+          and are not stored by ALPHACI.
         </p>
         {!canManageProviders ? (
           <p className="provider-empty-state" style={{ margin: 0 }}>

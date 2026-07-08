@@ -117,7 +117,7 @@ describe("DeploymentProvisioningSetup", () => {
       ),
     ).toHaveAttribute("type", "password");
     expect(rendered.container.textContent).toContain(
-      "Values are sent to the provider during setup and are not stored by Alphaexplora.",
+      "Values are sent to the provider during setup and are not stored by ALPHACI.",
     );
 
     rendered.unmount();
@@ -320,10 +320,10 @@ describe("DeploymentProvisioningSetup", () => {
     expect(rendered.container.textContent).toContain("backend target");
     expect(rendered.container.textContent).toContain("frontend target");
     expect(rendered.container.textContent).toContain(
-      "Alphaexplora creates the Vercel project on the organization's Vercel account and deploys it through GitHub Actions from the generated workflow.",
+      "ALPHACI creates the Vercel project on the organization's Vercel account and deploys it through GitHub Actions from the generated workflow.",
     );
     expect(rendered.container.textContent).toContain(
-      "Alphaexplora will install per-slot GitHub Actions secrets for Vercel deployment after the Vercel project is created.",
+      "ALPHACI will install per-slot GitHub Actions secrets for Vercel deployment after the Vercel project is created.",
     );
 
     const frontendProjectName =

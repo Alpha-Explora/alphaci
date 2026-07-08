@@ -113,7 +113,7 @@ const provisionedProject: ProvisionedProject = {
   repoFullName: "tone/orders-api",
   templateId: "nestjs-api",
   serviceName: "orders-api",
-  workflowPath: ".github/workflows/00-flowci-access.yml",
+  workflowPath: ".github/workflows/00-alphaci-access.yml",
   status: "provisioned",
   githubCommitSha: "abc123",
   githubCommitUrl: null,
@@ -292,7 +292,7 @@ function projectOverviewWithTargets(targets = [renderTarget, vercelTarget]) {
     ciAuth: {
       status: "active" as const,
       tokenPresent: true,
-      tokenPrefix: "fci_test",
+      tokenPrefix: "aci_test",
       createdAt: "2026-06-12T00:00:00.000Z",
       updatedAt: "2026-06-12T00:00:00.000Z",
       revokedAt: null,
@@ -358,38 +358,38 @@ describe("Project env provisioning UI", () => {
       workflowFiles: [
         {
           stage: "access",
-          name: "AlphaCI Access Gate",
-          path: ".github/workflows/00-flowci-access.yml",
+          name: "ALPHACI Access Gate",
+          path: ".github/workflows/00-alphaci-access.yml",
           gated: true,
-          yaml: "name: AlphaCI Access Gate",
+          yaml: "name: ALPHACI Access Gate",
         },
         {
           stage: "quality",
-          name: "AlphaCI Quality",
-          path: ".github/workflows/10-flowci-quality.yml",
+          name: "ALPHACI Quality",
+          path: ".github/workflows/10-alphaci-quality.yml",
           gated: true,
-          yaml: "name: AlphaCI Quality",
+          yaml: "name: ALPHACI Quality",
         },
         {
           stage: "package",
-          name: "AlphaCI Package",
-          path: ".github/workflows/20-flowci-package.yml",
+          name: "ALPHACI Package",
+          path: ".github/workflows/20-alphaci-package.yml",
           gated: true,
-          yaml: "name: AlphaCI Package",
+          yaml: "name: ALPHACI Package",
         },
       ],
       diffSummary: [
-        { path: ".github/workflows/00-flowci-access.yml", status: "changed" },
-        { path: ".github/workflows/10-flowci-quality.yml", status: "new" },
-        { path: ".github/workflows/20-flowci-package.yml", status: "new" },
+        { path: ".github/workflows/00-alphaci-access.yml", status: "changed" },
+        { path: ".github/workflows/10-alphaci-quality.yml", status: "new" },
+        { path: ".github/workflows/20-alphaci-package.yml", status: "new" },
       ],
       validationWarnings: [],
     });
     mockedProjectApi.createWorkflowUpdatePullRequest.mockResolvedValue({
       projectId: "project-1",
       repoFullName: "tone/orders-api",
-      branchName: "flowci/workflow-update-20260612000000",
-      workflowPath: ".github/workflows/00-flowci-access.yml",
+      branchName: "alphaci/workflow-update-20260612000000",
+      workflowPath: ".github/workflows/00-alphaci-access.yml",
       workflowFiles: [],
       pullRequestNumber: 42,
       pullRequestUrl: "https://github.com/tone/orders-api/pull/42",
@@ -428,13 +428,13 @@ describe("Project env provisioning UI", () => {
       findingId: "finding-1",
       action: "rotate_ci_token",
       status: "completed",
-      message: "CI token rotated in AlphaCI",
-      result: { tokenPrefix: "fci_prefix" },
+      message: "CI token rotated in ALPHACI",
+      result: { tokenPrefix: "aci_prefix" },
     });
     mockedProjectApi.getProjectCiRun.mockResolvedValue({
       id: "local-project-1-quality",
       stage: "quality",
-      workflowName: "AlphaCI Quality",
+      workflowName: "ALPHACI Quality",
     });
     mockedProjectApi.rerunProjectCiRun.mockResolvedValue({
       enabled: false,
@@ -613,7 +613,7 @@ describe("Project env provisioning UI", () => {
       repoFullName: "tone/web-client",
       serviceName: "web-client",
       status: "provisioned",
-      workflowPath: ".github/workflows/10-flowci-quality.yml",
+      workflowPath: ".github/workflows/10-alphaci-quality.yml",
       githubCommitSha: "def456",
     };
 
@@ -1159,7 +1159,7 @@ describe("Project env provisioning UI", () => {
       ciAuth: {
         status: "active",
         tokenPresent: true,
-        tokenPrefix: "fci_test",
+        tokenPrefix: "aci_test",
         createdAt: "2026-06-12T00:00:00.000Z",
         updatedAt: "2026-06-12T00:00:00.000Z",
         revokedAt: null,
@@ -1232,10 +1232,10 @@ describe("Project env provisioning UI", () => {
         {
           id: "local-project-1-quality",
           stage: "quality",
-          workflowName: "AlphaCI Quality",
+          workflowName: "ALPHACI Quality",
           branch: "test",
           commitSha: "abc123",
-          actor: "flowci-local",
+          actor: "alphaci-local",
           status: "completed",
           conclusion: "failure",
           createdAt: "2026-06-12T00:00:00.000Z",
@@ -1272,7 +1272,7 @@ describe("Project env provisioning UI", () => {
       await Promise.resolve();
     });
 
-    expect(rendered.container.textContent).toContain("AlphaCI Quality");
+    expect(rendered.container.textContent).toContain("ALPHACI Quality");
     expect(rendered.container.textContent).toContain("quality");
     expect(rendered.container.textContent).toContain("test");
     expect(rendered.container.textContent).toContain("abc123");
@@ -1735,7 +1735,7 @@ describe("Project env provisioning UI", () => {
     );
   });
 
-  it("requires confirmation before detaching a target from AlphaCI", async () => {
+  it("requires confirmation before detaching a target from ALPHACI", async () => {
     mockCapabilities(true, true, false, false, true);
     mockEnvHook();
     mockedProjectApi.getProjectOverview.mockResolvedValue(
@@ -1818,7 +1818,7 @@ describe("Project env provisioning UI", () => {
       ciAuth: {
         status: "active",
         tokenPresent: true,
-        tokenPrefix: "fci_test",
+        tokenPrefix: "aci_test",
         createdAt: "2026-06-12T00:00:00.000Z",
         updatedAt: "2026-06-12T00:00:00.000Z",
         revokedAt: null,
@@ -1900,7 +1900,7 @@ describe("Project env provisioning UI", () => {
       }),
     );
     expect(rendered.container.textContent).toContain(
-      ".github/workflows/00-flowci-access.yml",
+      ".github/workflows/00-alphaci-access.yml",
     );
     expect(rendered.container.textContent).toContain("changed");
     expect(rendered.container.textContent).toContain("new");
@@ -1926,7 +1926,7 @@ describe("Project env provisioning UI", () => {
       ciAuth: {
         status: "active",
         tokenPresent: true,
-        tokenPrefix: "fci_test",
+        tokenPrefix: "aci_test",
         createdAt: "2026-06-12T00:00:00.000Z",
         updatedAt: "2026-06-12T00:00:00.000Z",
         revokedAt: null,
@@ -2023,7 +2023,7 @@ describe("Project env provisioning UI", () => {
       ciAuth: {
         status: "active",
         tokenPresent: true,
-        tokenPrefix: "fci_test",
+        tokenPrefix: "aci_test",
         createdAt: "2026-06-12T00:00:00.000Z",
         updatedAt: "2026-06-12T00:00:00.000Z",
         revokedAt: null,

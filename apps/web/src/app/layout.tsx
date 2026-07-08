@@ -27,8 +27,8 @@ const dashDisplayFont = Outfit({
 
 export const metadata: Metadata = {
   title: {
-    default: "Alphaexplora CI/CD Platform",
-    template: "%s | Alphaexplora CI/CD Platform",
+    default: "ALPHACI CI/CD Platform",
+    template: "%s | ALPHACI CI/CD Platform",
   },
   description:
     "Internal employee workspace for provisioning GitHub projects with governed CI/CD workflows, starter files, and managed Actions secrets.",

@@ -651,11 +651,11 @@ export function WorkflowSetupTab({
                 Repository owner
               </label>
               <div className="premium-input" aria-readonly="true" style={{ display: "flex", alignItems: "center" }}>
-                {github.allRepositoriesAccount?.accountLogin ?? "Alpha-Explora"} organization
+                {github.allRepositoriesAccount?.accountLogin ?? "ALPHACI"} organization
               </div>
               <p style={{ color: "var(--text-muted)", fontSize: "0.72rem", margin: "0.3rem 0 0.9rem", lineHeight: 1.4 }}>
                 All repositories are created in the{" "}
-                <strong>{github.allRepositoriesAccount?.accountLogin ?? "Alpha-Explora"}</strong> organization. This
+                <strong>{github.allRepositoriesAccount?.accountLogin ?? "ALPHACI"}</strong> organization. This
                 requires this environment&apos;s GitHub App installed there with all-repositories access.
               </p>
 

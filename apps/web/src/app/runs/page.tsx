@@ -464,7 +464,7 @@ function RunsContent({
       {guest && (
         <div className="guest-banner" role="alert">
           <p className="guest-banner-text">
-            You are viewing Alphaexplora in preview mode. Sign up to see your
+            You are viewing ALPHACI in preview mode. Sign up to see your
             pipeline runs.
           </p>
           <div className="guest-banner-actions">
@@ -496,7 +496,7 @@ function RunsContent({
         >
           <div className="workflow-page-header-left">
             <p className="workflow-page-breadcrumb">
-              <span style={{ opacity: 0.55 }}>Alphaexplora</span>
+              <span style={{ opacity: 0.55 }}>ALPHACI</span>
               <span className="workflow-page-breadcrumb-sep">/</span>
               <span>Pipeline Runs</span>
             </p>

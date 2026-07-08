@@ -219,7 +219,7 @@ function parseRenderProvisioningMessage(message: string): string | null {
       message,
     )
   ) {
-    return "Render service was created, but Alphaexplora could not install the deployment secrets.";
+    return "Render service was created, but ALPHACI could not install the deployment secrets.";
   }
 
   if (/image pull|registry|GHCR/i.test(message)) {

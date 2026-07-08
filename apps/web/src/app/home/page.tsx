@@ -763,7 +763,7 @@ function HomeDashboardContent() {
               fontSize: "0.88rem",
             }}
           >
-            You are viewing Alphaexplora in preview mode. Sign up to unlock all
+            You are viewing ALPHACI in preview mode. Sign up to unlock all
             features.
           </p>
           <div style={{ display: "flex", gap: "0.5rem" }}>
@@ -872,7 +872,7 @@ function HomeDashboardContent() {
                   }}
                 >
                   {guest
-                    ? "Alphaexplora Dashboard"
+                    ? "ALPHACI Dashboard"
                     : `Welcome back, ${session?.user.name ?? session?.user.login ?? "builder"}.`}
                 </h1>
               </div>
@@ -1465,7 +1465,7 @@ function HomeDashboardContent() {
                               {confirmDisconnectId === project.id ? (
                                 <div className="repo-card-confirm-row">
                                   <span className="repo-card-confirm-label">
-                                    Remove from Alphaexplora? GitHub repo is
+                                    Remove from ALPHACI? GitHub repo is
                                     untouched.
                                   </span>
                                   <button

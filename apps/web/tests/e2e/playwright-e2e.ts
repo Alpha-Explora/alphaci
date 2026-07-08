@@ -7,7 +7,7 @@ type BrowserName = 'chromium' | 'firefox' | 'webkit';
 
 const LOCAL_PAGE_MARKERS = [
   'Ship with calm, not chaos.',
-  'AlphaCI',
+  'ALPHACI',
   'Pro subscription is 300 pesos per month',
 ];
 
@@ -113,24 +113,24 @@ const project = {
   repoFullName: 'tone/orders-api',
   templateId: 'be-nestjs',
   serviceName: 'orders-api',
-  workflowPath: '.github/workflows/00-flowci-access.yml',
+  workflowPath: '.github/workflows/00-alphaci-access.yml',
   workflowFiles: [
     {
       stage: 'access',
-      name: 'AlphaCI Access Gate',
-      path: '.github/workflows/00-flowci-access.yml',
+      name: 'ALPHACI Access Gate',
+      path: '.github/workflows/00-alphaci-access.yml',
       gated: true,
     },
     {
       stage: 'quality',
-      name: 'AlphaCI Quality',
-      path: '.github/workflows/10-flowci-quality.yml',
+      name: 'ALPHACI Quality',
+      path: '.github/workflows/10-alphaci-quality.yml',
       gated: true,
     },
     {
       stage: 'package',
-      name: 'AlphaCI Package',
-      path: '.github/workflows/20-flowci-package.yml',
+      name: 'ALPHACI Package',
+      path: '.github/workflows/20-alphaci-package.yml',
       gated: true,
     },
   ],
@@ -247,7 +247,7 @@ async function installDashboardAuditApi(page: Page) {
           {
             id: 'notification-1',
             title: 'Project created',
-            body: 'tone/orders-api is now tracked by AlphaCI.',
+            body: 'tone/orders-api is now tracked by ALPHACI.',
             eventCode: 'project_created',
             readAt: null,
             createdAt: '2026-06-15T00:00:00.000Z',
@@ -320,7 +320,7 @@ async function installDashboardAuditApi(page: Page) {
         ciAuth: {
           status: 'active',
           tokenPresent: true,
-          tokenPrefix: 'fci_test',
+          tokenPrefix: 'aci_test',
           createdAt: '2026-06-15T00:00:00.000Z',
           updatedAt: '2026-06-15T00:00:00.000Z',
           revokedAt: null,

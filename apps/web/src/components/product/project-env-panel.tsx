@@ -297,7 +297,7 @@ export function ProjectEnvPanel({
     if (confirmDeleteId !== item.id) {
       setConfirmDeleteId(item.id);
       setMessage(
-        "Confirm delete to remove this key from the provider and Alphaexplora metadata.",
+        "Confirm delete to remove this key from the provider and ALPHACI metadata.",
       );
       return;
     }

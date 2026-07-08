@@ -1215,7 +1215,7 @@ function SettingsPageContent() {
                         lineHeight: 1.6,
                       }}
                     >
-                      Alphaexplora turns a blank idea into a working repository in
+                      ALPHACI turns a blank idea into a working repository in
                       one step — GitHub repo, protected branches, and a
                       ready-to-run CI/CD pipeline, all committed automatically.
                     </p>
@@ -1358,7 +1358,7 @@ function SettingsPageContent() {
                             color: "var(--text-primary)",
                           }}
                         >
-                          Sign out of Alphaexplora
+                          Sign out of ALPHACI
                         </span>
                         <span
                           style={{
