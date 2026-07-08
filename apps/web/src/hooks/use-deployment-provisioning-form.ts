@@ -25,7 +25,9 @@ function defaultTarget(
   return {
     slot: normalizedSlot,
     provider,
-    ownershipMode: "byo",
+    // BYO hosting is archived: every target deploys on the platform's
+    // centralized Render/Vercel accounts.
+    ownershipMode: "flowci_managed",
     projectName,
     branchName: "test",
     rootDirectory: normalizedSlot === "backend" ? "backend" : ".",

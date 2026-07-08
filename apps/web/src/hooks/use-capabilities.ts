@@ -48,11 +48,14 @@ export function useCapabilities() {
     envProvisioningEnabled: capabilities?.envProvisioning?.enabled === true,
     // Single ownership mode this deployment offers. 'flowci_managed' = deploys
     // are centralized on the organization's Render/Vercel; 'byo' = users connect
-    // their own provider accounts.
+    // their own provider accounts. Defaults to 'flowci_managed' (the safer,
+    // centralized choice) while capabilities are still loading or on fetch
+    // failure, so BYO UI never flashes/appears unless the backend explicitly
+    // advertises it.
     deploymentOwnershipMode:
-      capabilities?.envProvisioning?.modes?.[0] === "flowci_managed"
-        ? ("flowci_managed" as const)
-        : ("byo" as const),
+      capabilities?.envProvisioning?.modes?.[0] === "byo"
+        ? ("byo" as const)
+        : ("flowci_managed" as const),
     projectSyncSnapshotsEnabled: capabilities?.projectSyncSnapshots?.enabled === true,
     workflowSettingsPreviewEnabled: capabilities?.workflowSettingsPreview?.enabled === true,
     workflowUpdatePrEnabled: capabilities?.workflowUpdatePr?.enabled === true,

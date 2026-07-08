@@ -21,9 +21,10 @@ interface DeploymentProvisioningSetupProps {
   repoShape: string;
   selectedProjectKind?: "frontend" | "backend";
   /**
-   * Ownership mode this deployment offers (from capabilities). 'flowci_managed'
-   * centralizes deployments on the organization's Render/Vercel and hides the
-   * bring-your-own provider-connection UI. Defaults to 'byo'.
+   * Ownership mode this deployment offers (from capabilities). BYO is
+   * archived, so this defaults to 'flowci_managed': deployments centralize on
+   * the platform's Render/Vercel and the bring-your-own provider-connection
+   * UI stays hidden.
    */
   ownershipMode?: EnvOwnershipMode;
   value: DeploymentProvisioningRequest;
@@ -50,7 +51,7 @@ function blankEnvSet(
 
 function fallbackTarget(
   selectedProjectKind?: "frontend" | "backend",
-  ownershipMode: EnvOwnershipMode = "byo",
+  ownershipMode: EnvOwnershipMode = "flowci_managed",
 ): DeploymentProvisioningTargetRequest {
   const slot: EnvTargetSlot =
     selectedProjectKind === "frontend" ? "frontend" : "backend";
@@ -302,7 +303,7 @@ export function DeploymentProvisioningSetup({
   enabled,
   repoShape,
   selectedProjectKind,
-  ownershipMode = "byo",
+  ownershipMode = "flowci_managed",
   value,
   onChange,
   onEnabledChange,

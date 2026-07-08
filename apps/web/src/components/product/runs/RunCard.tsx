@@ -17,10 +17,14 @@ export function RunCard({ run, index, reduced }: RunCardProps) {
   const repoName = run.repoFullName.split("/")[1] ?? run.repoFullName;
   const ownerName = run.repoFullName.split("/")[0] ?? "";
   const delay = index * 0.06;
+  const visibleRunNumber = index + 1;
+  const visibleRunId = `#${run.runId}`;
+  const visibleCommit = shortSha(run.commitSha);
 
   return (
     <motion.article
       className="runs-run-card"
+      aria-label={`Workflow run ${visibleRunNumber}: ${repoName} ${visibleCommit}`}
       initial={reduced ? false : { opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.32, ease: [0.25, 0, 0, 1], delay }}
@@ -30,6 +34,11 @@ export function RunCard({ run, index, reduced }: RunCardProps) {
       } as CSSProperties}
     >
       <div className="runs-card-accent" aria-hidden="true" />
+
+      <div className="runs-card-run-strip">
+        <span className="runs-run-eyebrow">Workflow run {visibleRunNumber}</span>
+        <span className="runs-run-id">{visibleRunId}</span>
+      </div>
 
       <div className="runs-card-header">
         <div className="runs-repo-block">
@@ -60,7 +69,7 @@ export function RunCard({ run, index, reduced }: RunCardProps) {
           <div className="runs-card-meta">
             <span className="runs-meta-chip">{run.branch}</span>
             <span className="runs-meta-chip runs-meta-chip--mono">
-              {shortSha(run.commitSha)}
+              {visibleCommit}
             </span>
             <span className="runs-meta-time">{relativeTime(run.startedAt)}</span>
           </div>
