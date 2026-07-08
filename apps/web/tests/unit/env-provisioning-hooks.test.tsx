@@ -382,7 +382,7 @@ describe("env provisioning hooks", () => {
         {
           slot: "frontend",
           provider: "vercel",
-          ownershipMode: "byo",
+          ownershipMode: "flowci_managed",
           projectName: "web-app",
           branchName: "test",
           rootDirectory: ".",
