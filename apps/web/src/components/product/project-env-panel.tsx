@@ -2,10 +2,10 @@
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
 
+import { useCapabilities } from "@/hooks/use-capabilities";
 import { useProjectEnvProvisioning } from "@/hooks/use-project-env-provisioning";
 import type {
   EnvEnvironment,
-  EnvOwnershipMode,
   EnvProvider,
   DeploymentTarget,
   RenderRuntime,
@@ -103,7 +103,11 @@ export function ProjectEnvPanel({
   const [targetAction, setTargetAction] = useState<
     "create" | "register_existing"
   >("create");
-  const [ownershipMode] = useState<EnvOwnershipMode>("byo");
+  // The deployment advertises a single ownership mode via /capabilities; the
+  // panel must conform to it rather than choose one locally. 'flowci_managed'
+  // deployments centralize hosting on the organization's Render/Vercel
+  // accounts, so no provider connection is required (or shown).
+  const { deploymentOwnershipMode: ownershipMode } = useCapabilities();
   const [provider, setProvider] = useState<EnvProvider>("render");
   const [slot, setSlot] = useState<EnvTargetSlot>("backend");
   const [environment, setEnvironment] = useState<EnvEnvironment>("test");
@@ -380,7 +384,11 @@ export function ProjectEnvPanel({
           </div>
           <div className="env-target-grid__field env-target-grid__field--wide">
             <span>Ownership</span>
-            <span className="env-static-field">Bring your own provider</span>
+            <span className="env-static-field">
+              {ownershipMode === "byo"
+                ? "Bring your own provider"
+                : "Managed by the organization"}
+            </span>
           </div>
           {ownershipMode === "byo" ? (
             <select

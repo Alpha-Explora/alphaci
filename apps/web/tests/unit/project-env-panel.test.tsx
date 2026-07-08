@@ -199,6 +199,7 @@ function mockCapabilities(
   deploymentHistoryEnabled = false,
   driftDetectionEnabled = false,
   driftRepairEnabled = false,
+  deploymentOwnershipMode: "byo" | "flowci_managed" = "byo",
 ) {
   mockedUseCapabilities.mockReturnValue({
     capabilities: {
@@ -206,7 +207,7 @@ function mockCapabilities(
         enabled,
         providers: enabled ? ["render", "vercel"] : [],
         environments: enabled ? ["test", "uat", "production"] : [],
-        modes: enabled ? ["byo", "flowci_managed"] : [],
+        modes: enabled ? [deploymentOwnershipMode] : [],
       },
       projectSyncSnapshots: {
         enabled: syncSnapshotsEnabled,
@@ -249,6 +250,7 @@ function mockCapabilities(
     deploymentHistoryEnabled,
     driftDetectionEnabled,
     driftRepairEnabled,
+    deploymentOwnershipMode,
     loadCapabilities: jest.fn(),
     loading: false,
   });
@@ -316,6 +318,9 @@ describe("Project env provisioning UI", () => {
   let root: Root | null = null;
 
   beforeEach(() => {
+    // Baseline capabilities for every test; individual tests re-invoke
+    // mockCapabilities to override flags or the deployment ownership mode.
+    mockCapabilities(true);
     mockedProjectApi.getProjectOverview.mockReturnValue(
       new Promise(() => undefined),
     );
@@ -2668,6 +2673,56 @@ describe("Project env provisioning UI", () => {
         providerProjectId: "srv-123",
         providerProjectName: "orders-api-render",
       }),
+    );
+  });
+
+  it("creates managed targets without a provider connection in flowci_managed deployments", async () => {
+    mockCapabilities(
+      true,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      "flowci_managed",
+    );
+    const addTarget = jest.fn().mockResolvedValue({
+      id: "target-1",
+      providerProjectName: "orders-api-test",
+      provider: "render",
+    });
+    mockEnvHook({ addTarget });
+
+    const rendered = render(<ProjectEnvPanel project={provisionedProject} />);
+    root = rendered.root;
+
+    expect(rendered.container.textContent).toContain(
+      "Managed by the organization",
+    );
+    expect(rendered.container.textContent).not.toContain(
+      "Bring your own provider",
+    );
+    expect(
+      rendered.container.querySelector('[aria-label="Provider connection"]'),
+    ).toBeNull();
+
+    await act(async () => {
+      rendered.container
+        .querySelector<HTMLButtonElement>('button[data-testid="save-target"]')!
+        .click();
+    });
+
+    expect(addTarget).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: "create",
+        ownershipMode: "flowci_managed",
+      }),
+    );
+    expect(addTarget.mock.calls[0][0]).not.toHaveProperty(
+      "providerConnectionId",
     );
   });
 
