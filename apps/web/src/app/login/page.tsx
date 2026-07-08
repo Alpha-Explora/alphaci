@@ -8,8 +8,8 @@ export default function LoginPage() {
     <Suspense fallback={<PipelineLoader label="Preparing your sign in" />}>
       <OAuthAuthPage
         mode="login"
-        title="Sign in to Alpha-Explora."
-        subtitle="Use your company GitHub account. Access opens only after Alpha-Explora organization membership is confirmed."
+        title="Sign in to ALPHACI."
+        subtitle="Use your company GitHub account. Access opens only after ALPHACI organization membership is confirmed."
       />
     </Suspense>
   );

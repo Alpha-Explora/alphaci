@@ -40,10 +40,10 @@ export function PublicSiteNav({
 
   return (
     <header className={className} data-active-section={active ?? undefined}>
-      <Link className="public-site-brand" href="/" aria-label="Alphaexplora home">
+      <Link className="public-site-brand" href="/" aria-label="ALPHACI home">
         <Image
           src="/brand-logo.png"
-          alt="AlphaCI"
+          alt="ALPHACI"
           width={132}
           height={44}
           priority

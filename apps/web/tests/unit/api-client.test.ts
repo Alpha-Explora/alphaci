@@ -469,7 +469,7 @@ describe("API client project setup helpers", () => {
       json: async () => ({
         id: "local-project-1-quality",
         stage: "quality",
-        workflowName: "AlphaCI Quality",
+        workflowName: "ALPHACI Quality",
       }),
     });
 
@@ -590,8 +590,8 @@ describe("API client project setup helpers", () => {
         findingId: "finding-1",
         action: "rotate_ci_token",
         status: "completed",
-        message: "CI token rotated in AlphaCI",
-        result: { tokenPrefix: "fci_prefix" },
+        message: "CI token rotated in ALPHACI",
+        result: { tokenPrefix: "aci_prefix" },
       }),
     });
 
@@ -599,7 +599,7 @@ describe("API client project setup helpers", () => {
       repairProjectDriftFinding("project-1", "finding-1", "rotate_ci_token"),
     ).resolves.toMatchObject({
       status: "completed",
-      message: "CI token rotated in AlphaCI",
+      message: "CI token rotated in ALPHACI",
     });
 
     expect(fetchMock).toHaveBeenCalledWith(
@@ -942,7 +942,7 @@ describe("API client project setup helpers", () => {
     );
   });
 
-  it("detaches a deployment target from AlphaCI only", async () => {
+  it("detaches a deployment target from ALPHACI only", async () => {
     fetchMock.mockResolvedValueOnce({
       ok: true,
       status: 200,
@@ -1204,15 +1204,15 @@ describe("API client project setup helpers", () => {
         workflowFiles: [
           {
             stage: "access",
-            name: "AlphaCI Access Gate",
-            path: ".github/workflows/00-flowci-access.yml",
+            name: "ALPHACI Access Gate",
+            path: ".github/workflows/00-alphaci-access.yml",
             gated: true,
-            yaml: "name: AlphaCI Access Gate",
+            yaml: "name: ALPHACI Access Gate",
           },
         ],
         diffSummary: [
           {
-            path: ".github/workflows/00-flowci-access.yml",
+            path: ".github/workflows/00-alphaci-access.yml",
             status: "changed",
           },
         ],
@@ -1225,7 +1225,7 @@ describe("API client project setup helpers", () => {
     ).resolves.toMatchObject({
       workflowFiles: [
         expect.objectContaining({
-          path: ".github/workflows/00-flowci-access.yml",
+          path: ".github/workflows/00-alphaci-access.yml",
         }),
       ],
     });
@@ -1247,8 +1247,8 @@ describe("API client project setup helpers", () => {
       json: async () => ({
         projectId: "project-1",
         repoFullName: "tone/example-app",
-        branchName: "flowci/workflow-update-20260612000000",
-        workflowPath: ".github/workflows/00-flowci-access.yml",
+        branchName: "alphaci/workflow-update-20260612000000",
+        workflowPath: ".github/workflows/00-alphaci-access.yml",
         workflowFiles: [],
         pullRequestNumber: 42,
         pullRequestUrl: "https://github.com/tone/example-app/pull/42",

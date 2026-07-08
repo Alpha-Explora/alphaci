@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 
 /**
- * Alphaexplora CI/CD Platform is an internal employee workspace — there is no
+ * ALPHACI CI/CD Platform is an internal employee workspace — there is no
  * public landing page. The root path sends visitors straight to sign-in.
  *
  * We redirect to /login unconditionally rather than trying to detect an

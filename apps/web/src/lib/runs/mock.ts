@@ -177,15 +177,15 @@ export const MOCK_RUNS: RunsResponse = {
               severity: "error",
               title: "GitHub App installation not found",
               detail:
-                "The Alphaexplora GitHub App is not installed on acme-org/infra-scripts. The pipeline cannot read or write files in this repository.",
-              hint: "Go to your GitHub organisation settings → Installed GitHub Apps and grant Alphaexplora access to this repository. Then re-trigger the pipeline.",
+                "The ALPHACI GitHub App is not installed on acme-org/infra-scripts. The pipeline cannot read or write files in this repository.",
+              hint: "Go to your GitHub organisation settings → Installed GitHub Apps and grant ALPHACI access to this repository. Then re-trigger the pipeline.",
             },
             {
               severity: "info",
               title: "Required CI token may be missing",
               detail:
-                "The FLOWCI_TOKEN repository secret was not found. This secret is required for the access stage to authenticate.",
-              hint: "In GitHub, go to Settings → Secrets → Actions and add FLOWCI_TOKEN. Copy the value from your Alphaexplora dashboard.",
+                "The ALPHACI_TOKEN repository secret was not found. This secret is required for the access stage to authenticate.",
+              hint: "In GitHub, go to Settings → Secrets → Actions and add ALPHACI_TOKEN. Copy the value from your ALPHACI dashboard.",
             },
           ],
         },

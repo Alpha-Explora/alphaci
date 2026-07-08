@@ -469,11 +469,11 @@ export function AppNav({
           <Link
             href="/home"
             className="sidebar-brand-link"
-            aria-label="Alphaexplora — home"
+            aria-label="ALPHACI — home"
           >
             <Image
               src="/brand-logo.png"
-              alt="Alphaexplora"
+              alt="ALPHACI"
               width={138}
               height={46}
               unoptimized

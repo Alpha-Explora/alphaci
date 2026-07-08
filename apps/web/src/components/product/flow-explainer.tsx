@@ -101,7 +101,7 @@ interface FlowExplainerProps {
 }
 
 /**
- * Shared visual explainer for Alphaexplora's core mental model:
+ * Shared visual explainer for ALPHACI's core mental model:
  * 3 gated stages (Access -> Quality -> Package) and the test -> uat -> main
  * promotion ladder, with a short Render/Vercel deploy note.
  *
@@ -112,7 +112,7 @@ interface FlowExplainerProps {
  */
 export function FlowExplainer({
   variant = "full",
-  heading = "How Alphaexplora works",
+  heading = "How ALPHACI works",
   className,
 }: FlowExplainerProps) {
   const reduced = useReducedMotion();

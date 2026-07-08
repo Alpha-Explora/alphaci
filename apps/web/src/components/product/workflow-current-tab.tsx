@@ -279,7 +279,7 @@ function DeploymentTargetsList({
     if (detachConfirmTargetId !== target.id) {
       setDetachConfirmTargetId(target.id);
       setTargetMessage(
-        "Confirm detach to remove this target from Alphaexplora only.",
+        "Confirm detach to remove this target from ALPHACI only.",
       );
       return;
     }
@@ -291,7 +291,7 @@ function DeploymentTargetsList({
       onDetached(target.id);
       setDetachConfirmTargetId(null);
       setTargetMessage(
-        "Target detached from Alphaexplora. Provider resource was not deleted.",
+        "Target detached from ALPHACI. Provider resource was not deleted.",
       );
     } catch {
       setTargetMessage("Unable to detach deployment target.");
@@ -1597,7 +1597,7 @@ export function WorkflowCurrentTab({
                     maxWidth: "32rem",
                   }}
                 >
-                  When you create one, Alphaexplora provisions the repository
+                  When you create one, ALPHACI provisions the repository
                   and commits a workflow that runs through the gated stages
                   below on every change. A read-only demo project normally
                   appears here too — open the{" "}
@@ -1716,7 +1716,7 @@ export function WorkflowCurrentTab({
 
                 {selectedProject.isExample ? (
                   <p className="project-demo-note">
-                    This is a read-only demo project Alphaexplora seeds for
+                    This is a read-only demo project ALPHACI seeds for
                     every account. It shows how a provisioned project looks end
                     to end — the gated stages, promotion flow, and deploys
                     explained in the{" "}

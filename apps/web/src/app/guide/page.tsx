@@ -36,7 +36,7 @@ interface GuideSection {
 }
 
 const SECTIONS: GuideSection[] = [
-  { id: "welcome", title: "What is Alphaexplora" },
+  { id: "welcome", title: "What is ALPHACI" },
   { id: "getting-started", title: "Getting started" },
   { id: "creating-a-project", title: "Creating a project" },
   { id: "branch-strategy", title: "Branch strategy" },
@@ -117,7 +117,7 @@ function PublicGuidePage({ error }: Readonly<{ error: string | null }>) {
     {
       label: "Repo",
       title: "Generate the repository",
-      body: "Alphaexplora creates the GitHub repository, starter project, protected branches, and workflow files.",
+      body: "ALPHACI creates the GitHub repository, starter project, protected branches, and workflow files.",
     },
     {
       label: "Gates",
@@ -147,9 +147,9 @@ function PublicGuidePage({ error }: Readonly<{ error: string | null }>) {
           transition={{ duration: 0.32, ease: EASE_OUT }}
         >
           <div>
-            <h1>How Alphaexplora works</h1>
+            <h1>How ALPHACI works</h1>
             <p>
-              Alphaexplora turns a project idea into a governed GitHub repository
+              ALPHACI turns a project idea into a governed GitHub repository
               with CI/CD, branch promotion, quality gates, and deployment
               targets already wired in.
             </p>
@@ -172,7 +172,7 @@ function PublicGuidePage({ error }: Readonly<{ error: string | null }>) {
 
         <section
           className="public-guide-workflow"
-          aria-label="Alphaexplora workflow"
+          aria-label="ALPHACI workflow"
         >
           <div className="public-guide-workflow-head">
             <div>
@@ -254,7 +254,7 @@ deploy:
           <div>
             <h2>Built around promotion, not just generation</h2>
             <p>
-              Alphaexplora does not just produce a YAML file. It gives teams a
+              ALPHACI does not just produce a YAML file. It gives teams a
               repeatable path from feature work to production so every repo
               follows the same release discipline.
             </p>
@@ -347,12 +347,12 @@ export default function GuidePage() {
         >
           <div className="workflow-page-header-left">
             <p className="workflow-page-breadcrumb">
-              <span style={{ opacity: 0.55 }}>Alphaexplora</span>
+              <span style={{ opacity: 0.55 }}>ALPHACI</span>
               <span className="workflow-page-breadcrumb-sep">/</span>
               <span>Guide</span>
             </p>
             <div className="workflow-page-title-row">
-              <h1 className="workflow-page-title">How to use Alphaexplora</h1>
+              <h1 className="workflow-page-title">How to use ALPHACI</h1>
             </div>
           </div>
         </motion.div>
@@ -389,11 +389,11 @@ export default function GuidePage() {
             <GuideCard
               id="welcome"
               index={0}
-              title="What is Alphaexplora"
+              title="What is ALPHACI"
               reduced={reduced}
             >
               <p>
-                Alphaexplora turns a blank idea into a working repository in one
+                ALPHACI turns a blank idea into a working repository in one
                 step. It creates a GitHub repository, sets up the{" "}
                 <code>main</code>, <code>uat</code>, and <code>test</code>{" "}
                 branches, scaffolds a starter project, and commits a
@@ -418,7 +418,7 @@ export default function GuidePage() {
                   page, if you see an
                   <em> &ldquo;Install GitHub App&rdquo;</em> chip, click it and
                   grant access to the repositories (or organisation) you want
-                  Alphaexplora to manage. This is what lets Alphaexplora create repos and
+                  ALPHACI to manage. This is what lets ALPHACI create repos and
                   commit workflows on your behalf.
                 </li>
                 <li>

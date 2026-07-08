@@ -146,7 +146,7 @@ function deploymentRouteLabel(
     default:
       return target.ownershipMode === "byo"
         ? "Customer managed"
-        : "Archived Alphaexplora-managed";
+        : "Archived ALPHACI-managed";
   }
 }
 

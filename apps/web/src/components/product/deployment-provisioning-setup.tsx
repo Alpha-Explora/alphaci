@@ -287,16 +287,16 @@ function ownershipDescription(target: DeploymentProvisioningTargetRequest) {
   if (target.provider === "render") {
     if (target.ownershipMode === "byo") {
       return target.renderDeployMethod === "native_git"
-        ? "Alphaexplora creates a Render service in your account using Render's native Git build. Render must have access to the repository."
-        : "Alphaexplora uses your Render account and deploys through the generated GitHub Actions image workflow.";
+        ? "ALPHACI creates a Render service in your account using Render's native Git build. Render must have access to the repository."
+        : "ALPHACI uses your Render account and deploys through the generated GitHub Actions image workflow.";
     }
 
-    return "Alphaexplora creates the Render service on the organization's Render account and deploys it as a container image built by GitHub Actions.";
+    return "ALPHACI creates the Render service on the organization's Render account and deploys it as a container image built by GitHub Actions.";
   }
 
   return target.ownershipMode === "byo"
-    ? "Alphaexplora creates a Vercel project in your account and deploys through GitHub Actions. You do not need to install Vercel's GitHub integration."
-    : "Alphaexplora creates the Vercel project on the organization's Vercel account and deploys it through GitHub Actions from the generated workflow.";
+    ? "ALPHACI creates a Vercel project in your account and deploys through GitHub Actions. You do not need to install Vercel's GitHub integration."
+    : "ALPHACI creates the Vercel project on the organization's Vercel account and deploys it through GitHub Actions from the generated workflow.";
 }
 
 export function DeploymentProvisioningSetup({
@@ -929,7 +929,7 @@ export function DeploymentProvisioningSetup({
                     <span>Ownership</span>
                     <span className="env-static-field">
                       {ownershipMode === "flowci_managed"
-                        ? "Centralized on Alphaexplora"
+                        ? "Centralized on ALPHACI"
                         : `Use my ${providerLabel(target.provider)} account`}
                     </span>
                     <span className="helper-text env-target-grid__note">
@@ -1088,7 +1088,7 @@ export function DeploymentProvisioningSetup({
                         <span className="helper-text env-target-grid__note">
                           {target.renderDeployMethod === "native_git"
                             ? "Uses Render build/start commands and requires Render repository access."
-                            : "Alphaexplora packages and deploys this backend automatically."}
+                            : "ALPHACI packages and deploys this backend automatically."}
                         </span>
                       </label>
                       <div className="env-target-grid__field env-target-grid__field--compact">
@@ -1310,7 +1310,7 @@ export function DeploymentProvisioningSetup({
                     >
                       {targetBranchLabel(target)} can override shared keys or
                       add its own values. Values are sent to the provider during
-                      setup and are not stored by Alphaexplora.
+                      setup and are not stored by ALPHACI.
                     </p>
                   </div>
                   <button
@@ -1335,7 +1335,7 @@ export function DeploymentProvisioningSetup({
 
                 {target.provider === "vercel" ? (
                   <p className="helper-text" style={{ margin: "0 0 0.6rem" }}>
-                    Alphaexplora will install per-slot GitHub Actions secrets
+                    ALPHACI will install per-slot GitHub Actions secrets
                     for Vercel deployment after the Vercel project is created.
                   </p>
                 ) : null}

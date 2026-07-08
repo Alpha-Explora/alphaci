@@ -177,7 +177,7 @@ export function OAuthAuthPage({
             </span>
             <div>
               <span>Internal workspace</span>
-              <strong>GitHub verifies Alpha-Explora membership before entry.</strong>
+              <strong>GitHub verifies ALPHACI membership before entry.</strong>
             </div>
           </motion.div>
 
@@ -188,7 +188,7 @@ export function OAuthAuthPage({
             transition={{ duration: 0.5, delay: 0.3 }}
           >
             <p className="auth-internal-kicker">Welcome back</p>
-            <h2>Alpha-Explora internal access</h2>
+            <h2>ALPHACI internal access</h2>
             <p>
               Sign in with GitHub to continue managing governed delivery
               workflows, organization repositories, provider connections, and
@@ -208,7 +208,7 @@ export function OAuthAuthPage({
                 meta: "Central templates with repository-aware setup.",
               },
               {
-                label: "Create repositories inside Alpha-Explora",
+                label: "Create repositories inside ALPHACI",
                 meta: "Organization provisioning stays locked to the company org.",
               },
               {
@@ -384,7 +384,7 @@ export function OAuthAuthPage({
 
           <div
             className="auth-trust-strip"
-            aria-label="Alphaexplora sign in protections"
+            aria-label="ALPHACI sign in protections"
           >
             <span>GitHub OAuth</span>
             <span>Branch-safe setup</span>

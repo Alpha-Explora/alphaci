@@ -30,7 +30,7 @@ export function PipelineLoader({
           <div className="pipeline-loader-logo-frame">
             <Image
               src="/brand-logo.png"
-              alt="AlphaExplora"
+              alt="ALPHACI"
               width={220}
               height={72}
               unoptimized

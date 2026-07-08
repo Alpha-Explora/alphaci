@@ -220,20 +220,20 @@ const projectOptions = {
 const stagedWorkflowFiles = [
   {
     stage: "access" as const,
-    name: "AlphaCI Access Gate",
-    path: ".github/workflows/00-flowci-access.yml",
+    name: "ALPHACI Access Gate",
+    path: ".github/workflows/00-alphaci-access.yml",
     gated: true,
   },
   {
     stage: "quality" as const,
-    name: "AlphaCI Quality",
-    path: ".github/workflows/10-flowci-quality.yml",
+    name: "ALPHACI Quality",
+    path: ".github/workflows/10-alphaci-quality.yml",
     gated: true,
   },
   {
     stage: "package" as const,
-    name: "AlphaCI Package",
-    path: ".github/workflows/20-flowci-package.yml",
+    name: "ALPHACI Package",
+    path: ".github/workflows/20-alphaci-package.yml",
     gated: true,
   },
 ];
@@ -325,7 +325,7 @@ describe("WorkflowBuilder project setup", () => {
       repoFullName: "tone/demo-next-app",
       repoUrl: "https://github.com/tone/demo-next-app",
       status: "provisioned",
-      workflowPath: ".github/workflows/00-flowci-access.yml",
+      workflowPath: ".github/workflows/00-alphaci-access.yml",
       workflowFiles: stagedWorkflowFiles,
       githubCommitSha: "commit-sha",
       githubCommitUrl: "https://github.com/tone/demo-next-app/commit/commit-sha",
@@ -408,10 +408,10 @@ describe("WorkflowBuilder project setup", () => {
     expect(mockedCreateGithubRepo).not.toHaveBeenCalled();
     expect(mockedGenerateWorkflow).not.toHaveBeenCalled();
     expect(container.textContent).toContain("tone/demo-next-app");
-    expect(container.textContent).toContain("00-flowci-access.yml");
-    expect(container.textContent).toContain("AlphaCI Access Gate");
-    expect(container.textContent).toContain("10-flowci-quality.yml");
-    expect(container.textContent).toContain("20-flowci-package.yml");
+    expect(container.textContent).toContain("00-alphaci-access.yml");
+    expect(container.textContent).toContain("ALPHACI Access Gate");
+    expect(container.textContent).toContain("10-alphaci-quality.yml");
+    expect(container.textContent).toContain("20-alphaci-package.yml");
     expect(container.textContent).toContain("3 gated workflow stages");
   });
 
@@ -469,7 +469,7 @@ describe("WorkflowBuilder project setup", () => {
       repoFullName: "tone/orders-api",
       repoUrl: "https://github.com/tone/orders-api",
       status: "provisioned",
-      workflowPath: ".github/workflows/00-flowci-access.yml",
+      workflowPath: ".github/workflows/00-alphaci-access.yml",
       workflowFiles: stagedWorkflowFiles,
       githubCommitSha: "commit-sha",
       githubCommitUrl: "https://github.com/tone/orders-api/commit/commit-sha",
