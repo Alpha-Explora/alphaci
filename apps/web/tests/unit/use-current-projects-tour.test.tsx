@@ -265,4 +265,40 @@ describe("useCurrentProjectsTour", () => {
     await flushMicrotasks(5);
     expect(mockDrive).not.toHaveBeenCalled();
   });
+
+  it("auto-launches once when every condition is satisfied", async () => {
+    await mount({
+      session: makeSession(false),
+      guest: false,
+      isCurrentTabActive: true,
+      onboardingCompleted: false,
+    });
+
+    await waitForCondition(() => mockDrive.mock.calls.length > 0);
+    expect(mockDrive).toHaveBeenCalledTimes(1);
+  });
+
+  it("destroys the previous driver instance when startTour is called again", async () => {
+    await mount({
+      session: makeSession(true),
+      guest: false,
+      isCurrentTabActive: true,
+      onboardingCompleted: true,
+    });
+
+    await act(async () => {
+      latestSnapshot?.startTour();
+      await flushMicrotasks(5);
+    });
+    expect(mockDrive).toHaveBeenCalledTimes(1);
+    expect(mockDestroy).not.toHaveBeenCalled();
+
+    await act(async () => {
+      latestSnapshot?.startTour();
+      await flushMicrotasks(5);
+    });
+
+    expect(mockDestroy).toHaveBeenCalledTimes(1);
+    expect(mockDrive).toHaveBeenCalledTimes(2);
+  });
 });

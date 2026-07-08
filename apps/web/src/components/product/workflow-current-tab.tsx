@@ -41,6 +41,10 @@ import type {
   WorkflowFileMetadata,
   WorkflowHistoryItem,
 } from "@/lib/api/contracts";
+import {
+  providerConsoleUrl,
+  providerDashboardUrl,
+} from "@/lib/hosting/provider-urls";
 import { ProjectEnvPanel } from "./project-env-panel";
 import { DeploymentProvisioningSummary } from "./setup-result-panel";
 import { FlowExplainer } from "./flow-explainer";
@@ -165,42 +169,6 @@ function WorkflowStageList({
       </div>
     </div>
   );
-}
-
-function providerDashboardUrl(target: DeploymentTarget): string | null {
-  if (target.provider === "vercel") {
-    const teamSlug =
-      typeof target.providerMetadata?.vercelTeamSlug === "string"
-        ? target.providerMetadata.vercelTeamSlug.trim()
-        : "";
-    return teamSlug
-      ? `https://vercel.com/${teamSlug}/${target.providerProjectName}`
-      : `https://vercel.com/dashboard/project/${target.providerProjectId}`;
-  }
-
-  if (target.provider === "render") {
-    return `https://dashboard.render.com/web/${target.providerProjectId}`;
-  }
-
-  return null;
-}
-
-function providerConsoleUrl(target: DeploymentTarget): string | null {
-  if (target.provider === "vercel") {
-    const teamSlug =
-      typeof target.providerMetadata?.vercelTeamSlug === "string"
-        ? target.providerMetadata.vercelTeamSlug.trim()
-        : "";
-    return teamSlug
-      ? `https://vercel.com/${teamSlug}/${target.providerProjectName}/deployments`
-      : `https://vercel.com/dashboard/project/${target.providerProjectId}/deployments`;
-  }
-
-  if (target.provider === "render") {
-    return `https://dashboard.render.com/web/${target.providerProjectId}/logs`;
-  }
-
-  return null;
 }
 
 function allowedSlotForProvider(provider: DeploymentTarget["provider"]) {
@@ -1761,6 +1729,12 @@ export function WorkflowCurrentTab({
                 ) : null}
 
                 <div className="project-detail-actions">
+                  <Link
+                    className="ghost-button"
+                    href={`/projects/${encodeURIComponent(selectedProject.id)}`}
+                  >
+                    Project page
+                  </Link>
                   {selectedProject.repoUrl ? (
                     <>
                       <a

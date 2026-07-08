@@ -312,6 +312,52 @@ describe("env provisioning hooks", () => {
     expect(snapshots.at(-1)?.connections[0]?.status).toBe("revoked");
   });
 
+  it("useProviderConnections defaults to enabled=true when no argument is given", async () => {
+    mockedListProviderConnections.mockResolvedValue([activeConnection]);
+
+    const snapshots: ReturnType<typeof useProviderConnections>[] = [];
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    root = createRoot(container);
+
+    function Probe() {
+      snapshots.push(useProviderConnections());
+      return null;
+    }
+
+    act(() => {
+      root?.render(<Probe />);
+    });
+    await flushEffects();
+
+    expect(mockedListProviderConnections).toHaveBeenCalledTimes(1);
+    expect(snapshots.at(-1)?.connections).toEqual([activeConnection]);
+  });
+
+  it("useProjectEnvProvisioning defaults to enabled=true when only projectId is given", async () => {
+    mockedListDeploymentTargets.mockResolvedValue([deploymentTarget]);
+    mockedListProjectEnvMetadata.mockResolvedValue([envMetadata]);
+    mockedListProviderConnections.mockResolvedValue([activeConnection]);
+
+    const snapshots: ReturnType<typeof useProjectEnvProvisioning>[] = [];
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    root = createRoot(container);
+
+    function Probe() {
+      snapshots.push(useProjectEnvProvisioning("project-1"));
+      return null;
+    }
+
+    act(() => {
+      root?.render(<Probe />);
+    });
+    await flushEffects();
+
+    expect(mockedListDeploymentTargets).toHaveBeenCalledWith("project-1");
+    expect(snapshots.at(-1)?.targets).toEqual([deploymentTarget]);
+  });
+
   it("skips provider connection loading when disabled", async () => {
     const snapshots = renderConnectionsHook(false);
     await flushEffects();
