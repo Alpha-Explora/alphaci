@@ -75,12 +75,20 @@ function targetOptionLabel(target: {
   renderRuntime?: RenderRuntime | string | null;
 }): string {
   const provider = target.provider === "render" ? "Render" : "Vercel";
-  const branch = target.branchName || "test";
+  const branch = activeBranch(target.branchName);
   const runtime =
     target.provider === "render" && target.renderRuntime
       ? ` - ${formatRenderRuntime(target.renderRuntime)}`
       : "";
   return `${target.providerProjectName} - ${provider} ${target.slot} - ${branch}${runtime}`;
+}
+
+function activeBranch(branchName: string | null | undefined): string {
+  return branchName === "main" ? "main" : "uat";
+}
+
+function activeEnvironment(environment: EnvEnvironment): EnvEnvironment {
+  return environment === "test" ? "uat" : environment;
 }
 
 export function ProjectEnvPanel({
@@ -110,14 +118,14 @@ export function ProjectEnvPanel({
   const { deploymentOwnershipMode: ownershipMode } = useCapabilities();
   const [provider, setProvider] = useState<EnvProvider>("render");
   const [slot, setSlot] = useState<EnvTargetSlot>("backend");
-  const [environment, setEnvironment] = useState<EnvEnvironment>("test");
-  const [projectName, setProjectName] = useState(`${project.serviceName}-test`);
+  const [environment, setEnvironment] = useState<EnvEnvironment>("uat");
+  const [projectName, setProjectName] = useState(`${project.serviceName}-uat`);
   const [providerProjectId, setProviderProjectId] = useState("");
   const [providerProjectName, setProviderProjectName] = useState(
     project.serviceName,
   );
   const [providerConnectionId, setProviderConnectionId] = useState("");
-  const [branchName, setBranchName] = useState("test");
+  const [branchName, setBranchName] = useState("uat");
   const [rootDirectory, setRootDirectory] = useState(".");
   const [buildCommand, setBuildCommand] = useState("npm ci && npm run build");
   const [startCommand, setStartCommand] = useState("npm run start:prod");
@@ -177,7 +185,10 @@ export function ProjectEnvPanel({
         item.deploymentTargetId !== filterTargetId
       )
         return false;
-      if (filterEnvironment !== "all" && item.environment !== filterEnvironment)
+      if (
+        filterEnvironment !== "all" &&
+        activeEnvironment(item.environment) !== filterEnvironment
+      )
         return false;
       if (filterStatus !== "all" && item.status !== filterStatus) return false;
       return true;
@@ -548,7 +559,7 @@ export function ProjectEnvPanel({
                   onClick={() => setTargetId(target.id)}
                 >
                   {target.provider === "render" ? "Render" : "Vercel"}{" "}
-                  {target.branchName || "test"}
+                  {activeBranch(target.branchName)}
                 </button>
               ))}
             </div>
@@ -565,7 +576,7 @@ export function ProjectEnvPanel({
         )}
 
         <div className="env-environment-tabs">
-          {(["test", "uat", "production"] as EnvEnvironment[]).map((env) => (
+          {(["uat", "production"] as EnvEnvironment[]).map((env) => (
             <button
               key={env}
               className={
@@ -657,13 +668,15 @@ export function ProjectEnvPanel({
               type="password"
             />
             <button
-              className="ghost-button"
+              className="env-var-row__remove"
+              aria-label={`Remove variable row ${index + 1}`}
+              title="Remove variable"
               type="button"
               onClick={() =>
                 setRows((current) => current.filter((_, i) => i !== index))
               }
             >
-              Remove
+              ×
             </button>
           </div>
         ))}
@@ -730,7 +743,6 @@ export function ProjectEnvPanel({
               }
             >
               <option value="all">All environments</option>
-              <option value="test">test</option>
               <option value="uat">uat</option>
               <option value="production">production</option>
             </select>
@@ -757,7 +769,7 @@ export function ProjectEnvPanel({
                 <span>
                   {targets.find((target) => target.id === item.deploymentTargetId)
                     ?.branchName ?? "unknown branch"}{" "}
-                  - {item.environment} - {item.status}
+                  - {activeEnvironment(item.environment)} - {item.status}
                   {item.errorSummary
                     ? ` - ${cleanUserMessage(item.errorSummary)}`
                     : ""}

@@ -32,7 +32,7 @@ interface DeploymentProvisioningSetupProps {
   onEnabledChange?: (enabled: boolean) => void;
 }
 
-const environments: EnvEnvironment[] = ["test", "uat", "production"];
+const environments: EnvEnvironment[] = ["uat", "production"];
 const renderRuntimeOptions: Array<{ value: RenderRuntime; label: string }> = [
   { value: "docker", label: "Dockerfile" },
   { value: "node", label: "Node.js / Bun" },
@@ -44,9 +44,17 @@ const renderRuntimeOptions: Array<{ value: RenderRuntime; label: string }> = [
 ];
 
 function blankEnvSet(
-  environment: EnvEnvironment = "test",
+  environment: EnvEnvironment = "uat",
 ): DeploymentProvisioningEnvSet {
   return { environment, vars: [] };
+}
+
+function activeEnvironment(environment: EnvEnvironment): EnvEnvironment {
+  return environment === "test" ? "uat" : environment;
+}
+
+function activeBranch(branchName: string | undefined): "uat" | "main" {
+  return branchName?.trim() === "main" ? "main" : "uat";
 }
 
 function fallbackTarget(
@@ -60,7 +68,7 @@ function fallbackTarget(
     slot,
     provider,
     ownershipMode,
-    branchName: "test",
+    branchName: "uat",
     rootDirectory:
       provider === "render" && slot === "backend" ? "backend" : ".",
     buildCommand: "npm run build",
@@ -70,7 +78,7 @@ function fallbackTarget(
     renderRuntime: provider === "render" ? "docker" : undefined,
     renderInstanceType: provider === "render" ? "free" : undefined,
     renderRegion: provider === "render" ? "singapore" : undefined,
-    renderEnvironmentName: "test",
+    renderEnvironmentName: "uat",
     dockerContext:
       provider === "render" && slot === "backend"
         ? "backend"
@@ -83,7 +91,7 @@ function fallbackTarget(
         : provider === "render"
           ? "Dockerfile"
           : undefined,
-    env: [{ environment: "test", vars: [] }],
+    env: [{ environment: "uat", vars: [] }],
   };
 }
 
@@ -146,7 +154,7 @@ function targetTitle(target: DeploymentProvisioningTargetRequest): string {
 function targetProviderSummary(
   target: DeploymentProvisioningTargetRequest,
 ): string {
-  const branch = target.branchName?.trim() || "test";
+  const branch = activeBranch(target.branchName);
   const provider = target.provider === "vercel" ? "Vercel" : "Render";
   return `${provider} on ${branch}`;
 }
@@ -199,7 +207,14 @@ function updateVariableGroupAt(
   group: DeploymentProvisioningVariableGroup,
 ): DeploymentProvisioningRequest {
   const nextGroups = [...currentGroups];
-  nextGroups[index] = group;
+  nextGroups[index] = {
+    ...group,
+    targetBranches: group.targetBranches?.map((targetKey) =>
+      targetKey.endsWith(":test")
+        ? `${targetKey.slice(0, -":test".length)}:uat`
+        : targetKey,
+    ),
+  };
   return { ...value, variableGroups: nextGroups, sharedEnv: undefined };
 }
 
@@ -245,14 +260,14 @@ function countVars(
 }
 
 function targetBranchKey(target: DeploymentProvisioningTargetRequest): string {
-  const branch = target.branchName?.trim() || "test";
+  const branch = activeBranch(target.branchName);
   return `${target.slot}:${target.provider}:${branch}`;
 }
 
 function targetBranchLabel(
   target: DeploymentProvisioningTargetRequest,
 ): string {
-  const branch = target.branchName?.trim() || "test";
+  const branch = activeBranch(target.branchName);
   const targetLabel = target.slot === "frontend" ? "Frontend" : "Backend";
   return `${targetLabel} - ${providerLabel(target.provider)} - ${branch}`;
 }
@@ -263,7 +278,12 @@ function targetScopeIncludes(
 ): boolean {
   return (
     group.appliesTo !== "selected" ||
-    (group.targetBranches ?? []).includes(targetKey)
+    (group.targetBranches ?? []).some(
+      (selectedKey) =>
+        (selectedKey.endsWith(":test")
+          ? `${selectedKey.slice(0, -":test".length)}:uat`
+          : selectedKey) === targetKey,
+    )
   );
 }
 
@@ -273,7 +293,13 @@ function toggleGroupTargetBranch(
   allTargetKeys: string[],
 ): DeploymentProvisioningVariableGroup {
   const selected = new Set(
-    group.targetBranches?.length ? group.targetBranches : allTargetKeys,
+    group.targetBranches?.length
+      ? group.targetBranches.map((selectedKey) =>
+          selectedKey.endsWith(":test")
+            ? `${selectedKey.slice(0, -":test".length)}:uat`
+            : selectedKey,
+        )
+      : allTargetKeys,
   );
   if (selected.has(targetKey)) {
     selected.delete(targetKey);
@@ -294,10 +320,10 @@ function defaultProjectPlaceholder(
 ) {
   if (repoShape === "multi" || repoShape === "microservices") {
     return target.slot === "frontend"
-      ? "app-frontend-test"
-      : "app-backend-test";
+      ? "app-frontend-uat"
+      : "app-backend-uat";
   }
-  return "project-name-test";
+  return "project-name-uat";
 }
 
 function ownershipDescription(target: DeploymentProvisioningTargetRequest) {
@@ -478,7 +504,7 @@ export function DeploymentProvisioningSetup({
                       key={`${target.slot}-${targetIndex}`}
                     >
                       {target.slot} / {target.provider} /{" "}
-                      {target.branchName?.trim() || "test"}
+                      {activeBranch(target.branchName)}
                     </span>
                   ))}
                 </div>
@@ -582,7 +608,11 @@ export function DeploymentProvisioningSetup({
                   ) : null}
 
                   {providerGroups.map(({ group, groupIndex }) => {
-                    const envSet = group.env[0] ?? blankEnvSet();
+                    const rawEnvSet = group.env[0] ?? blankEnvSet();
+                    const envSet = {
+                      ...rawEnvSet,
+                      environment: activeEnvironment(rawEnvSet.environment),
+                    };
                     const sharedVars = envVarsForDisplay(envSet);
                     const providerTargetKeys = providerTargets.map(
                       (target) => target.key,
@@ -909,9 +939,10 @@ export function DeploymentProvisioningSetup({
           </section>
 
           {targets.map((target, targetIndex) => {
-            const envSet = target.env?.[0] ?? {
-              environment: "test" as EnvEnvironment,
-              vars: [],
+            const rawEnvSet = target.env?.[0] ?? blankEnvSet();
+            const envSet = {
+              ...rawEnvSet,
+              environment: activeEnvironment(rawEnvSet.environment),
             };
             const vars = envVarsForDisplay(envSet);
             const matchingConnections = activeProviderConnections.filter(
@@ -1019,24 +1050,12 @@ export function DeploymentProvisioningSetup({
                       placeholder={defaultProjectPlaceholder(repoShape, target)}
                     />
                   </label>
-                  <label className="env-target-grid__field env-target-grid__field--compact">
+                  <div className="env-target-grid__field env-target-grid__field--compact">
                     <span>Branch</span>
-                    <input
-                      aria-label={
-                        targetIndex === 0
-                          ? "Provider branch"
-                          : `Provider branch ${targetIndex + 1}`
-                      }
-                      value={target.branchName ?? "test"}
-                      onChange={(event) =>
-                        onChange(
-                          updateTargetAt(value, targetIndex, {
-                            branchName: event.target.value,
-                          }),
-                        )
-                      }
-                    />
-                  </label>
+                    <span className="env-static-field">
+                      {activeBranch(target.branchName)}
+                    </span>
+                  </div>
                   <label className="env-target-grid__field env-target-grid__field--compact">
                     <span>Root directory</span>
                     <input
@@ -1232,7 +1251,7 @@ export function DeploymentProvisioningSetup({
                                   }),
                                 )
                               }
-                              placeholder="api-test"
+                              placeholder="api-uat"
                             />
                           </label>
                         </>

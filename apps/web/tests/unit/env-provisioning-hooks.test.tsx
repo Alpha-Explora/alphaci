@@ -384,7 +384,7 @@ describe("env provisioning hooks", () => {
           provider: "vercel",
           ownershipMode: "flowci_managed",
           projectName: "web-app",
-          branchName: "test",
+          branchName: "uat",
           rootDirectory: ".",
           buildCommand: "npm run build",
           startCommand: undefined,
@@ -434,13 +434,14 @@ describe("env provisioning hooks", () => {
 
     expect(snapshots.at(-1)?.payload).toEqual({
       enabled: true,
+      sharedEnv: undefined,
       targets: [
         {
           slot: "backend",
           provider: "render",
           ownershipMode: "flowci_managed",
           projectName: undefined,
-          branchName: "test",
+          branchName: "uat",
           rootDirectory: undefined,
           buildCommand: undefined,
           startCommand: undefined,
@@ -452,6 +453,7 @@ describe("env provisioning hooks", () => {
           ],
         },
       ],
+      variableGroups: undefined,
     });
   });
 

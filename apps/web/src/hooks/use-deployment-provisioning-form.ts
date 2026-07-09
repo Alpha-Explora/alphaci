@@ -29,7 +29,7 @@ function defaultTarget(
     // centralized Render/Vercel accounts.
     ownershipMode: "flowci_managed",
     projectName,
-    branchName: "test",
+    branchName: "uat",
     rootDirectory: normalizedSlot === "backend" ? "backend" : ".",
     buildCommand:
       provider === "render" ? "npm ci && npm run build" : "npm run build",
@@ -38,7 +38,7 @@ function defaultTarget(
     renderServiceType: provider === "render" ? "web_service" : undefined,
     renderRuntime: provider === "render" ? "docker" : undefined,
     renderInstanceType: provider === "render" ? "free" : undefined,
-    env: [{ environment: "test", vars: [] }],
+    env: [{ environment: "uat", vars: [] }],
   };
 }
 
@@ -86,7 +86,7 @@ function sanitizedVariableGroups(
 }
 
 function targetBranchKey(target: DeploymentProvisioningTargetRequest): string {
-  const branch = target.branchName?.trim() || "test";
+  const branch = target.branchName?.trim() || "uat";
   return `${target.slot}:${target.provider}:${branch}`;
 }
 
@@ -178,7 +178,7 @@ export function useDeploymentProvisioningForm() {
     const targets = request.targets.map((target) => ({
       ...target,
       projectName: target.projectName?.trim() || undefined,
-      branchName: target.branchName?.trim() || "test",
+      branchName: target.branchName?.trim() || "uat",
       rootDirectory: target.rootDirectory?.trim() || undefined,
       buildCommand: target.buildCommand?.trim() || undefined,
       startCommand: target.startCommand?.trim() || undefined,

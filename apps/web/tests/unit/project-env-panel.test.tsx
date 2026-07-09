@@ -2911,8 +2911,10 @@ describe("Project env provisioning UI", () => {
     ).toHaveLength(2);
 
     act(() => {
-      Array.from(rendered.container.querySelectorAll("button"))
-        .filter((button) => button.textContent === "Remove")[1]!
+      rendered.container
+        .querySelectorAll<HTMLButtonElement>(
+          'button[title="Remove variable"]',
+        )[0]!
         .click();
     });
     expect(
@@ -3081,7 +3083,7 @@ describe("Project env provisioning UI", () => {
 
     expect(provision).toHaveBeenCalledWith({
       deploymentTargetId: "target-1",
-      environment: "test",
+      environment: "uat",
       vars: [{ key: "DATABASE_URL", value: "postgres://secret" }],
     });
     expect(valueInput.value).toBe("");
@@ -3121,7 +3123,7 @@ describe("Project env provisioning UI", () => {
 
     expect(validateEnvText).toHaveBeenCalledWith({
       deploymentTargetId: "target-render",
-      environment: "test",
+      environment: "uat",
       text: 'DATABASE_URL=postgres://secret\nAPI_KEY="super-secret"',
     });
     expect(rendered.container.textContent).toContain("DATABASE_URL");
