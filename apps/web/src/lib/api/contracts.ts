@@ -1107,7 +1107,7 @@ export interface CreateProjectResult {
   githubCommitUrl: string | null;
   projectTypeId: string;
   workflowRecipeId: string;
-  /** Branch names always created by the unified endpoint: main, uat, test. */
+  /** Branch names always created by the unified endpoint: main, uat, develop. */
   branchesCreated: string[];
   /** Additional workflow file paths committed for microservices shapes. */
   additionalWorkflowPaths?: string[];

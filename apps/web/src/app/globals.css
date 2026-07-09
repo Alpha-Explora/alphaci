@@ -8538,7 +8538,14 @@ select option {
   flex-wrap: wrap;
   gap: 0.35rem;
   align-items: center;
+}
+
+.deployment-variable-actions {
   justify-content: flex-end;
+}
+
+.env-segmented-actions {
+  justify-content: flex-start;
 }
 
 .deployment-variable-panel {
@@ -8921,6 +8928,30 @@ select option {
 .env-environment-tabs .primary-button {
   min-height: 2.45rem;
   border-radius: 6px;
+}
+
+.env-provisioning-section .primary-button,
+.env-provisioning-section .ghost-button {
+  min-height: 2.25rem;
+  padding: 0.48rem 0.78rem;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  line-height: 1.2;
+  letter-spacing: 0;
+  box-shadow: none;
+}
+
+.env-provisioning-section .primary-button:hover,
+.env-provisioning-section .ghost-button:hover {
+  transform: translateY(-1px);
+  box-shadow: none;
+}
+
+.env-segmented-actions .primary-button,
+.env-segmented-actions .ghost-button {
+  flex: 0 1 auto;
+  max-width: 100%;
+  white-space: normal;
 }
 
 .deployment-provisioning-setup .env-target-grid .ghost-button,

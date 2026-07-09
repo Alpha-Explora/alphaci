@@ -228,7 +228,7 @@ describe("DeploymentProvisioningSetup", () => {
 
     expect(rendered.container.textContent).toContain("Shared defaults");
     expect(rendered.container.textContent).toContain(
-      "Frontend - Vercel - test",
+      "Frontend - Vercel - uat",
     );
     expect(
       rendered.container.querySelector<HTMLInputElement>(
@@ -251,10 +251,10 @@ describe("DeploymentProvisioningSetup", () => {
             name: "Shared API",
             provider: "vercel",
             appliesTo: "selected",
-            targetBranches: ["frontend:vercel:test"],
+            targetBranches: ["frontend:vercel:uat"],
             env: [
               {
-                environment: "test",
+                environment: "uat",
                 vars: [{ key: "API_URL", value: "https://api.example.com" }],
               },
             ],

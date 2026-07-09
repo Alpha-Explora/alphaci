@@ -85,7 +85,7 @@ const GATE_STAGES = [
   },
 ] as const;
 
-const PROMOTION_RUNGS = ["test", "uat", "main"] as const;
+const PROMOTION_RUNGS = ["uat", "main"] as const;
 
 export type FlowExplainerVariant = "full" | "compact";
 
@@ -102,7 +102,7 @@ interface FlowExplainerProps {
 
 /**
  * Shared visual explainer for ALPHACI's core mental model:
- * 3 gated stages (Access -> Quality -> Package) and the test -> uat -> main
+ * 3 gated stages (Access -> Quality -> Package) and the uat -> main
  * promotion ladder, with a short Render/Vercel deploy note.
  *
  * Reuses the motif iconography and connector language from the /runs pipeline
