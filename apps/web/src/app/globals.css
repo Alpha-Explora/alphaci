@@ -15916,3 +15916,176 @@ select option {
     font-size: 0.98rem;
   }
 }
+
+/* ── Unified signed-in application palette ─────────────────────────────── */
+
+html:not([data-theme="light"]) .dash-shell {
+  --bg-base: #102641;
+  --bg-soft: #112a48;
+  --bg-surface: rgba(20, 46, 76, 0.9);
+  --bg-panel: #142e4d;
+  --bg-elevated: #193858;
+  --layer-0: #102641;
+  --layer-1: #142e4d;
+  --layer-1-hover: #183755;
+  --layer-2: #193858;
+  --layer-2-hover: #204365;
+  --border: rgba(142, 180, 218, 0.2);
+  --border-soft: rgba(142, 180, 218, 0.13);
+  --border-subtle: rgba(142, 180, 218, 0.09);
+  --border-layer: rgba(142, 180, 218, 0.18);
+  --border-tile: rgba(142, 180, 218, 0.22);
+  background:
+    radial-gradient(
+      circle at 84% -12%,
+      rgba(56, 189, 248, 0.13),
+      transparent 36rem
+    ),
+    linear-gradient(180deg, #17385f 0%, #102b49 48%, #102641 100%);
+}
+
+html:not([data-theme="light"]) .dash-shell .app-sidebar {
+  background: linear-gradient(180deg, #102b49 0%, #0d213a 100%);
+  border-right: 1px solid rgba(142, 180, 218, 0.16);
+  box-shadow:
+    inset -1px 0 0 rgba(255, 255, 255, 0.025),
+    10px 0 34px rgba(5, 15, 29, 0.16);
+}
+
+html:not([data-theme="light"]) .dash-shell .sidebar-brand-zone,
+html:not([data-theme="light"]) .dash-shell .sidebar-bottom-zone {
+  border-color: rgba(142, 180, 218, 0.12);
+}
+
+html:not([data-theme="light"]) .dash-shell .sidebar-edge-gradient {
+  background: linear-gradient(
+    180deg,
+    rgba(56, 189, 248, 0.85),
+    rgba(96, 165, 250, 0.48)
+  );
+}
+
+html:not([data-theme="light"]) .dash-shell .sidebar-nav-item-bg {
+  background: rgba(56, 129, 194, 0.24);
+  border-left-color: #60a5fa;
+}
+
+html:not([data-theme="light"]) .dash-shell .sidebar-user-chip,
+html:not([data-theme="light"]) .dash-shell .sidebar-signout-btn,
+html:not([data-theme="light"]) .dash-shell .app-sidebar .workspace-switcher,
+html:not([data-theme="light"])
+  .dash-shell
+  .sidebar-collapse-btn--edge {
+  background: rgba(13, 34, 59, 0.78);
+  border-color: rgba(142, 180, 218, 0.16);
+}
+
+html:not([data-theme="light"]) .dash-shell .workflow-page-header,
+html:not([data-theme="light"]) .dash-shell .studio-tab-bar--enhanced {
+  background: rgba(16, 42, 72, 0.86);
+  border-color: rgba(142, 180, 218, 0.14);
+}
+
+html:not([data-theme="light"])
+  .dash-shell
+  :is(
+    .bento-card,
+    .glass-panel,
+    .workflow-page-signal-strip > div,
+    .runs-summary-card,
+    .runs-project-group,
+    .runs-run-card,
+    .settings-sidebar-surface,
+    .settings-profile-header,
+    .settings-card,
+    .settings-preference-card,
+    .env-provisioning-section,
+    .deployment-variable-panel,
+    .deployment-provider-groups
+  ) {
+  background: rgba(19, 45, 75, 0.9);
+  border-color: rgba(142, 180, 218, 0.17);
+  box-shadow:
+    0 12px 28px rgba(5, 15, 29, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.025);
+}
+
+html:not([data-theme="light"])
+  .dash-shell
+  :is(
+    .create-project-sidebar,
+    .create-project-main,
+    .settings-content,
+    .dash-page-content
+  ) {
+  border-color: rgba(142, 180, 218, 0.12);
+}
+
+html:not([data-theme="light"]) .dash-shell .create-project-sidebar {
+  background: rgba(13, 34, 59, 0.34);
+}
+
+html:not([data-theme="light"])
+  .dash-shell
+  :is(
+    .premium-input,
+    input,
+    select,
+    textarea,
+    .env-static-field,
+    .bento-cmd-row
+  ) {
+  background-color: rgba(10, 29, 51, 0.72);
+  border-color: rgba(142, 180, 218, 0.2);
+}
+
+html:not([data-theme="light"]) .dash-shell .settings-card-header,
+html:not([data-theme="light"]) .dash-shell .settings-sidebar-profile {
+  background: rgba(11, 31, 54, 0.3);
+  border-color: rgba(142, 180, 218, 0.13);
+}
+
+html:not([data-theme="light"]) .dash-shell .welcome-banner-flat {
+  background: transparent;
+  box-shadow: none;
+}
+
+[data-theme="light"] .dash-shell {
+  --layer-0: #dceafa;
+  --layer-1: #edf5fd;
+  --layer-1-hover: #e6f0fb;
+  --layer-2: #dbe9f7;
+  --layer-2-hover: #d2e3f5;
+  background:
+    radial-gradient(
+      circle at 84% -12%,
+      rgba(14, 165, 233, 0.13),
+      transparent 34rem
+    ),
+    linear-gradient(180deg, #e6f2ff 0%, #daeafb 52%, #d4e6f8 100%);
+}
+
+[data-theme="light"] .dash-shell .app-sidebar {
+  background: linear-gradient(180deg, #e8f2fd 0%, #dceafa 100%);
+  border-right: 1px solid rgba(51, 91, 135, 0.14);
+  box-shadow: 8px 0 28px rgba(52, 84, 124, 0.08);
+}
+
+[data-theme="light"]
+  .dash-shell
+  :is(
+    .bento-card,
+    .glass-panel,
+    .workflow-page-signal-strip > div,
+    .runs-summary-card,
+    .runs-project-group,
+    .runs-run-card,
+    .settings-sidebar-surface,
+    .settings-profile-header,
+    .settings-card,
+    .settings-preference-card
+  ) {
+  background: rgba(243, 248, 254, 0.92) !important;
+  border-color: rgba(51, 91, 135, 0.14) !important;
+  box-shadow: 0 10px 26px rgba(52, 84, 124, 0.07) !important;
+}
