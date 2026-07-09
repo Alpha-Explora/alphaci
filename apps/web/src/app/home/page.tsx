@@ -79,16 +79,16 @@ function useCountUp(target: number | null, duration = 900): number | null {
 const quickActions = [
   {
     cmd: "new-project",
-    href: "/workflows",
+    href: "/workflows?tab=setup",
     display: "Create Project",
-    shortcut: "⌘N",
+    shortcut: "N",
     accent: "var(--brand)",
   },
   {
     cmd: "view-workflows",
-    href: "/workflows",
+    href: "/workflows?tab=current",
     display: "View Workflows",
-    shortcut: "⌘W",
+    shortcut: "W",
     accent: "var(--accent-violet)",
   },
 ];
@@ -235,7 +235,11 @@ function BentoGrid({
   return (
     <div className="kpi-bento-grid">
       {/* Cell 1: Workflows Generated — dominant brand, asymmetric wide */}
-      <div className="bento-card bento-card-dominant bento-card-brand">
+      <Link
+        href="/workflows?tab=all"
+        className="bento-card bento-card-dominant bento-card-brand bento-card-link"
+        aria-label="View all generated workflows"
+      >
         <div className="bento-card-eyebrow">
           <span
             className="bento-pulse-dot bento-pulse-dot--brand"
@@ -293,10 +297,14 @@ function BentoGrid({
         >
           <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
         </svg>
-      </div>
+      </Link>
 
       {/* Cell 2: Projects Created — violet tint */}
-      <div className="bento-card bento-card-accent bento-card-violet">
+      <Link
+        href="/workflows?tab=current"
+        className="bento-card bento-card-accent bento-card-violet bento-card-link"
+        aria-label="View active projects"
+      >
         <div className="bento-card-eyebrow">
           <span
             className="bento-pulse-dot bento-pulse-dot--violet"
@@ -325,10 +333,14 @@ function BentoGrid({
           <line x1="6" y1="6" x2="6.01" y2="6" />
           <line x1="6" y1="18" x2="6.01" y2="18" />
         </svg>
-      </div>
+      </Link>
 
       {/* Cell 3: Services — teal accent */}
-      <div className="bento-card bento-card-teal">
+      <Link
+        href="/hosting"
+        className="bento-card bento-card-teal bento-card-link"
+        aria-label="Manage deployment services"
+      >
         <div className="bento-card-eyebrow">
           <span
             className="bento-pulse-dot bento-pulse-dot--teal"
@@ -356,10 +368,14 @@ function BentoGrid({
           <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
           <line x1="12" y1="22.08" x2="12" y2="12" />
         </svg>
-      </div>
+      </Link>
 
       {/* Cell 4: Last Activity — vertical timeline treatment */}
-      <div className="bento-card bento-card-activity">
+      <Link
+        href="/runs"
+        className="bento-card bento-card-activity bento-card-link"
+        aria-label="View recent workflow activity"
+      >
         <div className="bento-card-eyebrow">
           <svg
             width="11"
@@ -390,7 +406,7 @@ function BentoGrid({
             <span className="bento-timeline-label">Latest run</span>
           </div>
         </div>
-      </div>
+      </Link>
 
       {/* Cell 5: Quick Actions — terminal command rows */}
       <div className="bento-card bento-card-quick-actions">
@@ -473,6 +489,9 @@ function HomeDashboardContent() {
     null,
   );
   const [isSyncing, setIsSyncing] = useState(false);
+  const [repositoryActionError, setRepositoryActionError] = useState<
+    string | null
+  >(null);
   const [syncResult, setSyncResult] = useState<{
     orphaned: number;
     reachable: number;
@@ -551,6 +570,33 @@ function HomeDashboardContent() {
     })();
   }, [activeTab, selectedWorkspaceId]);
 
+  useEffect(() => {
+    function handleDashboardShortcut(event: KeyboardEvent) {
+      if (event.metaKey || event.ctrlKey || event.altKey) return;
+      const target = event.target;
+      if (
+        target instanceof HTMLInputElement ||
+        target instanceof HTMLTextAreaElement ||
+        target instanceof HTMLSelectElement ||
+        (target instanceof HTMLElement && target.isContentEditable)
+      ) {
+        return;
+      }
+
+      const key = event.key.toLowerCase();
+      if (key === "n") {
+        event.preventDefault();
+        router.push("/workflows?tab=setup");
+      } else if (key === "w") {
+        event.preventDefault();
+        router.push("/workflows?tab=current");
+      }
+    }
+
+    window.addEventListener("keydown", handleDashboardShortcut);
+    return () => window.removeEventListener("keydown", handleDashboardShortcut);
+  }, [router]);
+
   async function handleLogout() {
     setIsLoggingOut(true);
     setLogoutMessage(null);
@@ -568,6 +614,7 @@ function HomeDashboardContent() {
   async function handleSync() {
     setIsSyncing(true);
     setSyncResult(null);
+    setRepositoryActionError(null);
     try {
       const result = await syncProjects();
       setSyncResult(result);
@@ -576,7 +623,9 @@ function HomeDashboardContent() {
       });
       setProjects(updated.items);
     } catch {
-      // silently ignore
+      setRepositoryActionError(
+        "GitHub sync failed. Check the connection and try again.",
+      );
     } finally {
       setIsSyncing(false);
     }
@@ -584,12 +633,15 @@ function HomeDashboardContent() {
 
   async function handleDisconnect(id: string) {
     setDisconnectingId(id);
+    setRepositoryActionError(null);
     try {
       await disconnectProject(id);
       setProjects((prev) => prev.filter((p) => p.id !== id));
       setConfirmDisconnectId(null);
     } catch {
-      // silently ignore
+      setRepositoryActionError(
+        "The project could not be disconnected. Please try again.",
+      );
     } finally {
       setDisconnectingId(null);
     }
@@ -602,6 +654,12 @@ function HomeDashboardContent() {
     completeOnboarding().catch(() => {
       // Non-fatal — the modal is already hidden optimistically.
     });
+  }
+
+  function refreshDashboard() {
+    loadHistory();
+    loadProjects();
+    loadRepos();
   }
 
   /* ── Helpers ────────────────────────────────────────────────────────────── */
@@ -714,14 +772,14 @@ function HomeDashboardContent() {
 
   return (
     <main
-      className="dash-shell"
+      className="dash-shell dashboard-shell"
       suppressHydrationWarning
       style={{ overflowX: "hidden" }}
     >
       <a href="#main-content" className="skip-link">
         Skip to main content
       </a>
-      <FlowBackground />
+      <FlowBackground variant="calm" />
 
       <AppNav
         guest={guest}
@@ -947,9 +1005,21 @@ function HomeDashboardContent() {
                 </>
               ) : (
                 <>
+                  <button
+                    className="ghost-button"
+                    type="button"
+                    onClick={refreshDashboard}
+                    style={{
+                      padding: "0.4rem 1rem",
+                      fontSize: "0.8rem",
+                      minHeight: "2.2rem",
+                    }}
+                  >
+                    Refresh data
+                  </button>
                   <Link
                     className="primary-button"
-                    href="/workflows"
+                    href="/workflows?tab=setup"
                     style={{
                       padding: "0.4rem 1.2rem",
                       fontSize: "0.8rem",
@@ -1207,6 +1277,23 @@ function HomeDashboardContent() {
                 <>
                   {/* ── Provisioned Projects ── */}
                   <section aria-label="Provisioned projects">
+                    {repositoryActionError ? (
+                      <div className="error-inline" role="alert">
+                        <span className="error-inline-icon" aria-hidden="true">
+                          !
+                        </span>
+                        <p className="error-inline-msg">
+                          {repositoryActionError}
+                        </p>
+                        <button
+                          type="button"
+                          className="error-retry-btn"
+                          onClick={() => setRepositoryActionError(null)}
+                        >
+                          Dismiss
+                        </button>
+                      </div>
+                    ) : null}
                     <div className="dash-section-label">
                       <div className="dash-section-label-left">
                         <p

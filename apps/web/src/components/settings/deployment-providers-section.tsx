@@ -90,6 +90,7 @@ export function DeploymentProvidersSection({
             onChange={(event) => setToken(event.target.value)}
             placeholder="Provider token"
             type="password"
+            autoComplete="off"
             style={fieldStyle}
             disabled={!canManageProviders}
           />

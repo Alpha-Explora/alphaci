@@ -2,14 +2,8 @@
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useMemo, useState, type MouseEvent } from "react";
-import {
-  motion,
-  useMotionValue,
-  useReducedMotion,
-  useSpring,
-  useTransform,
-} from "framer-motion";
+import { useEffect, useMemo, useState } from "react";
+import { motion, useReducedMotion } from "framer-motion";
 
 import { FlowBackground } from "@/components/layout/flow-background";
 import { PublicSiteNav } from "@/components/layout/public-site-nav";
@@ -81,20 +75,6 @@ export function OAuthAuthPage({
     [githubCallbackReturnTo],
   );
 
-  const pointerX = useMotionValue(0);
-  const pointerY = useMotionValue(0);
-
-  const rotateX = useSpring(useTransform(pointerY, [-0.5, 0.5], [3.2, -3.2]), {
-    stiffness: 190,
-    damping: 24,
-    mass: 0.45,
-  });
-  const rotateY = useSpring(useTransform(pointerX, [-0.5, 0.5], [-3.2, 3.2]), {
-    stiffness: 190,
-    damping: 24,
-    mass: 0.45,
-  });
-
   useEffect(() => {
     setBrowserOrigin(window.location.origin);
   }, []);
@@ -105,35 +85,12 @@ export function OAuthAuthPage({
     if (redirectPath) router.replace(redirectPath);
   }, [nextPath, router, session, status]);
 
-  function handleCardPointerMove(event: MouseEvent<HTMLDivElement>) {
-    if (prefersReducedMotion) return;
-    const bounds = event.currentTarget.getBoundingClientRect();
-    const x = (event.clientX - bounds.left) / bounds.width - 0.5;
-    const y = (event.clientY - bounds.top) / bounds.height - 0.5;
-    pointerX.set(Math.max(-0.5, Math.min(0.5, x)));
-    pointerY.set(Math.max(-0.5, Math.min(0.5, y)));
-  }
-
-  function handleCardPointerLeave() {
-    pointerX.set(0);
-    pointerY.set(0);
-  }
-
   return (
-    <main className="auth-shell-split">
-      <FlowBackground />
+    <main className="auth-shell-split auth-shell-minimal">
+      <FlowBackground variant="calm" />
       <PublicSiteNav active="pricing" fixed showActions={false} />
-      <div className="auth-shell-grid" aria-hidden="true" />
-      <div className="auth-scanline" aria-hidden="true" />
 
       <div className="auth-left-panel">
-        <div className="auth-left-effects" aria-hidden="true">
-          <span className="auth-rail auth-rail-a" />
-          <span className="auth-rail auth-rail-b" />
-          <span className="auth-signal auth-signal-a" />
-          <span className="auth-signal auth-signal-b" />
-        </div>
-
         <div className="auth-internal-welcome">
           <motion.div
             className="auth-internal-eyebrow"
@@ -196,49 +153,10 @@ export function OAuthAuthPage({
             </p>
           </motion.div>
 
-          <motion.div
-            className="auth-internal-system-list"
-            initial={prefersReducedMotion ? undefined : { opacity: 0 }}
-            animate={prefersReducedMotion ? undefined : { opacity: 1 }}
-            transition={{ duration: 0.4, delay: 0.5 }}
-          >
-            {[
-              {
-                label: "Generate and update CI/CD workflow files",
-                meta: "Central templates with repository-aware setup.",
-              },
-              {
-                label: "Create repositories inside ALPHACI",
-                meta: "Organization provisioning stays locked to the company org.",
-              },
-              {
-                label: "Manage deployment provider connections",
-                meta: "Tokens and environment values stay encrypted server-side.",
-              },
-              {
-                label: "Track projects, runs, and access state",
-                meta: "Operational status stays visible for internal users.",
-              },
-            ].map((item, i) => (
-              <motion.div
-                key={item.label}
-                className="auth-internal-system-item"
-                initial={
-                  prefersReducedMotion ? undefined : { opacity: 0, x: -12 }
-                }
-                animate={
-                  prefersReducedMotion ? undefined : { opacity: 1, x: 0 }
-                }
-                transition={{ duration: 0.35, delay: 0.55 + i * 0.08 }}
-              >
-                <span aria-hidden="true" />
-                <div>
-                  <strong>{item.label}</strong>
-                  <p>{item.meta}</p>
-                </div>
-              </motion.div>
-            ))}
-          </motion.div>
+          <p className="auth-minimal-note">
+            One secure workspace for repositories, delivery workflows, and
+            deployment activity.
+          </p>
         </div>
       </div>
 
@@ -254,16 +172,7 @@ export function OAuthAuthPage({
             prefersReducedMotion ? undefined : { opacity: 1, y: 0, scale: 1 }
           }
           transition={{ duration: 0.42, ease: [0.22, 1, 0.36, 1] }}
-          onMouseMove={handleCardPointerMove}
-          onMouseLeave={handleCardPointerLeave}
-          style={
-            prefersReducedMotion
-              ? undefined
-              : { transformPerspective: 1100, rotateX, rotateY }
-          }
         >
-          <span className="auth-card-topline" aria-hidden="true" />
-          <span className="auth-card-sweep" aria-hidden="true" />
           <div className="auth-header">
             <motion.p
               className="hero-kicker"

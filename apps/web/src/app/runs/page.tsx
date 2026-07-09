@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { motion, useReducedMotion, AnimatePresence } from "framer-motion";
 
 import { AppNav } from "@/components/layout/app-nav";
@@ -367,8 +367,17 @@ function RunsContent({
   const [collapsedRepos, setCollapsedRepos] = useState<ReadonlySet<string>>(
     new Set(),
   );
+  const hasInitializedCollapse = useRef(false);
 
   const groupedRuns = useMemo(() => groupRunsByProject(runs), [runs]);
+
+  // All project groups start closed; the user's own toggles afterward win.
+  useEffect(() => {
+    if (!hasInitializedCollapse.current && groupedRuns.length > 0) {
+      hasInitializedCollapse.current = true;
+      setCollapsedRepos(new Set(groupedRuns.map((g) => g.repoFullName)));
+    }
+  }, [groupedRuns]);
 
   function toggleRepo(repo: string) {
     setCollapsedRepos((prev) => {

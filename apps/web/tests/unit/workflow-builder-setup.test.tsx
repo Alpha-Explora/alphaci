@@ -318,7 +318,7 @@ describe("WorkflowBuilder project setup", () => {
       repoUrl: "https://github.com/tone/demo-next-app",
       cloneUrl: "https://github.com/tone/demo-next-app.git",
       defaultBranch: "main",
-      branchesCreated: ["test", "uat", "main"],
+      branchesCreated: ["main", "uat", "develop"],
     });
     mockedCreateProject.mockResolvedValue({
       id: "project-1",
@@ -513,7 +513,7 @@ describe("WorkflowBuilder project setup", () => {
               provider: "vercel",
               slot: "frontend",
               projectName: "orders-api",
-              branchName: "test",
+              branchName: "uat",
             }),
           ],
         }),
