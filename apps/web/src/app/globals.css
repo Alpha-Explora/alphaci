@@ -9052,6 +9052,214 @@ select option {
   gap: 0.45rem;
 }
 
+.env-variables-form {
+  gap: 1rem;
+  padding: 1rem;
+}
+
+.env-variables-form > .env-target-grid__field {
+  display: grid;
+  gap: 0.42rem;
+  padding: 0.8rem;
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  background: rgba(15, 23, 42, 0.22);
+}
+
+.env-variables-form > .env-target-grid__field > span:first-child {
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.env-variable-workspace {
+  display: grid;
+  grid-template-columns: minmax(0, 1.45fr) minmax(17rem, 0.75fr);
+  gap: 0.8rem;
+  align-items: start;
+}
+
+.env-variable-editor,
+.env-bulk-editor {
+  display: grid;
+  gap: 0.7rem;
+  min-width: 0;
+  padding: 0.85rem;
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  background: rgba(15, 23, 42, 0.22);
+}
+
+.env-variable-subheader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.8rem;
+  min-height: 2.45rem;
+}
+
+.env-variable-subheader > div:first-child {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.env-variable-subheader strong {
+  color: var(--text-primary);
+  font-size: 0.82rem;
+}
+
+.env-variable-subheader span {
+  color: var(--text-muted);
+  font-size: 0.74rem;
+  line-height: 1.45;
+}
+
+.env-variable-column-labels {
+  display: grid;
+  grid-template-columns: minmax(10rem, 0.8fr) minmax(12rem, 1fr) 2.45rem;
+  gap: 0.45rem;
+  padding-inline: 0.1rem;
+  color: var(--text-muted);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.env-variable-column-labels span:last-child {
+  grid-column: 2;
+}
+
+.env-variable-rows {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.env-variables-form .env-var-row {
+  grid-template-columns: minmax(10rem, 0.8fr) minmax(12rem, 1fr) 2.45rem;
+  align-items: center;
+}
+
+.env-variables-form .env-var-row input,
+.env-bulk-editor textarea {
+  min-height: 2.45rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: rgba(15, 23, 42, 0.54);
+  color: var(--text-primary);
+  padding: 0.52rem 0.65rem;
+  font-size: 0.8rem;
+}
+
+.env-bulk-editor textarea {
+  width: 100%;
+  min-height: 8.25rem;
+  resize: vertical;
+  line-height: 1.55;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+.env-bulk-editor__validate {
+  justify-self: start;
+}
+
+.env-bulk-validation {
+  display: grid;
+  gap: 0.55rem;
+  padding: 0.65rem;
+  border: 1px solid rgba(52, 211, 153, 0.2);
+  border-radius: 7px;
+  background: rgba(52, 211, 153, 0.05);
+  color: var(--text-secondary);
+  font-size: 0.74rem;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.env-bulk-validation .ghost-button {
+  justify-self: start;
+}
+
+.env-variables-form .env-form-actions {
+  justify-content: flex-end;
+  padding-top: 0.15rem;
+}
+
+.env-provisioned-variables {
+  gap: 0.8rem;
+  padding: 1rem;
+}
+
+.env-provisioned-variables .env-metadata-filters {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.env-provisioned-variables .env-metadata-list {
+  overflow: hidden;
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+}
+
+.env-provisioned-variables .env-metadata-row {
+  grid-template-columns: minmax(10rem, 0.7fr) minmax(13rem, 1fr) auto;
+  align-items: center;
+  gap: 0.8rem;
+  padding: 0.72rem 0.8rem;
+  border-top: 1px solid var(--border-subtle);
+  background: rgba(15, 23, 42, 0.16);
+}
+
+.env-metadata-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.4rem;
+}
+
+.env-provisioned-variables .env-metadata-actions .ghost-button {
+  min-height: 2rem;
+  padding: 0.38rem 0.65rem;
+  font-size: 0.74rem;
+}
+
+@media (max-width: 980px) {
+  .env-variable-workspace {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .env-variable-subheader {
+    flex-direction: column;
+  }
+
+  .env-variable-column-labels {
+    display: none;
+  }
+
+  .env-variables-form .env-var-row,
+  .env-provisioned-variables .env-metadata-filters,
+  .env-provisioned-variables .env-metadata-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .env-variables-form .env-var-row__remove {
+    width: 100%;
+  }
+
+  .env-variables-form .env-form-actions,
+  .env-metadata-actions {
+    justify-content: stretch;
+  }
+
+  .env-variables-form .env-form-actions > *,
+  .env-metadata-actions > * {
+    flex: 1 1 auto;
+  }
+}
+
 .env-metadata-list {
   display: grid;
   gap: 0.35rem;
@@ -15515,44 +15723,14 @@ select option {
     linear-gradient(180deg, #f5f9ff 0%, #edf4fd 100%);
 }
 
-.dashboard-shell .welcome-banner-flat,
-.dashboard-shell .bento-card,
-.dashboard-shell .glass-panel,
-.dashboard-shell .dash-repo-row {
-  background: rgba(16, 32, 61, 0.78);
-  border-color: rgba(125, 164, 214, 0.19);
-  box-shadow: 0 12px 30px rgba(3, 10, 25, 0.16);
-}
-
-.dashboard-shell .bento-card-brand,
-.dashboard-shell .bento-card-violet,
-.dashboard-shell .bento-card-teal,
-.dashboard-shell .bento-card-activity,
-.dashboard-shell .bento-card-quick-actions {
-  background: rgba(16, 32, 61, 0.78);
-  border-color: rgba(125, 164, 214, 0.19);
-}
-
-.dashboard-shell .bento-num-brand,
-.dashboard-shell .bento-num-violet,
-.dashboard-shell .bento-num-teal,
-.dashboard-shell .bento-card-icon,
-.dashboard-shell .bento-card-eyebrow {
-  color: #67b7f7;
-}
-
-.dashboard-shell .bento-pulse-dot {
-  background: #60a5fa;
-  box-shadow: 0 0 0 4px rgba(96, 165, 250, 0.1);
-}
-
-.dashboard-shell .bento-card::before {
-  background: linear-gradient(
-    90deg,
-    transparent,
-    rgba(96, 165, 250, 0.42),
-    transparent
-  );
+.dashboard-shell {
+  background:
+    radial-gradient(
+      circle at 82% -12%,
+      rgba(56, 189, 248, 0.15),
+      transparent 34rem
+    ),
+    linear-gradient(180deg, #17375f 0%, #102949 48%, #0d223e 100%);
 }
 
 .bento-card-link {
@@ -15565,23 +15743,32 @@ select option {
   outline-offset: 3px;
 }
 
-.dashboard-shell .bento-card:hover {
-  border-color: rgba(96, 165, 250, 0.42);
-  transform: translateY(-2px);
-}
-
-[data-theme="light"] .dashboard-shell .welcome-banner-flat,
-[data-theme="light"] .dashboard-shell .bento-card,
-[data-theme="light"] .dashboard-shell .glass-panel,
-[data-theme="light"] .dashboard-shell .dash-repo-row {
-  background: rgba(255, 255, 255, 0.88) !important;
-  border-color: rgba(71, 112, 165, 0.18) !important;
-  box-shadow: 0 12px 30px rgba(52, 84, 124, 0.08) !important;
+[data-theme="light"] .dashboard-shell {
+  background:
+    radial-gradient(
+      circle at 82% -12%,
+      rgba(56, 189, 248, 0.18),
+      transparent 34rem
+    ),
+    linear-gradient(180deg, #dcecff 0%, #d2e5fb 48%, #c9def6 100%);
 }
 
 /* Minimal public entry surface: one accent family, no decorative spectacle. */
 .auth-shell-minimal {
   background: transparent;
+  --text-primary: #f4f8ff;
+  --text-secondary: #aebed3;
+  --text-muted: #7e93ae;
+}
+
+.auth-shell-minimal .flow-bg__calm-surface {
+  background:
+    radial-gradient(
+      circle at 78% -10%,
+      rgba(37, 99, 235, 0.13),
+      transparent 30rem
+    ),
+    linear-gradient(180deg, #0c1a31 0%, #081426 52%, #071120 100%);
 }
 
 .auth-shell-minimal .auth-left-panel,
@@ -15610,12 +15797,14 @@ select option {
 
 .auth-shell-minimal .auth-internal-copy h2 {
   max-width: 12ch;
-  font-size: clamp(2rem, 4vw, 3.7rem);
+  font-size: clamp(2.75rem, 5vw, 4.8rem);
   letter-spacing: -0.045em;
+  line-height: 0.98;
 }
 
 .auth-shell-minimal .auth-internal-copy p:not(.auth-internal-kicker) {
   max-width: 38rem;
+  font-size: clamp(1.05rem, 1.25vw, 1.18rem);
 }
 
 .auth-minimal-note {
@@ -15624,7 +15813,7 @@ select option {
   padding-top: 1.25rem;
   border-top: 1px solid rgba(125, 164, 214, 0.18);
   color: var(--text-secondary);
-  font-size: 0.86rem;
+  font-size: 0.98rem;
   line-height: 1.65;
 }
 
@@ -15632,7 +15821,45 @@ select option {
   background: rgba(14, 29, 55, 0.88);
   border: 1px solid rgba(125, 164, 214, 0.22);
   box-shadow: 0 24px 64px rgba(2, 8, 23, 0.24);
+  max-width: 30rem;
+  padding: 2.35rem 2.25rem 1.8rem;
   transform: none !important;
+}
+
+.auth-shell-minimal .auth-header {
+  gap: 0.55rem;
+  margin-bottom: 1.35rem;
+}
+
+.auth-shell-minimal .auth-header .hero-kicker {
+  font-size: 0.82rem;
+}
+
+.auth-shell-minimal .auth-header h1 {
+  font-size: clamp(1.8rem, 3vw, 2.25rem);
+  line-height: 1.12;
+}
+
+.auth-shell-minimal .auth-subtitle {
+  font-size: 1rem;
+  line-height: 1.65;
+}
+
+.auth-shell-minimal .auth-provider-single > p {
+  font-size: 0.88rem !important;
+  line-height: 1.5;
+}
+
+.auth-shell-minimal .auth-trust-strip span {
+  min-height: 2rem;
+  padding-inline: 0.72rem;
+  font-size: 0.8rem;
+}
+
+.auth-shell-minimal .auth-switch-text,
+.auth-shell-minimal .helper-text {
+  font-size: 0.92rem;
+  line-height: 1.55;
 }
 
 .auth-shell-minimal .auth-card-shell:hover {
@@ -15648,13 +15875,44 @@ select option {
 
 [data-theme="light"] .auth-shell-minimal .auth-internal-eyebrow,
 [data-theme="light"] .auth-shell-minimal .auth-card-shell {
-  background: rgba(255, 255, 255, 0.9) !important;
-  border-color: rgba(71, 112, 165, 0.2) !important;
-  box-shadow: 0 20px 50px rgba(52, 84, 124, 0.1) !important;
+  background: rgba(12, 27, 51, 0.92) !important;
+  border-color: rgba(125, 164, 214, 0.22) !important;
+  box-shadow: 0 24px 64px rgba(2, 8, 23, 0.28) !important;
+}
+
+[data-theme="light"] .auth-shell-minimal .flow-bg__calm-surface {
+  background:
+    radial-gradient(
+      circle at 78% -10%,
+      rgba(37, 99, 235, 0.13),
+      transparent 30rem
+    ),
+    linear-gradient(180deg, #0c1a31 0%, #081426 52%, #071120 100%);
+}
+
+[data-theme="light"] .auth-shell-minimal .public-site-nav {
+  background: rgba(8, 20, 38, 0.9);
+  border-bottom-color: rgba(125, 164, 214, 0.16);
+  color: #f4f8ff;
 }
 
 @media (max-width: 900px) {
   .auth-shell-minimal .auth-left-panel {
     padding-right: var(--layout-gutter);
+  }
+}
+
+@media (max-width: 760px) {
+  .auth-shell-minimal .auth-card-shell {
+    max-width: 31rem;
+    padding: 2rem 1.5rem 1.55rem;
+  }
+
+  .auth-shell-minimal .auth-header h1 {
+    font-size: clamp(1.75rem, 8vw, 2.15rem);
+  }
+
+  .auth-shell-minimal .auth-subtitle {
+    font-size: 0.98rem;
   }
 }
