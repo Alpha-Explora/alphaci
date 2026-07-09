@@ -15474,7 +15474,7 @@ select option {
 /* ── Calm blue product surfaces ─────────────────────────────────────────── */
 
 .flow-bg--calm {
-  background: #0b1730 !important;
+  background: #132a4d !important;
 }
 
 .flow-bg__calm-surface {
@@ -15483,10 +15483,10 @@ select option {
   background:
     radial-gradient(
       circle at 82% -8%,
-      rgba(59, 130, 246, 0.16),
-      transparent 34rem
+      rgba(56, 189, 248, 0.2),
+      transparent 36rem
     ),
-    linear-gradient(180deg, #10203d 0%, #0b1730 46%, #0a1428 100%);
+    linear-gradient(180deg, #1c3a66 0%, #132a4d 46%, #0f2040 100%);
 }
 
 .flow-bg__calm-surface::after {

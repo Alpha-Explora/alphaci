@@ -18,7 +18,7 @@ export function PipelineLoader({
 
   return (
     <main className="pipeline-loader-shell">
-      <FlowBackground />
+      <FlowBackground variant="calm" />
 
       <section className="pipeline-loader-center" role="status" aria-label={label}>
         <motion.div
