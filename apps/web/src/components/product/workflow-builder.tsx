@@ -133,6 +133,13 @@ export function WorkflowBuilder({ guest = false, session, onboardingCompleted }:
   }
 
   async function handleCreateProject() {
+    if (deploymentProvisioning.renderVariablesMissing) {
+      setStatusMessage(
+        "Add at least one Render environment variable before creating the repository.",
+      );
+      return;
+    }
+
     const payloadResult = createForm.buildPayload({
       isMicroservicesShape: projectCatalog.isMicroservicesShape,
       isMultiRepoShape: projectCatalog.isMultiRepoShape,

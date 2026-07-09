@@ -85,6 +85,55 @@ function sanitizedVariableGroups(
     );
 }
 
+function targetBranchKey(target: DeploymentProvisioningTargetRequest): string {
+  const branch = target.branchName?.trim() || "test";
+  return `${target.slot}:${target.provider}:${branch}`;
+}
+
+function countEnvVars(envSets: DeploymentProvisioningEnvSet[] | undefined) {
+  return (envSets ?? []).reduce(
+    (total, envSet) => total + envSet.vars.length,
+    0,
+  );
+}
+
+function countRenderVariables(
+  targets: DeploymentProvisioningTargetRequest[],
+  variableGroups: DeploymentProvisioningVariableGroup[],
+): number {
+  const renderTargetKeys = new Set(
+    targets
+      .filter((target) => target.provider === "render")
+      .map((target) => targetBranchKey(target)),
+  );
+
+  if (renderTargetKeys.size === 0) {
+    return 0;
+  }
+
+  const branchVarCount = targets
+    .filter((target) => target.provider === "render")
+    .reduce((total, target) => total + countEnvVars(target.env), 0);
+
+  const groupVarCount = variableGroups
+    .filter((group) => {
+      if (group.provider !== "render") {
+        return false;
+      }
+
+      if (group.appliesTo !== "selected") {
+        return true;
+      }
+
+      return (group.targetBranches ?? []).some((targetKey) =>
+        renderTargetKeys.has(targetKey),
+      );
+    })
+    .reduce((total, group) => total + countEnvVars(group.env), 0);
+
+  return branchVarCount + groupVarCount;
+}
+
 export function useDeploymentProvisioningForm() {
   const [enabled, setEnabled] = useState(false);
   const [request, setRequest] = useState<DeploymentProvisioningRequest>({
@@ -126,6 +175,16 @@ export function useDeploymentProvisioningForm() {
       activeProviders,
     );
 
+    const targets = request.targets.map((target) => ({
+      ...target,
+      projectName: target.projectName?.trim() || undefined,
+      branchName: target.branchName?.trim() || "test",
+      rootDirectory: target.rootDirectory?.trim() || undefined,
+      buildCommand: target.buildCommand?.trim() || undefined,
+      startCommand: target.startCommand?.trim() || undefined,
+      env: sanitizedEnvSets(target.env),
+    }));
+
     return {
       ...request,
       enabled: true,
@@ -133,21 +192,32 @@ export function useDeploymentProvisioningForm() {
         ? { variableGroups }
         : { variableGroups: undefined }),
       ...(sharedEnv.length ? { sharedEnv } : { sharedEnv: undefined }),
-      targets: request.targets.map((target) => ({
-        ...target,
-        projectName: target.projectName?.trim() || undefined,
-        branchName: target.branchName?.trim() || "test",
-        rootDirectory: target.rootDirectory?.trim() || undefined,
-        buildCommand: target.buildCommand?.trim() || undefined,
-        startCommand: target.startCommand?.trim() || undefined,
-        env: sanitizedEnvSets(target.env),
-      })),
+      targets,
     };
   }, [enabled, request]);
+
+  const renderVariableCount = useMemo(() => {
+    if (!payload) {
+      return 0;
+    }
+
+    return countRenderVariables(
+      payload.targets,
+      payload.variableGroups ?? [],
+    );
+  }, [payload]);
+  const renderVariablesRequired = Boolean(
+    payload?.targets.some((target) => target.provider === "render"),
+  );
+  const renderVariablesMissing =
+    renderVariablesRequired && renderVariableCount === 0;
 
   return {
     enabled,
     payload,
+    renderVariableCount,
+    renderVariablesMissing,
+    renderVariablesRequired,
     request,
     setDefaultTarget,
     setDefaultTargets,

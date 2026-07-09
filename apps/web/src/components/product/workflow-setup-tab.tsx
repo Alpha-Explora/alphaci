@@ -149,6 +149,7 @@ export function WorkflowSetupTab({
     isCreatingProject ||
     projectQuotaReached ||
     projectCatalog.loadingProjectOptions ||
+    deploymentProvisioning.renderVariablesMissing ||
     !form.repoName.trim() ||
     (!projectCatalog.isMicroservicesShape && !projectCatalog.isMultiRepoShape && !projectCatalog.selectedProjectType);
 
@@ -832,6 +833,12 @@ export function WorkflowSetupTab({
               {projectQuota ? (
                 <div className="env-empty-state" role="status" style={{ marginTop: "1.25rem" }}>
                   Project quota: {formatQuotaStatus(projectQuota)}
+                </div>
+              ) : null}
+
+              {deploymentProvisioning.renderVariablesMissing ? (
+                <div className="env-empty-state" role="alert" style={{ marginTop: "1.25rem" }}>
+                  Add at least one Render environment variable before creating the repository.
                 </div>
               ) : null}
 
