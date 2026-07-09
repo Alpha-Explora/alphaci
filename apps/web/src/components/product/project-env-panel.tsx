@@ -531,7 +531,10 @@ export function ProjectEnvPanel({
       ) : null}
 
       {showVariables ? (
-      <form className="env-provisioning-section" onSubmit={handleProvision}>
+      <form
+        className="env-provisioning-section env-variables-form"
+        onSubmit={handleProvision}
+      >
         <div className="env-section-header">
           <div>
             <h4>Branch variables</h4>
@@ -575,153 +578,183 @@ export function ProjectEnvPanel({
           </p>
         )}
 
-        <div className="env-environment-tabs">
-          {(["uat", "production"] as EnvEnvironment[]).map((env) => (
-            <button
-              key={env}
-              className={
-                environment === env ? "primary-button" : "ghost-button"
-              }
-              type="button"
-              onClick={() => setEnvironment(env)}
-            >
-              {env}
-            </button>
-          ))}
-        </div>
+        <div className="env-variable-workspace">
+          <section className="env-variable-editor" aria-label="Variable editor">
+            <div className="env-variable-subheader">
+              <div>
+                <strong>Variables</strong>
+                <span>Add keys individually for this environment.</span>
+              </div>
+              <div className="env-environment-tabs" aria-label="Environment">
+                {(["uat", "production"] as EnvEnvironment[]).map((env) => (
+                  <button
+                    key={env}
+                    className={
+                      environment === env ? "primary-button" : "ghost-button"
+                    }
+                    type="button"
+                    onClick={() => setEnvironment(env)}
+                  >
+                    {env}
+                  </button>
+                ))}
+              </div>
+            </div>
 
-        <div className="env-var-row" style={{ alignItems: "stretch" }}>
-          <textarea
-            aria-label="Bulk env text"
-            value={bulkEnvText}
-            onChange={(event) => setBulkEnvText(event.target.value)}
-            placeholder={"DATABASE_URL=...\nAPI_KEY=..."}
-            rows={4}
-            style={{ minHeight: "6rem", resize: "vertical" }}
-          />
-          <button
-            className="ghost-button"
-            disabled={
-              saving || loading || !activeTargetId || bulkEnvText.trim() === ""
-            }
-            type="button"
-            onClick={() => void handleBulkValidate()}
-          >
-            Validate .env
-          </button>
-        </div>
+            <div className="env-variable-column-labels" aria-hidden="true">
+              <span>Key</span>
+              <span>Secret value</span>
+            </div>
+            <div className="env-variable-rows">
+              {rows.map((row, index) => (
+                <div key={index} className="env-var-row">
+                  <input
+                    aria-label={`Variable key ${index + 1}`}
+                    value={row.key}
+                    onChange={(event) =>
+                      setRows((current) =>
+                        current.map((item, i) =>
+                          i === index
+                            ? {
+                                ...item,
+                                key: event.target.value.toUpperCase(),
+                              }
+                            : item,
+                        ),
+                      )
+                    }
+                    placeholder="DATABASE_URL"
+                  />
+                  <input
+                    aria-label={`Variable value ${index + 1}`}
+                    value={row.value}
+                    onChange={(event) =>
+                      setRows((current) =>
+                        current.map((item, i) =>
+                          i === index
+                            ? { ...item, value: event.target.value }
+                            : item,
+                        ),
+                      )
+                    }
+                    placeholder="Value"
+                    type="password"
+                    autoComplete="off"
+                  />
+                  <button
+                    className="env-var-row__remove"
+                    aria-label={`Remove variable row ${index + 1}`}
+                    title="Remove variable"
+                    type="button"
+                    onClick={() =>
+                      setRows((current) =>
+                        current.filter((_, i) => i !== index),
+                      )
+                    }
+                  >
+                    ×
+                  </button>
+                </div>
+              ))}
+            </div>
 
-        {bulkValidation ? (
-          <div
-            className="env-metadata-row provisioned"
-            style={{ alignItems: "center" }}
-          >
-            <span>
-              <strong>Parsed keys</strong>
-              <br />
-              {bulkValidation.keys.length
-                ? bulkValidation.keys.join(", ")
-                : "No valid keys"}
-              {bulkValidation.duplicates.length
-                ? ` - duplicates: ${bulkValidation.duplicates.join(", ")}`
-                : ""}
-              {bulkValidation.invalidKeys.length
-                ? ` - invalid: ${bulkValidation.invalidKeys.join(", ")}`
-                : ""}
-            </span>
-            <button
-              className="ghost-button"
-              disabled={!bulkValidation.keys.length}
-              type="button"
-              onClick={useParsedKeys}
-            >
-              Use parsed keys
-            </button>
-          </div>
-        ) : null}
+            {envKeyQuota ? (
+              <div className="env-empty-state" role="status">
+                Env key quota: {formatQuotaStatus(envKeyQuota)}
+              </div>
+            ) : null}
 
-        {rows.map((row, index) => (
-          <div key={index} className="env-var-row">
-            <input
-              value={row.key}
-              onChange={(event) =>
-                setRows((current) =>
-                  current.map((item, i) =>
-                    i === index
-                      ? { ...item, key: event.target.value.toUpperCase() }
-                      : item,
-                  ),
-                )
-              }
-              placeholder="DATABASE_URL"
+            <div className="env-form-actions">
+              <button
+                className="ghost-button"
+                type="button"
+                onClick={() =>
+                  setRows((current) => [...current, { key: "", value: "" }])
+                }
+              >
+                Add row
+              </button>
+              <button
+                className="primary-button"
+                disabled={
+                  saving ||
+                  loading ||
+                  !activeTargetId ||
+                  invalid ||
+                  envKeyQuotaReached
+                }
+                type="submit"
+              >
+                Provision
+              </button>
+            </div>
+          </section>
+
+          <section className="env-bulk-editor" aria-label="Bulk environment">
+            <div className="env-variable-subheader">
+              <div>
+                <strong>Paste a .env file</strong>
+                <span>Validate keys before adding them to the form.</span>
+              </div>
+            </div>
+            <textarea
+              aria-label="Bulk env text"
+              value={bulkEnvText}
+              onChange={(event) => setBulkEnvText(event.target.value)}
+              placeholder={"DATABASE_URL=...\nAPI_KEY=..."}
+              rows={6}
             />
-            <input
-              value={row.value}
-              onChange={(event) =>
-                setRows((current) =>
-                  current.map((item, i) =>
-                    i === index ? { ...item, value: event.target.value } : item,
-                  ),
-                )
-              }
-              placeholder="Value"
-              type="password"
-              autoComplete="off"
-            />
             <button
-              className="env-var-row__remove"
-              aria-label={`Remove variable row ${index + 1}`}
-              title="Remove variable"
-              type="button"
-              onClick={() =>
-                setRows((current) => current.filter((_, i) => i !== index))
+              className="ghost-button env-bulk-editor__validate"
+              disabled={
+                saving ||
+                loading ||
+                !activeTargetId ||
+                bulkEnvText.trim() === ""
               }
+              type="button"
+              onClick={() => void handleBulkValidate()}
             >
-              ×
+              Validate .env
             </button>
-          </div>
-        ))}
 
-        {envKeyQuota ? (
-          <div className="env-empty-state" role="status">
-            Env key quota: {formatQuotaStatus(envKeyQuota)}
-          </div>
-        ) : null}
-
-        <div className="env-form-actions">
-          <button
-            className="ghost-button"
-            type="button"
-            onClick={() =>
-              setRows((current) => [...current, { key: "", value: "" }])
-            }
-          >
-            Add row
-          </button>
-          <button
-            className="primary-button"
-            disabled={
-              saving ||
-              loading ||
-              !activeTargetId ||
-              invalid ||
-              envKeyQuotaReached
-            }
-            type="submit"
-          >
-            Provision
-          </button>
+            {bulkValidation ? (
+              <div className="env-bulk-validation">
+                <span>
+                  <strong>Parsed keys</strong>
+                  <br />
+                  {bulkValidation.keys.length
+                    ? bulkValidation.keys.join(", ")
+                    : "No valid keys"}
+                  {bulkValidation.duplicates.length
+                    ? ` - duplicates: ${bulkValidation.duplicates.join(", ")}`
+                    : ""}
+                  {bulkValidation.invalidKeys.length
+                    ? ` - invalid: ${bulkValidation.invalidKeys.join(", ")}`
+                    : ""}
+                </span>
+                <button
+                  className="ghost-button"
+                  disabled={!bulkValidation.keys.length}
+                  type="button"
+                  onClick={useParsedKeys}
+                >
+                  Use parsed keys
+                </button>
+              </div>
+            ) : null}
+          </section>
         </div>
       </form>
       ) : null}
 
       {showVariables ? (
-      <section className="env-provisioning-section">
+      <section className="env-provisioning-section env-provisioned-variables">
         <div className="env-section-header">
           <h4>Provisioned variables</h4>
         </div>
         {metadata.length ? (
-          <div className="env-target-grid">
+          <div className="env-target-grid env-metadata-filters">
             <select
               aria-label="Filter target"
               value={filterTargetId}
@@ -775,14 +808,7 @@ export function ProjectEnvPanel({
                     ? ` - ${cleanUserMessage(item.errorSummary)}`
                     : ""}
                 </span>
-                <span
-                  style={{
-                    display: "flex",
-                    gap: "0.4rem",
-                    flexWrap: "wrap",
-                    justifyContent: "flex-end",
-                  }}
-                >
+                <span className="env-metadata-actions">
                   <button
                     className="ghost-button"
                     type="button"
