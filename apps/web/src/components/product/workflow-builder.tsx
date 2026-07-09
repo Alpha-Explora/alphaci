@@ -2,6 +2,7 @@
 
 import { useState, useEffect, type KeyboardEvent } from "react";
 import { MotionConfig, motion, useReducedMotion } from "framer-motion";
+import { useSearchParams } from "next/navigation";
 
 import {
   createProject,
@@ -49,9 +50,15 @@ interface WorkflowBuilderProps {
 
 export function WorkflowBuilder({ guest = false, session, onboardingCompleted }: Readonly<WorkflowBuilderProps>) {
   const prefersReducedMotion = useReducedMotion();
+  const searchParams = useSearchParams();
   const reducedMotion = prefersReducedMotion ?? false;
 
-  const [activeTab, setActiveTab] = useState<WorkflowTab>("setup");
+  const requestedTab = searchParams.get("tab");
+  const initialTab: WorkflowTab =
+    requestedTab === "current" || requestedTab === "all"
+      ? requestedTab
+      : "setup";
+  const [activeTab, setActiveTab] = useState<WorkflowTab>(initialTab);
   const [isCreatingProject, setIsCreatingProject] = useState(false);
   const [isDiscoveringExistingRepo, setIsDiscoveringExistingRepo] = useState(false);
   const [isSettingUpExistingRepo, setIsSettingUpExistingRepo] = useState(false);
@@ -177,7 +184,7 @@ export function WorkflowBuilder({ guest = false, session, onboardingCompleted }:
         githubCommitUrl: response.githubCommitUrl,
         projectTypeId: response.projectTypeId,
         workflowRecipeId: response.workflowRecipeId,
-        branchesCreated: ["main", "uat", "test"],
+        branchesCreated: ["main", "uat", "develop"],
         additionalWorkflowPaths: response.additionalWorkflowPaths,
         secondaryRepoFullName: response.secondaryRepoFullName,
         secondaryRepoUrl: response.secondaryRepoUrl,

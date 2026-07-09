@@ -15470,3 +15470,191 @@ select option {
     display: none !important;
   }
 }
+
+/* ── Calm blue product surfaces ─────────────────────────────────────────── */
+
+.flow-bg--calm {
+  background: #0b1730 !important;
+}
+
+.flow-bg__calm-surface {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(
+      circle at 82% -8%,
+      rgba(59, 130, 246, 0.16),
+      transparent 34rem
+    ),
+    linear-gradient(180deg, #10203d 0%, #0b1730 46%, #0a1428 100%);
+}
+
+.flow-bg__calm-surface::after {
+  position: absolute;
+  inset: 0;
+  background-image: linear-gradient(
+    rgba(148, 163, 184, 0.035) 1px,
+    transparent 1px
+  );
+  background-size: 100% 48px;
+  content: "";
+  mask-image: linear-gradient(to bottom, black, transparent 70%);
+}
+
+[data-theme="light"] .flow-bg--calm {
+  background: #eef5ff !important;
+}
+
+[data-theme="light"] .flow-bg__calm-surface {
+  background:
+    radial-gradient(
+      circle at 82% -8%,
+      rgba(37, 99, 235, 0.1),
+      transparent 32rem
+    ),
+    linear-gradient(180deg, #f5f9ff 0%, #edf4fd 100%);
+}
+
+.dashboard-shell .welcome-banner-flat,
+.dashboard-shell .bento-card,
+.dashboard-shell .glass-panel,
+.dashboard-shell .dash-repo-row {
+  background: rgba(16, 32, 61, 0.78);
+  border-color: rgba(125, 164, 214, 0.19);
+  box-shadow: 0 12px 30px rgba(3, 10, 25, 0.16);
+}
+
+.dashboard-shell .bento-card-brand,
+.dashboard-shell .bento-card-violet,
+.dashboard-shell .bento-card-teal,
+.dashboard-shell .bento-card-activity,
+.dashboard-shell .bento-card-quick-actions {
+  background: rgba(16, 32, 61, 0.78);
+  border-color: rgba(125, 164, 214, 0.19);
+}
+
+.dashboard-shell .bento-num-brand,
+.dashboard-shell .bento-num-violet,
+.dashboard-shell .bento-num-teal,
+.dashboard-shell .bento-card-icon,
+.dashboard-shell .bento-card-eyebrow {
+  color: #67b7f7;
+}
+
+.dashboard-shell .bento-pulse-dot {
+  background: #60a5fa;
+  box-shadow: 0 0 0 4px rgba(96, 165, 250, 0.1);
+}
+
+.dashboard-shell .bento-card::before {
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(96, 165, 250, 0.42),
+    transparent
+  );
+}
+
+.bento-card-link {
+  color: inherit;
+  text-decoration: none;
+}
+
+.bento-card-link:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 3px;
+}
+
+.dashboard-shell .bento-card:hover {
+  border-color: rgba(96, 165, 250, 0.42);
+  transform: translateY(-2px);
+}
+
+[data-theme="light"] .dashboard-shell .welcome-banner-flat,
+[data-theme="light"] .dashboard-shell .bento-card,
+[data-theme="light"] .dashboard-shell .glass-panel,
+[data-theme="light"] .dashboard-shell .dash-repo-row {
+  background: rgba(255, 255, 255, 0.88) !important;
+  border-color: rgba(71, 112, 165, 0.18) !important;
+  box-shadow: 0 12px 30px rgba(52, 84, 124, 0.08) !important;
+}
+
+/* Minimal public entry surface: one accent family, no decorative spectacle. */
+.auth-shell-minimal {
+  background: transparent;
+}
+
+.auth-shell-minimal .auth-left-panel,
+.auth-shell-minimal .auth-right-panel {
+  background: transparent;
+}
+
+.auth-shell-minimal .auth-left-panel::before,
+.auth-shell-minimal .auth-right-panel::before {
+  display: none;
+}
+
+.auth-shell-minimal .auth-left-panel {
+  padding-right: clamp(2rem, 7vw, 7rem);
+}
+
+.auth-shell-minimal .auth-internal-welcome {
+  max-width: 33rem;
+}
+
+.auth-shell-minimal .auth-internal-eyebrow {
+  background: rgba(25, 48, 84, 0.68);
+  border-color: rgba(125, 164, 214, 0.22);
+  box-shadow: none;
+}
+
+.auth-shell-minimal .auth-internal-copy h2 {
+  max-width: 12ch;
+  font-size: clamp(2rem, 4vw, 3.7rem);
+  letter-spacing: -0.045em;
+}
+
+.auth-shell-minimal .auth-internal-copy p:not(.auth-internal-kicker) {
+  max-width: 38rem;
+}
+
+.auth-minimal-note {
+  max-width: 31rem;
+  margin: 1.5rem 0 0;
+  padding-top: 1.25rem;
+  border-top: 1px solid rgba(125, 164, 214, 0.18);
+  color: var(--text-secondary);
+  font-size: 0.86rem;
+  line-height: 1.65;
+}
+
+.auth-shell-minimal .auth-card-shell {
+  background: rgba(14, 29, 55, 0.88);
+  border: 1px solid rgba(125, 164, 214, 0.22);
+  box-shadow: 0 24px 64px rgba(2, 8, 23, 0.24);
+  transform: none !important;
+}
+
+.auth-shell-minimal .auth-card-shell:hover {
+  border-color: rgba(125, 164, 214, 0.34);
+  box-shadow: 0 24px 64px rgba(2, 8, 23, 0.24);
+  transform: none !important;
+}
+
+[data-theme="light"] .auth-shell-minimal .auth-left-panel,
+[data-theme="light"] .auth-shell-minimal .auth-right-panel {
+  background: transparent !important;
+}
+
+[data-theme="light"] .auth-shell-minimal .auth-internal-eyebrow,
+[data-theme="light"] .auth-shell-minimal .auth-card-shell {
+  background: rgba(255, 255, 255, 0.9) !important;
+  border-color: rgba(71, 112, 165, 0.2) !important;
+  box-shadow: 0 20px 50px rgba(52, 84, 124, 0.1) !important;
+}
+
+@media (max-width: 900px) {
+  .auth-shell-minimal .auth-left-panel {
+    padding-right: var(--layout-gutter);
+  }
+}

@@ -666,6 +666,7 @@ export function ProjectEnvPanel({
               }
               placeholder="Value"
               type="password"
+              autoComplete="off"
             />
             <button
               className="env-var-row__remove"

@@ -108,7 +108,13 @@ const DARK_STATIC_GRADIENT =
   "radial-gradient(ellipse 50% 40% at 20% 0%, rgba(139,92,246,0.25) 0%, transparent 60%)," +
   "radial-gradient(ellipse 40% 35% at 50% 90%, rgba(79,70,229,0.22) 0%, transparent 60%)";
 
-export function FlowBackground() {
+interface FlowBackgroundProps {
+  variant?: "aurora" | "calm";
+}
+
+export function FlowBackground({
+  variant = "aurora",
+}: Readonly<FlowBackgroundProps>) {
   const reduced = useReducedMotion();
   const { theme } = useTheme();
   const isLight = theme === "light";
@@ -122,6 +128,18 @@ export function FlowBackground() {
   const driftDownMed = useTransform(scrollYProgress, [0, 1], [0, PARALLAX.downMed]);
   const swellScale = useTransform(scrollYProgress, [0, 1], [1, PARALLAX.swellTo]);
   const darkParallax = useTransform(scrollYProgress, [0, 1], [0, PARALLAX.darkLayer]);
+
+  if (variant === "calm") {
+    return (
+      <div
+        className="flow-bg flow-bg--calm"
+        aria-hidden="true"
+        style={ROOT_STYLE}
+      >
+        <div className="flow-bg__calm-surface" />
+      </div>
+    );
+  }
 
   // Reduced motion → static gradient, no animation, no scroll coupling.
   if (reduced) {

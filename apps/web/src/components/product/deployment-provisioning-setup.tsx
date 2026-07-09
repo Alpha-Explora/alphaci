@@ -861,6 +861,7 @@ export function DeploymentProvisioningSetup({
                               <input
                                 aria-label={`Group variable value ${groupIndex + 1}-${variableIndex + 1}`}
                                 type="password"
+                                autoComplete="off"
                                 value={variable.value}
                                 onChange={(event) => {
                                   const nextEnvSet = updateEnvVar(
@@ -1419,6 +1420,7 @@ export function DeploymentProvisioningSetup({
                             : `Variable value ${targetIndex + 1}-${variableIndex + 1}`
                         }
                         type="password"
+                        autoComplete="off"
                         value={variable.value}
                         onChange={(event) => {
                           const nextEnvSet = updateEnvVar(
