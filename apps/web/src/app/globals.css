@@ -9,25 +9,28 @@ html::-webkit-scrollbar {
 }
 
 :root {
-  /* ── Dark base ─────────────────────────────────────────────── */
-  --bg-base: #020617;
-  --bg-soft: #0f172a;
+  /* ── Tech & Blue base ──────────────────────────────────────── */
+  /* Structural cool-neutral slate ladder. Nav is the darkest layer,
+     the app shell sits one step lighter, and cards are lighter still
+     so elevation reads by lightness (closer = lighter) on dark UI. */
+  --bg-base: #1e293b; /* main app background (Slate Grey)  */
+  --bg-soft: #0f172a; /* recessed / nav-adjacent surface   */
   --bg-frost: rgba(255, 255, 255, 0.03);
-  --bg-surface: rgba(15, 23, 42, 0.75);
-  --bg-panel: #0f172a;
-  --bg-elevated: #1e293b;
+  --bg-surface: rgba(51, 65, 85, 0.82); /* card, slightly translucent #334155 */
+  --bg-panel: #0f172a; /* left sidebar & top nav (Deep Slate) */
+  --bg-elevated: #334155; /* elevated container (Elevated Slate) */
 
   /* ── Surface elevation ladder (dark) ───────────────────────── */
-  /* Opaque, stepped values so shell < card < nested tile reads as
-     distinct layers with real contrast. Use these for any container
+  /* Opaque, stepped values so nav < shell < card < nested tile reads
+     as distinct layers with real contrast. Use these for any container
      hierarchy instead of stacking low-alpha rgba(15,23,42,...) values. */
-  --layer-0: #020617; /* shell / page background      */
-  --layer-1: #0d1526; /* card surface (above shell)   */
-  --layer-1-hover: #111c33; /* card hover                   */
-  --layer-2: #18233b; /* nested tile (elevated)       */
-  --layer-2-hover: #1f2d49; /* nested tile hover            */
-  --border-layer: rgba(148, 163, 184, 0.16); /* card edge   */
-  --border-tile: rgba(148, 163, 184, 0.22); /* tile edge   */
+  --layer-0: #1e293b; /* shell / page background (Slate Grey) */
+  --layer-1: #334155; /* card surface (Elevated Slate)       */
+  --layer-1-hover: #475569; /* card hover (spec hover state)  */
+  --layer-2: #3b4a61; /* nested tile (elevated)              */
+  --layer-2-hover: #475569; /* nested tile hover              */
+  --border-layer: #475569; /* crisp 1px card edge (spec)     */
+  --border-tile: #526480; /* nested tile edge, one step up   */
 
   /* ── Pipeline loader idle/track surfaces (theme-aware) ─────── */
   /* Idle dots, connectors and the pulse track on the full-screen
@@ -47,20 +50,20 @@ html::-webkit-scrollbar {
   --text-muted: #64748b;
 
   /* ── Brand / accent ────────────────────────────────────────── */
-  --brand: #38bdf8;
+  --brand: #38bdf8; /* sky-400 — text/icon accent, hover tint  */
   --brand-light: rgba(56, 189, 248, 0.15);
-  --brand-strong: #0ea5e9;
-  --brand-accent: #34d399;
-  --brand-glow: rgba(56, 189, 248, 0.5);
+  --brand-strong: #0ea5e9; /* Vibrant Sky Blue — buttons, active tabs */
+  --brand-accent: #10b981; /* emerald — secondary brand success tint  */
+  --brand-glow: rgba(56, 189, 248, 0.28);
 
-  /* ── Semantic ──────────────────────────────────────────────── */
-  --success: #34d399;
-  --warning: #fbbf24;
-  --danger: #f87171;
+  /* ── Semantic (data & status) ──────────────────────────────── */
+  --success: #10b981; /* Emerald Green — completed / passing   */
+  --warning: #f59e0b; /* Amber — partial / needs review        */
+  --danger: #ef4444; /* Rose Red — failed / danger            */
 
-  /* ── Secondary accent: violet/purple ──────────────────────── */
-  /* Used for secondary actions, highlights, plan badges, hover accents */
-  --accent-violet: #a78bfa; /* #a78bfa — violet-400 */
+  /* ── Secondary accent: tech purple ─────────────────────────── */
+  /* Secondary chart accent + secondary actions, plan badges, highlights */
+  --accent-violet: #8b5cf6; /* Tech Purple — secondary chart accent */
   --accent-violet-light: rgba(167, 139, 250, 0.12);
   --accent-violet-mid: rgba(167, 139, 250, 0.25);
   --accent-violet-glow: rgba(167, 139, 250, 0.4);
@@ -68,9 +71,9 @@ html::-webkit-scrollbar {
 
   /* ── Tertiary accent: amber — for warnings, "active" states ─ */
   /* Used for status-active, GitHub-connected indicator, orphaned status */
-  --accent-amber: #fbbf24; /* same as --warning, aliased for semantic clarity */
-  --accent-amber-light: rgba(251, 191, 36, 0.12);
-  --border-amber: rgba(251, 191, 36, 0.3);
+  --accent-amber: #f59e0b; /* same as --warning, aliased for semantic clarity */
+  --accent-amber-light: rgba(245, 158, 11, 0.12);
+  --border-amber: rgba(245, 158, 11, 0.3);
 
   /* ── Teal / emerald accent ─────────────────────────────────── */
   --accent-teal: #2dd4bf;
@@ -103,8 +106,8 @@ html::-webkit-scrollbar {
   --accent-gold-light: rgba(245, 158, 11, 0.1);
 
   /* ── Purple deep accent ────────────────────────────────────── */
-  --accent-purple: #7c3aed;
-  --accent-purple-light: rgba(124, 58, 237, 0.1);
+  --accent-purple: #8b5cf6; /* Tech Purple — aligned to secondary chart accent */
+  --accent-purple-light: rgba(139, 92, 246, 0.1);
 
   /* ── Sidebar layout ────────────────────────────────────────── */
   --sidebar-width: 220px;
@@ -116,11 +119,13 @@ html::-webkit-scrollbar {
   --surface-brand: rgba(56, 189, 248, 0.04);
 
   /* ── Borders ───────────────────────────────────────────────── */
-  --border: rgba(255, 255, 255, 0.12);
-  --border-soft: rgba(255, 255, 255, 0.06);
-  --border-subtle: rgba(255, 255, 255, 0.03);
-  --border-strong: rgba(255, 255, 255, 0.2);
-  --border-brand: rgba(56, 189, 248, 0.6);
+  /* Slate-toned (slate-600 #475569) so edges read crisp on the lighter
+     slate shell instead of the washed-out look white-alpha gives here. */
+  --border: rgba(71, 85, 105, 0.55);
+  --border-soft: rgba(71, 85, 105, 0.32);
+  --border-subtle: rgba(71, 85, 105, 0.2);
+  --border-strong: #475569;
+  --border-brand: rgba(14, 165, 233, 0.6);
 
   /* ── Shadows / glows ───────────────────────────────────────── */
   --shadow-soft: 0 4px 14px rgba(0, 0, 0, 0.25), 0 1px 3px rgba(0, 0, 0, 0.15);
@@ -128,9 +133,10 @@ html::-webkit-scrollbar {
   --shadow-elevated:
     0 16px 54px rgba(0, 0, 0, 0.65), 0 6px 20px rgba(0, 0, 0, 0.45);
   --shadow-hard: 0 24px 80px rgba(0, 0, 0, 0.85), 0 8px 24px rgba(0, 0, 0, 0.7);
-  --glow-brand:
-    0 0 50px rgba(56, 189, 248, 0.35), 0 0 100px rgba(56, 189, 248, 0.2);
-  --glow-success: 0 0 40px rgba(52, 211, 153, 0.3);
+  /* "glow" tokens repurposed as clean, tinted drop shadows — no neon
+     halos (spec: clean drop shadows instead of neon glows). */
+  --glow-brand: 0 10px 30px rgba(14, 165, 233, 0.22), 0 3px 8px rgba(0, 0, 0, 0.35);
+  --glow-success: 0 10px 30px rgba(16, 185, 129, 0.2), 0 3px 8px rgba(0, 0, 0, 0.35);
 
   /* ── Layout ────────────────────────────────────────────────── */
   --radius-card: 1.25rem;
@@ -140,6 +146,7 @@ html::-webkit-scrollbar {
   --stack-gap: clamp(1.5rem, 2vw, 2rem);
   --panel-pad: clamp(1.5rem, 2vw, 2.5rem);
   --content-measure: 80ch;
+  --input-measure: 32rem; /* readability cap for form inputs (spec) */
   --tab-min-height: 3rem;
   --surface: var(--bg-surface);
 }
@@ -1520,7 +1527,7 @@ h3 {
   border-radius: 1.25rem;
   box-shadow:
     var(--shadow-elevated),
-    0 0 60px rgba(79, 142, 255, 0.05);
+    0 0 60px rgba(14, 165, 233, 0.05);
 }
 
 .state-card h1 {
@@ -2341,7 +2348,7 @@ h3 {
   top: -14%;
   background: radial-gradient(
     ellipse,
-    rgba(79, 142, 255, 0.06) 0%,
+    rgba(14, 165, 233, 0.06) 0%,
     transparent 70%
   );
 }
@@ -2374,7 +2381,7 @@ h3 {
   top: 58%;
   background: radial-gradient(
     ellipse,
-    rgba(0, 208, 132, 0.04) 0%,
+    rgba(16, 185, 129, 0.04) 0%,
     transparent 70%
   );
 }
@@ -2391,7 +2398,7 @@ h3 {
   right: -4rem;
   background: radial-gradient(
     circle,
-    rgba(79, 142, 255, 0.08) 0%,
+    rgba(14, 165, 233, 0.08) 0%,
     transparent 70%
   );
 }
@@ -2403,7 +2410,7 @@ h3 {
   left: -5rem;
   background: radial-gradient(
     circle,
-    rgba(0, 208, 132, 0.06) 0%,
+    rgba(16, 185, 129, 0.06) 0%,
     transparent 70%
   );
 }
@@ -2415,7 +2422,7 @@ h3 {
   right: 22%;
   background: radial-gradient(
     circle,
-    rgba(79, 142, 255, 0.05) 0%,
+    rgba(14, 165, 233, 0.05) 0%,
     transparent 70%
   );
 }
@@ -2424,7 +2431,7 @@ h3 {
   width: 0.44rem;
   height: 0.44rem;
   border-radius: 999px;
-  background: rgba(79, 142, 255, 0.3);
+  background: rgba(14, 165, 233, 0.3);
 }
 
 .grid-haze {
@@ -2675,7 +2682,7 @@ h3 {
 
 /* Hero gradient text */
 .hero-highlight {
-  background: linear-gradient(135deg, #4f8eff 0%, #00d084 100%);
+  background: linear-gradient(135deg, #0ea5e9 0%, #10b981 100%);
   background-size: 200% 200%;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -2720,9 +2727,9 @@ h3 {
   gap: 0.35rem;
   padding: 0.2rem 0.55rem;
   border-radius: 999px;
-  background: rgba(0, 208, 132, 0.1);
-  border: 1px solid rgba(0, 208, 132, 0.25);
-  color: #00d084;
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(16, 185, 129, 0.25);
+  color: #10b981;
   font-size: 0.72rem;
   font-family: ui-monospace, monospace;
   font-weight: 600;
@@ -2733,7 +2740,7 @@ h3 {
   width: 5px;
   height: 5px;
   border-radius: 50%;
-  background: #00d084;
+  background: #10b981;
   animation: flowPulse 1.5s ease-in-out infinite;
 }
 
@@ -2938,7 +2945,7 @@ h3 {
 .subscription-plan-card.selected.plan-pro {
   border-color: var(--brand);
   box-shadow:
-    0 0 0 3px rgba(79, 142, 255, 0.15),
+    0 0 0 3px rgba(14, 165, 233, 0.15),
     var(--shadow-card);
 }
 
@@ -2974,8 +2981,8 @@ h3 {
   width: 1.5rem;
   height: 1.5rem;
   border-radius: 50%;
-  background: rgba(79, 142, 255, 0.15);
-  border: 1px solid rgba(79, 142, 255, 0.35);
+  background: rgba(14, 165, 233, 0.15);
+  border: 1px solid rgba(14, 165, 233, 0.35);
   color: var(--brand);
   font-size: 0.72rem;
   font-weight: 700;
@@ -3101,8 +3108,8 @@ h3 {
   right: -2rem;
   background: radial-gradient(
     circle at 40% 42%,
-    rgba(79, 142, 255, 0.2),
-    rgba(79, 142, 255, 0)
+    rgba(14, 165, 233, 0.2),
+    rgba(14, 165, 233, 0)
   );
   animation: authOrbDriftA 11s ease-in-out infinite;
 }
@@ -3114,8 +3121,8 @@ h3 {
   left: -1.5rem;
   background: radial-gradient(
     circle at 50% 50%,
-    rgba(0, 208, 132, 0.15),
-    rgba(0, 208, 132, 0)
+    rgba(16, 185, 129, 0.15),
+    rgba(16, 185, 129, 0)
   );
   animation: authOrbDriftB 12.5s ease-in-out infinite;
 }
@@ -3176,7 +3183,7 @@ h3 {
 
 .auth-provider-button:hover {
   border-color: var(--brand);
-  box-shadow: 0 0 0 3px rgba(79, 142, 255, 0.1);
+  box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.1);
   background: var(--bg-panel);
 }
 
@@ -3331,7 +3338,7 @@ h3 {
 .primary-button {
   color: #ffffff;
   background: var(--brand);
-  box-shadow: 0 1px 2px rgba(79, 142, 255, 0.3);
+  box-shadow: 0 1px 2px rgba(14, 165, 233, 0.3);
 }
 
 .primary-button:hover {
@@ -3668,6 +3675,10 @@ input,
 select,
 textarea {
   width: 100%;
+  /* Readability cap: text fields shouldn't stretch the full width of
+     wide enterprise panels. Checkboxes/radios opt out (they set their
+     own explicit sizing in more specific rules). */
+  max-width: var(--input-measure, 32rem);
   border: 1px solid var(--border-strong);
   border-radius: 0.5rem;
   font-size: 16px;
@@ -3679,6 +3690,11 @@ textarea {
     box-shadow 0.15s ease;
 }
 
+input[type="checkbox"],
+input[type="radio"] {
+  max-width: none;
+}
+
 input::placeholder,
 textarea::placeholder {
   color: var(--text-muted);
@@ -3688,8 +3704,8 @@ input:focus,
 select:focus,
 textarea:focus {
   outline: none;
-  border-color: var(--brand);
-  box-shadow: 0 0 0 2px rgba(79, 142, 255, 0.2);
+  border-color: var(--brand-strong);
+  box-shadow: 0 0 0 2px rgba(14, 165, 233, 0.28);
 }
 
 button:focus-visible,
@@ -3784,7 +3800,7 @@ select option {
 .template-card-active {
   border-color: var(--brand) !important;
   box-shadow:
-    0 0 0 3px rgba(79, 142, 255, 0.15),
+    0 0 0 3px rgba(14, 165, 233, 0.15),
     var(--shadow-card) !important;
 }
 
@@ -3804,7 +3820,7 @@ select option {
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--brand);
-  border: 1px solid rgba(79, 142, 255, 0.25);
+  border: 1px solid rgba(14, 165, 233, 0.25);
   padding: 0.2rem 0.48rem;
   background: var(--brand-light);
 }
@@ -3978,7 +3994,7 @@ select option {
 .history-card pre {
   margin: 0;
   border-radius: 0.8rem;
-  border: 1px solid rgba(79, 142, 255, 0.2);
+  border: 1px solid rgba(14, 165, 233, 0.2);
   background: #0d1117;
   color: #e6edf3;
   padding: 0.78rem;
@@ -4073,7 +4089,7 @@ select option {
 
 .github-repo-load-btn {
   width: 100%;
-  border: 1px dashed rgba(79, 142, 255, 0.3);
+  border: 1px dashed rgba(14, 165, 233, 0.3);
   border-radius: 0.5rem;
   background: var(--brand-light);
   color: var(--brand);
@@ -4095,7 +4111,7 @@ select option {
 .github-repo-load-btn:hover {
   border-color: var(--brand);
   border-style: solid;
-  box-shadow: 0 0 0 3px rgba(79, 142, 255, 0.1);
+  box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.1);
 }
 
 .github-repo-load-btn:disabled {
@@ -4175,15 +4191,15 @@ select option {
   width: 0.7rem;
   height: 0.7rem;
   border-radius: 50%;
-  background: rgba(79, 142, 255, 0.15);
-  border: 1px solid rgba(79, 142, 255, 0.3);
+  background: rgba(14, 165, 233, 0.15);
+  border: 1px solid rgba(14, 165, 233, 0.3);
   flex-shrink: 0;
 }
 
 .pipeline-dot.active {
   background: var(--brand-accent);
   border-color: var(--brand-accent);
-  box-shadow: 0 0 6px rgba(0, 208, 132, 0.4);
+  box-shadow: 0 0 6px rgba(16, 185, 129, 0.4);
 }
 
 .pipeline-connector {
@@ -4192,8 +4208,8 @@ select option {
   flex-shrink: 0;
   background: linear-gradient(
     90deg,
-    rgba(79, 142, 255, 0.25) 0%,
-    rgba(79, 142, 255, 0.08) 100%
+    rgba(14, 165, 233, 0.25) 0%,
+    rgba(14, 165, 233, 0.08) 100%
   );
 }
 
@@ -4209,21 +4225,38 @@ select option {
   position: relative;
 }
 
+/* Status colour comes from the semantic tokens so a node's state is
+   unmistakable at a glance. Clean drop shadows, no neon halos. */
 .pipeline-node.passing {
-  background: rgba(0, 208, 132, 0.15);
-  border: 1.5px solid rgba(0, 208, 132, 0.5);
-  animation: successGlow 2.5s ease-in-out infinite;
+  background: rgba(16, 185, 129, 0.16); /* --success */
+  border: 1.5px solid var(--success);
+  box-shadow: 0 2px 10px rgba(16, 185, 129, 0.28);
 }
 
 .pipeline-node.running {
-  background: rgba(79, 142, 255, 0.15);
-  border: 1.5px solid rgba(79, 142, 255, 0.5);
+  background: rgba(14, 165, 233, 0.16); /* --brand-strong */
+  border: 1.5px solid var(--brand-strong);
+  box-shadow: 0 2px 10px rgba(14, 165, 233, 0.28);
   animation: glowPulse 1.5s ease-in-out infinite;
 }
 
+.pipeline-node.warning,
+.pipeline-node.needs-review {
+  background: rgba(245, 158, 11, 0.16); /* --warning */
+  border: 1.5px solid var(--warning);
+  box-shadow: 0 2px 10px rgba(245, 158, 11, 0.25);
+}
+
+.pipeline-node.failed,
+.pipeline-node.danger {
+  background: rgba(239, 68, 68, 0.16); /* --danger */
+  border: 1.5px solid var(--danger);
+  box-shadow: 0 2px 10px rgba(239, 68, 68, 0.25);
+}
+
 .pipeline-node.pending {
-  background: rgba(74, 85, 120, 0.2);
-  border: 1.5px solid rgba(74, 85, 120, 0.4);
+  background: rgba(71, 85, 105, 0.28); /* neutral slate — not yet run */
+  border: 1.5px solid #64748b;
 }
 
 /* Pipeline connector line */
@@ -4232,8 +4265,8 @@ select option {
   height: 2px;
   background: linear-gradient(
     90deg,
-    rgba(79, 142, 255, 0.5),
-    rgba(79, 142, 255, 0.15)
+    rgba(14, 165, 233, 0.5),
+    rgba(14, 165, 233, 0.15)
   );
   position: relative;
   overflow: hidden;
@@ -4250,7 +4283,7 @@ select option {
   background: linear-gradient(
     90deg,
     transparent,
-    rgba(79, 142, 255, 0.8),
+    rgba(14, 165, 233, 0.8),
     transparent
   );
   animation: flowTravel 2.5s ease-in-out infinite;
@@ -4345,14 +4378,14 @@ select option {
 }
 
 .status-banner.success {
-  border: 1px solid rgba(0, 208, 132, 0.3);
-  background: rgba(0, 208, 132, 0.08);
-  color: #00d084;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  background: rgba(16, 185, 129, 0.08);
+  color: #10b981;
 }
 
 .status-banner.info {
-  border: 1px solid rgba(79, 142, 255, 0.3);
-  background: rgba(79, 142, 255, 0.08);
+  border: 1px solid rgba(14, 165, 233, 0.3);
+  background: rgba(14, 165, 233, 0.08);
   color: var(--brand);
 }
 
@@ -4630,8 +4663,8 @@ select option {
 .kpi-cell-dominant {
   background: linear-gradient(
     135deg,
-    rgba(79, 142, 255, 0.12),
-    rgba(0, 208, 132, 0.06)
+    rgba(14, 165, 233, 0.12),
+    rgba(16, 185, 129, 0.06)
   );
   border-color: var(--border-brand);
 }
@@ -4648,7 +4681,7 @@ select option {
 }
 
 .kpi-cell-dominant .kpi-badge {
-  background: rgba(79, 142, 255, 0.15);
+  background: rgba(14, 165, 233, 0.15);
   border-color: var(--border-brand);
   color: var(--brand);
 }
@@ -5302,7 +5335,7 @@ select option {
 
 .page-shell .glass-panel .file-path-label {
   background: var(--brand-light);
-  border: 1px solid rgba(79, 142, 255, 0.15);
+  border: 1px solid rgba(14, 165, 233, 0.15);
   border-radius: var(--radius-pill);
   padding: 0.18rem 0.6rem;
   color: var(--brand);
@@ -5403,7 +5436,7 @@ select option {
   height: 65%;
   background: radial-gradient(
     ellipse,
-    rgba(79, 142, 255, 0.06) 0%,
+    rgba(14, 165, 233, 0.06) 0%,
     transparent 65%
   );
   border-radius: 50%;
@@ -5420,7 +5453,7 @@ select option {
   height: 50%;
   background: radial-gradient(
     ellipse,
-    rgba(0, 208, 132, 0.04) 0%,
+    rgba(16, 185, 129, 0.04) 0%,
     transparent 65%
   );
   border-radius: 50%;
@@ -5534,7 +5567,7 @@ select option {
   height: 70%;
   background: radial-gradient(
     ellipse,
-    rgba(79, 142, 255, 0.07) 0%,
+    rgba(14, 165, 233, 0.07) 0%,
     transparent 65%
   );
   border-radius: 50%;
@@ -5550,7 +5583,7 @@ select option {
   height: 55%;
   background: radial-gradient(
     ellipse,
-    rgba(0, 208, 132, 0.05) 0%,
+    rgba(16, 185, 129, 0.05) 0%,
     transparent 65%
   );
   border-radius: 50%;
@@ -5695,8 +5728,8 @@ select option {
   align-items: center;
   padding: 0.15rem 0.55rem;
   border-radius: 999px;
-  background: rgba(79, 142, 255, 0.1);
-  border: 1px solid rgba(79, 142, 255, 0.25);
+  background: rgba(14, 165, 233, 0.1);
+  border: 1px solid rgba(14, 165, 233, 0.25);
   font-size: 0.72rem;
   font-family: ui-monospace, monospace;
   color: var(--brand);
@@ -5711,8 +5744,8 @@ select option {
   gap: 1rem;
   flex-wrap: wrap;
   padding: 0.65rem clamp(1.5rem, 4vw, 3rem);
-  background: rgba(79, 142, 255, 0.08);
-  border-bottom: 1px solid rgba(79, 142, 255, 0.15);
+  background: rgba(14, 165, 233, 0.08);
+  border-bottom: 1px solid rgba(14, 165, 233, 0.15);
   width: 100%;
 }
 
@@ -6113,7 +6146,7 @@ select option {
   border-radius: 50%;
   background: var(--success);
   flex-shrink: 0;
-  box-shadow: 0 0 0 3px rgba(0, 208, 132, 0.15);
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15);
 }
 
 .result-repo-name {
@@ -6337,23 +6370,23 @@ select option {
   0%,
   100% {
     box-shadow:
-      0 0 8px rgba(79, 142, 255, 0.3),
-      0 0 20px rgba(79, 142, 255, 0.1);
+      0 0 8px rgba(14, 165, 233, 0.3),
+      0 0 20px rgba(14, 165, 233, 0.1);
   }
   50% {
     box-shadow:
-      0 0 16px rgba(79, 142, 255, 0.5),
-      0 0 40px rgba(79, 142, 255, 0.2);
+      0 0 16px rgba(14, 165, 233, 0.5),
+      0 0 40px rgba(14, 165, 233, 0.2);
   }
 }
 
 @keyframes successGlow {
   0%,
   100% {
-    box-shadow: 0 0 8px rgba(0, 208, 132, 0.3);
+    box-shadow: 0 0 8px rgba(16, 185, 129, 0.3);
   }
   50% {
-    box-shadow: 0 0 20px rgba(0, 208, 132, 0.5);
+    box-shadow: 0 0 20px rgba(16, 185, 129, 0.5);
   }
 }
 
@@ -6390,7 +6423,7 @@ select option {
     90deg,
     transparent 0%,
     var(--border-brand) 30%,
-    rgba(0, 208, 132, 0.3) 60%,
+    rgba(16, 185, 129, 0.3) 60%,
     transparent 100%
   );
   width: 100%;
@@ -6408,8 +6441,8 @@ select option {
   position: absolute;
   inset: 0;
   background-image:
-    linear-gradient(rgba(79, 142, 255, 0.03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(79, 142, 255, 0.03) 1px, transparent 1px);
+    linear-gradient(rgba(14, 165, 233, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(14, 165, 233, 0.03) 1px, transparent 1px);
   background-size: 40px 40px;
   pointer-events: none;
   z-index: 0;
@@ -6436,7 +6469,7 @@ select option {
   height: 400px;
   background: radial-gradient(
     ellipse,
-    rgba(79, 142, 255, 0.07) 0%,
+    rgba(14, 165, 233, 0.07) 0%,
     transparent 65%
   );
   pointer-events: none;
@@ -6698,7 +6731,7 @@ select option {
   height: 100%;
   background: radial-gradient(
     ellipse at right,
-    rgba(0, 208, 132, 0.04) 0%,
+    rgba(16, 185, 129, 0.04) 0%,
     transparent 70%
   );
   pointer-events: none;
@@ -6722,7 +6755,7 @@ select option {
   height: 500px;
   background: radial-gradient(
     ellipse,
-    rgba(79, 142, 255, 0.06) 0%,
+    rgba(14, 165, 233, 0.06) 0%,
     transparent 65%
   );
   pointer-events: none;
@@ -6935,7 +6968,7 @@ select option {
   text-transform: uppercase;
   color: var(--brand);
   background: var(--brand-light);
-  border: 1px solid rgba(79, 142, 255, 0.2);
+  border: 1px solid rgba(14, 165, 233, 0.2);
   border-radius: var(--radius-pill);
   padding: 0.12rem 0.44rem;
   white-space: nowrap;
@@ -7165,8 +7198,8 @@ select option {
 
 .repo-visibility-badge.public {
   color: var(--brand-accent);
-  border-color: rgba(0, 208, 132, 0.25);
-  background: rgba(0, 208, 132, 0.08);
+  border-color: rgba(16, 185, 129, 0.25);
+  background: rgba(16, 185, 129, 0.08);
 }
 
 /* ── Project status badge ─────────────────────────────────────────────────────── */
@@ -7184,8 +7217,8 @@ select option {
 
 .project-status-badge.provisioned {
   color: var(--success);
-  background: rgba(0, 208, 132, 0.1);
-  border: 1px solid rgba(0, 208, 132, 0.25);
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(16, 185, 129, 0.25);
 }
 
 .project-status-badge.provisioning {
