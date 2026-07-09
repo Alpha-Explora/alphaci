@@ -455,6 +455,82 @@ describe("env provisioning hooks", () => {
     });
   });
 
+  it("flags Render provisioning as missing variables when no Render env vars remain after sanitization", async () => {
+    const snapshots = renderDeploymentProvisioningForm();
+
+    act(() => {
+      snapshots.at(-1)?.setRequest({
+        enabled: true,
+        targets: [
+          {
+            slot: "backend",
+            provider: "render",
+            ownershipMode: "flowci_managed",
+            projectName: "api",
+            branchName: "test",
+            rootDirectory: ".",
+            buildCommand: "npm ci && npm run build",
+            env: [
+              {
+                environment: "test",
+                vars: [
+                  { key: "DATABASE_URL", value: "" },
+                  { key: "   ", value: "ignored" },
+                ],
+              },
+            ],
+          },
+        ],
+      });
+      snapshots.at(-1)?.setEnabled(true);
+    });
+
+    expect(snapshots.at(-1)?.renderVariablesRequired).toBe(true);
+    expect(snapshots.at(-1)?.renderVariableCount).toBe(0);
+    expect(snapshots.at(-1)?.renderVariablesMissing).toBe(true);
+  });
+
+  it("counts Render variable groups as available Render variables", async () => {
+    const snapshots = renderDeploymentProvisioningForm();
+
+    act(() => {
+      snapshots.at(-1)?.setRequest({
+        enabled: true,
+        targets: [
+          {
+            slot: "backend",
+            provider: "render",
+            ownershipMode: "flowci_managed",
+            projectName: "api",
+            branchName: "test",
+            rootDirectory: ".",
+            buildCommand: "npm ci && npm run build",
+            env: [],
+          },
+        ],
+        variableGroups: [
+          {
+            name: "Render runtime",
+            provider: "render",
+            appliesTo: "selected",
+            targetBranches: ["backend:render:test"],
+            env: [
+              {
+                environment: "test",
+                vars: [{ key: "DATABASE_URL", value: "postgres://x" }],
+              },
+            ],
+          },
+        ],
+      });
+      snapshots.at(-1)?.setEnabled(true);
+    });
+
+    expect(snapshots.at(-1)?.renderVariablesRequired).toBe(true);
+    expect(snapshots.at(-1)?.renderVariableCount).toBe(1);
+    expect(snapshots.at(-1)?.renderVariablesMissing).toBe(false);
+  });
+
   it("sanitizes variable groups with defaulted optional fields", async () => {
     const snapshots = renderDeploymentProvisioningForm();
 

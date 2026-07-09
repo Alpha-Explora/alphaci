@@ -135,6 +135,22 @@ function targetKindLabel(target: DeploymentProvisioningTargetRequest): string {
   return target.provider === "vercel" ? "Vercel frontend" : "Render backend";
 }
 
+function targetTitle(target: DeploymentProvisioningTargetRequest): string {
+  if (target.slot === "standalone") {
+    return "Deployment target";
+  }
+
+  return target.provider === "vercel" ? "Frontend app" : "Backend service";
+}
+
+function targetProviderSummary(
+  target: DeploymentProvisioningTargetRequest,
+): string {
+  const branch = target.branchName?.trim() || "test";
+  const provider = target.provider === "vercel" ? "Vercel" : "Render";
+  return `${provider} on ${branch}`;
+}
+
 function readonlyValueLabel(value: string): string {
   return value.trim() || "Not set";
 }
@@ -237,7 +253,8 @@ function targetBranchLabel(
   target: DeploymentProvisioningTargetRequest,
 ): string {
   const branch = target.branchName?.trim() || "test";
-  return `${target.slot} / ${target.provider} / ${branch}`;
+  const targetLabel = target.slot === "frontend" ? "Frontend" : "Backend";
+  return `${targetLabel} - ${providerLabel(target.provider)} - ${branch}`;
 }
 
 function targetScopeIncludes(
@@ -418,13 +435,14 @@ export function DeploymentProvisioningSetup({
         <div>
           <span className="controls-panel-label">Deployment provisioning</span>
           <p className="helper-text" style={{ margin: "0.35rem 0 0" }}>
-            Create provider targets during setup, then send initial env vars
-            directly to the provider.
+            Create the hosting target and add only the variables needed for the
+            first deploy.
           </p>
         </div>
-        <label className="toggle-row">
+        <label className="toggle-row toggle-switch-row">
           <input
             type="checkbox"
+            className="toggle-switch-input"
             aria-label="Provision deployment target"
             checked={enabled}
             onChange={(event) => {
@@ -436,6 +454,9 @@ export function DeploymentProvisioningSetup({
               onChange({ ...value, enabled: nextEnabled });
             }}
           />
+          <span className="toggle-switch-track" aria-hidden="true">
+            <span className="toggle-switch-thumb" />
+          </span>
           <span>Provision deployment target</span>
         </label>
       </div>
@@ -449,7 +470,7 @@ export function DeploymentProvisioningSetup({
             <div className="deployment-flow-step">
               <span className="deployment-flow-step__index">1</span>
               <div>
-                <strong>Target map</strong>
+                <strong>Hosting targets</strong>
                 <div className="deployment-flow-branches">
                   {targets.map((target, targetIndex) => (
                     <span
@@ -466,21 +487,21 @@ export function DeploymentProvisioningSetup({
             <div className="deployment-flow-step">
               <span className="deployment-flow-step__index">2</span>
               <div>
-                <strong>Variable groups</strong>
+                <strong>Target variables</strong>
                 <span>
-                  {variableGroups.length} group
-                  {variableGroups.length === 1 ? "" : "s"} / {groupVarCount}{" "}
-                  variable{groupVarCount === 1 ? "" : "s"}
+                  {branchVarCount} variable{branchVarCount === 1 ? "" : "s"}{" "}
+                  on a specific service
                 </span>
               </div>
             </div>
             <div className="deployment-flow-step">
               <span className="deployment-flow-step__index">3</span>
               <div>
-                <strong>Branch variables</strong>
+                <strong>Shared defaults</strong>
                 <span>
-                  {branchVarCount} branch-specific variable
-                  {branchVarCount === 1 ? "" : "s"}
+                  Optional. {variableGroups.length} group
+                  {variableGroups.length === 1 ? "" : "s"} / {groupVarCount}{" "}
+                  variable{groupVarCount === 1 ? "" : "s"}
                 </span>
               </div>
             </div>
@@ -489,9 +510,10 @@ export function DeploymentProvisioningSetup({
           <section className="env-provisioning-section deployment-variable-groups">
             <div className="env-section-header">
               <div>
-                <h4>Variable groups</h4>
+                <h4>Shared defaults</h4>
                 <p className="helper-text" style={{ margin: "0.25rem 0 0" }}>
-                  Create reusable variables for the deployment targets below.
+                  Optional. Use this only when the same key should be sent to
+                  more than one target.
                 </p>
               </div>
               <div className="deployment-variable-actions">
@@ -506,17 +528,20 @@ export function DeploymentProvisioningSetup({
                       )
                     }
                   >
-                    New {providerLabel(provider)} variable group
+                    Add {providerLabel(provider)} group
                   </button>
                 ))}
               </div>
             </div>
 
             {variableGroups.length === 0 ? (
-              <p className="env-empty-state">
-                No variable groups yet. Add one when the same key should apply
-                to more than one branch target.
-              </p>
+              <div className="env-empty-state deployment-variable-empty">
+                <strong>Most projects can skip this.</strong>
+                <span>
+                  Add target variables inside each service card below when a
+                  value belongs to only one backend or frontend.
+                </span>
+              </div>
             ) : null}
 
             {displayProviders.map((provider) => {
@@ -534,14 +559,15 @@ export function DeploymentProvisioningSetup({
                 <div className="deployment-provider-groups" key={provider}>
                   <div className="deployment-provider-groups__header">
                     <div>
-                      <strong>{providerLabel(provider)} variable groups</strong>
+                      <strong>{providerLabel(provider)} shared defaults</strong>
                       <p
                         className="helper-text"
                         style={{ margin: "0.25rem 0 0" }}
                       >
-                        {providerTargets.length} {providerLabel(provider)}{" "}
-                        target branch{providerTargets.length === 1 ? "" : "es"}{" "}
-                        available.
+                        Available to {providerTargets.length}{" "}
+                        {providerLabel(provider)} target
+                        {providerTargets.length === 1 ? "" : "s"} unless you
+                        narrow the scope.
                       </p>
                     </div>
                   </div>
@@ -569,7 +595,7 @@ export function DeploymentProvisioningSetup({
                       >
                         <div className="deployment-variable-panel__title-row">
                           <label className="deployment-variable-panel__scope">
-                            <span>Group name</span>
+                            <span>Name</span>
                             <input
                               aria-label={`Variable group name ${groupIndex + 1}`}
                               value={
@@ -628,7 +654,7 @@ export function DeploymentProvisioningSetup({
                         </div>
                         <div className="deployment-variable-panel__scope-row">
                           <label className="deployment-variable-panel__environment">
-                            <span>Apply to</span>
+                            <span>Where used</span>
                             <select
                               aria-label={`Variable group scope ${groupIndex + 1}`}
                               value={group.appliesTo ?? "all"}
@@ -659,15 +685,15 @@ export function DeploymentProvisioningSetup({
                               }
                             >
                               <option value="all">
-                                All {providerLabel(provider)} branches
+                                Every {providerLabel(provider)} target
                               </option>
                               <option value="selected">
-                                Selected {providerLabel(provider)} branches
+                                Selected {providerLabel(provider)} targets
                               </option>
                             </select>
                           </label>
                           <label className="deployment-variable-panel__environment">
-                            <span>Provider environment</span>
+                            <span>Environment</span>
                             <select
                               aria-label={`Variable group environment ${groupIndex + 1}`}
                               value={envSet.environment}
@@ -723,7 +749,7 @@ export function DeploymentProvisioningSetup({
                               )
                             }
                           >
-                            Add variable
+                            Add key
                           </button>
                         </div>
 
@@ -733,8 +759,8 @@ export function DeploymentProvisioningSetup({
                         >
                           <span>
                             {group.appliesTo === "selected"
-                              ? `Selected ${providerLabel(provider)} branches`
-                              : `Applies to all ${providerLabel(provider)} branches`}
+                              ? `Selected ${providerLabel(provider)} targets`
+                              : `Every ${providerLabel(provider)} target`}
                           </span>
                           <div className="deployment-flow-branches">
                             {providerTargets.map((option) => (
@@ -896,35 +922,37 @@ export function DeploymentProvisioningSetup({
 
             return (
               <section
-                className="env-provisioning-section"
+                className={[
+                  "env-provisioning-section",
+                  "deployment-target-section",
+                  `deployment-target-section--${target.provider}`,
+                ].join(" ")}
                 key={`${target.slot}-${targetIndex}`}
               >
                 <div className="env-section-header">
-                  <div>
-                    <h4>
-                      {target.slot === "standalone"
-                        ? "Deployment target"
-                        : `${target.slot} target`}
-                    </h4>
-                    <p
-                      className="helper-text"
-                      style={{ margin: "0.25rem 0 0" }}
+                  <div className="deployment-target-heading">
+                    <span
+                      className={[
+                        "deployment-target-icon",
+                        `deployment-target-icon--${target.provider}`,
+                      ].join(" ")}
+                      aria-hidden="true"
                     >
-                      {target.provider === "vercel"
-                        ? "Vercel project"
-                        : "Render service"}{" "}
-                      on the test branch.
-                    </p>
+                      {target.provider === "vercel" ? "V" : "R"}
+                    </span>
+                    <div>
+                      <h4>{targetTitle(target)}</h4>
+                      <p className="helper-text">
+                        {targetProviderSummary(target)}
+                      </p>
+                    </div>
                   </div>
+                  <span className="deployment-target-role">
+                    {targetKindLabel(target)}
+                  </span>
                 </div>
 
                 <div className="env-target-grid">
-                  <div className="env-target-grid__field env-target-grid__field--compact">
-                    <span>Deployment</span>
-                    <span className="env-static-field">
-                      {targetKindLabel(target)}
-                    </span>
-                  </div>
                   <div className="env-target-grid__field env-target-grid__field--wide">
                     <span>Ownership</span>
                     <span className="env-static-field">
@@ -1091,14 +1119,6 @@ export function DeploymentProvisioningSetup({
                             : "ALPHACI packages and deploys this backend automatically."}
                         </span>
                       </label>
-                      <div className="env-target-grid__field env-target-grid__field--compact">
-                        <span>Service type</span>
-                        <span className="env-static-field">Web service</span>
-                        <span className="helper-text env-target-grid__note">
-                          Render is limited to backend web services on the free
-                          plan.
-                        </span>
-                      </div>
                       <label className="env-target-grid__field env-target-grid__field--compact">
                         <span>Runtime</span>
                         <select
@@ -1125,8 +1145,8 @@ export function DeploymentProvisioningSetup({
                         </select>
                         <span className="helper-text env-target-grid__note">
                           {target.renderDeployMethod === "native_git"
-                            ? "Render uses this runtime for its native Git build."
-                            : "Image-backed deploys run as a Docker image; this records the service runtime intent."}
+                            ? "Render uses this runtime for its native Git build. Web service on the free plan."
+                            : "Image-backed deploys run as a Docker image; this records the service runtime intent. Web service on the free plan."}
                         </span>
                       </label>
                       <div className="env-target-grid__field env-target-grid__field--compact">
@@ -1303,14 +1323,14 @@ export function DeploymentProvisioningSetup({
 
                 <div className="env-section-header deployment-provisioning-setup__vars-header">
                   <div>
-                    <strong>Branch-specific variables</strong>
+                    <strong>Target variables</strong>
                     <p
                       className="helper-text"
                       style={{ margin: "0.25rem 0 0" }}
                     >
-                      {targetBranchLabel(target)} can override shared keys or
-                      add its own values. Values are sent to the provider during
-                      setup and are not stored by ALPHACI.
+                      Add values only for {targetBranchLabel(target)}. These can
+                      override shared defaults with the same key. Values are
+                      sent during setup and are not stored by ALPHACI.
                     </p>
                   </div>
                   <button
@@ -1329,14 +1349,14 @@ export function DeploymentProvisioningSetup({
                       )
                     }
                   >
-                    Add variable
+                    Add key
                   </button>
                 </div>
 
                 {target.provider === "vercel" ? (
                   <p className="helper-text" style={{ margin: "0 0 0.6rem" }}>
-                    ALPHACI will install per-slot GitHub Actions secrets
-                    for Vercel deployment after the Vercel project is created.
+                    Vercel deployment secrets are installed automatically after
+                    the project is created.
                   </p>
                 ) : null}
 
