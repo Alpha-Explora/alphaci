@@ -26,6 +26,7 @@ import {
   providerConsoleUrl,
   providerDashboardUrl,
   providerDisplayName,
+  providerPublicUrl,
 } from "@/lib/hosting/provider-urls";
 import { relativeTime } from "@/lib/runs/utils";
 import { isGuest } from "@/lib/auth/subscription";
@@ -53,9 +54,28 @@ function HostingServiceCard({
 }: Readonly<{ target: DeploymentTarget; reduced: boolean }>) {
   const dashboardUrl = providerDashboardUrl(target);
   const consoleUrl = providerConsoleUrl(target);
+  const publicUrl = providerPublicUrl(target);
   const provider = providerDisplayName(target.provider);
   const consoleLabel =
     target.provider === "render" ? "Service logs" : "Deployments";
+  const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    if (!copied) return;
+    const timer = setTimeout(() => setCopied(false), 2000);
+    return () => clearTimeout(timer);
+  }, [copied]);
+
+  const copyPublicUrl = useCallback(async () => {
+    if (!publicUrl) return;
+    try {
+      await navigator.clipboard.writeText(publicUrl);
+      setCopied(true);
+    } catch {
+      // Clipboard access denied (e.g. insecure context); the visible link
+      // remains selectable as the manual fallback.
+    }
+  }, [publicUrl]);
 
   return (
     <motion.article
@@ -122,6 +142,50 @@ function HostingServiceCard({
             : ""}
         </span>
       </div>
+
+      {publicUrl ? (
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "0.5rem",
+            minWidth: 0,
+          }}
+        >
+          <a
+            href={publicUrl}
+            target="_blank"
+            rel="noreferrer"
+            title={publicUrl}
+            style={{
+              fontSize: "0.8rem",
+              fontFamily: "var(--font-mono, monospace)",
+              color: "var(--brand)",
+              textDecoration: "none",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
+              minWidth: 0,
+            }}
+          >
+            {publicUrl.replace(/^https?:\/\//, "")}
+          </a>
+          <button
+            type="button"
+            className="ghost-button"
+            onClick={() => void copyPublicUrl()}
+            aria-label={`Copy ${provider} service URL`}
+            style={{
+              minHeight: "1.7rem",
+              padding: "0.15rem 0.6rem",
+              fontSize: "0.72rem",
+              flexShrink: 0,
+            }}
+          >
+            {copied ? "Copied" : "Copy"}
+          </button>
+        </div>
+      ) : null}
 
       <div style={{ display: "flex", gap: "0.6rem", flexWrap: "wrap" }}>
         {dashboardUrl ? (

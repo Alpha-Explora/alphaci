@@ -158,6 +158,10 @@ export interface DeploymentTarget {
   deploymentStrategy?: DeploymentStrategy;
   providerMetadata?: Record<string, unknown>;
   status: "active" | "missing" | "failed";
+  /** Live service URL (e.g. https://demo-backend-main.onrender.com), computed by the BE. */
+  publicUrl?: string | null;
+  /** Provider dashboard URL, computed by the BE. */
+  dashboardUrl?: string | null;
 }
 
 export interface CreateDeploymentTargetRequest {
