@@ -2,9 +2,10 @@
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { type PointerEvent, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 
+import { DitherBackground } from "@/components/layout/dither-background";
 import { FlowBackground } from "@/components/layout/flow-background";
 import { PublicSiteNav } from "@/components/layout/public-site-nav";
 import { useAuthSession } from "@/hooks/use-auth-session";
@@ -85,31 +86,11 @@ export function OAuthAuthPage({
     if (redirectPath) router.replace(redirectPath);
   }, [nextPath, router, session, status]);
 
-  function handleDitherPointerMove(event: PointerEvent<HTMLElement>) {
-    if (prefersReducedMotion) return;
-    const x = ((event.clientX / window.innerWidth) - 0.5) * 18;
-    const y = ((event.clientY / window.innerHeight) - 0.5) * 12;
-    event.currentTarget.style.setProperty("--dither-x", `${x.toFixed(2)}px`);
-    event.currentTarget.style.setProperty("--dither-y", `${y.toFixed(2)}px`);
-    event.currentTarget.style.setProperty("--dither-scale", "1.025");
-  }
-
-  function resetDitherPointer(event: PointerEvent<HTMLElement>) {
-    event.currentTarget.style.setProperty("--dither-x", "0px");
-    event.currentTarget.style.setProperty("--dither-y", "0px");
-    event.currentTarget.style.setProperty("--dither-scale", "1");
-  }
 
   return (
-        <main
-      className="auth-shell-split auth-shell-minimal relative bg-zinc-50 text-zinc-950 dark:bg-zinc-950 dark:text-zinc-100"
-      onPointerMove={handleDitherPointerMove}
-      onPointerLeave={resetDitherPointer}
-      onPointerUp={resetDitherPointer}
-      onPointerCancel={resetDitherPointer}
-    >
+    <main className="auth-shell-split auth-shell-minimal relative bg-zinc-50 text-zinc-950 dark:bg-zinc-950 dark:text-zinc-100">
       <FlowBackground variant="calm" />
-      <div className="auth-dither-waves" aria-hidden="true" />
+      <DitherBackground />
       <PublicSiteNav active="pricing" fixed showActions={false} />
 
       <div className="auth-left-panel">

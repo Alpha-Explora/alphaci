@@ -16235,3 +16235,30 @@ html:not([data-theme="light"]) .dash-shell .welcome-banner-flat {
     transition: none;
   }
 }
+/* ReactBits-inspired interactive dither field. The logo remains unboxed. */
+.auth-shell-minimal .public-site-nav,
+.auth-shell-minimal .public-site-nav--fixed,
+.auth-shell-minimal .public-site-nav--fixed.public-site-nav--scrolled {
+  background: transparent !important;
+  border-bottom: 0 !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+.auth-dither-background {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  image-rendering: pixelated;
+  opacity: 0.86;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .auth-dither-background {
+    opacity: 0.45;
+  }
+}
