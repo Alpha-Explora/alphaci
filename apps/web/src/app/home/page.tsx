@@ -95,6 +95,38 @@ const quickActions = [
 
 const pipelineStages = ["Source", "Lint", "Test", "Build", "Deploy"];
 
+// Decorative sparkline shape for the "Workflows Generated" card. Only rendered
+// as an expressive rising trend when real history exists; flattened to a quiet
+// baseline at zero so an empty account never shows a fake upward trajectory.
+const SPARKBAR_PATTERN = [3, 6, 4, 7, 5, 8, 6, 9, 7, 10, 8, 11];
+const SPARKBAR_FLAT_LEVEL = 1.1;
+
+/* ── Proactive empty-state for the "Last Activity" card ───────────────────────
+ * When the account has no runs yet, the card should stop saying "None yet" and
+ * instead point the user at their next real action. WHICH action is correct
+ * depends on the onboarding funnel, so this decision is yours to make.
+ */
+interface ActivityEmptyCta {
+  href: string;
+  primary: string; // top line, e.g. "Connect a repository"
+  secondary: string; // muted line beneath it
+}
+
+// TODO(you): implement the CTA the empty "Last Activity" card should show.
+// Consider branching on `hasProjects`:
+//   • no projects yet          → first step is connecting/creating a project
+//                                 (e.g. href "/workflows?tab=setup")
+//   • has projects but no runs → next step is triggering a build/run
+// Return { href, primary, secondary }. A safe default is provided so the app
+// still builds; replace it with the funnel-aware version.
+function activityEmptyCta(hasProjects: boolean): ActivityEmptyCta {
+  return {
+    href: "/workflows?tab=setup",
+    primary: hasProjects ? "Trigger a build" : "Connect a repository",
+    secondary: "No runs yet",
+  };
+}
+
 const pipelineContainerVariants = {
   hidden: {},
   visible: { transition: { staggerChildren: 0.06, delayChildren: 0.15 } },
@@ -232,6 +264,20 @@ function BentoGrid({
     ? uniqueServices
     : (animatedServices ?? uniqueServices);
 
+  // Flatten the sparkline while loading or when there is no history yet, so the
+  // card never implies activity that doesn't exist.
+  const sparkbarEmpty = historyLoading || historyLength === 0;
+  const sparkbarHeights = sparkbarEmpty
+    ? SPARKBAR_PATTERN.map(() => SPARKBAR_FLAT_LEVEL)
+    : SPARKBAR_PATTERN;
+
+  // When there is no run history, the Last Activity card turns into a CTA
+  // pointing at the user's next real step instead of showing "None yet".
+  const activityIsEmpty = !historyLoading && historyLength === 0;
+  const emptyCta = activityIsEmpty
+    ? activityEmptyCta(projectsLength > 0)
+    : null;
+
   return (
     <div className="kpi-bento-grid">
       {/* Cell 1: Workflows Generated — dominant brand, asymmetric wide */}
@@ -274,8 +320,11 @@ function BentoGrid({
         <p className="bento-card-desc">
           GitHub Actions build &amp; test recipes
         </p>
-        <div className="bento-sparkbar" aria-hidden="true">
-          {[3, 6, 4, 7, 5, 8, 6, 9, 7, 10, 8, 11].map((h, i) => (
+        <div
+          className={`bento-sparkbar${sparkbarEmpty ? " bento-sparkbar--flat" : ""}`}
+          aria-hidden="true"
+        >
+          {sparkbarHeights.map((h, i) => (
             <span
               key={i}
               className="bento-sparkbar-bar"
@@ -372,9 +421,9 @@ function BentoGrid({
 
       {/* Cell 4: Last Activity — vertical timeline treatment */}
       <Link
-        href="/runs"
+        href={emptyCta ? emptyCta.href : "/runs"}
         className="bento-card bento-card-activity bento-card-link"
-        aria-label="View recent workflow activity"
+        aria-label={emptyCta ? emptyCta.primary : "View recent workflow activity"}
       >
         <div className="bento-card-eyebrow">
           <svg
@@ -396,14 +445,42 @@ function BentoGrid({
           Last Activity
         </div>
         <div className="bento-timeline">
-          <span className="bento-timeline-dot" aria-hidden="true" />
+          <span
+            className={`bento-timeline-dot${emptyCta ? " bento-timeline-dot--idle" : ""}`}
+            aria-hidden="true"
+          />
           <div className="bento-timeline-content">
             {historyLoading ? (
               <SkeletonValue wide />
+            ) : emptyCta ? (
+              <>
+                <span className="bento-timeline-date bento-timeline-cta">
+                  {emptyCta.primary}
+                  <svg
+                    width="12"
+                    height="12"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden="true"
+                  >
+                    <line x1="5" y1="12" x2="19" y2="12" />
+                    <polyline points="12 5 19 12 12 19" />
+                  </svg>
+                </span>
+                <span className="bento-timeline-label">
+                  {emptyCta.secondary}
+                </span>
+              </>
             ) : (
-              <span className="bento-timeline-date">{lastActivityValue}</span>
+              <>
+                <span className="bento-timeline-date">{lastActivityValue}</span>
+                <span className="bento-timeline-label">Latest run</span>
+              </>
             )}
-            <span className="bento-timeline-label">Latest run</span>
           </div>
         </div>
       </Link>
@@ -925,8 +1002,8 @@ function HomeDashboardContent() {
                     padding: 0,
                     border: "none",
                     margin: 0,
-                    fontSize: "clamp(1.4rem, 2.5vw, 1.85rem)",
-                    fontWeight: 800,
+                    fontSize: "clamp(1.15rem, 1.9vw, 1.45rem)",
+                    fontWeight: 700,
                   }}
                 >
                   {guest

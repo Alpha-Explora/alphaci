@@ -13580,6 +13580,19 @@ select option {
   opacity: 1;
 }
 
+/* Empty/loading state: a quiet, uniform baseline instead of a rising trend.
+   Muted grey, no emphasized final bar — signals "no data yet", not growth. */
+.bento-sparkbar--flat .bento-sparkbar-bar,
+.bento-card-brand .bento-sparkbar--flat .bento-sparkbar-bar:last-child {
+  background: linear-gradient(
+    180deg,
+    rgba(148, 163, 184, 0.28) 0%,
+    rgba(148, 163, 184, 0.04) 100%
+  );
+  opacity: 0.45;
+  animation: none;
+}
+
 @keyframes sparkbarRise {
   from {
     transform: scaleY(0);
@@ -13645,6 +13658,35 @@ select option {
   color: var(--text-muted);
   text-transform: uppercase;
   letter-spacing: 0.08em;
+}
+
+/* Proactive empty-state: primary line reads as an actionable link. */
+.bento-timeline-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: var(--brand);
+  font-family: inherit;
+  font-size: 0.98rem;
+}
+
+.bento-card-link:hover .bento-timeline-cta {
+  color: var(--brand-strong);
+}
+
+.bento-card-link:hover .bento-timeline-cta svg {
+  transform: translateX(3px);
+}
+
+.bento-timeline-cta svg {
+  transition: transform 0.2s ease;
+}
+
+/* Idle dot — grey, no pulse — when there's no activity to represent. */
+.bento-timeline-dot--idle {
+  background: var(--text-muted);
+  box-shadow: none;
+  animation: none;
 }
 
 /* Terminal command rows — replaces quick-action-pill */
