@@ -99,12 +99,12 @@ const ROOT_STYLE: CSSProperties = {
 };
 
 const LIGHT_STATIC_GRADIENT =
-  "radial-gradient(ellipse 60% 50% at 78% -8%, rgba(56,189,248,0.30) 0%, transparent 60%)," +
+  "radial-gradient(ellipse 60% 50% at 78% -8%, rgba(88, 166, 255,0.30) 0%, transparent 60%)," +
   "radial-gradient(ellipse 50% 45% at 18% 5%, rgba(167,139,250,0.28) 0%, transparent 60%)," +
   "radial-gradient(ellipse 45% 40% at 50% 95%, rgba(52,211,153,0.24) 0%, transparent 60%)";
 
 const DARK_STATIC_GRADIENT =
-  "radial-gradient(ellipse 60% 50% at 75% -10%, rgba(59,130,246,0.28) 0%, transparent 60%)," +
+  "radial-gradient(ellipse 60% 50% at 75% -10%, rgba(31, 111, 235,0.28) 0%, transparent 60%)," +
   "radial-gradient(ellipse 50% 40% at 20% 0%, rgba(139,92,246,0.25) 0%, transparent 60%)," +
   "radial-gradient(ellipse 40% 35% at 50% 90%, rgba(79,70,229,0.22) 0%, transparent 60%)";
 
@@ -164,7 +164,7 @@ export function FlowBackground({
         <LightOrb
           scrollY={driftUpSlow}
           scrollScale={swellScale}
-          gradient="radial-gradient(circle, #38bdf8 0%, #0ea5e9 45%, transparent 70%)"
+          gradient="radial-gradient(circle, #58a6ff 0%, #1f6feb 45%, transparent 70%)"
           size="58vw"
           position={{ top: "-16%", right: "-12%" }}
           idle={{ x: [0, 40, -20, 0], y: [0, -28, 18, 0], scale: [1, 1.06, 0.98, 1] }}
@@ -211,7 +211,7 @@ export function FlowBackground({
             position: "absolute",
             inset: 0,
             backgroundImage:
-              "radial-gradient(circle, rgba(15,23,42,0.05) 1px, transparent 1px)",
+              "radial-gradient(circle, rgba(17, 17, 22,0.05) 1px, transparent 1px)",
             backgroundSize: "32px 32px",
           }}
         />
@@ -232,7 +232,7 @@ export function FlowBackground({
           width: "85vw",
           height: "85vw",
           borderRadius: "50%",
-          background: "radial-gradient(ellipse, #3b82f6 0%, #1d4ed8 40%, transparent 70%)",
+          background: "radial-gradient(ellipse, #1f6feb 0%, #1d4ed8 40%, transparent 70%)",
           filter: "blur(60px)",
           opacity: 0.20,
           top: "-22%",
@@ -260,7 +260,7 @@ export function FlowBackground({
           width: "70vw",
           height: "70vw",
           borderRadius: "50%",
-          background: "radial-gradient(ellipse, #06b6d4 0%, #0284c7 45%, transparent 70%)",
+          background: "radial-gradient(ellipse, #06b6d4 0%, #0969da 45%, transparent 70%)",
           filter: "blur(60px)",
           opacity: 0.18,
           bottom: "-18%",

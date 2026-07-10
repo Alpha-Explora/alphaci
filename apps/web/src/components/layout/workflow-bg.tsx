@@ -77,7 +77,7 @@ function TravelParticle({ edge }: Readonly<{ edge: WfEdge }>) {
   return (
     <motion.circle
       r={3.5}
-      fill="rgba(56, 189, 248, 0.85)"
+      fill="rgba(88, 166, 255, 0.85)"
       filter="url(#particleGlow)"
       style={{ offsetPath: `path("${pathD}")` } as React.CSSProperties}
       initial={{ offsetDistance: "0%" }}
@@ -145,7 +145,7 @@ export function WorkflowBg() {
             y1={edge.y1}
             x2={edge.x2}
             y2={edge.y2}
-            stroke="rgba(56, 189, 248, 0.4)"
+            stroke="rgba(88, 166, 255, 0.4)"
             strokeWidth={1.5}
             strokeDasharray="6 5"
           />
@@ -160,8 +160,8 @@ export function WorkflowBg() {
               width={node.w}
               height={node.h}
               rx={7}
-              fill={node.active ? "rgba(52,211,153,0.14)" : "rgba(56,189,248,0.08)"}
-              stroke={node.active ? "rgba(52,211,153,0.55)" : "rgba(56,189,248,0.35)"}
+              fill={node.active ? "rgba(52,211,153,0.14)" : "rgba(88, 166, 255,0.08)"}
+              stroke={node.active ? "rgba(52,211,153,0.55)" : "rgba(88, 166, 255,0.35)"}
               strokeWidth={1.5}
               filter={node.active ? "url(#nodeGlow)" : undefined}
             />
@@ -175,7 +175,7 @@ export function WorkflowBg() {
               fill={
                 node.active
                   ? "rgba(52,211,153,0.95)"
-                  : "rgba(56,189,248,0.85)"
+                  : "rgba(88, 166, 255,0.85)"
               }
               letterSpacing="0.04em"
             >

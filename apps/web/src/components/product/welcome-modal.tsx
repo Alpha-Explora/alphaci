@@ -166,7 +166,7 @@ export function WelcomeModal({ displayName, onDismiss }: WelcomeModalProps) {
         style={{
           position: "fixed",
           inset: 0,
-          background: "rgba(2, 6, 23, 0.72)",
+          background: "rgba(10, 10, 14, 0.72)",
           backdropFilter: "blur(4px)",
           WebkitBackdropFilter: "blur(4px)",
           zIndex: 500,
@@ -190,11 +190,11 @@ export function WelcomeModal({ displayName, onDismiss }: WelcomeModalProps) {
           onClick={(e) => e.stopPropagation()}
           style={{
             position: "relative",
-            background: "rgba(15, 23, 42, 0.97)",
+            background: "rgba(17, 17, 22, 0.97)",
             border: "1px solid var(--border-strong)",
             borderRadius: "var(--radius-card)",
             boxShadow:
-              "0 24px 64px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(56, 189, 248, 0.08)",
+              "0 24px 64px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(88, 166, 255, 0.08)",
             width: "100%",
             maxWidth: 520,
             display: "flex",
@@ -308,7 +308,7 @@ export function WelcomeModal({ displayName, onDismiss }: WelcomeModalProps) {
                     height: "6px",
                     borderRadius: "50%",
                     background: "var(--brand)",
-                    boxShadow: "0 0 6px rgba(56, 189, 248, 0.7)",
+                    boxShadow: "0 0 6px rgba(88, 166, 255, 0.7)",
                   }}
                 />
                 New here
@@ -371,8 +371,8 @@ export function WelcomeModal({ displayName, onDismiss }: WelcomeModalProps) {
                     alignItems: "flex-start",
                     gap: "0.75rem",
                     padding: "0.65rem 0.8rem",
-                    background: "rgba(56, 189, 248, 0.04)",
-                    border: "1px solid rgba(56, 189, 248, 0.1)",
+                    background: "rgba(88, 166, 255, 0.04)",
+                    border: "1px solid rgba(88, 166, 255, 0.1)",
                     borderRadius: "0.6rem",
                   }}
                 >
@@ -385,8 +385,8 @@ export function WelcomeModal({ displayName, onDismiss }: WelcomeModalProps) {
                       width: "1.5rem",
                       height: "1.5rem",
                       borderRadius: "50%",
-                      background: "rgba(56, 189, 248, 0.12)",
-                      border: "1px solid rgba(56, 189, 248, 0.3)",
+                      background: "rgba(88, 166, 255, 0.12)",
+                      border: "1px solid rgba(88, 166, 255, 0.3)",
                       fontSize: "0.72rem",
                       fontWeight: 800,
                       color: "var(--brand)",

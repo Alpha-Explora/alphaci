@@ -640,7 +640,7 @@ export function AppNav({
         whileHover={
           reduced
             ? undefined
-            : { x: 2, backgroundColor: "rgba(30, 41, 59, 0.98)" }
+            : { x: 2, backgroundColor: "rgba(26, 26, 33, 0.98)" }
         }
         whileTap={reduced ? undefined : { scale: 0.94 }}
         transition={

@@ -56,7 +56,7 @@ function PipelineProgressNodes() {
           y1={28}
           x2={x + CONNECTOR_WIDTH}
           y2={28}
-          stroke={i < activeIdx ? "rgba(56,189,248,0.7)" : "rgba(56,189,248,0.15)"}
+          stroke={i < activeIdx ? "rgba(88, 166, 255,0.7)" : "rgba(88, 166, 255,0.15)"}
           strokeWidth="1.5"
           strokeDasharray={i === activeIdx - 1 ? "4 3" : "none"}
           style={{ transition: "stroke 0.3s ease" }}
@@ -76,7 +76,7 @@ function PipelineProgressNodes() {
                 cy={28}
                 r={15}
                 fill="none"
-                stroke="rgba(56,189,248,0.25)"
+                stroke="rgba(88, 166, 255,0.25)"
                 strokeWidth="1"
                 initial={{ r: 12, opacity: 0.6 }}
                 animate={{ r: [12, 16, 12], opacity: [0.6, 0, 0.6] }}
@@ -90,14 +90,14 @@ function PipelineProgressNodes() {
               r={10}
               fill={
                 isActive
-                  ? "rgba(56,189,248,0.15)"
+                  ? "rgba(88, 166, 255,0.15)"
                   : isPassed
                   ? "rgba(52,211,153,0.12)"
-                  : "rgba(15,23,42,0.6)"
+                  : "rgba(17, 17, 22,0.6)"
               }
               stroke={
                 isActive
-                  ? "rgba(56,189,248,0.9)"
+                  ? "rgba(88, 166, 255,0.9)"
                   : isPassed
                   ? "rgba(52,211,153,0.6)"
                   : "rgba(255,255,255,0.12)"
@@ -105,7 +105,7 @@ function PipelineProgressNodes() {
               strokeWidth="1.5"
               animate={{
                 filter: isActive
-                  ? "drop-shadow(0 0 6px rgba(56,189,248,0.8))"
+                  ? "drop-shadow(0 0 6px rgba(88, 166, 255,0.8))"
                   : "none",
               }}
               transition={{ duration: 0.28, ease: "easeOut" }}
@@ -130,7 +130,7 @@ function PipelineProgressNodes() {
                 cx={NODE_CX[i]}
                 cy={28}
                 r={3}
-                fill="rgba(56,189,248,0.9)"
+                fill="rgba(88, 166, 255,0.9)"
                 animate={{ opacity: [1, 0.5, 1] }}
                 transition={{ duration: 0.8, repeat: Infinity }}
               />
@@ -145,10 +145,10 @@ function PipelineProgressNodes() {
               letterSpacing="0.05em"
               fill={
                 isActive
-                  ? "rgba(56,189,248,0.9)"
+                  ? "rgba(88, 166, 255,0.9)"
                   : isPassed
                   ? "rgba(52,211,153,0.7)"
-                  : "rgba(100,116,139,0.6)"
+                  : "rgba(116, 116, 127,0.6)"
               }
               style={{ transition: "fill 0.3s ease" }}
             >
@@ -174,7 +174,7 @@ export function GeneratingOverlay({ isVisible }: GeneratingOverlayProps) {
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            background: "rgba(2, 6, 23, 0.85)",
+            background: "rgba(10, 10, 14, 0.85)",
             backdropFilter: "blur(12px)",
             WebkitBackdropFilter: "blur(12px)",
           }}
@@ -195,10 +195,10 @@ export function GeneratingOverlay({ isVisible }: GeneratingOverlayProps) {
               maxWidth: "400px",
               width: "calc(100% - 3rem)",
               padding: "2.5rem 2rem",
-              background: "rgba(15, 23, 42, 0.92)",
-              border: "1px solid rgba(56, 189, 248, 0.25)",
+              background: "rgba(17, 17, 22, 0.92)",
+              border: "1px solid rgba(88, 166, 255, 0.25)",
               borderRadius: "1.25rem",
-              boxShadow: "0 24px 80px rgba(0, 0, 0, 0.8), 0 0 40px rgba(56, 189, 248, 0.05)",
+              boxShadow: "0 24px 80px rgba(0, 0, 0, 0.8), 0 0 40px rgba(88, 166, 255, 0.05)",
             }}
             initial={{ scale: 0.9, opacity: 0, y: 12 }}
             animate={{ scale: 1, opacity: 1, y: 0 }}
@@ -213,7 +213,7 @@ export function GeneratingOverlay({ isVisible }: GeneratingOverlayProps) {
                   margin: "0 0 0.45rem",
                   fontSize: "1.05rem",
                   fontWeight: 600,
-                  color: "var(--text-primary, #f1f5f9)",
+                  color: "var(--text-primary, #f2f2f4)",
                   letterSpacing: "-0.01em",
                 }}
               >
@@ -223,7 +223,7 @@ export function GeneratingOverlay({ isVisible }: GeneratingOverlayProps) {
                 style={{
                   margin: 0,
                   fontSize: "0.82rem",
-                  color: "var(--text-muted, rgba(148, 163, 184, 0.75))",
+                  color: "var(--text-muted, rgba(162, 162, 172, 0.75))",
                   lineHeight: 1.55,
                 }}
               >
@@ -237,7 +237,7 @@ export function GeneratingOverlay({ isVisible }: GeneratingOverlayProps) {
                 width: "100%",
                 height: "3px",
                 borderRadius: "2px",
-                background: "linear-gradient(90deg, transparent, rgba(56, 189, 248, 0.6), transparent)",
+                background: "linear-gradient(90deg, transparent, rgba(88, 166, 255, 0.6), transparent)",
                 backgroundSize: "200% 100%",
                 animation: "glowSweep 1.8s linear infinite",
               }}

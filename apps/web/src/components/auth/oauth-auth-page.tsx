@@ -201,7 +201,7 @@ export function OAuthAuthPage({
                   ? undefined
                   : {
                       scale: 1.01,
-                      boxShadow: "0 0 24px rgba(56, 189, 248, 0.2)",
+                      boxShadow: "0 0 24px rgba(88, 166, 255, 0.2)",
                     }
               }
               whileTap={{ scale: 0.98 }}
@@ -221,8 +221,8 @@ export function OAuthAuthPage({
               }}
               onMouseEnter={(e) => {
                 const el = e.currentTarget as HTMLAnchorElement;
-                el.style.borderColor = "rgba(56, 189, 248, 0.6)";
-                el.style.boxShadow = "0 0 20px rgba(56,189,248,0.15)";
+                el.style.borderColor = "rgba(88, 166, 255, 0.6)";
+                el.style.boxShadow = "0 0 20px rgba(88, 166, 255,0.15)";
               }}
               onMouseLeave={(e) => {
                 const el = e.currentTarget as HTMLAnchorElement;
