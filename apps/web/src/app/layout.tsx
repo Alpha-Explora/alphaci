@@ -1,16 +1,18 @@
 import type { Metadata, Viewport } from "next";
-import { Doto, Plus_Jakarta_Sans, Outfit } from "next/font/google";
+import { Space_Grotesk, Plus_Jakarta_Sans, Outfit } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/lib/theme-context";
 
-const displayFont = Doto({
+const displayFont = Space_Grotesk({
   variable: "--font-display",
   subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
 });
 
-const bodyFont = Doto({
+const bodyFont = Space_Grotesk({
   variable: "--font-body",
   subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
 });
 
 const dashBodyFont = Plus_Jakarta_Sans({
