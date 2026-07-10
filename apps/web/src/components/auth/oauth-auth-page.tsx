@@ -199,15 +199,6 @@ export function OAuthAuthPage({
               href={githubLoginHref}
               aria-disabled={isWarming}
               className="auth-github-cta"
-              whileHover={
-                prefersReducedMotion
-                  ? undefined
-                  : {
-                      scale: 1.01,
-                      boxShadow: "0 12px 24px rgba(10, 10, 14, 0.2)",
-                    }
-              }
-              whileTap={{ scale: 0.98 }}
               style={{
                 display: "flex",
                 alignItems: "center",
