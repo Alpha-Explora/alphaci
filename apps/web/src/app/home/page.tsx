@@ -802,7 +802,7 @@ function HomeDashboardContent() {
           role="alert"
           style={{
             background:
-              "linear-gradient(135deg, rgba(56, 189, 248, 0.08) 0%, rgba(15, 23, 42, 0.7) 100%)",
+              "linear-gradient(135deg, rgba(88, 166, 255, 0.08) 0%, rgba(17, 17, 22, 0.7) 100%)",
             border: "1px solid var(--border-brand)",
             padding: "1rem var(--layout-gutter)",
             borderRadius: "0",
@@ -1072,7 +1072,7 @@ function HomeDashboardContent() {
               display: "flex",
               gap: "0.25rem",
               padding: "0.25rem",
-              background: "rgba(15, 23, 42, 0.4)",
+              background: "rgba(17, 17, 22, 0.4)",
               border: "1px solid var(--border-soft)",
               borderRadius: "0.6rem",
               width: "fit-content",
@@ -1112,9 +1112,9 @@ function HomeDashboardContent() {
                         position: "absolute",
                         inset: 0,
                         borderRadius: "0.4rem",
-                        background: "rgba(56, 189, 248, 0.1)",
-                        border: "1px solid rgba(56, 189, 248, 0.3)",
-                        boxShadow: "0 0 12px rgba(56, 189, 248, 0.15)",
+                        background: "rgba(88, 166, 255, 0.1)",
+                        border: "1px solid rgba(88, 166, 255, 0.3)",
+                        boxShadow: "0 0 12px rgba(88, 166, 255, 0.15)",
                         zIndex: -1,
                       }}
                       transition={{
@@ -1252,7 +1252,7 @@ function HomeDashboardContent() {
                   style={{
                     textAlign: "center",
                     padding: "3rem 1.5rem",
-                    background: "rgba(15, 23, 42, 0.3)",
+                    background: "rgba(17, 17, 22, 0.3)",
                     borderRadius: "var(--radius-card)",
                   }}
                 >
@@ -1319,7 +1319,7 @@ function HomeDashboardContent() {
                             className="skeleton-card glass-panel"
                             style={{
                               minHeight: "6.5rem",
-                              background: "rgba(15, 23, 42, 0.3)",
+                              background: "rgba(17, 17, 22, 0.3)",
                               animation: "state-pulse 1.5s infinite",
                             }}
                           />
@@ -1349,7 +1349,7 @@ function HomeDashboardContent() {
                         style={{
                           textAlign: "center",
                           padding: "3rem 1.5rem",
-                          background: "rgba(15, 23, 42, 0.3)",
+                          background: "rgba(17, 17, 22, 0.3)",
                           borderRadius: "var(--radius-card)",
                         }}
                       >
@@ -1663,7 +1663,7 @@ function HomeDashboardContent() {
                           style={{
                             textAlign: "center",
                             padding: "2.25rem 1.5rem",
-                            background: "rgba(15, 23, 42, 0.3)",
+                            background: "rgba(17, 17, 22, 0.3)",
                             borderRadius: "var(--radius-card)",
                           }}
                         >
@@ -1801,7 +1801,7 @@ function HomeDashboardContent() {
                         className="skeleton-card glass-panel"
                         style={{
                           minHeight: "8rem",
-                          background: "rgba(15, 23, 42, 0.3)",
+                          background: "rgba(17, 17, 22, 0.3)",
                           animation: "state-pulse 1.5s infinite",
                         }}
                       />
@@ -1831,7 +1831,7 @@ function HomeDashboardContent() {
                     style={{
                       textAlign: "center",
                       padding: "3rem 1.5rem",
-                      background: "rgba(15, 23, 42, 0.3)",
+                      background: "rgba(17, 17, 22, 0.3)",
                     }}
                   >
                     <p

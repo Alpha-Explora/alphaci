@@ -53,7 +53,7 @@ export function WorkflowAllTab({ allTemplates, onUseTemplate }: Readonly<Workflo
             gap: "0.65rem",
             padding: "3rem 1rem",
             textAlign: "center",
-            background: "rgba(15, 23, 42, 0.4)",
+            background: "rgba(17, 17, 22, 0.4)",
             border: "1px solid var(--border-soft)",
             borderRadius: "1rem"
           }}
@@ -64,8 +64,8 @@ export function WorkflowAllTab({ allTemplates, onUseTemplate }: Readonly<Workflo
               width: "2.8rem",
               height: "2.8rem",
               borderRadius: "0.74rem",
-              background: "rgba(56, 189, 248, 0.08)",
-              border: "1px solid rgba(56, 189, 248, 0.2)",
+              background: "rgba(88, 166, 255, 0.08)",
+              border: "1px solid rgba(88, 166, 255, 0.2)",
               display: "inline-flex",
               alignItems: "center",
               justifyContent: "center",
@@ -96,7 +96,7 @@ export function WorkflowAllTab({ allTemplates, onUseTemplate }: Readonly<Workflo
             variants={cardVariants}
             className="all-template-card glass-panel hud-glow-card"
             style={{
-              background: "rgba(15, 23, 42, 0.45)",
+              background: "rgba(17, 17, 22, 0.45)",
               border: "1px solid var(--border-soft)",
               borderRadius: "1.25rem",
               padding: "1.25rem",
@@ -107,8 +107,8 @@ export function WorkflowAllTab({ allTemplates, onUseTemplate }: Readonly<Workflo
             }}
             whileHover={{
               y: -3,
-              borderColor: "rgba(56, 189, 248, 0.3)",
-              boxShadow: "var(--shadow-card), 0 0 24px rgba(56, 189, 248, 0.05)"
+              borderColor: "rgba(88, 166, 255, 0.3)",
+              boxShadow: "var(--shadow-card), 0 0 24px rgba(88, 166, 255, 0.05)"
             }}
             onMouseMove={(e) => {
               const rect = e.currentTarget.getBoundingClientRect();
@@ -128,9 +128,9 @@ export function WorkflowAllTab({ allTemplates, onUseTemplate }: Readonly<Workflo
                 textTransform: "uppercase",
                 padding: "0.15rem 0.5rem",
                 borderRadius: "4px",
-                background: "rgba(56, 189, 248, 0.1)",
+                background: "rgba(88, 166, 255, 0.1)",
                 color: "var(--brand)",
-                border: "1px solid rgba(56, 189, 248, 0.15)"
+                border: "1px solid rgba(88, 166, 255, 0.15)"
               }}>{template.stack}</span>
             </div>
             
@@ -182,9 +182,9 @@ export function WorkflowAllTab({ allTemplates, onUseTemplate }: Readonly<Workflo
                   alignItems: "center",
                   justifyContent: "center",
                   borderRadius: "0.5rem",
-                  border: "1px solid rgba(56, 189, 248, 0.2)",
+                  border: "1px solid rgba(88, 166, 255, 0.2)",
                   color: "var(--brand)",
-                  background: "rgba(56, 189, 248, 0.04)",
+                  background: "rgba(88, 166, 255, 0.04)",
                   cursor: "pointer",
                   transition: "all 0.2s"
                 }}
@@ -194,8 +194,8 @@ export function WorkflowAllTab({ allTemplates, onUseTemplate }: Readonly<Workflo
                   e.currentTarget.style.color = "#fff";
                 }}
                 onMouseLeave={(e) => {
-                  e.currentTarget.style.background = "rgba(56, 189, 248, 0.04)";
-                  e.currentTarget.style.borderColor = "rgba(56, 189, 248, 0.2)";
+                  e.currentTarget.style.background = "rgba(88, 166, 255, 0.04)";
+                  e.currentTarget.style.borderColor = "rgba(88, 166, 255, 0.2)";
                   e.currentTarget.style.color = "var(--brand)";
                 }}
               >

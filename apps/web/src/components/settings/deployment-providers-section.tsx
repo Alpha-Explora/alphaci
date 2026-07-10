@@ -10,7 +10,7 @@ const fieldStyle = {
   width: "100%",
   border: "1px solid var(--border)",
   borderRadius: "6px",
-  background: "rgba(15, 23, 42, 0.45)",
+  background: "rgba(17, 17, 22, 0.45)",
   color: "var(--text-primary)",
   minHeight: "2.5rem",
   padding: "0.55rem 0.7rem",

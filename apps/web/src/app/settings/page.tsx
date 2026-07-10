@@ -1551,7 +1551,7 @@ function SettingsPageContent() {
                             placeholder={session?.user.login ?? "username"}
                             autoComplete="off"
                             style={{
-                              background: "rgba(15, 23, 42, 0.6)",
+                              background: "rgba(17, 17, 22, 0.6)",
                               border: "1px solid rgba(248, 113, 113, 0.3)",
                               borderRadius: "0.5rem",
                               padding: "0.5rem 0.75rem",

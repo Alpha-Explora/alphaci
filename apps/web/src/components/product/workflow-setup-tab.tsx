@@ -503,9 +503,9 @@ export function WorkflowSetupTab({
               textTransform: "uppercase",
               padding: "0.2rem 0.65rem",
               borderRadius: "999px",
-              background: "rgba(79,142,255,0.12)",
+              background: "rgba(88, 166, 255,0.12)",
               color: "var(--brand)",
-              border: "1px solid rgba(79,142,255,0.25)",
+              border: "1px solid rgba(88, 166, 255,0.25)",
             }}>
               {projectCatalog.selectedProjectType.label}
             </span>

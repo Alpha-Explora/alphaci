@@ -148,7 +148,7 @@ function failedContent(
         ghost: "RETRY",
         label: "Sign-in interrupted",
         accent: "var(--brand)",
-        accentSoft: "rgba(56, 189, 248, 0.12)",
+        accentSoft: "rgba(88, 166, 255, 0.12)",
         headline: "Authentication needs a retry",
         body: message,
       };

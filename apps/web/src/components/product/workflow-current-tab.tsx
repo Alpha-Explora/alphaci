@@ -1559,7 +1559,7 @@ export function WorkflowCurrentTab({
                   className="skeleton-card glass-panel"
                   style={{
                     minHeight: "12rem",
-                    background: "rgba(15, 23, 42, 0.3)",
+                    background: "rgba(17, 17, 22, 0.3)",
                     animation: "state-pulse 1.5s infinite",
                   }}
                 />
@@ -1571,7 +1571,7 @@ export function WorkflowCurrentTab({
               style={{
                 padding: "2.5rem 1.5rem",
                 textAlign: "center",
-                background: "rgba(15, 23, 42, 0.3)",
+                background: "rgba(17, 17, 22, 0.3)",
                 display: "flex",
                 flexDirection: "column",
                 gap: "1.5rem",
@@ -2477,7 +2477,7 @@ export function WorkflowCurrentTab({
                   className="skeleton-card glass-panel"
                   style={{
                     minHeight: "10rem",
-                    background: "rgba(15, 23, 42, 0.3)",
+                    background: "rgba(17, 17, 22, 0.3)",
                     animation: "state-pulse 1.5s infinite",
                   }}
                 />
@@ -2489,7 +2489,7 @@ export function WorkflowCurrentTab({
               style={{
                 padding: "3rem 1.5rem",
                 textAlign: "center",
-                background: "rgba(15, 23, 42, 0.3)",
+                background: "rgba(17, 17, 22, 0.3)",
               }}
             >
               <p
@@ -2527,7 +2527,7 @@ export function WorkflowCurrentTab({
                   variants={cardVariants}
                   className="repo-card glass-panel hud-glow-card"
                   style={{
-                    background: "rgba(15, 23, 42, 0.45)",
+                    background: "rgba(17, 17, 22, 0.45)",
                     border: "1px solid var(--border-soft)",
                     borderRadius: "1.25rem",
                     padding: "1.25rem",
@@ -2538,9 +2538,9 @@ export function WorkflowCurrentTab({
                   }}
                   whileHover={{
                     y: -3,
-                    borderColor: "rgba(56, 189, 248, 0.3)",
+                    borderColor: "rgba(88, 166, 255, 0.3)",
                     boxShadow:
-                      "var(--shadow-card), 0 0 24px rgba(56, 189, 248, 0.05)",
+                      "var(--shadow-card), 0 0 24px rgba(88, 166, 255, 0.05)",
                   }}
                   onMouseMove={(e) => {
                     const rect = e.currentTarget.getBoundingClientRect();
@@ -2600,9 +2600,9 @@ export function WorkflowCurrentTab({
                           textTransform: "uppercase",
                           padding: "0.15rem 0.5rem",
                           borderRadius: "4px",
-                          background: "rgba(56, 189, 248, 0.1)",
+                          background: "rgba(88, 166, 255, 0.1)",
                           color: "var(--brand)",
-                          border: "1px solid rgba(56, 189, 248, 0.15)",
+                          border: "1px solid rgba(88, 166, 255, 0.15)",
                         }}
                       >
                         {entry.stack}
@@ -2714,9 +2714,9 @@ export function WorkflowCurrentTab({
                         fontSize: "0.78rem",
                         minHeight: "2rem",
                         borderRadius: "6px",
-                        border: "1px solid rgba(56, 189, 248, 0.2)",
+                        border: "1px solid rgba(88, 166, 255, 0.2)",
                         color: "var(--brand)",
-                        background: "rgba(56, 189, 248, 0.04)",
+                        background: "rgba(88, 166, 255, 0.04)",
                       }}
                     >
                       New

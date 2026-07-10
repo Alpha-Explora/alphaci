@@ -51,7 +51,7 @@ export default function AdminUsersPageRoute() {
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search login, name, email…"
             aria-label="Search users"
-            style={{ padding: "0.45rem 0.75rem", borderRadius: "0.5rem", border: "1px solid var(--border-soft)", background: "var(--bg-elevated, rgba(15,23,42,0.4))", color: "inherit", minWidth: "16rem" }}
+            style={{ padding: "0.45rem 0.75rem", borderRadius: "0.5rem", border: "1px solid var(--border-soft)", background: "var(--bg-elevated, rgba(17, 17, 22,0.4))", color: "inherit", minWidth: "16rem" }}
           />
           <button type="submit" className="primary-button" style={{ padding: "0.45rem 1rem" }}>Search</button>
         </form>
