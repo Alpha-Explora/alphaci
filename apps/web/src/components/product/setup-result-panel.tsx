@@ -1,6 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
+import { useEffect, useState } from "react";
 
 import { useCapabilities } from "@/hooks/use-capabilities";
 import type {
@@ -193,6 +194,100 @@ function hasRenderDeploymentSecrets(
   );
 }
 
+type ProvisionedTargetSummary = DeploymentProvisioningResult["targets"][number];
+
+/**
+ * The live URL a provisioned service answers on. Prefers the URL the provider
+ * returned at creation (Render stores it in providerMetadata); falls back to
+ * each provider's deterministic naming convention.
+ */
+function provisioningTargetUrl(
+  target: ProvisionedTargetSummary,
+): string | null {
+  if (target.status === "failed") {
+    return null;
+  }
+
+  if (target.provider === "render") {
+    const metadataUrl = target.providerMetadata?.["renderServiceUrl"];
+    if (typeof metadataUrl === "string" && metadataUrl.trim()) {
+      return metadataUrl.trim();
+    }
+    return target.providerProjectName
+      ? `https://${target.providerProjectName}.onrender.com`
+      : null;
+  }
+
+  if (target.provider === "vercel") {
+    return target.providerProjectName
+      ? `https://${target.providerProjectName}.vercel.app`
+      : null;
+  }
+
+  return null;
+}
+
+function ServiceUrlLine({ url }: Readonly<{ url: string }>) {
+  const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    if (!copied) return;
+    const timer = setTimeout(() => setCopied(false), 2000);
+    return () => clearTimeout(timer);
+  }, [copied]);
+
+  return (
+    <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: "0.5rem",
+        minWidth: 0,
+      }}
+    >
+      <a
+        href={url}
+        target="_blank"
+        rel="noreferrer"
+        title={url}
+        style={{
+          fontSize: "0.78rem",
+          fontFamily: "var(--font-mono, monospace)",
+          color: "var(--brand)",
+          textDecoration: "none",
+          overflow: "hidden",
+          textOverflow: "ellipsis",
+          whiteSpace: "nowrap",
+          minWidth: 0,
+        }}
+      >
+        {url.replace(/^https?:\/\//, "")}
+      </a>
+      <button
+        type="button"
+        className="ghost-button"
+        aria-label="Copy service URL"
+        onClick={() => {
+          void navigator.clipboard
+            .writeText(url)
+            .then(() => setCopied(true))
+            .catch(() => {
+              // Clipboard denied; the visible link stays selectable.
+            });
+        }}
+        style={{
+          minHeight: "1.6rem",
+          padding: "0.1rem 0.55rem",
+          fontSize: "0.7rem",
+          flexShrink: 0,
+        }}
+      >
+        {copied ? "Copied" : "Copy"}
+      </button>
+    </div>
+  );
+}
+
 export function DeploymentProvisioningSummary({
   result,
 }: Readonly<{ result?: DeploymentProvisioningResult }>) {
@@ -239,6 +334,9 @@ export function DeploymentProvisioningSummary({
                 ? ` - ${cleanUserMessage(target.errorSummary)}`
                 : ""}
             </p>
+            {provisioningTargetUrl(target) ? (
+              <ServiceUrlLine url={provisioningTargetUrl(target)!} />
+            ) : null}
             {renderTargetDetails(target).length > 0 ? (
               <p className="helper-text" style={{ margin: 0 }}>
                 {renderTargetDetails(target).join(" - ")}
