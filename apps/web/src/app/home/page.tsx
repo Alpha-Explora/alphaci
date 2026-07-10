@@ -1028,17 +1028,7 @@ function HomeDashboardContent() {
                   >
                     Create project
                   </Link>
-                  <Link
-                    className="ghost-button"
-                    href="/subscribe"
-                    style={{
-                      padding: "0.4rem 1.2rem",
-                      fontSize: "0.8rem",
-                      minHeight: "2.2rem",
-                    }}
-                  >
-                    Subscription
-                  </Link>
+
                 </>
               )}
             </div>

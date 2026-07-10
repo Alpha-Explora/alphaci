@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { type PointerEvent, useEffect, useMemo, useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 
 import { FlowBackground } from "@/components/layout/flow-background";
@@ -85,9 +85,31 @@ export function OAuthAuthPage({
     if (redirectPath) router.replace(redirectPath);
   }, [nextPath, router, session, status]);
 
+  function handleDitherPointerMove(event: PointerEvent<HTMLElement>) {
+    if (prefersReducedMotion) return;
+    const x = ((event.clientX / window.innerWidth) - 0.5) * 18;
+    const y = ((event.clientY / window.innerHeight) - 0.5) * 12;
+    event.currentTarget.style.setProperty("--dither-x", `${x.toFixed(2)}px`);
+    event.currentTarget.style.setProperty("--dither-y", `${y.toFixed(2)}px`);
+    event.currentTarget.style.setProperty("--dither-scale", "1.025");
+  }
+
+  function resetDitherPointer(event: PointerEvent<HTMLElement>) {
+    event.currentTarget.style.setProperty("--dither-x", "0px");
+    event.currentTarget.style.setProperty("--dither-y", "0px");
+    event.currentTarget.style.setProperty("--dither-scale", "1");
+  }
+
   return (
-    <main className="auth-shell-split auth-shell-minimal">
+        <main
+      className="auth-shell-split auth-shell-minimal relative bg-zinc-50 text-zinc-950 dark:bg-zinc-950 dark:text-zinc-100"
+      onPointerMove={handleDitherPointerMove}
+      onPointerLeave={resetDitherPointer}
+      onPointerUp={resetDitherPointer}
+      onPointerCancel={resetDitherPointer}
+    >
       <FlowBackground variant="calm" />
+      <div className="auth-dither-waves" aria-hidden="true" />
       <PublicSiteNav active="pricing" fixed showActions={false} />
 
       <div className="auth-left-panel">
@@ -162,7 +184,7 @@ export function OAuthAuthPage({
 
       <div className="auth-right-panel">
         <motion.div
-          className="auth-card-shell"
+          className="auth-card-shell bg-white dark:bg-zinc-900"
           initial={
             prefersReducedMotion
               ? undefined
@@ -201,7 +223,7 @@ export function OAuthAuthPage({
                   ? undefined
                   : {
                       scale: 1.01,
-                      boxShadow: "0 0 24px rgba(88, 166, 255, 0.2)",
+                      boxShadow: "0 12px 24px rgba(10, 10, 14, 0.2)",
                     }
               }
               whileTap={{ scale: 0.98 }}
@@ -221,8 +243,8 @@ export function OAuthAuthPage({
               }}
               onMouseEnter={(e) => {
                 const el = e.currentTarget as HTMLAnchorElement;
-                el.style.borderColor = "rgba(88, 166, 255, 0.6)";
-                el.style.boxShadow = "0 0 20px rgba(88, 166, 255,0.15)";
+                el.style.borderColor = "rgba(162, 162, 172, 0.44)";
+                el.style.boxShadow = "0 12px 24px rgba(10, 10, 14, 0.2)";
               }}
               onMouseLeave={(e) => {
                 const el = e.currentTarget as HTMLAnchorElement;

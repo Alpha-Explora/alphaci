@@ -5,9 +5,9 @@ import type {
 } from "@/lib/api/contracts";
 import type { ApiError } from "@/lib/api/request";
 
-export type WorkflowTab = "setup" | "current" | "all";
+export type WorkflowTab = "setup" | "current";
 
-export const WORKFLOW_TABS: WorkflowTab[] = ["setup", "current", "all"];
+export const WORKFLOW_TABS: WorkflowTab[] = ["setup", "current"];
 
 export const enhancementLabels: Array<{
   key: NonNullable<SetupProjectRequest["enhancements"]>[number];

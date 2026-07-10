@@ -16110,3 +16110,128 @@ html:not([data-theme="light"]) .dash-shell .welcome-banner-flat {
   border-color: rgba(60, 60, 76, 0.14) !important;
   box-shadow: 0 10px 26px rgba(58, 58, 72, 0.07) !important;
 }
+
+/* ── Auth graphite theme ──────────────────────────────────────────────── */
+/* Login shares the dashboard's elevation ladder. The split remains for
+   orientation, not for competing color fields. */
+.auth-shell-minimal {
+  --auth-page-bg: #1b1b24;
+  --auth-surface: #24242d;
+  --auth-border: rgba(158, 158, 172, 0.2);
+  --auth-dither: rgba(162, 162, 172, 0.15);
+  background: var(--auth-page-bg);
+}
+
+.auth-shell-minimal .flow-bg--calm,
+.auth-shell-minimal .flow-bg__calm-surface,
+.auth-shell-minimal .auth-left-panel,
+.auth-shell-minimal .auth-right-panel {
+  background: var(--auth-page-bg) !important;
+}
+
+.auth-shell-minimal .auth-left-panel {
+  border-right: 1px solid var(--auth-border);
+}
+
+.auth-shell-minimal .auth-left-panel::before,
+.auth-shell-minimal .auth-right-panel::before {
+  display: none;
+}
+
+.auth-shell-minimal .auth-card-shell {
+  background: var(--auth-surface) !important;
+  border-color: var(--auth-border) !important;
+  box-shadow:
+    0 18px 48px rgba(10, 10, 14, 0.24),
+    inset 0 1px 0 rgba(255, 255, 255, 0.035) !important;
+}
+
+.auth-shell-minimal .auth-card-shell:hover {
+  border-color: rgba(162, 162, 172, 0.36) !important;
+  box-shadow:
+    0 18px 48px rgba(10, 10, 14, 0.24),
+    inset 0 1px 0 rgba(255, 255, 255, 0.035) !important;
+}
+
+.auth-shell-minimal .auth-internal-welcome,
+.auth-shell-minimal .auth-card-shell {
+  transform: translateY(-4vh) !important;
+}
+
+.auth-dither-waves {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  opacity: 0.72;
+  background-image: radial-gradient(circle, var(--auth-dither) 1px, transparent 1.2px);
+  background-size: 6px 6px;
+  mask-image: repeating-radial-gradient(
+    ellipse 105% 44% at 50% 118%,
+    #000 0 1px,
+    transparent 2px 32px
+  );
+  -webkit-mask-image: repeating-radial-gradient(
+    ellipse 105% 44% at 50% 118%,
+    #000 0 1px,
+    transparent 2px 32px
+  );
+}
+
+[data-theme="light"] .auth-shell-minimal {
+  --auth-page-bg: #f4f4f7;
+  --auth-surface: #f4f4f7;
+  --auth-border: rgba(60, 60, 76, 0.14);
+  --auth-dither: rgba(60, 60, 76, 0.14);
+  --text-primary: #20202a;
+  --text-secondary: #5f5f6b;
+  --text-muted: #767682;
+}
+
+[data-theme="light"] .auth-shell-minimal .auth-internal-eyebrow {
+  background: #f4f4f7 !important;
+  border-color: var(--auth-border) !important;
+  box-shadow: none !important;
+}
+
+[data-theme="light"] .auth-shell-minimal .auth-card-shell {
+  background: var(--auth-surface) !important;
+  border-color: var(--auth-border) !important;
+  box-shadow:
+    0 18px 48px rgba(58, 58, 72, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.7) !important;
+}
+
+@media (max-width: 760px) {
+  .auth-shell-minimal .auth-card-shell {
+    transform: translateY(-1.5rem) !important;
+  }
+}
+.auth-shell-minimal .auth-internal-eyebrow,
+.auth-shell-minimal .public-site-nav {
+  background: var(--auth-surface) !important;
+  border-color: var(--auth-border) !important;
+  box-shadow: none !important;
+}
+
+[data-theme="light"] .auth-shell-minimal .public-site-nav {
+  background: var(--auth-page-bg) !important;
+  color: var(--text-primary);
+}
+.auth-dither-waves {
+  transform: translate3d(
+      var(--dither-x, 0px),
+      var(--dither-y, 0px),
+      0
+    ) scale(var(--dither-scale, 1));
+  transform-origin: center;
+  transition: transform 280ms cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .auth-dither-waves {
+    transform: none;
+    transition: none;
+  }
+}

@@ -11,7 +11,6 @@ import {
   setupProject,
 } from "@/lib/api/client";
 import type {
-  CatalogTemplate,
   CreateProjectResult,
   DiscoverExistingRepoResponse,
   SetupProjectRequest,
@@ -28,7 +27,7 @@ import { useWorkflowHistory } from "@/hooks/use-workflow-history";
 import { useOnboardingTour } from "@/hooks/use-onboarding-tour";
 import { useCurrentProjectsTour } from "@/hooks/use-current-projects-tour";
 
-import { WorkflowAllTab } from "./workflow-all-tab";
+
 import {
   formatApiError,
   statusBannerVariant,
@@ -54,10 +53,7 @@ export function WorkflowBuilder({ guest = false, session, onboardingCompleted }:
   const reducedMotion = prefersReducedMotion ?? false;
 
   const requestedTab = searchParams.get("tab");
-  const initialTab: WorkflowTab =
-    requestedTab === "current" || requestedTab === "all"
-      ? requestedTab
-      : "setup";
+  const initialTab: WorkflowTab = requestedTab === "current" ? "current" : "setup";
   const [activeTab, setActiveTab] = useState<WorkflowTab>(initialTab);
   const [isCreatingProject, setIsCreatingProject] = useState(false);
   const [isDiscoveringExistingRepo, setIsDiscoveringExistingRepo] = useState(false);
@@ -108,11 +104,6 @@ export function WorkflowBuilder({ guest = false, session, onboardingCompleted }:
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [projectCatalog.defaultNodeVersion]);
 
-  function handleUseTemplate(template: CatalogTemplate) {
-    catalog.setSelectedTemplate(template);
-    setActiveTab("setup");
-    setStatusMessage(`Ready to create a project with ${template.name}`);
-  }
 
   function handleTabKeyDown(event: KeyboardEvent<HTMLButtonElement>, currentTab: WorkflowTab) {
     const currentIndex = WORKFLOW_TABS.indexOf(currentTab);
@@ -125,7 +116,7 @@ export function WorkflowBuilder({ guest = false, session, onboardingCompleted }:
     } else if (event.key === "Home") {
       nextTab = WORKFLOW_TABS[0];
     } else if (event.key === "End") {
-      nextTab = WORKFLOW_TABS.at(-1) ?? "all";
+      nextTab = WORKFLOW_TABS.at(-1) ?? "current";
     }
 
     if (!nextTab) return;
@@ -489,9 +480,7 @@ export function WorkflowBuilder({ guest = false, session, onboardingCompleted }:
               projects={projects.projects}
             />
           ) : null}
-          {activeTab === "all" ? (
-            <WorkflowAllTab allTemplates={catalog.allTemplates} onUseTemplate={handleUseTemplate} />
-          ) : null}
+
         </div>
       </section>
     </MotionConfig>

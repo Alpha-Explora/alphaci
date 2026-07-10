@@ -258,7 +258,9 @@ export function WorkflowSetupTab({
               Repository shape
             </legend>
             <div style={{ display: "grid", gap: "0.5rem", marginTop: "0.35rem" }}>
-              {projectCatalog.allRepoShapes.map((shape) => {
+              {projectCatalog.allRepoShapes
+                .filter((shape) => shape.id !== "monorepo")
+                .map((shape) => {
                 const selected = shape.id === projectCatalog.selectedRepoShapeId;
                 const disabled = !shape.enabled || projectCatalog.loadingProjectOptions;
                 return (
