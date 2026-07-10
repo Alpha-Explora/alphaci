@@ -15950,12 +15950,12 @@ select option {
   }
 }
 
-/* ── Unified signed-in application palette ─────────────────────────────── */
+/* ── Unified signed-in graphite application palette ────────────────────── */
 
 html:not([data-theme="light"]) .dash-shell {
   --bg-base: #1b1b24;
   --bg-soft: #1c1c26;
-  --bg-surface: rgba(20, 46, 76, 0.9);
+  --bg-surface: #24242d;
   --bg-panel: #1f1f29;
   --bg-elevated: #272733;
   --layer-0: #1b1b24;
@@ -15968,13 +15968,7 @@ html:not([data-theme="light"]) .dash-shell {
   --border-subtle: rgba(158, 158, 172, 0.09);
   --border-layer: rgba(158, 158, 172, 0.18);
   --border-tile: rgba(158, 158, 172, 0.22);
-  background:
-    radial-gradient(
-      circle at 84% -12%,
-      rgba(88, 166, 255, 0.13),
-      transparent 36rem
-    ),
-    linear-gradient(180deg, #262632 0%, #1c1c26 48%, #1b1b24 100%);
+  background: linear-gradient(180deg, #262632 0%, #1c1c26 48%, #1b1b24 100%);
 }
 
 html:not([data-theme="light"]) .dash-shell .app-sidebar {
@@ -15999,8 +15993,8 @@ html:not([data-theme="light"]) .dash-shell .sidebar-edge-gradient {
 }
 
 html:not([data-theme="light"]) .dash-shell .sidebar-nav-item-bg {
-  background: rgba(56, 129, 194, 0.24);
-  border-left-color: #79c0ff;
+  background: #2c2c37;
+  border-left-color: var(--accent-indigo);
 }
 
 html:not([data-theme="light"]) .dash-shell .sidebar-user-chip,
@@ -16015,7 +16009,7 @@ html:not([data-theme="light"])
 
 html:not([data-theme="light"]) .dash-shell .workflow-page-header,
 html:not([data-theme="light"]) .dash-shell .studio-tab-bar--enhanced {
-  background: rgba(16, 42, 72, 0.86);
+  background: #24242d;
   border-color: rgba(158, 158, 172, 0.14);
 }
 
@@ -16036,7 +16030,7 @@ html:not([data-theme="light"])
     .deployment-variable-panel,
     .deployment-provider-groups
   ) {
-  background: rgba(19, 45, 75, 0.9);
+  background: #24242d;
   border-color: rgba(158, 158, 172, 0.17);
   box-shadow:
     0 12px 28px rgba(13, 13, 18, 0.12),
@@ -16068,13 +16062,13 @@ html:not([data-theme="light"])
     .env-static-field,
     .bento-cmd-row
   ) {
-  background-color: rgba(10, 29, 51, 0.72);
+  background-color: #1d1d26;
   border-color: rgba(158, 158, 172, 0.2);
 }
 
 html:not([data-theme="light"]) .dash-shell .settings-card-header,
 html:not([data-theme="light"]) .dash-shell .settings-sidebar-profile {
-  background: rgba(11, 31, 54, 0.3);
+  background: #20202a;
   border-color: rgba(158, 158, 172, 0.13);
 }
 
@@ -16089,13 +16083,7 @@ html:not([data-theme="light"]) .dash-shell .welcome-banner-flat {
   --layer-1-hover: #ececf0;
   --layer-2: #e6e6eb;
   --layer-2-hover: #e0e0e6;
-  background:
-    radial-gradient(
-      circle at 84% -12%,
-      rgba(31, 111, 235, 0.13),
-      transparent 34rem
-    ),
-    linear-gradient(180deg, #ececf1 0%, #e6e6ec 52%, #e2e2e8 100%);
+  background: linear-gradient(180deg, #ececf1 0%, #e6e6ec 52%, #e2e2e8 100%);
 }
 
 [data-theme="light"] .dash-shell .app-sidebar {
@@ -16118,7 +16106,7 @@ html:not([data-theme="light"]) .dash-shell .welcome-banner-flat {
     .settings-card,
     .settings-preference-card
   ) {
-  background: rgba(243, 248, 254, 0.92) !important;
+  background: rgba(244, 244, 247, 0.94) !important;
   border-color: rgba(60, 60, 76, 0.14) !important;
   box-shadow: 0 10px 26px rgba(58, 58, 72, 0.07) !important;
 }
