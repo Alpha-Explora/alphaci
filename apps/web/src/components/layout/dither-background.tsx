@@ -32,7 +32,7 @@ const BAYER_8 = [
 ];
 
 // Screen pixels per dither cell. Larger = chunkier / more retro, cheaper to draw.
-const CELL = 6;
+const CELL = 7;
 
 export function DitherBackground() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -48,9 +48,9 @@ export function DitherBackground() {
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
     const isLight = theme === "light";
     // Azure accent on the dark graphite surface; darker graphite dots on light.
-    const dot = isLight ? [55, 55, 68] : [88, 166, 255];
-    const baseAlpha = isLight ? 30 : 42;
-    const peakAlpha = isLight ? 70 : 95;
+    const dot = isLight ? [40, 52, 74] : [88, 166, 255];
+    const baseAlpha = isLight ? 26 : 26;
+    const peakAlpha = isLight ? 74 : 82;
 
     let width = 0;
     let height = 0;
@@ -91,8 +91,8 @@ export function DitherBackground() {
       pointer.x += (target.x - pointer.x) * 0.12;
       pointer.y += (target.y - pointer.y) * 0.12;
 
-      // Ripple falloff radius, in low-res pixels (~20% of the field width).
-      const radius = width * 0.2;
+      // Ripple falloff radius, in low-res pixels (~24% of the field width).
+      const radius = width * 0.24;
 
       for (let y = 0; y < height; y += 1) {
         for (let x = 0; x < width; x += 1) {
@@ -100,12 +100,13 @@ export function DitherBackground() {
           const nx = x / width;
           const ny = y / height;
 
-          // (1) Ambient drifting field, centred around ~0.42 density.
+          // (1) Ambient drifting field. Wide amplitude so the field swings from
+          // fully dense to empty — that banding is what reads as a retro dither.
           const ambient =
-            0.42 +
-            0.17 * Math.sin(nx * 6.0 + t * 0.6) +
-            0.15 * Math.cos(ny * 5.0 - t * 0.45) +
-            0.12 * Math.sin((nx + ny) * 7.0 + t * 0.3);
+            0.5 +
+            0.28 * Math.sin(nx * 5.0 + t * 0.5) +
+            0.24 * Math.cos(ny * 4.0 - t * 0.4) +
+            0.18 * Math.sin((nx + ny) * 8.0 + t * 0.32);
 
           // (2) Local cursor ripple — concentric rings, killed by exp falloff so
           // it only lives near the pointer. energy fades it in/out.
@@ -116,7 +117,7 @@ export function DitherBackground() {
             const dist = Math.sqrt(dx * dx + dy * dy);
             const falloff = Math.exp(-dist / (radius * 0.5));
             ripple =
-              Math.sin(dist * 0.35 - t * 3.0) * falloff * energy * 0.5;
+              Math.sin(dist * 0.32 - t * 3.0) * falloff * energy * 0.65;
           }
 
           const brightness = ambient + ripple;

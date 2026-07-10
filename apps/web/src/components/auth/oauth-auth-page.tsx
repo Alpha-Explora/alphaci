@@ -96,69 +96,23 @@ export function OAuthAuthPage({
       <div className="auth-left-panel">
         <div className="auth-internal-welcome">
           <motion.div
-            className="auth-internal-eyebrow"
-            initial={
-              prefersReducedMotion
-                ? undefined
-                : { opacity: 0, y: 16, scale: 0.96 }
-            }
-            animate={
-              prefersReducedMotion ? undefined : { opacity: 1, y: 0, scale: 1 }
-            }
-            transition={{
-              duration: 0.55,
-              delay: 0.15,
-              ease: [0.25, 1, 0.5, 1],
-            }}
-          >
-            <span className="auth-internal-seal" aria-hidden="true">
-              <svg
-                width="26"
-                height="26"
-                viewBox="0 0 24 24"
-                fill="none"
-                focusable="false"
-              >
-                <path
-                  d="M8 12.5 10.5 15 16 9"
-                  stroke="currentColor"
-                  strokeWidth="2.4"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-                <path
-                  d="M12 3 19 6.1v5.3c0 4.4-2.8 8.3-7 9.6-4.2-1.3-7-5.2-7-9.6V6.1L12 3Z"
-                  stroke="currentColor"
-                  strokeWidth="1.8"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-            </span>
-            <div>
-              <span>Internal workspace</span>
-              <strong>GitHub verifies ALPHACI membership before entry.</strong>
-            </div>
-          </motion.div>
-
-          <motion.div
             className="auth-internal-copy"
             initial={prefersReducedMotion ? undefined : { opacity: 0, y: 16 }}
             animate={prefersReducedMotion ? undefined : { opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.3 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
           >
-            <p className="auth-internal-kicker">Welcome back</p>
-            <h2>ALPHACI internal access</h2>
+            <p className="auth-internal-kicker">Internal workspace</p>
+            <h2>AlphaExplora internal access</h2>
             <p>
-              Sign in with GitHub to continue managing governed delivery
+              Sign in with your company GitHub to manage governed delivery
               workflows, organization repositories, provider connections, and
-              deployment activity from one secure control surface.
+              deployments — all from one secure place.
             </p>
           </motion.div>
 
           <p className="auth-minimal-note">
-            One secure workspace for repositories, delivery workflows, and
-            deployment activity.
+            Access is gated on AlphaExplora organization membership — external
+            accounts can&apos;t get in.
           </p>
         </div>
       </div>
@@ -269,16 +223,6 @@ export function OAuthAuthPage({
                     : "Sign up with GitHub"}
               </span>
             </motion.a>
-            <p
-              style={{
-                fontSize: "0.78rem",
-                color: "var(--text-muted)",
-                textAlign: "center",
-                marginTop: "0.5rem",
-              }}
-            >
-              Your repos, pipelines, and workflow history stay connected.
-            </p>
           </div>
 
           {status === "loading" ? (
