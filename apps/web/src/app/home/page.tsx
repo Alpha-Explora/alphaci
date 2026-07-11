@@ -1007,6 +1007,9 @@ function HomeDashboardContent() {
   const projectStatusByRepo = new Map(
     projects.map((project) => [project.repoFullName.toLowerCase(), project.status]),
   );
+  const projectIdByRepo = new Map(
+    projects.map((project) => [project.repoFullName.toLowerCase(), project.id]),
+  );
   const statusFilteredRepos =
     repoStatusFilter === "all"
       ? repos
@@ -1914,7 +1917,11 @@ function HomeDashboardContent() {
                             className="repo-entry-list"
                             aria-label="GitHub repositories"
                           >
-                          {paginatedRepos.map((repo) => (
+                          {paginatedRepos.map((repo) => {
+                            const provisionedProjectId = projectIdByRepo.get(
+                              repo.fullName.toLowerCase(),
+                            );
+                            return (
                             <article key={repo.id} className="repo-entry">
                               <div className="repo-entry-main">
                                 <div className="repo-entry-title">
@@ -1968,6 +1975,26 @@ function HomeDashboardContent() {
                               </div>
 
                               <div className="repo-entry-actions">
+                                {provisionedProjectId ? (
+                                  <Link
+                                    href={`/projects/${provisionedProjectId}`}
+                                    className="dash-repo-row-view"
+                                  >
+                                    View project
+                                    <svg
+                                      width="10"
+                                      height="10"
+                                      viewBox="0 0 24 24"
+                                      fill="none"
+                                      stroke="currentColor"
+                                      strokeWidth="2.5"
+                                      aria-hidden="true"
+                                    >
+                                      <line x1="5" y1="12" x2="19" y2="12" />
+                                      <polyline points="12 5 19 12 12 19" />
+                                    </svg>
+                                  </Link>
+                                ) : null}
                                 <a
                                   href={repo.htmlUrl}
                                   target="_blank"
@@ -1990,7 +2017,8 @@ function HomeDashboardContent() {
                                 </a>
                               </div>
                             </article>
-                          ))}
+                            );
+                          })}
                           </div>
                           {repoPageCount > 1 ? (
                             <nav

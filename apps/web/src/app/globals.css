@@ -11662,6 +11662,22 @@ a.ov-stat-mini:hover .ov-stat-mini-num {
   opacity: 1;
 }
 
+.dash-repo-row-view {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  text-decoration: none;
+  flex-shrink: 0;
+  transition: color 0.15s ease;
+}
+
+.dash-repo-row-view:hover {
+  color: var(--brand);
+}
+
 /* Trailing action cluster on a provisioned-project row (browse + disconnect) */
 .dash-repo-row-actions,
 .dash-repo-row-confirm {
@@ -17345,10 +17361,13 @@ html:not([data-theme="light"]) .dash-shell .welcome-banner-flat {
 }
 
 /* Let the Pipeline Runs title bar use the same full-width chrome as Workflows,
-   without changing the content gutter used by its run list. */
+   without changing the content gutter used by its run list. Only the
+   horizontal margin is negative (for the edge-to-edge bleed) — the vertical
+   margin is left alone so it doesn't cancel out the page's top padding and
+   pin the header flush to the very top of the viewport. */
 .workflow-page-header:has(.runs-page-header-left) {
   width: calc(100% + (var(--layout-gutter) * 2));
-  margin: calc(-1 * var(--layout-gutter)) calc(-1 * var(--layout-gutter)) 0;
+  margin: 0 calc(-1 * var(--layout-gutter));
   padding-right: var(--layout-gutter);
   padding-left: var(--layout-gutter);
   border-right: 0;

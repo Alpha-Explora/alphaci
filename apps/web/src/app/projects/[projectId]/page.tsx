@@ -34,6 +34,9 @@ const EASE_OUT: [number, number, number, number] = [0.25, 0, 0, 1];
 /** How often the live workflow feed refreshes, in milliseconds. */
 const RUNS_POLL_INTERVAL_MS = 15_000;
 
+/** Recent runs shown inline before the feed hands off to the full /runs history. */
+const RECENT_RUNS_DISPLAY_LIMIT = 3;
+
 function statusVariant(status: string): string {
   if (status === "provisioned") return "provisioned";
   if (status === "provisioning" || status === "pending") return "provisioning";
@@ -357,7 +360,7 @@ function ProjectPageContent() {
 
       <div id="main-content" className="dash-page-content">
         <motion.div
-          className="workflow-page-header workflow-page-header--compact"
+          className="workflow-page-header"
           initial={reduced ? false : { opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.28, ease: EASE_OUT }}
@@ -514,11 +517,13 @@ function ProjectPageContent() {
                     ))}
                   </div>
                 ) : null}
-                <ProjectEnvPanel
-                  onTargetCreated={() => void loadOverview()}
-                  project={project}
-                  section="hosting"
-                />
+                {targets.length === 0 ? (
+                  <ProjectEnvPanel
+                    onTargetCreated={() => void loadOverview()}
+                    project={project}
+                    section="hosting"
+                  />
+                ) : null}
               </section>
             ) : null}
 
@@ -575,16 +580,51 @@ function ProjectPageContent() {
                     </p>
                   </div>
                 ) : (
-                  <div className="runs-list-stack">
-                    {runs.map((run, index) => (
-                      <RunCard
-                        key={run.runId}
-                        index={index}
-                        reduced={reduced}
-                        run={run}
-                      />
-                    ))}
-                  </div>
+                  <>
+                    <div className="runs-list-stack">
+                      {runs
+                        .slice(0, RECENT_RUNS_DISPLAY_LIMIT)
+                        .map((run, index) => (
+                          <RunCard
+                            key={run.runId}
+                            index={index}
+                            reduced={reduced}
+                            run={run}
+                          />
+                        ))}
+                    </div>
+                    {runs.length > RECENT_RUNS_DISPLAY_LIMIT ? (
+                      <Link
+                        href={`/runs?repoFullName=${encodeURIComponent(
+                          repoFullName ?? "",
+                        )}`}
+                        className="ghost-button"
+                        style={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: "0.4rem",
+                          marginTop: "1rem",
+                          fontSize: "0.82rem",
+                        }}
+                      >
+                        View all {runs.length} workflow runs
+                        <svg
+                          width="10"
+                          height="10"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2.5"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          aria-hidden="true"
+                        >
+                          <line x1="5" y1="12" x2="19" y2="12" />
+                          <polyline points="12 5 19 12 12 19" />
+                        </svg>
+                      </Link>
+                    ) : null}
+                  </>
                 )}
               </section>
             ) : null}
