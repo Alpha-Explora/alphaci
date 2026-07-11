@@ -24,10 +24,13 @@ import {
   syncProjects,
 } from "@/lib/api/client";
 import { completeOnboarding } from "@/lib/api/auth";
+import { getRuns } from "@/lib/api/runs";
 import type {
   ProvisionedProject,
   WorkflowHistoryItem,
   GitHubRepo,
+  RunGroup,
+  StageId,
 } from "@/lib/api/contracts";
 import { isGuest } from "@/lib/auth/subscription";
 
@@ -93,38 +96,21 @@ const quickActions = [
   },
 ];
 
-const pipelineStages = ["Source", "Lint", "Test", "Build", "Deploy"];
+// Real pipeline stages reported by GET /ci/runs — mirrors the /runs page.
+const RUN_STAGE_ORDER: StageId[] = ["access", "quality", "package"];
+const RUN_STAGE_LABELS: Record<StageId, string> = {
+  access: "Access",
+  quality: "Quality",
+  package: "Package",
+};
 
-// Decorative sparkline shape for the "Workflows Generated" card. Only rendered
-// as an expressive rising trend when real history exists; flattened to a quiet
-// baseline at zero so an empty account never shows a fake upward trajectory.
-const SPARKBAR_PATTERN = [3, 6, 4, 7, 5, 8, 6, 9, 7, 10, 8, 11];
-const SPARKBAR_FLAT_LEVEL = 1.1;
-
-/* ── Proactive empty-state for the "Last Activity" card ───────────────────────
- * When the account has no runs yet, the card should stop saying "None yet" and
- * instead point the user at their next real action. WHICH action is correct
- * depends on the onboarding funnel, so this decision is yours to make.
- */
-interface ActivityEmptyCta {
-  href: string;
-  primary: string; // top line, e.g. "Connect a repository"
-  secondary: string; // muted line beneath it
-}
-
-// TODO(you): implement the CTA the empty "Last Activity" card should show.
-// Consider branching on `hasProjects`:
-//   • no projects yet          → first step is connecting/creating a project
-//                                 (e.g. href "/workflows?tab=setup")
-//   • has projects but no runs → next step is triggering a build/run
-// Return { href, primary, secondary }. A safe default is provided so the app
-// still builds; replace it with the funnel-aware version.
-function activityEmptyCta(hasProjects: boolean): ActivityEmptyCta {
-  return {
-    href: "/workflows?tab=setup",
-    primary: hasProjects ? "Trigger a build" : "Connect a repository",
-    secondary: "No runs yet",
-  };
+function timeAgo(iso: string): string {
+  const minutes = Math.floor((Date.now() - new Date(iso).getTime()) / 60000);
+  if (minutes < 1) return "just now";
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  return `${Math.floor(hours / 24)}d ago`;
 }
 
 const pipelineContainerVariants = {
@@ -156,39 +142,117 @@ type DashTab = "overview" | "repositories" | "activity";
 
 /* ── Sub-components ─────────────────────────────────────────────────────────── */
 
-function PipelineTrack({ reduced }: Readonly<{ reduced: boolean | null }>) {
+/**
+ * Latest-run widget for the dashboard header. Unlike the old decorative
+ * pipeline (hardcoded stages, always-green final dot), this renders the real
+ * latest run from GET /ci/runs and links through to the /runs page.
+ */
+function LatestRunTrack({
+  run,
+  loading,
+  reduced,
+}: Readonly<{
+  run: RunGroup | null;
+  loading: boolean;
+  reduced: boolean | null;
+}>) {
+  if (loading) {
+    return (
+      <div className="latest-run-link" aria-label="Loading latest run">
+        <div className="pipeline-track" style={{ marginTop: 0 }}>
+          {RUN_STAGE_ORDER.map((stage, index) => (
+            <span
+              key={stage}
+              style={{ display: "inline-flex", alignItems: "center" }}
+            >
+              <span className="pipeline-dot latest-run-dot--loading" />
+              {index < RUN_STAGE_ORDER.length - 1 && (
+                <span className="pipeline-connector" aria-hidden="true" />
+              )}
+            </span>
+          ))}
+        </div>
+        <p className="latest-run-meta">Checking latest run</p>
+      </div>
+    );
+  }
+
+  if (!run) {
+    return (
+      <Link
+        href="/runs"
+        className="latest-run-link"
+        aria-label="No runs yet. Open the runs page."
+      >
+        <div className="pipeline-track" style={{ marginTop: 0 }}>
+          {RUN_STAGE_ORDER.map((stage, index) => (
+            <span
+              key={stage}
+              style={{ display: "inline-flex", alignItems: "center" }}
+            >
+              <span
+                className="pipeline-dot"
+                title={RUN_STAGE_LABELS[stage]}
+              />
+              {index < RUN_STAGE_ORDER.length - 1 && (
+                <span className="pipeline-connector" aria-hidden="true" />
+              )}
+            </span>
+          ))}
+        </div>
+        <p className="latest-run-meta">
+          No runs yet. Push to a provisioned repo to see live stages.
+        </p>
+      </Link>
+    );
+  }
+
+  const repoShort = run.repoFullName.split("/")[1] ?? run.repoFullName;
+  const stageMap = new Map(run.stages.map((s) => [s.stage, s]));
+
   return (
-    <div>
-      <p className="file-path-label" style={{ marginBottom: "0.75rem" }}>
-        pipeline/stages.yml
-      </p>
+    <Link
+      href="/runs"
+      className="latest-run-link"
+      aria-label={`Latest run for ${repoShort} on ${run.branch}: ${run.overallStatus}. View run details.`}
+    >
+      <span className="latest-run-repo">
+        {repoShort}
+        <span className="latest-run-branch">@{run.branch}</span>
+      </span>
       <motion.div
         className="pipeline-track"
-        aria-label="Pipeline stages"
+        style={{ marginTop: 0 }}
         variants={reduced ? undefined : pipelineContainerVariants}
         initial={reduced ? undefined : "hidden"}
         animate={reduced ? undefined : "visible"}
       >
-        {pipelineStages.map((stage, index) => (
-          <span
-            key={stage}
-            style={{ display: "inline-flex", alignItems: "center" }}
-          >
-            <motion.span
-              className={`pipeline-dot ${index === pipelineStages.length - 1 ? "active" : ""}`}
-              variants={reduced ? undefined : pipelineDotVariants}
-              title={stage}
-              style={{ cursor: "default" }}
-            />
-            {index < pipelineStages.length - 1 && (
+        {RUN_STAGE_ORDER.map((stageName, index) => {
+          const status = stageMap.get(stageName)?.status ?? "pending";
+          return (
+            <span
+              key={stageName}
+              style={{ display: "inline-flex", alignItems: "center" }}
+            >
               <motion.span
-                className="pipeline-connector"
+                className={`pipeline-dot pipeline-dot--${status}`}
                 variants={reduced ? undefined : pipelineDotVariants}
-                aria-hidden="true"
+                title={`${RUN_STAGE_LABELS[stageName]}: ${status}`}
               />
-            )}
-          </span>
-        ))}
+              {index < RUN_STAGE_ORDER.length - 1 && (
+                <motion.span
+                  className={`pipeline-connector${
+                    stageMap.get(stageName)?.status === "success"
+                      ? " pipeline-connector--active"
+                      : ""
+                  }`}
+                  variants={reduced ? undefined : pipelineDotVariants}
+                  aria-hidden="true"
+                />
+              )}
+            </span>
+          );
+        })}
       </motion.div>
       <div
         style={{
@@ -198,13 +262,32 @@ function PipelineTrack({ reduced }: Readonly<{ reduced: boolean | null }>) {
           flexWrap: "wrap",
         }}
       >
-        {pipelineStages.map((stage) => (
+        {RUN_STAGE_ORDER.map((stage) => (
           <span key={stage} className="template-tag">
-            {stage}
+            {RUN_STAGE_LABELS[stage]}
           </span>
         ))}
       </div>
-    </div>
+      <p
+        className={`latest-run-meta latest-run-meta--${run.overallStatus}`}
+      >
+        {run.overallStatus} · {timeAgo(run.startedAt)} · View runs
+        <svg
+          width="10"
+          height="10"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden="true"
+        >
+          <line x1="5" y1="12" x2="19" y2="12" />
+          <polyline points="12 5 19 12 12 19" />
+        </svg>
+      </p>
+    </Link>
   );
 }
 
@@ -223,27 +306,41 @@ function SkeletonValue({ wide = false }: { wide?: boolean }) {
   );
 }
 
-/* ── BentoGrid ──────────────────────────────────────────────────────────────── */
+/* ── ReleasePulse — container-less operational overview ─────────────────────── */
 
-interface BentoGridProps {
-  historyLoading: boolean;
-  projectsLoading: boolean;
+interface ReleasePulseProps {
+  projects: ProvisionedProject[];
   historyLength: number;
-  projectsLength: number;
   uniqueServices: number;
   lastActivityValue: string;
+  historyLoading: boolean;
+  projectsLoading: boolean;
   prefersReducedMotion: boolean | null;
 }
 
-function BentoGrid({
-  historyLoading,
-  projectsLoading,
+function ReleasePulse({
+  projects,
   historyLength,
-  projectsLength,
   uniqueServices,
   lastActivityValue,
+  historyLoading,
+  projectsLoading,
   prefersReducedMotion,
-}: Readonly<BentoGridProps>) {
+}: Readonly<ReleasePulseProps>) {
+  const projectsLength = projects.length;
+
+  // Real operational signal, derived from project status — this is what an
+  // operator opening the dashboard actually needs to see first.
+  const attention = projects.filter(
+    (p) => p.status === "failed" || p.status === "orphaned",
+  );
+  const provisioned = projects.filter(
+    (p) => p.status === "provisioned",
+  ).length;
+  const provisioning = projects.filter(
+    (p) => p.status === "provisioning",
+  ).length;
+
   const animatedHistory = useCountUp(
     prefersReducedMotion || historyLoading ? null : historyLength,
   );
@@ -264,246 +361,152 @@ function BentoGrid({
     ? uniqueServices
     : (animatedServices ?? uniqueServices);
 
-  // Flatten the sparkline while loading or when there is no history yet, so the
-  // card never implies activity that doesn't exist.
-  const sparkbarEmpty = historyLoading || historyLength === 0;
-  const sparkbarHeights = sparkbarEmpty
-    ? SPARKBAR_PATTERN.map(() => SPARKBAR_FLAT_LEVEL)
-    : SPARKBAR_PATTERN;
+  // Overall system read. Order matters: loading → empty → attention → healthy.
+  const health: "loading" | "empty" | "attention" | "ok" = projectsLoading
+    ? "loading"
+    : projectsLength === 0
+      ? "empty"
+      : attention.length > 0
+        ? "attention"
+        : "ok";
 
-  // When there is no run history, the Last Activity card turns into a CTA
-  // pointing at the user's next real step instead of showing "None yet".
-  const activityIsEmpty = !historyLoading && historyLength === 0;
-  const emptyCta = activityIsEmpty
-    ? activityEmptyCta(projectsLength > 0)
-    : null;
+  const headline =
+    health === "loading"
+      ? "Checking your systems"
+      : health === "empty"
+        ? "Nothing deployed yet"
+        : health === "attention"
+          ? `${attention.length} project${attention.length > 1 ? "s" : ""} need attention`
+          : "All systems operational";
+
+  const subline =
+    health === "loading"
+      ? "Reading project and workflow status"
+      : health === "empty"
+        ? "Connect a repository to generate your first pipeline"
+        : `${provisioned} provisioned${provisioning ? `, ${provisioning} provisioning` : ""}${attention.length ? `, ${attention.length} flagged` : ""}`;
+
+  const dotClass =
+    health === "ok"
+      ? "ov-status-dot--ok"
+      : health === "attention"
+        ? "ov-status-dot--warn"
+        : "ov-status-dot--idle";
 
   return (
-    <div className="kpi-bento-grid">
-      {/* Cell 1: Workflows Generated — dominant brand, asymmetric wide */}
-      <Link
-        href="/workflows?tab=all"
-        className="bento-card bento-card-dominant bento-card-brand bento-card-link"
-        aria-label="View all generated workflows"
-      >
-        <div className="bento-card-eyebrow">
-          <span
-            className="bento-pulse-dot bento-pulse-dot--brand"
-            aria-hidden="true"
-          />
-          Workflows Generated
+    <div className="ov-pulse">
+      {/* System status — the one line that answers "is anything wrong?" */}
+      <div className="ov-status">
+        <span className={`ov-status-dot ${dotClass}`} aria-hidden="true" />
+        <div className="ov-status-copy">
+          <h2 className="ov-status-headline">{headline}</h2>
+          <p className="ov-status-sub">{subline}</p>
         </div>
-        <div className="bento-value-row">
-          <div className="bento-card-value counter-number bento-num-brand">
-            {historyLoading ? <SkeletonValue wide /> : displayHistory}
-          </div>
-          {!historyLoading && historyLength > 0 && (
-            <span className="bento-trend-up">
-              <svg
-                width="9"
-                height="9"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                aria-hidden="true"
+      </div>
+
+      {/* Stat rail — quiet mono figures on hairline dividers, no card chrome */}
+      <div className="ov-rail">
+        <Link href="/workflows?tab=current" className="ov-stat">
+          <span className="ov-stat-num">
+            {projectsLoading ? <SkeletonValue /> : displayProjects}
+          </span>
+          <span className="ov-stat-label">Projects</span>
+        </Link>
+        <Link href="/hosting" className="ov-stat">
+          <span className="ov-stat-num">
+            {historyLoading ? <SkeletonValue /> : displayServices}
+          </span>
+          <span className="ov-stat-label">Services</span>
+        </Link>
+        <Link href="/workflows?tab=all" className="ov-stat">
+          <span className="ov-stat-num">
+            {historyLoading ? <SkeletonValue /> : displayHistory}
+          </span>
+          <span className="ov-stat-label">Workflows</span>
+        </Link>
+        <Link href="/runs" className="ov-stat">
+          <span className="ov-stat-num ov-stat-num--text">
+            {historyLoading ? <SkeletonValue wide /> : lastActivityValue}
+          </span>
+          <span className="ov-stat-label">Last run</span>
+        </Link>
+      </div>
+
+      {/* Operational focus: what needs the operator, a next step, or all-clear */}
+      {health === "attention" ? (
+        <div className="ov-attention">
+          <p className="ov-section-eyebrow">Needs attention</p>
+          <div className="ov-attention-list">
+            {attention.map((project) => (
+              <Link
+                key={project.id}
+                href="/workflows?tab=current"
+                className="ov-attention-row"
               >
-                <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" />
-                <polyline points="17 6 23 6 23 12" />
-              </svg>
-              Active
-            </span>
-          )}
-        </div>
-        <p className="bento-card-desc">
-          GitHub Actions build &amp; test recipes
-        </p>
-        <div
-          className={`bento-sparkbar${sparkbarEmpty ? " bento-sparkbar--flat" : ""}`}
-          aria-hidden="true"
-        >
-          {sparkbarHeights.map((h, i) => (
-            <span
-              key={i}
-              className="bento-sparkbar-bar"
-              style={{ height: `${h * 8}%`, animationDelay: `${i * 0.05}s` }}
-            />
-          ))}
-        </div>
-        <svg
-          className="bento-card-icon"
-          width="22"
-          height="22"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          aria-hidden="true"
-        >
-          <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
-        </svg>
-      </Link>
-
-      {/* Cell 2: Projects Created — violet tint */}
-      <Link
-        href="/workflows?tab=current"
-        className="bento-card bento-card-accent bento-card-violet bento-card-link"
-        aria-label="View active projects"
-      >
-        <div className="bento-card-eyebrow">
-          <span
-            className="bento-pulse-dot bento-pulse-dot--violet"
-            aria-hidden="true"
-          />
-          Projects
-        </div>
-        <div className="bento-card-value counter-number bento-num-violet">
-          {projectsLoading ? <SkeletonValue /> : displayProjects}
-        </div>
-        <p className="bento-card-desc">Active repositories</p>
-        <svg
-          className="bento-card-icon"
-          width="20"
-          height="20"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          aria-hidden="true"
-        >
-          <rect x="2" y="2" width="20" height="8" rx="2" ry="2" />
-          <rect x="2" y="14" width="20" height="8" rx="2" ry="2" />
-          <line x1="6" y1="6" x2="6.01" y2="6" />
-          <line x1="6" y1="18" x2="6.01" y2="18" />
-        </svg>
-      </Link>
-
-      {/* Cell 3: Services — teal accent */}
-      <Link
-        href="/hosting"
-        className="bento-card bento-card-teal bento-card-link"
-        aria-label="Manage deployment services"
-      >
-        <div className="bento-card-eyebrow">
-          <span
-            className="bento-pulse-dot bento-pulse-dot--teal"
-            aria-hidden="true"
-          />
-          Services
-        </div>
-        <div className="bento-card-value counter-number bento-num-teal">
-          {historyLoading ? <SkeletonValue /> : displayServices}
-        </div>
-        <p className="bento-card-desc">Unique services</p>
-        <svg
-          className="bento-card-icon"
-          width="20"
-          height="20"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          aria-hidden="true"
-        >
-          <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
-          <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
-          <line x1="12" y1="22.08" x2="12" y2="12" />
-        </svg>
-      </Link>
-
-      {/* Cell 4: Last Activity — vertical timeline treatment */}
-      <Link
-        href={emptyCta ? emptyCta.href : "/runs"}
-        className="bento-card bento-card-activity bento-card-link"
-        aria-label={emptyCta ? emptyCta.primary : "View recent workflow activity"}
-      >
-        <div className="bento-card-eyebrow">
-          <svg
-            width="11"
-            height="11"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            aria-hidden="true"
-          >
-            <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-            <line x1="16" y1="2" x2="16" y2="6" />
-            <line x1="8" y1="2" x2="8" y2="6" />
-            <line x1="3" y1="10" x2="21" y2="10" />
-          </svg>
-          Last Activity
-        </div>
-        <div className="bento-timeline">
-          <span
-            className={`bento-timeline-dot${emptyCta ? " bento-timeline-dot--idle" : ""}`}
-            aria-hidden="true"
-          />
-          <div className="bento-timeline-content">
-            {historyLoading ? (
-              <SkeletonValue wide />
-            ) : emptyCta ? (
-              <>
-                <span className="bento-timeline-date bento-timeline-cta">
-                  {emptyCta.primary}
-                  <svg
-                    width="12"
-                    height="12"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    aria-hidden="true"
-                  >
-                    <line x1="5" y1="12" x2="19" y2="12" />
-                    <polyline points="12 5 19 12 12 19" />
-                  </svg>
+                <span
+                  className={`ov-attention-status ${project.status === "failed" ? "is-failed" : "is-orphaned"}`}
+                >
+                  {project.status}
                 </span>
-                <span className="bento-timeline-label">
-                  {emptyCta.secondary}
+                <span className="ov-attention-name">
+                  {project.repoFullName.split("/")[1] ?? project.repoFullName}
                 </span>
-              </>
-            ) : (
-              <>
-                <span className="bento-timeline-date">{lastActivityValue}</span>
-                <span className="bento-timeline-label">Latest run</span>
-              </>
-            )}
+                <span className="ov-attention-reason">
+                  {project.failureReason ??
+                    (project.status === "orphaned"
+                      ? "GitHub webhook or access broke; re-sync to reconnect"
+                      : "Provisioning did not finish")}
+                </span>
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                >
+                  <line x1="5" y1="12" x2="19" y2="12" />
+                  <polyline points="12 5 19 12 12 19" />
+                </svg>
+              </Link>
+            ))}
           </div>
         </div>
-      </Link>
-
-      {/* Cell 5: Quick Actions — terminal command rows */}
-      <div className="bento-card bento-card-quick-actions">
-        <div className="bento-card-eyebrow" style={{ marginBottom: "0.9rem" }}>
+      ) : health === "empty" ? (
+        <Link href="/workflows?tab=setup" className="ov-nextstep">
+          <span className="ov-nextstep-copy">
+            <span className="ov-nextstep-title">Connect a repository</span>
+            <span className="ov-nextstep-sub">
+              Pick a repo and ALPHACI writes the GitHub Actions pipeline for it
+            </span>
+          </span>
           <svg
-            width="11"
-            height="11"
+            width="16"
+            height="16"
             viewBox="0 0 24 24"
             fill="none"
             stroke="currentColor"
-            strokeWidth="2"
+            strokeWidth="2.5"
             strokeLinecap="round"
             strokeLinejoin="round"
             aria-hidden="true"
           >
-            <polyline points="4 17 10 11 4 5" />
-            <line x1="12" y1="19" x2="20" y2="19" />
+            <line x1="5" y1="12" x2="19" y2="12" />
+            <polyline points="12 5 19 12 12 19" />
           </svg>
-          Quick actions
-        </div>
+        </Link>
+      ) : health === "ok" ? (
+        <p className="ov-allclear">
+          No failed or orphaned projects. Nothing needs your attention right now.
+        </p>
+      ) : null}
+
+      {/* Quick actions — lean command rows, no container */}
+      <div className="ov-actions">
+        <p className="ov-section-eyebrow">Quick actions</p>
         <div className="bento-cmd-list">
           {quickActions.map((action) => (
             <Link
@@ -560,6 +563,10 @@ function HomeDashboardContent() {
   const [repos, setRepos] = useState<GitHubRepo[]>([]);
   const [reposLoading, setReposLoading] = useState(true);
   const [reposError, setReposError] = useState<string | null>(null);
+  const [latestRun, setLatestRun] = useState<RunGroup | null>(null);
+  const [runsLoading, setRunsLoading] = useState(true);
+  // Hide the header widget entirely if /ci/runs is unavailable (feature off).
+  const [runsAvailable, setRunsAvailable] = useState(true);
   const [repoQuery, setRepoQuery] = useState("");
   const [disconnectingId, setDisconnectingId] = useState<string | null>(null);
   const [confirmDisconnectId, setConfirmDisconnectId] = useState<string | null>(
@@ -615,6 +622,20 @@ function HomeDashboardContent() {
       .finally(() => setReposLoading(false));
   }
 
+  function loadLatestRun() {
+    setRunsLoading(true);
+    getRuns()
+      .then((response) => {
+        setLatestRun(response.runs[0] ?? null);
+        setRunsAvailable(true);
+      })
+      .catch(() => {
+        setLatestRun(null);
+        setRunsAvailable(false);
+      })
+      .finally(() => setRunsLoading(false));
+  }
+
   // Internal workspace: there is no guest/preview mode. Unauthenticated
   // visitors are sent to sign-in rather than shown a preview dashboard.
   useEffect(() => {
@@ -628,6 +649,7 @@ function HomeDashboardContent() {
     loadHistory();
     loadProjects();
     loadRepos();
+    loadLatestRun();
     // Intentionally re-run only on auth/workspace change, not on loader identity.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status, selectedWorkspaceId]);
@@ -737,16 +759,10 @@ function HomeDashboardContent() {
     loadHistory();
     loadProjects();
     loadRepos();
+    loadLatestRun();
   }
 
   /* ── Helpers ────────────────────────────────────────────────────────────── */
-  function projectBorderClass(status: string) {
-    if (status === "provisioned") return "repo-card-success";
-    if (status === "failed") return "repo-card-danger";
-    if (status === "orphaned") return "repo-card-amber";
-    return "repo-card-brand";
-  }
-
   function projectStatusChipClass(status: string) {
     if (status === "provisioned") return "status-chip status-chip-success";
     if (status === "failed") return "status-chip status-chip-danger";
@@ -938,11 +954,20 @@ function HomeDashboardContent() {
               justifyContent: "space-between",
               flexWrap: "wrap",
               gap: "1.5rem",
-              marginBottom: "1.25rem",
             }}
           >
-            {/* Identity */}
-            <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
+            {/* Identity + primary actions (moved up from the old footer row) */}
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                gap: "1.1rem",
+                minWidth: 0,
+              }}
+            >
+              <div
+                style={{ display: "flex", alignItems: "center", gap: "1rem" }}
+              >
               {!guest &&
                 (session?.user.avatarUrl ? (
                   <Image
@@ -1011,104 +1036,87 @@ function HomeDashboardContent() {
                     : `Welcome back, ${session?.user.name ?? session?.user.login ?? "builder"}.`}
                 </h1>
               </div>
+              </div>
+
+              <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
+                {guest ? (
+                  <>
+                    <Link
+                      className="primary-button"
+                      href="/signup"
+                      style={{
+                        padding: "0.4rem 1rem",
+                        fontSize: "0.8rem",
+                        minHeight: "2.2rem",
+                      }}
+                    >
+                      Sign up free
+                    </Link>
+                    <Link
+                      className="ghost-button"
+                      href="/login"
+                      style={{
+                        padding: "0.4rem 1rem",
+                        fontSize: "0.8rem",
+                        minHeight: "2.2rem",
+                      }}
+                    >
+                      Log in
+                    </Link>
+                  </>
+                ) : (
+                  <>
+                    <Link
+                      className="primary-button"
+                      href="/workflows?tab=setup"
+                      style={{
+                        padding: "0.4rem 1.2rem",
+                        fontSize: "0.8rem",
+                        minHeight: "2.2rem",
+                      }}
+                    >
+                      Create project
+                    </Link>
+                    <button
+                      className="ghost-button"
+                      type="button"
+                      onClick={refreshDashboard}
+                      style={{
+                        padding: "0.4rem 1rem",
+                        fontSize: "0.8rem",
+                        minHeight: "2.2rem",
+                      }}
+                    >
+                      Refresh data
+                    </button>
+                  </>
+                )}
+              </div>
             </div>
 
-            {/* Pipeline track */}
-            <div
-              style={{
-                borderLeft: "1px solid var(--border)",
-                paddingLeft: "clamp(0.75rem, 1.5vw, 1.25rem)",
-                alignSelf: "start",
-                display: "flex",
-                flexDirection: "column",
-                gap: "0.35rem",
-              }}
-              className="pipeline-track-aside"
-            >
-              <p className="eyebrow" style={{ fontSize: "0.7rem" }}>
-                LIVE STATUS PIPELINE
-              </p>
-              <PipelineTrack reduced={prefersReducedMotion} />
-            </div>
-          </div>
-
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              flexWrap: "wrap",
-              gap: "0.75rem",
-              borderTop: "1px solid var(--border-soft)",
-              paddingTop: "1rem",
-            }}
-          >
-            {guest && (
-              <p
+            {/* Latest run — real pipeline state from /ci/runs */}
+            {runsAvailable && (
+              <div
                 style={{
-                  margin: 0,
-                  fontSize: "0.85rem",
-                  color: "var(--text-secondary)",
+                  borderLeft: "1px solid var(--border)",
+                  paddingLeft: "clamp(0.75rem, 1.5vw, 1.25rem)",
+                  alignSelf: "start",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "0.35rem",
                 }}
+                className="pipeline-track-aside"
               >
-                You are browsing in guest mode. Sign up to unlock all features.
-              </p>
+                <p className="eyebrow" style={{ fontSize: "0.7rem" }}>
+                  LATEST RUN
+                </p>
+                <LatestRunTrack
+                  run={latestRun}
+                  loading={runsLoading}
+                  reduced={prefersReducedMotion}
+                />
+              </div>
             )}
-            <div style={{ display: "flex", gap: "0.5rem", marginLeft: "auto" }}>
-              {guest ? (
-                <>
-                  <Link
-                    className="primary-button"
-                    href="/signup"
-                    style={{
-                      padding: "0.4rem 1rem",
-                      fontSize: "0.8rem",
-                      minHeight: "2.2rem",
-                    }}
-                  >
-                    Sign up free
-                  </Link>
-                  <Link
-                    className="ghost-button"
-                    href="/login"
-                    style={{
-                      padding: "0.4rem 1rem",
-                      fontSize: "0.8rem",
-                      minHeight: "2.2rem",
-                    }}
-                  >
-                    Log in
-                  </Link>
-                </>
-              ) : (
-                <>
-                  <button
-                    className="ghost-button"
-                    type="button"
-                    onClick={refreshDashboard}
-                    style={{
-                      padding: "0.4rem 1rem",
-                      fontSize: "0.8rem",
-                      minHeight: "2.2rem",
-                    }}
-                  >
-                    Refresh data
-                  </button>
-                  <Link
-                    className="primary-button"
-                    href="/workflows?tab=setup"
-                    style={{
-                      padding: "0.4rem 1.2rem",
-                      fontSize: "0.8rem",
-                      minHeight: "2.2rem",
-                    }}
-                  >
-                    Create project
-                  </Link>
-
-                </>
-              )}
-            </div>
           </div>
 
           {error ? (
@@ -1222,13 +1230,13 @@ function HomeDashboardContent() {
               }}
             >
               <section aria-label="Release pulse">
-                <BentoGrid
-                  historyLoading={historyLoading}
-                  projectsLoading={projectsLoading}
+                <ReleasePulse
+                  projects={projects}
                   historyLength={history.length}
-                  projectsLength={projects.length}
                   uniqueServices={uniqueServices}
                   lastActivityValue={lastActivityValue}
+                  historyLoading={historyLoading}
+                  projectsLoading={projectsLoading}
                   prefersReducedMotion={prefersReducedMotion}
                 />
               </section>
@@ -1472,155 +1480,55 @@ function HomeDashboardContent() {
                           </button>
                         </div>
                         <div
-                          className="repo-grid"
+                          className="dash-repo-list"
                           aria-label="Provisioned projects"
                         >
                           {projects.map((project) => (
                             <article
                               key={project.id}
-                              className={`repo-card glass-panel ${projectBorderClass(project.status)}`}
+                              className="dash-repo-row"
                             >
-                              <div
-                                style={{
-                                  display: "flex",
-                                  justifyContent: "space-between",
-                                  alignItems: "start",
-                                  gap: "0.5rem",
-                                }}
+                              <svg
+                                className="dash-repo-row-icon"
+                                width="15"
+                                height="15"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="2"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                aria-hidden="true"
                               >
-                                <a
-                                  href={
-                                    project.repoUrl ??
-                                    `https://github.com/${project.repoFullName}`
-                                  }
-                                  target="_blank"
-                                  rel="noreferrer"
-                                  className="repo-card-title"
-                                >
-                                  <svg
-                                    width="15"
-                                    height="15"
-                                    viewBox="0 0 24 24"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    strokeWidth="2"
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    style={{ flexShrink: 0 }}
-                                  >
-                                    <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22" />
-                                  </svg>
-                                  <span
-                                    style={{
-                                      overflow: "hidden",
-                                      textOverflow: "ellipsis",
-                                      whiteSpace: "nowrap",
-                                    }}
-                                  >
-                                    {project.repoFullName.split("/")[1] ??
-                                      project.repoFullName}
-                                  </span>
-                                </a>
-                                <span
-                                  className={projectStatusChipClass(
-                                    project.status,
-                                  )}
-                                >
-                                  {project.status}
-                                </span>
-                              </div>
-
-                              <p
-                                style={{
-                                  color: "var(--text-secondary)",
-                                  fontSize: "0.78rem",
-                                  margin: 0,
-                                  fontFamily: "ui-monospace, monospace",
-                                  overflow: "hidden",
-                                  textOverflow: "ellipsis",
-                                  whiteSpace: "nowrap",
-                                }}
+                                <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22" />
+                              </svg>
+                              <a
+                                href={
+                                  project.repoUrl ??
+                                  `https://github.com/${project.repoFullName}`
+                                }
+                                target="_blank"
+                                rel="noreferrer"
+                                className="dash-repo-row-name"
                               >
+                                {project.repoFullName.split("/")[1] ??
+                                  project.repoFullName}
+                              </a>
+                              <span
+                                className={`dash-repo-row-chip ${projectStatusChipClass(
+                                  project.status,
+                                )}`}
+                              >
+                                {project.status}
+                              </span>
+                              <p className="dash-repo-row-desc">
                                 {project.serviceName}
                               </p>
 
-                              <div className="repo-card-meta">
-                                <span
-                                  style={{
-                                    color: "var(--text-muted)",
-                                    fontSize: "0.7rem",
-                                    fontFamily: "ui-monospace, monospace",
-                                  }}
-                                >
-                                  {project.workflowPath}
-                                </span>
-                                {project.githubCommitUrl ? (
-                                  <a
-                                    href={project.githubCommitUrl}
-                                    target="_blank"
-                                    rel="noreferrer"
-                                    style={{
-                                      fontSize: "0.7rem",
-                                      color: "var(--brand)",
-                                      fontWeight: 600,
-                                      textDecoration: "none",
-                                      display: "flex",
-                                      alignItems: "center",
-                                      gap: "0.25rem",
-                                    }}
-                                  >
-                                    View commit
-                                    <svg
-                                      width="10"
-                                      height="10"
-                                      viewBox="0 0 24 24"
-                                      fill="none"
-                                      stroke="currentColor"
-                                      strokeWidth="2.5"
-                                    >
-                                      <line x1="7" y1="17" x2="17" y2="7" />
-                                      <polyline points="7 7 17 7 17 17" />
-                                    </svg>
-                                  </a>
-                                ) : (
-                                  <a
-                                    href={
-                                      project.repoUrl ??
-                                      `https://github.com/${project.repoFullName}`
-                                    }
-                                    target="_blank"
-                                    rel="noreferrer"
-                                    style={{
-                                      fontSize: "0.7rem",
-                                      color: "var(--brand)",
-                                      fontWeight: 600,
-                                      textDecoration: "none",
-                                      display: "flex",
-                                      alignItems: "center",
-                                      gap: "0.25rem",
-                                    }}
-                                  >
-                                    Browse
-                                    <svg
-                                      width="10"
-                                      height="10"
-                                      viewBox="0 0 24 24"
-                                      fill="none"
-                                      stroke="currentColor"
-                                      strokeWidth="2.5"
-                                    >
-                                      <line x1="7" y1="17" x2="17" y2="7" />
-                                      <polyline points="7 7 17 7 17 17" />
-                                    </svg>
-                                  </a>
-                                )}
-                              </div>
-
                               {confirmDisconnectId === project.id ? (
-                                <div className="repo-card-confirm-row">
-                                  <span className="repo-card-confirm-label">
-                                    Remove from ALPHACI? GitHub repo is
-                                    untouched.
+                                <span className="dash-repo-row-confirm">
+                                  <span className="dash-repo-row-confirm-label">
+                                    Remove from ALPHACI?
                                   </span>
                                   <button
                                     type="button"
@@ -1641,18 +1549,45 @@ function HomeDashboardContent() {
                                   >
                                     Cancel
                                   </button>
-                                </div>
+                                </span>
                               ) : (
-                                <button
-                                  type="button"
-                                  onClick={() =>
-                                    setConfirmDisconnectId(project.id)
-                                  }
-                                  className="dash-disconnect-link"
-                                  style={{ marginTop: "0.5rem" }}
-                                >
-                                  Disconnect
-                                </button>
+                                <span className="dash-repo-row-actions">
+                                  <a
+                                    href={
+                                      project.githubCommitUrl ??
+                                      project.repoUrl ??
+                                      `https://github.com/${project.repoFullName}`
+                                    }
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="dash-repo-row-browse"
+                                  >
+                                    {project.githubCommitUrl
+                                      ? "View commit"
+                                      : "Browse"}
+                                    <svg
+                                      width="10"
+                                      height="10"
+                                      viewBox="0 0 24 24"
+                                      fill="none"
+                                      stroke="currentColor"
+                                      strokeWidth="2.5"
+                                      aria-hidden="true"
+                                    >
+                                      <line x1="7" y1="17" x2="17" y2="7" />
+                                      <polyline points="7 7 17 7 17 17" />
+                                    </svg>
+                                  </a>
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      setConfirmDisconnectId(project.id)
+                                    }
+                                    className="dash-disconnect-link"
+                                  >
+                                    Disconnect
+                                  </button>
+                                </span>
                               )}
                             </article>
                           ))}
