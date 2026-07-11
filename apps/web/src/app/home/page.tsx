@@ -184,6 +184,7 @@ const sectionVariants = {
 };
 
 type DashTab = "overview" | "repositories" | "activity";
+type RepositoryStatusFilter = "all" | "provisioned" | "orphaned";
 
 /* ── Sub-components ─────────────────────────────────────────────────────────── */
 
@@ -386,25 +387,30 @@ function ReleasePulse({
     (p) => p.status === "provisioning",
   ).length;
 
-  const animatedHistory = useCountUp(
-    prefersReducedMotion || historyLoading ? null : historyLength,
-  );
   const animatedProjects = useCountUp(
     prefersReducedMotion || projectsLoading ? null : projectsLength,
+  );
+  const displayProjects = prefersReducedMotion
+    ? projectsLength
+    : (animatedProjects ?? projectsLength);
+  const animatedHistory = useCountUp(
+    prefersReducedMotion || historyLoading ? null : historyLength,
   );
   const animatedServices = useCountUp(
     prefersReducedMotion || historyLoading ? null : uniqueServices,
   );
-
   const displayHistory = prefersReducedMotion
     ? historyLength
     : (animatedHistory ?? historyLength);
-  const displayProjects = prefersReducedMotion
-    ? projectsLength
-    : (animatedProjects ?? projectsLength);
   const displayServices = prefersReducedMotion
     ? uniqueServices
     : (animatedServices ?? uniqueServices);
+
+  // Projects are returned newest-first, so the first recorded commit is the
+  // most recent commit available to the dashboard.
+  const latestCommitProject = projects.find(
+    (project) => Boolean(project.githubCommitSha),
+  );
 
   // Overall system read. Order matters: loading → empty → attention → healthy.
   const health: "loading" | "empty" | "attention" | "ok" = projectsLoading
@@ -475,6 +481,30 @@ function ReleasePulse({
           </span>
           <span className="ov-stat-label">Last run</span>
         </Link>
+      </div>
+
+      <div className="ov-latest-commit" aria-live="polite">
+        <p className="ov-section-eyebrow">Latest commit</p>
+        {projectsLoading ? (
+          <div className="ov-commit-loading"><SkeletonValue wide /></div>
+        ) : latestCommitProject?.githubCommitSha ? (
+          <a
+            className="ov-commit-link"
+            href={latestCommitProject.githubCommitUrl ?? undefined}
+            target={latestCommitProject.githubCommitUrl ? "_blank" : undefined}
+            rel={latestCommitProject.githubCommitUrl ? "noreferrer" : undefined}
+          >
+            <span className="ov-commit-repo">
+              {latestCommitProject.repoFullName}
+            </span>
+            <code>{latestCommitProject.githubCommitSha.slice(0, 7)}</code>
+            {latestCommitProject.githubCommitUrl ? (
+              <span className="ov-commit-arrow" aria-hidden="true">↗</span>
+            ) : null}
+          </a>
+        ) : (
+          <p className="ov-commit-empty">No commit recorded yet</p>
+        )}
       </div>
 
       {/* Operational focus: what needs the operator, a next step, or all-clear */}
@@ -613,6 +643,9 @@ function HomeDashboardContent() {
   // Hide the header widget entirely if /ci/runs is unavailable (feature off).
   const [runsAvailable, setRunsAvailable] = useState(true);
   const [repoQuery, setRepoQuery] = useState("");
+  const [repoStatusFilter, setRepoStatusFilter] =
+    useState<RepositoryStatusFilter>("all");
+  const [repoPage, setRepoPage] = useState(1);
   const [disconnectingId, setDisconnectingId] = useState<string | null>(null);
   const [confirmDisconnectId, setConfirmDisconnectId] = useState<string | null>(
     null,
@@ -629,6 +662,7 @@ function HomeDashboardContent() {
   // Welcome modal: shown once for new users (onboardingCompleted === false).
   // Local flag dismisses immediately without waiting for a network response.
   const [welcomeDismissed, setWelcomeDismissed] = useState(false);
+  const showProvisionedProjects = false as boolean;
 
   function loadHistory() {
     setHistoryLoading(true);
@@ -713,6 +747,10 @@ function HomeDashboardContent() {
       }
     })();
   }, [activeTab, selectedWorkspaceId]);
+
+  useEffect(() => {
+    setRepoPage(1);
+  }, [repoQuery, repoStatusFilter]);
 
   useEffect(() => {
     function handleDashboardShortcut(event: KeyboardEvent) {
@@ -889,13 +927,30 @@ function HomeDashboardContent() {
     session?.user.onboardingCompleted === false;
 
   const normalizedRepoQuery = repoQuery.trim().toLowerCase();
+  const projectStatusByRepo = new Map(
+    projects.map((project) => [project.repoFullName.toLowerCase(), project.status]),
+  );
+  const statusFilteredRepos =
+    repoStatusFilter === "all"
+      ? repos
+      : repos.filter(
+          (repo) =>
+            projectStatusByRepo.get(repo.fullName.toLowerCase()) ===
+            repoStatusFilter,
+        );
   const filteredRepos = normalizedRepoQuery
-    ? repos.filter(
+    ? statusFilteredRepos.filter(
         (repo) =>
           repo.fullName.toLowerCase().includes(normalizedRepoQuery) ||
           (repo.description ?? "").toLowerCase().includes(normalizedRepoQuery),
       )
-    : repos;
+    : statusFilteredRepos;
+  const reposPerPage = 10;
+  const repoPageCount = Math.max(1, Math.ceil(filteredRepos.length / reposPerPage));
+  const paginatedRepos = filteredRepos.slice(
+    (repoPage - 1) * reposPerPage,
+    repoPage * reposPerPage,
+  );
 
   const uniqueServices = new Set(history.map((h) => h.serviceName)).size;
   const lastActivityValue = history[0]
@@ -1395,8 +1450,10 @@ function HomeDashboardContent() {
                 </div>
               ) : (
                 <>
-                  {/* ── Provisioned Projects ── */}
-                  <section aria-label="Provisioned projects">
+                  {/* The Repositories tab is intentionally a single GitHub
+                      repository list. Provisioned projects remain available
+                      from the Projects and Overview surfaces. */}
+                  {showProvisionedProjects ? <section aria-label="Provisioned projects">
                     {repositoryActionError ? (
                       <div className="error-inline" role="alert">
                         <span className="error-inline-icon" aria-hidden="true">
@@ -1672,12 +1729,12 @@ function HomeDashboardContent() {
                         </div>
                       </>
                     )}
-                  </section>
+                  </section> : null}
 
                   {/* ── Connected GitHub repos — compact searchable list ── */}
                   {!reposLoading && repos.length > 0 && (
                     <section aria-label="GitHub repositories">
-                      <div className="dash-section-label">
+                      <div className="dash-section-label repositories-toolbar">
                         <div className="dash-section-label-left">
                           <p
                             className="file-path-label"
@@ -1735,6 +1792,27 @@ function HomeDashboardContent() {
                             </button>
                           )}
                         </div>
+                        <div className="repo-filters" role="group" aria-label="Filter repositories by status">
+                          {(["all", "provisioned", "orphaned"] as RepositoryStatusFilter[]).map(
+                            (filter) => (
+                              <button
+                                key={filter}
+                                type="button"
+                                className={
+                                  repoStatusFilter === filter
+                                    ? "is-active"
+                                    : undefined
+                                }
+                                onClick={() => setRepoStatusFilter(filter)}
+                                aria-pressed={repoStatusFilter === filter}
+                              >
+                                {filter === "all"
+                                  ? "All"
+                                  : filter[0].toUpperCase() + filter.slice(1)}
+                              </button>
+                            ),
+                          )}
+                        </div>
                       </div>
 
                       {filteredRepos.length === 0 ? (
@@ -1758,11 +1836,12 @@ function HomeDashboardContent() {
                           </p>
                         </div>
                       ) : (
-                        <div
-                          className="repo-entry-list"
-                          aria-label="GitHub repositories"
-                        >
-                          {filteredRepos.map((repo) => (
+                        <>
+                          <div
+                            className="repo-entry-list"
+                            aria-label="GitHub repositories"
+                          >
+                          {paginatedRepos.map((repo) => (
                             <article key={repo.id} className="repo-entry">
                               <div className="repo-entry-main">
                                 <div className="repo-entry-title">
@@ -1839,7 +1918,31 @@ function HomeDashboardContent() {
                               </div>
                             </article>
                           ))}
-                        </div>
+                          </div>
+                          {repoPageCount > 1 ? (
+                            <nav className="repo-pagination" aria-label="Repository pagination">
+                              <button
+                                type="button"
+                                onClick={() => setRepoPage((page) => Math.max(1, page - 1))}
+                                disabled={repoPage === 1}
+                              >
+                                Previous
+                              </button>
+                              <span>
+                                Page {repoPage} of {repoPageCount}
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setRepoPage((page) => Math.min(repoPageCount, page + 1))
+                                }
+                                disabled={repoPage === repoPageCount}
+                              >
+                                Next
+                              </button>
+                            </nav>
+                          ) : null}
+                        </>
                       )}
                     </section>
                   )}

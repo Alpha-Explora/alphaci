@@ -8002,6 +8002,60 @@ a.latest-run-link:hover .latest-run-meta svg {
   color: var(--text-muted);
 }
 
+/* Latest commit sits directly below the project count so the primary metric
+   stays visually connected to the repository activity it represents. */
+.ov-latest-commit {
+  padding: 1rem 0 0;
+  border-top: 1px solid var(--border-soft);
+}
+
+.ov-latest-commit .ov-section-eyebrow {
+  margin-bottom: 0.65rem;
+}
+
+.ov-commit-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.7rem;
+  max-width: 100%;
+  color: var(--text-primary);
+  text-decoration: none;
+}
+
+.ov-commit-link:hover .ov-commit-repo,
+.ov-commit-link:hover .ov-commit-arrow {
+  color: var(--brand);
+}
+
+.ov-commit-repo {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.92rem;
+  font-weight: 700;
+  transition: color 0.15s ease;
+}
+
+.ov-commit-link code,
+.ov-commit-empty {
+  color: var(--text-muted);
+  font-family: ui-monospace, monospace;
+  font-size: 0.78rem;
+}
+
+.ov-commit-arrow {
+  color: var(--text-muted);
+  transition: color 0.15s ease;
+}
+
+.ov-commit-empty {
+  margin: 0;
+}
+
+.ov-commit-loading {
+  min-height: 2.5rem;
+}
+
 /* Section label — restrained, plain-language */
 .ov-section-eyebrow {
   margin: 0 0 1rem;
@@ -11645,6 +11699,72 @@ a.latest-run-link:hover .latest-run-meta svg {
   border: 1px solid var(--border-soft);
   border-radius: var(--radius-card);
   overflow: hidden;
+}
+
+.repositories-toolbar {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.9rem;
+}
+
+.repositories-toolbar .repo-search {
+  order: -1;
+  align-self: flex-end;
+}
+
+.repo-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.repo-filters button {
+  border: 1px solid var(--border-soft);
+  border-radius: 999px;
+  padding: 0.35rem 0.7rem;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.72rem;
+}
+
+.repo-filters button:hover,
+.repo-filters button.is-active {
+  border-color: rgba(59, 130, 246, 0.55);
+  background: rgba(59, 130, 246, 0.1);
+  color: var(--brand);
+}
+
+.repo-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  padding-top: 1rem;
+  color: var(--text-muted);
+  font-size: 0.78rem;
+}
+
+.repo-pagination button {
+  border: 1px solid var(--border-soft);
+  border-radius: 6px;
+  padding: 0.45rem 0.75rem;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font: inherit;
+}
+
+.repo-pagination button:hover:not(:disabled) {
+  border-color: var(--brand);
+  color: var(--brand);
+}
+
+.repo-pagination button:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
 }
 
 .repo-entry {
