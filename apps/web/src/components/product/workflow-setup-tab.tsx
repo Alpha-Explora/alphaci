@@ -572,9 +572,18 @@ export function WorkflowSetupTab({
                       </p>
                     ) : null}
 
-                    {/* Backend service — no container box */}
-                    <div style={{ marginTop: "1rem" }}>
-                      <span className="cp-section-heading" style={{ fontSize: "0.6rem" }}>Backend service</span>
+                    <section className="service-pair-panel" aria-labelledby="backend-frontend-service-heading">
+                      <div className="service-pair-panel__header">
+                        <div>
+                          <span className="cp-section-heading" id="backend-frontend-service-heading">Backend &amp; Frontend Service</span>
+                          <p className="helper-text">Configure the two services together. The backend uses Render and the frontend uses Vercel.</p>
+                        </div>
+                        <span className="service-pair-panel__badge">2 services</span>
+                      </div>
+
+                      <div className="service-pair-panel__grid" role="group" aria-label="Backend and frontend service settings">
+                      <div className="service-pair-panel__service">
+                      <span className="service-pair-panel__service-title">Backend service</span>
                       <label className="input-label" htmlFor="backend-project-type-select" style={{ ...labelAccentStyle, display: "block" }}>
                         Language
                       </label>
@@ -617,11 +626,10 @@ export function WorkflowSetupTab({
                           />
                         </>
                       ) : null}
-                    </div>
+                      </div>
 
-                    {/* Frontend service — no container box */}
-                    <div style={{ marginTop: "1.25rem" }}>
-                      <span className="cp-section-heading" style={{ fontSize: "0.6rem" }}>Frontend service</span>
+                      <div className="service-pair-panel__service">
+                      <span className="service-pair-panel__service-title">Frontend service</span>
                       <label className="input-label" htmlFor="frontend-project-type-select" style={{ ...labelAccentStyle, display: "block" }}>
                         Language
                       </label>
@@ -664,7 +672,9 @@ export function WorkflowSetupTab({
                           />
                         </>
                       ) : null}
-                    </div>
+                      </div>
+                      </div>
+                    </section>
                   </>
                 )}
               </div>

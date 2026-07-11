@@ -19,6 +19,7 @@ import { useProviderConnections } from "@/hooks/use-provider-connections";
 interface DeploymentProvisioningSetupProps {
   enabled: boolean;
   repoShape: string;
+  showToggle?: boolean;
   selectedProjectKind?: "frontend" | "backend";
   /**
    * Ownership mode this deployment offers (from capabilities). BYO is

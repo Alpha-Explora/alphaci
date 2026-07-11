@@ -17214,3 +17214,169 @@ html:not([data-theme="light"]) .dash-shell .welcome-banner-flat {
     opacity: 0.45;
   }
 }
+
+/* Hosting is intentionally one fixed service per repository. Keep its compact
+   configuration fields aligned, rather than presenting provider choices as a
+   second deployment layer. */
+.env-provisioning-section--hosting .env-target-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.hosting-service-locked {
+  display: grid;
+  gap: 0.2rem;
+  padding: 0.75rem 0.85rem;
+  border: 1px solid rgba(88, 166, 255, 0.24);
+  border-radius: 7px;
+  background: rgba(88, 166, 255, 0.055);
+}
+
+.hosting-service-locked strong {
+  color: var(--text-primary);
+  font-size: 0.86rem;
+}
+
+.hosting-service-locked span {
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+
+@media (max-width: 980px) {
+  .env-provisioning-section--hosting .env-target-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .env-provisioning-section--hosting .env-target-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ── Project creation: one paired service surface ─────────────────────── */
+.service-pair-panel {
+  display: grid;
+  gap: 1rem;
+  margin-top: 0.35rem;
+  padding: 1rem;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg-surface);
+  box-shadow:
+    0 12px 28px rgba(10, 10, 14, 0.14),
+    inset 0 1px 0 rgba(255, 255, 255, 0.025);
+}
+
+.service-pair-panel__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-bottom: 0.8rem;
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.service-pair-panel__header .helper-text {
+  margin: 0.3rem 0 0;
+}
+
+.service-pair-panel__badge {
+  flex: 0 0 auto;
+  padding: 0.22rem 0.5rem;
+  border: 1px solid rgba(88, 166, 255, 0.32);
+  border-radius: 999px;
+  color: var(--brand-light);
+  background: rgba(88, 166, 255, 0.08);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.service-pair-panel__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1.25rem;
+}
+
+/* These are columns inside one combined container, not two nested cards. */
+.service-pair-panel__service {
+  display: grid;
+  align-content: start;
+  gap: 0.45rem;
+  min-width: 0;
+}
+
+.service-pair-panel__service + .service-pair-panel__service {
+  padding-left: 1.25rem;
+  border-left: 1px solid var(--border-soft);
+}
+
+.service-pair-panel__service-title {
+  margin-bottom: 0.15rem;
+  color: var(--text-primary);
+  font-size: 0.86rem;
+  font-weight: 700;
+}
+
+@media (max-width: 680px) {
+  .service-pair-panel__header {
+    flex-direction: column;
+  }
+
+  .service-pair-panel__grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .service-pair-panel__service + .service-pair-panel__service {
+    padding-top: 1rem;
+    padding-left: 0;
+    border-top: 1px solid var(--border-soft);
+    border-left: 0;
+  }
+}
+
+/* ── Signed-in surfaces: reuse the Login graphite elevation ladder ─────── */
+html:not([data-theme="light"]) .dash-shell {
+  --bg-base: #1b1b24;
+  --bg-soft: #1f1f29;
+  --bg-surface: #24242d;
+  --bg-panel: #1f1f29;
+  --bg-elevated: #272733;
+  background: #1b1b24;
+}
+
+html:not([data-theme="light"]) .dash-shell :is(
+  .workflow-page-header,
+  .studio-tab-bar--enhanced,
+  .service-pair-panel,
+  .env-provisioning-section
+) {
+  background-color: var(--bg-surface);
+  border-color: rgba(158, 158, 172, 0.2);
+}
+
+/* The edge control is discoverable on hover/focus without sitting over the
+   working area while it is not being used. */
+.sidebar-collapse-btn--edge {
+  opacity: 0;
+  transition:
+    opacity 0.18s ease,
+    color 0.18s ease,
+    border-color 0.18s ease,
+    background 0.18s ease;
+}
+
+.app-sidebar:hover + .sidebar-collapse-btn--edge,
+.sidebar-collapse-btn--edge:hover,
+.sidebar-collapse-btn--edge:focus-visible {
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sidebar-collapse-btn--edge {
+    transition: none;
+  }
+}

@@ -43,8 +43,22 @@ const RENDER_RUNTIME_OPTIONS: Array<{ value: RenderRuntime; label: string }> = [
   { value: "elixir", label: "Elixir" },
 ];
 
-function slotForProvider(provider: EnvProvider): EnvTargetSlot {
-  return provider === "vercel" ? "frontend" : "backend";
+function hostingForProject(project: ProvisionedProject): {
+  provider: EnvProvider;
+  slot: EnvTargetSlot;
+  label: string;
+} {
+  // A repository owns one hosting service. Infer its fixed provider instead
+  // of allowing a frontend repository to be configured as a Render service.
+  const identity = [project.projectTypeId, project.serviceName, project.repoFullName]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase();
+  const isFrontend = /next|react|vue|angular|svelte|frontend|[-_]fe\b/.test(identity);
+
+  return isFrontend
+    ? { provider: "vercel", slot: "frontend", label: "Vercel frontend" }
+    : { provider: "render", slot: "backend", label: "Render backend" };
 }
 
 function formatRenderRuntime(
@@ -116,8 +130,9 @@ export function ProjectEnvPanel({
   // deployments centralize hosting on the organization's Render/Vercel
   // accounts, so no provider connection is required (or shown).
   const { deploymentOwnershipMode: ownershipMode } = useCapabilities();
-  const [provider, setProvider] = useState<EnvProvider>("render");
-  const [slot, setSlot] = useState<EnvTargetSlot>("backend");
+  const hosting = useMemo(() => hostingForProject(project), [project]);
+  const provider = hosting.provider;
+  const slot = hosting.slot;
   const [environment, setEnvironment] = useState<EnvEnvironment>("uat");
   const [projectName, setProjectName] = useState(`${project.serviceName}-uat`);
   const [providerProjectId, setProviderProjectId] = useState("");
@@ -330,33 +345,16 @@ export function ProjectEnvPanel({
     setMessage(`Re-enter the value for ${item.key} before provisioning.`);
   }
 
-  function setDeploymentKind(nextProvider: EnvProvider) {
-    setProvider(nextProvider);
-    setSlot(slotForProvider(nextProvider));
-    setProviderConnectionId("");
-    if (nextProvider === "render") {
-      setRootDirectory((current) =>
-        !current || current === "." ? "backend" : current,
-      );
-      setBuildCommand((current) => current || "npm ci && npm run build");
-      setStartCommand((current) => current || "npm run start:prod");
-    } else {
-      setRootDirectory((current) =>
-        !current || current === "backend" ? "." : current,
-      );
-      setBuildCommand((current) => current || "npm run build");
-    }
-  }
-
   return (
     <div className="env-provisioning-panel">
       {showHosting ? (
-      <section className="env-provisioning-section">
+      <section className="env-provisioning-section env-provisioning-section--hosting">
         <div className="env-section-header">
-          <h4>Hosting service</h4>
+          <h4>{hosting.label} service</h4>
           {message ? <span>{message}</span> : null}
         </div>
 
+        {targets.length === 0 ? (
         <div className="env-target-grid">
           <select
             aria-label="Target action"
@@ -371,29 +369,10 @@ export function ProjectEnvPanel({
             <option value="register_existing">Use existing target</option>
           </select>
           <div className="env-target-grid__field env-target-grid__field--wide">
-            <span>Deployment</span>
-            <div className="env-segmented-actions" role="group">
-              <button
-                className={
-                  provider === "render" ? "primary-button" : "ghost-button"
-                }
-                type="button"
-                onClick={() => setDeploymentKind("render")}
-              >
-                Render backend
-              </button>
-              <button
-                className={
-                  provider === "vercel" ? "primary-button" : "ghost-button"
-                }
-                type="button"
-                onClick={() => setDeploymentKind("vercel")}
-              >
-                Vercel frontend
-              </button>
-            </div>
+            <span>Hosting provider</span>
+            <span className="env-static-field">{hosting.label}</span>
           </div>
-          <div className="env-target-grid__field env-target-grid__field--wide">
+          <div className="env-target-grid__field">
             <span>Ownership</span>
             <span className="env-static-field">
               {ownershipMode === "byo"
@@ -495,23 +474,15 @@ export function ProjectEnvPanel({
             {targetAction === "create" ? "Create target" : "Register target"}
           </button>
         </div>
-
-        <select
-          aria-label="Active deployment target"
-          value={activeTargetId}
-          onChange={(event) => setTargetId(event.target.value)}
-          disabled={!targets.length}
-        >
-          {targets.length ? (
-            targets.map((target) => (
-              <option key={target.id} value={target.id}>
-                {targetOptionLabel(target)}
-              </option>
-            ))
-          ) : (
-            <option value="">Create a target first</option>
-          )}
-        </select>
+        ) : (
+          <div className="hosting-service-locked" role="status">
+            <strong>{targets[0]?.providerProjectName || hosting.label}</strong>
+            <span>
+              This repository uses one fixed {hosting.label} service. Its
+              settings and status are shown below.
+            </span>
+          </div>
+        )}
 
         {resourceUsageItems.length ? (
           <div className="env-metadata-list" aria-label="Resource usage">
