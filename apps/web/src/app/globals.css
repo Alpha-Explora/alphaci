@@ -7950,155 +7950,85 @@ a.latest-run-link:hover .latest-run-meta svg {
   font-family: ui-monospace, monospace;
 }
 
-/* Stat rail — figures separated by thin vertical rules, no boxes */
-.ov-rail {
+/* Body row — operational focus (attention list / next step / all-clear) on
+   the left, key metrics as a compact column on the right. */
+.ov-body-row {
   display: flex;
-  flex-wrap: wrap;
-  row-gap: 1.25rem;
+  align-items: flex-start;
+  gap: 2rem;
 }
 
-.ov-stat {
+.ov-body-main {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* Stat rail — quiet mono figures stacked in a right-hand column, separated
+   from the main content by a single hairline rather than a card. */
+.ov-rail-aside {
+  flex: 0 0 auto;
   display: flex;
   flex-direction: column;
-  gap: 0.4rem;
-  padding: 0 1.9rem;
+  gap: 1.1rem;
+  padding-left: 1.75rem;
   border-left: 1px solid var(--border-soft);
+  min-width: 8rem;
+}
+
+.ov-stat-mini {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
   text-decoration: none;
   transition: transform 0.15s ease;
 }
 
-.ov-stat:first-child {
-  padding-left: 0;
-  border-left: none;
+a.ov-stat-mini:hover {
+  transform: translateX(2px);
 }
 
-.ov-stat:hover {
-  transform: translateY(-2px);
-}
-
-.ov-stat:hover .ov-stat-num {
+a.ov-stat-mini:hover .ov-stat-mini-num {
   color: var(--brand);
 }
 
-.ov-stat-num {
+.ov-stat-mini-num {
   font-family: "Sora", ui-monospace, monospace;
-  font-size: clamp(1.9rem, 3.6vw, 2.7rem);
+  font-size: clamp(1.5rem, 2.6vw, 2rem);
   font-weight: 800;
   line-height: 1;
   color: var(--text-primary);
   transition: color 0.15s ease;
 }
 
-.ov-stat-num--text {
-  font-size: clamp(1rem, 2vw, 1.3rem);
-  font-weight: 700;
-  font-family: ui-monospace, monospace;
-}
-
-.ov-stat-label {
-  font-size: 0.66rem;
+.ov-stat-mini-label {
+  font-size: 0.62rem;
   text-transform: uppercase;
   letter-spacing: 0.1em;
   color: var(--text-muted);
 }
 
-/* Metrics row — stat figures on the left, latest commit on the right. The
-   commit reads as one more column in the same rail, separated by the same
-   hairline the stats use rather than a box. */
-.ov-metrics-row {
-  display: flex;
-  align-items: center;
-  gap: 2rem;
-  flex-wrap: wrap;
-}
-
-.ov-metrics-row .ov-rail {
-  flex: 1 1 auto;
-}
-
-.ov-metrics-row .ov-latest-commit {
-  flex: 0 1 auto;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  padding: 0 0 0 2rem;
-  border-top: none;
-  border-left: 1px solid var(--border-soft);
-  text-align: right;
-  min-width: min(220px, 100%);
-}
-
-.ov-metrics-row .ov-commit-link {
-  justify-content: flex-end;
-}
-
-/* Latest commit sits directly below the project count so the primary metric
-   stays visually connected to the repository activity it represents. */
-.ov-latest-commit {
-  padding: 1rem 0 0;
-  border-top: 1px solid var(--border-soft);
-}
-
-.ov-latest-commit .ov-section-eyebrow {
-  margin-bottom: 0.65rem;
-}
-
-/* Narrow screens: drop the commit back under the rail, left-aligned. */
+/* Narrow screens: stack the stat column back under the main content. */
 @media (max-width: 640px) {
-  .ov-metrics-row .ov-latest-commit {
-    flex-basis: 100%;
-    align-items: stretch;
-    padding: 1rem 0 0;
+  .ov-body-row {
+    flex-direction: column;
+    gap: 1.25rem;
+  }
+
+  .ov-rail-aside {
+    flex-direction: row;
+    flex-wrap: wrap;
+    row-gap: 1rem;
+    padding-left: 0;
+    padding-top: 1rem;
     border-left: none;
     border-top: 1px solid var(--border-soft);
-    text-align: left;
+    min-width: 0;
+    width: 100%;
   }
-  .ov-metrics-row .ov-commit-link {
-    justify-content: flex-start;
+
+  .ov-stat-mini {
+    padding-right: 1.5rem;
   }
-}
-
-.ov-commit-link {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.7rem;
-  max-width: 100%;
-  color: var(--text-primary);
-  text-decoration: none;
-}
-
-.ov-commit-link:hover .ov-commit-repo,
-.ov-commit-link:hover .ov-commit-arrow {
-  color: var(--brand);
-}
-
-.ov-commit-repo {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-size: 0.92rem;
-  font-weight: 700;
-  transition: color 0.15s ease;
-}
-
-.ov-commit-link code,
-.ov-commit-empty {
-  color: var(--text-muted);
-  font-family: ui-monospace, monospace;
-  font-size: 0.78rem;
-}
-
-.ov-commit-arrow {
-  color: var(--text-muted);
-  transition: color 0.15s ease;
-}
-
-.ov-commit-empty {
-  margin: 0;
-}
-
-.ov-commit-loading {
-  min-height: 2.5rem;
 }
 
 /* Section label — restrained, plain-language */
@@ -8241,20 +8171,6 @@ a.latest-run-link:hover .latest-run-meta svg {
 }
 
 @media (max-width: 640px) {
-  .ov-rail {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 1.25rem 0;
-  }
-  .ov-stat {
-    padding: 0 0 0 1rem;
-    border-left: 1px solid var(--border-soft);
-  }
-  .ov-stat:first-child,
-  .ov-stat:nth-child(3) {
-    padding-left: 0;
-    border-left: none;
-  }
   .ov-attention-reason {
     display: none;
   }

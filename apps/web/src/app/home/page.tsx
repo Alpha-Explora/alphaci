@@ -137,27 +137,6 @@ function QuickActionRunIcon() {
   );
 }
 
-function QuickActionHostingIcon() {
-  return (
-    <svg
-      width="14"
-      height="14"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <rect x="3" y="4" width="18" height="6" rx="1.5" />
-      <rect x="3" y="14" width="18" height="6" rx="1.5" />
-      <circle cx="7" cy="7" r="1" fill="currentColor" stroke="none" />
-      <circle cx="7" cy="17" r="1" fill="currentColor" stroke="none" />
-    </svg>
-  );
-}
-
 const quickActions = [
   {
     cmd: "new-project",
@@ -185,15 +164,6 @@ const quickActions = [
     shortcut: "R",
     accent: "var(--success)",
     icon: QuickActionRunIcon,
-  },
-  {
-    cmd: "manage-hosting",
-    href: "/hosting",
-    display: "Manage Hosting",
-    description: "Review deployed services",
-    shortcut: "H",
-    accent: "var(--accent-amber)",
-    icon: QuickActionHostingIcon,
   },
 ];
 
@@ -570,99 +540,103 @@ function ReleasePulse({
         </div>
       </div>
 
-      {/* Stat rail — quiet mono figures on hairline dividers, no card chrome */}
-      <div className="ov-rail">
-        <Link href="/workflows?tab=current" className="ov-stat">
-          <span className="ov-stat-num">
-            {projectsLoading ? <SkeletonValue /> : displayProjects}
-          </span>
-          <span className="ov-stat-label">Projects</span>
-        </Link>
-        <Link href="/hosting" className="ov-stat">
-          <span className="ov-stat-num">
-            {historyLoading ? <SkeletonValue /> : displayServices}
-          </span>
-          <span className="ov-stat-label">Services</span>
-        </Link>
-        <Link href="/workflows?tab=all" className="ov-stat">
-          <span className="ov-stat-num">
-            {historyLoading ? <SkeletonValue /> : displayHistory}
-          </span>
-          <span className="ov-stat-label">Workflows</span>
-        </Link>
-      </div>
-
-      {/* Operational focus: what needs the operator, a next step, or all-clear */}
-      {health === "attention" ? (
-        <div className="ov-attention">
-          <p className="ov-section-eyebrow">{headline}</p>
-          <div className="ov-attention-list">
-            {attention.map((project) => (
-              <Link
-                key={project.id}
-                href="/workflows?tab=current"
-                className="ov-attention-row"
+      {/* Body row: operational focus on the left, stat rail on the right */}
+      <div className="ov-body-row">
+        <div className="ov-body-main">
+          {health === "attention" ? (
+            <div className="ov-attention-list">
+              {attention.map((project) => (
+                <Link
+                  key={project.id}
+                  href="/workflows?tab=current"
+                  className="ov-attention-row"
+                >
+                  <span
+                    className={`ov-attention-status ${project.status === "failed" ? "is-failed" : "is-orphaned"}`}
+                  >
+                    {project.status}
+                  </span>
+                  <span className="ov-attention-name">
+                    {project.repoFullName.split("/")[1] ??
+                      project.repoFullName}
+                  </span>
+                  <span className="ov-attention-reason">
+                    {project.failureReason ??
+                      (project.status === "orphaned"
+                        ? "GitHub webhook or access broke; re-sync to reconnect"
+                        : "Provisioning did not finish")}
+                  </span>
+                  <svg
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden="true"
+                  >
+                    <line x1="5" y1="12" x2="19" y2="12" />
+                    <polyline points="12 5 19 12 12 19" />
+                  </svg>
+                </Link>
+              ))}
+            </div>
+          ) : health === "empty" ? (
+            <Link href="/workflows?tab=setup" className="ov-nextstep">
+              <span className="ov-nextstep-copy">
+                <span className="ov-nextstep-title">Connect a repository</span>
+                <span className="ov-nextstep-sub">
+                  Pick a repo and ALPHACI writes the GitHub Actions pipeline
+                  for it
+                </span>
+              </span>
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
               >
-                <span
-                  className={`ov-attention-status ${project.status === "failed" ? "is-failed" : "is-orphaned"}`}
-                >
-                  {project.status}
-                </span>
-                <span className="ov-attention-name">
-                  {project.repoFullName.split("/")[1] ?? project.repoFullName}
-                </span>
-                <span className="ov-attention-reason">
-                  {project.failureReason ??
-                    (project.status === "orphaned"
-                      ? "GitHub webhook or access broke; re-sync to reconnect"
-                      : "Provisioning did not finish")}
-                </span>
-                <svg
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  aria-hidden="true"
-                >
-                  <line x1="5" y1="12" x2="19" y2="12" />
-                  <polyline points="12 5 19 12 12 19" />
-                </svg>
-              </Link>
-            ))}
-          </div>
+                <line x1="5" y1="12" x2="19" y2="12" />
+                <polyline points="12 5 19 12 12 19" />
+              </svg>
+            </Link>
+          ) : health === "ok" ? (
+            <p className="ov-allclear">
+              No failed or orphaned projects. Nothing needs your attention
+              right now.
+            </p>
+          ) : null}
         </div>
-      ) : health === "empty" ? (
-        <Link href="/workflows?tab=setup" className="ov-nextstep">
-          <span className="ov-nextstep-copy">
-            <span className="ov-nextstep-title">Connect a repository</span>
-            <span className="ov-nextstep-sub">
-              Pick a repo and ALPHACI writes the GitHub Actions pipeline for it
+
+        {/* Stat rail — quiet mono figures on a hairline divider, no card chrome */}
+        <div className="ov-rail-aside" aria-label="Key metrics">
+          <Link href="/workflows?tab=current" className="ov-stat-mini">
+            <span className="ov-stat-mini-num">
+              {projectsLoading ? <SkeletonValue /> : displayProjects}
             </span>
-          </span>
-          <svg
-            width="16"
-            height="16"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            aria-hidden="true"
-          >
-            <line x1="5" y1="12" x2="19" y2="12" />
-            <polyline points="12 5 19 12 12 19" />
-          </svg>
-        </Link>
-      ) : health === "ok" ? (
-        <p className="ov-allclear">
-          No failed or orphaned projects. Nothing needs your attention right now.
-        </p>
-      ) : null}
+            <span className="ov-stat-mini-label">Projects</span>
+          </Link>
+          <div className="ov-stat-mini">
+            <span className="ov-stat-mini-num">
+              {historyLoading ? <SkeletonValue /> : displayServices}
+            </span>
+            <span className="ov-stat-mini-label">Services</span>
+          </div>
+          <Link href="/workflows?tab=all" className="ov-stat-mini">
+            <span className="ov-stat-mini-num">
+              {historyLoading ? <SkeletonValue /> : displayHistory}
+            </span>
+            <span className="ov-stat-mini-label">Workflows</span>
+          </Link>
+        </div>
+      </div>
 
       {/* Quick actions — lean command rows, no container */}
       <div className="ov-actions">
@@ -875,9 +849,6 @@ function HomeDashboardContent() {
       } else if (key === "r") {
         event.preventDefault();
         router.push("/runs");
-      } else if (key === "h") {
-        event.preventDefault();
-        router.push("/hosting");
       }
     }
 
