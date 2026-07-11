@@ -30,7 +30,7 @@ function buildSteps(): DriveStep[] {
         title: "Repository shape",
         description:
           "Choose how your project is organised. Standalone is recommended for a single service. Microservices splits backend and frontend into sub-directories inside one repo; Multi-repo creates two separate GitHub repositories.",
-        side: "right",
+        side: "bottom",
         align: "start",
       },
     },

@@ -8796,15 +8796,19 @@ a.latest-run-link:hover .latest-run-meta svg {
 
 /* ── Sub-tab bar ─────────────────────────────────────────────────────────── */
 .current-subtab-bar {
-  position: relative;
+  position: sticky;
+  bottom: 1rem;
+  z-index: 5;
   display: flex;
   gap: 0.25rem;
   padding: 0.25rem;
-  background: rgba(17, 17, 22, 0.4);
+  background: rgba(17, 17, 22, 0.92);
+  backdrop-filter: blur(6px);
   border: 1px solid var(--border-soft);
   border-radius: 0.6rem;
   width: fit-content;
   margin-top: 1.25rem;
+  box-shadow: var(--shadow-soft);
 }
 
 .current-subtab-btn {

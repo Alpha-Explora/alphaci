@@ -258,90 +258,6 @@ export function WorkflowSetupTab({
 
         {/* Catalog */}
         <div>
-          <fieldset data-tour="repo-shape" style={{ border: "none", margin: 0, padding: 0, minInlineSize: "auto" }}>
-            <legend className="input-label" style={{ ...labelAccentStyle, padding: 0 }}>
-              Repository shape
-            </legend>
-            <div style={{ display: "grid", gap: "0.5rem", marginTop: "0.35rem" }}>
-              {projectCatalog.allRepoShapes
-                // Only offer shapes users can actually pick — hides any
-                // "coming soon" catalog entries (e.g. monorepo/workspaces).
-                .filter((shape) => shape.enabled && shape.id !== "monorepo")
-                .map((shape) => {
-                const selected = shape.id === projectCatalog.selectedRepoShapeId;
-                const disabled = !shape.enabled || projectCatalog.loadingProjectOptions;
-                return (
-                  <label
-                    key={shape.id}
-                    style={{
-                      position: "relative",
-                      display: "block",
-                      padding: "0.6rem 0.75rem",
-                      border: `1px solid ${selected ? "var(--border-brand)" : "var(--border)"}`,
-                      borderRadius: "8px",
-                      background: selected ? "color-mix(in srgb, var(--border-brand) 8%, transparent)" : "transparent",
-                      cursor: disabled ? "not-allowed" : "pointer",
-                      opacity: shape.enabled ? 1 : 0.55,
-                      transition: "border-color 0.15s, background 0.15s",
-                    }}
-                  >
-                    <input
-                      type="radio"
-                      name="repo-shape"
-                      value={shape.id}
-                      checked={selected}
-                      disabled={disabled}
-                      onChange={() => projectCatalog.setSelectedRepoShapeId(shape.id)}
-                      style={{ position: "absolute", opacity: 0, inset: 0, margin: 0, cursor: "inherit" }}
-                    />
-                    <span style={{ display: "flex", alignItems: "center", gap: "0.4rem", flexWrap: "wrap" }}>
-                      <strong style={{ color: "var(--text-primary)", fontSize: "0.82rem" }}>{shape.label}</strong>
-                      {shape.id === "standalone" ? (
-                        <span style={{
-                          fontSize: "0.58rem",
-                          fontWeight: 700,
-                          letterSpacing: "0.06em",
-                          textTransform: "uppercase",
-                          color: "var(--border-brand)",
-                          border: "1px solid var(--border-brand)",
-                          borderRadius: "999px",
-                          padding: "0.08rem 0.45rem",
-                        }}>
-                          Recommended
-                        </span>
-                      ) : null}
-                      {!shape.enabled ? (
-                        <span style={{
-                          fontSize: "0.58rem",
-                          fontWeight: 700,
-                          letterSpacing: "0.06em",
-                          textTransform: "uppercase",
-                          color: "var(--text-muted)",
-                          border: "1px solid var(--border)",
-                          borderRadius: "999px",
-                          padding: "0.08rem 0.45rem",
-                        }}>
-                          Coming soon
-                        </span>
-                      ) : null}
-                    </span>
-                    {shape.description ? (
-                      <span style={{
-                        display: "block",
-                        color: "var(--text-muted)",
-                        fontSize: "0.72rem",
-                        lineHeight: 1.45,
-                        marginTop: "0.25rem",
-                      }}>
-                        {shape.description}
-                      </span>
-                    ) : null}
-                  </label>
-                );
-              })}
-            </div>
-          </fieldset>
-
           {!projectCatalog.isMicroservicesShape && !projectCatalog.isMultiRepoShape ? (
             <>
               <label className="input-label" htmlFor="project-type-select" style={{ ...labelAccentStyle, marginTop: "1rem", display: "block" }}>
@@ -672,6 +588,91 @@ export function WorkflowSetupTab({
               style={{ overflow: "hidden" }}
               transition={{ duration: 0.28, ease: [0.25, 0.46, 0.45, 0.94] }}
             >
+              {/* Repository shape */}
+              <fieldset data-tour="repo-shape" style={{ border: "none", margin: "0 0 1.5rem", padding: 0, minInlineSize: "auto" }}>
+                <legend className="input-label" style={{ ...labelAccentStyle, padding: 0 }}>
+                  Repository shape
+                </legend>
+                <div className="form-pair-row" style={{ marginTop: "0.35rem", marginBottom: 0 }}>
+                  {projectCatalog.allRepoShapes
+                    // Only offer shapes users can actually pick — hides any
+                    // "coming soon" catalog entries (e.g. monorepo/workspaces).
+                    .filter((shape) => shape.enabled && shape.id !== "monorepo")
+                    .map((shape) => {
+                    const selected = shape.id === projectCatalog.selectedRepoShapeId;
+                    const disabled = !shape.enabled || projectCatalog.loadingProjectOptions;
+                    return (
+                      <label
+                        key={shape.id}
+                        style={{
+                          position: "relative",
+                          display: "block",
+                          padding: "0.6rem 0.75rem",
+                          border: `1px solid ${selected ? "var(--border-brand)" : "var(--border)"}`,
+                          borderRadius: "8px",
+                          background: selected ? "color-mix(in srgb, var(--border-brand) 8%, transparent)" : "transparent",
+                          cursor: disabled ? "not-allowed" : "pointer",
+                          opacity: shape.enabled ? 1 : 0.55,
+                          transition: "border-color 0.15s, background 0.15s",
+                        }}
+                      >
+                        <input
+                          type="radio"
+                          name="repo-shape"
+                          value={shape.id}
+                          checked={selected}
+                          disabled={disabled}
+                          onChange={() => projectCatalog.setSelectedRepoShapeId(shape.id)}
+                          style={{ position: "absolute", opacity: 0, inset: 0, margin: 0, cursor: "inherit" }}
+                        />
+                        <span style={{ display: "flex", alignItems: "center", gap: "0.4rem", flexWrap: "wrap" }}>
+                          <strong style={{ color: "var(--text-primary)", fontSize: "0.82rem" }}>{shape.label}</strong>
+                          {shape.id === "standalone" ? (
+                            <span style={{
+                              fontSize: "0.58rem",
+                              fontWeight: 700,
+                              letterSpacing: "0.06em",
+                              textTransform: "uppercase",
+                              color: "var(--border-brand)",
+                              border: "1px solid var(--border-brand)",
+                              borderRadius: "999px",
+                              padding: "0.08rem 0.45rem",
+                            }}>
+                              Recommended
+                            </span>
+                          ) : null}
+                          {!shape.enabled ? (
+                            <span style={{
+                              fontSize: "0.58rem",
+                              fontWeight: 700,
+                              letterSpacing: "0.06em",
+                              textTransform: "uppercase",
+                              color: "var(--text-muted)",
+                              border: "1px solid var(--border)",
+                              borderRadius: "999px",
+                              padding: "0.08rem 0.45rem",
+                            }}>
+                              Coming soon
+                            </span>
+                          ) : null}
+                        </span>
+                        {shape.description ? (
+                          <span style={{
+                            display: "block",
+                            color: "var(--text-muted)",
+                            fontSize: "0.72rem",
+                            lineHeight: 1.45,
+                            marginTop: "0.25rem",
+                          }}>
+                            {shape.description}
+                          </span>
+                        ) : null}
+                      </label>
+                    );
+                  })}
+                </div>
+              </fieldset>
+
               <label className="input-label" style={labelAccentStyle}>
                 Repository owner
               </label>
