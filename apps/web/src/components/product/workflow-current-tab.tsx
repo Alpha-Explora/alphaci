@@ -118,6 +118,8 @@ function statusVariant(status: string): string {
   return "failed";
 }
 
+const PROJECT_LIST_PAGE_SIZE = 8;
+
 function WorkflowStageList({
   files,
 }: Readonly<{ files?: WorkflowFileMetadata[] | null }>) {
@@ -936,6 +938,8 @@ export function WorkflowCurrentTab({
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(
     null,
   );
+  const [projectListQuery, setProjectListQuery] = useState("");
+  const [projectListPage, setProjectListPage] = useState(1);
   const [projectOverview, setProjectOverview] =
     useState<ProjectOverviewResponse | null>(null);
   const [projectOverviewError, setProjectOverviewError] = useState<{
@@ -998,6 +1002,30 @@ export function WorkflowCurrentTab({
       null
     );
   }, [projects, selectedProjectId]);
+  const filteredProjectList = useMemo(() => {
+    const query = projectListQuery.trim().toLowerCase();
+    if (!query) return projects;
+    return projects.filter((project) =>
+      `${project.repoFullName} ${project.serviceName}`
+        .toLowerCase()
+        .includes(query),
+    );
+  }, [projects, projectListQuery]);
+  useEffect(() => {
+    setProjectListPage(1);
+  }, [projectListQuery]);
+  const projectListPageCount = Math.max(
+    1,
+    Math.ceil(filteredProjectList.length / PROJECT_LIST_PAGE_SIZE),
+  );
+  const currentProjectListPage = Math.min(
+    projectListPage,
+    projectListPageCount,
+  );
+  const pagedProjectList = useMemo(() => {
+    const start = (currentProjectListPage - 1) * PROJECT_LIST_PAGE_SIZE;
+    return filteredProjectList.slice(start, start + PROJECT_LIST_PAGE_SIZE);
+  }, [filteredProjectList, currentProjectListPage]);
   const selectedOverview =
     selectedProject && projectOverview?.project.id === selectedProject.id
       ? projectOverview
@@ -1654,40 +1682,81 @@ export function WorkflowCurrentTab({
                     New
                   </button>
                 </div>
-                {projects.map((project) => {
-                  const isSelected = selectedProject.id === project.id;
-                  return (
-                    <button
-                      key={project.id}
-                      className={`project-list-item${isSelected ? " selected" : ""}`}
-                      data-project-id={project.id}
-                      type="button"
-                      aria-pressed={isSelected}
-                      onClick={() => {
-                        setSelectedProjectId(project.id);
-                        setProjectDetailTab("overview");
-                      }}
-                    >
-                      <span className="project-list-title">
-                        {project.repoFullName.split("/")[1] ??
-                          project.repoFullName}
-                      </span>
-                      <span className="project-list-meta">
-                        {project.serviceName}
-                      </span>
-                      <span className="project-list-badges">
-                        {project.isExample ? (
-                          <span className="project-demo-badge">Demo</span>
-                        ) : null}
-                        <span
-                          className={`project-status-badge ${statusVariant(project.status)}`}
-                        >
-                          {project.status}
+                <input
+                  className="project-list-search"
+                  aria-label="Search projects"
+                  type="search"
+                  placeholder="Search projects..."
+                  value={projectListQuery}
+                  onChange={(event) => setProjectListQuery(event.target.value)}
+                />
+                {pagedProjectList.length === 0 ? (
+                  <p className="project-list-empty">No projects match.</p>
+                ) : (
+                  pagedProjectList.map((project) => {
+                    const isSelected = selectedProject.id === project.id;
+                    return (
+                      <button
+                        key={project.id}
+                        className={`project-list-item${isSelected ? " selected" : ""}`}
+                        data-project-id={project.id}
+                        type="button"
+                        aria-pressed={isSelected}
+                        onClick={() => {
+                          setSelectedProjectId(project.id);
+                          setProjectDetailTab("overview");
+                        }}
+                      >
+                        <span className="project-list-title">
+                          {project.repoFullName.split("/")[1] ??
+                            project.repoFullName}
                         </span>
-                      </span>
+                        <span className="project-list-meta">
+                          {project.serviceName}
+                        </span>
+                        <span className="project-list-badges">
+                          {project.isExample ? (
+                            <span className="project-demo-badge">Demo</span>
+                          ) : null}
+                          <span
+                            className={`project-status-badge ${statusVariant(project.status)}`}
+                          >
+                            {project.status}
+                          </span>
+                        </span>
+                      </button>
+                    );
+                  })
+                )}
+                {filteredProjectList.length > 0 ? (
+                  <div className="project-list-pagination">
+                    <button
+                      className="ghost-button"
+                      type="button"
+                      onClick={() =>
+                        setProjectListPage((page) => Math.max(1, page - 1))
+                      }
+                      disabled={currentProjectListPage <= 1}
+                    >
+                      Prev
                     </button>
-                  );
-                })}
+                    <span className="project-list-pagination-status">
+                      Page {currentProjectListPage} of {projectListPageCount}
+                    </span>
+                    <button
+                      className="ghost-button"
+                      type="button"
+                      onClick={() =>
+                        setProjectListPage((page) =>
+                          Math.min(projectListPageCount, page + 1),
+                        )
+                      }
+                      disabled={currentProjectListPage >= projectListPageCount}
+                    >
+                      Next
+                    </button>
+                  </div>
+                ) : null}
               </aside>
 
               <motion.article
@@ -1733,7 +1802,7 @@ export function WorkflowCurrentTab({
                     className="ghost-button"
                     href={`/projects/${encodeURIComponent(selectedProject.id)}`}
                   >
-                    Project page
+                    Open full page <span aria-hidden="true">↗</span>
                   </Link>
                   {selectedProject.repoUrl ? (
                     <>
@@ -1743,7 +1812,7 @@ export function WorkflowCurrentTab({
                         target="_blank"
                         rel="noreferrer"
                       >
-                        Repo
+                        Repo <span aria-hidden="true">↗</span>
                       </a>
                       <a
                         className="ghost-button"
@@ -1751,7 +1820,7 @@ export function WorkflowCurrentTab({
                         target="_blank"
                         rel="noreferrer"
                       >
-                        Actions
+                        Actions <span aria-hidden="true">↗</span>
                       </a>
                     </>
                   ) : null}
@@ -1762,21 +1831,8 @@ export function WorkflowCurrentTab({
                       target="_blank"
                       rel="noreferrer"
                     >
-                      Commit
+                      Commit <span aria-hidden="true">↗</span>
                     </a>
-                  ) : null}
-                  {envProvisioningEnabled &&
-                  selectedProject.status === "provisioned" &&
-                  !selectedProject.isExample ? (
-                    <button
-                      className="ghost-button env-action-button"
-                      type="button"
-                      onClick={() => {
-                        setProjectDetailTab("environment");
-                      }}
-                    >
-                      Environment Variables
-                    </button>
                   ) : null}
                 </div>
 
