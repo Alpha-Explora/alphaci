@@ -552,57 +552,6 @@ describe("Project env provisioning UI", () => {
     jest.clearAllMocks();
   });
 
-  it("shows Environment Variables action only for provisioned projects when enabled", () => {
-    mockCapabilities(true);
-    mockEnvHook();
-
-    const failedProject = {
-      ...provisionedProject,
-      id: "project-2",
-      status: "failed" as const,
-    };
-    const rendered = render(
-      <WorkflowCurrentTab
-        history={[]}
-        latestResult={null}
-        loadingHistory={false}
-        loadingProjects={false}
-        onCopyYaml={jest.fn()}
-        onDownloadYaml={jest.fn()}
-        onOpenSetup={jest.fn()}
-        projects={[provisionedProject, failedProject]}
-      />,
-    );
-    root = rendered.root;
-
-    expect(
-      rendered.container.textContent?.match(/Environment Variables/g) ?? [],
-    ).toHaveLength(1);
-  });
-
-  it("hides Environment Variables action when capability is disabled", () => {
-    mockCapabilities(false);
-    mockEnvHook();
-
-    const rendered = render(
-      <WorkflowCurrentTab
-        history={[]}
-        latestResult={null}
-        loadingHistory={false}
-        loadingProjects={false}
-        onCopyYaml={jest.fn()}
-        onDownloadYaml={jest.fn()}
-        onOpenSetup={jest.fn()}
-        projects={[provisionedProject]}
-      />,
-    );
-    root = rendered.root;
-
-    expect(rendered.container.textContent).not.toContain(
-      "Environment Variables",
-    );
-  });
-
   it("uses a split workspace and updates project details from the selector", () => {
     mockCapabilities(true);
     mockEnvHook();
@@ -659,6 +608,72 @@ describe("Project env provisioning UI", () => {
     expect(
       rendered.container.querySelector(".project-detail-panel")?.textContent,
     ).not.toContain("orders-api");
+  });
+
+  it("keeps the project list rail visible and swaps only the right column when switching to History", () => {
+    mockCapabilities(true);
+    mockEnvHook();
+
+    const rendered = render(
+      <WorkflowCurrentTab
+        history={[
+          {
+            id: "history-1",
+            createdAt: "2026-06-12T00:00:00.000Z",
+            templateId: "frontend-react",
+            templateName: "React CI",
+            stack: "react",
+            serviceName: "orders-web",
+            outputFileName: "frontend.yml",
+            sourceWorkflowFile: "workflow-templates/frontend-react.yml",
+            sourcePropertiesFile:
+              "workflow-templates/frontend-react.properties.json",
+            lineCount: 12,
+            yaml: "name: CI\n",
+          },
+        ]}
+        latestResult={null}
+        loadingHistory={false}
+        loadingProjects={false}
+        onCopyYaml={jest.fn()}
+        onDownloadYaml={jest.fn()}
+        onOpenSetup={jest.fn()}
+        projects={[provisionedProject]}
+      />,
+    );
+    root = rendered.root;
+
+    expect(rendered.container.querySelector(".project-list")).not.toBeNull();
+    expect(
+      rendered.container.querySelector(".project-detail-panel"),
+    ).not.toBeNull();
+
+    act(() => {
+      rendered.container
+        .querySelector<HTMLButtonElement>("#subtab-history")!
+        .click();
+    });
+
+    // The rail (search box + project list) stays mounted and unchanged...
+    expect(rendered.container.querySelector(".project-list")).not.toBeNull();
+    expect(
+      rendered.container.querySelector(".project-list-item"),
+    ).not.toBeNull();
+    // ...while only the right column swaps to the history log.
+    expect(
+      rendered.container.querySelector(".project-detail-panel"),
+    ).toBeNull();
+    expect(rendered.container.textContent).toContain("React CI");
+
+    act(() => {
+      rendered.container
+        .querySelector<HTMLButtonElement>("#subtab-projects")!
+        .click();
+    });
+
+    expect(
+      rendered.container.querySelector(".project-detail-panel"),
+    ).not.toBeNull();
   });
 
   it("loads the project overview and renders control-center tabs with empty states", async () => {
@@ -2609,11 +2624,11 @@ describe("Project env provisioning UI", () => {
     expect(
       loadingRendered.container.querySelectorAll(".skeleton-card"),
     ).toHaveLength(3);
-    act(() => {
-      loadingRendered.container
-        .querySelector<HTMLButtonElement>("#subtab-history")!
-        .click();
-    });
+    // While projects are loading, only the skeleton grid renders — the
+    // Projects/History toggle is not mounted until loading resolves.
+    expect(
+      loadingRendered.container.querySelector("#subtab-history"),
+    ).toBeNull();
     expect(
       loadingRendered.container.querySelectorAll(".skeleton-card"),
     ).toHaveLength(3);

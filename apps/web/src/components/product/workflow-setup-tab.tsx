@@ -253,165 +253,6 @@ export function WorkflowSetupTab({
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] }}
     >
-      {/* ── Left sidebar: GitHub App + Catalog ──────────────────────── */}
-      <aside className="create-project-sidebar">
-
-        {/* Catalog */}
-        <div>
-          {!projectCatalog.isMicroservicesShape && !projectCatalog.isMultiRepoShape ? (
-            <>
-              <label className="input-label" htmlFor="project-type-select" style={{ ...labelAccentStyle, marginTop: "1rem", display: "block" }}>
-                Language / framework
-              </label>
-              <select
-                id="project-type-select"
-                value={projectCatalog.selectedProjectTypeId}
-                onChange={(event) => projectCatalog.setSelectedProjectTypeId(event.target.value)}
-                disabled={projectCatalog.loadingProjectOptions}
-                className="premium-input"
-              >
-                {projectCatalog.projectTypesForShape.map((projectType) => (
-                  <option key={projectType.id} value={projectType.id}>
-                    {projectType.label}
-                  </option>
-                ))}
-              </select>
-              <p style={{ color: "var(--text-muted)", fontSize: "0.72rem", margin: "0.3rem 0 0", lineHeight: 1.4 }}>
-                TypeScript • JavaScript
-              </p>
-
-              <label className="input-label" htmlFor="workflow-recipe-select" style={{ ...labelAccentStyle, marginTop: "1rem", display: "block" }}>
-                Workflow recipe
-              </label>
-              <select
-                id="workflow-recipe-select"
-                value={projectCatalog.selectedWorkflowRecipeId}
-                onChange={(event) => projectCatalog.setSelectedWorkflowRecipeId(event.target.value)}
-                disabled={projectCatalog.loadingProjectOptions}
-                className="premium-input"
-              >
-                {projectCatalog.recipesForSelectedProject.map((recipe) => (
-                  <option key={recipe.id} value={recipe.id}>
-                    {recipe.label}
-                  </option>
-                ))}
-              </select>
-              {projectCatalog.selectedWorkflowRecipe?.description ? (
-                <p style={{ color: "var(--text-muted)", fontSize: "0.75rem", margin: "0.3rem 0 0", lineHeight: 1.5 }}>
-                  {projectCatalog.selectedWorkflowRecipe.description}
-                </p>
-              ) : null}
-            </>
-          ) : (
-            <>
-              {projectCatalog.isMultiRepoShape && form.repoName ? (
-                <p style={{ color: "var(--text-muted)", fontSize: "0.75rem", margin: "0.5rem 0 0.75rem", lineHeight: 1.5 }}>
-                  {`2 separate repos will be created: ${form.repoName}-be and ${form.repoName}-fe`}
-                </p>
-              ) : null}
-
-              {/* Backend service — no container box */}
-              <div style={{ marginTop: "1rem" }}>
-                <span className="cp-section-heading" style={{ fontSize: "0.6rem" }}>Backend service</span>
-                <label className="input-label" htmlFor="backend-project-type-select" style={{ ...labelAccentStyle, display: "block" }}>
-                  Language
-                </label>
-                <select
-                  id="backend-project-type-select"
-                  value={form.backendProjectTypeId}
-                  onChange={(event) => form.setBackendProjectTypeId(event.target.value)}
-                  disabled={projectCatalog.loadingProjectOptions}
-                  className="premium-input"
-                >
-                  {projectCatalog.backendProjectTypes.map((pt) => (
-                    <option key={pt.id} value={pt.id}>{pt.label}</option>
-                  ))}
-                  {projectCatalog.backendProjectTypes.length === 0 ? (
-                    <option value="nestjs">NestJS</option>
-                  ) : null}
-                </select>
-                <label className="input-label" htmlFor="backend-service-name" style={{ ...labelAccentStyle, marginTop: "0.55rem", display: "block" }}>
-                  Service name
-                </label>
-                <input
-                  id="backend-service-name"
-                  value={form.backendServiceName}
-                  onChange={(event) => form.setBackendServiceName(event.target.value)}
-                  placeholder={form.repoName ? `${form.repoName}-backend` : "my-app-backend"}
-                  className="premium-input"
-                />
-                {projectCatalog.isMicroservicesShape ? (
-                  <>
-                    <label className="input-label" htmlFor="backend-service-path" style={{ ...labelAccentStyle, marginTop: "0.55rem", display: "block" }}>
-                      Service path
-                      <HelpTip text="The folder inside the repository where the backend service's code lives. Build commands run from this path, and only changes under it trigger this service's pipeline." />
-                    </label>
-                    <input
-                      id="backend-service-path"
-                      value={form.backendServicePath}
-                      onChange={(event) => form.setBackendServicePath(event.target.value)}
-                      placeholder="backend/"
-                      className="premium-input"
-                    />
-                  </>
-                ) : null}
-              </div>
-
-              {/* Frontend service — no container box */}
-              <div style={{ marginTop: "1.25rem" }}>
-                <span className="cp-section-heading" style={{ fontSize: "0.6rem" }}>Frontend service</span>
-                <label className="input-label" htmlFor="frontend-project-type-select" style={{ ...labelAccentStyle, display: "block" }}>
-                  Language
-                </label>
-                <select
-                  id="frontend-project-type-select"
-                  value={form.frontendProjectTypeId}
-                  onChange={(event) => form.setFrontendProjectTypeId(event.target.value)}
-                  disabled={projectCatalog.loadingProjectOptions}
-                  className="premium-input"
-                >
-                  {projectCatalog.frontendProjectTypes.map((pt) => (
-                    <option key={pt.id} value={pt.id}>{pt.label}</option>
-                  ))}
-                  {projectCatalog.frontendProjectTypes.length === 0 ? (
-                    <option value="nextjs">Next.js</option>
-                  ) : null}
-                </select>
-                <label className="input-label" htmlFor="frontend-service-name" style={{ ...labelAccentStyle, marginTop: "0.55rem", display: "block" }}>
-                  Service name
-                </label>
-                <input
-                  id="frontend-service-name"
-                  value={form.frontendServiceName}
-                  onChange={(event) => form.setFrontendServiceName(event.target.value)}
-                  placeholder={form.repoName ? `${form.repoName}-frontend` : "my-app-frontend"}
-                  className="premium-input"
-                />
-                {projectCatalog.isMicroservicesShape ? (
-                  <>
-                    <label className="input-label" htmlFor="frontend-service-path" style={{ ...labelAccentStyle, marginTop: "0.55rem", display: "block" }}>
-                      Service path
-                      <HelpTip text="The folder inside the repository where the frontend service's code lives. Build commands run from this path, and only changes under it trigger this service's pipeline." />
-                    </label>
-                    <input
-                      id="frontend-service-path"
-                      value={form.frontendServicePath}
-                      onChange={(event) => form.setFrontendServicePath(event.target.value)}
-                      placeholder="frontend/"
-                      className="premium-input"
-                    />
-                  </>
-                ) : null}
-              </div>
-            </>
-          )}
-        </div>
-
-        <p style={{ color: "var(--text-muted)", fontSize: "0.72rem", margin: "1.5rem 0 0" }}>
-          Source: <strong style={{ color: "var(--text-secondary)" }}>cicd-workflow</strong>
-        </p>
-      </aside>
-
       {/* ── Right: form + inline result ─────────────────────────────── */}
       <div className="create-project-main">
 
@@ -672,6 +513,165 @@ export function WorkflowSetupTab({
                   })}
                 </div>
               </fieldset>
+
+              {/* Catalog */}
+              <div>
+                {!projectCatalog.isMicroservicesShape && !projectCatalog.isMultiRepoShape ? (
+                  <div className="form-pair-row" style={{ gap: "1rem" }}>
+                    <div>
+                      <label className="input-label" htmlFor="project-type-select" style={labelAccentStyle}>
+                        Language / framework
+                      </label>
+                      <select
+                        id="project-type-select"
+                        value={projectCatalog.selectedProjectTypeId}
+                        onChange={(event) => projectCatalog.setSelectedProjectTypeId(event.target.value)}
+                        disabled={projectCatalog.loadingProjectOptions}
+                        className="premium-input"
+                      >
+                        {projectCatalog.projectTypesForShape.map((projectType) => (
+                          <option key={projectType.id} value={projectType.id}>
+                            {projectType.label}
+                          </option>
+                        ))}
+                      </select>
+                      <p style={{ color: "var(--text-muted)", fontSize: "0.72rem", margin: "0.3rem 0 0", lineHeight: 1.4 }}>
+                        TypeScript • JavaScript
+                      </p>
+                    </div>
+
+                    <div>
+                      <label className="input-label" htmlFor="workflow-recipe-select" style={labelAccentStyle}>
+                        Workflow recipe
+                      </label>
+                      <select
+                        id="workflow-recipe-select"
+                        value={projectCatalog.selectedWorkflowRecipeId}
+                        onChange={(event) => projectCatalog.setSelectedWorkflowRecipeId(event.target.value)}
+                        disabled={projectCatalog.loadingProjectOptions}
+                        className="premium-input"
+                      >
+                        {projectCatalog.recipesForSelectedProject.map((recipe) => (
+                          <option key={recipe.id} value={recipe.id}>
+                            {recipe.label}
+                          </option>
+                        ))}
+                      </select>
+                      {projectCatalog.selectedWorkflowRecipe?.description ? (
+                        <p style={{ color: "var(--text-muted)", fontSize: "0.75rem", margin: "0.3rem 0 0", lineHeight: 1.5 }}>
+                          {projectCatalog.selectedWorkflowRecipe.description}
+                        </p>
+                      ) : null}
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    {projectCatalog.isMultiRepoShape && form.repoName ? (
+                      <p style={{ color: "var(--text-muted)", fontSize: "0.75rem", margin: "0.5rem 0 0.75rem", lineHeight: 1.5 }}>
+                        {`2 separate repos will be created: ${form.repoName}-be and ${form.repoName}-fe`}
+                      </p>
+                    ) : null}
+
+                    {/* Backend service — no container box */}
+                    <div style={{ marginTop: "1rem" }}>
+                      <span className="cp-section-heading" style={{ fontSize: "0.6rem" }}>Backend service</span>
+                      <label className="input-label" htmlFor="backend-project-type-select" style={{ ...labelAccentStyle, display: "block" }}>
+                        Language
+                      </label>
+                      <select
+                        id="backend-project-type-select"
+                        value={form.backendProjectTypeId}
+                        onChange={(event) => form.setBackendProjectTypeId(event.target.value)}
+                        disabled={projectCatalog.loadingProjectOptions}
+                        className="premium-input"
+                      >
+                        {projectCatalog.backendProjectTypes.map((pt) => (
+                          <option key={pt.id} value={pt.id}>{pt.label}</option>
+                        ))}
+                        {projectCatalog.backendProjectTypes.length === 0 ? (
+                          <option value="nestjs">NestJS</option>
+                        ) : null}
+                      </select>
+                      <label className="input-label" htmlFor="backend-service-name" style={{ ...labelAccentStyle, marginTop: "0.55rem", display: "block" }}>
+                        Service name
+                      </label>
+                      <input
+                        id="backend-service-name"
+                        value={form.backendServiceName}
+                        onChange={(event) => form.setBackendServiceName(event.target.value)}
+                        placeholder={form.repoName ? `${form.repoName}-backend` : "my-app-backend"}
+                        className="premium-input"
+                      />
+                      {projectCatalog.isMicroservicesShape ? (
+                        <>
+                          <label className="input-label" htmlFor="backend-service-path" style={{ ...labelAccentStyle, marginTop: "0.55rem", display: "block" }}>
+                            Service path
+                            <HelpTip text="The folder inside the repository where the backend service's code lives. Build commands run from this path, and only changes under it trigger this service's pipeline." />
+                          </label>
+                          <input
+                            id="backend-service-path"
+                            value={form.backendServicePath}
+                            onChange={(event) => form.setBackendServicePath(event.target.value)}
+                            placeholder="backend/"
+                            className="premium-input"
+                          />
+                        </>
+                      ) : null}
+                    </div>
+
+                    {/* Frontend service — no container box */}
+                    <div style={{ marginTop: "1.25rem" }}>
+                      <span className="cp-section-heading" style={{ fontSize: "0.6rem" }}>Frontend service</span>
+                      <label className="input-label" htmlFor="frontend-project-type-select" style={{ ...labelAccentStyle, display: "block" }}>
+                        Language
+                      </label>
+                      <select
+                        id="frontend-project-type-select"
+                        value={form.frontendProjectTypeId}
+                        onChange={(event) => form.setFrontendProjectTypeId(event.target.value)}
+                        disabled={projectCatalog.loadingProjectOptions}
+                        className="premium-input"
+                      >
+                        {projectCatalog.frontendProjectTypes.map((pt) => (
+                          <option key={pt.id} value={pt.id}>{pt.label}</option>
+                        ))}
+                        {projectCatalog.frontendProjectTypes.length === 0 ? (
+                          <option value="nextjs">Next.js</option>
+                        ) : null}
+                      </select>
+                      <label className="input-label" htmlFor="frontend-service-name" style={{ ...labelAccentStyle, marginTop: "0.55rem", display: "block" }}>
+                        Service name
+                      </label>
+                      <input
+                        id="frontend-service-name"
+                        value={form.frontendServiceName}
+                        onChange={(event) => form.setFrontendServiceName(event.target.value)}
+                        placeholder={form.repoName ? `${form.repoName}-frontend` : "my-app-frontend"}
+                        className="premium-input"
+                      />
+                      {projectCatalog.isMicroservicesShape ? (
+                        <>
+                          <label className="input-label" htmlFor="frontend-service-path" style={{ ...labelAccentStyle, marginTop: "0.55rem", display: "block" }}>
+                            Service path
+                            <HelpTip text="The folder inside the repository where the frontend service's code lives. Build commands run from this path, and only changes under it trigger this service's pipeline." />
+                          </label>
+                          <input
+                            id="frontend-service-path"
+                            value={form.frontendServicePath}
+                            onChange={(event) => form.setFrontendServicePath(event.target.value)}
+                            placeholder="frontend/"
+                            className="premium-input"
+                          />
+                        </>
+                      ) : null}
+                    </div>
+                  </>
+                )}
+              </div>
+
+              <p style={{ color: "var(--text-muted)", fontSize: "0.72rem", margin: "1.5rem 0 0" }}>
+                Source: <strong style={{ color: "var(--text-secondary)" }}>cicd-workflow</strong>
+              </p>
 
               <label className="input-label" style={labelAccentStyle}>
                 Repository owner

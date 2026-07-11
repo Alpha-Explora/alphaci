@@ -8315,6 +8315,20 @@ a.latest-run-link:hover .latest-run-meta svg {
   align-items: start;
 }
 
+/* Left rail: project list + sub-tab bar glued together, sticky as one unit. */
+.project-list-rail {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  position: sticky;
+  top: 5rem;
+}
+
+/* Right column: swaps between the selected project detail and the history log. */
+.project-detail-column {
+  min-width: 0;
+}
+
 .project-list,
 .project-detail-panel {
   border: 1px solid var(--border-layer);
@@ -8327,8 +8341,6 @@ a.latest-run-link:hover .latest-run-meta svg {
   display: grid;
   gap: 0.4rem;
   padding: 0.75rem;
-  position: sticky;
-  top: 5rem;
 }
 
 .project-list-header {
@@ -8795,19 +8807,18 @@ a.latest-run-link:hover .latest-run-meta svg {
 }
 
 /* ── Sub-tab bar ─────────────────────────────────────────────────────────── */
+/* Sits in normal flow directly under the project list inside .project-list-rail
+   (no longer a viewport-pinned floating element). */
 .current-subtab-bar {
-  position: sticky;
-  bottom: 1rem;
-  z-index: 5;
+  position: relative;
   display: flex;
   gap: 0.25rem;
-  padding: 0.25rem;
-  background: rgba(17, 17, 22, 0.92);
-  backdrop-filter: blur(6px);
+  padding: 0.3rem;
+  background: var(--layer-1);
   border: 1px solid var(--border-soft);
   border-radius: 0.6rem;
-  width: fit-content;
-  margin-top: 1.25rem;
+  width: 100%;
+  justify-content: center;
   box-shadow: var(--shadow-soft);
 }
 
@@ -10032,6 +10043,11 @@ a.latest-run-link:hover .latest-run-meta svg {
     grid-template-columns: minmax(0, 1fr);
   }
 
+  .project-list-rail {
+    position: static;
+    width: 100%;
+  }
+
   .project-list {
     grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
     position: static;
@@ -10042,6 +10058,10 @@ a.latest-run-link:hover .latest-run-meta svg {
   .project-list-empty,
   .project-list-pagination {
     grid-column: 1 / -1;
+  }
+
+  .current-subtab-bar {
+    width: 100%;
   }
 
   .provider-connection-fields {
@@ -11412,27 +11432,11 @@ a.latest-run-link:hover .latest-run-meta svg {
   cursor: not-allowed;
 }
 
-/* ── 2-column layout ─────────────────────────────────────────────────── */
+/* ── Single-column layout ────────────────────────────────────────────── */
 .create-project-layout {
   display: grid;
-  grid-template-columns: 280px minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr);
   align-items: start;
-}
-
-.create-project-sidebar {
-  border-right: 1px solid var(--border-soft);
-  padding: 1.75rem 1.5rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0;
-  position: sticky;
-  top: 64px;
-  max-height: calc(100dvh - 64px);
-  overflow-y: auto;
-  scrollbar-width: none;
-}
-.create-project-sidebar::-webkit-scrollbar {
-  display: none;
 }
 
 .create-project-main {
@@ -11550,22 +11554,7 @@ a.latest-run-link:hover .latest-run-meta svg {
   color: var(--brand);
 }
 
-@media (max-width: 1024px) {
-  .create-project-layout {
-    grid-template-columns: 260px minmax(0, 1fr);
-  }
-}
 @media (max-width: 860px) {
-  .create-project-layout {
-    grid-template-columns: 1fr;
-  }
-  .create-project-sidebar {
-    border-right: none;
-    border-bottom: 1px solid var(--border-soft);
-    position: static;
-    max-height: none;
-    padding: 1.5rem var(--layout-gutter);
-  }
   .create-project-main {
     padding: 1.5rem var(--layout-gutter);
   }
@@ -16955,18 +16944,12 @@ html:not([data-theme="light"])
 html:not([data-theme="light"])
   .dash-shell
   :is(
-    .create-project-sidebar,
     .create-project-main,
     .settings-content,
     .dash-page-content
   ) {
   border-color: rgba(158, 158, 172, 0.12);
 }
-
-/* Sidebar stays transparent like .create-project-main (matches light theme,
-   which never set a background here) so the animated FlowBackground shows
-   through consistently across the whole panel — separation comes from the
-   existing border-right only, not a flat tint that reads as a mismatched box. */
 
 html:not([data-theme="light"])
   .dash-shell
