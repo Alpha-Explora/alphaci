@@ -8804,7 +8804,7 @@ a.latest-run-link:hover .latest-run-meta svg {
   border: 1px solid var(--border-soft);
   border-radius: 0.6rem;
   width: fit-content;
-  margin-bottom: 1.25rem;
+  margin-top: 1.25rem;
 }
 
 .current-subtab-btn {
@@ -11457,6 +11457,20 @@ a.latest-run-link:hover .latest-run-meta svg {
   flex: 1;
   height: 1px;
   background: var(--border-soft);
+}
+
+/* Language/framework badge next to the "Create Project" title.
+   Same pill treatment for both single-repo and two-repo (backend + frontend) modes. */
+.cp-project-type-badge {
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 0.2rem 0.65rem;
+  border-radius: 999px;
+  background: rgba(88, 166, 255, 0.12);
+  color: var(--brand);
+  border: 1px solid rgba(88, 166, 255, 0.25);
 }
 
 /* Inline result — replaces the 3rd grid column */
@@ -16945,9 +16959,10 @@ html:not([data-theme="light"])
   border-color: rgba(158, 158, 172, 0.12);
 }
 
-html:not([data-theme="light"]) .dash-shell .create-project-sidebar {
-  background: rgba(24, 24, 33, 0.34);
-}
+/* Sidebar stays transparent like .create-project-main (matches light theme,
+   which never set a background here) so the animated FlowBackground shows
+   through consistently across the whole panel — separation comes from the
+   existing border-right only, not a flat tint that reads as a mismatched box. */
 
 html:not([data-theme="light"])
   .dash-shell

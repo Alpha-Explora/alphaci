@@ -258,8 +258,6 @@ export function WorkflowSetupTab({
 
         {/* Catalog */}
         <div>
-          <span className="cp-section-heading">Catalog</span>
-
           <fieldset data-tour="repo-shape" style={{ border: "none", margin: 0, padding: 0, minInlineSize: "auto" }}>
             <legend className="input-label" style={{ ...labelAccentStyle, padding: 0 }}>
               Repository shape
@@ -502,25 +500,36 @@ export function WorkflowSetupTab({
       <div className="create-project-main">
 
         {/* Title + project type badge */}
-        <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "1.25rem" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "1.25rem", flexWrap: "wrap" }}>
           <h2 style={{ margin: 0, fontSize: "1.25rem" }}>
             {isExistingMode ? "Add CI/CD to Existing Repo" : "Create Project"}
           </h2>
-          {projectCatalog.selectedProjectType ? (
-            <span style={{
-              fontSize: "0.72rem",
-              fontWeight: 600,
-              letterSpacing: "0.06em",
-              textTransform: "uppercase",
-              padding: "0.2rem 0.65rem",
-              borderRadius: "999px",
-              background: "rgba(88, 166, 255,0.12)",
-              color: "var(--brand)",
-              border: "1px solid rgba(88, 166, 255,0.25)",
-            }}>
-              {projectCatalog.selectedProjectType.label}
-            </span>
-          ) : null}
+          {!projectCatalog.isMicroservicesShape && !projectCatalog.isMultiRepoShape ? (
+            projectCatalog.selectedProjectType ? (
+              <span className="cp-project-type-badge">
+                {projectCatalog.selectedProjectType.label}
+              </span>
+            ) : null
+          ) : (
+            <>
+              {(() => {
+                const backendType = projectCatalog.backendProjectTypes.find(
+                  (pt) => pt.id === form.backendProjectTypeId,
+                );
+                return backendType ? (
+                  <span className="cp-project-type-badge">{backendType.label}</span>
+                ) : null;
+              })()}
+              {(() => {
+                const frontendType = projectCatalog.frontendProjectTypes.find(
+                  (pt) => pt.id === form.frontendProjectTypeId,
+                );
+                return frontendType ? (
+                  <span className="cp-project-type-badge">{frontendType.label}</span>
+                ) : null;
+              })()}
+            </>
+          )}
         </div>
 
         {projectCatalog.loadingProjectOptions ? (
