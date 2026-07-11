@@ -4202,6 +4202,107 @@ select option {
   box-shadow: 0 0 6px rgba(16, 185, 129, 0.4);
 }
 
+/* ── Latest-run header widget: dots colored by real StageStatus ──────────── */
+.pipeline-dot--success {
+  background: var(--success);
+  border-color: var(--success);
+  box-shadow: 0 0 6px rgba(16, 185, 129, 0.4);
+}
+
+.pipeline-dot--failure {
+  background: var(--danger);
+  border-color: var(--danger);
+  box-shadow: 0 0 6px rgba(239, 68, 68, 0.4);
+}
+
+.pipeline-dot--running {
+  background: var(--accent-amber);
+  border-color: var(--accent-amber);
+  box-shadow: 0 0 6px rgba(245, 158, 11, 0.4);
+  animation: flowPulse 1.6s ease-in-out infinite;
+}
+
+.pipeline-dot--cancelled {
+  background: var(--text-muted);
+  border-color: var(--text-muted);
+  opacity: 0.55;
+}
+
+/* pending keeps the muted base .pipeline-dot look */
+
+.pipeline-connector--active {
+  background: var(--success);
+  opacity: 0.5;
+}
+
+.latest-run-dot--loading {
+  animation: state-pulse 1.5s infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pipeline-dot--running,
+  .latest-run-dot--loading {
+    animation: none;
+  }
+}
+
+.latest-run-link {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  text-decoration: none;
+}
+
+.latest-run-repo {
+  font-family: ui-monospace, monospace;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  max-width: 15rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.latest-run-branch {
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.latest-run-meta {
+  margin: 0.35rem 0 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.7rem;
+  font-family: ui-monospace, monospace;
+  color: var(--text-muted);
+}
+
+.latest-run-meta svg {
+  transition: transform 0.15s ease;
+}
+
+a.latest-run-link:hover .latest-run-meta {
+  color: var(--brand);
+}
+
+a.latest-run-link:hover .latest-run-meta svg {
+  transform: translateX(3px);
+}
+
+.latest-run-meta--success {
+  color: var(--success);
+}
+
+.latest-run-meta--failure {
+  color: var(--danger);
+}
+
+.latest-run-meta--running {
+  color: var(--accent-amber);
+}
+
 .pipeline-connector {
   height: 1px;
   width: 2rem;
@@ -7783,6 +7884,382 @@ select option {
   }
 }
 
+/* ── Overview: container-less operational pulse ─────────────────────────────
+   No card chrome. Health headline → mono stat rail on hairlines → attention
+   list / next step → lean actions. Density-first per the design brief. */
+.ov-pulse {
+  display: flex;
+  flex-direction: column;
+  gap: 2.25rem;
+}
+
+/* System status line — the single "is anything wrong?" answer */
+.ov-status {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.85rem;
+  padding-bottom: 1.75rem;
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.ov-status-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  margin-top: 0.55rem;
+  flex-shrink: 0;
+}
+
+.ov-status-dot--ok {
+  background: var(--success);
+  box-shadow:
+    0 0 0 4px rgba(16, 185, 129, 0.14),
+    0 0 12px rgba(16, 185, 129, 0.5);
+}
+
+.ov-status-dot--warn {
+  background: var(--accent-amber);
+  box-shadow:
+    0 0 0 4px rgba(245, 158, 11, 0.14),
+    0 0 12px rgba(245, 158, 11, 0.5);
+  animation: flowPulse 2.4s ease-in-out infinite;
+}
+
+.ov-status-dot--idle {
+  background: var(--text-muted);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ov-status-dot--warn {
+    animation: none;
+  }
+}
+
+.ov-status-headline {
+  margin: 0;
+  font-size: clamp(1.5rem, 3vw, 2.1rem);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.05;
+}
+
+.ov-status-sub {
+  margin: 0.4rem 0 0;
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  font-family: ui-monospace, monospace;
+}
+
+/* Stat rail — figures separated by thin vertical rules, no boxes */
+.ov-rail {
+  display: flex;
+  flex-wrap: wrap;
+  row-gap: 1.25rem;
+}
+
+.ov-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  padding: 0 1.9rem;
+  border-left: 1px solid var(--border-soft);
+  text-decoration: none;
+  transition: transform 0.15s ease;
+}
+
+.ov-stat:first-child {
+  padding-left: 0;
+  border-left: none;
+}
+
+.ov-stat:hover {
+  transform: translateY(-2px);
+}
+
+.ov-stat:hover .ov-stat-num {
+  color: var(--brand);
+}
+
+.ov-stat-num {
+  font-family: "Sora", ui-monospace, monospace;
+  font-size: clamp(1.9rem, 3.6vw, 2.7rem);
+  font-weight: 800;
+  line-height: 1;
+  color: var(--text-primary);
+  transition: color 0.15s ease;
+}
+
+.ov-stat-num--text {
+  font-size: clamp(1rem, 2vw, 1.3rem);
+  font-weight: 700;
+  font-family: ui-monospace, monospace;
+}
+
+.ov-stat-label {
+  font-size: 0.66rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-muted);
+}
+
+/* Metrics row — stat figures on the left, latest commit on the right. The
+   commit reads as one more column in the same rail, separated by the same
+   hairline the stats use rather than a box. */
+.ov-metrics-row {
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+  flex-wrap: wrap;
+}
+
+.ov-metrics-row .ov-rail {
+  flex: 1 1 auto;
+}
+
+.ov-metrics-row .ov-latest-commit {
+  flex: 0 1 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  padding: 0 0 0 2rem;
+  border-top: none;
+  border-left: 1px solid var(--border-soft);
+  text-align: right;
+  min-width: min(220px, 100%);
+}
+
+.ov-metrics-row .ov-commit-link {
+  justify-content: flex-end;
+}
+
+/* Latest commit sits directly below the project count so the primary metric
+   stays visually connected to the repository activity it represents. */
+.ov-latest-commit {
+  padding: 1rem 0 0;
+  border-top: 1px solid var(--border-soft);
+}
+
+.ov-latest-commit .ov-section-eyebrow {
+  margin-bottom: 0.65rem;
+}
+
+/* Narrow screens: drop the commit back under the rail, left-aligned. */
+@media (max-width: 640px) {
+  .ov-metrics-row .ov-latest-commit {
+    flex-basis: 100%;
+    align-items: stretch;
+    padding: 1rem 0 0;
+    border-left: none;
+    border-top: 1px solid var(--border-soft);
+    text-align: left;
+  }
+  .ov-metrics-row .ov-commit-link {
+    justify-content: flex-start;
+  }
+}
+
+.ov-commit-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.7rem;
+  max-width: 100%;
+  color: var(--text-primary);
+  text-decoration: none;
+}
+
+.ov-commit-link:hover .ov-commit-repo,
+.ov-commit-link:hover .ov-commit-arrow {
+  color: var(--brand);
+}
+
+.ov-commit-repo {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.92rem;
+  font-weight: 700;
+  transition: color 0.15s ease;
+}
+
+.ov-commit-link code,
+.ov-commit-empty {
+  color: var(--text-muted);
+  font-family: ui-monospace, monospace;
+  font-size: 0.78rem;
+}
+
+.ov-commit-arrow {
+  color: var(--text-muted);
+  transition: color 0.15s ease;
+}
+
+.ov-commit-empty {
+  margin: 0;
+}
+
+.ov-commit-loading {
+  min-height: 2.5rem;
+}
+
+/* Section label — restrained, plain-language */
+.ov-section-eyebrow {
+  margin: 0 0 1rem;
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.11em;
+  color: var(--text-muted);
+}
+
+/* Needs-attention list — plain rows, hairline separated, no cards */
+.ov-attention-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.ov-attention-row {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.85rem 0;
+  border-top: 1px solid var(--border-soft);
+  text-decoration: none;
+  transition: padding-left 0.15s ease;
+}
+
+.ov-attention-row:last-child {
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.ov-attention-row:hover {
+  padding-left: 0.4rem;
+}
+
+.ov-attention-status {
+  flex-shrink: 0;
+  min-width: 5.5rem;
+  text-align: center;
+  font-size: 0.64rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 0.22rem 0.5rem;
+  border-radius: 5px;
+}
+
+.ov-attention-status.is-failed {
+  color: var(--danger);
+  background: rgba(239, 68, 68, 0.1);
+}
+
+.ov-attention-status.is-orphaned {
+  color: var(--accent-amber);
+  background: rgba(245, 158, 11, 0.1);
+}
+
+.ov-attention-name {
+  flex-shrink: 0;
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: var(--text-primary);
+}
+
+.ov-attention-reason {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.76rem;
+  color: var(--text-muted);
+  font-family: ui-monospace, monospace;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ov-attention-row svg {
+  color: var(--text-muted);
+  flex-shrink: 0;
+  transition: transform 0.15s ease;
+}
+
+.ov-attention-row:hover svg {
+  color: var(--brand);
+  transform: translateX(3px);
+}
+
+/* Empty-account next step — one clear action, framed by hairlines not a box */
+.ov-nextstep {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.1rem 0;
+  border-top: 1px solid var(--border-soft);
+  border-bottom: 1px solid var(--border-soft);
+  text-decoration: none;
+  transition: padding-left 0.15s ease;
+}
+
+.ov-nextstep:hover {
+  padding-left: 0.4rem;
+}
+
+.ov-nextstep-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.ov-nextstep-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--brand);
+}
+
+.ov-nextstep-sub {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.ov-nextstep svg {
+  color: var(--brand);
+  flex-shrink: 0;
+  transition: transform 0.15s ease;
+}
+
+.ov-nextstep:hover svg {
+  transform: translateX(4px);
+}
+
+/* All-clear — calm confirmation, hairline framed */
+.ov-allclear {
+  margin: 0;
+  padding: 0.95rem 0;
+  border-top: 1px solid var(--border-soft);
+  border-bottom: 1px solid var(--border-soft);
+  font-size: 0.84rem;
+  color: var(--text-secondary);
+}
+
+@media (max-width: 640px) {
+  .ov-rail {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.25rem 0;
+  }
+  .ov-stat {
+    padding: 0 0 0 1rem;
+    border-left: 1px solid var(--border-soft);
+  }
+  .ov-stat:first-child,
+  .ov-stat:nth-child(3) {
+    padding-left: 0;
+    border-left: none;
+  }
+  .ov-attention-reason {
+    display: none;
+  }
+}
+
 .repo-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
@@ -11215,6 +11692,32 @@ select option {
   opacity: 1;
 }
 
+/* Trailing action cluster on a provisioned-project row (browse + disconnect) */
+.dash-repo-row-actions,
+.dash-repo-row-confirm {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-shrink: 0;
+}
+
+.dash-repo-row .dash-disconnect-link {
+  margin-top: 0;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.dash-repo-row:hover .dash-disconnect-link,
+.dash-repo-row:focus-within .dash-disconnect-link {
+  opacity: 1;
+}
+
+.dash-repo-row-confirm-label {
+  font-size: 0.72rem;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
 @media (max-width: 640px) {
   .dash-repo-row-desc {
     display: none;
@@ -11222,6 +11725,283 @@ select option {
   .dash-repo-row-name {
     max-width: none;
     flex: 1;
+  }
+  /* Keep the disconnect affordance reachable without hover on touch devices */
+  .dash-repo-row .dash-disconnect-link {
+    opacity: 1;
+  }
+  .dash-repo-row-confirm-label {
+    display: none;
+  }
+}
+
+/* ── Repository entries — GitHub-trending-style rich rows ─────────────────
+   Title line (icon · name · chips) → description → metadata (stack dot ·
+   workflow path · commit). One bordered list container, hairline-divided. */
+.repo-entry-list {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-card);
+  overflow: hidden;
+}
+
+.repositories-toolbar {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem 0.9rem;
+}
+
+/* Label stays on the left; filters + search cluster align to the right. */
+.repositories-toolbar .dash-section-label-left {
+  margin-right: auto;
+}
+
+.repositories-toolbar .repo-filters {
+  order: 1;
+}
+
+.repositories-toolbar .repo-search {
+  order: 2;
+  align-self: center;
+}
+
+.repo-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+@media (max-width: 640px) {
+  /* On narrow screens let the search take the full row under the filters. */
+  .repositories-toolbar .repo-search {
+    flex: 1 1 100%;
+  }
+}
+
+.repo-filters button {
+  border: 1px solid var(--border-soft);
+  border-radius: 999px;
+  padding: 0.35rem 0.7rem;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.72rem;
+}
+
+.repo-filters button:hover,
+.repo-filters button.is-active {
+  border-color: rgba(59, 130, 246, 0.55);
+  background: rgba(59, 130, 246, 0.1);
+  color: var(--brand);
+}
+
+.repo-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  padding-top: 1rem;
+  color: var(--text-muted);
+  font-size: 0.78rem;
+}
+
+/* Shared base for every clickable pager control (numbers + arrows). */
+.repo-pagination button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2rem;
+  height: 2rem;
+  padding: 0 0.55rem;
+  border: 1px solid var(--border-soft);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.78rem;
+  font-variant-numeric: tabular-nums;
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease,
+    color 0.15s ease;
+}
+
+.repo-pagination button:hover:not(:disabled) {
+  border-color: var(--brand);
+  color: var(--brand);
+}
+
+.repo-pagination button:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
+/* Active page — solid brand fill so the current position reads at a glance. */
+.repo-pagination .repo-pagination-page.is-active {
+  border-color: rgba(88, 166, 255, 0.55);
+  background: rgba(88, 166, 255, 0.14);
+  color: var(--brand);
+  font-weight: 700;
+}
+
+/* Prev / next chevrons — square icon buttons flanking the numbers. */
+.repo-pagination-arrow {
+  padding: 0;
+}
+
+.repo-pagination-ellipsis {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.5rem;
+  height: 2rem;
+  color: var(--text-muted);
+  user-select: none;
+}
+
+.repo-entry {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1.25rem;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid var(--border-soft);
+  transition: background 0.15s ease;
+}
+
+.repo-entry:last-child {
+  border-bottom: none;
+}
+
+.repo-entry:hover {
+  background: rgba(88, 166, 255, 0.04);
+}
+
+.repo-entry-main {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.repo-entry-title {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  flex-wrap: wrap;
+}
+
+.repo-entry-icon {
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.repo-entry:hover .repo-entry-icon {
+  color: var(--brand);
+}
+
+.repo-entry-name {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  text-decoration: none;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 22rem;
+}
+
+.repo-entry-name:hover {
+  color: var(--brand);
+  text-decoration: underline;
+}
+
+.repo-entry-desc {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  line-height: 1.45;
+  max-width: 52rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.repo-entry-meta {
+  display: flex;
+  align-items: center;
+  gap: 1.1rem;
+  flex-wrap: wrap;
+  margin-top: 0.1rem;
+}
+
+.repo-entry-lang {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
+.repo-entry-lang-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.repo-entry-meta-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  font-family: ui-monospace, monospace;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 20rem;
+}
+
+.repo-entry-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.7rem;
+  flex-shrink: 0;
+  padding-top: 0.15rem;
+}
+
+.repo-entry .dash-disconnect-link {
+  margin-top: 0;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.repo-entry:hover .dash-disconnect-link,
+.repo-entry:focus-within .dash-disconnect-link {
+  opacity: 1;
+}
+
+@media (max-width: 640px) {
+  .repo-entry {
+    flex-direction: column;
+    gap: 0.6rem;
+  }
+  .repo-entry-actions {
+    padding-top: 0;
+  }
+  .repo-entry-name {
+    max-width: 100%;
+  }
+  /* Touch devices have no hover — keep destructive action reachable */
+  .repo-entry .dash-disconnect-link {
+    opacity: 1;
   }
 }
 

@@ -368,6 +368,19 @@ describe("WorkflowBuilder project setup", () => {
       root.render(<WorkflowBuilder login="tone" plan="pro" />);
     });
 
+    // Current Projects is the default tab now — open Create Project first,
+    // the same way a user reaches the setup form.
+    await waitForCondition(
+      () =>
+        container.querySelector<HTMLButtonElement>("#workflow-tab-setup") !==
+        null,
+    );
+    await act(async () => {
+      container
+        .querySelector<HTMLButtonElement>("#workflow-tab-setup")
+        ?.click();
+    });
+
     await waitForCondition(() => container.textContent?.includes("Next.js App") ?? false);
     await waitForCondition(
       () => container.querySelector<HTMLButtonElement>("[data-testid='setup-project-button']") !== null,

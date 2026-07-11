@@ -7,7 +7,8 @@ import type { ApiError } from "@/lib/api/request";
 
 export type WorkflowTab = "setup" | "current";
 
-export const WORKFLOW_TABS: WorkflowTab[] = ["setup", "current"];
+// Current Projects intentionally comes first — it is the tab users land on.
+export const WORKFLOW_TABS: WorkflowTab[] = ["current", "setup"];
 
 export const enhancementLabels: Array<{
   key: NonNullable<SetupProjectRequest["enhancements"]>[number];

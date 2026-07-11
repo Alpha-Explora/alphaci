@@ -15,6 +15,15 @@ interface WorkflowStudioTabsProps {
 
 const TABS: { id: WorkflowTab; label: string; icon: React.ReactNode }[] = [
   {
+    id: "current",
+    label: "Current Projects",
+    icon: (
+      <svg className="studio-tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+      </svg>
+    ),
+  },
+  {
     id: "setup",
     label: "Create Project",
     icon: (
@@ -24,16 +33,6 @@ const TABS: { id: WorkflowTab; label: string; icon: React.ReactNode }[] = [
       </svg>
     ),
   },
-  {
-    id: "current",
-    label: "Current Projects",
-    icon: (
-      <svg className="studio-tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-        <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
-      </svg>
-    ),
-  },
-
 ];
 
 export function WorkflowStudioTabs({ activeTab, onChange, onKeyDown, trailing }: Readonly<WorkflowStudioTabsProps>) {

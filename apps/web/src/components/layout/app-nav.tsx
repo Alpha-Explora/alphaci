@@ -473,7 +473,7 @@ export function AppNav({
 
           <SidebarNavItem
             href="/home"
-            label="Dashboard"
+            label="Home"
             icon={DashboardIcon}
             isActive={pathname === "/home"}
             collapsed={collapsed}
@@ -482,7 +482,7 @@ export function AppNav({
           />
           <SidebarNavItem
             href="/workflows"
-            label="Workflows"
+            label="Projects"
             icon={WorkflowsIcon}
             isActive={pathname === "/workflows"}
             collapsed={collapsed}
@@ -491,7 +491,7 @@ export function AppNav({
           />
           <SidebarNavItem
             href="/runs"
-            label="Runs"
+            label="Workflows"
             icon={RunsIcon}
             isActive={pathname === "/runs"}
             collapsed={collapsed}
