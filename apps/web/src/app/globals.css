@@ -17254,6 +17254,153 @@ html:not([data-theme="light"]) .dash-shell .welcome-banner-flat {
   }
 }
 
+/* Deployment-target editor: labels are their own rows and the metadata forms
+   use a predictable grid instead of flowing label text into the inputs. */
+.deployment-target-editor {
+  display: grid;
+  gap: 1rem !important;
+  padding: 1rem;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg-surface);
+}
+
+.deployment-target-editor__grid {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: 0.85rem;
+}
+
+.deployment-target-editor__field {
+  display: grid;
+  align-content: start;
+  gap: 0.38rem;
+  min-width: 0;
+  color: var(--text-muted);
+  font-size: 0.74rem;
+  font-weight: 650;
+}
+
+.deployment-target-editor__field > :first-child {
+  letter-spacing: 0.03em;
+}
+
+.deployment-target-editor__field :is(input, select),
+.deployment-target-editor__field--hosting strong {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 2.6rem;
+  padding: 0.58rem 0.72rem;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: var(--bg-base);
+  color: var(--text-primary);
+  font: inherit;
+}
+
+.deployment-target-editor__field--hosting strong {
+  display: flex;
+  align-items: center;
+  font-size: 0.84rem;
+  font-weight: 650;
+}
+
+.deployment-target-editor__field--name { grid-column: span 7; }
+.deployment-target-editor__field--hosting { grid-column: span 5; }
+.deployment-target-editor__field--branch { grid-column: span 4; }
+.deployment-target-editor__field--root { grid-column: span 8; }
+.deployment-target-editor__field--build { grid-column: span 6; }
+.deployment-target-editor__field--start { grid-column: span 6; }
+.deployment-target-editor__field--environment { grid-column: span 4; }
+
+@media (max-width: 760px) {
+  .deployment-target-editor__field {
+    grid-column: span 6;
+  }
+
+  .deployment-target-editor__field--name,
+  .deployment-target-editor__field--build,
+  .deployment-target-editor__field--start {
+    grid-column: span 12;
+  }
+}
+
+@media (max-width: 520px) {
+  .deployment-target-editor__grid {
+    grid-template-columns: 1fr;
+  }
+
+  .deployment-target-editor__field,
+  .deployment-target-editor__field--name,
+  .deployment-target-editor__field--build,
+  .deployment-target-editor__field--start {
+    grid-column: span 1;
+  }
+}
+
+/* Environment keeps the established variables first; editing is revealed only
+   on request directly beneath that list. */
+.env-provisioned-variables {
+  order: 1;
+}
+
+.env-variables-form {
+  order: 2;
+}
+
+.env-variables-form .env-variable-workspace {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+/* When opened, the editor visually extends the provisioned-variable card so
+   new values are clearly being added to that same list. */
+.env-provisioned-variables + .env-variables-form {
+  margin-top: -0.85rem;
+  border-top: 0;
+  border-radius: 0 0 8px 8px;
+}
+
+.env-provisioned-variables__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.45rem;
+}
+
+.env-provisioned-variables__actions .ghost-button {
+  min-height: 2rem;
+  padding: 0.38rem 0.68rem;
+  font-size: 0.76rem;
+}
+
+/* The bulk parser is on-demand so it does not compete with provisioned values
+   for space on the Environment tab. */
+.env-bulk-editor--dialog {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  z-index: 400;
+  width: min(34rem, calc(100vw - 2rem));
+  max-height: min(42rem, calc(100vh - 2rem));
+  overflow: auto;
+  padding: 1rem;
+  border-color: rgba(88, 166, 255, 0.38);
+  background: var(--bg-surface);
+  box-shadow: 0 24px 72px rgba(0, 0, 0, 0.48);
+  transform: translate(-50%, -50%);
+}
+
+@media (max-width: 980px) {
+  .env-provisioned-variables__actions {
+    width: 100%;
+    justify-content: stretch;
+  }
+
+  .env-provisioned-variables__actions > * {
+    flex: 1 1 auto;
+  }
+}
+
 /* ── Project creation: one paired service surface ─────────────────────── */
 .service-pair-panel {
   display: grid;

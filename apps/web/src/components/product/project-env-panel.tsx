@@ -148,6 +148,8 @@ export function ProjectEnvPanel({
   const [rows, setRows] = useState<EnvRow[]>([{ key: "", value: "" }]);
   const [message, setMessage] = useState<string | null>(null);
   const [bulkEnvText, setBulkEnvText] = useState("");
+  const [isAddingVariable, setIsAddingVariable] = useState(false);
+  const [isBulkEnvDialogOpen, setIsBulkEnvDialogOpen] = useState(false);
   const [bulkValidation, setBulkValidation] =
     useState<ValidateEnvVarsResponse | null>(null);
   const [filterTargetId, setFilterTargetId] = useState("all");
@@ -285,6 +287,7 @@ export function ProjectEnvPanel({
         vars: rows,
       });
       setRows([{ key: "", value: "" }]);
+      setIsAddingVariable(false);
       setMessage("Environment variables provisioned.");
     } catch (error) {
       setMessage(
@@ -317,6 +320,8 @@ export function ProjectEnvPanel({
   function useParsedKeys() {
     if (!bulkValidation?.keys.length) return;
     setRows(bulkValidation.keys.map((key) => ({ key, value: "" })));
+    setIsAddingVariable(true);
+    setIsBulkEnvDialogOpen(false);
   }
 
   async function handleDeleteMetadata(item: EnvVarMetadata) {
@@ -342,6 +347,7 @@ export function ProjectEnvPanel({
     setTargetId(item.deploymentTargetId);
     setEnvironment(item.environment);
     setRows([{ key: item.key, value: "" }]);
+    setIsAddingVariable(true);
     setMessage(`Re-enter the value for ${item.key} before provisioning.`);
   }
 
@@ -501,18 +507,16 @@ export function ProjectEnvPanel({
       </section>
       ) : null}
 
-      {showVariables ? (
+      {showVariables && isAddingVariable ? (
       <form
         className="env-provisioning-section env-variables-form"
         onSubmit={handleProvision}
       >
         <div className="env-section-header">
           <div>
-            <h4>Branch variables</h4>
+            <h4>Add variables</h4>
             <p className="helper-text" style={{ margin: "0.25rem 0 0" }}>
-              Variables are provisioned to the selected hosting service and its
-              branch. Use a different hosting target to keep branch values
-              separate.
+              Add values to the selected hosting service and environment.
             </p>
           </div>
         </div>
@@ -639,6 +643,13 @@ export function ProjectEnvPanel({
               <button
                 className="ghost-button"
                 type="button"
+                onClick={() => setIsAddingVariable(false)}
+              >
+                Cancel
+              </button>
+              <button
+                className="ghost-button"
+                type="button"
                 onClick={() =>
                   setRows((current) => [...current, { key: "", value: "" }])
                 }
@@ -661,7 +672,13 @@ export function ProjectEnvPanel({
             </div>
           </section>
 
-          <section className="env-bulk-editor" aria-label="Bulk environment">
+          {isBulkEnvDialogOpen ? (
+          <section
+            className="env-bulk-editor env-bulk-editor--dialog"
+            aria-label="Paste a .env file"
+            aria-modal="true"
+            role="dialog"
+          >
             <div className="env-variable-subheader">
               <div>
                 <strong>Paste a .env file</strong>
@@ -687,6 +704,14 @@ export function ProjectEnvPanel({
               onClick={() => void handleBulkValidate()}
             >
               Validate .env
+            </button>
+
+            <button
+              className="ghost-button"
+              type="button"
+              onClick={() => setIsBulkEnvDialogOpen(false)}
+            >
+              Close
             </button>
 
             {bulkValidation ? (
@@ -715,6 +740,7 @@ export function ProjectEnvPanel({
               </div>
             ) : null}
           </section>
+          ) : null}
         </div>
       </form>
       ) : null}
@@ -723,6 +749,25 @@ export function ProjectEnvPanel({
       <section className="env-provisioning-section env-provisioned-variables">
         <div className="env-section-header">
           <h4>Provisioned variables</h4>
+          <div className="env-provisioned-variables__actions">
+            <button
+              className="ghost-button"
+              type="button"
+              onClick={() => setIsAddingVariable(true)}
+            >
+              Add variable
+            </button>
+            <button
+              className="ghost-button"
+              type="button"
+              onClick={() => {
+                setIsAddingVariable(true);
+                setIsBulkEnvDialogOpen(true);
+              }}
+            >
+              Paste a .env file
+            </button>
+          </div>
         </div>
         {metadata.length ? (
           <div className="env-target-grid env-metadata-filters">

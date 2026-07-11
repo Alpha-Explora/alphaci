@@ -25,7 +25,6 @@ import type {
   CreateProjectResult,
   DeploymentTarget,
   EnvEnvironment,
-  EnvTargetSlot,
   EnvVarMetadata,
   ProjectOverviewResponse,
   ProjectCiRunsResponse,
@@ -41,10 +40,6 @@ import type {
   WorkflowFileMetadata,
   WorkflowHistoryItem,
 } from "@/lib/api/contracts";
-import {
-  providerConsoleUrl,
-  providerDashboardUrl,
-} from "@/lib/hosting/provider-urls";
 import { ProjectEnvPanel } from "./project-env-panel";
 import { DeploymentProvisioningSummary } from "./setup-result-panel";
 import { FlowExplainer } from "./flow-explainer";
@@ -171,10 +166,6 @@ function WorkflowStageList({
       </div>
     </div>
   );
-}
-
-function allowedSlotForProvider(provider: DeploymentTarget["provider"]) {
-  return provider === "vercel" ? "frontend" : "backend";
 }
 
 function DeploymentTargetsList({
@@ -309,8 +300,6 @@ function DeploymentTargetsList({
       ) : null}
       <div className="env-metadata-list" data-tour="deployment-targets">
         {targets.map((target) => {
-          const dashboardUrl = providerDashboardUrl(target);
-          const consoleUrl = providerConsoleUrl(target);
           const isDetachConfirm = detachConfirmTargetId === target.id;
           return (
             <div
@@ -368,38 +357,6 @@ function DeploymentTargetsList({
                   </button>
                 </div>
 
-                {/* Secondary: external provider dashboard */}
-                {dashboardUrl ? (
-                  <div className="target-actions-secondary">
-                    <a
-                      className="ghost-button target-action-btn"
-                      href={dashboardUrl}
-                      rel="noreferrer"
-                      target="_blank"
-                    >
-                      Provider dashboard ↗
-                    </a>
-                    {consoleUrl ? (
-                      <a
-                        className="ghost-button target-action-btn"
-                        href={consoleUrl}
-                        rel="noreferrer"
-                        target="_blank"
-                      >
-                        Live console ↗
-                      </a>
-                    ) : null}
-                  </div>
-                ) : null}
-
-                {/* Coming soon hint — replaces a full disabled button */}
-                <span
-                  className="target-upcoming-hint"
-                  title="Provider activation will be available in the next phase"
-                >
-                  Provider activation — coming soon
-                </span>
-
                 {/* Destructive: Detach — visually separated */}
                 <div className="target-actions-destructive">
                   <button
@@ -424,7 +381,7 @@ function DeploymentTargetsList({
       </div>
       {editingTarget ? (
         <div
-          className="env-card"
+          className="env-card deployment-target-editor"
           data-testid="target-edit-drawer"
           style={{ gap: "0.85rem" }}
         >
@@ -434,9 +391,9 @@ function DeploymentTargetsList({
               Metadata edits only. Provider resources and secrets are unchanged.
             </p>
           </div>
-          <div className="env-form-grid">
-            <label>
-              Display name
+          <div className="deployment-target-editor__grid">
+            <label className="deployment-target-editor__field deployment-target-editor__field--name">
+              <span>Display name</span>
               <input
                 aria-label="Target display name"
                 value={editValues.providerProjectName ?? ""}
@@ -445,27 +402,16 @@ function DeploymentTargetsList({
                 }
               />
             </label>
-            <label>
-              Slot
-              <select
-                aria-label="Target slot"
-                value={
-                  editValues.slot ??
-                  allowedSlotForProvider(editingTarget.provider)
-                }
-                onChange={(event) =>
-                  updateEditValue("slot", event.target.value as EnvTargetSlot)
-                }
-              >
-                {editingTarget.provider === "render" ? (
-                  <option value="backend">Backend</option>
-                ) : (
-                  <option value="frontend">Frontend</option>
-                )}
-              </select>
-            </label>
-            <label>
-              Branch
+            <div className="deployment-target-editor__field deployment-target-editor__field--hosting">
+              <span>Hosting</span>
+              <strong>
+                {editingTarget.provider === "render"
+                  ? "Render backend"
+                  : "Vercel frontend"}
+              </strong>
+            </div>
+            <label className="deployment-target-editor__field deployment-target-editor__field--branch">
+              <span>Branch</span>
               <input
                 aria-label="Target branch"
                 value={editValues.branchName ?? ""}
@@ -474,8 +420,8 @@ function DeploymentTargetsList({
                 }
               />
             </label>
-            <label>
-              Root directory
+            <label className="deployment-target-editor__field deployment-target-editor__field--root">
+              <span>Root directory</span>
               <input
                 aria-label="Target root directory"
                 value={editValues.rootDirectory ?? ""}
@@ -484,8 +430,8 @@ function DeploymentTargetsList({
                 }
               />
             </label>
-            <label>
-              Build command
+            <label className="deployment-target-editor__field deployment-target-editor__field--build">
+              <span>Build command</span>
               <input
                 aria-label="Target build command"
                 value={editValues.buildCommand ?? ""}
@@ -494,8 +440,8 @@ function DeploymentTargetsList({
                 }
               />
             </label>
-            <label>
-              Start command
+            <label className="deployment-target-editor__field deployment-target-editor__field--start">
+              <span>Start command</span>
               <input
                 aria-label="Target start command"
                 value={editValues.startCommand ?? ""}
@@ -505,8 +451,8 @@ function DeploymentTargetsList({
               />
             </label>
             {editingTarget.provider === "render" ? (
-              <label>
-                Provider environment
+              <label className="deployment-target-editor__field deployment-target-editor__field--environment">
+                <span>Provider environment</span>
                 <select
                   aria-label="Target provider environment"
                   value={editValues.renderEnvironmentName ?? ""}
@@ -697,31 +643,6 @@ function DeploymentHistoryList({
                     ? formatDate(deployment.readyAt)
                     : "not ready"}
                 </small>
-              </span>
-              <span
-                style={{
-                  display: "flex",
-                  gap: "0.4rem",
-                  flexWrap: "wrap",
-                  justifyContent: "flex-end",
-                }}
-              >
-                <a
-                  className="ghost-button"
-                  href={deployment.providerUrl}
-                  rel="noreferrer"
-                  target="_blank"
-                >
-                  Provider deployment
-                </a>
-                <a
-                  className="ghost-button"
-                  href={deployment.consoleUrl}
-                  rel="noreferrer"
-                  target="_blank"
-                >
-                  Live console
-                </a>
               </span>
             </div>
           ))}

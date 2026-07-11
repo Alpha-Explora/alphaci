@@ -23,8 +23,6 @@ import { getProjectOverview } from "@/lib/api/projects";
 import { getRuns } from "@/lib/api/runs";
 import { ApiError } from "@/lib/api/request";
 import {
-  providerConsoleUrl,
-  providerDashboardUrl,
   providerDisplayName,
   providerPublicUrl,
 } from "@/lib/hosting/provider-urls";
@@ -52,12 +50,8 @@ function HostingServiceCard({
   target,
   reduced,
 }: Readonly<{ target: DeploymentTarget; reduced: boolean }>) {
-  const dashboardUrl = providerDashboardUrl(target);
-  const consoleUrl = providerConsoleUrl(target);
   const publicUrl = providerPublicUrl(target);
   const provider = providerDisplayName(target.provider);
-  const consoleLabel =
-    target.provider === "render" ? "Service logs" : "Deployments";
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
@@ -187,38 +181,6 @@ function HostingServiceCard({
         </div>
       ) : null}
 
-      <div style={{ display: "flex", gap: "0.6rem", flexWrap: "wrap" }}>
-        {dashboardUrl ? (
-          <a
-            className="ghost-button"
-            href={dashboardUrl}
-            target="_blank"
-            rel="noreferrer"
-            style={{
-              minHeight: "2rem",
-              padding: "0.35rem 0.85rem",
-              fontSize: "0.78rem",
-            }}
-          >
-            Open {provider} dashboard
-          </a>
-        ) : null}
-        {consoleUrl ? (
-          <a
-            className="ghost-button"
-            href={consoleUrl}
-            target="_blank"
-            rel="noreferrer"
-            style={{
-              minHeight: "2rem",
-              padding: "0.35rem 0.85rem",
-              fontSize: "0.78rem",
-            }}
-          >
-            {consoleLabel}
-          </a>
-        ) : null}
-      </div>
     </motion.article>
   );
 }
