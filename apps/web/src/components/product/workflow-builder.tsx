@@ -53,7 +53,8 @@ export function WorkflowBuilder({ guest = false, session, onboardingCompleted }:
   const reducedMotion = prefersReducedMotion ?? false;
 
   const requestedTab = searchParams.get("tab");
-  const initialTab: WorkflowTab = requestedTab === "current" ? "current" : "setup";
+  // Current Projects is the default landing tab; ?tab=setup deep-links to Create.
+  const initialTab: WorkflowTab = requestedTab === "setup" ? "setup" : "current";
   const [activeTab, setActiveTab] = useState<WorkflowTab>(initialTab);
   const [isCreatingProject, setIsCreatingProject] = useState(false);
   const [isDiscoveringExistingRepo, setIsDiscoveringExistingRepo] = useState(false);

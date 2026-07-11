@@ -26,6 +26,13 @@ import { SetupResultPanel } from "./setup-result-panel";
 import { formatQuotaStatus } from "./workflow-builder-utils";
 import { HelpTip } from "./help-tip";
 
+/**
+ * Existing-repository onboarding is hidden for now (product decision).
+ * Handlers, state, and the existing-mode panel stay wired — flip this flag
+ * to bring the "New / Existing repository" segmented control back.
+ */
+const EXISTING_REPO_MODE_ENABLED = false;
+
 interface WorkflowSetupTabProps {
   createResult: CreateProjectResult | null;
   deploymentOwnershipMode: EnvOwnershipMode;
@@ -259,7 +266,9 @@ export function WorkflowSetupTab({
             </legend>
             <div style={{ display: "grid", gap: "0.5rem", marginTop: "0.35rem" }}>
               {projectCatalog.allRepoShapes
-                .filter((shape) => shape.id !== "monorepo")
+                // Only offer shapes users can actually pick — hides any
+                // "coming soon" catalog entries (e.g. monorepo/workspaces).
+                .filter((shape) => shape.enabled && shape.id !== "monorepo")
                 .map((shape) => {
                 const selected = shape.id === projectCatalog.selectedRepoShapeId;
                 const disabled = !shape.enabled || projectCatalog.loadingProjectOptions;
@@ -520,20 +529,24 @@ export function WorkflowSetupTab({
           </p>
         ) : null}
 
-        {/* Mode toggle — segmented control, no container box */}
-        <div role="group" aria-label="Setup mode" className="cp-mode-toggle">
-          {(["new", "existing"] as const).map((mode) => (
-            <button
-              key={mode}
-              type="button"
-              className="cp-mode-btn"
-              aria-pressed={setupMode === mode}
-              onClick={() => onChangeSetupMode(mode)}
-            >
-              {mode === "new" ? "New repository" : "Existing repository"}
-            </button>
-          ))}
-        </div>
+        {/* Mode toggle — hidden while existing-repo onboarding is disabled.
+            Flip EXISTING_REPO_MODE_ENABLED to true to restore the segmented
+            control; all handlers and the existing-mode panel remain wired. */}
+        {EXISTING_REPO_MODE_ENABLED ? (
+          <div role="group" aria-label="Setup mode" className="cp-mode-toggle">
+            {(["new", "existing"] as const).map((mode) => (
+              <button
+                key={mode}
+                type="button"
+                className="cp-mode-btn"
+                aria-pressed={setupMode === mode}
+                onClick={() => onChangeSetupMode(mode)}
+              >
+                {mode === "new" ? "New repository" : "Existing repository"}
+              </button>
+            ))}
+          </div>
+        ) : null}
 
         {/* ── Existing repo mode ── */}
         <AnimatePresence mode="wait">
