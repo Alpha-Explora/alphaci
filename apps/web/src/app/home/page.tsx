@@ -113,6 +113,51 @@ function timeAgo(iso: string): string {
   return `${Math.floor(hours / 24)}d ago`;
 }
 
+/* ── Repository entry helpers (GitHub-style list rows) ───────────────────────
+ * Stack dot colors follow GitHub's language-color convention. Unknown catalog
+ * ids fall back to a prettified label with the brand color.
+ */
+const PROJECT_TYPE_META: Record<string, { label: string; color: string }> = {
+  "nextjs-app": { label: "Next.js", color: "#3178c6" },
+  "react-app": { label: "React", color: "#61dafb" },
+  "node-service": { label: "Node.js", color: "#3c873a" },
+  "nestjs-api": { label: "NestJS", color: "#e0234e" },
+  "express-api": { label: "Express", color: "#3c873a" },
+};
+
+function projectTypeMeta(id: string | null | undefined): {
+  label: string;
+  color: string;
+} {
+  if (!id) return { label: "Unknown stack", color: "var(--text-muted)" };
+  const known = PROJECT_TYPE_META[id];
+  if (known) return known;
+  const label = id
+    .split(/[-_]/)
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
+  return { label, color: "var(--brand)" };
+}
+
+function GitHubMarkIcon() {
+  return (
+    <svg
+      className="repo-entry-icon"
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22" />
+    </svg>
+  );
+}
+
 const pipelineContainerVariants = {
   hidden: {},
   visible: { transition: { staggerChildren: 0.06, delayChildren: 0.15 } },
@@ -1480,117 +1525,150 @@ function HomeDashboardContent() {
                           </button>
                         </div>
                         <div
-                          className="dash-repo-list"
+                          className="repo-entry-list"
                           aria-label="Provisioned projects"
                         >
-                          {projects.map((project) => (
-                            <article
-                              key={project.id}
-                              className="dash-repo-row"
-                            >
-                              <svg
-                                className="dash-repo-row-icon"
-                                width="15"
-                                height="15"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                strokeWidth="2"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                aria-hidden="true"
+                          {projects.map((project) => {
+                            const stack = projectTypeMeta(
+                              project.projectTypeId,
+                            );
+                            return (
+                              <article
+                                key={project.id}
+                                className="repo-entry"
                               >
-                                <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22" />
-                              </svg>
-                              <a
-                                href={
-                                  project.repoUrl ??
-                                  `https://github.com/${project.repoFullName}`
-                                }
-                                target="_blank"
-                                rel="noreferrer"
-                                className="dash-repo-row-name"
-                              >
-                                {project.repoFullName.split("/")[1] ??
-                                  project.repoFullName}
-                              </a>
-                              <span
-                                className={`dash-repo-row-chip ${projectStatusChipClass(
-                                  project.status,
-                                )}`}
-                              >
-                                {project.status}
-                              </span>
-                              <p className="dash-repo-row-desc">
-                                {project.serviceName}
-                              </p>
-
-                              {confirmDisconnectId === project.id ? (
-                                <span className="dash-repo-row-confirm">
-                                  <span className="dash-repo-row-confirm-label">
-                                    Remove from ALPHACI?
-                                  </span>
-                                  <button
-                                    type="button"
-                                    onClick={() =>
-                                      void handleDisconnect(project.id)
-                                    }
-                                    disabled={disconnectingId === project.id}
-                                    className="confirm-btn-danger"
-                                  >
-                                    {disconnectingId === project.id
-                                      ? "Removing..."
-                                      : "Yes, remove"}
-                                  </button>
-                                  <button
-                                    type="button"
-                                    onClick={() => setConfirmDisconnectId(null)}
-                                    className="confirm-btn-neutral"
-                                  >
-                                    Cancel
-                                  </button>
-                                </span>
-                              ) : (
-                                <span className="dash-repo-row-actions">
-                                  <a
-                                    href={
-                                      project.githubCommitUrl ??
-                                      project.repoUrl ??
-                                      `https://github.com/${project.repoFullName}`
-                                    }
-                                    target="_blank"
-                                    rel="noreferrer"
-                                    className="dash-repo-row-browse"
-                                  >
-                                    {project.githubCommitUrl
-                                      ? "View commit"
-                                      : "Browse"}
-                                    <svg
-                                      width="10"
-                                      height="10"
-                                      viewBox="0 0 24 24"
-                                      fill="none"
-                                      stroke="currentColor"
-                                      strokeWidth="2.5"
-                                      aria-hidden="true"
+                                <div className="repo-entry-main">
+                                  <div className="repo-entry-title">
+                                    <GitHubMarkIcon />
+                                    <a
+                                      href={
+                                        project.repoUrl ??
+                                        `https://github.com/${project.repoFullName}`
+                                      }
+                                      target="_blank"
+                                      rel="noreferrer"
+                                      className="repo-entry-name"
                                     >
-                                      <line x1="7" y1="17" x2="17" y2="7" />
-                                      <polyline points="7 7 17 7 17 17" />
-                                    </svg>
-                                  </a>
-                                  <button
-                                    type="button"
-                                    onClick={() =>
-                                      setConfirmDisconnectId(project.id)
-                                    }
-                                    className="dash-disconnect-link"
-                                  >
-                                    Disconnect
-                                  </button>
-                                </span>
-                              )}
-                            </article>
-                          ))}
+                                      {project.repoFullName.split("/")[1] ??
+                                        project.repoFullName}
+                                    </a>
+                                    <span
+                                      className={projectStatusChipClass(
+                                        project.status,
+                                      )}
+                                    >
+                                      {project.status}
+                                    </span>
+                                    {project.visibility ? (
+                                      <span className="status-chip status-chip-muted">
+                                        {project.visibility}
+                                      </span>
+                                    ) : null}
+                                  </div>
+                                  <p className="repo-entry-desc">
+                                    {project.status === "failed" &&
+                                    project.failureReason
+                                      ? project.failureReason
+                                      : project.serviceName}
+                                  </p>
+                                  <div className="repo-entry-meta">
+                                    <span className="repo-entry-lang">
+                                      <span
+                                        className="repo-entry-lang-dot"
+                                        style={{ background: stack.color }}
+                                        aria-hidden="true"
+                                      />
+                                      {stack.label}
+                                    </span>
+                                    <span className="repo-entry-meta-item">
+                                      {project.workflowPath}
+                                    </span>
+                                    {project.githubCommitSha ? (
+                                      <span className="repo-entry-meta-item">
+                                        {project.githubCommitSha.slice(0, 7)}
+                                      </span>
+                                    ) : null}
+                                  </div>
+                                </div>
+
+                                <div className="repo-entry-actions">
+                                  {confirmDisconnectId === project.id ? (
+                                    <>
+                                      <span className="dash-repo-row-confirm-label">
+                                        Remove from ALPHACI?
+                                      </span>
+                                      <button
+                                        type="button"
+                                        onClick={() =>
+                                          void handleDisconnect(project.id)
+                                        }
+                                        disabled={
+                                          disconnectingId === project.id
+                                        }
+                                        className="confirm-btn-danger"
+                                      >
+                                        {disconnectingId === project.id
+                                          ? "Removing..."
+                                          : "Yes, remove"}
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() =>
+                                          setConfirmDisconnectId(null)
+                                        }
+                                        className="confirm-btn-neutral"
+                                      >
+                                        Cancel
+                                      </button>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <a
+                                        href={
+                                          project.githubCommitUrl ??
+                                          project.repoUrl ??
+                                          `https://github.com/${project.repoFullName}`
+                                        }
+                                        target="_blank"
+                                        rel="noreferrer"
+                                        className="dash-repo-row-browse"
+                                      >
+                                        {project.githubCommitUrl
+                                          ? "View commit"
+                                          : "Browse"}
+                                        <svg
+                                          width="10"
+                                          height="10"
+                                          viewBox="0 0 24 24"
+                                          fill="none"
+                                          stroke="currentColor"
+                                          strokeWidth="2.5"
+                                          aria-hidden="true"
+                                        >
+                                          <line
+                                            x1="7"
+                                            y1="17"
+                                            x2="17"
+                                            y2="7"
+                                          />
+                                          <polyline points="7 7 17 7 17 17" />
+                                        </svg>
+                                      </a>
+                                      <button
+                                        type="button"
+                                        onClick={() =>
+                                          setConfirmDisconnectId(project.id)
+                                        }
+                                        className="dash-disconnect-link"
+                                      >
+                                        Disconnect
+                                      </button>
+                                    </>
+                                  )}
+                                </div>
+                              </article>
+                            );
+                          })}
                         </div>
                       </>
                     )}
@@ -1681,61 +1759,84 @@ function HomeDashboardContent() {
                         </div>
                       ) : (
                         <div
-                          className="dash-repo-list"
+                          className="repo-entry-list"
                           aria-label="GitHub repositories"
                         >
                           {filteredRepos.map((repo) => (
-                            <article key={repo.id} className="dash-repo-row">
-                              <svg
-                                className="dash-repo-row-icon"
-                                width="15"
-                                height="15"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                strokeWidth="2"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                aria-hidden="true"
-                              >
-                                <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22" />
-                              </svg>
-                              <a
-                                href={repo.htmlUrl}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="dash-repo-row-name"
-                              >
-                                {repo.fullName.split("/")[1]}
-                              </a>
-                              <span
-                                className={`dash-repo-row-chip ${repo.private ? "status-chip status-chip-muted" : "status-chip status-chip-success"}`}
-                              >
-                                {repo.private ? "private" : "public"}
-                              </span>
-                              <p className="dash-repo-row-desc">
-                                {repo.description ?? "No description provided."}
-                              </p>
-                              <a
-                                href={repo.htmlUrl}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="dash-repo-row-browse"
-                              >
-                                Browse
-                                <svg
-                                  width="10"
-                                  height="10"
-                                  viewBox="0 0 24 24"
-                                  fill="none"
-                                  stroke="currentColor"
-                                  strokeWidth="2.5"
-                                  aria-hidden="true"
+                            <article key={repo.id} className="repo-entry">
+                              <div className="repo-entry-main">
+                                <div className="repo-entry-title">
+                                  <GitHubMarkIcon />
+                                  <a
+                                    href={repo.htmlUrl}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="repo-entry-name"
+                                  >
+                                    {repo.fullName.split("/")[1]}
+                                  </a>
+                                  <span
+                                    className={
+                                      repo.private
+                                        ? "status-chip status-chip-muted"
+                                        : "status-chip status-chip-success"
+                                    }
+                                  >
+                                    {repo.private ? "private" : "public"}
+                                  </span>
+                                </div>
+                                <p className="repo-entry-desc">
+                                  {repo.description ??
+                                    "No description provided."}
+                                </p>
+                                <div className="repo-entry-meta">
+                                  <span className="repo-entry-meta-item">
+                                    <svg
+                                      width="11"
+                                      height="11"
+                                      viewBox="0 0 24 24"
+                                      fill="none"
+                                      stroke="currentColor"
+                                      strokeWidth="2"
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      aria-hidden="true"
+                                    >
+                                      <line x1="6" y1="3" x2="6" y2="15" />
+                                      <circle cx="18" cy="6" r="3" />
+                                      <circle cx="6" cy="18" r="3" />
+                                      <path d="M18 9a9 9 0 0 1-9 9" />
+                                    </svg>
+                                    {repo.defaultBranch}
+                                  </span>
+                                  <span className="repo-entry-meta-item">
+                                    Updated {timeAgo(repo.updatedAt)}
+                                  </span>
+                                </div>
+                              </div>
+
+                              <div className="repo-entry-actions">
+                                <a
+                                  href={repo.htmlUrl}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="dash-repo-row-browse"
                                 >
-                                  <line x1="7" y1="17" x2="17" y2="7" />
-                                  <polyline points="7 7 17 7 17 17" />
-                                </svg>
-                              </a>
+                                  Browse
+                                  <svg
+                                    width="10"
+                                    height="10"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    strokeWidth="2.5"
+                                    aria-hidden="true"
+                                  >
+                                    <line x1="7" y1="17" x2="17" y2="7" />
+                                    <polyline points="7 7 17 7 17 17" />
+                                  </svg>
+                                </a>
+                              </div>
                             </article>
                           ))}
                         </div>

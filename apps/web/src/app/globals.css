@@ -11636,6 +11636,157 @@ a.latest-run-link:hover .latest-run-meta svg {
   }
 }
 
+/* ── Repository entries — GitHub-trending-style rich rows ─────────────────
+   Title line (icon · name · chips) → description → metadata (stack dot ·
+   workflow path · commit). One bordered list container, hairline-divided. */
+.repo-entry-list {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-card);
+  overflow: hidden;
+}
+
+.repo-entry {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1.25rem;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid var(--border-soft);
+  transition: background 0.15s ease;
+}
+
+.repo-entry:last-child {
+  border-bottom: none;
+}
+
+.repo-entry:hover {
+  background: rgba(88, 166, 255, 0.04);
+}
+
+.repo-entry-main {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.repo-entry-title {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  flex-wrap: wrap;
+}
+
+.repo-entry-icon {
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.repo-entry:hover .repo-entry-icon {
+  color: var(--brand);
+}
+
+.repo-entry-name {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  text-decoration: none;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 22rem;
+}
+
+.repo-entry-name:hover {
+  color: var(--brand);
+  text-decoration: underline;
+}
+
+.repo-entry-desc {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  line-height: 1.45;
+  max-width: 52rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.repo-entry-meta {
+  display: flex;
+  align-items: center;
+  gap: 1.1rem;
+  flex-wrap: wrap;
+  margin-top: 0.1rem;
+}
+
+.repo-entry-lang {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
+.repo-entry-lang-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.repo-entry-meta-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  font-family: ui-monospace, monospace;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 20rem;
+}
+
+.repo-entry-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.7rem;
+  flex-shrink: 0;
+  padding-top: 0.15rem;
+}
+
+.repo-entry .dash-disconnect-link {
+  margin-top: 0;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.repo-entry:hover .dash-disconnect-link,
+.repo-entry:focus-within .dash-disconnect-link {
+  opacity: 1;
+}
+
+@media (max-width: 640px) {
+  .repo-entry {
+    flex-direction: column;
+    gap: 0.6rem;
+  }
+  .repo-entry-actions {
+    padding-top: 0;
+  }
+  .repo-entry-name {
+    max-width: 100%;
+  }
+  /* Touch devices have no hover — keep destructive action reachable */
+  .repo-entry .dash-disconnect-link {
+    opacity: 1;
+  }
+}
+
 /* ── Secondary accent badge — violet tint, for plan labels, highlights ───── */
 .dash-badge-violet {
   display: inline-flex;
