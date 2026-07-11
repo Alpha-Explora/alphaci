@@ -79,20 +79,121 @@ function useCountUp(target: number | null, duration = 900): number | null {
 
 /* ── Constants ─────────────────────────────────────────────────────────────── */
 
+function QuickActionCreateIcon() {
+  return (
+    <svg
+      width="14"
+      height="14"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M12 5v14M5 12h14" />
+    </svg>
+  );
+}
+
+function QuickActionWorkflowIcon() {
+  return (
+    <svg
+      width="14"
+      height="14"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <rect x="3" y="3" width="7" height="7" rx="1" />
+      <rect x="14" y="3" width="7" height="7" rx="1" />
+      <rect x="14" y="14" width="7" height="7" rx="1" />
+      <rect x="3" y="14" width="7" height="7" rx="1" />
+    </svg>
+  );
+}
+
+function QuickActionRunIcon() {
+  return (
+    <svg
+      width="14"
+      height="14"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <circle cx="12" cy="12" r="9" />
+      <polygon points="10 8 16 12 10 16" fill="currentColor" stroke="none" />
+    </svg>
+  );
+}
+
+function QuickActionHostingIcon() {
+  return (
+    <svg
+      width="14"
+      height="14"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <rect x="3" y="4" width="18" height="6" rx="1.5" />
+      <rect x="3" y="14" width="18" height="6" rx="1.5" />
+      <circle cx="7" cy="7" r="1" fill="currentColor" stroke="none" />
+      <circle cx="7" cy="17" r="1" fill="currentColor" stroke="none" />
+    </svg>
+  );
+}
+
 const quickActions = [
   {
     cmd: "new-project",
     href: "/workflows?tab=setup",
     display: "Create Project",
+    description: "Connect a repo and generate a pipeline",
     shortcut: "N",
     accent: "var(--brand)",
+    icon: QuickActionCreateIcon,
   },
   {
     cmd: "view-workflows",
     href: "/workflows?tab=current",
     display: "View Workflows",
+    description: "See provisioned projects and history",
     shortcut: "W",
     accent: "var(--accent-violet)",
+    icon: QuickActionWorkflowIcon,
+  },
+  {
+    cmd: "view-runs",
+    href: "/runs",
+    display: "View Runs",
+    description: "Check live pipeline stage status",
+    shortcut: "R",
+    accent: "var(--success)",
+    icon: QuickActionRunIcon,
+  },
+  {
+    cmd: "manage-hosting",
+    href: "/hosting",
+    display: "Manage Hosting",
+    description: "Review deployed services",
+    shortcut: "H",
+    accent: "var(--accent-amber)",
+    icon: QuickActionHostingIcon,
   },
 ];
 
@@ -380,7 +481,6 @@ interface ReleasePulseProps {
   projects: ProvisionedProject[];
   historyLength: number;
   uniqueServices: number;
-  lastActivityValue: string;
   historyLoading: boolean;
   projectsLoading: boolean;
   prefersReducedMotion: boolean | null;
@@ -390,7 +490,6 @@ function ReleasePulse({
   projects,
   historyLength,
   uniqueServices,
-  lastActivityValue,
   historyLoading,
   projectsLoading,
   prefersReducedMotion,
@@ -427,12 +526,6 @@ function ReleasePulse({
   const displayServices = prefersReducedMotion
     ? uniqueServices
     : (animatedServices ?? uniqueServices);
-
-  // Projects are returned newest-first, so the first recorded commit is the
-  // most recent commit available to the dashboard.
-  const latestCommitProject = projects.find(
-    (project) => Boolean(project.githubCommitSha),
-  );
 
   // Overall system read. Order matters: loading → empty → attention → healthy.
   const health: "loading" | "empty" | "attention" | "ok" = projectsLoading
@@ -477,65 +570,32 @@ function ReleasePulse({
         </div>
       </div>
 
-      {/* Stat rail + latest commit share one row: figures left, commit right */}
-      <div className="ov-metrics-row">
-        {/* Stat rail — quiet mono figures on hairline dividers, no card chrome */}
-        <div className="ov-rail">
-          <Link href="/workflows?tab=current" className="ov-stat">
-            <span className="ov-stat-num">
-              {projectsLoading ? <SkeletonValue /> : displayProjects}
-            </span>
-            <span className="ov-stat-label">Projects</span>
-          </Link>
-          <Link href="/hosting" className="ov-stat">
-            <span className="ov-stat-num">
-              {historyLoading ? <SkeletonValue /> : displayServices}
-            </span>
-            <span className="ov-stat-label">Services</span>
-          </Link>
-          <Link href="/workflows?tab=all" className="ov-stat">
-            <span className="ov-stat-num">
-              {historyLoading ? <SkeletonValue /> : displayHistory}
-            </span>
-            <span className="ov-stat-label">Workflows</span>
-          </Link>
-          <Link href="/runs" className="ov-stat">
-            <span className="ov-stat-num ov-stat-num--text">
-              {historyLoading ? <SkeletonValue wide /> : lastActivityValue}
-            </span>
-            <span className="ov-stat-label">Last run</span>
-          </Link>
-        </div>
-
-        <div className="ov-latest-commit" aria-live="polite">
-          <p className="ov-section-eyebrow">Latest commit</p>
-          {projectsLoading ? (
-            <div className="ov-commit-loading"><SkeletonValue wide /></div>
-          ) : latestCommitProject?.githubCommitSha ? (
-            <a
-              className="ov-commit-link"
-              href={latestCommitProject.githubCommitUrl ?? undefined}
-              target={latestCommitProject.githubCommitUrl ? "_blank" : undefined}
-              rel={latestCommitProject.githubCommitUrl ? "noreferrer" : undefined}
-            >
-              <span className="ov-commit-repo">
-                {latestCommitProject.repoFullName}
-              </span>
-              <code>{latestCommitProject.githubCommitSha.slice(0, 7)}</code>
-              {latestCommitProject.githubCommitUrl ? (
-                <span className="ov-commit-arrow" aria-hidden="true">↗</span>
-              ) : null}
-            </a>
-          ) : (
-            <p className="ov-commit-empty">No commit recorded yet</p>
-          )}
-        </div>
+      {/* Stat rail — quiet mono figures on hairline dividers, no card chrome */}
+      <div className="ov-rail">
+        <Link href="/workflows?tab=current" className="ov-stat">
+          <span className="ov-stat-num">
+            {projectsLoading ? <SkeletonValue /> : displayProjects}
+          </span>
+          <span className="ov-stat-label">Projects</span>
+        </Link>
+        <Link href="/hosting" className="ov-stat">
+          <span className="ov-stat-num">
+            {historyLoading ? <SkeletonValue /> : displayServices}
+          </span>
+          <span className="ov-stat-label">Services</span>
+        </Link>
+        <Link href="/workflows?tab=all" className="ov-stat">
+          <span className="ov-stat-num">
+            {historyLoading ? <SkeletonValue /> : displayHistory}
+          </span>
+          <span className="ov-stat-label">Workflows</span>
+        </Link>
       </div>
 
       {/* Operational focus: what needs the operator, a next step, or all-clear */}
       {health === "attention" ? (
         <div className="ov-attention">
-          <p className="ov-section-eyebrow">Needs attention</p>
+          <p className="ov-section-eyebrow">{headline}</p>
           <div className="ov-attention-list">
             {attention.map((project) => (
               <Link
@@ -608,36 +668,51 @@ function ReleasePulse({
       <div className="ov-actions">
         <p className="ov-section-eyebrow">Quick actions</p>
         <div className="bento-cmd-list">
-          {quickActions.map((action) => (
-            <Link
-              key={action.cmd}
-              href={action.href}
-              className="bento-cmd-row"
-              style={{ "--cmd-accent": action.accent } as React.CSSProperties}
-            >
-              <span className="bento-cmd-prompt" aria-hidden="true">
-                $
-              </span>
-              <span className="bento-cmd-name">{action.cmd}</span>
-              <span className="bento-cmd-display">{action.display}</span>
-              <span className="bento-cmd-shortcut">{action.shortcut}</span>
-              <svg
-                className="bento-cmd-arrow"
-                width="10"
-                height="10"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                aria-hidden="true"
+          {quickActions.map((action) => {
+            const ActionIcon = action.icon;
+            return (
+              <Link
+                key={action.cmd}
+                href={action.href}
+                className="bento-cmd-row"
+                style={
+                  { "--cmd-accent": action.accent } as React.CSSProperties
+                }
               >
-                <line x1="5" y1="12" x2="19" y2="12" />
-                <polyline points="12 5 19 12 12 19" />
-              </svg>
-            </Link>
-          ))}
+                <span className="bento-cmd-icon" aria-hidden="true">
+                  <ActionIcon />
+                </span>
+                <span className="bento-cmd-body">
+                  <span className="bento-cmd-titleline">
+                    <span className="bento-cmd-prompt" aria-hidden="true">
+                      $
+                    </span>
+                    <span className="bento-cmd-name">{action.cmd}</span>
+                    <span className="bento-cmd-display">
+                      {action.display}
+                    </span>
+                  </span>
+                  <span className="bento-cmd-desc">{action.description}</span>
+                </span>
+                <span className="bento-cmd-shortcut">{action.shortcut}</span>
+                <svg
+                  className="bento-cmd-arrow"
+                  width="10"
+                  height="10"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                >
+                  <line x1="5" y1="12" x2="19" y2="12" />
+                  <polyline points="12 5 19 12 12 19" />
+                </svg>
+              </Link>
+            );
+          })}
         </div>
       </div>
     </div>
@@ -797,6 +872,12 @@ function HomeDashboardContent() {
       } else if (key === "w") {
         event.preventDefault();
         router.push("/workflows?tab=current");
+      } else if (key === "r") {
+        event.preventDefault();
+        router.push("/runs");
+      } else if (key === "h") {
+        event.preventDefault();
+        router.push("/hosting");
       }
     }
 
@@ -970,7 +1051,7 @@ function HomeDashboardContent() {
           (repo.description ?? "").toLowerCase().includes(normalizedRepoQuery),
       )
     : statusFilteredRepos;
-  const reposPerPage = 10;
+  const reposPerPage = 6;
   const repoPageCount = Math.max(1, Math.ceil(filteredRepos.length / reposPerPage));
   const paginatedRepos = filteredRepos.slice(
     (repoPage - 1) * reposPerPage,
@@ -979,11 +1060,6 @@ function HomeDashboardContent() {
   const repoPageItems = buildPageItems(repoPage, repoPageCount);
 
   const uniqueServices = new Set(history.map((h) => h.serviceName)).size;
-  const lastActivityValue = history[0]
-    ? new Intl.DateTimeFormat("en-PH", { dateStyle: "medium" }).format(
-        new Date(history[0].createdAt),
-      )
-    : "None yet";
 
   const avatarInitial = (session?.user.name ?? session?.user.login ?? "U")
     .slice(0, 1)
@@ -1071,6 +1147,7 @@ function HomeDashboardContent() {
           variants={sectionVariants}
           initial={prefersReducedMotion ? false : "hidden"}
           animate="visible"
+          style={{ marginBottom: "0.75rem" }}
         >
           <div className="welcome-banner-flat-accent" aria-hidden="true" />
 
@@ -1360,7 +1437,6 @@ function HomeDashboardContent() {
                   projects={projects}
                   historyLength={history.length}
                   uniqueServices={uniqueServices}
-                  lastActivityValue={lastActivityValue}
                   historyLoading={historyLoading}
                   projectsLoading={projectsLoading}
                   prefersReducedMotion={prefersReducedMotion}

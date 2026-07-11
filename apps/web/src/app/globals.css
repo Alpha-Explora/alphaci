@@ -11571,7 +11571,7 @@ a.latest-run-link:hover .latest-run-meta svg {
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 1.75rem;
+  gap: 1rem;
 }
 
 /* ── Section label / eyebrow row ─────────────────────────────────────────── */
@@ -14612,6 +14612,38 @@ a.latest-run-link:hover .latest-run-meta svg {
   outline-offset: 2px;
 }
 
+.bento-cmd-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.9rem;
+  height: 1.9rem;
+  flex-shrink: 0;
+  border-radius: 0.45rem;
+  color: var(--cmd-accent, var(--brand));
+  background: color-mix(in srgb, var(--cmd-accent, var(--brand)) 12%, transparent);
+  transition: transform 0.18s ease;
+}
+
+.bento-cmd-row:hover .bento-cmd-icon {
+  transform: scale(1.06);
+}
+
+.bento-cmd-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  flex: 1;
+  min-width: 0;
+}
+
+.bento-cmd-titleline {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
 .bento-cmd-prompt {
   font-family: ui-monospace, monospace;
   font-size: 0.78rem;
@@ -14635,7 +14667,14 @@ a.latest-run-link:hover .latest-run-meta svg {
 .bento-cmd-display {
   color: var(--text-secondary);
   font-size: 0.78rem;
-  flex: 1;
+}
+
+.bento-cmd-desc {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .bento-cmd-shortcut {
@@ -17387,6 +17426,19 @@ html:not([data-theme="light"]) .dash-shell .welcome-banner-flat {
   .deployment-target-editor__field--start {
     grid-column: span 1;
   }
+}
+
+/* Let the Pipeline Runs title bar use the same full-width chrome as Workflows,
+   without changing the content gutter used by its run list. */
+.workflow-page-header:has(.runs-page-header-left) {
+  width: calc(100% + (var(--layout-gutter) * 2));
+  margin: calc(-1 * var(--layout-gutter)) calc(-1 * var(--layout-gutter)) 0;
+  padding-right: var(--layout-gutter);
+  padding-left: var(--layout-gutter);
+  border-right: 0;
+  border-left: 0;
+  border-radius: 0;
+  box-shadow: none;
 }
 
 /* Environment keeps the established variables first; editing is revealed only
