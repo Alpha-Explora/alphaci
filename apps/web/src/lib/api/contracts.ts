@@ -542,6 +542,11 @@ export interface ProjectOptionsResponse {
   nodeVersions: NodeVersionOption[];
 }
 
+export interface CentralWorkflowTagsResponse {
+  tags: string[];
+  defaultRef: string;
+}
+
 export interface GenerateWorkflowRequest {
   templateId: string;
   serviceName: string;

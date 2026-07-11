@@ -8459,15 +8459,20 @@ a.ov-stat-mini:hover .ov-stat-mini-num {
   min-height: 1.85rem;
   padding: 0.32rem 0.65rem;
   border-radius: 6px;
-  border-color: var(--border-soft);
-  background: var(--layer-2);
-  color: var(--text-muted);
+  border-color: var(--border-brand);
+  background: var(--brand-light);
+  color: var(--brand);
   font-size: 0.72rem;
-  font-weight: 500;
+  font-weight: 600;
+  transition:
+    background 0.15s ease,
+    box-shadow 0.15s ease,
+    color 0.15s ease;
 }
 
 .project-detail-actions .ghost-button:hover {
-  color: var(--text-primary);
+  color: var(--brand);
+  box-shadow: 0 0 10px var(--brand-glow);
 }
 
 .project-workspace .project-status-badge {
@@ -16408,6 +16413,7 @@ a.ov-stat-mini:hover .ov-stat-mini-num {
   display: flex;
   align-items: center;
   gap: 0.4rem;
+  flex-shrink: 0;
 }
 
 /* Collapsed sidebar: hide the workspace chip, stack the action buttons */

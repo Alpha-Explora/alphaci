@@ -5,6 +5,7 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 
 import { useCapabilities } from "@/hooks/use-capabilities";
+import { getCentralWorkflowTags } from "@/lib/api/catalog";
 import {
   createWorkflowUpdatePullRequest,
   detachDeploymentTarget,
@@ -65,7 +66,6 @@ type ProjectDetailTab =
   | "runs"
   | "hosting"
   | "environment"
-  | "activity"
   | "audit"
   | "settings";
 
@@ -75,9 +75,29 @@ const PROJECT_DETAIL_TABS: Array<{ id: ProjectDetailTab; label: string }> = [
   { id: "runs", label: "Runs" },
   { id: "hosting", label: "Hosting" },
   { id: "environment", label: "Environment" },
-  { id: "activity", label: "Activity" },
   { id: "audit", label: "Audit" },
   { id: "settings", label: "Settings" },
+];
+
+// Mirrors the coverage presets offered on repository creation (see
+// workflow-setup-tab.tsx) so editing an existing project's threshold isn't a
+// different, freer-form experience than setting it up in the first place.
+const COVERAGE_THRESHOLD_OPTIONS: Array<{ value: string; label: string }> = [
+  { value: "0", label: "None (0%)" },
+  { value: "60", label: "Basic (60%)" },
+  { value: "80", label: "Standard (80%)" },
+  { value: "90", label: "Strict (90%)" },
+  { value: "100", label: "Full (100%)" },
+];
+
+const WORKFLOW_CHECK_OPTIONS: Array<{
+  key: keyof WorkflowSettings["checks"];
+  label: string;
+}> = [
+  { key: "lint", label: "Lint" },
+  { key: "unit", label: "Unit tests" },
+  { key: "build", label: "Build" },
+  { key: "security", label: "Security" },
 ];
 
 const containerVariants = {
@@ -916,6 +936,12 @@ export function WorkflowCurrentTab({
     useState<ProjectAuditEventsResponse | null>(null);
   const [auditProjectId, setAuditProjectId] = useState<string | null>(null);
   const [auditError, setAuditError] = useState<string | null>(null);
+  const [centralWorkflowTags, setCentralWorkflowTags] = useState<
+    string[] | null
+  >(null);
+  const [centralWorkflowTagsError, setCentralWorkflowTagsError] = useState<
+    string | null
+  >(null);
   const selectedProject = useMemo(() => {
     return (
       projects.find((project) => project.id === selectedProjectId) ??
@@ -1094,6 +1120,33 @@ export function WorkflowCurrentTab({
     workflowSettingsPreviewEnabled,
     workflowSettingsProjectId,
   ]);
+
+  useEffect(() => {
+    if (
+      projectDetailTab !== "workflow" ||
+      centralWorkflowTags ||
+      centralWorkflowTagsError
+    ) {
+      return;
+    }
+
+    let active = true;
+    void getCentralWorkflowTags()
+      .then((response) => {
+        if (active) {
+          setCentralWorkflowTags(response.tags);
+        }
+      })
+      .catch(() => {
+        if (active) {
+          setCentralWorkflowTagsError("Unable to load available workflow refs.");
+        }
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [projectDetailTab, centralWorkflowTags, centralWorkflowTagsError]);
 
   useEffect(() => {
     if (!selectedProject || projectDetailTab !== "audit") {
@@ -2301,12 +2354,9 @@ export function WorkflowCurrentTab({
                                 Coverage threshold
                                 <HelpTip text="The minimum percentage of code that unit tests must exercise. Pipeline runs fail the Quality stage if coverage drops below this number." />
                               </dt>
-                              <input
+                              <select
                                 aria-label="Coverage threshold"
-                                type="number"
-                                min={0}
-                                max={100}
-                                value={workflowSettings.coverageThreshold}
+                                value={String(workflowSettings.coverageThreshold)}
                                 onChange={(event) => {
                                   setWorkflowSettings({
                                     ...workflowSettings,
@@ -2315,7 +2365,27 @@ export function WorkflowCurrentTab({
                                     ),
                                   });
                                 }}
-                              />
+                              >
+                                {!COVERAGE_THRESHOLD_OPTIONS.some(
+                                  (option) =>
+                                    option.value ===
+                                    String(workflowSettings.coverageThreshold),
+                                ) ? (
+                                  <option
+                                    value={String(
+                                      workflowSettings.coverageThreshold,
+                                    )}
+                                  >
+                                    {workflowSettings.coverageThreshold}%
+                                    (current)
+                                  </option>
+                                ) : null}
+                                {COVERAGE_THRESHOLD_OPTIONS.map((option) => (
+                                  <option key={option.value} value={option.value}>
+                                    {option.label}
+                                  </option>
+                                ))}
+                              </select>
                             </label>
                             <label>
                               <dt>
@@ -2336,18 +2406,58 @@ export function WorkflowCurrentTab({
                             <label>
                               <dt>
                                 Central workflow ref
-                                <HelpTip text="The branch or tag of ImplementSprint/central-workflow that this project's pipeline is pinned to. It supplies the reusable gated-stage logic — Access, Quality, Package — that every generated workflow calls into." />
+                                <HelpTip text="The tag of cicd-external-project/cicd-workflow that this project's pipeline is pinned to. It supplies the reusable gated-stage logic — Access, Quality, Package — that every generated workflow calls into. Options are the real tags published on that repo." />
                               </dt>
-                              <input
+                              <select
                                 aria-label="Central workflow ref"
                                 value={workflowSettings.centralWorkflowRef}
+                                disabled={!centralWorkflowTags}
                                 onChange={(event) => {
                                   setWorkflowSettings({
                                     ...workflowSettings,
                                     centralWorkflowRef: event.target.value,
                                   });
                                 }}
-                              />
+                              >
+                                {centralWorkflowTags ? (
+                                  <>
+                                    {!centralWorkflowTags.includes(
+                                      workflowSettings.centralWorkflowRef,
+                                    ) ? (
+                                      <option
+                                        value={
+                                          workflowSettings.centralWorkflowRef
+                                        }
+                                      >
+                                        {workflowSettings.centralWorkflowRef}{" "}
+                                        (current)
+                                      </option>
+                                    ) : null}
+                                    {centralWorkflowTags.map((tag) => (
+                                      <option key={tag} value={tag}>
+                                        {tag}
+                                      </option>
+                                    ))}
+                                  </>
+                                ) : (
+                                  <option value={workflowSettings.centralWorkflowRef}>
+                                    {centralWorkflowTagsError
+                                      ? workflowSettings.centralWorkflowRef
+                                      : "Loading tags..."}
+                                  </option>
+                                )}
+                              </select>
+                              {centralWorkflowTagsError ? (
+                                <p
+                                  className="error-text"
+                                  style={{
+                                    margin: "0.3rem 0 0",
+                                    fontSize: "0.72rem",
+                                  }}
+                                >
+                                  {centralWorkflowTagsError}
+                                </p>
+                              ) : null}
                             </label>
                             <label>
                               <dt>Workflow recipe</dt>
@@ -2373,80 +2483,66 @@ export function WorkflowCurrentTab({
                                 <option value="npm">npm</option>
                               </select>
                             </label>
-                            <label>
-                              <dt>Lint</dt>
-                              <input
-                                aria-label="Lint"
-                                type="checkbox"
-                                checked={workflowSettings.checks.lint}
-                                onChange={(event) => {
-                                  setWorkflowSettings({
-                                    ...workflowSettings,
-                                    checks: {
-                                      ...workflowSettings.checks,
-                                      lint: event.target.checked,
-                                    },
-                                  });
-                                }}
-                              />
-                            </label>
-                            <label>
-                              <dt>Unit tests</dt>
-                              <input
-                                aria-label="Unit tests"
-                                type="checkbox"
-                                checked={workflowSettings.checks.unit}
-                                onChange={(event) => {
-                                  setWorkflowSettings({
-                                    ...workflowSettings,
-                                    checks: {
-                                      ...workflowSettings.checks,
-                                      unit: event.target.checked,
-                                    },
-                                  });
-                                }}
-                              />
-                            </label>
-                            <label>
-                              <dt>Build</dt>
-                              <input
-                                aria-label="Build"
-                                type="checkbox"
-                                checked={workflowSettings.checks.build}
-                                onChange={(event) => {
-                                  setWorkflowSettings({
-                                    ...workflowSettings,
-                                    checks: {
-                                      ...workflowSettings.checks,
-                                      build: event.target.checked,
-                                    },
-                                  });
-                                }}
-                              />
-                            </label>
-                            <label>
-                              <dt>Security</dt>
-                              <input
-                                aria-label="Security"
-                                type="checkbox"
-                                checked={workflowSettings.checks.security}
-                                onChange={(event) => {
-                                  setWorkflowSettings({
-                                    ...workflowSettings,
-                                    checks: {
-                                      ...workflowSettings.checks,
-                                      security: event.target.checked,
-                                    },
-                                  });
-                                }}
-                              />
-                            </label>
                           </div>
                         ) : (
                           <p className="env-empty-state">
                             Loading workflow settings...
                           </p>
                         )}
+
+                        {workflowSettings ? (
+                          <div>
+                            <span
+                              className="input-label"
+                              style={{
+                                display: "block",
+                                marginBottom: "0.5rem",
+                              }}
+                            >
+                              Workflow checks
+                            </span>
+                            <div
+                              className="enhancement-chips"
+                              aria-label="Workflow checks"
+                              role="group"
+                              style={{ gap: "0.5rem", flexWrap: "wrap" }}
+                            >
+                              {WORKFLOW_CHECK_OPTIONS.map((check) => (
+                                <motion.label
+                                  key={check.key}
+                                  className={`enhancement-chip-label-premium${workflowSettings.checks[check.key] ? " enhancement-chip-label--active" : ""}`}
+                                  htmlFor={`workflow-check-${check.key}`}
+                                  whileTap={{ scale: 0.95 }}
+                                  transition={{
+                                    type: "spring",
+                                    stiffness: 500,
+                                    damping: 20,
+                                  }}
+                                >
+                                  <input
+                                    id={`workflow-check-${check.key}`}
+                                    type="checkbox"
+                                    checked={workflowSettings.checks[check.key]}
+                                    onChange={(event) => {
+                                      setWorkflowSettings({
+                                        ...workflowSettings,
+                                        checks: {
+                                          ...workflowSettings.checks,
+                                          [check.key]: event.target.checked,
+                                        },
+                                      });
+                                    }}
+                                  />
+                                  <span
+                                    className="enhancement-chip-dot"
+                                    aria-hidden="true"
+                                  />
+                                  {check.label}
+                                </motion.label>
+                              ))}
+                            </div>
+                          </div>
+                        ) : null}
 
                         <div>
                           <h4
@@ -2608,17 +2704,19 @@ export function WorkflowCurrentTab({
                     }}
                   >
                     {envProvisioningEnabled &&
-                    selectedProject.status === "provisioned" ? (
+                    selectedProject.status === "provisioned" &&
+                    deploymentTargets.length === 0 ? (
                       <ProjectEnvPanel
                         onTargetCreated={handleTargetCreated}
                         project={selectedProject}
                         section="hosting"
                       />
-                    ) : (
+                    ) : !envProvisioningEnabled &&
+                      deploymentTargets.length === 0 ? (
                       <p className="env-empty-state">
                         Hosting service provisioning is not enabled.
                       </p>
-                    )}
+                    ) : null}
                     {deploymentHistoryEnabled &&
                     selectedOverview?.capabilities.deploymentHistory ? (
                       deploymentsError ? (
@@ -2660,32 +2758,6 @@ export function WorkflowCurrentTab({
                     ) : (
                       <EnvMetadataList metadata={envMetadata} />
                     )}
-                  </div>
-                ) : null}
-
-                {projectDetailTab === "activity" ? (
-                  <div className="env-metadata-list">
-                    {selectedProject.githubCommitUrl ? (
-                      <div className="env-metadata-row provisioned">
-                        <span>Latest workflow commit</span>
-                        <span>
-                          {selectedProject.githubCommitSha?.slice(0, 10) ??
-                            "Unknown"}
-                        </span>
-                      </div>
-                    ) : null}
-                    {syncSnapshot?.latest ? (
-                      <div className="env-metadata-row provisioned">
-                        <span>Last local snapshot</span>
-                        <span>
-                          {formatDate(syncSnapshot.latest.completedAt)}
-                        </span>
-                      </div>
-                    ) : null}
-                    {!selectedProject.githubCommitUrl &&
-                    !syncSnapshot?.latest ? (
-                      <p className="env-empty-state">No activity events yet.</p>
-                    ) : null}
                   </div>
                 ) : null}
 
