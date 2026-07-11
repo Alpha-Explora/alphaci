@@ -3,7 +3,7 @@
 import { motion, useReducedMotion } from "framer-motion";
 import Image from "next/image";
 
-import { FlowBackground } from "@/components/layout/flow-background";
+import { DitherBackground } from "@/components/layout/dither-background";
 
 interface PipelineLoaderProps {
   label?: string;
@@ -18,7 +18,7 @@ export function PipelineLoader({
 
   return (
     <main className="pipeline-loader-shell">
-      <FlowBackground variant="calm" />
+      <DitherBackground className="pipeline-loader-dither" />
 
       <section className="pipeline-loader-center" role="status" aria-label={label}>
         <motion.div
