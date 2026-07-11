@@ -104,6 +104,28 @@ const RUN_STAGE_LABELS: Record<StageId, string> = {
   package: "Package",
 };
 
+/**
+ * Build the sequence of page controls for a numbered pager. Small page counts
+ * list every page (1 2 3 4 …); larger ones collapse the middle to an ellipsis
+ * so the control never grows past first · … · window · … · last.
+ */
+function buildPageItems(
+  current: number,
+  total: number,
+): (number | "ellipsis")[] {
+  if (total <= 7) {
+    return Array.from({ length: total }, (_, index) => index + 1);
+  }
+  const items: (number | "ellipsis")[] = [1];
+  const start = Math.max(2, current - 1);
+  const end = Math.min(total - 1, current + 1);
+  if (start > 2) items.push("ellipsis");
+  for (let page = start; page <= end; page += 1) items.push(page);
+  if (end < total - 1) items.push("ellipsis");
+  items.push(total);
+  return items;
+}
+
 function timeAgo(iso: string): string {
   const minutes = Math.floor((Date.now() - new Date(iso).getTime()) / 60000);
   if (minutes < 1) return "just now";
@@ -455,56 +477,59 @@ function ReleasePulse({
         </div>
       </div>
 
-      {/* Stat rail — quiet mono figures on hairline dividers, no card chrome */}
-      <div className="ov-rail">
-        <Link href="/workflows?tab=current" className="ov-stat">
-          <span className="ov-stat-num">
-            {projectsLoading ? <SkeletonValue /> : displayProjects}
-          </span>
-          <span className="ov-stat-label">Projects</span>
-        </Link>
-        <Link href="/hosting" className="ov-stat">
-          <span className="ov-stat-num">
-            {historyLoading ? <SkeletonValue /> : displayServices}
-          </span>
-          <span className="ov-stat-label">Services</span>
-        </Link>
-        <Link href="/workflows?tab=all" className="ov-stat">
-          <span className="ov-stat-num">
-            {historyLoading ? <SkeletonValue /> : displayHistory}
-          </span>
-          <span className="ov-stat-label">Workflows</span>
-        </Link>
-        <Link href="/runs" className="ov-stat">
-          <span className="ov-stat-num ov-stat-num--text">
-            {historyLoading ? <SkeletonValue wide /> : lastActivityValue}
-          </span>
-          <span className="ov-stat-label">Last run</span>
-        </Link>
-      </div>
-
-      <div className="ov-latest-commit" aria-live="polite">
-        <p className="ov-section-eyebrow">Latest commit</p>
-        {projectsLoading ? (
-          <div className="ov-commit-loading"><SkeletonValue wide /></div>
-        ) : latestCommitProject?.githubCommitSha ? (
-          <a
-            className="ov-commit-link"
-            href={latestCommitProject.githubCommitUrl ?? undefined}
-            target={latestCommitProject.githubCommitUrl ? "_blank" : undefined}
-            rel={latestCommitProject.githubCommitUrl ? "noreferrer" : undefined}
-          >
-            <span className="ov-commit-repo">
-              {latestCommitProject.repoFullName}
+      {/* Stat rail + latest commit share one row: figures left, commit right */}
+      <div className="ov-metrics-row">
+        {/* Stat rail — quiet mono figures on hairline dividers, no card chrome */}
+        <div className="ov-rail">
+          <Link href="/workflows?tab=current" className="ov-stat">
+            <span className="ov-stat-num">
+              {projectsLoading ? <SkeletonValue /> : displayProjects}
             </span>
-            <code>{latestCommitProject.githubCommitSha.slice(0, 7)}</code>
-            {latestCommitProject.githubCommitUrl ? (
-              <span className="ov-commit-arrow" aria-hidden="true">↗</span>
-            ) : null}
-          </a>
-        ) : (
-          <p className="ov-commit-empty">No commit recorded yet</p>
-        )}
+            <span className="ov-stat-label">Projects</span>
+          </Link>
+          <Link href="/hosting" className="ov-stat">
+            <span className="ov-stat-num">
+              {historyLoading ? <SkeletonValue /> : displayServices}
+            </span>
+            <span className="ov-stat-label">Services</span>
+          </Link>
+          <Link href="/workflows?tab=all" className="ov-stat">
+            <span className="ov-stat-num">
+              {historyLoading ? <SkeletonValue /> : displayHistory}
+            </span>
+            <span className="ov-stat-label">Workflows</span>
+          </Link>
+          <Link href="/runs" className="ov-stat">
+            <span className="ov-stat-num ov-stat-num--text">
+              {historyLoading ? <SkeletonValue wide /> : lastActivityValue}
+            </span>
+            <span className="ov-stat-label">Last run</span>
+          </Link>
+        </div>
+
+        <div className="ov-latest-commit" aria-live="polite">
+          <p className="ov-section-eyebrow">Latest commit</p>
+          {projectsLoading ? (
+            <div className="ov-commit-loading"><SkeletonValue wide /></div>
+          ) : latestCommitProject?.githubCommitSha ? (
+            <a
+              className="ov-commit-link"
+              href={latestCommitProject.githubCommitUrl ?? undefined}
+              target={latestCommitProject.githubCommitUrl ? "_blank" : undefined}
+              rel={latestCommitProject.githubCommitUrl ? "noreferrer" : undefined}
+            >
+              <span className="ov-commit-repo">
+                {latestCommitProject.repoFullName}
+              </span>
+              <code>{latestCommitProject.githubCommitSha.slice(0, 7)}</code>
+              {latestCommitProject.githubCommitUrl ? (
+                <span className="ov-commit-arrow" aria-hidden="true">↗</span>
+              ) : null}
+            </a>
+          ) : (
+            <p className="ov-commit-empty">No commit recorded yet</p>
+          )}
+        </div>
       </div>
 
       {/* Operational focus: what needs the operator, a next step, or all-clear */}
@@ -951,6 +976,7 @@ function HomeDashboardContent() {
     (repoPage - 1) * reposPerPage,
     repoPage * reposPerPage,
   );
+  const repoPageItems = buildPageItems(repoPage, repoPageCount);
 
   const uniqueServices = new Set(history.map((h) => h.serviceName)).size;
   const lastActivityValue = history[0]
@@ -1920,25 +1946,83 @@ function HomeDashboardContent() {
                           ))}
                           </div>
                           {repoPageCount > 1 ? (
-                            <nav className="repo-pagination" aria-label="Repository pagination">
+                            <nav
+                              className="repo-pagination"
+                              aria-label="Repository pagination"
+                            >
                               <button
                                 type="button"
-                                onClick={() => setRepoPage((page) => Math.max(1, page - 1))}
-                                disabled={repoPage === 1}
-                              >
-                                Previous
-                              </button>
-                              <span>
-                                Page {repoPage} of {repoPageCount}
-                              </span>
-                              <button
-                                type="button"
+                                className="repo-pagination-arrow"
                                 onClick={() =>
-                                  setRepoPage((page) => Math.min(repoPageCount, page + 1))
+                                  setRepoPage((page) => Math.max(1, page - 1))
+                                }
+                                disabled={repoPage === 1}
+                                aria-label="Previous page"
+                              >
+                                <svg
+                                  width="12"
+                                  height="12"
+                                  viewBox="0 0 24 24"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  strokeWidth="2.5"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  aria-hidden="true"
+                                >
+                                  <polyline points="15 18 9 12 15 6" />
+                                </svg>
+                              </button>
+                              {repoPageItems.map((item, index) =>
+                                item === "ellipsis" ? (
+                                  <span
+                                    key={`repo-page-ellipsis-${index}`}
+                                    className="repo-pagination-ellipsis"
+                                    aria-hidden="true"
+                                  >
+                                    …
+                                  </span>
+                                ) : (
+                                  <button
+                                    key={item}
+                                    type="button"
+                                    className={`repo-pagination-page${
+                                      item === repoPage ? " is-active" : ""
+                                    }`}
+                                    onClick={() => setRepoPage(item)}
+                                    aria-label={`Page ${item}`}
+                                    aria-current={
+                                      item === repoPage ? "page" : undefined
+                                    }
+                                  >
+                                    {item}
+                                  </button>
+                                ),
+                              )}
+                              <button
+                                type="button"
+                                className="repo-pagination-arrow"
+                                onClick={() =>
+                                  setRepoPage((page) =>
+                                    Math.min(repoPageCount, page + 1),
+                                  )
                                 }
                                 disabled={repoPage === repoPageCount}
+                                aria-label="Next page"
                               >
-                                Next
+                                <svg
+                                  width="12"
+                                  height="12"
+                                  viewBox="0 0 24 24"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  strokeWidth="2.5"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  aria-hidden="true"
+                                >
+                                  <polyline points="9 18 15 12 9 6" />
+                                </svg>
                               </button>
                             </nav>
                           ) : null}

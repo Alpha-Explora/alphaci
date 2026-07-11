@@ -8002,6 +8002,36 @@ a.latest-run-link:hover .latest-run-meta svg {
   color: var(--text-muted);
 }
 
+/* Metrics row — stat figures on the left, latest commit on the right. The
+   commit reads as one more column in the same rail, separated by the same
+   hairline the stats use rather than a box. */
+.ov-metrics-row {
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+  flex-wrap: wrap;
+}
+
+.ov-metrics-row .ov-rail {
+  flex: 1 1 auto;
+}
+
+.ov-metrics-row .ov-latest-commit {
+  flex: 0 1 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  padding: 0 0 0 2rem;
+  border-top: none;
+  border-left: 1px solid var(--border-soft);
+  text-align: right;
+  min-width: min(220px, 100%);
+}
+
+.ov-metrics-row .ov-commit-link {
+  justify-content: flex-end;
+}
+
 /* Latest commit sits directly below the project count so the primary metric
    stays visually connected to the repository activity it represents. */
 .ov-latest-commit {
@@ -8011,6 +8041,21 @@ a.latest-run-link:hover .latest-run-meta svg {
 
 .ov-latest-commit .ov-section-eyebrow {
   margin-bottom: 0.65rem;
+}
+
+/* Narrow screens: drop the commit back under the rail, left-aligned. */
+@media (max-width: 640px) {
+  .ov-metrics-row .ov-latest-commit {
+    flex-basis: 100%;
+    align-items: stretch;
+    padding: 1rem 0 0;
+    border-left: none;
+    border-top: 1px solid var(--border-soft);
+    text-align: left;
+  }
+  .ov-metrics-row .ov-commit-link {
+    justify-content: flex-start;
+  }
 }
 
 .ov-commit-link {
@@ -11703,20 +11748,37 @@ a.latest-run-link:hover .latest-run-meta svg {
 
 .repositories-toolbar {
   display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  gap: 0.9rem;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem 0.9rem;
+}
+
+/* Label stays on the left; filters + search cluster align to the right. */
+.repositories-toolbar .dash-section-label-left {
+  margin-right: auto;
+}
+
+.repositories-toolbar .repo-filters {
+  order: 1;
 }
 
 .repositories-toolbar .repo-search {
-  order: -1;
-  align-self: flex-end;
+  order: 2;
+  align-self: center;
 }
 
 .repo-filters {
   display: flex;
   flex-wrap: wrap;
   gap: 0.4rem;
+}
+
+@media (max-width: 640px) {
+  /* On narrow screens let the search take the full row under the filters. */
+  .repositories-toolbar .repo-search {
+    flex: 1 1 100%;
+  }
 }
 
 .repo-filters button {
@@ -11741,20 +11803,33 @@ a.latest-run-link:hover .latest-run-meta svg {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 1rem;
+  flex-wrap: wrap;
+  gap: 0.35rem;
   padding-top: 1rem;
   color: var(--text-muted);
   font-size: 0.78rem;
 }
 
+/* Shared base for every clickable pager control (numbers + arrows). */
 .repo-pagination button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2rem;
+  height: 2rem;
+  padding: 0 0.55rem;
   border: 1px solid var(--border-soft);
   border-radius: 6px;
-  padding: 0.45rem 0.75rem;
   background: transparent;
   color: var(--text-secondary);
   cursor: pointer;
   font: inherit;
+  font-size: 0.78rem;
+  font-variant-numeric: tabular-nums;
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease,
+    color 0.15s ease;
 }
 
 .repo-pagination button:hover:not(:disabled) {
@@ -11765,6 +11840,29 @@ a.latest-run-link:hover .latest-run-meta svg {
 .repo-pagination button:disabled {
   cursor: not-allowed;
   opacity: 0.4;
+}
+
+/* Active page — solid brand fill so the current position reads at a glance. */
+.repo-pagination .repo-pagination-page.is-active {
+  border-color: rgba(88, 166, 255, 0.55);
+  background: rgba(88, 166, 255, 0.14);
+  color: var(--brand);
+  font-weight: 700;
+}
+
+/* Prev / next chevrons — square icon buttons flanking the numbers. */
+.repo-pagination-arrow {
+  padding: 0;
+}
+
+.repo-pagination-ellipsis {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.5rem;
+  height: 2rem;
+  color: var(--text-muted);
+  user-select: none;
 }
 
 .repo-entry {
