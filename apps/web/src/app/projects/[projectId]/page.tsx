@@ -354,7 +354,7 @@ function ProjectPageContent() {
         isLoggingOut={isLoggingOut}
       />
 
-      <div id="main-content" className="dash-page-content">
+      <div id="main-content" className="dash-page-content project-page-shell">
         <motion.div
           className="workflow-page-header workflow-page-header--compact project-page-header"
           initial={reduced ? false : { opacity: 0, y: 8 }}
@@ -416,6 +416,7 @@ function ProjectPageContent() {
           </div>
         </motion.div>
 
+        <div className="project-page-body">
         {logoutMessage ? (
           <p className="error-text" style={{ marginTop: 0 }}>
             {logoutMessage}
@@ -636,6 +637,7 @@ function ProjectPageContent() {
               </section>
           </div>
         )}
+        </div>
       </div>
     </main>
   );

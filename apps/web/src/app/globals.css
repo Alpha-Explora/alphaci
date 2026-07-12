@@ -14718,6 +14718,49 @@ a.ov-stat-mini:hover .ov-stat-mini-num {
   padding: 0.9rem var(--layout-gutter) 0.8rem !important;
 }
 
+/* Full project pages share the studio header, but use a stable two-column
+   composition so the operational signals read as part of the header instead
+   of floating beside the project identity. */
+.dash-page-content.project-page-shell {
+  gap: 0;
+  padding: 0;
+}
+
+.project-page-header {
+  display: grid;
+  grid-template-columns: minmax(18rem, 1fr) minmax(34rem, 0.95fr);
+  align-items: center;
+  gap: clamp(1rem, 3vw, 3rem);
+}
+
+.project-page-header .workflow-page-signal-strip {
+  width: 100%;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.project-page-body {
+  display: grid;
+  gap: 1rem;
+  padding: 1.5rem var(--layout-gutter) 2.5rem;
+}
+
+@media (max-width: 1080px) {
+  .project-page-header {
+    grid-template-columns: 1fr;
+    align-items: start;
+  }
+}
+
+@media (max-width: 640px) {
+  .project-page-body {
+    padding-top: 1rem;
+  }
+
+  .project-page-header .workflow-page-signal-strip {
+    grid-template-columns: 1fr;
+  }
+}
+
 .workflow-page-header-left {
   display: flex;
   flex-direction: column;
