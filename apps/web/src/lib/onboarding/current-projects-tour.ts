@@ -40,8 +40,8 @@ function buildSteps(): DriveStep[] {
       popover: {
         title: "Projects vs History",
         description:
-          "Switch between Projects (your active provisioned repos) and History (a log of every setup run, including failed attempts). History is useful for diagnosing past provisioning errors.",
-        side: "bottom",
+          "Switch between Projects (your active provisioned repos) and History (a log of every setup run, including failed attempts). History is useful for diagnosing past provisioning errors. It stays docked right under the project list so it is always in reach.",
+        side: "right",
         align: "start",
       },
     },

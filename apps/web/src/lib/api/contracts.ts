@@ -200,14 +200,24 @@ export interface UpdateDeploymentTargetRequest {
 }
 
 export interface DeploymentTargetSyncResponse {
-  mode: "local_metadata";
+  mode: "provider_live" | "local_metadata";
   status: DeploymentTarget["status"];
   findings: Array<{
     code: string;
-    severity: "warning";
+    severity: "warning" | "error";
     message: string;
   }>;
   target: DeploymentTarget;
+}
+
+export interface DetachDeploymentTargetRequest {
+  deleteProviderResource?: boolean;
+}
+
+export interface DetachDeploymentTargetResponse {
+  detached: true;
+  providerResourceDeleted: boolean;
+  providerDeleteError?: string;
 }
 
 export interface DeploymentTargetActionsResponse {
@@ -540,6 +550,11 @@ export interface ProjectOptionsResponse {
   projectTypes: ProjectTypeOption[];
   recipes: WorkflowRecipeOption[];
   nodeVersions: NodeVersionOption[];
+}
+
+export interface CentralWorkflowTagsResponse {
+  tags: string[];
+  defaultRef: string;
 }
 
 export interface GenerateWorkflowRequest {

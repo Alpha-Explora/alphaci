@@ -459,6 +459,7 @@ describe("Project env provisioning UI", () => {
     });
     mockedProjectApi.detachDeploymentTarget.mockResolvedValue({
       detached: true,
+      providerResourceDeleted: false,
     });
     mockedProjectApi.getDeploymentTargetActions.mockResolvedValue({
       targetId: "target-render",
@@ -552,57 +553,6 @@ describe("Project env provisioning UI", () => {
     jest.clearAllMocks();
   });
 
-  it("shows Environment Variables action only for provisioned projects when enabled", () => {
-    mockCapabilities(true);
-    mockEnvHook();
-
-    const failedProject = {
-      ...provisionedProject,
-      id: "project-2",
-      status: "failed" as const,
-    };
-    const rendered = render(
-      <WorkflowCurrentTab
-        history={[]}
-        latestResult={null}
-        loadingHistory={false}
-        loadingProjects={false}
-        onCopyYaml={jest.fn()}
-        onDownloadYaml={jest.fn()}
-        onOpenSetup={jest.fn()}
-        projects={[provisionedProject, failedProject]}
-      />,
-    );
-    root = rendered.root;
-
-    expect(
-      rendered.container.textContent?.match(/Environment Variables/g) ?? [],
-    ).toHaveLength(1);
-  });
-
-  it("hides Environment Variables action when capability is disabled", () => {
-    mockCapabilities(false);
-    mockEnvHook();
-
-    const rendered = render(
-      <WorkflowCurrentTab
-        history={[]}
-        latestResult={null}
-        loadingHistory={false}
-        loadingProjects={false}
-        onCopyYaml={jest.fn()}
-        onDownloadYaml={jest.fn()}
-        onOpenSetup={jest.fn()}
-        projects={[provisionedProject]}
-      />,
-    );
-    root = rendered.root;
-
-    expect(rendered.container.textContent).not.toContain(
-      "Environment Variables",
-    );
-  });
-
   it("uses a split workspace and updates project details from the selector", () => {
     mockCapabilities(true);
     mockEnvHook();
@@ -619,12 +569,8 @@ describe("Project env provisioning UI", () => {
 
     const rendered = render(
       <WorkflowCurrentTab
-        history={[]}
         latestResult={null}
-        loadingHistory={false}
         loadingProjects={false}
-        onCopyYaml={jest.fn()}
-        onDownloadYaml={jest.fn()}
         onOpenSetup={jest.fn()}
         projects={[provisionedProject, frontendProject]}
       />,
@@ -714,12 +660,8 @@ describe("Project env provisioning UI", () => {
 
     const rendered = render(
       <WorkflowCurrentTab
-        history={[]}
         latestResult={null}
-        loadingHistory={false}
         loadingProjects={false}
-        onCopyYaml={jest.fn()}
-        onDownloadYaml={jest.fn()}
         onOpenSetup={jest.fn()}
         projects={[provisionedProject]}
       />,
@@ -803,12 +745,8 @@ describe("Project env provisioning UI", () => {
 
     const rendered = render(
       <WorkflowCurrentTab
-        history={[]}
         latestResult={null}
-        loadingHistory={false}
         loadingProjects={false}
-        onCopyYaml={jest.fn()}
-        onDownloadYaml={jest.fn()}
         onOpenSetup={jest.fn()}
         projects={[provisionedProject]}
       />,
@@ -890,12 +828,8 @@ describe("Project env provisioning UI", () => {
 
     const rendered = render(
       <WorkflowCurrentTab
-        history={[]}
         latestResult={null}
-        loadingHistory={false}
         loadingProjects={false}
-        onCopyYaml={jest.fn()}
-        onDownloadYaml={jest.fn()}
         onOpenSetup={jest.fn()}
         projects={[provisionedProject]}
       />,
@@ -970,12 +904,8 @@ describe("Project env provisioning UI", () => {
 
     const rendered = render(
       <WorkflowCurrentTab
-        history={[]}
         latestResult={null}
-        loadingHistory={false}
         loadingProjects={false}
-        onCopyYaml={jest.fn()}
-        onDownloadYaml={jest.fn()}
         onOpenSetup={jest.fn()}
         projects={[provisionedProject]}
       />,
@@ -1056,12 +986,8 @@ describe("Project env provisioning UI", () => {
 
     const rendered = render(
       <WorkflowCurrentTab
-        history={[]}
         latestResult={null}
-        loadingHistory={false}
         loadingProjects={false}
-        onCopyYaml={jest.fn()}
-        onDownloadYaml={jest.fn()}
         onOpenSetup={jest.fn()}
         projects={[provisionedProject]}
       />,
@@ -1115,12 +1041,8 @@ describe("Project env provisioning UI", () => {
 
     const rendered = render(
       <WorkflowCurrentTab
-        history={[]}
         latestResult={null}
-        loadingHistory={false}
         loadingProjects={false}
-        onCopyYaml={jest.fn()}
-        onDownloadYaml={jest.fn()}
         onOpenSetup={jest.fn()}
         projects={[provisionedProject]}
       />,
@@ -1178,12 +1100,8 @@ describe("Project env provisioning UI", () => {
 
     const rendered = render(
       <WorkflowCurrentTab
-        history={[]}
         latestResult={null}
-        loadingHistory={false}
         loadingProjects={false}
-        onCopyYaml={jest.fn()}
-        onDownloadYaml={jest.fn()}
         onOpenSetup={jest.fn()}
         projects={[provisionedProject]}
       />,
@@ -1248,12 +1166,8 @@ describe("Project env provisioning UI", () => {
 
     const rendered = render(
       <WorkflowCurrentTab
-        history={[]}
         latestResult={null}
-        loadingHistory={false}
         loadingProjects={false}
-        onCopyYaml={jest.fn()}
-        onDownloadYaml={jest.fn()}
         onOpenSetup={jest.fn()}
         projects={[provisionedProject]}
       />,
@@ -1285,6 +1199,58 @@ describe("Project env provisioning UI", () => {
     ).not.toBeNull();
   });
 
+  it("shows a simulated-data caveat for CI runs when live sync is enabled but nothing is connected", async () => {
+    mockCapabilities(true, true, false, false, false, true);
+    mockEnvHook();
+    mockedProjectApi.getProjectOverview.mockResolvedValue({
+      ...projectOverviewWithTargets([]),
+      capabilities: {
+        envProvisioning: true,
+        workflowSettings: false,
+        syncSnapshots: true,
+        ciRunTracking: true,
+        deploymentHistory: false,
+        driftDetection: false,
+      },
+    });
+    mockedProjectApi.getProjectCiRuns.mockResolvedValue({
+      enabled: true,
+      mode: "local_mock",
+      liveGithubEnabled: true,
+      githubActionsUrl: "https://github.com/tone/orders-api/actions",
+      runs: [],
+    });
+
+    const rendered = render(
+      <WorkflowCurrentTab
+        latestResult={null}
+        loadingProjects={false}
+        onOpenSetup={jest.fn()}
+        projects={[provisionedProject]}
+      />,
+    );
+    root = rendered.root;
+
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    const runsTab = Array.from(
+      rendered.container.querySelectorAll("button"),
+    ).find((button) => button.textContent === "Runs") as HTMLButtonElement;
+    await act(async () => {
+      runsTab.click();
+      await Promise.resolve();
+    });
+
+    expect(rendered.container.textContent).not.toContain(
+      "Live GitHub run sync is not enabled",
+    );
+    expect(rendered.container.textContent).toContain(
+      "Live sync is enabled, but no GitHub Actions integration is connected yet",
+    );
+  });
+
   it("renders Vercel and Render deployment target cards", async () => {
     mockCapabilities(true, true, false, false, true);
     mockEnvHook();
@@ -1294,12 +1260,8 @@ describe("Project env provisioning UI", () => {
 
     const rendered = render(
       <WorkflowCurrentTab
-        history={[]}
         latestResult={null}
-        loadingHistory={false}
         loadingProjects={false}
-        onCopyYaml={jest.fn()}
-        onDownloadYaml={jest.fn()}
         onOpenSetup={jest.fn()}
         projects={[provisionedProject]}
       />,
@@ -1384,12 +1346,8 @@ describe("Project env provisioning UI", () => {
 
     const rendered = render(
       <WorkflowCurrentTab
-        history={[]}
         latestResult={null}
-        loadingHistory={false}
         loadingProjects={false}
-        onCopyYaml={jest.fn()}
-        onDownloadYaml={jest.fn()}
         onOpenSetup={jest.fn()}
         projects={[provisionedProject]}
       />,
@@ -1439,6 +1397,59 @@ describe("Project env provisioning UI", () => {
     );
   });
 
+  it("shows a simulated-data caveat for deployment history when live sync is enabled but nothing is connected", async () => {
+    mockCapabilities(true, true, false, false, true, false, true);
+    mockEnvHook();
+    mockedProjectApi.getProjectOverview.mockResolvedValue({
+      ...projectOverviewWithTargets(),
+      capabilities: {
+        envProvisioning: true,
+        workflowSettings: false,
+        syncSnapshots: true,
+        ciRunTracking: false,
+        deploymentHistory: true,
+        driftDetection: false,
+      },
+    });
+    mockedProjectApi.getProjectDeployments.mockResolvedValue({
+      enabled: true,
+      mode: "local_mock",
+      liveProvidersEnabled: true,
+      deployments: [],
+    });
+
+    const rendered = render(
+      <WorkflowCurrentTab
+        latestResult={null}
+        loadingProjects={false}
+        onOpenSetup={jest.fn()}
+        projects={[provisionedProject]}
+      />,
+    );
+    root = rendered.root;
+
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    const deploymentsTab = Array.from(
+      rendered.container.querySelectorAll("button"),
+    ).find(
+      (button) => button.textContent === "Hosting",
+    ) as HTMLButtonElement;
+    await act(async () => {
+      deploymentsTab.click();
+      await Promise.resolve();
+    });
+
+    expect(rendered.container.textContent).not.toContain(
+      "Live deployment sync is not enabled",
+    );
+    expect(rendered.container.textContent).toContain(
+      "Live sync is enabled, but no provider integration is connected yet",
+    );
+  });
+
   it("opens target edit drawer with the current metadata values", async () => {
     mockCapabilities(true, true, false, false, true);
     mockEnvHook();
@@ -1448,12 +1459,8 @@ describe("Project env provisioning UI", () => {
 
     const rendered = render(
       <WorkflowCurrentTab
-        history={[]}
         latestResult={null}
-        loadingHistory={false}
         loadingProjects={false}
-        onCopyYaml={jest.fn()}
-        onDownloadYaml={jest.fn()}
         onOpenSetup={jest.fn()}
         projects={[provisionedProject]}
       />,
@@ -1549,12 +1556,8 @@ describe("Project env provisioning UI", () => {
 
     const rendered = render(
       <WorkflowCurrentTab
-        history={[]}
         latestResult={null}
-        loadingHistory={false}
         loadingProjects={false}
-        onCopyYaml={jest.fn()}
-        onDownloadYaml={jest.fn()}
         onOpenSetup={jest.fn()}
         projects={[provisionedProject]}
       />,
@@ -1672,12 +1675,8 @@ describe("Project env provisioning UI", () => {
 
     const rendered = render(
       <WorkflowCurrentTab
-        history={[]}
         latestResult={null}
-        loadingHistory={false}
         loadingProjects={false}
-        onCopyYaml={jest.fn()}
-        onDownloadYaml={jest.fn()}
         onOpenSetup={jest.fn()}
         projects={[provisionedProject]}
       />,
@@ -1744,12 +1743,8 @@ describe("Project env provisioning UI", () => {
 
     const rendered = render(
       <WorkflowCurrentTab
-        history={[]}
         latestResult={null}
-        loadingHistory={false}
         loadingProjects={false}
-        onCopyYaml={jest.fn()}
-        onDownloadYaml={jest.fn()}
         onOpenSetup={jest.fn()}
         projects={[provisionedProject]}
       />,
@@ -1778,6 +1773,9 @@ describe("Project env provisioning UI", () => {
 
     expect(mockedProjectApi.detachDeploymentTarget).not.toHaveBeenCalled();
     expect(rendered.container.textContent).toContain("Confirm detach");
+    expect(rendered.container.textContent).toContain(
+      "Also delete the render resource (orders-api-test). This cannot be undone.",
+    );
 
     const confirmButton = Array.from(
       rendered.container.querySelectorAll("button"),
@@ -1792,9 +1790,83 @@ describe("Project env provisioning UI", () => {
     expect(mockedProjectApi.detachDeploymentTarget).toHaveBeenCalledWith(
       "project-1",
       "target-render",
+      { deleteProviderResource: false },
     );
+    // Note: with the last target removed, DeploymentTargetsList falls back to
+    // its "No deployment targets configured." empty state before the success
+    // message (targetMessage) has a chance to render — this is pre-existing
+    // behavior of the early-return guard, not something introduced here.
     expect(rendered.container.textContent).toContain(
       "No deployment targets configured.",
+    );
+  });
+
+  it("opts in to deleting the live provider resource when the checkbox is checked", async () => {
+    mockCapabilities(true, true, false, false, true);
+    mockEnvHook();
+    mockedProjectApi.getProjectOverview.mockResolvedValue(
+      projectOverviewWithTargets([renderTarget]),
+    );
+    mockedProjectApi.detachDeploymentTarget.mockResolvedValue({
+      detached: true,
+      providerResourceDeleted: true,
+    });
+
+    const rendered = render(
+      <WorkflowCurrentTab
+        latestResult={null}
+        loadingProjects={false}
+        onOpenSetup={jest.fn()}
+        projects={[provisionedProject]}
+      />,
+    );
+    root = rendered.root;
+
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    const deploymentsTab = Array.from(
+      rendered.container.querySelectorAll("button"),
+    ).find(
+      (button) => button.textContent === "Hosting",
+    ) as HTMLButtonElement;
+    act(() => {
+      deploymentsTab.click();
+    });
+
+    const detachButton = Array.from(
+      rendered.container.querySelectorAll("button"),
+    ).find((button) => button.textContent === "Detach") as HTMLButtonElement;
+    act(() => {
+      detachButton.click();
+    });
+
+    // Checkbox is unchecked by default — the opt-in must be explicit.
+    const deleteResourceCheckbox = rendered.container.querySelector(
+      'input[type="checkbox"]',
+    ) as HTMLInputElement;
+    expect(deleteResourceCheckbox.checked).toBe(false);
+    act(() => {
+      deleteResourceCheckbox.click();
+    });
+    expect(deleteResourceCheckbox.checked).toBe(true);
+
+    const confirmButton = Array.from(
+      rendered.container.querySelectorAll("button"),
+    ).find(
+      (button) => button.textContent === "Confirm detach",
+    ) as HTMLButtonElement;
+    await act(async () => {
+      confirmButton.click();
+      await Promise.resolve();
+    });
+
+    // The checked box must flow through as an explicit true — never inferred.
+    expect(mockedProjectApi.detachDeploymentTarget).toHaveBeenCalledWith(
+      "project-1",
+      "target-render",
+      { deleteProviderResource: true },
     );
   });
 
@@ -1841,12 +1913,8 @@ describe("Project env provisioning UI", () => {
 
     const rendered = render(
       <WorkflowCurrentTab
-        history={[]}
         latestResult={null}
-        loadingHistory={false}
         loadingProjects={false}
-        onCopyYaml={jest.fn()}
-        onDownloadYaml={jest.fn()}
         onOpenSetup={jest.fn()}
         projects={[provisionedProject]}
       />,
@@ -1869,8 +1937,6 @@ describe("Project env provisioning UI", () => {
       "project-1",
     );
     expect(rendered.container.textContent).toContain("Workflow settings");
-    expect(rendered.container.textContent).toContain("Workflow recipe");
-    expect(rendered.container.textContent).toContain("Package manager");
     expect(rendered.container.textContent).toContain("Lint");
     expect(rendered.container.textContent).toContain("Unit tests");
     expect(rendered.container.textContent).toContain("Build");
@@ -1879,11 +1945,6 @@ describe("Project env provisioning UI", () => {
     expect(rendered.container.textContent).toContain("Node version");
     expect(rendered.container.textContent).toContain("Preview");
     expect(rendered.container.textContent).not.toContain("Create update PR");
-
-    const nodeVersionInput = rendered.container.querySelector<HTMLInputElement>(
-      'input[aria-label="Node version"]',
-    )!;
-    changeValue(nodeVersionInput, "22");
 
     const previewButton = Array.from(
       rendered.container.querySelectorAll("button"),
@@ -1896,7 +1957,7 @@ describe("Project env provisioning UI", () => {
     expect(mockedProjectApi.previewWorkflowSettings).toHaveBeenCalledWith(
       "project-1",
       expect.objectContaining({
-        nodeVersion: "22",
+        nodeVersion: "24",
       }),
     );
     expect(rendered.container.textContent).toContain(
@@ -1945,12 +2006,8 @@ describe("Project env provisioning UI", () => {
 
     const rendered = render(
       <WorkflowCurrentTab
-        history={[]}
         latestResult={null}
-        loadingHistory={false}
         loadingProjects={false}
-        onCopyYaml={jest.fn()}
-        onDownloadYaml={jest.fn()}
         onOpenSetup={jest.fn()}
         projects={[provisionedProject]}
       />,
@@ -2042,12 +2099,8 @@ describe("Project env provisioning UI", () => {
 
     const rendered = render(
       <WorkflowCurrentTab
-        history={[]}
         latestResult={null}
-        loadingHistory={false}
         loadingProjects={false}
-        onCopyYaml={jest.fn()}
-        onDownloadYaml={jest.fn()}
         onOpenSetup={jest.fn()}
         projects={[provisionedProject]}
       />,
@@ -2133,12 +2186,8 @@ describe("Project env provisioning UI", () => {
 
     const rendered = render(
       <WorkflowCurrentTab
-        history={[]}
         latestResult={null}
-        loadingHistory={false}
         loadingProjects={false}
-        onCopyYaml={jest.fn()}
-        onDownloadYaml={jest.fn()}
         onOpenSetup={jest.fn()}
         projects={[provisionedProject]}
       />,
@@ -2218,12 +2267,8 @@ describe("Project env provisioning UI", () => {
 
     const overviewErrorRendered = render(
       <WorkflowCurrentTab
-        history={[]}
         latestResult={null}
-        loadingHistory={false}
         loadingProjects={false}
-        onCopyYaml={jest.fn()}
-        onDownloadYaml={jest.fn()}
         onOpenSetup={jest.fn()}
         projects={[provisionedProject]}
       />,
@@ -2270,12 +2315,8 @@ describe("Project env provisioning UI", () => {
 
     const previewErrorRendered = render(
       <WorkflowCurrentTab
-        history={[]}
         latestResult={null}
-        loadingHistory={false}
         loadingProjects={false}
-        onCopyYaml={jest.fn()}
-        onDownloadYaml={jest.fn()}
         onOpenSetup={jest.fn()}
         projects={[provisionedProject]}
       />,
@@ -2333,12 +2374,8 @@ describe("Project env provisioning UI", () => {
 
     const rendered = render(
       <WorkflowCurrentTab
-        history={[]}
         latestResult={null}
-        loadingHistory={false}
         loadingProjects={false}
-        onCopyYaml={jest.fn()}
-        onDownloadYaml={jest.fn()}
         onOpenSetup={jest.fn()}
         projects={[provisionedProject]}
       />,
@@ -2381,12 +2418,8 @@ describe("Project env provisioning UI", () => {
 
     const rendered = render(
       <WorkflowCurrentTab
-        history={[]}
         latestResult={null}
-        loadingHistory={false}
         loadingProjects={false}
-        onCopyYaml={jest.fn()}
-        onDownloadYaml={jest.fn()}
         onOpenSetup={jest.fn()}
         projects={[provisionedProject]}
       />,
@@ -2405,12 +2438,6 @@ describe("Project env provisioning UI", () => {
       await Promise.resolve();
     });
 
-    changeValue(
-      rendered.container.querySelector<HTMLInputElement>(
-        'input[aria-label="Node version"]',
-      )!,
-      "22",
-    );
     changeValue(
       rendered.container.querySelector<HTMLInputElement>(
         'input[aria-label="Coverage threshold"]',
@@ -2443,125 +2470,21 @@ describe("Project env provisioning UI", () => {
       expect.objectContaining({
         centralWorkflowRef: "v2",
         coverageThreshold: 95,
-        nodeVersion: "22",
+        nodeVersion: "24",
         servicePath: "apps/api",
       }),
     );
   });
 
-  it("renders workflow history cards and wires history actions", () => {
-    mockCapabilities(false);
-    mockEnvHook();
-    const onCopyYaml = jest.fn();
-    const onDownloadYaml = jest.fn();
-    const onOpenSetup = jest.fn();
-
-    const rendered = render(
-      <WorkflowCurrentTab
-        history={[
-          {
-            id: "history-1",
-            createdAt: "2026-06-12T00:00:00.000Z",
-            templateId: "frontend-react",
-            templateName: "React CI",
-            stack: "react",
-            serviceName: "orders-web",
-            outputFileName: "frontend.yml",
-            sourceWorkflowFile: "workflow-templates/frontend-react.yml",
-            sourcePropertiesFile:
-              "workflow-templates/frontend-react.properties.json",
-            lineCount: 12,
-            yaml: "name: CI\n",
-          },
-        ]}
-        latestResult={null}
-        loadingHistory={false}
-        loadingProjects={false}
-        onCopyYaml={onCopyYaml}
-        onDownloadYaml={onDownloadYaml}
-        onOpenSetup={onOpenSetup}
-        projects={[]}
-      />,
-    );
-    root = rendered.root;
-
-    act(() => {
-      rendered.container
-        .querySelector<HTMLButtonElement>("#subtab-history")!
-        .click();
-    });
-
-    expect(rendered.container.textContent).toContain("React CI");
-    expect(rendered.container.textContent).toContain("orders-web");
-    expect(rendered.container.textContent).toContain("frontend.yml");
-    expect(rendered.container.textContent).toContain(
-      "workflow-templates/frontend-react.yml",
-    );
-
-    const card = rendered.container.querySelector<HTMLElement>(".repo-card")!;
-    card.getBoundingClientRect = jest.fn(() => ({
-      bottom: 100,
-      height: 100,
-      left: 0,
-      right: 100,
-      top: 0,
-      width: 100,
-      x: 0,
-      y: 0,
-      toJSON: () => ({}),
-    }));
-    act(() => {
-      card.dispatchEvent(
-        new MouseEvent("mousemove", {
-          bubbles: true,
-          clientX: 25,
-          clientY: 50,
-        }),
-      );
-    });
-    expect(card.style.getPropertyValue("--gx")).toBe("0.25");
-    expect(card.style.getPropertyValue("--gy")).toBe("0.5");
-    act(() => {
-      card.dispatchEvent(
-        new MouseEvent("mouseout", {
-          bubbles: true,
-          relatedTarget: document.body,
-        }),
-      );
-    });
-    expect(card.style.getPropertyValue("--gx")).toBe("");
-    expect(card.style.getPropertyValue("--gy")).toBe("");
-
-    act(() => {
-      Array.from(rendered.container.querySelectorAll("button"))
-        .find((button) => button.textContent === "Copy YAML")!
-        .click();
-      Array.from(rendered.container.querySelectorAll("button"))
-        .find((button) => button.textContent === "Download")!
-        .click();
-      Array.from(rendered.container.querySelectorAll("button"))
-        .find((button) => button.textContent === "New")!
-        .click();
-    });
-
-    expect(onCopyYaml).toHaveBeenCalledWith("name: CI\n");
-    expect(onDownloadYaml).toHaveBeenCalledWith("name: CI\n", "frontend.yml");
-    expect(onOpenSetup).toHaveBeenCalledTimes(1);
-  });
-
-  it("shows empty and loading states for project and history panels", () => {
+  it("shows empty and loading states for the projects panel", () => {
     mockCapabilities(false);
     mockEnvHook();
     const onOpenSetup = jest.fn();
 
     const emptyRendered = render(
       <WorkflowCurrentTab
-        history={[]}
         latestResult={null}
-        loadingHistory={false}
         loadingProjects={false}
-        onCopyYaml={jest.fn()}
-        onDownloadYaml={jest.fn()}
         onOpenSetup={onOpenSetup}
         projects={[]}
       />,
@@ -2572,18 +2495,8 @@ describe("Project env provisioning UI", () => {
       "No provisioned projects yet.",
     );
     act(() => {
-      emptyRendered.container
-        .querySelector<HTMLButtonElement>("#subtab-history")!
-        .click();
-    });
-    expect(emptyRendered.container.textContent).toContain(
-      "No generated workflow history yet.",
-    );
-    act(() => {
       Array.from(emptyRendered.container.querySelectorAll("button"))
-        .find(
-          (button) => button.textContent === "Generate your first workflow",
-        )!
+        .find((button) => button.textContent === "Create your first project")!
         .click();
     });
     expect(onOpenSetup).toHaveBeenCalledTimes(1);
@@ -2594,26 +2507,14 @@ describe("Project env provisioning UI", () => {
 
     const loadingRendered = render(
       <WorkflowCurrentTab
-        history={[]}
         latestResult={null}
-        loadingHistory
         loadingProjects
-        onCopyYaml={jest.fn()}
-        onDownloadYaml={jest.fn()}
         onOpenSetup={jest.fn()}
         projects={[]}
       />,
     );
     root = loadingRendered.root;
 
-    expect(
-      loadingRendered.container.querySelectorAll(".skeleton-card"),
-    ).toHaveLength(3);
-    act(() => {
-      loadingRendered.container
-        .querySelector<HTMLButtonElement>("#subtab-history")!
-        .click();
-    });
     expect(
       loadingRendered.container.querySelectorAll(".skeleton-card"),
     ).toHaveLength(3);

@@ -503,7 +503,7 @@ function RunsContent({
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.28, ease: EASE_OUT }}
         >
-          <div className="workflow-page-header-left">
+          <div className="workflow-page-header-left runs-page-header-left">
             <p className="workflow-page-breadcrumb">
               <span style={{ opacity: 0.55 }}>ALPHACI</span>
               <span className="workflow-page-breadcrumb-sep">/</span>

@@ -1,6 +1,7 @@
 import type {
   CatalogCategoriesResponse,
   CatalogTemplatesResponse,
+  CentralWorkflowTagsResponse,
   ProjectOptionsResponse,
 } from "./contracts";
 import { request } from "./request";
@@ -31,4 +32,8 @@ export async function getTemplates(params: {
 
 export async function getProjectOptions(): Promise<ProjectOptionsResponse> {
   return request<ProjectOptionsResponse>("/catalog/project-options");
+}
+
+export async function getCentralWorkflowTags(): Promise<CentralWorkflowTagsResponse> {
+  return request<CentralWorkflowTagsResponse>("/catalog/central-workflow-tags");
 }

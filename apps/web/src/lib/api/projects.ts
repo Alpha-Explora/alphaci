@@ -4,6 +4,8 @@ import type {
   DeploymentTarget,
   DeploymentTargetActionsResponse,
   DeploymentTargetSyncResponse,
+  DetachDeploymentTargetRequest,
+  DetachDeploymentTargetResponse,
   ProjectCiRun,
   ProjectCiRunRerunResponse,
   ProjectCiRunsResponse,
@@ -198,11 +200,13 @@ export async function syncDeploymentTarget(
 export async function detachDeploymentTarget(
   projectId: string,
   targetId: string,
-): Promise<{ detached: true }> {
-  return request<{ detached: true }>(
+  payload?: DetachDeploymentTargetRequest,
+): Promise<DetachDeploymentTargetResponse> {
+  return request<DetachDeploymentTargetResponse>(
     `/projects/${encodeURIComponent(projectId)}/deployment-targets/${encodeURIComponent(targetId)}`,
     {
       method: "DELETE",
+      ...(payload ? { body: JSON.stringify(payload) } : {}),
     },
   );
 }

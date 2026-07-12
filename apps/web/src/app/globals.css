@@ -7950,155 +7950,85 @@ a.latest-run-link:hover .latest-run-meta svg {
   font-family: ui-monospace, monospace;
 }
 
-/* Stat rail — figures separated by thin vertical rules, no boxes */
-.ov-rail {
+/* Body row — operational focus (attention list / next step / all-clear) on
+   the left, key metrics as a compact column on the right. */
+.ov-body-row {
   display: flex;
-  flex-wrap: wrap;
-  row-gap: 1.25rem;
+  align-items: flex-start;
+  gap: 2rem;
 }
 
-.ov-stat {
+.ov-body-main {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* Stat rail — quiet mono figures stacked in a right-hand column, separated
+   from the main content by a single hairline rather than a card. */
+.ov-rail-aside {
+  flex: 0 0 auto;
   display: flex;
   flex-direction: column;
-  gap: 0.4rem;
-  padding: 0 1.9rem;
+  gap: 1.1rem;
+  padding-left: 1.75rem;
   border-left: 1px solid var(--border-soft);
+  min-width: 8rem;
+}
+
+.ov-stat-mini {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
   text-decoration: none;
   transition: transform 0.15s ease;
 }
 
-.ov-stat:first-child {
-  padding-left: 0;
-  border-left: none;
+a.ov-stat-mini:hover {
+  transform: translateX(2px);
 }
 
-.ov-stat:hover {
-  transform: translateY(-2px);
-}
-
-.ov-stat:hover .ov-stat-num {
+a.ov-stat-mini:hover .ov-stat-mini-num {
   color: var(--brand);
 }
 
-.ov-stat-num {
+.ov-stat-mini-num {
   font-family: "Sora", ui-monospace, monospace;
-  font-size: clamp(1.9rem, 3.6vw, 2.7rem);
+  font-size: clamp(1.5rem, 2.6vw, 2rem);
   font-weight: 800;
   line-height: 1;
   color: var(--text-primary);
   transition: color 0.15s ease;
 }
 
-.ov-stat-num--text {
-  font-size: clamp(1rem, 2vw, 1.3rem);
-  font-weight: 700;
-  font-family: ui-monospace, monospace;
-}
-
-.ov-stat-label {
-  font-size: 0.66rem;
+.ov-stat-mini-label {
+  font-size: 0.62rem;
   text-transform: uppercase;
   letter-spacing: 0.1em;
   color: var(--text-muted);
 }
 
-/* Metrics row — stat figures on the left, latest commit on the right. The
-   commit reads as one more column in the same rail, separated by the same
-   hairline the stats use rather than a box. */
-.ov-metrics-row {
-  display: flex;
-  align-items: center;
-  gap: 2rem;
-  flex-wrap: wrap;
-}
-
-.ov-metrics-row .ov-rail {
-  flex: 1 1 auto;
-}
-
-.ov-metrics-row .ov-latest-commit {
-  flex: 0 1 auto;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  padding: 0 0 0 2rem;
-  border-top: none;
-  border-left: 1px solid var(--border-soft);
-  text-align: right;
-  min-width: min(220px, 100%);
-}
-
-.ov-metrics-row .ov-commit-link {
-  justify-content: flex-end;
-}
-
-/* Latest commit sits directly below the project count so the primary metric
-   stays visually connected to the repository activity it represents. */
-.ov-latest-commit {
-  padding: 1rem 0 0;
-  border-top: 1px solid var(--border-soft);
-}
-
-.ov-latest-commit .ov-section-eyebrow {
-  margin-bottom: 0.65rem;
-}
-
-/* Narrow screens: drop the commit back under the rail, left-aligned. */
+/* Narrow screens: stack the stat column back under the main content. */
 @media (max-width: 640px) {
-  .ov-metrics-row .ov-latest-commit {
-    flex-basis: 100%;
-    align-items: stretch;
-    padding: 1rem 0 0;
+  .ov-body-row {
+    flex-direction: column;
+    gap: 1.25rem;
+  }
+
+  .ov-rail-aside {
+    flex-direction: row;
+    flex-wrap: wrap;
+    row-gap: 1rem;
+    padding-left: 0;
+    padding-top: 1rem;
     border-left: none;
     border-top: 1px solid var(--border-soft);
-    text-align: left;
+    min-width: 0;
+    width: 100%;
   }
-  .ov-metrics-row .ov-commit-link {
-    justify-content: flex-start;
+
+  .ov-stat-mini {
+    padding-right: 1.5rem;
   }
-}
-
-.ov-commit-link {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.7rem;
-  max-width: 100%;
-  color: var(--text-primary);
-  text-decoration: none;
-}
-
-.ov-commit-link:hover .ov-commit-repo,
-.ov-commit-link:hover .ov-commit-arrow {
-  color: var(--brand);
-}
-
-.ov-commit-repo {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-size: 0.92rem;
-  font-weight: 700;
-  transition: color 0.15s ease;
-}
-
-.ov-commit-link code,
-.ov-commit-empty {
-  color: var(--text-muted);
-  font-family: ui-monospace, monospace;
-  font-size: 0.78rem;
-}
-
-.ov-commit-arrow {
-  color: var(--text-muted);
-  transition: color 0.15s ease;
-}
-
-.ov-commit-empty {
-  margin: 0;
-}
-
-.ov-commit-loading {
-  min-height: 2.5rem;
 }
 
 /* Section label — restrained, plain-language */
@@ -8241,20 +8171,6 @@ a.latest-run-link:hover .latest-run-meta svg {
 }
 
 @media (max-width: 640px) {
-  .ov-rail {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 1.25rem 0;
-  }
-  .ov-stat {
-    padding: 0 0 0 1rem;
-    border-left: 1px solid var(--border-soft);
-  }
-  .ov-stat:first-child,
-  .ov-stat:nth-child(3) {
-    padding-left: 0;
-    border-left: none;
-  }
   .ov-attention-reason {
     display: none;
   }
@@ -8315,6 +8231,20 @@ a.latest-run-link:hover .latest-run-meta svg {
   align-items: start;
 }
 
+/* Left rail: project list + sub-tab bar glued together, sticky as one unit. */
+.project-list-rail {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  position: sticky;
+  top: 5rem;
+}
+
+/* Right column: swaps between the selected project detail and the history log. */
+.project-detail-column {
+  min-width: 0;
+}
+
 .project-list,
 .project-detail-panel {
   border: 1px solid var(--border-layer);
@@ -8327,8 +8257,6 @@ a.latest-run-link:hover .latest-run-meta svg {
   display: grid;
   gap: 0.4rem;
   padding: 0.75rem;
-  position: sticky;
-  top: 5rem;
 }
 
 .project-list-header {
@@ -8408,6 +8336,46 @@ a.latest-run-link:hover .latest-run-meta svg {
   gap: 0.3rem;
 }
 
+.project-list-search {
+  width: 100%;
+  max-width: none;
+  padding: 0.45rem 0.65rem;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  min-height: 2.25rem;
+}
+
+.project-list-empty {
+  margin: 0;
+  padding: 0.75rem 0.4rem;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  text-align: center;
+}
+
+.project-list-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding-top: 0.5rem;
+  margin-top: 0.15rem;
+  border-top: 1px solid var(--border-soft);
+}
+
+.project-list-pagination .ghost-button {
+  min-height: 2rem;
+  padding: 0.35rem 0.65rem;
+  border-radius: 6px;
+  font-size: 0.76rem;
+}
+
+.project-list-pagination-status {
+  color: var(--text-muted);
+  font-size: 0.76rem;
+  white-space: nowrap;
+}
+
 .project-detail-panel {
   display: grid;
   gap: 1rem;
@@ -8480,22 +8448,31 @@ a.latest-run-link:hover .latest-run-meta svg {
 .project-detail-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.5rem;
-  padding-top: 0.85rem;
+  gap: 0.4rem;
+  padding: 0.65rem 0 0.75rem;
+  margin-bottom: 0.4rem;
   border-top: 1px solid var(--border-soft);
+  border-bottom: 1px solid var(--border-soft);
 }
 
 .project-detail-actions .ghost-button {
-  min-height: 2rem;
-  padding: 0.4rem 0.75rem;
+  min-height: 1.85rem;
+  padding: 0.32rem 0.65rem;
   border-radius: 6px;
-  font-size: 0.78rem;
+  border-color: var(--border-brand);
+  background: var(--brand-light);
+  color: var(--brand);
+  font-size: 0.72rem;
+  font-weight: 600;
+  transition:
+    background 0.15s ease,
+    box-shadow 0.15s ease,
+    color 0.15s ease;
 }
 
-.project-detail-actions .env-action-button {
-  border-color: rgba(52, 211, 153, 0.3);
-  background: rgba(52, 211, 153, 0.06);
-  color: var(--success);
+.project-detail-actions .ghost-button:hover {
+  color: var(--brand);
+  box-shadow: 0 0 10px var(--brand-glow);
 }
 
 .project-workspace .project-status-badge {
@@ -8751,16 +8728,19 @@ a.latest-run-link:hover .latest-run-meta svg {
 }
 
 /* ── Sub-tab bar ─────────────────────────────────────────────────────────── */
+/* Sits in normal flow directly under the project list inside .project-list-rail
+   (no longer a viewport-pinned floating element). */
 .current-subtab-bar {
   position: relative;
   display: flex;
   gap: 0.25rem;
-  padding: 0.25rem;
-  background: rgba(17, 17, 22, 0.4);
+  padding: 0.3rem;
+  background: var(--layer-1);
   border: 1px solid var(--border-soft);
   border-radius: 0.6rem;
-  width: fit-content;
-  margin-bottom: 1.25rem;
+  width: 100%;
+  justify-content: center;
+  box-shadow: var(--shadow-soft);
 }
 
 .current-subtab-btn {
@@ -9984,13 +9964,25 @@ a.latest-run-link:hover .latest-run-meta svg {
     grid-template-columns: minmax(0, 1fr);
   }
 
+  .project-list-rail {
+    position: static;
+    width: 100%;
+  }
+
   .project-list {
     grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
     position: static;
   }
 
-  .project-list-header {
+  .project-list-header,
+  .project-list-search,
+  .project-list-empty,
+  .project-list-pagination {
     grid-column: 1 / -1;
+  }
+
+  .current-subtab-bar {
+    width: 100%;
   }
 
   .provider-connection-fields {
@@ -11361,27 +11353,11 @@ a.latest-run-link:hover .latest-run-meta svg {
   cursor: not-allowed;
 }
 
-/* ── 2-column layout ─────────────────────────────────────────────────── */
+/* ── Single-column layout ────────────────────────────────────────────── */
 .create-project-layout {
   display: grid;
-  grid-template-columns: 280px minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr);
   align-items: start;
-}
-
-.create-project-sidebar {
-  border-right: 1px solid var(--border-soft);
-  padding: 1.75rem 1.5rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0;
-  position: sticky;
-  top: 64px;
-  max-height: calc(100dvh - 64px);
-  overflow-y: auto;
-  scrollbar-width: none;
-}
-.create-project-sidebar::-webkit-scrollbar {
-  display: none;
 }
 
 .create-project-main {
@@ -11410,6 +11386,20 @@ a.latest-run-link:hover .latest-run-meta svg {
   flex: 1;
   height: 1px;
   background: var(--border-soft);
+}
+
+/* Language/framework badge next to the "Create Project" title.
+   Same pill treatment for both single-repo and two-repo (backend + frontend) modes. */
+.cp-project-type-badge {
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 0.2rem 0.65rem;
+  border-radius: 999px;
+  background: rgba(88, 166, 255, 0.12);
+  color: var(--brand);
+  border: 1px solid rgba(88, 166, 255, 0.25);
 }
 
 /* Inline result — replaces the 3rd grid column */
@@ -11485,22 +11475,7 @@ a.latest-run-link:hover .latest-run-meta svg {
   color: var(--brand);
 }
 
-@media (max-width: 1024px) {
-  .create-project-layout {
-    grid-template-columns: 260px minmax(0, 1fr);
-  }
-}
 @media (max-width: 860px) {
-  .create-project-layout {
-    grid-template-columns: 1fr;
-  }
-  .create-project-sidebar {
-    border-right: none;
-    border-bottom: 1px solid var(--border-soft);
-    position: static;
-    max-height: none;
-    padding: 1.5rem var(--layout-gutter);
-  }
   .create-project-main {
     padding: 1.5rem var(--layout-gutter);
   }
@@ -11517,7 +11492,7 @@ a.latest-run-link:hover .latest-run-meta svg {
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 1.75rem;
+  gap: 1rem;
 }
 
 /* ── Section label / eyebrow row ─────────────────────────────────────────── */
@@ -11692,6 +11667,22 @@ a.latest-run-link:hover .latest-run-meta svg {
   opacity: 1;
 }
 
+.dash-repo-row-view {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  text-decoration: none;
+  flex-shrink: 0;
+  transition: color 0.15s ease;
+}
+
+.dash-repo-row-view:hover {
+  color: var(--brand);
+}
+
 /* Trailing action cluster on a provisioned-project row (browse + disconnect) */
 .dash-repo-row-actions,
 .dash-repo-row-confirm {
@@ -11741,6 +11732,7 @@ a.latest-run-link:hover .latest-run-meta svg {
 .repo-entry-list {
   display: flex;
   flex-direction: column;
+  background: rgba(17, 17, 22, 0.45);
   border: 1px solid var(--border-soft);
   border-radius: var(--radius-card);
   overflow: hidden;
@@ -14036,13 +14028,60 @@ a.latest-run-link:hover .latest-run-meta svg {
   min-height: 100dvh;
   padding: 0;
   overflow: hidden;
+  background: #17171f;
+}
+
+.pipeline-loader-shell::before {
+  position: absolute;
+  inset: -24%;
+  z-index: 0;
+  pointer-events: none;
   background:
-    radial-gradient(
-      circle at 50% 42%,
-      rgba(88, 166, 255, 0.11),
-      transparent 36%
+    repeating-radial-gradient(
+      ellipse 88% 34% at 50% 100%,
+      rgba(88, 166, 255, 0.13) 0 1px,
+      transparent 2px 38px
     ),
-    linear-gradient(180deg, var(--bg) 0%, var(--bg-muted) 100%);
+    radial-gradient(
+      ellipse 66% 44% at 50% 78%,
+      rgba(88, 166, 255, 0.12),
+      transparent 68%
+    );
+  content: "";
+  opacity: 0.72;
+  animation: pipeline-loader-wave 12s ease-in-out infinite alternate;
+}
+
+.pipeline-loader-dither {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  image-rendering: pixelated;
+  opacity: 0.72;
+  -webkit-mask-image: radial-gradient(
+    ellipse 110% 88% at 50% 58%,
+    #000 0%,
+    rgba(0, 0, 0, 0.7) 58%,
+    transparent 100%
+  );
+  mask-image: radial-gradient(
+    ellipse 110% 88% at 50% 58%,
+    #000 0%,
+    rgba(0, 0, 0, 0.7) 58%,
+    transparent 100%
+  );
+}
+
+@keyframes pipeline-loader-wave {
+  from {
+    transform: translate3d(-3%, 3%, 0) scale(1);
+  }
+  to {
+    transform: translate3d(3%, -3%, 0) scale(1.08);
+  }
 }
 
 .pipeline-loader-center {
@@ -14149,6 +14188,10 @@ a.latest-run-link:hover .latest-run-meta svg {
   .pipeline-loader-logo-frame,
   .pipeline-loader-progress-bar {
     box-shadow: none;
+  }
+
+  .pipeline-loader-shell::before {
+    animation: none;
   }
 }
 /* ════════════════════════════════════════════════════════════════════════════
@@ -14507,6 +14550,38 @@ a.latest-run-link:hover .latest-run-meta svg {
   outline-offset: 2px;
 }
 
+.bento-cmd-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.9rem;
+  height: 1.9rem;
+  flex-shrink: 0;
+  border-radius: 0.45rem;
+  color: var(--cmd-accent, var(--brand));
+  background: color-mix(in srgb, var(--cmd-accent, var(--brand)) 12%, transparent);
+  transition: transform 0.18s ease;
+}
+
+.bento-cmd-row:hover .bento-cmd-icon {
+  transform: scale(1.06);
+}
+
+.bento-cmd-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  flex: 1;
+  min-width: 0;
+}
+
+.bento-cmd-titleline {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
 .bento-cmd-prompt {
   font-family: ui-monospace, monospace;
   font-size: 0.78rem;
@@ -14530,7 +14605,14 @@ a.latest-run-link:hover .latest-run-meta svg {
 .bento-cmd-display {
   color: var(--text-secondary);
   font-size: 0.78rem;
-  flex: 1;
+}
+
+.bento-cmd-desc {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .bento-cmd-shortcut {
@@ -16332,6 +16414,7 @@ a.latest-run-link:hover .latest-run-meta svg {
   display: flex;
   align-items: center;
   gap: 0.4rem;
+  flex-shrink: 0;
 }
 
 /* Collapsed sidebar: hide the workspace chip, stack the action buttons */
@@ -16890,16 +16973,11 @@ html:not([data-theme="light"])
 html:not([data-theme="light"])
   .dash-shell
   :is(
-    .create-project-sidebar,
     .create-project-main,
     .settings-content,
     .dash-page-content
   ) {
   border-color: rgba(158, 158, 172, 0.12);
-}
-
-html:not([data-theme="light"]) .dash-shell .create-project-sidebar {
-  background: rgba(24, 24, 33, 0.34);
 }
 
 html:not([data-theme="light"])
@@ -17163,5 +17241,334 @@ html:not([data-theme="light"]) .dash-shell .welcome-banner-flat {
 @media (prefers-reduced-motion: reduce) {
   .auth-dither-background {
     opacity: 0.45;
+  }
+}
+
+/* Hosting is intentionally one fixed service per repository. Keep its compact
+   configuration fields aligned, rather than presenting provider choices as a
+   second deployment layer. */
+.env-provisioning-section--hosting .env-target-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.hosting-service-locked {
+  display: grid;
+  gap: 0.2rem;
+  padding: 0.75rem 0.85rem;
+  border: 1px solid rgba(88, 166, 255, 0.24);
+  border-radius: 7px;
+  background: rgba(88, 166, 255, 0.055);
+}
+
+.hosting-service-locked strong {
+  color: var(--text-primary);
+  font-size: 0.86rem;
+}
+
+.hosting-service-locked span {
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+
+@media (max-width: 980px) {
+  .env-provisioning-section--hosting .env-target-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .env-provisioning-section--hosting .env-target-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Deployment-target editor: labels are their own rows and the metadata forms
+   use a predictable grid instead of flowing label text into the inputs. */
+.deployment-target-editor {
+  display: grid;
+  gap: 1rem !important;
+  padding: 1rem;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg-surface);
+}
+
+.deployment-target-editor__grid {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: 0.85rem;
+}
+
+.deployment-target-editor__field {
+  display: grid;
+  align-content: start;
+  gap: 0.38rem;
+  min-width: 0;
+  color: var(--text-muted);
+  font-size: 0.74rem;
+  font-weight: 650;
+}
+
+.deployment-target-editor__field > :first-child {
+  letter-spacing: 0.03em;
+}
+
+.deployment-target-editor__field :is(input, select),
+.deployment-target-editor__field--hosting strong {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 2.6rem;
+  padding: 0.58rem 0.72rem;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: var(--bg-base);
+  color: var(--text-primary);
+  font: inherit;
+}
+
+.deployment-target-editor__field--hosting strong {
+  display: flex;
+  align-items: center;
+  font-size: 0.84rem;
+  font-weight: 650;
+}
+
+.deployment-target-editor__field--name { grid-column: span 7; }
+.deployment-target-editor__field--hosting { grid-column: span 5; }
+.deployment-target-editor__field--branch { grid-column: span 4; }
+.deployment-target-editor__field--root { grid-column: span 8; }
+.deployment-target-editor__field--build { grid-column: span 6; }
+.deployment-target-editor__field--start { grid-column: span 6; }
+.deployment-target-editor__field--environment { grid-column: span 4; }
+
+@media (max-width: 760px) {
+  .deployment-target-editor__field {
+    grid-column: span 6;
+  }
+
+  .deployment-target-editor__field--name,
+  .deployment-target-editor__field--build,
+  .deployment-target-editor__field--start {
+    grid-column: span 12;
+  }
+}
+
+@media (max-width: 520px) {
+  .deployment-target-editor__grid {
+    grid-template-columns: 1fr;
+  }
+
+  .deployment-target-editor__field,
+  .deployment-target-editor__field--name,
+  .deployment-target-editor__field--build,
+  .deployment-target-editor__field--start {
+    grid-column: span 1;
+  }
+}
+
+/* Let the Pipeline Runs title bar use the same full-width chrome as Workflows,
+   without changing the content gutter used by its run list. Only the
+   horizontal margin is negative (for the edge-to-edge bleed) — the vertical
+   margin is left alone so it doesn't cancel out the page's top padding and
+   pin the header flush to the very top of the viewport. */
+.workflow-page-header:has(.runs-page-header-left) {
+  width: calc(100% + (var(--layout-gutter) * 2));
+  margin: 0 calc(-1 * var(--layout-gutter));
+  padding-right: var(--layout-gutter);
+  padding-left: var(--layout-gutter);
+  border-right: 0;
+  border-left: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+/* Environment keeps the established variables first; editing is revealed only
+   on request directly beneath that list. */
+.env-provisioned-variables {
+  order: 1;
+}
+
+.env-variables-form {
+  order: 2;
+}
+
+.env-variables-form .env-variable-workspace {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+/* When opened, the editor visually extends the provisioned-variable card so
+   new values are clearly being added to that same list. */
+.env-provisioned-variables + .env-variables-form {
+  margin-top: -0.85rem;
+  border-top: 0;
+  border-radius: 0 0 8px 8px;
+}
+
+.env-provisioned-variables__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.45rem;
+}
+
+.env-provisioned-variables__actions .ghost-button {
+  min-height: 2rem;
+  padding: 0.38rem 0.68rem;
+  font-size: 0.76rem;
+}
+
+/* The bulk parser is on-demand so it does not compete with provisioned values
+   for space on the Environment tab. */
+.env-bulk-editor--dialog {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  z-index: 400;
+  width: min(34rem, calc(100vw - 2rem));
+  max-height: min(42rem, calc(100vh - 2rem));
+  overflow: auto;
+  padding: 1rem;
+  border-color: rgba(88, 166, 255, 0.38);
+  background: var(--bg-surface);
+  box-shadow: 0 24px 72px rgba(0, 0, 0, 0.48);
+  transform: translate(-50%, -50%);
+}
+
+@media (max-width: 980px) {
+  .env-provisioned-variables__actions {
+    width: 100%;
+    justify-content: stretch;
+  }
+
+  .env-provisioned-variables__actions > * {
+    flex: 1 1 auto;
+  }
+}
+
+/* ── Project creation: one paired service surface ─────────────────────── */
+.service-pair-panel {
+  display: grid;
+  gap: 1rem;
+  margin-top: 0.35rem;
+  padding: 1rem;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg-surface);
+  box-shadow:
+    0 12px 28px rgba(10, 10, 14, 0.14),
+    inset 0 1px 0 rgba(255, 255, 255, 0.025);
+}
+
+.service-pair-panel__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-bottom: 0.8rem;
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.service-pair-panel__header .helper-text {
+  margin: 0.3rem 0 0;
+}
+
+.service-pair-panel__badge {
+  flex: 0 0 auto;
+  padding: 0.22rem 0.5rem;
+  border: 1px solid rgba(88, 166, 255, 0.32);
+  border-radius: 999px;
+  color: var(--brand-light);
+  background: rgba(88, 166, 255, 0.08);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.service-pair-panel__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1.25rem;
+}
+
+/* These are columns inside one combined container, not two nested cards. */
+.service-pair-panel__service {
+  display: grid;
+  align-content: start;
+  gap: 0.45rem;
+  min-width: 0;
+}
+
+.service-pair-panel__service + .service-pair-panel__service {
+  padding-left: 1.25rem;
+  border-left: 1px solid var(--border-soft);
+}
+
+.service-pair-panel__service-title {
+  margin-bottom: 0.15rem;
+  color: var(--text-primary);
+  font-size: 0.86rem;
+  font-weight: 700;
+}
+
+@media (max-width: 680px) {
+  .service-pair-panel__header {
+    flex-direction: column;
+  }
+
+  .service-pair-panel__grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .service-pair-panel__service + .service-pair-panel__service {
+    padding-top: 1rem;
+    padding-left: 0;
+    border-top: 1px solid var(--border-soft);
+    border-left: 0;
+  }
+}
+
+/* ── Signed-in surfaces: reuse the Login graphite elevation ladder ─────── */
+html:not([data-theme="light"]) .dash-shell {
+  --bg-base: #1b1b24;
+  --bg-soft: #1f1f29;
+  --bg-surface: #24242d;
+  --bg-panel: #1f1f29;
+  --bg-elevated: #272733;
+  background: #1b1b24;
+}
+
+html:not([data-theme="light"]) .dash-shell :is(
+  .workflow-page-header,
+  .studio-tab-bar--enhanced,
+  .service-pair-panel,
+  .env-provisioning-section
+) {
+  background-color: var(--bg-surface);
+  border-color: rgba(158, 158, 172, 0.2);
+}
+
+/* The edge control is discoverable on hover/focus without sitting over the
+   working area while it is not being used. */
+.sidebar-collapse-btn--edge {
+  opacity: 0;
+  transition:
+    opacity 0.18s ease,
+    color 0.18s ease,
+    border-color 0.18s ease,
+    background 0.18s ease;
+}
+
+.app-sidebar:hover + .sidebar-collapse-btn--edge,
+.sidebar-collapse-btn--edge:hover,
+.sidebar-collapse-btn--edge:focus-visible {
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sidebar-collapse-btn--edge {
+    transition: none;
   }
 }

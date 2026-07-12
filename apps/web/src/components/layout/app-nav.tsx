@@ -531,12 +531,6 @@ export function AppNav({
             <>
               <div className="sidebar-bottom-utilities">
                 <WorkspaceSwitcher workspaces={workspaces} />
-                <div className="sidebar-utility-actions">
-                  <NotificationCenter
-                    notifications={notifications}
-                    onMarkRead={handleMarkNotificationRead}
-                  />
-                </div>
               </div>
 
               <div
@@ -578,6 +572,13 @@ export function AppNav({
                     </motion.div>
                   )}
                 </AnimatePresence>
+
+                <div className="sidebar-utility-actions">
+                  <NotificationCenter
+                    notifications={notifications}
+                    onMarkRead={handleMarkNotificationRead}
+                  />
+                </div>
               </div>
 
               <button

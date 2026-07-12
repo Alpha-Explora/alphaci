@@ -79,20 +79,91 @@ function useCountUp(target: number | null, duration = 900): number | null {
 
 /* ── Constants ─────────────────────────────────────────────────────────────── */
 
+function QuickActionCreateIcon() {
+  return (
+    <svg
+      width="14"
+      height="14"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M12 5v14M5 12h14" />
+    </svg>
+  );
+}
+
+function QuickActionWorkflowIcon() {
+  return (
+    <svg
+      width="14"
+      height="14"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <rect x="3" y="3" width="7" height="7" rx="1" />
+      <rect x="14" y="3" width="7" height="7" rx="1" />
+      <rect x="14" y="14" width="7" height="7" rx="1" />
+      <rect x="3" y="14" width="7" height="7" rx="1" />
+    </svg>
+  );
+}
+
+function QuickActionRunIcon() {
+  return (
+    <svg
+      width="14"
+      height="14"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <circle cx="12" cy="12" r="9" />
+      <polygon points="10 8 16 12 10 16" fill="currentColor" stroke="none" />
+    </svg>
+  );
+}
+
 const quickActions = [
   {
     cmd: "new-project",
     href: "/workflows?tab=setup",
     display: "Create Project",
+    description: "Connect a repo and generate a pipeline",
     shortcut: "N",
     accent: "var(--brand)",
+    icon: QuickActionCreateIcon,
   },
   {
     cmd: "view-workflows",
     href: "/workflows?tab=current",
     display: "View Workflows",
+    description: "See provisioned projects and history",
     shortcut: "W",
     accent: "var(--accent-violet)",
+    icon: QuickActionWorkflowIcon,
+  },
+  {
+    cmd: "view-runs",
+    href: "/runs",
+    display: "View Runs",
+    description: "Check live pipeline stage status",
+    shortcut: "R",
+    accent: "var(--success)",
+    icon: QuickActionRunIcon,
   },
 ];
 
@@ -380,7 +451,6 @@ interface ReleasePulseProps {
   projects: ProvisionedProject[];
   historyLength: number;
   uniqueServices: number;
-  lastActivityValue: string;
   historyLoading: boolean;
   projectsLoading: boolean;
   prefersReducedMotion: boolean | null;
@@ -390,7 +460,6 @@ function ReleasePulse({
   projects,
   historyLength,
   uniqueServices,
-  lastActivityValue,
   historyLoading,
   projectsLoading,
   prefersReducedMotion,
@@ -427,12 +496,6 @@ function ReleasePulse({
   const displayServices = prefersReducedMotion
     ? uniqueServices
     : (animatedServices ?? uniqueServices);
-
-  // Projects are returned newest-first, so the first recorded commit is the
-  // most recent commit available to the dashboard.
-  const latestCommitProject = projects.find(
-    (project) => Boolean(project.githubCommitSha),
-  );
 
   // Overall system read. Order matters: loading → empty → attention → healthy.
   const health: "loading" | "empty" | "attention" | "ok" = projectsLoading
@@ -477,154 +540,61 @@ function ReleasePulse({
         </div>
       </div>
 
-      {/* Stat rail + latest commit share one row: figures left, commit right */}
-      <div className="ov-metrics-row">
-        {/* Stat rail — quiet mono figures on hairline dividers, no card chrome */}
-        <div className="ov-rail">
-          <Link href="/workflows?tab=current" className="ov-stat">
-            <span className="ov-stat-num">
-              {projectsLoading ? <SkeletonValue /> : displayProjects}
-            </span>
-            <span className="ov-stat-label">Projects</span>
-          </Link>
-          <Link href="/hosting" className="ov-stat">
-            <span className="ov-stat-num">
-              {historyLoading ? <SkeletonValue /> : displayServices}
-            </span>
-            <span className="ov-stat-label">Services</span>
-          </Link>
-          <Link href="/workflows?tab=all" className="ov-stat">
-            <span className="ov-stat-num">
-              {historyLoading ? <SkeletonValue /> : displayHistory}
-            </span>
-            <span className="ov-stat-label">Workflows</span>
-          </Link>
-          <Link href="/runs" className="ov-stat">
-            <span className="ov-stat-num ov-stat-num--text">
-              {historyLoading ? <SkeletonValue wide /> : lastActivityValue}
-            </span>
-            <span className="ov-stat-label">Last run</span>
-          </Link>
-        </div>
-
-        <div className="ov-latest-commit" aria-live="polite">
-          <p className="ov-section-eyebrow">Latest commit</p>
-          {projectsLoading ? (
-            <div className="ov-commit-loading"><SkeletonValue wide /></div>
-          ) : latestCommitProject?.githubCommitSha ? (
-            <a
-              className="ov-commit-link"
-              href={latestCommitProject.githubCommitUrl ?? undefined}
-              target={latestCommitProject.githubCommitUrl ? "_blank" : undefined}
-              rel={latestCommitProject.githubCommitUrl ? "noreferrer" : undefined}
-            >
-              <span className="ov-commit-repo">
-                {latestCommitProject.repoFullName}
-              </span>
-              <code>{latestCommitProject.githubCommitSha.slice(0, 7)}</code>
-              {latestCommitProject.githubCommitUrl ? (
-                <span className="ov-commit-arrow" aria-hidden="true">↗</span>
-              ) : null}
-            </a>
-          ) : (
-            <p className="ov-commit-empty">No commit recorded yet</p>
-          )}
-        </div>
-      </div>
-
-      {/* Operational focus: what needs the operator, a next step, or all-clear */}
-      {health === "attention" ? (
-        <div className="ov-attention">
-          <p className="ov-section-eyebrow">Needs attention</p>
-          <div className="ov-attention-list">
-            {attention.map((project) => (
-              <Link
-                key={project.id}
-                href="/workflows?tab=current"
-                className="ov-attention-row"
-              >
-                <span
-                  className={`ov-attention-status ${project.status === "failed" ? "is-failed" : "is-orphaned"}`}
+      {/* Body row: operational focus on the left, stat rail on the right */}
+      <div className="ov-body-row">
+        <div className="ov-body-main">
+          {health === "attention" ? (
+            <div className="ov-attention-list">
+              {attention.map((project) => (
+                <Link
+                  key={project.id}
+                  href="/workflows?tab=current"
+                  className="ov-attention-row"
                 >
-                  {project.status}
+                  <span
+                    className={`ov-attention-status ${project.status === "failed" ? "is-failed" : "is-orphaned"}`}
+                  >
+                    {project.status}
+                  </span>
+                  <span className="ov-attention-name">
+                    {project.repoFullName.split("/")[1] ??
+                      project.repoFullName}
+                  </span>
+                  <span className="ov-attention-reason">
+                    {project.failureReason ??
+                      (project.status === "orphaned"
+                        ? "GitHub webhook or access broke; re-sync to reconnect"
+                        : "Provisioning did not finish")}
+                  </span>
+                  <svg
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden="true"
+                  >
+                    <line x1="5" y1="12" x2="19" y2="12" />
+                    <polyline points="12 5 19 12 12 19" />
+                  </svg>
+                </Link>
+              ))}
+            </div>
+          ) : health === "empty" ? (
+            <Link href="/workflows?tab=setup" className="ov-nextstep">
+              <span className="ov-nextstep-copy">
+                <span className="ov-nextstep-title">Connect a repository</span>
+                <span className="ov-nextstep-sub">
+                  Pick a repo and ALPHACI writes the GitHub Actions pipeline
+                  for it
                 </span>
-                <span className="ov-attention-name">
-                  {project.repoFullName.split("/")[1] ?? project.repoFullName}
-                </span>
-                <span className="ov-attention-reason">
-                  {project.failureReason ??
-                    (project.status === "orphaned"
-                      ? "GitHub webhook or access broke; re-sync to reconnect"
-                      : "Provisioning did not finish")}
-                </span>
-                <svg
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  aria-hidden="true"
-                >
-                  <line x1="5" y1="12" x2="19" y2="12" />
-                  <polyline points="12 5 19 12 12 19" />
-                </svg>
-              </Link>
-            ))}
-          </div>
-        </div>
-      ) : health === "empty" ? (
-        <Link href="/workflows?tab=setup" className="ov-nextstep">
-          <span className="ov-nextstep-copy">
-            <span className="ov-nextstep-title">Connect a repository</span>
-            <span className="ov-nextstep-sub">
-              Pick a repo and ALPHACI writes the GitHub Actions pipeline for it
-            </span>
-          </span>
-          <svg
-            width="16"
-            height="16"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            aria-hidden="true"
-          >
-            <line x1="5" y1="12" x2="19" y2="12" />
-            <polyline points="12 5 19 12 12 19" />
-          </svg>
-        </Link>
-      ) : health === "ok" ? (
-        <p className="ov-allclear">
-          No failed or orphaned projects. Nothing needs your attention right now.
-        </p>
-      ) : null}
-
-      {/* Quick actions — lean command rows, no container */}
-      <div className="ov-actions">
-        <p className="ov-section-eyebrow">Quick actions</p>
-        <div className="bento-cmd-list">
-          {quickActions.map((action) => (
-            <Link
-              key={action.cmd}
-              href={action.href}
-              className="bento-cmd-row"
-              style={{ "--cmd-accent": action.accent } as React.CSSProperties}
-            >
-              <span className="bento-cmd-prompt" aria-hidden="true">
-                $
               </span>
-              <span className="bento-cmd-name">{action.cmd}</span>
-              <span className="bento-cmd-display">{action.display}</span>
-              <span className="bento-cmd-shortcut">{action.shortcut}</span>
               <svg
-                className="bento-cmd-arrow"
-                width="10"
-                height="10"
+                width="16"
+                height="16"
                 viewBox="0 0 24 24"
                 fill="none"
                 stroke="currentColor"
@@ -637,7 +607,86 @@ function ReleasePulse({
                 <polyline points="12 5 19 12 12 19" />
               </svg>
             </Link>
-          ))}
+          ) : health === "ok" ? (
+            <p className="ov-allclear">
+              No failed or orphaned projects. Nothing needs your attention
+              right now.
+            </p>
+          ) : null}
+        </div>
+
+        {/* Stat rail — quiet mono figures on a hairline divider, no card chrome */}
+        <div className="ov-rail-aside" aria-label="Key metrics">
+          <Link href="/workflows?tab=current" className="ov-stat-mini">
+            <span className="ov-stat-mini-num">
+              {projectsLoading ? <SkeletonValue /> : displayProjects}
+            </span>
+            <span className="ov-stat-mini-label">Projects</span>
+          </Link>
+          <div className="ov-stat-mini">
+            <span className="ov-stat-mini-num">
+              {historyLoading ? <SkeletonValue /> : displayServices}
+            </span>
+            <span className="ov-stat-mini-label">Services</span>
+          </div>
+          <Link href="/workflows?tab=all" className="ov-stat-mini">
+            <span className="ov-stat-mini-num">
+              {historyLoading ? <SkeletonValue /> : displayHistory}
+            </span>
+            <span className="ov-stat-mini-label">Workflows</span>
+          </Link>
+        </div>
+      </div>
+
+      {/* Quick actions — lean command rows, no container */}
+      <div className="ov-actions">
+        <p className="ov-section-eyebrow">Quick actions</p>
+        <div className="bento-cmd-list">
+          {quickActions.map((action) => {
+            const ActionIcon = action.icon;
+            return (
+              <Link
+                key={action.cmd}
+                href={action.href}
+                className="bento-cmd-row"
+                style={
+                  { "--cmd-accent": action.accent } as React.CSSProperties
+                }
+              >
+                <span className="bento-cmd-icon" aria-hidden="true">
+                  <ActionIcon />
+                </span>
+                <span className="bento-cmd-body">
+                  <span className="bento-cmd-titleline">
+                    <span className="bento-cmd-prompt" aria-hidden="true">
+                      $
+                    </span>
+                    <span className="bento-cmd-name">{action.cmd}</span>
+                    <span className="bento-cmd-display">
+                      {action.display}
+                    </span>
+                  </span>
+                  <span className="bento-cmd-desc">{action.description}</span>
+                </span>
+                <span className="bento-cmd-shortcut">{action.shortcut}</span>
+                <svg
+                  className="bento-cmd-arrow"
+                  width="10"
+                  height="10"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                >
+                  <line x1="5" y1="12" x2="19" y2="12" />
+                  <polyline points="12 5 19 12 12 19" />
+                </svg>
+              </Link>
+            );
+          })}
         </div>
       </div>
     </div>
@@ -797,6 +846,9 @@ function HomeDashboardContent() {
       } else if (key === "w") {
         event.preventDefault();
         router.push("/workflows?tab=current");
+      } else if (key === "r") {
+        event.preventDefault();
+        router.push("/runs");
       }
     }
 
@@ -955,6 +1007,9 @@ function HomeDashboardContent() {
   const projectStatusByRepo = new Map(
     projects.map((project) => [project.repoFullName.toLowerCase(), project.status]),
   );
+  const projectIdByRepo = new Map(
+    projects.map((project) => [project.repoFullName.toLowerCase(), project.id]),
+  );
   const statusFilteredRepos =
     repoStatusFilter === "all"
       ? repos
@@ -970,7 +1025,7 @@ function HomeDashboardContent() {
           (repo.description ?? "").toLowerCase().includes(normalizedRepoQuery),
       )
     : statusFilteredRepos;
-  const reposPerPage = 10;
+  const reposPerPage = 6;
   const repoPageCount = Math.max(1, Math.ceil(filteredRepos.length / reposPerPage));
   const paginatedRepos = filteredRepos.slice(
     (repoPage - 1) * reposPerPage,
@@ -979,11 +1034,6 @@ function HomeDashboardContent() {
   const repoPageItems = buildPageItems(repoPage, repoPageCount);
 
   const uniqueServices = new Set(history.map((h) => h.serviceName)).size;
-  const lastActivityValue = history[0]
-    ? new Intl.DateTimeFormat("en-PH", { dateStyle: "medium" }).format(
-        new Date(history[0].createdAt),
-      )
-    : "None yet";
 
   const avatarInitial = (session?.user.name ?? session?.user.login ?? "U")
     .slice(0, 1)
@@ -1071,6 +1121,7 @@ function HomeDashboardContent() {
           variants={sectionVariants}
           initial={prefersReducedMotion ? false : "hidden"}
           animate="visible"
+          style={{ marginBottom: "0.75rem" }}
         >
           <div className="welcome-banner-flat-accent" aria-hidden="true" />
 
@@ -1165,7 +1216,7 @@ function HomeDashboardContent() {
               </div>
 
               <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
-                {guest ? (
+                {guest && (
                   <>
                     <Link
                       className="primary-button"
@@ -1189,32 +1240,6 @@ function HomeDashboardContent() {
                     >
                       Log in
                     </Link>
-                  </>
-                ) : (
-                  <>
-                    <Link
-                      className="primary-button"
-                      href="/workflows?tab=setup"
-                      style={{
-                        padding: "0.4rem 1.2rem",
-                        fontSize: "0.8rem",
-                        minHeight: "2.2rem",
-                      }}
-                    >
-                      Create project
-                    </Link>
-                    <button
-                      className="ghost-button"
-                      type="button"
-                      onClick={refreshDashboard}
-                      style={{
-                        padding: "0.4rem 1rem",
-                        fontSize: "0.8rem",
-                        minHeight: "2.2rem",
-                      }}
-                    >
-                      Refresh data
-                    </button>
                   </>
                 )}
               </div>
@@ -1263,6 +1288,13 @@ function HomeDashboardContent() {
           variants={sectionVariants}
           initial={prefersReducedMotion ? false : "hidden"}
           animate="visible"
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: "1rem",
+            flexWrap: "wrap",
+          }}
         >
           <div
             className="dash-tab-bar"
@@ -1334,6 +1366,34 @@ function HomeDashboardContent() {
               ),
             )}
           </div>
+
+          {!guest && (
+            <div style={{ display: "flex", gap: "0.5rem" }}>
+              <button
+                className="ghost-button"
+                type="button"
+                onClick={refreshDashboard}
+                style={{
+                  padding: "0.4rem 1rem",
+                  fontSize: "0.8rem",
+                  minHeight: "2.2rem",
+                }}
+              >
+                Refresh data
+              </button>
+              <Link
+                className="primary-button"
+                href="/workflows?tab=setup"
+                style={{
+                  padding: "0.4rem 1.2rem",
+                  fontSize: "0.8rem",
+                  minHeight: "2.2rem",
+                }}
+              >
+                Create project
+              </Link>
+            </div>
+          )}
         </motion.div>
 
         {/* ── Tab panels ──────────────────────────────────────────────── */}
@@ -1360,7 +1420,6 @@ function HomeDashboardContent() {
                   projects={projects}
                   historyLength={history.length}
                   uniqueServices={uniqueServices}
-                  lastActivityValue={lastActivityValue}
                   historyLoading={historyLoading}
                   projectsLoading={projectsLoading}
                   prefersReducedMotion={prefersReducedMotion}
@@ -1867,7 +1926,11 @@ function HomeDashboardContent() {
                             className="repo-entry-list"
                             aria-label="GitHub repositories"
                           >
-                          {paginatedRepos.map((repo) => (
+                          {paginatedRepos.map((repo) => {
+                            const provisionedProjectId = projectIdByRepo.get(
+                              repo.fullName.toLowerCase(),
+                            );
+                            return (
                             <article key={repo.id} className="repo-entry">
                               <div className="repo-entry-main">
                                 <div className="repo-entry-title">
@@ -1921,6 +1984,26 @@ function HomeDashboardContent() {
                               </div>
 
                               <div className="repo-entry-actions">
+                                {provisionedProjectId ? (
+                                  <Link
+                                    href={`/projects/${provisionedProjectId}`}
+                                    className="dash-repo-row-view"
+                                  >
+                                    View project
+                                    <svg
+                                      width="10"
+                                      height="10"
+                                      viewBox="0 0 24 24"
+                                      fill="none"
+                                      stroke="currentColor"
+                                      strokeWidth="2.5"
+                                      aria-hidden="true"
+                                    >
+                                      <line x1="5" y1="12" x2="19" y2="12" />
+                                      <polyline points="12 5 19 12 12 19" />
+                                    </svg>
+                                  </Link>
+                                ) : null}
                                 <a
                                   href={repo.htmlUrl}
                                   target="_blank"
@@ -1943,7 +2026,8 @@ function HomeDashboardContent() {
                                 </a>
                               </div>
                             </article>
-                          ))}
+                            );
+                          })}
                           </div>
                           {repoPageCount > 1 ? (
                             <nav

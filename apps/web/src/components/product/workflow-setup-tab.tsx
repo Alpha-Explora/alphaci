@@ -253,274 +253,40 @@ export function WorkflowSetupTab({
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] }}
     >
-      {/* ── Left sidebar: GitHub App + Catalog ──────────────────────── */}
-      <aside className="create-project-sidebar">
-
-        {/* Catalog */}
-        <div>
-          <span className="cp-section-heading">Catalog</span>
-
-          <fieldset data-tour="repo-shape" style={{ border: "none", margin: 0, padding: 0, minInlineSize: "auto" }}>
-            <legend className="input-label" style={{ ...labelAccentStyle, padding: 0 }}>
-              Repository shape
-            </legend>
-            <div style={{ display: "grid", gap: "0.5rem", marginTop: "0.35rem" }}>
-              {projectCatalog.allRepoShapes
-                // Only offer shapes users can actually pick — hides any
-                // "coming soon" catalog entries (e.g. monorepo/workspaces).
-                .filter((shape) => shape.enabled && shape.id !== "monorepo")
-                .map((shape) => {
-                const selected = shape.id === projectCatalog.selectedRepoShapeId;
-                const disabled = !shape.enabled || projectCatalog.loadingProjectOptions;
-                return (
-                  <label
-                    key={shape.id}
-                    style={{
-                      position: "relative",
-                      display: "block",
-                      padding: "0.6rem 0.75rem",
-                      border: `1px solid ${selected ? "var(--border-brand)" : "var(--border)"}`,
-                      borderRadius: "8px",
-                      background: selected ? "color-mix(in srgb, var(--border-brand) 8%, transparent)" : "transparent",
-                      cursor: disabled ? "not-allowed" : "pointer",
-                      opacity: shape.enabled ? 1 : 0.55,
-                      transition: "border-color 0.15s, background 0.15s",
-                    }}
-                  >
-                    <input
-                      type="radio"
-                      name="repo-shape"
-                      value={shape.id}
-                      checked={selected}
-                      disabled={disabled}
-                      onChange={() => projectCatalog.setSelectedRepoShapeId(shape.id)}
-                      style={{ position: "absolute", opacity: 0, inset: 0, margin: 0, cursor: "inherit" }}
-                    />
-                    <span style={{ display: "flex", alignItems: "center", gap: "0.4rem", flexWrap: "wrap" }}>
-                      <strong style={{ color: "var(--text-primary)", fontSize: "0.82rem" }}>{shape.label}</strong>
-                      {shape.id === "standalone" ? (
-                        <span style={{
-                          fontSize: "0.58rem",
-                          fontWeight: 700,
-                          letterSpacing: "0.06em",
-                          textTransform: "uppercase",
-                          color: "var(--border-brand)",
-                          border: "1px solid var(--border-brand)",
-                          borderRadius: "999px",
-                          padding: "0.08rem 0.45rem",
-                        }}>
-                          Recommended
-                        </span>
-                      ) : null}
-                      {!shape.enabled ? (
-                        <span style={{
-                          fontSize: "0.58rem",
-                          fontWeight: 700,
-                          letterSpacing: "0.06em",
-                          textTransform: "uppercase",
-                          color: "var(--text-muted)",
-                          border: "1px solid var(--border)",
-                          borderRadius: "999px",
-                          padding: "0.08rem 0.45rem",
-                        }}>
-                          Coming soon
-                        </span>
-                      ) : null}
-                    </span>
-                    {shape.description ? (
-                      <span style={{
-                        display: "block",
-                        color: "var(--text-muted)",
-                        fontSize: "0.72rem",
-                        lineHeight: 1.45,
-                        marginTop: "0.25rem",
-                      }}>
-                        {shape.description}
-                      </span>
-                    ) : null}
-                  </label>
-                );
-              })}
-            </div>
-          </fieldset>
-
-          {!projectCatalog.isMicroservicesShape && !projectCatalog.isMultiRepoShape ? (
-            <>
-              <label className="input-label" htmlFor="project-type-select" style={{ ...labelAccentStyle, marginTop: "1rem", display: "block" }}>
-                Language / framework
-              </label>
-              <select
-                id="project-type-select"
-                value={projectCatalog.selectedProjectTypeId}
-                onChange={(event) => projectCatalog.setSelectedProjectTypeId(event.target.value)}
-                disabled={projectCatalog.loadingProjectOptions}
-                className="premium-input"
-              >
-                {projectCatalog.projectTypesForShape.map((projectType) => (
-                  <option key={projectType.id} value={projectType.id}>
-                    {projectType.label}
-                  </option>
-                ))}
-              </select>
-              <p style={{ color: "var(--text-muted)", fontSize: "0.72rem", margin: "0.3rem 0 0", lineHeight: 1.4 }}>
-                TypeScript • JavaScript
-              </p>
-
-              <label className="input-label" htmlFor="workflow-recipe-select" style={{ ...labelAccentStyle, marginTop: "1rem", display: "block" }}>
-                Workflow recipe
-              </label>
-              <select
-                id="workflow-recipe-select"
-                value={projectCatalog.selectedWorkflowRecipeId}
-                onChange={(event) => projectCatalog.setSelectedWorkflowRecipeId(event.target.value)}
-                disabled={projectCatalog.loadingProjectOptions}
-                className="premium-input"
-              >
-                {projectCatalog.recipesForSelectedProject.map((recipe) => (
-                  <option key={recipe.id} value={recipe.id}>
-                    {recipe.label}
-                  </option>
-                ))}
-              </select>
-              {projectCatalog.selectedWorkflowRecipe?.description ? (
-                <p style={{ color: "var(--text-muted)", fontSize: "0.75rem", margin: "0.3rem 0 0", lineHeight: 1.5 }}>
-                  {projectCatalog.selectedWorkflowRecipe.description}
-                </p>
-              ) : null}
-            </>
-          ) : (
-            <>
-              {projectCatalog.isMultiRepoShape && form.repoName ? (
-                <p style={{ color: "var(--text-muted)", fontSize: "0.75rem", margin: "0.5rem 0 0.75rem", lineHeight: 1.5 }}>
-                  {`2 separate repos will be created: ${form.repoName}-be and ${form.repoName}-fe`}
-                </p>
-              ) : null}
-
-              {/* Backend service — no container box */}
-              <div style={{ marginTop: "1rem" }}>
-                <span className="cp-section-heading" style={{ fontSize: "0.6rem" }}>Backend service</span>
-                <label className="input-label" htmlFor="backend-project-type-select" style={{ ...labelAccentStyle, display: "block" }}>
-                  Language
-                </label>
-                <select
-                  id="backend-project-type-select"
-                  value={form.backendProjectTypeId}
-                  onChange={(event) => form.setBackendProjectTypeId(event.target.value)}
-                  disabled={projectCatalog.loadingProjectOptions}
-                  className="premium-input"
-                >
-                  {projectCatalog.backendProjectTypes.map((pt) => (
-                    <option key={pt.id} value={pt.id}>{pt.label}</option>
-                  ))}
-                  {projectCatalog.backendProjectTypes.length === 0 ? (
-                    <option value="nestjs">NestJS</option>
-                  ) : null}
-                </select>
-                <label className="input-label" htmlFor="backend-service-name" style={{ ...labelAccentStyle, marginTop: "0.55rem", display: "block" }}>
-                  Service name
-                </label>
-                <input
-                  id="backend-service-name"
-                  value={form.backendServiceName}
-                  onChange={(event) => form.setBackendServiceName(event.target.value)}
-                  placeholder={form.repoName ? `${form.repoName}-backend` : "my-app-backend"}
-                  className="premium-input"
-                />
-                {projectCatalog.isMicroservicesShape ? (
-                  <>
-                    <label className="input-label" htmlFor="backend-service-path" style={{ ...labelAccentStyle, marginTop: "0.55rem", display: "block" }}>
-                      Service path
-                      <HelpTip text="The folder inside the repository where the backend service's code lives. Build commands run from this path, and only changes under it trigger this service's pipeline." />
-                    </label>
-                    <input
-                      id="backend-service-path"
-                      value={form.backendServicePath}
-                      onChange={(event) => form.setBackendServicePath(event.target.value)}
-                      placeholder="backend/"
-                      className="premium-input"
-                    />
-                  </>
-                ) : null}
-              </div>
-
-              {/* Frontend service — no container box */}
-              <div style={{ marginTop: "1.25rem" }}>
-                <span className="cp-section-heading" style={{ fontSize: "0.6rem" }}>Frontend service</span>
-                <label className="input-label" htmlFor="frontend-project-type-select" style={{ ...labelAccentStyle, display: "block" }}>
-                  Language
-                </label>
-                <select
-                  id="frontend-project-type-select"
-                  value={form.frontendProjectTypeId}
-                  onChange={(event) => form.setFrontendProjectTypeId(event.target.value)}
-                  disabled={projectCatalog.loadingProjectOptions}
-                  className="premium-input"
-                >
-                  {projectCatalog.frontendProjectTypes.map((pt) => (
-                    <option key={pt.id} value={pt.id}>{pt.label}</option>
-                  ))}
-                  {projectCatalog.frontendProjectTypes.length === 0 ? (
-                    <option value="nextjs">Next.js</option>
-                  ) : null}
-                </select>
-                <label className="input-label" htmlFor="frontend-service-name" style={{ ...labelAccentStyle, marginTop: "0.55rem", display: "block" }}>
-                  Service name
-                </label>
-                <input
-                  id="frontend-service-name"
-                  value={form.frontendServiceName}
-                  onChange={(event) => form.setFrontendServiceName(event.target.value)}
-                  placeholder={form.repoName ? `${form.repoName}-frontend` : "my-app-frontend"}
-                  className="premium-input"
-                />
-                {projectCatalog.isMicroservicesShape ? (
-                  <>
-                    <label className="input-label" htmlFor="frontend-service-path" style={{ ...labelAccentStyle, marginTop: "0.55rem", display: "block" }}>
-                      Service path
-                      <HelpTip text="The folder inside the repository where the frontend service's code lives. Build commands run from this path, and only changes under it trigger this service's pipeline." />
-                    </label>
-                    <input
-                      id="frontend-service-path"
-                      value={form.frontendServicePath}
-                      onChange={(event) => form.setFrontendServicePath(event.target.value)}
-                      placeholder="frontend/"
-                      className="premium-input"
-                    />
-                  </>
-                ) : null}
-              </div>
-            </>
-          )}
-        </div>
-
-        <p style={{ color: "var(--text-muted)", fontSize: "0.72rem", margin: "1.5rem 0 0" }}>
-          Source: <strong style={{ color: "var(--text-secondary)" }}>cicd-workflow</strong>
-        </p>
-      </aside>
-
       {/* ── Right: form + inline result ─────────────────────────────── */}
       <div className="create-project-main">
 
         {/* Title + project type badge */}
-        <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "1.25rem" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "1.25rem", flexWrap: "wrap" }}>
           <h2 style={{ margin: 0, fontSize: "1.25rem" }}>
             {isExistingMode ? "Add CI/CD to Existing Repo" : "Create Project"}
           </h2>
-          {projectCatalog.selectedProjectType ? (
-            <span style={{
-              fontSize: "0.72rem",
-              fontWeight: 600,
-              letterSpacing: "0.06em",
-              textTransform: "uppercase",
-              padding: "0.2rem 0.65rem",
-              borderRadius: "999px",
-              background: "rgba(88, 166, 255,0.12)",
-              color: "var(--brand)",
-              border: "1px solid rgba(88, 166, 255,0.25)",
-            }}>
-              {projectCatalog.selectedProjectType.label}
-            </span>
-          ) : null}
+          {!projectCatalog.isMicroservicesShape && !projectCatalog.isMultiRepoShape ? (
+            projectCatalog.selectedProjectType ? (
+              <span className="cp-project-type-badge">
+                {projectCatalog.selectedProjectType.label}
+              </span>
+            ) : null
+          ) : (
+            <>
+              {(() => {
+                const backendType = projectCatalog.backendProjectTypes.find(
+                  (pt) => pt.id === form.backendProjectTypeId,
+                );
+                return backendType ? (
+                  <span className="cp-project-type-badge">{backendType.label}</span>
+                ) : null;
+              })()}
+              {(() => {
+                const frontendType = projectCatalog.frontendProjectTypes.find(
+                  (pt) => pt.id === form.frontendProjectTypeId,
+                );
+                return frontendType ? (
+                  <span className="cp-project-type-badge">{frontendType.label}</span>
+                ) : null;
+              })()}
+            </>
+          )}
         </div>
 
         {projectCatalog.loadingProjectOptions ? (
@@ -663,6 +429,260 @@ export function WorkflowSetupTab({
               style={{ overflow: "hidden" }}
               transition={{ duration: 0.28, ease: [0.25, 0.46, 0.45, 0.94] }}
             >
+              {/* Repository shape */}
+              <fieldset data-tour="repo-shape" style={{ border: "none", margin: "0 0 1.5rem", padding: 0, minInlineSize: "auto" }}>
+                <legend className="input-label" style={{ ...labelAccentStyle, padding: 0 }}>
+                  Repository shape
+                </legend>
+                <div className="form-pair-row" style={{ marginTop: "0.35rem", marginBottom: 0 }}>
+                  {projectCatalog.allRepoShapes
+                    // Only offer shapes users can actually pick — hides any
+                    // "coming soon" catalog entries (e.g. monorepo/workspaces).
+                    .filter((shape) => shape.enabled && shape.id !== "monorepo")
+                    .map((shape) => {
+                    const selected = shape.id === projectCatalog.selectedRepoShapeId;
+                    const disabled = !shape.enabled || projectCatalog.loadingProjectOptions;
+                    return (
+                      <label
+                        key={shape.id}
+                        style={{
+                          position: "relative",
+                          display: "block",
+                          padding: "0.6rem 0.75rem",
+                          border: `1px solid ${selected ? "var(--border-brand)" : "var(--border)"}`,
+                          borderRadius: "8px",
+                          background: selected ? "color-mix(in srgb, var(--border-brand) 8%, transparent)" : "transparent",
+                          cursor: disabled ? "not-allowed" : "pointer",
+                          opacity: shape.enabled ? 1 : 0.55,
+                          transition: "border-color 0.15s, background 0.15s",
+                        }}
+                      >
+                        <input
+                          type="radio"
+                          name="repo-shape"
+                          value={shape.id}
+                          checked={selected}
+                          disabled={disabled}
+                          onChange={() => projectCatalog.setSelectedRepoShapeId(shape.id)}
+                          style={{ position: "absolute", opacity: 0, inset: 0, margin: 0, cursor: "inherit" }}
+                        />
+                        <span style={{ display: "flex", alignItems: "center", gap: "0.4rem", flexWrap: "wrap" }}>
+                          <strong style={{ color: "var(--text-primary)", fontSize: "0.82rem" }}>{shape.label}</strong>
+                          {shape.id === "standalone" ? (
+                            <span style={{
+                              fontSize: "0.58rem",
+                              fontWeight: 700,
+                              letterSpacing: "0.06em",
+                              textTransform: "uppercase",
+                              color: "var(--border-brand)",
+                              border: "1px solid var(--border-brand)",
+                              borderRadius: "999px",
+                              padding: "0.08rem 0.45rem",
+                            }}>
+                              Recommended
+                            </span>
+                          ) : null}
+                          {!shape.enabled ? (
+                            <span style={{
+                              fontSize: "0.58rem",
+                              fontWeight: 700,
+                              letterSpacing: "0.06em",
+                              textTransform: "uppercase",
+                              color: "var(--text-muted)",
+                              border: "1px solid var(--border)",
+                              borderRadius: "999px",
+                              padding: "0.08rem 0.45rem",
+                            }}>
+                              Coming soon
+                            </span>
+                          ) : null}
+                        </span>
+                        {shape.description ? (
+                          <span style={{
+                            display: "block",
+                            color: "var(--text-muted)",
+                            fontSize: "0.72rem",
+                            lineHeight: 1.45,
+                            marginTop: "0.25rem",
+                          }}>
+                            {shape.description}
+                          </span>
+                        ) : null}
+                      </label>
+                    );
+                  })}
+                </div>
+              </fieldset>
+
+              {/* Catalog */}
+              <div>
+                {!projectCatalog.isMicroservicesShape && !projectCatalog.isMultiRepoShape ? (
+                  <div className="form-pair-row" style={{ gap: "1rem" }}>
+                    <div>
+                      <label className="input-label" htmlFor="project-type-select" style={labelAccentStyle}>
+                        Language / framework
+                      </label>
+                      <select
+                        id="project-type-select"
+                        value={projectCatalog.selectedProjectTypeId}
+                        onChange={(event) => projectCatalog.setSelectedProjectTypeId(event.target.value)}
+                        disabled={projectCatalog.loadingProjectOptions}
+                        className="premium-input"
+                      >
+                        {projectCatalog.projectTypesForShape.map((projectType) => (
+                          <option key={projectType.id} value={projectType.id}>
+                            {projectType.label}
+                          </option>
+                        ))}
+                      </select>
+                      <p style={{ color: "var(--text-muted)", fontSize: "0.72rem", margin: "0.3rem 0 0", lineHeight: 1.4 }}>
+                        TypeScript • JavaScript
+                      </p>
+                    </div>
+
+                    <div>
+                      <label className="input-label" htmlFor="workflow-recipe-select" style={labelAccentStyle}>
+                        Workflow recipe
+                      </label>
+                      <select
+                        id="workflow-recipe-select"
+                        value={projectCatalog.selectedWorkflowRecipeId}
+                        onChange={(event) => projectCatalog.setSelectedWorkflowRecipeId(event.target.value)}
+                        disabled={projectCatalog.loadingProjectOptions}
+                        className="premium-input"
+                      >
+                        {projectCatalog.recipesForSelectedProject.map((recipe) => (
+                          <option key={recipe.id} value={recipe.id}>
+                            {recipe.label}
+                          </option>
+                        ))}
+                      </select>
+                      {projectCatalog.selectedWorkflowRecipe?.description ? (
+                        <p style={{ color: "var(--text-muted)", fontSize: "0.75rem", margin: "0.3rem 0 0", lineHeight: 1.5 }}>
+                          {projectCatalog.selectedWorkflowRecipe.description}
+                        </p>
+                      ) : null}
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    {projectCatalog.isMultiRepoShape && form.repoName ? (
+                      <p style={{ color: "var(--text-muted)", fontSize: "0.75rem", margin: "0.5rem 0 0.75rem", lineHeight: 1.5 }}>
+                        {`2 separate repos will be created: ${form.repoName}-be and ${form.repoName}-fe`}
+                      </p>
+                    ) : null}
+
+                    <section className="service-pair-panel" aria-labelledby="backend-frontend-service-heading">
+                      <div className="service-pair-panel__header">
+                        <div>
+                          <span className="cp-section-heading" id="backend-frontend-service-heading">Backend &amp; Frontend Service</span>
+                          <p className="helper-text">Configure the two services together. The backend uses Render and the frontend uses Vercel.</p>
+                        </div>
+                        <span className="service-pair-panel__badge">2 services</span>
+                      </div>
+
+                      <div className="service-pair-panel__grid" role="group" aria-label="Backend and frontend service settings">
+                      <div className="service-pair-panel__service">
+                      <span className="service-pair-panel__service-title">Backend service</span>
+                      <label className="input-label" htmlFor="backend-project-type-select" style={{ ...labelAccentStyle, display: "block" }}>
+                        Language
+                      </label>
+                      <select
+                        id="backend-project-type-select"
+                        value={form.backendProjectTypeId}
+                        onChange={(event) => form.setBackendProjectTypeId(event.target.value)}
+                        disabled={projectCatalog.loadingProjectOptions}
+                        className="premium-input"
+                      >
+                        {projectCatalog.backendProjectTypes.map((pt) => (
+                          <option key={pt.id} value={pt.id}>{pt.label}</option>
+                        ))}
+                        {projectCatalog.backendProjectTypes.length === 0 ? (
+                          <option value="nestjs">NestJS</option>
+                        ) : null}
+                      </select>
+                      <label className="input-label" htmlFor="backend-service-name" style={{ ...labelAccentStyle, marginTop: "0.55rem", display: "block" }}>
+                        Service name
+                      </label>
+                      <input
+                        id="backend-service-name"
+                        value={form.backendServiceName}
+                        onChange={(event) => form.setBackendServiceName(event.target.value)}
+                        placeholder={form.repoName ? `${form.repoName}-backend` : "my-app-backend"}
+                        className="premium-input"
+                      />
+                      {projectCatalog.isMicroservicesShape ? (
+                        <>
+                          <label className="input-label" htmlFor="backend-service-path" style={{ ...labelAccentStyle, marginTop: "0.55rem", display: "block" }}>
+                            Service path
+                            <HelpTip text="The folder inside the repository where the backend service's code lives. Build commands run from this path, and only changes under it trigger this service's pipeline." />
+                          </label>
+                          <input
+                            id="backend-service-path"
+                            value={form.backendServicePath}
+                            onChange={(event) => form.setBackendServicePath(event.target.value)}
+                            placeholder="backend/"
+                            className="premium-input"
+                          />
+                        </>
+                      ) : null}
+                      </div>
+
+                      <div className="service-pair-panel__service">
+                      <span className="service-pair-panel__service-title">Frontend service</span>
+                      <label className="input-label" htmlFor="frontend-project-type-select" style={{ ...labelAccentStyle, display: "block" }}>
+                        Language
+                      </label>
+                      <select
+                        id="frontend-project-type-select"
+                        value={form.frontendProjectTypeId}
+                        onChange={(event) => form.setFrontendProjectTypeId(event.target.value)}
+                        disabled={projectCatalog.loadingProjectOptions}
+                        className="premium-input"
+                      >
+                        {projectCatalog.frontendProjectTypes.map((pt) => (
+                          <option key={pt.id} value={pt.id}>{pt.label}</option>
+                        ))}
+                        {projectCatalog.frontendProjectTypes.length === 0 ? (
+                          <option value="nextjs">Next.js</option>
+                        ) : null}
+                      </select>
+                      <label className="input-label" htmlFor="frontend-service-name" style={{ ...labelAccentStyle, marginTop: "0.55rem", display: "block" }}>
+                        Service name
+                      </label>
+                      <input
+                        id="frontend-service-name"
+                        value={form.frontendServiceName}
+                        onChange={(event) => form.setFrontendServiceName(event.target.value)}
+                        placeholder={form.repoName ? `${form.repoName}-frontend` : "my-app-frontend"}
+                        className="premium-input"
+                      />
+                      {projectCatalog.isMicroservicesShape ? (
+                        <>
+                          <label className="input-label" htmlFor="frontend-service-path" style={{ ...labelAccentStyle, marginTop: "0.55rem", display: "block" }}>
+                            Service path
+                            <HelpTip text="The folder inside the repository where the frontend service's code lives. Build commands run from this path, and only changes under it trigger this service's pipeline." />
+                          </label>
+                          <input
+                            id="frontend-service-path"
+                            value={form.frontendServicePath}
+                            onChange={(event) => form.setFrontendServicePath(event.target.value)}
+                            placeholder="frontend/"
+                            className="premium-input"
+                          />
+                        </>
+                      ) : null}
+                      </div>
+                      </div>
+                    </section>
+                  </>
+                )}
+              </div>
+
+              <p style={{ color: "var(--text-muted)", fontSize: "0.72rem", margin: "1.5rem 0 0" }}>
+                Source: <strong style={{ color: "var(--text-secondary)" }}>cicd-workflow</strong>
+              </p>
+
               <label className="input-label" style={labelAccentStyle}>
                 Repository owner
               </label>

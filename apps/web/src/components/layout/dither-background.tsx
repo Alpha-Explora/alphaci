@@ -34,7 +34,13 @@ const BAYER_8 = [
 // Screen pixels per dither cell. Larger = chunkier / more retro, cheaper to draw.
 const CELL = 7;
 
-export function DitherBackground() {
+interface DitherBackgroundProps {
+  className?: string;
+}
+
+export function DitherBackground({
+  className = "auth-dither-background",
+}: Readonly<DitherBackgroundProps>) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const { theme } = useTheme();
 
@@ -162,7 +168,7 @@ export function DitherBackground() {
   return (
     <canvas
       ref={canvasRef}
-      className="auth-dither-background"
+      className={className}
       aria-hidden="true"
     />
   );
