@@ -11732,6 +11732,7 @@ a.ov-stat-mini:hover .ov-stat-mini-num {
 .repo-entry-list {
   display: flex;
   flex-direction: column;
+  background: rgba(17, 17, 22, 0.45);
   border: 1px solid var(--border-soft);
   border-radius: var(--radius-card);
   overflow: hidden;

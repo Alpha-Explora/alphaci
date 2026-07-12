@@ -568,12 +568,8 @@ describe("Project env provisioning UI", () => {
 
     const rendered = render(
       <WorkflowCurrentTab
-        history={[]}
         latestResult={null}
-        loadingHistory={false}
         loadingProjects={false}
-        onCopyYaml={jest.fn()}
-        onDownloadYaml={jest.fn()}
         onOpenSetup={jest.fn()}
         projects={[provisionedProject, frontendProject]}
       />,
@@ -608,72 +604,6 @@ describe("Project env provisioning UI", () => {
     expect(
       rendered.container.querySelector(".project-detail-panel")?.textContent,
     ).not.toContain("orders-api");
-  });
-
-  it("keeps the project list rail visible and swaps only the right column when switching to History", () => {
-    mockCapabilities(true);
-    mockEnvHook();
-
-    const rendered = render(
-      <WorkflowCurrentTab
-        history={[
-          {
-            id: "history-1",
-            createdAt: "2026-06-12T00:00:00.000Z",
-            templateId: "frontend-react",
-            templateName: "React CI",
-            stack: "react",
-            serviceName: "orders-web",
-            outputFileName: "frontend.yml",
-            sourceWorkflowFile: "workflow-templates/frontend-react.yml",
-            sourcePropertiesFile:
-              "workflow-templates/frontend-react.properties.json",
-            lineCount: 12,
-            yaml: "name: CI\n",
-          },
-        ]}
-        latestResult={null}
-        loadingHistory={false}
-        loadingProjects={false}
-        onCopyYaml={jest.fn()}
-        onDownloadYaml={jest.fn()}
-        onOpenSetup={jest.fn()}
-        projects={[provisionedProject]}
-      />,
-    );
-    root = rendered.root;
-
-    expect(rendered.container.querySelector(".project-list")).not.toBeNull();
-    expect(
-      rendered.container.querySelector(".project-detail-panel"),
-    ).not.toBeNull();
-
-    act(() => {
-      rendered.container
-        .querySelector<HTMLButtonElement>("#subtab-history")!
-        .click();
-    });
-
-    // The rail (search box + project list) stays mounted and unchanged...
-    expect(rendered.container.querySelector(".project-list")).not.toBeNull();
-    expect(
-      rendered.container.querySelector(".project-list-item"),
-    ).not.toBeNull();
-    // ...while only the right column swaps to the history log.
-    expect(
-      rendered.container.querySelector(".project-detail-panel"),
-    ).toBeNull();
-    expect(rendered.container.textContent).toContain("React CI");
-
-    act(() => {
-      rendered.container
-        .querySelector<HTMLButtonElement>("#subtab-projects")!
-        .click();
-    });
-
-    expect(
-      rendered.container.querySelector(".project-detail-panel"),
-    ).not.toBeNull();
   });
 
   it("loads the project overview and renders control-center tabs with empty states", async () => {
@@ -729,12 +659,8 @@ describe("Project env provisioning UI", () => {
 
     const rendered = render(
       <WorkflowCurrentTab
-        history={[]}
         latestResult={null}
-        loadingHistory={false}
         loadingProjects={false}
-        onCopyYaml={jest.fn()}
-        onDownloadYaml={jest.fn()}
         onOpenSetup={jest.fn()}
         projects={[provisionedProject]}
       />,
@@ -818,12 +744,8 @@ describe("Project env provisioning UI", () => {
 
     const rendered = render(
       <WorkflowCurrentTab
-        history={[]}
         latestResult={null}
-        loadingHistory={false}
         loadingProjects={false}
-        onCopyYaml={jest.fn()}
-        onDownloadYaml={jest.fn()}
         onOpenSetup={jest.fn()}
         projects={[provisionedProject]}
       />,
@@ -905,12 +827,8 @@ describe("Project env provisioning UI", () => {
 
     const rendered = render(
       <WorkflowCurrentTab
-        history={[]}
         latestResult={null}
-        loadingHistory={false}
         loadingProjects={false}
-        onCopyYaml={jest.fn()}
-        onDownloadYaml={jest.fn()}
         onOpenSetup={jest.fn()}
         projects={[provisionedProject]}
       />,
@@ -985,12 +903,8 @@ describe("Project env provisioning UI", () => {
 
     const rendered = render(
       <WorkflowCurrentTab
-        history={[]}
         latestResult={null}
-        loadingHistory={false}
         loadingProjects={false}
-        onCopyYaml={jest.fn()}
-        onDownloadYaml={jest.fn()}
         onOpenSetup={jest.fn()}
         projects={[provisionedProject]}
       />,
@@ -1071,12 +985,8 @@ describe("Project env provisioning UI", () => {
 
     const rendered = render(
       <WorkflowCurrentTab
-        history={[]}
         latestResult={null}
-        loadingHistory={false}
         loadingProjects={false}
-        onCopyYaml={jest.fn()}
-        onDownloadYaml={jest.fn()}
         onOpenSetup={jest.fn()}
         projects={[provisionedProject]}
       />,
@@ -1130,12 +1040,8 @@ describe("Project env provisioning UI", () => {
 
     const rendered = render(
       <WorkflowCurrentTab
-        history={[]}
         latestResult={null}
-        loadingHistory={false}
         loadingProjects={false}
-        onCopyYaml={jest.fn()}
-        onDownloadYaml={jest.fn()}
         onOpenSetup={jest.fn()}
         projects={[provisionedProject]}
       />,
@@ -1193,12 +1099,8 @@ describe("Project env provisioning UI", () => {
 
     const rendered = render(
       <WorkflowCurrentTab
-        history={[]}
         latestResult={null}
-        loadingHistory={false}
         loadingProjects={false}
-        onCopyYaml={jest.fn()}
-        onDownloadYaml={jest.fn()}
         onOpenSetup={jest.fn()}
         projects={[provisionedProject]}
       />,
@@ -1263,12 +1165,8 @@ describe("Project env provisioning UI", () => {
 
     const rendered = render(
       <WorkflowCurrentTab
-        history={[]}
         latestResult={null}
-        loadingHistory={false}
         loadingProjects={false}
-        onCopyYaml={jest.fn()}
-        onDownloadYaml={jest.fn()}
         onOpenSetup={jest.fn()}
         projects={[provisionedProject]}
       />,
@@ -1309,12 +1207,8 @@ describe("Project env provisioning UI", () => {
 
     const rendered = render(
       <WorkflowCurrentTab
-        history={[]}
         latestResult={null}
-        loadingHistory={false}
         loadingProjects={false}
-        onCopyYaml={jest.fn()}
-        onDownloadYaml={jest.fn()}
         onOpenSetup={jest.fn()}
         projects={[provisionedProject]}
       />,
@@ -1399,12 +1293,8 @@ describe("Project env provisioning UI", () => {
 
     const rendered = render(
       <WorkflowCurrentTab
-        history={[]}
         latestResult={null}
-        loadingHistory={false}
         loadingProjects={false}
-        onCopyYaml={jest.fn()}
-        onDownloadYaml={jest.fn()}
         onOpenSetup={jest.fn()}
         projects={[provisionedProject]}
       />,
@@ -1463,12 +1353,8 @@ describe("Project env provisioning UI", () => {
 
     const rendered = render(
       <WorkflowCurrentTab
-        history={[]}
         latestResult={null}
-        loadingHistory={false}
         loadingProjects={false}
-        onCopyYaml={jest.fn()}
-        onDownloadYaml={jest.fn()}
         onOpenSetup={jest.fn()}
         projects={[provisionedProject]}
       />,
@@ -1564,12 +1450,8 @@ describe("Project env provisioning UI", () => {
 
     const rendered = render(
       <WorkflowCurrentTab
-        history={[]}
         latestResult={null}
-        loadingHistory={false}
         loadingProjects={false}
-        onCopyYaml={jest.fn()}
-        onDownloadYaml={jest.fn()}
         onOpenSetup={jest.fn()}
         projects={[provisionedProject]}
       />,
@@ -1687,12 +1569,8 @@ describe("Project env provisioning UI", () => {
 
     const rendered = render(
       <WorkflowCurrentTab
-        history={[]}
         latestResult={null}
-        loadingHistory={false}
         loadingProjects={false}
-        onCopyYaml={jest.fn()}
-        onDownloadYaml={jest.fn()}
         onOpenSetup={jest.fn()}
         projects={[provisionedProject]}
       />,
@@ -1759,12 +1637,8 @@ describe("Project env provisioning UI", () => {
 
     const rendered = render(
       <WorkflowCurrentTab
-        history={[]}
         latestResult={null}
-        loadingHistory={false}
         loadingProjects={false}
-        onCopyYaml={jest.fn()}
-        onDownloadYaml={jest.fn()}
         onOpenSetup={jest.fn()}
         projects={[provisionedProject]}
       />,
@@ -1856,12 +1730,8 @@ describe("Project env provisioning UI", () => {
 
     const rendered = render(
       <WorkflowCurrentTab
-        history={[]}
         latestResult={null}
-        loadingHistory={false}
         loadingProjects={false}
-        onCopyYaml={jest.fn()}
-        onDownloadYaml={jest.fn()}
         onOpenSetup={jest.fn()}
         projects={[provisionedProject]}
       />,
@@ -1960,12 +1830,8 @@ describe("Project env provisioning UI", () => {
 
     const rendered = render(
       <WorkflowCurrentTab
-        history={[]}
         latestResult={null}
-        loadingHistory={false}
         loadingProjects={false}
-        onCopyYaml={jest.fn()}
-        onDownloadYaml={jest.fn()}
         onOpenSetup={jest.fn()}
         projects={[provisionedProject]}
       />,
@@ -2057,12 +1923,8 @@ describe("Project env provisioning UI", () => {
 
     const rendered = render(
       <WorkflowCurrentTab
-        history={[]}
         latestResult={null}
-        loadingHistory={false}
         loadingProjects={false}
-        onCopyYaml={jest.fn()}
-        onDownloadYaml={jest.fn()}
         onOpenSetup={jest.fn()}
         projects={[provisionedProject]}
       />,
@@ -2148,12 +2010,8 @@ describe("Project env provisioning UI", () => {
 
     const rendered = render(
       <WorkflowCurrentTab
-        history={[]}
         latestResult={null}
-        loadingHistory={false}
         loadingProjects={false}
-        onCopyYaml={jest.fn()}
-        onDownloadYaml={jest.fn()}
         onOpenSetup={jest.fn()}
         projects={[provisionedProject]}
       />,
@@ -2233,12 +2091,8 @@ describe("Project env provisioning UI", () => {
 
     const overviewErrorRendered = render(
       <WorkflowCurrentTab
-        history={[]}
         latestResult={null}
-        loadingHistory={false}
         loadingProjects={false}
-        onCopyYaml={jest.fn()}
-        onDownloadYaml={jest.fn()}
         onOpenSetup={jest.fn()}
         projects={[provisionedProject]}
       />,
@@ -2285,12 +2139,8 @@ describe("Project env provisioning UI", () => {
 
     const previewErrorRendered = render(
       <WorkflowCurrentTab
-        history={[]}
         latestResult={null}
-        loadingHistory={false}
         loadingProjects={false}
-        onCopyYaml={jest.fn()}
-        onDownloadYaml={jest.fn()}
         onOpenSetup={jest.fn()}
         projects={[provisionedProject]}
       />,
@@ -2348,12 +2198,8 @@ describe("Project env provisioning UI", () => {
 
     const rendered = render(
       <WorkflowCurrentTab
-        history={[]}
         latestResult={null}
-        loadingHistory={false}
         loadingProjects={false}
-        onCopyYaml={jest.fn()}
-        onDownloadYaml={jest.fn()}
         onOpenSetup={jest.fn()}
         projects={[provisionedProject]}
       />,
@@ -2396,12 +2242,8 @@ describe("Project env provisioning UI", () => {
 
     const rendered = render(
       <WorkflowCurrentTab
-        history={[]}
         latestResult={null}
-        loadingHistory={false}
         loadingProjects={false}
-        onCopyYaml={jest.fn()}
-        onDownloadYaml={jest.fn()}
         onOpenSetup={jest.fn()}
         projects={[provisionedProject]}
       />,
@@ -2464,119 +2306,15 @@ describe("Project env provisioning UI", () => {
     );
   });
 
-  it("renders workflow history cards and wires history actions", () => {
-    mockCapabilities(false);
-    mockEnvHook();
-    const onCopyYaml = jest.fn();
-    const onDownloadYaml = jest.fn();
-    const onOpenSetup = jest.fn();
-
-    const rendered = render(
-      <WorkflowCurrentTab
-        history={[
-          {
-            id: "history-1",
-            createdAt: "2026-06-12T00:00:00.000Z",
-            templateId: "frontend-react",
-            templateName: "React CI",
-            stack: "react",
-            serviceName: "orders-web",
-            outputFileName: "frontend.yml",
-            sourceWorkflowFile: "workflow-templates/frontend-react.yml",
-            sourcePropertiesFile:
-              "workflow-templates/frontend-react.properties.json",
-            lineCount: 12,
-            yaml: "name: CI\n",
-          },
-        ]}
-        latestResult={null}
-        loadingHistory={false}
-        loadingProjects={false}
-        onCopyYaml={onCopyYaml}
-        onDownloadYaml={onDownloadYaml}
-        onOpenSetup={onOpenSetup}
-        projects={[]}
-      />,
-    );
-    root = rendered.root;
-
-    act(() => {
-      rendered.container
-        .querySelector<HTMLButtonElement>("#subtab-history")!
-        .click();
-    });
-
-    expect(rendered.container.textContent).toContain("React CI");
-    expect(rendered.container.textContent).toContain("orders-web");
-    expect(rendered.container.textContent).toContain("frontend.yml");
-    expect(rendered.container.textContent).toContain(
-      "workflow-templates/frontend-react.yml",
-    );
-
-    const card = rendered.container.querySelector<HTMLElement>(".repo-card")!;
-    card.getBoundingClientRect = jest.fn(() => ({
-      bottom: 100,
-      height: 100,
-      left: 0,
-      right: 100,
-      top: 0,
-      width: 100,
-      x: 0,
-      y: 0,
-      toJSON: () => ({}),
-    }));
-    act(() => {
-      card.dispatchEvent(
-        new MouseEvent("mousemove", {
-          bubbles: true,
-          clientX: 25,
-          clientY: 50,
-        }),
-      );
-    });
-    expect(card.style.getPropertyValue("--gx")).toBe("0.25");
-    expect(card.style.getPropertyValue("--gy")).toBe("0.5");
-    act(() => {
-      card.dispatchEvent(
-        new MouseEvent("mouseout", {
-          bubbles: true,
-          relatedTarget: document.body,
-        }),
-      );
-    });
-    expect(card.style.getPropertyValue("--gx")).toBe("");
-    expect(card.style.getPropertyValue("--gy")).toBe("");
-
-    act(() => {
-      Array.from(rendered.container.querySelectorAll("button"))
-        .find((button) => button.textContent === "Copy YAML")!
-        .click();
-      Array.from(rendered.container.querySelectorAll("button"))
-        .find((button) => button.textContent === "Download")!
-        .click();
-      Array.from(rendered.container.querySelectorAll("button"))
-        .find((button) => button.textContent === "New")!
-        .click();
-    });
-
-    expect(onCopyYaml).toHaveBeenCalledWith("name: CI\n");
-    expect(onDownloadYaml).toHaveBeenCalledWith("name: CI\n", "frontend.yml");
-    expect(onOpenSetup).toHaveBeenCalledTimes(1);
-  });
-
-  it("shows empty and loading states for project and history panels", () => {
+  it("shows empty and loading states for the projects panel", () => {
     mockCapabilities(false);
     mockEnvHook();
     const onOpenSetup = jest.fn();
 
     const emptyRendered = render(
       <WorkflowCurrentTab
-        history={[]}
         latestResult={null}
-        loadingHistory={false}
         loadingProjects={false}
-        onCopyYaml={jest.fn()}
-        onDownloadYaml={jest.fn()}
         onOpenSetup={onOpenSetup}
         projects={[]}
       />,
@@ -2587,18 +2325,8 @@ describe("Project env provisioning UI", () => {
       "No provisioned projects yet.",
     );
     act(() => {
-      emptyRendered.container
-        .querySelector<HTMLButtonElement>("#subtab-history")!
-        .click();
-    });
-    expect(emptyRendered.container.textContent).toContain(
-      "No generated workflow history yet.",
-    );
-    act(() => {
       Array.from(emptyRendered.container.querySelectorAll("button"))
-        .find(
-          (button) => button.textContent === "Generate your first workflow",
-        )!
+        .find((button) => button.textContent === "Create your first project")!
         .click();
     });
     expect(onOpenSetup).toHaveBeenCalledTimes(1);
@@ -2609,26 +2337,14 @@ describe("Project env provisioning UI", () => {
 
     const loadingRendered = render(
       <WorkflowCurrentTab
-        history={[]}
         latestResult={null}
-        loadingHistory
         loadingProjects
-        onCopyYaml={jest.fn()}
-        onDownloadYaml={jest.fn()}
         onOpenSetup={jest.fn()}
         projects={[]}
       />,
     );
     root = loadingRendered.root;
 
-    expect(
-      loadingRendered.container.querySelectorAll(".skeleton-card"),
-    ).toHaveLength(3);
-    // While projects are loading, only the skeleton grid renders — the
-    // Projects/History toggle is not mounted until loading resolves.
-    expect(
-      loadingRendered.container.querySelector("#subtab-history"),
-    ).toBeNull();
     expect(
       loadingRendered.container.querySelectorAll(".skeleton-card"),
     ).toHaveLength(3);

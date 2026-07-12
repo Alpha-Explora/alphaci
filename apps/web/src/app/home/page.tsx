@@ -1242,31 +1242,18 @@ function HomeDashboardContent() {
                     </Link>
                   </>
                 ) : (
-                  <>
-                    <Link
-                      className="primary-button"
-                      href="/workflows?tab=setup"
-                      style={{
-                        padding: "0.4rem 1.2rem",
-                        fontSize: "0.8rem",
-                        minHeight: "2.2rem",
-                      }}
-                    >
-                      Create project
-                    </Link>
-                    <button
-                      className="ghost-button"
-                      type="button"
-                      onClick={refreshDashboard}
-                      style={{
-                        padding: "0.4rem 1rem",
-                        fontSize: "0.8rem",
-                        minHeight: "2.2rem",
-                      }}
-                    >
-                      Refresh data
-                    </button>
-                  </>
+                  <button
+                    className="ghost-button"
+                    type="button"
+                    onClick={refreshDashboard}
+                    style={{
+                      padding: "0.4rem 1rem",
+                      fontSize: "0.8rem",
+                      minHeight: "2.2rem",
+                    }}
+                  >
+                    Refresh data
+                  </button>
                 )}
               </div>
             </div>
@@ -1314,6 +1301,13 @@ function HomeDashboardContent() {
           variants={sectionVariants}
           initial={prefersReducedMotion ? false : "hidden"}
           animate="visible"
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: "1rem",
+            flexWrap: "wrap",
+          }}
         >
           <div
             className="dash-tab-bar"
@@ -1385,6 +1379,20 @@ function HomeDashboardContent() {
               ),
             )}
           </div>
+
+          {!guest && (
+            <Link
+              className="primary-button"
+              href="/workflows?tab=setup"
+              style={{
+                padding: "0.4rem 1.2rem",
+                fontSize: "0.8rem",
+                minHeight: "2.2rem",
+              }}
+            >
+              Create project
+            </Link>
+          )}
         </motion.div>
 
         {/* ── Tab panels ──────────────────────────────────────────────── */}

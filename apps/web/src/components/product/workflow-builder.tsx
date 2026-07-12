@@ -340,27 +340,6 @@ export function WorkflowBuilder({ guest = false, session, onboardingCompleted }:
     }
   }
 
-  async function copyYaml(yaml: string) {
-    try {
-      if (!navigator.clipboard) throw new Error("Clipboard API unavailable");
-      await navigator.clipboard.writeText(yaml);
-      setStatusMessage("YAML copied to clipboard.");
-    } catch {
-      setStatusMessage("Clipboard copy failed. Copy the YAML manually from the preview.");
-    }
-  }
-
-  function downloadYaml(yaml: string, fileName: string) {
-    const blob = new Blob([yaml], { type: "text/yaml" });
-    const href = URL.createObjectURL(blob);
-    const anchor = document.createElement("a");
-    anchor.href = href;
-    anchor.download = fileName;
-    anchor.click();
-    URL.revokeObjectURL(href);
-    setStatusMessage(`Downloaded ${fileName}`);
-  }
-
   return (
     <MotionConfig reducedMotion={reducedMotion ? "always" : "never"}>
       <GeneratingOverlay isVisible={isCreatingProject} />
@@ -471,12 +450,8 @@ export function WorkflowBuilder({ guest = false, session, onboardingCompleted }:
           ) : null}
           {activeTab === "current" ? (
             <WorkflowCurrentTab
-              history={history.history}
               latestResult={createResult}
-              loadingHistory={history.loadingHistory}
               loadingProjects={projects.loadingProjects}
-              onCopyYaml={guest ? () => { window.location.href = "/signup"; } : (yaml) => void copyYaml(yaml)}
-              onDownloadYaml={guest ? () => { window.location.href = "/signup"; } : downloadYaml}
               onOpenSetup={() => setActiveTab("setup")}
               projects={projects.projects}
             />

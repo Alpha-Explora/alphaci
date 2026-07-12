@@ -39,27 +39,21 @@ import type {
   WorkflowUpdatePullRequestResponse,
   ProvisionedProject,
   WorkflowFileMetadata,
-  WorkflowHistoryItem,
 } from "@/lib/api/contracts";
 import { ProjectEnvPanel } from "./project-env-panel";
 import { DeploymentProvisioningSummary } from "./setup-result-panel";
 import { FlowExplainer } from "./flow-explainer";
 import { HelpTip } from "./help-tip";
 
-import { formatDate, toSourcePath } from "./workflow-builder-utils";
+import { formatDate } from "./workflow-builder-utils";
 
 interface WorkflowCurrentTabProps {
-  history: WorkflowHistoryItem[];
   latestResult: CreateProjectResult | null;
-  loadingHistory: boolean;
   loadingProjects: boolean;
-  onCopyYaml: (yaml: string) => void;
-  onDownloadYaml: (yaml: string, fileName: string) => void;
   onOpenSetup: () => void;
   projects: ProvisionedProject[];
 }
 
-type SubTab = "projects" | "history";
 type ProjectDetailTab =
   | "overview"
   | "workflow"
@@ -864,16 +858,11 @@ function DriftFindingsPanel({
 }
 
 export function WorkflowCurrentTab({
-  history,
   latestResult,
-  loadingHistory,
   loadingProjects,
-  onCopyYaml,
-  onDownloadYaml,
   onOpenSetup,
   projects,
 }: Readonly<WorkflowCurrentTabProps>) {
-  const [subTab, setSubTab] = useState<SubTab>("projects");
   const [projectDetailTab, setProjectDetailTab] =
     useState<ProjectDetailTab>("overview");
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(
@@ -1397,338 +1386,6 @@ export function WorkflowCurrentTab({
     }
   }
 
-  const historyPanelContent = (
-          loadingHistory ? (
-            <div className="repo-grid">
-              {[0, 1, 2].map((i) => (
-                <div
-                  key={i}
-                  className="skeleton-card glass-panel"
-                  style={{
-                    minHeight: "10rem",
-                    background: "rgba(17, 17, 22, 0.3)",
-                    animation: "state-pulse 1.5s infinite",
-                  }}
-                />
-              ))}
-            </div>
-          ) : history.length === 0 ? (
-            <div
-              className="glass-panel"
-              style={{
-                padding: "3rem 1.5rem",
-                textAlign: "center",
-                background: "rgba(17, 17, 22, 0.3)",
-              }}
-            >
-              <p
-                style={{
-                  color: "var(--text-secondary)",
-                  margin: "0 0 1.25rem",
-                  fontSize: "0.88rem",
-                }}
-              >
-                No generated workflow history yet.
-              </p>
-              <button
-                className="primary-button"
-                type="button"
-                onClick={onOpenSetup}
-                style={{
-                  padding: "0.6rem 1.4rem",
-                  fontSize: "0.88rem",
-                  minHeight: "2.5rem",
-                }}
-              >
-                Generate your first workflow
-              </button>
-            </div>
-          ) : (
-            <motion.div
-              className="repo-grid"
-              variants={containerVariants}
-              initial="hidden"
-              animate="show"
-            >
-              {history.map((entry) => (
-                <motion.article
-                  key={entry.id}
-                  variants={cardVariants}
-                  className="repo-card glass-panel hud-glow-card"
-                  style={{
-                    background: "rgba(17, 17, 22, 0.45)",
-                    border: "1px solid var(--border-soft)",
-                    borderRadius: "1.25rem",
-                    padding: "1.25rem",
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: "0.85rem",
-                    transition: "all 0.25s ease",
-                  }}
-                  whileHover={{
-                    y: -3,
-                    borderColor: "rgba(88, 166, 255, 0.3)",
-                    boxShadow:
-                      "var(--shadow-card), 0 0 24px rgba(88, 166, 255, 0.05)",
-                  }}
-                  onMouseMove={(e) => {
-                    const rect = e.currentTarget.getBoundingClientRect();
-                    e.currentTarget.style.setProperty(
-                      "--gx",
-                      String((e.clientX - rect.left) / rect.width),
-                    );
-                    e.currentTarget.style.setProperty(
-                      "--gy",
-                      String((e.clientY - rect.top) / rect.height),
-                    );
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.removeProperty("--gx");
-                    e.currentTarget.style.removeProperty("--gy");
-                  }}
-                >
-                  {/* Header */}
-                  <div
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "start",
-                      gap: "0.5rem",
-                    }}
-                  >
-                    <h3
-                      style={{ fontSize: "1rem", fontWeight: 700, margin: 0 }}
-                    >
-                      {entry.templateName}
-                    </h3>
-                    <p
-                      style={{
-                        fontSize: "0.72rem",
-                        color: "var(--text-muted)",
-                        margin: 0,
-                      }}
-                    >
-                      {formatDate(entry.createdAt)}
-                    </p>
-                  </div>
-
-                  {/* Meta tags: stack + file name */}
-                  <div
-                    style={{
-                      display: "flex",
-                      flexWrap: "wrap",
-                      gap: "0.35rem",
-                    }}
-                  >
-                    {entry.stack && (
-                      <span
-                        className="template-stack-badge"
-                        style={{
-                          fontSize: "0.68rem",
-                          fontWeight: 700,
-                          textTransform: "uppercase",
-                          padding: "0.15rem 0.5rem",
-                          borderRadius: "4px",
-                          background: "rgba(88, 166, 255, 0.1)",
-                          color: "var(--brand)",
-                          border: "1px solid rgba(88, 166, 255, 0.15)",
-                        }}
-                      >
-                        {entry.stack}
-                      </span>
-                    )}
-                    <span
-                      className="project-card-tag"
-                      style={{
-                        fontSize: "0.68rem",
-                        padding: "0.15rem 0.45rem",
-                        borderRadius: "4px",
-                        background: "rgba(255, 255, 255, 0.04)",
-                        color: "var(--text-secondary)",
-                        border: "1px solid var(--border-soft)",
-                        fontFamily: "ui-monospace, monospace",
-                      }}
-                    >
-                      {entry.outputFileName}
-                    </span>
-                  </div>
-
-                  {/* Key-value row */}
-                  <dl
-                    style={{
-                      display: "grid",
-                      gridTemplateColumns: "auto 1fr",
-                      gap: "0.45rem 1rem",
-                      background: "rgba(0,0,0,0.15)",
-                      padding: "0.75rem",
-                      borderRadius: "8px",
-                      border: "1px solid var(--border-subtle)",
-                      fontSize: "0.78rem",
-                      margin: "0.1rem 0",
-                    }}
-                  >
-                    <dt style={{ color: "var(--text-muted)" }}>Service</dt>
-                    <dd
-                      style={{ color: "var(--text-primary)", fontWeight: 600 }}
-                    >
-                      {entry.serviceName}
-                    </dd>
-
-                    {entry.sourceWorkflowFile && (
-                      <>
-                        <dt style={{ color: "var(--text-muted)" }}>Source</dt>
-                        <dd
-                          style={{
-                            color: "var(--text-secondary)",
-                            fontFamily: "ui-monospace, monospace",
-                            fontSize: "0.72rem",
-                            wordBreak: "break-all",
-                          }}
-                        >
-                          {toSourcePath(entry.sourceWorkflowFile)}
-                        </dd>
-                      </>
-                    )}
-                  </dl>
-
-                  {/* Actions */}
-                  <div
-                    style={{
-                      display: "flex",
-                      gap: "0.35rem",
-                      marginTop: "auto",
-                      borderTop: "1px solid var(--border-soft)",
-                      paddingTop: "0.75rem",
-                    }}
-                  >
-                    <button
-                      className="ghost-button"
-                      type="button"
-                      onClick={() => onCopyYaml(entry.yaml)}
-                      style={{
-                        padding: "0.4rem 0.8rem",
-                        fontSize: "0.78rem",
-                        minHeight: "2rem",
-                        borderRadius: "6px",
-                        border: "1px solid var(--border)",
-                        color: "var(--text-secondary)",
-                      }}
-                    >
-                      Copy YAML
-                    </button>
-                    <button
-                      className="ghost-button"
-                      type="button"
-                      onClick={() =>
-                        onDownloadYaml(entry.yaml, entry.outputFileName)
-                      }
-                      style={{
-                        padding: "0.4rem 0.8rem",
-                        fontSize: "0.78rem",
-                        minHeight: "2rem",
-                        borderRadius: "6px",
-                        border: "1px solid var(--border)",
-                        color: "var(--text-secondary)",
-                      }}
-                    >
-                      Download
-                    </button>
-                    <button
-                      className="ghost-button"
-                      type="button"
-                      onClick={onOpenSetup}
-                      style={{
-                        marginLeft: "auto",
-                        padding: "0.4rem 0.8rem",
-                        fontSize: "0.78rem",
-                        minHeight: "2rem",
-                        borderRadius: "6px",
-                        border: "1px solid rgba(88, 166, 255, 0.2)",
-                        color: "var(--brand)",
-                        background: "rgba(88, 166, 255, 0.04)",
-                      }}
-                    >
-                      New
-                    </button>
-                  </div>
-
-                  {/* YAML preview */}
-                  <details style={{ marginTop: "0.25rem" }}>
-                    <summary
-                      style={{
-                        cursor: "pointer",
-                        color: "var(--brand)",
-                        fontWeight: 700,
-                        fontSize: "0.82rem",
-                        outline: "none",
-                        userSelect: "none",
-                      }}
-                    >
-                      Preview YAML config
-                    </summary>
-                    <pre
-                      style={{
-                        marginTop: "0.5rem",
-                        padding: "0.75rem",
-                        background: "rgba(0, 0, 0, 0.35)",
-                        border: "1px solid var(--border-soft)",
-                        borderRadius: "6px",
-                        fontFamily: "ui-monospace, monospace",
-                        fontSize: "0.75rem",
-                        color: "var(--text-secondary)",
-                        overflowX: "auto",
-                        maxHeight: "150px",
-                      }}
-                    >
-                      {entry.yaml}
-                    </pre>
-                  </details>
-                </motion.article>
-              ))}
-            </motion.div>
-          )
-  );
-
-  const subtabBar = (
-      <div
-        className="current-subtab-bar"
-        role="tablist"
-        aria-label="Current tab sections"
-        data-tour="subtab-bar"
-      >
-        {(["projects", "history"] as SubTab[]).map((tab) => (
-          <button
-            key={tab}
-            type="button"
-            role="tab"
-            id={`subtab-${tab}`}
-            aria-controls={`subtab-panel-${tab}`}
-            aria-selected={subTab === tab}
-            onClick={() => setSubTab(tab)}
-            className={`current-subtab-btn${subTab === tab ? " active" : ""}`}
-          >
-            {subTab === tab && (
-              <motion.span
-                layoutId="current-subtab-indicator"
-                className="current-subtab-indicator"
-                transition={{ type: "spring", stiffness: 380, damping: 30 }}
-                aria-hidden="true"
-              />
-            )}
-            <span style={{ position: "relative", zIndex: 1 }}>
-              {tab === "projects" ? "Projects" : "History"}
-            </span>
-            {tab === "projects" && !loadingProjects && projects.length > 0 && (
-              <span className="current-subtab-count">{projects.length}</span>
-            )}
-            {tab === "history" && !loadingHistory && history.length > 0 && (
-              <span className="current-subtab-count">{history.length}</span>
-            )}
-          </button>
-        ))}
-      </div>
-  );
-
   return (
     <motion.section
       className="tab-content-panel"
@@ -1855,14 +1512,6 @@ export function WorkflowCurrentTab({
               ))}
             </div>
           ) : projects.length === 0 ? (
-            <>
-              {subtabBar}
-              <div
-                id={`subtab-panel-${subTab}`}
-                role="tabpanel"
-                aria-labelledby={`subtab-${subTab}`}
-              >
-                {subTab === "projects" ? (
                   <div
                     className="glass-panel"
               style={{
@@ -1929,11 +1578,6 @@ export function WorkflowCurrentTab({
                 Create your first project
               </button>
                   </div>
-                ) : (
-                  historyPanelContent
-                )}
-              </div>
-            </>
           ) : (
             <motion.div
               className="project-workspace"
@@ -2033,16 +1677,9 @@ export function WorkflowCurrentTab({
                   </div>
                 ) : null}
               </aside>
-              {subtabBar}
               </div>
-              <div
-                className="project-detail-column"
-                id={`subtab-panel-${subTab}`}
-                role="tabpanel"
-                aria-labelledby={`subtab-${subTab}`}
-              >
-                {subTab === "projects" ? (
-                  selectedProject ? (
+              <div className="project-detail-column">
+                {selectedProject ? (
                     <motion.article
                       key={selectedProject.id}
                       variants={cardVariants}
@@ -2149,6 +1786,15 @@ export function WorkflowCurrentTab({
                   </p>
                 ) : null}
 
+                {/* Keyed on the sub-tab so only this content fades in on
+                    switch — the project list rail is a sibling outside this
+                    wrapper and never re-animates when you change tabs. */}
+                <motion.div
+                  key={projectDetailTab}
+                  initial={{ opacity: 0, y: 6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.18 }}
+                >
                 {projectDetailTab === "overview" ? (
                   <div
                     style={{
@@ -2815,11 +2461,9 @@ export function WorkflowCurrentTab({
                     </div>
                   </dl>
                 ) : null}
+                </motion.div>
                     </motion.article>
-                  ) : null
-                ) : (
-                  historyPanelContent
-                )}
+                  ) : null}
               </div>
             </motion.div>
           )}
