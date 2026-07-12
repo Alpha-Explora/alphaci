@@ -2273,7 +2273,7 @@ function HomeDashboardContent() {
                               </div>
 
                               <div className="repo-entry-actions">
-                                {provisionedProjectId ? (
+                                {false ? (
                                   <Link
                                     href={`/projects/${provisionedProjectId}`}
                                     className="dash-repo-row-view"
