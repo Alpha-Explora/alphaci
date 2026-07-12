@@ -724,6 +724,17 @@ function HomeDashboardContent() {
   const [confirmDisconnectId, setConfirmDisconnectId] = useState<string | null>(
     null,
   );
+  // Opt-in "also delete the GitHub repo" checkbox + type-to-confirm input,
+  // scoped to whichever row is currently in confirm mode.
+  const [deleteGithubRepoOptIn, setDeleteGithubRepoOptIn] = useState(false);
+  const [confirmRepoNameInput, setConfirmRepoNameInput] = useState("");
+  // Post-disconnect outcome banner. Rendered at the section level (not per
+  // row) since the row itself is removed from `projects` once disconnected.
+  const [disconnectOutcome, setDisconnectOutcome] = useState<{
+    repoFullName: string;
+    kind: "github-deleted" | "github-delete-failed" | "missing-scope";
+    message?: string;
+  } | null>(null);
   const [isSyncing, setIsSyncing] = useState(false);
   const [repositoryActionError, setRepositoryActionError] = useState<
     string | null
@@ -736,7 +747,7 @@ function HomeDashboardContent() {
   // Welcome modal: shown once for new users (onboardingCompleted === false).
   // Local flag dismisses immediately without waiting for a network response.
   const [welcomeDismissed, setWelcomeDismissed] = useState(false);
-  const showProvisionedProjects = false as boolean;
+  const showProvisionedProjects = true as boolean;
 
   function loadHistory() {
     setHistoryLoading(true);
@@ -890,13 +901,47 @@ function HomeDashboardContent() {
     }
   }
 
-  async function handleDisconnect(id: string) {
-    setDisconnectingId(id);
+  function resetDisconnectConfirm() {
+    setConfirmDisconnectId(null);
+    setDeleteGithubRepoOptIn(false);
+    setConfirmRepoNameInput("");
+  }
+
+  async function handleDisconnect(project: ProvisionedProject) {
+    setDisconnectingId(project.id);
     setRepositoryActionError(null);
+    setDisconnectOutcome(null);
     try {
-      await disconnectProject(id);
-      setProjects((prev) => prev.filter((p) => p.id !== id));
-      setConfirmDisconnectId(null);
+      const result = await disconnectProject(
+        project.id,
+        deleteGithubRepoOptIn
+          ? {
+              deleteGithubRepo: true,
+              confirmRepoName: project.repoFullName,
+            }
+          : undefined,
+      );
+      setProjects((prev) => prev.filter((p) => p.id !== project.id));
+      resetDisconnectConfirm();
+      if (deleteGithubRepoOptIn) {
+        if (result.githubRepoDeleted) {
+          setDisconnectOutcome({
+            repoFullName: project.repoFullName,
+            kind: "github-deleted",
+          });
+        } else if (result.githubRepoDeleteError?.code === "missing_scope") {
+          setDisconnectOutcome({
+            repoFullName: project.repoFullName,
+            kind: "missing-scope",
+          });
+        } else {
+          setDisconnectOutcome({
+            repoFullName: project.repoFullName,
+            kind: "github-delete-failed",
+            message: result.githubRepoDeleteError?.message,
+          });
+        }
+      }
     } catch {
       setRepositoryActionError(
         "The project could not be disconnected. Please try again.",
@@ -1556,6 +1601,78 @@ function HomeDashboardContent() {
                         </button>
                       </div>
                     ) : null}
+                    {disconnectOutcome ? (
+                      <div
+                        className={
+                          disconnectOutcome.kind === "github-deleted"
+                            ? undefined
+                            : "error-inline"
+                        }
+                        role="status"
+                        aria-live="polite"
+                        style={
+                          disconnectOutcome.kind === "github-deleted"
+                            ? {
+                                display: "flex",
+                                alignItems: "center",
+                                gap: "0.55rem",
+                                padding: "0.55rem 0.74rem",
+                                borderRadius: "0.84rem",
+                                border: "1px solid rgba(52, 211, 153, 0.3)",
+                                color: "var(--success)",
+                                background: "rgba(52, 211, 153, 0.08)",
+                                fontSize: "0.86rem",
+                                marginTop: "0.75rem",
+                              }
+                            : undefined
+                        }
+                      >
+                        <span className="error-inline-icon" aria-hidden="true">
+                          {disconnectOutcome.kind === "github-deleted"
+                            ? "✓"
+                            : "!"}
+                        </span>
+                        <p className="error-inline-msg">
+                          {disconnectOutcome.kind === "github-deleted" && (
+                            <>
+                              Removed from ALPHACI and the GitHub repository{" "}
+                              <strong>{disconnectOutcome.repoFullName}</strong>{" "}
+                              was deleted.
+                            </>
+                          )}
+                          {disconnectOutcome.kind === "missing-scope" && (
+                            <>
+                              Removed from ALPHACI, but ALPHACI doesn&apos;t
+                              have permission to delete{" "}
+                              <strong>{disconnectOutcome.repoFullName}</strong>{" "}
+                              on GitHub. Log out and reconnect your GitHub
+                              account to grant repository-deletion
+                              permission, then delete the repo from GitHub
+                              directly if still needed.
+                            </>
+                          )}
+                          {disconnectOutcome.kind === "github-delete-failed" && (
+                            <>
+                              Removed from ALPHACI, but{" "}
+                              <strong>{disconnectOutcome.repoFullName}</strong>{" "}
+                              could not be deleted from GitHub
+                              {disconnectOutcome.message
+                                ? `: ${disconnectOutcome.message}`
+                                : "."}{" "}
+                              The repository still exists on GitHub and will
+                              need to be deleted manually.
+                            </>
+                          )}
+                        </p>
+                        <button
+                          type="button"
+                          className="error-retry-btn"
+                          onClick={() => setDisconnectOutcome(null)}
+                        >
+                          Dismiss
+                        </button>
+                      </div>
+                    ) : null}
                     <div className="dash-section-label">
                       <div className="dash-section-label-left">
                         <p
@@ -1679,92 +1796,258 @@ function HomeDashboardContent() {
                                 key={project.id}
                                 className="repo-entry"
                               >
-                                <div className="repo-entry-main">
-                                  <div className="repo-entry-title">
-                                    <GitHubMarkIcon />
-                                    <a
-                                      href={
-                                        project.repoUrl ??
-                                        `https://github.com/${project.repoFullName}`
+                                {confirmDisconnectId === project.id ? (
+                                  <div
+                                    role="group"
+                                    aria-labelledby={`disconnect-confirm-heading-${project.id}`}
+                                    onKeyDown={(e) => {
+                                      if (e.key === "Escape") {
+                                        e.stopPropagation();
+                                        resetDisconnectConfirm();
                                       }
-                                      target="_blank"
-                                      rel="noreferrer"
-                                      className="repo-entry-name"
+                                    }}
+                                    style={{
+                                      display: "flex",
+                                      flexDirection: "column",
+                                      gap: "0.85rem",
+                                      width: "100%",
+                                      background: "rgba(248, 113, 113, 0.05)",
+                                      border:
+                                        "1px solid rgba(248, 113, 113, 0.2)",
+                                      borderRadius: "0.75rem",
+                                      padding: "1rem 1.1rem",
+                                    }}
+                                  >
+                                    <div
+                                      style={{
+                                        display: "flex",
+                                        flexDirection: "column",
+                                        gap: "0.3rem",
+                                      }}
                                     >
-                                      {project.repoFullName.split("/")[1] ??
-                                        project.repoFullName}
-                                    </a>
-                                    <span
-                                      className={projectStatusChipClass(
-                                        project.status,
-                                      )}
-                                    >
-                                      {project.status}
-                                    </span>
-                                    {project.visibility ? (
-                                      <span className="status-chip status-chip-muted">
-                                        {project.visibility}
-                                      </span>
-                                    ) : null}
-                                  </div>
-                                  <p className="repo-entry-desc">
-                                    {project.status === "failed" &&
-                                    project.failureReason
-                                      ? project.failureReason
-                                      : project.serviceName}
-                                  </p>
-                                  <div className="repo-entry-meta">
-                                    <span className="repo-entry-lang">
-                                      <span
-                                        className="repo-entry-lang-dot"
-                                        style={{ background: stack.color }}
-                                        aria-hidden="true"
-                                      />
-                                      {stack.label}
-                                    </span>
-                                    <span className="repo-entry-meta-item">
-                                      {project.workflowPath}
-                                    </span>
-                                    {project.githubCommitSha ? (
-                                      <span className="repo-entry-meta-item">
-                                        {project.githubCommitSha.slice(0, 7)}
-                                      </span>
-                                    ) : null}
-                                  </div>
-                                </div>
+                                      <p
+                                        id={`disconnect-confirm-heading-${project.id}`}
+                                        style={{
+                                          margin: 0,
+                                          fontSize: "0.88rem",
+                                          fontWeight: 700,
+                                          color: "var(--danger)",
+                                        }}
+                                      >
+                                        Remove{" "}
+                                        {project.repoFullName.split("/")[1] ??
+                                          project.repoFullName}{" "}
+                                        from ALPHACI?
+                                      </p>
+                                      <p
+                                        style={{
+                                          margin: 0,
+                                          fontSize: "0.78rem",
+                                          color: "var(--text-muted)",
+                                        }}
+                                      >
+                                        The project is disconnected from
+                                        ALPHACI. The GitHub repository itself
+                                        is kept unless you opt in below.
+                                      </p>
+                                    </div>
 
-                                <div className="repo-entry-actions">
-                                  {confirmDisconnectId === project.id ? (
-                                    <>
-                                      <span className="dash-repo-row-confirm-label">
-                                        Remove from ALPHACI?
+                                    <label
+                                      className="enhancement-option"
+                                      style={{ cursor: "pointer" }}
+                                    >
+                                      <input
+                                        type="checkbox"
+                                        checked={deleteGithubRepoOptIn}
+                                        onChange={(e) => {
+                                          setDeleteGithubRepoOptIn(
+                                            e.target.checked,
+                                          );
+                                          setConfirmRepoNameInput("");
+                                        }}
+                                        aria-describedby={`disconnect-repo-warn-${project.id}`}
+                                      />
+                                      <span
+                                        style={{
+                                          display: "flex",
+                                          flexDirection: "column",
+                                          gap: "0.15rem",
+                                        }}
+                                      >
+                                        <span
+                                          style={{
+                                            fontSize: "0.83rem",
+                                            fontWeight: 600,
+                                            color: "var(--text-primary)",
+                                          }}
+                                        >
+                                          Also delete the GitHub repository
+                                        </span>
+                                        <span
+                                          id={`disconnect-repo-warn-${project.id}`}
+                                          style={{
+                                            fontSize: "0.75rem",
+                                            color: "var(--text-muted)",
+                                          }}
+                                        >
+                                          Permanently deletes{" "}
+                                          {project.repoFullName} on GitHub —
+                                          this cannot be undone.
+                                        </span>
                                       </span>
+                                    </label>
+
+                                    {deleteGithubRepoOptIn ? (
+                                      <div
+                                        style={{
+                                          display: "flex",
+                                          flexDirection: "column",
+                                          gap: "0.4rem",
+                                        }}
+                                      >
+                                        <label
+                                          htmlFor={`confirm-repo-name-${project.id}`}
+                                          style={{
+                                            fontSize: "0.78rem",
+                                            color: "var(--text-secondary)",
+                                          }}
+                                        >
+                                          Type{" "}
+                                          <strong
+                                            style={{
+                                              color: "var(--text-primary)",
+                                              fontFamily:
+                                                "ui-monospace, monospace",
+                                            }}
+                                          >
+                                            {project.repoFullName}
+                                          </strong>{" "}
+                                          to confirm:
+                                        </label>
+                                        <input
+                                          id={`confirm-repo-name-${project.id}`}
+                                          type="text"
+                                          value={confirmRepoNameInput}
+                                          onChange={(e) =>
+                                            setConfirmRepoNameInput(
+                                              e.target.value,
+                                            )
+                                          }
+                                          placeholder={project.repoFullName}
+                                          autoComplete="off"
+                                          autoFocus
+                                          style={{
+                                            background:
+                                              "rgba(17, 17, 22, 0.6)",
+                                            border:
+                                              "1px solid rgba(248, 113, 113, 0.3)",
+                                            borderRadius: "0.5rem",
+                                            padding: "0.5rem 0.75rem",
+                                            fontSize: "0.85rem",
+                                            color: "var(--text-primary)",
+                                            fontFamily:
+                                              "ui-monospace, monospace",
+                                            outline: "none",
+                                            width: "100%",
+                                            maxWidth: "26rem",
+                                            boxSizing: "border-box",
+                                          }}
+                                        />
+                                      </div>
+                                    ) : null}
+
+                                    <div
+                                      style={{ display: "flex", gap: "0.5rem" }}
+                                    >
                                       <button
                                         type="button"
                                         onClick={() =>
-                                          void handleDisconnect(project.id)
+                                          void handleDisconnect(project)
                                         }
                                         disabled={
-                                          disconnectingId === project.id
+                                          disconnectingId === project.id ||
+                                          (deleteGithubRepoOptIn &&
+                                            confirmRepoNameInput !==
+                                              project.repoFullName)
                                         }
                                         className="confirm-btn-danger"
                                       >
                                         {disconnectingId === project.id
                                           ? "Removing..."
-                                          : "Yes, remove"}
+                                          : deleteGithubRepoOptIn
+                                            ? "Delete repo & disconnect"
+                                            : "Yes, remove"}
                                       </button>
                                       <button
                                         type="button"
-                                        onClick={() =>
-                                          setConfirmDisconnectId(null)
-                                        }
+                                        onClick={resetDisconnectConfirm}
                                         className="confirm-btn-neutral"
                                       >
                                         Cancel
                                       </button>
-                                    </>
-                                  ) : (
-                                    <>
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <>
+                                    <div className="repo-entry-main">
+                                      <div className="repo-entry-title">
+                                        <GitHubMarkIcon />
+                                        <a
+                                          href={
+                                            project.repoUrl ??
+                                            `https://github.com/${project.repoFullName}`
+                                          }
+                                          target="_blank"
+                                          rel="noreferrer"
+                                          className="repo-entry-name"
+                                        >
+                                          {project.repoFullName.split(
+                                            "/",
+                                          )[1] ?? project.repoFullName}
+                                        </a>
+                                        <span
+                                          className={projectStatusChipClass(
+                                            project.status,
+                                          )}
+                                        >
+                                          {project.status}
+                                        </span>
+                                        {project.visibility ? (
+                                          <span className="status-chip status-chip-muted">
+                                            {project.visibility}
+                                          </span>
+                                        ) : null}
+                                      </div>
+                                      <p className="repo-entry-desc">
+                                        {project.status === "failed" &&
+                                        project.failureReason
+                                          ? project.failureReason
+                                          : project.serviceName}
+                                      </p>
+                                      <div className="repo-entry-meta">
+                                        <span className="repo-entry-lang">
+                                          <span
+                                            className="repo-entry-lang-dot"
+                                            style={{ background: stack.color }}
+                                            aria-hidden="true"
+                                          />
+                                          {stack.label}
+                                        </span>
+                                        <span className="repo-entry-meta-item">
+                                          {project.workflowPath}
+                                        </span>
+                                        {project.githubCommitSha ? (
+                                          <span className="repo-entry-meta-item">
+                                            {project.githubCommitSha.slice(
+                                              0,
+                                              7,
+                                            )}
+                                          </span>
+                                        ) : null}
+                                      </div>
+                                    </div>
+
+                                    <div className="repo-entry-actions">
                                       <a
                                         href={
                                           project.githubCommitUrl ??
@@ -1798,16 +2081,18 @@ function HomeDashboardContent() {
                                       </a>
                                       <button
                                         type="button"
-                                        onClick={() =>
-                                          setConfirmDisconnectId(project.id)
-                                        }
+                                        onClick={() => {
+                                          setConfirmDisconnectId(project.id);
+                                          setDeleteGithubRepoOptIn(false);
+                                          setConfirmRepoNameInput("");
+                                        }}
                                         className="dash-disconnect-link"
                                       >
                                         Disconnect
                                       </button>
-                                    </>
-                                  )}
-                                </div>
+                                    </div>
+                                  </>
+                                )}
                               </article>
                             );
                           })}

@@ -6,6 +6,8 @@ import type {
   DeploymentTargetSyncResponse,
   DetachDeploymentTargetRequest,
   DetachDeploymentTargetResponse,
+  DisconnectProjectRequest,
+  DisconnectProjectResponse,
   ProjectCiRun,
   ProjectCiRunRerunResponse,
   ProjectCiRunsResponse,
@@ -220,9 +222,13 @@ export async function getDeploymentTargetActions(
   );
 }
 
-export async function disconnectProject(id: string): Promise<void> {
-  await request<{ ok: boolean }>(`/projects/${encodeURIComponent(id)}`, {
+export async function disconnectProject(
+  id: string,
+  options?: DisconnectProjectRequest,
+): Promise<DisconnectProjectResponse> {
+  return request<DisconnectProjectResponse>(`/projects/${encodeURIComponent(id)}`, {
     method: 'DELETE',
+    ...(options ? { body: JSON.stringify(options) } : {}),
   });
 }
 

@@ -214,6 +214,20 @@ export interface DetachDeploymentTargetRequest {
   deleteProviderResource?: boolean;
 }
 
+export interface DisconnectProjectRequest {
+  deleteGithubRepo?: boolean;
+  confirmRepoName?: string;
+}
+
+export interface DisconnectProjectResponse {
+  ok: boolean;
+  githubRepoDeleted?: boolean;
+  githubRepoDeleteError?: {
+    code: "missing_scope" | "not_found" | "other";
+    message: string;
+  };
+}
+
 export interface DetachDeploymentTargetResponse {
   detached: true;
   providerResourceDeleted: boolean;

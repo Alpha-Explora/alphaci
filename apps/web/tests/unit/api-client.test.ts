@@ -1140,7 +1140,9 @@ describe("API client project setup helpers", () => {
         json: async () => ({ orphaned: 1, reachable: 3, total: 4 }),
       });
 
-    await expect(disconnectProject("project/1")).resolves.toBeUndefined();
+    await expect(disconnectProject("project/1")).resolves.toEqual({
+      ok: true,
+    });
     await expect(syncProjects()).resolves.toEqual({
       orphaned: 1,
       reachable: 3,
@@ -1157,6 +1159,90 @@ describe("API client project setup helpers", () => {
       "http://localhost:4000/api/v1/projects/sync",
       expect.objectContaining({ method: "POST" }),
     );
+  });
+
+  it("disconnects a project with deleteGithubRepo opt-in and reports full success", async () => {
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: async () => ({ ok: true, githubRepoDeleted: true }),
+    });
+
+    await expect(
+      disconnectProject("project/1", {
+        deleteGithubRepo: true,
+        confirmRepoName: "acme/project-1",
+      }),
+    ).resolves.toEqual({ ok: true, githubRepoDeleted: true });
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      "http://localhost:4000/api/v1/projects/project%2F1",
+      expect.objectContaining({
+        method: "DELETE",
+        body: JSON.stringify({
+          deleteGithubRepo: true,
+          confirmRepoName: "acme/project-1",
+        }),
+      }),
+    );
+  });
+
+  it("resolves a generic githubRepoDeleteError when GitHub deletion fails", async () => {
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        ok: true,
+        githubRepoDeleted: false,
+        githubRepoDeleteError: {
+          code: "other",
+          message: "GitHub API returned a 500 error.",
+        },
+      }),
+    });
+
+    await expect(
+      disconnectProject("project/1", {
+        deleteGithubRepo: true,
+        confirmRepoName: "acme/project-1",
+      }),
+    ).resolves.toEqual({
+      ok: true,
+      githubRepoDeleted: false,
+      githubRepoDeleteError: {
+        code: "other",
+        message: "GitHub API returned a 500 error.",
+      },
+    });
+  });
+
+  it("resolves a missing_scope githubRepoDeleteError when the GitHub App lacks delete permission", async () => {
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        ok: true,
+        githubRepoDeleted: false,
+        githubRepoDeleteError: {
+          code: "missing_scope",
+          message: "The GitHub App installation is missing delete_repo scope.",
+        },
+      }),
+    });
+
+    await expect(
+      disconnectProject("project/1", {
+        deleteGithubRepo: true,
+        confirmRepoName: "acme/project-1",
+      }),
+    ).resolves.toEqual({
+      ok: true,
+      githubRepoDeleted: false,
+      githubRepoDeleteError: {
+        code: "missing_scope",
+        message: "The GitHub App installation is missing delete_repo scope.",
+      },
+    });
   });
 
   it("loads workflow settings for a project", async () => {
