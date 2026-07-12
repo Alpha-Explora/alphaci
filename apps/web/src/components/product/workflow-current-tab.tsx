@@ -1617,8 +1617,7 @@ export function WorkflowCurrentTab({
                 >
                   When you create one, ALPHACI provisions the repository
                   and commits a workflow that runs through the gated stages
-                  below on every change. A read-only demo project normally
-                  appears here too — open the{" "}
+                  below on every change. Open the{" "}
                   <Link href="/guide" className="inline-link">
                     guide
                   </Link>{" "}
@@ -1706,9 +1705,6 @@ export function WorkflowCurrentTab({
                           {project.serviceName}
                         </span>
                         <span className="project-list-badges">
-                          {project.isExample ? (
-                            <span className="project-demo-badge">Demo</span>
-                          ) : null}
                           <span
                             className={`project-status-badge ${statusVariant(project.status)}`}
                           >
@@ -1763,11 +1759,6 @@ export function WorkflowCurrentTab({
                     <p>{selectedProject.serviceName}</p>
                   </div>
                   <span className="project-detail-header-badges">
-                    {selectedProject.isExample ? (
-                      <span className="project-demo-badge">
-                        Demo · read-only
-                      </span>
-                    ) : null}
                     <span
                       className={`project-status-badge ${statusVariant(selectedProject.status)}`}
                     >
@@ -1775,20 +1766,6 @@ export function WorkflowCurrentTab({
                     </span>
                   </span>
                 </div>
-
-                {selectedProject.isExample ? (
-                  <p className="project-demo-note">
-                    This is a read-only demo project ALPHACI seeds for
-                    every account. It shows how a provisioned project looks end
-                    to end — the gated stages, promotion flow, and deploys
-                    explained in the{" "}
-                    <Link href="/guide#branch-strategy" className="inline-link">
-                      guide
-                    </Link>{" "}
-                    — but it is not connected to a real GitHub repository.
-                    Create your own project to run a live pipeline.
-                  </p>
-                ) : null}
 
                 <div className="project-detail-actions">
                   <Link

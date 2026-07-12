@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { motion, useReducedMotion, AnimatePresence } from "framer-motion";
 
 import { AppNav } from "@/components/layout/app-nav";
@@ -367,8 +367,18 @@ function RunsContent({
   const [collapsedRepos, setCollapsedRepos] = useState<ReadonlySet<string>>(
     new Set(),
   );
+  const hasInitializedCollapse = useRef(false);
 
   const groupedRuns = useMemo(() => groupRunsByProject(runs), [runs]);
+
+  // Keep every repository visible, but start its commit list closed. This
+  // preserves a quiet first view without hiding any connected project.
+  useEffect(() => {
+    if (!hasInitializedCollapse.current && groupedRuns.length > 0) {
+      hasInitializedCollapse.current = true;
+      setCollapsedRepos(new Set(groupedRuns.map((group) => group.repoFullName)));
+    }
+  }, [groupedRuns]);
 
   function toggleRepo(repo: string) {
     setCollapsedRepos((prev) => {

@@ -213,7 +213,6 @@ function ProjectPageContent() {
   const project = overview?.project ?? null;
   const targets = overview?.deploymentTargets.items ?? [];
   const repoFullName = project?.repoFullName ?? null;
-  const isExample = project?.isExample === true;
 
   useEffect(() => {
     if (status === "signed-out") {
@@ -247,10 +246,7 @@ function ProjectPageContent() {
   }, [guest, loadOverview, status]);
 
   useEffect(() => {
-    if (status !== "signed-in" || guest || !repoFullName || isExample) {
-      if (isExample) setLoadingRuns(false);
-      return;
-    }
+    if (status !== "signed-in" || guest || !repoFullName) return;
 
     let active = true;
     const load = async () => {
@@ -280,7 +276,7 @@ function ProjectPageContent() {
       active = false;
       clearInterval(timer);
     };
-  }, [guest, isExample, repoFullName, status]);
+  }, [guest, repoFullName, status]);
 
   async function handleLogout() {
     setIsLoggingOut(true);
@@ -360,7 +356,7 @@ function ProjectPageContent() {
 
       <div id="main-content" className="dash-page-content">
         <motion.div
-          className="workflow-page-header"
+          className="workflow-page-header workflow-page-header--compact project-page-header"
           initial={reduced ? false : { opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.28, ease: EASE_OUT }}
@@ -377,6 +373,10 @@ function ProjectPageContent() {
             </p>
             <div className="workflow-page-title-row">
               <h1 className="workflow-page-title">{repoName}</h1>
+              <div className="workflow-page-studio-badge">
+                <span className="workflow-studio-led" aria-hidden="true" />
+                Project overview
+              </div>
               {project ? (
                 <span
                   className={`project-status-badge ${statusVariant(project.status)}`}
@@ -396,6 +396,23 @@ function ProjectPageContent() {
                 {project.repoFullName} · {project.serviceName}
               </p>
             ) : null}
+          </div>
+          <div
+            className="workflow-page-signal-strip"
+            aria-label="Project workflow model"
+          >
+            <div>
+              <span>Mode</span>
+              <strong>PR-safe updates</strong>
+            </div>
+            <div>
+              <span>Promotion</span>
+              <strong>test &gt; uat &gt; main</strong>
+            </div>
+            <div>
+              <span>Stages</span>
+              <strong>Access, Quality, Package</strong>
+            </div>
           </div>
         </motion.div>
 
@@ -462,16 +479,7 @@ function ProjectPageContent() {
           </div>
         ) : (
           <div style={{ display: "grid", gap: "1.5rem" }}>
-            {isExample ? (
-              <p className="project-demo-note">
-                This is the read-only demo project. It is not connected to a
-                real repository, so hosting services and live runs are not
-                available here.
-              </p>
-            ) : null}
-
-            {!isExample &&
-            envProvisioningEnabled &&
+            {envProvisioningEnabled &&
             project &&
             project.status === "provisioned" ? (
               <section aria-label="Hosting services">
@@ -527,8 +535,7 @@ function ProjectPageContent() {
               </section>
             ) : null}
 
-            {!isExample ? (
-              <section aria-label="Live workflow activity" aria-live="polite">
+            <section aria-label="Live workflow activity" aria-live="polite">
                 <div
                   style={{
                     display: "flex",
@@ -627,7 +634,6 @@ function ProjectPageContent() {
                   </>
                 )}
               </section>
-            ) : null}
           </div>
         )}
       </div>

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import type { RunGroup, StageReport } from "@/lib/api/contracts";
+import type { FriendlyMessage, RunGroup, StageReport } from "@/lib/api/contracts";
 import { StageNode, StageConnector } from "./StageNode";
 import { MessageCard } from "./MessageCard";
 
@@ -13,8 +13,64 @@ interface RunPipelineProps {
   reduced: boolean;
 }
 
+function preferredStage(run: RunGroup): StageReport["stage"] | null {
+  return (
+    run.stages.find((stage) => stage.status === "failure")?.stage ??
+    run.stages.find((stage) => stage.status === "running")?.stage ??
+    null
+  );
+}
+
+function fallbackStageMessage(stage: StageReport): FriendlyMessage {
+  if (stage.status === "failure") {
+    const guidance: Record<StageReport["stage"], { title: string; detail: string; hint: string }> = {
+      access: {
+        title: "Access check failed before details were reported",
+        detail: "ALPHACI received the failed result but GitHub did not provide the failed job output for this commit.",
+        hint: "Open the GitHub workflow, fix the first failed access step, then re-run. Check the ALPHACI_TOKEN secret and GitHub App repository access first.",
+      },
+      quality: {
+        title: "Quality check failed before details were reported",
+        detail: "ALPHACI received the failed result but GitHub did not provide test, lint, typecheck, or scan details for this commit.",
+        hint: "Open the GitHub workflow, fix the first failed quality step, then re-run. New ALPHACI workflows report the failed job name here automatically.",
+      },
+      package: {
+        title: "Build or package check failed before details were reported",
+        detail: "ALPHACI received the failed result but GitHub did not provide the failed build step for this commit.",
+        hint: "Open the GitHub workflow, fix the first failed build or package step, then re-run the workflow.",
+      },
+    };
+    return { severity: "error", ...guidance[stage.stage] };
+  }
+
+  if (stage.status === "pending") {
+    return {
+      severity: "info",
+      title: "This stage has not started",
+      detail: "It is waiting for the earlier workflow stages to finish.",
+      hint: "No action is needed unless an earlier stage fails.",
+    };
+  }
+
+  if (stage.status === "cancelled") {
+    return {
+      severity: "warning",
+      title: "This stage was cancelled",
+      detail: "The workflow stopped before this stage could complete.",
+      hint: "Fix the earlier failed stage, then re-run the workflow.",
+    };
+  }
+
+  return {
+    severity: "success",
+    title: "This stage completed successfully",
+    detail: "GitHub did not send additional details for this completed stage.",
+    hint: "No action is needed.",
+  };
+}
+
 export function RunPipeline({ run, reduced }: RunPipelineProps) {
-  const [expandedStage, setExpandedStage] = useState<StageReport["stage"] | null>(null);
+  const [expandedStage, setExpandedStage] = useState<StageReport["stage"] | null>(() => preferredStage(run));
 
   // Build an ordered map of stages
   const stageMap = new Map(run.stages.map((s) => [s.stage, s]));
@@ -78,19 +134,16 @@ export function RunPipeline({ run, reduced }: RunPipelineProps) {
             <div
               className="runs-messages-panel"
             >
-              {expandedStageData.friendlyMessages.length === 0 ? (
-                <p style={{ margin: 0, fontSize: "0.8rem", color: "var(--text-muted)" }}>
-                  No messages for this stage.
-                </p>
-              ) : (
-                expandedStageData.friendlyMessages.map((msg, i) => (
+              {(expandedStageData.friendlyMessages.length > 0
+                ? expandedStageData.friendlyMessages
+                : [fallbackStageMessage(expandedStageData)]
+              ).map((msg, i) => (
                   <MessageCard
                     key={i}
                     message={msg}
                     githubRunUrl={expandedStageData.githubRunUrl}
                   />
-                ))
-              )}
+                ))}
 
               {/* Raw logs — rendered only when the backend provides them */}
               {expandedStageData.rawLogs && (
