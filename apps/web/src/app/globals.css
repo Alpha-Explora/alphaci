@@ -17572,3 +17572,240 @@ html:not([data-theme="light"]) .dash-shell :is(
     transition: none;
   }
 }
+
+/* ── Commit-first workflow history ─────────────────────────────────────── */
+
+.runs-project-group-body {
+  gap: 0.5rem;
+}
+
+.runs-run-card--commit {
+  display: block;
+  padding: 0;
+  border-color: color-mix(in srgb, var(--run-accent) 20%, var(--border-layer));
+  background: var(--layer-1);
+  box-shadow: none;
+}
+
+.runs-run-card--commit::before {
+  display: none;
+}
+
+.runs-run-card--commit .runs-card-accent {
+  width: 3px;
+  opacity: 0.8;
+}
+
+.runs-run-card--commit:hover {
+  border-color: color-mix(in srgb, var(--run-accent) 38%, var(--border-tile));
+  background: var(--layer-1-hover);
+  box-shadow: 0 10px 24px rgba(10, 10, 14, 0.18);
+}
+
+.runs-commit-row {
+  display: grid;
+  grid-template-columns: auto minmax(11rem, 0.9fr) minmax(12rem, 1.45fr) auto;
+  align-items: center;
+  gap: 0.9rem;
+  width: 100%;
+  min-width: 0;
+  padding: 0.8rem 0.95rem 0.8rem 1.1rem;
+  border: 0;
+  background: transparent;
+  color: var(--text-primary);
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+}
+
+.runs-commit-row:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: -2px;
+}
+
+.runs-commit-status {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.85rem;
+  height: 1.85rem;
+  border: 1px solid;
+  border-radius: 50%;
+  flex: 0 0 1.85rem;
+}
+
+.runs-commit-primary,
+.runs-commit-health {
+  display: grid;
+  gap: 0.22rem;
+  min-width: 0;
+}
+
+.runs-commit-sha {
+  color: var(--text-primary);
+  font-family: ui-monospace, "Cascadia Code", "Fira Code", monospace;
+  font-size: 0.88rem;
+  font-weight: 800;
+  letter-spacing: 0.025em;
+}
+
+.runs-commit-meta {
+  display: flex;
+  gap: 0.55rem;
+  overflow: hidden;
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  line-height: 1.3;
+  white-space: nowrap;
+}
+
+.runs-commit-meta span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.runs-commit-meta span + span::before {
+  content: "·";
+  margin-right: 0.55rem;
+  color: var(--border-strong);
+}
+
+.runs-commit-health strong,
+.runs-commit-health span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.runs-commit-health strong {
+  color: var(--success);
+  font-size: 0.78rem;
+  line-height: 1.2;
+}
+
+.runs-commit-health span {
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  line-height: 1.3;
+}
+
+.runs-commit-health--error strong {
+  color: var(--danger);
+}
+
+.runs-commit-open {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.runs-commit-open svg {
+  transition: transform 0.18s ease;
+}
+
+.runs-run-card--expanded .runs-commit-open {
+  color: var(--brand);
+}
+
+.runs-run-card--expanded .runs-commit-open svg {
+  transform: rotate(90deg);
+}
+
+.runs-workflow-details {
+  overflow: hidden;
+  padding: 0 0.95rem 0.95rem 1.1rem;
+}
+
+.runs-workflow-details > .runs-pipeline-row {
+  margin-top: 0.7rem;
+}
+
+.runs-workflow-details-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.8rem;
+  padding: 0.75rem 0 0;
+  border-top: 1px solid var(--border-soft);
+}
+
+.runs-workflow-details-header > div {
+  display: flex;
+  align-items: baseline;
+  gap: 0.4rem;
+  min-width: 0;
+}
+
+.runs-workflow-details-header span {
+  color: var(--text-muted);
+  font-size: 0.72rem;
+}
+
+.runs-workflow-details-header strong {
+  overflow: hidden;
+  color: var(--text-primary);
+  font-family: ui-monospace, "Cascadia Code", "Fira Code", monospace;
+  font-size: 0.76rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.runs-workflow-github-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: var(--brand);
+  font-size: 0.74rem;
+  font-weight: 700;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.runs-workflow-github-link:hover,
+.runs-workflow-github-link:focus-visible {
+  color: var(--brand-strong);
+  text-decoration: underline;
+}
+
+@media (max-width: 760px) {
+  .runs-commit-row {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+  }
+
+  .runs-commit-health {
+    grid-column: 2 / -1;
+  }
+}
+
+@media (max-width: 520px) {
+  .runs-commit-row {
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 0.65rem;
+    padding: 0.75rem 0.75rem 0.75rem 0.9rem;
+  }
+
+  .runs-commit-open {
+    grid-column: 2;
+  }
+
+  .runs-commit-health {
+    grid-column: 2;
+  }
+
+  .runs-commit-meta span:last-child {
+    display: none;
+  }
+
+  .runs-workflow-details {
+    padding: 0 0.75rem 0.75rem 0.9rem;
+  }
+
+  .runs-workflow-details-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
