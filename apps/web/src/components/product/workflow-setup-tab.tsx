@@ -258,7 +258,7 @@ export function WorkflowSetupTab({
 
         {/* Title + project type badge */}
         <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "1.25rem", flexWrap: "wrap" }}>
-          <h2 style={{ margin: 0, fontSize: "1.25rem" }}>
+          <h2 style={{ margin: 0, fontSize: "1.5rem" }}>
             {isExistingMode ? "Add CI/CD to Existing Repo" : "Create Project"}
           </h2>
           {!projectCatalog.isMicroservicesShape && !projectCatalog.isMultiRepoShape ? (
@@ -467,7 +467,7 @@ export function WorkflowSetupTab({
                           style={{ position: "absolute", opacity: 0, inset: 0, margin: 0, cursor: "inherit" }}
                         />
                         <span style={{ display: "flex", alignItems: "center", gap: "0.4rem", flexWrap: "wrap" }}>
-                          <strong style={{ color: "var(--text-primary)", fontSize: "0.82rem" }}>{shape.label}</strong>
+                          <strong style={{ color: "var(--text-primary)", fontSize: "0.94rem" }}>{shape.label}</strong>
                           {shape.id === "standalone" ? (
                             <span style={{
                               fontSize: "0.58rem",

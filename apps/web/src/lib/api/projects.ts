@@ -27,7 +27,7 @@ import type {
   WorkflowSettingsResponse,
   WorkflowUpdatePullRequestResponse,
 } from "./contracts";
-import { request } from "./request";
+import { getApiBaseUrl, request } from "./request";
 
 export async function setupProject(payload: SetupProjectRequest): Promise<SetupProjectResponse> {
   return request<SetupProjectResponse>("/projects/setup", {
@@ -244,12 +244,37 @@ export interface DeploymentTargetLogsResponse {
   reason?: string;
 }
 
+export interface DeploymentTargetLogsFilters {
+  type?: string;
+  startTime?: string;
+  endTime?: string;
+}
+
+function deploymentTargetLogsQuery(filters?: DeploymentTargetLogsFilters): string {
+  const params = new URLSearchParams();
+  if (filters?.type) params.set("type", filters.type);
+  if (filters?.startTime) params.set("startTime", filters.startTime);
+  if (filters?.endTime) params.set("endTime", filters.endTime);
+  const query = params.toString();
+  return query ? `?${query}` : "";
+}
+
 export async function getDeploymentTargetLogs(
   projectId: string,
   targetId: string,
+  filters?: DeploymentTargetLogsFilters,
 ): Promise<DeploymentTargetLogsResponse> {
   return request<DeploymentTargetLogsResponse>(
-    `/projects/${encodeURIComponent(projectId)}/deployment-targets/${encodeURIComponent(targetId)}/logs`,
+    `/projects/${encodeURIComponent(projectId)}/deployment-targets/${encodeURIComponent(targetId)}/logs${deploymentTargetLogsQuery(filters)}`,
   );
+}
+
+/** Full URL (not just the path) for EventSource, which cannot use fetch's credentials/base-URL plumbing. */
+export function getDeploymentTargetLogsStreamUrl(
+  projectId: string,
+  targetId: string,
+  filters?: DeploymentTargetLogsFilters,
+): string {
+  return `${getApiBaseUrl()}/projects/${encodeURIComponent(projectId)}/deployment-targets/${encodeURIComponent(targetId)}/logs/stream${deploymentTargetLogsQuery(filters)}`;
 }
 

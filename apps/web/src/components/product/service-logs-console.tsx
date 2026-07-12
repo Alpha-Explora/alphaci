@@ -1,14 +1,42 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import type { DeploymentTarget, RunGroup } from "@/lib/api/contracts";
-import { getDeploymentTargetLogs } from "@/lib/api/projects";
+import {
+  getDeploymentTargetLogsStreamUrl,
+  type DeploymentTargetLogsResponse,
+} from "@/lib/api/projects";
 
 export interface LogLine {
   timestamp: string;
   message: string;
   level: string;
+}
+
+const TIME_RANGE_OPTIONS = [
+  { value: "", label: "All time" },
+  { value: "15m", label: "Last 15 minutes" },
+  { value: "1h", label: "Last 1 hour" },
+  { value: "6h", label: "Last 6 hours" },
+  { value: "24h", label: "Last 24 hours" },
+] as const;
+
+const TIME_RANGE_MINUTES: Record<string, number> = {
+  "15m": 15,
+  "1h": 60,
+  "6h": 6 * 60,
+  "24h": 24 * 60,
+};
+
+function timeRangeToWindow(
+  rangeValue: string,
+): { startTime: string; endTime: string } | null {
+  const minutes = TIME_RANGE_MINUTES[rangeValue];
+  if (!minutes) return null;
+  const endTime = new Date();
+  const startTime = new Date(endTime.getTime() - minutes * 60_000);
+  return { startTime: startTime.toISOString(), endTime: endTime.toISOString() };
 }
 
 export function ServiceLogsConsole({
@@ -26,30 +54,53 @@ export function ServiceLogsConsole({
   const [searchQuery, setSearchQuery] = useState("");
   const [source, setSource] = useState<"live" | "simulated" | null>(null);
   const [simulatedReason, setSimulatedReason] = useState<string | null>(null);
+  const [logType, setLogType] = useState("");
+  const [timeRange, setTimeRange] = useState<string>("");
   const consoleEndRef = useRef<HTMLDivElement>(null);
 
-  const loadLogs = useCallback(async () => {
-    try {
-      const res = await getDeploymentTargetLogs(projectId, target.id);
-      setLogs(res.logs);
-      setSource(res.source);
-      setSimulatedReason(res.source === "simulated" ? (res.reason ?? null) : null);
-      setError(null);
-    } catch {
-      setError("Failed to fetch service logs.");
-    } finally {
-      setLoading(false);
-    }
-  }, [projectId, target.id]);
-
+  // Live tail via SSE: the backend pushes a fresh snapshot on its own
+  // interval instead of the browser re-polling over plain HTTP. The
+  // connection is recreated whenever a filter changes, since EventSource
+  // can't change its URL once open — each recreation re-evaluates the
+  // time-range window against "now" at that moment.
   useEffect(() => {
-    void loadLogs();
-    const interval = setInterval(() => {
-      void loadLogs();
-    }, 5000);
+    setLoading(true);
+    setError(null);
 
-    return () => clearInterval(interval);
-  }, [loadLogs]);
+    const url = getDeploymentTargetLogsStreamUrl(projectId, target.id, {
+      ...(logType ? { type: logType } : {}),
+      ...(timeRangeToWindow(timeRange) ?? {}),
+    });
+    const eventSource = new EventSource(url, { withCredentials: true });
+
+    eventSource.onmessage = (event) => {
+      try {
+        const res = JSON.parse(event.data) as DeploymentTargetLogsResponse;
+        setLogs(res.logs);
+        setSource(res.source);
+        setSimulatedReason(
+          res.source === "simulated" ? (res.reason ?? null) : null,
+        );
+        setError(null);
+      } catch {
+        setError("Received a malformed log update.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    eventSource.onerror = () => {
+      // EventSource retries automatically unless the browser has fully
+      // closed the connection (e.g. auth failure) — only surface an error
+      // once retries have been exhausted, not on every transient blip.
+      if (eventSource.readyState === EventSource.CLOSED) {
+        setError("Live log connection closed. Reopen this panel to retry.");
+        setLoading(false);
+      }
+    };
+
+    return () => eventSource.close();
+  }, [projectId, target.id, logType, timeRange]);
 
   useEffect(() => {
     if (consoleEndRef.current) {
@@ -189,6 +240,9 @@ export function ServiceLogsConsole({
           }}
         >
           <select
+            aria-label="Log type"
+            value={logType}
+            onChange={(e) => setLogType(e.target.value)}
             style={{
               background: "rgba(17, 17, 22, 0.6)",
               border: "1px solid rgba(255, 255, 255, 0.1)",
@@ -199,7 +253,30 @@ export function ServiceLogsConsole({
               outline: "none",
             }}
           >
-            <option>All logs</option>
+            <option value="">All logs</option>
+            <option value="build">Build logs</option>
+            <option value="app">App logs</option>
+          </select>
+
+          <select
+            aria-label="Time range"
+            value={timeRange}
+            onChange={(e) => setTimeRange(e.target.value)}
+            style={{
+              background: "rgba(17, 17, 22, 0.6)",
+              border: "1px solid rgba(255, 255, 255, 0.1)",
+              borderRadius: "0.35rem",
+              padding: "0.35rem 0.6rem",
+              fontSize: "0.78rem",
+              color: "var(--text-secondary)",
+              outline: "none",
+            }}
+          >
+            {TIME_RANGE_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
           </select>
 
           <input

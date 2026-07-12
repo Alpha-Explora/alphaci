@@ -1249,7 +1249,7 @@ function HomeDashboardContent() {
                     padding: 0,
                     border: "none",
                     margin: 0,
-                    fontSize: "clamp(1.15rem, 1.9vw, 1.45rem)",
+                    fontSize: "clamp(1.3rem, 2.1vw, 1.65rem)",
                     fontWeight: 700,
                   }}
                 >
