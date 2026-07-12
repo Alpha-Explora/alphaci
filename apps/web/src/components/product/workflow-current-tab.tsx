@@ -206,6 +206,8 @@ function DeploymentTargetsList({
   const [detachConfirmTargetId, setDetachConfirmTargetId] = useState<
     string | null
   >(null);
+  const [deleteProviderResourceConfirmId, setDeleteProviderResourceConfirmId] =
+    useState<string | null>(null);
   const [detachingTargetId, setDetachingTargetId] = useState<string | null>(
     null,
   );
@@ -270,11 +272,24 @@ function DeploymentTargetsList({
     try {
       const response = await syncDeploymentTarget(projectId, target.id);
       onTargetChanged(response.target);
-      setTargetMessage(
-        response.findings.length
-          ? `Local metadata sync completed with ${response.findings.length} finding${response.findings.length === 1 ? "" : "s"}.`
-          : "Local metadata sync completed.",
-      );
+      const findingCount = response.findings.length;
+      if (response.mode === "provider_live") {
+        setTargetMessage(
+          findingCount
+            ? `Live status check completed with ${findingCount} finding${findingCount === 1 ? "" : "s"}.`
+            : "Live status check completed.",
+        );
+      } else {
+        const liveCheckFailed = response.findings.some(
+          (finding) => finding.code === "provider_live_check_failed",
+        );
+        const suffix = liveCheckFailed ? " (live check unavailable)" : "";
+        setTargetMessage(
+          findingCount
+            ? `Local metadata sync completed with ${findingCount} finding${findingCount === 1 ? "" : "s"}.${suffix}`
+            : `Local metadata sync completed.${suffix}`,
+        );
+      }
     } catch {
       setTargetMessage("Unable to sync target metadata.");
     } finally {
@@ -285,21 +300,39 @@ function DeploymentTargetsList({
   const detachTarget = async (target: DeploymentTarget) => {
     if (detachConfirmTargetId !== target.id) {
       setDetachConfirmTargetId(target.id);
+      // Reset any leftover checkbox state from a previously-abandoned confirm
+      // (e.g. switching from one target's detach confirm to another's)
+      // so this target's confirm always opens with the checkbox unchecked.
+      setDeleteProviderResourceConfirmId(null);
       setTargetMessage(
         "Confirm detach to remove this target from ALPHACI only.",
       );
       return;
     }
 
+    const deleteProviderResource = deleteProviderResourceConfirmId === target.id;
     setDetachingTargetId(target.id);
     setTargetMessage(null);
     try {
-      await detachDeploymentTarget(projectId, target.id);
+      const response = await detachDeploymentTarget(projectId, target.id, {
+        deleteProviderResource,
+      });
       onDetached(target.id);
       setDetachConfirmTargetId(null);
-      setTargetMessage(
-        "Target detached from ALPHACI. Provider resource was not deleted.",
-      );
+      setDeleteProviderResourceConfirmId(null);
+      if (response.providerResourceDeleted) {
+        setTargetMessage(
+          `Target detached from ALPHACI and the ${target.provider} resource was deleted.`,
+        );
+      } else if (response.providerDeleteError) {
+        setTargetMessage(
+          `Target detached from ALPHACI, but the ${target.provider} resource could not be deleted automatically (${response.providerDeleteError}). Delete it manually from the provider dashboard${target.dashboardUrl ? ` (${target.dashboardUrl})` : ""}.`,
+        );
+      } else {
+        setTargetMessage(
+          "Target detached from ALPHACI. Provider resource was not deleted.",
+        );
+      }
     } catch {
       setTargetMessage("Unable to detach deployment target.");
     } finally {
@@ -373,6 +406,33 @@ function DeploymentTargetsList({
 
                 {/* Destructive: Detach — visually separated */}
                 <div className="target-actions-destructive">
+                  {isDetachConfirm ? (
+                    <label
+                      style={{
+                        display: "flex",
+                        alignItems: "flex-start",
+                        gap: "0.4rem",
+                        fontSize: "0.76rem",
+                        color: "var(--text-muted)",
+                        maxWidth: "22rem",
+                      }}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={deleteProviderResourceConfirmId === target.id}
+                        onChange={(event) =>
+                          setDeleteProviderResourceConfirmId(
+                            event.target.checked ? target.id : null,
+                          )
+                        }
+                        style={{ marginTop: "0.15rem" }}
+                      />
+                      <span>
+                        Also delete the {target.provider} resource (
+                        {target.providerProjectName}). This cannot be undone.
+                      </span>
+                    </label>
+                  ) : null}
                   <button
                     className={`ghost-button target-action-btn ${isDetachConfirm ? "target-action-btn--confirm" : "target-action-btn--detach"}`}
                     type="button"
@@ -552,6 +612,12 @@ function CiRunsList({
           Live GitHub run sync is not enabled
         </p>
       ) : null}
+      {response.liveGithubEnabled && response.mode === "local_mock" ? (
+        <p className="env-empty-state" style={{ margin: 0 }}>
+          Live sync is enabled, but no GitHub Actions integration is
+          connected yet — the runs below are simulated, not live.
+        </p>
+      ) : null}
       {response.runs.length ? (
         <div className="env-metadata-list">
           {response.runs.map((run) => (
@@ -622,6 +688,12 @@ function DeploymentHistoryList({
       {!response.liveProvidersEnabled ? (
         <p className="env-empty-state" style={{ margin: 0 }}>
           Live deployment sync is not enabled
+        </p>
+      ) : null}
+      {response.liveProvidersEnabled && response.mode === "local_mock" ? (
+        <p className="env-empty-state" style={{ margin: 0 }}>
+          Live sync is enabled, but no provider integration is connected
+          yet — the deployments below are simulated, not live.
         </p>
       ) : null}
       {response.deployments.length ? (
@@ -1984,16 +2056,15 @@ export function WorkflowCurrentTab({
                           <div className="project-detail-grid">
                             <label>
                               <dt>Node version</dt>
-                              <input
+                              <select
                                 aria-label="Node version"
                                 value={workflowSettings.nodeVersion}
-                                onChange={(event) => {
-                                  setWorkflowSettings({
-                                    ...workflowSettings,
-                                    nodeVersion: event.target.value,
-                                  });
-                                }}
-                              />
+                                disabled
+                              >
+                                <option value={workflowSettings.nodeVersion}>
+                                  {workflowSettings.nodeVersion}
+                                </option>
+                              </select>
                             </label>
                             <label>
                               <dt>
@@ -2104,30 +2175,6 @@ export function WorkflowCurrentTab({
                                   {centralWorkflowTagsError}
                                 </p>
                               ) : null}
-                            </label>
-                            <label>
-                              <dt>Workflow recipe</dt>
-                              <input
-                                aria-label="Workflow recipe"
-                                value={workflowSettings.workflowRecipeId ?? ""}
-                                onChange={(event) => {
-                                  setWorkflowSettings({
-                                    ...workflowSettings,
-                                    workflowRecipeId:
-                                      event.target.value || null,
-                                  });
-                                }}
-                              />
-                            </label>
-                            <label>
-                              <dt>Package manager</dt>
-                              <select
-                                aria-label="Package manager"
-                                value={workflowSettings.packageManager}
-                                disabled
-                              >
-                                <option value="npm">npm</option>
-                              </select>
                             </label>
                           </div>
                         ) : (

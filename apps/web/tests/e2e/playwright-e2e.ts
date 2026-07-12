@@ -561,8 +561,7 @@ async function runDashboardAudit(page: Page, baseUrl: string) {
   }
 
   await page.getByRole('tab', { name: 'Workflow' }).click();
-  await expectVisibleText(page, 'Workflow recipe');
-  await expectVisibleText(page, 'Package manager');
+  await expectVisibleText(page, 'Node version');
   await expectVisibleText(page, 'Lint');
   await expectVisibleText(page, 'Unit tests');
   await expectVisibleText(page, 'Build');

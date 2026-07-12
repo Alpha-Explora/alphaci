@@ -1216,7 +1216,7 @@ function HomeDashboardContent() {
               </div>
 
               <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
-                {guest ? (
+                {guest && (
                   <>
                     <Link
                       className="primary-button"
@@ -1241,19 +1241,6 @@ function HomeDashboardContent() {
                       Log in
                     </Link>
                   </>
-                ) : (
-                  <button
-                    className="ghost-button"
-                    type="button"
-                    onClick={refreshDashboard}
-                    style={{
-                      padding: "0.4rem 1rem",
-                      fontSize: "0.8rem",
-                      minHeight: "2.2rem",
-                    }}
-                  >
-                    Refresh data
-                  </button>
                 )}
               </div>
             </div>
@@ -1381,17 +1368,31 @@ function HomeDashboardContent() {
           </div>
 
           {!guest && (
-            <Link
-              className="primary-button"
-              href="/workflows?tab=setup"
-              style={{
-                padding: "0.4rem 1.2rem",
-                fontSize: "0.8rem",
-                minHeight: "2.2rem",
-              }}
-            >
-              Create project
-            </Link>
+            <div style={{ display: "flex", gap: "0.5rem" }}>
+              <button
+                className="ghost-button"
+                type="button"
+                onClick={refreshDashboard}
+                style={{
+                  padding: "0.4rem 1rem",
+                  fontSize: "0.8rem",
+                  minHeight: "2.2rem",
+                }}
+              >
+                Refresh data
+              </button>
+              <Link
+                className="primary-button"
+                href="/workflows?tab=setup"
+                style={{
+                  padding: "0.4rem 1.2rem",
+                  fontSize: "0.8rem",
+                  minHeight: "2.2rem",
+                }}
+              >
+                Create project
+              </Link>
+            </div>
           )}
         </motion.div>
 
