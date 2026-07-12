@@ -12838,7 +12838,7 @@ a.ov-stat-mini:hover .ov-stat-mini-num {
 /* ── Welcome banner: flatter, no outer border box ───────────────────────── */
 .welcome-banner-flat {
   position: relative;
-  padding: 1.5rem 0 1.25rem;
+  padding: 1.5rem 0 0.5rem;
   border-bottom: 1px solid var(--border-soft);
   overflow: hidden;
 }

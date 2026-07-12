@@ -1166,7 +1166,7 @@ function HomeDashboardContent() {
           variants={sectionVariants}
           initial={prefersReducedMotion ? false : "hidden"}
           animate="visible"
-          style={{ marginBottom: "0.75rem" }}
+          style={{ marginBottom: 0 }}
         >
           <div className="welcome-banner-flat-accent" aria-hidden="true" />
 
