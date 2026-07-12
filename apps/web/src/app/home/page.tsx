@@ -1992,19 +1992,14 @@ function HomeDashboardContent() {
                                     <div className="repo-entry-main">
                                       <div className="repo-entry-title">
                                         <GitHubMarkIcon />
-                                        <a
-                                          href={
-                                            project.repoUrl ??
-                                            `https://github.com/${project.repoFullName}`
-                                          }
-                                          target="_blank"
-                                          rel="noreferrer"
+                                        <Link
+                                          href={`/projects/${project.id}`}
                                           className="repo-entry-name"
                                         >
                                           {project.repoFullName.split(
                                             "/",
                                           )[1] ?? project.repoFullName}
-                                        </a>
+                                        </Link>
                                         <span
                                           className={projectStatusChipClass(
                                             project.status,
