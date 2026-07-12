@@ -289,8 +289,7 @@ function ServiceLogsConsole({
   const getCommitText = () => {
     if (latestRun) {
       const sha = latestRun.commitSha?.slice(0, 7) || "";
-      const msg = latestRun.commitMessage || "";
-      return `${sha} ${msg}`;
+      return `Run #${latestRun.runId} on ${latestRun.branch} (${sha})`;
     }
     return "Initial deployment";
   };
