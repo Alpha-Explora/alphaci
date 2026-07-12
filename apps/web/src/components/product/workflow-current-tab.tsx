@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 
+import { ServiceLogsConsole } from "@/components/product/service-logs-console";
 import { useCapabilities } from "@/hooks/use-capabilities";
 import { getCentralWorkflowTags } from "@/lib/api/catalog";
 import {
@@ -212,6 +213,9 @@ function DeploymentTargetsList({
     null,
   );
   const [targetMessage, setTargetMessage] = useState<string | null>(null);
+  const [activeLogTargetId, setActiveLogTargetId] = useState<string | null>(
+    null,
+  );
 
   if (!targets.length) {
     return <p className="env-empty-state">No deployment targets configured.</p>;
@@ -348,107 +352,123 @@ function DeploymentTargetsList({
       <div className="env-metadata-list" data-tour="deployment-targets">
         {targets.map((target) => {
           const isDetachConfirm = detachConfirmTargetId === target.id;
+          const isLogsOpen = activeLogTargetId === target.id;
           return (
-            <div
-              key={target.id}
-              className={`env-metadata-row ${target.status}`}
-              style={{ alignItems: "flex-start" }}
-            >
-              <span
-                style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: "0.2rem",
-                }}
+            <div key={target.id}>
+              <div
+                className={`env-metadata-row ${target.status}`}
+                style={{ alignItems: "flex-start" }}
               >
-                <strong>{target.providerProjectName}</strong>
-                <small>
-                  {target.provider} · {target.slot} · {target.branchName}
-                </small>
-                <small style={{ color: "var(--text-muted)" }}>
-                  Root: {target.rootDirectory || "."} · Build:{" "}
-                  {target.buildCommand || "—"} · Start:{" "}
-                  {target.startCommand || "—"}
-                </small>
-                {target.renderEnvironmentName ? (
-                  <small style={{ color: "var(--text-muted)" }}>
-                    Render env: {target.renderEnvironmentName}
+                <span
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "0.2rem",
+                  }}
+                >
+                  <strong>{target.providerProjectName}</strong>
+                  <small>
+                    {target.provider} · {target.slot} · {target.branchName}
                   </small>
-                ) : null}
-                <small style={{ color: "var(--text-muted)" }}>
-                  ID: {target.providerProjectId}
-                </small>
-              </span>
-
-              {/* Hierarchical action cluster */}
-              <div className="target-actions">
-                {/* Primary: Edit + Sync */}
-                <div className="target-actions-primary">
-                  <button
-                    className="ghost-button target-action-btn"
-                    type="button"
-                    disabled={!managementEnabled}
-                    onClick={() => openEdit(target)}
-                  >
-                    Edit
-                  </button>
-                  <button
-                    className="ghost-button target-action-btn"
-                    type="button"
-                    disabled={
-                      !managementEnabled || syncingTargetId === target.id
-                    }
-                    onClick={() => void runSync(target)}
-                  >
-                    {syncingTargetId === target.id ? "Syncing…" : "Sync"}
-                  </button>
-                </div>
-
-                {/* Destructive: Detach — visually separated */}
-                <div className="target-actions-destructive">
-                  {isDetachConfirm ? (
-                    <label
-                      style={{
-                        display: "flex",
-                        alignItems: "flex-start",
-                        gap: "0.4rem",
-                        fontSize: "0.76rem",
-                        color: "var(--text-muted)",
-                        maxWidth: "22rem",
-                      }}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={deleteProviderResourceConfirmId === target.id}
-                        onChange={(event) =>
-                          setDeleteProviderResourceConfirmId(
-                            event.target.checked ? target.id : null,
-                          )
-                        }
-                        style={{ marginTop: "0.15rem" }}
-                      />
-                      <span>
-                        Also delete the {target.provider} resource (
-                        {target.providerProjectName}). This cannot be undone.
-                      </span>
-                    </label>
+                  <small style={{ color: "var(--text-muted)" }}>
+                    Root: {target.rootDirectory || "."} · Build:{" "}
+                    {target.buildCommand || "—"} · Start:{" "}
+                    {target.startCommand || "—"}
+                  </small>
+                  {target.renderEnvironmentName ? (
+                    <small style={{ color: "var(--text-muted)" }}>
+                      Render env: {target.renderEnvironmentName}
+                    </small>
                   ) : null}
-                  <button
-                    className={`ghost-button target-action-btn ${isDetachConfirm ? "target-action-btn--confirm" : "target-action-btn--detach"}`}
-                    type="button"
-                    disabled={
-                      !managementEnabled || detachingTargetId === target.id
-                    }
-                    onClick={() => void detachTarget(target)}
-                  >
-                    {detachingTargetId === target.id
-                      ? "Detaching…"
-                      : isDetachConfirm
-                        ? "Confirm detach"
-                        : "Detach"}
-                  </button>
+                  <small style={{ color: "var(--text-muted)" }}>
+                    ID: {target.providerProjectId}
+                  </small>
+                </span>
+
+                {/* Hierarchical action cluster */}
+                <div className="target-actions">
+                  {/* Primary: Edit + Sync + Logs */}
+                  <div className="target-actions-primary">
+                    <button
+                      className="ghost-button target-action-btn"
+                      type="button"
+                      disabled={!managementEnabled}
+                      onClick={() => openEdit(target)}
+                    >
+                      Edit
+                    </button>
+                    <button
+                      className="ghost-button target-action-btn"
+                      type="button"
+                      disabled={
+                        !managementEnabled || syncingTargetId === target.id
+                      }
+                      onClick={() => void runSync(target)}
+                    >
+                      {syncingTargetId === target.id ? "Syncing…" : "Sync"}
+                    </button>
+                    <button
+                      className={`ghost-button target-action-btn${isLogsOpen ? " active" : ""}`}
+                      type="button"
+                      onClick={() =>
+                        setActiveLogTargetId((current) =>
+                          current === target.id ? null : target.id,
+                        )
+                      }
+                    >
+                      {isLogsOpen ? "Hide Logs" : "Logs"}
+                    </button>
+                  </div>
+
+                  {/* Destructive: Detach — visually separated */}
+                  <div className="target-actions-destructive">
+                    {isDetachConfirm ? (
+                      <label
+                        style={{
+                          display: "flex",
+                          alignItems: "flex-start",
+                          gap: "0.4rem",
+                          fontSize: "0.76rem",
+                          color: "var(--text-muted)",
+                          maxWidth: "22rem",
+                        }}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={deleteProviderResourceConfirmId === target.id}
+                          onChange={(event) =>
+                            setDeleteProviderResourceConfirmId(
+                              event.target.checked ? target.id : null,
+                            )
+                          }
+                          style={{ marginTop: "0.15rem" }}
+                        />
+                        <span>
+                          Also delete the {target.provider} resource (
+                          {target.providerProjectName}). This cannot be undone.
+                        </span>
+                      </label>
+                    ) : null}
+                    <button
+                      className={`ghost-button target-action-btn ${isDetachConfirm ? "target-action-btn--confirm" : "target-action-btn--detach"}`}
+                      type="button"
+                      disabled={
+                        !managementEnabled || detachingTargetId === target.id
+                      }
+                      onClick={() => void detachTarget(target)}
+                    >
+                      {detachingTargetId === target.id
+                        ? "Detaching…"
+                        : isDetachConfirm
+                          ? "Confirm detach"
+                          : "Detach"}
+                    </button>
+                  </div>
                 </div>
               </div>
+              {isLogsOpen ? (
+                <ServiceLogsConsole projectId={projectId} target={target} />
+              ) : null}
             </div>
           );
         })}

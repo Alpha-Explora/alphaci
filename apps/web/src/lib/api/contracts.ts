@@ -898,7 +898,7 @@ export interface ProjectDeploymentHistoryItem {
 
 export interface ProjectDeploymentsResponse {
   enabled: boolean;
-  mode: "local_mock";
+  mode: "local_mock" | "live";
   liveProvidersEnabled: boolean;
   deployments: ProjectDeploymentHistoryItem[];
 }

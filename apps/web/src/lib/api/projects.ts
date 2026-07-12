@@ -238,11 +238,17 @@ export async function syncProjects(): Promise<{ orphaned: number; reachable: num
   });
 }
 
+export interface DeploymentTargetLogsResponse {
+  logs: Array<{ timestamp: string; message: string; level: string }>;
+  source: "live" | "simulated";
+  reason?: string;
+}
+
 export async function getDeploymentTargetLogs(
   projectId: string,
   targetId: string,
-): Promise<{ logs: Array<{ timestamp: string; message: string; level: string }> }> {
-  return request<{ logs: Array<{ timestamp: string; message: string; level: string }> }>(
+): Promise<DeploymentTargetLogsResponse> {
+  return request<DeploymentTargetLogsResponse>(
     `/projects/${encodeURIComponent(projectId)}/deployment-targets/${encodeURIComponent(targetId)}/logs`,
   );
 }
