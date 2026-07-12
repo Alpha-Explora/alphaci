@@ -1157,7 +1157,7 @@ function HomeDashboardContent() {
         </div>
       )}
 
-      <div id="main-content" className="dash-page-content">
+      <div id="main-content" className="dash-page-content home-dash-content">
         {/* ── Welcome header — flat, no outer panel box ─────────────── */}
         <motion.section
           className="welcome-banner-flat"

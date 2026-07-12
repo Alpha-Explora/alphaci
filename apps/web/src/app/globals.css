@@ -11502,6 +11502,12 @@ a.ov-stat-mini:hover .ov-stat-mini-num {
   gap: 1rem;
 }
 
+/* Home dashboard: tab bar should sit directly under the welcome header with
+   no dead space, so it tightens the shared page gap instead of inheriting it. */
+.home-dash-content {
+  gap: 0.4rem;
+}
+
 /* ── Section label / eyebrow row ─────────────────────────────────────────── */
 .dash-section-label {
   display: flex;
