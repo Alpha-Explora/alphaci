@@ -747,7 +747,7 @@ function HomeDashboardContent() {
   // Welcome modal: shown once for new users (onboardingCompleted === false).
   // Local flag dismisses immediately without waiting for a network response.
   const [welcomeDismissed, setWelcomeDismissed] = useState(false);
-  const showProvisionedProjects = true as boolean;
+  const showProvisionedProjects = false;
 
   function loadHistory() {
     setHistoryLoading(true);
@@ -2215,14 +2215,23 @@ function HomeDashboardContent() {
                               <div className="repo-entry-main">
                                 <div className="repo-entry-title">
                                   <GitHubMarkIcon />
-                                  <a
-                                    href={repo.htmlUrl}
-                                    target="_blank"
-                                    rel="noreferrer"
-                                    className="repo-entry-name"
-                                  >
-                                    {repo.fullName.split("/")[1]}
-                                  </a>
+                                  {provisionedProjectId ? (
+                                    <Link
+                                      href={`/projects/${provisionedProjectId}`}
+                                      className="repo-entry-name"
+                                    >
+                                      {repo.fullName.split("/")[1]}
+                                    </Link>
+                                  ) : (
+                                    <a
+                                      href={repo.htmlUrl}
+                                      target="_blank"
+                                      rel="noreferrer"
+                                      className="repo-entry-name"
+                                    >
+                                      {repo.fullName.split("/")[1]}
+                                    </a>
+                                  )}
                                   <span
                                     className={
                                       repo.private
