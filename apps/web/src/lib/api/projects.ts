@@ -237,3 +237,13 @@ export async function syncProjects(): Promise<{ orphaned: number; reachable: num
     method: 'POST',
   });
 }
+
+export async function getDeploymentTargetLogs(
+  projectId: string,
+  targetId: string,
+): Promise<{ logs: Array<{ timestamp: string; message: string; level: string }> }> {
+  return request<{ logs: Array<{ timestamp: string; message: string; level: string }> }>(
+    `/projects/${encodeURIComponent(projectId)}/deployment-targets/${encodeURIComponent(targetId)}/logs`,
+  );
+}
+
