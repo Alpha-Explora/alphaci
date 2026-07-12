@@ -1179,14 +1179,15 @@ function HomeDashboardContent() {
             }}
           >
             {/* Identity + primary actions (moved up from the old footer row) */}
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                gap: "1.1rem",
-                minWidth: 0,
-              }}
-            >
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "1.1rem",
+                  minWidth: 0,
+                  flex: "1 1 0",
+                }}
+              >
               <div
                 style={{ display: "flex", alignItems: "center", gap: "1rem" }}
               >
@@ -1288,6 +1289,122 @@ function HomeDashboardContent() {
                   </>
                 )}
               </div>
+
+              {/* Dashboard controls live with the welcome content: navigation on
+                  the left and signed-in actions on the right. */}
+              <motion.div
+                custom={1}
+                variants={sectionVariants}
+                initial={prefersReducedMotion ? false : "hidden"}
+                animate="visible"
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  gap: "1rem",
+                  flexWrap: "wrap",
+                  width: "100%",
+                }}
+              >
+                <div
+                  className="dash-tab-bar"
+                  role="tablist"
+                  aria-label="Dashboard sections"
+                  style={{
+                    position: "relative",
+                    display: "flex",
+                    gap: "0.25rem",
+                    padding: "0.25rem",
+                    background: "rgba(17, 17, 22, 0.4)",
+                    border: "1px solid var(--border-soft)",
+                    borderRadius: "0.6rem",
+                    width: "fit-content",
+                  }}
+                >
+                  {(["overview", "repositories", "activity"] as DashTab[]).map(
+                    (tab) => (
+                      <button
+                        key={tab}
+                        type="button"
+                        role="tab"
+                        id={`dash-tab-${tab}`}
+                        aria-controls={`dash-panel-${tab}`}
+                        aria-selected={activeTab === tab}
+                        onClick={() => setActiveTab(tab)}
+                        style={{
+                          position: "relative",
+                          padding: "0.45rem 1.2rem",
+                          border: "none",
+                          background: "transparent",
+                          cursor: "pointer",
+                          transition: "color 0.2s ease",
+                          color:
+                            activeTab === tab
+                              ? "var(--text-primary)"
+                              : "var(--text-secondary)",
+                          zIndex: 1,
+                          fontWeight: 600,
+                          fontSize: "0.85rem",
+                          fontFamily: "inherit",
+                        }}
+                      >
+                        {activeTab === tab && (
+                          <motion.span
+                            layoutId="dash-tab-indicator"
+                            style={{
+                              position: "absolute",
+                              inset: 0,
+                              borderRadius: "0.4rem",
+                              background: "rgba(88, 166, 255, 0.1)",
+                              border: "1px solid rgba(88, 166, 255, 0.3)",
+                              boxShadow: "0 0 12px rgba(88, 166, 255, 0.15)",
+                              zIndex: -1,
+                            }}
+                            transition={{
+                              type: "spring",
+                              stiffness: 380,
+                              damping: 30,
+                            }}
+                          />
+                        )}
+                        {tab === "overview"
+                          ? "Overview"
+                          : tab === "repositories"
+                            ? "Repositories"
+                            : "Activity"}
+                      </button>
+                    ),
+                  )}
+                </div>
+
+                {!guest && (
+                  <div style={{ display: "flex", gap: "0.5rem" }}>
+                    <button
+                      className="ghost-button"
+                      type="button"
+                      onClick={refreshDashboard}
+                      style={{
+                        padding: "0.4rem 1rem",
+                        fontSize: "0.8rem",
+                        minHeight: "2.2rem",
+                      }}
+                    >
+                      Refresh data
+                    </button>
+                    <Link
+                      className="primary-button"
+                      href="/workflows?tab=setup"
+                      style={{
+                        padding: "0.4rem 1.2rem",
+                        fontSize: "0.8rem",
+                        minHeight: "2.2rem",
+                      }}
+                    >
+                      Create project
+                    </Link>
+                  </div>
+                )}
+              </motion.div>
             </div>
 
             {/* Latest run — real pipeline state from /ci/runs */}
@@ -1326,120 +1443,6 @@ function HomeDashboardContent() {
             </p>
           ) : null}
         </motion.section>
-
-        {/* ── Dashboard tab bar ─────────────────────────────────────── */}
-        <motion.div
-          custom={1}
-          variants={sectionVariants}
-          initial={prefersReducedMotion ? false : "hidden"}
-          animate="visible"
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            gap: "1rem",
-            flexWrap: "wrap",
-          }}
-        >
-          <div
-            className="dash-tab-bar"
-            role="tablist"
-            aria-label="Dashboard sections"
-            style={{
-              position: "relative",
-              display: "flex",
-              gap: "0.25rem",
-              padding: "0.25rem",
-              background: "rgba(17, 17, 22, 0.4)",
-              border: "1px solid var(--border-soft)",
-              borderRadius: "0.6rem",
-              width: "fit-content",
-            }}
-          >
-            {(["overview", "repositories", "activity"] as DashTab[]).map(
-              (tab) => (
-                <button
-                  key={tab}
-                  type="button"
-                  role="tab"
-                  id={`dash-tab-${tab}`}
-                  aria-controls={`dash-panel-${tab}`}
-                  aria-selected={activeTab === tab}
-                  onClick={() => setActiveTab(tab)}
-                  style={{
-                    position: "relative",
-                    padding: "0.45rem 1.2rem",
-                    border: "none",
-                    background: "transparent",
-                    cursor: "pointer",
-                    transition: "color 0.2s ease",
-                    color:
-                      activeTab === tab
-                        ? "var(--text-primary)"
-                        : "var(--text-secondary)",
-                    zIndex: 1,
-                    fontWeight: 600,
-                    fontSize: "0.85rem",
-                    fontFamily: "inherit",
-                  }}
-                >
-                  {activeTab === tab && (
-                    <motion.span
-                      layoutId="dash-tab-indicator"
-                      style={{
-                        position: "absolute",
-                        inset: 0,
-                        borderRadius: "0.4rem",
-                        background: "rgba(88, 166, 255, 0.1)",
-                        border: "1px solid rgba(88, 166, 255, 0.3)",
-                        boxShadow: "0 0 12px rgba(88, 166, 255, 0.15)",
-                        zIndex: -1,
-                      }}
-                      transition={{
-                        type: "spring",
-                        stiffness: 380,
-                        damping: 30,
-                      }}
-                    />
-                  )}
-                  {tab === "overview"
-                    ? "Overview"
-                    : tab === "repositories"
-                      ? "Repositories"
-                      : "Activity"}
-                </button>
-              ),
-            )}
-          </div>
-
-          {!guest && (
-            <div style={{ display: "flex", gap: "0.5rem" }}>
-              <button
-                className="ghost-button"
-                type="button"
-                onClick={refreshDashboard}
-                style={{
-                  padding: "0.4rem 1rem",
-                  fontSize: "0.8rem",
-                  minHeight: "2.2rem",
-                }}
-              >
-                Refresh data
-              </button>
-              <Link
-                className="primary-button"
-                href="/workflows?tab=setup"
-                style={{
-                  padding: "0.4rem 1.2rem",
-                  fontSize: "0.8rem",
-                  minHeight: "2.2rem",
-                }}
-              >
-                Create project
-              </Link>
-            </div>
-          )}
-        </motion.div>
 
         {/* ── Tab panels ──────────────────────────────────────────────── */}
         <AnimatePresence mode="wait">
