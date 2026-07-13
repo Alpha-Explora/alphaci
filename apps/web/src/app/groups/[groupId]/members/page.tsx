@@ -33,6 +33,9 @@ function MembersInner({
   canTransferLead: boolean;
 }) {
   const canManage = isGroupManagerRole(group.role);
+  // Only an Admin (Lead/owner) — or a platform admin (canTransferLead) — may
+  // grant the Admin tier; a Delegated lead cannot mint an Admin.
+  const canGrantAdmin = group.role === "admin" || canTransferLead;
   const [inviteOpen, setInviteOpen] = useState(false);
 
   const membersResource = useApiResource<GroupMember[]>(
@@ -84,6 +87,7 @@ function MembersInner({
           members={members}
           invitations={invitations}
           canManage={canManage}
+          canGrantAdmin={canGrantAdmin}
           canTransferLead={canTransferLead}
           currentUserId={currentUserId}
           onMembersChange={(updater) =>

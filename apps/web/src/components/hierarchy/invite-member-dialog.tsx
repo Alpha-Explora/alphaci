@@ -7,15 +7,11 @@ import {
   searchEligibleGroupUsers,
 } from "@/lib/api/client";
 import { ApiError } from "@/lib/api/request";
-import {
-  GROUP_ROLE_LABELS,
-  type GroupInvitation,
-  type InternalUserDirectoryEntry,
-  type InvitableRole,
+import type {
+  GroupInvitation,
+  InternalUserDirectoryEntry,
 } from "@/lib/api/hierarchy-contracts";
 import { FormDialog } from "./primitives";
-
-const INVITABLE_ROLES: InvitableRole[] = ["delegated_lead", "member", "viewer"];
 
 export function InviteMemberDialog({
   open,
@@ -33,7 +29,6 @@ export function InviteMemberDialog({
     useState<InternalUserDirectoryEntry | null>(null);
   const [results, setResults] = useState<InternalUserDirectoryEntry[]>([]);
   const [searching, setSearching] = useState(false);
-  const [role, setRole] = useState<InvitableRole>("member");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -41,21 +36,20 @@ export function InviteMemberDialog({
     setSearch("");
     setSelectedUser(null);
     setResults([]);
-    setRole("member");
     setError(null);
   }
 
   async function handleSubmit() {
-    if (!selectedUser) {
-      setError("An internal user is required.");
+    if (!selectedUser || !selectedUser.hasAccount || !selectedUser.id) {
+      setError("Select an organization member who has an AlphaCI account.");
       return;
     }
     setSubmitting(true);
     setError(null);
     try {
+      // Everyone joins as a Member; a Lead can promote them afterward.
       const invitation = await createGroupInvitation(groupId, {
         inviteeUserId: selectedUser.id,
-        role,
       });
       onInvited(invitation);
       reset();
@@ -73,8 +67,10 @@ export function InviteMemberDialog({
     }
   }
 
+  // Load the GitHub organization roster when the dialog opens, and narrow it as
+  // the user types. An empty search returns the full org list (live mode).
   useEffect(() => {
-    if (!open || selectedUser || search.trim().length < 2) {
+    if (!open || selectedUser) {
       setResults([]);
       return;
     }
@@ -82,7 +78,9 @@ export function InviteMemberDialog({
       setSearching(true);
       void searchEligibleGroupUsers(groupId, search.trim())
         .then(setResults)
-        .catch(() => setError("The internal user directory is unavailable."))
+        .catch(() =>
+          setError("The organization member list is unavailable."),
+        )
         .finally(() => setSearching(false));
     }, 250);
     return () => window.clearTimeout(handle);
@@ -96,16 +94,16 @@ export function InviteMemberDialog({
         onClose();
       }}
       title="Invite member"
-      description="Invite an internal user to this group. They'll join once they accept."
+      description="Pick a member of your GitHub organization. They'll join as a Member once they accept; you can promote them to Lead later."
       submitLabel="Send invitation"
       submitting={submitting}
       error={error}
-      canSubmit={selectedUser !== null}
+      canSubmit={selectedUser !== null && selectedUser.hasAccount}
       onSubmit={handleSubmit}
     >
       <div className="hier-field">
         <label className="hier-field-label" htmlFor="invite-user">
-          Internal user
+          Organization member
         </label>
         <input
           id="invite-user"
@@ -119,22 +117,34 @@ export function InviteMemberDialog({
             setSelectedUser(null);
             setSearch(event.target.value);
           }}
-          placeholder="Search by name, GitHub login, or email"
+          placeholder="Search Alpha-Explora members by name or GitHub login"
           autoComplete="off"
         />
         <span className="hier-field-hint">
           {searching
-            ? "Searching approved internal users…"
-            : "Select an approved internal user."}
+            ? "Loading organization members…"
+            : "Members without an AlphaCI account can't be invited until they sign in."}
         </span>
         {!selectedUser && results.length > 0 && (
-          <div className="hier-panel" role="listbox" aria-label="Matching internal users">
+          <div
+            className="hier-panel"
+            role="listbox"
+            aria-label="Organization members"
+          >
             {results.map((user) => (
               <button
-                key={user.id}
+                key={user.login}
                 type="button"
                 className="hier-row"
+                disabled={!user.hasAccount}
+                title={
+                  user.hasAccount
+                    ? undefined
+                    : "Hasn't signed into AlphaCI yet"
+                }
+                style={user.hasAccount ? undefined : { opacity: 0.5 }}
                 onClick={() => {
+                  if (!user.hasAccount) return;
                   setSelectedUser(user);
                   setResults([]);
                 }}
@@ -142,32 +152,16 @@ export function InviteMemberDialog({
                 <span>{user.name ?? user.login}</span>
                 <span>
                   @{user.login}
-                  {user.email ? ` · ${user.email}` : ""}
+                  {user.hasAccount
+                    ? user.email
+                      ? ` · ${user.email}`
+                      : ""
+                    : " · hasn't signed in yet"}
                 </span>
               </button>
             ))}
           </div>
         )}
-      </div>
-      <div className="hier-field">
-        <label className="hier-field-label" htmlFor="invite-role">
-          Role
-        </label>
-        <select
-          id="invite-role"
-          className="hier-select"
-          value={role}
-          onChange={(event) => setRole(event.target.value as InvitableRole)}
-        >
-          {INVITABLE_ROLES.map((option) => (
-            <option key={option} value={option}>
-              {GROUP_ROLE_LABELS[option]}
-            </option>
-          ))}
-        </select>
-        <span className="hier-field-hint">
-          Lead is assigned only via ownership transfer.
-        </span>
       </div>
     </FormDialog>
   );

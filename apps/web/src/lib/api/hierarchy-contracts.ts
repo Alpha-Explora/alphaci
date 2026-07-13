@@ -158,11 +158,14 @@ export interface TransferGroupRequest {
 }
 
 export interface InternalUserDirectoryEntry {
-  id: string;
+  /** Null when this GitHub org member has never signed into AlphaCI. */
+  id: string | null;
   login: string;
   name: string | null;
   email: string | null;
   avatarUrl: string | null;
+  /** True only when the org member has an AlphaCI account and can be invited. */
+  hasAccount: boolean;
 }
 
 export interface GroupMember {
@@ -199,9 +202,10 @@ export interface GroupInvitation {
   invitedByLogin?: string | null;
 }
 
+// Invitations no longer carry a role: everyone joins as a Member and a Lead
+// promotes them afterward from the members page.
 export interface CreateInvitationRequest {
   inviteeUserId: string;
-  role: InvitableRole;
 }
 
 export interface UpdateMemberRoleRequest {

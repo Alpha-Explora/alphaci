@@ -35,6 +35,7 @@ export function MemberTable({
   members,
   invitations,
   canManage,
+  canGrantAdmin,
   canTransferLead,
   currentUserId,
   onMembersChange,
@@ -45,6 +46,8 @@ export function MemberTable({
   members: GroupMember[];
   invitations: GroupInvitation[];
   canManage: boolean;
+  /** Only an Admin (or platform admin) may grant the Admin/Lead tier. */
+  canGrantAdmin: boolean;
   canTransferLead: boolean;
   currentUserId: string;
   onMembersChange: (updater: (current: GroupMember[]) => GroupMember[]) => void;
@@ -164,6 +167,14 @@ export function MemberTable({
               member.role === "admin" && leadCount <= 1;
             const isSelf = member.userId === currentUserId;
             const removed = member.memberStatus === "removed";
+            // "Admin" (Lead) is only offered when the current user may grant it.
+            // A member who is already an Admin keeps the option so their row
+            // renders their current role correctly.
+            const roleOptions = ROLE_OPTIONS.filter((option) =>
+              option === "admin"
+                ? canGrantAdmin || member.role === "admin"
+                : true,
+            );
             return (
               <div key={member.id} className="hier-row">
                 <div className="hier-row-identity">
@@ -196,7 +207,7 @@ export function MemberTable({
                         )
                       }
                     >
-                      {ROLE_OPTIONS.map((option) => (
+                      {roleOptions.map((option) => (
                         <option key={option} value={option}>
                           {GROUP_ROLE_LABELS[option]}
                         </option>
