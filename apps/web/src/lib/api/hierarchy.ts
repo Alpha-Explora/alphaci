@@ -23,6 +23,7 @@ import type {
   GroupSummary,
   HierarchyRepository,
   HierarchySystem,
+  InternalUserDirectoryEntry,
   MyAssignedRepositoriesResponse,
   MyGroupsResponse,
   PutConfigurationValueRequest,
@@ -93,6 +94,16 @@ export function transferGroup(
 
 export function getGroupMembers(groupId: string): Promise<GroupMember[]> {
   return request<GroupMember[]>(`/groups/${enc(groupId)}/members`);
+}
+
+export function searchEligibleGroupUsers(
+  groupId: string,
+  search: string,
+): Promise<InternalUserDirectoryEntry[]> {
+  const query = new URLSearchParams({ search });
+  return request<InternalUserDirectoryEntry[]>(
+    `/groups/${enc(groupId)}/eligible-users?${query.toString()}`,
+  );
 }
 
 export function createGroupInvitation(

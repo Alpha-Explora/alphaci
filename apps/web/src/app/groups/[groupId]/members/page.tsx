@@ -26,9 +26,11 @@ import {
 function MembersInner({
   group,
   currentUserId,
+  canTransferLead,
 }: {
   group: GroupSummary;
   currentUserId: string;
+  canTransferLead: boolean;
 }) {
   const canManage = isGroupManagerRole(group.role);
   const [inviteOpen, setInviteOpen] = useState(false);
@@ -82,6 +84,7 @@ function MembersInner({
           members={members}
           invitations={invitations}
           canManage={canManage}
+          canTransferLead={canTransferLead}
           currentUserId={currentUserId}
           onMembersChange={(updater) =>
             membersResource.setData((current) => updater(current ?? []))
@@ -142,7 +145,13 @@ function MembersView({ session }: { session: AuthMeResponse }) {
     );
   }
 
-  return <MembersInner group={data} currentUserId={session.user.id} />;
+  return (
+    <MembersInner
+      group={data}
+      currentUserId={session.user.id}
+      canTransferLead={session.platformRole != null}
+    />
+  );
 }
 
 export default function GroupMembersPage() {

@@ -5,6 +5,7 @@ import { useMemo, useState } from "react";
 import {
   removeGroupMember,
   revokeGroupInvitation,
+  transferGroup,
   updateGroupMemberRole,
 } from "@/lib/api/client";
 import {
@@ -34,6 +35,7 @@ export function MemberTable({
   members,
   invitations,
   canManage,
+  canTransferLead,
   currentUserId,
   onMembersChange,
   onInvitationsChange,
@@ -43,6 +45,7 @@ export function MemberTable({
   members: GroupMember[];
   invitations: GroupInvitation[];
   canManage: boolean;
+  canTransferLead: boolean;
   currentUserId: string;
   onMembersChange: (updater: (current: GroupMember[]) => GroupMember[]) => void;
   onInvitationsChange: (
@@ -124,6 +127,29 @@ export function MemberTable({
     }
   }
 
+  async function handleTransferLead(member: GroupMember) {
+    setBusyId(member.id);
+    setError(null);
+    try {
+      await transferGroup(groupId, { newManagerUserId: member.userId });
+      onMembersChange((current) =>
+        current.map((item) => ({
+          ...item,
+          role:
+            item.userId === member.userId
+              ? "admin"
+              : item.role === "admin"
+                ? "delegated_lead"
+                : item.role,
+        })),
+      );
+    } catch {
+      setError("The group Lead could not be transferred.");
+    } finally {
+      setBusyId(null);
+    }
+  }
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
       <section aria-label="Members">
@@ -194,6 +220,16 @@ export function MemberTable({
                       onClick={() => void handleRemove(member)}
                     >
                       Remove
+                    </button>
+                  )}
+                  {canTransferLead && !removed && member.memberStatus === "active" && member.role !== "admin" && (
+                    <button
+                      type="button"
+                      className="hier-btn-sm"
+                      disabled={busyId === member.id}
+                      onClick={() => void handleTransferLead(member)}
+                    >
+                      Make Lead
                     </button>
                   )}
                 </div>

@@ -157,6 +157,14 @@ export interface TransferGroupRequest {
   newManagerUserId: string;
 }
 
+export interface InternalUserDirectoryEntry {
+  id: string;
+  login: string;
+  name: string | null;
+  email: string | null;
+  avatarUrl: string | null;
+}
+
 export interface GroupMember {
   id: string;
   groupId: string;

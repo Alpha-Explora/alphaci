@@ -18,6 +18,7 @@ import type {
 } from "@/lib/api/hierarchy-contracts";
 import { isGroupManagerRole } from "@/lib/api/hierarchy-contracts";
 import { useApiResource } from "@/hooks/use-hierarchy";
+import { useCapabilities } from "@/hooks/use-capabilities";
 import { RepositoryStatusBadge } from "@/components/hierarchy/badges";
 import { AssignDeveloperDialog } from "@/components/hierarchy/assign-developer-dialog";
 import { AssignmentPanel } from "@/components/hierarchy/assignment-panel";
@@ -33,11 +34,15 @@ import {
 type RepoTab = "access" | "configuration";
 
 function AccessTab({
+  groupId,
   repositoryId,
   canManage,
+  githubSyncLive,
 }: {
+  groupId: string;
   repositoryId: string;
   canManage: boolean;
+  githubSyncLive: boolean;
 }) {
   const [assignOpen, setAssignOpen] = useState(false);
   const assignmentsResource = useApiResource<RepositoryAssignment[]>(
@@ -92,7 +97,7 @@ function AccessTab({
         onAssignmentsChange={(updater) =>
           assignmentsResource.setData((current) => updater(current ?? []))
         }
-        assignAction={
+        assignAction={githubSyncLive ? (
           <button
             type="button"
             className="primary-button"
@@ -100,10 +105,15 @@ function AccessTab({
           >
             Assign member
           </button>
-        }
+        ) : (
+          <span className="error-text">
+            Enable live GitHub synchronization before assigning access.
+          </span>
+        )}
       />
       <AssignDeveloperDialog
         open={assignOpen}
+        groupId={groupId}
         repositoryId={repositoryId}
         onClose={() => setAssignOpen(false)}
         onAssigned={(assignment) => {
@@ -134,6 +144,7 @@ function RepositoryDetail({
     [repositoryId],
   );
   const canManage = isGroupManagerRole(groupResource.data?.role);
+  const { hierarchyGithubSyncMode } = useCapabilities();
   const [tab, setTab] = useState<RepoTab>("access");
 
   const repository = repoResource.data;
@@ -211,7 +222,12 @@ function RepositoryDetail({
       )}
 
       {effectiveTab === "access" ? (
-        <AccessTab repositoryId={repository.id} canManage={canManage} />
+        <AccessTab
+          groupId={groupId}
+          repositoryId={repository.id}
+          canManage={canManage}
+          githubSyncLive={hierarchyGithubSyncMode === "live"}
+        />
       ) : (
         <ConfigurationPanel repositoryId={repository.id} />
       )}
