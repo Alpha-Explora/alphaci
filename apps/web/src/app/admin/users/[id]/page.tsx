@@ -6,6 +6,7 @@ import { useCallback, useEffect, useState } from "react";
 
 import { useAdminContext } from "@/components/admin/admin-gate";
 import {
+  ApiError,
   getAdminUser,
   setUserAppRole,
   APP_ROLE_LABELS,
@@ -18,7 +19,10 @@ const ROLE_ORDER: AppRole[] = ["admin", "lead", "member"];
 export default function AdminUserDetailPage() {
   const params = useParams<{ id: string }>();
   const id = params.id;
-  const { isSuperAdmin, currentUserId } = useAdminContext();
+  // Any platform admin reaching this page (AdminGate already enforces that) may
+  // assign hierarchy roles — matching the BE, which gates PATCH app-role on the
+  // class-level PlatformAdminGuard rather than super-admin.
+  const { currentUserId } = useAdminContext();
 
   const [detail, setDetail] = useState<AdminUserDetail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -49,8 +53,8 @@ export default function AdminUserDetailPage() {
       await setUserAppRole(id, next);
       await load();
       setRoleMessage(`Role set to ${APP_ROLE_LABELS[next]}.`);
-    } catch {
-      setRoleMessage("Failed to update role.");
+    } catch (cause) {
+      setRoleMessage(`Failed to update role: ${describeRoleError(cause)}`);
     } finally {
       setRoleBusy(false);
     }
@@ -88,8 +92,7 @@ export default function AdminUserDetailPage() {
         </div>
       </header>
 
-      {isSuperAdmin && (
-        <div className="glass-panel" style={{ padding: "1rem 1.25rem", borderRadius: "0.75rem", display: "flex", alignItems: "center", gap: "1rem", flexWrap: "wrap" }}>
+      <div className="glass-panel" style={{ padding: "1rem 1.25rem", borderRadius: "0.75rem", display: "flex", alignItems: "center", gap: "1rem", flexWrap: "wrap" }}>
           <span style={{ fontWeight: 600, fontSize: "0.9rem" }}>Role</span>
           <select
             aria-label="Global role"
@@ -112,7 +115,6 @@ export default function AdminUserDetailPage() {
           )}
           {roleMessage && <span style={{ fontSize: "0.8rem", color: "var(--text-secondary)" }}>{roleMessage}</span>}
         </div>
-      )}
 
       <div style={{ display: "grid", gap: "1.5rem", gridTemplateColumns: "repeat(auto-fit, minmax(18rem, 1fr))" }}>
         <Panel title={`Recent errors (${detail.recentErrors.length})`}>
@@ -197,4 +199,22 @@ const rowStyle: React.CSSProperties = {
 
 function fmt(iso: string): string {
   return new Intl.DateTimeFormat("en-PH", { dateStyle: "short", timeStyle: "short" }).format(new Date(iso));
+}
+
+/**
+ * Turns a failed role-update into a message the admin can act on. NestJS returns
+ * `{ statusCode, message, error }`; a 403 means the actor lacks platform-admin
+ * rights, a 400 is a business-rule rejection (e.g. self-lockout) whose `message`
+ * is worth showing verbatim. Anything else falls back to the HTTP status.
+ */
+function describeRoleError(cause: unknown): string {
+  if (cause instanceof ApiError) {
+    if (cause.status === 403) return "you need platform-admin access.";
+    const detail = cause.details as { message?: string | string[] } | undefined;
+    const message = Array.isArray(detail?.message)
+      ? detail?.message.join(", ")
+      : detail?.message;
+    return message ?? `request failed (${cause.status}).`;
+  }
+  return "unexpected error. Please try again.";
 }
