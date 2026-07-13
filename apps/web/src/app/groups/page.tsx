@@ -31,8 +31,8 @@ function GroupsView() {
   return (
     <>
       <PageHeader
-        title="Projects"
-        subtitle="Your groups. Open a group to manage members and its systems — each system provisions a repository."
+        title="Groups"
+        subtitle="Groups you manage or belong to. Open a group to manage members, systems, delivery projects, repositories, and access."
         actions={
           <button
             type="button"

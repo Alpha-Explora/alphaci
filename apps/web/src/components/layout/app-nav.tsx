@@ -7,6 +7,7 @@ import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 
 import type { useAuthSession } from "@/hooks/use-auth-session";
+import { useCapabilities } from "@/hooks/use-capabilities";
 import type {
   NotificationsResponse,
   WorkspacesMeResponse,
@@ -86,6 +87,45 @@ function RunsIcon({ size = 16 }: { size?: number }) {
       <circle cx="12" cy="12" r="3" />
       <path d="M12 3v3M12 18v3M3 12h3M18 12h3" />
       <path d="M5.64 5.64l2.12 2.12M16.24 16.24l2.12 2.12M5.64 18.36l2.12-2.12M16.24 7.76l2.12-2.12" />
+    </svg>
+  );
+}
+
+function GroupsIcon({ size = 16 }: { size?: number }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+      <circle cx="9" cy="7" r="4" />
+      <path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" />
+    </svg>
+  );
+}
+
+function MyWorkIcon({ size = 16 }: { size?: number }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <rect x="2" y="7" width="20" height="14" rx="2" />
+      <path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2" />
     </svg>
   );
 }
@@ -343,6 +383,7 @@ export function AppNav({
   const [notifications, setNotifications] =
     useState<NotificationsResponse | null>(null);
   const { setWorkspaces } = useWorkspaceSelection();
+  const { hierarchyEnabled } = useCapabilities();
   const prefersReducedMotion = useReducedMotion();
   const reduced = prefersReducedMotion ?? false;
   const sidebarRef = useRef<HTMLElement>(null);
@@ -532,14 +573,11 @@ export function AppNav({
             reduced={reduced}
             itemIndex={0}
           />
-          {/* Projects is now the entry point to the group → system → repository
-              hierarchy (the old standalone Groups tab and My work tab were
-              folded in here). It points at the groups list. */}
           <SidebarNavItem
-            href="/groups"
+            href="/workflows"
             label="Projects"
             icon={WorkflowsIcon}
-            isActive={pathname.startsWith("/groups")}
+            isActive={pathname === "/workflows"}
             collapsed={collapsed}
             reduced={reduced}
             itemIndex={1}
@@ -553,6 +591,28 @@ export function AppNav({
             reduced={reduced}
             itemIndex={2}
           />
+          {!guest && hierarchyEnabled && (
+            <>
+              <SidebarNavItem
+                href="/groups"
+                label="Groups"
+                icon={GroupsIcon}
+                isActive={pathname.startsWith("/groups")}
+                collapsed={collapsed}
+                reduced={reduced}
+                itemIndex={3}
+              />
+              <SidebarNavItem
+                href="/my-work"
+                label="My work"
+                icon={MyWorkIcon}
+                isActive={pathname.startsWith("/my-work")}
+                collapsed={collapsed}
+                reduced={reduced}
+                itemIndex={4}
+              />
+            </>
+          )}
 
           <SidebarSectionLabel text="Account" collapsed={collapsed} />
 
