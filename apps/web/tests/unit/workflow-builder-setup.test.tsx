@@ -60,6 +60,8 @@ jest.mock("../../src/lib/api/client", () => ({
   getCategories: jest.fn(),
   getGithubInstallationAccounts: jest.fn(),
   getGithubAppInstallUrl: jest.fn(),
+  // Current Projects tab groups the list by the user's groups.
+  getGroups: jest.fn().mockResolvedValue([]),
   getLinkedGithubRepos: jest.fn(),
   getMyUsage: jest.fn(),
   getProjectOptions: jest.fn(),

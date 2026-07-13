@@ -8,6 +8,7 @@ import { motion, useReducedMotion } from "framer-motion";
 import { AppNav } from "@/components/layout/app-nav";
 import { FlowBackground } from "@/components/layout/flow-background";
 import { PipelineLoader } from "@/components/layout/pipeline-loader";
+import { ProjectDetailTabs } from "@/components/product/project-detail-tabs";
 import { ProjectEnvPanel } from "@/components/product/project-env-panel";
 import { RunCard } from "@/components/product/runs/RunCard";
 import { RunsSkeleton } from "@/components/product/runs/RunsSkeleton";
@@ -545,6 +546,11 @@ function ProjectPageContent() {
           </div>
         ) : (
           <div style={{ display: "grid", gap: "1.5rem" }}>
+            {/* Tabbed detail (Overview / Workflow / Runs / Hosting /
+                Environment / Audit / Settings) — moved here from the old
+                split-pane Current Projects view. */}
+            {project ? <ProjectDetailTabs project={project} /> : null}
+
             {envProvisioningEnabled &&
             project &&
             project.status === "provisioned" ? (

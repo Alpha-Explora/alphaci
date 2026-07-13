@@ -791,6 +791,11 @@ export interface ProvisionedProject {
   projectTypeId?: string | null;
   workflowRecipeId?: string | null;
   projectOptions?: Record<string, unknown> | null;
+  /**
+   * Owning workspace id. For hierarchy-managed repositories this is the GROUP
+   * id — the Projects screen uses it to bucket projects under their group.
+   */
+  workspaceId?: string | null;
 }
 
 export type ProjectOverviewHealthStatus = "ok" | "warning" | "error";
