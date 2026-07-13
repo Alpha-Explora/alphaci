@@ -26,16 +26,11 @@ import {
 function MembersInner({
   group,
   currentUserId,
-  canTransferLead,
 }: {
   group: GroupSummary;
   currentUserId: string;
-  canTransferLead: boolean;
 }) {
   const canManage = isGroupManagerRole(group.role);
-  // Only an Admin (Lead/owner) — or a platform admin (canTransferLead) — may
-  // grant the Admin tier; a Delegated lead cannot mint an Admin.
-  const canGrantAdmin = group.role === "admin" || canTransferLead;
   const [inviteOpen, setInviteOpen] = useState(false);
 
   const membersResource = useApiResource<GroupMember[]>(
@@ -66,7 +61,7 @@ function MembersInner({
         title="Members & invitations"
         subtitle={
           canManage
-            ? "Add and remove members, change roles, and manage invitations. Removing a member automatically reviews their repository access."
+            ? "Add and remove members and manage invitations. Roles are managed in the Admin Console. Removing a member automatically reviews their repository access."
             : "People who belong to this group."
         }
       />
@@ -87,8 +82,6 @@ function MembersInner({
           members={members}
           invitations={invitations}
           canManage={canManage}
-          canGrantAdmin={canGrantAdmin}
-          canTransferLead={canTransferLead}
           currentUserId={currentUserId}
           onMembersChange={(updater) =>
             membersResource.setData((current) => updater(current ?? []))
@@ -150,11 +143,7 @@ function MembersView({ session }: { session: AuthMeResponse }) {
   }
 
   return (
-    <MembersInner
-      group={data}
-      currentUserId={session.user.id}
-      canTransferLead={session.platformRole != null}
-    />
+    <MembersInner group={data} currentUserId={session.user.id} />
   );
 }
 

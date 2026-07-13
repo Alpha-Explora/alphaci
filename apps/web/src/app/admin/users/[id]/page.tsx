@@ -7,10 +7,13 @@ import { useCallback, useEffect, useState } from "react";
 import { useAdminContext } from "@/components/admin/admin-gate";
 import {
   getAdminUser,
-  grantPlatformRole,
-  revokePlatformRole,
+  setUserAppRole,
+  APP_ROLE_LABELS,
   type AdminUserDetail,
+  type AppRole,
 } from "@/lib/api/client";
+
+const ROLE_ORDER: AppRole[] = ["admin", "lead", "member"];
 
 export default function AdminUserDetailPage() {
   const params = useParams<{ id: string }>();
@@ -39,27 +42,15 @@ export default function AdminUserDetailPage() {
     void load();
   }, [load]);
 
-  async function handleGrant() {
+  async function handleSetRole(next: AppRole) {
     setRoleBusy(true);
     setRoleMessage(null);
     try {
-      await grantPlatformRole(id, "admin");
-      setRoleMessage("Granted platform admin.");
+      await setUserAppRole(id, next);
+      await load();
+      setRoleMessage(`Role set to ${APP_ROLE_LABELS[next]}.`);
     } catch {
-      setRoleMessage("Failed to grant role.");
-    } finally {
-      setRoleBusy(false);
-    }
-  }
-
-  async function handleRevoke() {
-    setRoleBusy(true);
-    setRoleMessage(null);
-    try {
-      await revokePlatformRole(id);
-      setRoleMessage("Revoked platform role.");
-    } catch {
-      setRoleMessage("Failed to revoke role (user may not be an admin, or is the last super-admin).");
+      setRoleMessage("Failed to update role.");
     } finally {
       setRoleBusy(false);
     }
@@ -97,15 +88,28 @@ export default function AdminUserDetailPage() {
         </div>
       </header>
 
-      {isSuperAdmin && detail.id !== currentUserId && (
+      {isSuperAdmin && (
         <div className="glass-panel" style={{ padding: "1rem 1.25rem", borderRadius: "0.75rem", display: "flex", alignItems: "center", gap: "1rem", flexWrap: "wrap" }}>
-          <span style={{ fontWeight: 600, fontSize: "0.9rem" }}>Platform role</span>
-          <button type="button" className="primary-button" disabled={roleBusy} onClick={() => void handleGrant()} style={{ padding: "0.4rem 1rem", fontSize: "0.8rem" }}>
-            Grant admin
-          </button>
-          <button type="button" className="ghost-button" disabled={roleBusy} onClick={() => void handleRevoke()} style={{ padding: "0.4rem 1rem", fontSize: "0.8rem" }}>
-            Revoke
-          </button>
+          <span style={{ fontWeight: 600, fontSize: "0.9rem" }}>Role</span>
+          <select
+            aria-label="Global role"
+            value={detail.appRole}
+            disabled={roleBusy || detail.id === currentUserId}
+            onChange={(event) => void handleSetRole(event.target.value as AppRole)}
+            style={{ padding: "0.4rem 0.75rem", fontSize: "0.85rem", borderRadius: "0.5rem", minWidth: "9rem" }}
+          >
+            {ROLE_ORDER.map((r) => (
+              <option key={r} value={r}>
+                {APP_ROLE_LABELS[r]}
+              </option>
+            ))}
+          </select>
+          <span style={{ fontSize: "0.78rem", color: "var(--text-muted)" }}>
+            Admin = full access · Lead = create/manage groups & invite · Member = assigned repos only
+          </span>
+          {detail.id === currentUserId && (
+            <span style={{ fontSize: "0.8rem", color: "var(--text-secondary)" }}>You can&apos;t change your own role.</span>
+          )}
           {roleMessage && <span style={{ fontSize: "0.8rem", color: "var(--text-secondary)" }}>{roleMessage}</span>}
         </div>
       )}

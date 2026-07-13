@@ -5,14 +5,11 @@ import { useMemo, useState } from "react";
 import {
   removeGroupMember,
   revokeGroupInvitation,
-  transferGroup,
-  updateGroupMemberRole,
 } from "@/lib/api/client";
 import {
   GROUP_ROLE_LABELS,
   type GroupInvitation,
   type GroupMember,
-  type GroupRole,
 } from "@/lib/api/hierarchy-contracts";
 import {
   InvitationStatusBadge,
@@ -22,21 +19,18 @@ import {
 import { Avatar, SectionHeader } from "./primitives";
 import { timeAgo } from "@/hooks/use-hierarchy";
 
-// "admin" = top membership tier (label "Lead"); unrelated to platform-admin.
-const ROLE_OPTIONS: GroupRole[] = ["admin", "delegated_lead", "member", "viewer"];
-
 /**
- * Member management + invitation lifecycle. Management controls (role select,
- * remove, revoke) render ONLY when `canManage` is true — members/viewers see
- * a read-only roster. The backend independently enforces the same rule.
+ * Member roster + invitation lifecycle. Roles are DISPLAY-ONLY here — role
+ * assignment (Admin / Lead / Member) is centralized in the Admin Console, so
+ * a group Lead cannot change roles from this tab. Membership actions (invite,
+ * remove) still render for managers when `canManage` is true; the backend
+ * independently enforces the same rules.
  */
 export function MemberTable({
   groupId,
   members,
   invitations,
   canManage,
-  canGrantAdmin,
-  canTransferLead,
   currentUserId,
   onMembersChange,
   onInvitationsChange,
@@ -46,9 +40,6 @@ export function MemberTable({
   members: GroupMember[];
   invitations: GroupInvitation[];
   canManage: boolean;
-  /** Only an Admin (or platform admin) may grant the Admin/Lead tier. */
-  canGrantAdmin: boolean;
-  canTransferLead: boolean;
   currentUserId: string;
   onMembersChange: (updater: (current: GroupMember[]) => GroupMember[]) => void;
   onInvitationsChange: (
@@ -74,23 +65,6 @@ export function MemberTable({
     () => invitations.filter((invitation) => invitation.status === "pending"),
     [invitations],
   );
-
-  async function handleRoleChange(member: GroupMember, nextRole: GroupRole) {
-    setBusyId(member.id);
-    setError(null);
-    try {
-      const updated = await updateGroupMemberRole(groupId, member.id, {
-        role: nextRole,
-      });
-      onMembersChange((current) =>
-        current.map((item) => (item.id === updated.id ? updated : item)),
-      );
-    } catch {
-      setError("Member role could not be updated.");
-    } finally {
-      setBusyId(null);
-    }
-  }
 
   async function handleRemove(member: GroupMember) {
     setBusyId(member.id);
@@ -130,29 +104,6 @@ export function MemberTable({
     }
   }
 
-  async function handleTransferLead(member: GroupMember) {
-    setBusyId(member.id);
-    setError(null);
-    try {
-      await transferGroup(groupId, { newManagerUserId: member.userId });
-      onMembersChange((current) =>
-        current.map((item) => ({
-          ...item,
-          role:
-            item.userId === member.userId
-              ? "admin"
-              : item.role === "admin"
-                ? "delegated_lead"
-                : item.role,
-        })),
-      );
-    } catch {
-      setError("The group Lead could not be transferred.");
-    } finally {
-      setBusyId(null);
-    }
-  }
-
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
       <section aria-label="Members">
@@ -163,18 +114,9 @@ export function MemberTable({
         />
         <div className="hier-panel">
           {activeMembers.map((member) => {
-            const isLastLead =
-              member.role === "admin" && leadCount <= 1;
+            const isLastLead = member.role === "admin" && leadCount <= 1;
             const isSelf = member.userId === currentUserId;
             const removed = member.memberStatus === "removed";
-            // "Admin" (Lead) is only offered when the current user may grant it.
-            // A member who is already an Admin keeps the option so their row
-            // renders their current role correctly.
-            const roleOptions = ROLE_OPTIONS.filter((option) =>
-              option === "admin"
-                ? canGrantAdmin || member.role === "admin"
-                : true,
-            );
             return (
               <div key={member.id} className="hier-row">
                 <div className="hier-row-identity">
@@ -193,29 +135,8 @@ export function MemberTable({
                 </div>
                 <div className="hier-row-actions">
                   <MemberStatusBadge status={member.memberStatus} />
-                  {canManage && !removed ? (
-                    <select
-                      aria-label={`Role for ${member.login}`}
-                      className="hier-select"
-                      style={{ width: "auto", minWidth: "9.5rem" }}
-                      value={member.role}
-                      disabled={busyId === member.id || isLastLead}
-                      onChange={(event) =>
-                        void handleRoleChange(
-                          member,
-                          event.target.value as GroupRole,
-                        )
-                      }
-                    >
-                      {roleOptions.map((option) => (
-                        <option key={option} value={option}>
-                          {GROUP_ROLE_LABELS[option]}
-                        </option>
-                      ))}
-                    </select>
-                  ) : (
-                    <RoleBadge role={member.role} />
-                  )}
+                  {/* Role is display-only — managed in the Admin Console. */}
+                  <RoleBadge role={member.role} />
                   {canManage && !removed && (
                     <button
                       type="button"
@@ -231,16 +152,6 @@ export function MemberTable({
                       onClick={() => void handleRemove(member)}
                     >
                       Remove
-                    </button>
-                  )}
-                  {canTransferLead && !removed && member.memberStatus === "active" && member.role !== "admin" && (
-                    <button
-                      type="button"
-                      className="hier-btn-sm"
-                      disabled={busyId === member.id}
-                      onClick={() => void handleTransferLead(member)}
-                    >
-                      Make Lead
                     </button>
                   )}
                 </div>

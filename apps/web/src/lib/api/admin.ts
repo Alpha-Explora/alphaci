@@ -3,6 +3,15 @@ import { request } from "./request";
 
 /* ── Types (mirror the BE admin view models) ─────────────────────────────── */
 
+/** Global hierarchy role — the single source of truth for group capabilities. */
+export type AppRole = "admin" | "lead" | "member";
+
+export const APP_ROLE_LABELS: Record<AppRole, string> = {
+  admin: "Admin",
+  lead: "Lead",
+  member: "Member",
+};
+
 export interface AdminUserListItem {
   id: string;
   login: string;
@@ -14,6 +23,7 @@ export interface AdminUserListItem {
   lastLoginAt: string | null;
   archivedAt: string | null;
   onboardingCompleted: boolean;
+  appRole: AppRole;
   projectCount: number;
   errorCount: number;
 }
@@ -146,6 +156,17 @@ export async function grantPlatformRole(
 
 export async function revokePlatformRole(id: string): Promise<void> {
   await request(`/admin/users/${id}/role`, { method: "DELETE" });
+}
+
+/** Sets a user's global hierarchy role (Admin / Lead / Member). Super-admin only. */
+export async function setUserAppRole(
+  id: string,
+  role: AppRole,
+): Promise<void> {
+  await request(`/admin/users/${id}/app-role`, {
+    method: "PATCH",
+    body: JSON.stringify({ role }),
+  });
 }
 
 export async function getAdminFeedback(
