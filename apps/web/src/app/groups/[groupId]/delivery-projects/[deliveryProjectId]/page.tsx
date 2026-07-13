@@ -62,7 +62,7 @@ function DeliveryProjectDetail({
     return (
       <>
         <Breadcrumb
-          items={[{ label: "Groups", href: "/groups" }, { label: "Delivery project" }]}
+          items={[{ label: "Projects", href: "/groups" }, { label: "Delivery project" }]}
         />
         <ResourceBoundary
           state={projectResource.state}
@@ -88,7 +88,7 @@ function DeliveryProjectDetail({
     <>
       <Breadcrumb
         items={[
-          { label: "Groups", href: "/groups" },
+          { label: "Projects", href: "/groups" },
           { label: group?.name ?? "Group", href: `/groups/${groupId}` },
           { label: "Systems", href: `/groups/${groupId}/systems` },
           { label: project.name },

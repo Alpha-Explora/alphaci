@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import { useState } from "react";
 
 import {
+  getDeliveryProjectRepositories,
   getGroup,
   getSystem,
   getSystemDeliveryProjects,
@@ -12,12 +13,15 @@ import {
 import type {
   DeliveryProject,
   GroupSummary,
+  HierarchyRepository,
   HierarchySystem,
 } from "@/lib/api/hierarchy-contracts";
-import { isGroupManagerRole } from "@/lib/api/hierarchy-contracts";
+import { isGlobalCreatorRole } from "@/lib/api/hierarchy-contracts";
 import { useApiResource } from "@/hooks/use-hierarchy";
+import { useAuthSession } from "@/hooks/use-auth-session";
 import { LifecycleStatusBadge } from "@/components/hierarchy/badges";
 import { CreateDeliveryProjectDialog } from "@/components/hierarchy/create-delivery-project-dialog";
+import { RepositoryDetailView } from "@/components/hierarchy/repository-detail-view";
 import {
   Breadcrumb,
   HierarchyPageShell,
@@ -30,10 +34,11 @@ import {
 function SystemDetail({
   groupId,
   systemId,
-}: {
+}: Readonly<{
   groupId: string;
   systemId: string;
-}) {
+}>) {
+  const { session } = useAuthSession();
   const groupResource = useApiResource<GroupSummary>(
     () => getGroup(groupId),
     [groupId],
@@ -51,18 +56,37 @@ function SystemDetail({
 
   const group = groupResource.data;
   const system = systemResource.data;
-  const canManage = isGroupManagerRole(group?.role);
+  // A system now maps 1:1 to a repository (create-system provisions one). Resolve
+  // that single repository so we can render its detail directly on this page.
   const projects = projectsResource.data ?? [];
+  const singleDeliveryProjectId = projects.length === 1 ? projects[0].id : null;
+  const reposResource = useApiResource<HierarchyRepository[]>(
+    () => getDeliveryProjectRepositories(singleDeliveryProjectId ?? ""),
+    [singleDeliveryProjectId],
+    { enabled: Boolean(singleDeliveryProjectId) },
+  );
+  const repositories = reposResource.data ?? [];
+  const singleRepositoryId =
+    repositories.length === 1 ? repositories[0].id : null;
+
+  // Create capability follows the GLOBAL role (Lead/Admin), mirroring the backend.
+  const canManage = isGlobalCreatorRole(session?.appRole);
+
+  const breadcrumb = (
+    <Breadcrumb
+      items={[
+        { label: "Projects", href: "/groups" },
+        { label: group?.name ?? "Group", href: `/groups/${groupId}` },
+        { label: "Systems", href: `/groups/${groupId}/systems` },
+        { label: system?.name ?? "System" },
+      ]}
+    />
+  );
 
   if (systemResource.state !== "ready" || !system) {
     return (
       <>
-        <Breadcrumb
-          items={[
-            { label: "Groups", href: "/groups" },
-            { label: "System" },
-          ]}
-        />
+        {breadcrumb}
         <ResourceBoundary
           state={systemResource.state}
           onRetry={systemResource.reload}
@@ -73,6 +97,35 @@ function SystemDetail({
     );
   }
 
+  // Primary path: the system has exactly one repository — show its contents
+  // (member access + configuration) inline, treating the system AS the repo.
+  if (singleRepositoryId) {
+    return (
+      <RepositoryDetailView
+        groupId={groupId}
+        repositoryId={singleRepositoryId}
+        breadcrumb={breadcrumb}
+      />
+    );
+  }
+
+  // Still resolving the repository.
+  if (
+    projectsResource.state === "loading" ||
+    (singleDeliveryProjectId && reposResource.state === "loading")
+  ) {
+    return (
+      <>
+        {breadcrumb}
+        <PageHeader title={system.name} subtitle={system.description ?? undefined} />
+        <LoadingRows rows={3} />
+      </>
+    );
+  }
+
+  // Fallback for legacy/edge systems (no repository, or multiple delivery
+  // projects/repositories): show the delivery-project hierarchy so nothing is
+  // hidden and managers can still drill in.
   const createButton = canManage ? (
     <button
       type="button"
@@ -85,14 +138,7 @@ function SystemDetail({
 
   return (
     <>
-      <Breadcrumb
-        items={[
-          { label: "Groups", href: "/groups" },
-          { label: group?.name ?? "Group", href: `/groups/${groupId}` },
-          { label: "Systems", href: `/groups/${groupId}/systems` },
-          { label: system.name },
-        ]}
-      />
+      {breadcrumb}
       <PageHeader
         title={system.name}
         subtitle={system.description ?? undefined}
@@ -131,17 +177,15 @@ function SystemDetail({
             ))}
           </div>
         </>
-      ) : projectsResource.state === "loading" ? (
-        <LoadingRows rows={2} />
       ) : (
         <ResourceBoundary
           state={projectsResource.state}
           onRetry={projectsResource.reload}
-          emptyTitle="No delivery projects yet"
+          emptyTitle="No repository yet"
           emptyMessage={
             canManage
-              ? "Create a delivery project to start adding repositories."
-              : "This system has no delivery projects yet."
+              ? "This system has no repository. Create a delivery project to add one."
+              : "This system has no repository yet."
           }
           emptyAction={createButton}
         />
