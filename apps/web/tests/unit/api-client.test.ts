@@ -648,7 +648,7 @@ describe("API client project setup helpers", () => {
               id: "personal-user-1",
               name: "Personal",
               kind: "personal",
-              role: "owner",
+              role: "admin",
             },
           ],
         }),
@@ -671,17 +671,17 @@ describe("API client project setup helpers", () => {
       .mockResolvedValueOnce({
         ok: true,
         status: 200,
-        json: async () => [{ id: "member-1", role: "owner", login: "tone" }],
+        json: async () => [{ id: "member-1", role: "admin", login: "tone" }],
       })
       .mockResolvedValueOnce({
         ok: true,
         status: 201,
-        json: async () => ({ id: "member-2", role: "developer", login: "dev" }),
+        json: async () => ({ id: "member-2", role: "member", login: "dev" }),
       })
       .mockResolvedValueOnce({
         ok: true,
         status: 200,
-        json: async () => ({ id: "member-2", role: "admin", login: "dev" }),
+        json: async () => ({ id: "member-2", role: "delegated_lead", login: "dev" }),
       })
       .mockResolvedValueOnce({
         ok: true,
@@ -710,7 +710,7 @@ describe("API client project setup helpers", () => {
       });
 
     await expect(getMyWorkspaces()).resolves.toMatchObject({
-      items: [{ kind: "personal", role: "owner" }],
+      items: [{ kind: "personal", role: "admin" }],
     });
     await expect(getNotifications()).resolves.toMatchObject({ unreadCount: 0 });
     await expect(markNotificationRead("notification-1")).resolves.toEqual({
@@ -721,17 +721,17 @@ describe("API client project setup helpers", () => {
       items: [],
     });
     await expect(getWorkspaceMembers("workspace-1")).resolves.toEqual([
-      { id: "member-1", role: "owner", login: "tone" },
+      { id: "member-1", role: "admin", login: "tone" },
     ]);
     await expect(
       addWorkspaceMember("workspace-1", {
         loginOrEmail: "dev",
-        role: "developer",
+        role: "member",
       }),
-    ).resolves.toMatchObject({ id: "member-2", role: "developer" });
+    ).resolves.toMatchObject({ id: "member-2", role: "member" });
     await expect(
-      updateWorkspaceMemberRole("workspace-1", "member-2", { role: "admin" }),
-    ).resolves.toMatchObject({ id: "member-2", role: "admin" });
+      updateWorkspaceMemberRole("workspace-1", "member-2", { role: "delegated_lead" }),
+    ).resolves.toMatchObject({ id: "member-2", role: "delegated_lead" });
     await expect(
       removeWorkspaceMember("workspace-1", "member-2"),
     ).resolves.toEqual({

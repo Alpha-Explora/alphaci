@@ -110,6 +110,16 @@ export interface CapabilitiesResponse {
   notifications?: {
     enabled: boolean;
   };
+  /**
+   * Groups / Systems / Delivery Projects / Repositories / Assignments surface
+   * (HIERARCHY_IMPLEMENTATION_PLAN.md §3.2). Gates the Groups + My work nav and
+   * dashboards without a separate endpoint, consistent with `workspaces.enabled`.
+   * `githubSyncMode` mirrors HIERARCHY_GITHUB_SYNC_MODE (stub|live).
+   */
+  hierarchy?: {
+    enabled: boolean;
+    githubSyncMode: "stub" | "live";
+  };
 }
 
 export interface ProviderConnection {
@@ -486,7 +496,13 @@ export interface WorkspaceSummary {
   role: WorkspaceRole;
 }
 
-export type WorkspaceRole = "owner" | "admin" | "developer" | "viewer";
+/**
+ * Role rename plan §2.1 (confirmed 2026-07-14): 'admin' is now the TOP membership
+ * tier (product label "Lead" — see GROUP_ROLE_LABELS in hierarchy-contracts.ts).
+ * This is a different system from `identity.platform_admins` (platform-admin
+ * tier) — same literal string, unrelated table/column. Do not conflate them.
+ */
+export type WorkspaceRole = "admin" | "delegated_lead" | "member" | "viewer";
 
 export interface WorkspacesMeResponse {
   enabled: boolean;

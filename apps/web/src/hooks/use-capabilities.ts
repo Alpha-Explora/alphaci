@@ -33,6 +33,7 @@ export function useCapabilities() {
         workspaces: { enabled: false },
         auditEvents: { enabled: false },
         notifications: { enabled: false },
+        hierarchy: { enabled: false, githubSyncMode: "stub" },
       });
     } finally {
       setLoading(false);
@@ -68,6 +69,8 @@ export function useCapabilities() {
     workspacesEnabled: capabilities?.workspaces?.enabled === true,
     auditEventsEnabled: capabilities?.auditEvents?.enabled === true,
     notificationsEnabled: capabilities?.notifications?.enabled === true,
+    hierarchyEnabled: capabilities?.hierarchy?.enabled === true,
+    hierarchyGithubSyncMode: capabilities?.hierarchy?.githubSyncMode ?? "stub",
     loadCapabilities,
     loading,
   };

@@ -217,7 +217,7 @@ async function installDashboardAuditApi(page: Page) {
             id: 'workspace-1',
             name: 'Personal workspace',
             kind: 'personal',
-            role: 'owner',
+            role: 'admin',
           },
         ],
       });
@@ -229,7 +229,7 @@ async function installDashboardAuditApi(page: Page) {
           id: 'member-1',
           workspaceId: 'workspace-1',
           userId: 'user-1',
-          role: 'owner',
+          role: 'admin',
           login: 'tone',
           name: 'Tone Builder',
           email: 'tone@example.test',

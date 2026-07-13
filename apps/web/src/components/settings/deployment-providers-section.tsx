@@ -17,7 +17,8 @@ const fieldStyle = {
 } as const;
 
 export function DeploymentProvidersSection({
-  workspaceRole = "owner",
+  // "admin" default = top membership tier (label "Lead"); unrelated to platform-admin.
+  workspaceRole = "admin",
 }: {
   workspaceRole?: WorkspaceRole | null;
 }) {
@@ -35,7 +36,7 @@ export function DeploymentProvidersSection({
   }
 
   const canManageProviders =
-    workspaceRole === "owner" || workspaceRole === "admin";
+    workspaceRole === "admin" || workspaceRole === "delegated_lead";
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -62,7 +63,7 @@ export function DeploymentProvidersSection({
         </p>
         {!canManageProviders ? (
           <p className="provider-empty-state" style={{ margin: 0 }}>
-            Provider management requires owner or admin access.
+            Provider management requires lead or delegated lead access.
           </p>
         ) : null}
       </div>

@@ -19,11 +19,11 @@ const mockedAddMember = addWorkspaceMember as jest.MockedFunction<typeof addWork
 const mockedGetMembers = getWorkspaceMembers as jest.MockedFunction<typeof getWorkspaceMembers>;
 const mockedRemoveMember = removeWorkspaceMember as jest.MockedFunction<typeof removeWorkspaceMember>;
 
-const ownerWorkspace = {
+const leadWorkspace = {
   id: "workspace-1",
   name: "Personal workspace",
   kind: "personal" as const,
-  role: "owner" as const,
+  role: "admin" as const,
 };
 
 describe("WorkspaceMembersSection", () => {
@@ -35,7 +35,7 @@ describe("WorkspaceMembersSection", () => {
         id: "member-1",
         workspaceId: "workspace-1",
         userId: "user-1",
-        role: "owner",
+        role: "admin",
         login: "tone",
         name: "Tone",
         email: "tone@example.test",
@@ -54,13 +54,13 @@ describe("WorkspaceMembersSection", () => {
     jest.clearAllMocks();
   });
 
-  it("loads members and prevents removing the last owner", async () => {
+  it("loads members and prevents removing the last lead", async () => {
     const container = document.createElement("div");
     document.body.appendChild(container);
     root = createRoot(container);
 
     await act(async () => {
-      root!.render(<WorkspaceMembersSection workspace={ownerWorkspace} currentUserId="user-2" />);
+      root!.render(<WorkspaceMembersSection workspace={leadWorkspace} currentUserId="user-2" />);
       await Promise.resolve();
     });
 
@@ -74,7 +74,7 @@ describe("WorkspaceMembersSection", () => {
       id: "member-2",
       workspaceId: "workspace-1",
       userId: "user-2",
-      role: "developer",
+      role: "member",
       login: "dev",
       name: "Dev User",
       email: null,
@@ -86,7 +86,7 @@ describe("WorkspaceMembersSection", () => {
     root = createRoot(container);
 
     await act(async () => {
-      root!.render(<WorkspaceMembersSection workspace={ownerWorkspace} currentUserId="user-1" />);
+      root!.render(<WorkspaceMembersSection workspace={leadWorkspace} currentUserId="user-1" />);
       await Promise.resolve();
     });
 
@@ -106,7 +106,7 @@ describe("WorkspaceMembersSection", () => {
 
     expect(mockedAddMember).toHaveBeenCalledWith("workspace-1", {
       loginOrEmail: "dev",
-      role: "developer",
+      role: "member",
     });
     expect(container.textContent).toContain("Dev User");
   });
@@ -119,7 +119,7 @@ describe("WorkspaceMembersSection", () => {
     await act(async () => {
       root!.render(
         <WorkspaceMembersSection
-          workspace={{ ...ownerWorkspace, role: "viewer" }}
+          workspace={{ ...leadWorkspace, role: "viewer" }}
           currentUserId="user-2"
         />,
       );
