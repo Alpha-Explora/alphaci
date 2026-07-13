@@ -13,8 +13,9 @@ import type {
   GroupSummary,
   HierarchyRepository,
 } from "@/lib/api/hierarchy-contracts";
-import { isGroupManagerRole } from "@/lib/api/hierarchy-contracts";
+import { isGlobalCreatorRole } from "@/lib/api/hierarchy-contracts";
 import { useApiResource } from "@/hooks/use-hierarchy";
+import { useAuthSession } from "@/hooks/use-auth-session";
 import { LifecycleStatusBadge } from "@/components/hierarchy/badges";
 import { CreateRepositoryDialog } from "@/components/hierarchy/create-repository-dialog";
 import { RepositoryTable } from "@/components/hierarchy/repository-table";
@@ -49,9 +50,12 @@ function DeliveryProjectDetail({
   );
   const [dialogOpen, setDialogOpen] = useState(false);
 
+  const { session } = useAuthSession();
   const group = groupResource.data;
   const project = projectResource.data;
-  const canManage = isGroupManagerRole(group?.role);
+  // Repository creation follows the GLOBAL role (Lead/Admin), mirroring the
+  // backend gate — not the per-group membership tier.
+  const canManage = isGlobalCreatorRole(session?.appRole);
   const repositories = reposResource.data ?? [];
 
   if (projectResource.state !== "ready" || !project) {

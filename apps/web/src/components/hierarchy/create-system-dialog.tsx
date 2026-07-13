@@ -2,9 +2,28 @@
 
 import { useState } from "react";
 
-import { createSystem } from "@/lib/api/client";
+import { ApiError, createSystem } from "@/lib/api/client";
 import type { HierarchySystem } from "@/lib/api/hierarchy-contracts";
 import { FormDialog } from "./primitives";
+
+/**
+ * Creating a system now provisions a real GitHub repository, so failures carry
+ * an actionable backend reason (name taken, missing GitHub auth, insufficient
+ * role). NestJS returns `{ message }`; surface it instead of a generic string.
+ */
+function describeCreateError(cause: unknown): string {
+  if (cause instanceof ApiError) {
+    if (cause.status === 403) {
+      return "Only a Lead or Admin can create systems.";
+    }
+    const detail = cause.details as { message?: string | string[] } | undefined;
+    const message = Array.isArray(detail?.message)
+      ? detail?.message.join(", ")
+      : detail?.message;
+    return message ?? `Request failed (${cause.status}).`;
+  }
+  return "The system could not be created. Please try again.";
+}
 
 export function CreateSystemDialog({
   open,
@@ -44,8 +63,8 @@ export function CreateSystemDialog({
       onCreated(system);
       reset();
       onClose();
-    } catch {
-      setError("The system could not be created. Please try again.");
+    } catch (cause) {
+      setError(describeCreateError(cause));
     } finally {
       setSubmitting(false);
     }
@@ -59,7 +78,7 @@ export function CreateSystemDialog({
         onClose();
       }}
       title="Create system"
-      description="A system groups related delivery projects under this group."
+      description="Creating a system provisions a private GitHub repository under this group. The system name is used as the repository name."
       submitLabel="Create system"
       submitting={submitting}
       error={error}

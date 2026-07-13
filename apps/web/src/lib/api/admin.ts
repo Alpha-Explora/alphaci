@@ -1,10 +1,10 @@
-import type { PlatformRole } from "./contracts";
+import type { AppRole, PlatformRole } from "./contracts";
 import { request } from "./request";
 
 /* ── Types (mirror the BE admin view models) ─────────────────────────────── */
 
 /** Global hierarchy role — the single source of truth for group capabilities. */
-export type AppRole = "admin" | "lead" | "member";
+export type { AppRole };
 
 export const APP_ROLE_LABELS: Record<AppRole, string> = {
   admin: "Admin",

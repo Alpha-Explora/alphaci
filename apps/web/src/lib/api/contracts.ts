@@ -48,12 +48,21 @@ export interface SubscriptionInfo {
 
 export type PlatformRole = "admin" | "super_admin";
 
+/** Global hierarchy role — the single source of truth for create capabilities. */
+export type AppRole = "admin" | "lead" | "member";
+
 export interface AuthMeResponse {
   authenticated: boolean;
   user: SessionUser;
   subscription: SubscriptionInfo;
   /** null for ordinary users; set for platform admins. Gates the /admin surface. */
   platformRole?: PlatformRole | null;
+  /**
+   * Global hierarchy role ('admin' | 'lead' | 'member'). Gates create actions
+   * (systems/repositories) in the Groups UI — only admin/lead may create.
+   * Optional so older cached sessions deserialize safely (defaults to 'member').
+   */
+  appRole?: AppRole;
 }
 
 export interface CapabilitiesResponse {

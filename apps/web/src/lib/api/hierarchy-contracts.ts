@@ -14,7 +14,18 @@
  * convention and are documented as the shared FE↔BE assumption in docs/UI_LAYOUTS.md.
  */
 
-import type { WorkspaceRole } from "./contracts";
+import type { AppRole, WorkspaceRole } from "./contracts";
+
+/**
+ * Create capability (systems, delivery projects, repositories) is governed by
+ * the GLOBAL app_role assigned in the Admin Console — only 'admin'/'lead' may
+ * create; 'member' is read-/assigned-only. This is intentionally NOT the
+ * per-group membership tier (see isGroupManagerRole). Mirrors the backend
+ * HierarchyAccessService.assertCanCreate* gate (2026-07-14).
+ */
+export function isGlobalCreatorRole(appRole: AppRole | null | undefined): boolean {
+  return appRole === "admin" || appRole === "lead";
+}
 
 /* ── Role wire values + display labels (plan §2.1) ─────────────────────────── */
 

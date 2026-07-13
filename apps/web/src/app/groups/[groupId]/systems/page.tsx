@@ -8,8 +8,9 @@ import type {
   GroupSummary,
   HierarchySystem,
 } from "@/lib/api/hierarchy-contracts";
-import { isGroupManagerRole } from "@/lib/api/hierarchy-contracts";
+import { isGlobalCreatorRole } from "@/lib/api/hierarchy-contracts";
 import { useApiResource } from "@/hooks/use-hierarchy";
+import { useAuthSession } from "@/hooks/use-auth-session";
 import { CreateSystemDialog } from "@/components/hierarchy/create-system-dialog";
 import { SystemTree } from "@/components/hierarchy/system-tree";
 import {
@@ -23,7 +24,10 @@ import {
 } from "@/components/hierarchy/primitives";
 
 function SystemsInner({ group }: { group: GroupSummary }) {
-  const canManage = isGroupManagerRole(group.role);
+  const { session } = useAuthSession();
+  // Create capability follows the GLOBAL role (Lead/Admin), not the per-group
+  // membership tier — mirrors the backend gate. Members can't create systems.
+  const canManage = isGlobalCreatorRole(session?.appRole);
   const [dialogOpen, setDialogOpen] = useState(false);
   const { data, state, reload, setData } = useApiResource<HierarchySystem[]>(
     () => getGroupSystems(group.id),
