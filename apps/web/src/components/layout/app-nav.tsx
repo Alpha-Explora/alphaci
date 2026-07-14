@@ -90,6 +90,25 @@ function RunsIcon({ size = 16 }: { size?: number }) {
   );
 }
 
+function InboxIcon({ size = 16 }: { size?: number }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <polyline points="22 12 16 12 14 15 10 15 8 12 2 12" />
+      <path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z" />
+    </svg>
+  );
+}
+
 function SettingsIcon({ size = 16 }: { size?: number }) {
   return (
     <svg
@@ -230,6 +249,7 @@ interface SidebarNavItemProps {
   collapsed: boolean;
   reduced: boolean;
   itemIndex?: number;
+  badgeCount?: number;
 }
 
 function SidebarNavItem({
@@ -240,6 +260,7 @@ function SidebarNavItem({
   collapsed,
   reduced,
   itemIndex = 0,
+  badgeCount = 0,
 }: Readonly<SidebarNavItemProps>) {
   const expandDelay = itemIndex * 0.04;
   const collapseDelay = itemIndex * 0.018;
@@ -298,6 +319,43 @@ function SidebarNavItem({
             </motion.span>
           )}
         </AnimatePresence>
+        {badgeCount > 0 &&
+          (collapsed ? (
+            <span
+              aria-hidden="true"
+              style={{
+                position: "absolute",
+                top: 6,
+                right: 6,
+                width: 7,
+                height: 7,
+                borderRadius: "50%",
+                background: "var(--accent-indigo)",
+                boxShadow: "0 0 0 2px var(--bg-panel)",
+              }}
+            />
+          ) : (
+            <span
+              aria-label={`${badgeCount} unread`}
+              style={{
+                marginLeft: "auto",
+                minWidth: "1.15rem",
+                height: "1.15rem",
+                padding: "0 0.3rem",
+                borderRadius: "999px",
+                background: "var(--accent-indigo)",
+                color: "#fff",
+                fontSize: "0.62rem",
+                fontWeight: 700,
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                lineHeight: 1,
+              }}
+            >
+              {badgeCount > 99 ? "99+" : badgeCount}
+            </span>
+          ))}
       </Link>
     </motion.div>
   );
@@ -555,6 +613,18 @@ export function AppNav({
             reduced={reduced}
             itemIndex={2}
           />
+          {!guest && (
+            <SidebarNavItem
+              href="/inbox"
+              label="Inbox"
+              icon={InboxIcon}
+              isActive={pathname === "/inbox"}
+              collapsed={collapsed}
+              reduced={reduced}
+              itemIndex={3}
+              badgeCount={notifications?.unreadCount ?? 0}
+            />
+          )}
 
           <SidebarSectionLabel text="Account" collapsed={collapsed} />
 
@@ -566,7 +636,7 @@ export function AppNav({
               isActive={pathname === "/settings"}
               collapsed={collapsed}
               reduced={reduced}
-              itemIndex={3}
+              itemIndex={4}
             />
           )}
 
@@ -578,7 +648,7 @@ export function AppNav({
               isActive={pathname.startsWith("/admin")}
               collapsed={collapsed}
               reduced={reduced}
-              itemIndex={4}
+              itemIndex={5}
             />
           )}
         </nav>
