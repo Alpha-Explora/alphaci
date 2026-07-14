@@ -198,21 +198,7 @@ function timeAgo(iso: string): string {
   return `${Math.floor(hours / 24)}d ago`;
 }
 
-const pipelineContainerVariants = {
-  hidden: {},
-  visible: { transition: { staggerChildren: 0.06, delayChildren: 0.15 } },
-};
-
 const EASE_OUT: [number, number, number, number] = [0.25, 0, 0, 1];
-
-const pipelineDotVariants = {
-  hidden: { opacity: 0, scale: 0.5 },
-  visible: {
-    opacity: 1,
-    scale: 1,
-    transition: { duration: 0.28, ease: EASE_OUT },
-  },
-};
 
 const sectionVariants = {
   hidden: { opacity: 0, y: 16 },
@@ -224,155 +210,6 @@ const sectionVariants = {
 };
 
 /* ── Sub-components ─────────────────────────────────────────────────────────── */
-
-/**
- * Latest-run widget for the dashboard header. Unlike the old decorative
- * pipeline (hardcoded stages, always-green final dot), this renders the real
- * latest run from GET /ci/runs and links through to the /runs page.
- */
-function LatestRunTrack({
-  run,
-  loading,
-  reduced,
-}: Readonly<{
-  run: RunGroup | null;
-  loading: boolean;
-  reduced: boolean | null;
-}>) {
-  if (loading) {
-    return (
-      <div className="latest-run-link" aria-label="Loading latest run">
-        <div className="pipeline-track" style={{ marginTop: 0 }}>
-          {RUN_STAGE_ORDER.map((stage, index) => (
-            <span
-              key={stage}
-              style={{ display: "inline-flex", alignItems: "center" }}
-            >
-              <span className="pipeline-dot latest-run-dot--loading" />
-              {index < RUN_STAGE_ORDER.length - 1 && (
-                <span className="pipeline-connector" aria-hidden="true" />
-              )}
-            </span>
-          ))}
-        </div>
-        <p className="latest-run-meta">Checking latest run</p>
-      </div>
-    );
-  }
-
-  if (!run) {
-    return (
-      <Link
-        href="/runs"
-        className="latest-run-link"
-        aria-label="No runs yet. Open the runs page."
-      >
-        <div className="pipeline-track" style={{ marginTop: 0 }}>
-          {RUN_STAGE_ORDER.map((stage, index) => (
-            <span
-              key={stage}
-              style={{ display: "inline-flex", alignItems: "center" }}
-            >
-              <span
-                className="pipeline-dot"
-                title={RUN_STAGE_LABELS[stage]}
-              />
-              {index < RUN_STAGE_ORDER.length - 1 && (
-                <span className="pipeline-connector" aria-hidden="true" />
-              )}
-            </span>
-          ))}
-        </div>
-        <p className="latest-run-meta">
-          No runs yet. Push to a provisioned repo to see live stages.
-        </p>
-      </Link>
-    );
-  }
-
-  const repoShort = run.repoFullName.split("/")[1] ?? run.repoFullName;
-  const stageMap = new Map(run.stages.map((s) => [s.stage, s]));
-
-  return (
-    <Link
-      href="/runs"
-      className="latest-run-link"
-      aria-label={`Latest run for ${repoShort} on ${run.branch}: ${run.overallStatus}. View run details.`}
-    >
-      <span className="latest-run-repo">
-        {repoShort}
-        <span className="latest-run-branch">@{run.branch}</span>
-      </span>
-      <motion.div
-        className="pipeline-track"
-        style={{ marginTop: 0 }}
-        variants={reduced ? undefined : pipelineContainerVariants}
-        initial={reduced ? undefined : "hidden"}
-        animate={reduced ? undefined : "visible"}
-      >
-        {RUN_STAGE_ORDER.map((stageName, index) => {
-          const status = stageMap.get(stageName)?.status ?? "pending";
-          return (
-            <span
-              key={stageName}
-              style={{ display: "inline-flex", alignItems: "center" }}
-            >
-              <motion.span
-                className={`pipeline-dot pipeline-dot--${status}`}
-                variants={reduced ? undefined : pipelineDotVariants}
-                title={`${RUN_STAGE_LABELS[stageName]}: ${status}`}
-              />
-              {index < RUN_STAGE_ORDER.length - 1 && (
-                <motion.span
-                  className={`pipeline-connector${
-                    stageMap.get(stageName)?.status === "success"
-                      ? " pipeline-connector--active"
-                      : ""
-                  }`}
-                  variants={reduced ? undefined : pipelineDotVariants}
-                  aria-hidden="true"
-                />
-              )}
-            </span>
-          );
-        })}
-      </motion.div>
-      <div
-        style={{
-          display: "flex",
-          gap: "0.5rem",
-          marginTop: "0.45rem",
-          flexWrap: "wrap",
-        }}
-      >
-        {RUN_STAGE_ORDER.map((stage) => (
-          <span key={stage} className="template-tag">
-            {RUN_STAGE_LABELS[stage]}
-          </span>
-        ))}
-      </div>
-      <p
-        className={`latest-run-meta latest-run-meta--${run.overallStatus}`}
-      >
-        {run.overallStatus} · {timeAgo(run.startedAt)} · View runs
-        <svg
-          width="10"
-          height="10"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2.5"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          aria-hidden="true"
-        >
-          <line x1="5" y1="12" x2="19" y2="12" />
-          <polyline points="12 5 19 12 12 19" />
-        </svg>
-      </p>
-    </Link>
-  );
-}
 
 function SkeletonValue({ wide = false }: { wide?: boolean }) {
   return (
@@ -651,6 +488,13 @@ function shortRepoName(repoFullName: string | null | undefined): string {
   return repoFullName.split("/")[1] ?? repoFullName;
 }
 
+/** Product-facing role label: admin → Lead, delegated_lead → Delegated lead. */
+function readableGroupRole(role: GroupSummary["role"]): string {
+  if (role === "admin") return "Lead";
+  if (role === "delegated_lead") return "Delegated lead";
+  return role.charAt(0).toUpperCase() + role.slice(1);
+}
+
 /* ── Derived run analytics — computed client-side from recentRuns ──────────── */
 
 interface RunStats {
@@ -901,7 +745,8 @@ const runCardVariants = {
 function RunActivityCard({
   run,
   reduced,
-}: Readonly<{ run: RunGroup; reduced: boolean | null }>) {
+  featured = false,
+}: Readonly<{ run: RunGroup; reduced: boolean | null; featured?: boolean }>) {
   const repoShort = shortRepoName(run.repoFullName);
   const stageMap = new Map(run.stages.map((stage) => [stage.stage, stage]));
   const stageSummary = RUN_STAGE_ORDER.map(
@@ -911,7 +756,7 @@ function RunActivityCard({
 
   return (
     <motion.div
-      className={`run-card run-card--${run.overallStatus}`}
+      className={`run-card run-card--${run.overallStatus}${featured ? " run-card--featured" : ""}`}
       variants={reduced ? undefined : runCardVariants}
     >
       <Link
@@ -1018,7 +863,7 @@ function PipelineActivity({
   loading: boolean;
   reduced: boolean | null;
 }>) {
-  const visibleRuns = runs.slice(0, 5);
+  const latest = runs[0] ?? null;
   return (
     <motion.section
       className="runs-hero"
@@ -1031,7 +876,7 @@ function PipelineActivity({
       <div className="dashboard-panel-heading runs-hero-heading">
         <div>
           <p className="dashboard-section-kicker">PIPELINE ACTIVITY</p>
-          <h2 id="runs-hero-title">Recent runs</h2>
+          <h2 id="runs-hero-title">Latest run</h2>
         </div>
         <div className="runs-hero-heading-right">
           {stats.running > 0 && (
@@ -1041,7 +886,10 @@ function PipelineActivity({
             </span>
           )}
           <Link href="/runs" className="dashboard-inline-link">
-            View all <span aria-hidden="true">→</span>
+            {runs.length > 0
+              ? `View all ${runs.length} run${runs.length === 1 ? "" : "s"}`
+              : "View runs"}{" "}
+            <span aria-hidden="true">→</span>
           </Link>
         </div>
       </div>
@@ -1054,15 +902,9 @@ function PipelineActivity({
           animate={reduced ? undefined : "visible"}
         >
           {loading ? (
-            <>
-              <RunCardSkeleton />
-              <RunCardSkeleton />
-              <RunCardSkeleton />
-            </>
-          ) : visibleRuns.length ? (
-            visibleRuns.map((run) => (
-              <RunActivityCard key={run.runId} run={run} reduced={reduced} />
-            ))
+            <RunCardSkeleton />
+          ) : latest ? (
+            <RunActivityCard run={latest} reduced={reduced} featured />
           ) : (
             <Link href="/workflows?tab=setup" className="runs-empty">
               <span className="runs-empty-icon" aria-hidden="true">
@@ -1302,6 +1144,7 @@ function DashboardMetric({
 
 function DashboardWorkspaceOverview({
   group,
+  groups,
   portfolio,
   assignments,
   invitations,
@@ -1313,6 +1156,7 @@ function DashboardWorkspaceOverview({
   reduced,
 }: Readonly<{
   group: GroupSummary | null;
+  groups: GroupSummary[];
   portfolio: DeliveryPortfolioNode[];
   assignments: MyAssignedRepository[];
   invitations: GroupInvitation[];
@@ -1376,9 +1220,6 @@ function DashboardWorkspaceOverview({
       : null,
   ].filter((item): item is NonNullable<typeof item> => item !== null);
 
-  const scopeLabel = group
-    ? `${group.name} · ${group.role === "admin" ? "Lead" : group.role === "delegated_lead" ? "Delegated lead" : group.role}`
-    : "Personal workspace";
   const scopeDescription = group
     ? group.description ?? group.businessUnit ?? "Team delivery workspace"
     : "Your provisioned projects and assigned delivery work";
@@ -1393,27 +1234,73 @@ function DashboardWorkspaceOverview({
     runs.length === 0 &&
     deliveryProjectCount === 0;
 
+  const primaryTone = attentionItems.some((item) => item.tone === "danger")
+    ? "danger"
+    : attentionItems.length
+      ? "warn"
+      : "ok";
+
   return (
-    <div className="dashboard-flow">
+    <div className={`dashboard-flow${isEmptyWorkspace ? " dashboard-flow--empty" : ""}`}>
+      {/* Merged status strip — scope + attention on one compact row */}
       <motion.section
-        className="dashboard-scope"
-        aria-label="Current dashboard scope"
+        className="dashboard-statusbar"
+        aria-label="Workspace status"
         custom={1}
         variants={sectionVariants}
         initial={reduced ? false : "hidden"}
         animate="visible"
       >
-        <div>
-          <p className="dashboard-section-kicker">CURRENT SCOPE</p>
-          <h2>{scopeLabel}</h2>
-          <p>{scopeDescription}</p>
+        <div className="statusbar-scope">
+          <span
+            className={`statusbar-dot statusbar-dot--${loading ? "idle" : primaryTone}`}
+            aria-hidden="true"
+          />
+          <div className="statusbar-scope-copy">
+            <span className="statusbar-scope-label">
+              {group ? group.name : "Personal workspace"}
+            </span>
+            <span className="statusbar-scope-sub">
+              {group
+                ? `${readableGroupRole(group.role)} · ${scopeDescription}`
+                : scopeDescription}
+            </span>
+          </div>
+          {group ? (
+            <Link
+              href={`/groups/${group.id}`}
+              className="dashboard-inline-link statusbar-scope-link"
+            >
+              Open <span aria-hidden="true">→</span>
+            </Link>
+          ) : null}
         </div>
-        {group ? (
-          <Link href={`/groups/${group.id}`} className="dashboard-inline-link">
-            Open group
-            <span aria-hidden="true">→</span>
-          </Link>
-        ) : null}
+
+        <div className="statusbar-attention" role="status">
+          {loading ? (
+            <span className="statusbar-allclear statusbar-allclear--idle">
+              Refreshing signals…
+            </span>
+          ) : attentionItems.length ? (
+            attentionItems.map((item) => (
+              <Link
+                key={item.label}
+                href={item.href}
+                className={`statusbar-chip statusbar-chip--${item.tone}`}
+                title={item.detail}
+              >
+                <span className="statusbar-chip-dot" aria-hidden="true" />
+                {item.label}
+                <span aria-hidden="true">→</span>
+              </Link>
+            ))
+          ) : (
+            <span className="statusbar-allclear">
+              <span className="statusbar-chip-dot" aria-hidden="true" />
+              All systems operational
+            </span>
+          )}
+        </div>
       </motion.section>
 
       {isEmptyWorkspace ? (
@@ -1426,52 +1313,9 @@ function DashboardWorkspaceOverview({
       ) : (
         <>
           <motion.section
-            className="dashboard-attention"
-            aria-label="Items needing attention"
-            custom={2}
-            variants={sectionVariants}
-            initial={reduced ? false : "hidden"}
-            animate="visible"
-          >
-            {loading ? (
-              <p className="dashboard-attention-empty">Refreshing workspace signals…</p>
-            ) : attentionItems.length ? (
-              attentionItems.map((item) => (
-                <Link
-                  key={item.label}
-                  href={item.href}
-                  className={`dashboard-attention-item dashboard-attention-item--${item.tone}`}
-                >
-                  <span className="dashboard-attention-marker" aria-hidden="true" />
-                  <span>
-                    <strong>{item.label}</strong>
-                    <small>{item.detail}</small>
-                  </span>
-                  <span className="dashboard-row-arrow" aria-hidden="true">→</span>
-                </Link>
-              ))
-            ) : (
-              <div className="dashboard-attention-clear" role="status">
-                <span className="dashboard-attention-marker" aria-hidden="true" />
-                <span>
-                  <strong>All systems operational</strong>
-                  <small>Nothing in this workspace needs your attention right now.</small>
-                </span>
-              </div>
-            )}
-          </motion.section>
-
-          <PipelineActivity
-            runs={runs}
-            stats={runStats}
-            loading={loading}
-            reduced={reduced}
-          />
-
-          <motion.section
-            className="dashboard-metrics"
+            className="dashboard-metrics dashboard-metrics--slim"
             aria-label="Workspace metrics"
-            custom={4}
+            custom={2}
             variants={sectionVariants}
             initial={reduced ? false : "hidden"}
             animate="visible"
@@ -1484,80 +1328,125 @@ function DashboardWorkspaceOverview({
             <DashboardMetric value={runs.length} label="Recent runs" loading={loading} reduced={reduced} href="/runs" accent="muted" />
           </motion.section>
 
-          <div className="dashboard-primary-grid">
-            <motion.section
-              className="dashboard-panel dashboard-panel--delivery"
-              aria-labelledby="delivery-overview-title"
-              custom={5}
-              variants={sectionVariants}
-              initial={reduced ? false : "hidden"}
-              animate="visible"
-            >
-          <div className="dashboard-panel-heading">
-            <div>
-              <p className="dashboard-section-kicker">DELIVERY OVERVIEW</p>
-              <h2 id="delivery-overview-title">{group ? "Active delivery structure" : "Active projects"}</h2>
-            </div>
-            <Link href={group ? `/groups/${group.id}/systems` : "/workflows?tab=current"} className="dashboard-inline-link">View all <span aria-hidden="true">→</span></Link>
-          </div>
-          {loading ? <p className="dashboard-empty">Loading delivery structure…</p> : group && portfolio.length ? (
-            <div className="dashboard-tree">
-              {portfolio.slice(0, 4).map((node) => (
-                <div className="dashboard-tree-system" key={node.system.id}>
-                  <Link href={`/groups/${group.id}/systems/${node.system.id}`} className="dashboard-tree-system-head">
-                    <span className="dashboard-tree-node-dot" aria-hidden="true" />
-                    <span><strong>{node.system.name}</strong><small>{node.deliveryProjects.length} delivery project{node.deliveryProjects.length === 1 ? "" : "s"}</small></span>
-                    <span className="dashboard-tree-count">{node.system.status}</span>
-                  </Link>
-                  {node.deliveryProjects.slice(0, 2).map((deliveryProject) => (
-                    <div className="dashboard-tree-project" key={deliveryProject.id}>
-                      <Link href={`/groups/${group.id}/delivery-projects/${deliveryProject.id}`}>
-                        <span>{deliveryProject.name}</span>
-                        <small>{deliveryProject.repositories.length} repo{deliveryProject.repositories.length === 1 ? "" : "s"}</small>
-                      </Link>
-                      {deliveryProject.repositories.slice(0, 2).map((repository) => (
-                        <Link key={repository.id} href={`/groups/${group.id}/repositories/${repository.id}`} className="dashboard-tree-repository">
-                          <span>{repository.name}</span>
-                          <small className={`dashboard-status dashboard-status--${repository.status}`}>{repository.status}</small>
+          <div className="dashboard-main-grid">
+            <PipelineActivity
+              runs={runs}
+              stats={runStats}
+              loading={loading}
+              reduced={reduced}
+            />
+
+            <div className="dashboard-side-col">
+              <motion.section
+                className="dashboard-panel dashboard-panel--scroll"
+                aria-labelledby="teams-title"
+                custom={4}
+                variants={sectionVariants}
+                initial={reduced ? false : "hidden"}
+                animate="visible"
+              >
+                <div className="dashboard-panel-heading">
+                  <div><p className="dashboard-section-kicker">MY TEAMS</p><h2 id="teams-title">Teams</h2></div>
+                  {groups.length ? <Link href="/groups" className="dashboard-inline-link">All <span aria-hidden="true">→</span></Link> : null}
+                </div>
+                <div className="dashboard-panel-scroll">
+                  {loading ? (
+                    <p className="dashboard-empty">Loading teams…</p>
+                  ) : groups.length ? (
+                    <div className="dashboard-teams-list">
+                      {groups.map((teamGroup) => (
+                        <Link
+                          key={teamGroup.id}
+                          href={`/groups/${teamGroup.id}`}
+                          className={`dashboard-team-row${teamGroup.id === group?.id ? " is-current" : ""}`}
+                        >
+                          <span className="dashboard-team-mark" aria-hidden="true" />
+                          <span>
+                            <strong>{teamGroup.name}</strong>
+                            <small>{readableGroupRole(teamGroup.role)} · {teamGroup.memberCount} member{teamGroup.memberCount === 1 ? "" : "s"}</small>
+                          </span>
+                          <span className="dashboard-row-arrow" aria-hidden="true">→</span>
                         </Link>
                       ))}
                     </div>
-                  ))}
+                  ) : (
+                    <p className="dashboard-empty">You&apos;re in a personal workspace — no teams yet.</p>
+                  )}
                 </div>
-              ))}
-            </div>
-          ) : (
-            <div className="dashboard-project-list">
-              {projects.slice(0, 5).map((project) => (
-                <Link key={project.id} href="/workflows?tab=current" className="dashboard-project-row">
-                  <span><strong>{shortRepoName(project.repoFullName)}</strong><small>{project.serviceName}</small></span>
-                  <span className={`dashboard-status dashboard-status--${project.status}`}>{project.status}</span>
-                </Link>
-              ))}
-              {!projects.length ? <p className="dashboard-empty">No projects in this workspace yet.</p> : null}
-            </div>
-          )}
-        </motion.section>
+              </motion.section>
 
-            <motion.section
-              className="dashboard-panel"
-              aria-labelledby="recent-activity-title"
-              custom={6}
-              variants={sectionVariants}
-              initial={reduced ? false : "hidden"}
-              animate="visible"
-            >
-              <div className="dashboard-panel-heading">
-                <div><p className="dashboard-section-kicker">WORKSPACE ACTIVITY</p><h2 id="recent-activity-title">Recent activity</h2></div>
-                {group ? <Link href={`/groups/${group.id}/activity`} className="dashboard-inline-link">Open activity <span aria-hidden="true">→</span></Link> : null}
-              </div>
-              {activity.length ? <div className="dashboard-activity-list">{activity.slice(0, 5).map((item) => (
-                <div className="dashboard-activity-row" key={item.id}>
-                  <span className="dashboard-activity-dot" aria-hidden="true" />
-                  <span><strong>{item.message}</strong><small>{item.actorLabel} · {timeAgo(item.createdAt)}</small></span>
+              <motion.section
+                className="dashboard-panel dashboard-panel--scroll"
+                aria-labelledby="delivery-overview-title"
+                custom={5}
+                variants={sectionVariants}
+                initial={reduced ? false : "hidden"}
+                animate="visible"
+              >
+                <div className="dashboard-panel-heading">
+                  <div>
+                    <p className="dashboard-section-kicker">DELIVERY OVERVIEW</p>
+                    <h2 id="delivery-overview-title">{group ? "Delivery structure" : "Active projects"}</h2>
+                  </div>
+                  <Link href={group ? `/groups/${group.id}/systems` : "/workflows?tab=current"} className="dashboard-inline-link">All <span aria-hidden="true">→</span></Link>
                 </div>
-              ))}</div> : <p className="dashboard-empty">{group && !isGroupManagerRole(group.role) ? "Team activity is available to group leads." : "No recent activity in this workspace."}</p>}
-            </motion.section>
+                <div className="dashboard-panel-scroll">
+                  {loading ? <p className="dashboard-empty">Loading delivery structure…</p> : group && portfolio.length ? (
+                    <div className="dashboard-tree">
+                      {portfolio.slice(0, 4).map((node) => (
+                        <div className="dashboard-tree-system" key={node.system.id}>
+                          <Link href={`/groups/${group.id}/systems/${node.system.id}`} className="dashboard-tree-system-head">
+                            <span className="dashboard-tree-node-dot" aria-hidden="true" />
+                            <span><strong>{node.system.name}</strong><small>{node.deliveryProjects.length} delivery project{node.deliveryProjects.length === 1 ? "" : "s"}</small></span>
+                            <span className="dashboard-tree-count">{node.system.status}</span>
+                          </Link>
+                          {node.deliveryProjects.slice(0, 2).map((deliveryProject) => (
+                            <div className="dashboard-tree-project" key={deliveryProject.id}>
+                              <Link href={`/groups/${group.id}/delivery-projects/${deliveryProject.id}`}>
+                                <span>{deliveryProject.name}</span>
+                                <small>{deliveryProject.repositories.length} repo{deliveryProject.repositories.length === 1 ? "" : "s"}</small>
+                              </Link>
+                            </div>
+                          ))}
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="dashboard-project-list">
+                      {projects.slice(0, 6).map((project) => (
+                        <Link key={project.id} href="/workflows?tab=current" className="dashboard-project-row">
+                          <span><strong>{shortRepoName(project.repoFullName)}</strong><small>{project.serviceName}</small></span>
+                          <span className={`dashboard-status dashboard-status--${project.status}`}>{project.status}</span>
+                        </Link>
+                      ))}
+                      {!projects.length ? <p className="dashboard-empty">No projects in this workspace yet.</p> : null}
+                    </div>
+                  )}
+                </div>
+              </motion.section>
+
+              <motion.section
+                className="dashboard-panel dashboard-panel--scroll dashboard-panel--activity"
+                aria-labelledby="recent-activity-title"
+                custom={6}
+                variants={sectionVariants}
+                initial={reduced ? false : "hidden"}
+                animate="visible"
+              >
+                <div className="dashboard-panel-heading">
+                  <div><p className="dashboard-section-kicker">WORKSPACE ACTIVITY</p><h2 id="recent-activity-title">Recent activity</h2></div>
+                  {group ? <Link href={`/groups/${group.id}/activity`} className="dashboard-inline-link">Open <span aria-hidden="true">→</span></Link> : null}
+                </div>
+                <div className="dashboard-panel-scroll">
+                  {activity.length ? <div className="dashboard-activity-list">{activity.slice(0, 8).map((item) => (
+                    <div className="dashboard-activity-row" key={item.id}>
+                      <span className="dashboard-activity-dot" aria-hidden="true" />
+                      <span><strong>{item.message}</strong><small>{item.actorLabel} · {timeAgo(item.createdAt)}</small></span>
+                    </div>
+                  ))}</div> : <p className="dashboard-empty">{group && !isGroupManagerRole(group.role) ? "Team activity is available to group leads." : "No recent activity in this workspace."}</p>}
+                </div>
+              </motion.section>
+            </div>
           </div>
         </>
       )}
@@ -1580,15 +1469,14 @@ function HomeDashboardContent() {
   const [projectsLoading, setProjectsLoading] = useState(true);
   const [historyError, setHistoryError] = useState<string | null>(null);
   const [projectsError, setProjectsError] = useState<string | null>(null);
-  const [latestRun, setLatestRun] = useState<RunGroup | null>(null);
   const [recentRuns, setRecentRuns] = useState<RunGroup[]>([]);
   const [runsLoading, setRunsLoading] = useState(true);
-  // Hide the header widget entirely if /ci/runs is unavailable (feature off).
-  const [runsAvailable, setRunsAvailable] = useState(true);
   // Welcome modal: shown once for new users (onboardingCompleted === false).
   // Local flag dismisses immediately without waiting for a network response.
   const [welcomeDismissed, setWelcomeDismissed] = useState(false);
   const [currentGroup, setCurrentGroup] = useState<GroupSummary | null>(null);
+  // Full team/group list for the "My teams" panel (getMyGroups items).
+  const [groups, setGroups] = useState<GroupSummary[]>([]);
   const [portfolio, setPortfolio] = useState<DeliveryPortfolioNode[]>([]);
   const [assignments, setAssignments] = useState<MyAssignedRepository[]>([]);
   const [invitations, setInvitations] = useState<GroupInvitation[]>([]);
@@ -1625,14 +1513,10 @@ function HomeDashboardContent() {
     setRunsLoading(true);
     getRuns()
       .then((response) => {
-        setLatestRun(response.runs[0] ?? null);
         setRecentRuns(response.runs);
-        setRunsAvailable(true);
       })
       .catch(() => {
-        setLatestRun(null);
         setRecentRuns([]);
-        setRunsAvailable(false);
       })
       .finally(() => setRunsLoading(false));
   }
@@ -1643,6 +1527,7 @@ function HomeDashboardContent() {
 
     Promise.all([getMyGroups(), getMyAssignedRepositories()])
       .then(async ([groupsResponse, assignmentsResponse]) => {
+        setGroups(groupsResponse.items);
         const group = groupsResponse.items.find(
           (item) => item.id === selectedWorkspaceId,
         ) ?? null;
@@ -1695,6 +1580,7 @@ function HomeDashboardContent() {
       })
       .catch(() => {
         setCurrentGroup(null);
+        setGroups([]);
         setPortfolio([]);
         setInvitations([]);
         setActivity([]);
@@ -1862,7 +1748,7 @@ function HomeDashboardContent() {
 
   return (
     <main
-      className="dash-shell dashboard-shell"
+      className="dash-shell dashboard-shell dashboard-shell--fit"
       suppressHydrationWarning
       style={{ overflowX: "hidden" }}
     >
@@ -1934,217 +1820,74 @@ function HomeDashboardContent() {
       )}
 
       <div id="main-content" className="dash-page-content home-dash-content">
-        {/* ── Welcome header — flat, no outer panel box ─────────────── */}
+        {/* ── Compact welcome header — single row, no latest-run widget ── */}
         <motion.section
-          className="welcome-banner-flat"
+          className="welcome-banner-flat home-header"
           aria-label="Welcome"
           custom={0}
           variants={sectionVariants}
           initial={prefersReducedMotion ? false : "hidden"}
           animate="visible"
-          style={{ marginBottom: 0 }}
         >
           <div className="welcome-banner-flat-accent" aria-hidden="true" />
 
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              flexWrap: "wrap",
-              gap: "1.5rem",
-            }}
-          >
-            {/* Identity + primary actions (moved up from the old footer row) */}
-              <div
-                style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: "1.1rem",
-                  minWidth: 0,
-                  flex: "1 1 0",
-                }}
-              >
-              <div
-                style={{ display: "flex", alignItems: "center", gap: "1rem" }}
-              >
+          <div className="home-header-row">
+            <div className="home-header-id">
               {!guest &&
                 (session?.user.avatarUrl ? (
                   <Image
                     src={session.user.avatarUrl}
                     alt={session.user.name ?? session.user.login}
-                    className="welcome-editorial-avatar"
-                    width={44}
-                    height={44}
-                    style={{
-                      borderRadius: "50%",
-                      border: "2px solid var(--border-brand)",
-                      boxShadow: "0 0 12px var(--brand-glow)",
-                    }}
+                    className="home-header-avatar"
+                    width={40}
+                    height={40}
                     unoptimized
                   />
                 ) : (
-                  <span
-                    aria-hidden="true"
-                    style={{
-                      width: 44,
-                      height: 44,
-                      fontSize: "1.15rem",
-                      fontWeight: 700,
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      borderRadius: "50%",
-                      background: "var(--brand-light)",
-                      border: "2px solid var(--border-brand)",
-                      color: "var(--brand)",
-                    }}
-                  >
+                  <span className="home-header-avatar home-header-avatar--fallback" aria-hidden="true">
                     {avatarInitial}
                   </span>
                 ))}
-              <div
-                style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: "0.2rem",
-                }}
-              >
-                <p
-                  style={{
-                    margin: 0,
-                    fontSize: "0.7rem",
-                    color: "var(--brand)",
-                    fontWeight: 700,
-                    letterSpacing: "0.1em",
-                    textTransform: "uppercase",
-                  }}
-                >
-                  SYSTEM.DASHBOARD
-                </p>
-                <h1
-                  style={{
-                    padding: 0,
-                    border: "none",
-                    margin: 0,
-                    fontSize: "clamp(1.3rem, 2.1vw, 1.65rem)",
-                    fontWeight: 700,
-                  }}
-                >
+              <div className="home-header-copy">
+                <p className="home-header-eyebrow">SYSTEM.DASHBOARD</p>
+                <h1 className="home-header-title">
                   {guest
                     ? "ALPHACI Dashboard"
                     : `Welcome back, ${session?.user.name ?? session?.user.login ?? "builder"}.`}
                 </h1>
               </div>
-              </div>
-
-              <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
-                {guest && (
-                  <>
-                    <Link
-                      className="primary-button"
-                      href="/signup"
-                      style={{
-                        padding: "0.4rem 1rem",
-                        fontSize: "0.8rem",
-                        minHeight: "2.2rem",
-                      }}
-                    >
-                      Sign up free
-                    </Link>
-                    <Link
-                      className="ghost-button"
-                      href="/login"
-                      style={{
-                        padding: "0.4rem 1rem",
-                        fontSize: "0.8rem",
-                        minHeight: "2.2rem",
-                      }}
-                    >
-                      Log in
-                    </Link>
-                  </>
-                )}
-              </div>
-
-              {/* Dashboard controls */}
-              <motion.div
-                custom={1}
-                variants={sectionVariants}
-                initial={prefersReducedMotion ? false : "hidden"}
-                animate="visible"
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "flex-end",
-                  gap: "1rem",
-                  flexWrap: "wrap",
-                  width: "100%",
-                }}
-              >
-                {!guest && (
-                  <div style={{ display: "flex", gap: "0.5rem" }}>
-                    <button
-                      className="ghost-button"
-                      type="button"
-                      onClick={refreshDashboard}
-                      style={{
-                        padding: "0.4rem 1rem",
-                        fontSize: "0.8rem",
-                        minHeight: "2.2rem",
-                      }}
-                    >
-                      Refresh data
-                    </button>
-                    <Link
-                      className="primary-button"
-                      href="/workflows?tab=setup"
-                      style={{
-                        padding: "0.4rem 1.2rem",
-                        fontSize: "0.8rem",
-                        minHeight: "2.2rem",
-                      }}
-                    >
-                      Create project
-                    </Link>
-                  </div>
-                )}
-              </motion.div>
             </div>
 
-            {/* Latest run — real pipeline state from /ci/runs */}
-            {runsAvailable && (
-              <div
-                style={{
-                  borderLeft: "1px solid var(--border)",
-                  paddingLeft: "clamp(0.75rem, 1.5vw, 1.25rem)",
-                  alignSelf: "start",
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: "0.35rem",
-                }}
-                className="pipeline-track-aside"
-              >
-                <p className="eyebrow" style={{ fontSize: "0.7rem" }}>
-                  LATEST RUN
-                </p>
-                <LatestRunTrack
-                  run={latestRun}
-                  loading={runsLoading}
-                  reduced={prefersReducedMotion}
-                />
-              </div>
-            )}
+            <div className="home-header-actions">
+              {guest ? (
+                <>
+                  <Link className="primary-button home-header-btn" href="/signup">
+                    Sign up free
+                  </Link>
+                  <Link className="ghost-button home-header-btn" href="/login">
+                    Log in
+                  </Link>
+                </>
+              ) : (
+                <>
+                  <button
+                    className="ghost-button home-header-btn"
+                    type="button"
+                    onClick={refreshDashboard}
+                  >
+                    Refresh
+                  </button>
+                  <Link className="primary-button home-header-btn" href="/workflows?tab=setup">
+                    Create project
+                  </Link>
+                </>
+              )}
+            </div>
           </div>
 
-          {error ? (
-            <p className="error-text" style={{ marginTop: "1rem" }}>
-              {error}
-            </p>
-          ) : null}
+          {error ? <p className="error-text home-header-msg">{error}</p> : null}
           {logoutMessage ? (
-            <p className="error-text" style={{ marginTop: "1rem" }}>
-              {logoutMessage}
-            </p>
+            <p className="error-text home-header-msg">{logoutMessage}</p>
           ) : null}
         </motion.section>
 
@@ -2161,6 +1904,7 @@ function HomeDashboardContent() {
 
         <DashboardWorkspaceOverview
           group={currentGroup}
+          groups={groups}
           portfolio={portfolio}
           assignments={assignments}
           invitations={invitations}
