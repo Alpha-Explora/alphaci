@@ -11,7 +11,7 @@ import type {
   GroupInvitation,
   InternalUserDirectoryEntry,
 } from "@/lib/api/hierarchy-contracts";
-import { FormDialog } from "./primitives";
+import { Avatar, FormDialog } from "./primitives";
 
 export function InviteMemberDialog({
   open,
@@ -105,63 +105,104 @@ export function InviteMemberDialog({
         <label className="hier-field-label" htmlFor="invite-user">
           Organization member
         </label>
-        <input
-          id="invite-user"
-          className="hier-input"
-          value={
-            selectedUser
-              ? `${selectedUser.name ?? selectedUser.login} (@${selectedUser.login})`
-              : search
-          }
-          onChange={(event) => {
-            setSelectedUser(null);
-            setSearch(event.target.value);
-          }}
-          placeholder="Search Alpha-Explora members by name or GitHub login"
-          autoComplete="off"
-        />
+
+        {selectedUser ? (
+          // Selected-member chip — clearer than cramming the name back into the
+          // text input, and shows the GitHub avatar we're about to invite.
+          <div className="invite-selected">
+            <Avatar
+              login={selectedUser.login}
+              name={selectedUser.name}
+              avatarUrl={selectedUser.avatarUrl}
+            />
+            <div className="invite-selected__meta">
+              <strong>{selectedUser.name ?? selectedUser.login}</strong>
+              <span>
+                @{selectedUser.login}
+                {selectedUser.email ? ` · ${selectedUser.email}` : ""}
+              </span>
+            </div>
+            <button
+              type="button"
+              className="invite-selected__clear"
+              aria-label="Choose a different member"
+              onClick={() => {
+                setSelectedUser(null);
+                setSearch("");
+              }}
+            >
+              Change
+            </button>
+          </div>
+        ) : (
+          <>
+            <input
+              id="invite-user"
+              className="hier-input"
+              value={search}
+              onChange={(event) => {
+                setSelectedUser(null);
+                setSearch(event.target.value);
+              }}
+              placeholder="Search Alpha-Explora members by name or GitHub login"
+              autoComplete="off"
+            />
+            {results.length > 0 && (
+              <div
+                className="invite-results"
+                role="listbox"
+                aria-label="Organization members"
+              >
+                {results.map((user) => (
+                  <button
+                    key={user.login}
+                    type="button"
+                    className="invite-result"
+                    role="option"
+                    aria-selected={false}
+                    disabled={!user.hasAccount}
+                    title={
+                      user.hasAccount
+                        ? undefined
+                        : "Hasn't signed into AlphaCI yet"
+                    }
+                    onClick={() => {
+                      if (!user.hasAccount) return;
+                      setSelectedUser(user);
+                      setResults([]);
+                    }}
+                  >
+                    <Avatar
+                      login={user.login}
+                      name={user.name}
+                      avatarUrl={user.avatarUrl}
+                    />
+                    <div className="invite-result__meta">
+                      <strong>{user.name ?? user.login}</strong>
+                      <span>
+                        @{user.login}
+                        {user.hasAccount
+                          ? user.email
+                            ? ` · ${user.email}`
+                            : ""
+                          : " · hasn't signed in yet"}
+                      </span>
+                    </div>
+                    {!user.hasAccount && (
+                      <span className="invite-result__flag">No account</span>
+                    )}
+                  </button>
+                ))}
+              </div>
+            )}
+          </>
+        )}
+
         <span className="hier-field-hint">
           {searching
             ? "Loading organization members…"
             : "Members without an AlphaCI account can't be invited until they sign in."}
         </span>
-        {!selectedUser && results.length > 0 && (
-          <div
-            className="hier-panel"
-            role="listbox"
-            aria-label="Organization members"
-          >
-            {results.map((user) => (
-              <button
-                key={user.login}
-                type="button"
-                className="hier-row"
-                disabled={!user.hasAccount}
-                title={
-                  user.hasAccount
-                    ? undefined
-                    : "Hasn't signed into AlphaCI yet"
-                }
-                style={user.hasAccount ? undefined : { opacity: 0.5 }}
-                onClick={() => {
-                  if (!user.hasAccount) return;
-                  setSelectedUser(user);
-                  setResults([]);
-                }}
-              >
-                <span>{user.name ?? user.login}</span>
-                <span>
-                  @{user.login}
-                  {user.hasAccount
-                    ? user.email
-                      ? ` · ${user.email}`
-                      : ""
-                    : " · hasn't signed in yet"}
-                </span>
-              </button>
-            ))}
-          </div>
-        )}
       </div>
     </FormDialog>
   );

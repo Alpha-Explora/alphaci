@@ -76,6 +76,14 @@ export function archiveGroup(groupId: string): Promise<GroupSummary> {
   });
 }
 
+export function deleteGroup(
+  groupId: string,
+): Promise<{ id: string; deleted: true }> {
+  return request<{ id: string; deleted: true }>(`/groups/${enc(groupId)}`, {
+    method: "DELETE",
+  });
+}
+
 export function reopenGroup(groupId: string): Promise<GroupSummary> {
   return request<GroupSummary>(`/groups/${enc(groupId)}/reopen`, {
     method: "POST",
@@ -120,6 +128,11 @@ export function getGroupInvitations(
   groupId: string,
 ): Promise<GroupInvitation[]> {
   return request<GroupInvitation[]>(`/groups/${enc(groupId)}/invitations`);
+}
+
+/** The caller's own pending invitations across every group (invitee inbox). */
+export function getMyInvitations(): Promise<GroupInvitation[]> {
+  return request<GroupInvitation[]>("/groups/invitations/mine");
 }
 
 export function acceptGroupInvitation(

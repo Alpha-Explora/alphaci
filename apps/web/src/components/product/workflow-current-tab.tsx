@@ -14,6 +14,7 @@ import { WorkflowStageList } from "./project-detail-tabs";
 import { DeploymentProvisioningSummary } from "./setup-result-panel";
 import { FlowExplainer } from "./flow-explainer";
 import { GroupWorkspacePanel } from "./group-workspace-panel";
+import { PendingInvitationsBanner } from "./pending-invitations-banner";
 
 interface WorkflowCurrentTabProps {
   latestResult: CreateProjectResult | null;
@@ -96,6 +97,20 @@ export function WorkflowCurrentTab({
     };
   }, []);
 
+  // Re-pull groups after the user accepts an invitation so the group they just
+  // joined shows up without a full page reload.
+  function refreshGroups() {
+    void getGroups()
+      .then((items) => {
+        setGroups(items);
+        setGroupsError(null);
+      })
+      .catch(() => {
+        setGroups((current) => current ?? []);
+        setGroupsError("Could not load groups.");
+      });
+  }
+
   const entries: GroupListEntry[] = useMemo(() => {
     const groupList = groups ?? [];
     const list: GroupListEntry[] = groupList.map((group) => ({
@@ -140,6 +155,13 @@ export function WorkflowCurrentTab({
   const selectedEntry =
     entries.find((entry) => entry.key === selectedKey) ?? entries[0] ?? null;
 
+  function handleGroupDeleted(groupId: string) {
+    setGroups((current) =>
+      current ? current.filter((group) => group.id !== groupId) : current,
+    );
+    setSelectedKey((current) => (current === groupId ? null : current));
+  }
+
   const loading = loadingProjects || groups === null;
   const selectedIndividualProject =
     individualProjects.find((project) => project.id === selectedIndividualProjectId) ??
@@ -163,6 +185,9 @@ export function WorkflowCurrentTab({
         padding: 0,
       }}
     >
+      {/* ── Pending invitations inbox ─────────────────────────────── */}
+      <PendingInvitationsBanner onAccepted={refreshGroups} />
+
       {/* ── Latest result banner ──────────────────────────────────── */}
       {latestResult ? (
         <div className="latest-result-banner glass-panel">
@@ -540,6 +565,7 @@ export function WorkflowCurrentTab({
                     group={selectedEntry.group}
                     projects={selectedEntry.projects}
                     renderCreateProject={(onComplete) => renderGroupCreate(selectedEntry.group!.id, onComplete)}
+                    onDeleted={handleGroupDeleted}
                   />
                 ) : selectedEntry.projects.length === 0 ? (
                   <p className="env-empty-state">No projects here yet.</p>

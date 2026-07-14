@@ -177,6 +177,7 @@ export function MemberTable({
                     <Avatar
                       login={invitation.inviteeLogin ?? invitation.invitedUserId}
                       name={invitation.inviteeName}
+                      avatarUrl={invitation.inviteeAvatarUrl}
                     />
                     <div className="hier-row-name">
                       <strong>
@@ -185,6 +186,9 @@ export function MemberTable({
                           invitation.invitedUserId}
                       </strong>
                       <span>
+                        {invitation.inviteeLogin
+                          ? `@${invitation.inviteeLogin} · `
+                          : ""}
                         {GROUP_ROLE_LABELS[invitation.role]} · invited{" "}
                         {timeAgo(invitation.createdAt)}
                       </span>

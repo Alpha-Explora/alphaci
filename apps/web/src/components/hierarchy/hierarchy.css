@@ -621,6 +621,135 @@ a.hier-card:hover {
   margin-top: 1.3rem;
 }
 
+/* ── Invite picker ────────────────────────────────────────────────────────── */
+
+/* Scrollable results list under the search input. Capped so a long org roster
+ * never pushes the dialog actions off-screen — it scrolls internally instead. */
+.invite-results {
+  margin-top: 0.4rem;
+  display: flex;
+  flex-direction: column;
+  max-height: 15rem;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-layer);
+  border-radius: 0.7rem;
+  box-shadow: var(--shadow-soft);
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-strong) transparent;
+}
+
+.invite-results::-webkit-scrollbar {
+  width: 0.4rem;
+}
+
+.invite-results::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: var(--border-strong);
+}
+
+.invite-result {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  width: 100%;
+  padding: 0.6rem 0.75rem;
+  border: none;
+  border-bottom: 1px solid var(--border-subtle);
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.14s ease;
+}
+
+.invite-result:last-child {
+  border-bottom: none;
+}
+
+.invite-result:hover:not(:disabled),
+.invite-result:focus-visible {
+  background: var(--accent-indigo-light);
+  outline: none;
+}
+
+.invite-result:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.invite-result__meta,
+.invite-selected__meta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.invite-result__meta strong,
+.invite-selected__meta strong {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.invite-result__meta span,
+.invite-selected__meta span {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.invite-result__flag {
+  flex-shrink: 0;
+  font-size: 0.64rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 0.12rem 0.45rem;
+  border-radius: var(--radius-pill);
+  color: var(--text-muted);
+  background: var(--bg-soft);
+  border: 1px solid var(--border-strong);
+}
+
+/* Chosen member — replaces the search input once a person is picked. */
+.invite-selected {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.6rem 0.7rem;
+  border: 1px solid var(--accent-indigo-glow);
+  border-radius: 0.7rem;
+  background: var(--accent-indigo-light);
+}
+
+.invite-selected__clear {
+  flex-shrink: 0;
+  font: inherit;
+  font-size: 0.76rem;
+  font-weight: 600;
+  color: var(--accent-indigo);
+  background: transparent;
+  border: 1px solid var(--accent-indigo-glow);
+  border-radius: 0.5rem;
+  padding: 0.32rem 0.7rem;
+  cursor: pointer;
+  transition: background 0.14s ease;
+}
+
+.invite-selected__clear:hover,
+.invite-selected__clear:focus-visible {
+  background: var(--bg-surface);
+  outline: none;
+}
+
 /* ── Inline forms ─────────────────────────────────────────────────────────── */
 
 .hier-inline-form {

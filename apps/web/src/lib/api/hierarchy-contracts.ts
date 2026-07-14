@@ -207,10 +207,20 @@ export interface GroupInvitation {
   createdAt: string;
   respondedAt: string | null;
   expiresAt: string | null;
-  /** Optional display enrichment — UI degrades gracefully if absent. */
+  /**
+   * Display enrichment joined server-side from the invitee/inviter profiles and
+   * the group. The UI degrades gracefully if any are absent (falls back to the
+   * user id), but the backend now populates them so invitation rows show the
+   * member's real name + GitHub avatar rather than a bare UUID.
+   */
   inviteeLogin?: string | null;
   inviteeName?: string | null;
+  inviteeEmail?: string | null;
+  inviteeAvatarUrl?: string | null;
   invitedByLogin?: string | null;
+  invitedByName?: string | null;
+  /** Present on the invitee's own inbox feed so each card names its group. */
+  groupName?: string | null;
 }
 
 // Invitations no longer carry a role: everyone joins as a Member and a Lead

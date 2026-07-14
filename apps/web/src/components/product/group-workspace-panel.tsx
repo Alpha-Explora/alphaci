@@ -6,10 +6,12 @@ import Link from "next/link";
 import { useApiResource } from "@/hooks/use-hierarchy";
 import { useAuthSession } from "@/hooks/use-auth-session";
 import {
+  deleteGroup,
   getGroupActivity,
   getGroupInvitations,
   getGroupMembers,
 } from "@/lib/api/client";
+import { ApiError } from "@/lib/api/request";
 import type { ProvisionedProject } from "@/lib/api/contracts";
 import {
   isGlobalCreatorRole,
@@ -22,6 +24,7 @@ import {
   type GroupSummary,
 } from "@/lib/api/hierarchy-contracts";
 import { ActivityFeed, ActivityFilters } from "@/components/hierarchy/activity-feed";
+import { FormDialog } from "@/components/hierarchy/primitives";
 import { InviteMemberDialog } from "@/components/hierarchy/invite-member-dialog";
 import { MemberTable } from "@/components/hierarchy/member-table";
 
@@ -31,6 +34,8 @@ interface GroupWorkspacePanelProps {
   group: GroupSummary;
   projects: ProvisionedProject[];
   renderCreateProject: (onComplete: () => void) => React.ReactNode;
+  /** Called after this group is deleted so the parent can drop it from the list. */
+  onDeleted?: (groupId: string) => void;
 }
 
 function statusVariant(status: string): string {
@@ -186,10 +191,80 @@ function Activity({ group }: { group: GroupSummary }) {
   );
 }
 
-export function GroupWorkspacePanel({ group, projects, renderCreateProject }: Readonly<GroupWorkspacePanelProps>) {
+function DeleteGroupControl({
+  group,
+  projectCount,
+  onDeleted,
+}: {
+  group: GroupSummary;
+  projectCount: number;
+  onDeleted?: (groupId: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleDelete() {
+    setDeleting(true);
+    setError(null);
+    try {
+      await deleteGroup(group.id);
+      setOpen(false);
+      onDeleted?.(group.id);
+    } catch (cause) {
+      if (cause instanceof ApiError && cause.status === 403) {
+        setError("You're not allowed to delete this group.");
+      } else if (cause instanceof ApiError && cause.status === 404) {
+        setError("This group no longer exists.");
+      } else {
+        setError("The group could not be deleted. Please try again.");
+      }
+    } finally {
+      setDeleting(false);
+    }
+  }
+
+  return (
+    <>
+      <button
+        type="button"
+        className="hier-btn-danger"
+        onClick={() => setOpen(true)}
+      >
+        Delete group
+      </button>
+      <FormDialog
+        open={open}
+        onClose={() => {
+          if (!deleting) {
+            setOpen(false);
+            setError(null);
+          }
+        }}
+        title={`Delete "${group.name}"?`}
+        description={
+          projectCount > 0
+            ? `This permanently deletes the group and its membership. Its ${projectCount} ${projectCount === 1 ? "repository stays" : "repositories stay"} on GitHub and move to your individual repositories. This cannot be undone.`
+            : "This permanently deletes the group, its membership, and its systems. This cannot be undone."
+        }
+        submitLabel="Delete group"
+        submitting={deleting}
+        error={error}
+        onSubmit={() => void handleDelete()}
+      >
+        <p className="project-list-empty" style={{ margin: 0 }}>
+          Members will lose access to this group immediately.
+        </p>
+      </FormDialog>
+    </>
+  );
+}
+
+export function GroupWorkspacePanel({ group, projects, renderCreateProject, onDeleted }: Readonly<GroupWorkspacePanelProps>) {
   const { session } = useAuthSession();
   const [section, setSection] = useState<GroupSection>("overview");
   const canCreate = isGlobalCreatorRole(session?.appRole);
+  const canManage = isGroupManagerRole(group.role);
 
   if (section === "create") {
     return (
@@ -205,7 +280,16 @@ export function GroupWorkspacePanel({ group, projects, renderCreateProject }: Re
 
   return (
     <>
-      <SectionTabs section={section} onChange={setSection} />
+      <div className="group-workspace-toolbar">
+        <SectionTabs section={section} onChange={setSection} />
+        {canManage ? (
+          <DeleteGroupControl
+            group={group}
+            projectCount={projects.length}
+            onDeleted={onDeleted}
+          />
+        ) : null}
+      </div>
       {section === "overview" ? <Overview group={group} projects={projects} /> : null}
       {section === "projects" ? <Projects projects={projects} canCreate={canCreate} onCreate={() => setSection("create")} /> : null}
     </>
