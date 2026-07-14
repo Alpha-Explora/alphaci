@@ -17895,6 +17895,129 @@ html:not([data-theme="light"]) .dash-shell :is(
   font: inherit;
   text-align: left;
   cursor: pointer;
+}
+
+/* Current Projects ownership switch and personal repository details. */
+.project-ownership-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.12rem;
+  padding: 0.18rem;
+  border: 1px solid var(--border-soft);
+  border-radius: 0.62rem;
+  background: rgba(255, 255, 255, 0.025);
+}
+
+.project-ownership-switch button {
+  min-height: 1.75rem;
+  padding: 0.25rem 0.52rem;
+  border: 1px solid transparent;
+  border-radius: 0.42rem;
+  color: var(--text-muted);
+  background: transparent;
+  font: inherit;
+  font-size: 0.7rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: color 160ms ease, background 160ms ease, border-color 160ms ease, transform 160ms ease;
+}
+
+.project-ownership-switch button:hover {
+  color: var(--text-primary);
+  transform: translateY(-1px);
+}
+
+.project-ownership-switch button.active {
+  border-color: color-mix(in srgb, var(--brand) 48%, var(--border-soft));
+  color: var(--text-primary);
+  background: color-mix(in srgb, var(--brand) 16%, transparent);
+  box-shadow: 0 4px 12px color-mix(in srgb, var(--brand) 16%, transparent);
+}
+
+.repo-creation-scope {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  max-width: 54rem;
+  margin: -0.15rem 0 1.1rem;
+  padding: 0.6rem 0.72rem;
+  border: 1px solid var(--border-soft);
+  border-radius: 0.64rem;
+  color: var(--text-secondary);
+  background: rgba(255, 255, 255, 0.018);
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+
+.repo-creation-scope strong { color: var(--text-primary); }
+
+.repo-creation-scope__dot {
+  flex: 0 0 auto;
+  width: 0.48rem;
+  height: 0.48rem;
+  margin-top: 0.34rem;
+  border-radius: 50%;
+  background: var(--brand);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--brand) 15%, transparent);
+}
+
+.repo-creation-scope--individual {
+  border-color: color-mix(in srgb, var(--brand) 38%, var(--border-soft));
+  background: linear-gradient(105deg, color-mix(in srgb, var(--brand) 11%, transparent), transparent 65%);
+}
+
+.repo-creation-scope--group .repo-creation-scope__dot {
+  background: #8b7cff;
+  box-shadow: 0 0 0 4px rgba(139, 124, 255, 0.14);
+}
+
+.repo-individual-detail {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin: 1rem 0;
+  overflow: hidden;
+  border: 1px solid var(--border-soft);
+  border-radius: 0.75rem;
+  background: rgba(255, 255, 255, 0.018);
+}
+
+.repo-individual-detail > div {
+  min-width: 0;
+  padding: 0.82rem 0.9rem;
+  border-right: 1px solid var(--border-soft);
+}
+
+.repo-individual-detail > div:last-child { border-right: 0; }
+
+.repo-individual-detail span {
+  display: block;
+  margin-bottom: 0.3rem;
+  color: var(--text-muted);
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.repo-individual-detail strong {
+  display: block;
+  overflow: hidden;
+  color: var(--text-primary);
+  font-size: 0.78rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (max-width: 720px) {
+  .repo-individual-detail { grid-template-columns: 1fr; }
+  .repo-individual-detail > div { border-right: 0; border-bottom: 1px solid var(--border-soft); }
+  .repo-individual-detail > div:last-child { border-bottom: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .project-ownership-switch button { transition: none; }
+}
+.repo-wizard-progress__step {
   transition: transform 180ms ease, background 180ms ease, border-color 180ms ease, color 180ms ease;
 }
 

@@ -78,6 +78,7 @@ function RepositoryCreationProgress({
 
 interface WorkflowSetupTabProps {
   createResult: CreateProjectResult | null;
+  creationScope: "individual" | "group";
   deploymentOwnershipMode: EnvOwnershipMode;
   deploymentProvisioning: DeploymentProvisioningFormState;
   envProvisioningEnabled: boolean;
@@ -160,6 +161,7 @@ function defaultProjectName(
 export function WorkflowSetupTab({
   createResult,
   deploymentOwnershipMode,
+  creationScope,
   deploymentProvisioning,
   envProvisioningEnabled,
   existingRepoBaseBranch,
@@ -370,6 +372,15 @@ export function WorkflowSetupTab({
             </>
           )}
         </div>
+        {!isExistingMode ? (
+          <div className={`repo-creation-scope repo-creation-scope--${creationScope}`} role="status">
+            <span className="repo-creation-scope__dot" aria-hidden="true" />
+            <span><strong>{creationScope === "individual" ? "Individual repository" : "Group repository"}</strong>{" "}
+              {creationScope === "individual" ? "Only you own and manage this repository. It will not be added to a group." : "This repository belongs to the selected group."}
+            </span>
+          </div>
+        ) : null}
+
 
         {projectCatalog.loadingProjectOptions ? (
           <p style={{ color: "var(--text-muted)", fontSize: "0.84rem", margin: "0 0 1rem" }}>

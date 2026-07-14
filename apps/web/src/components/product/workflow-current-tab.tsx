@@ -50,9 +50,6 @@ function statusVariant(status: string): string {
 
 const GROUP_LIST_PAGE_SIZE = 8;
 
-/** Sentinel list entry for projects that don't belong to any group. */
-const UNGROUPED_KEY = "__ungrouped__";
-
 interface GroupListEntry {
   key: string;
   name: string;
@@ -81,6 +78,8 @@ export function WorkflowCurrentTab({
 }: Readonly<WorkflowCurrentTabProps>) {
   const [groups, setGroups] = useState<GroupSummary[] | null>(null);
   const [groupsError, setGroupsError] = useState<string | null>(null);
+  const [railMode, setRailMode] = useState<"groups" | "individual">("groups");
+  const [selectedIndividualProjectId, setSelectedIndividualProjectId] = useState<string | null>(null);
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
   const [groupListQuery, setGroupListQuery] = useState("");
   const [groupListPage, setGroupListPage] = useState(1);
@@ -109,7 +108,6 @@ export function WorkflowCurrentTab({
 
   const entries: GroupListEntry[] = useMemo(() => {
     const groupList = groups ?? [];
-    const groupIds = new Set(groupList.map((group) => group.id));
     const list: GroupListEntry[] = groupList.map((group) => ({
       key: group.id,
       name: group.name,
@@ -118,20 +116,14 @@ export function WorkflowCurrentTab({
       groupId: group.id,
       group,
     }));
-    const ungrouped = projects.filter(
+    return list;
+  }, [groups, projects]);
+
+  const individualProjects = useMemo(() => {
+    const groupIds = new Set((groups ?? []).map((group) => group.id));
+    return projects.filter(
       (project) => !project.workspaceId || !groupIds.has(project.workspaceId),
     );
-    if (ungrouped.length > 0) {
-      list.push({
-        key: UNGROUPED_KEY,
-        name: "Ungrouped",
-        description: "Projects not owned by any group.",
-        projects: ungrouped,
-        groupId: null,
-        group: null,
-      });
-    }
-    return list;
   }, [groups, projects]);
 
   const filteredEntries = useMemo(() => {
@@ -159,6 +151,10 @@ export function WorkflowCurrentTab({
     entries.find((entry) => entry.key === selectedKey) ?? entries[0] ?? null;
 
   const loading = loadingProjects || groups === null;
+  const selectedIndividualProject =
+    individualProjects.find((project) => project.id === selectedIndividualProjectId) ??
+    individualProjects[0] ?? null;
+
 
   return (
     <motion.section
@@ -285,7 +281,7 @@ export function WorkflowCurrentTab({
             />
           ))}
         </div>
-      ) : entries.length === 0 ? (
+      ) : entries.length === 0 && individualProjects.length === 0 ? (
         <div
           className="glass-panel"
           style={{
@@ -378,11 +374,14 @@ export function WorkflowCurrentTab({
               data-tour="projects-list"
             >
               <div className="project-list-header">
-                <span>Groups</span>
-                <Link className="ghost-button" href="/groups">
-                  Manage
-                </Link>
+                <span>{railMode === "groups" ? "Groups" : "My repositories"}</span>
+                <div className="project-ownership-switch" role="group" aria-label="Repository ownership view">
+                  <button type="button" className={railMode === "groups" ? "active" : ""} aria-pressed={railMode === "groups"} onClick={() => setRailMode("groups")}>Groups</button>
+                  <button type="button" className={railMode === "individual" ? "active" : ""} aria-pressed={railMode === "individual"} onClick={() => setRailMode("individual")}>Mine</button>
+                </div>
               </div>
+              {railMode === "groups" ? (
+                <>
               <input
                 className="project-list-search"
                 aria-label="Search groups"
@@ -448,10 +447,69 @@ export function WorkflowCurrentTab({
                   </button>
                 </div>
               ) : null}
+                </>
+              ) : (
+                <>
+                  <p className="project-list-empty" style={{ marginBottom: "0.6rem" }}>Repositories you create for yourself.</p>
+                  {individualProjects.length === 0 ? (
+                    <div className="project-list-empty">
+                      No individual repositories yet.
+                      <button type="button" className="inline-link" onClick={onOpenSetup}>Create one</button>
+                    </div>
+                  ) : individualProjects.map((project) => {
+                    const selected = selectedIndividualProject?.id === project.id;
+                    return (
+                      <button
+                        key={project.id}
+                        className={`project-list-item${selected ? " selected" : ""}`}
+                        type="button"
+                        aria-pressed={selected}
+                        onClick={() => setSelectedIndividualProjectId(project.id)}
+                      >
+                        <span className="project-list-title">{project.repoFullName.split("/").at(-1) ?? project.repoFullName}</span>
+                        <span className="project-list-meta">{project.status}</span>
+                      </button>
+                    );
+                  })}
+                  <button type="button" className="ghost-button" onClick={onOpenSetup} style={{ marginTop: "0.75rem", width: "100%" }}>
+                    Create individual repository
+                  </button>
+                </>
+              )}
             </aside>
           </div>
           <div className="project-detail-column">
-            {selectedEntry ? (
+            {railMode === "individual" ? (
+              <motion.article
+                key={selectedIndividualProject?.id ?? "individual-empty"}
+                variants={cardVariants}
+                className="project-detail-panel"
+              >
+                {selectedIndividualProject ? (
+                  <>
+                    <div className="project-detail-header">
+                      <div><h3>{selectedIndividualProject.repoFullName.split("/").at(-1) ?? selectedIndividualProject.repoFullName}</h3><p>Your individual repository. It is not owned by a group.</p></div>
+                      <span className="project-detail-header-badges"><span className={`project-status-badge ${statusVariant(selectedIndividualProject.status)}`}>{selectedIndividualProject.status}</span></span>
+                    </div>
+                    <div className="repo-individual-detail">
+                      <div><span>Repository</span><strong>{selectedIndividualProject.repoFullName}</strong></div>
+                      <div><span>Service</span><strong>{selectedIndividualProject.serviceName}</strong></div>
+                      <div><span>Workflow</span><strong>{selectedIndividualProject.workflowPath}</strong></div>
+                    </div>
+                    <div className="latest-result-banner__actions">
+                      {selectedIndividualProject.repoUrl ? <a className="latest-result-banner__action-btn latest-result-banner__action-btn--primary" href={selectedIndividualProject.repoUrl} target="_blank" rel="noreferrer">Open repository</a> : null}
+                      <Link className="latest-result-banner__action-btn" href={`/projects/${encodeURIComponent(selectedIndividualProject.id)}`}>Open project</Link>
+                    </div>
+                  </>
+                ) : (
+                  <div className="env-empty-state">
+                    <strong>Build something of your own</strong>
+                    <p>Create an individual repository without assigning it to a group.</p>
+                    <button type="button" className="primary-button" onClick={onOpenSetup}>Create individual repository</button>
+                  </div>
+                )}
+              </motion.article>
+            ) : selectedEntry ? (
               <motion.article
                 key={selectedEntry.key}
                 variants={cardVariants}
