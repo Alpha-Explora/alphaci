@@ -1,18 +1,14 @@
 "use client";
 
+import Link from "next/link";
 import { useParams } from "next/navigation";
-import { useState } from "react";
 
-import { getGroup, getGroupSystems } from "@/lib/api/client";
-import type {
-  GroupSummary,
-  HierarchySystem,
-} from "@/lib/api/hierarchy-contracts";
+import { getGroup, getProjects } from "@/lib/api/client";
+import type { GroupSummary } from "@/lib/api/hierarchy-contracts";
 import { isGlobalCreatorRole } from "@/lib/api/hierarchy-contracts";
+import type { ProvisionedProject } from "@/lib/api/contracts";
 import { useApiResource } from "@/hooks/use-hierarchy";
 import { useAuthSession } from "@/hooks/use-auth-session";
-import { CreateSystemDialog } from "@/components/hierarchy/create-system-dialog";
-import { SystemTree } from "@/components/hierarchy/system-tree";
 import {
   Breadcrumb,
   GroupSubNav,
@@ -23,27 +19,36 @@ import {
   SectionHeader,
 } from "@/components/hierarchy/primitives";
 
+function statusVariant(status: string): string {
+  if (status === "provisioned") return "provisioned";
+  if (status === "provisioning" || status === "pending") return "provisioning";
+  return "failed";
+}
+
 function SystemsInner({ group }: { group: GroupSummary }) {
   const { session } = useAuthSession();
   // Create capability follows the GLOBAL role (Lead/Admin), not the per-group
-  // membership tier — mirrors the backend gate. Members can't create systems.
+  // membership tier — mirrors the backend gate. Members can't create projects.
   const canManage = isGlobalCreatorRole(session?.appRole);
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const { data, state, reload, setData } = useApiResource<HierarchySystem[]>(
-    () => getGroupSystems(group.id),
+  // The group's projects are provisioned projects owned by its workspace. The
+  // backend already scopes this to what the viewer may see (managers/admins see
+  // all; a plain member sees only the repositories they're assigned to).
+  const { data, state, reload } = useApiResource<ProvisionedProject[]>(
+    async () => (await getProjects(undefined, { workspaceId: group.id })).items,
     [group.id],
-    { emptyWhen: (systems) => systems.length === 0 },
+    { emptyWhen: (projects) => projects.length === 0 },
   );
 
-  const systems = data ?? [];
+  const projects = data ?? [];
+  // "Create project" opens the full Create Project form, pre-scoped to this
+  // group so the provisioned project is owned by it.
   const createButton = canManage ? (
-    <button
-      type="button"
+    <Link
       className="primary-button"
-      onClick={() => setDialogOpen(true)}
+      href={`/workflows?tab=setup&group=${group.id}`}
     >
       Create project
-    </button>
+    </Link>
   ) : undefined;
 
   return (
@@ -64,8 +69,29 @@ function SystemsInner({ group }: { group: GroupSummary }) {
 
       {state === "ready" ? (
         <>
-          <SectionHeader title="Projects" count={systems.length} />
-          <SystemTree groupId={group.id} systems={systems} canManage={canManage} />
+          <SectionHeader title="Projects" count={projects.length} />
+          <div className="hier-card-grid">
+            {projects.map((project) => (
+              <Link
+                key={project.id}
+                href={`/projects/${encodeURIComponent(project.id)}`}
+                className="hier-card"
+              >
+                <div className="hier-card-top">
+                  <h3 className="hier-card-name">
+                    {project.repoFullName.split("/")[1] ?? project.repoFullName}
+                  </h3>
+                  <span className={`project-status-badge ${statusVariant(project.status)}`}>
+                    {project.status}
+                  </span>
+                </div>
+                <p className="hier-card-desc">{project.repoFullName}</p>
+                <div className="hier-card-meta">
+                  <span>{project.serviceName}</span>
+                </div>
+              </Link>
+            ))}
+          </div>
         </>
       ) : state === "loading" ? (
         <LoadingRows rows={3} />
@@ -77,18 +103,9 @@ function SystemsInner({ group }: { group: GroupSummary }) {
           emptyMessage={
             canManage
               ? "Create a project to provision its GitHub repository."
-              : "This group has no projects yet."
+              : "You don't have access to any projects in this group yet."
           }
           emptyAction={createButton}
-        />
-      )}
-
-      {canManage && (
-        <CreateSystemDialog
-          open={dialogOpen}
-          groupId={group.id}
-          onClose={() => setDialogOpen(false)}
-          onCreated={(system) => setData((current) => [system, ...(current ?? [])])}
         />
       )}
     </>
@@ -106,7 +123,7 @@ function SystemsView() {
   if (state !== "ready" || !data) {
     return (
       <>
-        <Breadcrumb items={[{ label: "Groups", href: "/groups" }, { label: "Systems" }]} />
+        <Breadcrumb items={[{ label: "Groups", href: "/groups" }, { label: "Projects" }]} />
         <ResourceBoundary
           state={state}
           onRetry={reload}

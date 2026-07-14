@@ -614,6 +614,8 @@ export interface SetupProjectRequest extends GenerateWorkflowRequest {
   repoFullName: string;
   outputFileName?: string;
   deploymentProvisioning?: DeploymentProvisioningRequest;
+  /** Group/workspace to create this project inside (from ?group=<id>). */
+  workspaceId?: string;
 }
 
 export interface GenerateWorkflowResponse {
@@ -755,6 +757,8 @@ export interface CreateProjectRequest {
   microservicesConfig?: MicroservicesConfig;
   multiRepoConfig?: MicroservicesConfig;
   deploymentProvisioning?: DeploymentProvisioningRequest;
+  /** Group/workspace to create this project inside (from ?group=<id>). */
+  workspaceId?: string;
 }
 
 export interface CreateProjectResponse {

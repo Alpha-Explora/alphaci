@@ -53,6 +53,9 @@ export function WorkflowBuilder({ guest = false, session, onboardingCompleted }:
   const reducedMotion = prefersReducedMotion ?? false;
 
   const requestedTab = searchParams.get("tab");
+  // ?group=<id> deep-links "create a project inside this group" — the created
+  // project is owned by that group's workspace (validated server-side).
+  const groupId = searchParams.get("group");
   // Current Projects is the default landing tab; ?tab=setup deep-links to Create.
   const initialTab: WorkflowTab = requestedTab === "setup" ? "setup" : "current";
   const [activeTab, setActiveTab] = useState<WorkflowTab>(initialTab);
@@ -160,7 +163,10 @@ export function WorkflowBuilder({ guest = false, session, onboardingCompleted }:
     setStatusMessage("Creating GitHub repository, branches, and committing workflow...");
 
     try {
-      const response = await createProject(payloadResult.payload);
+      const response = await createProject({
+        ...payloadResult.payload,
+        ...(groupId ? { workspaceId: groupId } : {}),
+      });
 
       const outputFileName = response.workflowPath.split("/").at(-1) ?? response.workflowPath;
 
@@ -273,6 +279,7 @@ export function WorkflowBuilder({ guest = false, session, onboardingCompleted }:
       coverageThreshold: safeCoverage,
       outputFileName: createForm.outputFileName || "ci.yml",
       deploymentProvisioning: deploymentProvisioning.payload,
+      ...(groupId ? { workspaceId: groupId } : {}),
     };
 
     setIsSettingUpExistingRepo(true);
