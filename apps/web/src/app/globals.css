@@ -17861,3 +17861,260 @@ html:not([data-theme="light"]) .dash-shell :is(
     flex-direction: column;
   }
 }
+
+/* ── Repository creation wizard ─────────────────────────────────────────── */
+
+.repo-wizard-progress {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0.35rem;
+  position: relative;
+  margin: 0 0 1.5rem;
+  padding: 0.55rem;
+  border: 1px solid color-mix(in srgb, var(--border-soft) 82%, transparent);
+  border-radius: 0.95rem;
+  background:
+    radial-gradient(circle at 18% 0%, color-mix(in srgb, var(--brand) 11%, transparent), transparent 36%),
+    rgba(255, 255, 255, 0.018);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.025);
+}
+
+.repo-wizard-progress__step {
+  appearance: none;
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  min-width: 0;
+  padding: 0.62rem 0.6rem;
+  border: 1px solid transparent;
+  border-radius: 0.7rem;
+  color: var(--text-muted);
+  background: transparent;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: transform 180ms ease, background 180ms ease, border-color 180ms ease, color 180ms ease;
+}
+
+.repo-wizard-progress__step:not(:last-child)::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: calc(100% - 0.12rem);
+  width: 0.24rem;
+  height: 1px;
+  background: var(--border-soft);
+}
+
+.repo-wizard-progress__step:disabled {
+  cursor: default;
+}
+
+.repo-wizard-progress__step:not(:disabled):hover {
+  color: var(--text-secondary);
+  background: rgba(255, 255, 255, 0.035);
+  transform: translateY(-1px);
+}
+
+.repo-wizard-progress__step.is-active {
+  color: var(--text-primary);
+  border-color: color-mix(in srgb, var(--brand) 45%, var(--border-soft));
+  background: color-mix(in srgb, var(--brand) 11%, transparent);
+  box-shadow: 0 10px 24px color-mix(in srgb, var(--brand) 12%, transparent);
+}
+
+.repo-wizard-progress__step.is-complete {
+  color: var(--text-secondary);
+}
+
+.repo-wizard-progress__number {
+  display: inline-grid;
+  flex: 0 0 auto;
+  width: 1.65rem;
+  height: 1.65rem;
+  place-items: center;
+  border: 1px solid var(--border-soft);
+  border-radius: 999px;
+  color: var(--text-secondary);
+  font-size: 0.72rem;
+  font-weight: 800;
+  transition: color 180ms ease, background 180ms ease, border-color 180ms ease, transform 180ms ease;
+}
+
+.repo-wizard-progress__step.is-active .repo-wizard-progress__number {
+  border-color: var(--brand);
+  color: white;
+  background: var(--brand);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--brand) 13%, transparent);
+  transform: scale(1.06);
+}
+
+.repo-wizard-progress__step.is-complete .repo-wizard-progress__number {
+  border-color: color-mix(in srgb, var(--brand) 55%, var(--border-soft));
+  color: var(--brand);
+  background: color-mix(in srgb, var(--brand) 10%, transparent);
+}
+
+.repo-wizard-progress__copy {
+  display: grid;
+  min-width: 0;
+  gap: 0.05rem;
+}
+
+.repo-wizard-progress__copy strong {
+  overflow: hidden;
+  font-size: 0.72rem;
+  line-height: 1.1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.repo-wizard-progress__copy small {
+  overflow: hidden;
+  font-size: 0.62rem;
+  line-height: 1.15;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  opacity: 0.68;
+}
+
+.repo-wizard-step {
+  min-height: 18rem;
+}
+
+.repo-wizard-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-top: 1.8rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border-soft);
+}
+
+.repo-wizard-actions .primary-button {
+  min-width: 9rem;
+}
+
+.repo-wizard-review {
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--brand) 28%, var(--border-soft));
+  border-radius: 0.9rem;
+  background:
+    linear-gradient(130deg, color-mix(in srgb, var(--brand) 10%, transparent), transparent 44%),
+    rgba(255, 255, 255, 0.018);
+}
+
+.repo-wizard-review__heading {
+  padding: 1.15rem 1.2rem 0.95rem;
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.repo-wizard-review__eyebrow {
+  display: block;
+  margin-bottom: 0.35rem;
+  color: var(--brand);
+  font-size: 0.66rem;
+  font-weight: 800;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+}
+
+.repo-wizard-review h3 {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 1.1rem;
+}
+
+.repo-wizard-review p {
+  max-width: 44rem;
+  margin: 0.45rem 0 0;
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+  line-height: 1.5;
+}
+
+.repo-wizard-review__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin: 0;
+}
+
+.repo-wizard-review__grid > div {
+  min-width: 0;
+  padding: 0.85rem 1.2rem;
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.repo-wizard-review__grid > div:nth-child(odd) {
+  border-right: 1px solid var(--border-soft);
+}
+
+.repo-wizard-review dt {
+  margin-bottom: 0.26rem;
+  color: var(--text-muted);
+  font-size: 0.64rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.repo-wizard-review dd {
+  overflow: hidden;
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.repo-wizard-review__checks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  padding: 0.85rem 1.2rem;
+}
+
+.repo-wizard-review__checks span {
+  padding: 0.2rem 0.48rem;
+  border: 1px solid color-mix(in srgb, var(--brand) 32%, var(--border-soft));
+  border-radius: 999px;
+  color: var(--text-secondary);
+  background: color-mix(in srgb, var(--brand) 7%, transparent);
+  font-size: 0.68rem;
+  font-weight: 700;
+}
+
+@media (max-width: 920px) {
+  .repo-wizard-progress {
+    display: flex;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .repo-wizard-progress::-webkit-scrollbar { display: none; }
+
+  .repo-wizard-progress__step {
+    flex: 0 0 auto;
+    min-width: 8.4rem;
+  }
+
+  .repo-wizard-progress__step::after { display: none; }
+}
+
+@media (max-width: 560px) {
+  .repo-wizard-progress { margin-bottom: 1rem; padding: 0.38rem; }
+  .repo-wizard-progress__step { min-width: 2.25rem; padding: 0.48rem; justify-content: center; }
+  .repo-wizard-progress__copy { display: none; }
+  .repo-wizard-review__grid { grid-template-columns: 1fr; }
+  .repo-wizard-review__grid > div:nth-child(odd) { border-right: 0; }
+  .repo-wizard-review__heading, .repo-wizard-review__grid > div, .repo-wizard-review__checks { padding-left: 0.9rem; padding-right: 0.9rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .repo-wizard-progress__step,
+  .repo-wizard-progress__number { transition: none; }
+}
