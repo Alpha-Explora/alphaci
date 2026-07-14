@@ -58,6 +58,8 @@ interface GroupListEntry {
   projects: ProvisionedProject[];
   /** Null for the ungrouped bucket — no group page to link to. */
   groupId: string | null;
+  /** The full group summary (null for the ungrouped bucket). */
+  group: GroupSummary | null;
 }
 
 /**
@@ -111,6 +113,7 @@ export function WorkflowCurrentTab({
       description: group.description,
       projects: projects.filter((project) => project.workspaceId === group.id),
       groupId: group.id,
+      group,
     }));
     const ungrouped = projects.filter(
       (project) => !project.workspaceId || !groupIds.has(project.workspaceId),
@@ -122,6 +125,7 @@ export function WorkflowCurrentTab({
         description: "Projects not owned by any group.",
         projects: ungrouped,
         groupId: null,
+        group: null,
       });
     }
     return list;
@@ -455,7 +459,9 @@ export function WorkflowCurrentTab({
                     <h3>{selectedEntry.name}</h3>
                     <p>
                       {selectedEntry.description ??
-                        "Repositories owned by this group."}
+                        (selectedEntry.group
+                          ? "Projects owned by this group."
+                          : "Projects not owned by any group.")}
                     </p>
                   </div>
                   <span className="project-detail-header-badges">
@@ -468,31 +474,85 @@ export function WorkflowCurrentTab({
                   </span>
                 </div>
 
-                {selectedEntry.groupId ? (
-                  <div className="project-detail-actions">
-                    <Link
-                      className="ghost-button"
-                      href={`/groups/${selectedEntry.groupId}`}
+                {selectedEntry.group ? (
+                  // Real group: the group's own contents (formerly the Groups
+                  // page) live here — stats + the group's sections.
+                  <>
+                    <div
+                      className="hier-stat-row"
+                      style={{ margin: "0.5rem 0 1.1rem" }}
                     >
-                      Manage <span aria-hidden="true">↗</span>
-                    </Link>
-                    <Link
-                      className="ghost-button"
-                      href={`/groups/${selectedEntry.groupId}/systems`}
-                    >
-                      Create project <span aria-hidden="true">↗</span>
-                    </Link>
-                  </div>
-                ) : null}
+                      <div className="hier-stat">
+                        <span className="hier-stat-num">
+                          {selectedEntry.group.memberCount}
+                        </span>
+                        <span className="hier-stat-label">Members</span>
+                      </div>
+                      <div className="hier-stat">
+                        <span className="hier-stat-num">
+                          {selectedEntry.projects.length}
+                        </span>
+                        <span className="hier-stat-label">Projects</span>
+                      </div>
+                      <div className="hier-stat">
+                        <span
+                          className="hier-stat-num"
+                          style={{
+                            textTransform: "capitalize",
+                            fontSize: "1.1rem",
+                          }}
+                        >
+                          {selectedEntry.group.status}
+                        </span>
+                        <span className="hier-stat-label">Status</span>
+                      </div>
+                    </div>
 
-                {selectedEntry.projects.length === 0 ? (
-                  <p className="env-empty-state">
-                    No projects in this group yet.
-                    {selectedEntry.groupId
-                      ? " Create a project — that provisions the group's repository."
-                      : ""}
-                  </p>
+                    <div className="hier-card-grid">
+                      <Link
+                        href={`/groups/${selectedEntry.groupId}/members`}
+                        className="hier-card"
+                      >
+                        <div className="hier-card-top">
+                          <h3 className="hier-card-name">
+                            Members &amp; invitations
+                          </h3>
+                        </div>
+                        <p className="hier-card-desc">
+                          Manage who belongs to this group and their roles, and
+                          track invitations.
+                        </p>
+                      </Link>
+                      <Link
+                        href={`/groups/${selectedEntry.groupId}/systems`}
+                        className="hier-card"
+                      >
+                        <div className="hier-card-top">
+                          <h3 className="hier-card-name">Projects</h3>
+                        </div>
+                        <p className="hier-card-desc">
+                          Projects owned by this group. Each project provisions a
+                          GitHub repository.
+                        </p>
+                      </Link>
+                      <Link
+                        href={`/groups/${selectedEntry.groupId}/activity`}
+                        className="hier-card"
+                      >
+                        <div className="hier-card-top">
+                          <h3 className="hier-card-name">Activity &amp; audit</h3>
+                        </div>
+                        <p className="hier-card-desc">
+                          Membership changes, assignment grants/revokes, and
+                          GitHub synchronization results.
+                        </p>
+                      </Link>
+                    </div>
+                  </>
+                ) : selectedEntry.projects.length === 0 ? (
+                  <p className="env-empty-state">No projects here yet.</p>
                 ) : (
+                  // Ungrouped bucket: a plain list of the projects.
                   <div className="env-metadata-list">
                     {selectedEntry.projects.map((project) => (
                       <div

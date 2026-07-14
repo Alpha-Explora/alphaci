@@ -166,7 +166,7 @@ function GroupOverview({ groupId }: { groupId: string }) {
   if (state !== "ready" || !group) {
     return (
       <>
-        <Breadcrumb items={[{ label: "Projects", href: "/groups" }, { label: "Group" }]} />
+        <Breadcrumb items={[{ label: "Projects", href: "/workflows" }, { label: "Group" }]} />
         <ResourceBoundary
           state={state}
           onRetry={reload}
@@ -179,7 +179,7 @@ function GroupOverview({ groupId }: { groupId: string }) {
 
   return (
     <>
-      <Breadcrumb items={[{ label: "Projects", href: "/groups" }, { label: group.name }]} />
+      <Breadcrumb items={[{ label: "Projects", href: "/workflows" }, { label: group.name }]} />
       <PageHeader
         title={group.name}
         subtitle={group.description ?? group.businessUnit ?? undefined}

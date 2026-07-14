@@ -153,7 +153,7 @@ function RepositoryDetail({
     return (
       <>
         <Breadcrumb
-          items={[{ label: "Groups", href: "/groups" }, { label: "Repository" }]}
+          items={[{ label: "Projects", href: "/workflows" }, { label: "Repository" }]}
         />
         <ResourceBoundary
           state={repoResource.state}
@@ -171,7 +171,7 @@ function RepositoryDetail({
     <>
       <Breadcrumb
         items={[
-          { label: "Groups", href: "/groups" },
+          { label: "Projects", href: "/workflows" },
           {
             label: groupResource.data?.name ?? "Group",
             href: `/groups/${groupId}`,

@@ -65,7 +65,7 @@ function ActivityInner({ group }: { group: GroupSummary }) {
     <>
       <Breadcrumb
         items={[
-          { label: "Projects", href: "/groups" },
+          { label: "Projects", href: "/workflows" },
           { label: group.name, href: `/groups/${group.id}` },
           { label: "Activity" },
         ]}
@@ -120,7 +120,7 @@ function ActivityView() {
   if (state !== "ready" || !data) {
     return (
       <>
-        <Breadcrumb items={[{ label: "Projects", href: "/groups" }, { label: "Activity" }]} />
+        <Breadcrumb items={[{ label: "Projects", href: "/workflows" }, { label: "Activity" }]} />
         <ResourceBoundary
           state={state}
           onRetry={reload}

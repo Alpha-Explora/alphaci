@@ -59,7 +59,7 @@ function SystemDetail({
       <>
         <Breadcrumb
           items={[
-            { label: "Groups", href: "/groups" },
+            { label: "Projects", href: "/workflows" },
             { label: "System" },
           ]}
         />
@@ -87,7 +87,7 @@ function SystemDetail({
     <>
       <Breadcrumb
         items={[
-          { label: "Groups", href: "/groups" },
+          { label: "Projects", href: "/workflows" },
           { label: group?.name ?? "Group", href: `/groups/${groupId}` },
           { label: "Systems", href: `/groups/${groupId}/systems` },
           { label: system.name },

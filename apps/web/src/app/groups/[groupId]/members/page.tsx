@@ -52,7 +52,7 @@ function MembersInner({
     <>
       <Breadcrumb
         items={[
-          { label: "Projects", href: "/groups" },
+          { label: "Projects", href: "/workflows" },
           { label: group.name, href: `/groups/${group.id}` },
           { label: "Members" },
         ]}
@@ -131,7 +131,7 @@ function MembersView({ session }: { session: AuthMeResponse }) {
   if (state !== "ready" || !data) {
     return (
       <>
-        <Breadcrumb items={[{ label: "Projects", href: "/groups" }, { label: "Members" }]} />
+        <Breadcrumb items={[{ label: "Projects", href: "/workflows" }, { label: "Members" }]} />
         <ResourceBoundary
           state={state}
           onRetry={reload}

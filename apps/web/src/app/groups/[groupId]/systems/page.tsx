@@ -55,7 +55,7 @@ function SystemsInner({ group }: { group: GroupSummary }) {
     <>
       <Breadcrumb
         items={[
-          { label: "Groups", href: "/groups" },
+          { label: "Projects", href: "/workflows" },
           { label: group.name, href: `/groups/${group.id}` },
           { label: "Projects" },
         ]}
@@ -123,7 +123,7 @@ function SystemsView() {
   if (state !== "ready" || !data) {
     return (
       <>
-        <Breadcrumb items={[{ label: "Groups", href: "/groups" }, { label: "Projects" }]} />
+        <Breadcrumb items={[{ label: "Projects", href: "/workflows" }, { label: "Projects" }]} />
         <ResourceBoundary
           state={state}
           onRetry={reload}
