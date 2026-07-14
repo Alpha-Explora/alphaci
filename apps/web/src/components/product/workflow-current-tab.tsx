@@ -375,13 +375,23 @@ export function WorkflowCurrentTab({
             >
               <div className="project-list-header">
                 <span>{railMode === "groups" ? "Groups" : "My repositories"}</span>
-                <div className="project-ownership-switch" role="group" aria-label="Repository ownership view">
-                  <button type="button" className={railMode === "groups" ? "active" : ""} aria-pressed={railMode === "groups"} onClick={() => setRailMode("groups")}>Groups</button>
-                  <button type="button" className={railMode === "individual" ? "active" : ""} aria-pressed={railMode === "individual"} onClick={() => setRailMode("individual")}>Mine</button>
-                </div>
+                <button
+                  className={`project-ownership-toggle${railMode === "individual" ? " is-individual" : ""}`}
+                  type="button"
+                  role="switch"
+                  aria-checked={railMode === "individual"}
+                  aria-label={railMode === "individual" ? "Show group repositories" : "Show my repositories"}
+                  title={railMode === "individual" ? "Show group repositories" : "Show my repositories"}
+                  onClick={() => setRailMode((mode) => mode === "groups" ? "individual" : "groups")}
+                >
+                  <span className="project-ownership-toggle__track" aria-hidden="true">
+                    <span className="project-ownership-toggle__thumb" />
+                  </span>
+                </button>
               </div>
-              {railMode === "groups" ? (
-                <>
+              <div className="project-list-body">
+                {railMode === "groups" ? (
+                  <>
               <input
                 className="project-list-search"
                 aria-label="Search groups"
@@ -475,7 +485,8 @@ export function WorkflowCurrentTab({
                     Create individual repository
                   </button>
                 </>
-              )}
+                )}
+              </div>
             </aside>
           </div>
           <div className="project-detail-column">

@@ -8235,6 +8235,8 @@ a.ov-stat-mini:hover .ov-stat-mini-num {
 .project-list-rail {
   display: flex;
   flex-direction: column;
+  min-height: 0;
+  height: calc(100dvh - 11rem);
   gap: 0.75rem;
   position: sticky;
   top: 5rem;
@@ -8254,9 +8256,33 @@ a.ov-stat-mini:hover .ov-stat-mini-num {
 }
 
 .project-list {
-  display: grid;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  height: 100%;
   gap: 0.4rem;
+  overflow: hidden;
   padding: 0.75rem;
+}
+
+.project-list-body {
+  display: grid;
+  flex: 1 1 auto;
+  min-height: 0;
+  align-content: start;
+  gap: 0.4rem;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 0.05rem 0.2rem 0.1rem 0;
+  scrollbar-color: var(--border-tile) transparent;
+  scrollbar-width: thin;
+}
+
+.project-list-body::-webkit-scrollbar { width: 0.38rem; }
+.project-list-body::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: var(--border-tile);
 }
 
 .project-list-header {
@@ -9974,12 +10000,14 @@ a.ov-stat-mini:hover .ov-stat-mini-num {
   .project-list-rail {
     position: static;
     width: 100%;
+    height: min(30rem, calc(100dvh - 14rem));
   }
 
   .project-list {
-    grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
     position: static;
   }
+
+  .project-list-body { grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr)); }
 
   .project-list-header,
   .project-list-search,
@@ -17898,42 +17926,6 @@ html:not([data-theme="light"]) .dash-shell :is(
 }
 
 /* Current Projects ownership switch and personal repository details. */
-.project-ownership-switch {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.12rem;
-  padding: 0.18rem;
-  border: 1px solid var(--border-soft);
-  border-radius: 0.62rem;
-  background: rgba(255, 255, 255, 0.025);
-}
-
-.project-ownership-switch button {
-  min-height: 1.75rem;
-  padding: 0.25rem 0.52rem;
-  border: 1px solid transparent;
-  border-radius: 0.42rem;
-  color: var(--text-muted);
-  background: transparent;
-  font: inherit;
-  font-size: 0.7rem;
-  font-weight: 700;
-  cursor: pointer;
-  transition: color 160ms ease, background 160ms ease, border-color 160ms ease, transform 160ms ease;
-}
-
-.project-ownership-switch button:hover {
-  color: var(--text-primary);
-  transform: translateY(-1px);
-}
-
-.project-ownership-switch button.active {
-  border-color: color-mix(in srgb, var(--brand) 48%, var(--border-soft));
-  color: var(--text-primary);
-  background: color-mix(in srgb, var(--brand) 16%, transparent);
-  box-shadow: 0 4px 12px color-mix(in srgb, var(--brand) 16%, transparent);
-}
-
 .repo-creation-scope {
   display: flex;
   align-items: flex-start;
@@ -18014,8 +18006,75 @@ html:not([data-theme="light"]) .dash-shell :is(
   .repo-individual-detail > div:last-child { border-bottom: 0; }
 }
 
+.project-list-header > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.project-ownership-toggle {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  width: 2.7rem;
+  height: 1.5rem;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  cursor: pointer;
+}
+
+.project-ownership-toggle__track {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 100%;
+  border: 1px solid var(--border-tile);
+  border-radius: inherit;
+  background: rgba(255, 255, 255, 0.08);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.2);
+  transition: background 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
+}
+
+.project-ownership-toggle__thumb {
+  position: absolute;
+  top: 0.18rem;
+  left: 0.18rem;
+  width: 0.98rem;
+  height: 0.98rem;
+  border-radius: 50%;
+  background: var(--text-secondary);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.28);
+  transition: transform 180ms cubic-bezier(0.2, 0.9, 0.2, 1.15), background 180ms ease, box-shadow 180ms ease;
+}
+
+.project-ownership-toggle:hover .project-ownership-toggle__track {
+  border-color: color-mix(in srgb, var(--brand) 52%, var(--border-tile));
+}
+
+.project-ownership-toggle:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 3px;
+}
+
+.project-ownership-toggle.is-individual .project-ownership-toggle__track {
+  border-color: color-mix(in srgb, var(--brand) 70%, var(--border-tile));
+  background: var(--brand);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand) 15%, transparent), inset 0 1px 2px rgba(0, 0, 0, 0.12);
+}
+
+.project-ownership-toggle.is-individual .project-ownership-toggle__thumb {
+  transform: translateX(1.18rem);
+  background: white;
+  box-shadow: 0 2px 7px color-mix(in srgb, var(--brand) 40%, rgba(0, 0, 0, 0.3));
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .project-ownership-switch button { transition: none; }
+  .project-ownership-toggle__track,
+  .project-ownership-toggle__thumb { transition: none; }
 }
 .repo-wizard-progress__step {
   transition: transform 180ms ease, background 180ms ease, border-color 180ms ease, color 180ms ease;
