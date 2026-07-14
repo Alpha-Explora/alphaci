@@ -372,7 +372,11 @@ export function AppNav({
   const avatarInitial = (session?.user.name ?? session?.user.login ?? "U")
     .slice(0, 1)
     .toUpperCase();
-  const isPlatformAdmin = !guest && Boolean(session?.platformRole);
+  // The Admin tab is the GLOBAL admin tier: app_role 'admin' or the permanent
+  // super-admin. Leads and members don't see it. Mirrors the BE guard.
+  const isPlatformAdmin =
+    !guest &&
+    (session?.appRole === "admin" || session?.platformRole === "super_admin");
 
   useEffect(() => {
     function handleResize() {

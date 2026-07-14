@@ -212,7 +212,7 @@ export function GroupSubNav({
   const tabs: { key: typeof active; label: string; href: string }[] = [
     { key: "overview", label: "Overview", href: `/groups/${groupId}` },
     { key: "members", label: "Members", href: `/groups/${groupId}/members` },
-    { key: "systems", label: "Systems", href: `/groups/${groupId}/systems` },
+    { key: "systems", label: "Projects", href: `/groups/${groupId}/systems` },
     { key: "activity", label: "Activity", href: `/groups/${groupId}/activity` },
   ];
   return (

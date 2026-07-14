@@ -19,10 +19,10 @@ const ROLE_ORDER: AppRole[] = ["admin", "lead", "member"];
 export default function AdminUserDetailPage() {
   const params = useParams<{ id: string }>();
   const id = params.id;
-  // Any platform admin reaching this page (AdminGate already enforces that) may
-  // assign hierarchy roles — matching the BE, which gates PATCH app-role on the
-  // class-level PlatformAdminGuard rather than super-admin.
-  const { currentUserId } = useAdminContext();
+  // Admins reach this page (AdminGate enforces it). Changing the ADMIN tier
+  // (promote to Admin / demote an Admin) is the super-admin's power; a regular
+  // Admin may only shuffle Lead/Member — mirrors the BE setAppRole guard.
+  const { currentUserId, isSuperAdmin } = useAdminContext();
 
   const [detail, setDetail] = useState<AdminUserDetail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -97,12 +97,25 @@ export default function AdminUserDetailPage() {
           <select
             aria-label="Global role"
             value={detail.appRole}
-            disabled={roleBusy || detail.id === currentUserId}
+            disabled={
+              roleBusy ||
+              detail.id === currentUserId ||
+              // Only the super-admin can touch the Admin tier — for everyone
+              // else the control is read-only when the target is already an
+              // Admin (can't demote) since Lead/Member changes are the only
+              // ones they're allowed and those don't apply to an Admin.
+              (!isSuperAdmin && detail.appRole === "admin")
+            }
             onChange={(event) => void handleSetRole(event.target.value as AppRole)}
             style={{ padding: "0.4rem 0.75rem", fontSize: "0.85rem", borderRadius: "0.5rem", minWidth: "9rem" }}
           >
             {ROLE_ORDER.map((r) => (
-              <option key={r} value={r}>
+              <option
+                key={r}
+                value={r}
+                // A regular Admin cannot promote anyone to Admin.
+                disabled={r === "admin" && !isSuperAdmin && detail.appRole !== "admin"}
+              >
                 {APP_ROLE_LABELS[r]}
               </option>
             ))}
@@ -112,6 +125,9 @@ export default function AdminUserDetailPage() {
           </span>
           {detail.id === currentUserId && (
             <span style={{ fontSize: "0.8rem", color: "var(--text-secondary)" }}>You can&apos;t change your own role.</span>
+          )}
+          {!isSuperAdmin && detail.id !== currentUserId && (
+            <span style={{ fontSize: "0.8rem", color: "var(--text-muted)" }}>Only the super-admin can change Admin-level roles.</span>
           )}
           {roleMessage && <span style={{ fontSize: "0.8rem", color: "var(--text-secondary)" }}>{roleMessage}</span>}
         </div>

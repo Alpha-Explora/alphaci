@@ -217,7 +217,7 @@ function GroupOverview({ groupId }: { groupId: string }) {
         </div>
         <div className="hier-stat">
           <span className="hier-stat-num">{group.systemCount}</span>
-          <span className="hier-stat-label">Systems</span>
+          <span className="hier-stat-label">Projects</span>
         </div>
         <div className="hier-stat">
           <span className="hier-stat-num" style={{ textTransform: "capitalize", fontSize: "1.1rem" }}>
@@ -235,8 +235,8 @@ function GroupOverview({ groupId }: { groupId: string }) {
         />
         <NavCard
           href={`/groups/${group.id}/systems`}
-          title="Systems & delivery projects"
-          description="The system → delivery project → repository hierarchy owned by this group."
+          title="Projects"
+          description="Projects owned by this group. Each project provisions a GitHub repository."
         />
         <NavCard
           href={`/groups/${group.id}/activity`}

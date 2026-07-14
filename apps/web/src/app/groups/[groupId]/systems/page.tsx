@@ -42,7 +42,7 @@ function SystemsInner({ group }: { group: GroupSummary }) {
       className="primary-button"
       onClick={() => setDialogOpen(true)}
     >
-      Create system
+      Create project
     </button>
   ) : undefined;
 
@@ -52,19 +52,19 @@ function SystemsInner({ group }: { group: GroupSummary }) {
         items={[
           { label: "Groups", href: "/groups" },
           { label: group.name, href: `/groups/${group.id}` },
-          { label: "Systems" },
+          { label: "Projects" },
         ]}
       />
       <PageHeader
-        title="Systems & delivery projects"
-        subtitle="The system → delivery project → repository hierarchy owned by this group. Expand a system to see its delivery projects."
+        title="Projects"
+        subtitle="Projects owned by this group. Creating a project provisions its GitHub repository."
         actions={createButton}
       />
       <GroupSubNav groupId={group.id} active="systems" />
 
       {state === "ready" ? (
         <>
-          <SectionHeader title="Systems" count={systems.length} />
+          <SectionHeader title="Projects" count={systems.length} />
           <SystemTree groupId={group.id} systems={systems} canManage={canManage} />
         </>
       ) : state === "loading" ? (
@@ -73,11 +73,11 @@ function SystemsInner({ group }: { group: GroupSummary }) {
         <ResourceBoundary
           state={state}
           onRetry={reload}
-          emptyTitle="No systems yet"
+          emptyTitle="No projects yet"
           emptyMessage={
             canManage
-              ? "Create a system to start building the delivery project and repository hierarchy."
-              : "This group has no systems yet."
+              ? "Create a project to provision its GitHub repository."
+              : "This group has no projects yet."
           }
           emptyAction={createButton}
         />

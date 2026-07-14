@@ -474,22 +474,22 @@ export function WorkflowCurrentTab({
                       className="ghost-button"
                       href={`/groups/${selectedEntry.groupId}`}
                     >
-                      Group page <span aria-hidden="true">↗</span>
+                      Manage <span aria-hidden="true">↗</span>
                     </Link>
                     <Link
                       className="ghost-button"
                       href={`/groups/${selectedEntry.groupId}/systems`}
                     >
-                      Create system (repo) <span aria-hidden="true">↗</span>
+                      Create project <span aria-hidden="true">↗</span>
                     </Link>
                   </div>
                 ) : null}
 
                 {selectedEntry.projects.length === 0 ? (
                   <p className="env-empty-state">
-                    No repositories in this group yet.
+                    No projects in this group yet.
                     {selectedEntry.groupId
-                      ? " Create a system — that provisions the group's repository."
+                      ? " Create a project — that provisions the group's repository."
                       : ""}
                   </p>
                 ) : (

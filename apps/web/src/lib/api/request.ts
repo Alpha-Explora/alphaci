@@ -95,5 +95,14 @@ export async function request<T>(path: string, init?: RequestInit): Promise<T> {
     return undefined as T;
   }
 
-  return (await response.json()) as T;
+  // Void endpoints (e.g. PATCH /admin/users/:id/app-role) reply 200 with an
+  // EMPTY body, not 204. response.json() then rejects with a SyntaxError that
+  // callers surfaced as a spurious "unexpected error" even though the write
+  // succeeded. Treat an unparseable body on a SUCCESSFUL response as "no
+  // content" rather than a failure.
+  try {
+    return (await response.json()) as T;
+  } catch {
+    return undefined as T;
+  }
 }

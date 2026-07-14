@@ -14,7 +14,7 @@ import { FormDialog } from "./primitives";
 function describeCreateError(cause: unknown): string {
   if (cause instanceof ApiError) {
     if (cause.status === 403) {
-      return "Only a Lead or Admin can create systems.";
+      return "Only a Lead or Admin can create projects.";
     }
     const detail = cause.details as { message?: string | string[] } | undefined;
     const message = Array.isArray(detail?.message)
@@ -50,7 +50,7 @@ export function CreateSystemDialog({
   async function handleSubmit() {
     const trimmed = name.trim();
     if (!trimmed) {
-      setError("A system name is required.");
+      setError("A project name is required.");
       return;
     }
     setSubmitting(true);
@@ -77,9 +77,9 @@ export function CreateSystemDialog({
         reset();
         onClose();
       }}
-      title="Create system"
-      description="Creating a system provisions a private GitHub repository under this group. The system name is used as the repository name."
-      submitLabel="Create system"
+      title="Create project"
+      description="Creating a project provisions a private GitHub repository under this group. The project name is used as the repository name."
+      submitLabel="Create project"
       submitting={submitting}
       error={error}
       canSubmit={name.trim().length > 0}
@@ -87,7 +87,7 @@ export function CreateSystemDialog({
     >
       <div className="hier-field">
         <label className="hier-field-label" htmlFor="system-name">
-          System name
+          Project name
         </label>
         <input
           id="system-name"
