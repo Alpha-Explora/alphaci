@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useState } from "react";
 
 import { getProjects } from "@/lib/api/client";
-import { useWorkspaceSelection } from "@/components/layout/workspace-context";
 import type {
   CreateProjectRequest,
   CreateProjectResponse,
@@ -15,7 +14,6 @@ import type {
 export function useProvisionedProjects(setStatusMessage: (message: string) => void) {
   const [projects, setProjects] = useState<ProvisionedProject[]>([]);
   const [loadingProjects, setLoadingProjects] = useState(false);
-  const { selectedWorkspaceId } = useWorkspaceSelection();
 
   const loadProjects = useCallback(async (silent = false) => {
     if (!silent) {
@@ -23,7 +21,10 @@ export function useProvisionedProjects(setStatusMessage: (message: string) => vo
     }
 
     try {
-      const response = await getProjects(25, { workspaceId: selectedWorkspaceId });
+      // Current Projects is group-centric: it needs every project the user can
+      // see so the selected group's count and repository list remain correct.
+      // The API enforces group/assignment visibility for this unfiltered query.
+      const response = await getProjects(100);
       setProjects(response.items);
     } catch {
       if (!silent) {
@@ -34,7 +35,7 @@ export function useProvisionedProjects(setStatusMessage: (message: string) => vo
         setLoadingProjects(false);
       }
     }
-  }, [selectedWorkspaceId, setStatusMessage]);
+  }, [setStatusMessage]);
 
   useEffect(() => {
     void loadProjects();
@@ -44,6 +45,7 @@ export function useProvisionedProjects(setStatusMessage: (message: string) => vo
     setProjects((current) => [
       {
         id: response.id,
+        workspaceId: payload.workspaceId,
         repoFullName: response.repoFullName,
         templateId: payload.templateId,
         serviceName: payload.serviceName,
@@ -62,6 +64,7 @@ export function useProvisionedProjects(setStatusMessage: (message: string) => vo
     setProjects((current) => [
       {
         id: response.id,
+        workspaceId: payload.workspaceId,
         repoFullName: response.repoFullName,
         repoUrl: response.repoUrl,
         visibility: payload.visibility,

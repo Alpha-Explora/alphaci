@@ -13,11 +13,13 @@ import type {
 import { WorkflowStageList } from "./project-detail-tabs";
 import { DeploymentProvisioningSummary } from "./setup-result-panel";
 import { FlowExplainer } from "./flow-explainer";
+import { GroupWorkspacePanel } from "./group-workspace-panel";
 
 interface WorkflowCurrentTabProps {
   latestResult: CreateProjectResult | null;
   loadingProjects: boolean;
   onOpenSetup: () => void;
+  renderGroupCreate: (groupId: string, onComplete: () => void) => React.ReactNode;
   projects: ProvisionedProject[];
 }
 
@@ -74,6 +76,7 @@ export function WorkflowCurrentTab({
   latestResult,
   loadingProjects,
   onOpenSetup,
+  renderGroupCreate,
   projects,
 }: Readonly<WorkflowCurrentTabProps>) {
   const [groups, setGroups] = useState<GroupSummary[] | null>(null);
@@ -475,80 +478,11 @@ export function WorkflowCurrentTab({
                 </div>
 
                 {selectedEntry.group ? (
-                  // Real group: the group's own contents (formerly the Groups
-                  // page) live here — stats + the group's sections.
-                  <>
-                    <div
-                      className="hier-stat-row"
-                      style={{ margin: "0.5rem 0 1.1rem" }}
-                    >
-                      <div className="hier-stat">
-                        <span className="hier-stat-num">
-                          {selectedEntry.group.memberCount}
-                        </span>
-                        <span className="hier-stat-label">Members</span>
-                      </div>
-                      <div className="hier-stat">
-                        <span className="hier-stat-num">
-                          {selectedEntry.projects.length}
-                        </span>
-                        <span className="hier-stat-label">Projects</span>
-                      </div>
-                      <div className="hier-stat">
-                        <span
-                          className="hier-stat-num"
-                          style={{
-                            textTransform: "capitalize",
-                            fontSize: "1.1rem",
-                          }}
-                        >
-                          {selectedEntry.group.status}
-                        </span>
-                        <span className="hier-stat-label">Status</span>
-                      </div>
-                    </div>
-
-                    <div className="hier-card-grid">
-                      <Link
-                        href={`/groups/${selectedEntry.groupId}/members`}
-                        className="hier-card"
-                      >
-                        <div className="hier-card-top">
-                          <h3 className="hier-card-name">
-                            Members &amp; invitations
-                          </h3>
-                        </div>
-                        <p className="hier-card-desc">
-                          Manage who belongs to this group and their roles, and
-                          track invitations.
-                        </p>
-                      </Link>
-                      <Link
-                        href={`/groups/${selectedEntry.groupId}/systems`}
-                        className="hier-card"
-                      >
-                        <div className="hier-card-top">
-                          <h3 className="hier-card-name">Projects</h3>
-                        </div>
-                        <p className="hier-card-desc">
-                          Projects owned by this group. Each project provisions a
-                          GitHub repository.
-                        </p>
-                      </Link>
-                      <Link
-                        href={`/groups/${selectedEntry.groupId}/activity`}
-                        className="hier-card"
-                      >
-                        <div className="hier-card-top">
-                          <h3 className="hier-card-name">Activity &amp; audit</h3>
-                        </div>
-                        <p className="hier-card-desc">
-                          Membership changes, assignment grants/revokes, and
-                          GitHub synchronization results.
-                        </p>
-                      </Link>
-                    </div>
-                  </>
+                  <GroupWorkspacePanel
+                    group={selectedEntry.group}
+                    projects={selectedEntry.projects}
+                    renderCreateProject={(onComplete) => renderGroupCreate(selectedEntry.group!.id, onComplete)}
+                  />
                 ) : selectedEntry.projects.length === 0 ? (
                   <p className="env-empty-state">No projects here yet.</p>
                 ) : (

@@ -134,7 +134,10 @@ export function WorkflowBuilder({ guest = false, session, onboardingCompleted }:
     }
   }
 
-  async function handleCreateProject() {
+  async function handleCreateProject(
+    selectedGroupId?: string,
+    onComplete?: () => void,
+  ) {
     if (deploymentProvisioning.renderVariablesMissing) {
       setStatusMessage(
         "Add at least one Render environment variable before creating the repository.",
@@ -163,10 +166,12 @@ export function WorkflowBuilder({ guest = false, session, onboardingCompleted }:
     setStatusMessage("Creating GitHub repository, branches, and committing workflow...");
 
     try {
-      const response = await createProject({
+      const workspaceId = selectedGroupId ?? groupId;
+      const requestPayload = {
         ...payloadResult.payload,
-        ...(groupId ? { workspaceId: groupId } : {}),
-      });
+        ...(workspaceId ? { workspaceId } : {}),
+      };
+      const response = await createProject(requestPayload);
 
       const outputFileName = response.workflowPath.split("/").at(-1) ?? response.workflowPath;
 
@@ -190,9 +195,10 @@ export function WorkflowBuilder({ guest = false, session, onboardingCompleted }:
       };
 
       setCreateResult(result);
-      projects.prependCreateResult(response, payloadResult.payload);
+      projects.prependCreateResult(response, requestPayload);
       void projects.loadProjects(true);
       setActiveTab("current");
+      onComplete?.();
       setStatusMessage(
         `Repository "${response.repoFullName}" created. Workflow committed to ${response.workflowPath}.`,
       );
@@ -461,6 +467,34 @@ export function WorkflowBuilder({ guest = false, session, onboardingCompleted }:
               loadingProjects={projects.loadingProjects}
               onOpenSetup={() => setActiveTab("setup")}
               projects={projects.projects}
+              renderGroupCreate={(selectedGroupId, onComplete) => (
+                <WorkflowSetupTab
+                  form={createForm}
+                  deploymentOwnershipMode={deploymentOwnershipMode}
+                  deploymentProvisioning={deploymentProvisioning}
+                  envProvisioningEnabled={envProvisioningEnabled}
+                  github={github}
+                  existingRepoBaseBranch={existingRepoBaseBranch}
+                  existingRepoDiscovery={existingRepoDiscovery}
+                  existingRepoFullName={existingRepoFullName}
+                  existingRepoResult={existingRepoResult}
+                  isCreatingProject={isCreatingProject}
+                  isDiscoveringExistingRepo={isDiscoveringExistingRepo}
+                  isSettingUpExistingRepo={isSettingUpExistingRepo}
+                  setupMode={setupMode}
+                  onChangeExistingRepoBaseBranch={setExistingRepoBaseBranch}
+                  onChangeExistingRepoFullName={setExistingRepoFullName}
+                  onChangeSetupMode={setSetupMode}
+                  onCreateProject={guest ? () => { window.location.href = "/signup"; } : () => void handleCreateProject(selectedGroupId, onComplete)}
+                  onDiscoverExistingRepo={guest ? () => { window.location.href = "/signup"; } : handleDiscoverExistingRepo}
+                  onGenerateWorkflow={guest ? () => { window.location.href = "/signup"; } : handleGenerateWorkflow}
+                  onSetupExistingRepo={guest ? () => { window.location.href = "/signup"; } : handleSetupExistingRepo}
+                  projectCatalog={projectCatalog}
+                  onViewProject={onComplete}
+                  reducedMotion={reducedMotion}
+                  createResult={createResult}
+                />
+              )}
             />
           ) : null}
 
