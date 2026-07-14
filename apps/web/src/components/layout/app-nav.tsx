@@ -474,7 +474,7 @@ export function AppNav({
         {/* ── Primary nav ───────────────────────────────────────── */}
         <nav className="sidebar-nav" aria-label="Primary">
           {!guest && (
-            <div style={{ padding: collapsed ? "0 0.5rem 0.75rem" : "0 0.75rem 0.75rem" }}>
+            <div className="sidebar-account-zone">
               <div
                 className="sidebar-user-chip"
                 aria-label={`Signed in as ${session?.user.login ?? "user"}`}
@@ -484,8 +484,8 @@ export function AppNav({
                     <Image
                       src={session.user.avatarUrl}
                       alt={session.user.name ?? session.user.login}
-                      width={28}
-                      height={28}
+                      width={36}
+                      height={36}
                       className="sidebar-user-avatar-img"
                       unoptimized
                     />
@@ -511,6 +511,7 @@ export function AppNav({
                       <span className="sidebar-user-login">
                         {session?.user.login ?? "user"}
                       </span>
+                      <WorkspaceSwitcher workspaces={workspaces} />
                     </motion.div>
                   )}
                 </AnimatePresence>
@@ -586,10 +587,6 @@ export function AppNav({
         <div className="sidebar-bottom-zone">
           {!guest && (
             <>
-              <div className="sidebar-bottom-utilities">
-                <WorkspaceSwitcher workspaces={workspaces} />
-              </div>
-
               <button
                 type="button"
                 onClick={onLogout}

@@ -3,6 +3,17 @@
 import type { WorkspacesMeResponse } from "@/lib/api/contracts";
 import { useWorkspaceSelection } from "./workspace-context";
 
+function roleAwareWorkspaceLabel(workspace: {
+  kind: "personal" | "team";
+  role: "admin" | "delegated_lead" | "member" | "viewer";
+}): string {
+  if (workspace.kind === "personal") return "Personal owner";
+  if (workspace.role === "admin") return "Team lead";
+  if (workspace.role === "delegated_lead") return "Delegated team lead";
+  if (workspace.role === "viewer") return "View-only team access";
+  return "Team member";
+}
+
 export function WorkspaceSwitcher({
   workspaces,
 }: {
@@ -32,7 +43,7 @@ export function WorkspaceSwitcher({
         >
           {items.map((workspace) => (
             <option key={workspace.id} value={workspace.id}>
-              {workspace.name}
+              {workspace.name} — {roleAwareWorkspaceLabel(workspace)}
             </option>
           ))}
         </select>
@@ -45,7 +56,7 @@ export function WorkspaceSwitcher({
       <span className="workspace-switcher-label">Workspace</span>
       <span className="workspace-switcher-name">{current?.name ?? "Workspace"}</span>
       <span className="workspace-switcher-role">
-        {current ? `${current.kind} / ${current.role}` : "Loading"}
+        {current ? roleAwareWorkspaceLabel(current) : "Loading workspace"}
       </span>
     </div>
   );
