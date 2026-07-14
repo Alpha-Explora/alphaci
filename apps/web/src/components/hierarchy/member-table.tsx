@@ -65,6 +65,11 @@ export function MemberTable({
     () => invitations.filter((invitation) => invitation.status === "pending"),
     [invitations],
   );
+  // Only still-actionable (pending) invitations are shown. Accepted ones have
+  // graduated into real members (already listed in Members above), and revoked/
+  // declined/expired ones are terminal — keeping any of them here would just
+  // clutter the list. The full lifecycle stays in the Activity & audit feed.
+  const visibleInvitations = pendingInvitations;
 
   async function handleRemove(member: GroupMember) {
     setBusyId(member.id);
@@ -163,15 +168,12 @@ export function MemberTable({
 
       {(canManage || pendingInvitations.length > 0) && (
         <section aria-label="Invitations">
-          <SectionHeader
-            title="Invitations"
-            count={canManage ? invitations.length : pendingInvitations.length}
-          />
+          <SectionHeader title="Invitations" count={visibleInvitations.length} />
           <div className="hier-panel">
-            {(canManage ? invitations : pendingInvitations).length === 0 ? (
+            {visibleInvitations.length === 0 ? (
               <div className="hier-tree-empty">No invitations.</div>
             ) : (
-              (canManage ? invitations : pendingInvitations).map((invitation) => (
+              visibleInvitations.map((invitation) => (
                 <div key={invitation.id} className="hier-row">
                   <div className="hier-row-identity">
                     <Avatar

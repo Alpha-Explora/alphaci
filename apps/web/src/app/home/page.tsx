@@ -4,7 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 
 import { AppNav } from "@/components/layout/app-nav";
 import { FlowBackground } from "@/components/layout/flow-background";
@@ -16,6 +16,13 @@ import {
 import { WelcomeModal } from "@/components/product/welcome-modal";
 import { useAuthSession } from "@/hooks/use-auth-session";
 import {
+  getDeliveryProjectRepositories,
+  getGroupActivity,
+  getGroupInvitations,
+  getGroupSystems,
+  getMyAssignedRepositories,
+  getMyGroups,
+  getSystemDeliveryProjects,
   logout,
   getProjects,
   getWorkflowHistory,
@@ -28,6 +35,16 @@ import type {
   RunGroup,
   StageId,
 } from "@/lib/api/contracts";
+import {
+  isGroupManagerRole,
+  type DeliveryProject,
+  type GroupActivityItem,
+  type GroupInvitation,
+  type GroupSummary,
+  type HierarchyRepository,
+  type HierarchySystem,
+  type MyAssignedRepository,
+} from "@/lib/api/hierarchy-contracts";
 import { isGuest } from "@/lib/auth/subscription";
 
 /* ── Animated counter hook ──────────────────────────────────────────────────── */
@@ -382,6 +399,8 @@ interface ReleasePulseProps {
   prefersReducedMotion: boolean | null;
 }
 
+// Kept while the legacy helper is retired behind the new continuous dashboard.
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function ReleasePulse({
   projects,
   historyLength,
@@ -619,6 +638,364 @@ function ReleasePulse({
   );
 }
 
+type DeliveryPortfolioNode = {
+  system: HierarchySystem;
+  deliveryProjects: Array<
+    DeliveryProject & { repositories: HierarchyRepository[] }
+  >;
+};
+
+function shortRepoName(repoFullName: string | null | undefined): string {
+  if (!repoFullName) return "Repository";
+  return repoFullName.split("/")[1] ?? repoFullName;
+}
+
+function readableAssignmentState(state: MyAssignedRepository["effectiveState"]): string {
+  return state === "active"
+    ? "Access active"
+    : state === "pending"
+      ? "Access syncing"
+      : state === "failed"
+        ? "Access needs attention"
+        : state === "revoking"
+          ? "Access is being removed"
+          : state === "revoked"
+            ? "Access removed"
+            : "Access check pending";
+}
+
+function DashboardMetric({
+  value,
+  label,
+  loading,
+  reduced,
+  href,
+  accent,
+}: Readonly<{
+  value: number;
+  label: string;
+  loading: boolean;
+  reduced: boolean | null;
+  href?: string;
+  accent: "brand" | "violet" | "success" | "amber" | "muted";
+}>) {
+  const animatedValue = useCountUp(reduced || loading ? null : value, 700);
+  const content = (
+    <>
+      <span className={`dashboard-metric-icon dashboard-metric-icon--${accent}`} aria-hidden="true">
+        <span />
+      </span>
+      <span className="dashboard-metric-copy">
+        <strong>{loading ? "—" : (reduced ? value : (animatedValue ?? value))}</strong>
+        <span>{label}</span>
+      </span>
+    </>
+  );
+
+  return href ? (
+    <Link href={href} className="dashboard-metric dashboard-metric--link">
+      {content}
+    </Link>
+  ) : (
+    <div className="dashboard-metric">{content}</div>
+  );
+}
+
+function DashboardWorkspaceOverview({
+  group,
+  portfolio,
+  assignments,
+  invitations,
+  activity,
+  projects,
+  runs,
+  workflowHistoryCount,
+  loading,
+  reduced,
+}: Readonly<{
+  group: GroupSummary | null;
+  portfolio: DeliveryPortfolioNode[];
+  assignments: MyAssignedRepository[];
+  invitations: GroupInvitation[];
+  activity: GroupActivityItem[];
+  projects: ProvisionedProject[];
+  runs: RunGroup[];
+  workflowHistoryCount: number;
+  loading: boolean;
+  reduced: boolean | null;
+}>) {
+  const deliveryProjectCount = portfolio.reduce(
+    (count, node) => count + node.deliveryProjects.length,
+    0,
+  );
+  const repositoryCount = portfolio.reduce(
+    (count, node) =>
+      count +
+      node.deliveryProjects.reduce(
+        (deliveryCount, deliveryProject) =>
+          deliveryCount + deliveryProject.repositories.length,
+        0,
+      ),
+    0,
+  );
+  const failedProjects = projects.filter(
+    (project) => project.status === "failed" || project.status === "orphaned",
+  );
+  const syncingAssignments = assignments.filter(
+    (assignment) =>
+      assignment.effectiveState === "failed" ||
+      assignment.effectiveState === "pending" ||
+      assignment.effectiveState === "unknown",
+  );
+  const pendingInvitations = invitations.filter(
+    (invitation) => invitation.status === "pending",
+  );
+  const attentionItems = [
+    failedProjects.length
+      ? {
+          tone: "danger",
+          label: `${failedProjects.length} project${failedProjects.length === 1 ? "" : "s"} need attention`,
+          detail: "Review failed or disconnected delivery work.",
+          href: "/workflows?tab=current",
+        }
+      : null,
+    pendingInvitations.length
+      ? {
+          tone: "warning",
+          label: `${pendingInvitations.length} pending invitation${pendingInvitations.length === 1 ? "" : "s"}`,
+          detail: "A teammate is waiting to join this group.",
+          href: group ? `/groups/${group.id}/members` : "/settings",
+        }
+      : null,
+    syncingAssignments.length
+      ? {
+          tone: "warning",
+          label: `${syncingAssignments.length} access update${syncingAssignments.length === 1 ? "" : "s"} in progress`,
+          detail: "GitHub permissions are still being verified.",
+          href: group ? `/groups/${group.id}` : "/workflows?tab=current",
+        }
+      : null,
+  ].filter((item): item is NonNullable<typeof item> => item !== null);
+
+  const scopeLabel = group
+    ? `${group.name} · ${group.role === "admin" ? "Lead" : group.role === "delegated_lead" ? "Delegated lead" : group.role}`
+    : "Personal workspace";
+  const scopeDescription = group
+    ? group.description ?? group.businessUnit ?? "Team delivery workspace"
+    : "Your provisioned projects and assigned delivery work";
+
+  return (
+    <div className="dashboard-flow">
+      <motion.section
+        className="dashboard-scope"
+        aria-label="Current dashboard scope"
+        custom={1}
+        variants={sectionVariants}
+        initial={reduced ? false : "hidden"}
+        animate="visible"
+      >
+        <div>
+          <p className="dashboard-section-kicker">CURRENT SCOPE</p>
+          <h2>{scopeLabel}</h2>
+          <p>{scopeDescription}</p>
+        </div>
+        {group ? (
+          <Link href={`/groups/${group.id}`} className="dashboard-inline-link">
+            Open group
+            <span aria-hidden="true">→</span>
+          </Link>
+        ) : null}
+      </motion.section>
+
+      <motion.section
+        className="dashboard-attention"
+        aria-label="Items needing attention"
+        custom={2}
+        variants={sectionVariants}
+        initial={reduced ? false : "hidden"}
+        animate="visible"
+      >
+        {loading ? (
+          <p className="dashboard-attention-empty">Refreshing workspace signals…</p>
+        ) : attentionItems.length ? (
+          attentionItems.map((item) => (
+            <Link
+              key={item.label}
+              href={item.href}
+              className={`dashboard-attention-item dashboard-attention-item--${item.tone}`}
+            >
+              <span className="dashboard-attention-marker" aria-hidden="true" />
+              <span>
+                <strong>{item.label}</strong>
+                <small>{item.detail}</small>
+              </span>
+              <span className="dashboard-row-arrow" aria-hidden="true">→</span>
+            </Link>
+          ))
+        ) : (
+          <div className="dashboard-attention-clear" role="status">
+            <span className="dashboard-attention-marker" aria-hidden="true" />
+            <span>
+              <strong>All systems operational</strong>
+              <small>Nothing in this workspace needs your attention right now.</small>
+            </span>
+          </div>
+        )}
+      </motion.section>
+
+      <motion.section
+        className="dashboard-metrics"
+        aria-label="Workspace metrics"
+        custom={3}
+        variants={sectionVariants}
+        initial={reduced ? false : "hidden"}
+        animate="visible"
+      >
+        <DashboardMetric value={projects.length} label="Projects" loading={loading} reduced={reduced} href="/workflows?tab=current" accent="brand" />
+        <DashboardMetric value={group?.systemCount ?? 0} label="Systems" loading={loading && Boolean(group)} reduced={reduced} accent="violet" />
+        <DashboardMetric value={deliveryProjectCount} label="Delivery projects" loading={loading && Boolean(group)} reduced={reduced} accent="amber" />
+        <DashboardMetric value={repositoryCount} label="Repositories" loading={loading && Boolean(group)} reduced={reduced} accent="success" />
+        <DashboardMetric value={workflowHistoryCount} label="Workflows" loading={loading} reduced={reduced} href="/workflows?tab=all" accent="violet" />
+        <DashboardMetric value={runs.length} label="Recent runs" loading={loading} reduced={reduced} href="/runs" accent="muted" />
+      </motion.section>
+
+      <div className="dashboard-primary-grid">
+        <motion.section
+          className="dashboard-panel dashboard-panel--delivery"
+          aria-labelledby="delivery-overview-title"
+          custom={4}
+          variants={sectionVariants}
+          initial={reduced ? false : "hidden"}
+          animate="visible"
+        >
+          <div className="dashboard-panel-heading">
+            <div>
+              <p className="dashboard-section-kicker">DELIVERY OVERVIEW</p>
+              <h2 id="delivery-overview-title">{group ? "Active delivery structure" : "Active projects"}</h2>
+            </div>
+            <Link href={group ? `/groups/${group.id}/systems` : "/workflows?tab=current"} className="dashboard-inline-link">View all <span aria-hidden="true">→</span></Link>
+          </div>
+          {loading ? <p className="dashboard-empty">Loading delivery structure…</p> : group && portfolio.length ? (
+            <div className="dashboard-tree">
+              {portfolio.slice(0, 4).map((node) => (
+                <div className="dashboard-tree-system" key={node.system.id}>
+                  <Link href={`/groups/${group.id}/systems/${node.system.id}`} className="dashboard-tree-system-head">
+                    <span className="dashboard-tree-node-dot" aria-hidden="true" />
+                    <span><strong>{node.system.name}</strong><small>{node.deliveryProjects.length} delivery project{node.deliveryProjects.length === 1 ? "" : "s"}</small></span>
+                    <span className="dashboard-tree-count">{node.system.status}</span>
+                  </Link>
+                  {node.deliveryProjects.slice(0, 2).map((deliveryProject) => (
+                    <div className="dashboard-tree-project" key={deliveryProject.id}>
+                      <Link href={`/groups/${group.id}/delivery-projects/${deliveryProject.id}`}>
+                        <span>{deliveryProject.name}</span>
+                        <small>{deliveryProject.repositories.length} repo{deliveryProject.repositories.length === 1 ? "" : "s"}</small>
+                      </Link>
+                      {deliveryProject.repositories.slice(0, 2).map((repository) => (
+                        <Link key={repository.id} href={`/groups/${group.id}/repositories/${repository.id}`} className="dashboard-tree-repository">
+                          <span>{repository.name}</span>
+                          <small className={`dashboard-status dashboard-status--${repository.status}`}>{repository.status}</small>
+                        </Link>
+                      ))}
+                    </div>
+                  ))}
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="dashboard-project-list">
+              {projects.slice(0, 5).map((project) => (
+                <Link key={project.id} href="/workflows?tab=current" className="dashboard-project-row">
+                  <span><strong>{shortRepoName(project.repoFullName)}</strong><small>{project.serviceName}</small></span>
+                  <span className={`dashboard-status dashboard-status--${project.status}`}>{project.status}</span>
+                </Link>
+              ))}
+              {!projects.length ? <p className="dashboard-empty">No projects in this workspace yet.</p> : null}
+            </div>
+          )}
+        </motion.section>
+
+        <motion.section
+          className="dashboard-panel dashboard-panel--work"
+          aria-labelledby="my-work-title"
+          custom={5}
+          variants={sectionVariants}
+          initial={reduced ? false : "hidden"}
+          animate="visible"
+        >
+          <div className="dashboard-panel-heading">
+            <div>
+              <p className="dashboard-section-kicker">{group && isGroupManagerRole(group.role) ? "TEAM STATUS" : "MY WORK"}</p>
+              <h2 id="my-work-title">{group && isGroupManagerRole(group.role) ? "People and access" : "Assigned repositories"}</h2>
+            </div>
+          </div>
+          {loading ? <p className="dashboard-empty">Loading workspace activity…</p> : assignments.length ? (
+            <div className="dashboard-work-list">
+              {assignments.slice(0, 5).map((assignment) => (
+                <div className="dashboard-work-row" key={assignment.assignmentId}>
+                  <span className={`dashboard-work-state dashboard-work-state--${assignment.effectiveState}`} aria-hidden="true" />
+                  <span><strong>{assignment.repositoryName}</strong><small>{assignment.systemName ?? assignment.groupName ?? "Assigned delivery work"}</small></span>
+                  <small className="dashboard-work-access">{readableAssignmentState(assignment.effectiveState)}</small>
+                </div>
+              ))}
+            </div>
+          ) : group && isGroupManagerRole(group.role) ? (
+            <div className="dashboard-team-summary">
+              <strong>{group.memberCount} active team member{group.memberCount === 1 ? "" : "s"}</strong>
+              <span>{pendingInvitations.length ? `${pendingInvitations.length} invitation${pendingInvitations.length === 1 ? " is" : "s are"} waiting.` : "No pending invitations."}</span>
+              <Link href={`/groups/${group.id}/members`} className="dashboard-inline-link">Manage members <span aria-hidden="true">→</span></Link>
+            </div>
+          ) : <p className="dashboard-empty">No repositories are assigned to you in this workspace.</p>}
+        </motion.section>
+      </div>
+
+      <div className="dashboard-secondary-grid">
+        <motion.section
+          className="dashboard-panel"
+          aria-labelledby="recent-runs-title"
+          custom={6}
+          variants={sectionVariants}
+          initial={reduced ? false : "hidden"}
+          animate="visible"
+        >
+          <div className="dashboard-panel-heading">
+            <div><p className="dashboard-section-kicker">PIPELINE ACTIVITY</p><h2 id="recent-runs-title">Recent runs</h2></div>
+            <Link href="/runs" className="dashboard-inline-link">View all <span aria-hidden="true">→</span></Link>
+          </div>
+          {runs.length ? <div className="dashboard-runs-list">{runs.slice(0, 4).map((run) => (
+            <Link href="/runs" key={run.runId} className="dashboard-run-row">
+              <span><strong>{shortRepoName(run.repoFullName)}</strong><small>{run.branch} · {timeAgo(run.startedAt)}</small></span>
+              <span className="dashboard-stage-track" aria-label={`Run ${run.overallStatus}`}>
+                {RUN_STAGE_ORDER.map((stage) => <span key={stage} className={`pipeline-dot pipeline-dot--${run.stages.find((item) => item.stage === stage)?.status ?? "pending"}`} />)}
+              </span>
+              <span className={`dashboard-status dashboard-status--${run.overallStatus}`}>{run.overallStatus}</span>
+            </Link>
+          ))}</div> : <p className="dashboard-empty">Runs will appear here after a provisioned repository is updated.</p>}
+        </motion.section>
+
+        <motion.section
+          className="dashboard-panel"
+          aria-labelledby="recent-activity-title"
+          custom={7}
+          variants={sectionVariants}
+          initial={reduced ? false : "hidden"}
+          animate="visible"
+        >
+          <div className="dashboard-panel-heading">
+            <div><p className="dashboard-section-kicker">WORKSPACE ACTIVITY</p><h2 id="recent-activity-title">Recent activity</h2></div>
+            {group ? <Link href={`/groups/${group.id}/activity`} className="dashboard-inline-link">Open activity <span aria-hidden="true">→</span></Link> : null}
+          </div>
+          {activity.length ? <div className="dashboard-activity-list">{activity.slice(0, 4).map((item) => (
+            <div className="dashboard-activity-row" key={item.id}>
+              <span className="dashboard-activity-dot" aria-hidden="true" />
+              <span><strong>{item.message}</strong><small>{item.actorLabel} · {timeAgo(item.createdAt)}</small></span>
+            </div>
+          ))}</div> : <p className="dashboard-empty">{group && !isGroupManagerRole(group.role) ? "Team activity is available to group leads." : "No recent activity in this workspace."}</p>}
+        </motion.section>
+      </div>
+    </div>
+  );
+}
+
 /* ── Page ───────────────────────────────────────────────────────────────────── */
 
 function HomeDashboardContent() {
@@ -635,12 +1012,20 @@ function HomeDashboardContent() {
   const [historyError, setHistoryError] = useState<string | null>(null);
   const [projectsError, setProjectsError] = useState<string | null>(null);
   const [latestRun, setLatestRun] = useState<RunGroup | null>(null);
+  const [recentRuns, setRecentRuns] = useState<RunGroup[]>([]);
   const [runsLoading, setRunsLoading] = useState(true);
   // Hide the header widget entirely if /ci/runs is unavailable (feature off).
   const [runsAvailable, setRunsAvailable] = useState(true);
   // Welcome modal: shown once for new users (onboardingCompleted === false).
   // Local flag dismisses immediately without waiting for a network response.
   const [welcomeDismissed, setWelcomeDismissed] = useState(false);
+  const [currentGroup, setCurrentGroup] = useState<GroupSummary | null>(null);
+  const [portfolio, setPortfolio] = useState<DeliveryPortfolioNode[]>([]);
+  const [assignments, setAssignments] = useState<MyAssignedRepository[]>([]);
+  const [invitations, setInvitations] = useState<GroupInvitation[]>([]);
+  const [activity, setActivity] = useState<GroupActivityItem[]>([]);
+  const [workspaceOverviewLoading, setWorkspaceOverviewLoading] = useState(true);
+  const [workspaceOverviewError, setWorkspaceOverviewError] = useState<string | null>(null);
 
   function loadHistory() {
     setHistoryLoading(true);
@@ -672,13 +1057,83 @@ function HomeDashboardContent() {
     getRuns()
       .then((response) => {
         setLatestRun(response.runs[0] ?? null);
+        setRecentRuns(response.runs);
         setRunsAvailable(true);
       })
       .catch(() => {
         setLatestRun(null);
+        setRecentRuns([]);
         setRunsAvailable(false);
       })
       .finally(() => setRunsLoading(false));
+  }
+
+  function loadWorkspaceOverview() {
+    setWorkspaceOverviewLoading(true);
+    setWorkspaceOverviewError(null);
+
+    Promise.all([getMyGroups(), getMyAssignedRepositories()])
+      .then(async ([groupsResponse, assignmentsResponse]) => {
+        const group = groupsResponse.items.find(
+          (item) => item.id === selectedWorkspaceId,
+        ) ?? null;
+        setCurrentGroup(group);
+        setAssignments(
+          group
+            ? assignmentsResponse.items.filter(
+                (assignment) => assignment.groupId === group.id,
+              )
+            : assignmentsResponse.items.filter(
+                (assignment) => !selectedWorkspaceId || assignment.groupId === selectedWorkspaceId,
+              ),
+        );
+
+        if (!group) {
+          setPortfolio([]);
+          setInvitations([]);
+          setActivity([]);
+          return;
+        }
+
+        const systems = await getGroupSystems(group.id);
+        const nextPortfolio = await Promise.all(
+          systems.map(async (system) => {
+            const deliveryProjects = await getSystemDeliveryProjects(system.id);
+            const projectsWithRepositories = await Promise.all(
+              deliveryProjects.map(async (deliveryProject) => ({
+                ...deliveryProject,
+                repositories: await getDeliveryProjectRepositories(
+                  deliveryProject.id,
+                ),
+              })),
+            );
+            return { system, deliveryProjects: projectsWithRepositories };
+          }),
+        );
+        setPortfolio(nextPortfolio);
+
+        if (isGroupManagerRole(group.role)) {
+          const [nextInvitations, nextActivity] = await Promise.all([
+            getGroupInvitations(group.id),
+            getGroupActivity(group.id, { limit: 4 }),
+          ]);
+          setInvitations(nextInvitations);
+          setActivity(nextActivity.items);
+        } else {
+          setInvitations([]);
+          setActivity([]);
+        }
+      })
+      .catch(() => {
+        setCurrentGroup(null);
+        setPortfolio([]);
+        setInvitations([]);
+        setActivity([]);
+        setWorkspaceOverviewError(
+          "Some group information could not be loaded. You can still review your projects and runs.",
+        );
+      })
+      .finally(() => setWorkspaceOverviewLoading(false));
   }
 
   // Internal workspace: there is no guest/preview mode. Unauthenticated
@@ -694,6 +1149,7 @@ function HomeDashboardContent() {
     loadHistory();
     loadProjects();
     loadLatestRun();
+    loadWorkspaceOverview();
     // Intentionally re-run only on auth/workspace change, not on loader identity.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status, selectedWorkspaceId]);
@@ -755,6 +1211,7 @@ function HomeDashboardContent() {
     loadHistory();
     loadProjects();
     loadLatestRun();
+    loadWorkspaceOverview();
   }
 
   /* ── Guard: loading ─────────────────────────────────────────────────────── */
@@ -829,8 +1286,6 @@ function HomeDashboardContent() {
     !guest &&
     !welcomeDismissed &&
     session?.user.onboardingCompleted === false;
-
-  const uniqueServices = new Set(history.map((h) => h.serviceName)).size;
 
   const avatarInitial = (session?.user.name ?? session?.user.login ?? "U")
     .slice(0, 1)
@@ -1124,100 +1579,29 @@ function HomeDashboardContent() {
           ) : null}
         </motion.section>
 
-        {/* ── Dashboard Content ────────────────────────────────────────── */}
-        <AnimatePresence mode="wait">
-          <motion.div
-            key="overview"
-            id="dash-panel-overview"
-            role="tabpanel"
-            aria-labelledby="dash-tab-overview"
-            initial={prefersReducedMotion ? false : { opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={prefersReducedMotion ? undefined : { opacity: 0, y: -6 }}
-            transition={{ duration: 0.28, ease: EASE_OUT }}
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              gap: "1.5rem",
-            }}
-          >
-            <section aria-label="Release pulse">
-              <ReleasePulse
-                projects={projects}
-                historyLength={history.length}
-                uniqueServices={uniqueServices}
-                historyLoading={historyLoading}
-                projectsLoading={projectsLoading}
-                prefersReducedMotion={prefersReducedMotion}
-              />
-            </section>
+        {/* One continuous dashboard flow — no internal tabs or modes. */}
+        {!guest && (projectsError || historyError || workspaceOverviewError) ? (
+          <div className="dashboard-load-errors" role="alert">
+            <span aria-hidden="true">!</span>
+            <p>{projectsError ?? historyError ?? workspaceOverviewError}</p>
+            <button className="error-retry-btn" type="button" onClick={refreshDashboard}>
+              Retry
+            </button>
+          </div>
+        ) : null}
 
-            {!guest && projectsError ? (
-              <div
-                className="error-inline glass-panel"
-                role="alert"
-                style={{
-                  background: "rgba(248, 113, 113, 0.05)",
-                  border: "1px solid rgba(248, 113, 113, 0.2)",
-                  borderRadius: "10px",
-                }}
-              >
-                <span
-                  className="error-inline-icon"
-                  aria-hidden="true"
-                  style={{ color: "var(--danger)" }}
-                >
-                  !
-                </span>
-                <p
-                  className="error-inline-msg"
-                  style={{ margin: 0, fontSize: "0.82rem" }}
-                >
-                  {projectsError}
-                </p>
-                <button
-                  className="error-retry-btn"
-                  type="button"
-                  onClick={loadProjects}
-                >
-                  Retry
-                </button>
-              </div>
-            ) : null}
-            {!guest && historyError ? (
-              <div
-                className="error-inline glass-panel"
-                role="alert"
-                style={{
-                  background: "rgba(248, 113, 113, 0.05)",
-                  border: "1px solid rgba(248, 113, 113, 0.2)",
-                  borderRadius: "10px",
-                }}
-              >
-                <span
-                  className="error-inline-icon"
-                  aria-hidden="true"
-                  style={{ color: "var(--danger)" }}
-                >
-                  !
-                </span>
-                <p
-                  className="error-inline-msg"
-                  style={{ margin: 0, fontSize: "0.82rem" }}
-                >
-                  {historyError}
-                </p>
-                <button
-                  className="error-retry-btn"
-                  type="button"
-                  onClick={loadHistory}
-                >
-                  Retry
-                </button>
-              </div>
-            ) : null}
-          </motion.div>
-        </AnimatePresence>
+        <DashboardWorkspaceOverview
+          group={currentGroup}
+          portfolio={portfolio}
+          assignments={assignments}
+          invitations={invitations}
+          activity={activity}
+          projects={projects}
+          runs={recentRuns}
+          workflowHistoryCount={history.length}
+          loading={projectsLoading || workspaceOverviewLoading || runsLoading || historyLoading}
+          reduced={prefersReducedMotion}
+        />
       </div>
     </main>
   );
