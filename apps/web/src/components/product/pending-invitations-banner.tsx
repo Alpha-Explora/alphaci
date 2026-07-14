@@ -7,6 +7,7 @@ import {
   declineGroupInvitation,
   getMyInvitations,
 } from "@/lib/api/client";
+import { ApiError } from "@/lib/api/request";
 import type { GroupInvitation } from "@/lib/api/hierarchy-contracts";
 import { Avatar } from "@/components/hierarchy/primitives";
 import { timeAgo } from "@/hooks/use-hierarchy";
@@ -44,6 +45,29 @@ export function PendingInvitationsBanner({
     };
   }, []);
 
+  // Map the backend's status codes to a specific reason instead of a single
+  // catch-all, so a genuinely revoked/expired invite reads differently from a
+  // transient server error. A 400/404/409 means the invite is no longer
+  // actionable, so we also drop it from the list.
+  function invitationGoneMessage(cause: unknown, verb: "accepted" | "declined") {
+    if (cause instanceof ApiError) {
+      if (cause.status === 404)
+        return { message: "This invitation no longer exists.", gone: true };
+      if (cause.status === 400 || cause.status === 409)
+        return {
+          message:
+            "This invitation is no longer pending — it may have been revoked, or you already responded.",
+          gone: true,
+        };
+      if (cause.status === 403)
+        return {
+          message: "This invitation isn't addressed to your account.",
+          gone: false,
+        };
+    }
+    return { message: `The invitation could not be ${verb}. Please try again.`, gone: false };
+  }
+
   async function accept(invitation: GroupInvitation) {
     setBusyId(invitation.id);
     setError(null);
@@ -53,8 +77,14 @@ export function PendingInvitationsBanner({
         (current ?? []).filter((item) => item.id !== invitation.id),
       );
       onAccepted?.();
-    } catch {
-      setError("That invitation could not be accepted. It may have been revoked.");
+    } catch (cause) {
+      const { message, gone } = invitationGoneMessage(cause, "accepted");
+      setError(message);
+      if (gone) {
+        setInvitations((current) =>
+          (current ?? []).filter((item) => item.id !== invitation.id),
+        );
+      }
     } finally {
       setBusyId(null);
     }
@@ -68,8 +98,14 @@ export function PendingInvitationsBanner({
       setInvitations((current) =>
         (current ?? []).filter((item) => item.id !== invitation.id),
       );
-    } catch {
-      setError("That invitation could not be declined. Please try again.");
+    } catch (cause) {
+      const { message, gone } = invitationGoneMessage(cause, "declined");
+      setError(message);
+      if (gone) {
+        setInvitations((current) =>
+          (current ?? []).filter((item) => item.id !== invitation.id),
+        );
+      }
     } finally {
       setBusyId(null);
     }
