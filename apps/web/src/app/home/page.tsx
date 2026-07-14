@@ -3,7 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 
 import { AppNav } from "@/components/layout/app-nav";
@@ -33,6 +33,7 @@ import type {
   ProvisionedProject,
   WorkflowHistoryItem,
   RunGroup,
+  RunOverallStatus,
   StageId,
 } from "@/lib/api/contracts";
 import {
@@ -650,18 +651,616 @@ function shortRepoName(repoFullName: string | null | undefined): string {
   return repoFullName.split("/")[1] ?? repoFullName;
 }
 
-function readableAssignmentState(state: MyAssignedRepository["effectiveState"]): string {
-  return state === "active"
-    ? "Access active"
-    : state === "pending"
-      ? "Access syncing"
-      : state === "failed"
-        ? "Access needs attention"
-        : state === "revoking"
-          ? "Access is being removed"
-          : state === "revoked"
-            ? "Access removed"
-            : "Access check pending";
+/* ── Derived run analytics — computed client-side from recentRuns ──────────── */
+
+interface RunStats {
+  /** Most-recent-first window used for rate/breakdown (up to 10). */
+  sample: RunGroup[];
+  /** Whole-number success percentage over finished runs, or null when none. */
+  successRate: number | null;
+  finishedCount: number;
+  successes: number;
+  failures: number;
+  running: number;
+  /** Stage that failed most across the sample, or null when no failures. */
+  worstStage: { stage: StageId; count: number } | null;
+  /** Consecutive failures counted from the most recent run. */
+  failureStreak: number;
+  /** Overall statuses, most-recent-first, for the sparkline. */
+  outcomes: RunOverallStatus[];
+}
+
+function computeRunStats(runs: RunGroup[]): RunStats {
+  const sample = runs.slice(0, 10);
+  const finished = sample.filter((run) => run.overallStatus !== "running");
+  const successes = sample.filter(
+    (run) => run.overallStatus === "success",
+  ).length;
+  const failures = sample.filter(
+    (run) => run.overallStatus === "failure",
+  ).length;
+  const running = runs.filter((run) => run.overallStatus === "running").length;
+
+  const successRate = finished.length
+    ? Math.round(
+        (finished.filter((run) => run.overallStatus === "success").length /
+          finished.length) *
+          100,
+      )
+    : null;
+
+  const stageFailures: Record<StageId, number> = {
+    access: 0,
+    quality: 0,
+    package: 0,
+  };
+  for (const run of sample) {
+    for (const stage of run.stages) {
+      if (stage.status === "failure") stageFailures[stage.stage] += 1;
+    }
+  }
+  const rankedStages = (
+    Object.entries(stageFailures) as Array<[StageId, number]>
+  ).sort((a, b) => b[1] - a[1]);
+  const worstStage =
+    rankedStages[0] && rankedStages[0][1] > 0
+      ? { stage: rankedStages[0][0], count: rankedStages[0][1] }
+      : null;
+
+  let failureStreak = 0;
+  for (const run of runs) {
+    if (run.overallStatus === "failure") failureStreak += 1;
+    else break;
+  }
+
+  return {
+    sample,
+    successRate,
+    finishedCount: finished.length,
+    successes,
+    failures,
+    running,
+    worstStage,
+    failureStreak,
+    outcomes: runs.map((run) => run.overallStatus),
+  };
+}
+
+/* ── Success-rate ring — single SVG, count-up drives the arc ───────────────── */
+
+function SuccessRing({
+  value,
+  display,
+  reduced,
+}: Readonly<{
+  value: number | null;
+  display: number | null;
+  reduced: boolean | null;
+}>) {
+  const pct = display ?? 0;
+  const radius = 26;
+  const circumference = 2 * Math.PI * radius;
+  const offset = circumference - (pct / 100) * circumference;
+  const color =
+    value === null
+      ? "var(--text-muted)"
+      : pct >= 80
+        ? "var(--success)"
+        : pct >= 50
+          ? "var(--accent-amber)"
+          : "var(--danger)";
+  return (
+    <div className="ops-ring">
+      <svg width="64" height="64" viewBox="0 0 64 64" aria-hidden="true">
+        <circle className="ops-ring-bg" cx="32" cy="32" r={radius} />
+        <circle
+          className="ops-ring-fg"
+          cx="32"
+          cy="32"
+          r={radius}
+          style={{
+            stroke: color,
+            strokeDasharray: circumference,
+            strokeDashoffset: value === null ? circumference : offset,
+            transition: reduced ? "none" : "stroke-dashoffset 0.12s linear",
+          }}
+        />
+      </svg>
+      <span className="ops-ring-val" style={{ color }}>
+        {value === null ? "—" : `${pct}%`}
+      </span>
+    </div>
+  );
+}
+
+/* ── Sparkline of recent run outcomes (oldest → newest, left → right) ───────── */
+
+function RunSparkline({
+  outcomes,
+  reduced,
+}: Readonly<{ outcomes: RunOverallStatus[]; reduced: boolean | null }>) {
+  if (!outcomes.length) {
+    return <p className="ops-empty">Outcomes appear after your first run.</p>;
+  }
+  const bars = outcomes.slice(0, 14).reverse();
+  return (
+    <div
+      className="ops-spark"
+      role="img"
+      aria-label={`Last ${bars.length} run outcomes, oldest to newest`}
+    >
+      {bars.map((outcome, index) => (
+        <motion.span
+          key={index}
+          className={`ops-spark-bar ops-spark-bar--${outcome}`}
+          title={outcome}
+          initial={reduced ? false : { scaleY: 0.15, opacity: 0 }}
+          animate={{ scaleY: 1, opacity: 1 }}
+          transition={{
+            delay: reduced ? 0 : index * 0.028,
+            duration: 0.32,
+            ease: EASE_OUT,
+          }}
+        />
+      ))}
+    </div>
+  );
+}
+
+/* ── Ops insight rail — the "genuinely useful operational content" ─────────── */
+
+function OpsInsightRail({
+  stats,
+  loading,
+  reduced,
+}: Readonly<{ stats: RunStats; loading: boolean; reduced: boolean | null }>) {
+  const animatedRate = useCountUp(
+    reduced || loading || stats.successRate === null ? null : stats.successRate,
+    800,
+  );
+  const displayRate =
+    stats.successRate === null
+      ? null
+      : reduced
+        ? stats.successRate
+        : (animatedRate ?? stats.successRate);
+
+  return (
+    <aside className="ops-rail" aria-label="Pipeline health insights">
+      <div className="ops-ring-card">
+        <SuccessRing
+          value={loading ? null : stats.successRate}
+          display={displayRate}
+          reduced={reduced}
+        />
+        <div className="ops-ring-copy">
+          <strong>Success rate</strong>
+          <small>
+            {stats.finishedCount
+              ? `Last ${stats.finishedCount} finished run${stats.finishedCount === 1 ? "" : "s"}`
+              : "Awaiting first finished run"}
+          </small>
+        </div>
+      </div>
+
+      <div className="ops-block">
+        <span className="ops-block-label">Recent outcomes</span>
+        <RunSparkline outcomes={stats.outcomes} reduced={reduced} />
+      </div>
+
+      <div className="ops-stat-grid">
+        <div className="ops-stat">
+          <span className="ops-stat-num">
+            {stats.worstStage
+              ? RUN_STAGE_LABELS[stats.worstStage.stage]
+              : "None"}
+          </span>
+          <span className="ops-stat-label">Most-failing stage</span>
+        </div>
+        <div className="ops-stat">
+          <span
+            className={`ops-stat-num${stats.failureStreak > 0 ? " ops-stat-num--danger" : ""}`}
+          >
+            {stats.failureStreak}
+          </span>
+          <span className="ops-stat-label">Failure streak</span>
+        </div>
+      </div>
+
+      <div className="ops-shortcuts">
+        <span className="ops-block-label">Keyboard</span>
+        <div className="ops-shortcuts-keys">
+          {quickActions.map((action) => (
+            <span key={action.cmd} className="ops-kbd-row">
+              <kbd className="ops-kbd">{action.shortcut}</kbd>
+              <span className="ops-kbd-desc">{action.display}</span>
+            </span>
+          ))}
+        </div>
+      </div>
+    </aside>
+  );
+}
+
+/* ── Run activity card — the star: animated per-stage pipeline ─────────────── */
+
+const runListVariants = {
+  hidden: {},
+  visible: { transition: { staggerChildren: 0.07, delayChildren: 0.05 } },
+};
+
+const runCardVariants = {
+  hidden: { opacity: 0, y: 14 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.4, ease: EASE_OUT },
+  },
+};
+
+function RunActivityCard({
+  run,
+  reduced,
+}: Readonly<{ run: RunGroup; reduced: boolean | null }>) {
+  const repoShort = shortRepoName(run.repoFullName);
+  const stageMap = new Map(run.stages.map((stage) => [stage.stage, stage]));
+  const stageSummary = RUN_STAGE_ORDER.map(
+    (stage) =>
+      `${RUN_STAGE_LABELS[stage]} ${stageMap.get(stage)?.status ?? "pending"}`,
+  ).join(", ");
+
+  return (
+    <motion.div
+      className={`run-card run-card--${run.overallStatus}`}
+      variants={reduced ? undefined : runCardVariants}
+    >
+      <Link
+        href="/runs"
+        className="run-card-link"
+        aria-label={`Run for ${repoShort} on ${run.branch}, ${run.overallStatus}. ${stageSummary}. Started ${timeAgo(run.startedAt)}. View run details.`}
+      >
+        <span className="run-card-accent" aria-hidden="true" />
+        <div className="run-card-top">
+          <span className="run-card-id">
+            <span className="run-card-repo">{repoShort}</span>
+            <span className="run-card-branch">@{run.branch}</span>
+          </span>
+          <span className={`run-status-pill run-status-pill--${run.overallStatus}`}>
+            {run.overallStatus === "running" && (
+              <span className="run-status-live" aria-hidden="true" />
+            )}
+            {run.overallStatus}
+          </span>
+        </div>
+
+        <div className="run-card-pipeline" aria-hidden="true">
+          {RUN_STAGE_ORDER.map((stage, index) => {
+            const status = stageMap.get(stage)?.status ?? "pending";
+            const prevStatus =
+              index > 0
+                ? (stageMap.get(RUN_STAGE_ORDER[index - 1])?.status ?? "pending")
+                : null;
+            return (
+              <Fragment key={stage}>
+                {index > 0 && (
+                  <span
+                    className={`run-conn${prevStatus === "success" ? " run-conn--active" : ""}${
+                      prevStatus === "success" && status === "running"
+                        ? " run-conn--flowing"
+                        : ""
+                    }`}
+                  />
+                )}
+                <span className="run-stage">
+                  <span
+                    className={`run-stage-dot pipeline-dot pipeline-dot--${status}`}
+                  />
+                  <span className="run-stage-label">
+                    {RUN_STAGE_LABELS[stage]}
+                  </span>
+                </span>
+              </Fragment>
+            );
+          })}
+        </div>
+
+        <div className="run-card-foot">
+          <span className="run-card-time">{timeAgo(run.startedAt)}</span>
+          <span className="run-card-sha">{run.commitSha.slice(0, 7)}</span>
+          <span className="run-card-cta">
+            View
+            <svg
+              width="11"
+              height="11"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <line x1="5" y1="12" x2="19" y2="12" />
+              <polyline points="12 5 19 12 12 19" />
+            </svg>
+          </span>
+        </div>
+      </Link>
+    </motion.div>
+  );
+}
+
+function RunCardSkeleton() {
+  return (
+    <div className="run-card run-card--skeleton" aria-hidden="true">
+      <div className="run-card-link">
+        <div className="run-card-top">
+          <span className="run-skel run-skel--repo" />
+          <span className="run-skel run-skel--pill" />
+        </div>
+        <div className="run-skel run-skel--track" />
+        <div className="run-skel run-skel--foot" />
+      </div>
+    </div>
+  );
+}
+
+/* ── Pipeline Activity — dedicated hero section for runs ────────────────────── */
+
+function PipelineActivity({
+  runs,
+  stats,
+  loading,
+  reduced,
+}: Readonly<{
+  runs: RunGroup[];
+  stats: RunStats;
+  loading: boolean;
+  reduced: boolean | null;
+}>) {
+  const visibleRuns = runs.slice(0, 5);
+  return (
+    <motion.section
+      className="runs-hero"
+      aria-labelledby="runs-hero-title"
+      custom={3}
+      variants={sectionVariants}
+      initial={reduced ? false : "hidden"}
+      animate="visible"
+    >
+      <div className="dashboard-panel-heading runs-hero-heading">
+        <div>
+          <p className="dashboard-section-kicker">PIPELINE ACTIVITY</p>
+          <h2 id="runs-hero-title">Recent runs</h2>
+        </div>
+        <div className="runs-hero-heading-right">
+          {stats.running > 0 && (
+            <span className="runs-live-badge">
+              <span className="runs-live-dot" aria-hidden="true" />
+              {stats.running} running
+            </span>
+          )}
+          <Link href="/runs" className="dashboard-inline-link">
+            View all <span aria-hidden="true">→</span>
+          </Link>
+        </div>
+      </div>
+
+      <div className="runs-hero-body">
+        <motion.div
+          className="runs-stream"
+          variants={reduced ? undefined : runListVariants}
+          initial={reduced ? undefined : "hidden"}
+          animate={reduced ? undefined : "visible"}
+        >
+          {loading ? (
+            <>
+              <RunCardSkeleton />
+              <RunCardSkeleton />
+              <RunCardSkeleton />
+            </>
+          ) : visibleRuns.length ? (
+            visibleRuns.map((run) => (
+              <RunActivityCard key={run.runId} run={run} reduced={reduced} />
+            ))
+          ) : (
+            <Link href="/workflows?tab=setup" className="runs-empty">
+              <span className="runs-empty-icon" aria-hidden="true">
+                <svg
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <circle cx="12" cy="12" r="9" />
+                  <polygon points="10 8 16 12 10 16" fill="currentColor" stroke="none" />
+                </svg>
+              </span>
+              <span>
+                <strong>No runs yet</strong>
+                <small>
+                  Push to a provisioned repository and its access → quality →
+                  package stages stream here live.
+                </small>
+              </span>
+              <span className="dashboard-row-arrow" aria-hidden="true">→</span>
+            </Link>
+          )}
+        </motion.div>
+
+        <OpsInsightRail stats={stats} loading={loading} reduced={reduced} />
+      </div>
+    </motion.section>
+  );
+}
+
+/* ── Get-started journey — shown when the workspace is effectively empty ────── */
+
+function CheckMark() {
+  return (
+    <svg
+      width="14"
+      height="14"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="3"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <polyline points="20 6 9 17 4 12" />
+    </svg>
+  );
+}
+
+function GetStartedJourney({
+  projects,
+  runs,
+  historyCount,
+  reduced,
+}: Readonly<{
+  projects: ProvisionedProject[];
+  runs: RunGroup[];
+  historyCount: number;
+  reduced: boolean | null;
+}>) {
+  const hasProjects = projects.length > 0;
+  const hasProvisioned = projects.some(
+    (project) => project.status === "provisioned",
+  );
+  const hasWorkflow = historyCount > 0 || hasProvisioned;
+  const hasRuns = runs.length > 0;
+
+  const steps: Array<{
+    title: string;
+    desc: string;
+    done: boolean;
+    href?: string;
+    cta?: string;
+  }> = [
+    {
+      title: "Create a project",
+      desc: "Name a service and pick what its pipeline should check.",
+      done: hasProjects,
+      href: "/workflows?tab=setup",
+      cta: "Create a project",
+    },
+    {
+      title: "Connect a repository",
+      desc: "Link a GitHub repo — ALPHACI writes the Actions workflow into it.",
+      done: hasProvisioned,
+      href: "/workflows?tab=setup",
+      cta: "Connect a repo",
+    },
+    {
+      title: "Pipeline generated",
+      desc: "Access, quality and package stages are committed to your repo.",
+      done: hasWorkflow,
+      href: "/workflows?tab=current",
+      cta: "View workflows",
+    },
+    {
+      title: "Push code, watch it run",
+      desc: "Every push streams live per-stage status straight to your dashboard.",
+      done: hasRuns,
+      href: "/runs",
+      cta: "Open runs",
+    },
+    {
+      title: "Monitor & iterate",
+      desc: "Track success rate, catch failing stages, and tune your pipeline.",
+      done: false,
+      href: "/guide",
+      cta: "Read the guide",
+    },
+  ];
+
+  const currentIndex = steps.findIndex((step) => !step.done);
+  const activeIndex = currentIndex === -1 ? steps.length - 1 : currentIndex;
+  const completed = steps.filter((step) => step.done).length;
+
+  return (
+    <motion.section
+      className="getstarted"
+      aria-labelledby="getstarted-title"
+      custom={2}
+      variants={sectionVariants}
+      initial={reduced ? false : "hidden"}
+      animate="visible"
+    >
+      <div className="getstarted-intro">
+        <p className="dashboard-section-kicker">GET STARTED</p>
+        <h2 id="getstarted-title">Ship your first pipeline</h2>
+        <p className="getstarted-lede">
+          Your workspace is a clean slate. Follow the path below — each push you
+          make will light up live here.
+        </p>
+        <div className="getstarted-progress" aria-hidden="true">
+          <span className="getstarted-progress-bar">
+            <motion.span
+              className="getstarted-progress-fill"
+              initial={reduced ? false : { scaleX: 0 }}
+              animate={{ scaleX: completed / steps.length }}
+              transition={{ duration: 0.6, ease: EASE_OUT, delay: 0.15 }}
+            />
+          </span>
+          <span className="getstarted-progress-label">
+            {completed} of {steps.length}
+          </span>
+        </div>
+      </div>
+
+      <ol className="getstarted-steps">
+        {steps.map((step, index) => {
+          const isCurrent = index === activeIndex && !step.done;
+          return (
+            <motion.li
+              key={step.title}
+              className={`getstarted-step${step.done ? " is-done" : ""}${isCurrent ? " is-current" : ""}`}
+              initial={reduced ? false : { opacity: 0, x: -12 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{
+                duration: 0.35,
+                ease: EASE_OUT,
+                delay: reduced ? 0 : 0.1 + index * 0.08,
+              }}
+            >
+              <span className="getstarted-node" aria-hidden="true">
+                {step.done ? <CheckMark /> : index + 1}
+              </span>
+              <div className="getstarted-copy">
+                <strong>{step.title}</strong>
+                <small>{step.desc}</small>
+                {isCurrent && step.href ? (
+                  <Link href={step.href} className="getstarted-cta">
+                    {step.cta}
+                    <span aria-hidden="true">→</span>
+                  </Link>
+                ) : null}
+              </div>
+              <span className="getstarted-state" aria-hidden="true">
+                {step.done ? "Done" : isCurrent ? "Now" : ""}
+              </span>
+            </motion.li>
+          );
+        })}
+      </ol>
+
+      <div className="getstarted-resources">
+        <span className="ops-block-label">Resources</span>
+        <div className="getstarted-resource-links">
+          <Link href="/workflows?tab=setup">Create a project</Link>
+          <Link href="/runs">View runs</Link>
+          <Link href="/guide">Read the guide</Link>
+        </div>
+      </div>
+    </motion.section>
+  );
 }
 
 function DashboardMetric({
@@ -784,6 +1383,16 @@ function DashboardWorkspaceOverview({
     ? group.description ?? group.businessUnit ?? "Team delivery workspace"
     : "Your provisioned projects and assigned delivery work";
 
+  const runStats = useMemo(() => computeRunStats(runs), [runs]);
+
+  // "Effectively empty" — nothing to operate on yet. Show a guided journey
+  // instead of a grid of zeros. Derived entirely from real data.
+  const isEmptyWorkspace =
+    !loading &&
+    projects.length === 0 &&
+    runs.length === 0 &&
+    deliveryProjectCount === 0;
+
   return (
     <div className="dashboard-flow">
       <motion.section
@@ -807,67 +1416,83 @@ function DashboardWorkspaceOverview({
         ) : null}
       </motion.section>
 
-      <motion.section
-        className="dashboard-attention"
-        aria-label="Items needing attention"
-        custom={2}
-        variants={sectionVariants}
-        initial={reduced ? false : "hidden"}
-        animate="visible"
-      >
-        {loading ? (
-          <p className="dashboard-attention-empty">Refreshing workspace signals…</p>
-        ) : attentionItems.length ? (
-          attentionItems.map((item) => (
-            <Link
-              key={item.label}
-              href={item.href}
-              className={`dashboard-attention-item dashboard-attention-item--${item.tone}`}
+      {isEmptyWorkspace ? (
+        <GetStartedJourney
+          projects={projects}
+          runs={runs}
+          historyCount={workflowHistoryCount}
+          reduced={reduced}
+        />
+      ) : (
+        <>
+          <motion.section
+            className="dashboard-attention"
+            aria-label="Items needing attention"
+            custom={2}
+            variants={sectionVariants}
+            initial={reduced ? false : "hidden"}
+            animate="visible"
+          >
+            {loading ? (
+              <p className="dashboard-attention-empty">Refreshing workspace signals…</p>
+            ) : attentionItems.length ? (
+              attentionItems.map((item) => (
+                <Link
+                  key={item.label}
+                  href={item.href}
+                  className={`dashboard-attention-item dashboard-attention-item--${item.tone}`}
+                >
+                  <span className="dashboard-attention-marker" aria-hidden="true" />
+                  <span>
+                    <strong>{item.label}</strong>
+                    <small>{item.detail}</small>
+                  </span>
+                  <span className="dashboard-row-arrow" aria-hidden="true">→</span>
+                </Link>
+              ))
+            ) : (
+              <div className="dashboard-attention-clear" role="status">
+                <span className="dashboard-attention-marker" aria-hidden="true" />
+                <span>
+                  <strong>All systems operational</strong>
+                  <small>Nothing in this workspace needs your attention right now.</small>
+                </span>
+              </div>
+            )}
+          </motion.section>
+
+          <PipelineActivity
+            runs={runs}
+            stats={runStats}
+            loading={loading}
+            reduced={reduced}
+          />
+
+          <motion.section
+            className="dashboard-metrics"
+            aria-label="Workspace metrics"
+            custom={4}
+            variants={sectionVariants}
+            initial={reduced ? false : "hidden"}
+            animate="visible"
+          >
+            <DashboardMetric value={projects.length} label="Projects" loading={loading} reduced={reduced} href="/workflows?tab=current" accent="brand" />
+            <DashboardMetric value={group?.systemCount ?? 0} label="Systems" loading={loading && Boolean(group)} reduced={reduced} accent="violet" />
+            <DashboardMetric value={deliveryProjectCount} label="Delivery projects" loading={loading && Boolean(group)} reduced={reduced} accent="amber" />
+            <DashboardMetric value={repositoryCount} label="Repositories" loading={loading && Boolean(group)} reduced={reduced} accent="success" />
+            <DashboardMetric value={workflowHistoryCount} label="Workflows" loading={loading} reduced={reduced} href="/workflows?tab=all" accent="violet" />
+            <DashboardMetric value={runs.length} label="Recent runs" loading={loading} reduced={reduced} href="/runs" accent="muted" />
+          </motion.section>
+
+          <div className="dashboard-primary-grid">
+            <motion.section
+              className="dashboard-panel dashboard-panel--delivery"
+              aria-labelledby="delivery-overview-title"
+              custom={5}
+              variants={sectionVariants}
+              initial={reduced ? false : "hidden"}
+              animate="visible"
             >
-              <span className="dashboard-attention-marker" aria-hidden="true" />
-              <span>
-                <strong>{item.label}</strong>
-                <small>{item.detail}</small>
-              </span>
-              <span className="dashboard-row-arrow" aria-hidden="true">→</span>
-            </Link>
-          ))
-        ) : (
-          <div className="dashboard-attention-clear" role="status">
-            <span className="dashboard-attention-marker" aria-hidden="true" />
-            <span>
-              <strong>All systems operational</strong>
-              <small>Nothing in this workspace needs your attention right now.</small>
-            </span>
-          </div>
-        )}
-      </motion.section>
-
-      <motion.section
-        className="dashboard-metrics"
-        aria-label="Workspace metrics"
-        custom={3}
-        variants={sectionVariants}
-        initial={reduced ? false : "hidden"}
-        animate="visible"
-      >
-        <DashboardMetric value={projects.length} label="Projects" loading={loading} reduced={reduced} href="/workflows?tab=current" accent="brand" />
-        <DashboardMetric value={group?.systemCount ?? 0} label="Systems" loading={loading && Boolean(group)} reduced={reduced} accent="violet" />
-        <DashboardMetric value={deliveryProjectCount} label="Delivery projects" loading={loading && Boolean(group)} reduced={reduced} accent="amber" />
-        <DashboardMetric value={repositoryCount} label="Repositories" loading={loading && Boolean(group)} reduced={reduced} accent="success" />
-        <DashboardMetric value={workflowHistoryCount} label="Workflows" loading={loading} reduced={reduced} href="/workflows?tab=all" accent="violet" />
-        <DashboardMetric value={runs.length} label="Recent runs" loading={loading} reduced={reduced} href="/runs" accent="muted" />
-      </motion.section>
-
-      <div className="dashboard-primary-grid">
-        <motion.section
-          className="dashboard-panel dashboard-panel--delivery"
-          aria-labelledby="delivery-overview-title"
-          custom={4}
-          variants={sectionVariants}
-          initial={reduced ? false : "hidden"}
-          animate="visible"
-        >
           <div className="dashboard-panel-heading">
             <div>
               <p className="dashboard-section-kicker">DELIVERY OVERVIEW</p>
@@ -914,84 +1539,28 @@ function DashboardWorkspaceOverview({
           )}
         </motion.section>
 
-        <motion.section
-          className="dashboard-panel dashboard-panel--work"
-          aria-labelledby="my-work-title"
-          custom={5}
-          variants={sectionVariants}
-          initial={reduced ? false : "hidden"}
-          animate="visible"
-        >
-          <div className="dashboard-panel-heading">
-            <div>
-              <p className="dashboard-section-kicker">{group && isGroupManagerRole(group.role) ? "TEAM STATUS" : "MY WORK"}</p>
-              <h2 id="my-work-title">{group && isGroupManagerRole(group.role) ? "People and access" : "Assigned repositories"}</h2>
-            </div>
-          </div>
-          {loading ? <p className="dashboard-empty">Loading workspace activity…</p> : assignments.length ? (
-            <div className="dashboard-work-list">
-              {assignments.slice(0, 5).map((assignment) => (
-                <div className="dashboard-work-row" key={assignment.assignmentId}>
-                  <span className={`dashboard-work-state dashboard-work-state--${assignment.effectiveState}`} aria-hidden="true" />
-                  <span><strong>{assignment.repositoryName}</strong><small>{assignment.systemName ?? assignment.groupName ?? "Assigned delivery work"}</small></span>
-                  <small className="dashboard-work-access">{readableAssignmentState(assignment.effectiveState)}</small>
+            <motion.section
+              className="dashboard-panel"
+              aria-labelledby="recent-activity-title"
+              custom={6}
+              variants={sectionVariants}
+              initial={reduced ? false : "hidden"}
+              animate="visible"
+            >
+              <div className="dashboard-panel-heading">
+                <div><p className="dashboard-section-kicker">WORKSPACE ACTIVITY</p><h2 id="recent-activity-title">Recent activity</h2></div>
+                {group ? <Link href={`/groups/${group.id}/activity`} className="dashboard-inline-link">Open activity <span aria-hidden="true">→</span></Link> : null}
+              </div>
+              {activity.length ? <div className="dashboard-activity-list">{activity.slice(0, 5).map((item) => (
+                <div className="dashboard-activity-row" key={item.id}>
+                  <span className="dashboard-activity-dot" aria-hidden="true" />
+                  <span><strong>{item.message}</strong><small>{item.actorLabel} · {timeAgo(item.createdAt)}</small></span>
                 </div>
-              ))}
-            </div>
-          ) : group && isGroupManagerRole(group.role) ? (
-            <div className="dashboard-team-summary">
-              <strong>{group.memberCount} active team member{group.memberCount === 1 ? "" : "s"}</strong>
-              <span>{pendingInvitations.length ? `${pendingInvitations.length} invitation${pendingInvitations.length === 1 ? " is" : "s are"} waiting.` : "No pending invitations."}</span>
-              <Link href={`/groups/${group.id}/members`} className="dashboard-inline-link">Manage members <span aria-hidden="true">→</span></Link>
-            </div>
-          ) : <p className="dashboard-empty">No repositories are assigned to you in this workspace.</p>}
-        </motion.section>
-      </div>
-
-      <div className="dashboard-secondary-grid">
-        <motion.section
-          className="dashboard-panel"
-          aria-labelledby="recent-runs-title"
-          custom={6}
-          variants={sectionVariants}
-          initial={reduced ? false : "hidden"}
-          animate="visible"
-        >
-          <div className="dashboard-panel-heading">
-            <div><p className="dashboard-section-kicker">PIPELINE ACTIVITY</p><h2 id="recent-runs-title">Recent runs</h2></div>
-            <Link href="/runs" className="dashboard-inline-link">View all <span aria-hidden="true">→</span></Link>
+              ))}</div> : <p className="dashboard-empty">{group && !isGroupManagerRole(group.role) ? "Team activity is available to group leads." : "No recent activity in this workspace."}</p>}
+            </motion.section>
           </div>
-          {runs.length ? <div className="dashboard-runs-list">{runs.slice(0, 4).map((run) => (
-            <Link href="/runs" key={run.runId} className="dashboard-run-row">
-              <span><strong>{shortRepoName(run.repoFullName)}</strong><small>{run.branch} · {timeAgo(run.startedAt)}</small></span>
-              <span className="dashboard-stage-track" aria-label={`Run ${run.overallStatus}`}>
-                {RUN_STAGE_ORDER.map((stage) => <span key={stage} className={`pipeline-dot pipeline-dot--${run.stages.find((item) => item.stage === stage)?.status ?? "pending"}`} />)}
-              </span>
-              <span className={`dashboard-status dashboard-status--${run.overallStatus}`}>{run.overallStatus}</span>
-            </Link>
-          ))}</div> : <p className="dashboard-empty">Runs will appear here after a provisioned repository is updated.</p>}
-        </motion.section>
-
-        <motion.section
-          className="dashboard-panel"
-          aria-labelledby="recent-activity-title"
-          custom={7}
-          variants={sectionVariants}
-          initial={reduced ? false : "hidden"}
-          animate="visible"
-        >
-          <div className="dashboard-panel-heading">
-            <div><p className="dashboard-section-kicker">WORKSPACE ACTIVITY</p><h2 id="recent-activity-title">Recent activity</h2></div>
-            {group ? <Link href={`/groups/${group.id}/activity`} className="dashboard-inline-link">Open activity <span aria-hidden="true">→</span></Link> : null}
-          </div>
-          {activity.length ? <div className="dashboard-activity-list">{activity.slice(0, 4).map((item) => (
-            <div className="dashboard-activity-row" key={item.id}>
-              <span className="dashboard-activity-dot" aria-hidden="true" />
-              <span><strong>{item.message}</strong><small>{item.actorLabel} · {timeAgo(item.createdAt)}</small></span>
-            </div>
-          ))}</div> : <p className="dashboard-empty">{group && !isGroupManagerRole(group.role) ? "Team activity is available to group leads." : "No recent activity in this workspace."}</p>}
-        </motion.section>
-      </div>
+        </>
+      )}
     </div>
   );
 }
