@@ -25,7 +25,7 @@ import { ActivityFeed, ActivityFilters } from "@/components/hierarchy/activity-f
 import { InviteMemberDialog } from "@/components/hierarchy/invite-member-dialog";
 import { MemberTable } from "@/components/hierarchy/member-table";
 
-type GroupSection = "overview" | "members" | "projects" | "activity" | "create";
+type GroupSection = "overview" | "projects" | "create";
 
 interface GroupWorkspacePanelProps {
   group: GroupSummary;
@@ -42,9 +42,7 @@ function statusVariant(status: string): string {
 function SectionTabs({ section, onChange }: { section: GroupSection; onChange: (section: GroupSection) => void }) {
   const tabs: { id: Exclude<GroupSection, "create">; label: string }[] = [
     { id: "overview", label: "Overview" },
-    { id: "members", label: "Members" },
     { id: "projects", label: "Projects" },
-    { id: "activity", label: "Activity" },
   ];
 
   return (
@@ -66,13 +64,7 @@ function SectionTabs({ section, onChange }: { section: GroupSection; onChange: (
   );
 }
 
-function Overview({ group, projects, onChange }: { group: GroupSummary; projects: ProvisionedProject[]; onChange: (section: GroupSection) => void }) {
-  const cards: { id: Exclude<GroupSection, "create">; title: string; description: string }[] = [
-    { id: "members", title: "Members & invitations", description: "Manage who belongs to this group, their roles, and invitations." },
-    { id: "projects", title: "Projects", description: "Projects owned by this group. Each project provisions a GitHub repository." },
-    { id: "activity", title: "Activity & audit", description: "Membership changes, access updates, and GitHub synchronization results." },
-  ];
-
+function Overview({ group, projects }: { group: GroupSummary; projects: ProvisionedProject[] }) {
   return (
     <>
       <div className="hier-stat-row" style={{ margin: "0.5rem 0 1.1rem" }}>
@@ -80,13 +72,19 @@ function Overview({ group, projects, onChange }: { group: GroupSummary; projects
         <div className="hier-stat"><span className="hier-stat-num">{projects.length}</span><span className="hier-stat-label">Projects</span></div>
         <div className="hier-stat"><span className="hier-stat-num" style={{ textTransform: "capitalize", fontSize: "1.1rem" }}>{group.status}</span><span className="hier-stat-label">Status</span></div>
       </div>
-      <div className="hier-card-grid">
-        {cards.map((card) => (
-          <button key={card.id} type="button" className="hier-card" onClick={() => onChange(card.id)} style={{ textAlign: "left", cursor: "pointer" }}>
-            <div className="hier-card-top"><h3 className="hier-card-name">{card.title}</h3></div>
-            <p className="hier-card-desc">{card.description}</p>
-          </button>
-        ))}
+      <div className="group-overview-content">
+        <section className="group-overview-section">
+          <div className="group-overview-section__header">
+            <div><h3>Members & invitations</h3><p>Manage membership, roles, and invitations without leaving the overview.</p></div>
+          </div>
+          <Members group={group} />
+        </section>
+        <section className="group-overview-section">
+          <div className="group-overview-section__header">
+            <div><h3>Activity & audit</h3><p>Review membership changes, access updates, and GitHub synchronization results.</p></div>
+          </div>
+          <Activity group={group} />
+        </section>
       </div>
     </>
   );
@@ -208,10 +206,8 @@ export function GroupWorkspacePanel({ group, projects, renderCreateProject }: Re
   return (
     <>
       <SectionTabs section={section} onChange={setSection} />
-      {section === "overview" ? <Overview group={group} projects={projects} onChange={setSection} /> : null}
-      {section === "members" ? <Members group={group} /> : null}
+      {section === "overview" ? <Overview group={group} projects={projects} /> : null}
       {section === "projects" ? <Projects projects={projects} canCreate={canCreate} onCreate={() => setSection("create")} /> : null}
-      {section === "activity" ? <Activity group={group} /> : null}
     </>
   );
 }

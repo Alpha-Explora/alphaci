@@ -8236,7 +8236,7 @@ a.ov-stat-mini:hover .ov-stat-mini-num {
   display: flex;
   flex-direction: column;
   min-height: 0;
-  height: min(24rem, calc(100dvh - 11rem));
+  height: 24rem;
   gap: 0.75rem;
   position: sticky;
   top: 5rem;
@@ -8245,6 +8245,40 @@ a.ov-stat-mini:hover .ov-stat-mini-num {
 /* Right column: swaps between the selected project detail and the history log. */
 .project-detail-column {
   min-width: 0;
+}
+
+.group-overview-content {
+  display: grid;
+  gap: 1rem;
+}
+
+.group-overview-section {
+  min-width: 0;
+  padding: 1rem;
+  border: 1px solid var(--border-layer);
+  border-radius: 0.75rem;
+  background: color-mix(in srgb, var(--layer-1) 88%, var(--layer-2));
+}
+
+.group-overview-section__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.9rem;
+}
+
+.group-overview-section__header h3 {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 0.95rem;
+}
+
+.group-overview-section__header p {
+  margin: 0.32rem 0 0;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  line-height: 1.45;
 }
 
 .project-list,
@@ -10000,7 +10034,7 @@ a.ov-stat-mini:hover .ov-stat-mini-num {
   .project-list-rail {
     position: static;
     width: 100%;
-    height: min(22rem, calc(100dvh - 14rem));
+    height: 22rem;
   }
 
   .project-list {
@@ -10008,6 +10042,10 @@ a.ov-stat-mini:hover .ov-stat-mini-num {
   }
 
   .project-list-body { grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr)); }
+
+  .group-overview-section {
+    padding: 0.85rem;
+  }
 
   .project-list-header,
   .project-list-search,
