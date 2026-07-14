@@ -23,16 +23,6 @@ interface WorkflowCurrentTabProps {
   projects: ProvisionedProject[];
 }
 
-const containerVariants = {
-  hidden: { opacity: 0 },
-  show: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.04,
-    },
-  },
-};
-
 const cardVariants = {
   hidden: { opacity: 0, y: 12 },
   show: {
@@ -361,12 +351,7 @@ export function WorkflowCurrentTab({
           </div>
         </div>
       ) : (
-        <motion.div
-          className="project-workspace"
-          variants={containerVariants}
-          initial="hidden"
-          animate="show"
-        >
+        <div className="project-workspace">
           <div className="project-list-rail">
             <aside
               className="project-list"
@@ -494,6 +479,8 @@ export function WorkflowCurrentTab({
               <motion.article
                 key={selectedIndividualProject?.id ?? "individual-empty"}
                 variants={cardVariants}
+                initial="hidden"
+                animate="show"
                 className="project-detail-panel"
               >
                 {selectedIndividualProject ? (
@@ -524,6 +511,8 @@ export function WorkflowCurrentTab({
               <motion.article
                 key={selectedEntry.key}
                 variants={cardVariants}
+                initial="hidden"
+                animate="show"
                 className="project-detail-panel"
               >
                 <div className="project-detail-header">
@@ -615,7 +604,7 @@ export function WorkflowCurrentTab({
               </motion.article>
             ) : null}
           </div>
-        </motion.div>
+        </div>
       )}
     </motion.section>
   );
