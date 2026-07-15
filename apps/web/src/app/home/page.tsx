@@ -209,273 +209,6 @@ const sectionVariants = {
   }),
 };
 
-/* ── Sub-components ─────────────────────────────────────────────────────────── */
-
-function SkeletonValue({ wide = false }: { wide?: boolean }) {
-  return (
-    <span
-      style={{
-        display: "block",
-        height: "2.5rem",
-        width: wide ? "6rem" : "3.5rem",
-        background: "var(--bg-elevated)",
-        borderRadius: "6px",
-        animation: "state-pulse 1.5s infinite",
-      }}
-    />
-  );
-}
-
-/* ── ReleasePulse — container-less operational overview ─────────────────────── */
-
-interface ReleasePulseProps {
-  projects: ProvisionedProject[];
-  historyLength: number;
-  uniqueServices: number;
-  historyLoading: boolean;
-  projectsLoading: boolean;
-  prefersReducedMotion: boolean | null;
-}
-
-// Kept while the legacy helper is retired behind the new continuous dashboard.
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-function ReleasePulse({
-  projects,
-  historyLength,
-  uniqueServices,
-  historyLoading,
-  projectsLoading,
-  prefersReducedMotion,
-}: Readonly<ReleasePulseProps>) {
-  const projectsLength = projects.length;
-
-  // Real operational signal, derived from project status — this is what an
-  // operator opening the dashboard actually needs to see first.
-  const attention = projects.filter(
-    (p) => p.status === "failed" || p.status === "orphaned",
-  );
-  const provisioned = projects.filter(
-    (p) => p.status === "provisioned",
-  ).length;
-  const provisioning = projects.filter(
-    (p) => p.status === "provisioning",
-  ).length;
-
-  const animatedProjects = useCountUp(
-    prefersReducedMotion || projectsLoading ? null : projectsLength,
-  );
-  const displayProjects = prefersReducedMotion
-    ? projectsLength
-    : (animatedProjects ?? projectsLength);
-  const animatedHistory = useCountUp(
-    prefersReducedMotion || historyLoading ? null : historyLength,
-  );
-  const animatedServices = useCountUp(
-    prefersReducedMotion || historyLoading ? null : uniqueServices,
-  );
-  const displayHistory = prefersReducedMotion
-    ? historyLength
-    : (animatedHistory ?? historyLength);
-  const displayServices = prefersReducedMotion
-    ? uniqueServices
-    : (animatedServices ?? uniqueServices);
-
-  // Overall system read. Order matters: loading → empty → attention → healthy.
-  const health: "loading" | "empty" | "attention" | "ok" = projectsLoading
-    ? "loading"
-    : projectsLength === 0
-      ? "empty"
-      : attention.length > 0
-        ? "attention"
-        : "ok";
-
-  const headline =
-    health === "loading"
-      ? "Checking your systems"
-      : health === "empty"
-        ? "Nothing deployed yet"
-        : health === "attention"
-          ? `${attention.length} project${attention.length > 1 ? "s" : ""} need attention`
-          : "All systems operational";
-
-  const subline =
-    health === "loading"
-      ? "Reading project and workflow status"
-      : health === "empty"
-        ? "Connect a repository to generate your first pipeline"
-        : `${provisioned} provisioned${provisioning ? `, ${provisioning} provisioning` : ""}${attention.length ? `, ${attention.length} flagged` : ""}`;
-
-  const dotClass =
-    health === "ok"
-      ? "ov-status-dot--ok"
-      : health === "attention"
-        ? "ov-status-dot--warn"
-        : "ov-status-dot--idle";
-
-  return (
-    <div className="ov-pulse">
-      {/* System status — the one line that answers "is anything wrong?" */}
-      <div className="ov-status">
-        <span className={`ov-status-dot ${dotClass}`} aria-hidden="true" />
-        <div className="ov-status-copy">
-          <h2 className="ov-status-headline">{headline}</h2>
-          <p className="ov-status-sub">{subline}</p>
-        </div>
-      </div>
-
-      {/* Body row: operational focus on the left, stat rail on the right */}
-      <div className="ov-body-row">
-        <div className="ov-body-main">
-          {health === "attention" ? (
-            <div className="ov-attention-list">
-              {attention.map((project) => (
-                <Link
-                  key={project.id}
-                  href="/workflows?tab=current"
-                  className="ov-attention-row"
-                >
-                  <span
-                    className={`ov-attention-status ${project.status === "failed" ? "is-failed" : "is-orphaned"}`}
-                  >
-                    {project.status}
-                  </span>
-                  <span className="ov-attention-name">
-                    {project.repoFullName.split("/")[1] ??
-                      project.repoFullName}
-                  </span>
-                  <span className="ov-attention-reason">
-                    {project.failureReason ??
-                      (project.status === "orphaned"
-                        ? "GitHub webhook or access broke; re-sync to reconnect"
-                        : "Provisioning did not finish")}
-                  </span>
-                  <svg
-                    width="14"
-                    height="14"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    aria-hidden="true"
-                  >
-                    <line x1="5" y1="12" x2="19" y2="12" />
-                    <polyline points="12 5 19 12 12 19" />
-                  </svg>
-                </Link>
-              ))}
-            </div>
-          ) : health === "empty" ? (
-            <Link href="/workflows?tab=setup" className="ov-nextstep">
-              <span className="ov-nextstep-copy">
-                <span className="ov-nextstep-title">Connect a repository</span>
-                <span className="ov-nextstep-sub">
-                  Pick a repo and ALPHACI writes the GitHub Actions pipeline
-                  for it
-                </span>
-              </span>
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                aria-hidden="true"
-              >
-                <line x1="5" y1="12" x2="19" y2="12" />
-                <polyline points="12 5 19 12 12 19" />
-              </svg>
-            </Link>
-          ) : health === "ok" ? (
-            <p className="ov-allclear">
-              No failed or orphaned projects. Nothing needs your attention
-              right now.
-            </p>
-          ) : null}
-        </div>
-
-        {/* Stat rail — quiet mono figures on a hairline divider, no card chrome */}
-        <div className="ov-rail-aside" aria-label="Key metrics">
-          <Link href="/workflows?tab=current" className="ov-stat-mini">
-            <span className="ov-stat-mini-num">
-              {projectsLoading ? <SkeletonValue /> : displayProjects}
-            </span>
-            <span className="ov-stat-mini-label">Projects</span>
-          </Link>
-          <div className="ov-stat-mini">
-            <span className="ov-stat-mini-num">
-              {historyLoading ? <SkeletonValue /> : displayServices}
-            </span>
-            <span className="ov-stat-mini-label">Services</span>
-          </div>
-          <Link href="/workflows?tab=all" className="ov-stat-mini">
-            <span className="ov-stat-mini-num">
-              {historyLoading ? <SkeletonValue /> : displayHistory}
-            </span>
-            <span className="ov-stat-mini-label">Workflows</span>
-          </Link>
-        </div>
-      </div>
-
-      {/* Quick actions — lean command rows, no container */}
-      <div className="ov-actions">
-        <p className="ov-section-eyebrow">Quick actions</p>
-        <div className="bento-cmd-list">
-          {quickActions.map((action) => {
-            const ActionIcon = action.icon;
-            return (
-              <Link
-                key={action.cmd}
-                href={action.href}
-                className="bento-cmd-row"
-                style={
-                  { "--cmd-accent": action.accent } as React.CSSProperties
-                }
-              >
-                <span className="bento-cmd-icon" aria-hidden="true">
-                  <ActionIcon />
-                </span>
-                <span className="bento-cmd-body">
-                  <span className="bento-cmd-titleline">
-                    <span className="bento-cmd-prompt" aria-hidden="true">
-                      $
-                    </span>
-                    <span className="bento-cmd-name">{action.cmd}</span>
-                    <span className="bento-cmd-display">
-                      {action.display}
-                    </span>
-                  </span>
-                  <span className="bento-cmd-desc">{action.description}</span>
-                </span>
-                <span className="bento-cmd-shortcut">{action.shortcut}</span>
-                <svg
-                  className="bento-cmd-arrow"
-                  width="10"
-                  height="10"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  aria-hidden="true"
-                >
-                  <line x1="5" y1="12" x2="19" y2="12" />
-                  <polyline points="12 5 19 12 12 19" />
-                </svg>
-              </Link>
-            );
-          })}
-        </div>
-      </div>
-    </div>
-  );
-}
-
 type DeliveryPortfolioNode = {
   system: HierarchySystem;
   deliveryProjects: Array<
@@ -486,13 +219,6 @@ type DeliveryPortfolioNode = {
 function shortRepoName(repoFullName: string | null | undefined): string {
   if (!repoFullName) return "Repository";
   return repoFullName.split("/")[1] ?? repoFullName;
-}
-
-/** Product-facing role label: admin → Lead, delegated_lead → Delegated lead. */
-function readableGroupRole(role: GroupSummary["role"]): string {
-  if (role === "admin") return "Lead";
-  if (role === "delegated_lead") return "Delegated lead";
-  return role.charAt(0).toUpperCase() + role.slice(1);
 }
 
 /* ── Derived run analytics — computed client-side from recentRuns ──────────── */
@@ -514,7 +240,7 @@ interface RunStats {
   outcomes: RunOverallStatus[];
 }
 
-function _computeRunStats(runs: RunGroup[]): RunStats {
+function computeRunStats(runs: RunGroup[]): RunStats {
   const sample = runs.slice(0, 10);
   const finished = sample.filter((run) => run.overallStatus !== "running");
   const successes = sample.filter(
@@ -572,7 +298,7 @@ function _computeRunStats(runs: RunGroup[]): RunStats {
 
 /* ── Success-rate ring — single SVG, count-up drives the arc ───────────────── */
 
-function _SuccessRing({
+function SuccessRing({
   value,
   display,
   reduced,
@@ -619,7 +345,7 @@ function _SuccessRing({
 
 /* ── Sparkline of recent run outcomes (oldest → newest, left → right) ───────── */
 
-function _RunSparkline({
+function RunSparkline({
   outcomes,
   reduced,
 }: Readonly<{ outcomes: RunOverallStatus[]; reduced: boolean | null }>) {
@@ -678,12 +404,12 @@ function KeyboardShortcuts({ reduced }: Readonly<{ reduced: boolean | null }>) {
 
 /* ── Run activity card — the star: animated per-stage pipeline ─────────────── */
 
-const _runListVariants = {
+const runListVariants = {
   hidden: {},
   visible: { transition: { staggerChildren: 0.07, delayChildren: 0.05 } },
 };
 
-const _runCardVariants = {
+const runCardVariants = {
   hidden: { opacity: 0, y: 14 },
   visible: {
     opacity: 1,
@@ -692,7 +418,7 @@ const _runCardVariants = {
   },
 };
 
-function _RunActivityCard({
+function RunActivityCard({
   run,
   reduced,
   featured = false,
@@ -707,7 +433,7 @@ function _RunActivityCard({
   return (
     <motion.div
       className={`run-card run-card--${run.overallStatus}${featured ? " run-card--featured" : ""}`}
-      variants={reduced ? undefined : _runCardVariants}
+      variants={reduced ? undefined : runCardVariants}
     >
       <Link
         href="/runs"
@@ -785,7 +511,7 @@ function _RunActivityCard({
   );
 }
 
-function _RunCardSkeleton() {
+function RunCardSkeleton() {
   return (
     <div className="run-card run-card--skeleton" aria-hidden="true">
       <div className="run-card-link">
@@ -800,42 +526,190 @@ function _RunCardSkeleton() {
   );
 }
 
-/* ── Pipeline Activity — dedicated hero section for runs ────────────────────── */
+/* ── Pipeline Activity — the animated runs hero ─────────────────────────────── */
 
-function LatestRunSummary({
+interface AttentionItem {
+  tone: string;
+  label: string;
+  detail: string;
+  href: string;
+}
+
+/** Right-hand ops rail: success ring, outcome sparkline, worst stage, streak. */
+function OpsRail({
+  stats,
+  displayRate,
+  reduced,
+}: Readonly<{
+  stats: RunStats;
+  displayRate: number | null;
+  reduced: boolean | null;
+}>) {
+  return (
+    <div className="ops-rail" aria-label="Run health">
+      <div className="ops-ring-card">
+        <SuccessRing
+          value={stats.successRate}
+          display={displayRate}
+          reduced={reduced}
+        />
+        <div className="ops-ring-copy">
+          <strong>Success rate</strong>
+          <small>
+            {stats.finishedCount
+              ? `${stats.successes} passed of ${stats.finishedCount} finished`
+              : "No finished runs yet"}
+          </small>
+        </div>
+      </div>
+
+      <div className="ops-block">
+        <span className="ops-block-label">Recent outcomes</span>
+        <RunSparkline outcomes={stats.outcomes} reduced={reduced} />
+      </div>
+
+      <div className="ops-stat-grid">
+        <div className="ops-stat">
+          <span className="ops-stat-num">
+            {stats.worstStage
+              ? RUN_STAGE_LABELS[stats.worstStage.stage]
+              : "None"}
+          </span>
+          <span className="ops-stat-label">Top failing stage</span>
+        </div>
+        <div className="ops-stat">
+          <span
+            className={`ops-stat-num${stats.failureStreak > 0 ? " ops-stat-num--danger" : ""}`}
+          >
+            {stats.failureStreak}
+          </span>
+          <span className="ops-stat-label">Failure streak</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function PipelineActivity({
   runs,
   loading,
   reduced,
+  attentionItems,
 }: Readonly<{
   runs: RunGroup[];
   loading: boolean;
   reduced: boolean | null;
+  attentionItems: AttentionItem[];
 }>) {
+  const stats = computeRunStats(runs);
+  const runningCount = stats.running;
   const latest = runs[0] ?? null;
+  const rest = runs.slice(1, 4);
+
+  const animatedRate = useCountUp(
+    reduced || loading ? null : stats.successRate,
+    900,
+  );
+  const displayRate = reduced
+    ? stats.successRate
+    : (animatedRate ?? stats.successRate);
+
   return (
     <motion.section
-      className="latest-run-summary"
-      aria-labelledby="latest-run-title"
-      custom={4}
+      className="runs-hero"
+      aria-labelledby="runs-hero-title"
+      custom={3}
       variants={sectionVariants}
       initial={reduced ? false : "hidden"}
       animate="visible"
     >
-      <div className="dashboard-panel-heading">
+      <div className="dashboard-panel-heading runs-hero-heading">
         <div>
-          <p className="dashboard-section-kicker">LATEST RUN</p>
-          <h2 id="latest-run-title">Pipeline status</h2>
+          <p className="dashboard-section-kicker">PIPELINE ACTIVITY</p>
+          <h2 id="runs-hero-title">Latest runs</h2>
         </div>
-        <Link href="/runs" className="dashboard-inline-link">View runs <span aria-hidden="true">→</span></Link>
+        <div className="runs-hero-heading-right">
+          {runningCount > 0 ? (
+            <span className="runs-live-badge">
+              <span className="runs-live-dot" aria-hidden="true" />
+              {runningCount} running
+            </span>
+          ) : null}
+          <Link href="/runs" className="dashboard-inline-link">
+            {runs.length ? `View all ${runs.length} runs` : "Open runs"}{" "}
+            <span aria-hidden="true">→</span>
+          </Link>
+        </div>
       </div>
-      {loading ? <p className="dashboard-empty">Loading latest run…</p> : latest ? (
-        <Link href="/runs" className="latest-run-row">
-          <span className={`latest-run-state latest-run-state--${latest.overallStatus}`} aria-hidden="true" />
-          <span><strong>{shortRepoName(latest.repoFullName)}</strong><small>@{latest.branch} · {timeAgo(latest.startedAt)}</small></span>
-          <span className={`dashboard-status dashboard-status--${latest.overallStatus}`}>{latest.overallStatus}</span>
-          <span className="dashboard-row-arrow" aria-hidden="true">→</span>
-        </Link>
-      ) : <p className="dashboard-empty">No runs yet. Push to a provisioned repository to see its status here.</p>}
+
+      {/* Operational signal folded in from the retired scope banner:
+         the one line answering "is anything wrong?". */}
+      <div className="runs-hero-status" role="status">
+        {loading ? (
+          <span className="runs-hero-signal runs-hero-signal--idle">
+            Refreshing signals…
+          </span>
+        ) : attentionItems.length ? (
+          attentionItems.map((item) => (
+            <Link
+              key={item.label}
+              href={item.href}
+              className={`runs-hero-chip runs-hero-chip--${item.tone}`}
+              title={item.detail}
+            >
+              <span className="runs-hero-chip-dot" aria-hidden="true" />
+              {item.label}
+              <span aria-hidden="true">→</span>
+            </Link>
+          ))
+        ) : (
+          <span className="runs-hero-signal">
+            <span className="runs-hero-chip-dot" aria-hidden="true" />
+            All systems operational
+          </span>
+        )}
+      </div>
+
+      <div className="runs-hero-body">
+        {loading ? (
+          <div className="runs-stream">
+            <RunCardSkeleton />
+            <RunCardSkeleton />
+          </div>
+        ) : latest ? (
+          <motion.div
+            className="runs-stream"
+            variants={reduced ? undefined : runListVariants}
+            initial={reduced ? false : "hidden"}
+            animate="visible"
+          >
+            <RunActivityCard run={latest} reduced={reduced} featured />
+            {rest.map((run) => (
+              <RunActivityCard key={run.runId} run={run} reduced={reduced} />
+            ))}
+          </motion.div>
+        ) : (
+          <div className="runs-stream">
+            <Link href="/workflows?tab=setup" className="runs-empty">
+              <span className="runs-empty-icon" aria-hidden="true">
+                <QuickActionRunIcon />
+              </span>
+              <span>
+                <strong>No runs yet</strong>
+                <small>
+                  Push to a provisioned repository and its per-stage status
+                  streams in here live.
+                </small>
+              </span>
+              <span className="dashboard-row-arrow" aria-hidden="true">
+                →
+              </span>
+            </Link>
+          </div>
+        )}
+
+        <OpsRail stats={stats} displayRate={displayRate} reduced={reduced} />
+      </div>
     </motion.section>
   );
 }
@@ -1005,46 +879,41 @@ function GetStartedJourney({
   );
 }
 
+/** Container-less metric cell: a quiet mono figure on a hairline, not a card. */
 function DashboardMetric({
   value,
   label,
   loading,
   reduced,
   href,
-  accent,
 }: Readonly<{
   value: number;
   label: string;
   loading: boolean;
   reduced: boolean | null;
   href?: string;
-  accent: "brand" | "violet" | "success" | "amber" | "muted";
 }>) {
   const animatedValue = useCountUp(reduced || loading ? null : value, 700);
   const content = (
     <>
-      <span className={`dashboard-metric-icon dashboard-metric-icon--${accent}`} aria-hidden="true">
-        <span />
+      <span className="metric-cell-num">
+        {loading ? "—" : reduced ? value : (animatedValue ?? value)}
       </span>
-      <span className="dashboard-metric-copy">
-        <strong>{loading ? "—" : (reduced ? value : (animatedValue ?? value))}</strong>
-        <span>{label}</span>
-      </span>
+      <span className="metric-cell-label">{label}</span>
     </>
   );
 
   return href ? (
-    <Link href={href} className="dashboard-metric dashboard-metric--link">
+    <Link href={href} className="metric-cell metric-cell--link">
       {content}
     </Link>
   ) : (
-    <div className="dashboard-metric">{content}</div>
+    <div className="metric-cell">{content}</div>
   );
 }
 
 function DashboardWorkspaceOverview({
   group,
-  groups,
   portfolio,
   assignments,
   invitations,
@@ -1056,7 +925,6 @@ function DashboardWorkspaceOverview({
   reduced,
 }: Readonly<{
   group: GroupSummary | null;
-  groups: GroupSummary[];
   portfolio: DeliveryPortfolioNode[];
   assignments: MyAssignedRepository[];
   invitations: GroupInvitation[];
@@ -1120,10 +988,6 @@ function DashboardWorkspaceOverview({
       : null,
   ].filter((item): item is NonNullable<typeof item> => item !== null);
 
-  const scopeDescription = group
-    ? group.description ?? group.businessUnit ?? "Team delivery workspace"
-    : "Your provisioned projects and assigned delivery work";
-
   // "Effectively empty" — nothing to operate on yet. Show a guided journey
   // instead of a grid of zeros. Derived entirely from real data.
   const isEmptyWorkspace =
@@ -1132,69 +996,8 @@ function DashboardWorkspaceOverview({
     runs.length === 0 &&
     deliveryProjectCount === 0;
 
-  const primaryTone = attentionItems.some((item) => item.tone === "danger")
-    ? "danger"
-    : attentionItems.length
-      ? "warn"
-      : "ok";
-
   return (
     <div className={`dashboard-flow${isEmptyWorkspace ? " dashboard-flow--empty" : ""}`}>
-      {/* Merged status strip — scope + attention on one compact row */}
-      <motion.section
-        className={`dashboard-statusbar${group ? "" : " dashboard-statusbar--attention-only"}`}
-        aria-label="Workspace status"
-        custom={1}
-        variants={sectionVariants}
-        initial={reduced ? false : "hidden"}
-        animate="visible"
-      >
-        {group ? (
-          <div className="statusbar-scope">
-            <span
-              className={`statusbar-dot statusbar-dot--${loading ? "idle" : primaryTone}`}
-              aria-hidden="true"
-            />
-            <div className="statusbar-scope-copy">
-              <span className="statusbar-scope-label">{group.name}</span>
-              <span className="statusbar-scope-sub">{readableGroupRole(group.role)} · {scopeDescription}</span>
-            </div>
-            <Link
-              href={`/groups/${group.id}`}
-              className="dashboard-inline-link statusbar-scope-link"
-            >
-              Open <span aria-hidden="true">→</span>
-            </Link>
-          </div>
-        ) : null}
-
-        <div className="statusbar-attention" role="status">
-          {loading ? (
-            <span className="statusbar-allclear statusbar-allclear--idle">
-              Refreshing signals…
-            </span>
-          ) : attentionItems.length ? (
-            attentionItems.map((item) => (
-              <Link
-                key={item.label}
-                href={item.href}
-                className={`statusbar-chip statusbar-chip--${item.tone}`}
-                title={item.detail}
-              >
-                <span className="statusbar-chip-dot" aria-hidden="true" />
-                {item.label}
-                <span aria-hidden="true">→</span>
-              </Link>
-            ))
-          ) : (
-            <span className="statusbar-allclear">
-              <span className="statusbar-chip-dot" aria-hidden="true" />
-              All systems operational
-            </span>
-          )}
-        </div>
-      </motion.section>
-
       {isEmptyWorkspace ? (
         <GetStartedJourney
           projects={projects}
@@ -1204,86 +1007,49 @@ function DashboardWorkspaceOverview({
         />
       ) : (
         <>
+          {/* Metrics — container-less hairline figures, not a boxed KPI row. */}
           <motion.section
-            className="dashboard-metrics dashboard-metrics--slim"
+            className="metrics-rail"
             aria-label="Workspace metrics"
-            custom={2}
+            custom={1}
             variants={sectionVariants}
             initial={reduced ? false : "hidden"}
             animate="visible"
           >
-            <DashboardMetric value={projects.length} label="Projects" loading={loading} reduced={reduced} href="/workflows?tab=current" accent="brand" />
-            <DashboardMetric value={group?.systemCount ?? 0} label="Systems" loading={loading && Boolean(group)} reduced={reduced} accent="violet" />
-            <DashboardMetric value={deliveryProjectCount} label="Delivery projects" loading={loading && Boolean(group)} reduced={reduced} accent="amber" />
-            <DashboardMetric value={repositoryCount} label="Repositories" loading={loading && Boolean(group)} reduced={reduced} accent="success" />
-            <DashboardMetric value={workflowHistoryCount} label="Workflows" loading={loading} reduced={reduced} href="/workflows?tab=all" accent="violet" />
-            <DashboardMetric value={runs.length} label="Recent runs" loading={loading} reduced={reduced} href="/runs" accent="muted" />
+            <DashboardMetric value={projects.length} label="Projects" loading={loading} reduced={reduced} href="/workflows?tab=current" />
+            <DashboardMetric value={group?.systemCount ?? 0} label="Systems" loading={loading && Boolean(group)} reduced={reduced} />
+            <DashboardMetric value={deliveryProjectCount} label="Delivery projects" loading={loading && Boolean(group)} reduced={reduced} />
+            <DashboardMetric value={repositoryCount} label="Repositories" loading={loading && Boolean(group)} reduced={reduced} />
+            <DashboardMetric value={workflowHistoryCount} label="Workflows" loading={loading} reduced={reduced} href="/workflows?tab=all" />
+            <DashboardMetric value={runs.length} label="Recent runs" loading={loading} reduced={reduced} href="/runs" />
           </motion.section>
 
-          <KeyboardShortcuts reduced={reduced} />
-
+          {/* Main grid: the animated pipeline flow is the star; delivery +
+             activity collapse into one slim, container-less rail beside it. */}
           <div className="dashboard-main-grid">
-            <LatestRunSummary
+            <PipelineActivity
               runs={runs}
               loading={loading}
               reduced={reduced}
+              attentionItems={attentionItems}
             />
 
-            <div className="dashboard-side-col">
-              <motion.section
-                className="dashboard-panel dashboard-panel--scroll"
-                aria-labelledby="teams-title"
-                custom={4}
-                variants={sectionVariants}
-                initial={reduced ? false : "hidden"}
-                animate="visible"
-              >
-                <div className="dashboard-panel-heading">
-                  <div><p className="dashboard-section-kicker">MY TEAMS</p><h2 id="teams-title">Teams</h2></div>
-                  {groups.length ? <Link href="/groups" className="dashboard-inline-link">All <span aria-hidden="true">→</span></Link> : null}
-                </div>
-                <div className="dashboard-panel-scroll">
-                  {loading ? (
-                    <p className="dashboard-empty">Loading teams…</p>
-                  ) : groups.length ? (
-                    <div className="dashboard-teams-list">
-                      {groups.map((teamGroup) => (
-                        <Link
-                          key={teamGroup.id}
-                          href={`/groups/${teamGroup.id}`}
-                          className={`dashboard-team-row${teamGroup.id === group?.id ? " is-current" : ""}`}
-                        >
-                          <span className="dashboard-team-mark" aria-hidden="true" />
-                          <span>
-                            <strong>{teamGroup.name}</strong>
-                            <small>{readableGroupRole(teamGroup.role)} · {teamGroup.memberCount} member{teamGroup.memberCount === 1 ? "" : "s"}</small>
-                          </span>
-                          <span className="dashboard-row-arrow" aria-hidden="true">→</span>
-                        </Link>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="dashboard-empty">Create or join a team to see it here.</p>
-                  )}
-                </div>
-              </motion.section>
-
-              <motion.section
-                className="dashboard-panel dashboard-panel--scroll"
-                aria-labelledby="delivery-overview-title"
-                custom={5}
-                variants={sectionVariants}
-                initial={reduced ? false : "hidden"}
-                animate="visible"
-              >
-                <div className="dashboard-panel-heading">
+            <motion.aside
+              className="dashboard-side-col"
+              custom={4}
+              variants={sectionVariants}
+              initial={reduced ? false : "hidden"}
+              animate="visible"
+            >
+              <section className="side-rail-block" aria-labelledby="delivery-overview-title">
+                <div className="side-rail-head">
                   <div>
-                    <p className="dashboard-section-kicker">DELIVERY OVERVIEW</p>
+                    <p className="dashboard-section-kicker">DELIVERY</p>
                     <h2 id="delivery-overview-title">{group ? "Delivery structure" : "Active projects"}</h2>
                   </div>
                   <Link href={group ? `/groups/${group.id}/systems` : "/workflows?tab=current"} className="dashboard-inline-link">All <span aria-hidden="true">→</span></Link>
                 </div>
-                <div className="dashboard-panel-scroll">
+                <div className="side-rail-scroll">
                   {loading ? <p className="dashboard-empty">Loading delivery structure…</p> : group && portfolio.length ? (
                     <div className="dashboard-tree">
                       {portfolio.slice(0, 4).map((node) => (
@@ -1316,21 +1082,14 @@ function DashboardWorkspaceOverview({
                     </div>
                   )}
                 </div>
-              </motion.section>
+              </section>
 
-              <motion.section
-                className="dashboard-panel dashboard-panel--scroll dashboard-panel--activity"
-                aria-labelledby="recent-activity-title"
-                custom={6}
-                variants={sectionVariants}
-                initial={reduced ? false : "hidden"}
-                animate="visible"
-              >
-                <div className="dashboard-panel-heading">
-                  <div><p className="dashboard-section-kicker">WORKSPACE ACTIVITY</p><h2 id="recent-activity-title">Recent activity</h2></div>
+              <section className="side-rail-block side-rail-block--divided" aria-labelledby="recent-activity-title">
+                <div className="side-rail-head">
+                  <div><p className="dashboard-section-kicker">ACTIVITY</p><h2 id="recent-activity-title">Recent activity</h2></div>
                   {group ? <Link href={`/groups/${group.id}/activity`} className="dashboard-inline-link">Open <span aria-hidden="true">→</span></Link> : null}
                 </div>
-                <div className="dashboard-panel-scroll">
+                <div className="side-rail-scroll">
                   {activity.length ? <div className="dashboard-activity-list">{activity.slice(0, 8).map((item) => (
                     <div className="dashboard-activity-row" key={item.id}>
                       <span className="dashboard-activity-dot" aria-hidden="true" />
@@ -1338,9 +1097,11 @@ function DashboardWorkspaceOverview({
                     </div>
                   ))}</div> : <p className="dashboard-empty">{group && !isGroupManagerRole(group.role) ? "Team activity is available to group leads." : "No recent activity in this workspace."}</p>}
                 </div>
-              </motion.section>
-            </div>
+              </section>
+            </motion.aside>
           </div>
+
+          <KeyboardShortcuts reduced={reduced} />
         </>
       )}
     </div>
@@ -1368,8 +1129,6 @@ function HomeDashboardContent() {
   // Local flag dismisses immediately without waiting for a network response.
   const [welcomeDismissed, setWelcomeDismissed] = useState(false);
   const [currentGroup, setCurrentGroup] = useState<GroupSummary | null>(null);
-  // Full team/group list for the "My teams" panel (getMyGroups items).
-  const [groups, setGroups] = useState<GroupSummary[]>([]);
   const [portfolio, setPortfolio] = useState<DeliveryPortfolioNode[]>([]);
   const [assignments, setAssignments] = useState<MyAssignedRepository[]>([]);
   const [invitations, setInvitations] = useState<GroupInvitation[]>([]);
@@ -1420,7 +1179,6 @@ function HomeDashboardContent() {
 
     Promise.all([getMyGroups(), getMyAssignedRepositories()])
       .then(async ([groupsResponse, assignmentsResponse]) => {
-        setGroups(groupsResponse.items);
         const group = groupsResponse.items.find(
           (item) => item.id === selectedWorkspaceId,
         ) ?? null;
@@ -1473,7 +1231,6 @@ function HomeDashboardContent() {
       })
       .catch(() => {
         setCurrentGroup(null);
-        setGroups([]);
         setPortfolio([]);
         setInvitations([]);
         setActivity([]);
@@ -1797,7 +1554,6 @@ function HomeDashboardContent() {
 
         <DashboardWorkspaceOverview
           group={currentGroup}
-          groups={groups}
           portfolio={portfolio}
           assignments={assignments}
           invitations={invitations}
