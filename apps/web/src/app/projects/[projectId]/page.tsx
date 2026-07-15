@@ -15,7 +15,7 @@ import { RunsSkeleton } from "@/components/product/runs/RunsSkeleton";
 import { ServiceLogsConsole } from "@/components/product/service-logs-console";
 import { useAuthSession } from "@/hooks/use-auth-session";
 import { useCapabilities } from "@/hooks/use-capabilities";
-import { logout, disconnectProject } from "@/lib/api/client";
+import { logout, disconnectProject, getProjectOptions } from "@/lib/api/client";
 import type {
   DeploymentTarget,
   ProjectOverviewResponse,
@@ -43,6 +43,11 @@ function statusVariant(status: string): string {
   if (status === "provisioned") return "provisioned";
   if (status === "provisioning" || status === "pending") return "provisioning";
   return "failed";
+}
+
+function isExternalRepo(repoFullName: string, enforcedOrg?: string): boolean {
+  if (!enforcedOrg) return false;
+  return repoFullName.split("/")[0]?.toLowerCase() !== enforcedOrg.toLowerCase();
 }
 
 function targetStatusColor(status: DeploymentTarget["status"]): string {
@@ -240,6 +245,12 @@ function ProjectPageContent() {
   );
   const [overviewError, setOverviewError] = useState<string | null>(null);
   const [loadingOverview, setLoadingOverview] = useState(true);
+  // Login of the org every new repository must belong to — used only to
+  // label already-attached repos outside it as "External" (product decision;
+  // existing external attachments stay untouched).
+  const [enforcedOrg, setEnforcedOrg] = useState<string | undefined>(
+    undefined,
+  );
 
   const [isDeleting, setIsDeleting] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -288,6 +299,21 @@ function ProjectPageContent() {
     if (status !== "signed-in" || guest) return;
     void loadOverview();
   }, [guest, loadOverview, status]);
+
+  useEffect(() => {
+    if (status !== "signed-in" || guest) return;
+    let active = true;
+    void getProjectOptions()
+      .then((response) => {
+        if (active) setEnforcedOrg(response.enforcedOrg);
+      })
+      .catch(() => {
+        // Non-critical: the External badge just won't render.
+      });
+    return () => {
+      active = false;
+    };
+  }, [guest, status]);
 
   useEffect(() => {
     if (status !== "signed-in" || guest || !repoFullName) return;
@@ -449,6 +475,9 @@ function ProjectPageContent() {
                 >
                   {project.status}
                 </span>
+              ) : null}
+              {project && isExternalRepo(project.repoFullName, enforcedOrg) ? (
+                <span className="project-status-badge external">External</span>
               ) : null}
             </div>
             {project ? (

@@ -228,11 +228,23 @@ export function WorkflowSetupTab({
     !existingRepoFullName.trim() ||
     !projectCatalog.selectedProjectType;
 
+  // Setup-flow attachments are restricted to the enforced org going forward
+  // (product decision) — already-attached external repos stay untouched
+  // elsewhere, but must not be offered again here. Falls back to the full
+  // linked-repos list only while enforcedOrg hasn't loaded yet, so the
+  // picker isn't wrongly emptied during the catalog fetch.
+  const enforcedOrgLower = projectCatalog.enforcedOrg?.toLowerCase() ?? "";
+  const enforcedOrgLinkedRepos = enforcedOrgLower
+    ? github.linkedRepos.filter(
+        (repo) => repo.repoFullName.split("/")[0]?.toLowerCase() === enforcedOrgLower,
+      )
+    : github.linkedRepos;
+
   const noLinkedRepos =
     isExistingMode &&
     github.linkedReposLoaded &&
     !github.loadingLinkedRepos &&
-    github.linkedRepos.length === 0;
+    enforcedOrgLinkedRepos.length === 0;
 
   const selectedProjectKind = inferSingleProjectKind(projectCatalog);
 
@@ -458,7 +470,7 @@ export function WorkflowSetupTab({
                     <option value="">
                       {github.loadingLinkedRepos ? "Loading linked repos..." : "Choose a repository"}
                     </option>
-                    {github.linkedRepos.map((repo) => (
+                    {enforcedOrgLinkedRepos.map((repo) => (
                       <option key={`${repo.installationId}-${repo.repoFullName}`} value={repo.repoFullName}>
                         {repo.repoFullName}
                       </option>

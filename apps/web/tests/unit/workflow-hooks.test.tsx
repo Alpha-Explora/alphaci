@@ -71,6 +71,7 @@ const template: CatalogTemplate = {
 };
 
 const projectOptions: ProjectOptionsResponse = {
+  enforcedOrg: "Alpha-Explora",
   nodeVersions: [
     { value: "20", label: "Node 20 LTS (Iron)" },
     { value: "22", label: "Node 22 LTS (Jod)" },

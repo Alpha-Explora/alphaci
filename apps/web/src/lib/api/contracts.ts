@@ -589,6 +589,12 @@ export interface ProjectOptionsResponse {
   projectTypes: ProjectTypeOption[];
   recipes: WorkflowRecipeOption[];
   nodeVersions: NodeVersionOption[];
+  /**
+   * Login of the GitHub org every repository must belong to. Used to filter
+   * the Setup-flow "existing repo" picker and to label already-attached
+   * repos outside this org as "External" — never hardcode this value.
+   */
+  enforcedOrg: string;
 }
 
 export interface CentralWorkflowTagsResponse {
@@ -800,6 +806,13 @@ export interface ProvisionedProject {
    * id — the Projects screen uses it to bucket projects under their group.
    */
   workspaceId?: string | null;
+  /**
+   * Viewer-relative: true only when the authenticated user is the actual
+   * project creator, not just able to see it via admin/manager visibility.
+   * Only populated by endpoints that compute it against the current viewer
+   * (currently `GET /api/v1/projects`) — undefined elsewhere.
+   */
+  isOwner?: boolean;
 }
 
 export type ProjectOverviewHealthStatus = "ok" | "warning" | "error";

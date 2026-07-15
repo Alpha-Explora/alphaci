@@ -27,6 +27,12 @@ interface WorkflowCurrentTabProps {
   onOpenSetup: () => void;
   renderGroupCreate: (groupId: string, onComplete: () => void) => React.ReactNode;
   projects: ProvisionedProject[];
+  /**
+   * Login of the org every new repository must belong to. Used only to label
+   * already-attached repos outside this org as "External" — never to hide
+   * them, since existing external attachments stay untouched.
+   */
+  enforcedOrg?: string;
 }
 
 const cardVariants = {
@@ -65,12 +71,18 @@ interface GroupListEntry {
  * per-project detail tabs live on the full page (/projects/[id]) via
  * ProjectDetailTabs — "Open full page" is the way into them.
  */
+function isExternalRepo(repoFullName: string, enforcedOrg?: string): boolean {
+  if (!enforcedOrg) return false;
+  return repoFullName.split("/")[0]?.toLowerCase() !== enforcedOrg.toLowerCase();
+}
+
 export function WorkflowCurrentTab({
   latestResult,
   loadingProjects,
   onOpenSetup,
   renderGroupCreate,
   projects,
+  enforcedOrg,
 }: Readonly<WorkflowCurrentTabProps>) {
   const { session } = useAuthSession();
   const canCreateGroup = isGlobalCreatorRole(session?.appRole);
@@ -134,8 +146,13 @@ export function WorkflowCurrentTab({
 
   const individualProjects = useMemo(() => {
     const groupIds = new Set((groups ?? []).map((group) => group.id));
+    // isOwner is viewer-relative: without it, an admin/manager who can see a
+    // project via oversight visibility (not actual ownership) would have it
+    // fall into "individual repositories" alongside their own projects.
     return projects.filter(
-      (project) => !project.workspaceId || !groupIds.has(project.workspaceId),
+      (project) =>
+        project.isOwner &&
+        (!project.workspaceId || !groupIds.has(project.workspaceId)),
     );
   }, [groups, projects]);
 
@@ -532,7 +549,12 @@ export function WorkflowCurrentTab({
                         aria-pressed={selected}
                         onClick={() => setSelectedIndividualProjectId(project.id)}
                       >
-                        <span className="project-list-title">{project.repoFullName.split("/").at(-1) ?? project.repoFullName}</span>
+                        <span className="project-list-title">
+                          {project.repoFullName.split("/").at(-1) ?? project.repoFullName}
+                          {isExternalRepo(project.repoFullName, enforcedOrg) ? (
+                            <span className="project-status-badge external" style={{ marginLeft: "0.4rem" }}>External</span>
+                          ) : null}
+                        </span>
                         <span className="project-list-meta">{project.status}</span>
                       </button>
                     );
@@ -558,7 +580,12 @@ export function WorkflowCurrentTab({
                   <>
                     <div className="project-detail-header">
                       <div><h3>{selectedIndividualProject.repoFullName.split("/").at(-1) ?? selectedIndividualProject.repoFullName}</h3><p>Your individual repository. It is not owned by a group.</p></div>
-                      <span className="project-detail-header-badges"><span className={`project-status-badge ${statusVariant(selectedIndividualProject.status)}`}>{selectedIndividualProject.status}</span></span>
+                      <span className="project-detail-header-badges">
+                        <span className={`project-status-badge ${statusVariant(selectedIndividualProject.status)}`}>{selectedIndividualProject.status}</span>
+                        {isExternalRepo(selectedIndividualProject.repoFullName, enforcedOrg) ? (
+                          <span className="project-status-badge external">External</span>
+                        ) : null}
+                      </span>
                     </div>
                     <div className="repo-individual-detail">
                       <div><span>Repository</span><strong>{selectedIndividualProject.repoFullName}</strong></div>

@@ -475,6 +475,7 @@ export function WorkflowBuilder({ guest = false, session, onboardingCompleted }:
               loadingProjects={projects.loadingProjects}
               onOpenSetup={openIndividualSetup}
               projects={projects.projects}
+              enforcedOrg={projectCatalog.enforcedOrg}
               renderGroupCreate={(selectedGroupId, onComplete) => (
                 <WorkflowSetupTab
                   form={createForm}

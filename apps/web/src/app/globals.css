@@ -7240,6 +7240,13 @@ select option {
   border: 1px solid rgba(255, 79, 79, 0.25);
 }
 
+/* Repo attached outside the enforced org — informational, not a status. */
+.project-status-badge.external {
+  color: var(--text-muted);
+  background: color-mix(in srgb, var(--text-muted) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--text-muted) 25%, transparent);
+}
+
 .project-demo-badge {
   display: inline-flex;
   align-items: center;
