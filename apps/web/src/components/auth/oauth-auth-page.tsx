@@ -102,7 +102,7 @@ export function OAuthAuthPage({
             transition={{ duration: 0.5, delay: 0.2 }}
           >
             <p className="auth-internal-kicker">Internal workspace</p>
-            <h2>AlphaExplora internal access</h2>
+            <h2>Alphaexplora internal access</h2>
             <p>
               Sign in with your company GitHub to manage governed delivery
               workflows, organization repositories, provider connections, and
@@ -111,7 +111,7 @@ export function OAuthAuthPage({
           </motion.div>
 
           <p className="auth-minimal-note">
-            Access is gated on AlphaExplora organization membership — external
+            Access is gated on Alphaexplora organization membership — external
             accounts can&apos;t get in.
           </p>
         </div>
