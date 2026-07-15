@@ -14,11 +14,32 @@ function roleAwareWorkspaceLabel(workspace: {
   return "Team member";
 }
 
+/** Chevron affordance so the multi-team <select> reads as "click to switch"
+ *  rather than plain text with default OS select chrome. */
+function WorkspaceSwitcherChevron() {
+  return (
+    <svg
+      className="workspace-switcher-chevron"
+      width="10"
+      height="10"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <polyline points="6 9 12 15 18 9" />
+    </svg>
+  );
+}
+
 export function WorkspaceSwitcher({
   workspaces,
-}: {
+}: Readonly<{
   workspaces: WorkspacesMeResponse | null;
-}) {
+}>) {
   const { selectedWorkspace, selectedWorkspaceId, setSelectedWorkspaceId } =
     useWorkspaceSelection();
   const items = workspaces?.items ?? [];
@@ -34,19 +55,26 @@ export function WorkspaceSwitcher({
 
   if (items.length > 1) {
     return (
-      <label className="workspace-switcher">
+      <label className="workspace-switcher workspace-switcher--multi">
         <span className="workspace-switcher-label">Workspace</span>
-        <select
-          aria-label="Current workspace"
-          value={current?.id ?? ""}
-          onChange={(event) => setSelectedWorkspaceId(event.target.value || null)}
-        >
-          {items.map((workspace) => (
-            <option key={workspace.id} value={workspace.id}>
-              {workspace.name} — {roleAwareWorkspaceLabel(workspace)}
-            </option>
-          ))}
-        </select>
+        <span className="workspace-switcher-count" aria-hidden="true">
+          {items.length} teams
+        </span>
+        <span className="workspace-switcher-select-wrap">
+          <select
+            aria-label="Current workspace"
+            value={current?.id ?? ""}
+            onChange={(event) => setSelectedWorkspaceId(event.target.value || null)}
+            className="workspace-switcher-select"
+          >
+            {items.map((workspace) => (
+              <option key={workspace.id} value={workspace.id}>
+                {workspace.name} — {roleAwareWorkspaceLabel(workspace)}
+              </option>
+            ))}
+          </select>
+          <WorkspaceSwitcherChevron />
+        </span>
       </label>
     );
   }

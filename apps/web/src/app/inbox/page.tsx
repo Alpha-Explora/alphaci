@@ -89,6 +89,26 @@ function groupNotificationsByDay(
   return groups.filter((group) => group.items.length > 0);
 }
 
+/* Flatten day groups into one continuous row list (day-label rows interspersed
+ * with item rows) so the list reads as one smooth surface, not stacked cards,
+ * while keeping a stable per-item index for a snappy, capped stagger-in. */
+type InboxRow =
+  | { type: "header"; label: string }
+  | { type: "item"; item: NotificationItem; index: number };
+
+function flattenGroups(groups: NotificationGroup[]): InboxRow[] {
+  const rows: InboxRow[] = [];
+  let index = 0;
+  for (const group of groups) {
+    rows.push({ type: "header", label: group.label });
+    for (const item of group.items) {
+      rows.push({ type: "item", item, index });
+      index += 1;
+    }
+  }
+  return rows;
+}
+
 /* ── Page ──────────────────────────────────────────────────────────────────── */
 
 type InboxFilter = "all" | "unread";
@@ -149,6 +169,8 @@ function InboxPageContent() {
     () => groupNotificationsByDay(visibleItems),
     [visibleItems],
   );
+
+  const rows = useMemo(() => flattenGroups(groups), [groups]);
 
   function applyMarkedRead(id: string) {
     setNotifications((current) =>
@@ -235,11 +257,7 @@ function InboxPageContent() {
                 Go to login
               </Link>
             </div>
-            {error ? (
-              <p className="error-text" style={{ fontSize: "0.82rem" }}>
-                {error}
-              </p>
-            ) : null}
+            {error ? <p className="error-text inbox-error-inline">{error}</p> : null}
           </div>
         </div>
       </main>
@@ -249,6 +267,7 @@ function InboxPageContent() {
   if (status === "signed-out") return null;
 
   const unreadCount = notifications?.unreadCount ?? 0;
+  const totalCount = notifications?.items.length ?? 0;
 
   return (
     <main className="dash-shell" suppressHydrationWarning>
@@ -264,56 +283,17 @@ function InboxPageContent() {
         isLoggingOut={isLoggingOut}
       />
 
-      <div
-        id="main-content"
-        style={{
-          flex: 1,
-          width: "100%",
-          maxWidth: "880px",
-          margin: "0 auto",
-          padding: "1.75rem var(--layout-gutter) 2.5rem",
-          display: "flex",
-          flexDirection: "column",
-          gap: "1.25rem",
-        }}
-      >
+      <div id="main-content" className="dash-page-content inbox-page">
         {/* ── Page header ── */}
         <motion.div
+          className="inbox-header"
           initial={prefersReducedMotion ? false : { opacity: 0, y: 14 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.35, ease: [0.25, 0, 0, 1] }}
-          style={{
-            display: "flex",
-            alignItems: "flex-end",
-            justifyContent: "space-between",
-            gap: "1rem",
-            flexWrap: "wrap",
-          }}
         >
           <div>
-            <p
-              style={{
-                fontSize: "0.65rem",
-                fontWeight: 700,
-                textTransform: "uppercase",
-                letterSpacing: "0.1em",
-                color: "var(--brand)",
-                margin: "0 0 0.25rem",
-              }}
-            >
-              ALPHACI / INBOX
-            </p>
-            <h1
-              style={{
-                fontSize: "clamp(1.2rem, 2.5vw, 1.6rem)",
-                fontWeight: 800,
-                margin: 0,
-                letterSpacing: "-0.02em",
-                display: "flex",
-                alignItems: "center",
-                gap: "0.6rem",
-              }}
-            >
+            <p className="inbox-kicker">ALPHACI / INBOX</p>
+            <h1 className="inbox-title">
               <InboxIcon size={20} />
               Inbox
               {unreadCount > 0 && (
@@ -322,51 +302,39 @@ function InboxPageContent() {
                 </span>
               )}
             </h1>
-            <p
-              style={{
-                margin: "0.35rem 0 0",
-                fontSize: "0.82rem",
-                color: "var(--text-muted)",
-              }}
-            >
+            <p className="inbox-subtitle">
               System notifications — project provisioning, workflow runs,
               membership, and sync events.
             </p>
           </div>
 
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "0.5rem",
-              flexWrap: "wrap",
-            }}
-          >
-            {/* Filter pills */}
+          <div className="inbox-toolbar">
+            {/* Gmail-style filter tabs with live counts */}
             <div
               role="group"
               aria-label="Filter notifications"
-              style={{ display: "flex", gap: "0.35rem" }}
+              className="inbox-filter-tabs"
             >
-              {(["all", "unread"] as InboxFilter[]).map((value) => (
-                <button
-                  key={value}
-                  type="button"
-                  className="dash-action-btn"
-                  aria-pressed={filter === value}
-                  onClick={() => setFilter(value)}
-                  style={
-                    filter === value
-                      ? {
-                          borderColor: "var(--accent-indigo)",
-                          color: "var(--accent-indigo)",
-                        }
-                      : undefined
-                  }
-                >
-                  {value === "all" ? "All" : `Unread (${unreadItems.length})`}
-                </button>
-              ))}
+              <button
+                type="button"
+                className={`inbox-filter-tab${filter === "all" ? " inbox-filter-tab--active" : ""}`}
+                aria-pressed={filter === "all"}
+                onClick={() => setFilter("all")}
+              >
+                All
+                <span className="inbox-filter-tab-count">{totalCount}</span>
+              </button>
+              <button
+                type="button"
+                className={`inbox-filter-tab${filter === "unread" ? " inbox-filter-tab--active" : ""}`}
+                aria-pressed={filter === "unread"}
+                onClick={() => setFilter("unread")}
+              >
+                Unread
+                <span className="inbox-filter-tab-count">
+                  {unreadItems.length}
+                </span>
+              </button>
             </div>
 
             {unreadItems.length > 0 && (
@@ -383,101 +351,47 @@ function InboxPageContent() {
         </motion.div>
 
         {notificationsError && (
-          <p className="error-text" style={{ margin: 0 }}>
-            {notificationsError}
-          </p>
+          <p className="error-text inbox-error-inline">{notificationsError}</p>
         )}
 
         {/* ── Content states ── */}
         {guest ? (
           <div className="settings-card">
             <div className="settings-section-body">
-              <p
-                style={{
-                  margin: 0,
-                  fontSize: "0.85rem",
-                  color: "var(--text-secondary)",
-                }}
-              >
+              <p className="inbox-state-copy">
                 Activate a subscription to start receiving system
                 notifications.
               </p>
-              <Link
-                href="/subscribe"
-                className="primary-button"
-                style={{
-                  marginTop: "0.85rem",
-                  fontSize: "0.82rem",
-                  padding: "0.45rem 1.1rem",
-                  display: "inline-flex",
-                }}
-              >
+              <Link href="/subscribe" className="primary-button inbox-state-cta">
                 View plans
               </Link>
             </div>
           </div>
         ) : !notifications && !notificationsError ? (
-          <p
-            style={{
-              margin: 0,
-              fontSize: "0.85rem",
-              color: "var(--text-muted)",
-            }}
-          >
-            Loading notifications...
-          </p>
+          <p className="inbox-loading-text">Loading notifications...</p>
         ) : notifications && !notifications.enabled ? (
           <div className="settings-card">
             <div className="settings-section-body">
-              <p
-                style={{
-                  margin: 0,
-                  fontSize: "0.85rem",
-                  color: "var(--text-secondary)",
-                }}
-              >
+              <p className="inbox-state-copy">
                 Notifications are not enabled for this deployment.
               </p>
             </div>
           </div>
-        ) : groups.length === 0 ? (
+        ) : rows.length === 0 ? (
           <motion.div
             className="settings-card"
             initial={prefersReducedMotion ? false : { opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.25 }}
           >
-            <div
-              className="settings-section-body"
-              style={{ textAlign: "center", padding: "2.5rem 1.5rem" }}
-            >
-              <span
-                aria-hidden="true"
-                style={{
-                  display: "inline-flex",
-                  color: "var(--text-muted)",
-                  marginBottom: "0.6rem",
-                }}
-              >
+            <div className="settings-section-body inbox-empty">
+              <span className="inbox-empty-icon" aria-hidden="true">
                 <InboxIcon size={28} />
               </span>
-              <p
-                style={{
-                  margin: 0,
-                  fontSize: "0.92rem",
-                  fontWeight: 700,
-                  color: "var(--text-primary)",
-                }}
-              >
+              <p className="inbox-empty-title">
                 {filter === "unread" ? "No unread notifications" : "All caught up"}
               </p>
-              <p
-                style={{
-                  margin: "0.3rem 0 0",
-                  fontSize: "0.8rem",
-                  color: "var(--text-muted)",
-                }}
-              >
+              <p className="inbox-empty-sub">
                 {filter === "unread"
                   ? "Everything in your inbox has been read."
                   : "New activity on your projects and workflows will show up here."}
@@ -485,124 +399,57 @@ function InboxPageContent() {
             </div>
           </motion.div>
         ) : (
-          groups.map((group, groupIndex) => (
-            <section
-              key={group.label}
-              aria-label={group.label}
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                gap: "0.6rem",
-              }}
-            >
-              <p
-                style={{
-                  margin: 0,
-                  fontSize: "0.68rem",
-                  fontWeight: 700,
-                  letterSpacing: "0.08em",
-                  textTransform: "uppercase",
-                  color: "var(--text-muted)",
-                }}
-              >
-                {group.label}
-              </p>
-              {group.items.map((notification, itemIndex) => (
+          <div className="inbox-list">
+            {rows.map((row) =>
+              row.type === "header" ? (
+                <p key={`header-${row.label}`} className="inbox-day-label">
+                  {row.label}
+                </p>
+              ) : (
                 <motion.article
-                  key={notification.id}
-                  className="hover-field"
-                  initial={
-                    prefersReducedMotion ? false : { opacity: 0, y: 8 }
-                  }
+                  key={row.item.id}
+                  className={`inbox-row${row.item.readAt ? " inbox-row--read" : ""}`}
+                  title={`${row.item.title} · ${notificationLabel(row.item.eventCode)}`}
+                  initial={prefersReducedMotion ? false : { opacity: 0, y: 6 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{
-                    duration: 0.22,
-                    delay: (groupIndex * 3 + itemIndex) * 0.03,
-                  }}
-                  style={{
-                    display: "flex",
-                    alignItems: "flex-start",
-                    gap: "0.85rem",
-                    opacity: notification.readAt ? 0.72 : 1,
+                    duration: 0.18,
+                    delay: prefersReducedMotion
+                      ? 0
+                      : Math.min(row.index * 0.015, 0.3),
                   }}
                 >
-                  <NotificationGlyph item={notification} />
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div
-                      style={{
-                        display: "flex",
-                        alignItems: "baseline",
-                        justifyContent: "space-between",
-                        gap: "0.75rem",
-                        flexWrap: "wrap",
-                      }}
-                    >
-                      <span
-                        style={{
-                          fontSize: "0.9rem",
-                          fontWeight: notification.readAt ? 600 : 700,
-                          color: "var(--text-primary)",
-                        }}
-                      >
-                        {notification.title}
-                      </span>
-                      <time
-                        dateTime={notification.createdAt}
-                        style={{
-                          fontSize: "0.72rem",
-                          color: "var(--text-muted)",
-                          flexShrink: 0,
-                        }}
-                      >
-                        {formatNotificationTime(notification.createdAt)}
-                      </time>
-                    </div>
-                    <p
-                      style={{
-                        margin: "0.25rem 0 0.35rem",
-                        fontSize: "0.82rem",
-                        color: "var(--text-secondary)",
-                        lineHeight: 1.5,
-                      }}
-                    >
-                      {notification.body}
-                    </p>
-                    <span
-                      style={{
-                        fontSize: "0.68rem",
-                        color: "var(--text-muted)",
-                        fontFamily: "ui-monospace, monospace",
-                        textTransform: "uppercase",
-                        letterSpacing: "0.05em",
-                      }}
-                    >
-                      {notificationLabel(notification.eventCode)}
-                    </span>
-                  </div>
-                  {notification.readAt ? (
-                    <span
-                      className="dash-badge-violet"
-                      style={{ flexShrink: 0 }}
-                    >
+                  <NotificationGlyph item={row.item} />
+                  <span className="inbox-row-text">
+                    <strong className="inbox-row-title">
+                      {row.item.title}
+                    </strong>
+                    <span className="inbox-row-snippet">{row.item.body}</span>
+                  </span>
+                  <time
+                    dateTime={row.item.createdAt}
+                    className="inbox-row-time"
+                  >
+                    {formatNotificationTime(row.item.createdAt)}
+                  </time>
+                  {row.item.readAt ? (
+                    <span className="inbox-row-action dash-badge-violet">
                       Read
                     </span>
                   ) : (
                     <button
                       type="button"
-                      className="dash-action-btn"
-                      style={{ flexShrink: 0 }}
-                      disabled={markingId === notification.id || isMarkingAll}
-                      onClick={() => void handleMarkRead(notification.id)}
+                      className="inbox-row-action dash-action-btn"
+                      disabled={markingId === row.item.id || isMarkingAll}
+                      onClick={() => void handleMarkRead(row.item.id)}
                     >
-                      {markingId === notification.id
-                        ? "Saving..."
-                        : "Mark read"}
+                      {markingId === row.item.id ? "Saving..." : "Mark read"}
                     </button>
                   )}
                 </motion.article>
-              ))}
-            </section>
-          ))
+              ),
+            )}
+          </div>
         )}
       </div>
     </main>
