@@ -8042,6 +8042,7 @@ select option {
 
 .project-list-body {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   flex: 1 1 auto;
   min-height: 0;
   align-content: start;
@@ -8156,8 +8157,11 @@ select option {
 }
 
 .project-list-empty {
+  min-width: 0;
+  width: 100%;
   margin: 0;
   padding: 0.75rem 0.4rem;
+  overflow-wrap: break-word;
   color: var(--text-muted);
   font-size: 0.8rem;
   text-align: center;
@@ -17522,11 +17526,45 @@ html:not([data-theme="light"]) .dash-shell :is(
   .repo-individual-detail > div:last-child { border-bottom: 0; }
 }
 
-.project-list-header > span {
+/* Two-sided labeled switch: "Repositories | Teams" flanking the toggle,
+   so the switch communicates both states at once instead of one word
+   swapping in a separate header line. */
+.rail-mode-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
   min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+}
+
+.rail-mode-label {
+  flex: 0 0 auto;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: color 180ms ease;
+}
+
+.rail-mode-label:hover {
+  color: var(--text-secondary);
+}
+
+.rail-mode-label:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 3px;
+  border-radius: 3px;
+}
+
+.rail-mode-label.is-active {
+  color: var(--text-primary);
+  font-weight: 700;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rail-mode-label { transition: none; }
 }
 
 .project-ownership-toggle {

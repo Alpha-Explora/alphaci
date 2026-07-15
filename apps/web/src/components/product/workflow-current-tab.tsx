@@ -400,24 +400,41 @@ export function WorkflowCurrentTab({
           <div className="project-list-rail">
             <aside
               className="project-list"
-              aria-label="Groups"
+              aria-label={railMode === "groups" ? "Teams" : "Repositories"}
               data-tour="projects-list"
             >
               <div className="project-list-header">
-                <span>{railMode === "groups" ? "Groups" : "My repositories"}</span>
-                <button
-                  className={`project-ownership-toggle${railMode === "individual" ? " is-individual" : ""}`}
-                  type="button"
-                  role="switch"
-                  aria-checked={railMode === "individual"}
-                  aria-label={railMode === "individual" ? "Show group repositories" : "Show my repositories"}
-                  title={railMode === "individual" ? "Show group repositories" : "Show my repositories"}
-                  onClick={() => setRailMode((mode) => mode === "groups" ? "individual" : "groups")}
-                >
-                  <span className="project-ownership-toggle__track" aria-hidden="true">
-                    <span className="project-ownership-toggle__thumb" />
-                  </span>
-                </button>
+                <div className="rail-mode-switch" role="group" aria-label="Switch between repositories and teams">
+                  <button
+                    type="button"
+                    className={`rail-mode-label${railMode === "individual" ? " is-active" : ""}`}
+                    aria-pressed={railMode === "individual"}
+                    onClick={() => setRailMode("individual")}
+                  >
+                    Repositories
+                  </button>
+                  <button
+                    className={`project-ownership-toggle${railMode === "individual" ? " is-individual" : ""}`}
+                    type="button"
+                    role="switch"
+                    aria-checked={railMode === "individual"}
+                    aria-label={railMode === "individual" ? "Show team repositories" : "Show my repositories"}
+                    title={railMode === "individual" ? "Show team repositories" : "Show my repositories"}
+                    onClick={() => setRailMode((mode) => mode === "groups" ? "individual" : "groups")}
+                  >
+                    <span className="project-ownership-toggle__track" aria-hidden="true">
+                      <span className="project-ownership-toggle__thumb" />
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    className={`rail-mode-label${railMode === "groups" ? " is-active" : ""}`}
+                    aria-pressed={railMode === "groups"}
+                    onClick={() => setRailMode("groups")}
+                  >
+                    Teams
+                  </button>
+                </div>
               </div>
               <div className="project-list-body">
                 {railMode === "groups" ? (
