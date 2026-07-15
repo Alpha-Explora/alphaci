@@ -18315,14 +18315,9 @@ html .dash-shell .app-sidebar .sidebar-user-chip {
 
 /* ── Pipeline Activity — the star runs section ─────────────────────────────── */
 .runs-hero {
+  /* Container-less: no border/background/box — content sits on the page. */
   min-width: 0;
-  padding: 1rem 1.1rem 1.15rem;
-  border: 1px solid var(--border-soft);
-  border-radius: 0.95rem;
-  background:
-    radial-gradient(120% 140% at 100% 0%, color-mix(in srgb, var(--brand) 7%, transparent), transparent 55%),
-    var(--bg-elevated);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+  padding: 0;
 }
 
 .runs-hero-heading { align-items: center; }
@@ -18665,7 +18660,6 @@ html .dash-shell .app-sidebar .sidebar-user-chip {
 
 /* ── Responsive ───────────────────────────────────────────────────────────── */
 @media (max-width: 560px) {
-  .runs-hero { padding: 0.9rem 0.8rem 1rem; }
   .run-card-link { flex-wrap: wrap; }
   .run-card-side {
     flex-direction: row; align-items: center; justify-content: space-between;

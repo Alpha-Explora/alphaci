@@ -11,12 +11,8 @@ import type {
   NotificationsResponse,
   WorkspacesMeResponse,
 } from "@/lib/api/contracts";
-import {
-  getNotifications,
-  markNotificationRead,
-} from "@/lib/api/notifications";
+import { getNotifications } from "@/lib/api/notifications";
 import { getMyWorkspaces } from "@/lib/api/workspaces";
-import { NotificationCenter } from "./notification-center";
 import { useWorkspaceSelection } from "./workspace-context";
 import { WorkspaceSwitcher } from "./workspace-switcher";
 
@@ -467,23 +463,6 @@ export function AppNav({
     };
   }, [guest]);
 
-  async function handleMarkNotificationRead(id: string) {
-    await markNotificationRead(id);
-    setNotifications((current) =>
-      current
-        ? {
-            ...current,
-            unreadCount: Math.max(0, current.unreadCount - 1),
-            items: current.items.map((item) =>
-              item.id === id
-                ? { ...item, readAt: item.readAt ?? new Date().toISOString() }
-                : item,
-            ),
-          }
-        : current,
-    );
-  }
-
   const sidebarWidth = collapsed ? 64 : 220;
 
   return (
@@ -573,13 +552,6 @@ export function AppNav({
                     </motion.div>
                   )}
                 </AnimatePresence>
-
-                <div className="sidebar-utility-actions">
-                  <NotificationCenter
-                    notifications={notifications}
-                    onMarkRead={handleMarkNotificationRead}
-                  />
-                </div>
               </div>
             </div>
           )}
