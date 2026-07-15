@@ -35,6 +35,7 @@ import type {
   RunGroup,
   RunOverallStatus,
   StageId,
+  StageStatus,
 } from "@/lib/api/contracts";
 import {
   isGroupManagerRole,
@@ -221,6 +222,23 @@ function shortRepoName(repoFullName: string | null | undefined): string {
   return repoFullName.split("/")[1] ?? repoFullName;
 }
 
+type ProjectTone = "ok" | "warn" | "danger" | "muted";
+
+/** Map a provisioned-project status to a status-badge tone + friendly label. */
+function projectTone(status: ProvisionedProject["status"]): ProjectTone {
+  if (status === "provisioned") return "ok";
+  if (status === "provisioning") return "warn";
+  if (status === "failed") return "danger";
+  return "muted"; // orphaned
+}
+
+function projectBadgeLabel(status: ProvisionedProject["status"]): string {
+  if (status === "provisioned") return "Active";
+  if (status === "provisioning") return "Provisioning";
+  if (status === "failed") return "Failed";
+  return "Idle"; // orphaned
+}
+
 /* ── Derived run analytics — computed client-side from recentRuns ──────────── */
 
 interface RunStats {
@@ -296,53 +314,6 @@ function computeRunStats(runs: RunGroup[]): RunStats {
   };
 }
 
-/* ── Success-rate ring — single SVG, count-up drives the arc ───────────────── */
-
-function SuccessRing({
-  value,
-  display,
-  reduced,
-}: Readonly<{
-  value: number | null;
-  display: number | null;
-  reduced: boolean | null;
-}>) {
-  const pct = display ?? 0;
-  const radius = 26;
-  const circumference = 2 * Math.PI * radius;
-  const offset = circumference - (pct / 100) * circumference;
-  const color =
-    value === null
-      ? "var(--text-muted)"
-      : pct >= 80
-        ? "var(--success)"
-        : pct >= 50
-          ? "var(--accent-amber)"
-          : "var(--danger)";
-  return (
-    <div className="ops-ring">
-      <svg width="64" height="64" viewBox="0 0 64 64" aria-hidden="true">
-        <circle className="ops-ring-bg" cx="32" cy="32" r={radius} />
-        <circle
-          className="ops-ring-fg"
-          cx="32"
-          cy="32"
-          r={radius}
-          style={{
-            stroke: color,
-            strokeDasharray: circumference,
-            strokeDashoffset: value === null ? circumference : offset,
-            transition: reduced ? "none" : "stroke-dashoffset 0.12s linear",
-          }}
-        />
-      </svg>
-      <span className="ops-ring-val" style={{ color }}>
-        {value === null ? "—" : `${pct}%`}
-      </span>
-    </div>
-  );
-}
-
 /* ── Sparkline of recent run outcomes (oldest → newest, left → right) ───────── */
 
 function RunSparkline({
@@ -402,7 +373,7 @@ function KeyboardShortcuts({ reduced }: Readonly<{ reduced: boolean | null }>) {
   );
 }
 
-/* ── Run activity card — the star: animated per-stage pipeline ─────────────── */
+/* ── Run activity card — the star: a full-width horizontal pipeline track ───── */
 
 const runListVariants = {
   hidden: {},
@@ -418,6 +389,17 @@ const runCardVariants = {
   },
 };
 
+type ConnectorTone = "success" | "danger" | "flowing" | "pending";
+
+/** Colour a connector segment from the stages it links: green while progress
+ *  holds, red into a failing stage, an animated flow into a running stage. */
+function connectorTone(prev: StageStatus, next: StageStatus): ConnectorTone {
+  if (next === "failure") return "danger";
+  if (prev === "success" && next === "success") return "success";
+  if (prev === "success" && next === "running") return "flowing";
+  return "pending";
+}
+
 function RunActivityCard({
   run,
   reduced,
@@ -425,10 +407,13 @@ function RunActivityCard({
 }: Readonly<{ run: RunGroup; reduced: boolean | null; featured?: boolean }>) {
   const repoShort = shortRepoName(run.repoFullName);
   const stageMap = new Map(run.stages.map((stage) => [stage.stage, stage]));
-  const stageSummary = RUN_STAGE_ORDER.map(
-    (stage) =>
-      `${RUN_STAGE_LABELS[stage]} ${stageMap.get(stage)?.status ?? "pending"}`,
-  ).join(", ");
+  const stages = RUN_STAGE_ORDER.map((stage) => ({
+    id: stage,
+    status: (stageMap.get(stage)?.status ?? "pending") as StageStatus,
+  }));
+  const stageSummary = stages
+    .map((stage) => `${RUN_STAGE_LABELS[stage.id]} ${stage.status}`)
+    .join(", ");
 
   return (
     <motion.div
@@ -441,53 +426,51 @@ function RunActivityCard({
         aria-label={`Run for ${repoShort} on ${run.branch}, ${run.overallStatus}. ${stageSummary}. Started ${timeAgo(run.startedAt)}. View run details.`}
       >
         <span className="run-card-accent" aria-hidden="true" />
-        <div className="run-card-top">
-          <span className="run-card-id">
+
+        <div className="run-card-main">
+          <div className="run-card-head">
             <span className="run-card-repo">{repoShort}</span>
-            <span className="run-card-branch">@{run.branch}</span>
-          </span>
-          <span className={`run-status-pill run-status-pill--${run.overallStatus}`}>
-            {run.overallStatus === "running" && (
+            <span className="run-card-branch-pill">{run.branch}</span>
+            {run.overallStatus === "running" ? (
               <span className="run-status-live" aria-hidden="true" />
-            )}
+            ) : null}
+          </div>
+
+          <div className="run-track" aria-hidden="true">
+            <span className="run-track-cap">{RUN_STAGE_LABELS.access}</span>
+            <div className="run-track-line">
+              {stages.map((stage, index) => {
+                const seg =
+                  index > 0
+                    ? connectorTone(stages[index - 1].status, stage.status)
+                    : null;
+                return (
+                  <Fragment key={stage.id}>
+                    {seg ? (
+                      <span
+                        className={`run-track-seg run-track-seg--${seg}`}
+                      />
+                    ) : null}
+                    <span
+                      className={`run-track-dot pipeline-dot pipeline-dot--${stage.status}`}
+                    />
+                  </Fragment>
+                );
+              })}
+            </div>
+            <span className="run-track-cap">{RUN_STAGE_LABELS.package}</span>
+          </div>
+
+          <div className="run-card-foot">
+            <span className="run-card-time">{timeAgo(run.startedAt)}</span>
+            <span className="run-card-sha">{run.commitSha.slice(0, 7)}</span>
+          </div>
+        </div>
+
+        <div className="run-card-side">
+          <span className={`run-status-word run-status-word--${run.overallStatus}`}>
             {run.overallStatus}
           </span>
-        </div>
-
-        <div className="run-card-pipeline" aria-hidden="true">
-          {RUN_STAGE_ORDER.map((stage, index) => {
-            const status = stageMap.get(stage)?.status ?? "pending";
-            const prevStatus =
-              index > 0
-                ? (stageMap.get(RUN_STAGE_ORDER[index - 1])?.status ?? "pending")
-                : null;
-            return (
-              <Fragment key={stage}>
-                {index > 0 && (
-                  <span
-                    className={`run-conn${prevStatus === "success" ? " run-conn--active" : ""}${
-                      prevStatus === "success" && status === "running"
-                        ? " run-conn--flowing"
-                        : ""
-                    }`}
-                  />
-                )}
-                <span className="run-stage">
-                  <span
-                    className={`run-stage-dot pipeline-dot pipeline-dot--${status}`}
-                  />
-                  <span className="run-stage-label">
-                    {RUN_STAGE_LABELS[stage]}
-                  </span>
-                </span>
-              </Fragment>
-            );
-          })}
-        </div>
-
-        <div className="run-card-foot">
-          <span className="run-card-time">{timeAgo(run.startedAt)}</span>
-          <span className="run-card-sha">{run.commitSha.slice(0, 7)}</span>
           <span className="run-card-cta">
             View
             <svg
@@ -515,12 +498,14 @@ function RunCardSkeleton() {
   return (
     <div className="run-card run-card--skeleton" aria-hidden="true">
       <div className="run-card-link">
-        <div className="run-card-top">
-          <span className="run-skel run-skel--repo" />
-          <span className="run-skel run-skel--pill" />
+        <div className="run-card-main">
+          <div className="run-card-head">
+            <span className="run-skel run-skel--repo" />
+          </div>
+          <div className="run-skel run-skel--track" />
+          <div className="run-skel run-skel--foot" />
         </div>
-        <div className="run-skel run-skel--track" />
-        <div className="run-skel run-skel--foot" />
+        <span className="run-skel run-skel--pill" />
       </div>
     </div>
   );
@@ -535,84 +520,22 @@ interface AttentionItem {
   href: string;
 }
 
-/** Right-hand ops rail: success ring, outcome sparkline, worst stage, streak. */
-function OpsRail({
-  stats,
-  displayRate,
-  reduced,
-}: Readonly<{
-  stats: RunStats;
-  displayRate: number | null;
-  reduced: boolean | null;
-}>) {
-  return (
-    <div className="ops-rail" aria-label="Run health">
-      <div className="ops-ring-card">
-        <SuccessRing
-          value={stats.successRate}
-          display={displayRate}
-          reduced={reduced}
-        />
-        <div className="ops-ring-copy">
-          <strong>Success rate</strong>
-          <small>
-            {stats.finishedCount
-              ? `${stats.successes} passed of ${stats.finishedCount} finished`
-              : "No finished runs yet"}
-          </small>
-        </div>
-      </div>
-
-      <div className="ops-block">
-        <span className="ops-block-label">Recent outcomes</span>
-        <RunSparkline outcomes={stats.outcomes} reduced={reduced} />
-      </div>
-
-      <div className="ops-stat-grid">
-        <div className="ops-stat">
-          <span className="ops-stat-num">
-            {stats.worstStage
-              ? RUN_STAGE_LABELS[stats.worstStage.stage]
-              : "None"}
-          </span>
-          <span className="ops-stat-label">Top failing stage</span>
-        </div>
-        <div className="ops-stat">
-          <span
-            className={`ops-stat-num${stats.failureStreak > 0 ? " ops-stat-num--danger" : ""}`}
-          >
-            {stats.failureStreak}
-          </span>
-          <span className="ops-stat-label">Failure streak</span>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 function PipelineActivity({
   runs,
+  stats,
   loading,
   reduced,
   attentionItems,
 }: Readonly<{
   runs: RunGroup[];
+  stats: RunStats;
   loading: boolean;
   reduced: boolean | null;
   attentionItems: AttentionItem[];
 }>) {
-  const stats = computeRunStats(runs);
   const runningCount = stats.running;
   const latest = runs[0] ?? null;
   const rest = runs.slice(1, 4);
-
-  const animatedRate = useCountUp(
-    reduced || loading ? null : stats.successRate,
-    900,
-  );
-  const displayRate = reduced
-    ? stats.successRate
-    : (animatedRate ?? stats.successRate);
 
   return (
     <motion.section
@@ -670,45 +593,47 @@ function PipelineActivity({
         )}
       </div>
 
-      <div className="runs-hero-body">
-        {loading ? (
-          <div className="runs-stream">
-            <RunCardSkeleton />
-            <RunCardSkeleton />
-          </div>
-        ) : latest ? (
-          <motion.div
-            className="runs-stream"
-            variants={reduced ? undefined : runListVariants}
-            initial={reduced ? false : "hidden"}
-            animate="visible"
-          >
-            <RunActivityCard run={latest} reduced={reduced} featured />
-            {rest.map((run) => (
-              <RunActivityCard key={run.runId} run={run} reduced={reduced} />
-            ))}
-          </motion.div>
-        ) : (
-          <div className="runs-stream">
-            <Link href="/workflows?tab=setup" className="runs-empty">
-              <span className="runs-empty-icon" aria-hidden="true">
-                <QuickActionRunIcon />
-              </span>
-              <span>
-                <strong>No runs yet</strong>
-                <small>
-                  Push to a provisioned repository and its per-stage status
-                  streams in here live.
-                </small>
-              </span>
-              <span className="dashboard-row-arrow" aria-hidden="true">
-                →
-              </span>
-            </Link>
-          </div>
-        )}
+      {loading ? (
+        <div className="runs-stream">
+          <RunCardSkeleton />
+          <RunCardSkeleton />
+        </div>
+      ) : latest ? (
+        <motion.div
+          className="runs-stream"
+          variants={reduced ? undefined : runListVariants}
+          initial={reduced ? false : "hidden"}
+          animate="visible"
+        >
+          <RunActivityCard run={latest} reduced={reduced} featured />
+          {rest.map((run) => (
+            <RunActivityCard key={run.runId} run={run} reduced={reduced} />
+          ))}
+        </motion.div>
+      ) : (
+        <div className="runs-stream">
+          <Link href="/workflows?tab=setup" className="runs-empty">
+            <span className="runs-empty-icon" aria-hidden="true">
+              <QuickActionRunIcon />
+            </span>
+            <span>
+              <strong>No runs yet</strong>
+              <small>
+                Push to a provisioned repository and its per-stage status
+                streams in here live.
+              </small>
+            </span>
+            <span className="dashboard-row-arrow" aria-hidden="true">
+              →
+            </span>
+          </Link>
+        </div>
+      )}
 
-        <OpsRail stats={stats} displayRate={displayRate} reduced={reduced} />
+      {/* Recent outcomes sparkline pinned at the foot of the hero. */}
+      <div className="runs-outcomes ops-block">
+        <span className="ops-block-label">Recent outcomes</span>
+        <RunSparkline outcomes={stats.outcomes} reduced={reduced} />
       </div>
     </motion.section>
   );
@@ -996,6 +921,9 @@ function DashboardWorkspaceOverview({
     runs.length === 0 &&
     deliveryProjectCount === 0;
 
+  // Single source of run analytics — feeds the hero sparkline + Quality card.
+  const runStats = computeRunStats(runs);
+
   return (
     <div className={`dashboard-flow${isEmptyWorkspace ? " dashboard-flow--empty" : ""}`}>
       {isEmptyWorkspace ? (
@@ -1007,7 +935,7 @@ function DashboardWorkspaceOverview({
         />
       ) : (
         <>
-          {/* Metrics — container-less hairline figures, not a boxed KPI row. */}
+          {/* Metric strip — one framed row of hairline-divided figures. */}
           <motion.section
             className="metrics-rail"
             aria-label="Workspace metrics"
@@ -1018,17 +946,17 @@ function DashboardWorkspaceOverview({
           >
             <DashboardMetric value={projects.length} label="Projects" loading={loading} reduced={reduced} href="/workflows?tab=current" />
             <DashboardMetric value={group?.systemCount ?? 0} label="Systems" loading={loading && Boolean(group)} reduced={reduced} />
-            <DashboardMetric value={deliveryProjectCount} label="Delivery projects" loading={loading && Boolean(group)} reduced={reduced} />
+            <DashboardMetric value={deliveryProjectCount} label="Team projects" loading={loading && Boolean(group)} reduced={reduced} />
             <DashboardMetric value={repositoryCount} label="Repositories" loading={loading && Boolean(group)} reduced={reduced} />
             <DashboardMetric value={workflowHistoryCount} label="Workflows" loading={loading} reduced={reduced} href="/workflows?tab=all" />
             <DashboardMetric value={runs.length} label="Recent runs" loading={loading} reduced={reduced} href="/runs" />
           </motion.section>
 
-          {/* Main grid: the animated pipeline flow is the star; delivery +
-             activity collapse into one slim, container-less rail beside it. */}
+          {/* Main grid: animated pipeline flow (hero) + narrow ops sidebar. */}
           <div className="dashboard-main-grid">
             <PipelineActivity
               runs={runs}
+              stats={runStats}
               loading={loading}
               reduced={reduced}
               attentionItems={attentionItems}
@@ -1041,52 +969,62 @@ function DashboardWorkspaceOverview({
               initial={reduced ? false : "hidden"}
               animate="visible"
             >
-              <section className="side-rail-block" aria-labelledby="delivery-overview-title">
+              {/* a. Team projects — real provisioned projects, tinted by status. */}
+              <section className="side-rail-block side-rail-block--grow" aria-label="Team projects">
                 <div className="side-rail-head">
-                  <div>
-                    <p className="dashboard-section-kicker">DELIVERY</p>
-                    <h2 id="delivery-overview-title">{group ? "Delivery structure" : "Active projects"}</h2>
-                  </div>
+                  <p className="dashboard-section-kicker">TEAM PROJECTS</p>
                   <Link href={group ? `/groups/${group.id}/systems` : "/workflows?tab=current"} className="dashboard-inline-link">All <span aria-hidden="true">→</span></Link>
                 </div>
                 <div className="side-rail-scroll">
-                  {loading ? <p className="dashboard-empty">Loading delivery structure…</p> : group && portfolio.length ? (
-                    <div className="dashboard-tree">
-                      {portfolio.slice(0, 4).map((node) => (
-                        <div className="dashboard-tree-system" key={node.system.id}>
-                          <Link href={`/groups/${group.id}/systems/${node.system.id}`} className="dashboard-tree-system-head">
-                            <span className="dashboard-tree-node-dot" aria-hidden="true" />
-                            <span><strong>{node.system.name}</strong><small>{node.deliveryProjects.length} delivery project{node.deliveryProjects.length === 1 ? "" : "s"}</small></span>
-                            <span className="dashboard-tree-count">{node.system.status}</span>
+                  {loading ? (
+                    <p className="dashboard-empty">Loading projects…</p>
+                  ) : projects.length ? (
+                    <div className="team-projects-list">
+                      {projects.slice(0, 4).map((project) => {
+                        const tone = projectTone(project.status);
+                        return (
+                          <Link key={project.id} href="/workflows?tab=current" className="team-project-row">
+                            <span className={`team-status-dot team-status-dot--${tone}`} aria-hidden="true" />
+                            <span className="team-project-copy">
+                              <strong>{shortRepoName(project.repoFullName)}</strong>
+                              <small>{project.serviceName}</small>
+                            </span>
+                            <span className={`team-status-badge team-status-badge--${tone}`}>
+                              {projectBadgeLabel(project.status)}
+                            </span>
                           </Link>
-                          {node.deliveryProjects.slice(0, 2).map((deliveryProject) => (
-                            <div className="dashboard-tree-project" key={deliveryProject.id}>
-                              <Link href={`/groups/${group.id}/delivery-projects/${deliveryProject.id}`}>
-                                <span>{deliveryProject.name}</span>
-                                <small>{deliveryProject.repositories.length} repo{deliveryProject.repositories.length === 1 ? "" : "s"}</small>
-                              </Link>
-                            </div>
-                          ))}
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   ) : (
-                    <div className="dashboard-project-list">
-                      {projects.slice(0, 6).map((project) => (
-                        <Link key={project.id} href="/workflows?tab=current" className="dashboard-project-row">
-                          <span><strong>{shortRepoName(project.repoFullName)}</strong><small>{project.serviceName}</small></span>
-                          <span className={`dashboard-status dashboard-status--${project.status}`}>{project.status}</span>
-                        </Link>
-                      ))}
-                      {!projects.length ? <p className="dashboard-empty">No projects in this workspace yet.</p> : null}
-                    </div>
+                    <p className="dashboard-empty">No projects in this workspace yet.</p>
                   )}
                 </div>
               </section>
 
-              <section className="side-rail-block side-rail-block--divided" aria-labelledby="recent-activity-title">
+              {/* b. Quality — compact stat card from computeRunStats. */}
+              <section className="side-rail-block side-rail-block--divided" aria-label="Quality">
+                <p className="dashboard-section-kicker side-rail-kicker">QUALITY</p>
+                <div className="quality-card">
+                  <div className="quality-stat">
+                    <span className="quality-stat-label">Scanning stage</span>
+                    <span className="quality-stat-value">
+                      {runStats.worstStage ? RUN_STAGE_LABELS[runStats.worstStage.stage] : "None"}
+                    </span>
+                  </div>
+                  <div className="quality-stat">
+                    <span className="quality-stat-label">Failure streak</span>
+                    <span className={`quality-stat-value${runStats.failureStreak > 0 ? " quality-stat-value--danger" : ""}`}>
+                      {loading ? "—" : runStats.failureStreak}
+                    </span>
+                  </div>
+                </div>
+              </section>
+
+              {/* c. Activity — group activity feed, manager-gated as before. */}
+              <section className="side-rail-block side-rail-block--divided side-rail-block--grow" aria-labelledby="recent-activity-title">
                 <div className="side-rail-head">
-                  <div><p className="dashboard-section-kicker">ACTIVITY</p><h2 id="recent-activity-title">Recent activity</h2></div>
+                  <p className="dashboard-section-kicker" id="recent-activity-title">ACTIVITY</p>
                   {group ? <Link href={`/groups/${group.id}/activity`} className="dashboard-inline-link">Open <span aria-hidden="true">→</span></Link> : null}
                 </div>
                 <div className="side-rail-scroll">
