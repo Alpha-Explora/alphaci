@@ -832,7 +832,14 @@ export function WorkflowSetupTab({
                     onChange={(event) => form.setRepoName(event.target.value)}
                     placeholder="my-next-app"
                     className="premium-input"
+                    aria-describedby="repo-name-hint"
                   />
+                  <p
+                    id="repo-name-hint"
+                    style={{ color: "var(--text-muted)", fontSize: "0.75rem", margin: "0.4rem 0 0", lineHeight: 1.5 }}
+                  >
+                    Lowercase letters, numbers, and <code>-</code> <code>_</code> <code>.</code> — spaces become hyphens.
+                  </p>
                 </div>
                 <div>
                   <label className="input-label" htmlFor="repo-visibility" style={labelAccentStyle}>

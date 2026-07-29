@@ -22,16 +22,25 @@ interface BuildPayloadInput {
 }
 
 // GitHub repository names allow letters, digits, '.', '_' and '-'. We keep the
-// existing lowercase convention and now also permit '.' and '_' (previously
-// stripped). Anything else (including '/', which separates owner/repo) is
-// dropped; spaces become hyphens; leading/trailing separators are trimmed.
-function normalizeRepoName(value: string): string {
+// existing lowercase convention. Anything else (including '/', which separates
+// owner/repo) is dropped and whitespace becomes a hyphen.
+//
+// This runs on every keystroke of a controlled input, so it must never touch
+// the *edges* of the value: trimming a trailing '-' here makes it impossible to
+// ever type "my-app", because each separator is a trailing separator for the
+// keystroke that produces it. Edge trimming belongs in normalizeRepoName.
+function sanitizeRepoNameInput(value: string): string {
   return value
     .toLowerCase()
-    .trim()
+    .replace(/^\s+/, "")
     .replaceAll(/\s+/g, "-")
-    .replaceAll(/[^a-z0-9._-]/g, "")
-    .replaceAll(/^[-._]+|[-._]+$/g, "");
+    .replaceAll(/[^a-z0-9._-]/g, "");
+}
+
+// Submit-time form: GitHub rejects names that begin or end with a separator, so
+// the edges are trimmed once, when the value is final.
+function normalizeRepoName(value: string): string {
+  return sanitizeRepoNameInput(value).replaceAll(/^[-._]+|[-._]+$/g, "");
 }
 
 export function useCreateProjectForm() {
@@ -58,7 +67,7 @@ export function useCreateProjectForm() {
 
   const setRepoName = useCallback(
     (value: string) => {
-      const normalized = normalizeRepoName(value);
+      const normalized = sanitizeRepoNameInput(value);
       setRepoNameState(normalized);
       if (!serviceNameTouched) {
         // Service name feeds the workflow YAML as an identifier — keep it a

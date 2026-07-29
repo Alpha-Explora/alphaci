@@ -464,6 +464,63 @@ describe("workflow hooks", () => {
     );
   });
 
+  it("keeps separators typed into the repository name and trims them on submit", async () => {
+    let current = null as ReturnType<typeof useCreateProjectForm> | null;
+    const baseInput = {
+      isMicroservicesShape: false, isMultiRepoShape: false,
+      repoShapeId: "single-app",
+      projectTypeId: "nextjs-app",
+      workflowRecipeId: "frontend-standard-ci",
+      tests: {
+        lint: true,
+        unit: true,
+        build: true,
+        coverage: true,
+        security: true,
+        docker: false,
+      },
+    };
+
+    function Probe() {
+      const value = useCreateProjectForm();
+      useEffect(() => {
+        current = value;
+      }, [value]);
+      return null;
+    }
+
+    await act(async () => {
+      hookRoot.root.render(<Probe />);
+    });
+
+    // The field is a controlled input, so every keystroke re-enters the
+    // sanitizer with the previously sanitized value. A separator has to survive
+    // being the last character, otherwise it can never reach the middle either.
+    for (const character of "my-next_app.v2") {
+      const next = `${current?.repoName ?? ""}${character}`;
+      act(() => current?.setRepoName(next));
+      await flushMicrotasks();
+    }
+    expect(current?.repoName).toBe("my-next_app.v2");
+
+    // Characters GitHub does not accept are still dropped, spaces still fold
+    // into hyphens.
+    act(() => current?.setRepoName("Bad name/with?chars"));
+    await flushMicrotasks();
+    expect(current?.repoName).toBe("bad-namewithchars");
+
+    // Edge separators survive typing but are trimmed off the submitted payload.
+    act(() => current?.setRepoName("-my-app-"));
+    await flushMicrotasks();
+    expect(current?.repoName).toBe("-my-app-");
+    expect(current?.buildPayload(baseInput)).toEqual(
+      expect.objectContaining({
+        ok: true,
+        payload: expect.objectContaining({ repoName: "my-app" }),
+      }),
+    );
+  });
+
   it("reports create project form validation branches", async () => {
     let current = null as ReturnType<typeof useCreateProjectForm> | null;
     const baseInput = {
