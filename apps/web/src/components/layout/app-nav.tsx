@@ -7,9 +7,11 @@ import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 
 import type { useAuthSession } from "@/hooks/use-auth-session";
-import type {
-  NotificationsResponse,
-  WorkspacesMeResponse,
+import {
+  APP_ROLE_BADGE_LABELS,
+  type AppRole,
+  type NotificationsResponse,
+  type WorkspacesMeResponse,
 } from "@/lib/api/contracts";
 import { getNotifications } from "@/lib/api/notifications";
 import { getMyWorkspaces } from "@/lib/api/workspaces";
@@ -363,6 +365,39 @@ function SidebarNavItem({
   return inner;
 }
 
+/* ── Role badge ─────────────────────────────────────────────────────────────
+   Answers "which am I?" at a glance. The label mirrors the GitHub org team
+   that drives the role (`team-lead` → Team lead, `developers` → Developer), so
+   what a user sees here matches what they were added to in GitHub. Hidden when
+   the sidebar is collapsed — the 64px rail has no room for it, and the role is
+   not urgent enough to earn an icon-only affordance. */
+
+function SidebarRoleBadge({
+  appRole,
+  collapsed,
+  reduced,
+}: Readonly<{
+  appRole: AppRole;
+  collapsed: boolean;
+  reduced: boolean;
+}>) {
+  return (
+    <AnimatePresence initial={false}>
+      {!collapsed && (
+        <motion.span
+          className={`sidebar-role-badge sidebar-role-badge--${appRole}`}
+          initial={reduced ? false : { opacity: 0, y: -4 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={reduced ? undefined : { opacity: 0, y: -4 }}
+          transition={{ duration: 0.16 }}
+        >
+          {APP_ROLE_BADGE_LABELS[appRole]}
+        </motion.span>
+      )}
+    </AnimatePresence>
+  );
+}
+
 /* ── Section divider label ──────────────────────────────────────────────────── */
 
 function SidebarSectionLabel({
@@ -409,6 +444,9 @@ export function AppNav({
   const isPlatformAdmin =
     !guest &&
     (session?.appRole === "admin" || session?.platformRole === "super_admin");
+  // Defaults to 'member' (rendered as "Developer") so the badge never blanks
+  // out on an older cached session that predates appRole.
+  const appRole: AppRole = session?.appRole ?? "member";
 
   useEffect(() => {
     function handleResize() {
@@ -545,8 +583,15 @@ export function AppNav({
                       exit={reduced ? undefined : { opacity: 0, x: -8 }}
                       transition={{ duration: 0.16 }}
                     >
-                      <span className="sidebar-user-login">
-                        {session?.user.login ?? "user"}
+                      <span className="sidebar-user-login-row">
+                        <span className="sidebar-user-login">
+                          {session?.user.login ?? "user"}
+                        </span>
+                        <SidebarRoleBadge
+                          appRole={appRole}
+                          collapsed={collapsed}
+                          reduced={reduced}
+                        />
                       </span>
                       <WorkspaceSwitcher workspaces={workspaces} />
                     </motion.div>

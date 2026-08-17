@@ -8,6 +8,7 @@ import { useAdminContext } from "@/components/admin/admin-gate";
 import {
   ApiError,
   getAdminUser,
+  resetUserAppRoleToGithub,
   setUserAppRole,
   APP_ROLE_LABELS,
   type AdminUserDetail,
@@ -55,6 +56,28 @@ export default function AdminUserDetailPage() {
       setRoleMessage(`Role set to ${APP_ROLE_LABELS[next]}.`);
     } catch (cause) {
       setRoleMessage(`Failed to update role: ${describeRoleError(cause)}`);
+    } finally {
+      setRoleBusy(false);
+    }
+  }
+
+  /**
+   * Unpins the user so GitHub team membership drives their role again. The role
+   * itself does not change here — the backend has no GitHub token on this
+   * request — so the message says what will actually happen rather than
+   * implying an immediate change.
+   */
+  async function handleResetRole() {
+    setRoleBusy(true);
+    setRoleMessage(null);
+    try {
+      await resetUserAppRoleToGithub(id);
+      await load();
+      setRoleMessage(
+        "Now following GitHub teams. The role updates on their next sign-in, or immediately if their team membership changes.",
+      );
+    } catch (cause) {
+      setRoleMessage(`Failed to reset role: ${describeRoleError(cause)}`);
     } finally {
       setRoleBusy(false);
     }
@@ -120,8 +143,44 @@ export default function AdminUserDetailPage() {
               </option>
             ))}
           </select>
+          {/* Provenance — answers "why is this user a Lead?" without having to
+              read the audit log. A 'manual' pin is the reason automatic GitHub
+              team sync appears to be doing nothing for this user, so it is
+              surfaced right next to the control that caused it. */}
+          {detail.appRoleSource === "manual" ? (
+            <span
+              className="status-chip status-chip-amber"
+              title="Set in the Console. GitHub team sync skips this user until it is reset."
+            >
+              pinned manually
+            </span>
+          ) : (
+            <span
+              className="status-chip status-chip-muted"
+              title="Follows the GitHub org teams (team-lead / developers). Re-derived on each sign-in."
+            >
+              from GitHub teams
+            </span>
+          )}
+
+          {detail.appRoleSource === "manual" && detail.id !== currentUserId && (
+            <button
+              type="button"
+              className="ghost-button"
+              disabled={roleBusy || (!isSuperAdmin && detail.appRole === "admin")}
+              onClick={() => void handleResetRole()}
+              style={{ padding: "0.35rem 0.85rem", fontSize: "0.78rem", minHeight: "2rem" }}
+            >
+              Reset to GitHub
+            </button>
+          )}
+
           <span style={{ fontSize: "0.78rem", color: "var(--text-muted)" }}>
             Admin = full access · Lead = create/manage groups & invite · Member = assigned repos only
+          </span>
+          <span style={{ fontSize: "0.78rem", color: "var(--text-muted)" }}>
+            Setting a role here pins it — GitHub team changes stop applying to
+            this user until you reset it.
           </span>
           {detail.id === currentUserId && (
             <span style={{ fontSize: "0.8rem", color: "var(--text-secondary)" }}>You can&apos;t change your own role.</span>

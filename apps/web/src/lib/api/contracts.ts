@@ -51,6 +51,20 @@ export type PlatformRole = "admin" | "super_admin";
 /** Global hierarchy role — the single source of truth for create capabilities. */
 export type AppRole = "admin" | "lead" | "member";
 
+/** Provenance of {@link AppRole} — see AuthMeResponse.appRoleSource. */
+export type AppRoleSource = "github_team" | "manual";
+
+/**
+ * User-facing labels for the global role. These mirror the GitHub org teams
+ * that drive them (`team-lead` / `developers`), so what a user sees in the app
+ * matches what they were added to in GitHub.
+ */
+export const APP_ROLE_BADGE_LABELS: Record<AppRole, string> = {
+  admin: "Admin",
+  lead: "Team lead",
+  member: "Developer",
+};
+
 export interface AuthMeResponse {
   authenticated: boolean;
   user: SessionUser;
@@ -63,6 +77,13 @@ export interface AuthMeResponse {
    * Optional so older cached sessions deserialize safely (defaults to 'member').
    */
   appRole?: AppRole;
+  /**
+   * Where `appRole` came from. 'github_team' means it follows the GitHub org
+   * teams (`team-lead` / `developers`) and can change on the next sign-in;
+   * 'manual' means an admin pinned it in the Console and automatic sync skips
+   * this user. Optional so older cached sessions deserialize safely.
+   */
+  appRoleSource?: AppRoleSource;
 }
 
 export interface CapabilitiesResponse {

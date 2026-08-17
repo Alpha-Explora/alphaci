@@ -115,6 +115,44 @@ export function useAuthSession(): UseAuthSessionResult {
     };
   }, [applySession]);
 
+  // Re-read the session when the tab regains focus.
+  //
+  // appRole is derived from GitHub org team membership and can change while a
+  // tab sits open (a promotion to `team-lead`, or — more importantly — a
+  // removal from it). The backend already reads the role live on every
+  // request, so authorization is never stale; this only keeps the UI honest,
+  // so a promoted user sees their new capabilities without a hard reload and a
+  // demoted one stops being shown actions that would now 403.
+  //
+  // Deliberately silent: it patches state in place rather than going through
+  // refresh(), which would flip status to "loading" and flash every page's
+  // loading state on every tab switch.
+  useEffect(() => {
+    function handleFocus() {
+      if (document.visibilityState === "hidden") return;
+
+      const requestVersion = requestVersionRef.current + 1;
+      requestVersionRef.current = requestVersion;
+
+      void getAuthSession()
+        .then((current) => {
+          if (requestVersion !== requestVersionRef.current) return;
+          applySession(current);
+        })
+        .catch(() => {
+          // A background refresh must never surface an error or sign the user
+          // out — the next real request will handle a genuinely dead session.
+        });
+    }
+
+    window.addEventListener("focus", handleFocus);
+    document.addEventListener("visibilitychange", handleFocus);
+    return () => {
+      window.removeEventListener("focus", handleFocus);
+      document.removeEventListener("visibilitychange", handleFocus);
+    };
+  }, [applySession]);
+
   return {
     status,
     session,
