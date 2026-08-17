@@ -88,6 +88,27 @@ function RunsIcon({ size = 16 }: { size?: number }) {
   );
 }
 
+function TeamsIcon({ size = 16 }: { size?: number }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+      <circle cx="9" cy="7" r="4" />
+      <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+      <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+    </svg>
+  );
+}
+
 function InboxIcon({ size = 16 }: { size?: number }) {
   return (
     <svg
@@ -630,6 +651,20 @@ export function AppNav({
             reduced={reduced}
             itemIndex={2}
           />
+          {/* Teams owns groups + membership; Projects owns repositories. The
+              same groups remain reachable from the Projects tab's rail toggle,
+              but that is three levels deep — this is the findable entry. */}
+          {!guest && (
+            <SidebarNavItem
+              href="/teams"
+              label="Teams"
+              icon={TeamsIcon}
+              isActive={pathname === "/teams" || pathname.startsWith("/groups")}
+              collapsed={collapsed}
+              reduced={reduced}
+              itemIndex={3}
+            />
+          )}
           {!guest && (
             <SidebarNavItem
               href="/inbox"
@@ -638,7 +673,7 @@ export function AppNav({
               isActive={pathname === "/inbox"}
               collapsed={collapsed}
               reduced={reduced}
-              itemIndex={3}
+              itemIndex={4}
               badgeCount={notifications?.unreadCount ?? 0}
             />
           )}
@@ -653,7 +688,7 @@ export function AppNav({
               isActive={pathname === "/settings"}
               collapsed={collapsed}
               reduced={reduced}
-              itemIndex={4}
+              itemIndex={5}
             />
           )}
 
@@ -665,7 +700,7 @@ export function AppNav({
               isActive={pathname.startsWith("/admin")}
               collapsed={collapsed}
               reduced={reduced}
-              itemIndex={5}
+              itemIndex={6}
             />
           )}
         </nav>
