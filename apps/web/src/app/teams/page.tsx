@@ -11,7 +11,6 @@ import { PipelineLoader } from "@/components/layout/pipeline-loader";
 import { WorkspaceProvider } from "@/components/layout/workspace-context";
 import { CreateGroupDialog } from "@/components/hierarchy/create-group-dialog";
 import { GroupWorkspacePanel } from "@/components/product/group-workspace-panel";
-import { PendingInvitationsBanner } from "@/components/product/pending-invitations-banner";
 import { useAuthSession } from "@/hooks/use-auth-session";
 import { getGroups, getProjects, logout } from "@/lib/api/client";
 import type { ProvisionedProject } from "@/lib/api/contracts";
@@ -202,8 +201,6 @@ function TeamsPageContent() {
             </p>
           </div>
         </motion.div>
-
-        <PendingInvitationsBanner onAccepted={loadGroups} />
 
         {loadError ? (
           <p className="error-text" style={{ marginTop: 0 }}>

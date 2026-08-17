@@ -40,8 +40,11 @@ export function isGlobalCreatorRole(appRole: AppRole | null | undefined): boolea
 // system. Do not conflate the two when reading/writing this type.
 export type GroupRole = WorkspaceRole;
 
-/** Invitations can never be sent directly as the top tier — ownership only moves via transfer. */
-export type InvitableRole = Exclude<GroupRole, "admin">; // 'delegated_lead' | 'member' | 'viewer'
+/**
+ * Roles a lead may grant when adding someone — ownership only moves via
+ * transfer, so 'admin' is never grantable.
+ */
+export type GrantableRole = Exclude<GroupRole, "admin">; // 'delegated_lead' | 'member' | 'viewer'
 
 /**
  * Display-label mapping (plan §2.1). The UI must render these labels, never the
@@ -75,12 +78,10 @@ export function isGroupManagerRole(role: GroupRole | null | undefined): boolean 
 /* ── Enum strings — copied verbatim from plan §2.2 ─────────────────────────── */
 
 export type GroupStatus = "active" | "archived";
-export type GroupInvitationStatus =
-  | "pending"
-  | "accepted"
-  | "declined"
-  | "revoked"
-  | "expired";
+/**
+ * 'invited' is retained only for historical rows — members are added directly,
+ * so nothing produces it now.
+ */
 export type GroupMemberStatus = "invited" | "active" | "removed";
 
 export type SystemStatus = "active" | "archived";
@@ -197,36 +198,10 @@ export interface GroupMember {
   createdAt: string;
 }
 
-export interface GroupInvitation {
-  id: string;
-  groupId: string;
-  invitedUserId: string;
-  invitedBy: string;
-  role: InvitableRole;
-  status: GroupInvitationStatus;
-  createdAt: string;
-  respondedAt: string | null;
-  expiresAt: string | null;
-  /**
-   * Display enrichment joined server-side from the invitee/inviter profiles and
-   * the group. The UI degrades gracefully if any are absent (falls back to the
-   * user id), but the backend now populates them so invitation rows show the
-   * member's real name + GitHub avatar rather than a bare UUID.
-   */
-  inviteeLogin?: string | null;
-  inviteeName?: string | null;
-  inviteeEmail?: string | null;
-  inviteeAvatarUrl?: string | null;
-  invitedByLogin?: string | null;
-  invitedByName?: string | null;
-  /** Present on the invitee's own inbox feed so each card names its group. */
-  groupName?: string | null;
-}
-
-// Invitations no longer carry a role: everyone joins as a Member and a Lead
-// promotes them afterward from the members page.
-export interface CreateInvitationRequest {
-  inviteeUserId: string;
+export interface AddGroupMemberRequest {
+  userId: string;
+  /** Defaults to 'member'. 'admin' is not grantable — ownership moves via transfer. */
+  role?: GrantableRole;
 }
 
 export interface UpdateMemberRoleRequest {

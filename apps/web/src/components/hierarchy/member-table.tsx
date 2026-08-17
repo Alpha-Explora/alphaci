@@ -2,50 +2,35 @@
 
 import { useMemo, useState } from "react";
 
-import {
-  removeGroupMember,
-  revokeGroupInvitation,
-} from "@/lib/api/client";
-import {
-  GROUP_ROLE_LABELS,
-  type GroupInvitation,
-  type GroupMember,
-} from "@/lib/api/hierarchy-contracts";
-import {
-  InvitationStatusBadge,
-  MemberStatusBadge,
-  RoleBadge,
-} from "./badges";
+import { removeGroupMember } from "@/lib/api/client";
+import { type GroupMember } from "@/lib/api/hierarchy-contracts";
+import { MemberStatusBadge, RoleBadge } from "./badges";
 import { Avatar, SectionHeader } from "./primitives";
-import { timeAgo } from "@/hooks/use-hierarchy";
 
 /**
- * Member roster + invitation lifecycle. Roles are DISPLAY-ONLY here — role
- * assignment (Admin / Lead / Member) is centralized in the Admin Console, so
- * a group Lead cannot change roles from this tab. Membership actions (invite,
- * remove) still render for managers when `canManage` is true; the backend
- * independently enforces the same rules.
+ * Member roster. Roles are DISPLAY-ONLY here — role assignment
+ * (Admin / Lead / Member) is centralized in the Admin Console, so a group Lead
+ * cannot change roles from this tab. Membership actions (add, remove) render
+ * for managers when `canManage` is true; the backend independently enforces
+ * the same rules.
+ *
+ * There is no invitation lifecycle: a lead adds someone and they are a member
+ * immediately.
  */
 export function MemberTable({
   groupId,
   members,
-  invitations,
   canManage,
   currentUserId,
   onMembersChange,
-  onInvitationsChange,
-  inviteAction,
+  addAction,
 }: {
   groupId: string;
   members: GroupMember[];
-  invitations: GroupInvitation[];
   canManage: boolean;
   currentUserId: string;
   onMembersChange: (updater: (current: GroupMember[]) => GroupMember[]) => void;
-  onInvitationsChange: (
-    updater: (current: GroupInvitation[]) => GroupInvitation[],
-  ) => void;
-  inviteAction?: React.ReactNode;
+  addAction?: React.ReactNode;
 }) {
   const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -61,16 +46,6 @@ export function MemberTable({
       ).length,
     [activeMembers],
   );
-  const pendingInvitations = useMemo(
-    () => invitations.filter((invitation) => invitation.status === "pending"),
-    [invitations],
-  );
-  // Only still-actionable (pending) invitations are shown. Accepted ones have
-  // graduated into real members (already listed in Members above), and revoked/
-  // declined/expired ones are terminal — keeping any of them here would just
-  // clutter the list. The full lifecycle stays in the Activity & audit feed.
-  const visibleInvitations = pendingInvitations;
-
   async function handleRemove(member: GroupMember) {
     setBusyId(member.id);
     setError(null);
@@ -90,32 +65,13 @@ export function MemberTable({
     }
   }
 
-  async function handleRevoke(invitation: GroupInvitation) {
-    setBusyId(invitation.id);
-    setError(null);
-    try {
-      await revokeGroupInvitation(groupId, invitation.id);
-      onInvitationsChange((current) =>
-        current.map((item) =>
-          item.id === invitation.id
-            ? { ...item, status: "revoked" as const }
-            : item,
-        ),
-      );
-    } catch {
-      setError("The invitation could not be revoked.");
-    } finally {
-      setBusyId(null);
-    }
-  }
-
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
       <section aria-label="Members">
         <SectionHeader
           title="Members"
           count={activeMembers.length}
-          actions={inviteAction}
+          actions={addAction}
         />
         <div className="hier-panel">
           {activeMembers.map((member) => {
@@ -165,56 +121,6 @@ export function MemberTable({
           })}
         </div>
       </section>
-
-      {(canManage || pendingInvitations.length > 0) && (
-        <section aria-label="Invitations">
-          <SectionHeader title="Invitations" count={visibleInvitations.length} />
-          <div className="hier-panel">
-            {visibleInvitations.length === 0 ? (
-              <div className="hier-tree-empty">No invitations.</div>
-            ) : (
-              visibleInvitations.map((invitation) => (
-                <div key={invitation.id} className="hier-row">
-                  <div className="hier-row-identity">
-                    <Avatar
-                      login={invitation.inviteeLogin ?? invitation.invitedUserId}
-                      name={invitation.inviteeName}
-                      avatarUrl={invitation.inviteeAvatarUrl}
-                    />
-                    <div className="hier-row-name">
-                      <strong>
-                        {invitation.inviteeName ||
-                          invitation.inviteeLogin ||
-                          invitation.invitedUserId}
-                      </strong>
-                      <span>
-                        {invitation.inviteeLogin
-                          ? `@${invitation.inviteeLogin} · `
-                          : ""}
-                        {GROUP_ROLE_LABELS[invitation.role]} · invited{" "}
-                        {timeAgo(invitation.createdAt)}
-                      </span>
-                    </div>
-                  </div>
-                  <div className="hier-row-actions">
-                    <InvitationStatusBadge status={invitation.status} />
-                    {canManage && invitation.status === "pending" && (
-                      <button
-                        type="button"
-                        className="hier-btn-danger"
-                        disabled={busyId === invitation.id}
-                        onClick={() => void handleRevoke(invitation)}
-                      >
-                        Revoke
-                      </button>
-                    )}
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-        </section>
-      )}
 
       {error && (
         <p className="error-text" role="alert" style={{ margin: 0 }}>

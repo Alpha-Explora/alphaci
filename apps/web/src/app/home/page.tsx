@@ -18,7 +18,6 @@ import { useAuthSession } from "@/hooks/use-auth-session";
 import {
   getDeliveryProjectRepositories,
   getGroupActivity,
-  getGroupInvitations,
   getGroupSystems,
   getMyAssignedRepositories,
   getMyGroups,
@@ -41,7 +40,6 @@ import {
   isGroupManagerRole,
   type DeliveryProject,
   type GroupActivityItem,
-  type GroupInvitation,
   type GroupSummary,
   type HierarchyRepository,
   type HierarchySystem,
@@ -841,7 +839,6 @@ function DashboardWorkspaceOverview({
   group,
   portfolio,
   assignments,
-  invitations,
   activity,
   projects,
   runs,
@@ -852,7 +849,6 @@ function DashboardWorkspaceOverview({
   group: GroupSummary | null;
   portfolio: DeliveryPortfolioNode[];
   assignments: MyAssignedRepository[];
-  invitations: GroupInvitation[];
   activity: GroupActivityItem[];
   projects: ProvisionedProject[];
   runs: RunGroup[];
@@ -883,9 +879,6 @@ function DashboardWorkspaceOverview({
       assignment.effectiveState === "pending" ||
       assignment.effectiveState === "unknown",
   );
-  const pendingInvitations = invitations.filter(
-    (invitation) => invitation.status === "pending",
-  );
   const attentionItems = [
     failedProjects.length
       ? {
@@ -893,14 +886,6 @@ function DashboardWorkspaceOverview({
           label: `${failedProjects.length} project${failedProjects.length === 1 ? "" : "s"} need attention`,
           detail: "Review failed or disconnected delivery work.",
           href: "/workflows?tab=current",
-        }
-      : null,
-    pendingInvitations.length
-      ? {
-          tone: "warning",
-          label: `${pendingInvitations.length} pending invitation${pendingInvitations.length === 1 ? "" : "s"}`,
-          detail: "A teammate is waiting to join this group.",
-          href: group ? `/groups/${group.id}/members` : "/settings",
         }
       : null,
     syncingAssignments.length
@@ -1069,7 +1054,6 @@ function HomeDashboardContent() {
   const [currentGroup, setCurrentGroup] = useState<GroupSummary | null>(null);
   const [portfolio, setPortfolio] = useState<DeliveryPortfolioNode[]>([]);
   const [assignments, setAssignments] = useState<MyAssignedRepository[]>([]);
-  const [invitations, setInvitations] = useState<GroupInvitation[]>([]);
   const [activity, setActivity] = useState<GroupActivityItem[]>([]);
   const [workspaceOverviewLoading, setWorkspaceOverviewLoading] = useState(true);
   const [workspaceOverviewError, setWorkspaceOverviewError] = useState<string | null>(null);
@@ -1133,7 +1117,6 @@ function HomeDashboardContent() {
 
         if (!group) {
           setPortfolio([]);
-          setInvitations([]);
           setActivity([]);
           return;
         }
@@ -1156,21 +1139,15 @@ function HomeDashboardContent() {
         setPortfolio(nextPortfolio);
 
         if (isGroupManagerRole(group.role)) {
-          const [nextInvitations, nextActivity] = await Promise.all([
-            getGroupInvitations(group.id),
-            getGroupActivity(group.id, { limit: 4 }),
-          ]);
-          setInvitations(nextInvitations);
+          const nextActivity = await getGroupActivity(group.id, { limit: 4 });
           setActivity(nextActivity.items);
         } else {
-          setInvitations([]);
           setActivity([]);
         }
       })
       .catch(() => {
         setCurrentGroup(null);
         setPortfolio([]);
-        setInvitations([]);
         setActivity([]);
         setWorkspaceOverviewError(
           "Some group information could not be loaded. You can still review your projects and runs.",
@@ -1494,7 +1471,6 @@ function HomeDashboardContent() {
           group={currentGroup}
           portfolio={portfolio}
           assignments={assignments}
-          invitations={invitations}
           activity={activity}
           projects={projects}
           runs={recentRuns}

@@ -19,7 +19,6 @@ import { WorkflowStageList } from "./project-detail-tabs";
 import { DeploymentProvisioningSummary } from "./setup-result-panel";
 import { FlowExplainer } from "./flow-explainer";
 import { GroupWorkspacePanel } from "./group-workspace-panel";
-import { PendingInvitationsBanner } from "./pending-invitations-banner";
 
 interface WorkflowCurrentTabProps {
   latestResult: CreateProjectResult | null;
@@ -117,20 +116,6 @@ export function WorkflowCurrentTab({
     };
   }, []);
 
-  // Re-pull groups after the user accepts an invitation so the group they just
-  // joined shows up without a full page reload.
-  function refreshGroups() {
-    void getGroups()
-      .then((items) => {
-        setGroups(items);
-        setGroupsError(null);
-      })
-      .catch(() => {
-        setGroups((current) => current ?? []);
-        setGroupsError("Could not load groups.");
-      });
-  }
-
   const entries: GroupListEntry[] = useMemo(() => {
     const groupList = groups ?? [];
     const list: GroupListEntry[] = groupList.map((group) => ({
@@ -219,9 +204,6 @@ export function WorkflowCurrentTab({
         padding: 0,
       }}
     >
-      {/* ── Pending invitations inbox ─────────────────────────────── */}
-      <PendingInvitationsBanner onAccepted={refreshGroups} />
-
       {/* ── Latest result banner ──────────────────────────────────── */}
       {latestResult ? (
         <div className="latest-result-banner glass-panel">

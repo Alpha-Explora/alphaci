@@ -8,7 +8,6 @@ import { useAuthSession } from "@/hooks/use-auth-session";
 import {
   deleteGroup,
   getGroupActivity,
-  getGroupInvitations,
   getGroupMembers,
 } from "@/lib/api/client";
 import { ApiError } from "@/lib/api/request";
@@ -19,13 +18,12 @@ import {
   type GroupActivityItem,
   type GroupActivityQuery,
   type GroupActivityResponse,
-  type GroupInvitation,
   type GroupMember,
   type GroupSummary,
 } from "@/lib/api/hierarchy-contracts";
 import { ActivityFeed, ActivityFilters } from "@/components/hierarchy/activity-feed";
 import { FormDialog } from "@/components/hierarchy/primitives";
-import { InviteMemberDialog } from "@/components/hierarchy/invite-member-dialog";
+import { AddMemberDialog } from "@/components/hierarchy/add-member-dialog";
 import { MemberTable } from "@/components/hierarchy/member-table";
 
 type GroupSection = "overview" | "projects" | "create";
@@ -97,14 +95,9 @@ function Overview({ group, projects }: { group: GroupSummary; projects: Provisio
 
 function Members({ group }: { group: GroupSummary }) {
   const { session } = useAuthSession();
-  const [inviteOpen, setInviteOpen] = useState(false);
+  const [addOpen, setAddOpen] = useState(false);
   const canManage = isGroupManagerRole(group.role);
   const membersResource = useApiResource<GroupMember[]>(() => getGroupMembers(group.id), [group.id]);
-  const invitationsResource = useApiResource<GroupInvitation[]>(
-    () => getGroupInvitations(group.id),
-    [group.id],
-    { enabled: canManage },
-  );
 
   if (membersResource.state === "loading") return <p className="project-list-empty">Loading members…</p>;
   if (membersResource.state !== "ready" && membersResource.state !== "empty") return <p className="project-list-empty">Members could not be loaded. <button type="button" className="inline-link" onClick={membersResource.reload}>Retry</button></p>;
@@ -114,14 +107,21 @@ function Members({ group }: { group: GroupSummary }) {
       <MemberTable
         groupId={group.id}
         members={membersResource.data ?? []}
-        invitations={invitationsResource.data ?? []}
         canManage={canManage}
         currentUserId={session?.user.id ?? ""}
         onMembersChange={(updater) => membersResource.setData((current) => updater(current ?? []))}
-        onInvitationsChange={(updater) => invitationsResource.setData((current) => updater(current ?? []))}
-        inviteAction={canManage ? <button type="button" className="primary-button" onClick={() => setInviteOpen(true)}>Invite member</button> : undefined}
+        addAction={canManage ? <button type="button" className="primary-button" onClick={() => setAddOpen(true)}>Add member</button> : undefined}
       />
-      {canManage ? <InviteMemberDialog open={inviteOpen} groupId={group.id} onClose={() => setInviteOpen(false)} onInvited={(invitation) => invitationsResource.setData((current) => [invitation, ...(current ?? [])])} /> : null}
+      {canManage ? (
+        <AddMemberDialog
+          open={addOpen}
+          groupId={group.id}
+          onClose={() => setAddOpen(false)}
+          // The new member is active immediately, so it goes straight into the
+          // roster — there is no pending list for it to sit in first.
+          onAdded={(member) => membersResource.setData((current) => [member, ...(current ?? [])])}
+        />
+      ) : null}
     </>
   );
 }

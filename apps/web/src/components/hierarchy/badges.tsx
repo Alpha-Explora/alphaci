@@ -5,7 +5,6 @@ import {
   type AssignmentStatus,
   type DeliveryProjectStatus,
   type GithubSyncState,
-  type GroupInvitationStatus,
   type GroupMemberStatus,
   type GroupRole,
   type GroupStatus,
@@ -127,20 +126,3 @@ export function MemberStatusBadge({ status }: { status: GroupMemberStatus }) {
   return <Badge tone={tone} label={label} />;
 }
 
-/* ── Invitation lifecycle status (plan §2.2) ──────────────────────────────── */
-
-export function InvitationStatusBadge({
-  status,
-}: {
-  status: GroupInvitationStatus;
-}) {
-  const map: Record<GroupInvitationStatus, { tone: Tone; label: string }> = {
-    pending: { tone: "warning", label: "Pending" },
-    accepted: { tone: "success", label: "Accepted" },
-    declined: { tone: "muted", label: "Declined" },
-    revoked: { tone: "muted", label: "Revoked" },
-    expired: { tone: "muted", label: "Expired" },
-  };
-  const { tone, label } = map[status];
-  return <Badge tone={tone} label={label} />;
-}

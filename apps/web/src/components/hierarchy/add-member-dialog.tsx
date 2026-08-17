@@ -2,27 +2,28 @@
 
 import { useEffect, useState } from "react";
 
-import {
-  createGroupInvitation,
-  searchEligibleGroupUsers,
-} from "@/lib/api/client";
+import { addGroupMember, searchEligibleGroupUsers } from "@/lib/api/client";
 import { ApiError } from "@/lib/api/request";
 import type {
-  GroupInvitation,
+  GroupMember,
   InternalUserDirectoryEntry,
 } from "@/lib/api/hierarchy-contracts";
 import { Avatar, FormDialog } from "./primitives";
 
-export function InviteMemberDialog({
+/**
+ * Adds someone to a group immediately. There is no invitation and nothing for
+ * the person to accept — they are a member the moment this succeeds.
+ */
+export function AddMemberDialog({
   open,
   groupId,
   onClose,
-  onInvited,
+  onAdded,
 }: {
   open: boolean;
   groupId: string;
   onClose: () => void;
-  onInvited: (invitation: GroupInvitation) => void;
+  onAdded: (member: GroupMember) => void;
 }) {
   const [search, setSearch] = useState("");
   const [selectedUser, setSelectedUser] =
@@ -48,19 +49,17 @@ export function InviteMemberDialog({
     setError(null);
     try {
       // Everyone joins as a Member; a Lead can promote them afterward.
-      const invitation = await createGroupInvitation(groupId, {
-        inviteeUserId: selectedUser.id,
-      });
-      onInvited(invitation);
+      const member = await addGroupMember(groupId, { userId: selectedUser.id });
+      onAdded(member);
       reset();
       onClose();
     } catch (cause) {
       if (cause instanceof ApiError && cause.status === 403) {
-        setError("You're not allowed to invite members to this group.");
+        setError("You're not allowed to add members to this group.");
       } else if (cause instanceof ApiError && cause.status === 404) {
         setError("That user could not be found in the internal directory.");
       } else {
-        setError("The invitation could not be sent. Please try again.");
+        setError("The member could not be added. Please try again.");
       }
     } finally {
       setSubmitting(false);
@@ -93,22 +92,22 @@ export function InviteMemberDialog({
         reset();
         onClose();
       }}
-      title="Invite member"
-      description="Pick a member of your GitHub organization. They'll join as a Member once they accept; you can promote them to Lead later."
-      submitLabel="Send invitation"
+      title="Add member"
+      description="Pick a member of your GitHub organization. They join as a Member straight away — you can promote them to Lead afterward."
+      submitLabel="Add member"
       submitting={submitting}
       error={error}
       canSubmit={selectedUser !== null && selectedUser.hasAccount}
       onSubmit={handleSubmit}
     >
       <div className="hier-field">
-        <label className="hier-field-label" htmlFor="invite-user">
+        <label className="hier-field-label" htmlFor="add-member-user">
           Organization member
         </label>
 
         {selectedUser ? (
           // Selected-member chip — clearer than cramming the name back into the
-          // text input, and shows the GitHub avatar we're about to invite.
+          // text input, and shows the GitHub avatar we're about to add.
           <div className="invite-selected">
             <Avatar
               login={selectedUser.login}
@@ -137,7 +136,7 @@ export function InviteMemberDialog({
         ) : (
           <>
             <input
-              id="invite-user"
+              id="add-member-user"
               className="hier-input"
               value={search}
               onChange={(event) => {
@@ -201,7 +200,7 @@ export function InviteMemberDialog({
         <span className="hier-field-hint">
           {searching
             ? "Loading organization members…"
-            : "Members without an AlphaCI account can't be invited until they sign in."}
+            : "Members without an AlphaCI account can't be added until they sign in."}
         </span>
       </div>
     </FormDialog>
