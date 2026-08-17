@@ -5,6 +5,8 @@ export * from "./catalog";
 export * from "./env-provisioning";
 export * from "./existing-repos";
 export * from "./github";
+export * from "./hierarchy";
+export * from "./hierarchy-contracts";
 export * from "./projects";
 export * from "./request";
 export * from "./runs";

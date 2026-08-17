@@ -48,12 +48,21 @@ export interface SubscriptionInfo {
 
 export type PlatformRole = "admin" | "super_admin";
 
+/** Global hierarchy role — the single source of truth for create capabilities. */
+export type AppRole = "admin" | "lead" | "member";
+
 export interface AuthMeResponse {
   authenticated: boolean;
   user: SessionUser;
   subscription: SubscriptionInfo;
   /** null for ordinary users; set for platform admins. Gates the /admin surface. */
   platformRole?: PlatformRole | null;
+  /**
+   * Global hierarchy role ('admin' | 'lead' | 'member'). Gates create actions
+   * (systems/repositories) in the Groups UI — only admin/lead may create.
+   * Optional so older cached sessions deserialize safely (defaults to 'member').
+   */
+  appRole?: AppRole;
 }
 
 export interface CapabilitiesResponse {
@@ -109,6 +118,16 @@ export interface CapabilitiesResponse {
   };
   notifications?: {
     enabled: boolean;
+  };
+  /**
+   * Groups / Systems / Delivery Projects / Repositories / Assignments surface
+   * (HIERARCHY_IMPLEMENTATION_PLAN.md §3.2). Gates the Groups + My work nav and
+   * dashboards without a separate endpoint, consistent with `workspaces.enabled`.
+   * `githubSyncMode` mirrors HIERARCHY_GITHUB_SYNC_MODE (stub|live).
+   */
+  hierarchy?: {
+    enabled: boolean;
+    githubSyncMode: "stub" | "live";
   };
 }
 
@@ -212,6 +231,20 @@ export interface DeploymentTargetSyncResponse {
 
 export interface DetachDeploymentTargetRequest {
   deleteProviderResource?: boolean;
+}
+
+export interface DisconnectProjectRequest {
+  deleteGithubRepo?: boolean;
+  confirmRepoName?: string;
+}
+
+export interface DisconnectProjectResponse {
+  ok: boolean;
+  githubRepoDeleted?: boolean;
+  githubRepoDeleteError?: {
+    code: "missing_scope" | "not_found" | "other";
+    message: string;
+  };
 }
 
 export interface DetachDeploymentTargetResponse {
@@ -472,7 +505,13 @@ export interface WorkspaceSummary {
   role: WorkspaceRole;
 }
 
-export type WorkspaceRole = "owner" | "admin" | "developer" | "viewer";
+/**
+ * Role rename plan §2.1 (confirmed 2026-07-14): 'admin' is now the TOP membership
+ * tier (product label "Lead" — see GROUP_ROLE_LABELS in hierarchy-contracts.ts).
+ * This is a different system from `identity.platform_admins` (platform-admin
+ * tier) — same literal string, unrelated table/column. Do not conflate them.
+ */
+export type WorkspaceRole = "admin" | "delegated_lead" | "member" | "viewer";
 
 export interface WorkspacesMeResponse {
   enabled: boolean;
@@ -550,6 +589,12 @@ export interface ProjectOptionsResponse {
   projectTypes: ProjectTypeOption[];
   recipes: WorkflowRecipeOption[];
   nodeVersions: NodeVersionOption[];
+  /**
+   * Login of the GitHub org every repository must belong to. Used to filter
+   * the Setup-flow "existing repo" picker and to label already-attached
+   * repos outside this org as "External" — never hardcode this value.
+   */
+  enforcedOrg: string;
 }
 
 export interface CentralWorkflowTagsResponse {
@@ -575,6 +620,8 @@ export interface SetupProjectRequest extends GenerateWorkflowRequest {
   repoFullName: string;
   outputFileName?: string;
   deploymentProvisioning?: DeploymentProvisioningRequest;
+  /** Group/workspace to create this project inside (from ?group=<id>). */
+  workspaceId?: string;
 }
 
 export interface GenerateWorkflowResponse {
@@ -716,6 +763,8 @@ export interface CreateProjectRequest {
   microservicesConfig?: MicroservicesConfig;
   multiRepoConfig?: MicroservicesConfig;
   deploymentProvisioning?: DeploymentProvisioningRequest;
+  /** Group/workspace to create this project inside (from ?group=<id>). */
+  workspaceId?: string;
 }
 
 export interface CreateProjectResponse {
@@ -752,8 +801,18 @@ export interface ProvisionedProject {
   projectTypeId?: string | null;
   workflowRecipeId?: string | null;
   projectOptions?: Record<string, unknown> | null;
-  /** True for the system-seeded read-only demo project shown to every user. */
-  isExample?: boolean;
+  /**
+   * Owning workspace id. For hierarchy-managed repositories this is the GROUP
+   * id — the Projects screen uses it to bucket projects under their group.
+   */
+  workspaceId?: string | null;
+  /**
+   * Viewer-relative: true only when the authenticated user is the actual
+   * project creator, not just able to see it via admin/manager visibility.
+   * Only populated by endpoints that compute it against the current viewer
+   * (currently `GET /api/v1/projects`) — undefined elsewhere.
+   */
+  isOwner?: boolean;
 }
 
 export type ProjectOverviewHealthStatus = "ok" | "warning" | "error";
@@ -886,7 +945,7 @@ export interface ProjectDeploymentHistoryItem {
 
 export interface ProjectDeploymentsResponse {
   enabled: boolean;
-  mode: "local_mock";
+  mode: "local_mock" | "live";
   liveProvidersEnabled: boolean;
   deployments: ProjectDeploymentHistoryItem[];
 }

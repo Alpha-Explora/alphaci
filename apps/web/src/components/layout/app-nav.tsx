@@ -11,12 +11,8 @@ import type {
   NotificationsResponse,
   WorkspacesMeResponse,
 } from "@/lib/api/contracts";
-import {
-  getNotifications,
-  markNotificationRead,
-} from "@/lib/api/notifications";
+import { getNotifications } from "@/lib/api/notifications";
 import { getMyWorkspaces } from "@/lib/api/workspaces";
-import { NotificationCenter } from "./notification-center";
 import { useWorkspaceSelection } from "./workspace-context";
 import { WorkspaceSwitcher } from "./workspace-switcher";
 
@@ -86,6 +82,25 @@ function RunsIcon({ size = 16 }: { size?: number }) {
       <circle cx="12" cy="12" r="3" />
       <path d="M12 3v3M12 18v3M3 12h3M18 12h3" />
       <path d="M5.64 5.64l2.12 2.12M16.24 16.24l2.12 2.12M5.64 18.36l2.12-2.12M16.24 7.76l2.12-2.12" />
+    </svg>
+  );
+}
+
+function InboxIcon({ size = 16 }: { size?: number }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <polyline points="22 12 16 12 14 15 10 15 8 12 2 12" />
+      <path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z" />
     </svg>
   );
 }
@@ -230,6 +245,7 @@ interface SidebarNavItemProps {
   collapsed: boolean;
   reduced: boolean;
   itemIndex?: number;
+  badgeCount?: number;
 }
 
 function SidebarNavItem({
@@ -240,6 +256,7 @@ function SidebarNavItem({
   collapsed,
   reduced,
   itemIndex = 0,
+  badgeCount = 0,
 }: Readonly<SidebarNavItemProps>) {
   const expandDelay = itemIndex * 0.04;
   const collapseDelay = itemIndex * 0.018;
@@ -298,6 +315,43 @@ function SidebarNavItem({
             </motion.span>
           )}
         </AnimatePresence>
+        {badgeCount > 0 &&
+          (collapsed ? (
+            <span
+              aria-hidden="true"
+              style={{
+                position: "absolute",
+                top: 6,
+                right: 6,
+                width: 7,
+                height: 7,
+                borderRadius: "50%",
+                background: "var(--accent-indigo)",
+                boxShadow: "0 0 0 2px var(--bg-panel)",
+              }}
+            />
+          ) : (
+            <span
+              aria-label={`${badgeCount} unread`}
+              style={{
+                marginLeft: "auto",
+                minWidth: "1.15rem",
+                height: "1.15rem",
+                padding: "0 0.3rem",
+                borderRadius: "999px",
+                background: "var(--accent-indigo)",
+                color: "#fff",
+                fontSize: "0.62rem",
+                fontWeight: 700,
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                lineHeight: 1,
+              }}
+            >
+              {badgeCount > 99 ? "99+" : badgeCount}
+            </span>
+          ))}
       </Link>
     </motion.div>
   );
@@ -350,7 +404,11 @@ export function AppNav({
   const avatarInitial = (session?.user.name ?? session?.user.login ?? "U")
     .slice(0, 1)
     .toUpperCase();
-  const isPlatformAdmin = !guest && Boolean(session?.platformRole);
+  // The Admin tab is the GLOBAL admin tier: app_role 'admin' or the permanent
+  // super-admin. Leads and members don't see it. Mirrors the BE guard.
+  const isPlatformAdmin =
+    !guest &&
+    (session?.appRole === "admin" || session?.platformRole === "super_admin");
 
   useEffect(() => {
     function handleResize() {
@@ -405,23 +463,6 @@ export function AppNav({
     };
   }, [guest]);
 
-  async function handleMarkNotificationRead(id: string) {
-    await markNotificationRead(id);
-    setNotifications((current) =>
-      current
-        ? {
-            ...current,
-            unreadCount: Math.max(0, current.unreadCount - 1),
-            items: current.items.map((item) =>
-              item.id === id
-                ? { ...item, readAt: item.readAt ?? new Date().toISOString() }
-                : item,
-            ),
-          }
-        : current,
-    );
-  }
-
   const sidebarWidth = collapsed ? 64 : 220;
 
   return (
@@ -469,6 +510,52 @@ export function AppNav({
 
         {/* ── Primary nav ───────────────────────────────────────── */}
         <nav className="sidebar-nav" aria-label="Primary">
+          {!guest && (
+            <div className="sidebar-account-zone">
+              <div
+                className="sidebar-user-chip"
+                aria-label={`Signed in as ${session?.user.login ?? "user"}`}
+              >
+                <span className="sidebar-user-avatar-ring">
+                  {session?.user.avatarUrl ? (
+                    <Image
+                      src={session.user.avatarUrl}
+                      alt={session.user.name ?? session.user.login}
+                      width={36}
+                      height={36}
+                      className="sidebar-user-avatar-img"
+                      unoptimized
+                    />
+                  ) : (
+                    <span
+                      className="sidebar-user-avatar-fallback"
+                      aria-hidden="true"
+                    >
+                      {avatarInitial}
+                    </span>
+                  )}
+                </span>
+
+                <AnimatePresence initial={false}>
+                  {!collapsed && (
+                    <motion.div
+                      className="sidebar-user-info"
+                      initial={reduced ? false : { opacity: 0, x: -8 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={reduced ? undefined : { opacity: 0, x: -8 }}
+                      transition={{ duration: 0.16 }}
+                    >
+                      <span className="sidebar-user-login">
+                        {session?.user.login ?? "user"}
+                      </span>
+                      <WorkspaceSwitcher workspaces={workspaces} />
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            </div>
+          )}
+
           <SidebarSectionLabel text="Main" collapsed={collapsed} />
 
           <SidebarNavItem
@@ -498,6 +585,19 @@ export function AppNav({
             reduced={reduced}
             itemIndex={2}
           />
+          {!guest && (
+            <SidebarNavItem
+              href="/inbox"
+              label="Inbox"
+              icon={InboxIcon}
+              isActive={pathname === "/inbox"}
+              collapsed={collapsed}
+              reduced={reduced}
+              itemIndex={3}
+              badgeCount={notifications?.unreadCount ?? 0}
+            />
+          )}
+
           <SidebarSectionLabel text="Account" collapsed={collapsed} />
 
           {!guest && (
@@ -508,7 +608,7 @@ export function AppNav({
               isActive={pathname === "/settings"}
               collapsed={collapsed}
               reduced={reduced}
-              itemIndex={3}
+              itemIndex={4}
             />
           )}
 
@@ -520,7 +620,7 @@ export function AppNav({
               isActive={pathname.startsWith("/admin")}
               collapsed={collapsed}
               reduced={reduced}
-              itemIndex={4}
+              itemIndex={5}
             />
           )}
         </nav>
@@ -529,58 +629,6 @@ export function AppNav({
         <div className="sidebar-bottom-zone">
           {!guest && (
             <>
-              <div className="sidebar-bottom-utilities">
-                <WorkspaceSwitcher workspaces={workspaces} />
-              </div>
-
-              <div
-                className="sidebar-user-chip"
-                aria-label={`Signed in as ${session?.user.login ?? "user"}`}
-              >
-                <span className="sidebar-user-avatar-ring">
-                  {session?.user.avatarUrl ? (
-                    <Image
-                      src={session.user.avatarUrl}
-                      alt={session.user.name ?? session.user.login}
-                      width={28}
-                      height={28}
-                      className="sidebar-user-avatar-img"
-                      unoptimized
-                    />
-                  ) : (
-                    <span
-                      className="sidebar-user-avatar-fallback"
-                      aria-hidden="true"
-                    >
-                      {avatarInitial}
-                    </span>
-                  )}
-                </span>
-
-                <AnimatePresence initial={false}>
-                  {!collapsed && (
-                    <motion.div
-                      className="sidebar-user-info"
-                      initial={reduced ? false : { opacity: 0, x: -8 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      exit={reduced ? undefined : { opacity: 0, x: -8 }}
-                      transition={{ duration: 0.16 }}
-                    >
-                      <span className="sidebar-user-login">
-                        {session?.user.login ?? "user"}
-                      </span>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-
-                <div className="sidebar-utility-actions">
-                  <NotificationCenter
-                    notifications={notifications}
-                    onMarkRead={handleMarkNotificationRead}
-                  />
-                </div>
-              </div>
-
               <button
                 type="button"
                 onClick={onLogout}

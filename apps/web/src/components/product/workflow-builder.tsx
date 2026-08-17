@@ -131,7 +131,10 @@ export function WorkflowBuilder({ guest = false, session, onboardingCompleted }:
     }
   }
 
-  async function handleCreateProject() {
+  async function handleCreateProject(
+    selectedGroupId?: string,
+    onComplete?: () => void,
+  ) {
     if (deploymentProvisioning.renderVariablesMissing) {
       setStatusMessage(
         "Add at least one Render environment variable before creating the repository.",
@@ -160,7 +163,12 @@ export function WorkflowBuilder({ guest = false, session, onboardingCompleted }:
     setStatusMessage("Creating GitHub repository, branches, and committing workflow...");
 
     try {
-      const response = await createProject(payloadResult.payload);
+      const workspaceId = selectedGroupId;
+      const requestPayload = {
+        ...payloadResult.payload,
+        ...(workspaceId ? { workspaceId } : {}),
+      };
+      const response = await createProject(requestPayload);
 
       const outputFileName = response.workflowPath.split("/").at(-1) ?? response.workflowPath;
 
@@ -184,9 +192,10 @@ export function WorkflowBuilder({ guest = false, session, onboardingCompleted }:
       };
 
       setCreateResult(result);
-      projects.prependCreateResult(response, payloadResult.payload);
+      projects.prependCreateResult(response, requestPayload);
       void projects.loadProjects(true);
       setActiveTab("current");
+      onComplete?.();
       setStatusMessage(
         `Repository "${response.repoFullName}" created. Workflow committed to ${response.workflowPath}.`,
       );
@@ -340,6 +349,16 @@ export function WorkflowBuilder({ guest = false, session, onboardingCompleted }:
     }
   }
 
+  // The top-level Create Project tab always provisions an individual's
+  // repository. Group ownership is only supplied by the selected group panel.
+  function openIndividualSetup() {
+    setActiveTab("setup");
+  }
+
+  function handleStudioTabChange(tab: WorkflowTab) {
+    setActiveTab(tab);
+  }
+
   return (
     <MotionConfig reducedMotion={reducedMotion ? "always" : "never"}>
       <GeneratingOverlay isVisible={isCreatingProject} />
@@ -377,7 +396,7 @@ export function WorkflowBuilder({ guest = false, session, onboardingCompleted }:
         {/* Tab bar — GitHub App status sits right-aligned on the same row */}
         <WorkflowStudioTabs
           activeTab={activeTab}
-          onChange={setActiveTab}
+          onChange={handleStudioTabChange}
           onKeyDown={handleTabKeyDown}
           trailing={
             <>
@@ -390,6 +409,7 @@ export function WorkflowBuilder({ guest = false, session, onboardingCompleted }:
                   onClick={startTour}
                 >
                   <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+
                     <circle cx="12" cy="12" r="10" />
                     <line x1="12" y1="8" x2="12" y2="12" />
                     <line x1="12" y1="16" x2="12.01" y2="16" />
@@ -442,6 +462,7 @@ export function WorkflowBuilder({ guest = false, session, onboardingCompleted }:
               onDiscoverExistingRepo={guest ? () => { window.location.href = "/signup"; } : handleDiscoverExistingRepo}
               onGenerateWorkflow={guest ? () => { window.location.href = "/signup"; } : handleGenerateWorkflow}
               onSetupExistingRepo={guest ? () => { window.location.href = "/signup"; } : handleSetupExistingRepo}
+              creationScope="individual"
               projectCatalog={projectCatalog}
               onViewProject={() => setActiveTab("current")}
               reducedMotion={reducedMotion}
@@ -452,8 +473,38 @@ export function WorkflowBuilder({ guest = false, session, onboardingCompleted }:
             <WorkflowCurrentTab
               latestResult={createResult}
               loadingProjects={projects.loadingProjects}
-              onOpenSetup={() => setActiveTab("setup")}
+              onOpenSetup={openIndividualSetup}
               projects={projects.projects}
+              enforcedOrg={projectCatalog.enforcedOrg}
+              renderGroupCreate={(selectedGroupId, onComplete) => (
+                <WorkflowSetupTab
+                  form={createForm}
+                  deploymentOwnershipMode={deploymentOwnershipMode}
+                  deploymentProvisioning={deploymentProvisioning}
+                  envProvisioningEnabled={envProvisioningEnabled}
+                  github={github}
+                  existingRepoBaseBranch={existingRepoBaseBranch}
+                  existingRepoDiscovery={existingRepoDiscovery}
+                  existingRepoFullName={existingRepoFullName}
+                  existingRepoResult={existingRepoResult}
+                  isCreatingProject={isCreatingProject}
+                  isDiscoveringExistingRepo={isDiscoveringExistingRepo}
+                  isSettingUpExistingRepo={isSettingUpExistingRepo}
+                  setupMode={setupMode}
+                  onChangeExistingRepoBaseBranch={setExistingRepoBaseBranch}
+                  onChangeExistingRepoFullName={setExistingRepoFullName}
+                  onChangeSetupMode={setSetupMode}
+                  onCreateProject={guest ? () => { window.location.href = "/signup"; } : () => void handleCreateProject(selectedGroupId, onComplete)}
+                  onDiscoverExistingRepo={guest ? () => { window.location.href = "/signup"; } : handleDiscoverExistingRepo}
+                  onGenerateWorkflow={guest ? () => { window.location.href = "/signup"; } : handleGenerateWorkflow}
+                  onSetupExistingRepo={guest ? () => { window.location.href = "/signup"; } : handleSetupExistingRepo}
+                  projectCatalog={projectCatalog}
+                  creationScope="group"
+                  onViewProject={onComplete}
+                  reducedMotion={reducedMotion}
+                  createResult={createResult}
+                />
+              )}
             />
           ) : null}
 

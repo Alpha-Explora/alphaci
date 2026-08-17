@@ -2,6 +2,7 @@ import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 
 import { ProjectEnvPanel } from "../../src/components/product/project-env-panel";
+import { ProjectDetailTabs } from "../../src/components/product/project-detail-tabs";
 import { WorkflowCurrentTab } from "../../src/components/product/workflow-current-tab";
 import { useCapabilities } from "../../src/hooks/use-capabilities";
 import { useProjectEnvProvisioning } from "../../src/hooks/use-project-env-provisioning";
@@ -74,6 +75,13 @@ jest.mock("../../src/lib/api/projects", () => ({
   syncDeploymentTarget: jest.fn(),
   detachDeploymentTarget: jest.fn(),
   getDeploymentTargetActions: jest.fn(),
+}));
+
+// The Current Projects rail now groups repositories by the user's groups —
+// resolve to "no groups" so projects land in the Ungrouped bucket.
+jest.mock("../../src/lib/api/client", () => ({
+  ...jest.requireActual("../../src/lib/api/client"),
+  getGroups: jest.fn().mockResolvedValue([]),
 }));
 
 jest.mock("../../src/lib/api/usage", () => ({
@@ -553,7 +561,7 @@ describe("Project env provisioning UI", () => {
     jest.clearAllMocks();
   });
 
-  it("uses a split workspace and updates project details from the selector", () => {
+  it("uses a split workspace listing groups and shows the group's repositories", async () => {
     mockCapabilities(true);
     mockEnvHook();
 
@@ -577,34 +585,37 @@ describe("Project env provisioning UI", () => {
     );
     root = rendered.root;
 
+    // Flush the groups fetch (mocked to resolve with no groups) so both
+    // projects land in the Ungrouped bucket.
+    await act(async () => {});
+
     expect(
       rendered.container.querySelector(".project-workspace"),
     ).not.toBeNull();
     expect(rendered.container.querySelector(".project-list")).not.toBeNull();
-    expect(
-      rendered.container.querySelector(".project-detail-panel"),
-    ).not.toBeNull();
-    expect(
-      rendered.container.querySelector(".project-detail-panel")?.textContent,
-    ).toContain("orders-api");
-    expect(
-      rendered.container.querySelector(".project-detail-panel")?.textContent,
-    ).not.toContain("web-client");
 
-    const webClientSelector =
+    // Rail lists the group buckets, not individual repositories.
+    const ungroupedSelector =
       rendered.container.querySelector<HTMLButtonElement>(
-        'button[data-project-id="project-2"]',
-      )!;
-    act(() => {
-      webClientSelector.click();
-    });
+        'button[data-project-id="__ungrouped__"]',
+      );
+    expect(ungroupedSelector).not.toBeNull();
+    expect(ungroupedSelector?.textContent).toContain("2 repositories");
 
-    expect(
-      rendered.container.querySelector(".project-detail-panel")?.textContent,
-    ).toContain("web-client");
-    expect(
-      rendered.container.querySelector(".project-detail-panel")?.textContent,
-    ).not.toContain("orders-api");
+    // The detail panel lists every repository of the selected bucket, each
+    // linking to its full page (where the detail tabs now live).
+    const detailPanel = rendered.container.querySelector(
+      ".project-detail-panel",
+    );
+    expect(detailPanel).not.toBeNull();
+    expect(detailPanel?.textContent).toContain("orders-api");
+    expect(detailPanel?.textContent).toContain("web-client");
+    const fullPageLinks = Array.from(
+      rendered.container.querySelectorAll<HTMLAnchorElement>(
+        'a[href^="/projects/"]',
+      ),
+    );
+    expect(fullPageLinks).toHaveLength(2);
   });
 
   it("loads the project overview and renders control-center tabs with empty states", async () => {
@@ -659,12 +670,7 @@ describe("Project env provisioning UI", () => {
     });
 
     const rendered = render(
-      <WorkflowCurrentTab
-        latestResult={null}
-        loadingProjects={false}
-        onOpenSetup={jest.fn()}
-        projects={[provisionedProject]}
-      />,
+      <ProjectDetailTabs project={provisionedProject} />,
     );
     root = rendered.root;
 
@@ -744,12 +750,7 @@ describe("Project env provisioning UI", () => {
     });
 
     const rendered = render(
-      <WorkflowCurrentTab
-        latestResult={null}
-        loadingProjects={false}
-        onOpenSetup={jest.fn()}
-        projects={[provisionedProject]}
-      />,
+      <ProjectDetailTabs project={provisionedProject} />,
     );
     root = rendered.root;
 
@@ -827,12 +828,7 @@ describe("Project env provisioning UI", () => {
     });
 
     const rendered = render(
-      <WorkflowCurrentTab
-        latestResult={null}
-        loadingProjects={false}
-        onOpenSetup={jest.fn()}
-        projects={[provisionedProject]}
-      />,
+      <ProjectDetailTabs project={provisionedProject} />,
     );
     root = rendered.root;
 
@@ -903,12 +899,7 @@ describe("Project env provisioning UI", () => {
     });
 
     const rendered = render(
-      <WorkflowCurrentTab
-        latestResult={null}
-        loadingProjects={false}
-        onOpenSetup={jest.fn()}
-        projects={[provisionedProject]}
-      />,
+      <ProjectDetailTabs project={provisionedProject} />,
     );
     root = rendered.root;
 
@@ -985,12 +976,7 @@ describe("Project env provisioning UI", () => {
     });
 
     const rendered = render(
-      <WorkflowCurrentTab
-        latestResult={null}
-        loadingProjects={false}
-        onOpenSetup={jest.fn()}
-        projects={[provisionedProject]}
-      />,
+      <ProjectDetailTabs project={provisionedProject} />,
     );
     root = rendered.root;
 
@@ -1040,12 +1026,7 @@ describe("Project env provisioning UI", () => {
     });
 
     const rendered = render(
-      <WorkflowCurrentTab
-        latestResult={null}
-        loadingProjects={false}
-        onOpenSetup={jest.fn()}
-        projects={[provisionedProject]}
-      />,
+      <ProjectDetailTabs project={provisionedProject} />,
     );
     root = rendered.root;
 
@@ -1099,12 +1080,7 @@ describe("Project env provisioning UI", () => {
     });
 
     const rendered = render(
-      <WorkflowCurrentTab
-        latestResult={null}
-        loadingProjects={false}
-        onOpenSetup={jest.fn()}
-        projects={[provisionedProject]}
-      />,
+      <ProjectDetailTabs project={provisionedProject} />,
     );
     root = rendered.root;
 
@@ -1165,12 +1141,7 @@ describe("Project env provisioning UI", () => {
     });
 
     const rendered = render(
-      <WorkflowCurrentTab
-        latestResult={null}
-        loadingProjects={false}
-        onOpenSetup={jest.fn()}
-        projects={[provisionedProject]}
-      />,
+      <ProjectDetailTabs project={provisionedProject} />,
     );
     root = rendered.root;
 
@@ -1222,12 +1193,7 @@ describe("Project env provisioning UI", () => {
     });
 
     const rendered = render(
-      <WorkflowCurrentTab
-        latestResult={null}
-        loadingProjects={false}
-        onOpenSetup={jest.fn()}
-        projects={[provisionedProject]}
-      />,
+      <ProjectDetailTabs project={provisionedProject} />,
     );
     root = rendered.root;
 
@@ -1259,12 +1225,7 @@ describe("Project env provisioning UI", () => {
     );
 
     const rendered = render(
-      <WorkflowCurrentTab
-        latestResult={null}
-        loadingProjects={false}
-        onOpenSetup={jest.fn()}
-        projects={[provisionedProject]}
-      />,
+      <ProjectDetailTabs project={provisionedProject} />,
     );
     root = rendered.root;
 
@@ -1345,12 +1306,7 @@ describe("Project env provisioning UI", () => {
     });
 
     const rendered = render(
-      <WorkflowCurrentTab
-        latestResult={null}
-        loadingProjects={false}
-        onOpenSetup={jest.fn()}
-        projects={[provisionedProject]}
-      />,
+      <ProjectDetailTabs project={provisionedProject} />,
     );
     root = rendered.root;
 
@@ -1419,12 +1375,7 @@ describe("Project env provisioning UI", () => {
     });
 
     const rendered = render(
-      <WorkflowCurrentTab
-        latestResult={null}
-        loadingProjects={false}
-        onOpenSetup={jest.fn()}
-        projects={[provisionedProject]}
-      />,
+      <ProjectDetailTabs project={provisionedProject} />,
     );
     root = rendered.root;
 
@@ -1458,12 +1409,7 @@ describe("Project env provisioning UI", () => {
     );
 
     const rendered = render(
-      <WorkflowCurrentTab
-        latestResult={null}
-        loadingProjects={false}
-        onOpenSetup={jest.fn()}
-        projects={[provisionedProject]}
-      />,
+      <ProjectDetailTabs project={provisionedProject} />,
     );
     root = rendered.root;
 
@@ -1555,12 +1501,7 @@ describe("Project env provisioning UI", () => {
     });
 
     const rendered = render(
-      <WorkflowCurrentTab
-        latestResult={null}
-        loadingProjects={false}
-        onOpenSetup={jest.fn()}
-        projects={[provisionedProject]}
-      />,
+      <ProjectDetailTabs project={provisionedProject} />,
     );
     root = rendered.root;
 
@@ -1674,12 +1615,7 @@ describe("Project env provisioning UI", () => {
     );
 
     const rendered = render(
-      <WorkflowCurrentTab
-        latestResult={null}
-        loadingProjects={false}
-        onOpenSetup={jest.fn()}
-        projects={[provisionedProject]}
-      />,
+      <ProjectDetailTabs project={provisionedProject} />,
     );
     root = rendered.root;
 
@@ -1742,12 +1678,7 @@ describe("Project env provisioning UI", () => {
     );
 
     const rendered = render(
-      <WorkflowCurrentTab
-        latestResult={null}
-        loadingProjects={false}
-        onOpenSetup={jest.fn()}
-        projects={[provisionedProject]}
-      />,
+      <ProjectDetailTabs project={provisionedProject} />,
     );
     root = rendered.root;
 
@@ -1813,12 +1744,7 @@ describe("Project env provisioning UI", () => {
     });
 
     const rendered = render(
-      <WorkflowCurrentTab
-        latestResult={null}
-        loadingProjects={false}
-        onOpenSetup={jest.fn()}
-        projects={[provisionedProject]}
-      />,
+      <ProjectDetailTabs project={provisionedProject} />,
     );
     root = rendered.root;
 
@@ -1912,12 +1838,7 @@ describe("Project env provisioning UI", () => {
     });
 
     const rendered = render(
-      <WorkflowCurrentTab
-        latestResult={null}
-        loadingProjects={false}
-        onOpenSetup={jest.fn()}
-        projects={[provisionedProject]}
-      />,
+      <ProjectDetailTabs project={provisionedProject} />,
     );
     root = rendered.root;
 
@@ -2005,12 +1926,7 @@ describe("Project env provisioning UI", () => {
     });
 
     const rendered = render(
-      <WorkflowCurrentTab
-        latestResult={null}
-        loadingProjects={false}
-        onOpenSetup={jest.fn()}
-        projects={[provisionedProject]}
-      />,
+      <ProjectDetailTabs project={provisionedProject} />,
     );
     root = rendered.root;
 
@@ -2098,12 +2014,7 @@ describe("Project env provisioning UI", () => {
     });
 
     const rendered = render(
-      <WorkflowCurrentTab
-        latestResult={null}
-        loadingProjects={false}
-        onOpenSetup={jest.fn()}
-        projects={[provisionedProject]}
-      />,
+      <ProjectDetailTabs project={provisionedProject} />,
     );
     root = rendered.root;
 
@@ -2185,12 +2096,7 @@ describe("Project env provisioning UI", () => {
     );
 
     const rendered = render(
-      <WorkflowCurrentTab
-        latestResult={null}
-        loadingProjects={false}
-        onOpenSetup={jest.fn()}
-        projects={[provisionedProject]}
-      />,
+      <ProjectDetailTabs project={provisionedProject} />,
     );
     root = rendered.root;
 
@@ -2266,12 +2172,7 @@ describe("Project env provisioning UI", () => {
     );
 
     const overviewErrorRendered = render(
-      <WorkflowCurrentTab
-        latestResult={null}
-        loadingProjects={false}
-        onOpenSetup={jest.fn()}
-        projects={[provisionedProject]}
-      />,
+      <ProjectDetailTabs project={provisionedProject} />,
     );
     root = overviewErrorRendered.root;
 
@@ -2314,12 +2215,7 @@ describe("Project env provisioning UI", () => {
     );
 
     const previewErrorRendered = render(
-      <WorkflowCurrentTab
-        latestResult={null}
-        loadingProjects={false}
-        onOpenSetup={jest.fn()}
-        projects={[provisionedProject]}
-      />,
+      <ProjectDetailTabs project={provisionedProject} />,
     );
     root = previewErrorRendered.root;
 
@@ -2373,12 +2269,7 @@ describe("Project env provisioning UI", () => {
     );
 
     const rendered = render(
-      <WorkflowCurrentTab
-        latestResult={null}
-        loadingProjects={false}
-        onOpenSetup={jest.fn()}
-        projects={[provisionedProject]}
-      />,
+      <ProjectDetailTabs project={provisionedProject} />,
     );
     root = rendered.root;
 
@@ -2417,12 +2308,7 @@ describe("Project env provisioning UI", () => {
     );
 
     const rendered = render(
-      <WorkflowCurrentTab
-        latestResult={null}
-        loadingProjects={false}
-        onOpenSetup={jest.fn()}
-        projects={[provisionedProject]}
-      />,
+      <ProjectDetailTabs project={provisionedProject} />,
     );
     root = rendered.root;
 
@@ -2476,7 +2362,7 @@ describe("Project env provisioning UI", () => {
     );
   });
 
-  it("shows empty and loading states for the projects panel", () => {
+  it("shows empty and loading states for the projects panel", async () => {
     mockCapabilities(false);
     mockEnvHook();
     const onOpenSetup = jest.fn();
@@ -2491,12 +2377,16 @@ describe("Project env provisioning UI", () => {
     );
     root = emptyRendered.root;
 
+    // Flush the groups fetch — the empty state only shows once the (empty)
+    // groups list has resolved.
+    await act(async () => {});
+
     expect(emptyRendered.container.textContent).toContain(
-      "No provisioned projects yet.",
+      "No groups or projects yet.",
     );
     act(() => {
       Array.from(emptyRendered.container.querySelectorAll("button"))
-        .find((button) => button.textContent === "Create your first project")!
+        .find((button) => button.textContent === "Create a project")!
         .click();
     });
     expect(onOpenSetup).toHaveBeenCalledTimes(1);

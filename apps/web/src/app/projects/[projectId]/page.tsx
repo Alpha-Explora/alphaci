@@ -8,12 +8,14 @@ import { motion, useReducedMotion } from "framer-motion";
 import { AppNav } from "@/components/layout/app-nav";
 import { FlowBackground } from "@/components/layout/flow-background";
 import { PipelineLoader } from "@/components/layout/pipeline-loader";
+import { ProjectDetailTabs } from "@/components/product/project-detail-tabs";
 import { ProjectEnvPanel } from "@/components/product/project-env-panel";
 import { RunCard } from "@/components/product/runs/RunCard";
 import { RunsSkeleton } from "@/components/product/runs/RunsSkeleton";
+import { ServiceLogsConsole } from "@/components/product/service-logs-console";
 import { useAuthSession } from "@/hooks/use-auth-session";
 import { useCapabilities } from "@/hooks/use-capabilities";
-import { logout } from "@/lib/api/client";
+import { logout, disconnectProject, getProjectOptions } from "@/lib/api/client";
 import type {
   DeploymentTarget,
   ProjectOverviewResponse,
@@ -43,6 +45,11 @@ function statusVariant(status: string): string {
   return "failed";
 }
 
+function isExternalRepo(repoFullName: string, enforcedOrg?: string): boolean {
+  if (!enforcedOrg) return false;
+  return repoFullName.split("/")[0]?.toLowerCase() !== enforcedOrg.toLowerCase();
+}
+
 function targetStatusColor(status: DeploymentTarget["status"]): string {
   if (status === "active") return "var(--accent-teal)";
   if (status === "missing") return "var(--accent-amber)";
@@ -52,7 +59,14 @@ function targetStatusColor(status: DeploymentTarget["status"]): string {
 function HostingServiceCard({
   target,
   reduced,
-}: Readonly<{ target: DeploymentTarget; reduced: boolean }>) {
+  isLogsOpen,
+  onToggleLogs,
+}: Readonly<{
+  target: DeploymentTarget;
+  reduced: boolean;
+  isLogsOpen: boolean;
+  onToggleLogs: () => void;
+}>) {
   const publicUrl = providerPublicUrl(target);
   const provider = providerDisplayName(target.provider);
   const [copied, setCopied] = useState(false);
@@ -140,15 +154,16 @@ function HostingServiceCard({
         </span>
       </div>
 
-      {publicUrl ? (
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "0.5rem",
-            minWidth: 0,
-          }}
-        >
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: "0.5rem",
+          minWidth: 0,
+          marginTop: "0.3rem",
+        }}
+      >
+        {publicUrl ? (
           <a
             href={publicUrl}
             target="_blank"
@@ -163,10 +178,18 @@ function HostingServiceCard({
               textOverflow: "ellipsis",
               whiteSpace: "nowrap",
               minWidth: 0,
+              flexGrow: 1,
             }}
           >
             {publicUrl.replace(/^https?:\/\//, "")}
           </a>
+        ) : (
+          <span style={{ fontSize: "0.8rem", color: "var(--text-muted)", flexGrow: 1 }}>
+            No public URL
+          </span>
+        )}
+
+        {publicUrl ? (
           <button
             type="button"
             className="ghost-button"
@@ -181,9 +204,28 @@ function HostingServiceCard({
           >
             {copied ? "Copied" : "Copy"}
           </button>
-        </div>
-      ) : null}
+        ) : null}
 
+        <button
+          type="button"
+          className={isLogsOpen ? "ghost-button active" : "ghost-button"}
+          onClick={onToggleLogs}
+          aria-label={`View ${provider} service logs`}
+          style={{
+            minHeight: "1.7rem",
+            padding: "0.15rem 0.6rem",
+            fontSize: "0.72rem",
+            flexShrink: 0,
+            ...(isLogsOpen ? {
+              background: "rgba(255, 255, 255, 0.08)",
+              borderColor: "rgba(255, 255, 255, 0.2)",
+              color: "var(--text-primary)",
+            } : {}),
+          }}
+        >
+          {isLogsOpen ? "Hide Logs" : "Logs"}
+        </button>
+      </div>
     </motion.article>
   );
 }
@@ -203,17 +245,29 @@ function ProjectPageContent() {
   );
   const [overviewError, setOverviewError] = useState<string | null>(null);
   const [loadingOverview, setLoadingOverview] = useState(true);
+  // Login of the org every new repository must belong to — used only to
+  // label already-attached repos outside it as "External" (product decision;
+  // existing external attachments stay untouched).
+  const [enforcedOrg, setEnforcedOrg] = useState<string | undefined>(
+    undefined,
+  );
+
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleteGithubRepoOptIn, setDeleteGithubRepoOptIn] = useState(false);
+  const [confirmRepoNameInput, setConfirmRepoNameInput] = useState("");
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   const [runs, setRuns] = useState<RunGroup[]>([]);
   const [runsError, setRunsError] = useState<string | null>(null);
   const [loadingRuns, setLoadingRuns] = useState(true);
   const [lastRefreshedAt, setLastRefreshedAt] = useState<string | null>(null);
+  const [activeLogTargetId, setActiveLogTargetId] = useState<string | null>(null);
 
   const guest = isGuest(session);
   const project = overview?.project ?? null;
   const targets = overview?.deploymentTargets.items ?? [];
   const repoFullName = project?.repoFullName ?? null;
-  const isExample = project?.isExample === true;
 
   useEffect(() => {
     if (status === "signed-out") {
@@ -247,10 +301,22 @@ function ProjectPageContent() {
   }, [guest, loadOverview, status]);
 
   useEffect(() => {
-    if (status !== "signed-in" || guest || !repoFullName || isExample) {
-      if (isExample) setLoadingRuns(false);
-      return;
-    }
+    if (status !== "signed-in" || guest) return;
+    let active = true;
+    void getProjectOptions()
+      .then((response) => {
+        if (active) setEnforcedOrg(response.enforcedOrg);
+      })
+      .catch(() => {
+        // Non-critical: the External badge just won't render.
+      });
+    return () => {
+      active = false;
+    };
+  }, [guest, status]);
+
+  useEffect(() => {
+    if (status !== "signed-in" || guest || !repoFullName) return;
 
     let active = true;
     const load = async () => {
@@ -280,7 +346,7 @@ function ProjectPageContent() {
       active = false;
       clearInterval(timer);
     };
-  }, [guest, isExample, repoFullName, status]);
+  }, [guest, repoFullName, status]);
 
   async function handleLogout() {
     setIsLoggingOut(true);
@@ -295,6 +361,28 @@ function ProjectPageContent() {
       setIsLoggingOut(false);
     }
   }
+
+  const handleDeleteProject = useCallback(async () => {
+    if (!project) return;
+    setIsDeleting(true);
+    setDeleteError(null);
+    try {
+      await disconnectProject(
+        project.id,
+        deleteGithubRepoOptIn
+          ? {
+              deleteGithubRepo: true,
+              confirmRepoName: project.repoFullName,
+            }
+          : undefined,
+      );
+      router.push("/home");
+    } catch {
+      setDeleteError("Failed to delete project. Please verify permissions and try again.");
+    } finally {
+      setIsDeleting(false);
+    }
+  }, [project, deleteGithubRepoOptIn, router]);
 
   if (status === "loading") {
     return <PipelineLoader label="Loading project" />;
@@ -358,9 +446,9 @@ function ProjectPageContent() {
         isLoggingOut={isLoggingOut}
       />
 
-      <div id="main-content" className="dash-page-content">
+      <div id="main-content" className="dash-page-content project-page-shell">
         <motion.div
-          className="workflow-page-header"
+          className="workflow-page-header workflow-page-header--compact project-page-header"
           initial={reduced ? false : { opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.28, ease: EASE_OUT }}
@@ -377,12 +465,19 @@ function ProjectPageContent() {
             </p>
             <div className="workflow-page-title-row">
               <h1 className="workflow-page-title">{repoName}</h1>
+              <div className="workflow-page-studio-badge">
+                <span className="workflow-studio-led" aria-hidden="true" />
+                Project overview
+              </div>
               {project ? (
                 <span
                   className={`project-status-badge ${statusVariant(project.status)}`}
                 >
                   {project.status}
                 </span>
+              ) : null}
+              {project && isExternalRepo(project.repoFullName, enforcedOrg) ? (
+                <span className="project-status-badge external">External</span>
               ) : null}
             </div>
             {project ? (
@@ -397,8 +492,26 @@ function ProjectPageContent() {
               </p>
             ) : null}
           </div>
+          <div
+            className="workflow-page-signal-strip"
+            aria-label="Project workflow model"
+          >
+            <div>
+              <span>Mode</span>
+              <strong>PR-safe updates</strong>
+            </div>
+            <div>
+              <span>Promotion</span>
+              <strong>test &gt; uat &gt; main</strong>
+            </div>
+            <div>
+              <span>Stages</span>
+              <strong>Access, Quality, Package</strong>
+            </div>
+          </div>
         </motion.div>
 
+        <div className="project-page-body">
         {logoutMessage ? (
           <p className="error-text" style={{ marginTop: 0 }}>
             {logoutMessage}
@@ -462,16 +575,12 @@ function ProjectPageContent() {
           </div>
         ) : (
           <div style={{ display: "grid", gap: "1.5rem" }}>
-            {isExample ? (
-              <p className="project-demo-note">
-                This is the read-only demo project. It is not connected to a
-                real repository, so hosting services and live runs are not
-                available here.
-              </p>
-            ) : null}
+            {/* Tabbed detail (Overview / Workflow / Runs / Hosting /
+                Environment / Audit / Settings) — moved here from the old
+                split-pane Current Projects view. */}
+            {project ? <ProjectDetailTabs project={project} /> : null}
 
-            {!isExample &&
-            envProvisioningEnabled &&
+            {envProvisioningEnabled &&
             project &&
             project.status === "provisioned" ? (
               <section aria-label="Hosting services">
@@ -499,23 +608,47 @@ function ProjectPageContent() {
                   ) : null}
                 </div>
                 {targets.length > 0 ? (
-                  <div
-                    style={{
-                      display: "grid",
-                      gap: "1rem",
-                      gridTemplateColumns:
-                        "repeat(auto-fit, minmax(min(20rem, 100%), 1fr))",
-                      marginBottom: "1rem",
-                    }}
-                  >
-                    {targets.map((target) => (
-                      <HostingServiceCard
-                        key={target.id}
-                        reduced={reduced}
-                        target={target}
-                      />
-                    ))}
-                  </div>
+                  <>
+                    <div
+                      style={{
+                        display: "grid",
+                        gap: "1rem",
+                        gridTemplateColumns:
+                          "repeat(auto-fit, minmax(min(20rem, 100%), 1fr))",
+                        marginBottom: "1rem",
+                      }}
+                    >
+                      {targets.map((target) => (
+                        <HostingServiceCard
+                          key={target.id}
+                          reduced={reduced}
+                          target={target}
+                          isLogsOpen={activeLogTargetId === target.id}
+                          onToggleLogs={() =>
+                            setActiveLogTargetId((prev) =>
+                              prev === target.id ? null : target.id,
+                            )
+                          }
+                        />
+                      ))}
+                    </div>
+
+                    {(() => {
+                      const activeTarget = targets.find(
+                        (t) => t.id === activeLogTargetId,
+                      );
+                      if (activeTarget && project) {
+                        return (
+                          <ServiceLogsConsole
+                            projectId={project.id}
+                            target={activeTarget}
+                            latestRun={runs[0]}
+                          />
+                        );
+                      }
+                      return null;
+                    })()}
+                  </>
                 ) : null}
                 {targets.length === 0 ? (
                   <ProjectEnvPanel
@@ -527,8 +660,7 @@ function ProjectPageContent() {
               </section>
             ) : null}
 
-            {!isExample ? (
-              <section aria-label="Live workflow activity" aria-live="polite">
+            <section aria-label="Live workflow activity" aria-live="polite">
                 <div
                   style={{
                     display: "flex",
@@ -627,9 +759,184 @@ function ProjectPageContent() {
                   </>
                 )}
               </section>
-            ) : null}
+
+              <section aria-label="Danger Zone" style={{ marginTop: "1rem" }}>
+                <div
+                  className="glass-panel"
+                  style={{
+                    border: "1px solid rgba(248, 113, 113, 0.2)",
+                    background: "rgba(248, 113, 113, 0.02)",
+                    padding: "1.25rem 1.5rem",
+                    borderRadius: "var(--radius-card, 12px)",
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "1rem",
+                  }}
+                >
+                  {!confirmDelete ? (
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        flexWrap: "wrap",
+                        gap: "1rem",
+                      }}
+                    >
+                      <div style={{ display: "flex", flexDirection: "column", gap: "0.2rem" }}>
+                        <h3 style={{ margin: 0, fontSize: "0.95rem", color: "var(--danger, #f87171)", fontWeight: 600 }}>
+                          Delete Project
+                        </h3>
+                        <p style={{ margin: 0, fontSize: "0.78rem", color: "var(--text-secondary)" }}>
+                          Disconnect this project from ALPHACI. You can optionally delete the GitHub repository.
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        className="confirm-btn-danger"
+                        onClick={() => setConfirmDelete(true)}
+                        style={{ padding: "0.45rem 1rem", fontSize: "0.82rem", minHeight: "2.2rem" }}
+                      >
+                        Delete Project
+                      </button>
+                    </div>
+                  ) : (
+                    <div
+                      role="group"
+                      aria-labelledby="delete-confirm-heading"
+                      style={{
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: "0.85rem",
+                        width: "100%",
+                      }}
+                    >
+                      <div style={{ display: "flex", flexDirection: "column", gap: "0.3rem" }}>
+                        <p
+                          id="delete-confirm-heading"
+                          style={{
+                            margin: 0,
+                            fontSize: "0.88rem",
+                            fontWeight: 700,
+                            color: "var(--danger, #f87171)",
+                          }}
+                        >
+                          Are you sure you want to delete this project?
+                        </p>
+                        <p
+                          style={{
+                            margin: 0,
+                            fontSize: "0.78rem",
+                            color: "var(--text-muted)",
+                          }}
+                        >
+                          The project will be disconnected from ALPHACI. The GitHub repository will be kept unless you opt in below.
+                        </p>
+                      </div>
+
+                      <label
+                        className="enhancement-option"
+                        style={{ cursor: "pointer", display: "flex", alignItems: "flex-start", gap: "0.5rem" }}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={deleteGithubRepoOptIn}
+                          onChange={(e) => {
+                            setDeleteGithubRepoOptIn(e.target.checked);
+                            setConfirmRepoNameInput("");
+                          }}
+                          style={{ marginTop: "0.2rem" }}
+                        />
+                        <span style={{ display: "flex", flexDirection: "column", gap: "0.15rem" }}>
+                          <span style={{ fontSize: "0.83rem", fontWeight: 600, color: "var(--text-primary)" }}>
+                            Also delete the GitHub repository
+                          </span>
+                          <span style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>
+                            Permanently deletes {project?.repoFullName} on GitHub — this cannot be undone.
+                          </span>
+                        </span>
+                      </label>
+
+                      {deleteGithubRepoOptIn ? (
+                        <div style={{ display: "flex", flexDirection: "column", gap: "0.4rem" }}>
+                          <label
+                            htmlFor="confirm-repo-name-input"
+                            style={{
+                              fontSize: "0.78rem",
+                              color: "var(--text-secondary)",
+                            }}
+                          >
+                            Type <strong style={{ color: "var(--text-primary)", fontFamily: "monospace" }}>{project?.repoFullName}</strong> to confirm:
+                          </label>
+                          <input
+                            id="confirm-repo-name-input"
+                            type="text"
+                            value={confirmRepoNameInput}
+                            onChange={(e) => setConfirmRepoNameInput(e.target.value)}
+                            placeholder={project?.repoFullName}
+                            autoComplete="off"
+                            style={{
+                              background: "rgba(17, 17, 22, 0.6)",
+                              border: "1px solid rgba(248, 113, 113, 0.3)",
+                              borderRadius: "0.5rem",
+                              padding: "0.5rem 0.75rem",
+                              fontSize: "0.85rem",
+                              color: "var(--text-primary)",
+                              fontFamily: "monospace",
+                              outline: "none",
+                              width: "100%",
+                              maxWidth: "26rem",
+                              boxSizing: "border-box",
+                            }}
+                          />
+                        </div>
+                      ) : null}
+
+                      {deleteError ? (
+                        <p style={{ margin: 0, fontSize: "0.78rem", color: "var(--danger, #f87171)" }}>
+                          {deleteError}
+                        </p>
+                      ) : null}
+
+                      <div style={{ display: "flex", gap: "0.5rem" }}>
+                        <button
+                          type="button"
+                          onClick={() => void handleDeleteProject()}
+                          disabled={
+                            isDeleting ||
+                            (deleteGithubRepoOptIn &&
+                              confirmRepoNameInput !== project?.repoFullName)
+                          }
+                          className="confirm-btn-danger"
+                          style={{ padding: "0.45rem 1rem", fontSize: "0.82rem" }}
+                        >
+                          {isDeleting
+                            ? "Deleting..."
+                            : deleteGithubRepoOptIn
+                              ? "Delete repo & disconnect"
+                              : "Yes, disconnect"}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setConfirmDelete(false);
+                            setDeleteGithubRepoOptIn(false);
+                            setConfirmRepoNameInput("");
+                            setDeleteError(null);
+                          }}
+                          className="confirm-btn-neutral"
+                          style={{ padding: "0.45rem 1rem", fontSize: "0.82rem" }}
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </section>
           </div>
         )}
+        </div>
       </div>
     </main>
   );

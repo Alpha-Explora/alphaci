@@ -376,15 +376,8 @@ html[data-theme="light"] {
   color: var(--danger);
 }
 
-[data-theme="light"] .sidebar-user-chip {
-  background: rgba(0, 0, 0, 0.04);
-  border-color: rgba(0, 0, 0, 0.08);
-}
-
-[data-theme="light"] .app-sidebar .workspace-switcher {
-  background: rgba(0, 0, 0, 0.04);
-  border-color: rgba(0, 0, 0, 0.1);
-}
+/* .sidebar-user-chip and .workspace-switcher are token-driven (--bg-elevated,
+   --border-soft) and adapt to light/dark automatically — no override needed. */
 
 [data-theme="light"] .app-sidebar .notification-center-button {
   background: rgba(0, 0, 0, 0.04);
@@ -595,19 +588,6 @@ html[data-theme="light"] {
   background: rgba(250, 250, 251, 0.9);
   border-color: rgba(0, 0, 0, 0.08);
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.1);
-}
-
-/* ── Workspace switcher ──────────────────────────────────────── */
-[data-theme="light"] .workspace-switcher-btn {
-  background: rgba(0, 0, 0, 0.04);
-  border-color: rgba(0, 0, 0, 0.1);
-  color: var(--text-secondary);
-}
-
-[data-theme="light"] .workspace-switcher-panel {
-  background: rgba(250, 250, 251, 0.99);
-  border-color: rgba(0, 0, 0, 0.1);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
 }
 
 /* ── Hero section — light mode overrides ─────────────────────────────────── */
@@ -987,18 +967,6 @@ html[data-theme="light"] {
     rgba(9, 105, 218, 0.06) 50%,
     transparent 58% 100%
   ) !important;
-}
-
-/* Quick-action terminal command rows inside the bento card: dark fills →
-   light tinted rows with a correct (darkening) hover. */
-[data-theme="light"] .bento-cmd-row {
-  background: rgba(17, 17, 22, 0.035) !important;
-  border-color: rgba(17, 17, 22, 0.08) !important;
-}
-
-[data-theme="light"] .bento-cmd-row:hover {
-  background: rgba(17, 17, 22, 0.06) !important;
-  border-color: rgba(9, 105, 218, 0.2) !important;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -3566,7 +3534,7 @@ h3 {
   border-bottom: 0;
   background: transparent;
   color: var(--text-secondary);
-  font-size: 0.85rem;
+  font-size: 0.92rem;
   font-weight: 600;
   cursor: pointer;
   display: inline-flex;
@@ -3664,7 +3632,7 @@ h3 {
   display: block;
   margin-top: 0.72rem;
   margin-bottom: 0.3rem;
-  font-size: 0.72rem;
+  font-size: 0.8rem;
   color: var(--text-muted);
   font-family: ui-monospace, monospace;
   text-transform: uppercase;
@@ -4235,72 +4203,10 @@ select option {
   opacity: 0.5;
 }
 
-.latest-run-dot--loading {
-  animation: state-pulse 1.5s infinite;
-}
-
 @media (prefers-reduced-motion: reduce) {
-  .pipeline-dot--running,
-  .latest-run-dot--loading {
+  .pipeline-dot--running {
     animation: none;
   }
-}
-
-.latest-run-link {
-  display: flex;
-  flex-direction: column;
-  gap: 0.15rem;
-  text-decoration: none;
-}
-
-.latest-run-repo {
-  font-family: ui-monospace, monospace;
-  font-size: 0.78rem;
-  font-weight: 700;
-  color: var(--text-primary);
-  max-width: 15rem;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.latest-run-branch {
-  color: var(--text-muted);
-  font-weight: 500;
-}
-
-.latest-run-meta {
-  margin: 0.35rem 0 0;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  font-size: 0.7rem;
-  font-family: ui-monospace, monospace;
-  color: var(--text-muted);
-}
-
-.latest-run-meta svg {
-  transition: transform 0.15s ease;
-}
-
-a.latest-run-link:hover .latest-run-meta {
-  color: var(--brand);
-}
-
-a.latest-run-link:hover .latest-run-meta svg {
-  transform: translateX(3px);
-}
-
-.latest-run-meta--success {
-  color: var(--success);
-}
-
-.latest-run-meta--failure {
-  color: var(--danger);
-}
-
-.latest-run-meta--running {
-  color: var(--accent-amber);
 }
 
 .pipeline-connector {
@@ -7334,6 +7240,13 @@ a.latest-run-link:hover .latest-run-meta svg {
   border: 1px solid rgba(255, 79, 79, 0.25);
 }
 
+/* Repo attached outside the enforced org — informational, not a status. */
+.project-status-badge.external {
+  color: var(--text-muted);
+  background: color-mix(in srgb, var(--text-muted) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--text-muted) 25%, transparent);
+}
+
 .project-demo-badge {
   display: inline-flex;
   align-items: center;
@@ -7884,298 +7797,6 @@ a.latest-run-link:hover .latest-run-meta svg {
   }
 }
 
-/* ── Overview: container-less operational pulse ─────────────────────────────
-   No card chrome. Health headline → mono stat rail on hairlines → attention
-   list / next step → lean actions. Density-first per the design brief. */
-.ov-pulse {
-  display: flex;
-  flex-direction: column;
-  gap: 2.25rem;
-}
-
-/* System status line — the single "is anything wrong?" answer */
-.ov-status {
-  display: flex;
-  align-items: flex-start;
-  gap: 0.85rem;
-  padding-bottom: 1.75rem;
-  border-bottom: 1px solid var(--border-soft);
-}
-
-.ov-status-dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  margin-top: 0.55rem;
-  flex-shrink: 0;
-}
-
-.ov-status-dot--ok {
-  background: var(--success);
-  box-shadow:
-    0 0 0 4px rgba(16, 185, 129, 0.14),
-    0 0 12px rgba(16, 185, 129, 0.5);
-}
-
-.ov-status-dot--warn {
-  background: var(--accent-amber);
-  box-shadow:
-    0 0 0 4px rgba(245, 158, 11, 0.14),
-    0 0 12px rgba(245, 158, 11, 0.5);
-  animation: flowPulse 2.4s ease-in-out infinite;
-}
-
-.ov-status-dot--idle {
-  background: var(--text-muted);
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .ov-status-dot--warn {
-    animation: none;
-  }
-}
-
-.ov-status-headline {
-  margin: 0;
-  font-size: clamp(1.5rem, 3vw, 2.1rem);
-  font-weight: 800;
-  letter-spacing: -0.02em;
-  line-height: 1.05;
-}
-
-.ov-status-sub {
-  margin: 0.4rem 0 0;
-  font-size: 0.82rem;
-  color: var(--text-secondary);
-  font-family: ui-monospace, monospace;
-}
-
-/* Body row — operational focus (attention list / next step / all-clear) on
-   the left, key metrics as a compact column on the right. */
-.ov-body-row {
-  display: flex;
-  align-items: flex-start;
-  gap: 2rem;
-}
-
-.ov-body-main {
-  flex: 1 1 auto;
-  min-width: 0;
-}
-
-/* Stat rail — quiet mono figures stacked in a right-hand column, separated
-   from the main content by a single hairline rather than a card. */
-.ov-rail-aside {
-  flex: 0 0 auto;
-  display: flex;
-  flex-direction: column;
-  gap: 1.1rem;
-  padding-left: 1.75rem;
-  border-left: 1px solid var(--border-soft);
-  min-width: 8rem;
-}
-
-.ov-stat-mini {
-  display: flex;
-  flex-direction: column;
-  gap: 0.3rem;
-  text-decoration: none;
-  transition: transform 0.15s ease;
-}
-
-a.ov-stat-mini:hover {
-  transform: translateX(2px);
-}
-
-a.ov-stat-mini:hover .ov-stat-mini-num {
-  color: var(--brand);
-}
-
-.ov-stat-mini-num {
-  font-family: "Sora", ui-monospace, monospace;
-  font-size: clamp(1.5rem, 2.6vw, 2rem);
-  font-weight: 800;
-  line-height: 1;
-  color: var(--text-primary);
-  transition: color 0.15s ease;
-}
-
-.ov-stat-mini-label {
-  font-size: 0.62rem;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  color: var(--text-muted);
-}
-
-/* Narrow screens: stack the stat column back under the main content. */
-@media (max-width: 640px) {
-  .ov-body-row {
-    flex-direction: column;
-    gap: 1.25rem;
-  }
-
-  .ov-rail-aside {
-    flex-direction: row;
-    flex-wrap: wrap;
-    row-gap: 1rem;
-    padding-left: 0;
-    padding-top: 1rem;
-    border-left: none;
-    border-top: 1px solid var(--border-soft);
-    min-width: 0;
-    width: 100%;
-  }
-
-  .ov-stat-mini {
-    padding-right: 1.5rem;
-  }
-}
-
-/* Section label — restrained, plain-language */
-.ov-section-eyebrow {
-  margin: 0 0 1rem;
-  font-size: 0.68rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.11em;
-  color: var(--text-muted);
-}
-
-/* Needs-attention list — plain rows, hairline separated, no cards */
-.ov-attention-list {
-  display: flex;
-  flex-direction: column;
-}
-
-.ov-attention-row {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  padding: 0.85rem 0;
-  border-top: 1px solid var(--border-soft);
-  text-decoration: none;
-  transition: padding-left 0.15s ease;
-}
-
-.ov-attention-row:last-child {
-  border-bottom: 1px solid var(--border-soft);
-}
-
-.ov-attention-row:hover {
-  padding-left: 0.4rem;
-}
-
-.ov-attention-status {
-  flex-shrink: 0;
-  min-width: 5.5rem;
-  text-align: center;
-  font-size: 0.64rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  padding: 0.22rem 0.5rem;
-  border-radius: 5px;
-}
-
-.ov-attention-status.is-failed {
-  color: var(--danger);
-  background: rgba(239, 68, 68, 0.1);
-}
-
-.ov-attention-status.is-orphaned {
-  color: var(--accent-amber);
-  background: rgba(245, 158, 11, 0.1);
-}
-
-.ov-attention-name {
-  flex-shrink: 0;
-  font-weight: 700;
-  font-size: 0.9rem;
-  color: var(--text-primary);
-}
-
-.ov-attention-reason {
-  flex: 1;
-  min-width: 0;
-  font-size: 0.76rem;
-  color: var(--text-muted);
-  font-family: ui-monospace, monospace;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.ov-attention-row svg {
-  color: var(--text-muted);
-  flex-shrink: 0;
-  transition: transform 0.15s ease;
-}
-
-.ov-attention-row:hover svg {
-  color: var(--brand);
-  transform: translateX(3px);
-}
-
-/* Empty-account next step — one clear action, framed by hairlines not a box */
-.ov-nextstep {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  padding: 1.1rem 0;
-  border-top: 1px solid var(--border-soft);
-  border-bottom: 1px solid var(--border-soft);
-  text-decoration: none;
-  transition: padding-left 0.15s ease;
-}
-
-.ov-nextstep:hover {
-  padding-left: 0.4rem;
-}
-
-.ov-nextstep-copy {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-}
-
-.ov-nextstep-title {
-  font-size: 1rem;
-  font-weight: 700;
-  color: var(--brand);
-}
-
-.ov-nextstep-sub {
-  font-size: 0.8rem;
-  color: var(--text-secondary);
-}
-
-.ov-nextstep svg {
-  color: var(--brand);
-  flex-shrink: 0;
-  transition: transform 0.15s ease;
-}
-
-.ov-nextstep:hover svg {
-  transform: translateX(4px);
-}
-
-/* All-clear — calm confirmation, hairline framed */
-.ov-allclear {
-  margin: 0;
-  padding: 0.95rem 0;
-  border-top: 1px solid var(--border-soft);
-  border-bottom: 1px solid var(--border-soft);
-  font-size: 0.84rem;
-  color: var(--text-secondary);
-}
-
-@media (max-width: 640px) {
-  .ov-attention-reason {
-    display: none;
-  }
-}
-
 .repo-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
@@ -8231,10 +7852,17 @@ a.ov-stat-mini:hover .ov-stat-mini-num {
   align-items: start;
 }
 
-/* Left rail: project list + sub-tab bar glued together, sticky as one unit. */
+/* Left rail: project list + sub-tab bar glued together, sticky as one unit.
+ * Sizes to its content (so a short group list stays short) but never grows
+ * past one screen — at that point the inner .project-list-body scrolls. */
 .project-list-rail {
   display: flex;
   flex-direction: column;
+  min-height: 0;
+  /* Bounded card: hugs content when the list is short, but a long list (e.g.
+   * many individual repositories) caps at ~32rem and scrolls internally rather
+   * than running the full viewport height. */
+  max-height: min(calc(100dvh - 11rem), 32rem);
   gap: 0.75rem;
   position: sticky;
   top: 5rem;
@@ -8243,6 +7871,159 @@ a.ov-stat-mini:hover .ov-stat-mini-num {
 /* Right column: swaps between the selected project detail and the history log. */
 .project-detail-column {
   min-width: 0;
+}
+
+/* Invitee inbox — pending group invitations the signed-in user can act on. */
+.invitations-inbox {
+  padding: 1.1rem 1.25rem;
+  margin-bottom: 1.1rem;
+  border-radius: var(--radius-card, 0.9rem);
+}
+
+.invitations-inbox__header h3 {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 0.98rem;
+}
+
+.invitations-inbox__header p {
+  margin: 0.25rem 0 0.9rem;
+  color: var(--text-muted);
+  font-size: 0.82rem;
+}
+
+.invitations-inbox__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.invitations-inbox__item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid var(--border-soft);
+  border-radius: 0.7rem;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.invitations-inbox__meta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.12rem;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.invitations-inbox__meta strong {
+  font-size: 0.9rem;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.invitations-inbox__meta span {
+  font-size: 0.76rem;
+  color: var(--text-muted);
+}
+
+.invitations-inbox__actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+/* Selected-group sub-tabs on the left, destructive actions (delete) on the
+ * right. Wraps on narrow widths so the delete button drops below the tabs. */
+.group-workspace-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+/* Right-size buttons inside the dense management surfaces. The global
+ * .primary-button/.ghost-button are hero-scale (min-height 3rem, 1.05rem text,
+ * 1rem×2.5rem padding) — correct on landing CTAs, oversized in a data panel.
+ * Scope a compact size here without touching the global button used elsewhere. */
+.project-detail-panel .primary-button,
+.project-detail-panel .ghost-button,
+.invitations-inbox .primary-button,
+.invitations-inbox .ghost-button {
+  font-size: 0.82rem;
+  font-weight: 600;
+  min-height: 2.2rem;
+  padding: 0.45rem 0.95rem;
+  border-radius: 0.5rem;
+  gap: 0.3rem;
+  letter-spacing: 0;
+}
+
+/* Calmer hover in a dense list — the global glow/lift is distracting at this
+ * density and scale. */
+.project-detail-panel .primary-button:hover,
+.invitations-inbox .primary-button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.32);
+}
+
+.project-detail-panel .ghost-button:hover,
+.invitations-inbox .ghost-button:hover {
+  transform: translateY(-1px);
+  box-shadow: none;
+}
+
+.group-overview-content {
+  display: grid;
+  gap: 1.5rem;
+}
+
+/* Flattened: these were bordered/filled cards nested inside the already-carded
+ * detail panel (card-in-card-in-card). Now they're plain blocks — the section
+ * below gets a hairline top divider for separation instead of its own box, so
+ * the inner list panel is the only remaining container. */
+.group-overview-section {
+  min-width: 0;
+}
+
+.group-overview-section + .group-overview-section {
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--border-soft);
+}
+
+/* The inner list panel is now the only container in the overview, so drop its
+ * floating shadow — it should read as a grouped list, not a raised card. */
+.group-overview-section .hier-panel {
+  box-shadow: none;
+}
+
+.group-overview-section__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.group-overview-section__header h3 {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 0.95rem;
+}
+
+.group-overview-section__header p {
+  margin: 0.32rem 0 0;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  line-height: 1.45;
 }
 
 .project-list,
@@ -8254,9 +8035,37 @@ a.ov-stat-mini:hover .ov-stat-mini-num {
 }
 
 .project-list {
-  display: grid;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  /* Hug content; the rail's max-height caps overall height and the body
+   * scrolls internally past that point. Was height:100%, which forced the
+   * whole box to a full screen even with only a couple of groups. */
+  max-height: 100%;
   gap: 0.4rem;
+  overflow: hidden;
   padding: 0.75rem;
+}
+
+.project-list-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  flex: 1 1 auto;
+  min-height: 0;
+  align-content: start;
+  gap: 0.4rem;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 0.05rem 0.2rem 0.1rem 0;
+  scrollbar-color: var(--border-tile) transparent;
+  scrollbar-width: thin;
+}
+
+.project-list-body::-webkit-scrollbar { width: 0.38rem; }
+.project-list-body::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: var(--border-tile);
 }
 
 .project-list-header {
@@ -8345,9 +8154,21 @@ a.ov-stat-mini:hover .ov-stat-mini-num {
   min-height: 2.25rem;
 }
 
+/* "+ New group" action in the Groups rail — full-width under the search box. */
+.project-list-create {
+  width: 100%;
+  min-height: 2.25rem;
+  padding: 0.45rem 0.65rem;
+  font-size: 0.8rem;
+  border-radius: 6px;
+}
+
 .project-list-empty {
+  min-width: 0;
+  width: 100%;
   margin: 0;
   padding: 0.75rem 0.4rem;
+  overflow-wrap: break-word;
   color: var(--text-muted);
   font-size: 0.8rem;
   text-align: center;
@@ -9458,8 +9279,8 @@ a.ov-stat-mini:hover .ov-stat-mini-num {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 2.45rem;
-  height: 2.45rem;
+  width: 2.75rem;
+  height: 2.75rem;
   border: 1px solid var(--border-subtle);
   border-radius: 6px;
   background: transparent;
@@ -9564,14 +9385,26 @@ a.ov-stat-mini:hover .ov-stat-mini-num {
   text-transform: uppercase;
 }
 
+/* .env-bulk-editor is now only ever rendered as a fixed-position modal
+   (see .env-bulk-editor--dialog) rather than a grid sibling of the editor,
+   so this is a plain single-column container. */
 .env-variable-workspace {
   display: grid;
-  grid-template-columns: minmax(0, 1.45fr) minmax(17rem, 0.75fr);
+  grid-template-columns: minmax(0, 1fr);
   gap: 0.8rem;
   align-items: start;
 }
 
-.env-variable-editor,
+.env-variable-editor {
+  display: grid;
+  gap: 0.75rem;
+  min-width: 0;
+  padding: 1.15rem 1.3rem;
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  background: rgba(17, 17, 22, 0.22);
+}
+
 .env-bulk-editor {
   display: grid;
   gap: 0.7rem;
@@ -9608,8 +9441,8 @@ a.ov-stat-mini:hover .ov-stat-mini-num {
 
 .env-variable-column-labels {
   display: grid;
-  grid-template-columns: minmax(10rem, 0.8fr) minmax(12rem, 1fr) 2.45rem;
-  gap: 0.45rem;
+  grid-template-columns: minmax(11rem, 0.7fr) minmax(15rem, 1.3fr) 2.75rem;
+  gap: 0.5rem;
   padding-inline: 0.1rem;
   color: var(--text-muted);
   font-size: 0.7rem;
@@ -9628,18 +9461,19 @@ a.ov-stat-mini:hover .ov-stat-mini-num {
 }
 
 .env-variables-form .env-var-row {
-  grid-template-columns: minmax(10rem, 0.8fr) minmax(12rem, 1fr) 2.45rem;
+  grid-template-columns: minmax(11rem, 0.7fr) minmax(15rem, 1.3fr) 2.75rem;
+  gap: 0.5rem;
   align-items: center;
 }
 
 .env-variables-form .env-var-row input,
 .env-bulk-editor textarea {
-  min-height: 2.45rem;
+  min-height: 2.75rem;
   border: 1px solid var(--border);
   border-radius: 6px;
   background: rgba(17, 17, 22, 0.54);
   color: var(--text-primary);
-  padding: 0.52rem 0.65rem;
+  padding: 0.58rem 0.75rem;
   font-size: 0.8rem;
 }
 
@@ -9712,12 +9546,6 @@ a.ov-stat-mini:hover .ov-stat-mini-num {
   min-height: 2rem;
   padding: 0.38rem 0.65rem;
   font-size: 0.74rem;
-}
-
-@media (max-width: 980px) {
-  .env-variable-workspace {
-    grid-template-columns: 1fr;
-  }
 }
 
 @media (max-width: 640px) {
@@ -9967,11 +9795,17 @@ a.ov-stat-mini:hover .ov-stat-mini-num {
   .project-list-rail {
     position: static;
     width: 100%;
+    height: 22rem;
   }
 
   .project-list {
-    grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
     position: static;
+  }
+
+  .project-list-body { grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr)); }
+
+  .group-overview-section {
+    padding: 0.85rem;
   }
 
   .project-list-header,
@@ -10643,12 +10477,6 @@ a.ov-stat-mini:hover .ov-stat-mini-num {
 /* ── Sign out hover (danger color on hover via JS — no CSS override needed) */
 
 /* ── Responsive overflow fixes ───────────────────────────────────────────── */
-@media (max-width: 768px) {
-  .pipeline-track-aside {
-    display: none !important;
-  }
-}
-
 @media (max-width: 480px) {
   .stats-row-enhanced {
     flex-direction: column !important;
@@ -11493,6 +11321,12 @@ a.ov-stat-mini:hover .ov-stat-mini-num {
   display: flex;
   flex-direction: column;
   gap: 1rem;
+}
+
+/* Home dashboard: tab bar should sit directly under the welcome header with
+   no dead space, so it tightens the shared page gap instead of inheriting it. */
+.home-dash-content {
+  gap: 0.4rem;
 }
 
 /* ── Section label / eyebrow row ─────────────────────────────────────────── */
@@ -12831,7 +12665,7 @@ a.ov-stat-mini:hover .ov-stat-mini-num {
 /* ── Welcome banner: flatter, no outer border box ───────────────────────── */
 .welcome-banner-flat {
   position: relative;
-  padding: 1.5rem 0 1.25rem;
+  padding: 1.5rem 0 0.5rem;
   border-bottom: 1px solid var(--border-soft);
   overflow: hidden;
 }
@@ -13332,48 +13166,6 @@ a.ov-stat-mini:hover .ov-stat-mini-num {
   align-items: center;
   gap: 0.55rem;
   flex-shrink: 0;
-}
-
-.workspace-switcher {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  min-height: 2rem;
-  max-width: 220px;
-  padding: 0.22rem 0.6rem;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 0.5rem;
-  background: rgba(17, 17, 22, 0.65);
-  color: var(--text-secondary);
-  font-size: 0.72rem;
-  white-space: nowrap;
-}
-
-.workspace-switcher-label {
-  color: var(--text-muted);
-}
-
-.workspace-switcher-name {
-  max-width: 92px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  color: var(--text-primary);
-  font-weight: 700;
-}
-
-.workspace-switcher-role {
-  color: var(--text-muted);
-  text-transform: capitalize;
-}
-
-.workspace-switcher select {
-  max-width: 130px;
-  border: 0;
-  outline: 0;
-  background: transparent;
-  color: var(--text-primary);
-  font: inherit;
-  font-weight: 700;
 }
 
 .notification-center {
@@ -14512,135 +14304,6 @@ a.ov-stat-mini:hover .ov-stat-mini-num {
   animation: none;
 }
 
-/* Terminal command rows — replaces quick-action-pill */
-.bento-cmd-list {
-  display: flex;
-  flex-direction: column;
-  gap: 0.3rem;
-  width: 100%;
-}
-
-.bento-cmd-row {
-  display: flex;
-  align-items: center;
-  gap: 0.55rem;
-  padding: 0.55rem 0.85rem;
-  border-radius: 0.55rem;
-  background: rgba(0, 0, 0, 0.2);
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  text-decoration: none;
-  color: var(--text-primary);
-  font-size: 0.82rem;
-  font-weight: 500;
-  transition:
-    border-color 0.18s ease,
-    background 0.18s ease,
-    box-shadow 0.18s ease;
-  cursor: pointer;
-}
-
-.bento-cmd-row:hover {
-  border-color: rgba(255, 255, 255, 0.1);
-  background: rgba(255, 255, 255, 0.03);
-  box-shadow: inset 2px 0 0 var(--cmd-accent, var(--brand));
-}
-
-.bento-cmd-row:focus-visible {
-  outline: 2px solid var(--brand);
-  outline-offset: 2px;
-}
-
-.bento-cmd-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 1.9rem;
-  height: 1.9rem;
-  flex-shrink: 0;
-  border-radius: 0.45rem;
-  color: var(--cmd-accent, var(--brand));
-  background: color-mix(in srgb, var(--cmd-accent, var(--brand)) 12%, transparent);
-  transition: transform 0.18s ease;
-}
-
-.bento-cmd-row:hover .bento-cmd-icon {
-  transform: scale(1.06);
-}
-
-.bento-cmd-body {
-  display: flex;
-  flex-direction: column;
-  gap: 0.15rem;
-  flex: 1;
-  min-width: 0;
-}
-
-.bento-cmd-titleline {
-  display: flex;
-  align-items: baseline;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-}
-
-.bento-cmd-prompt {
-  font-family: ui-monospace, monospace;
-  font-size: 0.78rem;
-  color: var(--cmd-accent, var(--brand));
-  flex-shrink: 0;
-  opacity: 0.75;
-  transition: opacity 0.15s;
-}
-.bento-cmd-row:hover .bento-cmd-prompt {
-  opacity: 1;
-}
-
-.bento-cmd-name {
-  font-family: ui-monospace, monospace;
-  font-size: 0.78rem;
-  color: var(--cmd-accent, var(--brand));
-  flex-shrink: 0;
-  transition: color 0.15s;
-}
-
-.bento-cmd-display {
-  color: var(--text-secondary);
-  font-size: 0.78rem;
-}
-
-.bento-cmd-desc {
-  font-size: 0.7rem;
-  color: var(--text-muted);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.bento-cmd-shortcut {
-  font-family: ui-monospace, monospace;
-  font-size: 0.65rem;
-  color: var(--text-muted);
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 4px;
-  padding: 0.1rem 0.35rem;
-  flex-shrink: 0;
-}
-
-.bento-cmd-arrow {
-  color: var(--text-muted);
-  opacity: 0;
-  transform: translateX(-4px);
-  transition:
-    opacity 0.18s ease,
-    transform 0.18s ease;
-  flex-shrink: 0;
-}
-
-.bento-cmd-row:hover .bento-cmd-arrow {
-  opacity: 1;
-  transform: translateX(0);
-}
-
 /* ════════════════════════════════════════════════════════════════════════════
    GITHUB APP STATUS BAR — compact inline strip (replaces old topbar-controls)
    ════════════════════════════════════════════════════════════════════════════ */
@@ -14718,6 +14381,49 @@ a.ov-stat-mini:hover .ov-stat-mini-num {
   padding: 0.9rem var(--layout-gutter) 0.8rem !important;
 }
 
+/* Full project pages share the studio header, but use a stable two-column
+   composition so the operational signals read as part of the header instead
+   of floating beside the project identity. */
+.dash-page-content.project-page-shell {
+  gap: 0;
+  padding: 0;
+}
+
+.project-page-header {
+  display: grid;
+  grid-template-columns: minmax(18rem, 1fr) minmax(34rem, 0.95fr);
+  align-items: center;
+  gap: clamp(1rem, 3vw, 3rem);
+}
+
+.project-page-header .workflow-page-signal-strip {
+  width: 100%;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.project-page-body {
+  display: grid;
+  gap: 1rem;
+  padding: 1.5rem var(--layout-gutter) 2.5rem;
+}
+
+@media (max-width: 1080px) {
+  .project-page-header {
+    grid-template-columns: 1fr;
+    align-items: start;
+  }
+}
+
+@media (max-width: 640px) {
+  .project-page-body {
+    padding-top: 1rem;
+  }
+
+  .project-page-header .workflow-page-signal-strip {
+    grid-template-columns: 1fr;
+  }
+}
+
 .workflow-page-header-left {
   display: flex;
   flex-direction: column;
@@ -14732,7 +14438,7 @@ a.ov-stat-mini:hover .ov-stat-mini-num {
 }
 
 .workflow-page-title {
-  font-size: clamp(1.25rem, 2.2vw, 1.65rem);
+  font-size: clamp(1.4rem, 2.5vw, 1.85rem);
   margin: 0;
   letter-spacing: -0.025em;
   font-weight: 800;
@@ -16430,73 +16136,6 @@ a.ov-stat-mini:hover .ov-stat-mini-num {
   flex-direction: column;
 }
 
-/* User chip */
-.sidebar-user-chip {
-  display: flex;
-  align-items: center;
-  gap: 0.55rem;
-  padding: 0.45rem 0.55rem;
-  border-radius: 0.6rem;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.07);
-  overflow: hidden;
-  cursor: default;
-}
-
-.sidebar-user-avatar-ring {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 30px;
-  height: 30px;
-  border-radius: 50%;
-  background: linear-gradient(
-    135deg,
-    var(--accent-indigo),
-    var(--accent-violet)
-  );
-  padding: 1.5px;
-  flex-shrink: 0;
-}
-
-.sidebar-user-avatar-img {
-  border-radius: 50%;
-  display: block;
-  width: 27px;
-  height: 27px;
-}
-
-.sidebar-user-avatar-fallback {
-  width: 27px;
-  height: 27px;
-  border-radius: 50%;
-  background: var(--bg-elevated);
-  color: var(--accent-indigo);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.7rem;
-  font-weight: 700;
-}
-
-.sidebar-user-info {
-  display: flex;
-  flex-direction: column;
-  gap: 0.1rem;
-  min-width: 0;
-  flex: 1;
-  overflow: hidden;
-}
-
-.sidebar-user-login {
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: var(--text-primary);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
 .sidebar-user-plan-badge {
   display: inline-flex;
   align-self: flex-start;
@@ -16580,33 +16219,6 @@ a.ov-stat-mini:hover .ov-stat-mini-num {
     animation: none;
     opacity: 0.8;
   }
-}
-
-/* Workspace switcher in sidebar context — full-width row, truncates cleanly */
-.app-sidebar .workspace-switcher {
-  display: flex;
-  width: 100%;
-  max-width: none;
-  min-width: 0;
-  justify-content: flex-start;
-  overflow: hidden;
-}
-
-/* Let the workspace name absorb leftover space and ellipsize */
-.app-sidebar .workspace-switcher-name {
-  flex: 1;
-  min-width: 0;
-  max-width: none;
-}
-
-/* Role should never be squeezed into the name */
-.app-sidebar .workspace-switcher-role {
-  flex-shrink: 0;
-}
-
-/* The standalone "Workspace" label is redundant in the chip — reclaim the space */
-.app-sidebar .workspace-switcher-label {
-  display: none;
 }
 
 /* Auth access-gate: hide the oversized ghost word on narrow viewports where
@@ -16930,9 +16542,9 @@ html:not([data-theme="light"]) .dash-shell .sidebar-nav-item-bg {
   border-left-color: var(--accent-indigo);
 }
 
-html:not([data-theme="light"]) .dash-shell .sidebar-user-chip,
+/* Profile chip + workspace switcher are token-driven (see "Sidebar account
+   identity" below) and adapt to theme automatically — excluded here. */
 html:not([data-theme="light"]) .dash-shell .sidebar-signout-btn,
-html:not([data-theme="light"]) .dash-shell .app-sidebar .workspace-switcher,
 html:not([data-theme="light"])
   .dash-shell
   .sidebar-collapse-btn--edge {
@@ -16987,8 +16599,7 @@ html:not([data-theme="light"])
     input,
     select,
     textarea,
-    .env-static-field,
-    .bento-cmd-row
+    .env-static-field
   ) {
   background-color: #1d1d26;
   border-color: rgba(158, 158, 172, 0.2);
@@ -17393,10 +17004,6 @@ html:not([data-theme="light"]) .dash-shell .welcome-banner-flat {
   order: 2;
 }
 
-.env-variables-form .env-variable-workspace {
-  grid-template-columns: minmax(0, 1fr);
-}
-
 /* When opened, the editor visually extends the provisioned-variable card so
    new values are clearly being added to that same list. */
 .env-provisioned-variables + .env-variables-form {
@@ -17571,4 +17178,2067 @@ html:not([data-theme="light"]) .dash-shell :is(
   .sidebar-collapse-btn--edge {
     transition: none;
   }
+}
+
+/* ── Commit-first workflow history ─────────────────────────────────────── */
+
+.runs-project-group-body {
+  gap: 0.5rem;
+}
+
+.runs-run-card--commit {
+  display: block;
+  padding: 0;
+  border-color: color-mix(in srgb, var(--run-accent) 20%, var(--border-layer));
+  background: var(--layer-1);
+  box-shadow: none;
+}
+
+.runs-run-card--commit::before {
+  display: none;
+}
+
+.runs-run-card--commit .runs-card-accent {
+  width: 3px;
+  opacity: 0.8;
+}
+
+.runs-run-card--commit:hover {
+  border-color: color-mix(in srgb, var(--run-accent) 38%, var(--border-tile));
+  background: var(--layer-1-hover);
+  box-shadow: 0 10px 24px rgba(10, 10, 14, 0.18);
+}
+
+.runs-commit-row {
+  display: grid;
+  grid-template-columns: auto minmax(11rem, 0.9fr) minmax(12rem, 1.45fr) auto;
+  align-items: center;
+  gap: 0.9rem;
+  width: 100%;
+  min-width: 0;
+  padding: 0.8rem 0.95rem 0.8rem 1.1rem;
+  border: 0;
+  background: transparent;
+  color: var(--text-primary);
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+}
+
+.runs-commit-row:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: -2px;
+}
+
+.runs-commit-status {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.85rem;
+  height: 1.85rem;
+  border: 1px solid;
+  border-radius: 50%;
+  flex: 0 0 1.85rem;
+}
+
+.runs-commit-primary,
+.runs-commit-health {
+  display: grid;
+  gap: 0.22rem;
+  min-width: 0;
+}
+
+.runs-commit-sha {
+  color: var(--text-primary);
+  font-family: ui-monospace, "Cascadia Code", "Fira Code", monospace;
+  font-size: 0.88rem;
+  font-weight: 800;
+  letter-spacing: 0.025em;
+}
+
+.runs-commit-meta {
+  display: flex;
+  gap: 0.55rem;
+  overflow: hidden;
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  line-height: 1.3;
+  white-space: nowrap;
+}
+
+.runs-commit-meta span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.runs-commit-meta span + span::before {
+  content: "·";
+  margin-right: 0.55rem;
+  color: var(--border-strong);
+}
+
+.runs-commit-health strong,
+.runs-commit-health span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.runs-commit-health strong {
+  color: var(--success);
+  font-size: 0.78rem;
+  line-height: 1.2;
+}
+
+.runs-commit-health span {
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  line-height: 1.3;
+}
+
+.runs-commit-health--error strong {
+  color: var(--danger);
+}
+
+.runs-commit-open {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.runs-commit-open svg {
+  transition: transform 0.18s ease;
+}
+
+.runs-run-card--expanded .runs-commit-open {
+  color: var(--brand);
+}
+
+.runs-run-card--expanded .runs-commit-open svg {
+  transform: rotate(90deg);
+}
+
+.runs-workflow-details {
+  overflow: hidden;
+  padding: 0 0.95rem 0.95rem 1.1rem;
+}
+
+.runs-workflow-details > .runs-pipeline-row {
+  margin-top: 0.7rem;
+}
+
+.runs-workflow-details-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.8rem;
+  padding: 0.75rem 0 0;
+  border-top: 1px solid var(--border-soft);
+}
+
+.runs-workflow-details-header > div {
+  display: flex;
+  align-items: baseline;
+  gap: 0.4rem;
+  min-width: 0;
+}
+
+.runs-workflow-details-header span {
+  color: var(--text-muted);
+  font-size: 0.72rem;
+}
+
+.runs-workflow-details-header strong {
+  overflow: hidden;
+  color: var(--text-primary);
+  font-family: ui-monospace, "Cascadia Code", "Fira Code", monospace;
+  font-size: 0.76rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.runs-workflow-github-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: var(--brand);
+  font-size: 0.74rem;
+  font-weight: 700;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.runs-workflow-github-link:hover,
+.runs-workflow-github-link:focus-visible {
+  color: var(--brand-strong);
+  text-decoration: underline;
+}
+
+@media (max-width: 760px) {
+  .runs-commit-row {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+  }
+
+  .runs-commit-health {
+    grid-column: 2 / -1;
+  }
+}
+
+@media (max-width: 520px) {
+  .runs-commit-row {
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 0.65rem;
+    padding: 0.75rem 0.75rem 0.75rem 0.9rem;
+  }
+
+  .runs-commit-open {
+    grid-column: 2;
+  }
+
+  .runs-commit-health {
+    grid-column: 2;
+  }
+
+  .runs-commit-meta span:last-child {
+    display: none;
+  }
+
+  .runs-workflow-details {
+    padding: 0 0.75rem 0.75rem 0.9rem;
+  }
+
+  .runs-workflow-details-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+
+/* ── Repository creation wizard ─────────────────────────────────────────── */
+
+.repo-wizard-progress {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0.35rem;
+  position: relative;
+  margin: 0 0 1.5rem;
+  padding: 0.55rem;
+  border: 1px solid color-mix(in srgb, var(--border-soft) 82%, transparent);
+  border-radius: 0.95rem;
+  background:
+    radial-gradient(circle at 18% 0%, color-mix(in srgb, var(--brand) 11%, transparent), transparent 36%),
+    rgba(255, 255, 255, 0.018);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.025);
+}
+
+.repo-wizard-progress__step {
+  appearance: none;
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  min-width: 0;
+  padding: 0.62rem 0.6rem;
+  border: 1px solid transparent;
+  border-radius: 0.7rem;
+  color: var(--text-muted);
+  background: transparent;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+/* Current Projects ownership switch and personal repository details. */
+.repo-creation-scope {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  max-width: 54rem;
+  margin: -0.15rem 0 1.1rem;
+  padding: 0.6rem 0.72rem;
+  border: 1px solid var(--border-soft);
+  border-radius: 0.64rem;
+  color: var(--text-secondary);
+  background: rgba(255, 255, 255, 0.018);
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+
+.repo-creation-scope strong { color: var(--text-primary); }
+
+.repo-creation-scope__dot {
+  flex: 0 0 auto;
+  width: 0.48rem;
+  height: 0.48rem;
+  margin-top: 0.34rem;
+  border-radius: 50%;
+  background: var(--brand);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--brand) 15%, transparent);
+}
+
+.repo-creation-scope--individual {
+  border-color: color-mix(in srgb, var(--brand) 38%, var(--border-soft));
+  background: linear-gradient(105deg, color-mix(in srgb, var(--brand) 11%, transparent), transparent 65%);
+}
+
+.repo-creation-scope--group .repo-creation-scope__dot {
+  background: #8b7cff;
+  box-shadow: 0 0 0 4px rgba(139, 124, 255, 0.14);
+}
+
+.repo-individual-detail {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin: 1rem 0;
+  overflow: hidden;
+  border: 1px solid var(--border-soft);
+  border-radius: 0.75rem;
+  background: rgba(255, 255, 255, 0.018);
+}
+
+.repo-individual-detail > div {
+  min-width: 0;
+  padding: 0.82rem 0.9rem;
+  border-right: 1px solid var(--border-soft);
+}
+
+.repo-individual-detail > div:last-child { border-right: 0; }
+
+.repo-individual-detail span {
+  display: block;
+  margin-bottom: 0.3rem;
+  color: var(--text-muted);
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.repo-individual-detail strong {
+  display: block;
+  overflow: hidden;
+  color: var(--text-primary);
+  font-size: 0.78rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (max-width: 720px) {
+  .repo-individual-detail { grid-template-columns: 1fr; }
+  .repo-individual-detail > div { border-right: 0; border-bottom: 1px solid var(--border-soft); }
+  .repo-individual-detail > div:last-child { border-bottom: 0; }
+}
+
+/* Two-sided labeled switch: "Repositories | Teams" flanking the toggle,
+   so the switch communicates both states at once instead of one word
+   swapping in a separate header line. */
+.rail-mode-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  min-width: 0;
+}
+
+.rail-mode-label {
+  flex: 0 0 auto;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: color 180ms ease;
+}
+
+.rail-mode-label:hover {
+  color: var(--text-secondary);
+}
+
+.rail-mode-label:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 3px;
+  border-radius: 3px;
+}
+
+.rail-mode-label.is-active {
+  color: var(--text-primary);
+  font-weight: 700;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rail-mode-label { transition: none; }
+}
+
+.project-ownership-toggle {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  width: 2.7rem;
+  height: 1.5rem;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  cursor: pointer;
+}
+
+.project-ownership-toggle__track {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 100%;
+  border: 1px solid var(--border-tile);
+  border-radius: inherit;
+  background: rgba(255, 255, 255, 0.08);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.2);
+  transition: background 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
+}
+
+.project-ownership-toggle__thumb {
+  position: absolute;
+  top: 0.18rem;
+  left: 0.18rem;
+  width: 0.98rem;
+  height: 0.98rem;
+  border-radius: 50%;
+  background: var(--text-secondary);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.28);
+  transition: transform 180ms cubic-bezier(0.2, 0.9, 0.2, 1.15), background 180ms ease, box-shadow 180ms ease;
+}
+
+.project-ownership-toggle:hover .project-ownership-toggle__track {
+  border-color: color-mix(in srgb, var(--brand) 52%, var(--border-tile));
+}
+
+.project-ownership-toggle:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 3px;
+}
+
+.project-ownership-toggle.is-individual .project-ownership-toggle__track {
+  border-color: color-mix(in srgb, var(--brand) 70%, var(--border-tile));
+  background: var(--brand);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand) 15%, transparent), inset 0 1px 2px rgba(0, 0, 0, 0.12);
+}
+
+.project-ownership-toggle.is-individual .project-ownership-toggle__thumb {
+  transform: translateX(1.18rem);
+  background: white;
+  box-shadow: 0 2px 7px color-mix(in srgb, var(--brand) 40%, rgba(0, 0, 0, 0.3));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .project-ownership-toggle__track,
+  .project-ownership-toggle__thumb { transition: none; }
+}
+.repo-wizard-progress__step {
+  transition: transform 180ms ease, background 180ms ease, border-color 180ms ease, color 180ms ease;
+}
+
+.repo-wizard-progress__step:not(:last-child)::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: calc(100% - 0.12rem);
+  width: 0.24rem;
+  height: 1px;
+  background: var(--border-soft);
+}
+
+.repo-wizard-progress__step:disabled {
+  cursor: default;
+}
+
+.repo-wizard-progress__step:not(:disabled):hover {
+  color: var(--text-secondary);
+  background: rgba(255, 255, 255, 0.035);
+  transform: translateY(-1px);
+}
+
+.repo-wizard-progress__step.is-active {
+  color: var(--text-primary);
+  border-color: color-mix(in srgb, var(--brand) 45%, var(--border-soft));
+  background: color-mix(in srgb, var(--brand) 11%, transparent);
+  box-shadow: 0 10px 24px color-mix(in srgb, var(--brand) 12%, transparent);
+}
+
+.repo-wizard-progress__step.is-complete {
+  color: var(--text-secondary);
+}
+
+.repo-wizard-progress__number {
+  display: inline-grid;
+  flex: 0 0 auto;
+  width: 1.65rem;
+  height: 1.65rem;
+  place-items: center;
+  border: 1px solid var(--border-soft);
+  border-radius: 999px;
+  color: var(--text-secondary);
+  font-size: 0.72rem;
+  font-weight: 800;
+  transition: color 180ms ease, background 180ms ease, border-color 180ms ease, transform 180ms ease;
+}
+
+.repo-wizard-progress__step.is-active .repo-wizard-progress__number {
+  border-color: var(--brand);
+  color: white;
+  background: var(--brand);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--brand) 13%, transparent);
+  transform: scale(1.06);
+}
+
+.repo-wizard-progress__step.is-complete .repo-wizard-progress__number {
+  border-color: color-mix(in srgb, var(--brand) 55%, var(--border-soft));
+  color: var(--brand);
+  background: color-mix(in srgb, var(--brand) 10%, transparent);
+}
+
+.repo-wizard-progress__copy {
+  display: grid;
+  min-width: 0;
+  gap: 0.05rem;
+}
+
+.repo-wizard-progress__copy strong {
+  overflow: hidden;
+  font-size: 0.72rem;
+  line-height: 1.1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.repo-wizard-progress__copy small {
+  overflow: hidden;
+  font-size: 0.62rem;
+  line-height: 1.15;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  opacity: 0.68;
+}
+
+.repo-wizard-step {
+  min-height: 18rem;
+}
+
+.repo-wizard-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-top: 1.8rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border-soft);
+}
+
+.repo-wizard-actions .primary-button {
+  min-width: 9rem;
+}
+
+.repo-wizard-review {
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--brand) 28%, var(--border-soft));
+  border-radius: 0.9rem;
+  background:
+    linear-gradient(130deg, color-mix(in srgb, var(--brand) 10%, transparent), transparent 44%),
+    rgba(255, 255, 255, 0.018);
+}
+
+.repo-wizard-review__heading {
+  padding: 1.15rem 1.2rem 0.95rem;
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.repo-wizard-review__eyebrow {
+  display: block;
+  margin-bottom: 0.35rem;
+  color: var(--brand);
+  font-size: 0.66rem;
+  font-weight: 800;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+}
+
+.repo-wizard-review h3 {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 1.1rem;
+}
+
+.repo-wizard-review p {
+  max-width: 44rem;
+  margin: 0.45rem 0 0;
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+  line-height: 1.5;
+}
+
+.repo-wizard-review__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin: 0;
+}
+
+.repo-wizard-review__grid > div {
+  min-width: 0;
+  padding: 0.85rem 1.2rem;
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.repo-wizard-review__grid > div:nth-child(odd) {
+  border-right: 1px solid var(--border-soft);
+}
+
+.repo-wizard-review dt {
+  margin-bottom: 0.26rem;
+  color: var(--text-muted);
+  font-size: 0.64rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.repo-wizard-review dd {
+  overflow: hidden;
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.repo-wizard-review__checks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  padding: 0.85rem 1.2rem;
+}
+
+.repo-wizard-review__checks span {
+  padding: 0.2rem 0.48rem;
+  border: 1px solid color-mix(in srgb, var(--brand) 32%, var(--border-soft));
+  border-radius: 999px;
+  color: var(--text-secondary);
+  background: color-mix(in srgb, var(--brand) 7%, transparent);
+  font-size: 0.68rem;
+  font-weight: 700;
+}
+
+@media (max-width: 920px) {
+  .repo-wizard-progress {
+    display: flex;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .repo-wizard-progress::-webkit-scrollbar { display: none; }
+
+  .repo-wizard-progress__step {
+    flex: 0 0 auto;
+    min-width: 8.4rem;
+  }
+
+  .repo-wizard-progress__step::after { display: none; }
+}
+
+@media (max-width: 560px) {
+  .repo-wizard-progress { margin-bottom: 1rem; padding: 0.38rem; }
+  .repo-wizard-progress__step { min-width: 2.25rem; padding: 0.48rem; justify-content: center; }
+  .repo-wizard-progress__copy { display: none; }
+  .repo-wizard-review__grid { grid-template-columns: 1fr; }
+  .repo-wizard-review__grid > div:nth-child(odd) { border-right: 0; }
+  .repo-wizard-review__heading, .repo-wizard-review__grid > div, .repo-wizard-review__checks { padding-left: 0.9rem; padding-right: 0.9rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .repo-wizard-progress__step,
+  .repo-wizard-progress__number { transition: none; }
+}
+
+/* ── Sidebar account identity — profile chip + workspace switcher ───────────
+   Single consolidated definition (previously duplicated across 3 cascade
+   layers, which is what caused the name/role text to overlap and clip).
+   These classes render only inside .app-sidebar .sidebar-account-zone, so a
+   single flat specificity level is enough — no need to chase cascade order. */
+.sidebar-account-zone {
+  padding: 0.55rem 0.8rem 0.9rem;
+}
+
+.sidebar-user-chip {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  min-width: 0;
+  padding: 0.3rem 0.15rem;
+  border-radius: 0.65rem;
+}
+
+/* Avatar pinned to the far left; fixed size so it never shrinks or shifts. */
+.sidebar-user-avatar-ring {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  margin: 0;
+  border-radius: 50%;
+  padding: 2px;
+  background: linear-gradient(135deg, var(--brand), var(--accent-indigo) 56%, var(--accent-violet));
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand) 11%, transparent);
+}
+
+.sidebar-user-avatar-img,
+.sidebar-user-avatar-fallback {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+}
+
+.sidebar-user-avatar-img { display: block; }
+
+.sidebar-user-avatar-fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-elevated);
+  color: var(--brand);
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+/* Name + workspace stack immediately right of the avatar. */
+.sidebar-user-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.sidebar-user-login {
+  overflow: hidden;
+  color: var(--text-primary);
+  font-size: 0.88rem;
+  font-weight: 750;
+  letter-spacing: -0.015em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Workspace switcher row — sits directly beneath the username, own line,
+   never overlapping. Name and role each get a bounded, ellipsized width so
+   neither can push into or clip the other. */
+.workspace-switcher {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  min-width: 0;
+  width: 100%;
+  color: var(--text-muted);
+  font-size: 0.68rem;
+  line-height: 1.3;
+}
+
+.workspace-switcher-label {
+  display: none; /* redundant — name + role already communicate "workspace" */
+}
+
+.workspace-switcher-name {
+  overflow: hidden;
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 55%;
+  color: var(--text-secondary);
+  font-weight: 650;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.workspace-switcher-role {
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  flex: 1 1 auto;
+  min-width: 0;
+  color: var(--brand);
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.015em;
+  text-overflow: ellipsis;
+  text-transform: none;
+  white-space: nowrap;
+}
+
+.workspace-switcher-role::before {
+  content: "•";
+  flex: 0 0 auto;
+  margin-right: 0.28rem;
+  color: var(--text-muted);
+}
+
+/* Multi-team: an unmistakable switcher, not text that happens to be a
+   <select> — hover/focus tint, ellipsis in the closed state, and a visible
+   chevron + "N teams" count so it reads as clickable at a glance. */
+.workspace-switcher--multi {
+  gap: 0.35rem;
+}
+
+.workspace-switcher-count {
+  flex: 0 0 auto;
+  padding: 0.08rem 0.42rem;
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--accent-violet) 16%, transparent);
+  color: var(--accent-violet);
+  font-size: 0.58rem;
+  font-weight: 750;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.workspace-switcher-select-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.workspace-switcher-select {
+  flex: 1 1 auto;
+  min-width: 0;
+  width: 100%;
+  overflow: hidden;
+  padding: 0.15rem 1rem 0.15rem 0.3rem;
+  border: 0;
+  border-radius: 0.4rem;
+  appearance: none;
+  -webkit-appearance: none;
+  background: transparent;
+  color: var(--brand);
+  font: inherit;
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background 0.16s ease;
+}
+
+.workspace-switcher-select:hover {
+  background: color-mix(in srgb, var(--brand) 12%, transparent);
+}
+
+.workspace-switcher-select:focus-visible {
+  background: color-mix(in srgb, var(--brand) 12%, transparent);
+  outline: 2px solid var(--brand);
+  outline-offset: 1px;
+}
+
+.workspace-switcher-chevron {
+  position: absolute;
+  right: 0.25rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-muted);
+  pointer-events: none;
+}
+
+/* A focused circular notification control replaces the old square button. */
+.app-sidebar .notification-center-button {
+  width: 2.3rem;
+  height: 2.3rem;
+  border-color: color-mix(in srgb, var(--accent-indigo) 38%, var(--border-soft));
+  border-radius: 50%;
+  background: linear-gradient(145deg, color-mix(in srgb, var(--accent-indigo) 18%, transparent), rgba(255, 255, 255, 0.03));
+  color: var(--text-secondary);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 5px 14px rgba(0, 0, 0, 0.16);
+}
+
+.app-sidebar .notification-center-button:hover,
+.app-sidebar .notification-center-button:focus-visible {
+  border-color: var(--brand);
+  background: color-mix(in srgb, var(--brand) 18%, transparent);
+  color: var(--text-primary);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand) 13%, transparent), 0 7px 18px rgba(0, 0, 0, 0.2);
+}
+
+.app-sidebar .notification-center-button:focus-visible {
+  outline: 0;
+}
+
+.app-sidebar .notification-center-count {
+  top: -0.15rem;
+  right: -0.18rem;
+  min-width: 1.08rem;
+  height: 1.08rem;
+  border: 2px solid var(--bg-base);
+  background: var(--brand);
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--brand) 42%, transparent);
+  font-size: 0.6rem;
+  line-height: 0.84rem;
+}
+
+.dashboard-shortcuts {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--border-soft);
+  border-radius: 0.7rem;
+  background: color-mix(in srgb, var(--bg-elevated) 72%, transparent);
+}
+
+.dashboard-shortcuts-label {
+  flex: 0 0 auto;
+  color: var(--text-muted);
+  font-size: 0.62rem;
+  font-weight: 750;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+.dashboard-shortcuts-keys { display: flex; flex-wrap: wrap; gap: 0.45rem 0.9rem; }
+.dashboard-shortcut { display: inline-flex; align-items: center; gap: 0.35rem; color: var(--text-secondary); font-size: 0.71rem; }
+.dashboard-shortcut kbd {
+  display: inline-grid;
+  width: 1.35rem;
+  height: 1.35rem;
+  place-items: center;
+  border: 1px solid var(--border-soft);
+  border-bottom-color: color-mix(in srgb, var(--text-muted) 45%, var(--border-soft));
+  border-radius: 0.32rem;
+  background: var(--bg-base);
+  color: var(--text-primary);
+  font-family: ui-monospace, monospace;
+  font-size: 0.66rem;
+  font-weight: 700;
+}
+
+@media (max-width: 640px) {
+  .dashboard-shortcuts { align-items: flex-start; flex-direction: column; gap: 0.45rem; }
+}
+
+/* ── Home dashboard: single operational flow ───────────────────────────────
+   One page, no internal tabs. Team context, attention, delivery, and activity
+   remain visible in a predictable top-to-bottom order. */
+.dashboard-flow {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1.25rem 0 2.25rem;
+}
+
+.dashboard-section-kicker {
+  margin: 0 0 0.35rem;
+  color: var(--brand);
+  font-size: 0.66rem;
+  font-weight: 750;
+  letter-spacing: 0.11em;
+}
+
+.dashboard-panel-heading h2 {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 1.05rem;
+  letter-spacing: -0.015em;
+}
+
+.dashboard-inline-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-height: 2.5rem;
+  color: var(--brand);
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.dashboard-inline-link span {
+  transition: transform 0.18s ease;
+}
+
+.dashboard-inline-link:hover span,
+.dashboard-inline-link:focus-visible span {
+  transform: translateX(3px);
+}
+
+.dashboard-inline-link:focus-visible, .dashboard-panel a:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 3px;
+}
+
+.dashboard-activity-dot, .dashboard-tree-node-dot {
+  width: 0.55rem;
+  height: 0.55rem;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: var(--success);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--success) 12%, transparent);
+}
+
+.dashboard-row-arrow {
+  color: var(--text-muted);
+  opacity: 0;
+  transform: translateX(-4px);
+  transition: opacity 0.18s ease, transform 0.18s ease;
+}
+
+.dashboard-panel {
+  min-width: 0;
+  padding: 1rem;
+  border: 1px solid var(--border-soft);
+  border-radius: 0.9rem;
+  background: var(--bg-elevated);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.025);
+}
+
+.dashboard-panel-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding-bottom: 0.8rem;
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.dashboard-panel-heading .dashboard-inline-link { min-height: auto; }
+.dashboard-empty { margin: 1rem 0 0; color: var(--text-muted); font-size: 0.78rem; }
+
+.dashboard-tree { display: flex; flex-direction: column; }
+.dashboard-tree-system { padding: 0.75rem 0; border-bottom: 1px solid var(--border-soft); }
+.dashboard-tree-system:last-child { border-bottom: 0; }
+
+.dashboard-tree-system-head, .dashboard-tree-project > a, .dashboard-project-row, .dashboard-run-row {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  color: var(--text-primary);
+  text-decoration: none;
+}
+
+.dashboard-tree-system-head { min-height: 2rem; }
+.dashboard-tree-system-head > span:nth-child(2),
+.dashboard-project-row > span:first-child,
+.dashboard-run-row > span:first-child { display: flex; min-width: 0; flex: 1; flex-direction: column; gap: 0.12rem; }
+.dashboard-tree-system-head strong,
+.dashboard-project-row strong,
+.dashboard-run-row strong,
+.dashboard-work-row strong,
+.dashboard-activity-row strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 0.79rem; }
+.dashboard-tree-system-head small,
+.dashboard-project-row small,
+.dashboard-run-row small,
+.dashboard-work-row small,
+.dashboard-activity-row small { color: var(--text-muted); font-size: 0.68rem; }
+.dashboard-tree-count { margin-left: auto; color: var(--text-muted); font-size: 0.65rem; text-transform: capitalize; }
+
+.dashboard-tree-project { display: flex; flex-direction: column; gap: 0.32rem; margin: 0.45rem 0 0 1.35rem; padding-left: 0.85rem; border-left: 1px solid color-mix(in srgb, var(--brand) 30%, var(--border-soft)); }
+.dashboard-tree-project > a { justify-content: space-between; font-size: 0.74rem; }
+.dashboard-tree-project > a small { color: var(--text-muted); }
+
+.dashboard-project-list,
+.dashboard-work-list,
+.dashboard-runs-list,
+.dashboard-activity-list { display: flex; flex-direction: column; }
+.dashboard-project-row,
+.dashboard-run-row { min-height: 3.2rem; padding: 0.55rem 0; border-bottom: 1px solid var(--border-soft); transition: padding-left 0.18s ease, background 0.18s ease; }
+.dashboard-project-row:last-child,
+.dashboard-run-row:last-child { border-bottom: 0; }
+.dashboard-project-row:hover,
+.dashboard-run-row:hover { padding-left: 0.35rem; color: var(--brand); }
+
+.dashboard-status { flex: 0 0 auto; border-radius: var(--radius-pill); padding: 0.18rem 0.45rem; font-size: 0.62rem; font-weight: 750; line-height: 1; text-transform: capitalize; }
+.dashboard-status--provisioned,
+.dashboard-status--active,
+.dashboard-status--success { color: var(--success); background: color-mix(in srgb, var(--success) 12%, transparent); }
+.dashboard-status--provisioning,
+.dashboard-status--pending,
+.dashboard-status--running { color: var(--accent-amber); background: color-mix(in srgb, var(--accent-amber) 12%, transparent); }
+.dashboard-status--failed,
+.dashboard-status--orphaned,
+.dashboard-status--failure { color: var(--danger); background: color-mix(in srgb, var(--danger) 12%, transparent); }
+.dashboard-status--archived,
+.dashboard-status--cancelled { color: var(--text-muted); background: color-mix(in srgb, var(--text-muted) 12%, transparent); }
+
+.dashboard-work-row,
+.dashboard-activity-row { display: flex; align-items: center; min-height: 3.55rem; gap: 0.65rem; border-bottom: 1px solid var(--border-soft); }
+.dashboard-work-row:last-child,
+.dashboard-activity-row:last-child { border-bottom: 0; }
+.dashboard-work-row > span:nth-child(2),
+.dashboard-activity-row > span:nth-child(2) { display: flex; min-width: 0; flex: 1; flex-direction: column; gap: 0.12rem; }
+.dashboard-work-access { max-width: 6rem; text-align: right; }
+
+.dashboard-stage-track { display: inline-flex; align-items: center; gap: 0.3rem; }
+.dashboard-run-row .pipeline-dot { width: 0.45rem; height: 0.45rem; margin: 0; }
+.dashboard-activity-dot { width: 0.45rem; height: 0.45rem; background: var(--accent-violet); box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent-violet) 12%, transparent); }
+
+.dashboard-load-errors { display: flex; align-items: center; gap: 0.75rem; margin-top: 1rem; padding: 0.7rem 0.85rem; border: 1px solid color-mix(in srgb, var(--danger) 35%, var(--border-soft)); border-radius: 0.75rem; background: color-mix(in srgb, var(--danger) 6%, transparent); color: var(--text-secondary); font-size: 0.78rem; }
+.dashboard-load-errors > span { display: grid; width: 1.25rem; height: 1.25rem; flex: 0 0 auto; place-items: center; border-radius: 50%; background: color-mix(in srgb, var(--danger) 15%, transparent); color: var(--danger); font-weight: 800; }
+.dashboard-load-errors p { flex: 1; margin: 0; }
+
+@media (max-width: 640px) {
+  .dashboard-flow { gap: 0.75rem; padding-top: 0.9rem; }
+  .dashboard-work-access { display: none; }
+  .dashboard-run-row { flex-wrap: wrap; }
+  .dashboard-run-row > span:first-child { flex-basis: calc(100% - 4.5rem); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dashboard-inline-link span, .dashboard-row-arrow, .dashboard-project-row, .dashboard-run-row { transition: none; }
+}
+
+/* ── Pipeline Activity — the star runs section ─────────────────────────────── */
+.runs-hero {
+  /* Container-less: no border/background/box — content sits on the page. */
+  min-width: 0;
+  padding: 0;
+}
+
+.runs-hero-heading { align-items: center; }
+.runs-hero-heading-right { display: inline-flex; align-items: center; gap: 0.9rem; }
+
+.runs-live-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.22rem 0.55rem;
+  border-radius: var(--radius-pill);
+  border: 1px solid color-mix(in srgb, var(--accent-amber) 45%, transparent);
+  background: color-mix(in srgb, var(--accent-amber) 12%, transparent);
+  color: var(--accent-amber);
+  font-size: 0.66rem;
+  font-weight: 750;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.runs-live-dot {
+  width: 0.42rem;
+  height: 0.42rem;
+  border-radius: 50%;
+  background: var(--accent-amber);
+  box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent-amber) 60%, transparent);
+  animation: runsLivePulse 1.6s ease-in-out infinite;
+}
+
+@keyframes runsLivePulse {
+  0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent-amber) 55%, transparent); }
+  50% { box-shadow: 0 0 0 5px color-mix(in srgb, var(--accent-amber) 0%, transparent); }
+}
+
+.runs-stream { display: flex; flex-direction: column; gap: 0.6rem; min-width: 0; margin-top: 0.85rem; }
+
+/* Recent-outcomes sparkline, divided off at the foot of the hero. */
+.runs-outcomes {
+  margin-top: 0.85rem;
+  padding-top: 0.8rem;
+  border-top: 1px solid var(--border-soft);
+}
+
+/* ── Run card ─────────────────────────────────────────────────────────────── */
+.run-card {
+  position: relative;
+  border: 1px solid var(--border-soft);
+  border-radius: 0.72rem;
+  background: color-mix(in srgb, var(--bg-elevated) 62%, var(--bg-base) 38%);
+  overflow: hidden;
+  transition: transform 0.18s ease, border-color 0.18s ease, background 0.18s ease;
+}
+
+.run-card:hover {
+  transform: translateY(-2px);
+  border-color: color-mix(in srgb, var(--brand) 40%, var(--border-soft));
+  background: color-mix(in srgb, var(--bg-elevated) 92%, var(--brand) 6%);
+}
+
+.run-card-accent {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 3px;
+  background: var(--text-muted);
+}
+.run-card--success .run-card-accent { background: var(--success); }
+.run-card--failure .run-card-accent { background: var(--danger); }
+.run-card--running .run-card-accent {
+  background: linear-gradient(180deg, var(--accent-amber), color-mix(in srgb, var(--accent-amber) 30%, transparent));
+}
+.run-card--partial .run-card-accent { background: var(--accent-violet); }
+.run-card--cancelled .run-card-accent { background: var(--text-muted); }
+.run-card--failure { border-color: color-mix(in srgb, var(--danger) 32%, var(--border-soft)); }
+
+.run-card-link {
+  display: flex;
+  align-items: stretch;
+  gap: 0.9rem;
+  padding: 0.7rem 0.9rem 0.7rem 1.05rem;
+  text-decoration: none;
+  color: var(--text-primary);
+}
+
+.run-card-main { display: flex; flex: 1; min-width: 0; flex-direction: column; gap: 0.55rem; }
+
+.run-card-head { display: flex; align-items: center; gap: 0.5rem; min-width: 0; }
+.run-card-repo {
+  font-family: ui-monospace, monospace;
+  font-size: clamp(0.82rem, 1.4vw, 0.92rem);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.run-card-branch-pill {
+  flex: 0 0 auto;
+  padding: 0.08rem 0.45rem;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--border-soft);
+  background: color-mix(in srgb, var(--text-muted) 10%, transparent);
+  color: var(--text-secondary);
+  font-family: ui-monospace, monospace;
+  font-size: 0.66rem;
+  white-space: nowrap;
+}
+
+.run-status-live {
+  width: 0.4rem; height: 0.4rem; border-radius: 50%;
+  background: var(--accent-amber);
+  animation: runsLivePulse 1.6s ease-in-out infinite;
+}
+
+/* Horizontal pipeline track — the visual centerpiece spanning the card. */
+.run-track { display: flex; align-items: center; gap: 0.55rem; }
+.run-track-cap {
+  flex: 0 0 auto;
+  font-family: ui-monospace, monospace;
+  font-size: 0.56rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.run-track-line { display: flex; align-items: center; flex: 1 1 auto; min-width: 0; }
+.run-track-dot { width: 0.78rem; height: 0.78rem; flex: 0 0 auto; }
+.run-track-seg {
+  position: relative;
+  flex: 1 1 auto;
+  min-width: 1.2rem;
+  height: 2px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--text-muted) 28%, transparent);
+  overflow: hidden;
+}
+.run-track-seg--success { background: color-mix(in srgb, var(--success) 60%, transparent); }
+.run-track-seg--danger { background: color-mix(in srgb, var(--danger) 65%, transparent); }
+.run-track-seg--flowing { background: color-mix(in srgb, var(--success) 45%, transparent); }
+.run-track-seg--flowing::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--accent-amber) 90%, transparent), transparent);
+  animation: flowTravel 1.8s ease-in-out infinite;
+}
+
+.run-card-foot {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  font-family: ui-monospace, monospace;
+  font-size: 0.68rem;
+  color: var(--text-muted);
+}
+.run-card-sha { padding: 0.08rem 0.35rem; border-radius: 0.3rem; background: color-mix(in srgb, var(--text-muted) 12%, transparent); }
+
+/* Right side — status word + View link, vertically centered. */
+.run-card-side {
+  display: flex;
+  flex: 0 0 auto;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 0.4rem;
+  padding-left: 0.7rem;
+  border-left: 1px solid var(--border-soft);
+}
+.run-status-word {
+  font-size: 0.78rem;
+  font-weight: 750;
+  text-transform: capitalize;
+  color: var(--text-secondary);
+}
+.run-status-word--success { color: var(--success); }
+.run-status-word--failure { color: var(--danger); }
+.run-status-word--running { color: var(--accent-amber); }
+.run-status-word--partial { color: var(--accent-violet); }
+.run-status-word--cancelled { color: var(--text-muted); }
+
+.run-card-cta {
+  display: inline-flex; align-items: center; gap: 0.28rem;
+  color: var(--text-secondary); font-weight: 700; font-size: 0.74rem;
+  transition: color 0.18s ease;
+}
+.run-card-cta svg { transition: transform 0.18s ease; }
+.run-card:hover .run-card-cta { color: var(--brand); }
+.run-card:hover .run-card-cta svg { transform: translateX(3px); }
+
+.run-card-link:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; border-radius: 0.72rem; }
+
+/* Run empty + skeletons */
+.runs-empty {
+  display: flex; align-items: center; gap: 0.8rem;
+  padding: 1.1rem 1rem;
+  border: 1px dashed color-mix(in srgb, var(--brand) 30%, var(--border-soft));
+  border-radius: 0.72rem;
+  background: color-mix(in srgb, var(--brand) 4%, transparent);
+  text-decoration: none; color: var(--text-primary);
+  transition: border-color 0.18s ease, background 0.18s ease;
+}
+.runs-empty:hover { border-color: color-mix(in srgb, var(--brand) 55%, transparent); background: color-mix(in srgb, var(--brand) 8%, transparent); }
+.runs-empty:hover .dashboard-row-arrow { opacity: 1; transform: translateX(0); }
+.runs-empty-icon {
+  display: grid; place-items: center; flex: 0 0 auto;
+  width: 2.4rem; height: 2.4rem; border-radius: 0.6rem;
+  color: var(--brand); background: color-mix(in srgb, var(--brand) 12%, transparent);
+}
+.runs-empty > span:nth-child(2) { display: flex; flex-direction: column; gap: 0.18rem; flex: 1; min-width: 0; }
+.runs-empty strong { font-size: 0.85rem; }
+.runs-empty small { color: var(--text-muted); font-size: 0.72rem; line-height: 1.4; }
+.runs-empty .dashboard-row-arrow { color: var(--brand); }
+
+.run-card--skeleton { pointer-events: none; }
+.run-skel { display: block; border-radius: 6px; background: color-mix(in srgb, var(--text-muted) 14%, transparent); animation: state-pulse 1.5s infinite; }
+.run-skel--repo { width: 8rem; height: 0.9rem; }
+.run-skel--pill { width: 3.5rem; height: 1rem; border-radius: 999px; }
+.run-skel--track { width: 100%; height: 0.9rem; margin: 0.15rem 0; }
+.run-skel--foot { width: 60%; height: 0.7rem; }
+
+/* ── Recent-outcomes sparkline (runs-hero foot) ────────────────────────────── */
+.ops-block { display: flex; flex-direction: column; gap: 0.4rem; }
+.ops-block-label {
+  font-size: 0.62rem; font-weight: 750; letter-spacing: 0.09em; text-transform: uppercase; color: var(--text-muted);
+}
+
+.ops-spark { display: flex; align-items: flex-end; gap: 0.22rem; height: 2.1rem; }
+.ops-spark-bar {
+  flex: 1 1 0; min-width: 0.25rem; height: 100%;
+  border-radius: 2px; transform-origin: bottom;
+  background: color-mix(in srgb, var(--text-muted) 30%, transparent);
+}
+.ops-spark-bar--success { background: color-mix(in srgb, var(--success) 75%, transparent); }
+.ops-spark-bar--failure { background: color-mix(in srgb, var(--danger) 80%, transparent); }
+.ops-spark-bar--running { background: color-mix(in srgb, var(--accent-amber) 80%, transparent); }
+.ops-spark-bar--partial { background: color-mix(in srgb, var(--accent-violet) 75%, transparent); }
+.ops-spark-bar--cancelled { background: color-mix(in srgb, var(--text-muted) 45%, transparent); }
+.ops-empty { margin: 0; color: var(--text-muted); font-size: 0.7rem; }
+
+/* ── Get-started journey (empty workspace) ─────────────────────────────────── */
+.getstarted {
+  min-width: 0;
+  padding: clamp(1.1rem, 2.5vw, 1.8rem);
+  border: 1px solid var(--border-soft);
+  border-radius: 1rem;
+  background:
+    radial-gradient(130% 120% at 0% 0%, color-mix(in srgb, var(--brand) 9%, transparent), transparent 52%),
+    radial-gradient(120% 120% at 100% 100%, color-mix(in srgb, var(--accent-violet) 8%, transparent), transparent 50%),
+    var(--bg-elevated);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+.getstarted-intro { max-width: 46rem; }
+.getstarted-intro h2 { margin: 0; font-size: clamp(1.25rem, 2.4vw, 1.7rem); letter-spacing: -0.02em; color: var(--text-primary); }
+.getstarted-lede { margin: 0.5rem 0 0; color: var(--text-secondary); font-size: clamp(0.85rem, 1.3vw, 0.95rem); line-height: 1.5; }
+
+.getstarted-progress { display: flex; align-items: center; gap: 0.7rem; margin-top: 1rem; }
+.getstarted-progress-bar { position: relative; flex: 1; max-width: 22rem; height: 5px; border-radius: 999px; overflow: hidden; background: color-mix(in srgb, var(--text-muted) 22%, transparent); }
+.getstarted-progress-fill { position: absolute; inset: 0; transform-origin: left; border-radius: 999px; background: linear-gradient(90deg, var(--brand), var(--accent-violet)); }
+.getstarted-progress-label { font-family: ui-monospace, monospace; font-size: 0.72rem; font-weight: 700; color: var(--text-muted); white-space: nowrap; }
+
+.getstarted-steps { list-style: none; margin: 1.4rem 0 0; padding: 0; display: flex; flex-direction: column; }
+.getstarted-step {
+  position: relative;
+  display: grid;
+  grid-template-columns: 2.35rem 1fr auto;
+  align-items: start;
+  gap: 0.85rem;
+  padding: 0.75rem 0.75rem 0.9rem;
+  border-radius: 0.7rem;
+  transition: background 0.2s ease;
+}
+/* Connector line between nodes */
+.getstarted-step:not(:last-child)::before {
+  content: "";
+  position: absolute;
+  left: calc(0.75rem + 1.17rem);
+  top: 2.9rem;
+  bottom: -0.15rem;
+  width: 2px;
+  background: color-mix(in srgb, var(--text-muted) 22%, transparent);
+}
+.getstarted-step.is-done:not(:last-child)::before { background: color-mix(in srgb, var(--success) 45%, transparent); }
+.getstarted-step.is-current { background: color-mix(in srgb, var(--brand) 7%, transparent); }
+
+.getstarted-node {
+  display: grid; place-items: center;
+  width: 2.35rem; height: 2.35rem; border-radius: 50%;
+  border: 1.5px solid var(--border);
+  background: color-mix(in srgb, var(--bg-elevated) 85%, transparent);
+  color: var(--text-muted);
+  font-family: ui-monospace, monospace; font-size: 0.9rem; font-weight: 700;
+  position: relative; z-index: 1;
+}
+.getstarted-step.is-done .getstarted-node {
+  border-color: var(--success); color: var(--success);
+  background: color-mix(in srgb, var(--success) 14%, transparent);
+}
+.getstarted-step.is-current .getstarted-node {
+  border-color: var(--brand); color: var(--brand);
+  background: color-mix(in srgb, var(--brand) 15%, transparent);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--brand) 14%, transparent);
+}
+
+.getstarted-copy { display: flex; flex-direction: column; gap: 0.2rem; min-width: 0; padding-top: 0.28rem; }
+.getstarted-copy strong { font-size: 0.9rem; color: var(--text-primary); }
+.getstarted-step:not(.is-current):not(.is-done) .getstarted-copy strong { color: var(--text-secondary); }
+.getstarted-copy small { color: var(--text-muted); font-size: 0.76rem; line-height: 1.45; }
+.getstarted-cta {
+  display: inline-flex; align-items: center; gap: 0.4rem; align-self: flex-start;
+  margin-top: 0.55rem; padding: 0.42rem 0.9rem;
+  border-radius: var(--radius-pill);
+  background: var(--brand-strong); color: #fff;
+  font-size: 0.78rem; font-weight: 700; text-decoration: none;
+  transition: transform 0.16s ease, background 0.16s ease;
+}
+.getstarted-cta span { transition: transform 0.18s ease; }
+.getstarted-cta:hover { background: var(--brand); transform: translateY(-1px); }
+.getstarted-cta:hover span { transform: translateX(3px); }
+.getstarted-cta:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+
+.getstarted-state {
+  align-self: center; font-size: 0.62rem; font-weight: 750; letter-spacing: 0.05em; text-transform: uppercase;
+  color: var(--text-muted);
+}
+.getstarted-step.is-done .getstarted-state { color: var(--success); }
+.getstarted-step.is-current .getstarted-state { color: var(--brand); }
+
+.getstarted-resources { display: flex; flex-direction: column; gap: 0.5rem; margin-top: 1.4rem; padding-top: 1.1rem; border-top: 1px solid var(--border-soft); }
+.getstarted-resource-links { display: flex; flex-wrap: wrap; gap: 0.55rem; }
+.getstarted-resource-links a {
+  display: inline-flex; align-items: center;
+  padding: 0.42rem 0.85rem; border-radius: var(--radius-pill);
+  border: 1px solid var(--border); background: color-mix(in srgb, var(--bg-elevated) 80%, transparent);
+  color: var(--text-secondary); font-size: 0.78rem; font-weight: 600; text-decoration: none;
+  transition: border-color 0.16s ease, color 0.16s ease, transform 0.16s ease;
+}
+.getstarted-resource-links a:hover { border-color: var(--border-brand); color: var(--brand); transform: translateY(-1px); }
+.getstarted-resource-links a:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+
+/* ── Responsive ───────────────────────────────────────────────────────────── */
+@media (max-width: 560px) {
+  .run-card-link { flex-wrap: wrap; }
+  .run-card-side {
+    flex-direction: row; align-items: center; justify-content: space-between;
+    width: 100%; padding-left: 0; padding-top: 0.5rem;
+    border-left: 0; border-top: 1px solid var(--border-soft);
+  }
+  .run-track-cap { font-size: 0.5rem; }
+  .getstarted-step { grid-template-columns: 2.1rem 1fr; }
+  .getstarted-state { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .runs-live-dot,
+  .run-status-live,
+  .run-track-seg--flowing::after,
+  .run-card--skeleton .run-skel { animation: none; }
+  .run-card,
+  .run-card-cta,
+  .run-card-cta svg,
+  .runs-empty,
+  .getstarted-step,
+  .getstarted-cta,
+  .getstarted-cta span,
+  .getstarted-resource-links a { transition: none; }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   Viewport-fit home dashboard — compact header, merged status strip, and a
+   height-locked main grid on tall desktops. Falls back to normal page scroll
+   below the fit breakpoint (short viewports / narrow / mobile).
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Compact welcome header ────────────────────────────────────────────────── */
+.home-header { padding: 0.85rem 0 0.7rem; }
+.home-header-row {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 1rem; flex-wrap: wrap;
+}
+.home-header-id { display: flex; align-items: center; gap: 0.75rem; min-width: 0; }
+.home-header-avatar {
+  width: 40px; height: 40px; flex: 0 0 auto; border-radius: 50%;
+  border: 2px solid var(--border-brand); box-shadow: 0 0 12px var(--brand-glow);
+}
+.home-header-avatar--fallback {
+  display: grid; place-items: center; box-shadow: none;
+  background: var(--brand-light); color: var(--brand);
+  font-size: 1.05rem; font-weight: 700;
+}
+.home-header-copy { display: flex; flex-direction: column; gap: 0.1rem; min-width: 0; }
+.home-header-eyebrow {
+  margin: 0; font-size: 0.63rem; font-weight: 700; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--brand);
+}
+.home-header-title {
+  margin: 0; padding: 0; border: none;
+  font-size: clamp(1.1rem, 1.9vw, 1.5rem); font-weight: 700; letter-spacing: -0.015em;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.home-header-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+.home-header-btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  padding: 0.4rem 1rem; font-size: 0.8rem; min-height: 2.2rem;
+}
+.home-header-msg { margin: 0.55rem 0 0; }
+
+/* ── Main grid + scrollable side panels ────────────────────────────────────── */
+.dashboard-main-grid { display: grid; grid-template-columns: 1fr; gap: 0.85rem; min-width: 0; }
+.dashboard-side-col { display: flex; flex-direction: column; gap: 0.85rem; min-width: 0; }
+
+/* ══ Viewport-fit: only on tall, wide desktops. Otherwise natural scroll. ═══ */
+@media (min-width: 1024px) and (min-height: 720px) {
+  .dashboard-shell--fit { height: 100dvh; padding-bottom: 0; }
+  .dashboard-shell--fit .home-dash-content {
+    flex: 1 1 auto; min-height: 0; overflow: hidden;
+    padding-top: 0.9rem; padding-bottom: 0.9rem;
+  }
+  .dashboard-shell--fit .dashboard-flow {
+    flex: 1 1 auto; min-height: 0;
+    display: flex; flex-direction: column; gap: 0.7rem; padding: 0.55rem 0 0;
+  }
+  .dashboard-shell--fit .dashboard-main-grid {
+    flex: 1 1 auto; min-height: 0;
+    grid-template-columns: minmax(0, 1.6fr) minmax(0, 0.95fr);
+    align-items: stretch; gap: 1rem;
+  }
+  .dashboard-shell--fit .metrics-rail { flex: 0 0 auto; }
+
+  /* Runs hero fills its column: run stack scrolls, outcomes pin at the foot. */
+  .dashboard-shell--fit .runs-hero { display: flex; flex-direction: column; min-height: 0; overflow: hidden; }
+  .dashboard-shell--fit .runs-stream {
+    flex: 1 1 auto; min-height: 0; overflow: auto; scrollbar-width: thin;
+    padding-right: 0.15rem;
+  }
+  .dashboard-shell--fit .runs-outcomes { flex: 0 0 auto; }
+
+  /* Sidebar: team + activity blocks scroll; the quality card stays fixed. */
+  .dashboard-shell--fit .dashboard-side-col {
+    min-height: 0; display: flex; flex-direction: column; gap: 0;
+  }
+  .dashboard-shell--fit .side-rail-block { min-height: 0; }
+  .dashboard-shell--fit .side-rail-block--grow { flex: 1 1 0; }
+
+  /* Empty-state journey also fits, scrolling internally only if very short. */
+  .dashboard-shell--fit .dashboard-flow--empty .getstarted {
+    flex: 1 1 auto; min-height: 0; overflow: auto; scrollbar-width: thin;
+  }
+}
+
+/* ══ /home redesign (2026-07): container-less metrics, runs-hero status, slim rail ══ */
+
+/* Metric strip — one framed row of hairline-divided mono figures. */
+.metrics-rail {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  min-width: 0;
+  border: 1px solid var(--border-soft);
+  border-radius: 0.7rem;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--bg-elevated) 45%, transparent);
+}
+
+.metric-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  min-width: 0;
+  padding: 0.7rem 0.95rem;
+  border-left: 1px solid var(--border-soft);
+  color: var(--text-primary);
+  text-decoration: none;
+}
+
+.metric-cell:first-child { border-left: 0; }
+
+.metric-cell--link { transition: background 0.16s ease; }
+.metric-cell--link:hover { background: color-mix(in srgb, var(--brand) 7%, transparent); }
+.metric-cell--link:hover .metric-cell-num { color: var(--brand); }
+.metric-cell--link:focus-visible { outline: 2px solid var(--brand); outline-offset: -2px; }
+
+.metric-cell-num {
+  font-family: ui-monospace, monospace;
+  font-size: clamp(1.3rem, 2vw, 1.65rem);
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.035em;
+  color: var(--text-primary);
+  transition: color 0.16s ease;
+}
+
+.metric-cell-label {
+  font-size: 0.57rem;
+  font-weight: 700;
+  letter-spacing: 0.085em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Wrap to 3 then 2 columns on narrow screens, keeping the grid hairlines. */
+@media (max-width: 1100px) {
+  .metrics-rail { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .metric-cell:nth-child(3n + 1) { border-left: 0; }
+  .metric-cell:nth-child(n + 4) { border-top: 1px solid var(--border-soft); }
+}
+
+@media (max-width: 560px) {
+  .metrics-rail { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .metric-cell:nth-child(3n + 1) { border-left: 1px solid var(--border-soft); }
+  .metric-cell:nth-child(2n + 1) { border-left: 0; }
+  .metric-cell:nth-child(n + 3) { border-top: 1px solid var(--border-soft); }
+}
+
+/* Runs-hero operational signal line (folded in from the retired scope banner). */
+.runs-hero-status {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem 0.55rem;
+  margin-top: 0.7rem;
+}
+
+.runs-hero-signal {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  color: var(--text-secondary);
+  font-size: 0.74rem;
+  font-weight: 600;
+}
+
+.runs-hero-signal--idle { color: var(--text-muted); }
+
+.runs-hero-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.24rem 0.55rem;
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--bg-elevated) 70%, transparent);
+  color: var(--text-secondary);
+  font-size: 0.72rem;
+  font-weight: 650;
+  text-decoration: none;
+  transition: transform 0.16s ease, border-color 0.16s ease;
+}
+
+.runs-hero-chip:hover { transform: translateY(-1px); }
+.runs-hero-chip--danger { border-color: color-mix(in srgb, var(--danger) 45%, var(--border-soft)); }
+.runs-hero-chip--warning { border-color: color-mix(in srgb, var(--accent-amber) 45%, var(--border-soft)); }
+.runs-hero-chip:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+
+.runs-hero-chip-dot {
+  width: 0.42rem;
+  height: 0.42rem;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: var(--success);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--success) 13%, transparent);
+}
+.runs-hero-chip--danger .runs-hero-chip-dot { background: var(--danger); box-shadow: 0 0 0 3px color-mix(in srgb, var(--danger) 13%, transparent); }
+.runs-hero-chip--warning .runs-hero-chip-dot { background: var(--accent-amber); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-amber) 13%, transparent); }
+.runs-hero-signal--idle .runs-hero-chip-dot { background: var(--text-muted); box-shadow: none; }
+
+/* Slim, container-less delivery + activity rail (replaces two boxed panels). */
+.side-rail-block {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+}
+
+.side-rail-block--divided {
+  margin-top: 0.85rem;
+  padding-top: 0.85rem;
+  border-top: 1px solid var(--border-soft);
+}
+
+.side-rail-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex: 0 0 auto;
+  padding-bottom: 0.5rem;
+}
+
+.side-rail-head .dashboard-section-kicker { margin: 0; }
+.side-rail-head .dashboard-inline-link { min-height: auto; }
+.side-rail-kicker { margin: 0 0 0.55rem; }
+
+.side-rail-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  scrollbar-width: thin;
+  margin: 0 -0.2rem;
+  padding: 0.1rem 0.2rem 0;
+}
+.side-rail-scroll::-webkit-scrollbar { width: 6px; }
+.side-rail-scroll::-webkit-scrollbar-thumb { border-radius: 999px; background: var(--border); }
+
+/* Sidebar block that stretches to fill available height (team, activity). */
+.side-rail-block--grow { flex: 1 1 auto; }
+
+/* ── Team projects list (right sidebar) ────────────────────────────────────── */
+.team-projects-list { display: flex; flex-direction: column; }
+.team-project-row {
+  display: flex; align-items: center; gap: 0.6rem;
+  min-height: 3rem; padding: 0.5rem 0;
+  border-bottom: 1px solid var(--border-soft);
+  color: var(--text-primary); text-decoration: none;
+  transition: padding-left 0.16s ease, color 0.16s ease;
+}
+.team-project-row:last-child { border-bottom: 0; }
+.team-project-row:hover { padding-left: 0.3rem; color: var(--brand); }
+.team-status-dot { width: 0.55rem; height: 0.55rem; flex: 0 0 auto; border-radius: 50%; background: var(--text-muted); }
+.team-status-dot--ok { background: var(--success); box-shadow: 0 0 0 3px color-mix(in srgb, var(--success) 13%, transparent); }
+.team-status-dot--warn { background: var(--accent-amber); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-amber) 13%, transparent); }
+.team-status-dot--danger { background: var(--danger); box-shadow: 0 0 0 3px color-mix(in srgb, var(--danger) 13%, transparent); }
+.team-status-dot--muted { background: var(--text-muted); }
+.team-project-copy { display: flex; flex-direction: column; gap: 0.1rem; min-width: 0; flex: 1; }
+.team-project-copy strong { font-size: 0.8rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.team-project-copy small { color: var(--text-muted); font-size: 0.68rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.team-status-badge {
+  flex: 0 0 auto; padding: 0.16rem 0.45rem; border-radius: var(--radius-pill);
+  font-size: 0.6rem; font-weight: 750; line-height: 1; white-space: nowrap;
+}
+.team-status-badge--ok { color: var(--success); background: color-mix(in srgb, var(--success) 12%, transparent); }
+.team-status-badge--warn { color: var(--accent-amber); background: color-mix(in srgb, var(--accent-amber) 12%, transparent); }
+.team-status-badge--danger { color: var(--danger); background: color-mix(in srgb, var(--danger) 12%, transparent); }
+.team-status-badge--muted { color: var(--text-muted); background: color-mix(in srgb, var(--text-muted) 14%, transparent); }
+
+/* ── Quality stat card (right sidebar) ─────────────────────────────────────── */
+.quality-card {
+  display: flex; flex-direction: column;
+  border: 1px solid var(--border-soft); border-radius: 0.7rem;
+  background: color-mix(in srgb, var(--bg-elevated) 55%, transparent);
+  overflow: hidden;
+}
+.quality-stat {
+  display: flex; align-items: center; justify-content: space-between; gap: 0.75rem;
+  padding: 0.6rem 0.8rem;
+}
+.quality-stat + .quality-stat { border-top: 1px solid var(--border-soft); }
+.quality-stat-label { font-size: 0.62rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-muted); }
+.quality-stat-value {
+  font-family: ui-monospace, monospace; font-size: 0.95rem; font-weight: 750;
+  letter-spacing: -0.01em; color: var(--text-primary); text-transform: capitalize;
+}
+.quality-stat-value--danger { color: var(--danger); }
+
+/* Featured latest-run card — the emphasised hero card at the top of the stream. */
+.run-card--featured {
+  border-color: color-mix(in srgb, var(--brand) 30%, var(--border-soft));
+  background:
+    radial-gradient(130% 170% at 0% 0%, color-mix(in srgb, var(--brand) 9%, transparent), transparent 55%),
+    color-mix(in srgb, var(--bg-elevated) 82%, var(--bg-base) 18%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+.run-card--featured .run-card-accent { width: 4px; }
+.run-card--featured .run-card-link { padding: 0.9rem 1rem 0.9rem 1.2rem; }
+.run-card--featured .run-card-repo { font-size: clamp(0.95rem, 1.7vw, 1.08rem); }
+.run-card--featured .run-track { gap: 0.7rem; }
+.run-card--featured .run-track-dot { width: 0.92rem; height: 0.92rem; }
+.run-card--featured .run-track-seg { min-width: 1.5rem; }
+.run-card--featured .run-status-word { font-size: 0.85rem; }
+
+.run-card-time { font-variant-numeric: tabular-nums; }
+
+/* Reduced motion: kill the runs-hero ambient loops and hover transforms. */
+@media (prefers-reduced-motion: reduce) {
+  .runs-live-dot,
+  .run-status-live,
+  .run-track-seg--flowing::after { animation: none; }
+  .run-card,
+  .run-card-cta,
+  .run-card-cta svg,
+  .runs-empty,
+  .metric-cell--link,
+  .runs-hero-chip,
+  .ops-spark-bar { transition: none; }
+}
+
+/* ══ /inbox redesign (2026-07): full-width, Gmail-style dense list ══════════
+   Was capped at 880px + tall 3-line cards. Now uses the full content width
+   (matching /home's dash-page-content), with one compact row per
+   notification (glyph + title — snippet, one line) instead of a stacked
+   card, and hover/focus-revealed actions to keep the row lean by default. */
+
+.inbox-page {
+  width: 100%;
+  max-width: 1520px;
+  margin: 0 auto;
+}
+
+/* ── Header ───────────────────────────────────────────────────────────────── */
+.inbox-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.inbox-kicker {
+  margin: 0 0 0.25rem;
+  color: var(--brand);
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.inbox-title {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin: 0;
+  color: var(--text-primary);
+  font-size: clamp(1.2rem, 2.5vw, 1.6rem);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.inbox-subtitle {
+  margin: 0.35rem 0 0;
+  color: var(--text-muted);
+  font-size: 0.82rem;
+}
+
+.inbox-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+/* Gmail-style tab filter pills with live counts */
+.inbox-filter-tabs {
+  display: flex;
+  gap: 0.2rem;
+  padding: 0.2rem;
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--bg-elevated) 55%, transparent);
+}
+
+.inbox-filter-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.32rem 0.85rem;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+  font-weight: 650;
+  cursor: pointer;
+  transition: background 0.16s ease, color 0.16s ease;
+}
+
+.inbox-filter-tab:hover { color: var(--text-primary); }
+.inbox-filter-tab:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+
+.inbox-filter-tab--active {
+  background: var(--bg-elevated);
+  color: var(--accent-indigo);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent-indigo) 35%, transparent);
+}
+
+.inbox-filter-tab-count {
+  font-variant-numeric: tabular-nums;
+  color: inherit;
+  font-size: 0.72rem;
+  opacity: 0.75;
+}
+
+.inbox-error-inline { margin: 0; }
+
+/* ── Non-list states (guest / loading / disabled / empty) ────────────────── */
+.inbox-state-copy {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+}
+
+.inbox-state-cta {
+  margin-top: 0.85rem;
+  padding: 0.45rem 1.1rem;
+  font-size: 0.82rem;
+  display: inline-flex;
+}
+
+.inbox-loading-text {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+.inbox-empty {
+  padding: 2.5rem 1.5rem;
+  text-align: center;
+}
+
+.inbox-empty-icon {
+  display: inline-flex;
+  margin-bottom: 0.6rem;
+  color: var(--text-muted);
+}
+
+.inbox-empty-title {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 0.92rem;
+  font-weight: 700;
+}
+
+.inbox-empty-sub {
+  margin: 0.3rem 0 0;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+}
+
+/* ── Dense list ───────────────────────────────────────────────────────────── */
+.inbox-list {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--border-soft);
+  border-radius: 0.85rem;
+  background: color-mix(in srgb, var(--bg-elevated) 32%, transparent);
+}
+
+.inbox-day-label {
+  margin: 0;
+  padding: 0.55rem 1.1rem 0.3rem;
+  border-top: 1px solid var(--border-soft);
+  background: color-mix(in srgb, var(--bg-elevated) 55%, transparent);
+  color: var(--text-muted);
+  font-size: 0.64rem;
+  font-weight: 750;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.inbox-list > .inbox-day-label:first-child { border-top: 0; }
+/* The row right under a day label doesn't need its own duplicate hairline. */
+.inbox-day-label + .inbox-row { border-top: 0; }
+
+.inbox-row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  min-height: 2.65rem;
+  padding: 0.4rem 1.1rem;
+  border-top: 1px solid var(--border-soft);
+  background: transparent;
+  transition: background-color 0.15s ease, transform 0.15s ease;
+}
+
+.inbox-row:hover,
+.inbox-row:focus-within {
+  background: color-mix(in srgb, var(--brand) 6%, transparent);
+  transform: translateX(2px);
+}
+
+.inbox-row--read { opacity: 0.68; }
+
+.inbox-row-text {
+  display: block;
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.inbox-row-title {
+  color: var(--text-primary);
+  font-weight: 700;
+}
+
+.inbox-row--read .inbox-row-title { font-weight: 600; }
+
+.inbox-row-snippet { font-weight: 400; }
+.inbox-row-snippet::before { content: " - "; }
+
+.inbox-row-time {
+  flex: 0 0 auto;
+  color: var(--text-muted);
+  font-size: 0.7rem;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* Mark-read control / read badge — reserved gutter so hover reveal never
+   shifts the row, but invisible by default so the dense row stays lean.
+   Shown on hover AND on keyboard focus (:focus-within), never hover-only. */
+.inbox-row-action {
+  flex: 0 0 auto;
+  min-width: 4.6rem;
+  padding: 0.22rem 0.55rem;
+  font-size: 0.68rem;
+  text-align: center;
+  opacity: 0;
+  transition: opacity 0.14s ease;
+}
+
+.inbox-row:hover .inbox-row-action,
+.inbox-row:focus-within .inbox-row-action {
+  opacity: 1;
+}
+
+.inbox-row-action:focus-visible {
+  opacity: 1;
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
+@media (max-width: 720px) {
+  .inbox-row-text { white-space: normal; }
+  .inbox-row-action { min-width: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .inbox-filter-tab,
+  .inbox-row,
+  .inbox-row-action { transition: none; }
+  .inbox-row:hover,
+  .inbox-row:focus-within { transform: none; }
 }

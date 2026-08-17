@@ -33,8 +33,52 @@ import { HelpTip } from "./help-tip";
  */
 const EXISTING_REPO_MODE_ENABLED = false;
 
+const WIZARD_STEPS = [
+  { label: "Blueprint", detail: "Shape and stack" },
+  { label: "Repository", detail: "Name and service" },
+  { label: "Automation", detail: "Workflow and checks" },
+  { label: "Delivery", detail: "Deployment options" },
+  { label: "Review", detail: "Confirm and create" },
+] as const;
+
+function RepositoryCreationProgress({
+  activeStep,
+  furthestStep,
+  ready,
+  onSelect,
+}: {
+  activeStep: number;
+  furthestStep: number;
+  ready: readonly boolean[];
+  onSelect: (step: number) => void;
+}) {
+  return (
+    <nav className="repo-wizard-progress" aria-label="Repository creation progress">
+      {WIZARD_STEPS.map((step, index) => {
+        const active = index === activeStep;
+        const complete = index < activeStep || (index < furthestStep && ready[index]);
+        const available = index <= furthestStep;
+        return (
+          <button
+            key={step.label}
+            type="button"
+            className={`repo-wizard-progress__step${active ? " is-active" : ""}${complete ? " is-complete" : ""}`}
+            aria-current={active ? "step" : undefined}
+            disabled={!available}
+            onClick={() => onSelect(index)}
+          >
+            <span className="repo-wizard-progress__number" aria-hidden="true">{complete ? "✓" : index + 1}</span>
+            <span className="repo-wizard-progress__copy"><strong>{step.label}</strong><small>{step.detail}</small></span>
+          </button>
+        );
+      })}
+    </nav>
+  );
+}
+
 interface WorkflowSetupTabProps {
   createResult: CreateProjectResult | null;
+  creationScope: "individual" | "group";
   deploymentOwnershipMode: EnvOwnershipMode;
   deploymentProvisioning: DeploymentProvisioningFormState;
   envProvisioningEnabled: boolean;
@@ -117,6 +161,7 @@ function defaultProjectName(
 export function WorkflowSetupTab({
   createResult,
   deploymentOwnershipMode,
+  creationScope,
   deploymentProvisioning,
   envProvisioningEnabled,
   existingRepoBaseBranch,
@@ -141,6 +186,8 @@ export function WorkflowSetupTab({
   reducedMotion,
 }: Readonly<WorkflowSetupTabProps>) {
   const [usageItems, setUsageItems] = useState<UsageLimitItem[]>([]);
+  const [activeWizardStep, setActiveWizardStep] = useState(0);
+  const [furthestWizardStep, setFurthestWizardStep] = useState(0);
   const isExistingMode = setupMode === "existing";
   const projectQuota = useMemo(
     () => usageItems.find((item) => item.code === "projects") ?? null,
@@ -181,13 +228,62 @@ export function WorkflowSetupTab({
     !existingRepoFullName.trim() ||
     !projectCatalog.selectedProjectType;
 
+  // Setup-flow attachments are restricted to the enforced org going forward
+  // (product decision) — already-attached external repos stay untouched
+  // elsewhere, but must not be offered again here. Falls back to the full
+  // linked-repos list only while enforcedOrg hasn't loaded yet, so the
+  // picker isn't wrongly emptied during the catalog fetch.
+  const enforcedOrgLower = projectCatalog.enforcedOrg?.toLowerCase() ?? "";
+  const enforcedOrgLinkedRepos = enforcedOrgLower
+    ? github.linkedRepos.filter(
+        (repo) => repo.repoFullName.split("/")[0]?.toLowerCase() === enforcedOrgLower,
+      )
+    : github.linkedRepos;
+
   const noLinkedRepos =
     isExistingMode &&
     github.linkedReposLoaded &&
     !github.loadingLinkedRepos &&
-    github.linkedRepos.length === 0;
+    enforcedOrgLinkedRepos.length === 0;
 
   const selectedProjectKind = inferSingleProjectKind(projectCatalog);
+
+  const wizardStepReady = [
+    Boolean(
+      projectCatalog.selectedRepoShapeId &&
+        (projectCatalog.isMicroservicesShape || projectCatalog.isMultiRepoShape
+          ? form.backendProjectTypeId && form.frontendProjectTypeId
+          : projectCatalog.selectedProjectType),
+    ),
+    Boolean(
+      form.repoName.trim() &&
+        (projectCatalog.isMicroservicesShape || projectCatalog.isMultiRepoShape
+          ? true
+          : form.serviceName.trim()),
+    ),
+    Boolean(form.outputFileName.trim() && form.nodeVersion),
+    !deploymentProvisioning.renderVariablesMissing,
+    !createDisabled,
+  ];
+  const finalCreateDisabled = createDisabled || !wizardStepReady.slice(0, 4).every(Boolean);
+
+  function goToWizardStep(step: number) {
+    const prerequisitesReady = wizardStepReady.slice(0, step).every(Boolean);
+    if (step <= furthestWizardStep && prerequisitesReady) {
+      setActiveWizardStep(step);
+    }
+  }
+
+  function goToNextWizardStep() {
+    if (!wizardStepReady[activeWizardStep]) return;
+    const nextStep = Math.min(WIZARD_STEPS.length - 1, activeWizardStep + 1);
+    setFurthestWizardStep((current) => Math.max(current, nextStep));
+    setActiveWizardStep(nextStep);
+  }
+
+  function goToPreviousWizardStep() {
+    setActiveWizardStep((current) => Math.max(0, current - 1));
+  }
 
   function handleDeploymentProvisioningEnabledChange(enabled: boolean) {
     if (!enabled) {
@@ -258,7 +354,7 @@ export function WorkflowSetupTab({
 
         {/* Title + project type badge */}
         <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "1.25rem", flexWrap: "wrap" }}>
-          <h2 style={{ margin: 0, fontSize: "1.25rem" }}>
+          <h2 style={{ margin: 0, fontSize: "1.5rem" }}>
             {isExistingMode ? "Add CI/CD to Existing Repo" : "Create Project"}
           </h2>
           {!projectCatalog.isMicroservicesShape && !projectCatalog.isMultiRepoShape ? (
@@ -288,12 +384,30 @@ export function WorkflowSetupTab({
             </>
           )}
         </div>
+        {!isExistingMode ? (
+          <div className={`repo-creation-scope repo-creation-scope--${creationScope}`} role="status">
+            <span className="repo-creation-scope__dot" aria-hidden="true" />
+            <span><strong>{creationScope === "individual" ? "Individual repository" : "Group repository"}</strong>{" "}
+              {creationScope === "individual" ? "Only you own and manage this repository. It will not be added to a group." : "This repository belongs to the selected group."}
+            </span>
+          </div>
+        ) : null}
+
 
         {projectCatalog.loadingProjectOptions ? (
           <p style={{ color: "var(--text-muted)", fontSize: "0.84rem", margin: "0 0 1rem" }}>
             Loading project catalog…
           </p>
         ) : null}
+        {!isExistingMode ? (
+          <RepositoryCreationProgress
+            activeStep={activeWizardStep}
+            furthestStep={furthestWizardStep}
+            ready={wizardStepReady}
+            onSelect={goToWizardStep}
+          />
+        ) : null}
+
 
         {/* Mode toggle — hidden while existing-repo onboarding is disabled.
             Flip EXISTING_REPO_MODE_ENABLED to true to restore the segmented
@@ -356,7 +470,7 @@ export function WorkflowSetupTab({
                     <option value="">
                       {github.loadingLinkedRepos ? "Loading linked repos..." : "Choose a repository"}
                     </option>
-                    {github.linkedRepos.map((repo) => (
+                    {enforcedOrgLinkedRepos.map((repo) => (
                       <option key={`${repo.installationId}-${repo.repoFullName}`} value={repo.repoFullName}>
                         {repo.repoFullName}
                       </option>
@@ -429,6 +543,15 @@ export function WorkflowSetupTab({
               style={{ overflow: "hidden" }}
               transition={{ duration: 0.28, ease: [0.25, 0.46, 0.45, 0.94] }}
             >
+              <AnimatePresence mode="wait" initial={false}>
+                <motion.div
+                  key={`repository-wizard-step-${activeWizardStep}`}
+                  className="repo-wizard-step"
+                  initial={reducedMotion ? false : { opacity: 0, y: 14, filter: "blur(4px)" }}
+                  animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+                  exit={reducedMotion ? undefined : { opacity: 0, y: -10, filter: "blur(3px)" }}
+                >
+                  {activeWizardStep === 0 ? (<>
               {/* Repository shape */}
               <fieldset data-tour="repo-shape" style={{ border: "none", margin: "0 0 1.5rem", padding: 0, minInlineSize: "auto" }}>
                 <legend className="input-label" style={{ ...labelAccentStyle, padding: 0 }}>
@@ -467,7 +590,7 @@ export function WorkflowSetupTab({
                           style={{ position: "absolute", opacity: 0, inset: 0, margin: 0, cursor: "inherit" }}
                         />
                         <span style={{ display: "flex", alignItems: "center", gap: "0.4rem", flexWrap: "wrap" }}>
-                          <strong style={{ color: "var(--text-primary)", fontSize: "0.82rem" }}>{shape.label}</strong>
+                          <strong style={{ color: "var(--text-primary)", fontSize: "0.94rem" }}>{shape.label}</strong>
                           {shape.id === "standalone" ? (
                             <span style={{
                               fontSize: "0.58rem",
@@ -678,8 +801,10 @@ export function WorkflowSetupTab({
                   </>
                 )}
               </div>
+                  </>) : null}
 
-              <p style={{ color: "var(--text-muted)", fontSize: "0.72rem", margin: "1.5rem 0 0" }}>
+
+                  {activeWizardStep === 1 ? (<><p style={{ color: "var(--text-muted)", fontSize: "0.72rem", margin: "1.5rem 0 0" }}>
                 Source: <strong style={{ color: "var(--text-secondary)" }}>cicd-workflow</strong>
               </p>
 
@@ -707,7 +832,14 @@ export function WorkflowSetupTab({
                     onChange={(event) => form.setRepoName(event.target.value)}
                     placeholder="my-next-app"
                     className="premium-input"
+                    aria-describedby="repo-name-hint"
                   />
+                  <p
+                    id="repo-name-hint"
+                    style={{ color: "var(--text-muted)", fontSize: "0.75rem", margin: "0.4rem 0 0", lineHeight: 1.5 }}
+                  >
+                    Lowercase letters, numbers, and <code>-</code> <code>_</code> <code>.</code> — spaces become hyphens.
+                  </p>
                 </div>
                 <div>
                   <label className="input-label" htmlFor="repo-visibility" style={labelAccentStyle}>
@@ -757,6 +889,10 @@ export function WorkflowSetupTab({
               ) : null}
 
               {/* Workflow file name */}
+                  </>) : null}
+
+                  {activeWizardStep === 2 ? (<>
+
               <div style={{ marginTop: "1.5rem" }}>
                 <label className="input-label" htmlFor="output-file-name" style={labelAccentStyle}>
                   Workflow file name
@@ -850,6 +986,10 @@ export function WorkflowSetupTab({
                   ))}
                 </div>
               </div>
+                  </>) : null}
+
+                  {activeWizardStep === 3 ? (<>
+
 
               {envProvisioningEnabled ? (
                 <div style={{ marginTop: "1.5rem" }}>
@@ -878,11 +1018,34 @@ export function WorkflowSetupTab({
               ) : null}
 
               {/* Primary CTA */}
+                  </>) : null}
+
+                  {activeWizardStep === 4 ? (
+                    <>
+                      <section className="repo-wizard-review" aria-labelledby="repo-wizard-review-title">
+                        <div className="repo-wizard-review__heading">
+                          <span className="repo-wizard-review__eyebrow">Ready to provision</span>
+                          <h3 id="repo-wizard-review-title">Review your repository</h3>
+                          <p>ALPHACI will create the repository, protected branches, and the selected CI workflow in one operation.</p>
+                        </div>
+                        <dl className="repo-wizard-review__grid">
+                          <div><dt>Repository</dt><dd>{github.allRepositoriesAccount?.accountLogin ?? "ALPHACI"}/{form.repoName || "repository-name"}</dd></div>
+                          <div><dt>Visibility</dt><dd>{form.visibility}</dd></div>
+                          <div><dt>Shape</dt><dd>{projectCatalog.allRepoShapes.find((shape) => shape.id === projectCatalog.selectedRepoShapeId)?.label ?? "Selected shape"}</dd></div>
+                          <div><dt>Workflow</dt><dd>{projectCatalog.selectedWorkflowRecipe?.label ?? "Standard"} · {form.outputFileName || "ci.yml"}</dd></div>
+                          <div><dt>Runtime</dt><dd>Node {form.nodeVersion || "default"} · {form.coverageThreshold}% coverage</dd></div>
+                          <div><dt>Delivery</dt><dd>{deploymentProvisioning.enabled ? "Deployment setup included" : "CI workflow only"}</dd></div>
+                        </dl>
+                        <div className="repo-wizard-review__checks">
+                          {projectCatalog.supportedTestOptions.filter((option) => option.checked).map((option) => <span key={option.key}>{projectOptionLabels[option.key]}</span>)}
+                        </div>
+                      </section>
+
               <button
                 type="button"
                 className="primary-button create-repo-btn-premium"
                 data-testid="setup-project-button"
-                disabled={createDisabled}
+                disabled={finalCreateDisabled}
                 onClick={() => void onCreateProject()}
                 style={{ marginTop: "2rem" }}
               >
@@ -895,13 +1058,23 @@ export function WorkflowSetupTab({
                 )}
                 {isCreatingProject ? "Creating…" : "Create GitHub Repository"}
               </button>
+                    </>
+                  ) : null}
+
+                  <div className="repo-wizard-actions">
+                    {activeWizardStep > 0 ? <button type="button" className="ghost-button" onClick={goToPreviousWizardStep}>Back</button> : <span />}
+                    {activeWizardStep < WIZARD_STEPS.length - 1 ? <button type="button" className="primary-button" disabled={!wizardStepReady[activeWizardStep]} onClick={goToNextWizardStep}>Continue <span aria-hidden="true">→</span></button> : null}
+                  </div>
+                </motion.div>
+              </AnimatePresence>
             </motion.div>
           )}
         </AnimatePresence>
 
-        {/* Generate YAML only — tertiary, always visible */}
-        <div style={{ marginTop: "1rem", display: "flex", alignItems: "center", gap: "0.65rem" }}>
-          <button
+        {/* Generate YAML only belongs to the automation step. */}
+        {!isExistingMode && activeWizardStep === 2 ? (
+          <div style={{ marginTop: "1rem", display: "flex", alignItems: "center", gap: "0.65rem" }}>
+            <button
             type="button"
             className="generate-yaml-link"
             data-testid="generate-workflow-button"
@@ -917,6 +1090,8 @@ export function WorkflowSetupTab({
           </button>
           <span className="generate-workflow-hint">No repo — just the workflow file</span>
         </div>
+
+        ) : null}
 
         {/* Inline result — appears below the form after creation */}
         {(createResult ?? existingRepoResult) ? (

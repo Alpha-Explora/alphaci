@@ -6,16 +6,23 @@ import { useCallback, useEffect, useState } from "react";
 
 import { useAdminContext } from "@/components/admin/admin-gate";
 import {
+  ApiError,
   getAdminUser,
-  grantPlatformRole,
-  revokePlatformRole,
+  setUserAppRole,
+  APP_ROLE_LABELS,
   type AdminUserDetail,
+  type AppRole,
 } from "@/lib/api/client";
+
+const ROLE_ORDER: AppRole[] = ["admin", "lead", "member"];
 
 export default function AdminUserDetailPage() {
   const params = useParams<{ id: string }>();
   const id = params.id;
-  const { isSuperAdmin, currentUserId } = useAdminContext();
+  // Admins reach this page (AdminGate enforces it). Changing the ADMIN tier
+  // (promote to Admin / demote an Admin) is the super-admin's power; a regular
+  // Admin may only shuffle Lead/Member — mirrors the BE setAppRole guard.
+  const { currentUserId, isSuperAdmin } = useAdminContext();
 
   const [detail, setDetail] = useState<AdminUserDetail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -39,27 +46,15 @@ export default function AdminUserDetailPage() {
     void load();
   }, [load]);
 
-  async function handleGrant() {
+  async function handleSetRole(next: AppRole) {
     setRoleBusy(true);
     setRoleMessage(null);
     try {
-      await grantPlatformRole(id, "admin");
-      setRoleMessage("Granted platform admin.");
-    } catch {
-      setRoleMessage("Failed to grant role.");
-    } finally {
-      setRoleBusy(false);
-    }
-  }
-
-  async function handleRevoke() {
-    setRoleBusy(true);
-    setRoleMessage(null);
-    try {
-      await revokePlatformRole(id);
-      setRoleMessage("Revoked platform role.");
-    } catch {
-      setRoleMessage("Failed to revoke role (user may not be an admin, or is the last super-admin).");
+      await setUserAppRole(id, next);
+      await load();
+      setRoleMessage(`Role set to ${APP_ROLE_LABELS[next]}.`);
+    } catch (cause) {
+      setRoleMessage(`Failed to update role: ${describeRoleError(cause)}`);
     } finally {
       setRoleBusy(false);
     }
@@ -97,18 +92,45 @@ export default function AdminUserDetailPage() {
         </div>
       </header>
 
-      {isSuperAdmin && detail.id !== currentUserId && (
-        <div className="glass-panel" style={{ padding: "1rem 1.25rem", borderRadius: "0.75rem", display: "flex", alignItems: "center", gap: "1rem", flexWrap: "wrap" }}>
-          <span style={{ fontWeight: 600, fontSize: "0.9rem" }}>Platform role</span>
-          <button type="button" className="primary-button" disabled={roleBusy} onClick={() => void handleGrant()} style={{ padding: "0.4rem 1rem", fontSize: "0.8rem" }}>
-            Grant admin
-          </button>
-          <button type="button" className="ghost-button" disabled={roleBusy} onClick={() => void handleRevoke()} style={{ padding: "0.4rem 1rem", fontSize: "0.8rem" }}>
-            Revoke
-          </button>
+      <div className="glass-panel" style={{ padding: "1rem 1.25rem", borderRadius: "0.75rem", display: "flex", alignItems: "center", gap: "1rem", flexWrap: "wrap" }}>
+          <span style={{ fontWeight: 600, fontSize: "0.9rem" }}>Role</span>
+          <select
+            aria-label="Global role"
+            value={detail.appRole}
+            disabled={
+              roleBusy ||
+              detail.id === currentUserId ||
+              // Only the super-admin can touch the Admin tier — for everyone
+              // else the control is read-only when the target is already an
+              // Admin (can't demote) since Lead/Member changes are the only
+              // ones they're allowed and those don't apply to an Admin.
+              (!isSuperAdmin && detail.appRole === "admin")
+            }
+            onChange={(event) => void handleSetRole(event.target.value as AppRole)}
+            style={{ padding: "0.4rem 0.75rem", fontSize: "0.85rem", borderRadius: "0.5rem", minWidth: "9rem" }}
+          >
+            {ROLE_ORDER.map((r) => (
+              <option
+                key={r}
+                value={r}
+                // A regular Admin cannot promote anyone to Admin.
+                disabled={r === "admin" && !isSuperAdmin && detail.appRole !== "admin"}
+              >
+                {APP_ROLE_LABELS[r]}
+              </option>
+            ))}
+          </select>
+          <span style={{ fontSize: "0.78rem", color: "var(--text-muted)" }}>
+            Admin = full access · Lead = create/manage groups & invite · Member = assigned repos only
+          </span>
+          {detail.id === currentUserId && (
+            <span style={{ fontSize: "0.8rem", color: "var(--text-secondary)" }}>You can&apos;t change your own role.</span>
+          )}
+          {!isSuperAdmin && detail.id !== currentUserId && (
+            <span style={{ fontSize: "0.8rem", color: "var(--text-muted)" }}>Only the super-admin can change Admin-level roles.</span>
+          )}
           {roleMessage && <span style={{ fontSize: "0.8rem", color: "var(--text-secondary)" }}>{roleMessage}</span>}
         </div>
-      )}
 
       <div style={{ display: "grid", gap: "1.5rem", gridTemplateColumns: "repeat(auto-fit, minmax(18rem, 1fr))" }}>
         <Panel title={`Recent errors (${detail.recentErrors.length})`}>
@@ -193,4 +215,22 @@ const rowStyle: React.CSSProperties = {
 
 function fmt(iso: string): string {
   return new Intl.DateTimeFormat("en-PH", { dateStyle: "short", timeStyle: "short" }).format(new Date(iso));
+}
+
+/**
+ * Turns a failed role-update into a message the admin can act on. NestJS returns
+ * `{ statusCode, message, error }`; a 403 means the actor lacks platform-admin
+ * rights, a 400 is a business-rule rejection (e.g. self-lockout) whose `message`
+ * is worth showing verbatim. Anything else falls back to the HTTP status.
+ */
+function describeRoleError(cause: unknown): string {
+  if (cause instanceof ApiError) {
+    if (cause.status === 403) return "you need platform-admin access.";
+    const detail = cause.details as { message?: string | string[] } | undefined;
+    const message = Array.isArray(detail?.message)
+      ? detail?.message.join(", ")
+      : detail?.message;
+    return message ?? `request failed (${cause.status}).`;
+  }
+  return "unexpected error. Please try again.";
 }

@@ -35,7 +35,7 @@ function renderComponent() {
   };
 }
 
-function renderComponentWithRole(workspaceRole: "owner" | "admin" | "developer" | "viewer") {
+function renderComponentWithRole(workspaceRole: "admin" | "delegated_lead" | "member" | "viewer") {
   const container = document.createElement("div");
   document.body.appendChild(container);
   const root = createRoot(container);
@@ -289,7 +289,7 @@ describe("DeploymentProvidersSection", () => {
     const rendered = renderComponentWithRole("viewer");
     root = rendered.root;
 
-    expect(rendered.container.textContent).toContain("Provider management requires owner or admin access.");
+    expect(rendered.container.textContent).toContain("Provider management requires lead or delegated lead access.");
     expect(rendered.container.querySelector<HTMLInputElement>('input[placeholder="Label"]')?.disabled).toBe(true);
     expect(rendered.container.querySelector<HTMLInputElement>('input[placeholder="Provider token"]')?.disabled).toBe(true);
 

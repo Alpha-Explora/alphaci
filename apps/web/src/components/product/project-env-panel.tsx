@@ -650,6 +650,13 @@ export function ProjectEnvPanel({
               <button
                 className="ghost-button"
                 type="button"
+                onClick={() => setIsBulkEnvDialogOpen(true)}
+              >
+                Paste a .env file
+              </button>
+              <button
+                className="ghost-button"
+                type="button"
                 onClick={() =>
                   setRows((current) => [...current, { key: "", value: "" }])
                 }
@@ -756,16 +763,6 @@ export function ProjectEnvPanel({
               onClick={() => setIsAddingVariable(true)}
             >
               Add variable
-            </button>
-            <button
-              className="ghost-button"
-              type="button"
-              onClick={() => {
-                setIsAddingVariable(true);
-                setIsBulkEnvDialogOpen(true);
-              }}
-            >
-              Paste a .env file
             </button>
           </div>
         </div>

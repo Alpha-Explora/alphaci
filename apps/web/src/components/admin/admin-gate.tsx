@@ -39,13 +39,22 @@ export function AdminGate({ children }: { children: React.ReactNode }) {
     );
   }
 
-  if (status !== "signed-in" || !session?.authenticated || !session.platformRole) {
+  // Admin Console access is the GLOBAL admin tier: app_role 'admin', or the
+  // permanent super-admin. Leads and members are excluded even if they hold a
+  // legacy platform-admin row. Mirrors the BE PlatformAdminGuard.
+  const isSuperAdmin = session?.platformRole === "super_admin";
+  const canAccessAdmin =
+    status === "signed-in" &&
+    Boolean(session?.authenticated) &&
+    (isSuperAdmin || session?.appRole === "admin");
+
+  if (!canAccessAdmin) {
     return (
       <main className="dash-shell" style={{ minHeight: "60vh", display: "grid", placeItems: "center" }}>
         <div className="glass-panel" style={{ textAlign: "center", padding: "3rem 2rem", maxWidth: "26rem" }}>
           <h1 style={{ fontSize: "1.25rem", marginBottom: "0.75rem" }}>Admin access required</h1>
           <p style={{ color: "var(--text-secondary)", marginBottom: "1.5rem", fontSize: "0.9rem" }}>
-            This area is restricted to platform administrators.
+            This area is restricted to administrators.
           </p>
           <Link className="primary-button" href="/home" style={{ padding: "0.6rem 1.4rem" }}>
             Back to dashboard
@@ -55,13 +64,11 @@ export function AdminGate({ children }: { children: React.ReactNode }) {
     );
   }
 
-  const platformRole = session.platformRole;
-
   return (
     <AdminContext.Provider
       value={{
-        role: platformRole,
-        isSuperAdmin: platformRole === "super_admin",
+        role: session.platformRole ?? "admin",
+        isSuperAdmin,
         currentUserId: session.user.id,
       }}
     >

@@ -14,7 +14,8 @@ import {
   updateWorkspaceMemberRole,
 } from "@/lib/api/workspaces";
 
-const ROLE_OPTIONS: WorkspaceRole[] = ["owner", "admin", "developer", "viewer"];
+// "admin" = top membership tier (label "Lead"); unrelated to platform-admin.
+const ROLE_OPTIONS: WorkspaceRole[] = ["admin", "delegated_lead", "member", "viewer"];
 
 export function WorkspaceMembersSection({
   workspace,
@@ -27,11 +28,11 @@ export function WorkspaceMembersSection({
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [loginOrEmail, setLoginOrEmail] = useState("");
-  const [role, setRole] = useState<WorkspaceRole>("developer");
+  const [role, setRole] = useState<WorkspaceRole>("member");
   const [message, setMessage] = useState<string | null>(null);
-  const canManage = workspace.role === "owner" || workspace.role === "admin";
-  const ownerCount = useMemo(
-    () => members.filter((member) => member.role === "owner").length,
+  const canManage = workspace.role === "admin" || workspace.role === "delegated_lead";
+  const leadCount = useMemo(
+    () => members.filter((member) => member.role === "admin").length,
     [members],
   );
 
@@ -114,7 +115,7 @@ export function WorkspaceMembersSection({
     <div className="workspace-members">
       <div className="workspace-members-list">
         {members.map((member) => {
-          const isLastOwner = member.role === "owner" && ownerCount <= 1;
+          const isLastLead = member.role === "admin" && leadCount <= 1;
           return (
             <div key={member.id} className="hover-field workspace-member-row">
               <div className="workspace-member-identity">
@@ -126,7 +127,7 @@ export function WorkspaceMembersSection({
               <select
                 aria-label={`Role for ${member.login}`}
                 value={member.role}
-                disabled={!canManage || saving || isLastOwner}
+                disabled={!canManage || saving || isLastLead}
                 onChange={(event) =>
                   void handleRoleChange(member, event.target.value as WorkspaceRole)
                 }
@@ -141,7 +142,7 @@ export function WorkspaceMembersSection({
               <button
                 type="button"
                 className="workspace-member-btn workspace-member-btn--neutral"
-                disabled={!canManage || saving || isLastOwner || member.userId === currentUserId}
+                disabled={!canManage || saving || isLastLead || member.userId === currentUserId}
                 onClick={() => void handleRemove(member)}
               >
                 Remove

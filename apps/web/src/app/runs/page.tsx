@@ -106,7 +106,7 @@ function ProjectGroupSection({
 }>) {
   const latestStatus = group.latestRun.overallStatus;
   const bodyId = `project-runs-${group.repoFullName.replaceAll(/[^a-zA-Z0-9-]/g, "-")}`;
-  const runCountLabel = `${group.runs.length} ${group.runs.length === 1 ? "run" : "runs"}`;
+  const runCountLabel = `${group.runs.length} ${group.runs.length === 1 ? "commit" : "commits"}`;
   const metaText = `Latest ${STATUS_LABELS[latestStatus].toLowerCase()} · ${relativeTime(group.latestRun.startedAt)} · ${runCountLabel}`;
 
   return (
@@ -219,7 +219,7 @@ function RunsSummaryStrip({
   return (
     <section className="runs-summary-strip" aria-label="Pipeline run summary">
       <div className="runs-summary-card runs-summary-card--primary">
-        <span>Total runs</span>
+        <span>Tracked commits</span>
         <strong>{summary.total}</strong>
         <p>{repoFullName ? "Filtered repository" : "Across all repositories"}</p>
       </div>
@@ -371,11 +371,12 @@ function RunsContent({
 
   const groupedRuns = useMemo(() => groupRunsByProject(runs), [runs]);
 
-  // All project groups start closed; the user's own toggles afterward win.
+  // Keep every repository visible, but start its commit list closed. This
+  // preserves a quiet first view without hiding any connected project.
   useEffect(() => {
     if (!hasInitializedCollapse.current && groupedRuns.length > 0) {
       hasInitializedCollapse.current = true;
-      setCollapsedRepos(new Set(groupedRuns.map((g) => g.repoFullName)));
+      setCollapsedRepos(new Set(groupedRuns.map((group) => group.repoFullName)));
     }
   }, [groupedRuns]);
 
@@ -507,13 +508,13 @@ function RunsContent({
             <p className="workflow-page-breadcrumb">
               <span style={{ opacity: 0.55 }}>ALPHACI</span>
               <span className="workflow-page-breadcrumb-sep">/</span>
-              <span>Pipeline Runs</span>
+              <span>Workflows</span>
             </p>
             <div className="workflow-page-title-row">
               <h1 className="workflow-page-title">
                 {repoFullName
-                  ? `Runs for ${visibleRepoName}`
-                  : "All Pipeline Runs"}
+                  ? `Commits for ${visibleRepoName}`
+                  : "All Workflow Commits"}
               </h1>
               <div className="workflow-page-studio-badge">
                 <span className="workflow-studio-led" aria-hidden="true" />
@@ -636,13 +637,13 @@ function RunsContent({
                   <RunsSummaryStrip runs={runs} repoFullName={repoFullName} />
                   <div className="runs-list-toolbar">
                     <div>
-                      <span>Run history</span>
+                      <span>Commit history</span>
                       <strong>
                         {repoFullName ?? "All connected repositories"}
                       </strong>
                     </div>
                     <p>
-                      {runs.length} {runs.length === 1 ? "run" : "runs"} in{" "}
+                      {runs.length} {runs.length === 1 ? "commit" : "commits"} in{" "}
                       {groupedRuns.length}{" "}
                       {groupedRuns.length === 1 ? "project" : "projects"}
                     </p>
