@@ -57,6 +57,16 @@ import { formatDate } from "./workflow-builder-utils";
  */
 interface ProjectDetailTabsProps {
   project: ProvisionedProject;
+  /**
+   * The delete flow, rendered at the foot of Settings.
+   *
+   * Passed IN rather than built here because deleting navigates away, and the
+   * router push, the confirmation state and the "also delete the GitHub repo"
+   * choice all belong to the page that owns the route. This component decides
+   * only WHERE it appears — which is Settings, with the rest of the
+   * configuration, and nowhere else.
+   */
+  dangerZone?: React.ReactNode;
 }
 
 type ProjectDetailTab =
@@ -968,6 +978,7 @@ function DriftFindingsPanel({
 
 export function ProjectDetailTabs({
   project,
+  dangerZone,
 }: Readonly<ProjectDetailTabsProps>) {
   const [projectDetailTab, setProjectDetailTab] =
     useState<ProjectDetailTab>("overview");
@@ -2246,6 +2257,15 @@ export function ProjectDetailTabs({
                       <dd>{selectedProject.repoShape ?? "Not configured"}</dd>
                     </div>
                   </dl>
+                ) : null}
+
+                {/* The danger zone lives HERE and only here. It used to sit
+                    below the whole tab set, which meant "Delete Project" was on
+                    screen no matter which tab you were reading — including
+                    while browsing code. Destructive actions belong with
+                    configuration, not on every surface. */}
+                {projectDetailTab === "settings" && dangerZone ? (
+                  <div style={{ marginTop: "1.25rem" }}>{dangerZone}</div>
                 ) : null}
                 </motion.div>
                 </div>
