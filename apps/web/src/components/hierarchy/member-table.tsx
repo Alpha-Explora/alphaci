@@ -24,6 +24,7 @@ export function MemberTable({
   currentUserId,
   onMembersChange,
   addAction,
+  showHeader = true,
 }: {
   groupId: string;
   members: GroupMember[];
@@ -31,6 +32,16 @@ export function MemberTable({
   currentUserId: string;
   onMembersChange: (updater: (current: GroupMember[]) => GroupMember[]) => void;
   addAction?: React.ReactNode;
+  /**
+   * Whether to draw the "Members (n)" heading.
+   *
+   * False inside the team workspace, where the section rail has already named
+   * the section and the panel owns the heading — two headings reading
+   * "Members" one above the other is the page telling you the same thing
+   * twice. The standalone /groups/:id/members page has no such heading of its
+   * own, so it keeps this.
+   */
+  showHeader?: boolean;
 }) {
   const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -68,11 +79,13 @@ export function MemberTable({
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
       <section aria-label="Members">
-        <SectionHeader
-          title="Members"
-          count={activeMembers.length}
-          actions={addAction}
-        />
+        {showHeader ? (
+          <SectionHeader
+            title="Members"
+            count={activeMembers.length}
+            actions={addAction}
+          />
+        ) : null}
         <div className="hier-panel">
           {activeMembers.map((member) => {
             const isLastLead = member.role === "admin" && leadCount <= 1;

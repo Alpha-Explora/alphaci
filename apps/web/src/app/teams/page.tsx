@@ -221,20 +221,11 @@ function TeamsPageContent() {
               projects={teamProjects}
               onDeleted={load}
               // Creating a repository belongs to the Projects surface, which
-              // owns the setup form; this page hands off rather than embedding
-              // it a second time.
-              renderCreateProject={() => (
-                <div className="env-empty-state">
-                  <strong>Create a repository for this team</strong>
-                  <p>
-                    Repositories are created from the Projects surface, which
-                    owns the full setup form.
-                  </p>
-                  <Link className="primary-button" href="/workflows?tab=setup">
-                    Go to Create Project
-                  </Link>
-                </div>
-              )}
+              // owns the setup form. Linking straight there — pre-scoped to
+              // this team — replaces an intermediate screen whose only content
+              // was a button pointing at the same place.
+              createHref={`/workflows?tab=setup&group=${encodeURIComponent(team.id)}`}
+              renderCreateProject={() => null}
             />
           </div>
         ) : (

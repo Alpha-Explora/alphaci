@@ -19993,3 +19993,142 @@ html:not([data-theme="light"]) .dash-shell :is(
   border-color: rgba(63, 185, 80, 0.35);
   background: rgba(63, 185, 80, 0.06);
 }
+
+/* ── Team workspace panel ───────────────────────────────────────────────────
+   One header row per section — name, count, and the single action that belongs
+   to it — then the section's content. Replaces a layout where the panel drew a
+   heading and the component inside drew its own.
+   ------------------------------------------------------------------------- */
+.group-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.1rem;
+}
+
+.group-section-head .group-section-title {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin: 0;
+}
+
+.group-section-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.5rem;
+  height: 1.5rem;
+  padding: 0 0.45rem;
+  border-radius: 999px;
+  background: var(--surface-raised);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+/* The section action sits beside a heading, so it is sized to the heading —
+   not to a page-level call to action. The default .primary-button is built for
+   a hero and dwarfed everything around it here. */
+.group-section-action {
+  padding: 0.45rem 0.9rem;
+  min-height: 2.15rem;
+  font-size: 0.82rem;
+  border-radius: 0.55rem;
+  white-space: nowrap;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+}
+
+/* ── Repository rows ── */
+.team-repo-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.team-repo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  padding: 0.7rem 0.9rem;
+  border: 1px solid var(--border-subtle);
+  border-radius: 0.7rem;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.team-repo:hover {
+  background: var(--surface-hover);
+  border-color: var(--border-soft, var(--border-subtle));
+}
+
+/* The row's main target. Stretched over the free space so the whole line is
+   clickable, not just the words in it. */
+.team-repo__main {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  flex: 1;
+  min-width: 12rem;
+  text-decoration: none;
+  color: inherit;
+}
+
+.team-repo__main:focus-visible {
+  outline: 2px solid var(--accent-primary);
+  outline-offset: 3px;
+  border-radius: 0.35rem;
+}
+
+.team-repo__name {
+  font-weight: 600;
+  font-size: 0.88rem;
+  color: var(--text-primary);
+  overflow-wrap: anywhere;
+}
+
+.team-repo__main:hover .team-repo__name {
+  color: var(--accent-primary);
+}
+
+.team-repo__service {
+  font-size: 0.76rem;
+  color: var(--text-muted);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+.team-repo__meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.team-repo__link {
+  padding: 0.3rem 0.65rem;
+  font-size: 0.75rem;
+  min-height: 1.9rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+@media (max-width: 640px) {
+  .team-repo {
+    align-items: flex-start;
+  }
+
+  .team-repo__meta {
+    width: 100%;
+    justify-content: flex-start;
+  }
+}

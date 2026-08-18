@@ -42,6 +42,15 @@ interface GroupWorkspacePanelProps {
   group: GroupSummary;
   projects: ProvisionedProject[];
   renderCreateProject: (onComplete: () => void) => React.ReactNode;
+  /**
+   * Where "Create repository" should go instead of opening the in-panel form.
+   *
+   * The teams page has no setup form of its own — its `renderCreateProject`
+   * was a stub whose only content was a button pointing at the Projects
+   * surface, so the section existed purely to be clicked through. Given a href
+   * the header links straight there and that empty screen never renders.
+   */
+  createHref?: string;
   /** Called after this group is deleted so the parent can drop it from the list. */
   onDeleted?: (groupId: string) => void;
 }
@@ -78,9 +87,17 @@ function Overview({
   );
 }
 
-function Members({ group }: { group: GroupSummary }) {
+function Members({
+  group,
+  addOpen,
+  onCloseAdd,
+}: {
+  group: GroupSummary;
+  /** Owned by the panel, because the button that opens it lives in the header. */
+  addOpen: boolean;
+  onCloseAdd: () => void;
+}) {
   const { session } = useAuthSession();
-  const [addOpen, setAddOpen] = useState(false);
   const canManage = isGroupManagerRole(group.role);
   const membersResource = useApiResource<GroupMember[]>(() => getGroupMembers(group.id), [group.id]);
 
@@ -95,13 +112,14 @@ function Members({ group }: { group: GroupSummary }) {
         canManage={canManage}
         currentUserId={session?.user.id ?? ""}
         onMembersChange={(updater) => membersResource.setData((current) => updater(current ?? []))}
-        addAction={canManage ? <button type="button" className="primary-button" onClick={() => setAddOpen(true)}>Add member</button> : undefined}
+        // The panel's header row already says "Members" and carries the button.
+        showHeader={false}
       />
       {canManage ? (
         <AddMemberDialog
           open={addOpen}
           groupId={group.id}
-          onClose={() => setAddOpen(false)}
+          onClose={onCloseAdd}
           // The new member is active immediately, so it goes straight into the
           // roster — there is no pending list for it to sit in first.
           onAdded={(member) => membersResource.setData((current) => [member, ...(current ?? [])])}
@@ -111,30 +129,56 @@ function Members({ group }: { group: GroupSummary }) {
   );
 }
 
-function Projects({ projects, canCreate, onCreate }: { projects: ProvisionedProject[]; canCreate: boolean; onCreate: () => void }) {
-  return (
-    <>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "0.75rem", marginBottom: "1rem" }}>
-        <p className="project-list-empty" style={{ margin: 0 }}>{projects.length} {projects.length === 1 ? "project" : "projects"}</p>
-        {canCreate ? <button type="button" className="primary-button" onClick={onCreate}>Create project</button> : null}
+function Projects({ projects, canCreate }: { projects: ProvisionedProject[]; canCreate: boolean }) {
+  if (projects.length === 0) {
+    return (
+      <div className="env-empty-state">
+        No repositories yet.{" "}
+        {canCreate
+          ? "Create one and ALPHACI will provision it on GitHub."
+          : "You do not have access to any repositories in this team yet."}
       </div>
-      {projects.length === 0 ? (
-        <div className="env-empty-state">No projects yet. {canCreate ? "Create a project to provision its GitHub repository." : "You do not have access to any projects in this group yet."}</div>
-      ) : (
-        <div className="env-metadata-list">
-          {projects.map((project) => (
-            <div key={project.id} className="env-metadata-row provisioned" style={{ alignItems: "center", gap: "0.75rem" }}>
-              <span style={{ minWidth: 0 }}><strong style={{ wordBreak: "break-all" }}>{project.repoFullName}</strong><br /><span style={{ color: "var(--text-muted)", fontSize: "0.78rem" }}>{project.serviceName}</span></span>
-              <span style={{ display: "flex", gap: "0.5rem", alignItems: "center", flexWrap: "wrap", justifyContent: "flex-end" }}>
-                <span className={`project-status-badge ${statusVariant(project.status)}`}>{project.status}</span>
-                {project.repoUrl ? <a className="ghost-button target-action-btn" href={project.repoUrl} target="_blank" rel="noreferrer">Repo <span aria-hidden="true">↗</span></a> : null}
-                <Link className="ghost-button target-action-btn" href={`/projects/${encodeURIComponent(project.id)}`}>Open full page <span aria-hidden="true">↗</span></Link>
-              </span>
-            </div>
-          ))}
-        </div>
-      )}
-    </>
+    );
+  }
+
+  return (
+    <ul className="team-repo-list">
+      {projects.map((project) => (
+        <li key={project.id} className="team-repo">
+          {/*
+            THE WHOLE ROW is the link. It used to be a plain div with an "Open
+            full page" button on the end, which made the obvious target — the
+            repository's own name — dead, and spent a button on what the row
+            already implied. The GitHub link stays a separate control because
+            it goes somewhere else entirely.
+          */}
+          <Link
+            className="team-repo__main"
+            href={`/projects/${encodeURIComponent(project.id)}`}
+          >
+            <span className="team-repo__name">{project.repoFullName}</span>
+            <span className="team-repo__service">{project.serviceName}</span>
+          </Link>
+          <span className="team-repo__meta">
+            <span className={`project-status-badge ${statusVariant(project.status)}`}>
+              {project.status}
+            </span>
+            {project.repoUrl ? (
+              <a
+                className="ghost-button team-repo__link"
+                href={project.repoUrl}
+                target="_blank"
+                rel="noreferrer"
+                // The row is a link; without this the outer navigation wins.
+                onClick={(event) => event.stopPropagation()}
+              >
+                GitHub <span aria-hidden="true">↗</span>
+              </a>
+            ) : null}
+          </span>
+        </li>
+      ))}
+    </ul>
   );
 }
 
@@ -245,7 +289,10 @@ function DeleteGroupControl({
   );
 }
 
-export function GroupWorkspacePanel({ group, projects, renderCreateProject, onDeleted }: Readonly<GroupWorkspacePanelProps>) {
+export function GroupWorkspacePanel({ group, projects, renderCreateProject, createHref, onDeleted }: Readonly<GroupWorkspacePanelProps>) {
+  // Declared with the other hooks: the create section returns early below,
+  // and a hook after that point would not run on every render.
+  const [addMemberOpen, setAddMemberOpen] = useState(false);
   const { session } = useAuthSession();
   const [section, setSection] = useState<GroupSection>("overview");
   const canCreate = isGlobalCreatorRole(session?.appRole);
@@ -315,12 +362,58 @@ export function GroupWorkspacePanel({ group, projects, renderCreateProject, onDe
         aria-labelledby={`group-tab-${current}`}
         tabIndex={0}
       >
-        <h3 className="group-section-title">{titles[current]}</h3>
+        {/*
+          ONE header for the section: its name, how many of the thing it holds,
+          and the single action that belongs to it. Each section used to draw
+          this heading and then the component inside drew its own, so the panel
+          read "Members / Members 2" — the same word twice, one line apart.
+        */}
+        <div className="group-section-head">
+          <h3 className="group-section-title">
+            {titles[current]}
+            {current === "members" ? (
+              <span className="group-section-count">{group.memberCount}</span>
+            ) : null}
+            {current === "projects" ? (
+              <span className="group-section-count">{projects.length}</span>
+            ) : null}
+          </h3>
+          {current === "members" && canManage ? (
+            <button
+              type="button"
+              className="primary-button group-section-action"
+              onClick={() => setAddMemberOpen(true)}
+            >
+              Add member
+            </button>
+          ) : null}
+          {current === "projects" && canCreate ? (
+            createHref ? (
+              <Link className="primary-button group-section-action" href={createHref}>
+                Create repository
+              </Link>
+            ) : (
+              <button
+                type="button"
+                className="primary-button group-section-action"
+                onClick={() => setSection("create")}
+              >
+                Create repository
+              </button>
+            )
+          ) : null}
+        </div>
 
         {current === "overview" ? <Overview group={group} projects={projects} /> : null}
-        {current === "members" ? <Members group={group} /> : null}
+        {current === "members" ? (
+          <Members
+            group={group}
+            addOpen={addMemberOpen}
+            onCloseAdd={() => setAddMemberOpen(false)}
+          />
+        ) : null}
         {current === "projects" ? (
-          <Projects projects={projects} canCreate={canCreate} onCreate={() => setSection("create")} />
+          <Projects projects={projects} canCreate={canCreate} />
         ) : null}
         {current === "activity" ? <Activity group={group} /> : null}
         {current === "settings" && canManage ? (
