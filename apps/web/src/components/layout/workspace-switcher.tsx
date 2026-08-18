@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+
 import type { WorkspacesMeResponse } from "@/lib/api/contracts";
 import { useWorkspaceSelection } from "./workspace-context";
 
@@ -14,27 +16,19 @@ function roleAwareWorkspaceLabel(workspace: {
   return "Team member";
 }
 
-/** Chevron affordance so the multi-team <select> reads as "click to switch"
- *  rather than plain text with default OS select chrome. */
-function WorkspaceSwitcherChevron() {
-  return (
-    <svg
-      className="workspace-switcher-chevron"
-      width="10"
-      height="10"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2.5"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <polyline points="6 9 12 15 18 9" />
-    </svg>
-  );
-}
-
+/**
+ * The team picker, in the header.
+ *
+ * Groups ARE workspaces (`orgs.workspaces` with `kind='team'`), so switching
+ * workspace IS switching team — this is the only control that changes what the
+ * rest of the app is scoped to.
+ *
+ * It renders as a <select> even with a single entry. Falling back to plain text
+ * there was worse than it sounds: a lead with one team saw a label, learned the
+ * app had no team switcher, and never looked again after joining a second.
+ * A control that appears only once you already have the problem is a control
+ * nobody discovers.
+ */
 export function WorkspaceSwitcher({
   workspaces,
 }: Readonly<{
@@ -49,43 +43,35 @@ export function WorkspaceSwitcher({
     items[0] ??
     null;
 
-  if (workspaces?.enabled === false) {
+  if (workspaces?.enabled === false || items.length === 0) {
     return null;
   }
 
-  if (items.length > 1) {
-    return (
-      <label className="workspace-switcher workspace-switcher--multi">
-        <span className="workspace-switcher-label">Workspace</span>
-        <span className="workspace-switcher-count" aria-hidden="true">
-          {items.length} teams
-        </span>
-        <span className="workspace-switcher-select-wrap">
-          <select
-            aria-label="Current workspace"
-            value={current?.id ?? ""}
-            onChange={(event) => setSelectedWorkspaceId(event.target.value || null)}
-            className="workspace-switcher-select"
-          >
-            {items.map((workspace) => (
-              <option key={workspace.id} value={workspace.id}>
-                {workspace.name} — {roleAwareWorkspaceLabel(workspace)}
-              </option>
-            ))}
-          </select>
-          <WorkspaceSwitcherChevron />
-        </span>
-      </label>
-    );
-  }
-
   return (
-    <div className="workspace-switcher" aria-label="Current workspace">
-      <span className="workspace-switcher-label">Workspace</span>
-      <span className="workspace-switcher-name">{current?.name ?? "Workspace"}</span>
-      <span className="workspace-switcher-role">
-        {current ? roleAwareWorkspaceLabel(current) : "Loading workspace"}
+    <div className="team-switcher">
+      <label className="team-switcher-field">
+        <span className="sr-only">Active team</span>
+        <select
+          aria-label="Active team"
+          value={current?.id ?? ""}
+          onChange={(event) => setSelectedWorkspaceId(event.target.value || null)}
+          className="team-switcher-select"
+        >
+          {items.map((workspace) => (
+            <option key={workspace.id} value={workspace.id}>
+              {workspace.name}
+            </option>
+          ))}
+        </select>
+      </label>
+      <span className="team-switcher-role">
+        {current ? roleAwareWorkspaceLabel(current) : "Loading"}
       </span>
+      {/* The rail no longer has a Teams entry, so this is the only route to
+          team management. Without it /teams would be unreachable. */}
+      <Link href="/teams" className="team-switcher-manage">
+        Manage
+      </Link>
     </div>
   );
 }

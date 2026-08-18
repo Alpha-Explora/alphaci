@@ -15812,9 +15812,9 @@ select option {
    what makes the closed state read as a reveal rather than as truncation. */
 .app-sidebar {
   position: fixed;
-  top: 0;
+  top: 56px;
   left: 0;
-  height: 100dvh;
+  height: calc(100dvh - 56px);
   z-index: 100;
   display: flex;
   flex-direction: column;
@@ -15838,6 +15838,27 @@ select option {
     4px 0 20px rgba(0, 0, 0, 0.3);
 }
 
+.app-header-brand {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  text-decoration: none;
+}
+
+.app-header-brand-image {
+  display: block;
+  height: 30px;
+  width: auto;
+  max-width: 160px;
+  object-fit: contain;
+}
+
+/* The rail is a nav column now, not a branded panel — its brand zone moved
+   into the header, where there is room for the wordmark. */
+.app-sidebar .sidebar-brand-zone {
+  display: none;
+}
+
 /* ── The one header ──────────────────────────────────────────────────────────
    Starts to the RIGHT of the closed rail. The rail keeps its own brand mark and
    sits at a higher z-index, so an expanded rail paints OVER this bar rather
@@ -15849,10 +15870,12 @@ select option {
 .app-header {
   position: fixed;
   top: 0;
-  left: var(--sidebar-width);
+  left: 0;
   right: 0;
   height: 56px;
-  z-index: 90;
+  /* Above the rail: the rail starts BELOW this bar and must never cover it,
+     not even when it expands on hover. */
+  z-index: 110;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -15955,15 +15978,62 @@ select option {
   padding-top: 56px;
 }
 
-/* The switcher moved out of a 220px rail into a 56px bar — it lays out as a
-   row here rather than the stacked label/name/role it used in the rail. */
-.app-header .workspace-switcher {
-  flex-direction: row;
+/* Team switcher — a row in a 56px bar, not the stacked block it was in the
+   rail. */
+.team-switcher {
+  display: flex;
   align-items: center;
   gap: 0.5rem;
-  padding: 0;
-  border: none;
-  background: transparent;
+  min-width: 0;
+}
+
+.team-switcher-field {
+  display: flex;
+  min-width: 0;
+}
+
+.team-switcher-select {
+  max-width: 14rem;
+  padding: 0.3rem 0.55rem;
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+  font-size: 0.84rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  cursor: pointer;
+}
+
+.team-switcher-select:hover {
+  border-color: var(--border-brand);
+}
+
+.team-switcher-role {
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.team-switcher-manage {
+  color: var(--brand);
+  font-size: 0.76rem;
+  font-weight: 700;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.team-switcher-manage:hover {
+  text-decoration: underline;
+}
+
+@media (max-width: 900px) {
+  .team-switcher-role {
+    display: none;
+  }
 }
 
 /* :has(:focus-visible), NOT :focus-within. A click FOCUSES the link, and
@@ -16031,7 +16101,7 @@ select option {
 .sidebar-nav-dot {
   position: absolute;
   top: 6px;
-  left: 30px;
+  left: 38px;
   width: 7px;
   height: 7px;
   border-radius: 50%;
@@ -16069,18 +16139,15 @@ select option {
   padding-left: 0;
 }
 
+/* The icon box spans the rail MINUS .sidebar-nav's 0.5rem side padding, so the
+   glyph centres on the rail's midline (32px) rather than 8px off it — and sits
+   on the same x whether the rail is 64px or 240px, so opening reveals labels
+   instead of sliding every icon sideways. */
 .app-sidebar .sidebar-nav-item-icon {
   display: grid;
   place-items: center;
-  width: 64px;
+  width: calc(var(--sidebar-width) - 1rem);
   flex-shrink: 0;
-}
-
-/* The wordmark is left-aligned and clipped: its circular mark lands in the
-   icon column while closed, and the full logotype is revealed with the rail —
-   so no separate mark asset is needed. */
-.app-sidebar .sidebar-brand-image {
-  object-position: left center;
 }
 
 /* Hover is a pointer affordance and a touch device has none, so below the

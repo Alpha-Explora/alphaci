@@ -24,7 +24,10 @@ describe("WorkspaceSwitcher", () => {
     window.localStorage.clear();
   });
 
-  it("renders a static personal workspace when only one workspace is available", () => {
+  // Deliberately a <select> even with ONE entry. Falling back to plain text
+  // meant a lead with a single team learned the app had no switcher and never
+  // looked again after joining a second.
+  it("still renders a switcher when only one workspace is available", () => {
     const container = document.createElement("div");
     document.body.appendChild(container);
     root = createRoot(container);
@@ -38,7 +41,23 @@ describe("WorkspaceSwitcher", () => {
     });
 
     expect(container.textContent).toContain("Personal workspace");
-    expect(container.textContent).toContain("personal / admin");
+    expect(container.textContent).toContain("Personal owner");
+    expect(container.querySelector("select")).not.toBeNull();
+  });
+
+  it("renders nothing when workspaces are disabled", () => {
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    root = createRoot(container);
+
+    act(() => {
+      root!.render(
+        <WorkspaceProvider>
+          <WorkspaceSwitcher workspaces={{ enabled: false, items: [] }} />
+        </WorkspaceProvider>,
+      );
+    });
+
     expect(container.querySelector("select")).toBeNull();
   });
 
@@ -55,7 +74,7 @@ describe("WorkspaceSwitcher", () => {
       );
     });
 
-    const select = container.querySelector<HTMLSelectElement>('select[aria-label="Current workspace"]')!;
+    const select = container.querySelector<HTMLSelectElement>('select[aria-label="Active team"]')!;
     act(() => {
       const descriptor = Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, "value");
       descriptor?.set?.call(select, "workspace-2");

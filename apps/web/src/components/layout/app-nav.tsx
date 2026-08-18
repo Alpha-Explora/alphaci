@@ -88,27 +88,6 @@ function RunsIcon({ size = 16 }: { size?: number }) {
   );
 }
 
-function TeamsIcon({ size = 16 }: { size?: number }) {
-  return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-      <circle cx="9" cy="7" r="4" />
-      <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-      <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-    </svg>
-  );
-}
-
 function InboxIcon({ size = 16 }: { size?: number }) {
   return (
     <svg
@@ -379,6 +358,23 @@ export function AppNav({
           rail paints over this bar rather than beside it. */}
       <header className="app-header">
         <div className="app-header-left">
+          <Link
+            href="/home"
+            className="app-header-brand"
+            aria-label="ALPHACI — home"
+          >
+            <Image
+              src="/brand-logo.png"
+              alt="ALPHACI"
+              width={138}
+              height={46}
+              unoptimized
+              priority
+              className="app-header-brand-image"
+            />
+          </Link>
+          {/* Teams live here rather than in the rail: picking one changes what
+              the rest of the app is scoped to, which is a header job. */}
           {!guest && <WorkspaceSwitcher workspaces={workspaces} />}
         </div>
 
@@ -444,32 +440,6 @@ export function AppNav({
       >
         <div className="sidebar-edge-gradient" aria-hidden="true" />
 
-        {/* ── Brand zone ────────────────────────────────────────── */}
-        <div className="sidebar-brand-zone">
-          <Link
-            href="/home"
-            className="sidebar-brand-link"
-            aria-label="ALPHACI — home"
-          >
-            <Image
-              src="/brand-logo.png"
-              alt="ALPHACI"
-              width={138}
-              height={46}
-              unoptimized
-              priority
-              className="sidebar-brand-image"
-              style={{
-                display: "block",
-                height: 46,
-                width: "auto",
-                maxWidth: "100%",
-                objectFit: "contain",
-              }}
-            />
-          </Link>
-        </div>
-
         {/* ── Primary nav ───────────────────────────────────────── */}
         <nav className="sidebar-nav" aria-label="Primary">
           <SidebarSectionLabel text="Main" />
@@ -498,19 +468,6 @@ export function AppNav({
             reduced={reduced}
             onNavigate={() => setHoverSuppressed(true)}
           />
-          {/* Teams owns groups + membership; Projects owns repositories. The
-              same groups remain reachable from the Projects tab's rail toggle,
-              but that is three levels deep — this is the findable entry. */}
-          {!guest && (
-            <SidebarNavItem
-              href="/teams"
-              label="Teams"
-              icon={TeamsIcon}
-              isActive={pathname === "/teams" || pathname.startsWith("/groups")}
-              reduced={reduced}
-              onNavigate={() => setHoverSuppressed(true)}
-            />
-          )}
           {!guest && (
             <SidebarNavItem
               href="/inbox"
