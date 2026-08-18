@@ -25,8 +25,18 @@ import { ActivityFeed, ActivityFilters } from "@/components/hierarchy/activity-f
 import { FormDialog } from "@/components/hierarchy/primitives";
 import { AddMemberDialog } from "@/components/hierarchy/add-member-dialog";
 import { MemberTable } from "@/components/hierarchy/member-table";
+import {
+  SideTabs,
+  type SideTabGroup,
+} from "@/components/hierarchy/side-tabs";
 
-type GroupSection = "overview" | "projects" | "create";
+type GroupSection =
+  | "overview"
+  | "members"
+  | "projects"
+  | "activity"
+  | "settings"
+  | "create";
 
 interface GroupWorkspacePanelProps {
   group: GroupSummary;
@@ -42,53 +52,28 @@ function statusVariant(status: string): string {
   return "failed";
 }
 
-function SectionTabs({ section, onChange }: { section: GroupSection; onChange: (section: GroupSection) => void }) {
-  const tabs: { id: Exclude<GroupSection, "create">; label: string }[] = [
-    { id: "overview", label: "Overview" },
-    { id: "projects", label: "Projects" },
-  ];
-
-  return (
-    <div className="hier-subnav" role="tablist" aria-label="Selected group sections">
-      {tabs.map((tab) => (
-        <button
-          key={tab.id}
-          type="button"
-          className={`hier-subnav-link${section === tab.id ? " active" : ""}`}
-          role="tab"
-          aria-selected={section === tab.id}
-          aria-current={section === tab.id ? "page" : undefined}
-          onClick={() => onChange(tab.id)}
-        >
-          {tab.label}
-        </button>
-      ))}
-    </div>
-  );
-}
-
-function Overview({ group, projects }: { group: GroupSummary; projects: ProvisionedProject[] }) {
+function Overview({
+  group,
+  projects,
+}: {
+  group: GroupSummary;
+  projects: ProvisionedProject[];
+}) {
   return (
     <>
-      <div className="hier-stat-row" style={{ margin: "0.5rem 0 1.1rem" }}>
+      <div className="hier-stat-row" style={{ margin: "0 0 1.1rem" }}>
         <div className="hier-stat"><span className="hier-stat-num">{group.memberCount}</span><span className="hier-stat-label">Members</span></div>
-        <div className="hier-stat"><span className="hier-stat-num">{projects.length}</span><span className="hier-stat-label">Projects</span></div>
+        <div className="hier-stat"><span className="hier-stat-num">{projects.length}</span><span className="hier-stat-label">Repositories</span></div>
         <div className="hier-stat"><span className="hier-stat-num" style={{ textTransform: "capitalize", fontSize: "1.1rem" }}>{group.status}</span><span className="hier-stat-label">Status</span></div>
       </div>
-      <div className="group-overview-content">
-        <section className="group-overview-section">
-          <div className="group-overview-section__header">
-            <div><h3>Members</h3><p>Add or remove people without leaving the overview. Anyone you add is a member immediately.</p></div>
-          </div>
-          <Members group={group} />
-        </section>
-        <section className="group-overview-section">
-          <div className="group-overview-section__header">
-            <div><h3>Activity & audit</h3><p>Review membership changes, access updates, and GitHub synchronization results.</p></div>
-          </div>
-          <Activity group={group} />
-        </section>
-      </div>
+      {group.description ? (
+        <p className="group-section-lede">{group.description}</p>
+      ) : (
+        <p className="group-section-lede">
+          This team owns its own members and repositories. Use the sections on
+          the left to manage them.
+        </p>
+      )}
     </>
   );
 }
@@ -270,28 +255,91 @@ export function GroupWorkspacePanel({ group, projects, renderCreateProject, onDe
     return (
       <>
         <div className="project-detail-header">
-          <div><h3>Create project in {group.name}</h3><p>The repository will be owned by this group.</p></div>
-          <button type="button" className="ghost-button" onClick={() => setSection("projects")}>Back to projects</button>
+          <div><h3>Create repository in {group.name}</h3><p>The repository will be owned by this team.</p></div>
+          <button type="button" className="ghost-button" onClick={() => setSection("projects")}>Back to repositories</button>
         </div>
         {renderCreateProject(() => setSection("projects"))}
       </>
     );
   }
 
+  // Headings rather than a flat list: they turn five entries into a map of what
+  // a team HAS, and that reading survives the list growing.
+  const groups: SideTabGroup<Exclude<GroupSection, "create">>[] = [
+    { heading: "Team", items: [{ id: "overview", label: "Overview" }] },
+    {
+      heading: "People",
+      items: [{ id: "members", label: "Members", badge: group.memberCount }],
+    },
+    {
+      heading: "Work",
+      items: [
+        { id: "projects", label: "Repositories", badge: projects.length },
+      ],
+    },
+    { heading: "Records", items: [{ id: "activity", label: "Activity & audit" }] },
+    ...(canManage
+      ? [
+          {
+            heading: "Configuration",
+            items: [{ id: "settings" as const, label: "Settings" }],
+          },
+        ]
+      : []),
+  ];
+
+  const titles: Record<Exclude<GroupSection, "create">, string> = {
+    overview: "Overview",
+    members: "Members",
+    projects: "Repositories",
+    activity: "Activity & audit",
+    settings: "Settings",
+  };
+
+  const current = section;
+
   return (
-    <>
-      <div className="group-workspace-toolbar">
-        <SectionTabs section={section} onChange={setSection} />
-        {canManage ? (
-          <DeleteGroupControl
-            group={group}
-            projectCount={projects.length}
-            onDeleted={onDeleted}
-          />
+    <div className="group-workspace">
+      <SideTabs
+        groups={groups}
+        value={current}
+        onChange={setSection}
+        label="Team sections"
+        idPrefix="group"
+      />
+
+      <div
+        className="group-workspace-panel"
+        role="tabpanel"
+        id={`group-panel-${current}`}
+        aria-labelledby={`group-tab-${current}`}
+        tabIndex={0}
+      >
+        <h3 className="group-section-title">{titles[current]}</h3>
+
+        {current === "overview" ? <Overview group={group} projects={projects} /> : null}
+        {current === "members" ? <Members group={group} /> : null}
+        {current === "projects" ? (
+          <Projects projects={projects} canCreate={canCreate} onCreate={() => setSection("create")} />
+        ) : null}
+        {current === "activity" ? <Activity group={group} /> : null}
+        {current === "settings" && canManage ? (
+          <div className="group-danger-zone">
+            <div>
+              <strong>Delete this team</strong>
+              <p>
+                Removes the team and its membership. Its repositories stay on
+                GitHub and move to your individual repositories.
+              </p>
+            </div>
+            <DeleteGroupControl
+              group={group}
+              projectCount={projects.length}
+              onDeleted={onDeleted}
+            />
+          </div>
         ) : null}
       </div>
-      {section === "overview" ? <Overview group={group} projects={projects} /> : null}
-      {section === "projects" ? <Projects projects={projects} canCreate={canCreate} onCreate={() => setSection("create")} /> : null}
-    </>
+    </div>
   );
 }
