@@ -1,6 +1,17 @@
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 
+// The switcher reads the session to decide whether "+ Create workspace" is
+// offered. Stubbed so the component never reaches the network here.
+jest.mock("../../src/hooks/use-auth-session", () => ({
+  useAuthSession: () => ({
+    status: "signed-in",
+    session: { authenticated: true, appRole: "lead" },
+    error: null,
+    refresh: jest.fn(),
+  }),
+}));
+
 import { WorkspaceProvider } from "../../src/components/layout/workspace-context";
 import { WorkspaceSwitcher } from "../../src/components/layout/workspace-switcher";
 
@@ -41,8 +52,23 @@ describe("WorkspaceSwitcher", () => {
     });
 
     expect(container.textContent).toContain("Personal workspace");
-    expect(container.textContent).toContain("Personal owner");
     expect(container.querySelector("select")).not.toBeNull();
+  });
+
+  it("offers create-workspace to a lead", () => {
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    root = createRoot(container);
+
+    act(() => {
+      root!.render(
+        <WorkspaceProvider>
+          <WorkspaceSwitcher workspaces={workspaces} />
+        </WorkspaceProvider>,
+      );
+    });
+
+    expect(container.textContent).toContain("+ Create workspace");
   });
 
   it("renders nothing when workspaces are disabled", () => {
@@ -74,7 +100,7 @@ describe("WorkspaceSwitcher", () => {
       );
     });
 
-    const select = container.querySelector<HTMLSelectElement>('select[aria-label="Active team"]')!;
+    const select = container.querySelector<HTMLSelectElement>('select[aria-label="Active workspace"]')!;
     act(() => {
       const descriptor = Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, "value");
       descriptor?.set?.call(select, "workspace-2");

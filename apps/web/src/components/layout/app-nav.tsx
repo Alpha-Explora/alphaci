@@ -3,7 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 
 import type { useAuthSession } from "@/hooks/use-auth-session";
@@ -84,6 +84,27 @@ function RunsIcon({ size = 16 }: { size?: number }) {
       <circle cx="12" cy="12" r="3" />
       <path d="M12 3v3M12 18v3M3 12h3M18 12h3" />
       <path d="M5.64 5.64l2.12 2.12M16.24 16.24l2.12 2.12M5.64 18.36l2.12-2.12M16.24 7.76l2.12-2.12" />
+    </svg>
+  );
+}
+
+function TeamsIcon({ size = 16 }: { size?: number }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+      <circle cx="9" cy="7" r="4" />
+      <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+      <path d="M16 3.13a4 4 0 0 1 0 7.75" />
     </svg>
   );
 }
@@ -303,6 +324,15 @@ export function AppNav({
   // out on an older cached session that predates appRole.
   const appRole: AppRole = session?.appRole ?? "member";
 
+  const loadWorkspaces = useCallback(() => {
+    void getMyWorkspaces()
+      .then((response) => {
+        setWorkspacesState(response);
+        setWorkspaces(response);
+      })
+      .catch(() => undefined);
+  }, [setWorkspaces]);
+
   useEffect(() => {
     if (guest) return;
     let active = true;
@@ -375,7 +405,12 @@ export function AppNav({
           </Link>
           {/* Teams live here rather than in the rail: picking one changes what
               the rest of the app is scoped to, which is a header job. */}
-          {!guest && <WorkspaceSwitcher workspaces={workspaces} />}
+          {!guest && (
+            <WorkspaceSwitcher
+              workspaces={workspaces}
+              onWorkspaceCreated={loadWorkspaces}
+            />
+          )}
         </div>
 
         <div className="app-header-right">
@@ -468,6 +503,18 @@ export function AppNav({
             reduced={reduced}
             onNavigate={() => setHoverSuppressed(true)}
           />
+          {/* The header picks the WORKSPACE; this lists the teams inside it.
+              Selection is a header job, browsing is a nav job. */}
+          {!guest && (
+            <SidebarNavItem
+              href="/teams"
+              label="Teams"
+              icon={TeamsIcon}
+              isActive={pathname === "/teams" || pathname.startsWith("/groups")}
+              reduced={reduced}
+              onNavigate={() => setHoverSuppressed(true)}
+            />
+          )}
           {!guest && (
             <SidebarNavItem
               href="/inbox"
