@@ -369,6 +369,73 @@ export function AppNav({
 
           pointerleave rather than mouseleave: it also fires for pen and touch,
           so a tablet cannot strand the rail in the suppressed state. */}
+      {/* ── The one header ──────────────────────────────────────────────────
+          Everything that must stay readable regardless of the rail's state:
+          the workspace switcher (the one control up here that CHANGES state,
+          so it cannot live behind a hover), identity, and sign-out.
+
+          It starts to the right of the closed rail rather than spanning the
+          full width, so the rail keeps its own brand mark and the expanded
+          rail paints over this bar rather than beside it. */}
+      <header className="app-header">
+        <div className="app-header-left">
+          {!guest && <WorkspaceSwitcher workspaces={workspaces} />}
+        </div>
+
+        <div className="app-header-right">
+          {guest ? (
+            <>
+              <Link className="ghost-button app-header-btn" href="/login">
+                Log in
+              </Link>
+              <Link className="primary-button app-header-btn" href="/signup">
+                Sign up
+              </Link>
+            </>
+          ) : (
+            <>
+              <div className="app-header-identity">
+                <span className="app-header-login">
+                  {session?.user.login ?? "user"}
+                </span>
+                <SidebarRoleBadge appRole={appRole} />
+              </div>
+
+              <span className="app-header-avatar-ring">
+                {session?.user.avatarUrl ? (
+                  <Image
+                    src={session.user.avatarUrl}
+                    alt={session.user.name ?? session.user.login}
+                    width={32}
+                    height={32}
+                    className="app-header-avatar"
+                    unoptimized
+                  />
+                ) : (
+                  <span className="app-header-avatar-fallback" aria-hidden="true">
+                    {avatarInitial}
+                  </span>
+                )}
+              </span>
+
+              <button
+                type="button"
+                onClick={onLogout}
+                disabled={isLoggingOut}
+                className="app-header-signout"
+              >
+                {isLoggingOut ? (
+                  <span className="sidebar-signout-spinner" aria-hidden="true" />
+                ) : (
+                  <SignOutIcon size={14} />
+                )}
+                <span>{isLoggingOut ? "Signing out…" : "Sign out"}</span>
+              </button>
+            </>
+          )}
+        </div>
+      </header>
+
       <aside
         className="app-sidebar"
         data-hover-suppressed={hoverSuppressed ? "true" : "false"}
@@ -405,45 +472,6 @@ export function AppNav({
 
         {/* ── Primary nav ───────────────────────────────────────── */}
         <nav className="sidebar-nav" aria-label="Primary">
-          {!guest && (
-            <div className="sidebar-account-zone">
-              <div
-                className="sidebar-user-chip"
-                aria-label={`Signed in as ${session?.user.login ?? "user"}`}
-              >
-                <span className="sidebar-user-avatar-ring">
-                  {session?.user.avatarUrl ? (
-                    <Image
-                      src={session.user.avatarUrl}
-                      alt={session.user.name ?? session.user.login}
-                      width={36}
-                      height={36}
-                      className="sidebar-user-avatar-img"
-                      unoptimized
-                    />
-                  ) : (
-                    <span
-                      className="sidebar-user-avatar-fallback"
-                      aria-hidden="true"
-                    >
-                      {avatarInitial}
-                    </span>
-                  )}
-                </span>
-
-                <div className="sidebar-user-info">
-                  <span className="sidebar-user-login-row">
-                    <span className="sidebar-user-login">
-                      {session?.user.login ?? "user"}
-                    </span>
-                    <SidebarRoleBadge appRole={appRole} />
-                  </span>
-                  <WorkspaceSwitcher workspaces={workspaces} />
-                </div>
-              </div>
-            </div>
-          )}
-
           <SidebarSectionLabel text="Main" />
 
           <SidebarNavItem
@@ -520,51 +548,6 @@ export function AppNav({
           )}
         </nav>
 
-        {/* ── Bottom zone — user identity + actions ─────────────── */}
-        <div className="sidebar-bottom-zone">
-          {!guest && (
-            <>
-              <button
-                type="button"
-                onClick={onLogout}
-                disabled={isLoggingOut}
-                aria-label={isLoggingOut ? "Signing out…" : "Sign out"}
-                className="sidebar-signout-btn"
-              >
-                {isLoggingOut ? (
-                  <span
-                    className="sidebar-signout-spinner"
-                    aria-hidden="true"
-                  />
-                ) : (
-                  <SignOutIcon size={15} />
-                )}
-                {/* Only the WORD hides. The icon stays on screen at 64px:
-                    a sign-out you have to hover a hidden panel to find is not
-                    a sign-out anybody can find in a hurry. */}
-                <span className="sidebar-signout-label">
-                  {isLoggingOut ? "Signing out…" : "Sign out"}
-                </span>
-              </button>
-            </>
-          )}
-
-          {guest && (
-            <Link
-              className="primary-button"
-              href="/signup"
-              style={{
-                width: "100%",
-                justifyContent: "center",
-                fontSize: "0.82rem",
-                padding: "0.5rem 0.75rem",
-                minHeight: "2.2rem",
-              }}
-            >
-              Sign up
-            </Link>
-          )}
-        </div>
       </aside>
     </>
   );

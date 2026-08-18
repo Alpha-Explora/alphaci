@@ -15838,6 +15838,134 @@ select option {
     4px 0 20px rgba(0, 0, 0, 0.3);
 }
 
+/* ── The one header ──────────────────────────────────────────────────────────
+   Starts to the RIGHT of the closed rail. The rail keeps its own brand mark and
+   sits at a higher z-index, so an expanded rail paints OVER this bar rather
+   than shunting it — which is also why the two never read as two headers.
+
+   It exists so the workspace switcher is always visible: it is the one control
+   in the chrome that changes what the rest of the page is scoped to, and a
+   scope control behind a hover is a scope control nobody finds. */
+.app-header {
+  position: fixed;
+  top: 0;
+  left: var(--sidebar-width);
+  right: 0;
+  height: 56px;
+  z-index: 90;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0 var(--layout-gutter, 1.5rem);
+  background: color-mix(in srgb, var(--bg-panel) 88%, transparent);
+  backdrop-filter: blur(14px) saturate(160%);
+  -webkit-backdrop-filter: blur(14px) saturate(160%);
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.app-header-left,
+.app-header-right {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.app-header-identity {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-width: 0;
+}
+
+.app-header-login {
+  overflow: hidden;
+  color: var(--text-primary);
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.app-header-avatar-ring {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--brand), var(--accent-violet));
+  padding: 1.5px;
+  flex-shrink: 0;
+}
+
+.app-header-avatar,
+.app-header-avatar-fallback {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  display: block;
+}
+
+.app-header-avatar-fallback {
+  display: grid;
+  place-items: center;
+  background: var(--bg-elevated);
+  color: var(--brand);
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.app-header-signout {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.35rem 0.7rem;
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    color 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.app-header-signout:hover:not(:disabled) {
+  color: var(--text-primary);
+  border-color: var(--border-brand);
+}
+
+.app-header-signout:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.app-header-btn {
+  padding: 0.35rem 0.9rem;
+  font-size: 0.8rem;
+  min-height: 2rem;
+}
+
+/* The header is fixed, so every shell reserves its height. */
+.dash-shell {
+  padding-top: 56px;
+}
+
+/* The switcher moved out of a 220px rail into a 56px bar — it lays out as a
+   row here rather than the stacked label/name/role it used in the rail. */
+.app-header .workspace-switcher {
+  flex-direction: row;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0;
+  border: none;
+  background: transparent;
+}
+
 /* :has(:focus-visible), NOT :focus-within. A click FOCUSES the link, and
    :focus-within cannot tell a click from a Tab press — so every click latched
    the rail open on top of the page it had just opened. :focus-visible is the
