@@ -1090,7 +1090,7 @@ describe("Project env provisioning UI", () => {
 
     const runsTab = Array.from(
       rendered.container.querySelectorAll("button"),
-    ).find((button) => button.textContent === "Runs") as HTMLButtonElement;
+    ).find((button) => button.textContent === "Pipeline runs") as HTMLButtonElement;
     await act(async () => {
       runsTab.click();
       await Promise.resolve();
@@ -1151,7 +1151,7 @@ describe("Project env provisioning UI", () => {
 
     const runsTab = Array.from(
       rendered.container.querySelectorAll("button"),
-    ).find((button) => button.textContent === "Runs") as HTMLButtonElement;
+    ).find((button) => button.textContent === "Pipeline runs") as HTMLButtonElement;
     await act(async () => {
       runsTab.click();
       await Promise.resolve();
@@ -1203,7 +1203,7 @@ describe("Project env provisioning UI", () => {
 
     const runsTab = Array.from(
       rendered.container.querySelectorAll("button"),
-    ).find((button) => button.textContent === "Runs") as HTMLButtonElement;
+    ).find((button) => button.textContent === "Pipeline runs") as HTMLButtonElement;
     await act(async () => {
       runsTab.click();
       await Promise.resolve();
@@ -2136,7 +2136,7 @@ describe("Project env provisioning UI", () => {
 
     await act(async () => {
       Array.from(rendered.container.querySelectorAll("button"))
-        .find((button) => button.textContent === "Runs")!
+        .find((button) => button.textContent === "Pipeline runs")!
         .click();
       await Promise.resolve();
     });

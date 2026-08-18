@@ -40,6 +40,10 @@ import type {
   ProvisionedProject,
   WorkflowFileMetadata,
 } from "@/lib/api/contracts";
+import { SideTabs, type SideTabGroup } from "@/components/hierarchy/side-tabs";
+import { CodeTab } from "./workspace/code-tab";
+import { PipelineRunsTab } from "./workspace/pipeline-runs-tab";
+import { PullRequestsTab } from "./workspace/pull-requests-tab";
 import { ProjectEnvPanel } from "./project-env-panel";
 import { HelpTip } from "./help-tip";
 
@@ -57,21 +61,55 @@ interface ProjectDetailTabsProps {
 
 type ProjectDetailTab =
   | "overview"
-  | "workflow"
+  | "code"
+  | "pulls"
   | "runs"
+  | "workflow"
   | "hosting"
   | "environment"
   | "audit"
   | "settings";
 
-const PROJECT_DETAIL_TABS: Array<{ id: ProjectDetailTab; label: string }> = [
-  { id: "overview", label: "Overview" },
-  { id: "workflow", label: "Workflow" },
-  { id: "runs", label: "Runs" },
-  { id: "hosting", label: "Hosting" },
-  { id: "environment", label: "Environment" },
-  { id: "audit", label: "Audit" },
-  { id: "settings", label: "Settings" },
+/**
+ * Grouped, and in a SIDE rail rather than a strip across the top.
+ *
+ * Nine entries will not fit a horizontal strip legibly, and the three new ones
+ * are the reason: Code, Pull requests and Pipeline runs are where the work
+ * actually is, so hiding them behind an overflow would bury the point of the
+ * page. The headings turn a flat list into a map of what a project HAS, which
+ * is the same reasoning — and the same component — as the Teams page.
+ *
+ * The order follows the order work moves in: read it, propose it, watch it run,
+ * see the rules that ran. Delivery, records and configuration sit after,
+ * because they are consulted rather than worked in.
+ */
+const PROJECT_DETAIL_TAB_GROUPS: ReadonlyArray<
+  SideTabGroup<ProjectDetailTab>
+> = [
+  {
+    heading: "Work",
+    items: [
+      { id: "overview", label: "Overview" },
+      { id: "code", label: "Code" },
+      { id: "pulls", label: "Pull requests" },
+    ],
+  },
+  {
+    heading: "Pipeline",
+    items: [
+      { id: "runs", label: "Pipeline runs" },
+      { id: "workflow", label: "Workflow" },
+    ],
+  },
+  {
+    heading: "Delivery",
+    items: [
+      { id: "hosting", label: "Hosting" },
+      { id: "environment", label: "Environment" },
+    ],
+  },
+  { heading: "Records", items: [{ id: "audit", label: "Audit" }] },
+  { heading: "Configuration", items: [{ id: "settings", label: "Settings" }] },
 ];
 
 // Mirrors the coverage presets offered on repository creation (see
@@ -1469,25 +1507,15 @@ export function ProjectDetailTabs({
                   ) : null}
                 </div>
 
-                <div
-                  className="project-inner-tabs"
-                  role="tablist"
-                  aria-label="Project detail sections"
-                  data-tour="project-detail-tabs"
-                >
-                  {PROJECT_DETAIL_TABS.map((tab) => (
-                    <button
-                      key={tab.id}
-                      type="button"
-                      role="tab"
-                      aria-selected={projectDetailTab === tab.id}
-                      className={`project-inner-tab${projectDetailTab === tab.id ? " active" : ""}`}
-                      onClick={() => setProjectDetailTab(tab.id)}
-                    >
-                      {tab.label}
-                    </button>
-                  ))}
-                </div>
+                <div className="project-sections" data-tour="project-detail-tabs">
+                <SideTabs
+                  groups={PROJECT_DETAIL_TAB_GROUPS}
+                  value={projectDetailTab}
+                  onChange={setProjectDetailTab}
+                  label="Project sections"
+                  idPrefix="project-detail"
+                />
+                <div className="project-sections__body">
 
                 {loadingProjectOverview ? (
                   <p className="env-empty-state">Loading project overview...</p>
@@ -2040,21 +2068,63 @@ export function ProjectDetailTabs({
                   </div>
                 ) : null}
 
+                {/*
+                  LIVE from GitHub — run, jobs, steps, console log — replacing
+                  the old list, which could only show what our own workflow had
+                  reported back to us. Both truths still exist: this is the
+                  EXECUTION, and the reported result below is the VERDICT. A run
+                  that is green here with no reported result is a real state,
+                  and seeing both in one place is the diagnosis.
+                */}
                 {projectDetailTab === "runs" ? (
-                  ciRunTrackingEnabled &&
-                  selectedOverview?.capabilities.ciRunTracking ? (
-                    ciRunsError ? (
-                      <p className="error-text" style={{ margin: 0 }}>
-                        {ciRunsError}
-                      </p>
-                    ) : (
-                      <CiRunsList response={ciRunsResponse} />
-                    )
-                  ) : (
-                    <p className="env-empty-state">
-                      CI run tracking is not enabled.
-                    </p>
-                  )
+                  <div
+                    role="tabpanel"
+                    id="project-detail-panel-runs"
+                    aria-labelledby="project-detail-tab-runs"
+                    style={{ display: "grid", gap: "1.25rem" }}
+                  >
+                    <PipelineRunsTab projectId={selectedProject.id} />
+
+                    {ciRunTrackingEnabled &&
+                    selectedOverview?.capabilities.ciRunTracking ? (
+                      <div className="ws-reported">
+                        <h3 className="ws-reported__head">
+                          Reported results
+                        </h3>
+                        <p className="ws-hint">
+                          What the workflow sent back to ALPHACI. If a run above
+                          is green but missing here, the report never arrived.
+                        </p>
+                        {ciRunsError ? (
+                          <p className="error-text" style={{ margin: 0 }}>
+                            {ciRunsError}
+                          </p>
+                        ) : (
+                          <CiRunsList response={ciRunsResponse} />
+                        )}
+                      </div>
+                    ) : null}
+                  </div>
+                ) : null}
+
+                {projectDetailTab === "code" ? (
+                  <div
+                    role="tabpanel"
+                    id="project-detail-panel-code"
+                    aria-labelledby="project-detail-tab-code"
+                  >
+                    <CodeTab projectId={selectedProject.id} />
+                  </div>
+                ) : null}
+
+                {projectDetailTab === "pulls" ? (
+                  <div
+                    role="tabpanel"
+                    id="project-detail-panel-pulls"
+                    aria-labelledby="project-detail-tab-pulls"
+                  >
+                    <PullRequestsTab projectId={selectedProject.id} />
+                  </div>
                 ) : null}
 
                 {projectDetailTab === "hosting" ? (
@@ -2178,6 +2248,8 @@ export function ProjectDetailTabs({
                   </dl>
                 ) : null}
                 </motion.div>
+                </div>
+                </div>
     </section>
   );
 }

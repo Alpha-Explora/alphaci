@@ -68,26 +68,6 @@ function WorkflowsIcon({ size = 16 }: { size?: number }) {
   );
 }
 
-function RunsIcon({ size = 16 }: { size?: number }) {
-  return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <circle cx="12" cy="12" r="3" />
-      <path d="M12 3v3M12 18v3M3 12h3M18 12h3" />
-      <path d="M5.64 5.64l2.12 2.12M16.24 16.24l2.12 2.12M5.64 18.36l2.12-2.12M16.24 7.76l2.12-2.12" />
-    </svg>
-  );
-}
-
 function TeamsIcon({ size = 16 }: { size?: number }) {
   return (
     <svg
@@ -487,6 +467,15 @@ export function AppNav({
             reduced={reduced}
             onNavigate={() => setHoverSuppressed(true)}
           />
+          {/*
+            "Projects" points at /workflows, and that mismatch is now the ONLY
+            one left: the second bar used to be labelled "Workflows" while
+            pointing at /runs, so the two names read in the opposite order to
+            their routes. Pipeline runs live inside a project now, so that bar
+            is gone and the confusion goes with it. /runs survives as the
+            cross-project view — the one question a per-project tab cannot
+            answer — reached from Home rather than from here.
+          */}
           <SidebarNavItem
             href="/workflows"
             label="Projects"
@@ -495,14 +484,7 @@ export function AppNav({
             reduced={reduced}
             onNavigate={() => setHoverSuppressed(true)}
           />
-          <SidebarNavItem
-            href="/runs"
-            label="Workflows"
-            icon={RunsIcon}
-            isActive={pathname === "/runs"}
-            reduced={reduced}
-            onNavigate={() => setHoverSuppressed(true)}
-          />
+
           {/* The header picks the WORKSPACE; this lists the teams inside it.
               Selection is a header job, browsing is a nav job. */}
           {!guest && (
