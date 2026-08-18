@@ -8,14 +8,11 @@ import { motion, useReducedMotion } from "framer-motion";
 import { AppNav } from "@/components/layout/app-nav";
 import { FlowBackground } from "@/components/layout/flow-background";
 import { PipelineLoader } from "@/components/layout/pipeline-loader";
-import {
-  WorkspaceProvider,
-  useWorkspaceSelection,
-} from "@/components/layout/workspace-context";
+import { WorkspaceProvider } from "@/components/layout/workspace-context";
 import { CreateGroupDialog } from "@/components/hierarchy/create-group-dialog";
 import { GroupWorkspacePanel } from "@/components/product/group-workspace-panel";
 import { useAuthSession } from "@/hooks/use-auth-session";
-import { getProjects, getWorkspaceTeams, logout } from "@/lib/api/client";
+import { getGroups, getProjects, logout } from "@/lib/api/client";
 import type { ProvisionedProject } from "@/lib/api/contracts";
 import {
   isGlobalCreatorRole,
@@ -48,28 +45,16 @@ function TeamsPageContent() {
   const [query, setQuery] = useState("");
   const [page, setPage] = useState(1);
   const [createOpen, setCreateOpen] = useState(false);
-  const { selectedWorkspaceId, selectedWorkspace } = useWorkspaceSelection();
 
   const guest = isGuest(session);
-  // Creating a team needs the global tier AND manager rights on this
-  // workspace — the backend enforces both; this only decides whether to
-  // offer the button.
-  const canCreateGroup =
-    isGlobalCreatorRole(session?.appRole) &&
-    Boolean(selectedWorkspaceId) &&
-    (selectedWorkspace?.role === "admin" ||
-      selectedWorkspace?.role === "delegated_lead");
+  const canCreateGroup = isGlobalCreatorRole(session?.appRole);
 
   useEffect(() => {
     if (status === "signed-out") router.replace("/login?next=/teams");
   }, [router, status]);
 
   function loadGroups() {
-    if (!selectedWorkspaceId) {
-      setGroups([]);
-      return;
-    }
-    void getWorkspaceTeams(selectedWorkspaceId)
+    void getGroups()
       .then((items) => {
         setGroups(items);
         setLoadError(null);
@@ -88,8 +73,7 @@ function TeamsPageContent() {
     void getProjects(100)
       .then((response) => setProjects(response.items))
       .catch(() => setProjects([]));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [status, guest, selectedWorkspaceId]);
+  }, [status, guest]);
 
   const entries = useMemo(
     () =>
@@ -203,7 +187,6 @@ function TeamsPageContent() {
               <div className="workflow-page-studio-badge">
                 <span className="workflow-studio-led" aria-hidden="true" />
                 {entries.length} {entries.length === 1 ? "team" : "teams"}
-                {selectedWorkspace ? ` in ${selectedWorkspace.name}` : ""}
               </div>
             </div>
             <p
@@ -213,8 +196,8 @@ function TeamsPageContent() {
                 fontSize: "0.86rem",
               }}
             >
-              Teams live inside the workspace selected in the header. Each owns its
-              own members and repositories.
+              Groups own repositories and membership. Add people here, then
+              assign them to the repositories they should reach.
             </p>
           </div>
         </motion.div>
@@ -267,8 +250,8 @@ function TeamsPageContent() {
                 }}
               >
                 {canCreateGroup
-                  ? "Create a team to group repositories and add developers to them."
-                  : "No teams in this workspace yet. Only a team lead of this workspace can create one."}
+                  ? "Create a team to group repositories and invite developers to them."
+                  : "You are not a member of any team yet. A team lead has to invite you."}
               </p>
             </div>
             {canCreateGroup ? (
@@ -427,7 +410,6 @@ function TeamsPageContent() {
       {canCreateGroup ? (
         <CreateGroupDialog
           open={createOpen}
-          parentWorkspaceId={selectedWorkspaceId ?? undefined}
           onClose={() => setCreateOpen(false)}
           onCreated={(group) => {
             setGroups((current) => [group, ...(current ?? [])]);

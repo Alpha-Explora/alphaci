@@ -51,14 +51,6 @@ export function createGroup(payload: CreateGroupRequest): Promise<GroupSummary> 
   });
 }
 
-/** Teams inside one workspace — distinct from getGroups(), which is every team
- *  the caller belongs to regardless of which workspace holds it. */
-export function getWorkspaceTeams(
-  workspaceId: string,
-): Promise<GroupSummary[]> {
-  return request<GroupSummary[]>(`/groups/${enc(workspaceId)}/teams`);
-}
-
 export function getGroups(): Promise<GroupSummary[]> {
   return request<GroupSummary[]>("/groups");
 }
