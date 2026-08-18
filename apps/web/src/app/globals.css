@@ -271,18 +271,6 @@ html[data-theme="light"] {
   border-left-color: var(--accent-indigo);
 }
 
-[data-theme="light"] .notification-center-button {
-  background: rgba(0, 0, 0, 0.04);
-  border-color: rgba(0, 0, 0, 0.1);
-}
-
-[data-theme="light"] .notification-center-panel {
-  background: rgba(250, 250, 251, 0.99);
-  border-color: rgba(79, 70, 229, 0.15);
-  box-shadow:
-    0 16px 40px rgba(0, 0, 0, 0.14),
-    0 0 0 1px rgba(0, 0, 0, 0.04);
-}
 
 [data-theme="light"] .glass-panel {
   background: rgba(250, 250, 251, 0.85);
@@ -376,10 +364,6 @@ html[data-theme="light"] {
 /* .sidebar-user-chip and .workspace-switcher are token-driven (--bg-elevated,
    --border-soft) and adapt to light/dark automatically — no override needed. */
 
-[data-theme="light"] .app-sidebar .notification-center-button {
-  background: rgba(0, 0, 0, 0.04);
-  border-color: rgba(0, 0, 0, 0.1);
-}
 
 [data-theme="light"] .admin-shell {
   background: var(--bg-base);
@@ -12615,23 +12599,7 @@ select option {
   background: var(--text-secondary);
 }
 
-[data-theme="light"] .notification-center-panel {
-  background:
-    linear-gradient(180deg, rgba(250, 250, 251, 0.98), rgba(240, 240, 243, 0.98)),
-    var(--bg-panel);
-  border-color: rgba(9, 105, 218, 0.18);
-  box-shadow:
-    0 18px 42px rgba(17, 17, 22, 0.15),
-    0 0 0 1px rgba(255, 255, 255, 0.8);
-}
 
-[data-theme="light"] .notification-center-item,
-[data-theme="light"] .notification-center-header {
-  border-bottom-color: rgba(17, 17, 22, 0.07);
-}
-
-[data-theme="light"] .notification-center-mark-all,
-[data-theme="light"] .notification-center-event-code,
 [data-theme="light"] .notification-preferences-state {
   background: rgba(17, 17, 22, 0.035);
   border-color: rgba(17, 17, 22, 0.08);
@@ -13165,113 +13133,10 @@ select option {
   flex-shrink: 0;
 }
 
-.notification-center {
-  position: relative;
-  display: inline-flex;
-}
-
-.notification-center-button {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 2rem;
-  height: 2rem;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 0.5rem;
-  background: rgba(17, 17, 22, 0.65);
-  color: var(--text-secondary);
-  cursor: pointer;
-  transition:
-    color 0.18s ease,
-    border-color 0.18s ease,
-    background 0.18s ease;
-}
-
-.notification-center-button:hover {
-  color: var(--text-primary);
-  border-color: rgba(255, 255, 255, 0.2);
-  background: rgba(99, 102, 241, 0.1);
-}
-
-.notification-center-button--unread {
-  border-color: rgba(99, 102, 241, 0.35);
-  color: var(--accent-indigo);
-  box-shadow: 0 0 12px rgba(99, 102, 241, 0.18);
-}
-
-.notification-center-count {
-  position: absolute;
-  top: -0.35rem;
-  right: -0.35rem;
-  min-width: 1rem;
-  height: 1rem;
-  padding: 0 0.25rem;
-  border-radius: 999px;
-  background: var(--accent-indigo);
-  color: white;
-  font-size: 0.62rem;
-  line-height: 1rem;
-  font-weight: 800;
-  text-align: center;
-  pointer-events: none;
-}
 
 /* Panel is portaled to <body> and positioned `fixed` via inline left/top set in JS,
    so it escapes the sidebar's `overflow: hidden` clip. */
-.notification-center-panel {
-  position: fixed;
-  width: min(380px, calc(100vw - 2rem));
-  max-height: min(480px, calc(100vh - 5rem));
-  overflow-y: auto;
-  overflow-x: hidden;
-  padding: 0;
-  border: 1px solid rgba(88, 166, 255, 0.18);
-  border-radius: 0.85rem;
-  background:
-    linear-gradient(180deg, rgba(17, 17, 22, 0.98), rgba(6, 12, 24, 0.98)),
-    var(--bg-panel);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  box-shadow:
-    0 16px 48px rgba(0, 0, 0, 0.5),
-    0 0 0 1px rgba(255, 255, 255, 0.04),
-    0 0 38px rgba(88, 166, 255, 0.08);
-  z-index: 400;
-  transform-origin: bottom left;
-}
 
-.notification-center-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem;
-  padding: 0.9rem 0.95rem 0.75rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-}
-
-.notification-center-title {
-  display: block;
-  font-size: 0.78rem;
-  font-weight: 700;
-  color: var(--text-primary);
-  letter-spacing: 0.02em;
-}
-
-.notification-center-subtitle {
-  display: block;
-  margin-top: 0.15rem;
-  color: var(--text-muted);
-  font-size: 0.68rem;
-}
-
-.notification-center-header-actions {
-  display: inline-flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 0.4rem;
-  flex-wrap: wrap;
-}
 
 .notification-center-unread-chip {
   font-size: 0.65rem;
@@ -13283,52 +13148,6 @@ select option {
   border: 1px solid rgba(88, 166, 255, 0.26);
 }
 
-.notification-center-mark-all {
-  border: 1px solid var(--border-soft);
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.03);
-  color: var(--text-secondary);
-  padding: 0.18rem 0.48rem;
-  font-size: 0.65rem;
-  font-weight: 800;
-  cursor: pointer;
-  transition:
-    color 0.15s ease,
-    border-color 0.15s ease,
-    background 0.15s ease;
-}
-
-.notification-center-mark-all:hover {
-  color: var(--brand);
-  border-color: rgba(88, 166, 255, 0.32);
-  background: rgba(88, 166, 255, 0.08);
-}
-
-.notification-center-item {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  align-items: flex-start;
-  gap: 0.65rem;
-  padding: 0.8rem 0.95rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-  transition: background 0.15s ease;
-}
-
-.notification-center-item:hover {
-  background: rgba(255, 255, 255, 0.03);
-}
-
-.notification-center-item:last-child {
-  border-bottom: 0;
-}
-
-.notification-center-item--read {
-  opacity: 0.64;
-}
-
-.notification-center-item-body {
-  min-width: 0;
-}
 
 .notification-center-glyph {
   display: inline-flex;
@@ -13364,89 +13183,6 @@ select option {
   background: rgba(88, 166, 255, 0.09);
 }
 
-.notification-center-item-topline {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 0.5rem;
-  min-width: 0;
-}
-
-.notification-center-item strong {
-  color: var(--text-primary);
-  font-size: 0.8rem;
-  font-weight: 600;
-  margin-bottom: 0.15rem;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.notification-center-item time {
-  flex-shrink: 0;
-  color: var(--text-muted);
-  font-size: 0.66rem;
-}
-
-.notification-center-item p {
-  margin: 0 0 0.2rem;
-  color: var(--text-secondary);
-  font-size: 0.74rem;
-  line-height: 1.45;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  overflow-wrap: anywhere;
-}
-
-.notification-center-event-code {
-  display: inline-flex;
-  width: fit-content;
-  max-width: 100%;
-  padding: 0.12rem 0.42rem;
-  border: 1px solid var(--border-soft);
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.03);
-  color: var(--text-muted);
-  font-size: 0.67rem;
-  font-weight: 700;
-}
-
-.notification-center-action,
-.notification-center-state {
-  flex-shrink: 0;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 0.4rem;
-  background: transparent;
-  color: var(--text-secondary);
-  padding: 0.22rem 0.5rem;
-  font-size: 0.7rem;
-  white-space: nowrap;
-}
-
-.notification-center-action {
-  cursor: pointer;
-  transition:
-    color 0.15s ease,
-    border-color 0.15s ease,
-    background 0.15s ease;
-}
-
-.notification-center-action:hover {
-  color: var(--accent-indigo);
-  border-color: rgba(99, 102, 241, 0.4);
-  background: rgba(99, 102, 241, 0.08);
-}
-
-.notification-center-empty {
-  margin: 0;
-  padding: 1.5rem 0.85rem;
-  color: var(--text-muted);
-  font-size: 0.8rem;
-  text-align: center;
-}
 
 @media (max-width: 860px) {
   .studio-tab-bar--enhanced {
@@ -13470,16 +13206,8 @@ select option {
 }
 
 @media (max-width: 520px) {
-  .notification-center-item {
-    grid-template-columns: auto minmax(0, 1fr);
-  }
-
-  .notification-center-action,
-  .notification-center-state {
-    grid-column: 2;
-    width: fit-content;
-  }
-
+  
+  
   .settings-preference-card,
   .notification-preferences-card {
     align-items: flex-start;
@@ -16050,9 +15778,6 @@ select option {
 }
 
 
-
-
-
 /* :has(:focus-visible), NOT :focus-within. A click FOCUSES the link, and
    :focus-within cannot tell a click from a Tab press — so every click latched
    the rail open on top of the page it had just opened. :focus-visible is the
@@ -16271,11 +15996,6 @@ select option {
   -webkit-text-fill-color: transparent;
   color: var(--brand);
 }
-
-
-
-
-
 
 
 /* ── Navigation section ─────────────────────────────────────────────────── */
@@ -18383,39 +18103,7 @@ html:not([data-theme="light"]) .dash-shell :is(
 }
 
 /* A focused circular notification control replaces the old square button. */
-.app-sidebar .notification-center-button {
-  width: 2.3rem;
-  height: 2.3rem;
-  border-color: color-mix(in srgb, var(--accent-indigo) 38%, var(--border-soft));
-  border-radius: 50%;
-  background: linear-gradient(145deg, color-mix(in srgb, var(--accent-indigo) 18%, transparent), rgba(255, 255, 255, 0.03));
-  color: var(--text-secondary);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 5px 14px rgba(0, 0, 0, 0.16);
-}
 
-.app-sidebar .notification-center-button:hover,
-.app-sidebar .notification-center-button:focus-visible {
-  border-color: var(--brand);
-  background: color-mix(in srgb, var(--brand) 18%, transparent);
-  color: var(--text-primary);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand) 13%, transparent), 0 7px 18px rgba(0, 0, 0, 0.2);
-}
-
-.app-sidebar .notification-center-button:focus-visible {
-  outline: 0;
-}
-
-.app-sidebar .notification-center-count {
-  top: -0.15rem;
-  right: -0.18rem;
-  min-width: 1.08rem;
-  height: 1.08rem;
-  border: 2px solid var(--bg-base);
-  background: var(--brand);
-  box-shadow: 0 2px 8px color-mix(in srgb, var(--brand) 42%, transparent);
-  font-size: 0.6rem;
-  line-height: 0.84rem;
-}
 
 .dashboard-shortcuts {
   display: flex;

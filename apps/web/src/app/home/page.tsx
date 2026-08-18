@@ -933,7 +933,7 @@ function DashboardWorkspaceOverview({
             <DashboardMetric value={group?.systemCount ?? 0} label="Systems" loading={loading && Boolean(group)} reduced={reduced} />
             <DashboardMetric value={deliveryProjectCount} label="Team projects" loading={loading && Boolean(group)} reduced={reduced} />
             <DashboardMetric value={repositoryCount} label="Repositories" loading={loading && Boolean(group)} reduced={reduced} />
-            <DashboardMetric value={workflowHistoryCount} label="Workflows" loading={loading} reduced={reduced} href="/workflows?tab=all" />
+            <DashboardMetric value={workflowHistoryCount} label="Workflows" loading={loading} reduced={reduced} href="/workflows?tab=current" />
             <DashboardMetric value={runs.length} label="Recent runs" loading={loading} reduced={reduced} href="/runs" />
           </motion.section>
 

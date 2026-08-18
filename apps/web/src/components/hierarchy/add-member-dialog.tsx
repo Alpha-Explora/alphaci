@@ -11,6 +11,28 @@ import type {
 import { Avatar, FormDialog } from "./primitives";
 
 /**
+ * A 404 here is ambiguous: NestJS returns it both when the user is genuinely
+ * missing from the directory AND when the ROUTE does not exist (a backend
+ * running a stale build). Inventing "user not found" from the status alone
+ * once disguised a stale-build 404 as a data problem, so prefer the server's
+ * own `{ message }` and keep the friendly strings only as a fallback.
+ */
+function describeAddError(cause: unknown): string {
+  if (cause instanceof ApiError) {
+    if (cause.status === 403) {
+      return "You're not allowed to add members to this group.";
+    }
+    const detail = cause.details as { message?: string | string[] } | undefined;
+    const message = Array.isArray(detail?.message)
+      ? detail?.message.join(", ")
+      : detail?.message;
+    if (message) return message;
+    return `The member could not be added (${String(cause.status)}).`;
+  }
+  return "The member could not be added. Please try again.";
+}
+
+/**
  * Adds someone to a group immediately. There is no invitation and nothing for
  * the person to accept — they are a member the moment this succeeds.
  */
@@ -54,13 +76,7 @@ export function AddMemberDialog({
       reset();
       onClose();
     } catch (cause) {
-      if (cause instanceof ApiError && cause.status === 403) {
-        setError("You're not allowed to add members to this group.");
-      } else if (cause instanceof ApiError && cause.status === 404) {
-        setError("That user could not be found in the internal directory.");
-      } else {
-        setError("The member could not be added. Please try again.");
-      }
+      setError(describeAddError(cause));
     } finally {
       setSubmitting(false);
     }
