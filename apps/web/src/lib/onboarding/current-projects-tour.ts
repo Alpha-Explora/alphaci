@@ -36,26 +36,21 @@ function buildSteps(): DriveStep[] {
       },
     },
     {
-      element: "[data-tour='subtab-bar']",
+      element: "[data-tour='project-detail-tabs']",
       popover: {
-        title: "Projects vs History",
+        title: "Project sections",
         description:
-          "Switch between Projects (your active provisioned repos) and History (a log of every setup run, including failed attempts). History is useful for diagnosing past provisioning errors. It stays docked right under the project list so it is always in reach.",
+          "Everything about this project lives here, grouped by what you came to do. Work holds Overview, Code and Pull requests. Pipeline holds Pipeline runs and the workflow file. Delivery holds Hosting and Environment. Records is the audit trail, and Configuration is Settings — including deleting the project. Nothing sits outside these sections.",
+        // A vertical rail on the left: the popover belongs beside it, not
+        // under it. This said "bottom" while it was still a horizontal strip.
         side: "right",
         align: "start",
       },
     },
     {
-      element: "[data-tour='project-detail-tabs']",
-      popover: {
-        title: "Project detail tabs",
-        description:
-          "Once a project is selected, these tabs let you inspect every aspect of it — Overview, Workflow YAML, CI Runs, Deployment targets, Environment variables, Activity log, Audit trail, and Settings. Start with Overview to see the current health of your project.",
-        side: "bottom",
-        align: "start",
-      },
-    },
-    {
+      // Lives inside the Delivery > Hosting section, so this step only appears
+      // when the tour is started from there. filterStepsForDom drops it
+      // otherwise rather than pointing at nothing.
       element: "[data-tour='deployment-targets']",
       popover: {
         title: "Deployment targets",

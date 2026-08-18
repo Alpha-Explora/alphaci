@@ -19512,6 +19512,12 @@ html:not([data-theme="light"]) .dash-shell :is(
   justify-content: space-between;
 }
 
+.ws-toolbar__links {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
 .ws-hint {
   margin: 0;
   font-size: 0.8rem;
@@ -19895,10 +19901,15 @@ html:not([data-theme="light"]) .dash-shell :is(
   color: #58a6ff;
 }
 
+/* `copied`, `changed` and `unchanged` are GitHub file statuses too — without
+   them those chips rendered with no background and no border at all. */
 .ws-pill--neutral,
 .ws-pill--closed,
 .ws-pill--draft,
-.ws-pill--renamed {
+.ws-pill--renamed,
+.ws-pill--copied,
+.ws-pill--changed,
+.ws-pill--unchanged {
   background: var(--surface-raised);
   border-color: var(--border-subtle);
   color: var(--text-secondary);
@@ -19945,4 +19956,40 @@ html:not([data-theme="light"]) .dash-shell :is(
   margin: 0;
   font-size: 0.9rem;
   color: var(--text-primary);
+}
+
+/* Existing-repository onboarding: what setup will do, before it does it. */
+.existing-repo-notices {
+  list-style: none;
+  margin: 0.75rem 0 0;
+  padding: 0;
+  display: grid;
+  gap: 0.4rem;
+}
+
+.existing-repo-notice {
+  margin: 0.75rem 0 0;
+  padding: 0.55rem 0.75rem;
+  border-radius: 0.5rem;
+  border: 1px solid var(--border-subtle);
+  font-size: 0.78rem;
+  line-height: 1.45;
+  color: var(--text-secondary);
+}
+
+.existing-repo-notices .existing-repo-notice {
+  margin: 0;
+}
+
+/* Blocking is the one the push will actually fail on, so it reads differently
+   from the informational notices rather than sharing their tone. */
+.existing-repo-notice--blocking {
+  border-color: rgba(248, 113, 113, 0.4);
+  background: rgba(248, 113, 113, 0.06);
+  color: #f87171;
+}
+
+.existing-repo-notice--ok {
+  border-color: rgba(63, 185, 80, 0.35);
+  background: rgba(63, 185, 80, 0.06);
 }

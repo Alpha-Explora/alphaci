@@ -384,21 +384,71 @@ describe("WorkflowBuilder project setup", () => {
     });
 
     await waitForCondition(() => container.textContent?.includes("Next.js App") ?? false);
+  }
+
+  function findButton(startsWith: string): HTMLButtonElement | null {
+    return (
+      Array.from(container.querySelectorAll("button")).find((button) =>
+        button.textContent?.trim().startsWith(startsWith),
+      ) ?? null
+    );
+  }
+
+  async function clickContinue() {
+    await act(async () => {
+      findButton("Continue")?.click();
+      await Promise.resolve();
+    });
+  }
+
+  /**
+   * Walks Blueprint -> Repository -> Automation -> Delivery -> Review.
+   *
+   * Setup became a FIVE-STEP WIZARD that renders one step at a time, so the
+   * create button exists only on the last step and each field lives on the step
+   * that owns it. These tests used to render and immediately reach for both,
+   * which is why all five timed out waiting for a button four Continues away.
+   */
+  async function advanceToStep(
+    stopAt: number,
+    values: { projectTypeId?: string; repoName?: string } = {},
+  ) {
+    if (values.projectTypeId) {
+      const select =
+        container.querySelector<HTMLSelectElement>("#project-type-select");
+      if (select) changeValue(select, values.projectTypeId);
+    }
+    if (stopAt === 0) return;
+    await clickContinue();
+
+    if (values.repoName) {
+      const input = container.querySelector<HTMLInputElement>("#repo-name");
+      if (input) changeValue(input, values.repoName);
+    }
+    for (let step = 1; step < stopAt; step += 1) {
+      await clickContinue();
+    }
+  }
+
+  async function advanceToReview(
+    values: { projectTypeId?: string; repoName?: string } = {},
+  ) {
+    await advanceToStep(4, values);
     await waitForCondition(
-      () => container.querySelector<HTMLButtonElement>("[data-testid='setup-project-button']") !== null,
+      () =>
+        container.querySelector<HTMLButtonElement>(
+          "[data-testid='setup-project-button']",
+        ) !== null,
     );
   }
 
   it("creates a new project through the backend project endpoint", async () => {
     await renderBuilder();
 
-    const repoName = container.querySelector<HTMLInputElement>("#repo-name");
-    expect(repoName).not.toBeNull();
-    changeValue(repoName!, "demo-next-app");
-
-    const projectType = container.querySelector<HTMLSelectElement>("#project-type-select");
-    expect(projectType).not.toBeNull();
-    changeValue(projectType!, "nextjs-app");
+    await advanceToReview({
+      projectTypeId: "nextjs-app",
+      repoName: "demo-next-app",
+    });
 
     await act(async () => {
       container.querySelector<HTMLButtonElement>("[data-testid='setup-project-button']")?.click();
@@ -442,8 +492,21 @@ describe("WorkflowBuilder project setup", () => {
 
     await renderBuilder();
 
-    expect(container.textContent).toContain("Project quota: Limit reached. Upgrade to continue.");
-    expect(container.querySelector<HTMLButtonElement>("[data-testid='setup-project-button']")?.disabled).toBe(true);
+    // The quota notice sits on the DELIVERY step (3), not on Blueprint where
+    // this used to look for it and not on Review either.
+    await advanceToStep(3, {
+      projectTypeId: "nextjs-app",
+      repoName: "demo-next-app",
+    });
+    expect(container.textContent).toContain("Project quota:");
+
+    // And the create button on Review stays disabled once the limit is hit.
+    await clickContinue();
+    expect(
+      container.querySelector<HTMLButtonElement>(
+        "[data-testid='setup-project-button']",
+      )?.disabled,
+    ).toBe(true);
   });
 
   it("shows a create project error when createProject rejects", async () => {
@@ -456,13 +519,10 @@ describe("WorkflowBuilder project setup", () => {
 
     await renderBuilder();
 
-    const repoName = container.querySelector<HTMLInputElement>("#repo-name");
-    expect(repoName).not.toBeNull();
-    changeValue(repoName!, "demo-next-app");
-
-    const projectType = container.querySelector<HTMLSelectElement>("#project-type-select");
-    expect(projectType).not.toBeNull();
-    changeValue(projectType!, "nextjs-app");
+    await advanceToReview({
+      projectTypeId: "nextjs-app",
+      repoName: "demo-next-app",
+    });
 
     await act(async () => {
       container.querySelector<HTMLButtonElement>("[data-testid='setup-project-button']")?.click();
@@ -494,13 +554,11 @@ describe("WorkflowBuilder project setup", () => {
 
     await renderBuilder();
 
-    const repoName = container.querySelector<HTMLInputElement>("#repo-name");
-    expect(repoName).not.toBeNull();
-    changeValue(repoName!, "orders-api");
-
-    const projectType = container.querySelector<HTMLSelectElement>("#project-type-select");
-    expect(projectType).not.toBeNull();
-    changeValue(projectType!, "nextjs-app");
+    // Hosting is configured on the DELIVERY step (3); Review only summarises it.
+    await advanceToStep(3, {
+      projectTypeId: "nextjs-app",
+      repoName: "orders-api",
+    });
 
     expect(container.textContent).toContain("Deployment provisioning");
     const provisioningToggle = container.querySelector<HTMLInputElement>(
@@ -511,6 +569,14 @@ describe("WorkflowBuilder project setup", () => {
     act(() => {
       provisioningToggle!.click();
     });
+
+    await clickContinue();
+    await waitForCondition(
+      () =>
+        container.querySelector<HTMLButtonElement>(
+          "[data-testid='setup-project-button']",
+        ) !== null,
+    );
 
     await act(async () => {
       container.querySelector<HTMLButtonElement>("[data-testid='setup-project-button']")?.click();
@@ -537,13 +603,33 @@ describe("WorkflowBuilder project setup", () => {
     expect(container.textContent).toContain("Current Projects");
   });
 
-  it("keeps Create GitHub Repository disabled when repo name is empty", async () => {
+  /*
+   * The guard MOVED EARLIER. This used to assert a disabled create button on a
+   * single long form; the wizard now refuses to leave the Repository step
+   * without a name, so the create button is never reached at all. Asserting
+   * Continue is blocked is the same protection one step sooner — and it is a
+   * stronger check, because it fails before anything downstream is filled in.
+   */
+  it("will not leave the Repository step while the repo name is empty", async () => {
     await renderBuilder();
 
-    const button = container.querySelector<HTMLButtonElement>("[data-testid='setup-project-button']");
-    expect(button).not.toBeNull();
-    // repo name is empty by default — button should be disabled
-    expect(button).toBeDisabled();
+    const select =
+      container.querySelector<HTMLSelectElement>("#project-type-select");
+    if (select) changeValue(select, "nextjs-app");
+    await clickContinue();
+
+    // On Repository now, with the name deliberately left blank.
+    expect(container.querySelector("#repo-name")).not.toBeNull();
+    expect(findButton("Continue")).toBeDisabled();
+
+    await clickContinue();
+
+    // Still on Repository — Review was never reached, so nothing was created.
+    expect(container.querySelector("#repo-name")).not.toBeNull();
+    expect(
+      container.querySelector("[data-testid='setup-project-button']"),
+    ).toBeNull();
     expect(mockedCreateGithubRepo).not.toHaveBeenCalled();
+    expect(mockedCreateProject).not.toHaveBeenCalled();
   });
 });

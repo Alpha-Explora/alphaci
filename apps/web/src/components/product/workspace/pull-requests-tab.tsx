@@ -43,13 +43,17 @@ export function PullRequestsTab({ projectId }: { projectId: string }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  /*
+   * No synchronous setState — see the note in pipeline-runs-tab. `loading`
+   * starts true for the first paint, and the filter buttons raise it
+   * themselves because they are event handlers.
+   */
   const load = useCallback(() => {
-    setLoading(true);
-    setError(null);
-    getProjectPullRequests(projectId, filter)
+    return getProjectPullRequests(projectId, filter)
       .then((data) => {
         setItems(data.pullRequests);
         setPullsUrl(data.pullsUrl);
+        setError(null);
       })
       .catch(() =>
         setError("Pull requests could not be read from GitHub."),
@@ -57,7 +61,9 @@ export function PullRequestsTab({ projectId }: { projectId: string }) {
       .finally(() => setLoading(false));
   }, [projectId, filter]);
 
-  useEffect(load, [load]);
+  useEffect(() => {
+    void load();
+  }, [load]);
 
   return (
     <div className="ws-panel">
@@ -69,7 +75,10 @@ export function PullRequestsTab({ projectId }: { projectId: string }) {
               type="button"
               className="ws-filter"
               aria-pressed={filter === option.id}
-              onClick={() => setFilter(option.id)}
+              onClick={() => {
+                setLoading(true);
+                setFilter(option.id);
+              }}
             >
               {option.label}
             </button>
@@ -90,7 +99,13 @@ export function PullRequestsTab({ projectId }: { projectId: string }) {
       {loading ? (
         <WorkspaceLoading rows={4} />
       ) : error ? (
-        <WorkspaceError message={error} onRetry={load} />
+        <WorkspaceError
+          message={error}
+          onRetry={() => {
+            setLoading(true);
+            void load();
+          }}
+        />
       ) : items.length === 0 ? (
         <WorkspaceEmpty
           title="Nothing in flight"

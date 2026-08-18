@@ -26,7 +26,20 @@ import { WorkspaceEmpty, WorkspaceError, WorkspaceLoading } from "./workspace-st
  */
 export function CodeTab({ projectId }: { projectId: string }) {
   const [branches, setBranches] = useState<RepoBranch[]>([]);
-  const [ref, setRef] = useState<string | null>(null);
+  /*
+   * TWO refs, deliberately.
+   *
+   * `chosenRef` is the branch a PERSON picked, and it is the only ref in the
+   * fetch effect's dependencies. `resolvedRef` is whatever the server or the
+   * branch list settled on, and feeds the picker's display value only.
+   *
+   * Collapsing them into one piece of state made the effect retrigger itself:
+   * it depended on the ref, and its own response set the ref, so every cold
+   * open fetched the same listing twice. Separating "what was asked for" from
+   * "what came back" is what makes one open cost one request.
+   */
+  const [chosenRef, setChosenRef] = useState<string | null>(null);
+  const [resolvedRef, setResolvedRef] = useState<string | null>(null);
   const [path, setPath] = useState("");
   const [listing, setListing] = useState<RepoContentListing | null>(null);
   const [loading, setLoading] = useState(true);
@@ -40,7 +53,9 @@ export function CodeTab({ projectId }: { projectId: string }) {
       .then((data) => {
         if (cancelled) return;
         setBranches(data.branches);
-        setRef((current) => current ?? data.defaultBranch);
+        // Display only — this must not move `chosenRef`, or the fetch effect
+        // fires a second time for a listing it already has.
+        setResolvedRef((current) => current ?? data.defaultBranch);
       })
       .catch(() => {
         // Non-fatal: the file listing below resolves its own ref server-side,
@@ -52,17 +67,24 @@ export function CodeTab({ projectId }: { projectId: string }) {
     };
   }, [projectId]);
 
+  /*
+   * The effect only STARTS the request; every setState happens in a promise
+   * callback. Resetting loading/error synchronously in an effect body triggers
+   * a cascading render (react-hooks/set-state-in-effect), so the spinner is
+   * raised by the handlers that cause navigation instead — see openEntry and
+   * the branch picker — and `loading` simply starts true for the first render.
+   */
   const load = useCallback(() => {
     let cancelled = false;
-    setLoading(true);
-    setError(null);
-    getProjectFiles(projectId, { path, ref })
+    getProjectFiles(projectId, { path, ref: chosenRef })
       .then((data) => {
         if (cancelled) return;
         setListing(data);
-        // The server resolves the ref on a cold open; adopt whatever it chose
-        // so the picker stops reading as "no branch".
-        setRef((current) => current ?? data.ref);
+        setError(null);
+        // Adopt what the server resolved so the picker stops reading as "no
+        // branch". Safe because `resolvedRef` is not a dependency of this
+        // effect.
+        setResolvedRef(data.ref);
       })
       .catch(() => {
         if (!cancelled) setError("This path could not be read from GitHub.");
@@ -73,7 +95,7 @@ export function CodeTab({ projectId }: { projectId: string }) {
     return () => {
       cancelled = true;
     };
-  }, [projectId, path, ref]);
+  }, [projectId, path, chosenRef]);
 
   useEffect(load, [load]);
 
@@ -87,11 +109,17 @@ export function CodeTab({ projectId }: { projectId: string }) {
     }));
   }, [path]);
 
+  /** Raises the spinner here rather than in the effect — see `load`. */
+  function goTo(nextPath: string) {
+    setLoading(true);
+    setPath(nextPath);
+  }
+
   function openEntry(entry: RepoContentEntry) {
     // Only directories and files are navigable. A symlink or submodule points
     // somewhere this browser cannot follow, so it renders as a dead row rather
     // than a link that would 404.
-    if (entry.type === "dir" || entry.type === "file") setPath(entry.path);
+    if (entry.type === "dir" || entry.type === "file") goTo(entry.path);
   }
 
   const file = listing?.file ?? null;
@@ -104,9 +132,11 @@ export function CodeTab({ projectId }: { projectId: string }) {
             <span className="ws-branch__label">Branch</span>
             <select
               className="ws-select"
-              value={ref ?? ""}
+              value={chosenRef ?? resolvedRef ?? ""}
               onChange={(event) => {
-                setRef(event.target.value);
+                setLoading(true);
+                setChosenRef(event.target.value);
+                setResolvedRef(event.target.value);
                 // A path is only valid within the branch it was found in, so
                 // switching branches returns to the root rather than 404ing on
                 // a file that exists in one branch and not the other.
@@ -123,7 +153,7 @@ export function CodeTab({ projectId }: { projectId: string }) {
         )}
 
         <nav className="ws-crumbs" aria-label="File path">
-          <button type="button" className="ws-crumb" onClick={() => setPath("")}>
+          <button type="button" className="ws-crumb" onClick={() => goTo("")}>
             root
           </button>
           {crumbs.map((crumb) => (
@@ -134,7 +164,7 @@ export function CodeTab({ projectId }: { projectId: string }) {
               <button
                 type="button"
                 className="ws-crumb"
-                onClick={() => setPath(crumb.path)}
+                onClick={() => goTo(crumb.path)}
               >
                 {crumb.label}
               </button>
@@ -156,9 +186,7 @@ export function CodeTab({ projectId }: { projectId: string }) {
               <button
                 type="button"
                 className="ws-tree__row"
-                onClick={() =>
-                  setPath(path.split("/").slice(0, -1).join("/"))
-                }
+                onClick={() => goTo(path.split("/").slice(0, -1).join("/"))}
               >
                 <span className="ws-tree__icon" aria-hidden="true">
                   ↰

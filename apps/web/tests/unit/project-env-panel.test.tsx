@@ -126,6 +126,14 @@ const provisionedProject: ProvisionedProject = {
   githubCommitSha: "abc123",
   githubCommitUrl: null,
   failureReason: null,
+  /*
+   * `isOwner` is viewer-relative and WorkflowCurrentTab requires it to place a
+   * project in the "individual repositories" bucket — a manager who can merely
+   * see a project must not have it listed as their own. Without it here the
+   * component fell through to its empty state and eighteen assertions in this
+   * file were checking an empty screen.
+   */
+  isOwner: true,
 };
 
 const renderTarget = {
@@ -184,10 +192,19 @@ function changeValue(
   value: string,
 ) {
   act(() => {
+    /*
+     * Picked by TAG NAME, not `instanceof`.
+     *
+     * `instanceof` compares against the constructor on the test file's global,
+     * and an element rendered into a container jsdom created elsewhere does not
+     * always match it — so a real <select> fell through to the input branch and
+     * jsdom rejected the setter with "'set value' called on an object that is
+     * not a valid instance of HTMLInputElement". tagName carries no realm.
+     */
     const prototype =
-      element instanceof HTMLSelectElement
+      element.tagName === "SELECT"
         ? HTMLSelectElement.prototype
-        : element instanceof HTMLTextAreaElement
+        : element.tagName === "TEXTAREA"
           ? HTMLTextAreaElement.prototype
           : HTMLInputElement.prototype;
     const descriptor = Object.getOwnPropertyDescriptor(prototype, "value");
@@ -688,8 +705,15 @@ describe("Project env provisioning UI", () => {
     expect(rendered.container.textContent).toContain("Workflow");
     expect(rendered.container.textContent).toContain("Hosting");
     expect(rendered.container.textContent).toContain("Environment");
-    expect(rendered.container.textContent).toContain("Activity");
+    // "Activity" and "Audit" were once two sections; there is one now, and the
+    // rail calls it Audit.
+    expect(rendered.container.textContent).toContain("Audit");
     expect(rendered.container.textContent).toContain("Settings");
+    // The three sections the workspace added — asserted here so a regression
+    // that drops one is caught by the same test that covers the rest.
+    expect(rendered.container.textContent).toContain("Code");
+    expect(rendered.container.textContent).toContain("Pull requests");
+    expect(rendered.container.textContent).toContain("Pipeline runs");
     expect(rendered.container.textContent).toContain(
       "No workflow file metadata is tracked yet.",
     );
@@ -1248,11 +1272,15 @@ describe("Project env provisioning UI", () => {
     expect(rendered.container.textContent).toContain(
       "vercel · frontend · main",
     );
-    expect(rendered.container.textContent).toContain(
-      "Provider activation — coming soon",
-    );
-    expect(rendered.container.textContent).toContain("Provider dashboard");
-    expect(rendered.container.textContent).toContain("Live console");
+    // Provider activation SHIPPED — this used to assert a "coming soon"
+    // placeholder that no longer renders. Each target now carries its own
+    // controls, which is what replaced it.
+    expect(rendered.container.textContent).toContain("Edit");
+    expect(rendered.container.textContent).toContain("Sync");
+    expect(rendered.container.textContent).toContain("Detach");
+    // The log viewer is opened by a "Logs" control on each target now;
+    // "Live console" was the old always-visible heading.
+    expect(rendered.container.textContent).toContain("Logs");
   });
 
   it("renders mixed Render and Vercel deployment history from the local contract", async () => {
@@ -2599,9 +2627,9 @@ describe("Project env provisioning UI", () => {
       await Promise.resolve();
     });
 
-    expect(rendered.container.textContent).toContain(
-      "Env key quota: Limit reached. Upgrade to continue.",
-    );
+    // The quota moved from a sentence to a counter in the usage grid.
+    expect(rendered.container.textContent).toContain("Env keys");
+    expect(rendered.container.textContent).toContain("25 / 25");
     expect(rendered.container.textContent).toContain(
       "Archived managed Render services",
     );
@@ -2640,8 +2668,11 @@ describe("Project env provisioning UI", () => {
     const rendered = render(<ProjectEnvPanel project={provisionedProject} />);
     root = rendered.root;
 
-    expect(rendered.container.textContent).toContain("Hosting service");
-    expect(rendered.container.textContent).toContain("Branch variables");
+    // Heading is provider-specific now, not the generic "Hosting service".
+    expect(rendered.container.textContent).toContain("Render backend service");
+    // Variables are no longer split by branch — one "Provisioned variables"
+    // list with target/environment/status filters replaced that section.
+    expect(rendered.container.textContent).toContain("All environments");
     expect(rendered.container.textContent).toContain("Provisioned variables");
   });
 

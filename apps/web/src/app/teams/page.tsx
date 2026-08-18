@@ -47,6 +47,18 @@ function TeamsPageContent() {
     if (status === "signed-out") router.replace("/login?next=/teams");
   }, [router, status]);
 
+  /*
+   * The header owns the selection; fall back to the first team so the page is
+   * never blank just because nothing has been picked yet this session.
+   * Resolved here rather than at render time because the project fetch below
+   * is scoped to it.
+   */
+  const team =
+    (groups ?? []).find((group) => group.id === selectedWorkspaceId) ??
+    (groups ?? [])[0] ??
+    null;
+  const teamId = team?.id ?? null;
+
   const load = useCallback(() => {
     void getGroups()
       .then((items) => {
@@ -57,10 +69,35 @@ function TeamsPageContent() {
         setGroups([]);
         setLoadError("Could not load this team.");
       });
-    void getProjects(100)
-      .then((response) => setProjects(response.items))
-      .catch(() => setProjects([]));
   }, []);
+
+  /*
+   * Projects are fetched SCOPED to the team on screen.
+   *
+   * This used to pull the caller's newest 100 projects and filter by workspace
+   * in the browser, which silently truncated: someone in several teams could
+   * have a team's repositories fall outside that window and see an empty
+   * section with no explanation. It got worse once every team member — not
+   * just leads — started seeing their team's projects, because that put far
+   * more rows in the unscoped list.
+   */
+  useEffect(() => {
+    if (!teamId) {
+      setProjects([]);
+      return;
+    }
+    let cancelled = false;
+    void getProjects(100, { workspaceId: teamId })
+      .then((response) => {
+        if (!cancelled) setProjects(response.items);
+      })
+      .catch(() => {
+        if (!cancelled) setProjects([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [teamId]);
 
   useEffect(() => {
     if (status !== "signed-in" || guest) return;
@@ -114,15 +151,7 @@ function TeamsPageContent() {
   if (status === "signed-out") return null;
 
   const loading = groups === null;
-  // The header owns the selection; fall back to the first team so the page is
-  // never blank just because nothing has been picked yet this session.
-  const team =
-    (groups ?? []).find((group) => group.id === selectedWorkspaceId) ??
-    (groups ?? [])[0] ??
-    null;
-  const teamProjects = team
-    ? projects.filter((project) => project.workspaceId === team.id)
-    : [];
+  const teamProjects = projects;
 
   return (
     <main className="dash-shell" suppressHydrationWarning>

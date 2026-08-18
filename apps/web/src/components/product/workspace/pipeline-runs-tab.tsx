@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import Link from "next/link";
 
 import {
   getProjectJobLog,
@@ -44,18 +45,26 @@ export function PipelineRunsTab({
   projectId: string;
   actionsUrl?: string | null;
 }) {
+  const [repoFullName, setRepoFullName] = useState<string | null>(null);
   const [runs, setRuns] = useState<WorkflowRunSummary[]>([]);
   const [url, setUrl] = useState<string | null>(actionsUrl ?? null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  /*
+   * Every setState happens in a promise callback. `loading` starts true, so the
+   * first render shows the skeleton without the effect having to raise it —
+   * setting state synchronously inside an effect body cascades renders
+   * (react-hooks/set-state-in-effect). The Retry button is an event handler,
+   * so it may raise the spinner itself.
+   */
   const load = useCallback(
-    (showSpinner: boolean) => {
-      if (showSpinner) setLoading(true);
+    () => {
       return getProjectWorkflowRuns(projectId)
         .then((data) => {
           setRuns(data.runs);
           setUrl(data.actionsUrl);
+          setRepoFullName(data.repoFullName);
           setError(null);
         })
         .catch(() => {
@@ -67,13 +76,18 @@ export function PipelineRunsTab({
   );
 
   useEffect(() => {
-    void load(true);
-    const handle = window.setInterval(() => void load(false), POLL_MS);
+    // `loading` already starts true, so the first paint shows the skeleton
+    // without this effect touching state.
+    void load();
+    const handle = window.setInterval(() => void load(), POLL_MS);
     return () => window.clearInterval(handle);
   }, [load]);
 
   if (loading) return <WorkspaceLoading rows={5} />;
-  if (error) return <WorkspaceError message={error} onRetry={() => void load(true)} />;
+  if (error) return <WorkspaceError message={error} onRetry={() => {
+          setLoading(true);
+          void load();
+        }} />;
 
   if (runs.length === 0) {
     return (
@@ -97,11 +111,34 @@ export function PipelineRunsTab({
         <span className="ws-hint">
           Refreshes every {POLL_MS / 1000} seconds
         </span>
-        {url && (
-          <a className="ws-link" href={url} target="_blank" rel="noopener noreferrer">
-            Open Actions on GitHub ↗
-          </a>
-        )}
+        <span className="ws-toolbar__links">
+          {/*
+            The cross-project view. This tab answers "what happened to THIS
+            project"; /runs answers "what is red anywhere", which no per-project
+            tab can. Since Pipeline runs replaced the rail bar that used to lead
+            there, this is the link that keeps it reachable from a project.
+          */}
+          <Link
+            className="ws-link"
+            href={
+              repoFullName
+                ? `/runs?repoFullName=${encodeURIComponent(repoFullName)}`
+                : "/runs"
+            }
+          >
+            Runs across all projects →
+          </Link>
+          {url && (
+            <a
+              className="ws-link"
+              href={url}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Open Actions on GitHub ↗
+            </a>
+          )}
+        </span>
       </div>
 
       <ul className="ws-runs">
@@ -125,20 +162,47 @@ function RunRow({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Jobs load ON EXPAND, once, and are not refetched by the parent's poll.
-  const loadJobs = useCallback(() => {
-    setLoading(true);
-    setError(null);
-    getProjectRunJobs(projectId, run.id)
-      .then(setJobs)
-      .catch(() => setError("The jobs for this run could not be read."))
-      .finally(() => setLoading(false));
-  }, [projectId, run.id]);
+  // Jobs load ON EXPAND, and are never fetched by the parent's list poll.
+  //
+  // `showSpinner` is false for refreshes: a run that is still executing
+  // re-reads its jobs below, and blanking the panel every fifteen seconds
+  // while someone is reading a step would be worse than showing nothing.
+  const loadJobs = useCallback(
+    (showSpinner: boolean) => {
+      if (showSpinner) setLoading(true);
+      setError(null);
+      return getProjectRunJobs(projectId, run.id)
+        .then(setJobs)
+        .catch(() => setError("The jobs for this run could not be read."))
+        .finally(() => setLoading(false));
+    },
+    [projectId, run.id],
+  );
+
+  /*
+   * An EXPANDED, still-running run refreshes its own jobs.
+   *
+   * This is the one narrow exception to "jobs are never polled", and it is
+   * bounded on three sides: only the run someone has open, only while it has
+   * not completed, and it stops the moment either changes. Without it a run
+   * expanded mid-flight sat frozen on "in progress" forever — the list above
+   * kept moving while the steps under it did not, which is precisely the
+   * moment someone is watching.
+   *
+   * What is still forbidden is what the limit cannot survive: fetching jobs
+   * for every run in the list on every tick.
+   */
+  const isRunning = run.status !== "completed";
+  useEffect(() => {
+    if (!open || !isRunning) return;
+    const handle = window.setInterval(() => void loadJobs(false), POLL_MS);
+    return () => window.clearInterval(handle);
+  }, [open, isRunning, loadJobs]);
 
   function toggle() {
     const next = !open;
     setOpen(next);
-    if (next && jobs === null && !loading) loadJobs();
+    if (next && jobs === null && !loading) void loadJobs(true);
   }
 
   return (
@@ -178,7 +242,7 @@ function RunRow({
           {loading ? (
             <WorkspaceLoading rows={3} />
           ) : error ? (
-            <WorkspaceError message={error} onRetry={loadJobs} />
+            <WorkspaceError message={error} onRetry={() => void loadJobs(true)} />
           ) : jobs && jobs.length > 0 ? (
             <ul className="ws-jobs">
               {jobs.map((job) => (

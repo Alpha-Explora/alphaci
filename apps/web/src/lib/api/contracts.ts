@@ -1100,13 +1100,31 @@ export interface DiscoverExistingRepoRequest {
   baseBranch?: string;
 }
 
+export type ExistingRepoWarningCode =
+  | "branch_protected"
+  | "sonar_already_configured"
+  | "uat_missing"
+  | "project_type_undetected";
+
+export interface ExistingRepoWarning {
+  code: ExistingRepoWarningCode;
+  message: string;
+}
+
 export interface DiscoverExistingRepoResponse {
   repoFullName: string;
+  /** The repository's own default branch, read from GitHub — not assumed. */
   baseBranch: string;
   detectedProjectTypeId: string | null;
   recommendedWorkflowRecipeId: string;
   serviceName: string;
   servicePath: string;
+  /**
+   * What setup is about to do, and what it cannot do — reported before
+   * anything is written. Optional so a page served by an older backend simply
+   * shows no notices instead of failing to parse.
+   */
+  warnings?: ExistingRepoWarning[];
 }
 
 export interface SetupExistingRepoPrRequest {
