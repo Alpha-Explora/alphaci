@@ -78,7 +78,7 @@ function Overview({ group, projects }: { group: GroupSummary; projects: Provisio
       <div className="group-overview-content">
         <section className="group-overview-section">
           <div className="group-overview-section__header">
-            <div><h3>Members & invitations</h3><p>Manage membership, roles, and invitations without leaving the overview.</p></div>
+            <div><h3>Members</h3><p>Add or remove people without leaving the overview. Anyone you add is a member immediately.</p></div>
           </div>
           <Members group={group} />
         </section>
