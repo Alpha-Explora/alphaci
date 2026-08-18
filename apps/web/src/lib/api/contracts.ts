@@ -907,6 +907,19 @@ export interface ProjectOverviewResponse {
     deploymentHistory: boolean;
     driftDetection: boolean;
   };
+  /**
+   * hierarchy.repositories id for this project, or null.
+   *
+   * Developer assignments are keyed on hierarchy.repositories rather than on
+   * the provisioned project, so this is the only way the project page can
+   * address its own access panel. Null means there is no assignment surface
+   * (personal-workspace project, or one predating the link) and the Access
+   * entry point is hidden rather than pointed at a URL that would 404.
+   *
+   * Optional so a project page served by an older backend degrades to hiding
+   * the entry point instead of failing to parse the response.
+   */
+  hierarchyRepositoryId?: string | null;
 }
 
 export type ProjectCiRunStage =

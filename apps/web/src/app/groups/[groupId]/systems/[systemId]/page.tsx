@@ -89,7 +89,7 @@ function SystemDetail({
         items={[
           { label: "Projects", href: "/workflows" },
           { label: group?.name ?? "Group", href: `/groups/${groupId}` },
-          { label: "Systems", href: `/groups/${groupId}/systems` },
+          { label: "Projects", href: `/groups/${groupId}/systems` },
           { label: system.name },
         ]}
       />

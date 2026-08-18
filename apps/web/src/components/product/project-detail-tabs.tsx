@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { motion } from "framer-motion";
 
 import { ServiceLogsConsole } from "@/components/product/service-logs-console";
@@ -1557,6 +1558,35 @@ export function ProjectDetailTabs({
                         </dd>
                       </div>
                     </dl>
+
+                    {/* Developer access.
+
+                        Assignments are keyed on hierarchy.repositories, not on
+                        this provisioned project, so the panel lives on the
+                        group route. This row is the only path to it — without
+                        it the assignment feature is built but unreachable.
+                        Rendered only when BOTH ids resolve; a project in a
+                        personal workspace has no assignment surface at all. */}
+                    {selectedOverview?.hierarchyRepositoryId &&
+                    selectedProject.workspaceId ? (
+                      <div
+                        className="env-metadata-row provisioned"
+                        style={{ alignItems: "center" }}
+                      >
+                        <span>
+                          <strong>Developer access</strong>
+                          <br />
+                          Grant or revoke this repository for members of the
+                          team that owns it.
+                        </span>
+                        <Link
+                          className="ghost-button target-action-btn"
+                          href={`/groups/${encodeURIComponent(selectedProject.workspaceId)}/repositories/${encodeURIComponent(selectedOverview.hierarchyRepositoryId)}`}
+                        >
+                          Manage access
+                        </Link>
+                      </div>
+                    ) : null}
 
                     {syncSnapshot ? (
                       <div
