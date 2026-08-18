@@ -11,10 +11,13 @@ export function CreateGroupDialog({
   open,
   onClose,
   onCreated,
+  parentWorkspaceId,
 }: {
   open: boolean;
   onClose: () => void;
   onCreated: (group: GroupSummary) => void;
+  /** Set to create a TEAM inside that workspace; omit for a workspace. */
+  parentWorkspaceId?: string;
 }) {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
@@ -42,6 +45,7 @@ export function CreateGroupDialog({
         name: trimmed,
         description: description.trim() || undefined,
         businessUnit: businessUnit.trim() || undefined,
+        ...(parentWorkspaceId ? { parentWorkspaceId } : {}),
       });
       onCreated(group);
       reset();
@@ -64,9 +68,13 @@ export function CreateGroupDialog({
         reset();
         onClose();
       }}
-      title="Create group"
-      description="A group organizes your systems, delivery projects, repositories, and members."
-      submitLabel="Create group"
+      title={parentWorkspaceId ? "Create team" : "Create workspace"}
+      description={
+        parentWorkspaceId
+          ? "A team lives inside this workspace and owns its own members and repositories."
+          : "A workspace is the top level. Teams live inside it."
+      }
+      submitLabel={parentWorkspaceId ? "Create team" : "Create workspace"}
       submitting={submitting}
       error={error}
       canSubmit={name.trim().length > 0}
@@ -109,7 +117,7 @@ export function CreateGroupDialog({
           className="hier-textarea"
           value={description}
           onChange={(event) => setDescription(event.target.value)}
-          placeholder="What this group is responsible for"
+          placeholder={parentWorkspaceId ? "What this team is responsible for" : "What this workspace is for"}
           maxLength={500}
         />
       </div>

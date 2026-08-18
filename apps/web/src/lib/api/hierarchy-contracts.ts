@@ -154,6 +154,8 @@ export interface GroupSummary {
 }
 
 export interface CreateGroupRequest {
+  /** Set to create a TEAM inside that workspace; omit for a top-level workspace. */
+  parentWorkspaceId?: string;
   name: string;
   description?: string;
   businessUnit?: string;
