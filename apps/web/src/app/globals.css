@@ -19775,3 +19775,11 @@ html:not([data-theme="light"]) .dash-shell :is(
     white-space: nowrap;
   }
 }
+
+/* The team detail now fills the page rather than sitting beside a list rail —
+   the header dropdown selects the team, so a second list was the same rows
+   twice. */
+.team-detail-surface {
+  padding: 1.25rem 1.4rem 1.6rem;
+  border-radius: var(--radius-card, 12px);
+}
