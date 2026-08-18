@@ -110,7 +110,9 @@ html::-webkit-scrollbar {
   --accent-purple-light: rgba(139, 92, 246, 0.1);
 
   /* ── Sidebar layout ────────────────────────────────────────── */
-  --sidebar-width: 220px;
+  /* The rail expands on hover by painting OVER the page, so the layout only
+     ever reserves its collapsed width. Do not animate this. */
+  --sidebar-width: 64px;
   --sidebar-collapsed: 64px;
 
   /* ── Surface-level accent tints ───────────────────────────── */
@@ -359,11 +361,6 @@ html[data-theme="light"] {
   border-bottom-color: rgba(0, 0, 0, 0.06);
 }
 
-[data-theme="light"] .sidebar-collapse-btn {
-  background: rgba(0, 0, 0, 0.04);
-  border-color: rgba(0, 0, 0, 0.1);
-  color: var(--text-secondary);
-}
 
 [data-theme="light"] .sidebar-signout-btn {
   color: var(--text-secondary);
@@ -15807,6 +15804,12 @@ select option {
   }
 }
 
+/* ── The rail ────────────────────────────────────────────────────────────────
+   Closed at 64px, revealed to 240px on hover or keyboard focus. `overflow:
+   hidden` is load-bearing, not tidying: the labels are opacity-0 rather than
+   display:none, so they still lay out ~200px wide inside a 64px column and
+   would raise a horizontal scrollbar along the rail's foot. Clipping is also
+   what makes the closed state read as a reveal rather than as truncation. */
 .app-sidebar {
   position: fixed;
   top: 0;
@@ -15816,6 +15819,10 @@ select option {
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  width: var(--sidebar-width);
+  transition:
+    width 0.2s ease-out,
+    box-shadow 0.2s ease-out;
   /* Frosted glass dark background */
   background: linear-gradient(
     180deg,
@@ -15829,6 +15836,147 @@ select option {
     inset -1px 0 0 rgba(255, 255, 255, 0.06),
     2px 0 40px rgba(99, 102, 241, 0.08),
     4px 0 20px rgba(0, 0, 0, 0.3);
+}
+
+/* :has(:focus-visible), NOT :focus-within. A click FOCUSES the link, and
+   :focus-within cannot tell a click from a Tab press — so every click latched
+   the rail open on top of the page it had just opened. :focus-visible is the
+   browser's own answer to that distinction: withheld after a pointer click,
+   set on keyboard focus. This one is never suppressed. */
+.app-sidebar:has(:focus-visible),
+.app-sidebar:not([data-hover-suppressed="true"]):hover {
+  width: 240px;
+  box-shadow:
+    inset -1px 0 0 rgba(255, 255, 255, 0.06),
+    8px 0 48px rgba(0, 0, 0, 0.45);
+}
+
+/* Everything that only makes sense once there is room to read it. */
+.app-sidebar .sidebar-nav-item-label,
+.app-sidebar .sidebar-section-label,
+.app-sidebar .sidebar-user-info,
+.app-sidebar .sidebar-signout-label,
+.app-sidebar .sidebar-nav-count {
+  opacity: 0;
+  transition: opacity 0.15s ease-out;
+}
+
+.app-sidebar:has(:focus-visible) .sidebar-nav-item-label,
+.app-sidebar:has(:focus-visible) .sidebar-section-label,
+.app-sidebar:has(:focus-visible) .sidebar-user-info,
+.app-sidebar:has(:focus-visible) .sidebar-signout-label,
+.app-sidebar:has(:focus-visible) .sidebar-nav-count,
+.app-sidebar:not([data-hover-suppressed="true"]):hover .sidebar-nav-item-label,
+.app-sidebar:not([data-hover-suppressed="true"]):hover .sidebar-section-label,
+.app-sidebar:not([data-hover-suppressed="true"]):hover .sidebar-user-info,
+.app-sidebar:not([data-hover-suppressed="true"]):hover .sidebar-signout-label,
+.app-sidebar:not([data-hover-suppressed="true"]):hover .sidebar-nav-count {
+  opacity: 1;
+}
+
+/* Section headings: a hairline while closed, the words once open. Both are in
+   the DOM so the rail never re-flows mid-transition. */
+.sidebar-section {
+  position: relative;
+  display: flex;
+  align-items: center;
+  height: 1.9rem;
+  margin: 0.65rem 0 0.15rem;
+  padding: 0 0.65rem;
+}
+
+.sidebar-section-divider {
+  position: absolute;
+  left: 0.9rem;
+  right: 0.9rem;
+  height: 1px;
+  background: var(--border);
+  transition: opacity 0.15s ease-out;
+}
+
+.app-sidebar:has(:focus-visible) .sidebar-section-divider,
+.app-sidebar:not([data-hover-suppressed="true"]):hover .sidebar-section-divider {
+  opacity: 0;
+}
+
+/* Unread: a dot that survives 64px, swapped for the real count once open. */
+.sidebar-nav-dot {
+  position: absolute;
+  top: 6px;
+  left: 30px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--accent-indigo);
+  box-shadow: 0 0 0 2px var(--bg-panel);
+  transition: opacity 0.15s ease-out;
+}
+
+.app-sidebar:has(:focus-visible) .sidebar-nav-dot,
+.app-sidebar:not([data-hover-suppressed="true"]):hover .sidebar-nav-dot {
+  opacity: 0;
+}
+
+.sidebar-nav-count {
+  margin-left: auto;
+  min-width: 1.15rem;
+  height: 1.15rem;
+  padding: 0 0.3rem;
+  border-radius: 999px;
+  background: var(--accent-indigo);
+  color: #fff;
+  font-size: 0.62rem;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  position: relative;
+  z-index: 1;
+}
+
+/* The icon box is pinned at the same x in both states, so opening reveals the
+   labels instead of sliding every glyph sideways. */
+.app-sidebar .sidebar-nav-item {
+  padding-left: 0;
+}
+
+.app-sidebar .sidebar-nav-item-icon {
+  display: grid;
+  place-items: center;
+  width: 64px;
+  flex-shrink: 0;
+}
+
+/* The wordmark is left-aligned and clipped: its circular mark lands in the
+   icon column while closed, and the full logotype is revealed with the rail —
+   so no separate mark asset is needed. */
+.app-sidebar .sidebar-brand-image {
+  object-position: left center;
+}
+
+/* Hover is a pointer affordance and a touch device has none, so below the
+   breakpoint the rail simply stays closed — icons only, tap to navigate. This
+   is what it already did before (it auto-collapsed at 768px); the difference is
+   that the width no longer has to be kept in sync from JS. Widening here would
+   desync it from --sidebar-width, which reserves the closed width, and the rail
+   would sit on top of the content. */
+@media (max-width: 768px) {
+  .app-sidebar:hover {
+    width: var(--sidebar-width);
+    box-shadow:
+      inset -1px 0 0 rgba(255, 255, 255, 0.06),
+      2px 0 40px rgba(99, 102, 241, 0.08),
+      4px 0 20px rgba(0, 0, 0, 0.3);
+  }
+
+  .app-sidebar:hover .sidebar-nav-item-label,
+  .app-sidebar:hover .sidebar-section-label,
+  .app-sidebar:hover .sidebar-user-info,
+  .app-sidebar:hover .sidebar-signout-label,
+  .app-sidebar:hover .sidebar-nav-count {
+    opacity: 0;
+  }
 }
 
 /* Left edge gradient stripe */
@@ -15912,68 +16060,11 @@ select option {
   color: var(--brand);
 }
 
-.sidebar-collapse-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 24px;
-  height: 24px;
-  border-radius: 6px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  background: rgba(255, 255, 255, 0.04);
-  color: var(--text-muted);
-  cursor: pointer;
-  flex-shrink: 0;
-  transition:
-    color 0.18s ease,
-    border-color 0.18s ease,
-    background 0.18s ease;
-  outline: none;
-}
 
-.sidebar-collapse-btn--edge {
-  position: fixed;
-  top: 50%;
-  z-index: 110;
-  width: 27px;
-  height: 52px;
-  margin-top: -26px;
-  border-left: 0;
-  border-radius: 0 11px 11px 0;
-  background: rgba(17, 17, 22, 0.96);
-  border-color: rgba(99, 102, 241, 0.3);
-  color: var(--text-secondary);
-  box-shadow:
-    8px 0 22px rgba(0, 0, 0, 0.28),
-    0 0 18px rgba(99, 102, 241, 0.12);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-}
 
-.sidebar-collapse-btn.sidebar-collapse-btn--edge:hover {
-  color: var(--brand);
-  border-color: rgba(88, 166, 255, 0.48);
-  box-shadow:
-    10px 0 26px rgba(0, 0, 0, 0.32),
-    0 0 22px rgba(88, 166, 255, 0.18);
-}
 
-.sidebar-collapse-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
 
-.sidebar-collapse-btn:hover {
-  color: var(--text-primary);
-  border-color: rgba(255, 255, 255, 0.2);
-  background: rgba(255, 255, 255, 0.08);
-}
 
-.sidebar-collapse-btn:focus-visible {
-  outline: 2px solid var(--accent-indigo);
-  outline-offset: 2px;
-}
 
 /* ── Navigation section ─────────────────────────────────────────────────── */
 .sidebar-nav {
@@ -16547,10 +16638,6 @@ html:not([data-theme="light"]) .dash-shell .sidebar-nav-item-bg {
 html:not([data-theme="light"]) .dash-shell .sidebar-signout-btn,
 html:not([data-theme="light"])
   .dash-shell
-  .sidebar-collapse-btn--edge {
-  background: rgba(24, 24, 33, 0.78);
-  border-color: rgba(158, 158, 172, 0.16);
-}
 
 html:not([data-theme="light"]) .dash-shell .workflow-page-header,
 html:not([data-theme="light"]) .dash-shell .studio-tab-bar--enhanced {
@@ -17159,25 +17246,9 @@ html:not([data-theme="light"]) .dash-shell :is(
 
 /* The edge control is discoverable on hover/focus without sitting over the
    working area while it is not being used. */
-.sidebar-collapse-btn--edge {
-  opacity: 0;
-  transition:
-    opacity 0.18s ease,
-    color 0.18s ease,
-    border-color 0.18s ease,
-    background 0.18s ease;
-}
 
-.app-sidebar:hover + .sidebar-collapse-btn--edge,
-.sidebar-collapse-btn--edge:hover,
-.sidebar-collapse-btn--edge:focus-visible {
-  opacity: 1;
-}
 
 @media (prefers-reduced-motion: reduce) {
-  .sidebar-collapse-btn--edge {
-    transition: none;
-  }
 }
 
 /* ── Commit-first workflow history ─────────────────────────────────────── */
