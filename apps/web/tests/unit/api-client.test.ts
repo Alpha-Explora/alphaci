@@ -44,12 +44,12 @@ import {
   disconnectProject,
   syncProjects,
 } from "../../src/lib/api/client";
-import {
-  getNotifications,
-  getNotificationPreferences,
-  updateNotificationPreferences,
-  markNotificationRead,
-} from "../../src/features/notifications/api/notifications.api";
+import { notificationsRepository } from "../../src/features/notifications/data/notifications-repository";
+
+const getNotifications = notificationsRepository.list;
+const markNotificationRead = notificationsRepository.markRead;
+const getNotificationPreferences = notificationsRepository.getPreferences;
+const updateNotificationPreferences = notificationsRepository.updatePreferences;
 
 describe("API client project setup helpers", () => {
   const fetchMock = jest.fn();

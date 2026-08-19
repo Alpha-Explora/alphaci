@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { ApiError, getAuthSession } from "@/lib/api/client";
+import { ApiError, getAuthSession, logout } from "@/lib/api/client";
 import type { AuthMeResponse } from "@/lib/api/contracts";
 
 export type AuthSessionStatus = "loading" | "signed-out" | "signed-in" | "error";
@@ -12,6 +12,11 @@ interface UseAuthSessionResult {
   session: AuthMeResponse | null;
   error: string | null;
   refresh: () => Promise<void>;
+  /* Sign-out lives here rather than in each view. Nine surfaces were repeating
+   * the same call-then-refresh-then-redirect dance, and a view that performs
+   * I/O is exactly what the architecture's no-http-in-views rule forbids. */
+  signOut: () => Promise<void>;
+  isSigningOut: boolean;
 }
 
 function getFriendlyAuthError(error: unknown): string {
@@ -30,6 +35,7 @@ export function useAuthSession(): UseAuthSessionResult {
   const [status, setStatus] = useState<AuthSessionStatus>("loading");
   const [session, setSession] = useState<AuthMeResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [isSigningOut, setIsSigningOut] = useState(false);
   const requestVersionRef = useRef(0);
 
   const applySession = useCallback((current: AuthMeResponse) => {
@@ -153,10 +159,22 @@ export function useAuthSession(): UseAuthSessionResult {
     };
   }, [applySession]);
 
+  const signOut = useCallback(async () => {
+    setIsSigningOut(true);
+    try {
+      await logout();
+      await refresh();
+    } finally {
+      setIsSigningOut(false);
+    }
+  }, [refresh]);
+
   return {
     status,
     session,
     error,
     refresh,
+    signOut,
+    isSigningOut,
   };
 }

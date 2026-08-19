@@ -1,9 +1,8 @@
-/* Notification contracts — the shapes crossing this feature's boundary.
+/* Domain types shared by every notifications action (inbox, preferences).
  *
- * Moved out of lib/api/contracts.ts, which had grown to 1,247 lines holding
- * every feature's types in one file. A type belongs with the feature that
- * owns it, so this file changes only when notifications change.
- */
+ * Domain-level model/ is the sanctioned share point when more than one action
+ * needs the same types — see the skill's domain-sharing guidance. Pure types
+ * only: no React, no Next, no I/O. */
 
 export interface NotificationItem {
   id: string;
@@ -31,3 +30,6 @@ export interface UpdateNotificationPreferencesRequest {
   inAppEnabled?: boolean;
   emailEnabled?: boolean;
 }
+
+/** Every interactive view-model in this domain reports one of these. */
+export type NotificationsStatus = "idle" | "loading" | "ready" | "error";

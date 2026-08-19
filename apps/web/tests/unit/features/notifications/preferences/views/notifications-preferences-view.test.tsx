@@ -1,21 +1,24 @@
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 
-import { NotificationPreferencesSection } from "../../../../../src/features/notifications";
-import {
-  getNotificationPreferences,
-  updateNotificationPreferences,
-} from "../../../../../src/features/notifications/api/notifications.api";
+import { NotificationsPreferencesView } from "../../../../../../src/features/notifications/preferences";
+import { notificationsRepository } from "../../../../../../src/features/notifications/data/notifications-repository";
 
-jest.mock("../../../../../src/features/notifications/api/notifications.api", () => ({
-  getNotificationPreferences: jest.fn(),
-  updateNotificationPreferences: jest.fn(),
+jest.mock("../../../../../../src/features/notifications/data/notifications-repository", () => ({
+  notificationsRepository: {
+    getPreferences: jest.fn(),
+    updatePreferences: jest.fn(),
+  },
 }));
 
-const mockedGetPreferences = getNotificationPreferences as jest.MockedFunction<typeof getNotificationPreferences>;
-const mockedUpdatePreferences = updateNotificationPreferences as jest.MockedFunction<typeof updateNotificationPreferences>;
+const mockedGetPreferences = notificationsRepository.getPreferences as jest.MockedFunction<
+  typeof notificationsRepository.getPreferences
+>;
+const mockedUpdatePreferences = notificationsRepository.updatePreferences as jest.MockedFunction<
+  typeof notificationsRepository.updatePreferences
+>;
 
-describe("NotificationPreferencesSection", () => {
+describe("NotificationsPreferencesView", () => {
   let root: Root | null = null;
 
   beforeEach(() => {
@@ -48,7 +51,7 @@ describe("NotificationPreferencesSection", () => {
     root = createRoot(container);
 
     await act(async () => {
-      root!.render(<NotificationPreferencesSection />);
+      root!.render(<NotificationsPreferencesView />);
       await Promise.resolve();
     });
 
@@ -70,7 +73,7 @@ describe("NotificationPreferencesSection", () => {
     root = createRoot(container);
 
     await act(async () => {
-      root!.render(<NotificationPreferencesSection />);
+      root!.render(<NotificationsPreferencesView />);
       await Promise.resolve();
     });
 

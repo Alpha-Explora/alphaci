@@ -1,15 +1,15 @@
 "use client";
 
-import { useNotificationPrefs } from "../model/use-notification-prefs";
+import { useNotificationsPreferencesViewModel } from "../view-models/use-notifications-preferences-view-model";
 
-export function NotificationPreferencesSection() {
+export function NotificationsPreferencesView() {
   /* View only — state and persistence live in the ViewModel. */
   const {
     preferences,
     isSaving: saving,
-    message,
+    error: message,
     setInAppEnabled,
-  } = useNotificationPrefs();
+  } = useNotificationsPreferencesViewModel();
 
   const handleInAppChange = (enabled: boolean) => void setInAppEnabled(enabled);
 

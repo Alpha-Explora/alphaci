@@ -12,8 +12,8 @@ import {
   type AppRole,
   type WorkspacesMeResponse,
 } from "@/lib/api/contracts";
-import type { NotificationsResponse } from "@/features/notifications/api/notifications.contracts";
-import { getNotifications } from "@/features/notifications/api/notifications.api";
+import type { NotificationsResponse } from "@/features/notifications";
+import { notificationsRepository } from "@/features/notifications/data/notifications-repository";
 import { getMyWorkspaces } from "@/lib/api/workspaces";
 import { useWorkspaceSelection } from "./workspace-context";
 import { WorkspaceSwitcher } from "./workspace-switcher";
@@ -341,7 +341,7 @@ export function AppNav({
   useEffect(() => {
     if (guest) return;
     let active = true;
-    void getNotifications()
+    void notificationsRepository.list()
       .then((response) => {
         if (active) setNotifications(response);
       })

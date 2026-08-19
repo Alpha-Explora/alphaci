@@ -14,13 +14,13 @@ import {
   WorkspaceProvider,
   useWorkspaceSelection,
 } from "@/components/layout/workspace-context";
-import { NotificationPreferencesSection } from "@/features/notifications";
+import { NotificationsPreferencesView } from "@/features/notifications/preferences";
 import { WorkspaceMembersSection } from "@/components/settings/workspace-members-section";
 import { useAuthSession } from "@/hooks/use-auth-session";
 import { useCapabilities } from "@/hooks/use-capabilities";
 import { logout, deleteAccount } from "@/lib/api/client";
 import type { WorkspacesMeResponse } from "@/lib/api/contracts";
-import { useInbox } from "@/features/notifications";
+import { useNotificationsInboxViewModel } from "@/features/notifications/inbox";
 import { getMyWorkspaces } from "@/lib/api/workspaces";
 import { isGuest } from "@/lib/auth/subscription";
 
@@ -327,11 +327,11 @@ function SettingsPageContent() {
   const {
     items: notificationItems,
     unreadCount: notificationUnreadCount,
-    isLoading: notificationsLoading,
+    status: notificationsStatus,
     error: notificationsError,
     markingId: markingNotificationId,
     markRead: handleMarkNotificationRead,
-  } = useInbox(activeSection === "account" && notificationsEnabled);
+  } = useNotificationsInboxViewModel(activeSection === "account" && notificationsEnabled);
 
   useEffect(() => {
     if (status === "signed-out") {
@@ -926,7 +926,7 @@ function SettingsPageContent() {
                         <p className="error-text" style={{ margin: 0 }}>
                           {notificationsError}
                         </p>
-                      ) : !notificationsLoading ? (
+                      ) : notificationsStatus !== "loading" ? (
                         <div
                           style={{
                             display: "flex",
@@ -1032,7 +1032,7 @@ function SettingsPageContent() {
                               paddingTop: "0.75rem",
                             }}
                           >
-                            <NotificationPreferencesSection />
+                            <NotificationsPreferencesView />
                           </div>
                         </div>
                       ) : (
