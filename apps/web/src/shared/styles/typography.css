@@ -1,0 +1,14 @@
+/* Base typography — destination, not yet populated.
+ *
+ * Deliberately empty at phase 00. The element-level type rules still live in
+ * globals.css (`body` at ~line 1062, the heading rules below it) and moving
+ * them now would change their position in the cascade: they currently sit
+ * *after* several hundred component rules, and hoisting them into an @import
+ * would let those components win where today the base rule does.
+ *
+ * They move in phase 03, once the component rules around them have gone to
+ * their own features and the cascade can be reasoned about locally.
+ *
+ * Only document-level defaults belong here. Component and feature typography
+ * belongs in that feature's CSS module.
+ */

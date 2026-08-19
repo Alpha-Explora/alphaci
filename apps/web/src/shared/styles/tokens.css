@@ -1,0 +1,243 @@
+/* Design tokens — the single origin for colour, elevation and type.
+ *
+ * Every colour in the product must resolve to a variable declared here.
+ * globals.css previously carried 1,166 rgba() and 220 hex literals against
+ * only 191 custom properties; stylelint now blocks raw literals outside
+ * this file so that ratio cannot regress.
+ */
+
+:root {
+  /* ── Graphite & Azure base ──────────────────────────────────────── */
+  /* Structural neutral graphite ladder. Nav is the darkest layer,
+     the app shell sits one step lighter, and cards are lighter still
+     so elevation reads by lightness (closer = lighter) on dark UI. */
+  --bg-base: #1a1a21; /* main app background (Graphite)  */
+  --bg-soft: #111116; /* recessed / nav-adjacent surface   */
+  --bg-frost: rgba(255, 255, 255, 0.03);
+  --bg-surface: rgba(36, 36, 45, 0.82); /* card, slightly translucent #24242d */
+  --bg-panel: #111116; /* left sidebar & top nav (Deep Graphite) */
+  --bg-elevated: #24242d; /* elevated container (Elevated Graphite) */
+
+  /* ── Surface elevation ladder (dark) ───────────────────────── */
+  /* Opaque, stepped values so nav < shell < card < nested tile reads
+     as distinct layers with real contrast. Use these for any container
+     hierarchy instead of stacking low-alpha rgba(17, 17, 22,...) values. */
+  --layer-0: #1a1a21; /* shell / page background (Graphite) */
+  --layer-1: #24242d; /* card surface (Elevated Graphite)       */
+  --layer-1-hover: #363642; /* card hover (spec hover state)  */
+  --layer-2: #2c2c37; /* nested tile (elevated)              */
+  --layer-2-hover: #363642; /* nested tile hover              */
+  --border-layer: #363642; /* crisp 1px card edge (spec)     */
+  --border-tile: #424250; /* nested tile edge, one step up   */
+
+  /* ── Pipeline loader idle/track surfaces (theme-aware) ─────── */
+  /* Idle dots, connectors and the pulse track on the full-screen
+     loader. White-alpha on the dark shell; dark-alpha in light mode. */
+  --loader-track-strong: rgba(
+    255,
+    255,
+    255,
+    0.15
+  ); /* idle node border        */
+  --loader-track-mid: rgba(255, 255, 255, 0.08); /* idle node fill / line   */
+  --loader-track-faint: rgba(255, 255, 255, 0.04); /* pulse-line track        */
+
+  /* ── Text ──────────────────────────────────────────────────── */
+  --text-primary: #f7f7f9;
+  --text-secondary: #a2a2ac;
+  --text-muted: #74747f;
+
+  /* ── Brand / accent ────────────────────────────────────────── */
+  --brand: #58a6ff; /* azure — text/icon accent, hover tint  */
+  --brand-light: rgba(88, 166, 255, 0.15);
+  --brand-strong: #1f6feb; /* Azure Blue — buttons, active tabs */
+  --brand-accent: #10b981; /* emerald — secondary brand success tint  */
+  --brand-glow: rgba(88, 166, 255, 0.28);
+
+  /* ── Semantic (data & status) ──────────────────────────────── */
+  --success: #10b981; /* Emerald Green — completed / passing   */
+  --warning: #f59e0b; /* Amber — partial / needs review        */
+  --danger: #ef4444; /* Rose Red — failed / danger            */
+
+  /* ── Secondary accent: tech purple ─────────────────────────── */
+  /* Secondary chart accent + secondary actions, plan badges, highlights */
+  --accent-violet: #8b5cf6; /* Tech Purple — secondary chart accent */
+  --accent-violet-light: rgba(167, 139, 250, 0.12);
+  --accent-violet-mid: rgba(167, 139, 250, 0.25);
+  --accent-violet-glow: rgba(167, 139, 250, 0.4);
+  --border-violet: rgba(167, 139, 250, 0.35);
+
+  /* ── Tertiary accent: amber — for warnings, "active" states ─ */
+  /* Used for status-active, GitHub-connected indicator, orphaned status */
+  --accent-amber: #f59e0b; /* same as --warning, aliased for semantic clarity */
+  --accent-amber-light: rgba(245, 158, 11, 0.12);
+  --border-amber: rgba(245, 158, 11, 0.3);
+
+  /* ── Teal / emerald accent ─────────────────────────────────── */
+  --accent-teal: #2dd4bf;
+  --accent-teal-light: rgba(45, 212, 191, 0.12);
+  --accent-teal-glow: rgba(45, 212, 191, 0.4);
+  --border-teal: rgba(45, 212, 191, 0.3);
+
+  /* ── Coral / rose accent ───────────────────────────────────── */
+  --accent-coral: #fb7185;
+  --accent-coral-light: rgba(251, 113, 133, 0.12);
+  --accent-coral-glow: rgba(251, 113, 133, 0.35);
+  --border-coral: rgba(251, 113, 133, 0.3);
+
+  /* ── Indigo accent ────────────────────────────────────────── */
+  --accent-indigo: #6366f1;
+  --accent-indigo-light: rgba(99, 102, 241, 0.12);
+  --accent-indigo-glow: rgba(99, 102, 241, 0.35);
+
+  /* ── Rose accent ───────────────────────────────────────────── */
+  --accent-rose: #f43f5e;
+  --accent-rose-light: rgba(244, 63, 94, 0.1);
+  --accent-rose-glow: rgba(244, 63, 94, 0.3);
+
+  /* ── Emerald accent ────────────────────────────────────────── */
+  --accent-emerald: #10b981;
+  --accent-emerald-light: rgba(16, 185, 129, 0.1);
+
+  /* ── Gold accent ───────────────────────────────────────────── */
+  --accent-gold: #f59e0b;
+  --accent-gold-light: rgba(245, 158, 11, 0.1);
+
+  /* ── Purple deep accent ────────────────────────────────────── */
+  --accent-purple: #8b5cf6; /* Tech Purple — aligned to secondary chart accent */
+  --accent-purple-light: rgba(139, 92, 246, 0.1);
+
+  /* ── Sidebar layout ────────────────────────────────────────── */
+  /* The rail expands on hover by painting OVER the page, so the layout only
+     ever reserves its collapsed width. Do not animate this. */
+  --sidebar-width: 64px;
+  --sidebar-collapsed: 64px;
+
+  /* ── Surface-level accent tints ───────────────────────────── */
+  /* Subtle background tints for section separators and hover states */
+  --surface-violet: rgba(167, 139, 250, 0.04);
+  --surface-brand: rgba(88, 166, 255, 0.04);
+
+  /* ── Borders ───────────────────────────────────────────────── */
+  /* Graphite-toned (#363642) so edges read crisp on the lighter
+     slate shell instead of the washed-out look white-alpha gives here. */
+  --border: rgba(54, 54, 66, 0.55);
+  --border-soft: rgba(54, 54, 66, 0.32);
+  --border-subtle: rgba(54, 54, 66, 0.2);
+  --border-strong: #363642;
+  --border-brand: rgba(31, 111, 235, 0.6);
+
+  /* ── Shadows / glows ───────────────────────────────────────── */
+  --shadow-soft: 0 4px 14px rgba(0, 0, 0, 0.25), 0 1px 3px rgba(0, 0, 0, 0.15);
+  --shadow-card: 0 10px 40px rgba(0, 0, 0, 0.45), 0 4px 12px rgba(0, 0, 0, 0.3);
+  --shadow-elevated:
+    0 16px 54px rgba(0, 0, 0, 0.65), 0 6px 20px rgba(0, 0, 0, 0.45);
+  --shadow-hard: 0 24px 80px rgba(0, 0, 0, 0.85), 0 8px 24px rgba(0, 0, 0, 0.7);
+  /* "glow" tokens repurposed as clean, tinted drop shadows — no neon
+     halos (spec: clean drop shadows instead of neon glows). */
+  --glow-brand: 0 10px 30px rgba(31, 111, 235, 0.22), 0 3px 8px rgba(0, 0, 0, 0.35);
+  --glow-success: 0 10px 30px rgba(16, 185, 129, 0.2), 0 3px 8px rgba(0, 0, 0, 0.35);
+
+  /* ── Layout ────────────────────────────────────────────────── */
+  --radius-card: 1.25rem;
+  --radius-pill: 999px;
+  --layout-max: 100vw;
+  --layout-gutter: clamp(1.5rem, 3vw, 2.5rem);
+  --stack-gap: clamp(1.5rem, 2vw, 2rem);
+  --panel-pad: clamp(1.5rem, 2vw, 2.5rem);
+  --content-measure: 80ch;
+  --input-measure: 32rem; /* readability cap for form inputs (spec) */
+  --tab-min-height: 3rem;
+  --surface: var(--bg-surface);
+}
+
+[data-theme="light"] {
+  --bg-base: #f1f1f3;
+  --bg-soft: #fafafb;
+  --bg-frost: rgba(250, 250, 251, 0.7);
+  --bg-surface: rgba(250, 250, 251, 0.85);
+  --bg-panel: #fafafb;
+  --bg-elevated: #f2f2f4;
+
+  /* ── Surface elevation ladder (light) ──────────────────────── */
+  --layer-0: #ebebee; /* shell / page background       */
+  --layer-1: #fafafb; /* card surface                  */
+  --layer-1-hover: #f4f4f6; /* card hover                    */
+  --layer-2: #f2f2f4; /* nested tile (slightly recessed) */
+  --layer-2-hover: #eaeaee; /* nested tile hover             */
+  --border-layer: rgba(17, 17, 22, 0.1); /* card edge      */
+  --border-tile: rgba(17, 17, 22, 0.08); /* tile edge      */
+
+  /* Loader idle/track surfaces — dark-alpha so they read on the light shell */
+  --loader-track-strong: rgba(17, 17, 22, 0.18);
+  --loader-track-mid: rgba(17, 17, 22, 0.1);
+  --loader-track-faint: rgba(17, 17, 22, 0.06);
+
+  --text-primary: #111116;
+  --text-secondary: #363642;
+  --text-muted: #a2a2ac;
+
+  --brand: #0969da;
+  --brand-light: rgba(9, 105, 218, 0.1);
+  --brand-strong: #0550ae;
+  --brand-accent: #059669;
+  --brand-glow: rgba(9, 105, 218, 0.25);
+
+  --success: #059669;
+  --warning: #d97706;
+  --danger: #dc2626;
+
+  --accent-violet: #7c3aed;
+  --accent-violet-light: rgba(124, 58, 237, 0.08);
+  --accent-violet-mid: rgba(124, 58, 237, 0.15);
+  --accent-violet-glow: rgba(124, 58, 237, 0.2);
+  --border-violet: rgba(124, 58, 237, 0.25);
+
+  --accent-amber: #d97706;
+  --accent-amber-light: rgba(217, 119, 6, 0.08);
+  --border-amber: rgba(217, 119, 6, 0.25);
+
+  --accent-teal: #0d9488;
+  --accent-teal-light: rgba(13, 148, 136, 0.08);
+  --accent-teal-glow: rgba(13, 148, 136, 0.2);
+  --border-teal: rgba(13, 148, 136, 0.2);
+
+  --accent-coral: #e11d48;
+  --accent-coral-light: rgba(225, 29, 72, 0.08);
+  --accent-coral-glow: rgba(225, 29, 72, 0.15);
+  --border-coral: rgba(225, 29, 72, 0.2);
+
+  --accent-indigo: #4f46e5;
+  --accent-indigo-light: rgba(79, 70, 229, 0.08);
+  --accent-indigo-glow: rgba(79, 70, 229, 0.2);
+
+  --accent-rose: #e11d48;
+  --accent-rose-light: rgba(225, 29, 72, 0.07);
+  --accent-rose-glow: rgba(225, 29, 72, 0.15);
+
+  --accent-emerald: #059669;
+  --accent-emerald-light: rgba(5, 150, 105, 0.08);
+
+  --accent-gold: #d97706;
+  --accent-gold-light: rgba(217, 119, 6, 0.08);
+
+  --accent-purple: #6d28d9;
+  --accent-purple-light: rgba(109, 40, 217, 0.08);
+
+  --surface-violet: rgba(79, 70, 229, 0.03);
+  --surface-brand: rgba(9, 105, 218, 0.03);
+
+  --border: rgba(0, 0, 0, 0.08);
+  --border-soft: rgba(0, 0, 0, 0.05);
+  --border-subtle: rgba(0, 0, 0, 0.03);
+  --border-strong: rgba(0, 0, 0, 0.15);
+  --border-brand: rgba(9, 105, 218, 0.4);
+
+  --shadow-soft: 0 2px 8px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.04);
+  --shadow-card: 0 4px 20px rgba(0, 0, 0, 0.1), 0 2px 6px rgba(0, 0, 0, 0.06);
+  --shadow-elevated:
+    0 8px 32px rgba(0, 0, 0, 0.14), 0 4px 12px rgba(0, 0, 0, 0.08);
+  --shadow-hard: 0 16px 48px rgba(0, 0, 0, 0.2), 0 6px 16px rgba(0, 0, 0, 0.12);
+  --glow-brand: 0 0 30px rgba(9, 105, 218, 0.15);
+  --glow-success: 0 0 24px rgba(5, 150, 105, 0.15);
+}

@@ -1,0 +1,13 @@
+/* Base reset. Document-level only — nothing here may describe a feature. */
+
+html {
+  scrollbar-width: none;
+}
+
+html::-webkit-scrollbar {
+  display: none;
+}
+
+* {
+  box-sizing: border-box;
+}
