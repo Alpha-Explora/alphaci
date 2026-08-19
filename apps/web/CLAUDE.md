@@ -15,10 +15,9 @@ All MVP product surfaces are built and functional. Auth, billing, dashboard, and
 | `/` | Built | Landing page with auth-aware CTAs |
 | `/login` | Built | GitHub + Google OAuth via `OAuthAuthPage` |
 | `/signup` | Built | Same component as login, signup-labelled |
-| `/auth/callback` | Built | OAuth callback handler; routes by subscription state |
-| `/home` | Built | Dashboard: KPI cards, recent workflows, quick actions; gates on active subscription |
-| `/subscribe` | Built | Plan comparison (Pro ₱300, Enterprise ₱1200); mock activate/cancel; `actionError` shown on failure |
-| `/workflows` | Built | 3-tab Create Project surface (Setup, Current Projects, Catalog); gates on active subscription |
+| `/auth/callback` | Built | OAuth callback handler; routes straight to the requested path (no paywall) |
+| `/home` | Built | Dashboard: KPI cards, recent workflows, quick actions |
+| `/workflows` | Built | 3-tab Create Project surface (Setup, Current Projects, Catalog) |
 
 ### Built components
 
@@ -53,7 +52,6 @@ All MVP product surfaces are built and functional. Auth, billing, dashboard, and
 | `catalog.ts` | `GET /catalog/categories`, `GET /catalog/templates`, `GET /catalog/project-options` |
 | `github.ts` | `GET /github/app/install-url`, `POST /github/installations`, `GET /github/installations/repos`, `GET /github/installations/accounts` |
 | `projects.ts` | `POST /api/v1/projects` (primary flow), `POST /api/v1/projects/setup` (existing repo), `GET /api/v1/projects` |
-| `subscription.ts` | `POST /subscription/monthly/activate`, `POST /subscription/monthly/cancel` |
 | `workflows.ts` | `POST /workflows/generate`, `GET /workflows/history` |
 
 ### Not yet built
@@ -64,9 +62,21 @@ All MVP product surfaces are built and functional. Auth, billing, dashboard, and
 
 ---
 
+## Billing model
+
+This deployment has **no payment gateway**. Entitlement is agreed by contract and
+granted administratively, so there is no checkout, no paywall, and no
+`/subscribe` route — they were removed along with the PayMongo integration.
+
+`getAuthenticatedRedirectPath` therefore sends every authenticated user to the
+path they asked for; only guests are redirected, to `/login`. On the backend,
+`SUBSCRIPTION_GATE_ENABLED=false` makes both the app and CI run validation treat
+every user as fully entitled.
+
+---
+
 ## Planned surfaces (future, post-MVP)
 
-- PayMongo real checkout: `/billing` → `POST /v1/checkout/sessions` → redirect to PayMongo URL
 - Runs page: polls BE for `workflow_run` events mirrored from GitHub App webhooks
 
 ---

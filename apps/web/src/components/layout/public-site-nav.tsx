@@ -64,9 +64,9 @@ export function PublicSiteNav({
           <Link className="public-site-login" href="/login">
             Login
           </Link>
-          <Link className="public-site-cta" href="/subscribe">
+          <Link className="public-site-cta" href="/signup">
             <span aria-hidden="true" />
-            Pricing
+            Get started
           </Link>
         </div>
       )}

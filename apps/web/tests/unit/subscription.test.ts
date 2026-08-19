@@ -1,7 +1,6 @@
 import type { AuthMeResponse } from "@/lib/api/contracts";
 import {
   getAuthenticatedRedirectPath,
-  hasActiveSubscription,
   isGuest,
   isInternalUser,
 } from "@/lib/auth/subscription";
@@ -34,63 +33,6 @@ function buildSession(overrides: Partial<AuthMeResponse> = {}): AuthMeResponse {
     },
   };
 }
-
-describe("hasActiveSubscription", () => {
-  it("returns false for missing session", () => {
-    expect(hasActiveSubscription(null)).toBe(false);
-    expect(hasActiveSubscription(undefined)).toBe(false);
-  });
-
-  it("returns false for unauthenticated users", () => {
-    expect(hasActiveSubscription(buildSession({ authenticated: false }))).toBe(false);
-  });
-
-  it("returns false for authenticated users on the free plan", () => {
-    expect(
-      hasActiveSubscription(
-        buildSession({
-          subscription: {
-            plan: "free",
-            status: "active",
-            provider: "mock",
-            updatedAt: "2026-01-01T00:00:00.000Z",
-          },
-        }),
-      ),
-    ).toBe(false);
-  });
-
-  it("returns false for inactive paid plans", () => {
-    expect(
-      hasActiveSubscription(
-        buildSession({
-          subscription: {
-            plan: "pro",
-            status: "inactive",
-            provider: "mock",
-            updatedAt: "2026-01-01T00:00:00.000Z",
-          },
-        }),
-      ),
-    ).toBe(false);
-  });
-
-  it("returns true for active paid plans", () => {
-    expect(
-      hasActiveSubscription(
-        buildSession({
-          subscription: {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            plan: "enterprise" as any,
-            status: "active",
-            provider: "mock",
-            updatedAt: "2026-01-01T00:00:00.000Z",
-          },
-        }),
-      ),
-    ).toBe(true);
-  });
-});
 
 describe("isGuest", () => {
   it("returns true for null or undefined session", () => {
@@ -140,11 +82,7 @@ describe("internal users", () => {
     expect(isInternalUser(null)).toBe(false);
   });
 
-  it("hasActiveSubscription is true for internal users regardless of plan/status", () => {
-    expect(hasActiveSubscription(internalInactive)).toBe(true);
-  });
-
-  it("never routes internal users to the paywall", () => {
+  it("routes internal users straight to the requested path", () => {
     expect(getAuthenticatedRedirectPath(internalInactive, "/home")).toBe("/home");
   });
 });
@@ -166,7 +104,9 @@ describe("getAuthenticatedRedirectPath", () => {
     ).toBe("/home");
   });
 
-  it("sends inactive paid users to subscription management", () => {
+  // The payment gateway was removed: entitlement is contract-granted, so there
+  // is no paywall and no /subscribe route to divert anyone to.
+  it("sends inactive paid users to the requested path rather than a paywall", () => {
     expect(
       getAuthenticatedRedirectPath(
         buildSession({
@@ -179,7 +119,7 @@ describe("getAuthenticatedRedirectPath", () => {
         }),
         "/home",
       ),
-    ).toBe("/subscribe");
+    ).toBe("/home");
   });
 
   it("returns null for unauthenticated users", () => {
