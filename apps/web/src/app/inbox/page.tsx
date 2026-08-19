@@ -359,11 +359,10 @@ function InboxPageContent() {
           <div className="settings-card">
             <div className="settings-section-body">
               <p className="inbox-state-copy">
-                Activate a subscription to start receiving system
-                notifications.
+                Sign in to start receiving system notifications.
               </p>
-              <Link href="/subscribe" className="primary-button inbox-state-cta">
-                View plans
+              <Link href="/login" className="primary-button inbox-state-cta">
+                Sign in
               </Link>
             </div>
           </div>

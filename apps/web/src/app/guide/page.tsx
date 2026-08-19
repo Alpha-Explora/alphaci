@@ -158,8 +158,8 @@ function PublicGuidePage({ error }: Readonly<{ error: string | null }>) {
             <Link className="public-site-cta" href="/signup">
               Start free
             </Link>
-            <Link className="public-guide-link" href="/subscribe">
-              View plans
+            <Link className="public-guide-link" href="/login">
+              Sign in
             </Link>
           </div>
         </motion.section>
@@ -268,8 +268,8 @@ deploy:
             <Link className="public-site-cta" href="/signup">
               Start free
             </Link>
-            <Link className="public-guide-link" href="/subscribe">
-              Compare limits
+            <Link className="public-guide-link" href="/login">
+              Sign in
             </Link>
           </div>
         </section>
