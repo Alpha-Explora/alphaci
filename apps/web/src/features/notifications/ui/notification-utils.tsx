@@ -1,6 +1,6 @@
 "use client";
 
-import type { NotificationItem } from "@/lib/api/contracts";
+import type { NotificationItem } from "../api/notifications.contracts";
 
 export function notificationTone(
   eventCode: string,

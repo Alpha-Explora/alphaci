@@ -1,50 +1,17 @@
 "use client";
 
-import { useEffect, useState } from "react";
-
-import type { NotificationPreferences } from "@/lib/api/contracts";
-import {
-  getNotificationPreferences,
-  updateNotificationPreferences,
-} from "@/lib/api/notifications";
+import { useNotificationPrefs } from "../model/use-notification-prefs";
 
 export function NotificationPreferencesSection() {
-  const [preferences, setPreferences] =
-    useState<NotificationPreferences | null>(null);
-  const [saving, setSaving] = useState(false);
-  const [message, setMessage] = useState<string | null>(null);
+  /* View only — state and persistence live in the ViewModel. */
+  const {
+    preferences,
+    isSaving: saving,
+    message,
+    setInAppEnabled,
+  } = useNotificationPrefs();
 
-  useEffect(() => {
-    let active = true;
-    void getNotificationPreferences()
-      .then((response) => {
-        if (!active) return;
-        setPreferences(response);
-        setMessage(null);
-      })
-      .catch(() => {
-        if (active)
-          setMessage("Notification preferences are unavailable right now.");
-      });
-    return () => {
-      active = false;
-    };
-  }, []);
-
-  async function handleInAppChange(enabled: boolean) {
-    setSaving(true);
-    setMessage(null);
-    try {
-      const updated = await updateNotificationPreferences({
-        inAppEnabled: enabled,
-      });
-      setPreferences(updated);
-    } catch {
-      setMessage("Notification preferences could not be saved.");
-    } finally {
-      setSaving(false);
-    }
-  }
+  const handleInAppChange = (enabled: boolean) => void setInAppEnabled(enabled);
 
   if (!preferences) {
     return (

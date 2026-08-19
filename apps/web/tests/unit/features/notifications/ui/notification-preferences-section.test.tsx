@@ -1,13 +1,13 @@
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 
-import { NotificationPreferencesSection } from "../../src/components/settings/notification-preferences-section";
+import { NotificationPreferencesSection } from "../../../../../src/features/notifications";
 import {
   getNotificationPreferences,
   updateNotificationPreferences,
-} from "../../src/lib/api/notifications";
+} from "../../../../../src/features/notifications/api/notifications.api";
 
-jest.mock("../../src/lib/api/notifications", () => ({
+jest.mock("../../../../../src/features/notifications/api/notifications.api", () => ({
   getNotificationPreferences: jest.fn(),
   updateNotificationPreferences: jest.fn(),
 }));

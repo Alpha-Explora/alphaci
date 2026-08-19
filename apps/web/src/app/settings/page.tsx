@@ -14,19 +14,13 @@ import {
   WorkspaceProvider,
   useWorkspaceSelection,
 } from "@/components/layout/workspace-context";
-import { NotificationPreferencesSection } from "@/components/settings/notification-preferences-section";
+import { NotificationPreferencesSection } from "@/features/notifications";
 import { WorkspaceMembersSection } from "@/components/settings/workspace-members-section";
 import { useAuthSession } from "@/hooks/use-auth-session";
 import { useCapabilities } from "@/hooks/use-capabilities";
 import { logout, deleteAccount } from "@/lib/api/client";
-import type {
-  NotificationsResponse,
-  WorkspacesMeResponse,
-} from "@/lib/api/contracts";
-import {
-  getNotifications,
-  markNotificationRead,
-} from "@/lib/api/notifications";
+import type { WorkspacesMeResponse } from "@/lib/api/contracts";
+import { useInbox } from "@/features/notifications";
 import { getMyWorkspaces } from "@/lib/api/workspaces";
 import { isGuest } from "@/lib/auth/subscription";
 
@@ -327,14 +321,17 @@ function SettingsPageContent() {
     null,
   );
   const [workspacesError, setWorkspacesError] = useState<string | null>(null);
-  const [notifications, setNotifications] =
-    useState<NotificationsResponse | null>(null);
-  const [notificationsError, setNotificationsError] = useState<string | null>(
-    null,
-  );
-  const [markingNotificationId, setMarkingNotificationId] = useState<
-    string | null
-  >(null);
+  /* Notifications state comes from the feature's ViewModel — the same hook the
+   * inbox uses. Previously this page re-implemented the fetch, the optimistic
+   * mark-read and the error strings by hand. */
+  const {
+    items: notificationItems,
+    unreadCount: notificationUnreadCount,
+    isLoading: notificationsLoading,
+    error: notificationsError,
+    markingId: markingNotificationId,
+    markRead: handleMarkNotificationRead,
+  } = useInbox(activeSection === "account" && notificationsEnabled);
 
   useEffect(() => {
     if (status === "signed-out") {
@@ -371,26 +368,6 @@ function SettingsPageContent() {
     };
   }, [activeSection, setWorkspaceContext, workspacesEnabled]);
 
-  useEffect(() => {
-    if (activeSection !== "account" || !notificationsEnabled) return;
-    let active = true;
-    void getNotifications()
-      .then((response) => {
-        if (active) {
-          setNotifications(response);
-          setNotificationsError(null);
-        }
-      })
-      .catch(() => {
-        if (active) {
-          setNotificationsError("Notifications are unavailable right now.");
-        }
-      });
-    return () => {
-      active = false;
-    };
-  }, [activeSection, notificationsEnabled]);
-
   async function handleLogout() {
     setIsLoggingOut(true);
     setLogoutMessage(null);
@@ -414,31 +391,6 @@ function SettingsPageContent() {
     } catch {
       setDeleteMessage("Failed to delete account. Please try again.");
       setIsDeleting(false);
-    }
-  }
-
-  async function handleMarkNotificationRead(id: string) {
-    setMarkingNotificationId(id);
-    setNotificationsError(null);
-    try {
-      await markNotificationRead(id);
-      setNotifications((current) =>
-        current
-          ? {
-              ...current,
-              unreadCount: Math.max(0, current.unreadCount - 1),
-              items: current.items.map((item) =>
-                item.id === id
-                  ? { ...item, readAt: item.readAt ?? new Date().toISOString() }
-                  : item,
-              ),
-            }
-          : current,
-      );
-    } catch {
-      setNotificationsError("Notification update failed.");
-    } finally {
-      setMarkingNotificationId(null);
     }
   }
 
@@ -974,7 +926,7 @@ function SettingsPageContent() {
                         <p className="error-text" style={{ margin: 0 }}>
                           {notificationsError}
                         </p>
-                      ) : notifications ? (
+                      ) : !notificationsLoading ? (
                         <div
                           style={{
                             display: "flex",
@@ -989,10 +941,10 @@ function SettingsPageContent() {
                               color: "var(--text-primary)",
                             }}
                           >
-                            {notifications.unreadCount} unread
+                            {notificationUnreadCount} unread
                           </span>
-                          {notifications.items.length ? (
-                            notifications.items.map((notification) => (
+                          {notificationItems.length ? (
+                            notificationItems.map((notification) => (
                               <div
                                 key={notification.id}
                                 className="hover-field"

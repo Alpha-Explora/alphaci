@@ -13,11 +13,18 @@ module.exports = {
       name: 'view-must-not-fetch',
       severity: 'error',
       comment:
-        'A View renders what a ViewModel gives it. If ui/ imports api/, the ' +
-        'component owns its own data fetching and the layer boundary is ' +
-        'fictional. Move the call into model/ and pass the result down as props.',
+        'A View renders what a ViewModel gives it. If ui/ imports api/ at ' +
+        'runtime, the component owns its own data fetching and the layer ' +
+        'boundary is fictional. Move the call into model/ and pass the result ' +
+        'down as props.\n' +
+        'Type-only imports are exempt: they are erased at compile time and ' +
+        'carry no coupling — a View legitimately needs the shape of what it ' +
+        'renders. It is the fetching that must live in the ViewModel.',
       from: { path: '^src/features/([^/]+)/ui/' },
-      to: { path: '^src/features/[^/]+/api/' },
+      to: {
+        path: '^src/features/[^/]+/api/',
+        dependencyTypesNot: ['type-only'],
+      },
     },
     {
       name: 'no-deep-feature-imports',

@@ -14,5 +14,4 @@ export * from "./runs";
 export * from "./subscription";
 export * from "./usage";
 export * from "./workspaces";
-export * from "./notifications";
 export * from "./workflows";
