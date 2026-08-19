@@ -560,32 +560,6 @@ export interface UpdateWorkspaceMemberRoleRequest {
   role: WorkspaceRole;
 }
 
-export interface NotificationItem {
-  id: string;
-  title: string;
-  body: string;
-  eventCode: string;
-  readAt: string | null;
-  createdAt: string;
-}
-
-export interface NotificationsResponse {
-  enabled: boolean;
-  items: NotificationItem[];
-  unreadCount: number;
-}
-
-export interface NotificationPreferences {
-  userId: string;
-  inAppEnabled: boolean;
-  emailEnabled: boolean;
-  updatedAt: string;
-}
-
-export interface UpdateNotificationPreferencesRequest {
-  inAppEnabled?: boolean;
-  emailEnabled?: boolean;
-}
 
 export interface ProjectAuditEvent {
   id: string;

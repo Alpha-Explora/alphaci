@@ -13,5 +13,4 @@ export * from "./request";
 export * from "./runs";
 export * from "./usage";
 export * from "./workspaces";
-export * from "./notifications";
 export * from "./workflows";

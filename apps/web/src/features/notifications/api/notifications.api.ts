@@ -2,8 +2,8 @@ import type {
   NotificationPreferences,
   NotificationsResponse,
   UpdateNotificationPreferencesRequest,
-} from "./contracts";
-import { request } from "./request";
+} from "./notifications.contracts";
+import { request } from "@/lib/api/request";
 
 export async function getNotifications(): Promise<NotificationsResponse> {
   return request<NotificationsResponse>("/notifications");

@@ -9,9 +9,6 @@ import {
   addWorkspaceMember,
   updateWorkspaceMemberRole,
   removeWorkspaceMember,
-  getNotifications,
-  getNotificationPreferences,
-  updateNotificationPreferences,
   getLinkedGithubRepos,
   getMyUsage,
   getProjectAuditEvents,
@@ -35,7 +32,6 @@ import {
   rerunProjectCiRun,
   repairProjectDriftFinding,
   runProjectDriftDetection,
-  markNotificationRead,
   listDeploymentTargets,
   listProjectEnvMetadata,
   listProviderConnections,
@@ -46,6 +42,12 @@ import {
   disconnectProject,
   syncProjects,
 } from "../../src/lib/api/client";
+import {
+  getNotifications,
+  getNotificationPreferences,
+  updateNotificationPreferences,
+  markNotificationRead,
+} from "../../src/features/notifications/api/notifications.api";
 
 describe("API client project setup helpers", () => {
   const fetchMock = jest.fn();

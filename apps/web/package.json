@@ -10,7 +10,10 @@
     "typecheck": "tsc --noEmit -p tsconfig.typecheck.json",
     "test": "jest --runInBand",
     "test:watch": "jest --watch",
-    "test:e2e": "tsx tests/e2e/playwright-e2e.ts"
+    "test:e2e": "tsx tests/e2e/playwright-e2e.ts",
+    "boundaries": "depcruise src --config .dependency-cruiser.cjs --ignore-known",
+    "boundaries:all": "depcruise src --config .dependency-cruiser.cjs",
+    "lint:css": "stylelint \"src/shared/styles/**/*.css\" \"src/features/**/*.css\""
   },
   "dependencies": {
     "driver.js": "^1.4.0",
@@ -26,11 +29,14 @@
     "@types/node": "^25.6.0",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
+    "dependency-cruiser": "^18.2.0",
     "eslint": "^9.39.4",
     "eslint-config-next": "^16.2.4",
     "jest": "^30.3.0",
     "jest-environment-jsdom": "^30.3.0",
     "playwright": "^1.59.1",
+    "stylelint": "^17.14.1",
+    "stylelint-config-standard": "^40.0.0",
     "tailwindcss": "^4.2.4",
     "tsx": "^4.21.0",
     "typescript": "^6.0.3",

@@ -10,10 +10,10 @@ import type { useAuthSession } from "@/hooks/use-auth-session";
 import {
   APP_ROLE_BADGE_LABELS,
   type AppRole,
-  type NotificationsResponse,
   type WorkspacesMeResponse,
 } from "@/lib/api/contracts";
-import { getNotifications } from "@/lib/api/notifications";
+import type { NotificationsResponse } from "@/features/notifications/api/notifications.contracts";
+import { getNotifications } from "@/features/notifications/api/notifications.api";
 import { getMyWorkspaces } from "@/lib/api/workspaces";
 import { useWorkspaceSelection } from "./workspace-context";
 import { WorkspaceSwitcher } from "./workspace-switcher";

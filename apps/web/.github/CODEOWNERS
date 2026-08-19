@@ -1,0 +1,31 @@
+# Feature ownership.
+#
+# Uses the same feature names as the backend's src/modules/, so a developer
+# owning a feature owns it on both sides.
+#
+# REPLACE the placeholders below with real GitHub handles or teams before
+# enabling required reviews.
+
+# ── Default ──────────────────────────────────────────────────────────────────
+*                                   @Alpha-Explora/maintainers
+
+# ── Shared foundations ───────────────────────────────────────────────────────
+/src/shared/                        @Alpha-Explora/maintainers
+/src/shared/styles/tokens.css       @Alpha-Explora/maintainers
+/src/app/                           @Alpha-Explora/maintainers
+/.dependency-cruiser.cjs            @Alpha-Explora/maintainers
+/.stylelintrc.json                  @Alpha-Explora/maintainers
+/.github/workflows/                 @Alpha-Explora/maintainers
+
+# ── Features ─────────────────────────────────────────────────────────────────
+# /src/features/auth/               @handle
+# /src/features/projects/           @handle
+# /src/features/workflows/          @handle
+# /src/features/runs/               @handle
+# /src/features/hierarchy/          @handle
+# /src/features/deployments/        @handle
+# /src/features/notifications/      @handle
+# /src/features/admin/              @handle
+# /src/features/dashboard/          @handle
+# /src/features/onboarding/         @handle
+# /src/features/settings/           @handle
