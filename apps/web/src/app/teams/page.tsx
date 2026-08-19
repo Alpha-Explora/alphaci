@@ -34,7 +34,7 @@ function TeamsPageContent() {
   const router = useRouter();
   const prefersReducedMotion = useReducedMotion();
   const { status, session, error: sessionError, refresh } = useAuthSession();
-  const { selectedWorkspaceId } = useWorkspaceSelection();
+  const { selectedWorkspaceId, refreshWorkspaces } = useWorkspaceSelection();
 
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [groups, setGroups] = useState<GroupSummary[] | null>(null);
@@ -219,7 +219,14 @@ function TeamsPageContent() {
             <GroupWorkspacePanel
               group={team}
               projects={teamProjects}
-              onDeleted={load}
+              // Both, deliberately: `load` re-reads this page's group list, and
+              // refreshWorkspaces drops the team from the header picker — which
+              // otherwise kept offering a team that no longer exists.
+              onDeleted={() => {
+                load();
+                refreshWorkspaces();
+              }}
+              onMembershipChanged={load}
               // Creating a repository belongs to the Projects surface, which
               // owns the setup form. Linking straight there — pre-scoped to
               // this team — replaces an intermediate screen whose only content

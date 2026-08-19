@@ -288,7 +288,7 @@ export function AppNav({
     useState<WorkspacesMeResponse | null>(null);
   const [notifications, setNotifications] =
     useState<NotificationsResponse | null>(null);
-  const { setWorkspaces } = useWorkspaceSelection();
+  const { setWorkspaces, registerWorkspaceRefresh } = useWorkspaceSelection();
   const prefersReducedMotion = useReducedMotion();
   const reduced = prefersReducedMotion ?? false;
 
@@ -312,6 +312,12 @@ export function AppNav({
       })
       .catch(() => undefined);
   }, [setWorkspaces]);
+
+  // The header owns the fetch, so it hands it to the context — that is what
+  // lets a delete anywhere in the app drop the team from this picker.
+  useEffect(() => {
+    registerWorkspaceRefresh(loadWorkspaces);
+  }, [registerWorkspaceRefresh, loadWorkspaces]);
 
   useEffect(() => {
     if (guest) return;

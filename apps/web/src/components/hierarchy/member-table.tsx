@@ -2,8 +2,12 @@
 
 import { useMemo, useState } from "react";
 
-import { removeGroupMember } from "@/lib/api/client";
-import { type GroupMember } from "@/lib/api/hierarchy-contracts";
+import { removeGroupMember, updateGroupMemberRole } from "@/lib/api/client";
+import {
+  GROUP_ROLE_LABELS,
+  type GroupMember,
+  type GroupRole,
+} from "@/lib/api/hierarchy-contracts";
 import { MemberStatusBadge, RoleBadge } from "./badges";
 import { Avatar, SectionHeader } from "./primitives";
 
@@ -17,6 +21,17 @@ import { Avatar, SectionHeader } from "./primitives";
  * There is no invitation lifecycle: a lead adds someone and they are a member
  * immediately.
  */
+/**
+ * Roles a manager may assign from this table.
+ *
+ * 'viewer' is deliberately absent: nothing in this product distinguishes a
+ * viewer from a member yet, so offering it would create a state with no
+ * meaning. 'admin' (Lead) IS offered — the backend allows it for an existing
+ * Admin and rejects it for a delegated lead, which is the rule this table
+ * relies on rather than duplicating.
+ */
+const ASSIGNABLE_ROLES: GroupRole[] = ["admin", "delegated_lead", "member"];
+
 export function MemberTable({
   groupId,
   members,
@@ -76,6 +91,30 @@ export function MemberTable({
     }
   }
 
+  async function handleRoleChange(member: GroupMember, role: GroupRole) {
+    if (role === member.role) return;
+    setBusyId(member.id);
+    setError(null);
+    try {
+      const updated = await updateGroupMemberRole(groupId, member.id, { role });
+      onMembersChange((current) =>
+        current.map((item) => (item.id === member.id ? updated : item)),
+      );
+    } catch (cause) {
+      // The backend refuses some transitions a manager can still select — a
+      // delegated lead cannot mint an Admin, and the last Lead cannot be
+      // demoted. Surface its reason rather than a generic failure.
+      const detail = (cause as { details?: { message?: string | string[] } })
+        ?.details;
+      const message = Array.isArray(detail?.message)
+        ? detail?.message.join(", ")
+        : detail?.message;
+      setError(message ?? "That role could not be changed.");
+    } finally {
+      setBusyId(null);
+    }
+  }
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
       <section aria-label="Members">
@@ -109,8 +148,49 @@ export function MemberTable({
                 </div>
                 <div className="hier-row-actions">
                   <MemberStatusBadge status={member.memberStatus} />
-                  {/* Role is display-only — managed in the Admin Console. */}
-                  <RoleBadge role={member.role} />
+                  {/*
+                    Role is EDITABLE by a manager (2026-08-18). It used to be a
+                    read-only badge pointing at the Admin Console, but the
+                    Console sets the GLOBAL role (app_role) — a different axis
+                    entirely — so there was no way anywhere in the product to
+                    make somebody a Lead of a team, while the Add member dialog
+                    promised exactly that.
+
+                    The last Lead cannot be demoted, mirroring the backend's
+                    row-locked guard; the control is disabled rather than
+                    hidden so the reason can be read from the tooltip.
+                  */}
+                  {canManage && !removed ? (
+                    <label className="hier-role-picker">
+                      <span className="sr-only">
+                        Role for {member.name || member.login}
+                      </span>
+                      <select
+                        className="hier-role-select"
+                        value={member.role}
+                        disabled={busyId === member.id || isLastLead}
+                        title={
+                          isLastLead
+                            ? "A team must keep at least one Lead"
+                            : undefined
+                        }
+                        onChange={(event) =>
+                          void handleRoleChange(
+                            member,
+                            event.target.value as GroupRole,
+                          )
+                        }
+                      >
+                        {ASSIGNABLE_ROLES.map((role) => (
+                          <option key={role} value={role}>
+                            {GROUP_ROLE_LABELS[role]}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  ) : (
+                    <RoleBadge role={member.role} />
+                  )}
                   {canManage && !removed && (
                     <button
                       type="button"

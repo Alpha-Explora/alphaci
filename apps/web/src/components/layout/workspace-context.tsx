@@ -2,11 +2,12 @@
 
 import {
   createContext,
+  type ReactNode,
   useCallback,
   useContext,
   useMemo,
+  useRef,
   useState,
-  type ReactNode,
 } from "react";
 
 import type { WorkspaceSummary, WorkspacesMeResponse } from "@/lib/api/contracts";
@@ -17,6 +18,16 @@ interface WorkspaceSelectionContextValue {
   workspaces: WorkspacesMeResponse | null;
   setSelectedWorkspaceId: (workspaceId: string | null) => void;
   setWorkspaces: (workspaces: WorkspacesMeResponse | null) => void;
+  /**
+   * Re-reads the workspace list.
+   *
+   * Registered by the header, which owns the fetch. Anything that creates or
+   * deletes a team calls this — without it a deleted team stayed in the picker
+   * until a full reload, and selecting it left the header naming one team
+   * while the page showed another.
+   */
+  refreshWorkspaces: () => void;
+  registerWorkspaceRefresh: (refresh: () => void) => void;
 }
 
 const STORAGE_KEY = "flowci.workspaceId";
@@ -27,6 +38,8 @@ const WorkspaceSelectionContext = createContext<WorkspaceSelectionContextValue>(
   workspaces: null,
   setSelectedWorkspaceId: () => undefined,
   setWorkspaces: () => undefined,
+  refreshWorkspaces: () => undefined,
+  registerWorkspaceRefresh: () => undefined,
 });
 
 export function WorkspaceProvider({ children }: { children: ReactNode }) {
@@ -35,6 +48,20 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     return window.localStorage.getItem(STORAGE_KEY);
   });
   const [workspaces, setWorkspacesState] = useState<WorkspacesMeResponse | null>(null);
+  /*
+   * A ref, not state: the header registers its fetch on mount, and storing it
+   * in state would re-render every consumer of this context for a value none
+   * of them read.
+   */
+  const refreshRef = useRef<() => void>(() => undefined);
+
+  const registerWorkspaceRefresh = useCallback((refresh: () => void) => {
+    refreshRef.current = refresh;
+  }, []);
+
+  const refreshWorkspaces = useCallback(() => {
+    refreshRef.current();
+  }, []);
 
   const setSelectedWorkspaceId = useCallback((workspaceId: string | null) => {
     setSelectedWorkspaceIdState(workspaceId);
@@ -82,12 +109,16 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       workspaces,
       setSelectedWorkspaceId,
       setWorkspaces,
+      refreshWorkspaces,
+      registerWorkspaceRefresh,
     }),
     [
       selectedWorkspace,
       selectedWorkspaceId,
       setSelectedWorkspaceId,
       setWorkspaces,
+      refreshWorkspaces,
+      registerWorkspaceRefresh,
       workspaces,
     ],
   );

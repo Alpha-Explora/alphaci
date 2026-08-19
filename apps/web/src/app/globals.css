@@ -20132,3 +20132,69 @@ html:not([data-theme="light"]) .dash-shell :is(
     justify-content: flex-start;
   }
 }
+
+/* ── Team settings ──────────────────────────────────────────────────────────
+   Rename, transfer and archive — the reversible team actions. They lived only
+   on the older /groups pages, so the team surface offered delete and nothing
+   else. Delete stays last and keeps its own danger styling.
+   ------------------------------------------------------------------------- */
+.team-settings {
+  display: grid;
+  gap: 1.5rem;
+}
+
+.team-settings__block {
+  display: grid;
+  gap: 0.6rem;
+  padding-bottom: 1.25rem;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.team-settings__block h4 {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.team-settings__lede {
+  margin: 0;
+  font-size: 0.8rem;
+  line-height: 1.5;
+  color: var(--text-secondary);
+  max-width: 46rem;
+}
+
+.team-settings__actions {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.team-settings__ok {
+  margin: 0;
+  font-size: 0.8rem;
+  color: #3fb950;
+}
+
+/* The role control in a member row: sized to the badge it replaced, so the
+   roster still reads as a list rather than a form. */
+.hier-role-picker {
+  display: inline-flex;
+}
+
+.hier-role-select {
+  padding: 0.25rem 0.5rem;
+  border-radius: 999px;
+  border: 1px solid var(--border-subtle);
+  background: var(--surface-raised);
+  color: var(--text-secondary);
+  font-size: 0.72rem;
+  cursor: pointer;
+}
+
+.hier-role-select:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}

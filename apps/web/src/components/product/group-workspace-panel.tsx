@@ -6,9 +6,13 @@ import Link from "next/link";
 import { useApiResource } from "@/hooks/use-hierarchy";
 import { useAuthSession } from "@/hooks/use-auth-session";
 import {
+  archiveGroup,
   deleteGroup,
   getGroupActivity,
   getGroupMembers,
+  reopenGroup,
+  transferGroup,
+  updateGroup,
 } from "@/lib/api/client";
 import { ApiError } from "@/lib/api/request";
 import type { ProvisionedProject } from "@/lib/api/contracts";
@@ -53,6 +57,15 @@ interface GroupWorkspacePanelProps {
   createHref?: string;
   /** Called after this group is deleted so the parent can drop it from the list. */
   onDeleted?: (groupId: string) => void;
+  /**
+   * Called after the roster changes.
+   *
+   * The member COUNT is rendered in three places this component does not own —
+   * the page header, the rail badge and the Overview stat — all fed from the
+   * group record the parent fetched. Without this they kept showing the count
+   * from page load while the table below showed the truth.
+   */
+  onMembershipChanged?: () => void;
 }
 
 function statusVariant(status: string): string {
@@ -91,11 +104,13 @@ function Members({
   group,
   addOpen,
   onCloseAdd,
+  onMembershipChanged,
 }: {
   group: GroupSummary;
   /** Owned by the panel, because the button that opens it lives in the header. */
   addOpen: boolean;
   onCloseAdd: () => void;
+  onMembershipChanged?: () => void;
 }) {
   const { session } = useAuthSession();
   const canManage = isGroupManagerRole(group.role);
@@ -111,7 +126,12 @@ function Members({
         members={membersResource.data ?? []}
         canManage={canManage}
         currentUserId={session?.user.id ?? ""}
-        onMembersChange={(updater) => membersResource.setData((current) => updater(current ?? []))}
+        onMembersChange={(updater) => {
+          membersResource.setData((current) => updater(current ?? []));
+          // Re-read the group so the header, the rail badge and the Overview
+          // stat agree with the table.
+          onMembershipChanged?.();
+        }}
         // The panel's header row already says "Members" and carries the button.
         showHeader={false}
       />
@@ -122,7 +142,10 @@ function Members({
           onClose={onCloseAdd}
           // The new member is active immediately, so it goes straight into the
           // roster — there is no pending list for it to sit in first.
-          onAdded={(member) => membersResource.setData((current) => [member, ...(current ?? [])])}
+          onAdded={(member) => {
+            membersResource.setData((current) => [member, ...(current ?? [])]);
+            onMembershipChanged?.();
+          }}
         />
       ) : null}
     </>
@@ -289,7 +312,267 @@ function DeleteGroupControl({
   );
 }
 
-export function GroupWorkspacePanel({ group, projects, renderCreateProject, createHref, onDeleted }: Readonly<GroupWorkspacePanelProps>) {
+/**
+ * Everything a Lead can change about the team itself.
+ *
+ * These all existed on the backend and were reachable only from the older
+ * /groups/[groupId] pages, so the surface the header actually sends people to
+ * offered exactly one team-level action — DELETE. The reversible operations
+ * were the missing ones, which is the wrong way round.
+ */
+function Settings({
+  group,
+  projectCount,
+  onDeleted,
+  onChanged,
+}: {
+  group: GroupSummary;
+  projectCount: number;
+  onDeleted?: (groupId: string) => void;
+  onChanged?: () => void;
+}) {
+  const [name, setName] = useState(group.name);
+  const [description, setDescription] = useState(group.description ?? "");
+  const [saving, setSaving] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [transferTo, setTransferTo] = useState("");
+  const [confirmTransfer, setConfirmTransfer] = useState(false);
+
+  const members = useApiResource<GroupMember[]>(
+    () => getGroupMembers(group.id),
+    [group.id],
+  );
+
+  // Ownership can only move to somebody already on the team, and never to the
+  // person who already holds it.
+  const candidates = (members.data ?? []).filter(
+    (member) => member.memberStatus === "active" && member.role !== "admin",
+  );
+
+  const archived = group.status === "archived";
+  const dirty =
+    name.trim() !== group.name ||
+    description.trim() !== (group.description ?? "");
+
+  function report(cause: unknown, fallback: string) {
+    const detail = (cause as { details?: { message?: string | string[] } })
+      ?.details;
+    const detailMessage = Array.isArray(detail?.message)
+      ? detail?.message.join(", ")
+      : detail?.message;
+    setError(detailMessage ?? fallback);
+  }
+
+  async function handleSave() {
+    if (!name.trim()) {
+      setError("A team needs a name.");
+      return;
+    }
+    setSaving(true);
+    setError(null);
+    setMessage(null);
+    try {
+      await updateGroup(group.id, {
+        name: name.trim(),
+        description: description.trim() || undefined,
+      });
+      setMessage("Saved.");
+      onChanged?.();
+    } catch (cause) {
+      report(cause, "The team could not be updated.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleArchiveToggle() {
+    setBusy(true);
+    setError(null);
+    setMessage(null);
+    try {
+      if (archived) {
+        await reopenGroup(group.id);
+        setMessage("Team reopened.");
+      } else {
+        await archiveGroup(group.id);
+        setMessage("Team archived. Its repositories stay on GitHub.");
+      }
+      onChanged?.();
+    } catch (cause) {
+      report(cause, "That did not work.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleTransfer() {
+    if (!transferTo) return;
+    setBusy(true);
+    setError(null);
+    setMessage(null);
+    try {
+      await transferGroup(group.id, { newManagerUserId: transferTo });
+      setMessage("Lead transferred.");
+      setConfirmTransfer(false);
+      setTransferTo("");
+      members.reload();
+      onChanged?.();
+    } catch (cause) {
+      report(cause, "Ownership could not be transferred.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="team-settings">
+      <section className="team-settings__block">
+        <h4>Details</h4>
+        <label className="hier-field">
+          <span className="hier-field-label">Name</span>
+          <input
+            className="premium-input"
+            value={name}
+            onChange={(event) => setName(event.target.value)}
+            disabled={saving}
+          />
+        </label>
+        <label className="hier-field">
+          <span className="hier-field-label">Description</span>
+          <textarea
+            className="premium-input"
+            rows={2}
+            value={description}
+            onChange={(event) => setDescription(event.target.value)}
+            disabled={saving}
+          />
+        </label>
+        <div className="team-settings__actions">
+          <button
+            type="button"
+            className="primary-button group-section-action"
+            disabled={saving || !dirty}
+            onClick={() => void handleSave()}
+          >
+            {saving ? "Saving…" : "Save changes"}
+          </button>
+        </div>
+      </section>
+
+      <section className="team-settings__block">
+        <h4>Lead</h4>
+        <p className="team-settings__lede">
+          A team keeps exactly one Lead. Transferring hands it to another member
+          and makes you a Delegated lead — the only way to change who owns a
+          team without deleting it.
+        </p>
+        {candidates.length === 0 ? (
+          <p className="team-settings__lede">
+            There is nobody to transfer to yet. Add another member first.
+          </p>
+        ) : !confirmTransfer ? (
+          <div className="team-settings__actions">
+            <select
+              className="ws-select"
+              value={transferTo}
+              onChange={(event) => setTransferTo(event.target.value)}
+            >
+              <option value="">Choose a member…</option>
+              {candidates.map((member) => (
+                <option key={member.userId} value={member.userId}>
+                  {member.name || member.login}
+                </option>
+              ))}
+            </select>
+            <button
+              type="button"
+              className="ghost-button group-section-action"
+              disabled={!transferTo}
+              onClick={() => setConfirmTransfer(true)}
+            >
+              Transfer lead
+            </button>
+          </div>
+        ) : (
+          <div className="team-settings__actions">
+            <span className="team-settings__lede">
+              Hand the team to{" "}
+              <strong>
+                {candidates.find((m) => m.userId === transferTo)?.name ??
+                  candidates.find((m) => m.userId === transferTo)?.login}
+              </strong>
+              ?
+            </span>
+            <button
+              type="button"
+              className="confirm-btn-danger group-section-action"
+              disabled={busy}
+              onClick={() => void handleTransfer()}
+            >
+              {busy ? "Transferring…" : "Yes, transfer"}
+            </button>
+            <button
+              type="button"
+              className="ghost-button group-section-action"
+              onClick={() => setConfirmTransfer(false)}
+            >
+              Cancel
+            </button>
+          </div>
+        )}
+      </section>
+
+      <section className="team-settings__block">
+        <h4>{archived ? "Reopen" : "Archive"}</h4>
+        <p className="team-settings__lede">
+          {archived
+            ? "This team is archived. Reopening restores it everywhere."
+            : "Archiving hides the team without deleting anything. Its repositories stay on GitHub and it can be reopened."}
+        </p>
+        <div className="team-settings__actions">
+          <button
+            type="button"
+            className="ghost-button group-section-action"
+            disabled={busy}
+            onClick={() => void handleArchiveToggle()}
+          >
+            {archived ? "Reopen team" : "Archive team"}
+          </button>
+        </div>
+      </section>
+
+      {message ? (
+        <p className="team-settings__ok" role="status">
+          {message}
+        </p>
+      ) : null}
+      {error ? (
+        <p className="error-text" role="alert" style={{ margin: 0 }}>
+          {error}
+        </p>
+      ) : null}
+
+      <div className="group-danger-zone">
+        <div>
+          <strong>Delete this team</strong>
+          <p>
+            Removes the team and its membership. Its repositories stay on GitHub
+            and move to your individual repositories.
+          </p>
+        </div>
+        <DeleteGroupControl
+          group={group}
+          projectCount={projectCount}
+          onDeleted={onDeleted}
+        />
+      </div>
+    </div>
+  );
+}
+
+export function GroupWorkspacePanel({ group, projects, renderCreateProject, createHref, onDeleted, onMembershipChanged }: Readonly<GroupWorkspacePanelProps>) {
   // Declared with the other hooks: the create section returns early below,
   // and a hook after that point would not run on every render.
   const [addMemberOpen, setAddMemberOpen] = useState(false);
@@ -410,6 +693,7 @@ export function GroupWorkspacePanel({ group, projects, renderCreateProject, crea
             group={group}
             addOpen={addMemberOpen}
             onCloseAdd={() => setAddMemberOpen(false)}
+            onMembershipChanged={onMembershipChanged}
           />
         ) : null}
         {current === "projects" ? (
@@ -417,20 +701,12 @@ export function GroupWorkspacePanel({ group, projects, renderCreateProject, crea
         ) : null}
         {current === "activity" ? <Activity group={group} /> : null}
         {current === "settings" && canManage ? (
-          <div className="group-danger-zone">
-            <div>
-              <strong>Delete this team</strong>
-              <p>
-                Removes the team and its membership. Its repositories stay on
-                GitHub and move to your individual repositories.
-              </p>
-            </div>
-            <DeleteGroupControl
-              group={group}
-              projectCount={projects.length}
-              onDeleted={onDeleted}
-            />
-          </div>
+          <Settings
+            group={group}
+            projectCount={projects.length}
+            onDeleted={onDeleted}
+            onChanged={onMembershipChanged}
+          />
         ) : null}
       </div>
     </div>
