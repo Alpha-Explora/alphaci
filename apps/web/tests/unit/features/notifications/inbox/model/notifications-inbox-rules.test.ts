@@ -1,8 +1,8 @@
 import {
   flattenGroups,
   groupNotificationsByDay,
-} from "../../../../../src/features/notifications/model/grouping";
-import type { NotificationItem } from "../../../../../src/features/notifications/api/notifications.contracts";
+} from "../../../../../../src/features/notifications/inbox/model/notifications-inbox-rules";
+import type { NotificationItem } from "../../../../../../src/features/notifications/model/notifications-types";
 
 /* These assertions were previously only reachable by rendering the whole inbox
  * route and inspecting the DOM. Extracting grouping into a pure module made the

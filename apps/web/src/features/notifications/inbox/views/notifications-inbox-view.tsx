@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 
 import { AppNav } from "@/components/layout/app-nav";
@@ -10,10 +10,9 @@ import { FlowBackground } from "@/components/layout/flow-background";
 import { PipelineLoader } from "@/components/layout/pipeline-loader";
 import { WorkspaceProvider } from "@/components/layout/workspace-context";
 import { useAuthSession } from "@/hooks/use-auth-session";
-import { logout } from "@/lib/api/client";
 import { isGuest } from "@/lib/auth/subscription";
 
-import { useInbox } from "../model/use-inbox";
+import { useNotificationsInboxViewModel } from "../view-models/use-notifications-inbox-view-model";
 import {
   formatNotificationTime,
   notificationLabel,
@@ -44,11 +43,17 @@ function InboxIcon({ size = 16 }: { size?: number }) {
 
 /* ── Page ──────────────────────────────────────────────────────────────────── */
 
-function InboxPageContent() {
+function NotificationsInboxContent() {
   const router = useRouter();
   const prefersReducedMotion = useReducedMotion();
-  const { status, session, error, refresh } = useAuthSession();
-  const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const {
+    status,
+    session,
+    error,
+    refresh,
+    signOut,
+    isSigningOut: isLoggingOut,
+  } = useAuthSession();
 
   const guest = status === "signed-in" ? isGuest(session) : false;
 
@@ -60,7 +65,7 @@ function InboxPageContent() {
     unreadItemCount,
     totalCount,
     isEnabled,
-    isLoading,
+    status: notificationsStatus,
     error: notificationsError,
     filter,
     setFilter,
@@ -68,7 +73,7 @@ function InboxPageContent() {
     isMarkingAll,
     markRead: handleMarkRead,
     markAllRead: handleMarkAllRead,
-  } = useInbox(status === "signed-in" && !guest);
+  } = useNotificationsInboxViewModel(status === "signed-in" && !guest);
 
   useEffect(() => {
     if (status === "signed-out") {
@@ -77,14 +82,8 @@ function InboxPageContent() {
   }, [status, router]);
 
   async function handleLogout() {
-    setIsLoggingOut(true);
-    try {
-      await logout();
-      await refresh();
-      router.push("/");
-    } finally {
-      setIsLoggingOut(false);
-    }
+    await signOut();
+    router.push("/");
   }
 
   /* ── Loading ── */
@@ -221,7 +220,7 @@ function InboxPageContent() {
               </Link>
             </div>
           </div>
-        ) : isLoading ? (
+        ) : notificationsStatus === "loading" ? (
           <p className="inbox-loading-text">Loading notifications...</p>
         ) : !isEnabled ? (
           <div className="settings-card">
@@ -310,10 +309,10 @@ function InboxPageContent() {
   );
 }
 
-export function InboxPage() {
+export function NotificationsInboxView() {
   return (
     <WorkspaceProvider>
-      <InboxPageContent />
+      <NotificationsInboxContent />
     </WorkspaceProvider>
   );
 }

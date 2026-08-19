@@ -10,19 +10,19 @@
 module.exports = {
   forbidden: [
     {
-      name: 'view-must-not-fetch',
+      name: 'views-must-not-fetch',
       severity: 'error',
       comment:
-        'A View renders what a ViewModel gives it. If ui/ imports api/ at ' +
+        'A View renders what a ViewModel gives it. If views/ imports data/ at ' +
         'runtime, the component owns its own data fetching and the layer ' +
-        'boundary is fictional. Move the call into model/ and pass the result ' +
+        'boundary is fictional. Move the call into view-models/ and pass the result ' +
         'down as props.\n' +
         'Type-only imports are exempt: they are erased at compile time and ' +
         'carry no coupling — a View legitimately needs the shape of what it ' +
         'renders. It is the fetching that must live in the ViewModel.',
-      from: { path: '^src/features/([^/]+)/ui/' },
+      from: { path: '^src/features/[^/]+/[^/]+/views/' },
       to: {
-        path: '^src/features/[^/]+/api/',
+        path: '^src/features/[^/]+/(data|[^/]+/data)/',
         dependencyTypesNot: ['type-only'],
       },
     },
@@ -34,8 +34,14 @@ module.exports = {
         'This is what lets a feature be rewritten without touching consumers.',
       from: { path: '^src/features/([^/]+)/' },
       to: {
-        path: '^src/features/([^/]+)/(?!index\\.ts$).+',
-        pathNot: ['^src/features/$1/'],
+        path: '^src/features/',
+        pathNot: [
+          // Within your own domain, reach freely — the skill sanctions
+          // features/<domain>/{model,data} as the share point between actions.
+          '^src/features/$1/',
+          '^src/features/[^/]+/index\\.ts$',
+          '^src/features/[^/]+/[^/]+/index\\.ts$',
+        ],
       },
     },
     {
@@ -46,7 +52,13 @@ module.exports = {
         'shared/, nothing deeper. Business logic belongs in a feature.',
       from: { path: '^src/app/' },
       to: {
-        path: '^src/features/[^/]+/(?!index\\.ts$).+',
+        path: '^src/features/',
+        // Legal targets are barrels only: the domain barrel, or an
+        // action-slice barrel under features/<domain>/<action>/index.ts.
+        pathNot: [
+          '^src/features/[^/]+/index\\.ts$',
+          '^src/features/[^/]+/[^/]+/index\\.ts$',
+        ],
       },
     },
     {
