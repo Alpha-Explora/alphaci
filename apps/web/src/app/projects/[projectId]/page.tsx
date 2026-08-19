@@ -9,35 +9,23 @@ import { AppNav } from "@/components/layout/app-nav";
 import { FlowBackground } from "@/components/layout/flow-background";
 import { PipelineLoader } from "@/components/layout/pipeline-loader";
 import { ProjectDetailTabs } from "@/components/product/project-detail-tabs";
-import { ProjectEnvPanel } from "@/components/product/project-env-panel";
-import { RunCard } from "@/components/product/runs/RunCard";
 import { RunsSkeleton } from "@/components/product/runs/RunsSkeleton";
-import { ServiceLogsConsole } from "@/components/product/service-logs-console";
 import { useAuthSession } from "@/hooks/use-auth-session";
-import { useCapabilities } from "@/hooks/use-capabilities";
 import { logout, disconnectProject, getProjectOptions } from "@/lib/api/client";
 import type {
-  DeploymentTarget,
   ProjectOverviewResponse,
-  RunGroup,
 } from "@/lib/api/contracts";
 import { getProjectOverview } from "@/lib/api/projects";
-import { getRuns } from "@/lib/api/runs";
 import { ApiError } from "@/lib/api/request";
 import {
-  providerDisplayName,
-  providerPublicUrl,
 } from "@/lib/hosting/provider-urls";
-import { relativeTime } from "@/lib/runs/utils";
 import { isGuest } from "@/lib/auth/subscription";
 
 const EASE_OUT: [number, number, number, number] = [0.25, 0, 0, 1];
 
 /** How often the live workflow feed refreshes, in milliseconds. */
-const RUNS_POLL_INTERVAL_MS = 15_000;
 
 /** Recent runs shown inline before the feed hands off to the full /runs history. */
-const RECENT_RUNS_DISPLAY_LIMIT = 3;
 
 function statusVariant(status: string): string {
   if (status === "provisioned") return "provisioned";
@@ -50,193 +38,12 @@ function isExternalRepo(repoFullName: string, enforcedOrg?: string): boolean {
   return repoFullName.split("/")[0]?.toLowerCase() !== enforcedOrg.toLowerCase();
 }
 
-function targetStatusColor(status: DeploymentTarget["status"]): string {
-  if (status === "active") return "var(--accent-teal)";
-  if (status === "missing") return "var(--accent-amber)";
-  return "var(--danger)";
-}
-
-function HostingServiceCard({
-  target,
-  reduced,
-  isLogsOpen,
-  onToggleLogs,
-}: Readonly<{
-  target: DeploymentTarget;
-  reduced: boolean;
-  isLogsOpen: boolean;
-  onToggleLogs: () => void;
-}>) {
-  const publicUrl = providerPublicUrl(target);
-  const provider = providerDisplayName(target.provider);
-  const [copied, setCopied] = useState(false);
-
-  useEffect(() => {
-    if (!copied) return;
-    const timer = setTimeout(() => setCopied(false), 2000);
-    return () => clearTimeout(timer);
-  }, [copied]);
-
-  const copyPublicUrl = useCallback(async () => {
-    if (!publicUrl) return;
-    try {
-      await navigator.clipboard.writeText(publicUrl);
-      setCopied(true);
-    } catch {
-      // Clipboard access denied (e.g. insecure context); the visible link
-      // remains selectable as the manual fallback.
-    }
-  }, [publicUrl]);
-
-  return (
-    <motion.article
-      className="glass-panel"
-      initial={reduced ? false : { opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.28, ease: EASE_OUT }}
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        gap: "0.7rem",
-        padding: "1.1rem 1.25rem",
-      }}
-      aria-label={`${provider} hosting service`}
-    >
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: "0.6rem",
-          flexWrap: "wrap",
-        }}
-      >
-        <span
-          className="workflow-page-studio-badge"
-          style={{ textTransform: "none" }}
-        >
-          {provider}
-        </span>
-        <span style={{ fontSize: "0.78rem", color: "var(--text-muted)" }}>
-          {target.slot === "frontend" ? "Frontend" : "Backend service"}
-        </span>
-        <span
-          style={{
-            marginLeft: "auto",
-            display: "inline-flex",
-            alignItems: "center",
-            gap: "0.35rem",
-            fontSize: "0.76rem",
-            color: "var(--text-secondary)",
-          }}
-        >
-          <span
-            aria-hidden="true"
-            style={{
-              width: "0.5rem",
-              height: "0.5rem",
-              borderRadius: "50%",
-              background: targetStatusColor(target.status),
-            }}
-          />
-          {target.status}
-        </span>
-      </div>
-
-      <div style={{ display: "flex", flexDirection: "column", gap: "0.2rem" }}>
-        <strong style={{ fontSize: "0.95rem" }}>
-          {target.providerProjectName}
-        </strong>
-        <span style={{ fontSize: "0.78rem", color: "var(--text-muted)" }}>
-          Branch {target.branchName || "test"}
-          {target.rootDirectory && target.rootDirectory !== "."
-            ? ` · ${target.rootDirectory}`
-            : ""}
-        </span>
-      </div>
-
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: "0.5rem",
-          minWidth: 0,
-          marginTop: "0.3rem",
-        }}
-      >
-        {publicUrl ? (
-          <a
-            href={publicUrl}
-            target="_blank"
-            rel="noreferrer"
-            title={publicUrl}
-            style={{
-              fontSize: "0.8rem",
-              fontFamily: "var(--font-mono, monospace)",
-              color: "var(--brand)",
-              textDecoration: "none",
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-              whiteSpace: "nowrap",
-              minWidth: 0,
-              flexGrow: 1,
-            }}
-          >
-            {publicUrl.replace(/^https?:\/\//, "")}
-          </a>
-        ) : (
-          <span style={{ fontSize: "0.8rem", color: "var(--text-muted)", flexGrow: 1 }}>
-            No public URL
-          </span>
-        )}
-
-        {publicUrl ? (
-          <button
-            type="button"
-            className="ghost-button"
-            onClick={() => void copyPublicUrl()}
-            aria-label={`Copy ${provider} service URL`}
-            style={{
-              minHeight: "1.7rem",
-              padding: "0.15rem 0.6rem",
-              fontSize: "0.72rem",
-              flexShrink: 0,
-            }}
-          >
-            {copied ? "Copied" : "Copy"}
-          </button>
-        ) : null}
-
-        <button
-          type="button"
-          className={isLogsOpen ? "ghost-button active" : "ghost-button"}
-          onClick={onToggleLogs}
-          aria-label={`View ${provider} service logs`}
-          style={{
-            minHeight: "1.7rem",
-            padding: "0.15rem 0.6rem",
-            fontSize: "0.72rem",
-            flexShrink: 0,
-            ...(isLogsOpen ? {
-              background: "rgba(255, 255, 255, 0.08)",
-              borderColor: "rgba(255, 255, 255, 0.2)",
-              color: "var(--text-primary)",
-            } : {}),
-          }}
-        >
-          {isLogsOpen ? "Hide Logs" : "Logs"}
-        </button>
-      </div>
-    </motion.article>
-  );
-}
-
 function ProjectPageContent() {
   const router = useRouter();
   const params = useParams<{ projectId: string }>();
   const projectId = params?.projectId ?? "";
   const prefersReducedMotion = useReducedMotion();
   const { status, session, error: sessionError, refresh } = useAuthSession();
-  const { envProvisioningEnabled } = useCapabilities();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [logoutMessage, setLogoutMessage] = useState<string | null>(null);
 
@@ -258,15 +65,8 @@ function ProjectPageContent() {
   const [confirmRepoNameInput, setConfirmRepoNameInput] = useState("");
   const [deleteError, setDeleteError] = useState<string | null>(null);
 
-  const [runs, setRuns] = useState<RunGroup[]>([]);
-  const [runsError, setRunsError] = useState<string | null>(null);
-  const [loadingRuns, setLoadingRuns] = useState(true);
-  const [lastRefreshedAt, setLastRefreshedAt] = useState<string | null>(null);
-  const [activeLogTargetId, setActiveLogTargetId] = useState<string | null>(null);
-
   const guest = isGuest(session);
   const project = overview?.project ?? null;
-  const targets = overview?.deploymentTargets.items ?? [];
   const repoFullName = project?.repoFullName ?? null;
 
   useEffect(() => {
@@ -314,39 +114,6 @@ function ProjectPageContent() {
       active = false;
     };
   }, [guest, status]);
-
-  useEffect(() => {
-    if (status !== "signed-in" || guest || !repoFullName) return;
-
-    let active = true;
-    const load = async () => {
-      try {
-        const response = await getRuns(repoFullName);
-        if (!active) return;
-        setRuns(response.runs);
-        setRunsError(null);
-        setLastRefreshedAt(new Date().toISOString());
-      } catch (error) {
-        if (!active) return;
-        if (error instanceof ApiError && error.status === 404) {
-          // Repo has no CI reports yet — that is an empty feed, not a failure.
-          setRuns([]);
-          setRunsError(null);
-        } else {
-          setRunsError("Could not refresh workflow runs.");
-        }
-      } finally {
-        if (active) setLoadingRuns(false);
-      }
-    };
-
-    void load();
-    const timer = setInterval(() => void load(), RUNS_POLL_INTERVAL_MS);
-    return () => {
-      active = false;
-      clearInterval(timer);
-    };
-  }, [guest, repoFullName, status]);
 
   async function handleLogout() {
     setIsLoggingOut(true);
@@ -428,6 +195,189 @@ function ProjectPageContent() {
 
   const reduced = prefersReducedMotion ?? false;
   const repoName = repoFullName?.split("/")[1] ?? repoFullName ?? "Project";
+
+  /*
+   * Handed to ProjectDetailTabs, which places it at the foot of Settings.
+   * Built here because deleting navigates away: the router push, the
+   * confirmation state and the "also delete the GitHub repo" choice all
+   * belong to the page that owns the route.
+   */
+  const dangerZone = (
+    <section aria-label="Danger Zone" style={{ marginTop: "1rem" }}>
+      <div
+        className="glass-panel"
+        style={{
+          border: "1px solid rgba(248, 113, 113, 0.2)",
+          background: "rgba(248, 113, 113, 0.02)",
+          padding: "1.25rem 1.5rem",
+          borderRadius: "var(--radius-card, 12px)",
+          display: "flex",
+          flexDirection: "column",
+          gap: "1rem",
+        }}
+      >
+        {!confirmDelete ? (
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              flexWrap: "wrap",
+              gap: "1rem",
+            }}
+          >
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.2rem" }}>
+              <h3 style={{ margin: 0, fontSize: "0.95rem", color: "var(--danger, #f87171)", fontWeight: 600 }}>
+                Delete Project
+              </h3>
+              <p style={{ margin: 0, fontSize: "0.78rem", color: "var(--text-secondary)" }}>
+                Disconnect this project from ALPHACI. You can optionally delete the GitHub repository.
+              </p>
+            </div>
+            <button
+              type="button"
+              className="confirm-btn-danger"
+              onClick={() => setConfirmDelete(true)}
+              style={{ padding: "0.45rem 1rem", fontSize: "0.82rem", minHeight: "2.2rem" }}
+            >
+              Delete Project
+            </button>
+          </div>
+        ) : (
+          <div
+            role="group"
+            aria-labelledby="delete-confirm-heading"
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              gap: "0.85rem",
+              width: "100%",
+            }}
+          >
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.3rem" }}>
+              <p
+                id="delete-confirm-heading"
+                style={{
+                  margin: 0,
+                  fontSize: "0.88rem",
+                  fontWeight: 700,
+                  color: "var(--danger, #f87171)",
+                }}
+              >
+                Are you sure you want to delete this project?
+              </p>
+              <p
+                style={{
+                  margin: 0,
+                  fontSize: "0.78rem",
+                  color: "var(--text-muted)",
+                }}
+              >
+                The project will be disconnected from ALPHACI. The GitHub repository will be kept unless you opt in below.
+              </p>
+            </div>
+
+            <label
+              className="enhancement-option"
+              style={{ cursor: "pointer", display: "flex", alignItems: "flex-start", gap: "0.5rem" }}
+            >
+              <input
+                type="checkbox"
+                checked={deleteGithubRepoOptIn}
+                onChange={(e) => {
+                  setDeleteGithubRepoOptIn(e.target.checked);
+                  setConfirmRepoNameInput("");
+                }}
+                style={{ marginTop: "0.2rem" }}
+              />
+              <span style={{ display: "flex", flexDirection: "column", gap: "0.15rem" }}>
+                <span style={{ fontSize: "0.83rem", fontWeight: 600, color: "var(--text-primary)" }}>
+                  Also delete the GitHub repository
+                </span>
+                <span style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>
+                  Permanently deletes {project?.repoFullName} on GitHub — this cannot be undone.
+                </span>
+              </span>
+            </label>
+
+            {deleteGithubRepoOptIn ? (
+              <div style={{ display: "flex", flexDirection: "column", gap: "0.4rem" }}>
+                <label
+                  htmlFor="confirm-repo-name-input"
+                  style={{
+                    fontSize: "0.78rem",
+                    color: "var(--text-secondary)",
+                  }}
+                >
+                  Type <strong style={{ color: "var(--text-primary)", fontFamily: "monospace" }}>{project?.repoFullName}</strong> to confirm:
+                </label>
+                <input
+                  id="confirm-repo-name-input"
+                  type="text"
+                  value={confirmRepoNameInput}
+                  onChange={(e) => setConfirmRepoNameInput(e.target.value)}
+                  placeholder={project?.repoFullName}
+                  autoComplete="off"
+                  style={{
+                    background: "rgba(17, 17, 22, 0.6)",
+                    border: "1px solid rgba(248, 113, 113, 0.3)",
+                    borderRadius: "0.5rem",
+                    padding: "0.5rem 0.75rem",
+                    fontSize: "0.85rem",
+                    color: "var(--text-primary)",
+                    fontFamily: "monospace",
+                    outline: "none",
+                    width: "100%",
+                    maxWidth: "26rem",
+                    boxSizing: "border-box",
+                  }}
+                />
+              </div>
+            ) : null}
+
+            {deleteError ? (
+              <p style={{ margin: 0, fontSize: "0.78rem", color: "var(--danger, #f87171)" }}>
+                {deleteError}
+              </p>
+            ) : null}
+
+            <div style={{ display: "flex", gap: "0.5rem" }}>
+              <button
+                type="button"
+                onClick={() => void handleDeleteProject()}
+                disabled={
+                  isDeleting ||
+                  (deleteGithubRepoOptIn &&
+                    confirmRepoNameInput !== project?.repoFullName)
+                }
+                className="confirm-btn-danger"
+                style={{ padding: "0.45rem 1rem", fontSize: "0.82rem" }}
+              >
+                {isDeleting
+                  ? "Deleting..."
+                  : deleteGithubRepoOptIn
+                    ? "Delete repo & disconnect"
+                    : "Yes, disconnect"}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setConfirmDelete(false);
+                  setDeleteGithubRepoOptIn(false);
+                  setConfirmRepoNameInput("");
+                  setDeleteError(null);
+                }}
+                className="confirm-btn-neutral"
+                style={{ padding: "0.45rem 1rem", fontSize: "0.82rem" }}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    </section>
+  );
 
   return (
     <main
@@ -575,365 +525,18 @@ function ProjectPageContent() {
           </div>
         ) : (
           <div style={{ display: "grid", gap: "1.5rem" }}>
-            {/* Tabbed detail (Overview / Workflow / Runs / Hosting /
-                Environment / Audit / Settings) — moved here from the old
-                split-pane Current Projects view. */}
-            {project ? <ProjectDetailTabs project={project} /> : null}
+            {/*
+              EVERYTHING about a project is inside these tabs.
 
-            {envProvisioningEnabled &&
-            project &&
-            project.status === "provisioned" ? (
-              <section aria-label="Hosting services">
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "baseline",
-                    gap: "0.75rem",
-                    marginBottom: "0.75rem",
-                  }}
-                >
-                  <h2 style={{ margin: 0, fontSize: "1.05rem" }}>
-                    Hosting services
-                  </h2>
-                  {targets.length > 0 ? (
-                    <span
-                      style={{
-                        fontSize: "0.78rem",
-                        color: "var(--text-muted)",
-                      }}
-                    >
-                      {targets.length}{" "}
-                      {targets.length === 1 ? "service" : "services"} attached
-                    </span>
-                  ) : null}
-                </div>
-                {targets.length > 0 ? (
-                  <>
-                    <div
-                      style={{
-                        display: "grid",
-                        gap: "1rem",
-                        gridTemplateColumns:
-                          "repeat(auto-fit, minmax(min(20rem, 100%), 1fr))",
-                        marginBottom: "1rem",
-                      }}
-                    >
-                      {targets.map((target) => (
-                        <HostingServiceCard
-                          key={target.id}
-                          reduced={reduced}
-                          target={target}
-                          isLogsOpen={activeLogTargetId === target.id}
-                          onToggleLogs={() =>
-                            setActiveLogTargetId((prev) =>
-                              prev === target.id ? null : target.id,
-                            )
-                          }
-                        />
-                      ))}
-                    </div>
-
-                    {(() => {
-                      const activeTarget = targets.find(
-                        (t) => t.id === activeLogTargetId,
-                      );
-                      if (activeTarget && project) {
-                        return (
-                          <ServiceLogsConsole
-                            projectId={project.id}
-                            target={activeTarget}
-                            latestRun={runs[0]}
-                          />
-                        );
-                      }
-                      return null;
-                    })()}
-                  </>
-                ) : null}
-                {targets.length === 0 ? (
-                  <ProjectEnvPanel
-                    onTargetCreated={() => void loadOverview()}
-                    project={project}
-                    section="hosting"
-                  />
-                ) : null}
-              </section>
+              Hosting services, workflow activity and the delete flow used to be
+              rendered here, BELOW the tab set, so all three were on screen no
+              matter which tab you were reading. Each now lives in the one tab it
+              belongs to — Hosting, Pipeline runs and Settings — which is what
+              makes the tabs mean anything.
+            */}
+            {project ? (
+              <ProjectDetailTabs project={project} dangerZone={dangerZone} />
             ) : null}
-
-            <section aria-label="Live workflow activity" aria-live="polite">
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "0.75rem",
-                    marginBottom: "0.75rem",
-                    flexWrap: "wrap",
-                  }}
-                >
-                  <h2 style={{ margin: 0, fontSize: "1.05rem" }}>
-                    Workflow activity
-                  </h2>
-                  <div className="workflow-page-studio-badge">
-                    <span className="workflow-studio-led" aria-hidden="true" />
-                    Live · refreshes every {RUNS_POLL_INTERVAL_MS / 1000}s
-                  </div>
-                  {lastRefreshedAt ? (
-                    <span
-                      style={{
-                        fontSize: "0.76rem",
-                        color: "var(--text-muted)",
-                      }}
-                    >
-                      Updated {relativeTime(lastRefreshedAt)}
-                    </span>
-                  ) : null}
-                </div>
-
-                {runsError ? (
-                  <p className="error-text" style={{ marginBottom: "0.75rem" }}>
-                    {runsError}
-                  </p>
-                ) : null}
-
-                {loadingRuns ? (
-                  <RunsSkeleton />
-                ) : runs.length === 0 ? (
-                  <div className="glass-panel" style={{ padding: "1.5rem" }}>
-                    <p
-                      style={{
-                        margin: 0,
-                        color: "var(--text-secondary)",
-                        fontSize: "0.88rem",
-                      }}
-                    >
-                      No pipeline runs yet for this project. Push a commit to{" "}
-                      {project?.repoFullName ?? "the repository"} and the run
-                      will appear here as it progresses.
-                    </p>
-                  </div>
-                ) : (
-                  <>
-                    <div className="runs-list-stack">
-                      {runs
-                        .slice(0, RECENT_RUNS_DISPLAY_LIMIT)
-                        .map((run, index) => (
-                          <RunCard
-                            key={run.runId}
-                            index={index}
-                            reduced={reduced}
-                            run={run}
-                          />
-                        ))}
-                    </div>
-                    {runs.length > RECENT_RUNS_DISPLAY_LIMIT ? (
-                      <Link
-                        href={`/runs?repoFullName=${encodeURIComponent(
-                          repoFullName ?? "",
-                        )}`}
-                        className="ghost-button"
-                        style={{
-                          display: "inline-flex",
-                          alignItems: "center",
-                          gap: "0.4rem",
-                          marginTop: "1rem",
-                          fontSize: "0.82rem",
-                        }}
-                      >
-                        View all {runs.length} workflow runs
-                        <svg
-                          width="10"
-                          height="10"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2.5"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          aria-hidden="true"
-                        >
-                          <line x1="5" y1="12" x2="19" y2="12" />
-                          <polyline points="12 5 19 12 12 19" />
-                        </svg>
-                      </Link>
-                    ) : null}
-                  </>
-                )}
-              </section>
-
-              <section aria-label="Danger Zone" style={{ marginTop: "1rem" }}>
-                <div
-                  className="glass-panel"
-                  style={{
-                    border: "1px solid rgba(248, 113, 113, 0.2)",
-                    background: "rgba(248, 113, 113, 0.02)",
-                    padding: "1.25rem 1.5rem",
-                    borderRadius: "var(--radius-card, 12px)",
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: "1rem",
-                  }}
-                >
-                  {!confirmDelete ? (
-                    <div
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "space-between",
-                        flexWrap: "wrap",
-                        gap: "1rem",
-                      }}
-                    >
-                      <div style={{ display: "flex", flexDirection: "column", gap: "0.2rem" }}>
-                        <h3 style={{ margin: 0, fontSize: "0.95rem", color: "var(--danger, #f87171)", fontWeight: 600 }}>
-                          Delete Project
-                        </h3>
-                        <p style={{ margin: 0, fontSize: "0.78rem", color: "var(--text-secondary)" }}>
-                          Disconnect this project from ALPHACI. You can optionally delete the GitHub repository.
-                        </p>
-                      </div>
-                      <button
-                        type="button"
-                        className="confirm-btn-danger"
-                        onClick={() => setConfirmDelete(true)}
-                        style={{ padding: "0.45rem 1rem", fontSize: "0.82rem", minHeight: "2.2rem" }}
-                      >
-                        Delete Project
-                      </button>
-                    </div>
-                  ) : (
-                    <div
-                      role="group"
-                      aria-labelledby="delete-confirm-heading"
-                      style={{
-                        display: "flex",
-                        flexDirection: "column",
-                        gap: "0.85rem",
-                        width: "100%",
-                      }}
-                    >
-                      <div style={{ display: "flex", flexDirection: "column", gap: "0.3rem" }}>
-                        <p
-                          id="delete-confirm-heading"
-                          style={{
-                            margin: 0,
-                            fontSize: "0.88rem",
-                            fontWeight: 700,
-                            color: "var(--danger, #f87171)",
-                          }}
-                        >
-                          Are you sure you want to delete this project?
-                        </p>
-                        <p
-                          style={{
-                            margin: 0,
-                            fontSize: "0.78rem",
-                            color: "var(--text-muted)",
-                          }}
-                        >
-                          The project will be disconnected from ALPHACI. The GitHub repository will be kept unless you opt in below.
-                        </p>
-                      </div>
-
-                      <label
-                        className="enhancement-option"
-                        style={{ cursor: "pointer", display: "flex", alignItems: "flex-start", gap: "0.5rem" }}
-                      >
-                        <input
-                          type="checkbox"
-                          checked={deleteGithubRepoOptIn}
-                          onChange={(e) => {
-                            setDeleteGithubRepoOptIn(e.target.checked);
-                            setConfirmRepoNameInput("");
-                          }}
-                          style={{ marginTop: "0.2rem" }}
-                        />
-                        <span style={{ display: "flex", flexDirection: "column", gap: "0.15rem" }}>
-                          <span style={{ fontSize: "0.83rem", fontWeight: 600, color: "var(--text-primary)" }}>
-                            Also delete the GitHub repository
-                          </span>
-                          <span style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>
-                            Permanently deletes {project?.repoFullName} on GitHub — this cannot be undone.
-                          </span>
-                        </span>
-                      </label>
-
-                      {deleteGithubRepoOptIn ? (
-                        <div style={{ display: "flex", flexDirection: "column", gap: "0.4rem" }}>
-                          <label
-                            htmlFor="confirm-repo-name-input"
-                            style={{
-                              fontSize: "0.78rem",
-                              color: "var(--text-secondary)",
-                            }}
-                          >
-                            Type <strong style={{ color: "var(--text-primary)", fontFamily: "monospace" }}>{project?.repoFullName}</strong> to confirm:
-                          </label>
-                          <input
-                            id="confirm-repo-name-input"
-                            type="text"
-                            value={confirmRepoNameInput}
-                            onChange={(e) => setConfirmRepoNameInput(e.target.value)}
-                            placeholder={project?.repoFullName}
-                            autoComplete="off"
-                            style={{
-                              background: "rgba(17, 17, 22, 0.6)",
-                              border: "1px solid rgba(248, 113, 113, 0.3)",
-                              borderRadius: "0.5rem",
-                              padding: "0.5rem 0.75rem",
-                              fontSize: "0.85rem",
-                              color: "var(--text-primary)",
-                              fontFamily: "monospace",
-                              outline: "none",
-                              width: "100%",
-                              maxWidth: "26rem",
-                              boxSizing: "border-box",
-                            }}
-                          />
-                        </div>
-                      ) : null}
-
-                      {deleteError ? (
-                        <p style={{ margin: 0, fontSize: "0.78rem", color: "var(--danger, #f87171)" }}>
-                          {deleteError}
-                        </p>
-                      ) : null}
-
-                      <div style={{ display: "flex", gap: "0.5rem" }}>
-                        <button
-                          type="button"
-                          onClick={() => void handleDeleteProject()}
-                          disabled={
-                            isDeleting ||
-                            (deleteGithubRepoOptIn &&
-                              confirmRepoNameInput !== project?.repoFullName)
-                          }
-                          className="confirm-btn-danger"
-                          style={{ padding: "0.45rem 1rem", fontSize: "0.82rem" }}
-                        >
-                          {isDeleting
-                            ? "Deleting..."
-                            : deleteGithubRepoOptIn
-                              ? "Delete repo & disconnect"
-                              : "Yes, disconnect"}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setConfirmDelete(false);
-                            setDeleteGithubRepoOptIn(false);
-                            setConfirmRepoNameInput("");
-                            setDeleteError(null);
-                          }}
-                          className="confirm-btn-neutral"
-                          style={{ padding: "0.45rem 1rem", fontSize: "0.82rem" }}
-                        >
-                          Cancel
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </section>
           </div>
         )}
         </div>

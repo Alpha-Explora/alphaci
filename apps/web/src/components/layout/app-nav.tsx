@@ -3,13 +3,15 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
-import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
+import { useCallback, useEffect, useState } from "react";
+import { motion, useReducedMotion } from "framer-motion";
 
 import type { useAuthSession } from "@/hooks/use-auth-session";
-import type {
-  NotificationsResponse,
-  WorkspacesMeResponse,
+import {
+  APP_ROLE_BADGE_LABELS,
+  type AppRole,
+  type NotificationsResponse,
+  type WorkspacesMeResponse,
 } from "@/lib/api/contracts";
 import { getNotifications } from "@/lib/api/notifications";
 import { getMyWorkspaces } from "@/lib/api/workspaces";
@@ -66,7 +68,7 @@ function WorkflowsIcon({ size = 16 }: { size?: number }) {
   );
 }
 
-function RunsIcon({ size = 16 }: { size?: number }) {
+function TeamsIcon({ size = 16 }: { size?: number }) {
   return (
     <svg
       width={size}
@@ -79,9 +81,10 @@ function RunsIcon({ size = 16 }: { size?: number }) {
       strokeLinejoin="round"
       aria-hidden="true"
     >
-      <circle cx="12" cy="12" r="3" />
-      <path d="M12 3v3M12 18v3M3 12h3M18 12h3" />
-      <path d="M5.64 5.64l2.12 2.12M16.24 16.24l2.12 2.12M5.64 18.36l2.12-2.12M16.24 7.76l2.12-2.12" />
+      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+      <circle cx="9" cy="7" r="4" />
+      <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+      <path d="M16 3.13a4 4 0 0 1 0 7.75" />
     </svg>
   );
 }
@@ -163,78 +166,6 @@ function SignOutIcon({ size = 15 }: { size?: number }) {
   );
 }
 
-function ChevronLeftIcon({ size = 14 }: { size?: number }) {
-  return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2.5"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <polyline points="15 18 9 12 15 6" />
-    </svg>
-  );
-}
-
-/* ── Tooltip — appears to the right of the icon when sidebar is collapsed ─── */
-
-function SidebarTooltip({
-  text,
-  children,
-}: {
-  text: string;
-  children: React.ReactNode;
-}) {
-  const [visible, setVisible] = useState(false);
-  return (
-    <div
-      style={{ position: "relative", display: "flex", width: "100%" }}
-      onMouseEnter={() => setVisible(true)}
-      onMouseLeave={() => setVisible(false)}
-      onFocus={() => setVisible(true)}
-      onBlur={() => setVisible(false)}
-    >
-      {children}
-      <AnimatePresence>
-        {visible && (
-          <motion.div
-            initial={{ opacity: 0, x: -6, scale: 0.92 }}
-            animate={{ opacity: 1, x: 0, scale: 1 }}
-            exit={{ opacity: 0, x: -6, scale: 0.92 }}
-            transition={{ duration: 0.14 }}
-            style={{
-              position: "absolute",
-              left: "calc(100% + 10px)",
-              top: "50%",
-              transform: "translateY(-50%)",
-              background: "var(--bg-panel)",
-              border: "1px solid var(--border)",
-              borderRadius: "0.45rem",
-              padding: "0.35rem 0.7rem",
-              fontSize: "0.75rem",
-              fontWeight: 600,
-              color: "var(--text-primary)",
-              whiteSpace: "nowrap",
-              backdropFilter: "blur(12px)",
-              WebkitBackdropFilter: "blur(12px)",
-              pointerEvents: "none",
-              zIndex: 300,
-              boxShadow: "var(--shadow-card)",
-            }}
-          >
-            {text}
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
-  );
-}
-
 /* ── Sidebar nav item ───────────────────────────────────────────────────────── */
 
 interface SidebarNavItemProps {
@@ -242,142 +173,98 @@ interface SidebarNavItemProps {
   label: string;
   icon: (props: { size?: number }) => React.ReactNode;
   isActive: boolean;
-  collapsed: boolean;
   reduced: boolean;
-  itemIndex?: number;
   badgeCount?: number;
+  /** Suppresses hover-expand for the rest of this pointer pass. */
+  onNavigate: () => void;
 }
 
+/**
+ * The label is ALWAYS rendered and hidden with opacity, never unmounted or
+ * `display:none`. Two reasons: a screen reader then reads the nav normally
+ * whatever the visual state, and expanding the rail reveals text that is
+ * already laid out instead of reflowing the rail's contents as it opens.
+ *
+ * `.app-sidebar` clips overflow, which is what turns that from truncation into
+ * a reveal — without it the 200px-wide invisible labels raise a horizontal
+ * scrollbar inside a 64px rail.
+ */
 function SidebarNavItem({
   href,
   label,
   icon: NavIcon,
   isActive,
-  collapsed,
   reduced,
-  itemIndex = 0,
   badgeCount = 0,
+  onNavigate,
 }: Readonly<SidebarNavItemProps>) {
-  const expandDelay = itemIndex * 0.04;
-  const collapseDelay = itemIndex * 0.018;
-
-  const inner = (
-    <motion.div
-      className="sidebar-nav-item-wrapper"
-      initial={false}
-      animate={{ opacity: 1, x: 0 }}
-      whileHover={reduced ? undefined : { x: 2 }}
-      transition={{ type: "spring", stiffness: 340, damping: 28 }}
+  return (
+    <Link
+      href={href}
+      onClick={onNavigate}
+      className={`sidebar-nav-item${isActive ? " sidebar-nav-item--active" : ""}`}
+      aria-current={isActive ? "page" : undefined}
     >
-      <Link
-        href={href}
-        className={`sidebar-nav-item${isActive ? " sidebar-nav-item--active" : ""}`}
-        aria-current={isActive ? "page" : undefined}
-      >
-        {isActive && (
-          <motion.span
-            layoutId="sidebar-active-pill"
-            className="sidebar-nav-item-bg"
-            transition={
-              reduced
-                ? { duration: 0 }
-                : { type: "spring", stiffness: 420, damping: 36 }
-            }
-            aria-hidden="true"
-          />
-        )}
+      {isActive && (
         <motion.span
-          className="sidebar-nav-item-icon"
-          animate={
-            isActive
-              ? { color: "var(--accent-indigo)" }
-              : { color: "var(--text-secondary)" }
+          layoutId="sidebar-active-pill"
+          className="sidebar-nav-item-bg"
+          transition={
+            reduced
+              ? { duration: 0 }
+              : { type: "spring", stiffness: 420, damping: 36 }
           }
-          whileHover={reduced ? undefined : { scale: 1.12 }}
-          transition={{ duration: 0.2 }}
-        >
-          <NavIcon size={16} />
-        </motion.span>
-        <AnimatePresence initial={false}>
-          {!collapsed && (
-            <motion.span
-              className="sidebar-nav-item-label"
-              initial={reduced ? false : { opacity: 0, x: -10, width: 0 }}
-              animate={{ opacity: 1, x: 0, width: "auto" }}
-              exit={reduced ? undefined : { opacity: 0, x: -6, width: 0 }}
-              transition={{
-                duration: 0.2,
-                ease: [0.25, 0, 0, 1],
-                delay: collapsed ? collapseDelay : expandDelay,
-              }}
-            >
-              {label}
-            </motion.span>
-          )}
-        </AnimatePresence>
-        {badgeCount > 0 &&
-          (collapsed ? (
-            <span
-              aria-hidden="true"
-              style={{
-                position: "absolute",
-                top: 6,
-                right: 6,
-                width: 7,
-                height: 7,
-                borderRadius: "50%",
-                background: "var(--accent-indigo)",
-                boxShadow: "0 0 0 2px var(--bg-panel)",
-              }}
-            />
-          ) : (
-            <span
-              aria-label={`${badgeCount} unread`}
-              style={{
-                marginLeft: "auto",
-                minWidth: "1.15rem",
-                height: "1.15rem",
-                padding: "0 0.3rem",
-                borderRadius: "999px",
-                background: "var(--accent-indigo)",
-                color: "#fff",
-                fontSize: "0.62rem",
-                fontWeight: 700,
-                display: "inline-flex",
-                alignItems: "center",
-                justifyContent: "center",
-                lineHeight: 1,
-              }}
-            >
-              {badgeCount > 99 ? "99+" : badgeCount}
-            </span>
-          ))}
-      </Link>
-    </motion.div>
+          aria-hidden="true"
+        />
+      )}
+      <span className="sidebar-nav-item-icon">
+        <NavIcon size={16} />
+      </span>
+      <span className="sidebar-nav-item-label">{label}</span>
+      {badgeCount > 0 ? (
+        <>
+          {/* Two presentations of one number: a bare dot that survives the
+              64px rail, and the real count once the labels are readable. */}
+          <span className="sidebar-nav-dot" aria-hidden="true" />
+          <span
+            className="sidebar-nav-count"
+            aria-label={`${badgeCount} unread`}
+          >
+            {badgeCount > 99 ? "99+" : badgeCount}
+          </span>
+        </>
+      ) : null}
+    </Link>
   );
+}
 
-  if (collapsed) {
-    return <SidebarTooltip text={label}>{inner}</SidebarTooltip>;
-  }
+/* ── Role badge ─────────────────────────────────────────────────────────────
+   Answers "which am I?" at a glance. The label mirrors the GitHub org team
+   that drives the role (`team-lead` → Team lead, `developers` → Developer), so
+   what a user sees here matches what they were added to in GitHub. Hidden when
+   the rail is closed — 64px has no room for it, and the role is not urgent
+   enough to earn an icon-only affordance. */
 
-  return inner;
+function SidebarRoleBadge({ appRole }: Readonly<{ appRole: AppRole }>) {
+  return (
+    <span className={`sidebar-role-badge sidebar-role-badge--${appRole}`}>
+      {APP_ROLE_BADGE_LABELS[appRole]}
+    </span>
+  );
 }
 
 /* ── Section divider label ──────────────────────────────────────────────────── */
 
-function SidebarSectionLabel({
-  text,
-  collapsed,
-}: {
-  text: string;
-  collapsed: boolean;
-}) {
-  if (collapsed) {
-    return <div className="sidebar-section-divider" aria-hidden="true" />;
-  }
+/**
+ * Renders both forms at once and lets CSS choose: a hairline rule while the
+ * rail is closed, the words once it opens. Swapping them in JS would mean the
+ * rail re-flowed mid-transition.
+ */
+function SidebarSectionLabel({ text }: { text: string }) {
   return (
-    <div className="sidebar-section-label" aria-hidden="true">
-      {text}
+    <div className="sidebar-section" aria-hidden="true">
+      <span className="sidebar-section-divider" />
+      <span className="sidebar-section-label">{text}</span>
     </div>
   );
 }
@@ -391,15 +278,19 @@ export function AppNav({
   isLoggingOut,
 }: Readonly<AppNavProps>) {
   const pathname = usePathname();
-  const [collapsed, setCollapsed] = useState(false);
+  // Cleared on pointerleave. Clicking a nav link navigates but does NOT move
+  // the mouse, so the rail stays hovered — and an expanded rail is 240px of
+  // panel sitting on top of the page you just asked for. Suppressing hover
+  // until the pointer leaves makes a click read as "take me there", not "take
+  // me there and stay in the way". Keyboard focus is never suppressed.
+  const [hoverSuppressed, setHoverSuppressed] = useState(false);
   const [workspaces, setWorkspacesState] =
     useState<WorkspacesMeResponse | null>(null);
   const [notifications, setNotifications] =
     useState<NotificationsResponse | null>(null);
-  const { setWorkspaces } = useWorkspaceSelection();
+  const { setWorkspaces, registerWorkspaceRefresh } = useWorkspaceSelection();
   const prefersReducedMotion = useReducedMotion();
   const reduced = prefersReducedMotion ?? false;
-  const sidebarRef = useRef<HTMLElement>(null);
 
   const avatarInitial = (session?.user.name ?? session?.user.login ?? "U")
     .slice(0, 1)
@@ -409,24 +300,24 @@ export function AppNav({
   const isPlatformAdmin =
     !guest &&
     (session?.appRole === "admin" || session?.platformRole === "super_admin");
+  // Defaults to 'member' (rendered as "Developer") so the badge never blanks
+  // out on an older cached session that predates appRole.
+  const appRole: AppRole = session?.appRole ?? "member";
 
-  useEffect(() => {
-    function handleResize() {
-      if (window.innerWidth <= 768) {
-        setCollapsed(true);
-      }
-    }
-    handleResize();
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, []);
+  const loadWorkspaces = useCallback(() => {
+    void getMyWorkspaces()
+      .then((response) => {
+        setWorkspacesState(response);
+        setWorkspaces(response);
+      })
+      .catch(() => undefined);
+  }, [setWorkspaces]);
 
+  // The header owns the fetch, so it hands it to the context — that is what
+  // lets a delete anywhere in the app drop the team from this picker.
   useEffect(() => {
-    document.documentElement.style.setProperty(
-      "--sidebar-width",
-      collapsed ? "64px" : "220px",
-    );
-  }, [collapsed]);
+    registerWorkspaceRefresh(loadWorkspaces);
+  }, [registerWorkspaceRefresh, loadWorkspaces]);
 
   useEffect(() => {
     if (guest) return;
@@ -463,30 +354,29 @@ export function AppNav({
     };
   }, [guest]);
 
-  const sidebarWidth = collapsed ? 64 : 220;
-
   return (
     <>
-      <motion.aside
-        ref={sidebarRef}
-        className="app-sidebar"
-        data-collapsed={collapsed ? "true" : "false"}
-        animate={{ width: sidebarWidth }}
-        transition={
-          reduced
-            ? { duration: 0 }
-            : { type: "spring", stiffness: 360, damping: 34, mass: 0.8 }
-        }
-        style={{ width: sidebarWidth }}
-        aria-label="Primary navigation"
-      >
-        <div className="sidebar-edge-gradient" aria-hidden="true" />
+      {/* The rail's width is a CSS hover state, not React state. It is `fixed`
+          and the page reserves only the COLLAPSED width via --sidebar-width, so
+          expanding paints over the content instead of reflowing it — these
+          pages are dashboards and tables, and re-laying one out on every
+          incidental mouse pass along the left edge is motion nobody asked for.
 
-        {/* ── Brand zone ────────────────────────────────────────── */}
-        <div className="sidebar-brand-zone">
+          pointerleave rather than mouseleave: it also fires for pen and touch,
+          so a tablet cannot strand the rail in the suppressed state. */}
+      {/* ── The one header ──────────────────────────────────────────────────
+          Everything that must stay readable regardless of the rail's state:
+          the workspace switcher (the one control up here that CHANGES state,
+          so it cannot live behind a hover), identity, and sign-out.
+
+          It starts to the right of the closed rail rather than spanning the
+          full width, so the rail keeps its own brand mark and the expanded
+          rail paints over this bar rather than beside it. */}
+      <header className="app-header">
+        <div className="app-header-left">
           <Link
             href="/home"
-            className="sidebar-brand-link"
+            className="app-header-brand"
             aria-label="ALPHACI — home"
           >
             <Image
@@ -496,109 +386,136 @@ export function AppNav({
               height={46}
               unoptimized
               priority
-              className="sidebar-brand-image"
-              style={{
-                display: "block",
-                height: 46,
-                width: "auto",
-                maxWidth: "100%",
-                objectFit: "contain",
-              }}
+              className="app-header-brand-image"
             />
           </Link>
+          {/* Teams live here rather than in the rail: picking one changes what
+              the rest of the app is scoped to, which is a header job. */}
+          {!guest && (
+            <WorkspaceSwitcher
+              workspaces={workspaces}
+              onWorkspaceCreated={loadWorkspaces}
+            />
+          )}
         </div>
+
+        <div className="app-header-right">
+          {guest ? (
+            <>
+              <Link className="ghost-button app-header-btn" href="/login">
+                Log in
+              </Link>
+              <Link className="primary-button app-header-btn" href="/signup">
+                Sign up
+              </Link>
+            </>
+          ) : (
+            <>
+              <div className="app-header-identity">
+                <span className="app-header-login">
+                  {session?.user.login ?? "user"}
+                </span>
+                <SidebarRoleBadge appRole={appRole} />
+              </div>
+
+              <span className="app-header-avatar-ring">
+                {session?.user.avatarUrl ? (
+                  <Image
+                    src={session.user.avatarUrl}
+                    alt={session.user.name ?? session.user.login}
+                    width={32}
+                    height={32}
+                    className="app-header-avatar"
+                    unoptimized
+                  />
+                ) : (
+                  <span className="app-header-avatar-fallback" aria-hidden="true">
+                    {avatarInitial}
+                  </span>
+                )}
+              </span>
+
+              <button
+                type="button"
+                onClick={onLogout}
+                disabled={isLoggingOut}
+                className="app-header-signout"
+              >
+                {isLoggingOut ? (
+                  <span className="sidebar-signout-spinner" aria-hidden="true" />
+                ) : (
+                  <SignOutIcon size={14} />
+                )}
+                <span>{isLoggingOut ? "Signing out…" : "Sign out"}</span>
+              </button>
+            </>
+          )}
+        </div>
+      </header>
+
+      <aside
+        className="app-sidebar"
+        data-hover-suppressed={hoverSuppressed ? "true" : "false"}
+        onPointerLeave={() => setHoverSuppressed(false)}
+        aria-label="Primary navigation"
+      >
+        <div className="sidebar-edge-gradient" aria-hidden="true" />
 
         {/* ── Primary nav ───────────────────────────────────────── */}
         <nav className="sidebar-nav" aria-label="Primary">
-          {!guest && (
-            <div className="sidebar-account-zone">
-              <div
-                className="sidebar-user-chip"
-                aria-label={`Signed in as ${session?.user.login ?? "user"}`}
-              >
-                <span className="sidebar-user-avatar-ring">
-                  {session?.user.avatarUrl ? (
-                    <Image
-                      src={session.user.avatarUrl}
-                      alt={session.user.name ?? session.user.login}
-                      width={36}
-                      height={36}
-                      className="sidebar-user-avatar-img"
-                      unoptimized
-                    />
-                  ) : (
-                    <span
-                      className="sidebar-user-avatar-fallback"
-                      aria-hidden="true"
-                    >
-                      {avatarInitial}
-                    </span>
-                  )}
-                </span>
-
-                <AnimatePresence initial={false}>
-                  {!collapsed && (
-                    <motion.div
-                      className="sidebar-user-info"
-                      initial={reduced ? false : { opacity: 0, x: -8 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      exit={reduced ? undefined : { opacity: 0, x: -8 }}
-                      transition={{ duration: 0.16 }}
-                    >
-                      <span className="sidebar-user-login">
-                        {session?.user.login ?? "user"}
-                      </span>
-                      <WorkspaceSwitcher workspaces={workspaces} />
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
-            </div>
-          )}
-
-          <SidebarSectionLabel text="Main" collapsed={collapsed} />
+          <SidebarSectionLabel text="Main" />
 
           <SidebarNavItem
             href="/home"
             label="Home"
             icon={DashboardIcon}
             isActive={pathname === "/home"}
-            collapsed={collapsed}
             reduced={reduced}
-            itemIndex={0}
+            onNavigate={() => setHoverSuppressed(true)}
           />
+          {/*
+            "Projects" points at /workflows, and that mismatch is now the ONLY
+            one left: the second bar used to be labelled "Workflows" while
+            pointing at /runs, so the two names read in the opposite order to
+            their routes. Pipeline runs live inside a project now, so that bar
+            is gone and the confusion goes with it. /runs survives as the
+            cross-project view — the one question a per-project tab cannot
+            answer — reached from Home rather than from here.
+          */}
           <SidebarNavItem
             href="/workflows"
             label="Projects"
             icon={WorkflowsIcon}
             isActive={pathname === "/workflows"}
-            collapsed={collapsed}
             reduced={reduced}
-            itemIndex={1}
+            onNavigate={() => setHoverSuppressed(true)}
           />
-          <SidebarNavItem
-            href="/runs"
-            label="Workflows"
-            icon={RunsIcon}
-            isActive={pathname === "/runs"}
-            collapsed={collapsed}
-            reduced={reduced}
-            itemIndex={2}
-          />
+
+          {/* The header picks the WORKSPACE; this lists the teams inside it.
+              Selection is a header job, browsing is a nav job. */}
+          {!guest && (
+            <SidebarNavItem
+              href="/teams"
+              label="Teams"
+              icon={TeamsIcon}
+              isActive={pathname === "/teams" || pathname.startsWith("/groups")}
+              reduced={reduced}
+              onNavigate={() => setHoverSuppressed(true)}
+            />
+          )}
           {!guest && (
             <SidebarNavItem
               href="/inbox"
               label="Inbox"
               icon={InboxIcon}
               isActive={pathname === "/inbox"}
-              collapsed={collapsed}
               reduced={reduced}
-              itemIndex={3}
+              onNavigate={() => setHoverSuppressed(true)}
               badgeCount={notifications?.unreadCount ?? 0}
             />
           )}
 
-          <SidebarSectionLabel text="Account" collapsed={collapsed} />
+          <SidebarSectionLabel text="Account" />
 
           {!guest && (
             <SidebarNavItem
@@ -606,9 +523,8 @@ export function AppNav({
               label="Settings"
               icon={SettingsIcon}
               isActive={pathname === "/settings"}
-              collapsed={collapsed}
               reduced={reduced}
-              itemIndex={4}
+              onNavigate={() => setHoverSuppressed(true)}
             />
           )}
 
@@ -618,98 +534,13 @@ export function AppNav({
               label="Admin"
               icon={AdminIcon}
               isActive={pathname.startsWith("/admin")}
-              collapsed={collapsed}
               reduced={reduced}
-              itemIndex={5}
+              onNavigate={() => setHoverSuppressed(true)}
             />
           )}
         </nav>
 
-        {/* ── Bottom zone — user identity + actions ─────────────── */}
-        <div className="sidebar-bottom-zone">
-          {!guest && (
-            <>
-              <button
-                type="button"
-                onClick={onLogout}
-                disabled={isLoggingOut}
-                aria-label={isLoggingOut ? "Signing out…" : "Sign out"}
-                className="sidebar-signout-btn"
-              >
-                {isLoggingOut ? (
-                  <span
-                    className="sidebar-signout-spinner"
-                    aria-hidden="true"
-                  />
-                ) : (
-                  <SignOutIcon size={15} />
-                )}
-                <AnimatePresence initial={false}>
-                  {!collapsed && (
-                    <motion.span
-                      initial={reduced ? false : { opacity: 0, x: -8 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      exit={reduced ? undefined : { opacity: 0, x: -8 }}
-                      transition={{ duration: 0.16 }}
-                      className="sidebar-signout-label"
-                    >
-                      {isLoggingOut ? "Signing out…" : "Sign out"}
-                    </motion.span>
-                  )}
-                </AnimatePresence>
-              </button>
-            </>
-          )}
-
-          {guest && (
-            <Link
-              className="primary-button"
-              href="/signup"
-              style={{
-                width: "100%",
-                justifyContent: "center",
-                fontSize: "0.82rem",
-                padding: "0.5rem 0.75rem",
-                minHeight: "2.2rem",
-              }}
-            >
-              {collapsed ? "↑" : "Sign up"}
-            </Link>
-          )}
-        </div>
-      </motion.aside>
-
-      <motion.button
-        type="button"
-        className="sidebar-collapse-btn sidebar-collapse-btn--edge"
-        onClick={() => setCollapsed((current) => !current)}
-        aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-        aria-expanded={!collapsed}
-        animate={{ left: sidebarWidth - 1 }}
-        whileHover={
-          reduced
-            ? undefined
-            : { x: 2, backgroundColor: "rgba(26, 26, 33, 0.98)" }
-        }
-        whileTap={reduced ? undefined : { scale: 0.94 }}
-        transition={
-          reduced
-            ? { duration: 0 }
-            : { type: "spring", stiffness: 360, damping: 34, mass: 0.8 }
-        }
-      >
-        <motion.span
-          animate={{ rotate: collapsed ? 180 : 0 }}
-          transition={
-            reduced
-              ? { duration: 0 }
-              : { type: "spring", stiffness: 380, damping: 28 }
-          }
-          className="sidebar-collapse-icon"
-        >
-          <ChevronLeftIcon size={15} />
-        </motion.span>
-      </motion.button>
+      </aside>
     </>
   );
 }

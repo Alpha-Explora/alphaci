@@ -51,6 +51,20 @@ export type PlatformRole = "admin" | "super_admin";
 /** Global hierarchy role — the single source of truth for create capabilities. */
 export type AppRole = "admin" | "lead" | "member";
 
+/** Provenance of {@link AppRole} — see AuthMeResponse.appRoleSource. */
+export type AppRoleSource = "github_team" | "manual";
+
+/**
+ * User-facing labels for the global role. These mirror the GitHub org teams
+ * that drive them (`team-lead` / `developers`), so what a user sees in the app
+ * matches what they were added to in GitHub.
+ */
+export const APP_ROLE_BADGE_LABELS: Record<AppRole, string> = {
+  admin: "Admin",
+  lead: "Team lead",
+  member: "Developer",
+};
+
 export interface AuthMeResponse {
   authenticated: boolean;
   user: SessionUser;
@@ -63,6 +77,13 @@ export interface AuthMeResponse {
    * Optional so older cached sessions deserialize safely (defaults to 'member').
    */
   appRole?: AppRole;
+  /**
+   * Where `appRole` came from. 'github_team' means it follows the GitHub org
+   * teams (`team-lead` / `developers`) and can change on the next sign-in;
+   * 'manual' means an admin pinned it in the Console and automatic sync skips
+   * this user. Optional so older cached sessions deserialize safely.
+   */
+  appRoleSource?: AppRoleSource;
 }
 
 export interface CapabilitiesResponse {
@@ -886,6 +907,19 @@ export interface ProjectOverviewResponse {
     deploymentHistory: boolean;
     driftDetection: boolean;
   };
+  /**
+   * hierarchy.repositories id for this project, or null.
+   *
+   * Developer assignments are keyed on hierarchy.repositories rather than on
+   * the provisioned project, so this is the only way the project page can
+   * address its own access panel. Null means there is no assignment surface
+   * (personal-workspace project, or one predating the link) and the Access
+   * entry point is hidden rather than pointed at a URL that would 404.
+   *
+   * Optional so a project page served by an older backend degrades to hiding
+   * the entry point instead of failing to parse the response.
+   */
+  hierarchyRepositoryId?: string | null;
 }
 
 export type ProjectCiRunStage =
@@ -1066,13 +1100,31 @@ export interface DiscoverExistingRepoRequest {
   baseBranch?: string;
 }
 
+export type ExistingRepoWarningCode =
+  | "branch_protected"
+  | "sonar_already_configured"
+  | "uat_missing"
+  | "project_type_undetected";
+
+export interface ExistingRepoWarning {
+  code: ExistingRepoWarningCode;
+  message: string;
+}
+
 export interface DiscoverExistingRepoResponse {
   repoFullName: string;
+  /** The repository's own default branch, read from GitHub — not assumed. */
   baseBranch: string;
   detectedProjectTypeId: string | null;
   recommendedWorkflowRecipeId: string;
   serviceName: string;
   servicePath: string;
+  /**
+   * What setup is about to do, and what it cannot do — reported before
+   * anything is written. Optional so a page served by an older backend simply
+   * shows no notices instead of failing to parse.
+   */
+  warnings?: ExistingRepoWarning[];
 }
 
 export interface SetupExistingRepoPrRequest {

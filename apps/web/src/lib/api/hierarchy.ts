@@ -12,13 +12,12 @@ import type {
   CreateAssignmentRequest,
   CreateDeliveryProjectRequest,
   CreateGroupRequest,
-  CreateInvitationRequest,
+  AddGroupMemberRequest,
   CreateRepositoryRequest,
   CreateSystemRequest,
   DeliveryProject,
   GroupActivityQuery,
   GroupActivityResponse,
-  GroupInvitation,
   GroupMember,
   GroupSummary,
   HierarchyRepository,
@@ -43,7 +42,7 @@ import { request } from "./request";
 
 const enc = encodeURIComponent;
 
-/* ── Groups, members, invitations (plan §2.4) ──────────────────────────────── */
+/* ── Groups and members (plan §2.4) ────────────────────────────────────────── */
 
 export function createGroup(payload: CreateGroupRequest): Promise<GroupSummary> {
   return request<GroupSummary>("/groups", {
@@ -114,55 +113,19 @@ export function searchEligibleGroupUsers(
   );
 }
 
-export function createGroupInvitation(
+/**
+ * Adds a member directly. There is no invitation and nothing for the person to
+ * accept — they are a member as soon as this resolves.
+ */
+export function addGroupMember(
   groupId: string,
-  payload: CreateInvitationRequest,
-): Promise<GroupInvitation> {
-  return request<GroupInvitation>(`/groups/${enc(groupId)}/invitations`, {
+  payload: AddGroupMemberRequest,
+): Promise<GroupMember> {
+  return request<GroupMember>(`/groups/${enc(groupId)}/members`, {
     method: "POST",
     body: JSON.stringify(payload),
   });
 }
-
-export function getGroupInvitations(
-  groupId: string,
-): Promise<GroupInvitation[]> {
-  return request<GroupInvitation[]>(`/groups/${enc(groupId)}/invitations`);
-}
-
-/** The caller's own pending invitations across every group (invitee inbox). */
-export function getMyInvitations(): Promise<GroupInvitation[]> {
-  return request<GroupInvitation[]>("/groups/invitations/mine");
-}
-
-export function acceptGroupInvitation(
-  invitationId: string,
-): Promise<GroupInvitation> {
-  return request<GroupInvitation>(
-    `/groups/invitations/${enc(invitationId)}/accept`,
-    { method: "POST" },
-  );
-}
-
-export function declineGroupInvitation(
-  invitationId: string,
-): Promise<GroupInvitation> {
-  return request<GroupInvitation>(
-    `/groups/invitations/${enc(invitationId)}/decline`,
-    { method: "POST" },
-  );
-}
-
-export function revokeGroupInvitation(
-  groupId: string,
-  invitationId: string,
-): Promise<{ id: string; revoked: true }> {
-  return request<{ id: string; revoked: true }>(
-    `/groups/${enc(groupId)}/invitations/${enc(invitationId)}`,
-    { method: "DELETE" },
-  );
-}
-
 export function updateGroupMemberRole(
   groupId: string,
   memberId: string,

@@ -3,16 +3,15 @@
 import { useParams } from "next/navigation";
 import { useState } from "react";
 
-import { getGroup, getGroupInvitations, getGroupMembers } from "@/lib/api/client";
+import { getGroup, getGroupMembers } from "@/lib/api/client";
 import type {
-  GroupInvitation,
   GroupMember,
   GroupSummary,
 } from "@/lib/api/hierarchy-contracts";
 import { isGroupManagerRole } from "@/lib/api/hierarchy-contracts";
 import type { AuthMeResponse } from "@/lib/api/contracts";
 import { useApiResource } from "@/hooks/use-hierarchy";
-import { InviteMemberDialog } from "@/components/hierarchy/invite-member-dialog";
+import { AddMemberDialog } from "@/components/hierarchy/add-member-dialog";
 import { MemberTable } from "@/components/hierarchy/member-table";
 import {
   Breadcrumb,
@@ -31,22 +30,13 @@ function MembersInner({
   currentUserId: string;
 }) {
   const canManage = isGroupManagerRole(group.role);
-  const [inviteOpen, setInviteOpen] = useState(false);
+  const [addOpen, setAddOpen] = useState(false);
 
   const membersResource = useApiResource<GroupMember[]>(
     () => getGroupMembers(group.id),
     [group.id],
   );
-  // Invitations are owner/admin-only (plan §2.4) — don't fetch as a developer
-  // (it would 403); the roster still renders for everyone.
-  const invitationsResource = useApiResource<GroupInvitation[]>(
-    () => getGroupInvitations(group.id),
-    [group.id],
-    { enabled: canManage },
-  );
-
   const members = membersResource.data ?? [];
-  const invitations = invitationsResource.data ?? [];
 
   return (
     <>
@@ -58,10 +48,10 @@ function MembersInner({
         ]}
       />
       <PageHeader
-        title="Members & invitations"
+        title="Members"
         subtitle={
           canManage
-            ? "Add and remove members and manage invitations. Roles are managed in the Admin Console. Removing a member automatically reviews their repository access."
+            ? "Add and remove members. Someone you add is a member immediately. Roles are managed in the Admin Console, and removing a member automatically reviews their repository access."
             : "People who belong to this group."
         }
       />
@@ -80,23 +70,19 @@ function MembersInner({
         <MemberTable
           groupId={group.id}
           members={members}
-          invitations={invitations}
           canManage={canManage}
           currentUserId={currentUserId}
           onMembersChange={(updater) =>
             membersResource.setData((current) => updater(current ?? []))
           }
-          onInvitationsChange={(updater) =>
-            invitationsResource.setData((current) => updater(current ?? []))
-          }
-          inviteAction={
+          addAction={
             canManage ? (
               <button
                 type="button"
                 className="primary-button"
-                onClick={() => setInviteOpen(true)}
+                onClick={() => setAddOpen(true)}
               >
-                Invite member
+                Add member
               </button>
             ) : undefined
           }
@@ -104,15 +90,12 @@ function MembersInner({
       )}
 
       {canManage && (
-        <InviteMemberDialog
-          open={inviteOpen}
+        <AddMemberDialog
+          open={addOpen}
           groupId={group.id}
-          onClose={() => setInviteOpen(false)}
-          onInvited={(invitation) =>
-            invitationsResource.setData((current) => [
-              invitation,
-              ...(current ?? []),
-            ])
+          onClose={() => setAddOpen(false)}
+          onAdded={(member) =>
+            membersResource.setData((current) => [member, ...(current ?? [])])
           }
         />
       )}

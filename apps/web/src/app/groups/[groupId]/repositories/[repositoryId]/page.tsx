@@ -176,7 +176,7 @@ function RepositoryDetail({
             label: groupResource.data?.name ?? "Group",
             href: `/groups/${groupId}`,
           },
-          { label: "Systems", href: `/groups/${groupId}/systems` },
+          { label: "Projects", href: `/groups/${groupId}/systems` },
           { label: repository.name },
         ]}
       />

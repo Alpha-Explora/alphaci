@@ -1,91 +1,100 @@
 "use client";
 
+import { useState } from "react";
+
+import { CreateGroupDialog } from "@/components/hierarchy/create-group-dialog";
+import { useAuthSession } from "@/hooks/use-auth-session";
 import type { WorkspacesMeResponse } from "@/lib/api/contracts";
+import { isGlobalCreatorRole } from "@/lib/api/hierarchy-contracts";
 import { useWorkspaceSelection } from "./workspace-context";
 
-function roleAwareWorkspaceLabel(workspace: {
-  kind: "personal" | "team";
-  role: "admin" | "delegated_lead" | "member" | "viewer";
-}): string {
-  if (workspace.kind === "personal") return "Personal owner";
-  if (workspace.role === "admin") return "Team lead";
-  if (workspace.role === "delegated_lead") return "Delegated team lead";
-  if (workspace.role === "viewer") return "View-only team access";
-  return "Team member";
-}
+/**
+ * Sentinel option value. A <select> can only carry values, so "create" rides in
+ * as one and is intercepted on change — the alternative was a second control
+ * beside the dropdown, which is the thing this replaced.
+ */
+const CREATE = "__create__";
 
-/** Chevron affordance so the multi-team <select> reads as "click to switch"
- *  rather than plain text with default OS select chrome. */
-function WorkspaceSwitcherChevron() {
-  return (
-    <svg
-      className="workspace-switcher-chevron"
-      width="10"
-      height="10"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2.5"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <polyline points="6 9 12 15 18 9" />
-    </svg>
-  );
-}
-
+/**
+ * The workspace picker, in the header.
+ *
+ * Switching workspace is the only control in the chrome that changes what the
+ * rest of the app is scoped to, which is why it lives up here rather than
+ * behind the rail's hover.
+ *
+ * It renders as a <select> even with ONE entry. Falling back to plain text
+ * meant someone with a single workspace learned the app had no switcher and
+ * never looked again after gaining a second — a control that only appears once
+ * you already have the problem is one nobody discovers.
+ */
 export function WorkspaceSwitcher({
   workspaces,
+  onWorkspaceCreated,
 }: Readonly<{
   workspaces: WorkspacesMeResponse | null;
+  /** Lets the owner of the workspace list re-fetch after a create. */
+  onWorkspaceCreated?: (workspaceId: string) => void;
 }>) {
+  const { session } = useAuthSession();
   const { selectedWorkspace, selectedWorkspaceId, setSelectedWorkspaceId } =
     useWorkspaceSelection();
+  const [createOpen, setCreateOpen] = useState(false);
+
   const items = workspaces?.items ?? [];
+  const canCreate = isGlobalCreatorRole(session?.appRole);
   const current =
     items.find((workspace) => workspace.id === selectedWorkspaceId) ??
     selectedWorkspace ??
     items[0] ??
     null;
 
-  if (workspaces?.enabled === false) {
+  if (workspaces?.enabled === false || (items.length === 0 && !canCreate)) {
     return null;
   }
 
-  if (items.length > 1) {
-    return (
-      <label className="workspace-switcher workspace-switcher--multi">
-        <span className="workspace-switcher-label">Workspace</span>
-        <span className="workspace-switcher-count" aria-hidden="true">
-          {items.length} teams
-        </span>
-        <span className="workspace-switcher-select-wrap">
-          <select
-            aria-label="Current workspace"
-            value={current?.id ?? ""}
-            onChange={(event) => setSelectedWorkspaceId(event.target.value || null)}
-            className="workspace-switcher-select"
-          >
-            {items.map((workspace) => (
-              <option key={workspace.id} value={workspace.id}>
-                {workspace.name} — {roleAwareWorkspaceLabel(workspace)}
-              </option>
-            ))}
-          </select>
-          <WorkspaceSwitcherChevron />
-        </span>
-      </label>
-    );
-  }
-
   return (
-    <div className="workspace-switcher" aria-label="Current workspace">
-      <span className="workspace-switcher-label">Workspace</span>
-      <span className="workspace-switcher-name">{current?.name ?? "Workspace"}</span>
-      <span className="workspace-switcher-role">
-        {current ? roleAwareWorkspaceLabel(current) : "Loading workspace"}
-      </span>
+    <div className="team-switcher">
+      <label className="team-switcher-field">
+        <span className="sr-only">Active workspace</span>
+        <select
+          aria-label="Active workspace"
+          value={current?.id ?? ""}
+          onChange={(event) => {
+            if (event.target.value === CREATE) {
+              // Never let the sentinel become the selection — reopen on the
+              // workspace the user was already in, then show the dialog.
+              event.target.value = current?.id ?? "";
+              setCreateOpen(true);
+              return;
+            }
+            setSelectedWorkspaceId(event.target.value || null);
+          }}
+          className="team-switcher-select"
+        >
+          {items.map((workspace) => (
+            <option key={workspace.id} value={workspace.id}>
+              {workspace.name}
+            </option>
+          ))}
+          {canCreate ? (
+            <>
+              <option disabled>──────────</option>
+              <option value={CREATE}>+ Create workspace</option>
+            </>
+          ) : null}
+        </select>
+      </label>
+
+      {canCreate ? (
+        <CreateGroupDialog
+          open={createOpen}
+          onClose={() => setCreateOpen(false)}
+          onCreated={(group) => {
+            setSelectedWorkspaceId(group.id);
+            onWorkspaceCreated?.(group.id);
+          }}
+        />
+      ) : null}
     </div>
   );
 }

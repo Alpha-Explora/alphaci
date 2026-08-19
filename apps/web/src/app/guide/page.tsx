@@ -379,7 +379,7 @@ export default function GuidePage() {
                 justifyContent: "center",
                 fontSize: "0.82rem",
               }}
-              aria-label="Replay the guided product tour on the Workflows page"
+              aria-label="Replay the guided product tour on the Projects page"
             >
               Replay guided tour
             </Link>
@@ -414,7 +414,7 @@ export default function GuidePage() {
                   login page.
                 </li>
                 <li>
-                  <strong>Install the GitHub App.</strong> On the Workflows
+                  <strong>Install the GitHub App.</strong> On the Projects
                   page, if you see an
                   <em> &ldquo;Install GitHub App&rdquo;</em> chip, click it and
                   grant access to the repositories (or organisation) you want
@@ -422,7 +422,7 @@ export default function GuidePage() {
                   commit workflows on your behalf.
                 </li>
                 <li>
-                  <strong>Open Workflows</strong> and head to the{" "}
+                  <strong>Open Projects</strong> and head to the{" "}
                   <strong>Setup</strong> tab to create your first project.
                 </li>
               </ol>
@@ -607,11 +607,11 @@ docs: update the guide page`}</code>
               <FaqItem q="Why can't I see the catalog or project options?">
                 The most common cause is not being signed in, or the GitHub App
                 not being installed yet. Sign in, install the GitHub App from
-                the Workflows page, then reload.
+                the Projects page, then reload.
               </FaqItem>
               <FaqItem q="How do I replay the guided tour?">
                 Click <strong>Replay guided tour</strong> on this page, or the{" "}
-                <strong>Show guide</strong> button on the Workflows Setup tab.
+                <strong>Show guide</strong> button on the Projects Setup tab.
                 The tour walks every field and ends at the Create button.
               </FaqItem>
               <FaqItem q="What's the difference between Microservices and Multi-repo?">
@@ -647,7 +647,7 @@ docs: update the guide page`}</code>
               >
                 <p style={{ marginBottom: "0.9rem" }}>Ready to build?</p>
                 <Link className="primary-button" href="/workflows">
-                  Go to Workflows
+                  Go to Projects
                 </Link>
               </div>
             )}

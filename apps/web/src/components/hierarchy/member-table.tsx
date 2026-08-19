@@ -2,50 +2,61 @@
 
 import { useMemo, useState } from "react";
 
-import {
-  removeGroupMember,
-  revokeGroupInvitation,
-} from "@/lib/api/client";
+import { removeGroupMember, updateGroupMemberRole } from "@/lib/api/client";
 import {
   GROUP_ROLE_LABELS,
-  type GroupInvitation,
   type GroupMember,
+  type GroupRole,
 } from "@/lib/api/hierarchy-contracts";
-import {
-  InvitationStatusBadge,
-  MemberStatusBadge,
-  RoleBadge,
-} from "./badges";
+import { MemberStatusBadge, RoleBadge } from "./badges";
 import { Avatar, SectionHeader } from "./primitives";
-import { timeAgo } from "@/hooks/use-hierarchy";
 
 /**
- * Member roster + invitation lifecycle. Roles are DISPLAY-ONLY here — role
- * assignment (Admin / Lead / Member) is centralized in the Admin Console, so
- * a group Lead cannot change roles from this tab. Membership actions (invite,
- * remove) still render for managers when `canManage` is true; the backend
- * independently enforces the same rules.
+ * Member roster. Roles are DISPLAY-ONLY here — role assignment
+ * (Admin / Lead / Member) is centralized in the Admin Console, so a group Lead
+ * cannot change roles from this tab. Membership actions (add, remove) render
+ * for managers when `canManage` is true; the backend independently enforces
+ * the same rules.
+ *
+ * There is no invitation lifecycle: a lead adds someone and they are a member
+ * immediately.
  */
+/**
+ * Roles a manager may assign from this table.
+ *
+ * 'viewer' is deliberately absent: nothing in this product distinguishes a
+ * viewer from a member yet, so offering it would create a state with no
+ * meaning. 'admin' (Lead) IS offered — the backend allows it for an existing
+ * Admin and rejects it for a delegated lead, which is the rule this table
+ * relies on rather than duplicating.
+ */
+const ASSIGNABLE_ROLES: GroupRole[] = ["admin", "delegated_lead", "member"];
+
 export function MemberTable({
   groupId,
   members,
-  invitations,
   canManage,
   currentUserId,
   onMembersChange,
-  onInvitationsChange,
-  inviteAction,
+  addAction,
+  showHeader = true,
 }: {
   groupId: string;
   members: GroupMember[];
-  invitations: GroupInvitation[];
   canManage: boolean;
   currentUserId: string;
   onMembersChange: (updater: (current: GroupMember[]) => GroupMember[]) => void;
-  onInvitationsChange: (
-    updater: (current: GroupInvitation[]) => GroupInvitation[],
-  ) => void;
-  inviteAction?: React.ReactNode;
+  addAction?: React.ReactNode;
+  /**
+   * Whether to draw the "Members (n)" heading.
+   *
+   * False inside the team workspace, where the section rail has already named
+   * the section and the panel owns the heading — two headings reading
+   * "Members" one above the other is the page telling you the same thing
+   * twice. The standalone /groups/:id/members page has no such heading of its
+   * own, so it keeps this.
+   */
+  showHeader?: boolean;
 }) {
   const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -61,16 +72,6 @@ export function MemberTable({
       ).length,
     [activeMembers],
   );
-  const pendingInvitations = useMemo(
-    () => invitations.filter((invitation) => invitation.status === "pending"),
-    [invitations],
-  );
-  // Only still-actionable (pending) invitations are shown. Accepted ones have
-  // graduated into real members (already listed in Members above), and revoked/
-  // declined/expired ones are terminal — keeping any of them here would just
-  // clutter the list. The full lifecycle stays in the Activity & audit feed.
-  const visibleInvitations = pendingInvitations;
-
   async function handleRemove(member: GroupMember) {
     setBusyId(member.id);
     setError(null);
@@ -90,20 +91,25 @@ export function MemberTable({
     }
   }
 
-  async function handleRevoke(invitation: GroupInvitation) {
-    setBusyId(invitation.id);
+  async function handleRoleChange(member: GroupMember, role: GroupRole) {
+    if (role === member.role) return;
+    setBusyId(member.id);
     setError(null);
     try {
-      await revokeGroupInvitation(groupId, invitation.id);
-      onInvitationsChange((current) =>
-        current.map((item) =>
-          item.id === invitation.id
-            ? { ...item, status: "revoked" as const }
-            : item,
-        ),
+      const updated = await updateGroupMemberRole(groupId, member.id, { role });
+      onMembersChange((current) =>
+        current.map((item) => (item.id === member.id ? updated : item)),
       );
-    } catch {
-      setError("The invitation could not be revoked.");
+    } catch (cause) {
+      // The backend refuses some transitions a manager can still select — a
+      // delegated lead cannot mint an Admin, and the last Lead cannot be
+      // demoted. Surface its reason rather than a generic failure.
+      const detail = (cause as { details?: { message?: string | string[] } })
+        ?.details;
+      const message = Array.isArray(detail?.message)
+        ? detail?.message.join(", ")
+        : detail?.message;
+      setError(message ?? "That role could not be changed.");
     } finally {
       setBusyId(null);
     }
@@ -112,11 +118,13 @@ export function MemberTable({
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
       <section aria-label="Members">
-        <SectionHeader
-          title="Members"
-          count={activeMembers.length}
-          actions={inviteAction}
-        />
+        {showHeader ? (
+          <SectionHeader
+            title="Members"
+            count={activeMembers.length}
+            actions={addAction}
+          />
+        ) : null}
         <div className="hier-panel">
           {activeMembers.map((member) => {
             const isLastLead = member.role === "admin" && leadCount <= 1;
@@ -140,8 +148,49 @@ export function MemberTable({
                 </div>
                 <div className="hier-row-actions">
                   <MemberStatusBadge status={member.memberStatus} />
-                  {/* Role is display-only — managed in the Admin Console. */}
-                  <RoleBadge role={member.role} />
+                  {/*
+                    Role is EDITABLE by a manager (2026-08-18). It used to be a
+                    read-only badge pointing at the Admin Console, but the
+                    Console sets the GLOBAL role (app_role) — a different axis
+                    entirely — so there was no way anywhere in the product to
+                    make somebody a Lead of a team, while the Add member dialog
+                    promised exactly that.
+
+                    The last Lead cannot be demoted, mirroring the backend's
+                    row-locked guard; the control is disabled rather than
+                    hidden so the reason can be read from the tooltip.
+                  */}
+                  {canManage && !removed ? (
+                    <label className="hier-role-picker">
+                      <span className="sr-only">
+                        Role for {member.name || member.login}
+                      </span>
+                      <select
+                        className="hier-role-select"
+                        value={member.role}
+                        disabled={busyId === member.id || isLastLead}
+                        title={
+                          isLastLead
+                            ? "A team must keep at least one Lead"
+                            : undefined
+                        }
+                        onChange={(event) =>
+                          void handleRoleChange(
+                            member,
+                            event.target.value as GroupRole,
+                          )
+                        }
+                      >
+                        {ASSIGNABLE_ROLES.map((role) => (
+                          <option key={role} value={role}>
+                            {GROUP_ROLE_LABELS[role]}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  ) : (
+                    <RoleBadge role={member.role} />
+                  )}
                   {canManage && !removed && (
                     <button
                       type="button"
@@ -165,56 +214,6 @@ export function MemberTable({
           })}
         </div>
       </section>
-
-      {(canManage || pendingInvitations.length > 0) && (
-        <section aria-label="Invitations">
-          <SectionHeader title="Invitations" count={visibleInvitations.length} />
-          <div className="hier-panel">
-            {visibleInvitations.length === 0 ? (
-              <div className="hier-tree-empty">No invitations.</div>
-            ) : (
-              visibleInvitations.map((invitation) => (
-                <div key={invitation.id} className="hier-row">
-                  <div className="hier-row-identity">
-                    <Avatar
-                      login={invitation.inviteeLogin ?? invitation.invitedUserId}
-                      name={invitation.inviteeName}
-                      avatarUrl={invitation.inviteeAvatarUrl}
-                    />
-                    <div className="hier-row-name">
-                      <strong>
-                        {invitation.inviteeName ||
-                          invitation.inviteeLogin ||
-                          invitation.invitedUserId}
-                      </strong>
-                      <span>
-                        {invitation.inviteeLogin
-                          ? `@${invitation.inviteeLogin} · `
-                          : ""}
-                        {GROUP_ROLE_LABELS[invitation.role]} · invited{" "}
-                        {timeAgo(invitation.createdAt)}
-                      </span>
-                    </div>
-                  </div>
-                  <div className="hier-row-actions">
-                    <InvitationStatusBadge status={invitation.status} />
-                    {canManage && invitation.status === "pending" && (
-                      <button
-                        type="button"
-                        className="hier-btn-danger"
-                        disabled={busyId === invitation.id}
-                        onClick={() => void handleRevoke(invitation)}
-                      >
-                        Revoke
-                      </button>
-                    )}
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-        </section>
-      )}
 
       {error && (
         <p className="error-text" role="alert" style={{ margin: 0 }}>

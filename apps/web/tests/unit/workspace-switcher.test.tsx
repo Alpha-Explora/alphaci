@@ -1,6 +1,17 @@
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 
+// The switcher reads the session to decide whether "+ Create workspace" is
+// offered. Stubbed so the component never reaches the network here.
+jest.mock("../../src/hooks/use-auth-session", () => ({
+  useAuthSession: () => ({
+    status: "signed-in",
+    session: { authenticated: true, appRole: "lead" },
+    error: null,
+    refresh: jest.fn(),
+  }),
+}));
+
 import { WorkspaceProvider } from "../../src/components/layout/workspace-context";
 import { WorkspaceSwitcher } from "../../src/components/layout/workspace-switcher";
 
@@ -24,7 +35,10 @@ describe("WorkspaceSwitcher", () => {
     window.localStorage.clear();
   });
 
-  it("renders a static personal workspace when only one workspace is available", () => {
+  // Deliberately a <select> even with ONE entry. Falling back to plain text
+  // meant a lead with a single team learned the app had no switcher and never
+  // looked again after joining a second.
+  it("still renders a switcher when only one workspace is available", () => {
     const container = document.createElement("div");
     document.body.appendChild(container);
     root = createRoot(container);
@@ -38,7 +52,38 @@ describe("WorkspaceSwitcher", () => {
     });
 
     expect(container.textContent).toContain("Personal workspace");
-    expect(container.textContent).toContain("personal / admin");
+    expect(container.querySelector("select")).not.toBeNull();
+  });
+
+  it("offers create-workspace to a lead", () => {
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    root = createRoot(container);
+
+    act(() => {
+      root!.render(
+        <WorkspaceProvider>
+          <WorkspaceSwitcher workspaces={workspaces} />
+        </WorkspaceProvider>,
+      );
+    });
+
+    expect(container.textContent).toContain("+ Create workspace");
+  });
+
+  it("renders nothing when workspaces are disabled", () => {
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    root = createRoot(container);
+
+    act(() => {
+      root!.render(
+        <WorkspaceProvider>
+          <WorkspaceSwitcher workspaces={{ enabled: false, items: [] }} />
+        </WorkspaceProvider>,
+      );
+    });
+
     expect(container.querySelector("select")).toBeNull();
   });
 
@@ -55,7 +100,7 @@ describe("WorkspaceSwitcher", () => {
       );
     });
 
-    const select = container.querySelector<HTMLSelectElement>('select[aria-label="Current workspace"]')!;
+    const select = container.querySelector<HTMLSelectElement>('select[aria-label="Active workspace"]')!;
     act(() => {
       const descriptor = Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, "value");
       descriptor?.set?.call(select, "workspace-2");

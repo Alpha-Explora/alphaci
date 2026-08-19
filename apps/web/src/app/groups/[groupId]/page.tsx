@@ -230,8 +230,8 @@ function GroupOverview({ groupId }: { groupId: string }) {
       <div className="hier-card-grid" style={{ marginBottom: "1.25rem" }}>
         <NavCard
           href={`/groups/${group.id}/members`}
-          title="Members & invitations"
-          description="Manage who belongs to this group and their roles, and track invitation lifecycle."
+          title="Members"
+          description="Manage who belongs to this group and their roles. Members are added directly — there is no invitation to accept."
         />
         <NavCard
           href={`/groups/${group.id}/systems`}

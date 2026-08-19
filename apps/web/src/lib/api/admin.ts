@@ -1,10 +1,10 @@
-import type { AppRole, PlatformRole } from "./contracts";
+import type { AppRole, AppRoleSource, PlatformRole } from "./contracts";
 import { request } from "./request";
 
 /* ── Types (mirror the BE admin view models) ─────────────────────────────── */
 
 /** Global hierarchy role — the single source of truth for group capabilities. */
-export type { AppRole };
+export type { AppRole, AppRoleSource };
 
 export const APP_ROLE_LABELS: Record<AppRole, string> = {
   admin: "Admin",
@@ -24,6 +24,12 @@ export interface AdminUserListItem {
   archivedAt: string | null;
   onboardingCompleted: boolean;
   appRole: AppRole;
+  /**
+   * Where appRole came from. 'github_team' follows the GitHub org teams and
+   * can change on the user's next sign-in; 'manual' was pinned in the Console
+   * and automatic sync skips this user until it is reset.
+   */
+  appRoleSource: AppRoleSource;
   projectCount: number;
   errorCount: number;
 }
@@ -167,6 +173,17 @@ export async function setUserAppRole(
     method: "PATCH",
     body: JSON.stringify({ role }),
   });
+}
+
+/**
+ * Unpins a user so GitHub org team membership drives their role again.
+ *
+ * The role itself is not changed here — it is re-derived on the user's next
+ * login or by the next `membership` webhook, both of which have a GitHub token
+ * to read the teams with.
+ */
+export async function resetUserAppRoleToGithub(id: string): Promise<void> {
+  await request(`/admin/users/${id}/app-role/reset`, { method: "POST" });
 }
 
 export async function getAdminFeedback(

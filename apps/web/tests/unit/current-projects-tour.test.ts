@@ -36,10 +36,17 @@ describe("getCurrentProjectsTourSteps", () => {
     expect(step?.popover?.title).toBeTruthy();
   });
 
-  it("includes a step for the sub-tab bar", () => {
+  /*
+   * The sub-tab bar step was REMOVED on 2026-08-18: no element in the product
+   * carries [data-tour='subtab-bar'] any more, so filterStepsForDom silently
+   * dropped it on every run. This asserts it stays gone — a tour step that can
+   * never render is worse than no step, because nothing reports it.
+   */
+  it("has no step anchored to an element that no longer exists", () => {
     const steps = getCurrentProjectsTourSteps();
-    const step = steps.find((s) => s.element === "[data-tour='subtab-bar']");
-    expect(step).toBeDefined();
+    expect(
+      steps.find((s) => s.element === "[data-tour='subtab-bar']"),
+    ).toBeUndefined();
   });
 
   it("includes a step for the project detail tabs", () => {

@@ -5,21 +5,17 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 
 import { getGroups } from "@/lib/api/client";
-import { useAuthSession } from "@/hooks/use-auth-session";
 import {
-  isGlobalCreatorRole,
   type GroupSummary,
 } from "@/lib/api/hierarchy-contracts";
 import type {
   CreateProjectResult,
   ProvisionedProject,
 } from "@/lib/api/contracts";
-import { CreateGroupDialog } from "@/components/hierarchy/create-group-dialog";
 import { WorkflowStageList } from "./project-detail-tabs";
 import { DeploymentProvisioningSummary } from "./setup-result-panel";
 import { FlowExplainer } from "./flow-explainer";
 import { GroupWorkspacePanel } from "./group-workspace-panel";
-import { PendingInvitationsBanner } from "./pending-invitations-banner";
 
 interface WorkflowCurrentTabProps {
   latestResult: CreateProjectResult | null;
@@ -84,11 +80,8 @@ export function WorkflowCurrentTab({
   projects,
   enforcedOrg,
 }: Readonly<WorkflowCurrentTabProps>) {
-  const { session } = useAuthSession();
-  const canCreateGroup = isGlobalCreatorRole(session?.appRole);
   const [groups, setGroups] = useState<GroupSummary[] | null>(null);
   const [groupsError, setGroupsError] = useState<string | null>(null);
-  const [createGroupOpen, setCreateGroupOpen] = useState(false);
   const [railMode, setRailMode] = useState<"groups" | "individual">("groups");
   const [selectedIndividualProjectId, setSelectedIndividualProjectId] = useState<string | null>(null);
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
@@ -116,20 +109,6 @@ export function WorkflowCurrentTab({
       active = false;
     };
   }, []);
-
-  // Re-pull groups after the user accepts an invitation so the group they just
-  // joined shows up without a full page reload.
-  function refreshGroups() {
-    void getGroups()
-      .then((items) => {
-        setGroups(items);
-        setGroupsError(null);
-      })
-      .catch(() => {
-        setGroups((current) => current ?? []);
-        setGroupsError("Could not load groups.");
-      });
-  }
 
   const entries: GroupListEntry[] = useMemo(() => {
     const groupList = groups ?? [];
@@ -187,14 +166,6 @@ export function WorkflowCurrentTab({
     setSelectedKey((current) => (current === groupId ? null : current));
   }
 
-  function handleGroupCreated(group: GroupSummary) {
-    setGroups((current) => [group, ...(current ?? [])]);
-    setGroupsError(null);
-    setRailMode("groups");
-    setSelectedKey(group.id);
-    setGroupListQuery("");
-    setGroupListPage(1);
-  }
 
   const loading = loadingProjects || groups === null;
   const selectedIndividualProject =
@@ -219,9 +190,6 @@ export function WorkflowCurrentTab({
         padding: 0,
       }}
     >
-      {/* ── Pending invitations inbox ─────────────────────────────── */}
-      <PendingInvitationsBanner onAccepted={refreshGroups} />
-
       {/* ── Latest result banner ──────────────────────────────────── */}
       {latestResult ? (
         <div className="latest-result-banner glass-panel">
@@ -362,7 +330,8 @@ export function WorkflowCurrentTab({
                 maxWidth: "32rem",
               }}
             >
-              Create a group, then create a system inside it — ALPHACI
+              Create a workspace from the picker in the header — a workspace is
+              a team — then create a repository inside it. ALPHACI
               provisions the repository and commits a workflow that runs
               through the gated stages below on every change. Open the{" "}
               <Link href="/guide" className="inline-link">
@@ -384,20 +353,6 @@ export function WorkflowCurrentTab({
             <FlowExplainer variant="compact" />
           </div>
           <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>
-            {canCreateGroup ? (
-              <button
-                className="primary-button"
-                type="button"
-                onClick={() => setCreateGroupOpen(true)}
-                style={{
-                  padding: "0.6rem 1.4rem",
-                  fontSize: "0.88rem",
-                  minHeight: "2.5rem",
-                }}
-              >
-                Create a group
-              </button>
-            ) : null}
             <button
               className="ghost-button"
               type="button"
@@ -464,15 +419,6 @@ export function WorkflowCurrentTab({
                 value={groupListQuery}
                 onChange={(event) => setGroupListQuery(event.target.value)}
               />
-              {canCreateGroup ? (
-                <button
-                  type="button"
-                  className="primary-button project-list-create"
-                  onClick={() => setCreateGroupOpen(true)}
-                >
-                  + New group
-                </button>
-              ) : null}
               {groupsError ? (
                 <p className="project-list-empty">{groupsError}</p>
               ) : null}
@@ -705,14 +651,6 @@ export function WorkflowCurrentTab({
           </div>
         </div>
       )}
-
-      {canCreateGroup ? (
-        <CreateGroupDialog
-          open={createGroupOpen}
-          onClose={() => setCreateGroupOpen(false)}
-          onCreated={handleGroupCreated}
-        />
-      ) : null}
     </motion.section>
   );
 }

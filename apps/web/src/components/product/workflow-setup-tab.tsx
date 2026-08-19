@@ -31,7 +31,16 @@ import { HelpTip } from "./help-tip";
  * Handlers, state, and the existing-mode panel stay wired — flip this flag
  * to bring the "New / Existing repository" segmented control back.
  */
-const EXISTING_REPO_MODE_ENABLED = false;
+/*
+ * Existing-repository onboarding.
+ *
+ * Switched ON 2026-08-18, after the setup path stopped assuming the default
+ * branch was 'main', stopped overwriting a repository's own SonarCloud
+ * secrets, started creating `uat` so the staging half of the pipeline runs,
+ * and started cleaning up its own secrets when a setup fails. Discovery now
+ * reports what will happen before anything is written.
+ */
+const EXISTING_REPO_MODE_ENABLED = true;
 
 const WIZARD_STEPS = [
   { label: "Blueprint", detail: "Shape and stack" },
@@ -520,13 +529,42 @@ export function WorkflowSetupTab({
               </div>
 
               {existingRepoDiscovery ? (
-                <div className="result-branches">
-                  <span className="branch-chip">{existingRepoDiscovery.baseBranch}</span>
-                  <span className="branch-chip">
-                    {existingRepoDiscovery.detectedProjectTypeId ?? "manual"}
-                  </span>
-                  <span className="branch-chip">{existingRepoDiscovery.recommendedWorkflowRecipeId}</span>
-                </div>
+                <>
+                  <div className="result-branches">
+                    <span className="branch-chip">{existingRepoDiscovery.baseBranch}</span>
+                    <span className="branch-chip">
+                      {existingRepoDiscovery.detectedProjectTypeId ?? "manual"}
+                    </span>
+                    <span className="branch-chip">{existingRepoDiscovery.recommendedWorkflowRecipeId}</span>
+                  </div>
+
+                  {/*
+                    What setup is about to do to a repository that already has
+                    work in it, said while the user can still change their mind.
+                    Onboarding commits files and installs secrets; discovering
+                    a protected branch or an existing SonarCloud setup AFTER
+                    the fact is too late to be useful.
+                  */}
+                  {existingRepoDiscovery.warnings?.length ? (
+                    <ul className="existing-repo-notices" role="status">
+                      {existingRepoDiscovery.warnings.map((warning) => (
+                        <li
+                          key={warning.code}
+                          className={`existing-repo-notice existing-repo-notice--${
+                            warning.code === "branch_protected" ? "blocking" : "info"
+                          }`}
+                        >
+                          {warning.message}
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="existing-repo-notice existing-repo-notice--ok" role="status">
+                      Nothing in the way — ALPHACI will commit the workflows to{" "}
+                      <strong>{existingRepoDiscovery.baseBranch}</strong> and install its secrets.
+                    </p>
+                  )}
+                </>
               ) : null}
             </motion.div>
           ) : null}
