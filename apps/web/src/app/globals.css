@@ -264,10 +264,8 @@ html[data-theme="light"] {
 
 
 /* ── Feature value cards (Source-backed generation, etc.) ── */
-[data-theme="light"] .feature-strip-item,
 
 
-[data-theme="light"] .feature-strip-item:hover,
 
 @media (max-width: 700px) {
   [data-theme="light"] .feature-strip-item {
@@ -3117,7 +3115,6 @@ select option {
 }
 
 
-.features-strip::before,
 
 @media (max-width: 700px) {
   .features-strip {
@@ -6081,7 +6078,6 @@ select option {
 }
 
 /* ── KINETIC EDITORIAL HERO ────────────────────────────────────────── */
-.editorial-grid,
 
 /* Grid/flex items default to min-width:auto, so the right-column dashboard
    refuses to shrink and blows the 2-column hero past the viewport width.
@@ -6339,10 +6335,8 @@ select option {
 
 
 /* Trailing action cluster on a provisioned-project row (browse + disconnect) */
-.dash-repo-row-actions,
 
 
-.dash-repo-row:hover .dash-disconnect-link,
 
 
 @media (max-width: 640px) {
@@ -6392,7 +6386,6 @@ select option {
 }
 
 
-.repo-entry:hover .dash-disconnect-link,
 
 @media (max-width: 640px) {
   .repo-entry {
@@ -7736,7 +7729,6 @@ select option {
 
 /* Empty/loading state: a quiet, uniform baseline instead of a rising trend.
    Muted grey, no emphasized final bar — signals "no data yet", not growth. */
-.bento-sparkbar--flat .bento-sparkbar-bar,
 
 @keyframes sparkbarRise {
   from {
@@ -7936,7 +7928,6 @@ select option {
 
 
 /* Highlighted element — crisp brand outline */
-.driver-active-element,
 
 /* Mobile adjustments */
 @media (max-width: 600px) {
