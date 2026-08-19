@@ -14,9 +14,9 @@ name: Boundaries
 
 on:
   pull_request:
-    branches: [test, uat, main]
+    branches: [main]
   push:
-    branches: [test, uat, main]
+    branches: [main]
 
 permissions:
   contents: read
@@ -46,13 +46,17 @@ jobs:
         run: npm run lint:css
 
       # Layer rules from the next-feature-architecture skill: thin routes,
-      # no I/O in views, no React in model/. Checks only paths touched by this
-      # PR — the legacy routes have not migrated yet and would drown the signal.
+      # no I/O in views, no React in model/.
+      #
+      # Pull requests only, and only the paths the PR touches. The legacy
+      # routes have not migrated yet and would drown the signal; on a push to
+      # main there is no diff to measure against.
       - name: Feature architecture (touched paths)
+        if: github.event_name == 'pull_request'
         run: |
           NFA="$RUNNER_TEMP/nfa"
-          git clone --depth 1 -c core.longpaths=true             https://github.com/antoneeeeems/next-feature-architecture.git "$NFA"
-          node "$NFA/scripts/check-boundaries.mjs" --cwd . --src auto             --since "origin/${{ github.base_ref || 'main' }}"
+          git clone --depth 1 -c core.longpaths=true https://github.com/antoneeeeems/next-feature-architecture.git "$NFA"
+          node "$NFA/scripts/check-boundaries.mjs" --cwd . --src auto --since "origin/${{ github.base_ref }}"
 
       - name: Report remaining baseline debt
         if: always()
