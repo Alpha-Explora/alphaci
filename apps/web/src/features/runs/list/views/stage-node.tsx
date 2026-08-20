@@ -2,8 +2,8 @@
 
 import { motion } from "framer-motion";
 import type { CSSProperties } from "react";
-import type { StageReport } from "@/lib/api/contracts";
-import { stageStatusColors, stageLabel } from "@/lib/runs/utils";
+import type { StageReport } from "../../model/runs-types";
+import { stageStatusColors, stageLabel } from "../../model/runs-presentation";
 
 /* ── Icons ─────────────────────────────────────────────────────────────────── */
 

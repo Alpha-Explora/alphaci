@@ -2,9 +2,9 @@
 
 import { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import type { FriendlyMessage, RunGroup, StageReport } from "@/lib/api/contracts";
-import { StageNode, StageConnector } from "./StageNode";
-import { MessageCard } from "./MessageCard";
+import type { FriendlyMessage, RunGroup, StageReport } from "../../model/runs-types";
+import { StageNode, StageConnector } from "./stage-node";
+import { MessageCard } from "./message-card";
 
 const STAGE_ORDER: Array<StageReport["stage"]> = ["access", "quality", "package"];
 

@@ -1,4 +1,4 @@
-import type { RunOverallStatus, StageStatus, MessageSeverity } from "@/lib/api/contracts";
+import type { RunOverallStatus, StageStatus, MessageSeverity } from "./runs-types";
 
 /* ── Color tokens for overall run status ─────────────────────────────────── */
 
