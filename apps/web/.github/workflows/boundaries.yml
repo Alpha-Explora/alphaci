@@ -30,7 +30,11 @@ jobs:
     name: Boundaries and tokens
     runs-on: ubuntu-latest
     steps:
+      # Full history: the feature-architecture step diffs against a base ref,
+      # and the default shallow clone has nothing to diff against.
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - uses: actions/setup-node@v4
         with:
@@ -48,15 +52,29 @@ jobs:
       # Layer rules from the next-feature-architecture skill: thin routes,
       # no I/O in views, no React in model/.
       #
-      # Pull requests only, and only the paths the PR touches. The legacy
-      # routes have not migrated yet and would drown the signal; on a push to
-      # main there is no diff to measure against.
+      # The checker is vendored into scripts/ rather than cloned. The upstream
+      # skill repository is private, so an unauthenticated clone could never
+      # succeed here — and this job is deliberately secret-free, so there is no
+      # token to authenticate with. Vendoring keeps the gate hermetic.
+      # Re-sync with: node scripts/check-boundaries.mjs --help
+      #
+      # Touched paths only, never the whole tree: the unmigrated routes carry
+      # 50 known thin-page violations that would drown the signal. On a pull
+      # request the diff base is the target branch; on a push it is the commit
+      # before the push.
       - name: Feature architecture (touched paths)
-        if: github.event_name == 'pull_request'
         run: |
-          NFA="$RUNNER_TEMP/nfa"
-          git clone --depth 1 -c core.longpaths=true https://github.com/antoneeeeems/next-feature-architecture.git "$NFA"
-          node "$NFA/scripts/check-boundaries.mjs" --cwd . --src auto --since "origin/${{ github.base_ref }}"
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            SINCE="origin/${{ github.base_ref }}"
+          else
+            SINCE="${{ github.event.before }}"
+          fi
+          # A first push to a new branch reports an all-zero "before" SHA.
+          case "$SINCE" in
+            ""|0000000000000000000000000000000000000000) SINCE="HEAD~1" ;;
+          esac
+          echo "Comparing against $SINCE"
+          node scripts/check-boundaries.mjs --cwd . --src auto --since "$SINCE"
 
       - name: Report remaining baseline debt
         if: always()
@@ -65,4 +83,4 @@ jobs:
           echo "### Boundary debt: $COUNT known violations remaining" >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"
           echo "Each one is a module reaching into another module's internals." >> "$GITHUB_STEP_SUMMARY"
-          echo "They are migrated away feature by feature — see docs/restructure.md." >> "$GITHUB_STEP_SUMMARY"
+          echo "They are migrated away feature by feature — see src/features/README.md." >> "$GITHUB_STEP_SUMMARY"

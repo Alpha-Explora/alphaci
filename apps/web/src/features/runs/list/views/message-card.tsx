@@ -1,7 +1,7 @@
 "use client";
 
-import type { FriendlyMessage } from "@/lib/api/contracts";
-import { severityColors } from "@/lib/runs/utils";
+import type { FriendlyMessage } from "../../model/runs-types";
+import { severityColors } from "../../model/runs-presentation";
 
 interface MessageCardProps {
   message: FriendlyMessage;

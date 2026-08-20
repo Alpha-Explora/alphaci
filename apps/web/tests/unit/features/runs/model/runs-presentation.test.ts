@@ -5,7 +5,7 @@ import {
   relativeTime,
   shortSha,
   stageLabel,
-} from "../../src/lib/runs/utils";
+} from "../../../../../src/features/runs/model/runs-presentation";
 
 describe("runStatusColors", () => {
   it("returns green ring for success", () => {

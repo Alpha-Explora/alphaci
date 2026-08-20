@@ -1,0 +1,921 @@
+/**
+ * Teams and workspaces surface: the workspace switcher, member tables and
+ * role controls, team sections, and the invite and transfer flows.
+ * 
+ * Extracted from globals.css one surface at a time; see src/features/README.md.
+ */
+
+[data-theme="light"] .workspace-member-input,
+[data-theme="light"] .workspace-member-select {
+  background-color: rgba(250, 250, 251, 0.95);
+  border-color: rgba(0, 0, 0, 0.12);
+  color: var(--text-primary);
+}
+
+[data-theme="light"] .workspace-member-btn--neutral {
+  border-color: rgba(0, 0, 0, 0.12);
+  color: var(--text-secondary);
+}
+
+[data-theme="light"] .workspace-member-btn--neutral:hover:not(:disabled) {
+  border-color: rgba(220, 38, 38, 0.3);
+  background: rgba(220, 38, 38, 0.06);
+  color: var(--danger);
+}
+
+[data-theme="light"] .workspace-member-btn--add {
+  border-color: rgba(9, 105, 218, 0.3);
+  background: rgba(9, 105, 218, 0.07);
+  color: var(--brand);
+}
+
+[data-theme="light"] .workspace-member-btn--add:hover:not(:disabled) {
+  border-color: rgba(9, 105, 218, 0.5);
+  background: rgba(9, 105, 218, 0.13);
+}
+
+/* ── Workspace members (Settings → Workspace) ─────────────────────────────────
+   Shared control height keeps the role select, remove button, input, and add
+   button on one baseline. Surfaces use tokens so light mode overrides apply. */
+.workspace-members {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.workspace-members-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.workspace-member-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 8.5rem auto;
+  gap: 0.65rem;
+  align-items: center;
+}
+
+.workspace-member-identity {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.workspace-member-identity strong {
+  display: block;
+  color: var(--text-primary);
+  font-size: 0.9rem;
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.workspace-member-identity span {
+  color: var(--text-muted);
+  font-size: 0.76rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.workspace-member-input,
+.workspace-member-select {
+  height: 2.2rem;
+  border-radius: 0.5rem;
+  border: 1px solid var(--border-soft);
+  background: rgba(17, 17, 22, 0.55);
+  color: var(--text-primary);
+  padding: 0 0.65rem;
+  font-size: 0.82rem;
+  min-width: 0;
+  transition:
+    border-color 0.18s ease,
+    box-shadow 0.18s ease,
+    background 0.18s ease;
+}
+
+.workspace-member-select {
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  padding-right: 1.75rem;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.6rem center;
+}
+
+.workspace-member-input:focus-visible,
+.workspace-member-select:focus-visible {
+  outline: none;
+  border-color: rgba(88, 166, 255, 0.5);
+  box-shadow: 0 0 0 3px rgba(88, 166, 255, 0.15);
+}
+
+.workspace-member-input:disabled,
+.workspace-member-select:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.workspace-member-btn {
+  height: 2.2rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 0.95rem;
+  border-radius: 0.5rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    background 0.18s ease,
+    border-color 0.18s ease,
+    box-shadow 0.18s ease,
+    color 0.18s ease;
+}
+
+.workspace-member-btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(88, 166, 255, 0.18);
+}
+
+.workspace-member-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.workspace-member-btn--neutral {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: transparent;
+  color: var(--text-secondary);
+}
+
+.workspace-member-btn--neutral:hover:not(:disabled) {
+  border-color: rgba(248, 113, 113, 0.4);
+  background: rgba(248, 113, 113, 0.08);
+  color: var(--danger);
+}
+
+.workspace-member-btn--add {
+  border: 1px solid rgba(88, 166, 255, 0.25);
+  background: rgba(88, 166, 255, 0.06);
+  color: var(--brand);
+}
+
+.workspace-member-btn--add:hover:not(:disabled) {
+  border-color: rgba(88, 166, 255, 0.45);
+  background: rgba(88, 166, 255, 0.12);
+}
+
+.workspace-member-add {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 8.5rem auto;
+  gap: 0.5rem;
+}
+
+@media (max-width: 560px) {
+  .workspace-member-row,
+  .workspace-member-add {
+    grid-template-columns: 1fr 1fr;
+  }
+  .workspace-member-identity {
+    grid-column: 1 / -1;
+  }
+}
+
+/* Team switcher — a row in a 56px bar, not the stacked block it was in the
+   rail. */
+.team-switcher {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.team-switcher-field {
+  display: flex;
+  min-width: 0;
+}
+
+/* A native <select> keeps the OS popup — which is the point: it is reachable by
+   keyboard, screen readers and touch for free, and no custom listbox matches
+   that without a lot of code. What IS ours is the closed state, so it reads as
+   a workspace control rather than a form field: the default arrow is removed
+   and redrawn as a chevron with room reserved for it. */
+.team-switcher-field {
+  position: relative;
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.team-switcher-field::after {
+  content: "";
+  position: absolute;
+  right: 0.7rem;
+  width: 0.45rem;
+  height: 0.45rem;
+  border-right: 2px solid var(--text-muted);
+  border-bottom: 2px solid var(--text-muted);
+  transform: translateY(-25%) rotate(45deg);
+  pointer-events: none;
+}
+
+.team-switcher-select {
+  min-width: 11rem;
+  max-width: 16rem;
+  padding: 0.4rem 2rem 0.4rem 0.7rem;
+  border: 1px solid var(--border);
+  border-radius: 0.55rem;
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+  font-size: 0.86rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  text-overflow: ellipsis;
+}
+
+.team-switcher-select:hover {
+  border-color: var(--border-brand);
+}
+
+.team-switcher-select:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
+/* The popup itself is OS-drawn; these are the only properties that reliably
+   carry into it, and without them a dark app opens a white list. */
+.team-switcher-select option {
+  background: var(--bg-panel);
+  color: var(--text-primary);
+}
+
+/* Workspace switcher row — sits directly beneath the username, own line,
+   never overlapping. Name and role each get a bounded, ellipsized width so
+   neither can push into or clip the other. */
+.workspace-switcher {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  min-width: 0;
+  width: 100%;
+  color: var(--text-muted);
+  font-size: 0.68rem;
+  line-height: 1.3;
+}
+
+/* ── Team projects list (right sidebar) ────────────────────────────────────── */
+.team-projects-list { display: flex; flex-direction: column; }
+
+.team-project-row {
+  display: flex; align-items: center; gap: 0.6rem;
+  min-height: 3rem; padding: 0.5rem 0;
+  border-bottom: 1px solid var(--border-soft);
+  color: var(--text-primary); text-decoration: none;
+  transition: padding-left 0.16s ease, color 0.16s ease;
+}
+
+.team-project-row:last-child { border-bottom: 0; }
+
+.team-project-row:hover { padding-left: 0.3rem; color: var(--brand); }
+
+.team-status-dot { width: 0.55rem; height: 0.55rem; flex: 0 0 auto; border-radius: 50%; background: var(--text-muted); }
+
+.team-status-dot--ok { background: var(--success); box-shadow: 0 0 0 3px color-mix(in srgb, var(--success) 13%, transparent); }
+
+.team-status-dot--warn { background: var(--accent-amber); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-amber) 13%, transparent); }
+
+.team-status-dot--danger { background: var(--danger); box-shadow: 0 0 0 3px color-mix(in srgb, var(--danger) 13%, transparent); }
+
+.team-status-dot--muted { background: var(--text-muted); }
+
+.team-project-copy { display: flex; flex-direction: column; gap: 0.1rem; min-width: 0; flex: 1; }
+
+.team-project-copy strong { font-size: 0.8rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.team-project-copy small { color: var(--text-muted); font-size: 0.68rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.team-status-badge {
+  flex: 0 0 auto; padding: 0.16rem 0.45rem; border-radius: var(--radius-pill);
+  font-size: 0.6rem; font-weight: 750; line-height: 1; white-space: nowrap;
+}
+
+.team-status-badge--ok { color: var(--success); background: color-mix(in srgb, var(--success) 12%, transparent); }
+
+.team-status-badge--warn { color: var(--accent-amber); background: color-mix(in srgb, var(--accent-amber) 12%, transparent); }
+
+.team-status-badge--danger { color: var(--danger); background: color-mix(in srgb, var(--danger) 12%, transparent); }
+
+.team-status-badge--muted { color: var(--text-muted); background: color-mix(in srgb, var(--text-muted) 14%, transparent); }
+
+/* The team detail now fills the page rather than sitting beside a list rail —
+   the header dropdown selects the team, so a second list was the same rows
+   twice. */
+.team-detail-surface {
+  padding: 1.25rem 1.4rem 1.6rem;
+  border-radius: var(--radius-card, 12px);
+}
+
+.ws-panel {
+  display: grid;
+  gap: 1rem;
+  min-width: 0;
+}
+
+.ws-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.ws-toolbar--between {
+  justify-content: space-between;
+}
+
+.ws-toolbar__links {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.ws-hint {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.ws-link {
+  font-size: 0.85rem;
+  color: var(--accent-primary);
+  text-decoration: none;
+}
+
+.ws-link:hover,
+.ws-link:focus-visible {
+  text-decoration: underline;
+}
+
+.ws-branch {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.ws-branch__label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-secondary);
+}
+
+.ws-select {
+  padding: 0.35rem 0.6rem;
+  border-radius: 0.5rem;
+  border: 1px solid var(--border-subtle);
+  background: var(--surface-raised);
+  color: var(--text-primary);
+  font-size: 0.85rem;
+}
+
+.ws-crumbs {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.ws-crumb {
+  border: 0;
+  background: none;
+  padding: 0.15rem 0.25rem;
+  color: var(--accent-primary);
+  font-size: 0.85rem;
+  cursor: pointer;
+  border-radius: 0.35rem;
+}
+
+.ws-crumb:hover {
+  text-decoration: underline;
+}
+
+.ws-crumb-sep {
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+}
+
+.ws-tree {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--border-subtle);
+  border-radius: 0.75rem;
+  overflow: hidden;
+}
+
+.ws-tree__row {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  width: 100%;
+  padding: 0.55rem 0.85rem;
+  border: 0;
+  border-bottom: 1px solid var(--border-subtle);
+  background: none;
+  color: var(--text-primary);
+  font-size: 0.9rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.ws-tree li:last-child .ws-tree__row {
+  border-bottom: 0;
+}
+
+.ws-tree__row:hover {
+  background: var(--surface-hover);
+}
+
+.ws-tree__icon {
+  color: var(--text-secondary);
+  width: 1rem;
+}
+
+.ws-tree__name {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.ws-tree__size {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.ws-file {
+  border: 1px solid var(--border-subtle);
+  border-radius: 0.75rem;
+  overflow: hidden;
+}
+
+.ws-file__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.7rem 0.9rem;
+  border-bottom: 1px solid var(--border-subtle);
+  background: var(--surface-raised);
+}
+
+.ws-file__meta {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Code, diffs and console output each scroll INSIDE their own box, so the page
+   body never scrolls sideways because one line happened to be long. */
+.ws-code,
+.ws-diff,
+.ws-console {
+  margin: 0;
+  padding: 0.9rem;
+  overflow-x: auto;
+  max-height: 32rem;
+  overflow-y: auto;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.78rem;
+  line-height: 1.55;
+  white-space: pre;
+  color: var(--text-primary);
+  background: var(--surface-sunken, rgba(0, 0, 0, 0.15));
+}
+
+.ws-console {
+  max-height: 26rem;
+}
+
+.ws-runs,
+.ws-prs {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.6rem;
+}
+
+.ws-run,
+.ws-pr {
+  border: 1px solid var(--border-subtle);
+  border-radius: 0.75rem;
+  overflow: hidden;
+}
+
+.ws-run__head,
+.ws-pr__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.65rem;
+  width: 100%;
+  padding: 0.7rem 0.9rem;
+  border: 0;
+  background: none;
+  color: var(--text-primary);
+  text-align: left;
+  cursor: pointer;
+}
+
+.ws-run__head:hover,
+.ws-pr__head:hover {
+  background: var(--surface-hover);
+}
+
+.ws-run__caret,
+.ws-pr__caret {
+  color: var(--text-secondary);
+  width: 0.9rem;
+}
+
+.ws-run__title,
+.ws-pr__title {
+  flex: 1;
+  min-width: 12rem;
+  font-size: 0.9rem;
+  overflow-wrap: anywhere;
+}
+
+.ws-run__meta,
+.ws-pr__meta {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
+
+.ws-run__body,
+.ws-pr__body {
+  padding: 0 0.9rem 0.9rem;
+  display: grid;
+  gap: 0.75rem;
+}
+
+.ws-run__links {
+  display: flex;
+  gap: 1rem;
+}
+
+.ws-jobs {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.ws-job {
+  border: 1px solid var(--border-subtle);
+  border-radius: 0.6rem;
+  padding: 0.6rem 0.75rem;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.ws-job__head {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.ws-job__name {
+  flex: 1;
+  min-width: 8rem;
+  font-size: 0.85rem;
+}
+
+.ws-job__logbtn {
+  font-size: 0.75rem;
+}
+
+.ws-steps {
+  list-style: none;
+  margin: 0;
+  padding: 0 0 0 0.5rem;
+  display: grid;
+  gap: 0.3rem;
+  border-left: 2px solid var(--border-subtle);
+}
+
+.ws-step {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.ws-step__name {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.ws-filters {
+  display: inline-flex;
+  gap: 0.3rem;
+}
+
+.ws-filter {
+  padding: 0.3rem 0.7rem;
+  border-radius: 999px;
+  border: 1px solid var(--border-subtle);
+  background: none;
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+  cursor: pointer;
+}
+
+.ws-filter[aria-pressed="true"] {
+  background: var(--accent-primary);
+  border-color: var(--accent-primary);
+  color: #fff;
+}
+
+.ws-files {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.6rem;
+}
+
+.ws-file-row {
+  border: 1px solid var(--border-subtle);
+  border-radius: 0.6rem;
+  overflow: hidden;
+}
+
+.ws-file-row__head {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  padding: 0.5rem 0.75rem;
+  background: var(--surface-raised);
+}
+
+.ws-file-row__name {
+  flex: 1;
+  min-width: 10rem;
+  font-size: 0.82rem;
+  overflow-wrap: anywhere;
+}
+
+.ws-file-row__counts {
+  font-size: 0.78rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.ws-add {
+  color: #3fb950;
+}
+
+.ws-del {
+  color: #f85149;
+}
+
+.ws-file-row .ws-hint {
+  padding: 0.6rem 0.75rem;
+}
+
+.ws-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.15rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+
+.ws-pill--success,
+.ws-pill--merged,
+.ws-pill--added {
+  background: rgba(63, 185, 80, 0.14);
+  border-color: rgba(63, 185, 80, 0.4);
+  color: #3fb950;
+}
+
+.ws-pill--failure,
+.ws-pill--removed {
+  background: rgba(248, 81, 73, 0.14);
+  border-color: rgba(248, 81, 73, 0.4);
+  color: #f85149;
+}
+
+.ws-pill--running,
+.ws-pill--open,
+.ws-pill--modified {
+  background: rgba(88, 166, 255, 0.14);
+  border-color: rgba(88, 166, 255, 0.4);
+  color: #58a6ff;
+}
+
+/* `copied`, `changed` and `unchanged` are GitHub file statuses too — without
+   them those chips rendered with no background and no border at all. */
+.ws-pill--neutral,
+.ws-pill--closed,
+.ws-pill--draft,
+.ws-pill--renamed,
+.ws-pill--copied,
+.ws-pill--changed,
+.ws-pill--unchanged {
+  background: var(--surface-raised);
+  border-color: var(--border-subtle);
+  color: var(--text-secondary);
+}
+
+.ws-loading {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.ws-loading__row {
+  height: 2.25rem;
+  border-radius: 0.5rem;
+  background: var(--surface-raised);
+  opacity: 0.65;
+}
+
+.ws-empty,
+.ws-error {
+  padding: 1.5rem;
+  border: 1px dashed var(--border-subtle);
+  border-radius: 0.75rem;
+  text-align: center;
+  display: grid;
+  gap: 0.5rem;
+  justify-items: center;
+}
+
+.ws-empty p,
+.ws-error p {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.ws-reported {
+  border-top: 1px solid var(--border-subtle);
+  padding-top: 1rem;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.ws-reported__head {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--text-primary);
+}
+
+/* ── Repository rows ── */
+.team-repo-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.team-repo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  padding: 0.7rem 0.9rem;
+  border: 1px solid var(--border-subtle);
+  border-radius: 0.7rem;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.team-repo:hover {
+  background: var(--surface-hover);
+  border-color: var(--border-soft, var(--border-subtle));
+}
+
+/* The row's main target. Stretched over the free space so the whole line is
+   clickable, not just the words in it. */
+.team-repo__main {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  flex: 1;
+  min-width: 12rem;
+  text-decoration: none;
+  color: inherit;
+}
+
+.team-repo__main:focus-visible {
+  outline: 2px solid var(--accent-primary);
+  outline-offset: 3px;
+  border-radius: 0.35rem;
+}
+
+.team-repo__name {
+  font-weight: 600;
+  font-size: 0.88rem;
+  color: var(--text-primary);
+  overflow-wrap: anywhere;
+}
+
+.team-repo__main:hover .team-repo__name {
+  color: var(--accent-primary);
+}
+
+.team-repo__service {
+  font-size: 0.76rem;
+  color: var(--text-muted);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+.team-repo__meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.team-repo__link {
+  padding: 0.3rem 0.65rem;
+  font-size: 0.75rem;
+  min-height: 1.9rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+@media (max-width: 640px) {
+  .team-repo {
+    align-items: flex-start;
+  }
+
+  .team-repo__meta {
+    width: 100%;
+    justify-content: flex-start;
+  }
+}
+
+/* ── Team settings ──────────────────────────────────────────────────────────
+   Rename, transfer and archive — the reversible team actions. They lived only
+   on the older /groups pages, so the team surface offered delete and nothing
+   else. Delete stays last and keeps its own danger styling.
+   ------------------------------------------------------------------------- */
+.team-settings {
+  display: grid;
+  gap: 1.5rem;
+}
+
+.team-settings__block {
+  display: grid;
+  gap: 0.6rem;
+  padding-bottom: 1.25rem;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.team-settings__block h4 {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.team-settings__lede {
+  margin: 0;
+  font-size: 0.8rem;
+  line-height: 1.5;
+  color: var(--text-secondary);
+  max-width: 46rem;
+}
+
+.team-settings__actions {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.team-settings__ok {
+  margin: 0;
+  font-size: 0.8rem;
+  color: #3fb950;
+}

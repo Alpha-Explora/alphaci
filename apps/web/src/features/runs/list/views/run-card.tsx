@@ -3,9 +3,9 @@
 import { AnimatePresence, motion } from "framer-motion";
 import type { CSSProperties } from "react";
 import { useId, useMemo, useState } from "react";
-import type { RunGroup } from "@/lib/api/contracts";
-import { runStatusColors, relativeTime, shortSha } from "@/lib/runs/utils";
-import { RunPipeline } from "./RunPipeline";
+import type { RunGroup } from "../../model/runs-types";
+import { runStatusColors, relativeTime, shortSha } from "../../model/runs-presentation";
+import { RunPipeline } from "./run-pipeline";
 
 interface RunCardProps {
   run: RunGroup;

@@ -9,7 +9,7 @@ import { AppNav } from "@/components/layout/app-nav";
 import { FlowBackground } from "@/components/layout/flow-background";
 import { PipelineLoader } from "@/components/layout/pipeline-loader";
 import { ProjectDetailTabs } from "@/components/product/project-detail-tabs";
-import { RunsSkeleton } from "@/components/product/runs/RunsSkeleton";
+import { RunsSkeleton } from "@/features/runs/list";
 import { useAuthSession } from "@/hooks/use-auth-session";
 import { logout, disconnectProject, getProjectOptions } from "@/lib/api/client";
 import type {

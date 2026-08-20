@@ -14,8 +14,8 @@
     "boundaries": "depcruise src --config .dependency-cruiser.cjs --ignore-known",
     "boundaries:all": "depcruise src --config .dependency-cruiser.cjs",
     "lint:css": "stylelint \"src/shared/styles/**/*.css\" \"src/features/**/*.css\"",
-    "arch:check": "node \"${NFA:-$HOME/.agents/skills/next-feature-architecture}/scripts/check-boundaries.mjs\" --cwd . --src auto",
-    "arch:check:touched": "node \"${NFA:-$HOME/.agents/skills/next-feature-architecture}/scripts/check-boundaries.mjs\" --cwd . --src auto --since origin/main",
+    "arch:check": "node scripts/check-boundaries.mjs --cwd . --src auto",
+    "arch:check:touched": "node scripts/check-boundaries.mjs --cwd . --src auto --since origin/main",
     "arch:new": "node \"${NFA:-$HOME/.agents/skills/next-feature-architecture}/scripts/scaffold-feature.mjs\""
   },
   "dependencies": {

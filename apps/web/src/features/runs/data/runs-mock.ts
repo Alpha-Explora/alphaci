@@ -1,4 +1,4 @@
-import type { RunsResponse } from "@/lib/api/contracts";
+import type { RunsResponse } from "../model/runs-types";
 
 /**
  * Mock fixture for the /ci/runs API. Used while the backend endpoint is not
