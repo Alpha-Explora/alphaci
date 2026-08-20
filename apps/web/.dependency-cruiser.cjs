@@ -62,6 +62,29 @@ module.exports = {
       },
     },
     {
+      name: 'components-barrel-only',
+      severity: 'error',
+      comment:
+        'components/ is the pre-migration layout: 16k lines that no feature ' +
+        'owns. It may consume a feature through a barrel, never reach past ' +
+        'one. Without this rule the largest consumer surface in the repo is ' +
+        'the one place a feature\'s internals are unguarded — routes and other ' +
+        'features are already covered, components/ was the blind spot.\n' +
+        'The known-violations baseline grandfathers app-nav, which imports the ' +
+        'notifications repository directly to dodge a cycle: the inbox view ' +
+        'imports AppNav, so app-nav importing the inbox barrel closes a loop. ' +
+        'That is fixed by giving the shell its own view-model slice, not by ' +
+        'widening this rule.',
+      from: { path: '^src/components/' },
+      to: {
+        path: '^src/features/',
+        pathNot: [
+          '^src/features/[^/]+/index\\.ts$',
+          '^src/features/[^/]+/[^/]+/index\\.ts$',
+        ],
+      },
+    },
+    {
       name: 'shared-must-not-know-features',
       severity: 'error',
       comment:
