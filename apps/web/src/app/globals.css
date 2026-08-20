@@ -10,32 +10,13 @@
 @import "../styles/inbox.css";
 @import "../styles/settings.css";
 @import "../styles/product-workflows.css";
+@import "../styles/dashboard-projects.css";
+@import "../styles/dashboard-home.css";
+@import "../styles/app-shell.css";
 
 /* ── Light mode component overrides ────────────────────────────── */
 html[data-theme="light"] {
   background: var(--bg-base);
-}
-
-[data-theme="light"] .app-sidebar {
-  background: linear-gradient(180deg, #fafafb 0%, #f2f2f4 100%);
-  box-shadow:
-    inset -1px 0 0 rgba(0, 0, 0, 0.06),
-    2px 0 20px rgba(79, 70, 229, 0.06),
-    4px 0 12px rgba(0, 0, 0, 0.04);
-}
-
-[data-theme="light"] .sidebar-nav-item:hover {
-  background: rgba(79, 70, 229, 0.05);
-  color: var(--text-primary);
-}
-
-[data-theme="light"] .sidebar-nav-item-bg {
-  background: linear-gradient(
-    135deg,
-    rgba(79, 70, 229, 0.1) 0%,
-    rgba(9, 105, 218, 0.06) 100%
-  );
-  border-left-color: var(--accent-indigo);
 }
 
 
@@ -58,12 +39,6 @@ html[data-theme="light"] {
 [data-theme="light"] .sidebar-signout-btn {
   color: var(--text-secondary);
   border-color: rgba(0, 0, 0, 0.08);
-}
-
-[data-theme="light"] .sidebar-signout-btn:hover:not(:disabled) {
-  background: rgba(220, 38, 38, 0.06);
-  border-color: rgba(220, 38, 38, 0.2);
-  color: var(--danger);
 }
 
 /* .sidebar-user-chip and .workspace-switcher are token-driven (--bg-elevated,
@@ -150,13 +125,6 @@ html[data-theme="light"] {
 /* ── Welcome banner ──────────────────────────────────────────── */
 [data-theme="light"] .welcome-banner-flat {
   border-bottom-color: var(--border);
-}
-
-
-[data-theme="light"] .dash-badge-violet {
-  background: rgba(124, 58, 237, 0.08);
-  color: var(--accent-violet);
-  border-color: rgba(124, 58, 237, 0.2);
 }
 
 /* ── Guest banner ────────────────────────────────────────────── */
@@ -304,19 +272,6 @@ h3 {
   font-weight: 700;
 }
 
-/* ── Dashboard font overrides (scoped to .dash-shell) ───────────────────── */
-.dash-shell {
-  font-family: var(--font-dash-body), "Plus Jakarta Sans", sans-serif;
-}
-
-.dash-shell h1,
-.dash-shell h2,
-.dash-shell h3,
-.dash-shell h4 {
-  font-family: var(--font-dash-display), "Outfit", sans-serif;
-  letter-spacing: -0.02em;
-}
-
 /* ── Skip-to-content ───────────────────────────────────────────────────── */
 .skip-link {
   position: absolute;
@@ -350,30 +305,6 @@ h3 {
 .flow-shell.page-shell {
   padding: 0;
   gap: 0;
-}
-
-.dash-shell {
-  position: relative;
-  min-height: 100dvh;
-  width: 100%;
-  margin: 0 auto;
-  padding: 0 0 2rem var(--sidebar-width, 220px);
-  display: flex;
-  flex-direction: column;
-  gap: 0;
-  background: var(--bg-base);
-  transition: padding-left 0.35s cubic-bezier(0.25, 0, 0, 1);
-}
-
-.dash-shell h1 {
-  font-size: clamp(1.25rem, 2vw, 1.75rem);
-  line-height: 1.1;
-  letter-spacing: -0.015em;
-}
-
-.dash-shell h2 {
-  font-size: clamp(1.1rem, 1.5vw, 1.35rem);
-  line-height: 1.2;
 }
 
 /* ── Admin console: use the same typography as the signed-in dashboard ──── */
@@ -1178,21 +1109,6 @@ select option {
   cursor: not-allowed;
 }
 
-
-/* ── Result panel ────────────────────────────────────────────────────────── */
-.result-panel {
-  max-height: calc(100dvh - 12rem);
-  overflow: auto;
-  height: fit-content;
-}
-
-.result-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.45rem;
-  margin-bottom: 0.35rem;
-}
-
 /* Terminal dark code block */
 .result-panel pre,
 
@@ -1414,10 +1330,6 @@ select option {
   }
   .studio-grid {
     grid-template-columns: minmax(230px, 280px) minmax(0, 1fr);
-  }
-  .result-panel {
-    grid-column: 1 / -1;
-    max-height: none;
   }
   .landing-stage {
     min-height: auto;
@@ -1648,17 +1560,6 @@ select option {
 }
 
 
-/* ── GitHub repo list ───────────────────────────────────────────────────── */
-.repo-list {
-  list-style: none;
-  margin: 0.5rem 0 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.3rem;
-}
-
-
 /* ── Error inline width when used as page-level sibling ──── */
 .page-shell > .error-inline {
   width: min(var(--layout-max), calc(100% - (var(--layout-gutter) * 2)));
@@ -1728,40 +1629,6 @@ select option {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-}
-
-/* ── Result panel — repo result ─────────────────────────────── */
-.result-repo-header {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.result-status-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--success);
-  flex-shrink: 0;
-  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15);
-}
-
-.result-repo-name {
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: var(--text-primary);
-  text-decoration: none;
-  word-break: break-all;
-}
-
-.result-repo-name:hover {
-  text-decoration: underline;
-}
-
-.result-branches {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.35rem;
 }
 
 
@@ -1920,19 +1787,6 @@ select option {
   background: rgba(16, 185, 129, 0.08);
 }
 
-/* ── Project status badge ─────────────────────────────────────────────────────── */
-.project-status-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.3rem;
-  font-size: 0.7rem;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  padding: 0.2rem 0.55rem;
-  border-radius: var(--radius-pill);
-}
-
 .project-status-badge.provisioned {
   color: var(--success);
   background: rgba(16, 185, 129, 0.1);
@@ -1956,15 +1810,6 @@ select option {
   color: var(--text-muted);
   background: color-mix(in srgb, var(--text-muted) 12%, transparent);
   border: 1px solid color-mix(in srgb, var(--text-muted) 25%, transparent);
-}
-
-
-.project-detail-header-badges {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  flex-wrap: wrap;
-  justify-content: flex-end;
 }
 
 
@@ -2106,30 +1951,6 @@ select option {
   }
 }
 
-/* ── Dashboard Specific Tightening ─────────────────────────────────────────────── */
-.dash-shell .dash-tab-bar {
-  display: flex;
-  gap: 0.5rem;
-  border-bottom: 1px solid var(--border-soft);
-  margin-bottom: 1rem;
-}
-
-.dash-shell .dash-tab-btn {
-  padding: 0.4rem 0.8rem;
-  font-size: 0.85rem;
-  font-weight: 500;
-  border: none;
-  border-bottom: 2px solid transparent;
-  background: transparent;
-  color: var(--text-secondary);
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.dash-shell .dash-tab-btn:hover {
-  color: var(--text-primary);
-}
-
 .dash-shell .dash-tab-btn.active {
   color: var(--text-primary);
   border-bottom: 2px solid var(--brand);
@@ -2202,41 +2023,6 @@ select option {
   }
 }
 
-.repo-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-  gap: 1rem;
-}
-
-
-.project-workspace {
-  display: grid;
-  grid-template-columns: minmax(14rem, 18rem) minmax(0, 1fr);
-  gap: 1rem;
-  align-items: start;
-}
-
-/* Left rail: project list + sub-tab bar glued together, sticky as one unit.
- * Sizes to its content (so a short group list stays short) but never grows
- * past one screen — at that point the inner .project-list-body scrolls. */
-.project-list-rail {
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-  /* Bounded card: hugs content when the list is short, but a long list (e.g.
-   * many individual repositories) caps at ~32rem and scrolls internally rather
-   * than running the full viewport height. */
-  max-height: min(calc(100dvh - 11rem), 32rem);
-  gap: 0.75rem;
-  position: sticky;
-  top: 5rem;
-}
-
-/* Right column: swaps between the selected project detail and the history log. */
-.project-detail-column {
-  min-width: 0;
-}
-
 
 /* Selected-group sub-tabs on the left, destructive actions (delete) on the
  * right. Wraps on narrow widths so the delete button drops below the tabs. */
@@ -2286,80 +2072,11 @@ select option {
   box-shadow: none;
 }
 
-
-.project-list,
-.project-detail-panel {
-  border: 1px solid var(--border-layer);
-  border-radius: 8px;
-  background: var(--layer-1);
-  box-shadow: var(--shadow-soft);
-}
-
-.project-list {
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-  /* Hug content; the rail's max-height caps overall height and the body
-   * scrolls internally past that point. Was height:100%, which forced the
-   * whole box to a full screen even with only a couple of groups. */
-  max-height: 100%;
-  gap: 0.4rem;
-  overflow: hidden;
-  padding: 0.75rem;
-}
-
-.project-list-body {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  flex: 1 1 auto;
-  min-height: 0;
-  align-content: start;
-  gap: 0.4rem;
-  overflow-x: hidden;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  padding: 0.05rem 0.2rem 0.1rem 0;
-  scrollbar-color: var(--border-tile) transparent;
-  scrollbar-width: thin;
-}
-
-.project-list-body::-webkit-scrollbar { width: 0.38rem; }
-.project-list-body::-webkit-scrollbar-thumb {
-  border-radius: 999px;
-  background: var(--border-tile);
-}
-
-.project-list-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem;
-  padding: 0 0 0.55rem;
-  border-bottom: 1px solid var(--border-soft);
-  color: var(--text-primary);
-  font-size: 0.85rem;
-  font-weight: 700;
-}
-
 .project-list-header .ghost-button {
   min-height: 2rem;
   padding: 0.35rem 0.65rem;
   border-radius: 6px;
   font-size: 0.76rem;
-}
-
-.project-list-item {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 0.2rem 0.6rem;
-  width: 100%;
-  padding: 0.65rem;
-  border: 1px solid transparent;
-  border-radius: 6px;
-  background: transparent;
-  color: var(--text-secondary);
-  cursor: pointer;
-  text-align: left;
 }
 
 .project-list-item:hover,
@@ -2377,164 +2094,11 @@ select option {
   color: var(--text-primary);
 }
 
-.project-list-title {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-size: 0.86rem;
-  font-weight: 700;
-}
-
-.project-list-meta {
-  grid-column: 1;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  color: var(--text-muted);
-  font-size: 0.76rem;
-}
-
-.project-list-item .project-list-badges {
-  grid-column: 2;
-  grid-row: 1 / span 2;
-  align-self: center;
-  display: inline-flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 0.3rem;
-}
-
-.project-list-search {
-  width: 100%;
-  max-width: none;
-  padding: 0.45rem 0.65rem;
-  border-radius: 6px;
-  font-size: 0.8rem;
-  min-height: 2.25rem;
-}
-
-/* "+ New group" action in the Groups rail — full-width under the search box. */
-.project-list-create {
-  width: 100%;
-  min-height: 2.25rem;
-  padding: 0.45rem 0.65rem;
-  font-size: 0.8rem;
-  border-radius: 6px;
-}
-
-.project-list-empty {
-  min-width: 0;
-  width: 100%;
-  margin: 0;
-  padding: 0.75rem 0.4rem;
-  overflow-wrap: break-word;
-  color: var(--text-muted);
-  font-size: 0.8rem;
-  text-align: center;
-}
-
-.project-list-pagination {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.5rem;
-  padding-top: 0.5rem;
-  margin-top: 0.15rem;
-  border-top: 1px solid var(--border-soft);
-}
-
 .project-list-pagination .ghost-button {
   min-height: 2rem;
   padding: 0.35rem 0.65rem;
   border-radius: 6px;
   font-size: 0.76rem;
-}
-
-.project-list-pagination-status {
-  color: var(--text-muted);
-  font-size: 0.76rem;
-  white-space: nowrap;
-}
-
-.project-detail-panel {
-  display: grid;
-  gap: 1rem;
-  min-width: 0;
-  padding: 1rem;
-}
-
-.project-detail-header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 1rem;
-  padding-bottom: 0.85rem;
-  border-bottom: 1px solid var(--border-soft);
-}
-
-.project-detail-header h3 {
-  margin: 0;
-  color: var(--text-primary);
-  font-size: 1rem;
-  line-height: 1.25;
-  word-break: break-word;
-}
-
-.project-detail-header p {
-  margin: 0.25rem 0 0;
-  color: var(--text-secondary);
-  font-size: 0.82rem;
-}
-
-.project-detail-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.75rem;
-  margin: 0;
-}
-
-.project-detail-grid div {
-  min-width: 0;
-  padding: 0.75rem;
-  border: 1px solid var(--border-tile);
-  border-radius: 6px;
-  background: var(--layer-2);
-  transition:
-    background 0.2s ease,
-    border-color 0.2s ease;
-}
-
-.project-detail-grid div:hover {
-  background: var(--layer-2-hover);
-  border-color: var(--border-strong);
-}
-
-.project-detail-grid dt {
-  margin-bottom: 0.3rem;
-  color: var(--text-secondary);
-  font-size: 0.74rem;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-
-.project-detail-grid dd {
-  margin: 0;
-  overflow-wrap: anywhere;
-  color: var(--text-primary);
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  font-size: 0.78rem;
-}
-
-.project-detail-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.4rem;
-  padding: 0.65rem 0 0.75rem;
-  margin-bottom: 0.4rem;
-  border-top: 1px solid var(--border-soft);
-  border-bottom: 1px solid var(--border-soft);
 }
 
 .project-detail-actions .ghost-button {
@@ -2555,11 +2119,6 @@ select option {
 .project-detail-actions .ghost-button:hover {
   color: var(--brand);
   box-shadow: 0 0 10px var(--brand-glow);
-}
-
-.project-workspace .project-status-badge {
-  border-radius: 6px;
-  letter-spacing: 0;
 }
 
 
@@ -2769,23 +2328,6 @@ select option {
   color: var(--text-primary);
 }
 
-
-.env-provisioning-panel {
-  display: grid;
-  gap: 0.85rem;
-  padding-top: 1rem;
-  border-top: 1px solid var(--border-soft);
-}
-
-.deployment-provisioning-setup {
-  display: grid;
-  gap: 0.65rem;
-  padding: 0.75rem;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: var(--bg-panel);
-}
-
 .deployment-provisioning-setup__header,
 .toggle-row {
   display: flex;
@@ -2793,104 +2335,10 @@ select option {
   gap: 0.75rem;
 }
 
-.deployment-provisioning-setup__header {
-  justify-content: space-between;
-}
-
-.deployment-provisioning-setup__body {
-  display: grid;
-  gap: 0.7rem;
-}
-
-.deployment-provisioning-flow {
-  order: 1;
-  display: grid;
-  grid-template-columns: repeat(3, minmax(9rem, 1fr));
-  gap: 0.4rem;
-  align-items: stretch;
-}
-
-.deployment-flow-step {
-  display: flex;
-  gap: 0.5rem;
-  align-items: flex-start;
-  min-width: 0;
-  padding: 0.4rem 0.5rem;
-  border: 1px solid transparent;
-  border-radius: 6px;
-  background: rgba(17, 17, 22, 0.13);
-}
-
-.deployment-flow-step__index {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex: 0 0 auto;
-  width: 1.25rem;
-  height: 1.25rem;
-  border: 1px solid rgba(88, 166, 255, 0.32);
-  border-radius: 999px;
-  color: var(--brand);
-  font-family: ui-monospace, monospace;
-  font-size: 0.66rem;
-  font-weight: 800;
-}
-
-.deployment-flow-step strong,
-.deployment-variable-panel strong {
-  display: block;
-  color: var(--text-primary);
-  font-size: 0.75rem;
-}
-
-.deployment-flow-step
-  span:not(.deployment-flow-step__index):not(.deployment-flow-branch) {
-  color: var(--text-muted);
-  font-size: 0.69rem;
-}
-
-.deployment-flow-branches {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.35rem;
-  margin-top: 0.3rem;
-}
-
-.deployment-flow-branch {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 1.25rem;
-  max-width: 100%;
-  padding: 0.12rem 0.4rem;
-  border: 1px solid rgba(88, 166, 255, 0.2);
-  border-radius: 999px;
-  background: rgba(88, 166, 255, 0.07);
-  color: var(--brand);
-  font-family: ui-monospace, monospace;
-  font-size: 0.66rem;
-  overflow-wrap: anywhere;
-}
-
-.deployment-flow-branch--button {
-  cursor: pointer;
-}
-
 .deployment-flow-branch--button.active {
   border-color: rgba(45, 212, 191, 0.35);
   background: rgba(45, 212, 191, 0.1);
   color: var(--success);
-}
-
-.deployment-flow-branch--button:disabled {
-  cursor: default;
-  opacity: 0.9;
-}
-
-.deployment-provisioning-setup__vars-header {
-  align-items: end;
-  padding-top: 0.8rem;
-  border-top: 1px solid var(--border-soft);
 }
 
 .toggle-row {
@@ -2966,306 +2414,8 @@ select option {
   cursor: not-allowed;
 }
 
-.env-target-grid label,
-.env-target-grid__field,
-.deployment-variable-panel label,
-.env-var-row label {
-  display: grid;
-  gap: 0.3rem;
-  color: var(--text-muted);
-  font-size: 0.72rem;
-}
-
-.deployment-variable-groups {
-  order: 3;
-  border-style: dashed;
-  background: rgba(17, 17, 22, 0.12);
-}
-
-.deployment-provider-groups {
-  display: grid;
-  gap: 0.5rem;
-  padding: 0.58rem;
-  border: 1px solid var(--border-soft);
-  border-radius: 8px;
-  background: rgba(17, 17, 22, 0.18);
-}
-
-.deployment-provider-groups__header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem;
-}
-
-.deployment-provider-groups__header strong {
-  color: var(--text-primary);
-  font-size: 0.82rem;
-}
-
-.deployment-variable-actions,
-.env-segmented-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.35rem;
-  align-items: center;
-}
-
-.deployment-variable-actions {
-  justify-content: flex-end;
-}
-
-.env-segmented-actions {
-  justify-content: flex-start;
-}
-
-.deployment-variable-panel {
-  display: grid;
-  gap: 0.5rem;
-  padding: 0.58rem;
-  border: 1px solid var(--border-soft);
-  border-radius: 8px;
-  background: rgba(17, 17, 22, 0.26);
-}
-
-.deployment-variable-panel__title-row {
-  display: flex;
-  gap: 0.6rem;
-  align-items: end;
-}
-
-.deployment-variable-panel__title-row .deployment-variable-panel__scope {
-  flex: 1 1 auto;
-}
-
-.deployment-variable-panel__scope-row {
-  display: grid;
-  grid-template-columns: minmax(8rem, 1fr) minmax(8rem, 0.8fr) auto;
-  gap: 0.5rem;
-  align-items: end;
-}
-
-.deployment-variable-panel__scope {
-  min-width: 0;
-}
-
-.deployment-variable-panel__environment {
-  min-width: 0;
-}
-
-.deployment-variable-panel__button {
-  align-self: end;
-  white-space: nowrap;
-}
-
-.deployment-variable-empty {
-  display: grid;
-  gap: 0.18rem;
-  padding: 0.55rem 0.65rem;
-  border: 1px dashed var(--border-subtle);
-  border-radius: 8px;
-  background: rgba(17, 17, 22, 0.16);
-  line-height: 1.45;
-}
-
-.deployment-variable-empty strong {
-  color: var(--text-secondary);
-  font-size: 0.78rem;
-}
-
-.deployment-variable-empty span {
-  color: var(--text-muted);
-  font-size: 0.76rem;
-}
-
-.env-orphan-warning {
-  margin: 0;
-  padding: 0.5rem 0.65rem;
-  border: 1px solid rgba(251, 191, 36, 0.32);
-  border-radius: 6px;
-  background: rgba(251, 191, 36, 0.08);
-  color: var(--warning, #fbbf24);
-  font-size: 0.72rem;
-  line-height: 1.45;
-}
-
-@media (max-width: 720px) {
-  .deployment-variable-panel__scope-row {
-    grid-template-columns: 1fr 1fr;
-  }
-
-  .deployment-variable-panel__scope-row .deployment-variable-panel__button {
-    grid-column: 1 / -1;
-    justify-self: start;
-  }
-}
-
-.deployment-variable-panel__targets {
-  display: grid;
-  gap: 0.35rem;
-  min-width: 0;
-  color: var(--text-muted);
-  font-size: 0.72rem;
-}
-
-.env-provisioning-section {
-  display: grid;
-  gap: 0.65rem;
-  margin: 0;
-  padding: 0.72rem;
-  border: 1px solid var(--border-subtle);
-  border-radius: 8px;
-  background: rgba(0, 0, 0, 0.14);
-}
-
-.deployment-target-section {
-  order: 2;
-  position: relative;
-  overflow: hidden;
-  background: rgba(17, 17, 22, 0.22);
-}
-
-.deployment-target-section::before {
-  content: "";
-  position: absolute;
-  inset: 0 auto 0 0;
-  width: 3px;
-  background: rgba(88, 166, 255, 0.72);
-}
-
-.deployment-target-section--vercel::before {
-  background: rgba(228, 228, 233, 0.8);
-}
-
-.env-section-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem;
-}
-
-.deployment-target-heading {
-  display: flex;
-  align-items: center;
-  min-width: 0;
-  gap: 0.55rem;
-}
-
 .deployment-target-heading .helper-text {
   margin: 0.18rem 0 0;
-}
-
-.deployment-target-icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex: 0 0 auto;
-  width: 1.85rem;
-  height: 1.85rem;
-  border: 1px solid rgba(88, 166, 255, 0.28);
-  border-radius: 6px;
-  background: rgba(88, 166, 255, 0.1);
-  color: var(--brand) !important;
-  font-size: 0.72rem !important;
-  font-weight: 800;
-}
-
-.deployment-target-icon--vercel {
-  border-color: rgba(228, 228, 233, 0.24);
-  background: rgba(228, 228, 233, 0.08);
-  color: var(--text-primary) !important;
-}
-
-.deployment-target-role {
-  display: inline-flex;
-  align-items: center;
-  min-height: 1.65rem;
-  padding: 0.25rem 0.55rem;
-  border: 1px solid var(--border-soft);
-  border-radius: 999px;
-  background: rgba(17, 17, 22, 0.28);
-  color: var(--text-secondary) !important;
-  font-size: 0.72rem !important;
-  font-weight: 700;
-  white-space: nowrap;
-}
-
-.env-section-header h4 {
-  margin: 0;
-  color: var(--text-primary);
-  font-size: 0.84rem;
-  font-weight: 700;
-  /* Per-target headings come from data ("frontend target") — capitalize */
-  text-transform: capitalize;
-}
-
-.env-section-header span {
-  color: var(--success);
-  font-size: 0.76rem;
-}
-
-.env-target-grid {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 0.52rem 0.58rem;
-  align-items: start;
-}
-
-.env-target-grid__field {
-  min-width: 0;
-}
-
-.env-target-grid__field--compact {
-  grid-column: span 1;
-}
-
-.env-target-grid__field--wide {
-  grid-column: span 2;
-}
-
-.env-target-grid__note {
-  display: block;
-  max-width: 26rem;
-  margin-top: 0.15rem;
-  line-height: 1.45;
-}
-
-.env-static-field {
-  display: inline-flex;
-  align-items: center;
-  min-height: 2.05rem;
-  width: 100%;
-  min-width: 0;
-  padding: 0.38rem 0.55rem;
-  border: 1px solid var(--border-subtle);
-  border-radius: 6px;
-  background: rgba(17, 17, 22, 0.32);
-  color: var(--text-primary);
-  font-size: 0.78rem;
-}
-
-.env-var-row {
-  display: grid;
-  grid-template-columns: minmax(11rem, 0.8fr) minmax(14rem, 1fr) 2.45rem;
-  gap: 0.45rem;
-  align-items: end;
-}
-
-.env-target-grid input,
-.env-target-grid select,
-.deployment-variable-panel input,
-.deployment-variable-panel select,
-.env-provisioning-section > select,
-.env-var-row input {
-  width: 100%;
-  min-width: 0;
-  min-height: 2.05rem;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  background: rgba(17, 17, 22, 0.54);
-  color: var(--text-primary);
-  padding: 0.38rem 0.55rem;
-  font-size: 0.78rem;
 }
 
 .deployment-provisioning-setup .primary-button,
@@ -3296,34 +2446,6 @@ select option {
 .deployment-provisioning-setup .env-var-row {
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
   align-items: center;
-}
-
-.env-var-remove {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 2.05rem;
-  height: 2.05rem;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  background: rgba(17, 17, 22, 0.54);
-  color: var(--text-muted);
-  cursor: pointer;
-  transition:
-    color 0.15s ease,
-    border-color 0.15s ease,
-    background 0.15s ease;
-}
-
-.env-var-remove:hover:not(:disabled) {
-  color: var(--danger);
-  border-color: rgba(248, 113, 113, 0.4);
-  background: rgba(248, 113, 113, 0.08);
-}
-
-.env-var-remove:disabled {
-  opacity: 0.35;
-  cursor: not-allowed;
 }
 
 .env-target-grid .ghost-button,
@@ -3365,334 +2487,21 @@ select option {
   min-height: 1.85rem;
 }
 
-.deployment-provisioning-setup .env-var-row__remove {
-  width: 2.05rem;
-  height: 2.05rem;
-}
-
-.env-var-row__remove {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 2.75rem;
-  height: 2.75rem;
-  border: 1px solid var(--border-subtle);
-  border-radius: 6px;
-  background: transparent;
-  color: var(--text-muted);
-  font-size: 0.8rem;
-  line-height: 1;
-}
-
-.env-var-row__remove:not(:disabled):hover {
-  border-color: rgba(248, 113, 113, 0.36);
-  color: var(--danger);
-}
-
-.env-var-row__remove:disabled {
-  cursor: not-allowed;
-  opacity: 0.35;
-}
-
-@media (max-width: 980px) {
-  .deployment-provisioning-flow,
-  .env-target-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .deployment-variable-panel__scope-row {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  }
-
-  .deployment-variable-panel__scope-row .deployment-variable-panel__button {
-    grid-column: 1 / -1;
-    justify-self: start;
-  }
-
-  .env-target-grid__field--wide {
-    grid-column: span 2;
-  }
-}
-
 @media (max-width: 640px) {
-  .deployment-provisioning-setup__header,
-  .deployment-provider-groups__header,
-  .env-section-header {
-    align-items: flex-start;
-    flex-direction: column;
-  }
 
   .toggle-row {
     min-width: 0;
   }
-
-  .deployment-provisioning-flow,
-  .deployment-variable-panel__scope-row,
-  .env-target-grid,
-  .env-var-row {
-    grid-template-columns: 1fr;
-  }
-
-  .deployment-variable-panel__title-row {
-    flex-wrap: wrap;
-  }
-
-  .deployment-target-role {
-    white-space: normal;
-  }
-
-  .env-target-grid__field--compact,
-  .env-target-grid__field--wide {
-    grid-column: span 1;
-  }
-
-  .env-var-row__remove {
-    width: 100%;
-  }
-}
-
-.env-environment-tabs,
-.env-form-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.45rem;
-}
-
-.env-variables-form {
-  gap: 1rem;
-  padding: 1rem;
-}
-
-.env-variables-form > .env-target-grid__field {
-  display: grid;
-  gap: 0.42rem;
-  padding: 0.8rem;
-  border: 1px solid var(--border-subtle);
-  border-radius: 8px;
-  background: rgba(17, 17, 22, 0.22);
-}
-
-.env-variables-form > .env-target-grid__field > span:first-child {
-  color: var(--text-muted);
-  font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-}
-
-/* .env-bulk-editor is now only ever rendered as a fixed-position modal
-   (see .env-bulk-editor--dialog) rather than a grid sibling of the editor,
-   so this is a plain single-column container. */
-.env-variable-workspace {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: 0.8rem;
-  align-items: start;
-}
-
-.env-variable-editor {
-  display: grid;
-  gap: 0.75rem;
-  min-width: 0;
-  padding: 1.15rem 1.3rem;
-  border: 1px solid var(--border-subtle);
-  border-radius: 8px;
-  background: rgba(17, 17, 22, 0.22);
-}
-
-.env-bulk-editor {
-  display: grid;
-  gap: 0.7rem;
-  min-width: 0;
-  padding: 0.85rem;
-  border: 1px solid var(--border-subtle);
-  border-radius: 8px;
-  background: rgba(17, 17, 22, 0.22);
-}
-
-.env-variable-subheader {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 0.8rem;
-  min-height: 2.45rem;
-}
-
-.env-variable-subheader > div:first-child {
-  display: grid;
-  gap: 0.2rem;
-}
-
-.env-variable-subheader strong {
-  color: var(--text-primary);
-  font-size: 0.82rem;
-}
-
-.env-variable-subheader span {
-  color: var(--text-muted);
-  font-size: 0.74rem;
-  line-height: 1.45;
-}
-
-.env-variable-column-labels {
-  display: grid;
-  grid-template-columns: minmax(11rem, 0.7fr) minmax(15rem, 1.3fr) 2.75rem;
-  gap: 0.5rem;
-  padding-inline: 0.1rem;
-  color: var(--text-muted);
-  font-size: 0.7rem;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-}
-
-.env-variable-column-labels span:last-child {
-  grid-column: 2;
-}
-
-.env-variable-rows {
-  display: grid;
-  gap: 0.45rem;
-}
-
-.env-variables-form .env-var-row {
-  grid-template-columns: minmax(11rem, 0.7fr) minmax(15rem, 1.3fr) 2.75rem;
-  gap: 0.5rem;
-  align-items: center;
-}
-
-.env-variables-form .env-var-row input,
-.env-bulk-editor textarea {
-  min-height: 2.75rem;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  background: rgba(17, 17, 22, 0.54);
-  color: var(--text-primary);
-  padding: 0.58rem 0.75rem;
-  font-size: 0.8rem;
-}
-
-.env-bulk-editor textarea {
-  width: 100%;
-  min-height: 8.25rem;
-  resize: vertical;
-  line-height: 1.55;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-}
-
-.env-bulk-editor__validate {
-  justify-self: start;
-}
-
-.env-bulk-validation {
-  display: grid;
-  gap: 0.55rem;
-  padding: 0.65rem;
-  border: 1px solid rgba(52, 211, 153, 0.2);
-  border-radius: 7px;
-  background: rgba(52, 211, 153, 0.05);
-  color: var(--text-secondary);
-  font-size: 0.74rem;
-  line-height: 1.5;
-  overflow-wrap: anywhere;
 }
 
 .env-bulk-validation .ghost-button {
   justify-self: start;
 }
 
-.env-variables-form .env-form-actions {
-  justify-content: flex-end;
-  padding-top: 0.15rem;
-}
-
-.env-provisioned-variables {
-  gap: 0.8rem;
-  padding: 1rem;
-}
-
-.env-provisioned-variables .env-metadata-filters {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-}
-
-.env-provisioned-variables .env-metadata-list {
-  overflow: hidden;
-  border: 1px solid var(--border-subtle);
-  border-radius: 8px;
-}
-
-.env-provisioned-variables .env-metadata-row {
-  grid-template-columns: minmax(10rem, 0.7fr) minmax(13rem, 1fr) auto;
-  align-items: center;
-  gap: 0.8rem;
-  padding: 0.72rem 0.8rem;
-  border-top: 1px solid var(--border-subtle);
-  background: rgba(17, 17, 22, 0.16);
-}
-
-.env-metadata-actions {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-  gap: 0.4rem;
-}
-
 .env-provisioned-variables .env-metadata-actions .ghost-button {
   min-height: 2rem;
   padding: 0.38rem 0.65rem;
   font-size: 0.74rem;
-}
-
-@media (max-width: 640px) {
-  .env-variable-subheader {
-    flex-direction: column;
-  }
-
-  .env-variable-column-labels {
-    display: none;
-  }
-
-  .env-variables-form .env-var-row,
-  .env-provisioned-variables .env-metadata-filters,
-  .env-provisioned-variables .env-metadata-row {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .env-variables-form .env-var-row__remove {
-    width: 100%;
-  }
-
-  .env-variables-form .env-form-actions,
-  .env-metadata-actions {
-    justify-content: stretch;
-  }
-
-  .env-variables-form .env-form-actions > *,
-  .env-metadata-actions > * {
-    flex: 1 1 auto;
-  }
-}
-
-.env-metadata-list {
-  display: grid;
-  gap: 0.35rem;
-}
-
-.deployment-provisioning-summary {
-  display: grid;
-  gap: 0.65rem;
-  padding: 0.8rem;
-  border: 1px solid var(--border-subtle);
-  border-radius: 8px;
-  background: rgba(0, 0, 0, 0.14);
-}
-
-.deployment-provisioning-summary__status {
-  padding: 0.22rem 0.5rem;
-  border: 1px solid var(--border-soft);
-  border-radius: 999px;
-  color: var(--text-secondary);
-  font-size: 0.72rem;
 }
 
 .deployment-provisioning-summary__status.completed {
@@ -3706,89 +2515,14 @@ select option {
   color: var(--danger, #f87171);
 }
 
-.deployment-provisioning-summary__targets {
-  display: grid;
-  gap: 0.55rem;
-}
-
-.deployment-provisioning-summary__target {
-  display: grid;
-  gap: 0.35rem;
-  padding-top: 0.55rem;
-  border-top: 1px solid var(--border-subtle);
-}
-
-.deployment-provisioning-summary__target > div:first-child {
-  display: flex;
-  justify-content: space-between;
-  gap: 0.75rem;
-  color: var(--text-primary);
-  font-size: 0.8rem;
-}
-
-.deployment-provisioning-summary__target > div:first-child span {
-  min-width: 0;
-  color: var(--text-muted);
-  overflow-wrap: anywhere;
-}
-
-.deployment-provisioning-summary__env {
-  display: grid;
-  grid-template-columns: 4.5rem 1fr;
-  gap: 0.5rem;
-  align-items: start;
-  color: var(--text-muted);
-  font-size: 0.76rem;
-}
-
-.deployment-provisioning-summary__env > div {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.35rem;
-}
-
-.deployment-provisioning-summary__env code {
-  padding: 0.16rem 0.35rem;
-  border: 1px solid rgba(52, 211, 153, 0.26);
-  border-radius: 5px;
-  color: var(--success);
-  background: rgba(52, 211, 153, 0.06);
-}
-
 .deployment-provisioning-summary__env code.failed {
   border-color: rgba(248, 113, 113, 0.28);
   color: var(--danger, #f87171);
   background: rgba(248, 113, 113, 0.06);
 }
 
-.env-metadata-row {
-  display: grid;
-  grid-template-columns: minmax(0, 0.7fr) minmax(0, 1.3fr);
-  gap: 0.75rem;
-  padding: 0.45rem 0;
-  border-top: 1px solid var(--border-subtle);
-  color: var(--text-secondary);
-  font-size: 0.76rem;
-}
-
-.env-metadata-row:first-child {
-  border-top: none;
-}
-
-.env-metadata-row > span:first-child {
-  overflow-wrap: anywhere;
-  color: var(--text-primary);
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-}
-
 .env-metadata-row.failed > span:last-child {
   color: var(--danger);
-}
-
-.env-empty-state {
-  margin: 0;
-  color: var(--text-muted);
-  font-size: 0.8rem;
 }
 
 
@@ -3809,31 +2543,9 @@ select option {
 
 
 @media (max-width: 920px) {
-  .project-workspace {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .project-list-rail {
-    position: static;
-    width: 100%;
-    height: 22rem;
-  }
-
-  .project-list {
-    position: static;
-  }
-
-  .project-list-body { grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr)); }
 
   .group-overview-section {
     padding: 0.85rem;
-  }
-
-  .project-list-header,
-  .project-list-search,
-  .project-list-empty,
-  .project-list-pagination {
-    grid-column: 1 / -1;
   }
 
   .current-subtab-bar {
@@ -3848,16 +2560,6 @@ select option {
 @media (max-width: 640px) {
   .project-detail-grid,
   .provider-connection-fields {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .project-detail-header,
-  .env-section-header {
-    align-items: flex-start;
-    flex-direction: column;
-  }
-
-  .env-metadata-row {
     grid-template-columns: minmax(0, 1fr);
   }
 
@@ -4214,17 +2916,6 @@ select option {
   word-break: break-all;
 }
 
-/* ── Success result panel left-border glow ──────── */
-.result-panel--success {
-  border-left: 3px solid rgba(34, 197, 94, 0.6) !important;
-  box-shadow:
-    -6px 0 24px rgba(34, 197, 94, 0.08),
-    var(--shadow-soft) !important;
-  transition:
-    border-color 0.3s ease,
-    box-shadow 0.3s ease;
-}
-
 /* ── Kinetic chip — active glow ─────────────────── */
 .enhancement-chip-label--active {
   border: 1px solid rgba(88, 166, 255, 0.6) !important;
@@ -4493,20 +3184,6 @@ select option {
   }
 }
 
-/* ══════════════════════════════════════════════════════════════════════════
-   DASHBOARD LAYOUT REFACTOR — enhanced hierarchy, secondary color palette,
-   cleaner section rhythm. Scoped to .dash-shell to avoid bleeding.
-   ══════════════════════════════════════════════════════════════════════════ */
-
-/* ── Page-level content wrapper ─────────────────────────────────────────── */
-.dash-page-content {
-  padding: 1.75rem var(--layout-gutter) 2.5rem;
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-
 /* Home dashboard: tab bar should sit directly under the welcome header with
    no dead space, so it tightens the shared page gap instead of inheriting it. */
 .home-dash-content {
@@ -4568,60 +3245,10 @@ select option {
 
 
 @media (max-width: 640px) {
-  .repo-entry {
-    flex-direction: column;
-    gap: 0.6rem;
-  }
-  .repo-entry-actions {
-    padding-top: 0;
-  }
-  .repo-entry-name {
-    max-width: 100%;
-  }
   /* Touch devices have no hover — keep destructive action reachable */
   .repo-entry .dash-disconnect-link {
     opacity: 1;
   }
-}
-
-/* ── Secondary accent badge — violet tint, for plan labels, highlights ───── */
-.dash-badge-violet {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.3rem;
-  font-size: 0.65rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.07em;
-  padding: 0.15rem 0.55rem;
-  border-radius: var(--radius-pill);
-  background: var(--accent-violet-light);
-  color: var(--accent-violet);
-  border: 1px solid var(--border-violet);
-}
-
-/* ── Status chip — active/success ─────────────────────────────────────────── */
-.dash-status-active {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  font-size: 0.72rem;
-  font-weight: 600;
-  color: var(--success);
-  background: rgba(52, 211, 153, 0.08);
-  border: 1px solid rgba(52, 211, 153, 0.2);
-  border-radius: var(--radius-pill);
-  padding: 0.2rem 0.6rem;
-}
-
-.dash-status-active::before {
-  content: "";
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
-  background: var(--success);
-  animation: flowPulse 2s ease-in-out infinite;
-  flex-shrink: 0;
 }
 
 
@@ -4666,49 +3293,6 @@ select option {
   background: rgba(255, 255, 255, 0.05);
   color: var(--text-muted);
   border: 1px solid var(--border-soft);
-}
-
-/* ── Ghost action button — consolidated from inline styles ──────────────── */
-.dash-action-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  font-size: 0.8rem;
-  font-weight: 600;
-  padding: 0.4rem 0.85rem;
-  border-radius: 0.5rem;
-  border: 1px solid rgba(88, 166, 255, 0.25);
-  background: rgba(88, 166, 255, 0.06);
-  color: var(--brand);
-  text-decoration: none;
-  cursor: pointer;
-  transition:
-    background 0.18s ease,
-    border-color 0.18s ease,
-    box-shadow 0.18s ease;
-}
-
-.dash-action-btn:hover {
-  background: rgba(88, 166, 255, 0.12);
-  border-color: rgba(88, 166, 255, 0.4);
-  box-shadow: 0 0 14px rgba(88, 166, 255, 0.12);
-}
-
-.dash-action-btn:focus-visible {
-  outline: 2px solid var(--brand);
-  outline-offset: 2px;
-}
-
-.dash-action-btn-violet {
-  border-color: var(--border-violet);
-  background: var(--accent-violet-light);
-  color: var(--accent-violet);
-}
-
-.dash-action-btn-violet:hover {
-  background: var(--accent-violet-mid);
-  border-color: rgba(167, 139, 250, 0.5);
-  box-shadow: 0 0 14px rgba(167, 139, 250, 0.12);
 }
 
 
@@ -5114,35 +3698,12 @@ select option {
   padding: 0;
 }
 
-.project-page-header {
-  display: grid;
-  grid-template-columns: minmax(18rem, 1fr) minmax(34rem, 0.95fr);
-  align-items: center;
-  gap: clamp(1rem, 3vw, 3rem);
-}
-
 .project-page-header .workflow-page-signal-strip {
   width: 100%;
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
-.project-page-body {
-  display: grid;
-  gap: 1rem;
-  padding: 1.5rem var(--layout-gutter) 2.5rem;
-}
-
-@media (max-width: 1080px) {
-  .project-page-header {
-    grid-template-columns: 1fr;
-    align-items: start;
-  }
-}
-
 @media (max-width: 640px) {
-  .project-page-body {
-    padding-top: 1rem;
-  }
 
   .project-page-header .workflow-page-signal-strip {
     grid-template-columns: 1fr;
@@ -5293,295 +3854,6 @@ select option {
   }
 }
 
-/* ── The rail ────────────────────────────────────────────────────────────────
-   Closed at 64px, revealed to 240px on hover or keyboard focus. `overflow:
-   hidden` is load-bearing, not tidying: the labels are opacity-0 rather than
-   display:none, so they still lay out ~200px wide inside a 64px column and
-   would raise a horizontal scrollbar along the rail's foot. Clipping is also
-   what makes the closed state read as a reveal rather than as truncation. */
-.app-sidebar {
-  position: fixed;
-  top: 56px;
-  left: 0;
-  height: calc(100dvh - 56px);
-  z-index: 100;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  width: var(--sidebar-width);
-  transition:
-    width 0.2s ease-out,
-    box-shadow 0.2s ease-out;
-  /* Frosted glass dark background */
-  background: linear-gradient(
-    180deg,
-    rgba(17, 17, 22, 0.97) 0%,
-    rgba(7, 10, 25, 0.99) 100%
-  );
-  backdrop-filter: blur(20px) saturate(160%);
-  -webkit-backdrop-filter: blur(20px) saturate(160%);
-  /* Subtle inner shadow + right edge glow */
-  box-shadow:
-    inset -1px 0 0 rgba(255, 255, 255, 0.06),
-    2px 0 40px rgba(99, 102, 241, 0.08),
-    4px 0 20px rgba(0, 0, 0, 0.3);
-}
-
-.app-header-brand {
-  display: flex;
-  align-items: center;
-  flex-shrink: 0;
-  text-decoration: none;
-}
-
-.app-header-brand-image {
-  display: block;
-  height: 40px;
-  width: auto;
-  max-width: 220px;
-  object-fit: contain;
-}
-
-/* The rail is a nav column now, not a branded panel — its brand zone moved
-   into the header, where there is room for the wordmark. */
-.app-sidebar .sidebar-brand-zone {
-  display: none;
-}
-
-/* ── The one header ──────────────────────────────────────────────────────────
-   Starts to the RIGHT of the closed rail. The rail keeps its own brand mark and
-   sits at a higher z-index, so an expanded rail paints OVER this bar rather
-   than shunting it — which is also why the two never read as two headers.
-
-   It exists so the workspace switcher is always visible: it is the one control
-   in the chrome that changes what the rest of the page is scoped to, and a
-   scope control behind a hover is a scope control nobody finds. */
-.app-header {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 56px;
-  /* Above the rail: the rail starts BELOW this bar and must never cover it,
-     not even when it expands on hover. */
-  z-index: 110;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  padding: 0 var(--layout-gutter, 1.5rem) 0 0.75rem;
-  background: color-mix(in srgb, var(--bg-panel) 88%, transparent);
-  backdrop-filter: blur(14px) saturate(160%);
-  -webkit-backdrop-filter: blur(14px) saturate(160%);
-  border-bottom: 1px solid var(--border-soft);
-}
-
-.app-header-left,
-.app-header-right {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  min-width: 0;
-}
-
-.app-header-identity {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  min-width: 0;
-}
-
-.app-header-login {
-  overflow: hidden;
-  color: var(--text-primary);
-  font-size: 0.85rem;
-  font-weight: 700;
-  letter-spacing: -0.01em;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.app-header-avatar-ring {
-  display: grid;
-  place-items: center;
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, var(--brand), var(--accent-violet));
-  padding: 1.5px;
-  flex-shrink: 0;
-}
-
-.app-header-avatar,
-.app-header-avatar-fallback {
-  width: 100%;
-  height: 100%;
-  border-radius: 50%;
-  display: block;
-}
-
-.app-header-avatar-fallback {
-  display: grid;
-  place-items: center;
-  background: var(--bg-elevated);
-  color: var(--brand);
-  font-size: 0.8rem;
-  font-weight: 700;
-}
-
-.app-header-signout {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  padding: 0.35rem 0.7rem;
-  border: 1px solid var(--border);
-  border-radius: 0.5rem;
-  background: transparent;
-  color: var(--text-secondary);
-  font-size: 0.8rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition:
-    color 0.15s ease,
-    border-color 0.15s ease;
-}
-
-.app-header-signout:hover:not(:disabled) {
-  color: var(--text-primary);
-  border-color: var(--border-brand);
-}
-
-.app-header-signout:disabled {
-  cursor: not-allowed;
-  opacity: 0.6;
-}
-
-.app-header-btn {
-  padding: 0.35rem 0.9rem;
-  font-size: 0.8rem;
-  min-height: 2rem;
-}
-
-/* The header is fixed, so every shell reserves its height. */
-.dash-shell {
-  padding-top: 56px;
-}
-
-
-/* :has(:focus-visible), NOT :focus-within. A click FOCUSES the link, and
-   :focus-within cannot tell a click from a Tab press — so every click latched
-   the rail open on top of the page it had just opened. :focus-visible is the
-   browser's own answer to that distinction: withheld after a pointer click,
-   set on keyboard focus. This one is never suppressed. */
-.app-sidebar:has(:focus-visible),
-.app-sidebar:not([data-hover-suppressed="true"]):hover {
-  width: 240px;
-  box-shadow:
-    inset -1px 0 0 rgba(255, 255, 255, 0.06),
-    8px 0 48px rgba(0, 0, 0, 0.45);
-}
-
-/* Everything that only makes sense once there is room to read it. */
-.app-sidebar .sidebar-nav-item-label,
-.app-sidebar .sidebar-section-label,
-.app-sidebar .sidebar-user-info,
-.app-sidebar .sidebar-signout-label,
-.app-sidebar .sidebar-nav-count {
-  opacity: 0;
-  transition: opacity 0.15s ease-out;
-}
-
-.app-sidebar:has(:focus-visible) .sidebar-nav-item-label,
-.app-sidebar:has(:focus-visible) .sidebar-section-label,
-.app-sidebar:has(:focus-visible) .sidebar-user-info,
-.app-sidebar:has(:focus-visible) .sidebar-signout-label,
-.app-sidebar:has(:focus-visible) .sidebar-nav-count,
-.app-sidebar:not([data-hover-suppressed="true"]):hover .sidebar-nav-item-label,
-.app-sidebar:not([data-hover-suppressed="true"]):hover .sidebar-section-label,
-.app-sidebar:not([data-hover-suppressed="true"]):hover .sidebar-user-info,
-.app-sidebar:not([data-hover-suppressed="true"]):hover .sidebar-signout-label,
-.app-sidebar:not([data-hover-suppressed="true"]):hover .sidebar-nav-count {
-  opacity: 1;
-}
-
-/* Section headings: a hairline while closed, the words once open. Both are in
-   the DOM so the rail never re-flows mid-transition. */
-.sidebar-section {
-  position: relative;
-  display: flex;
-  align-items: center;
-  height: 1.9rem;
-  margin: 0.65rem 0 0.15rem;
-  padding: 0 0.65rem;
-}
-
-.sidebar-section-divider {
-  position: absolute;
-  left: 0.9rem;
-  right: 0.9rem;
-  height: 1px;
-  background: var(--border);
-  transition: opacity 0.15s ease-out;
-}
-
-.app-sidebar:has(:focus-visible) .sidebar-section-divider,
-.app-sidebar:not([data-hover-suppressed="true"]):hover .sidebar-section-divider {
-  opacity: 0;
-}
-
-/* Unread: a dot that survives 64px, swapped for the real count once open. */
-.sidebar-nav-dot {
-  position: absolute;
-  top: 6px;
-  left: 38px;
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: var(--accent-indigo);
-  box-shadow: 0 0 0 2px var(--bg-panel);
-  transition: opacity 0.15s ease-out;
-}
-
-.app-sidebar:has(:focus-visible) .sidebar-nav-dot,
-.app-sidebar:not([data-hover-suppressed="true"]):hover .sidebar-nav-dot {
-  opacity: 0;
-}
-
-.sidebar-nav-count {
-  margin-left: auto;
-  min-width: 1.15rem;
-  height: 1.15rem;
-  padding: 0 0.3rem;
-  border-radius: 999px;
-  background: var(--accent-indigo);
-  color: #fff;
-  font-size: 0.62rem;
-  font-weight: 700;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  line-height: 1;
-  position: relative;
-  z-index: 1;
-}
-
-/* The icon box is pinned at the same x in both states, so opening reveals the
-   labels instead of sliding every glyph sideways. */
-.app-sidebar .sidebar-nav-item {
-  padding-left: 0;
-}
-
-/* The icon box spans the rail MINUS .sidebar-nav's 0.5rem side padding, so the
-   glyph centres on the rail's midline (32px) rather than 8px off it — and sits
-   on the same x whether the rail is 64px or 240px, so opening reveals labels
-   instead of sliding every icon sideways. */
-.app-sidebar .sidebar-nav-item-icon {
-  display: grid;
-  place-items: center;
-  width: calc(var(--sidebar-width) - 1rem);
-  flex-shrink: 0;
-}
-
 /* Hover is a pointer affordance and a touch device has none, so below the
    breakpoint the rail simply stays closed — icons only, tap to navigate. This
    is what it already did before (it auto-collapsed at 768px); the difference is
@@ -5606,226 +3878,13 @@ select option {
   }
 }
 
-/* Left edge gradient stripe */
-.sidebar-edge-gradient {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 2px;
-  height: 100%;
-  background: linear-gradient(
-    180deg,
-    var(--accent-indigo) 0%,
-    var(--brand) 45%,
-    var(--accent-violet) 100%
-  );
-  opacity: 0.9;
-  animation: sidebarEdgePulse 4s ease-in-out infinite;
-  pointer-events: none;
-  flex-shrink: 0;
-}
-
-
-/* ── Navigation section ─────────────────────────────────────────────────── */
-.sidebar-nav {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  padding: 0.75rem 0.5rem;
-  overflow-y: auto;
-  overflow-x: hidden;
-  scrollbar-width: none;
-}
-
-.sidebar-nav::-webkit-scrollbar {
-  display: none;
-}
-
-/* Section label — subtle uppercase divider text */
-.sidebar-section-label {
-  padding: 0.35rem 0.5rem 0.2rem;
-  font-size: 0.65rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  color: var(--text-muted);
-  white-space: nowrap;
-  overflow: hidden;
-  margin-top: 0.25rem;
-}
-
-/* Collapsed: just a thin rule */
-.sidebar-section-divider {
-  height: 1px;
-  background: rgba(255, 255, 255, 0.06);
-  margin: 0.5rem 0.5rem;
-  flex-shrink: 0;
-}
-
 /* Nav item wrapper (motion.div) */
 .sidebar-nav-item-wrapper {
   width: 100%;
 }
 
-/* Nav item */
-.sidebar-nav-item {
-  position: relative;
-  display: flex;
-  align-items: center;
-  gap: 0.65rem;
-  padding: 0.55rem 0.65rem;
-  border-radius: 0.55rem;
-  text-decoration: none;
-  color: var(--text-secondary);
-  font-size: 0.84rem;
-  font-weight: 500;
-  white-space: nowrap;
-  overflow: hidden;
-  transition: color 0.18s ease;
-  width: 100%;
-}
-
-.sidebar-nav-item:hover {
-  color: var(--text-primary);
-}
-
-.sidebar-nav-item:hover .sidebar-nav-item-icon {
-  color: var(--brand);
-  filter: drop-shadow(0 0 6px rgba(88, 166, 255, 0.5));
-}
-
-.sidebar-nav-item:focus-visible {
-  outline: 2px solid var(--accent-indigo);
-  outline-offset: 2px;
-}
-
-/* Active pill background — animated via Framer Motion layoutId */
-.sidebar-nav-item-bg {
-  position: absolute;
-  inset: 0;
-  border-radius: 0.55rem;
-  background: linear-gradient(
-    135deg,
-    rgba(99, 102, 241, 0.2) 0%,
-    rgba(88, 166, 255, 0.12) 100%
-  );
-  border-left: 3px solid var(--accent-indigo);
-  pointer-events: none;
-}
-
-.sidebar-nav-item--active {
-  color: var(--text-primary);
-  font-weight: 600;
-}
-
-.sidebar-nav-item--active .sidebar-nav-item-icon {
-  color: var(--brand);
-}
-
-.sidebar-nav-item-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  width: 20px;
-  height: 20px;
-  position: relative;
-  z-index: 1;
-  color: inherit;
-  transition:
-    color 0.18s ease,
-    filter 0.18s ease;
-}
-
-.sidebar-nav-item-label {
-  flex: 1;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  position: relative;
-  z-index: 1;
-}
-
-
-/* Collapsed sidebar: hide the workspace chip, stack the action buttons */
-.app-sidebar[data-collapsed="true"] .sidebar-bottom-utilities {
-  align-items: center;
-}
-
 .app-sidebar[data-collapsed="true"] .workspace-switcher {
   display: none;
-}
-
-.app-sidebar[data-collapsed="true"] .sidebar-utility-actions {
-  flex-direction: column;
-}
-
-
-/* Sign-out button */
-.sidebar-signout-btn {
-  display: flex;
-  align-items: center;
-  gap: 0.55rem;
-  padding: 0.48rem 0.65rem;
-  border-radius: 0.55rem;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: transparent;
-  color: var(--text-muted);
-  font-size: 0.82rem;
-  font-weight: 500;
-  cursor: pointer;
-  width: 100%;
-  text-align: left;
-  overflow: hidden;
-  white-space: nowrap;
-  transition:
-    color 0.18s ease,
-    border-color 0.18s ease,
-    background 0.18s ease;
-  outline: none;
-}
-
-.sidebar-signout-btn:hover:not(:disabled) {
-  color: var(--accent-rose);
-  border-color: var(--accent-rose-glow);
-  background: var(--accent-rose-light);
-}
-
-.sidebar-signout-btn:disabled {
-  cursor: not-allowed;
-  opacity: 0.5;
-}
-
-.sidebar-signout-btn:focus-visible {
-  outline: 2px solid var(--accent-indigo);
-  outline-offset: 2px;
-}
-
-.sidebar-signout-label {
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.sidebar-signout-spinner {
-  display: block;
-  width: 13px;
-  height: 13px;
-  border-radius: 50%;
-  border: 1.5px solid rgba(255, 255, 255, 0.15);
-  border-top-color: var(--brand);
-  animation: spin 0.7s linear infinite;
-  flex-shrink: 0;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .sidebar-signout-spinner {
-    animation: none;
-    opacity: 0.6;
-  }
-  .sidebar-edge-gradient {
-    animation: none;
-    opacity: 0.8;
-  }
 }
 
 /* Auth access-gate: hide the oversized ghost word on narrow viewports where
@@ -5834,27 +3893,6 @@ select option {
   .auth-gate-ghost {
     display: none !important;
   }
-}
-
-.dashboard-shell {
-  background:
-    radial-gradient(
-      circle at 82% -12%,
-      rgba(88, 166, 255, 0.15),
-      transparent 34rem
-    ),
-    linear-gradient(180deg, #262632 0%, #1c1c26 48%, #181821 100%);
-}
-
-
-[data-theme="light"] .dashboard-shell {
-  background:
-    radial-gradient(
-      circle at 82% -12%,
-      rgba(88, 166, 255, 0.18),
-      transparent 34rem
-    ),
-    linear-gradient(180deg, #e7e7ed 0%, #e1e1e7 48%, #dcdce3 100%);
 }
 
 .auth-shell-minimal .flow-bg__calm-surface {
@@ -5891,27 +3929,6 @@ select option {
   background: rgba(8, 20, 38, 0.9);
   border-bottom-color: rgba(140, 140, 156, 0.16);
   color: #f6f6f8;
-}
-
-/* ── Unified signed-in graphite application palette ────────────────────── */
-
-html:not([data-theme="light"]) .dash-shell {
-  --bg-base: #1b1b24;
-  --bg-soft: #1c1c26;
-  --bg-surface: #24242d;
-  --bg-panel: #1f1f29;
-  --bg-elevated: #272733;
-  --layer-0: #1b1b24;
-  --layer-1: #1f1f29;
-  --layer-1-hover: #252531;
-  --layer-2: #272733;
-  --layer-2-hover: #2e2e3c;
-  --border: rgba(158, 158, 172, 0.2);
-  --border-soft: rgba(158, 158, 172, 0.13);
-  --border-subtle: rgba(158, 158, 172, 0.09);
-  --border-layer: rgba(158, 158, 172, 0.18);
-  --border-tile: rgba(158, 158, 172, 0.22);
-  background: linear-gradient(180deg, #262632 0%, #1c1c26 48%, #1b1b24 100%);
 }
 
 html:not([data-theme="light"]) .dash-shell .app-sidebar {
@@ -6010,15 +4027,6 @@ html:not([data-theme="light"]) .dash-shell .welcome-banner-flat {
   box-shadow: none;
 }
 
-[data-theme="light"] .dash-shell {
-  --layer-0: #e7e7ec;
-  --layer-1: #f1f1f4;
-  --layer-1-hover: #ececf0;
-  --layer-2: #e6e6eb;
-  --layer-2-hover: #e0e0e6;
-  background: linear-gradient(180deg, #ececf1 0%, #e6e6ec 52%, #e2e2e8 100%);
-}
-
 [data-theme="light"] .dash-shell .app-sidebar {
   background: linear-gradient(180deg, #eeeef2 0%, #e7e7ec 100%);
   border-right: 1px solid rgba(60, 60, 76, 0.14);
@@ -6074,13 +4082,6 @@ html:not([data-theme="light"]) .dash-shell .welcome-banner-flat {
   -webkit-backdrop-filter: none !important;
 }
 
-/* Hosting is intentionally one fixed service per repository. Keep its compact
-   configuration fields aligned, rather than presenting provider choices as a
-   second deployment layer. */
-.env-provisioning-section--hosting .env-target-grid {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-}
-
 .hosting-service-locked {
   display: grid;
   gap: 0.2rem;
@@ -6101,102 +4102,6 @@ html:not([data-theme="light"]) .dash-shell .welcome-banner-flat {
   line-height: 1.45;
 }
 
-@media (max-width: 980px) {
-  .env-provisioning-section--hosting .env-target-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-
-@media (max-width: 640px) {
-  .env-provisioning-section--hosting .env-target-grid {
-    grid-template-columns: 1fr;
-  }
-}
-
-/* Deployment-target editor: labels are their own rows and the metadata forms
-   use a predictable grid instead of flowing label text into the inputs. */
-.deployment-target-editor {
-  display: grid;
-  gap: 1rem !important;
-  padding: 1rem;
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  background: var(--bg-surface);
-}
-
-.deployment-target-editor__grid {
-  display: grid;
-  grid-template-columns: repeat(12, minmax(0, 1fr));
-  gap: 0.85rem;
-}
-
-.deployment-target-editor__field {
-  display: grid;
-  align-content: start;
-  gap: 0.38rem;
-  min-width: 0;
-  color: var(--text-muted);
-  font-size: 0.74rem;
-  font-weight: 650;
-}
-
-.deployment-target-editor__field > :first-child {
-  letter-spacing: 0.03em;
-}
-
-.deployment-target-editor__field :is(input, select),
-.deployment-target-editor__field--hosting strong {
-  box-sizing: border-box;
-  width: 100%;
-  min-height: 2.6rem;
-  padding: 0.58rem 0.72rem;
-  border: 1px solid var(--border);
-  border-radius: 7px;
-  background: var(--bg-base);
-  color: var(--text-primary);
-  font: inherit;
-}
-
-.deployment-target-editor__field--hosting strong {
-  display: flex;
-  align-items: center;
-  font-size: 0.84rem;
-  font-weight: 650;
-}
-
-.deployment-target-editor__field--name { grid-column: span 7; }
-.deployment-target-editor__field--hosting { grid-column: span 5; }
-.deployment-target-editor__field--branch { grid-column: span 4; }
-.deployment-target-editor__field--root { grid-column: span 8; }
-.deployment-target-editor__field--build { grid-column: span 6; }
-.deployment-target-editor__field--start { grid-column: span 6; }
-.deployment-target-editor__field--environment { grid-column: span 4; }
-
-@media (max-width: 760px) {
-  .deployment-target-editor__field {
-    grid-column: span 6;
-  }
-
-  .deployment-target-editor__field--name,
-  .deployment-target-editor__field--build,
-  .deployment-target-editor__field--start {
-    grid-column: span 12;
-  }
-}
-
-@media (max-width: 520px) {
-  .deployment-target-editor__grid {
-    grid-template-columns: 1fr;
-  }
-
-  .deployment-target-editor__field,
-  .deployment-target-editor__field--name,
-  .deployment-target-editor__field--build,
-  .deployment-target-editor__field--start {
-    grid-column: span 1;
-  }
-}
-
 /* Let the Pipeline Runs title bar use the same full-width chrome as Workflows,
    without changing the content gutter used by its run list. Only the
    horizontal margin is negative (for the edge-to-edge bleed) — the vertical
@@ -6213,63 +4118,10 @@ html:not([data-theme="light"]) .dash-shell .welcome-banner-flat {
   box-shadow: none;
 }
 
-/* Environment keeps the established variables first; editing is revealed only
-   on request directly beneath that list. */
-.env-provisioned-variables {
-  order: 1;
-}
-
-.env-variables-form {
-  order: 2;
-}
-
-/* When opened, the editor visually extends the provisioned-variable card so
-   new values are clearly being added to that same list. */
-.env-provisioned-variables + .env-variables-form {
-  margin-top: -0.85rem;
-  border-top: 0;
-  border-radius: 0 0 8px 8px;
-}
-
-.env-provisioned-variables__actions {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-  gap: 0.45rem;
-}
-
 .env-provisioned-variables__actions .ghost-button {
   min-height: 2rem;
   padding: 0.38rem 0.68rem;
   font-size: 0.76rem;
-}
-
-/* The bulk parser is on-demand so it does not compete with provisioned values
-   for space on the Environment tab. */
-.env-bulk-editor--dialog {
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  z-index: 400;
-  width: min(34rem, calc(100vw - 2rem));
-  max-height: min(42rem, calc(100vh - 2rem));
-  overflow: auto;
-  padding: 1rem;
-  border-color: rgba(88, 166, 255, 0.38);
-  background: var(--bg-surface);
-  box-shadow: 0 24px 72px rgba(0, 0, 0, 0.48);
-  transform: translate(-50%, -50%);
-}
-
-@media (max-width: 980px) {
-  .env-provisioned-variables__actions {
-    width: 100%;
-    justify-content: stretch;
-  }
-
-  .env-provisioned-variables__actions > * {
-    flex: 1 1 auto;
-  }
 }
 
 /* ── Project creation: one paired service surface ─────────────────────── */
@@ -6356,16 +4208,6 @@ html:not([data-theme="light"]) .dash-shell .welcome-banner-flat {
   }
 }
 
-/* ── Signed-in surfaces: reuse the Login graphite elevation ladder ─────── */
-html:not([data-theme="light"]) .dash-shell {
-  --bg-base: #1b1b24;
-  --bg-soft: #1f1f29;
-  --bg-surface: #24242d;
-  --bg-panel: #1f1f29;
-  --bg-elevated: #272733;
-  background: #1b1b24;
-}
-
 html:not([data-theme="light"]) .dash-shell :is(
   .workflow-page-header,
   .studio-tab-bar--enhanced,
@@ -6381,122 +4223,6 @@ html:not([data-theme="light"]) .dash-shell :is(
 
 
 @media (prefers-reduced-motion: reduce) {
-}
-
-/* ── Repository creation wizard ─────────────────────────────────────────── */
-
-.repo-wizard-progress {
-  display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 0.35rem;
-  position: relative;
-  margin: 0 0 1.5rem;
-  padding: 0.55rem;
-  border: 1px solid color-mix(in srgb, var(--border-soft) 82%, transparent);
-  border-radius: 0.95rem;
-  background:
-    radial-gradient(circle at 18% 0%, color-mix(in srgb, var(--brand) 11%, transparent), transparent 36%),
-    rgba(255, 255, 255, 0.018);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.025);
-}
-
-.repo-wizard-progress__step {
-  appearance: none;
-  position: relative;
-  z-index: 1;
-  display: flex;
-  align-items: center;
-  gap: 0.55rem;
-  min-width: 0;
-  padding: 0.62rem 0.6rem;
-  border: 1px solid transparent;
-  border-radius: 0.7rem;
-  color: var(--text-muted);
-  background: transparent;
-  font: inherit;
-  text-align: left;
-  cursor: pointer;
-}
-
-/* Current Projects ownership switch and personal repository details. */
-.repo-creation-scope {
-  display: flex;
-  align-items: flex-start;
-  gap: 0.5rem;
-  max-width: 54rem;
-  margin: -0.15rem 0 1.1rem;
-  padding: 0.6rem 0.72rem;
-  border: 1px solid var(--border-soft);
-  border-radius: 0.64rem;
-  color: var(--text-secondary);
-  background: rgba(255, 255, 255, 0.018);
-  font-size: 0.78rem;
-  line-height: 1.45;
-}
-
-.repo-creation-scope strong { color: var(--text-primary); }
-
-.repo-creation-scope__dot {
-  flex: 0 0 auto;
-  width: 0.48rem;
-  height: 0.48rem;
-  margin-top: 0.34rem;
-  border-radius: 50%;
-  background: var(--brand);
-  box-shadow: 0 0 0 4px color-mix(in srgb, var(--brand) 15%, transparent);
-}
-
-.repo-creation-scope--individual {
-  border-color: color-mix(in srgb, var(--brand) 38%, var(--border-soft));
-  background: linear-gradient(105deg, color-mix(in srgb, var(--brand) 11%, transparent), transparent 65%);
-}
-
-.repo-creation-scope--group .repo-creation-scope__dot {
-  background: #8b7cff;
-  box-shadow: 0 0 0 4px rgba(139, 124, 255, 0.14);
-}
-
-.repo-individual-detail {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  margin: 1rem 0;
-  overflow: hidden;
-  border: 1px solid var(--border-soft);
-  border-radius: 0.75rem;
-  background: rgba(255, 255, 255, 0.018);
-}
-
-.repo-individual-detail > div {
-  min-width: 0;
-  padding: 0.82rem 0.9rem;
-  border-right: 1px solid var(--border-soft);
-}
-
-.repo-individual-detail > div:last-child { border-right: 0; }
-
-.repo-individual-detail span {
-  display: block;
-  margin-bottom: 0.3rem;
-  color: var(--text-muted);
-  font-size: 0.65rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-.repo-individual-detail strong {
-  display: block;
-  overflow: hidden;
-  color: var(--text-primary);
-  font-size: 0.78rem;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-@media (max-width: 720px) {
-  .repo-individual-detail { grid-template-columns: 1fr; }
-  .repo-individual-detail > div { border-right: 0; border-bottom: 1px solid var(--border-soft); }
-  .repo-individual-detail > div:last-child { border-bottom: 0; }
 }
 
 /* Two-sided labeled switch: "Repositories | Teams" flanking the toggle,
@@ -6540,53 +4266,6 @@ html:not([data-theme="light"]) .dash-shell :is(
   .rail-mode-label { transition: none; }
 }
 
-.project-ownership-toggle {
-  display: inline-flex;
-  flex: 0 0 auto;
-  align-items: center;
-  justify-content: center;
-  width: 2.7rem;
-  height: 1.5rem;
-  padding: 0;
-  border: 0;
-  border-radius: 999px;
-  background: transparent;
-  cursor: pointer;
-}
-
-.project-ownership-toggle__track {
-  position: relative;
-  display: block;
-  width: 100%;
-  height: 100%;
-  border: 1px solid var(--border-tile);
-  border-radius: inherit;
-  background: rgba(255, 255, 255, 0.08);
-  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.2);
-  transition: background 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
-}
-
-.project-ownership-toggle__thumb {
-  position: absolute;
-  top: 0.18rem;
-  left: 0.18rem;
-  width: 0.98rem;
-  height: 0.98rem;
-  border-radius: 50%;
-  background: var(--text-secondary);
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.28);
-  transition: transform 180ms cubic-bezier(0.2, 0.9, 0.2, 1.15), background 180ms ease, box-shadow 180ms ease;
-}
-
-.project-ownership-toggle:hover .project-ownership-toggle__track {
-  border-color: color-mix(in srgb, var(--brand) 52%, var(--border-tile));
-}
-
-.project-ownership-toggle:focus-visible {
-  outline: 2px solid var(--brand);
-  outline-offset: 3px;
-}
-
 .project-ownership-toggle.is-individual .project-ownership-toggle__track {
   border-color: color-mix(in srgb, var(--brand) 70%, var(--border-tile));
   background: var(--brand);
@@ -6599,34 +4278,6 @@ html:not([data-theme="light"]) .dash-shell :is(
   box-shadow: 0 2px 7px color-mix(in srgb, var(--brand) 40%, rgba(0, 0, 0, 0.3));
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .project-ownership-toggle__track,
-  .project-ownership-toggle__thumb { transition: none; }
-}
-.repo-wizard-progress__step {
-  transition: transform 180ms ease, background 180ms ease, border-color 180ms ease, color 180ms ease;
-}
-
-.repo-wizard-progress__step:not(:last-child)::after {
-  content: "";
-  position: absolute;
-  top: 50%;
-  left: calc(100% - 0.12rem);
-  width: 0.24rem;
-  height: 1px;
-  background: var(--border-soft);
-}
-
-.repo-wizard-progress__step:disabled {
-  cursor: default;
-}
-
-.repo-wizard-progress__step:not(:disabled):hover {
-  color: var(--text-secondary);
-  background: rgba(255, 255, 255, 0.035);
-  transform: translateY(-1px);
-}
-
 .repo-wizard-progress__step.is-active {
   color: var(--text-primary);
   border-color: color-mix(in srgb, var(--brand) 45%, var(--border-soft));
@@ -6636,20 +4287,6 @@ html:not([data-theme="light"]) .dash-shell :is(
 
 .repo-wizard-progress__step.is-complete {
   color: var(--text-secondary);
-}
-
-.repo-wizard-progress__number {
-  display: inline-grid;
-  flex: 0 0 auto;
-  width: 1.65rem;
-  height: 1.65rem;
-  place-items: center;
-  border: 1px solid var(--border-soft);
-  border-radius: 999px;
-  color: var(--text-secondary);
-  font-size: 0.72rem;
-  font-weight: 800;
-  transition: color 180ms ease, background 180ms ease, border-color 180ms ease, transform 180ms ease;
 }
 
 .repo-wizard-progress__step.is-active .repo-wizard-progress__number {
@@ -6666,408 +4303,11 @@ html:not([data-theme="light"]) .dash-shell :is(
   background: color-mix(in srgb, var(--brand) 10%, transparent);
 }
 
-.repo-wizard-progress__copy {
-  display: grid;
-  min-width: 0;
-  gap: 0.05rem;
-}
-
-.repo-wizard-progress__copy strong {
-  overflow: hidden;
-  font-size: 0.72rem;
-  line-height: 1.1;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.repo-wizard-progress__copy small {
-  overflow: hidden;
-  font-size: 0.62rem;
-  line-height: 1.15;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  opacity: 0.68;
-}
-
-.repo-wizard-step {
-  min-height: 18rem;
-}
-
-.repo-wizard-actions {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem;
-  margin-top: 1.8rem;
-  padding-top: 1rem;
-  border-top: 1px solid var(--border-soft);
-}
-
 .repo-wizard-actions .primary-button {
   min-width: 9rem;
 }
 
-.repo-wizard-review {
-  overflow: hidden;
-  border: 1px solid color-mix(in srgb, var(--brand) 28%, var(--border-soft));
-  border-radius: 0.9rem;
-  background:
-    linear-gradient(130deg, color-mix(in srgb, var(--brand) 10%, transparent), transparent 44%),
-    rgba(255, 255, 255, 0.018);
-}
-
-.repo-wizard-review__heading {
-  padding: 1.15rem 1.2rem 0.95rem;
-  border-bottom: 1px solid var(--border-soft);
-}
-
-.repo-wizard-review__eyebrow {
-  display: block;
-  margin-bottom: 0.35rem;
-  color: var(--brand);
-  font-size: 0.66rem;
-  font-weight: 800;
-  letter-spacing: 0.11em;
-  text-transform: uppercase;
-}
-
-.repo-wizard-review h3 {
-  margin: 0;
-  color: var(--text-primary);
-  font-size: 1.1rem;
-}
-
-.repo-wizard-review p {
-  max-width: 44rem;
-  margin: 0.45rem 0 0;
-  color: var(--text-secondary);
-  font-size: 0.8rem;
-  line-height: 1.5;
-}
-
-.repo-wizard-review__grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  margin: 0;
-}
-
-.repo-wizard-review__grid > div {
-  min-width: 0;
-  padding: 0.85rem 1.2rem;
-  border-bottom: 1px solid var(--border-soft);
-}
-
-.repo-wizard-review__grid > div:nth-child(odd) {
-  border-right: 1px solid var(--border-soft);
-}
-
-.repo-wizard-review dt {
-  margin-bottom: 0.26rem;
-  color: var(--text-muted);
-  font-size: 0.64rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-.repo-wizard-review dd {
-  overflow: hidden;
-  margin: 0;
-  color: var(--text-primary);
-  font-size: 0.8rem;
-  font-weight: 600;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.repo-wizard-review__checks {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.4rem;
-  padding: 0.85rem 1.2rem;
-}
-
-.repo-wizard-review__checks span {
-  padding: 0.2rem 0.48rem;
-  border: 1px solid color-mix(in srgb, var(--brand) 32%, var(--border-soft));
-  border-radius: 999px;
-  color: var(--text-secondary);
-  background: color-mix(in srgb, var(--brand) 7%, transparent);
-  font-size: 0.68rem;
-  font-weight: 700;
-}
-
-@media (max-width: 920px) {
-  .repo-wizard-progress {
-    display: flex;
-    overflow-x: auto;
-    scrollbar-width: none;
-  }
-
-  .repo-wizard-progress::-webkit-scrollbar { display: none; }
-
-  .repo-wizard-progress__step {
-    flex: 0 0 auto;
-    min-width: 8.4rem;
-  }
-
-  .repo-wizard-progress__step::after { display: none; }
-}
-
-@media (max-width: 560px) {
-  .repo-wizard-progress { margin-bottom: 1rem; padding: 0.38rem; }
-  .repo-wizard-progress__step { min-width: 2.25rem; padding: 0.48rem; justify-content: center; }
-  .repo-wizard-progress__copy { display: none; }
-  .repo-wizard-review__grid { grid-template-columns: 1fr; }
-  .repo-wizard-review__grid > div:nth-child(odd) { border-right: 0; }
-  .repo-wizard-review__heading, .repo-wizard-review__grid > div, .repo-wizard-review__checks { padding-left: 0.9rem; padding-right: 0.9rem; }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .repo-wizard-progress__step,
-  .repo-wizard-progress__number { transition: none; }
-}
-
-/* ── Sidebar account identity — profile chip + workspace switcher ───────────
-   Single consolidated definition (previously duplicated across 3 cascade
-   layers, which is what caused the name/role text to overlap and clip).
-   These classes render only inside .app-sidebar .sidebar-account-zone, so a
-   single flat specificity level is enough — no need to chase cascade order. */
-
-
-.sidebar-user-avatar-img,
-
-
-/* Username + role badge share one line. min-width:0 on the row lets the login
-   ellipsize instead of shoving the badge out of the 220px rail. */
-
-
-/* Role badge — "Team lead" / "Developer" / "Admin", mirroring the GitHub org
-   team that drives app_role. flex-shrink:0 keeps it fully readable; the
-   username yields space instead. */
-.sidebar-role-badge {
-  flex-shrink: 0;
-  padding: 0.08rem 0.4rem;
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  color: var(--text-secondary);
-  font-size: 0.58rem;
-  font-weight: 700;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  white-space: nowrap;
-}
-
-.sidebar-role-badge--admin {
-  border-color: color-mix(in srgb, var(--accent-violet) 45%, transparent);
-  background: color-mix(in srgb, var(--accent-violet) 12%, transparent);
-  color: var(--accent-violet);
-}
-
-.sidebar-role-badge--lead {
-  border-color: var(--border-brand);
-  background: color-mix(in srgb, var(--border-brand) 12%, transparent);
-  color: var(--brand);
-}
-
-.sidebar-role-badge--member {
-  border-color: var(--border);
-  background: transparent;
-  color: var(--text-muted);
-}
-
-
-/* Multi-team: an unmistakable switcher, not text that happens to be a
-   <select> — hover/focus tint, ellipsis in the closed state, and a visible
-   chevron + "N teams" count so it reads as clickable at a glance. */
-
-
-/* A focused circular notification control replaces the old square button. */
-
-
-.dashboard-shortcuts {
-  display: flex;
-  align-items: center;
-  gap: 0.8rem;
-  padding: 0.5rem 0.75rem;
-  border: 1px solid var(--border-soft);
-  border-radius: 0.7rem;
-  background: color-mix(in srgb, var(--bg-elevated) 72%, transparent);
-}
-
-.dashboard-shortcuts-label {
-  flex: 0 0 auto;
-  color: var(--text-muted);
-  font-size: 0.62rem;
-  font-weight: 750;
-  letter-spacing: 0.09em;
-  text-transform: uppercase;
-}
-
-.dashboard-shortcuts-keys { display: flex; flex-wrap: wrap; gap: 0.45rem 0.9rem; }
-.dashboard-shortcut { display: inline-flex; align-items: center; gap: 0.35rem; color: var(--text-secondary); font-size: 0.71rem; }
-.dashboard-shortcut kbd {
-  display: inline-grid;
-  width: 1.35rem;
-  height: 1.35rem;
-  place-items: center;
-  border: 1px solid var(--border-soft);
-  border-bottom-color: color-mix(in srgb, var(--text-muted) 45%, var(--border-soft));
-  border-radius: 0.32rem;
-  background: var(--bg-base);
-  color: var(--text-primary);
-  font-family: ui-monospace, monospace;
-  font-size: 0.66rem;
-  font-weight: 700;
-}
-
-@media (max-width: 640px) {
-  .dashboard-shortcuts { align-items: flex-start; flex-direction: column; gap: 0.45rem; }
-}
-
-/* ── Home dashboard: single operational flow ───────────────────────────────
-   One page, no internal tabs. Team context, attention, delivery, and activity
-   remain visible in a predictable top-to-bottom order. */
-.dashboard-flow {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-  padding: 1.25rem 0 2.25rem;
-}
-
-.dashboard-section-kicker {
-  margin: 0 0 0.35rem;
-  color: var(--brand);
-  font-size: 0.66rem;
-  font-weight: 750;
-  letter-spacing: 0.11em;
-}
-
-.dashboard-panel-heading h2 {
-  margin: 0;
-  color: var(--text-primary);
-  font-size: 1.05rem;
-  letter-spacing: -0.015em;
-}
-
-.dashboard-inline-link {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.45rem;
-  min-height: 2.5rem;
-  color: var(--brand);
-  font-size: 0.78rem;
-  font-weight: 700;
-  text-decoration: none;
-  white-space: nowrap;
-}
-
-.dashboard-inline-link span {
-  transition: transform 0.18s ease;
-}
-
-.dashboard-inline-link:hover span,
-.dashboard-inline-link:focus-visible span {
-  transform: translateX(3px);
-}
-
-.dashboard-inline-link:focus-visible, .dashboard-panel a:focus-visible {
-  outline: 2px solid var(--brand);
-  outline-offset: 3px;
-}
-
-.dashboard-activity-dot, .dashboard-tree-node-dot {
-  width: 0.55rem;
-  height: 0.55rem;
-  flex: 0 0 auto;
-  border-radius: 50%;
-  background: var(--success);
-  box-shadow: 0 0 0 4px color-mix(in srgb, var(--success) 12%, transparent);
-}
-
-.dashboard-row-arrow {
-  color: var(--text-muted);
-  opacity: 0;
-  transform: translateX(-4px);
-  transition: opacity 0.18s ease, transform 0.18s ease;
-}
-
-.dashboard-panel {
-  min-width: 0;
-  padding: 1rem;
-  border: 1px solid var(--border-soft);
-  border-radius: 0.9rem;
-  background: var(--bg-elevated);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.025);
-}
-
-.dashboard-panel-heading {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 0.75rem;
-  padding-bottom: 0.8rem;
-  border-bottom: 1px solid var(--border-soft);
-}
-
-.dashboard-panel-heading .dashboard-inline-link { min-height: auto; }
-.dashboard-empty { margin: 1rem 0 0; color: var(--text-muted); font-size: 0.78rem; }
-
-
-.dashboard-tree-system-head > span:nth-child(2),
-.dashboard-project-row > span:first-child,
-.dashboard-tree-system-head strong,
-.dashboard-project-row strong,
-.dashboard-run-row strong,
-.dashboard-work-row strong,
-.dashboard-activity-row strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 0.79rem; }
-.dashboard-tree-system-head small,
-.dashboard-project-row small,
-.dashboard-run-row small,
-.dashboard-work-row small,
-.dashboard-activity-row small { color: var(--text-muted); font-size: 0.68rem; }
-
-
-.dashboard-project-list,
-.dashboard-work-list,
-.dashboard-runs-list,
-.dashboard-activity-list { display: flex; flex-direction: column; }
-.dashboard-project-row,
-.dashboard-project-row:last-child,
-.dashboard-project-row:hover,
-
-.dashboard-status--provisioned,
-.dashboard-status--active,
-.dashboard-status--provisioning,
-.dashboard-status--pending,
-.dashboard-status--failed,
-.dashboard-status--orphaned,
-.dashboard-status--archived,
-
-.dashboard-work-row,
-.dashboard-activity-row { display: flex; align-items: center; min-height: 3.55rem; gap: 0.65rem; border-bottom: 1px solid var(--border-soft); }
-.dashboard-work-row:last-child,
-.dashboard-activity-row:last-child { border-bottom: 0; }
-.dashboard-work-row > span:nth-child(2),
-.dashboard-activity-row > span:nth-child(2) { display: flex; min-width: 0; flex: 1; flex-direction: column; gap: 0.12rem; }
-
 .dashboard-run-row .pipeline-dot { width: 0.45rem; height: 0.45rem; margin: 0; }
-.dashboard-activity-dot { width: 0.45rem; height: 0.45rem; background: var(--accent-violet); box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent-violet) 12%, transparent); }
-
-.dashboard-load-errors { display: flex; align-items: center; gap: 0.75rem; margin-top: 1rem; padding: 0.7rem 0.85rem; border: 1px solid color-mix(in srgb, var(--danger) 35%, var(--border-soft)); border-radius: 0.75rem; background: color-mix(in srgb, var(--danger) 6%, transparent); color: var(--text-secondary); font-size: 0.78rem; }
-.dashboard-load-errors > span { display: grid; width: 1.25rem; height: 1.25rem; flex: 0 0 auto; place-items: center; border-radius: 50%; background: color-mix(in srgb, var(--danger) 15%, transparent); color: var(--danger); font-weight: 800; }
-.dashboard-load-errors p { flex: 1; margin: 0; }
-
-@media (max-width: 640px) {
-  .dashboard-flow { gap: 0.75rem; padding-top: 0.9rem; }
-  .dashboard-work-access { display: none; }
-  .dashboard-run-row { flex-wrap: wrap; }
-  .dashboard-run-row > span:first-child { flex-basis: calc(100% - 4.5rem); }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .dashboard-inline-link span, .dashboard-row-arrow, .dashboard-project-row, .dashboard-run-row { transition: none; }
-}
 .runs-empty:hover .dashboard-row-arrow { opacity: 1; transform: translateX(0); }
 .runs-empty .dashboard-row-arrow { color: var(--brand); }
 
@@ -7102,49 +4342,8 @@ html:not([data-theme="light"]) .dash-shell :is(
     var(--bg-elevated);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
 }
-
-.getstarted-intro { max-width: 46rem; }
-.getstarted-intro h2 { margin: 0; font-size: clamp(1.25rem, 2.4vw, 1.7rem); letter-spacing: -0.02em; color: var(--text-primary); }
-.getstarted-lede { margin: 0.5rem 0 0; color: var(--text-secondary); font-size: clamp(0.85rem, 1.3vw, 0.95rem); line-height: 1.5; }
-
-.getstarted-progress { display: flex; align-items: center; gap: 0.7rem; margin-top: 1rem; }
-.getstarted-progress-bar { position: relative; flex: 1; max-width: 22rem; height: 5px; border-radius: 999px; overflow: hidden; background: color-mix(in srgb, var(--text-muted) 22%, transparent); }
-.getstarted-progress-fill { position: absolute; inset: 0; transform-origin: left; border-radius: 999px; background: linear-gradient(90deg, var(--brand), var(--accent-violet)); }
-.getstarted-progress-label { font-family: ui-monospace, monospace; font-size: 0.72rem; font-weight: 700; color: var(--text-muted); white-space: nowrap; }
-
-.getstarted-steps { list-style: none; margin: 1.4rem 0 0; padding: 0; display: flex; flex-direction: column; }
-.getstarted-step {
-  position: relative;
-  display: grid;
-  grid-template-columns: 2.35rem 1fr auto;
-  align-items: start;
-  gap: 0.85rem;
-  padding: 0.75rem 0.75rem 0.9rem;
-  border-radius: 0.7rem;
-  transition: background 0.2s ease;
-}
-/* Connector line between nodes */
-.getstarted-step:not(:last-child)::before {
-  content: "";
-  position: absolute;
-  left: calc(0.75rem + 1.17rem);
-  top: 2.9rem;
-  bottom: -0.15rem;
-  width: 2px;
-  background: color-mix(in srgb, var(--text-muted) 22%, transparent);
-}
 .getstarted-step.is-done:not(:last-child)::before { background: color-mix(in srgb, var(--success) 45%, transparent); }
 .getstarted-step.is-current { background: color-mix(in srgb, var(--brand) 7%, transparent); }
-
-.getstarted-node {
-  display: grid; place-items: center;
-  width: 2.35rem; height: 2.35rem; border-radius: 50%;
-  border: 1.5px solid var(--border);
-  background: color-mix(in srgb, var(--bg-elevated) 85%, transparent);
-  color: var(--text-muted);
-  font-family: ui-monospace, monospace; font-size: 0.9rem; font-weight: 700;
-  position: relative; z-index: 1;
-}
 .getstarted-step.is-done .getstarted-node {
   border-color: var(--success); color: var(--success);
   background: color-mix(in srgb, var(--success) 14%, transparent);
@@ -7154,42 +4353,9 @@ html:not([data-theme="light"]) .dash-shell :is(
   background: color-mix(in srgb, var(--brand) 15%, transparent);
   box-shadow: 0 0 0 4px color-mix(in srgb, var(--brand) 14%, transparent);
 }
-
-.getstarted-copy { display: flex; flex-direction: column; gap: 0.2rem; min-width: 0; padding-top: 0.28rem; }
-.getstarted-copy strong { font-size: 0.9rem; color: var(--text-primary); }
 .getstarted-step:not(.is-current):not(.is-done) .getstarted-copy strong { color: var(--text-secondary); }
-.getstarted-copy small { color: var(--text-muted); font-size: 0.76rem; line-height: 1.45; }
-.getstarted-cta {
-  display: inline-flex; align-items: center; gap: 0.4rem; align-self: flex-start;
-  margin-top: 0.55rem; padding: 0.42rem 0.9rem;
-  border-radius: var(--radius-pill);
-  background: var(--brand-strong); color: #fff;
-  font-size: 0.78rem; font-weight: 700; text-decoration: none;
-  transition: transform 0.16s ease, background 0.16s ease;
-}
-.getstarted-cta span { transition: transform 0.18s ease; }
-.getstarted-cta:hover { background: var(--brand); transform: translateY(-1px); }
-.getstarted-cta:hover span { transform: translateX(3px); }
-.getstarted-cta:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
-
-.getstarted-state {
-  align-self: center; font-size: 0.62rem; font-weight: 750; letter-spacing: 0.05em; text-transform: uppercase;
-  color: var(--text-muted);
-}
 .getstarted-step.is-done .getstarted-state { color: var(--success); }
 .getstarted-step.is-current .getstarted-state { color: var(--brand); }
-
-.getstarted-resources { display: flex; flex-direction: column; gap: 0.5rem; margin-top: 1.4rem; padding-top: 1.1rem; border-top: 1px solid var(--border-soft); }
-.getstarted-resource-links { display: flex; flex-wrap: wrap; gap: 0.55rem; }
-.getstarted-resource-links a {
-  display: inline-flex; align-items: center;
-  padding: 0.42rem 0.85rem; border-radius: var(--radius-pill);
-  border: 1px solid var(--border); background: color-mix(in srgb, var(--bg-elevated) 80%, transparent);
-  color: var(--text-secondary); font-size: 0.78rem; font-weight: 600; text-decoration: none;
-  transition: border-color 0.16s ease, color 0.16s ease, transform 0.16s ease;
-}
-.getstarted-resource-links a:hover { border-color: var(--border-brand); color: var(--brand); transform: translateY(-1px); }
-.getstarted-resource-links a:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
 
 /* ── Responsive ───────────────────────────────────────────────────────────── */
 @media (max-width: 560px) {
@@ -7253,10 +4419,6 @@ html:not([data-theme="light"]) .dash-shell :is(
   padding: 0.4rem 1rem; font-size: 0.8rem; min-height: 2.2rem;
 }
 .home-header-msg { margin: 0.55rem 0 0; }
-
-/* ── Main grid + scrollable side panels ────────────────────────────────────── */
-.dashboard-main-grid { display: grid; grid-template-columns: 1fr; gap: 0.85rem; min-width: 0; }
-.dashboard-side-col { display: flex; flex-direction: column; gap: 0.85rem; min-width: 0; }
 
 /* ══ Viewport-fit: only on tall, wide desktops. Otherwise natural scroll. ═══ */
 @media (min-width: 1024px) and (min-height: 720px) {
@@ -7363,46 +4525,8 @@ html:not([data-theme="light"]) .dash-shell :is(
   .metric-cell:nth-child(n + 3) { border-top: 1px solid var(--border-soft); }
 }
 
-/* Slim, container-less delivery + activity rail (replaces two boxed panels). */
-.side-rail-block {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-  min-height: 0;
-}
-
-.side-rail-block--divided {
-  margin-top: 0.85rem;
-  padding-top: 0.85rem;
-  border-top: 1px solid var(--border-soft);
-}
-
-.side-rail-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem;
-  flex: 0 0 auto;
-  padding-bottom: 0.5rem;
-}
-
 .side-rail-head .dashboard-section-kicker { margin: 0; }
 .side-rail-head .dashboard-inline-link { min-height: auto; }
-.side-rail-kicker { margin: 0 0 0.55rem; }
-
-.side-rail-scroll {
-  flex: 1 1 auto;
-  min-height: 0;
-  overflow: auto;
-  scrollbar-width: thin;
-  margin: 0 -0.2rem;
-  padding: 0.1rem 0.2rem 0;
-}
-.side-rail-scroll::-webkit-scrollbar { width: 6px; }
-.side-rail-scroll::-webkit-scrollbar-thumb { border-radius: 999px; background: var(--border); }
-
-/* Sidebar block that stretches to fill available height (team, activity). */
-.side-rail-block--grow { flex: 1 1 auto; }
 
 /* ── Quality stat card (right sidebar) ─────────────────────────────────────── */
 .quality-card {
@@ -7450,109 +4574,6 @@ html:not([data-theme="light"]) .dash-shell :is(
   display: flex;
   align-items: flex-start;
   gap: 1.25rem;
-}
-
-.side-tabs {
-  position: sticky;
-  top: 1rem;
-  flex-shrink: 0;
-  width: 13.5rem;
-  padding: 0.6rem;
-  border: 1px solid var(--border-soft);
-  border-radius: 0.9rem;
-  background: color-mix(in srgb, var(--bg-elevated) 70%, transparent);
-}
-
-.side-tabs-list {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.side-tabs-heading {
-  margin: 0.85rem 0 0.3rem;
-  padding: 0 0.7rem;
-  color: var(--text-muted);
-  font-size: 0.63rem;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-}
-
-.side-tabs-group:first-child .side-tabs-heading {
-  margin-top: 0;
-}
-
-/* border-left is ALWAYS present (transparent when unselected) so selecting a
-   tab cannot shift its label sideways. */
-.side-tab {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  width: 100%;
-  padding: 0.45rem 0.7rem;
-  border: none;
-  border-left: 3px solid transparent;
-  border-radius: 0.5rem;
-  background: transparent;
-  color: var(--text-secondary);
-  font-size: 0.86rem;
-  font-weight: 500;
-  text-align: left;
-  cursor: pointer;
-  transition:
-    background 0.15s ease,
-    color 0.15s ease;
-}
-
-.side-tab:hover:not(.side-tab--selected) {
-  background: color-mix(in srgb, var(--text-primary) 6%, transparent);
-  color: var(--text-primary);
-}
-
-.side-tab:focus-visible {
-  outline: 2px solid var(--brand);
-  outline-offset: 2px;
-}
-
-/* Solid, not a tint: the rail already has a surface, so a tinted chip on it
-   disappears. */
-.side-tab--selected {
-  border-left-color: var(--brand);
-  background: var(--brand);
-  color: #fff;
-  font-weight: 700;
-}
-
-.side-tab-label {
-  flex: 1;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.side-tab-badge {
-  flex-shrink: 0;
-  min-width: 1.25rem;
-  padding: 0.05rem 0.35rem;
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--text-primary) 10%, transparent);
-  color: var(--text-muted);
-  font-size: 0.68rem;
-  font-weight: 700;
-  text-align: center;
-  font-variant-numeric: tabular-nums;
-}
-
-.side-tab--selected .side-tab-badge {
-  background: rgba(255, 255, 255, 0.22);
-  color: #fff;
-}
-
-.side-tabs-footer {
-  margin-top: 0.85rem;
-  padding-top: 0.85rem;
-  border-top: 1px solid var(--border-soft);
 }
 
 /* ── The panel beside the rail ─────────────────────────────────────────────── */
@@ -7649,17 +4670,6 @@ html:not([data-theme="light"]) .dash-shell :is(
   grid-template-columns: minmax(0, 200px) minmax(0, 1fr);
   gap: 1.5rem;
   align-items: start;
-}
-
-/* Lets wide code and diffs scroll instead of stretching the grid. */
-.project-sections__body {
-  min-width: 0;
-}
-
-@media (max-width: 900px) {
-  .project-sections {
-    grid-template-columns: minmax(0, 1fr);
-  }
 }
 
 /* Existing-repository onboarding: what setup will do, before it does it. */
