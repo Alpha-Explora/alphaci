@@ -12,8 +12,7 @@ import {
   type AppRole,
   type WorkspacesMeResponse,
 } from "@/lib/api/contracts";
-import type { NotificationsResponse } from "@/features/notifications";
-import { notificationsRepository } from "@/features/notifications/data/notifications-repository";
+import { useNotificationsSummaryViewModel } from "@/features/notifications/summary";
 import { getMyWorkspaces } from "@/lib/api/workspaces";
 import { useWorkspaceSelection } from "./workspace-context";
 import { WorkspaceSwitcher } from "./workspace-switcher";
@@ -286,8 +285,7 @@ export function AppNav({
   const [hoverSuppressed, setHoverSuppressed] = useState(false);
   const [workspaces, setWorkspacesState] =
     useState<WorkspacesMeResponse | null>(null);
-  const [notifications, setNotifications] =
-    useState<NotificationsResponse | null>(null);
+  const notifications = useNotificationsSummaryViewModel({ guest });
   const { setWorkspaces, registerWorkspaceRefresh } = useWorkspaceSelection();
   const prefersReducedMotion = useReducedMotion();
   const reduced = prefersReducedMotion ?? false;
@@ -337,22 +335,6 @@ export function AppNav({
       active = false;
     };
   }, [guest, setWorkspaces]);
-
-  useEffect(() => {
-    if (guest) return;
-    let active = true;
-    void notificationsRepository.list()
-      .then((response) => {
-        if (active) setNotifications(response);
-      })
-      .catch(() => {
-        if (active)
-          setNotifications({ enabled: false, items: [], unreadCount: 0 });
-      });
-    return () => {
-      active = false;
-    };
-  }, [guest]);
 
   return (
     <>
@@ -511,7 +493,7 @@ export function AppNav({
               isActive={pathname === "/inbox"}
               reduced={reduced}
               onNavigate={() => setHoverSuppressed(true)}
-              badgeCount={notifications?.unreadCount ?? 0}
+              badgeCount={notifications.unreadCount}
             />
           )}
 

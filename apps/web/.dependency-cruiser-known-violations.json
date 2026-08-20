@@ -1,22 +1,5 @@
 [
   {
-    "type": "dependency",
-    "from": "src/components/layout/app-nav.tsx",
-    "to": "src/features/notifications/data/notifications-repository.ts",
-    "unresolvedTo": "@/features/notifications/data/notifications-repository",
-    "dependencyTypes": [
-      "aliased",
-      "aliased-tsconfig",
-      "aliased-tsconfig-paths",
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "components-barrel-only"
-    }
-  },
-  {
     "type": "cycle",
     "from": "src/components/hierarchy/create-group-dialog.tsx",
     "to": "src/components/hierarchy/primitives.tsx",
