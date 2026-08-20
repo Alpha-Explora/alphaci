@@ -14,6 +14,11 @@ const eslintConfig = defineConfig([
     "coverage/**",
     "next-env.d.ts",
     "coverage/**",
+    // Vendored verbatim from the next-feature-architecture skill so the CI
+    // gate does not depend on a private repository. Kept byte-identical to
+    // upstream to stay re-syncable, so it is not ours to lint — and the lint
+    // gate runs --max-warnings=0, which its unused bindings would fail.
+    "scripts/**",
   ]),
   // Jest config files must use CommonJS require() — disable the rule for them.
   {
