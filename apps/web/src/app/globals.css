@@ -172,7 +172,6 @@ html[data-theme="light"] {
 /* ── Feature value cards (Source-backed generation, etc.) ── */
 
 
-
 @media (max-width: 700px) {
   [data-theme="light"] .feature-strip-item {
     border-right: 1px solid rgba(17, 17, 22, 0.09) !important;
@@ -422,57 +421,9 @@ h3 {
 }
 
 @media (max-width: 640px) {
-  .raw-hero-grid {
-    display: block !important;
-    min-height: auto !important;
-    padding: 7.25rem 1rem 3rem !important;
-    overflow: hidden !important;
-  }
-
-  .raw-hero-content {
-    transform: none !important;
-    max-width: 100% !important;
-  }
-
-  .raw-hero-content h2 {
-    font-size: clamp(2.6rem, 13vw, 3.6rem) !important;
-    line-height: 1.02 !important;
-  }
-
-  .raw-hero-content h1 {
-    font-size: clamp(2.6rem, 13vw, 3.6rem) !important;
-    line-height: 1.02 !important;
-  }
-
-  .raw-hero-content p {
-    max-width: 21rem !important;
-    font-family:
-      var(--font-dash-body), "Plus Jakarta Sans", sans-serif !important;
-    color: #babac4 !important;
-    font-size: 1rem !important;
-    line-height: 1.65 !important;
-  }
-
-  .raw-hero-actions {
-    flex-direction: column !important;
-    align-items: stretch !important;
-  }
-
-  .raw-hero-actions a {
-    justify-content: center !important;
-    width: 100% !important;
-  }
-
-  .raw-hero-stats {
-    display: none !important;
-  }
 
   .hero-proof-strip {
     margin-bottom: 1.6rem;
-  }
-
-  .raw-hero-visual {
-    display: none !important;
   }
 
   .hero-massive-text {
@@ -794,8 +745,6 @@ h3 {
   font-size: 0.72rem;
   opacity: 0.65;
 }
-
-
 
 
 /* ── Panels ─────────────────────────────────────────────────────────────── */
@@ -1243,11 +1192,6 @@ select option {
 }
 
 
-
-
-
-
-
 /* ── Error inline row (message + retry) ──────────────────────────────────── */
 .error-inline {
   display: flex;
@@ -1356,18 +1300,6 @@ select option {
   .landing-hero .hero-actions .primary-button,
   .landing-hero .hero-actions .ghost-button {
     width: 100%;
-  }
-}
-
-
-@media (max-width: 760px) {
-  .kpi-grid-editorial {
-    grid-template-columns: 1fr 1fr;
-  }
-}
-@media (max-width: 480px) {
-  .kpi-grid-editorial {
-    grid-template-columns: 1fr;
   }
 }
 
@@ -1497,7 +1429,6 @@ select option {
   height: 1px;
   background: var(--border);
 }
-
 
 
 @media (max-width: 700px) {
@@ -1661,26 +1592,6 @@ select option {
 /* ── Keyframes ───────────────────────────────────────────────────────────── */
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 @keyframes flowPulse {
   0%,
   100% {
@@ -1711,7 +1622,6 @@ select option {
 }
 
 
-
 @keyframes glowPulse {
   0%,
   100% {
@@ -1725,10 +1635,6 @@ select option {
       0 0 40px rgba(31, 111, 235, 0.2);
   }
 }
-
-
-
-
 
 
 @media (max-width: 640px) {
@@ -2005,22 +1911,6 @@ select option {
 .dash-shell .command-item:hover {
   border-color: var(--border-brand);
   background: var(--brand-light);
-}
-
-
-@media (max-width: 1024px) {
-  .kpi-bento-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-
-@media (max-width: 640px) {
-  .kpi-bento-grid {
-    grid-template-columns: 1fr;
-  }
-  .bento-card-dominant {
-    grid-column: span 1;
-  }
 }
 
 
@@ -2671,10 +2561,6 @@ select option {
 /* ── Orb drift animations for FlowBackground ─────────────────────────────── */
 
 
-
-
-
-
 /* ── CSS-driven FlowBackground orb animations (replaces JS-animated motion.div) */
 @keyframes orb-drift-a {
   0%,
@@ -2746,15 +2632,11 @@ select option {
 /* ── Shimmer sweep ───────────────────────────────────────────────────────── */
 
 
-
 @media (min-width: 768px) {
   .hero-br-desktop {
     display: inline;
   }
 }
-
-
-
 
 
 @media (max-width: 768px) {
@@ -2974,13 +2856,7 @@ select option {
 }
 
 
-
-
 @media (max-width: 768px) {
-  .editorial-glass-panel {
-    padding: 2.5rem 1.5rem;
-    margin-top: 10vh;
-  }
   .hero-massive-text {
     font-size: clamp(6rem, 15vw, 12rem);
     letter-spacing: -0.02em;
@@ -3194,8 +3070,6 @@ select option {
 /* Trailing action cluster on a provisioned-project row (browse + disconnect) */
 
 
-
-
 @media (max-width: 640px) {
   .dash-repo-row-desc {
     display: none;
@@ -3241,7 +3115,6 @@ select option {
   color: var(--brand);
   font-weight: 700;
 }
-
 
 
 @media (max-width: 640px) {
@@ -3383,7 +3256,6 @@ select option {
 /* ── Tab panel stagger animation ────────────────────────────────────────── */
 
 
-
 @media (prefers-reduced-motion: reduce) {
   .dash-panel-enter {
     animation: none;
@@ -3415,19 +3287,6 @@ select option {
 }
 
 
-@media (max-width: 1024px) {
-  .bento-card-quick-actions {
-    grid-column: span 2;
-  }
-}
-
-@media (max-width: 640px) {
-  .bento-card-quick-actions {
-    grid-column: span 1;
-  }
-}
-
-
 /* ── Route transition wrapper ─────────────────────────────────────────────── */
 /* Used by app/(dash)/template.tsx for page-level enter/exit */
 .page-transition-wrapper {
@@ -3446,23 +3305,6 @@ select option {
     transition:
       background 0.25s ease,
       box-shadow 0.25s ease;
-  }
-}
-
-
-@media (prefers-reduced-motion: reduce) {
-  .nav-spotlight {
-    display: none;
-  }
-}
-
-
-
-
-@media (prefers-reduced-motion: reduce) {
-  .nav-pipeline-motif-dot {
-    animation: none;
-    opacity: 0.5;
   }
 }
 
@@ -3505,25 +3347,9 @@ select option {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .nav-roll-char {
-    transition: none;
-  }
-  .nav-roll-bottom {
-    display: none;
-  }
   .nav-link:hover .nav-roll-top .nav-roll-char,
   .nav-link:focus-visible .nav-roll-top .nav-roll-char {
     transform: none;
-  }
-}
-
-
-
-
-@media (prefers-reduced-motion: reduce) {
-  .nav-brand:hover .nav-brand-logo-ring::after {
-    animation: none;
-    opacity: 0;
   }
 }
 
@@ -3552,21 +3378,6 @@ select option {
   .notification-preferences-card {
     align-items: flex-start;
     flex-direction: column;
-  }
-}
-
-
-@media (prefers-reduced-motion: reduce) {
-  .nav-user-status-led {
-    animation: none;
-  }
-}
-
-
-@media (prefers-reduced-motion: reduce) {
-  .nav-signout-spinner {
-    animation: none;
-    opacity: 0.6;
   }
 }
 
@@ -3606,16 +3417,8 @@ select option {
    Muted grey, no emphasized final bar — signals "no data yet", not growth. */
 
 
-
 @media (prefers-reduced-motion: reduce) {
   .bento-sparkbar-bar {
-    animation: none;
-  }
-}
-
-
-@media (prefers-reduced-motion: reduce) {
-  .bento-timeline-dot {
     animation: none;
   }
 }
@@ -3711,9 +3514,6 @@ select option {
 }
 
 /* ── driver.js onboarding tour — dark glass theme overrides ────────────── */
-
-
-
 
 
 /* Highlighted element — crisp brand outline */
@@ -3841,7 +3641,6 @@ select option {
 /* ════════════════════════════════════════════════════════════════════════════
    APP SIDEBAR — fixed left sidebar replacing the top nav dock
    ════════════════════════════════════════════════════════════════════════════ */
-
 
 
 @keyframes sidebarEdgePulse {
