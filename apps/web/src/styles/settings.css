@@ -1,0 +1,341 @@
+/**
+ * Settings surface: the section rail, preference rows and account panels.
+ * 
+ * Rules shared with the inbox preference toggles stayed in globals.css.
+ * Extracted from globals.css one surface at a time; see src/features/README.md.
+ */
+
+/* ── Code / monospace blocks ─────────────────────────────────── */
+[data-theme="light"] code,
+
+
+/* ── Settings panels ─────────────────────────────────────────── */
+[data-theme="light"] .settings-sidebar-nav-item:hover {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+@media (max-width: 720px) {
+  .settings-layout {
+    flex-direction: column !important;
+    gap: 1rem !important;
+    overflow-x: hidden;
+    padding-inline: 1rem !important;
+  }
+
+  .settings-sidebar,
+  .settings-content {
+    width: 100% !important;
+  }
+
+  .settings-sidebar {
+    position: relative !important;
+    top: auto !important;
+  }
+}
+
+/* ── Settings sections ───────────────────────────────────────────────────── */
+.settings-section {
+  background: rgba(17, 17, 22, 0.78);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 1rem;
+  overflow: hidden;
+  transition: border-color 0.2s ease;
+}
+
+.settings-section:hover {
+  border-color: rgba(88, 166, 255, 0.2);
+}
+
+.settings-section-danger {
+  background: rgba(248, 113, 113, 0.08);
+  border-color: rgba(248, 113, 113, 0.3);
+}
+
+.settings-section-danger:hover {
+  border-color: rgba(248, 113, 113, 0.4);
+}
+
+/* ── Settings Danger Zone sidebar nav active ─────── */
+.settings-nav-btn--danger-active {
+  background: rgba(220, 38, 38, 0.12) !important;
+  border-color: rgba(220, 38, 38, 0.35) !important;
+  color: #f87171 !important;
+}
+
+/* ── Settings page layout enhancements ─────────────────────────────────── */
+.settings-section-body {
+  padding: 1.25rem;
+}
+
+.settings-nav-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.6rem;
+  font-size: 0.83rem;
+  font-weight: 600;
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.settings-nav-btn:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
+/* ── Settings shell surfaces (themable) ─────────────────────────────────── */
+/* Defaults below reproduce the previous hardcoded dark inline styles exactly,
+   so dark mode is visually unchanged. Light overrides live further down in the
+   [data-theme="light"] block. */
+
+.settings-sidebar-surface {
+  background: rgba(17, 17, 22, 0.55);
+  border: 1px solid var(--border-soft);
+  border-radius: 1rem;
+}
+
+.settings-sidebar-profile {
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.settings-profile-header {
+  background: rgba(17, 17, 22, 0.5);
+  border: 1px solid var(--border-soft);
+}
+
+.settings-card {
+  background: rgba(17, 17, 22, 0.55);
+  border: 1px solid var(--border-soft);
+  border-radius: 1rem;
+  overflow: hidden;
+  position: relative;
+}
+
+.settings-card--danger {
+  background: linear-gradient(
+    160deg,
+    rgba(69, 10, 10, 0.8) 0%,
+    rgba(30, 10, 10, 0.5) 100%
+  );
+  border: 1px solid rgba(220, 38, 38, 0.35);
+}
+
+.settings-card-accent {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--brand), transparent);
+  opacity: 0.5;
+}
+
+.settings-card-accent--danger {
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(248, 113, 113, 0.6),
+    transparent
+  );
+}
+
+.settings-card-header {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.8rem 1.25rem 0.7rem;
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.settings-card-header--danger {
+  border-bottom: 1px solid rgba(248, 113, 113, 0.12);
+}
+
+.settings-card-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.6rem;
+  height: 1.6rem;
+  border-radius: 0.35rem;
+  background: var(--surface-brand);
+  color: var(--brand);
+  flex-shrink: 0;
+}
+
+.settings-card-icon--danger {
+  background: rgba(248, 113, 113, 0.1);
+  color: var(--danger);
+}
+
+.settings-card-title {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.settings-card-title--danger {
+  color: var(--danger);
+}
+
+.settings-card-divider--danger {
+  border-top: 1px solid rgba(248, 113, 113, 0.12);
+}
+
+/* Settings sub-nav button surface states (static parts only;
+   active/inactive selection is applied via modifier classes). */
+.settings-nav-btn--inactive {
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text-secondary);
+}
+
+.settings-nav-btn--inactive-danger {
+  border: 1px solid transparent;
+  background: transparent;
+  color: rgba(248, 113, 113, 0.65);
+}
+
+.settings-nav-btn--active {
+  border: 1px solid rgba(88, 166, 255, 0.25);
+  background: rgba(88, 166, 255, 0.09);
+  color: var(--brand);
+}
+
+.settings-nav-btn--active-danger {
+  border: 1px solid rgba(248, 113, 113, 0.3);
+  background: rgba(248, 113, 113, 0.08);
+  color: var(--danger);
+}
+
+.settings-preference-stack {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.settings-preference-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.95rem;
+  border: 1px solid var(--border-soft);
+  border-radius: 0.8rem;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.settings-preference-card--accent {
+  border-color: color-mix(in srgb, var(--brand) 24%, var(--border-soft));
+  background:
+    linear-gradient(135deg, var(--surface-brand), rgba(45, 212, 191, 0.035)),
+    rgba(255, 255, 255, 0.03);
+}
+
+.settings-preference-copy {
+  display: grid;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.settings-appearance-preview {
+  display: grid;
+  gap: 0.55rem;
+  padding: 0.8rem;
+  border: 1px solid var(--border-soft);
+  border-radius: 0.75rem;
+  background: var(--layer-2);
+}
+
+.settings-appearance-preview-bar {
+  height: 0.45rem;
+  width: 42%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--brand), var(--accent-teal));
+}
+
+.settings-appearance-preview-body {
+  display: grid;
+  grid-template-columns: 1.5fr 1fr 0.8fr;
+  gap: 0.45rem;
+}
+
+.settings-appearance-preview-body span {
+  height: 2.8rem;
+  border: 1px solid var(--border-soft);
+  border-radius: 0.55rem;
+  background: var(--layer-1);
+}
+
+/* ── Settings shell — light theme overrides ─────────────────────────────── */
+[data-theme="light"] .settings-sidebar-surface,
+[data-theme="light"] .settings-card,
+[data-theme="light"] .settings-profile-header {
+  background: rgba(250, 250, 251, 0.9);
+  border-color: rgba(0, 0, 0, 0.07);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+}
+
+[data-theme="light"] .settings-sidebar-profile,
+[data-theme="light"] .settings-card-header {
+  border-bottom-color: rgba(0, 0, 0, 0.07);
+}
+
+[data-theme="light"] .settings-card--danger {
+  background: linear-gradient(
+    160deg,
+    rgba(254, 226, 226, 0.9) 0%,
+    rgba(254, 242, 242, 0.85) 100%
+  );
+  border-color: rgba(220, 38, 38, 0.25);
+}
+
+[data-theme="light"] .settings-card-icon {
+  background: var(--surface-brand);
+  color: var(--brand);
+}
+
+[data-theme="light"] .settings-nav-btn--inactive {
+  color: var(--text-secondary);
+}
+
+[data-theme="light"] .settings-nav-btn--inactive:hover {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+[data-theme="light"] .settings-nav-btn--active {
+  border-color: rgba(9, 105, 218, 0.3);
+  background: rgba(9, 105, 218, 0.08);
+  color: var(--brand);
+}
+
+[data-theme="light"] .settings-nav-btn--active-danger {
+  border-color: rgba(220, 38, 38, 0.3);
+  background: rgba(220, 38, 38, 0.08);
+  color: var(--danger);
+}
+
+[data-theme="light"] .settings-nav-btn--inactive-danger {
+  color: rgba(220, 38, 38, 0.7);
+}
+
+[data-theme="light"] .settings-preference-card--accent {
+  border-color: rgba(9, 105, 218, 0.2);
+  background:
+    linear-gradient(135deg, rgba(9, 105, 218, 0.06), rgba(13, 148, 136, 0.04)),
+    rgba(250, 250, 251, 0.78);
+}
+
+@media (max-width: 520px) {
+
+  .settings-appearance-preview-body {
+    grid-template-columns: 1fr;
+  }
+}
