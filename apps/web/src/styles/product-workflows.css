@@ -1,0 +1,562 @@
+/**
+ * Workflow studio surface: the setup and current tabs, the builder, the
+ * pipeline diagram and flow explainer chrome.
+ * 
+ * Rules that also style another surface in the same selector stayed in
+ * globals.css. Extracted one surface at a time; see src/features/README.md.
+ */
+
+[data-theme="light"] .flow-bg {
+  opacity: 0.18;
+}
+
+/* ── Pipeline dots ───────────────────────────────────────────── */
+[data-theme="light"] .pipeline-dot {
+  background: rgba(0, 0, 0, 0.12);
+  border-color: rgba(0, 0, 0, 0.2);
+}
+
+.workflow-surface {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.pipeline-dot {
+  width: 0.7rem;
+  height: 0.7rem;
+  border-radius: 50%;
+  background: rgba(31, 111, 235, 0.15);
+  border: 1px solid rgba(31, 111, 235, 0.3);
+  flex-shrink: 0;
+}
+
+/* ── Latest-run header widget: dots colored by real StageStatus ──────────── */
+.pipeline-dot--success {
+  background: var(--success);
+  border-color: var(--success);
+  box-shadow: 0 0 6px rgba(16, 185, 129, 0.4);
+}
+
+.pipeline-dot--failure {
+  background: var(--danger);
+  border-color: var(--danger);
+  box-shadow: 0 0 6px rgba(239, 68, 68, 0.4);
+}
+
+.pipeline-dot--running {
+  background: var(--accent-amber);
+  border-color: var(--accent-amber);
+  box-shadow: 0 0 6px rgba(245, 158, 11, 0.4);
+  animation: flowPulse 1.6s ease-in-out infinite;
+}
+
+.pipeline-dot--cancelled {
+  background: var(--text-muted);
+  border-color: var(--text-muted);
+  opacity: 0.55;
+}
+
+/* pending keeps the muted base .pipeline-dot look */
+
+
+@media (prefers-reduced-motion: reduce) {
+  .pipeline-dot--running {
+    animation: none;
+  }
+}
+
+@media (max-width: 860px) {
+  .pipeline-section-content {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+
+  .workflow-surface {
+    overflow-x: hidden;
+  }
+}
+
+/* ── Workflow studio page header (Workflows page) ─────────────────────────── */
+.workflow-page-header {
+  padding: 1.75rem var(--layout-gutter) 1.25rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 1rem;
+  flex-wrap: wrap;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  background: linear-gradient(
+    180deg,
+    var(--surface-brand) 0%,
+    transparent 100%
+  );
+}
+
+.workflow-page-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0 0 0.3rem;
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--brand);
+}
+
+.workflow-page-breadcrumb-sep {
+  opacity: 0.4;
+}
+
+.workflow-page-studio-badge {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.85rem;
+  background: rgba(17, 17, 22, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 0.65rem;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+.workflow-page-signal-strip {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(9rem, 1fr));
+  gap: 0.6rem;
+  width: min(100%, 45rem);
+}
+
+.workflow-page-signal-strip > div {
+  min-width: 0;
+  padding: 0.65rem 0.8rem;
+  border: 1px solid var(--border-soft);
+  border-radius: 0.7rem;
+  background:
+    linear-gradient(135deg, rgba(88, 166, 255, 0.06), rgba(45, 212, 191, 0.035)),
+    rgba(17, 17, 22, 0.42);
+}
+
+.workflow-page-signal-strip strong {
+  display: block;
+  color: var(--text-primary);
+  font-size: 0.8rem;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 860px) {
+
+  .workflow-page-signal-strip {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ════════════════════════════════════════════════════════════════════════════
+   PIPELINE LOADER — full-screen branded loading state
+   ════════════════════════════════════════════════════════════════════════════ */
+
+.pipeline-loader-shell {
+  position: fixed;
+  inset: 0;
+  isolation: isolate;
+  display: grid;
+  place-items: center;
+  min-height: 100dvh;
+  padding: 0;
+  overflow: hidden;
+  background: #17171f;
+}
+
+.pipeline-loader-shell::before {
+  position: absolute;
+  inset: -24%;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    repeating-radial-gradient(
+      ellipse 88% 34% at 50% 100%,
+      rgba(88, 166, 255, 0.13) 0 1px,
+      transparent 2px 38px
+    ),
+    radial-gradient(
+      ellipse 66% 44% at 50% 78%,
+      rgba(88, 166, 255, 0.12),
+      transparent 68%
+    );
+  content: "";
+  opacity: 0.72;
+  animation: pipeline-loader-wave 12s ease-in-out infinite alternate;
+}
+
+.pipeline-loader-dither {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  image-rendering: pixelated;
+  opacity: 0.72;
+  -webkit-mask-image: radial-gradient(
+    ellipse 110% 88% at 50% 58%,
+    #000 0%,
+    rgba(0, 0, 0, 0.7) 58%,
+    transparent 100%
+  );
+  mask-image: radial-gradient(
+    ellipse 110% 88% at 50% 58%,
+    #000 0%,
+    rgba(0, 0, 0, 0.7) 58%,
+    transparent 100%
+  );
+}
+
+.pipeline-loader-center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: min(100%, 34rem);
+  min-height: 100dvh;
+  gap: 1rem;
+  padding: clamp(2rem, 7vw, 4rem);
+  position: relative;
+  z-index: 1;
+  text-align: center;
+}
+
+.pipeline-loader-mark {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 0.5rem;
+}
+
+.pipeline-loader-logo-frame {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: clamp(15rem, 34vw, 21rem);
+  min-height: clamp(5.5rem, 12vw, 7.25rem);
+  padding: clamp(1.15rem, 3vw, 1.65rem) clamp(1.5rem, 4vw, 2.4rem);
+  border: 1px solid rgba(162, 162, 172, 0.2);
+  border-radius: 28px;
+  background: color-mix(in srgb, var(--surface) 78%, transparent);
+  box-shadow:
+    0 24px 80px rgba(17, 17, 22, 0.18),
+    0 0 42px rgba(88, 166, 255, 0.16);
+  backdrop-filter: blur(18px);
+}
+
+.pipeline-loader-logo-image {
+  display: block;
+  width: min(100%, 220px);
+  height: auto;
+  object-fit: contain;
+}
+
+.pipeline-loader-copy {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.pipeline-loader-label {
+  font-size: clamp(1rem, 2.4vw, 1.18rem);
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+  letter-spacing: 0;
+}
+
+.pipeline-loader-subtitle {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.88rem;
+  font-weight: 500;
+}
+
+.pipeline-loader-progress {
+  width: min(16rem, 54vw);
+  height: 3px;
+  margin-top: 0.55rem;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--loader-track-faint);
+  transform-origin: center;
+}
+
+.pipeline-loader-progress-bar {
+  display: block;
+  width: 42%;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    var(--brand) 34%,
+    var(--accent-teal) 100%
+  );
+  box-shadow: 0 0 18px rgba(88, 166, 255, 0.42);
+}
+
+@media (max-width: 560px) {
+  .pipeline-loader-logo-frame {
+    width: min(100%, 17rem);
+    min-height: 5.5rem;
+    border-radius: 22px;
+  }
+
+  .pipeline-loader-progress {
+    width: min(15rem, 68vw);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pipeline-loader-logo-frame,
+  .pipeline-loader-progress-bar {
+    box-shadow: none;
+  }
+
+  .pipeline-loader-shell::before {
+    animation: none;
+  }
+}
+
+/* ════════════════════════════════════════════════════════════════════════════
+   WORKFLOW PAGE HEADER — compact single-band version
+   ════════════════════════════════════════════════════════════════════════════ */
+
+.workflow-page-header--compact {
+  padding: 0.9rem var(--layout-gutter) 0.8rem !important;
+}
+
+.workflow-page-header-left {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.workflow-page-title-row {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.workflow-page-title {
+  font-size: clamp(1.4rem, 2.5vw, 1.85rem);
+  margin: 0;
+  letter-spacing: -0.025em;
+  font-weight: 800;
+  color: var(--text-primary);
+  font-family: var(--font-dash-display, inherit);
+}
+
+.workflow-studio-led {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--success);
+  box-shadow: 0 0 6px rgba(52, 211, 153, 0.5);
+  animation: flowPulse 2s ease-in-out infinite;
+  flex-shrink: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .workflow-studio-led {
+    animation: none;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   FLOW EXPLAINER — shared "how ALPHACI works" visual (modal, guide, empty state)
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.flow-explainer {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.flow-explainer__heading {
+  margin: 0;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.flow-explainer__stages {
+  display: flex;
+  align-items: flex-start;
+  gap: 0;
+  flex-wrap: wrap;
+}
+
+.flow-explainer__stage-wrap {
+  display: flex;
+  align-items: center;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.flow-explainer__stage {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.3rem;
+  padding: 0.65rem 0.8rem;
+  border-radius: 0.6rem;
+  background: rgba(88, 166, 255, 0.04);
+  border: 1px solid rgba(88, 166, 255, 0.12);
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.flow-explainer__stage-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.6rem;
+  height: 1.6rem;
+  border-radius: 50%;
+  background: rgba(88, 166, 255, 0.12);
+  border: 1px solid rgba(88, 166, 255, 0.3);
+  color: var(--brand);
+  flex-shrink: 0;
+}
+
+.flow-explainer__stage-label {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.flow-explainer__stage-desc {
+  font-size: 0.76rem;
+  line-height: 1.45;
+  color: var(--text-secondary);
+}
+
+.flow-explainer__connector {
+  flex: 0 0 auto;
+  width: clamp(16px, 3vw, 40px);
+  height: 2px;
+  margin: 0 0.35rem;
+  background: linear-gradient(90deg, var(--brand), var(--success));
+  border-radius: 1px;
+  opacity: 0.55;
+  align-self: center;
+}
+
+.flow-explainer__promotion {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.flow-explainer__rung-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.flow-explainer__rung {
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  padding: 0.25rem 0.65rem;
+  border-radius: 0.4rem;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border-strong);
+}
+
+.flow-explainer__rung-arrow {
+  color: var(--text-muted);
+  font-size: 0.8rem;
+}
+
+.flow-explainer__deploy-note {
+  margin: 0;
+  font-size: 0.8rem;
+  line-height: 1.55;
+  color: var(--text-secondary);
+}
+
+.flow-explainer__deploy-note strong {
+  color: var(--text-primary);
+  font-weight: 650;
+}
+
+@media (max-width: 640px) {
+  .flow-explainer__stages {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .flow-explainer__stage-wrap {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .flow-explainer__connector {
+    width: 2px;
+    height: 16px;
+    margin: 0.3rem 0 0.3rem 1.4rem;
+    background: linear-gradient(180deg, var(--brand), var(--success));
+  }
+}
+
+/* ── Calm blue product surfaces ─────────────────────────────────────────── */
+
+.flow-bg--calm {
+  background: #1d1d28 !important;
+}
+
+.flow-bg__calm-surface {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(
+      circle at 82% -8%,
+      rgba(88, 166, 255, 0.2),
+      transparent 36rem
+    ),
+    linear-gradient(180deg, #2a2a38 0%, #1d1d28 46%, #191923 100%);
+}
+
+.flow-bg__calm-surface::after {
+  position: absolute;
+  inset: 0;
+  background-image: linear-gradient(
+    rgba(162, 162, 172, 0.035) 1px,
+    transparent 1px
+  );
+  background-size: 100% 48px;
+  content: "";
+  mask-image: linear-gradient(to bottom, black, transparent 70%);
+}
+
+[data-theme="light"] .flow-bg--calm {
+  background: #f2f2f5 !important;
+}
+
+[data-theme="light"] .flow-bg__calm-surface {
+  background:
+    radial-gradient(
+      circle at 82% -8%,
+      rgba(31, 111, 235, 0.1),
+      transparent 32rem
+    ),
+    linear-gradient(180deg, #f7f7f9 0%, #f1f1f4 100%);
+}
