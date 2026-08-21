@@ -1,0 +1,89 @@
+/**
+ * Element-level base rules: the box-sizing reset, html and body, headings,
+ * form controls and the shared focus ring.
+ * 
+ * Imported first. These are element selectors, specificity 0,0,x, so every class
+ * rule in the app already outranks them regardless of order — which is what makes
+ * the position safe. src/shared/styles/reset.css keeps the true reset; this file
+ * is the element styling layered on top of it.
+ */
+
+* {
+  box-sizing: border-box;
+}
+
+/* html holds the fallback dark background so FlowBackground (z-index:-1) never
+   uncovers a white flash before React hydrates */
+html {
+  background: var(--bg-base);
+}
+
+body {
+  margin: 0;
+  min-height: 100dvh;
+  color: var(--text-primary);
+  font-family: "Manrope", var(--font-body), sans-serif;
+  background: transparent;
+  line-height: 1.65;
+  letter-spacing: 0.015em;
+}
+
+h1,
+h2,
+h3 {
+  font-family: "Sora", var(--font-display), sans-serif;
+  margin: 0;
+  color: var(--text-primary);
+  line-height: 1.15;
+  letter-spacing: -0.025em;
+  font-weight: 700;
+}
+
+input,
+select,
+textarea {
+  width: 100%;
+  /* Readability cap: text fields shouldn't stretch the full width of
+     wide enterprise panels. Checkboxes/radios opt out (they set their
+     own explicit sizing in more specific rules). */
+  max-width: var(--input-measure, 32rem);
+  border: 1px solid var(--border-strong);
+  border-radius: 0.5rem;
+  font-size: 16px;
+  color: var(--text-primary);
+  background: var(--bg-panel);
+  padding: 0.56rem 0.72rem;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+input[type="checkbox"],
+input[type="radio"] {
+  max-width: none;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--text-muted);
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  outline: none;
+  border-color: var(--brand-strong);
+  box-shadow: 0 0 0 2px rgba(31, 111, 235, 0.28);
+}
+
+button:focus-visible,
+a:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
+/* Select dark option */
+select option {
+  background: var(--bg-panel);
+  color: var(--text-primary);
+}

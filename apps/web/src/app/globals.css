@@ -2,6 +2,7 @@
 @import "../shared/styles/tokens.css";
 @import "../shared/styles/reset.css";
 @import "../shared/styles/typography.css";
+@import "../styles/base.css";
 @import "../styles/keyframes.css";
 @import "../styles/theme.css";
 @import "../styles/auth.css";
@@ -17,6 +18,7 @@
 @import "../styles/app-shell.css";
 @import "../styles/hierarchy.css";
 @import "../styles/admin.css";
+@import "../styles/components.css";
 
 /* ── Light mode component overrides ────────────────────────────── */
 html[data-theme="light"] {
@@ -59,53 +61,6 @@ html[data-theme="light"] {
   --font-sans: var(--font-body);
 }
 
-* {
-  box-sizing: border-box;
-}
-
-/* html holds the fallback dark background so FlowBackground (z-index:-1) never
-   uncovers a white flash before React hydrates */
-html {
-  background: var(--bg-base);
-}
-
-body {
-  margin: 0;
-  min-height: 100dvh;
-  color: var(--text-primary);
-  font-family: "Manrope", var(--font-body), sans-serif;
-  background: transparent;
-  line-height: 1.65;
-  letter-spacing: 0.015em;
-}
-
-h1,
-h2,
-h3 {
-  font-family: "Sora", var(--font-display), sans-serif;
-  margin: 0;
-  color: var(--text-primary);
-  line-height: 1.15;
-  letter-spacing: -0.025em;
-  font-weight: 700;
-}
-
-/* ── Skip-to-content ───────────────────────────────────────────────────── */
-.skip-link {
-  position: absolute;
-  top: -100%;
-  left: 0;
-  background: var(--brand);
-  color: #fff;
-  padding: 0.5rem 1rem;
-  font-weight: 700;
-  z-index: 9999;
-  border-radius: 0 0 0.5rem 0;
-}
-.skip-link:focus {
-  top: 0;
-}
-
 /* ── Shell layouts ─────────────────────────────────────────────────────── */
 .flow-shell,
 
@@ -114,41 +69,9 @@ h3 {
   width: 100%;
 }
 
-.page-shell {
-  max-width: none;
-  padding-inline: 0;
-  padding-block: 0;
-}
-
 .flow-shell.page-shell {
   padding: 0;
   gap: 0;
-}
-
-.state-body {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: var(--layout-gutter);
-  min-height: 55vh;
-}
-
-.state-card {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
-  gap: 1.4rem;
-  max-width: 440px;
-  width: 100%;
-  padding: 2.75rem 2.5rem 2.25rem;
-  background: var(--bg-surface);
-  border: 1px solid var(--border-strong);
-  border-radius: 1.25rem;
-  box-shadow:
-    var(--shadow-elevated),
-    0 0 60px rgba(31, 111, 235, 0.05);
 }
 
 .state-card h1 {
@@ -166,26 +89,6 @@ h3 {
   margin: 0;
   line-height: 1.6;
   max-width: 34ch;
-}
-
-.state-icon {
-  width: 3.25rem;
-  height: 3.25rem;
-  border-radius: 0.875rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-
-
-.glass-panel {
-  background: rgba(10, 10, 10, 0.4);
-  border: 0.5px solid rgba(255, 255, 255, 0.05);
-  backdrop-filter: blur(24px) saturate(150%);
-  -webkit-backdrop-filter: blur(24px) saturate(150%);
-  border-radius: var(--radius-card);
-  box-shadow: 0 4px 12px 0 rgba(0, 0, 0, 0.15);
 }
 
 .page-shell .glass-panel {
@@ -230,16 +133,6 @@ h3 {
   .landing-page-shell .scroll-hint-arrow {
     display: none !important;
   }
-}
-
-/* ── Glass panels ─────────────────────────────────────────────────────── */
-.glass-panel {
-  background: rgba(17, 17, 22, 0.4);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(24px) saturate(150%);
-  -webkit-backdrop-filter: blur(24px) saturate(150%);
-  border-radius: var(--radius-card);
-  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
 }
 
 .page-shell .glass-panel {
@@ -311,15 +204,6 @@ h3 {
   justify-content: center;
 }
 
-
-.hero-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.75rem;
-  align-items: center;
-  justify-content: center;
-}
-
 /* ── Value / KPI / Action grids ─────────────────────────────────────────── */
 .value-grid,
 .kpi-grid,
@@ -379,69 +263,11 @@ h3 {
   letter-spacing: -0.01em;
 }
 
-.primary-button {
-  color: #ffffff;
-  background: var(--brand);
-  box-shadow: 0 1px 2px rgba(31, 111, 235, 0.3);
-}
-
-.primary-button:hover {
-  background: var(--brand-strong);
-  transform: translateY(-2px);
-  box-shadow:
-    0 0 24px rgba(121, 192, 255, 0.5),
-    0 8px 16px rgba(0, 0, 0, 0.4);
-}
-
-.primary-button:active {
-  transform: scale(0.98);
-}
-
-.primary-button:focus-visible {
-  outline: 2px solid var(--brand);
-  outline-offset: 2px;
-}
-
-.ghost-button {
-  border-color: var(--border-strong);
-  background: transparent;
-  color: var(--text-secondary);
-  font-weight: 500;
-}
-
-.ghost-button:hover {
-  transform: translateY(-2px);
-  border-color: var(--brand);
-  color: var(--text-primary);
-  background: var(--brand-light);
-  box-shadow:
-    0 8px 16px rgba(0, 0, 0, 0.3),
-    0 0 12px rgba(121, 192, 255, 0.1);
-}
-
-.ghost-button:active {
-  transform: scale(0.98);
-}
-
-.ghost-button:focus-visible {
-  outline: 2px solid var(--brand);
-  outline-offset: 2px;
-}
-
 .primary-button:disabled,
 .ghost-button:disabled {
   cursor: not-allowed;
   opacity: 0.45;
   transform: none;
-}
-
-
-.eyebrow {
-  margin: 0;
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
-  color: var(--text-muted);
-  font-size: 0.73rem;
 }
 
 
@@ -521,68 +347,6 @@ h3 {
 .tab-content-panel h2 {
   margin: 0 0 0.65rem;
   font-size: 1.12rem;
-  color: var(--text-primary);
-}
-
-
-/* ── Inputs ──────────────────────────────────────────────────────────────── */
-.input-label {
-  display: block;
-  margin-top: 0.72rem;
-  margin-bottom: 0.3rem;
-  font-size: 0.8rem;
-  color: var(--text-muted);
-  font-family: ui-monospace, monospace;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-}
-
-input,
-select,
-textarea {
-  width: 100%;
-  /* Readability cap: text fields shouldn't stretch the full width of
-     wide enterprise panels. Checkboxes/radios opt out (they set their
-     own explicit sizing in more specific rules). */
-  max-width: var(--input-measure, 32rem);
-  border: 1px solid var(--border-strong);
-  border-radius: 0.5rem;
-  font-size: 16px;
-  color: var(--text-primary);
-  background: var(--bg-panel);
-  padding: 0.56rem 0.72rem;
-  transition:
-    border-color 0.15s ease,
-    box-shadow 0.15s ease;
-}
-
-input[type="checkbox"],
-input[type="radio"] {
-  max-width: none;
-}
-
-input::placeholder,
-textarea::placeholder {
-  color: var(--text-muted);
-}
-
-input:focus,
-select:focus,
-textarea:focus {
-  outline: none;
-  border-color: var(--brand-strong);
-  box-shadow: 0 0 0 2px rgba(31, 111, 235, 0.28);
-}
-
-button:focus-visible,
-a:focus-visible {
-  outline: 2px solid var(--brand);
-  outline-offset: 2px;
-}
-
-/* Select dark option */
-select option {
-  background: var(--bg-panel);
   color: var(--text-primary);
 }
 
@@ -717,59 +481,6 @@ select option {
   color: #ff8b8b;
 }
 
-.skeleton-card {
-  border: 1px solid var(--border);
-  border-radius: var(--radius-card);
-  background: var(--bg-surface);
-  animation: skeletonPulse 1.6s ease-in-out infinite;
-  min-height: 8rem;
-}
-
-
-/* ── Error inline row (message + retry) ──────────────────────────────────── */
-.error-inline {
-  display: flex;
-  align-items: center;
-  gap: 0.55rem;
-  padding: 0.55rem 0.74rem;
-  border-radius: 0.84rem;
-  border: 1px solid rgba(255, 79, 79, 0.3);
-  color: #ff8b8b;
-  background: rgba(255, 79, 79, 0.08);
-  font-size: 0.86rem;
-  margin-top: 0.75rem;
-}
-
-.error-inline-icon {
-  flex-shrink: 0;
-  font-style: normal;
-  font-size: 1rem;
-}
-
-.error-inline-msg {
-  flex: 1;
-  margin: 0;
-}
-
-.error-retry-btn {
-  flex-shrink: 0;
-  padding: 0.25rem 0.65rem;
-  border-radius: 0.55rem;
-  border: 1px solid rgba(255, 79, 79, 0.3);
-  background: transparent;
-  color: #ff8b8b;
-  font-size: 0.78rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition:
-    background 0.15s ease,
-    border-color 0.15s ease;
-}
-.error-retry-btn:hover {
-  background: rgba(255, 79, 79, 0.1);
-  border-color: #ff4f4f;
-}
-
 
 /* ── Status banner prefix icons ──────────────────────────────────────────── */
 .status-banner.success::before {
@@ -866,15 +577,6 @@ select option {
   color: var(--success);
 }
 
-
-/* ── Welcome banner split ───────────────────────────────────────────────── */
-.welcome-banner-split {
-  display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 2rem;
-  align-items: start;
-}
-
 @media (max-width: 760px) {
   .welcome-banner-split {
     grid-template-columns: 1fr;
@@ -884,18 +586,6 @@ select option {
 .welcome-banner-split > *:first-child {
   border-left: 3px solid var(--brand);
   padding-left: 1.5rem;
-}
-
-/* ── File-path label ────────────────────────────────────────────────────── */
-.file-path-label {
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 0.72rem;
-  color: var(--text-muted);
-  letter-spacing: 0.06em;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.3rem;
-  margin: 0;
 }
 
 .file-path-label::before {
@@ -916,17 +606,6 @@ select option {
 }
 
 
-.stat-label {
-  font-size: 0.68rem;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  color: var(--text-muted);
-  font-family: ui-monospace, monospace;
-  margin-top: 0.35rem;
-  display: block;
-}
-
-
 @media (max-width: 700px) {
   .features-strip {
     grid-template-columns: 1fr;
@@ -937,53 +616,9 @@ select option {
   }
 }
 
-
-/* ── Branch chips ─────────────────────────────────────────────────────────── */
-.branch-chip {
-  display: inline-flex;
-  align-items: center;
-  padding: 0.15rem 0.55rem;
-  border-radius: 999px;
-  background: rgba(31, 111, 235, 0.1);
-  border: 1px solid rgba(31, 111, 235, 0.25);
-  font-size: 0.72rem;
-  font-family: ui-monospace, monospace;
-  color: var(--brand);
-  letter-spacing: 0.02em;
-}
-
-/* ── Guest mode ──────────────────────────────────────────────────────────── */
-.guest-banner {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  flex-wrap: wrap;
-  padding: 0.65rem clamp(1.5rem, 4vw, 3rem);
-  background: rgba(31, 111, 235, 0.08);
-  border-bottom: 1px solid rgba(31, 111, 235, 0.15);
-  width: 100%;
-}
-
-.guest-banner-text {
-  font-size: 0.85rem;
-  color: var(--brand);
-  font-weight: 500;
-  margin: 0;
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-}
-
 .guest-banner-text::before {
   content: "↳";
   font-size: 0.9em;
-}
-
-.guest-banner-actions {
-  display: flex;
-  gap: 0.5rem;
-  flex-shrink: 0;
 }
 
 
@@ -996,13 +631,6 @@ select option {
 
 .pricing-comparison-check.active {
   color: var(--brand);
-}
-
-.generate-workflow-row {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-  margin-top: 0.5rem;
 }
 
 .generate-workflow-row .ghost-button {
@@ -1118,37 +746,10 @@ select option {
   border: 1px solid color-mix(in srgb, var(--text-muted) 25%, transparent);
 }
 
-
-.inline-link {
-  color: var(--brand);
-  text-decoration: underline;
-  text-decoration-color: rgba(88, 166, 255, 0.4);
-  text-underline-offset: 2px;
-  transition:
-    color 0.15s ease,
-    text-decoration-color 0.15s ease;
-}
-
 .inline-link:hover,
 .inline-link:focus-visible {
   color: var(--text-primary);
   text-decoration-color: var(--brand);
-}
-
-.inline-link:focus-visible {
-  outline: 2px solid var(--brand);
-  outline-offset: 2px;
-  border-radius: 0.2rem;
-}
-
-
-/* ── Sub-tab pills (inside current tab) ───────────────────────────────────────── */
-.subtab-bar {
-  display: flex;
-  align-items: center;
-  gap: 0.3rem;
-  margin-bottom: 1.25rem;
-  flex-wrap: wrap;
 }
 
 
@@ -1158,73 +759,12 @@ select option {
   color: var(--brand);
 }
 
-.controls-panel-rule {
-  height: 1px;
-  background: var(--border);
-  border: none;
-  margin: 1rem 0;
-}
-
-.controls-panel-section {
-  display: flex;
-  flex-direction: column;
-  gap: 0.1rem;
-}
-
-/* Enhancement chips (compact toggle pills) */
-.enhancement-chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.4rem;
-  margin: 0.75rem 0;
-}
-
-.enhancement-chip-label {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  padding: 0.35rem 0.75rem;
-  border-radius: var(--radius-pill);
-  border: 1px solid var(--border-strong);
-  background: var(--bg-panel);
-  color: var(--text-secondary);
-  font-size: 0.78rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition:
-    background 0.15s,
-    border-color 0.15s,
-    color 0.15s;
-  user-select: none;
-  line-height: 1;
-}
-
-.enhancement-chip-label:has(input:checked) {
-  background: var(--brand-light);
-  border-color: var(--border-brand);
-  color: var(--brand);
-}
-
-.enhancement-chip-label:has(input:disabled) {
-  opacity: 0.45;
-  cursor: not-allowed;
-}
-
 .enhancement-chip-label input[type="checkbox"] {
   position: absolute;
   opacity: 0;
   width: 0;
   height: 0;
   pointer-events: none;
-}
-
-.enhancement-chip-dot {
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
-  background: var(--text-muted);
-  flex-shrink: 0;
-  transition: background 0.15s;
 }
 
 .enhancement-chip-label:has(input:checked) .enhancement-chip-dot {
@@ -1285,17 +825,6 @@ select option {
 .dash-shell .command-item:hover {
   border-color: var(--border-brand);
   background: var(--brand-light);
-}
-
-
-/* Selected-group sub-tabs on the left, destructive actions (delete) on the
- * right. Wraps on narrow widths so the delete button drops below the tabs. */
-.group-workspace-toolbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem;
-  flex-wrap: wrap;
 }
 
 /* Right-size buttons inside the dense management surfaces. The global
@@ -1389,21 +918,6 @@ select option {
 .project-inner-tab.active {
   color: var(--brand);
   border-bottom-color: var(--brand);
-}
-
-/* Secondary actions: Dashboard link */
-.target-actions-secondary {
-  display: flex;
-  gap: 0.35rem;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-}
-
-/* Small ghost button inside target action rows */
-.target-action-btn {
-  min-height: 2rem;
-  padding: 0.35rem 0.7rem;
-  font-size: 0.76rem;
 }
 
 .latest-result-banner__eyebrow {
@@ -1677,23 +1191,6 @@ select option {
   }
 }
 
-/* ── Guest banner enhanced ───────────────────────────────────────────────── */
-.guest-banner-enhanced {
-  background: linear-gradient(
-    135deg,
-    rgba(88, 166, 255, 0.08) 0%,
-    rgba(17, 17, 22, 0.6) 100%
-  );
-  border: 1px solid rgba(88, 166, 255, 0.2);
-  border-radius: 1rem;
-  padding: 1rem var(--layout-gutter);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 1rem;
-}
-
 /* ── Sign out hover (danger color on hover via JS — no CSS override needed) */
 
 /* ── Responsive overflow fixes ───────────────────────────────────────────── */
@@ -1745,14 +1242,6 @@ select option {
   word-break: break-all;
 }
 
-/* ── Kinetic chip — active glow ─────────────────── */
-.enhancement-chip-label--active {
-  border: 1px solid rgba(88, 166, 255, 0.6) !important;
-  box-shadow:
-    0 0 10px rgba(88, 166, 255, 0.28),
-    inset 0 0 6px rgba(88, 166, 255, 0.06) !important;
-}
-
 /* ── KINETIC EDITORIAL HERO ────────────────────────────────────────── */
 
 /* Grid/flex items default to min-width:auto, so the right-column dashboard
@@ -1778,40 +1267,6 @@ select option {
     letter-spacing: -0.02em;
   }
 }
-
-/* ══════════════════════════════════════════════════════════════════════════
-   CREATE PROJECT REDESIGN — flat 2-column layout, no container boxes
-   ══════════════════════════════════════════════════════════════════════════ */
-
-
-/* premium-input: clean, slightly softer radius for create-project fields */
-.premium-input {
-  border-radius: 6px;
-  font-size: 0.875rem;
-}
-
-/* enhancement-chip-label-premium: pill toggle chips for workflow checks */
-.enhancement-chip-label-premium {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  padding: 0.35rem 0.75rem;
-  border-radius: var(--radius-pill);
-  border: 1px solid var(--border-strong);
-  background: var(--bg-panel);
-  color: var(--text-secondary);
-  font-size: 0.78rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition:
-    background 0.15s,
-    border-color 0.15s,
-    color 0.15s,
-    box-shadow 0.15s;
-  user-select: none;
-  line-height: 1;
-}
 .enhancement-chip-label-premium input[type="checkbox"] {
   position: absolute;
   opacity: 0;
@@ -1836,20 +1291,6 @@ select option {
 .enhancement-chip-label-premium.disabled {
   opacity: 0.45;
   cursor: not-allowed;
-}
-
-/* Section heading with trailing rule */
-.cp-section-heading {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  font-size: 0.63rem;
-  font-weight: 700;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--text-muted);
-  margin: 0 0 0.9rem;
-  white-space: nowrap;
 }
 .cp-section-heading::after {
   content: "";
@@ -1929,41 +1370,8 @@ select option {
     opacity: 1;
   }
 }
-
-
-/* ── Confirm action buttons ───────────────────────────────────────────────── */
-.confirm-btn-danger {
-  padding: 0.3rem 0.7rem;
-  font-size: 0.72rem;
-  font-weight: 600;
-  border-radius: 5px;
-  border: 1px solid rgba(248, 113, 113, 0.4);
-  background: rgba(248, 113, 113, 0.1);
-  color: var(--danger);
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
 .confirm-btn-danger:hover:not(:disabled) {
   background: rgba(248, 113, 113, 0.18);
-}
-.confirm-btn-danger:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.confirm-btn-neutral {
-  padding: 0.3rem 0.7rem;
-  font-size: 0.72rem;
-  border-radius: 5px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  background: transparent;
-  color: var(--text-secondary);
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-.confirm-btn-neutral:hover {
-  border-color: rgba(255, 255, 255, 0.2);
-  color: var(--text-primary);
 }
 
 .workflow-page-signal-strip span,
@@ -1998,15 +1406,6 @@ select option {
   .dash-panel-enter {
     animation: none;
   }
-}
-
-
-/* ── Route transition wrapper ─────────────────────────────────────────────── */
-/* Used by app/(dash)/template.tsx for page-level enter/exit */
-.page-transition-wrapper {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
 }
 
 /* ════════════════════════════════════════════════════════════════════════════
@@ -2094,45 +1493,6 @@ select option {
   }
 }
 
-
-/* ════════════════════════════════════════════════════════════════════════════
-   GITHUB APP STATUS BAR — compact inline strip (replaces old topbar-controls)
-   ════════════════════════════════════════════════════════════════════════════ */
-
-.gh-app-status-bar {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-  padding: 0.5rem var(--layout-gutter);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
-  flex-wrap: wrap;
-}
-
-.gh-app-status-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  font-size: 0.72rem;
-  font-weight: 600;
-  padding: 0.2rem 0.6rem;
-  border-radius: var(--radius-pill);
-}
-
-.gh-app-status-chip--warn {
-  background: var(--accent-amber-light);
-  color: var(--accent-amber);
-  border: 1px solid var(--border-amber);
-}
-
-.gh-app-status-dot {
-  display: inline-block;
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
-  background: currentColor;
-  flex-shrink: 0;
-}
-
 /* Full project pages share the studio header, but use a stable two-column
    composition so the operational signals read as part of the header instead
    of floating beside the project identity. */
@@ -2193,69 +1553,11 @@ select option {
   }
 }
 
-/* ═══════════════════════════════════════════════════════════════════════════
-   HELP TIP — accessible inline contextual help (replaces native title= hovers)
-   ═══════════════════════════════════════════════════════════════════════════ */
-
-.help-tip {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  vertical-align: middle;
-  margin-left: 0.35rem;
-}
-
-.help-tip__trigger {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 1.05rem;
-  height: 1.05rem;
-  padding: 0;
-  border-radius: 50%;
-  border: 1px solid var(--border-strong);
-  background: rgba(255, 255, 255, 0.03);
-  color: var(--text-muted);
-  cursor: help;
-  flex-shrink: 0;
-  transition:
-    color 0.15s ease,
-    border-color 0.15s ease,
-    background 0.15s ease;
-}
-
 .help-tip__trigger:hover,
 .help-tip__trigger:focus-visible {
   color: var(--brand);
   border-color: var(--brand);
   background: var(--brand-light);
-}
-
-.help-tip__trigger:focus-visible {
-  outline: 2px solid var(--brand);
-  outline-offset: 2px;
-}
-
-.help-tip__bubble {
-  position: absolute;
-  bottom: calc(100% + 0.45rem);
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 30;
-  width: max-content;
-  max-width: 15rem;
-  padding: 0.5rem 0.65rem;
-  border-radius: 0.5rem;
-  background: rgba(8, 12, 24, 0.96);
-  border: 1px solid var(--border-strong);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
-  font-size: 0.74rem;
-  line-height: 1.45;
-  font-weight: 400;
-  text-transform: none;
-  letter-spacing: normal;
-  color: var(--text-secondary);
-  pointer-events: none;
 }
 
 @media (max-width: 480px) {
@@ -2279,11 +1581,6 @@ select option {
   .app-sidebar:hover .sidebar-nav-count {
     opacity: 0;
   }
-}
-
-/* Nav item wrapper (motion.div) */
-.sidebar-nav-item-wrapper {
-  width: 100%;
 }
 
 .auth-shell-minimal .flow-bg__calm-surface {
@@ -2327,22 +1624,6 @@ select option {
   -webkit-backdrop-filter: none !important;
 }
 
-/* Let the Pipeline Runs title bar use the same full-width chrome as Workflows,
-   without changing the content gutter used by its run list. Only the
-   horizontal margin is negative (for the edge-to-edge bleed) — the vertical
-   margin is left alone so it doesn't cancel out the page's top padding and
-   pin the header flush to the very top of the viewport. */
-.workflow-page-header:has(.runs-page-header-left) {
-  width: calc(100% + (var(--layout-gutter) * 2));
-  margin: 0 calc(-1 * var(--layout-gutter));
-  padding-right: var(--layout-gutter);
-  padding-left: var(--layout-gutter);
-  border-right: 0;
-  border-left: 0;
-  border-radius: 0;
-  box-shadow: none;
-}
-
 .env-provisioned-variables__actions .ghost-button {
   min-height: 2rem;
   padding: 0.38rem 0.68rem;
@@ -2360,11 +1641,6 @@ select option {
 .dashboard-run-row .pipeline-dot { width: 0.45rem; height: 0.45rem; margin: 0; }
 .runs-empty:hover .dashboard-row-arrow { opacity: 1; transform: translateX(0); }
 .runs-empty .dashboard-row-arrow { color: var(--brand); }
-.ops-spark-bar--success { background: color-mix(in srgb, var(--success) 75%, transparent); }
-.ops-spark-bar--failure { background: color-mix(in srgb, var(--danger) 80%, transparent); }
-.ops-spark-bar--running { background: color-mix(in srgb, var(--accent-amber) 80%, transparent); }
-.ops-spark-bar--partial { background: color-mix(in srgb, var(--accent-violet) 75%, transparent); }
-.ops-spark-bar--cancelled { background: color-mix(in srgb, var(--text-muted) 45%, transparent); }
 
 @media (prefers-reduced-motion: reduce) {
   .run-card,
@@ -2389,58 +1665,6 @@ select option {
   .metric-cell--link,
   .runs-hero-chip,
   .ops-spark-bar { transition: none; }
-}
-
-
-/* ── Side tabs — a vertical rail beside its panel ─────────────────────────────
-   The section list is a second COLUMN rather than a strip above the content.
-   A strip has to stay short to fit the width; a column can carry grouped
-   headings, which is what turns five entries into a map of what a team has.
-
-   The rail is sticky so it survives scrolling a long section — which needs the
-   row to be `align-items: start`, because a stretched flex child is already as
-   tall as the scroll area and has nothing to stick to. */
-.group-workspace {
-  display: flex;
-  align-items: flex-start;
-  gap: 1.25rem;
-}
-
-/* ── The panel beside the rail ─────────────────────────────────────────────── */
-.group-workspace-panel {
-  flex: 1;
-  min-width: 0;
-}
-
-.group-workspace-panel:focus-visible {
-  outline: none;
-}
-
-.group-section-title {
-  margin: 0 0 0.9rem;
-  font-size: 1.05rem;
-  font-weight: 750;
-  letter-spacing: -0.015em;
-}
-
-.group-section-lede {
-  margin: 0;
-  color: var(--text-secondary);
-  font-size: 0.88rem;
-  line-height: 1.6;
-  max-width: 44rem;
-}
-
-.group-danger-zone {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  flex-wrap: wrap;
-  padding: 1rem 1.15rem;
-  border: 1px solid rgba(248, 113, 113, 0.22);
-  border-radius: 0.75rem;
-  background: rgba(248, 113, 113, 0.04);
 }
 
 .group-danger-zone strong {
@@ -2475,61 +1699,9 @@ select option {
   }
 }
 
-/* Blocking is the one the push will actually fail on, so it reads differently
-   from the informational notices rather than sharing their tone. */
-.existing-repo-notice--blocking {
-  border-color: rgba(248, 113, 113, 0.4);
-  background: rgba(248, 113, 113, 0.06);
-  color: #f87171;
-}
-
-/* ── Team workspace panel ───────────────────────────────────────────────────
-   One header row per section — name, count, and the single action that belongs
-   to it — then the section's content. Replaces a layout where the panel drew a
-   heading and the component inside drew its own.
-   ------------------------------------------------------------------------- */
-.group-section-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  flex-wrap: wrap;
-  margin-bottom: 1.1rem;
-}
-
 .group-section-head .group-section-title {
   display: flex;
   align-items: center;
   gap: 0.55rem;
   margin: 0;
-}
-
-.group-section-count {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 1.5rem;
-  height: 1.5rem;
-  padding: 0 0.45rem;
-  border-radius: 999px;
-  background: var(--surface-raised);
-  border: 1px solid var(--border-subtle);
-  color: var(--text-secondary);
-  font-size: 0.75rem;
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
-}
-
-/* The section action sits beside a heading, so it is sized to the heading —
-   not to a page-level call to action. The default .primary-button is built for
-   a hero and dwarfed everything around it here. */
-.group-section-action {
-  padding: 0.45rem 0.9rem;
-  min-height: 2.15rem;
-  font-size: 0.82rem;
-  border-radius: 0.55rem;
-  white-space: nowrap;
-  text-decoration: none;
-  display: inline-flex;
-  align-items: center;
 }
