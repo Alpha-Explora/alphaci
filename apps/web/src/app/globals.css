@@ -15,6 +15,8 @@
 @import "../styles/dashboard-projects.css";
 @import "../styles/dashboard-home.css";
 @import "../styles/app-shell.css";
+@import "../styles/hierarchy.css";
+@import "../styles/admin.css";
 
 /* ── Light mode component overrides ────────────────────────────── */
 html[data-theme="light"] {
@@ -121,21 +123,6 @@ h3 {
 .flow-shell.page-shell {
   padding: 0;
   gap: 0;
-}
-
-/* ── Admin console: use the same typography as the signed-in dashboard ──── */
-.admin-shell {
-  font-family: var(--font-dash-body), "Plus Jakarta Sans", sans-serif;
-  letter-spacing: 0;
-  line-height: 1.55;
-}
-
-.admin-shell h1,
-.admin-shell h2,
-.admin-shell h3,
-.admin-shell h4 {
-  font-family: var(--font-dash-display), "Outfit", sans-serif;
-  letter-spacing: -0.02em;
 }
 
 .state-body {
@@ -271,14 +258,6 @@ h3 {
     0 0 40px rgba(31, 111, 235, 0.1);
 }
 
-/* ── Section cards ─────────────────────────────────────────────────────── */
-.section-card {
-  background: transparent;
-  border: none;
-  box-shadow: none;
-  border-radius: 0;
-}
-
 /* ── Ambient / background layers ──────────────────────────────────────── */
 .flow-ambient,
 
@@ -327,49 +306,9 @@ h3 {
   color: var(--text-secondary);
 }
 
-.hero-kicker {
-  font-size: 0.72rem;
-  font-weight: 600;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--brand);
-  margin: 0;
-}
-
-.auth-header .hero-kicker {
-  font-weight: 700;
-}
-
 
 .landing-hero .hero-actions {
   justify-content: center;
-}
-
-/* ── Hero chips / pills ─────────────────────────────────────────────────── */
-.hero-chip {
-  margin: 0;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  border-radius: var(--radius-pill);
-  border: 1px solid var(--border-brand);
-  background: var(--brand-light);
-  color: var(--brand);
-  font-size: 0.85rem;
-  font-weight: 500;
-  letter-spacing: 0.01em;
-  padding: 0.4rem 1rem 0.4rem 0.75rem;
-  width: fit-content;
-}
-
-.hero-chip::before {
-  content: "";
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--brand);
-  animation: flowPulse 1.8s ease-in-out infinite;
-  flex-shrink: 0;
 }
 
 
@@ -379,13 +318,6 @@ h3 {
   gap: 0.75rem;
   align-items: center;
   justify-content: center;
-}
-
-
-/* ── Section headers ────────────────────────────────────────────────────── */
-.section-header {
-  display: grid;
-  gap: 0.3rem;
 }
 
 /* ── Value / KPI / Action grids ─────────────────────────────────────────── */
@@ -547,17 +479,6 @@ h3 {
   box-shadow: var(--shadow-soft);
 }
 
-
-/* ── Tab bar ─────────────────────────────────────────────────────────────── */
-.studio-tab-bar {
-  display: flex;
-  gap: 0;
-  padding: 0 var(--layout-gutter);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-  overflow-x: auto;
-  scrollbar-width: none;
-}
-
 .studio-tab-bar--enhanced {
   position: sticky;
   top: 0;
@@ -579,70 +500,8 @@ h3 {
     inset 0 1px 0 rgba(255, 255, 255, 0.04);
 }
 
-.studio-tab-bar::-webkit-scrollbar {
-  display: none;
-}
-
-/* Right-aligned cluster after the tabs (GitHub App status, etc.) */
-.studio-tab-trailing {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.75rem;
-  margin-left: auto;
-  padding-left: 1rem;
-  flex-shrink: 0;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-}
-
-.studio-tab-button {
-  min-height: 2.55rem;
-  padding: 0.65rem 1rem;
-  border: none;
-  border-bottom: 0;
-  background: transparent;
-  color: var(--text-secondary);
-  font-size: 0.92rem;
-  font-weight: 600;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.45rem;
-  transition:
-    color 0.2s ease,
-    border-color 0.2s ease;
-  white-space: nowrap;
-  border-radius: 0.65rem;
-  flex-shrink: 0;
-  position: relative;
-  z-index: 1;
-}
-
-.studio-tab-button:hover {
-  color: var(--text-primary);
-}
-
-.studio-tab-button:focus-visible {
-  outline: 2px solid var(--brand);
-  outline-offset: 2px;
-}
-
 .studio-tab-button.active {
   color: var(--brand);
-}
-
-.studio-tab-indicator {
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  border-radius: 0.65rem;
-  border: 1px solid rgba(88, 166, 255, 0.26);
-  background:
-    linear-gradient(135deg, rgba(88, 166, 255, 0.12), rgba(45, 212, 191, 0.08)),
-    rgba(88, 166, 255, 0.04);
-  box-shadow:
-    0 0 20px rgba(88, 166, 255, 0.12),
-    inset 0 0 0 1px rgba(255, 255, 255, 0.04);
 }
 
 
@@ -654,10 +513,6 @@ h3 {
   transition:
     border-color 0.2s ease,
     box-shadow 0.2s ease;
-}
-
-.controls-panel {
-  padding: 1.5rem 1.25rem;
 }
 
 .controls-panel h2,
@@ -771,76 +626,6 @@ select option {
   cursor: pointer;
 }
 
-.enhancement-option:has(input:checked) {
-  border-color: var(--border-brand);
-  background: var(--brand-light);
-}
-
-.enhancement-option input[type="checkbox"] {
-  appearance: none;
-  -webkit-appearance: none;
-  width: 2.2rem;
-  min-width: 2.2rem;
-  height: 1.25rem;
-  border-radius: var(--radius-pill);
-  background: var(--bg-elevated);
-  border: 1px solid var(--border-strong);
-  position: relative;
-  cursor: pointer;
-  flex-shrink: 0;
-  margin-top: 0.1rem;
-  transition:
-    background 0.2s ease,
-    border-color 0.2s ease;
-}
-
-.enhancement-option input[type="checkbox"]::before {
-  content: "";
-  position: absolute;
-  top: 50%;
-  left: 0.18rem;
-  transform: translateY(-50%);
-  width: 0.82rem;
-  height: 0.82rem;
-  border-radius: 50%;
-  background: var(--text-muted);
-  transition:
-    transform 0.2s cubic-bezier(0.4, 0, 0.2, 1),
-    background 0.2s ease;
-}
-
-.enhancement-option input[type="checkbox"]:checked {
-  background: var(--brand-light);
-  border-color: var(--brand);
-}
-
-.enhancement-option input[type="checkbox"]:checked::before {
-  transform: translateY(-50%) translateX(0.95rem);
-  background: var(--brand);
-}
-
-.enhancement-option input[type="checkbox"]:focus-visible {
-  outline: 2px solid var(--brand);
-  outline-offset: 2px;
-}
-
-.enhancement-option input[type="checkbox"]:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-}
-
-
-.enhancement-option span {
-  font-size: 0.91rem;
-  font-weight: 700;
-  color: var(--text-primary);
-}
-
-.enhancement-option small {
-  color: var(--text-secondary);
-  font-size: 0.78rem;
-}
-
 .enhancement-option.disabled-option {
   opacity: 0.5;
   cursor: not-allowed;
@@ -883,16 +668,6 @@ select option {
   background: rgba(255, 79, 79, 0.08);
 }
 
-
-.studio-tab-icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 14px;
-  height: 14px;
-  flex-shrink: 0;
-}
-
 .pipeline-dot.active {
   background: var(--brand-accent);
   border-color: var(--brand-accent);
@@ -922,22 +697,6 @@ select option {
 .pipeline-node.pending {
   background: rgba(54, 54, 66, 0.28); /* neutral slate — not yet run */
   border: 1.5px solid #74747f;
-}
-
-
-/* ── Status banners ──────────────────────────────────────────────────────── */
-.status-banner {
-  padding: 0.6rem 0.9rem;
-  border-radius: 8px;
-  font-size: 0.88rem;
-  font-weight: 600;
-  display: flex;
-  align-items: flex-start;
-  gap: 0.5rem;
-  line-height: 1.45;
-  white-space: normal;
-  overflow-wrap: anywhere;
-  word-break: normal;
 }
 
 .status-banner.success {
@@ -1127,22 +886,6 @@ select option {
   padding-left: 1.5rem;
 }
 
-/* ── Activity item ────────────────────────────────────────────────────────── */
-.activity-item {
-  display: flex;
-  align-items: center;
-  gap: 0.8rem;
-  padding: 0.65rem 0.9rem;
-  border-radius: 0.5rem;
-  background: var(--bg-surface);
-  border: 1px solid var(--border);
-  transition: border-color 0.15s;
-}
-
-.activity-item:hover {
-  border-color: var(--border-brand);
-}
-
 /* ── File-path label ────────────────────────────────────────────────────── */
 .file-path-label {
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
@@ -1181,28 +924,6 @@ select option {
   font-family: ui-monospace, monospace;
   margin-top: 0.35rem;
   display: block;
-}
-
-
-/* ── Section divider with label ─────────────────────────────────────────── */
-.section-divider {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  font-size: 0.72rem;
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
-  color: var(--text-muted);
-  font-family: ui-monospace, monospace;
-  margin: 0;
-}
-
-.section-divider::before,
-.section-divider::after {
-  content: "";
-  flex: 1;
-  height: 1px;
-  background: var(--border);
 }
 
 
@@ -1277,32 +998,6 @@ select option {
   color: var(--brand);
 }
 
-/* ── Create repo button ─────────────────────────────────────── */
-.create-repo-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  width: 100%;
-  min-height: 2.8rem;
-}
-
-.create-repo-btn svg {
-  flex-shrink: 0;
-  opacity: 0.85;
-}
-
-.btn-spinner {
-  display: inline-block;
-  width: 0.95rem;
-  height: 0.95rem;
-  border: 2px solid rgba(255, 255, 255, 0.3);
-  border-top-color: #fff;
-  border-radius: 50%;
-  animation: spin 0.75s linear infinite;
-  flex-shrink: 0;
-}
-
 .generate-workflow-row {
   display: flex;
   align-items: center;
@@ -1312,14 +1007,6 @@ select option {
 
 .generate-workflow-row .ghost-button {
   flex-shrink: 0;
-}
-
-.generate-workflow-hint {
-  font-size: 0.75rem;
-  color: var(--text-muted);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 
@@ -1471,18 +1158,6 @@ select option {
   color: var(--brand);
 }
 
-
-/* ── Left panel editorial treatment ─────────────────────────────────────────────── */
-.controls-panel-label {
-  font-size: 0.65rem;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--text-muted);
-  margin: 0 0 0.65rem;
-  display: block;
-}
-
 .controls-panel-rule {
   height: 1px;
   background: var(--border);
@@ -1554,20 +1229,6 @@ select option {
 
 .enhancement-chip-label:has(input:checked) .enhancement-chip-dot {
   background: var(--brand);
-}
-
-/* ── Compact form pair row ─────────────────────────────────────────────────────── */
-.form-pair-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0.6rem;
-  margin-bottom: 0.5rem;
-}
-
-@media (max-width: 600px) {
-  .form-pair-row {
-    grid-template-columns: 1fr;
-  }
 }
 
 .dash-shell .dash-tab-btn.active {
@@ -1730,35 +1391,11 @@ select option {
   border-bottom-color: var(--brand);
 }
 
-
-/* ── Deployment target action clusters ───────────────────────────────────── */
-.target-actions {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 0.6rem;
-}
-
-/* Primary actions: Edit + Sync */
-.target-actions-primary {
-  display: flex;
-  gap: 0.35rem;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-}
-
 /* Secondary actions: Dashboard link */
 .target-actions-secondary {
   display: flex;
   gap: 0.35rem;
   flex-wrap: wrap;
-  justify-content: flex-end;
-}
-
-/* Destructive action (Detach) — visually separated */
-.target-actions-destructive {
-  display: flex;
-  gap: 0.35rem;
   justify-content: flex-end;
 }
 
@@ -1769,89 +1406,6 @@ select option {
   font-size: 0.76rem;
 }
 
-
-/* Detach button — danger tint */
-.target-action-btn--detach {
-  border-color: rgba(248, 113, 113, 0.3);
-  color: var(--danger);
-}
-
-.target-action-btn--detach:hover {
-  background: rgba(248, 113, 113, 0.07);
-  border-color: rgba(248, 113, 113, 0.55);
-  color: var(--danger);
-}
-
-/* Confirm-detach state emphasis */
-.target-action-btn--confirm {
-  border-color: rgba(248, 113, 113, 0.55);
-  color: var(--danger);
-  background: rgba(248, 113, 113, 0.06);
-}
-
-/* ── Result banner (latest project created) ──────────────────────────────── */
-.latest-result-banner {
-  margin-bottom: 1.5rem;
-  padding: 1.25rem;
-  border-radius: var(--radius-card);
-  background: linear-gradient(
-    135deg,
-    rgba(52, 211, 153, 0.06) 0%,
-    rgba(17, 17, 22, 0.6) 100%
-  );
-  border: 1px solid rgba(52, 211, 153, 0.25);
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-  box-shadow: var(--shadow-card);
-  position: relative;
-  overflow: hidden;
-}
-
-.latest-result-banner__header {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-}
-
-.latest-result-banner__dot {
-  display: inline-block;
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--success);
-  flex-shrink: 0;
-}
-
-.latest-result-banner__repo {
-  font-weight: 800;
-  font-size: 0.95rem;
-  color: var(--text-primary);
-  font-family: ui-monospace, monospace;
-}
-
-.latest-result-banner__actions {
-  display: flex;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-}
-
-.latest-result-banner__action-btn {
-  padding: 0.4rem 1rem;
-  font-size: 0.8rem;
-  min-height: 2.2rem;
-  display: inline-flex;
-  align-items: center;
-}
-
-.latest-result-banner__meta {
-  font-size: 0.76rem;
-  color: var(--text-muted);
-  margin: 0;
-  line-height: 1.4;
-}
-
 .latest-result-banner__eyebrow {
   color: var(--success);
   margin: 0;
@@ -1860,66 +1414,11 @@ select option {
   letter-spacing: 0.08em;
 }
 
-.latest-result-banner__sep {
-  color: var(--text-muted);
-  font-size: 0.78rem;
-}
-
 .latest-result-banner__chips {
   margin: 0;
   display: flex;
   gap: 0.35rem;
   flex-wrap: wrap;
-}
-
-.latest-result-banner__filename {
-  color: var(--brand);
-  font-family: ui-monospace, monospace;
-}
-
-.latest-result-banner__commit-link {
-  margin-left: 0.75rem;
-  color: var(--text-muted);
-  font-family: ui-monospace, monospace;
-  font-size: 0.75rem;
-  text-decoration: none;
-}
-
-.latest-result-banner__sha {
-  color: var(--brand);
-  border-bottom: 1px dashed var(--brand);
-}
-
-.latest-result-banner__sha-plain {
-  margin-left: 0.75rem;
-  color: var(--text-muted);
-  font-size: 0.75rem;
-}
-
-.latest-result-banner__footer {
-  font-size: 0.76rem;
-  color: var(--text-muted);
-  margin: 0;
-  line-height: 1.4;
-}
-
-.latest-result-banner__action-btn--primary {
-  background: var(--brand);
-  color: #111116;
-  border-color: var(--brand);
-  font-weight: 600;
-}
-
-.latest-result-banner__action-btn--primary:hover {
-  filter: brightness(1.1);
-}
-
-.branch-chip--mono {
-  font-family: ui-monospace, monospace;
-  font-size: 0.7rem;
-  background: rgba(255, 255, 255, 0.04);
-  color: var(--text-secondary);
-  border-color: var(--border-soft);
 }
 
 /* ── Sub-tab bar ─────────────────────────────────────────────────────────── */
@@ -1931,90 +1430,10 @@ select option {
   color: var(--text-primary);
 }
 
-.deployment-provisioning-setup__header,
-.toggle-row {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-}
-
 .deployment-flow-branch--button.active {
   border-color: rgba(45, 212, 191, 0.35);
   background: rgba(45, 212, 191, 0.1);
   color: var(--success);
-}
-
-.toggle-row {
-  min-width: max-content;
-  color: var(--text-secondary);
-  font-size: 0.8rem;
-}
-
-/* Toggle switch — track + thumb, replaces bare checkbox for the primary
-   enable/disable control gating the whole deployment provisioning panel. */
-.toggle-switch-row {
-  cursor: pointer;
-}
-
-.toggle-switch-input {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  margin: -1px;
-  padding: 0;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  border: 0;
-}
-
-.toggle-switch-track {
-  position: relative;
-  display: inline-flex;
-  flex: 0 0 auto;
-  align-items: center;
-  width: 2.15rem;
-  height: 1.2rem;
-  border: 1px solid var(--border-strong);
-  border-radius: var(--radius-pill);
-  background: rgba(162, 162, 172, 0.18);
-  transition:
-    background 0.15s,
-    border-color 0.15s;
-}
-
-.toggle-switch-thumb {
-  position: absolute;
-  top: 50%;
-  left: 0.15rem;
-  width: 0.85rem;
-  height: 0.85rem;
-  border-radius: 50%;
-  background: var(--text-secondary);
-  transform: translateY(-50%);
-  transition:
-    transform 0.15s ease,
-    background 0.15s;
-}
-
-.toggle-switch-input:checked ~ .toggle-switch-track {
-  border-color: rgba(88, 166, 255, 0.6);
-  background: var(--brand-light);
-}
-
-.toggle-switch-input:checked ~ .toggle-switch-track .toggle-switch-thumb {
-  background: var(--brand);
-  transform: translate(0.95rem, -50%);
-}
-
-.toggle-switch-input:focus-visible ~ .toggle-switch-track {
-  outline: 2px solid var(--brand);
-  outline-offset: 2px;
-}
-
-.toggle-switch-input:disabled ~ .toggle-switch-track {
-  opacity: 0.5;
-  cursor: not-allowed;
 }
 
 .deployment-target-heading .helper-text {
@@ -2088,13 +1507,6 @@ select option {
 .deployment-provisioning-setup .env-target-grid .ghost-button,
 .deployment-provisioning-setup .env-var-row .ghost-button {
   min-height: 1.85rem;
-}
-
-@media (max-width: 640px) {
-
-  .toggle-row {
-    min-width: 0;
-  }
 }
 
 .env-bulk-validation .ghost-button {
@@ -2211,27 +1623,6 @@ select option {
   }
 }
 
-.readiness-empty-state {
-  display: grid;
-  gap: 0.55rem;
-  padding: 1rem;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: var(--bg-panel);
-}
-
-.readiness-empty-state strong {
-  color: var(--text-primary);
-  font-size: 0.9rem;
-}
-
-.readiness-empty-state p {
-  margin: 0;
-  color: var(--text-secondary);
-  font-size: 0.82rem;
-  line-height: 1.5;
-}
-
 @media (max-width: 640px) {
   .state-body {
     padding: 1rem;
@@ -2286,31 +1677,6 @@ select option {
   }
 }
 
-
-/* ── Profile header gradient area ───────────────────────────────────────── */
-.profile-header {
-  position: relative;
-  border-radius: var(--radius-card);
-  overflow: hidden;
-  background: linear-gradient(
-    135deg,
-    rgba(88, 166, 255, 0.08) 0%,
-    rgba(52, 211, 153, 0.04) 60%,
-    rgba(17, 17, 22, 0.5) 100%
-  );
-  border: 1px solid rgba(88, 166, 255, 0.2);
-}
-
-.profile-header::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 2px;
-  background: linear-gradient(90deg, var(--brand), var(--brand-accent));
-}
-
 /* ── Guest banner enhanced ───────────────────────────────────────────────── */
 .guest-banner-enhanced {
   background: linear-gradient(
@@ -2355,15 +1721,6 @@ select option {
   box-shadow: none; /* replaced by drop-shadow filter */
 }
 
-.create-repo-btn:hover::after,
-.generate-workflow-hint:hover::after {
-  content: " █";
-  font-family: ui-monospace, monospace;
-  font-size: 0.82em;
-  animation: cursorBlink 0.9s step-end infinite;
-  color: var(--brand);
-}
-
 /* ── Badge hover micro-interaction ─────────────── */
 .branch-chip,
 .template-tag,
@@ -2387,28 +1744,6 @@ select option {
   color: #86efac;
   word-break: break-all;
 }
-.terminal-hash a {
-  color: #86efac;
-  text-decoration: none;
-  border-bottom: 1px dashed rgba(134, 239, 172, 0.4);
-}
-.terminal-hash a:hover {
-  color: #4ade80;
-}
-
-.terminal-path {
-  display: block;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-  padding: 0.32rem 0.65rem;
-  background: #0d1117;
-  border: 1px solid rgba(88, 166, 255, 0.18);
-  border-left: 3px solid rgba(88, 166, 255, 0.7);
-  border-radius: 0 5px 5px 0;
-  box-shadow: -4px 0 14px rgba(88, 166, 255, 0.12);
-  font-size: 0.8rem;
-  color: var(--brand);
-  word-break: break-all;
-}
 
 /* ── Kinetic chip — active glow ─────────────────── */
 .enhancement-chip-label--active {
@@ -2416,37 +1751,6 @@ select option {
   box-shadow:
     0 0 10px rgba(88, 166, 255, 0.28),
     inset 0 0 6px rgba(88, 166, 255, 0.06) !important;
-}
-
-/* ── HoverField hover reveal ───────────────────── */
-.hover-field {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-  padding: 0.5rem 0.6rem;
-  border-radius: 0.5rem;
-  border: 1px solid transparent;
-  transition:
-    border-color 0.18s ease,
-    background 0.18s ease;
-}
-.hover-field:hover {
-  border-color: rgba(255, 255, 255, 0.07);
-  background: rgba(255, 255, 255, 0.025);
-}
-.hover-field-icon {
-  position: absolute;
-  top: 50%;
-  right: 0.65rem;
-  transform: translateY(-50%);
-  opacity: 0;
-  transition: opacity 0.18s ease;
-  color: var(--text-muted);
-  pointer-events: none;
-}
-.hover-field:hover .hover-field-icon {
-  opacity: 1;
 }
 
 /* ── KINETIC EDITORIAL HERO ────────────────────────────────────────── */
@@ -2484,16 +1788,6 @@ select option {
 .premium-input {
   border-radius: 6px;
   font-size: 0.875rem;
-}
-
-/* create-repo-btn-premium: full-width primary CTA */
-.create-repo-btn-premium {
-  width: 100%;
-  min-height: 3rem;
-  font-size: 0.93rem;
-  gap: 0.55rem;
-  padding: 0.85rem 1.5rem;
-  letter-spacing: -0.01em;
 }
 
 /* enhancement-chip-label-premium: pill toggle chips for workflow checks */
@@ -2544,20 +1838,6 @@ select option {
   cursor: not-allowed;
 }
 
-/* ── Single-column layout ────────────────────────────────────────────── */
-.create-project-layout {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  align-items: start;
-}
-
-.create-project-main {
-  padding: 2rem var(--layout-gutter);
-  display: flex;
-  flex-direction: column;
-  gap: 0;
-}
-
 /* Section heading with trailing rule */
 .cp-section-heading {
   display: flex;
@@ -2578,27 +1858,6 @@ select option {
   height: 1px;
   background: var(--border-soft);
 }
-
-/* Language/framework badge next to the "Create Project" title.
-   Same pill treatment for both single-repo and two-repo (backend + frontend) modes. */
-.cp-project-type-badge {
-  font-size: 0.72rem;
-  font-weight: 600;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  padding: 0.2rem 0.65rem;
-  border-radius: 999px;
-  background: rgba(88, 166, 255, 0.12);
-  color: var(--brand);
-  border: 1px solid rgba(88, 166, 255, 0.25);
-}
-
-/* Inline result — replaces the 3rd grid column */
-.cp-inline-result {
-  margin-top: 1.75rem;
-  padding-top: 1.75rem;
-  border-top: 1px solid var(--border-soft);
-}
 .cp-inline-result .result-panel {
   max-height: none !important;
   overflow: visible !important;
@@ -2611,71 +1870,6 @@ select option {
 .cp-inline-result .result-panel--success {
   border-left: none !important;
   box-shadow: none !important;
-}
-
-/* generate-yaml-link: tertiary action, low visual weight */
-.generate-yaml-link {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.45rem;
-  background: none;
-  border: none;
-  padding: 0.3rem 0;
-  color: var(--text-muted);
-  font-size: 0.82rem;
-  font-family: inherit;
-  cursor: pointer;
-  transition: color 0.15s;
-  text-decoration: none;
-}
-.generate-yaml-link:hover:not(:disabled) {
-  color: var(--text-secondary);
-}
-.generate-yaml-link:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-}
-
-/* Mode toggle — clean segmented control */
-.cp-mode-toggle {
-  display: inline-flex;
-  border-radius: 8px;
-  border: 1px solid var(--border-soft);
-  overflow: hidden;
-  margin-bottom: 1.75rem;
-}
-.cp-mode-btn {
-  padding: 0.5rem 1.25rem;
-  font-size: 0.875rem;
-  font-weight: 600;
-  font-family: inherit;
-  border: none;
-  background: transparent;
-  color: var(--text-secondary);
-  cursor: pointer;
-  transition:
-    background 0.15s,
-    color 0.15s;
-  white-space: nowrap;
-}
-.cp-mode-btn + .cp-mode-btn {
-  border-left: 1px solid var(--border-soft);
-}
-.cp-mode-btn[aria-pressed="true"] {
-  background: rgba(88, 166, 255, 0.1);
-  color: var(--brand);
-}
-
-@media (max-width: 860px) {
-  .create-project-main {
-    padding: 1.5rem var(--layout-gutter);
-  }
-}
-
-/* Home dashboard: tab bar should sit directly under the welcome header with
-   no dead space, so it tightens the shared page gap instead of inheriting it. */
-.home-dash-content {
-  gap: 0.4rem;
 }
 
 
@@ -2734,50 +1928,6 @@ select option {
   .repo-entry .dash-disconnect-link {
     opacity: 1;
   }
-}
-
-
-/* ── Status chip variants — consolidated from inline styles ─────────────── */
-.status-chip {
-  display: inline-flex;
-  align-items: center;
-  font-size: 0.65rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  padding: 0.12rem 0.45rem;
-  border-radius: 4px;
-  flex-shrink: 0;
-}
-
-.status-chip-brand {
-  background: rgba(88, 166, 255, 0.1);
-  color: var(--brand);
-  border: 1px solid rgba(88, 166, 255, 0.2);
-}
-
-.status-chip-success {
-  background: rgba(52, 211, 153, 0.1);
-  color: var(--success);
-  border: 1px solid rgba(52, 211, 153, 0.2);
-}
-
-.status-chip-danger {
-  background: rgba(248, 113, 113, 0.1);
-  color: var(--danger);
-  border: 1px solid rgba(248, 113, 113, 0.2);
-}
-
-.status-chip-amber {
-  background: rgba(251, 191, 36, 0.1);
-  color: var(--accent-amber);
-  border: 1px solid rgba(251, 191, 36, 0.25);
-}
-
-.status-chip-muted {
-  background: rgba(255, 255, 255, 0.05);
-  color: var(--text-muted);
-  border: 1px solid var(--border-soft);
 }
 
 
@@ -2850,30 +2000,6 @@ select option {
   }
 }
 
-/* ── Welcome banner: flatter, no outer border box ───────────────────────── */
-.welcome-banner-flat {
-  position: relative;
-  padding: 1.5rem 0 0.5rem;
-  border-bottom: 1px solid var(--border-soft);
-  overflow: hidden;
-}
-
-.welcome-banner-flat-accent {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 1px;
-  background: linear-gradient(
-    90deg,
-    transparent,
-    var(--brand),
-    var(--accent-violet),
-    transparent
-  );
-  opacity: 0.5;
-}
-
 
 /* ── Route transition wrapper ─────────────────────────────────────────────── */
 /* Used by app/(dash)/template.tsx for page-level enter/exit */
@@ -2894,33 +2020,6 @@ select option {
       background 0.25s ease,
       box-shadow 0.25s ease;
   }
-}
-
-
-.nav-link {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.38rem;
-  padding: 0.38rem 0.85rem;
-  border-radius: 0.55rem;
-  font-size: 0.83rem;
-  font-weight: 600;
-  color: var(--text-muted);
-  text-decoration: none;
-  transition: color 0.18s ease;
-  outline: none;
-  letter-spacing: 0.005em;
-}
-
-.nav-link:hover {
-  color: var(--text-secondary);
-}
-
-
-.nav-link:focus-visible {
-  outline: 2px solid var(--brand);
-  outline-offset: 2px;
 }
 
 
@@ -2949,13 +2048,6 @@ select option {
     align-items: flex-start;
     flex-wrap: wrap;
     padding-block: 0.65rem;
-  }
-
-  .studio-tab-trailing {
-    width: 100%;
-    justify-content: flex-start;
-    margin-left: 0;
-    padding-left: 0;
   }
 }
 
@@ -3039,37 +2131,6 @@ select option {
   border-radius: 50%;
   background: currentColor;
   flex-shrink: 0;
-}
-
-.gh-app-install-link {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.3rem;
-  padding: 0;
-  border: 0;
-  background: transparent;
-  font-family: inherit;
-  font-size: 0.72rem;
-  font-weight: 600;
-  color: var(--brand);
-  text-decoration: none;
-  cursor: pointer;
-  transition: color 0.15s ease;
-}
-
-.gh-app-install-link:disabled {
-  cursor: wait;
-  opacity: 0.65;
-}
-
-.gh-app-install-link:hover {
-  color: #79c0ff;
-}
-
-.gh-app-install-link:focus-visible {
-  outline: 2px solid var(--brand);
-  outline-offset: 2px;
-  border-radius: 3px;
 }
 
 /* Full project pages share the studio header, but use a stable two-column
@@ -3210,13 +2271,6 @@ select option {
    desync it from --sidebar-width, which reserves the closed width, and the rail
    would sit on top of the content. */
 @media (max-width: 768px) {
-  .app-sidebar:hover {
-    width: var(--sidebar-width);
-    box-shadow:
-      inset -1px 0 0 rgba(255, 255, 255, 0.06),
-      2px 0 40px rgba(99, 102, 241, 0.08),
-      4px 0 20px rgba(0, 0, 0, 0.3);
-  }
 
   .app-sidebar:hover .sidebar-nav-item-label,
   .app-sidebar:hover .sidebar-section-label,
@@ -3232,18 +2286,6 @@ select option {
   width: 100%;
 }
 
-.app-sidebar[data-collapsed="true"] .workspace-switcher {
-  display: none;
-}
-
-/* Auth access-gate: hide the oversized ghost word on narrow viewports where
-   the full-width content would overlap it (callback-client.tsx). */
-@media (max-width: 720px) {
-  .auth-gate-ghost {
-    display: none !important;
-  }
-}
-
 .auth-shell-minimal .flow-bg__calm-surface {
   background:
     radial-gradient(
@@ -3252,10 +2294,6 @@ select option {
       transparent 30rem
     ),
     linear-gradient(180deg, #14141a 0%, #0f0f14 52%, #0d0d12 100%);
-}
-
-.auth-shell-minimal .auth-header .hero-kicker {
-  font-size: 0.82rem;
 }
 
 .auth-shell-minimal .auth-switch-text,
@@ -3289,26 +2327,6 @@ select option {
   -webkit-backdrop-filter: none !important;
 }
 
-.hosting-service-locked {
-  display: grid;
-  gap: 0.2rem;
-  padding: 0.75rem 0.85rem;
-  border: 1px solid rgba(88, 166, 255, 0.24);
-  border-radius: 7px;
-  background: rgba(88, 166, 255, 0.055);
-}
-
-.hosting-service-locked strong {
-  color: var(--text-primary);
-  font-size: 0.86rem;
-}
-
-.hosting-service-locked span {
-  color: var(--text-muted);
-  font-size: 0.78rem;
-  line-height: 1.45;
-}
-
 /* Let the Pipeline Runs title bar use the same full-width chrome as Workflows,
    without changing the content gutter used by its run list. Only the
    horizontal margin is negative (for the edge-to-edge bleed) — the vertical
@@ -3331,173 +2349,8 @@ select option {
   font-size: 0.76rem;
 }
 
-/* ── Project creation: one paired service surface ─────────────────────── */
-.service-pair-panel {
-  display: grid;
-  gap: 1rem;
-  margin-top: 0.35rem;
-  padding: 1rem;
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  background: var(--bg-surface);
-  box-shadow:
-    0 12px 28px rgba(10, 10, 14, 0.14),
-    inset 0 1px 0 rgba(255, 255, 255, 0.025);
-}
-
-.service-pair-panel__header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 1rem;
-  padding-bottom: 0.8rem;
-  border-bottom: 1px solid var(--border-soft);
-}
-
 .service-pair-panel__header .helper-text {
   margin: 0.3rem 0 0;
-}
-
-.service-pair-panel__badge {
-  flex: 0 0 auto;
-  padding: 0.22rem 0.5rem;
-  border: 1px solid rgba(88, 166, 255, 0.32);
-  border-radius: 999px;
-  color: var(--brand-light);
-  background: rgba(88, 166, 255, 0.08);
-  font-size: 0.68rem;
-  font-weight: 700;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-}
-
-.service-pair-panel__grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 1.25rem;
-}
-
-/* These are columns inside one combined container, not two nested cards. */
-.service-pair-panel__service {
-  display: grid;
-  align-content: start;
-  gap: 0.45rem;
-  min-width: 0;
-}
-
-.service-pair-panel__service + .service-pair-panel__service {
-  padding-left: 1.25rem;
-  border-left: 1px solid var(--border-soft);
-}
-
-.service-pair-panel__service-title {
-  margin-bottom: 0.15rem;
-  color: var(--text-primary);
-  font-size: 0.86rem;
-  font-weight: 700;
-}
-
-@media (max-width: 680px) {
-  .service-pair-panel__header {
-    flex-direction: column;
-  }
-
-  .service-pair-panel__grid {
-    grid-template-columns: 1fr;
-    gap: 1rem;
-  }
-
-  .service-pair-panel__service + .service-pair-panel__service {
-    padding-top: 1rem;
-    padding-left: 0;
-    border-top: 1px solid var(--border-soft);
-    border-left: 0;
-  }
-}
-
-/* The edge control is discoverable on hover/focus without sitting over the
-   working area while it is not being used. */
-
-
-@media (prefers-reduced-motion: reduce) {
-}
-
-/* Two-sided labeled switch: "Repositories | Teams" flanking the toggle,
-   so the switch communicates both states at once instead of one word
-   swapping in a separate header line. */
-.rail-mode-switch {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.55rem;
-  min-width: 0;
-}
-
-.rail-mode-label {
-  flex: 0 0 auto;
-  padding: 0;
-  border: 0;
-  background: transparent;
-  color: var(--text-muted);
-  font-size: 0.78rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: color 180ms ease;
-}
-
-.rail-mode-label:hover {
-  color: var(--text-secondary);
-}
-
-.rail-mode-label:focus-visible {
-  outline: 2px solid var(--brand);
-  outline-offset: 3px;
-  border-radius: 3px;
-}
-
-.rail-mode-label.is-active {
-  color: var(--text-primary);
-  font-weight: 700;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .rail-mode-label { transition: none; }
-}
-
-.project-ownership-toggle.is-individual .project-ownership-toggle__track {
-  border-color: color-mix(in srgb, var(--brand) 70%, var(--border-tile));
-  background: var(--brand);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand) 15%, transparent), inset 0 1px 2px rgba(0, 0, 0, 0.12);
-}
-
-.project-ownership-toggle.is-individual .project-ownership-toggle__thumb {
-  transform: translateX(1.18rem);
-  background: white;
-  box-shadow: 0 2px 7px color-mix(in srgb, var(--brand) 40%, rgba(0, 0, 0, 0.3));
-}
-
-.repo-wizard-progress__step.is-active {
-  color: var(--text-primary);
-  border-color: color-mix(in srgb, var(--brand) 45%, var(--border-soft));
-  background: color-mix(in srgb, var(--brand) 11%, transparent);
-  box-shadow: 0 10px 24px color-mix(in srgb, var(--brand) 12%, transparent);
-}
-
-.repo-wizard-progress__step.is-complete {
-  color: var(--text-secondary);
-}
-
-.repo-wizard-progress__step.is-active .repo-wizard-progress__number {
-  border-color: var(--brand);
-  color: white;
-  background: var(--brand);
-  box-shadow: 0 0 0 4px color-mix(in srgb, var(--brand) 13%, transparent);
-  transform: scale(1.06);
-}
-
-.repo-wizard-progress__step.is-complete .repo-wizard-progress__number {
-  border-color: color-mix(in srgb, var(--brand) 55%, var(--border-soft));
-  color: var(--brand);
-  background: color-mix(in srgb, var(--brand) 10%, transparent);
 }
 
 .repo-wizard-actions .primary-button {
@@ -3507,65 +2360,11 @@ select option {
 .dashboard-run-row .pipeline-dot { width: 0.45rem; height: 0.45rem; margin: 0; }
 .runs-empty:hover .dashboard-row-arrow { opacity: 1; transform: translateX(0); }
 .runs-empty .dashboard-row-arrow { color: var(--brand); }
-
-/* ── Recent-outcomes sparkline (runs-hero foot) ────────────────────────────── */
-.ops-block { display: flex; flex-direction: column; gap: 0.4rem; }
-.ops-block-label {
-  font-size: 0.62rem; font-weight: 750; letter-spacing: 0.09em; text-transform: uppercase; color: var(--text-muted);
-}
-
-.ops-spark { display: flex; align-items: flex-end; gap: 0.22rem; height: 2.1rem; }
-.ops-spark-bar {
-  flex: 1 1 0; min-width: 0.25rem; height: 100%;
-  border-radius: 2px; transform-origin: bottom;
-  background: color-mix(in srgb, var(--text-muted) 30%, transparent);
-}
 .ops-spark-bar--success { background: color-mix(in srgb, var(--success) 75%, transparent); }
 .ops-spark-bar--failure { background: color-mix(in srgb, var(--danger) 80%, transparent); }
 .ops-spark-bar--running { background: color-mix(in srgb, var(--accent-amber) 80%, transparent); }
 .ops-spark-bar--partial { background: color-mix(in srgb, var(--accent-violet) 75%, transparent); }
 .ops-spark-bar--cancelled { background: color-mix(in srgb, var(--text-muted) 45%, transparent); }
-.ops-empty { margin: 0; color: var(--text-muted); font-size: 0.7rem; }
-
-/* ── Get-started journey (empty workspace) ─────────────────────────────────── */
-.getstarted {
-  min-width: 0;
-  padding: clamp(1.1rem, 2.5vw, 1.8rem);
-  border: 1px solid var(--border-soft);
-  border-radius: 1rem;
-  background:
-    radial-gradient(130% 120% at 0% 0%, color-mix(in srgb, var(--brand) 9%, transparent), transparent 52%),
-    radial-gradient(120% 120% at 100% 100%, color-mix(in srgb, var(--accent-violet) 8%, transparent), transparent 50%),
-    var(--bg-elevated);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
-}
-.getstarted-step.is-done:not(:last-child)::before { background: color-mix(in srgb, var(--success) 45%, transparent); }
-.getstarted-step.is-current { background: color-mix(in srgb, var(--brand) 7%, transparent); }
-.getstarted-step.is-done .getstarted-node {
-  border-color: var(--success); color: var(--success);
-  background: color-mix(in srgb, var(--success) 14%, transparent);
-}
-.getstarted-step.is-current .getstarted-node {
-  border-color: var(--brand); color: var(--brand);
-  background: color-mix(in srgb, var(--brand) 15%, transparent);
-  box-shadow: 0 0 0 4px color-mix(in srgb, var(--brand) 14%, transparent);
-}
-.getstarted-step:not(.is-current):not(.is-done) .getstarted-copy strong { color: var(--text-secondary); }
-.getstarted-step.is-done .getstarted-state { color: var(--success); }
-.getstarted-step.is-current .getstarted-state { color: var(--brand); }
-
-/* ── Responsive ───────────────────────────────────────────────────────────── */
-@media (max-width: 560px) {
-  .run-card-link { flex-wrap: wrap; }
-  .run-card-side {
-    flex-direction: row; align-items: center; justify-content: space-between;
-    width: 100%; padding-left: 0; padding-top: 0.5rem;
-    border-left: 0; border-top: 1px solid var(--border-soft);
-  }
-  .run-track-cap { font-size: 0.5rem; }
-  .getstarted-step { grid-template-columns: 2.1rem 1fr; }
-  .getstarted-state { display: none; }
-}
 
 @media (prefers-reduced-motion: reduce) {
   .run-card,
@@ -3577,172 +2376,6 @@ select option {
   .getstarted-cta span,
   .getstarted-resource-links a { transition: none; }
 }
-
-/* ══════════════════════════════════════════════════════════════════════════
-   Viewport-fit home dashboard — compact header, merged status strip, and a
-   height-locked main grid on tall desktops. Falls back to normal page scroll
-   below the fit breakpoint (short viewports / narrow / mobile).
-   ══════════════════════════════════════════════════════════════════════════ */
-
-/* ── Compact welcome header ────────────────────────────────────────────────── */
-.home-header { padding: 0.85rem 0 0.7rem; }
-.home-header-row {
-  display: flex; align-items: center; justify-content: space-between;
-  gap: 1rem; flex-wrap: wrap;
-}
-.home-header-id { display: flex; align-items: center; gap: 0.75rem; min-width: 0; }
-.home-header-avatar {
-  width: 40px; height: 40px; flex: 0 0 auto; border-radius: 50%;
-  border: 2px solid var(--border-brand); box-shadow: 0 0 12px var(--brand-glow);
-}
-.home-header-avatar--fallback {
-  display: grid; place-items: center; box-shadow: none;
-  background: var(--brand-light); color: var(--brand);
-  font-size: 1.05rem; font-weight: 700;
-}
-.home-header-copy { display: flex; flex-direction: column; gap: 0.1rem; min-width: 0; }
-.home-header-eyebrow {
-  margin: 0; font-size: 0.63rem; font-weight: 700; letter-spacing: 0.1em;
-  text-transform: uppercase; color: var(--brand);
-}
-.home-header-title {
-  margin: 0; padding: 0; border: none;
-  font-size: clamp(1.1rem, 1.9vw, 1.5rem); font-weight: 700; letter-spacing: -0.015em;
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-}
-.home-header-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
-.home-header-btn {
-  display: inline-flex; align-items: center; justify-content: center;
-  padding: 0.4rem 1rem; font-size: 0.8rem; min-height: 2.2rem;
-}
-.home-header-msg { margin: 0.55rem 0 0; }
-
-/* ══ Viewport-fit: only on tall, wide desktops. Otherwise natural scroll. ═══ */
-@media (min-width: 1024px) and (min-height: 720px) {
-  .dashboard-shell--fit { height: 100dvh; padding-bottom: 0; }
-  .dashboard-shell--fit .home-dash-content {
-    flex: 1 1 auto; min-height: 0; overflow: hidden;
-    padding-top: 0.9rem; padding-bottom: 0.9rem;
-  }
-  .dashboard-shell--fit .dashboard-flow {
-    flex: 1 1 auto; min-height: 0;
-    display: flex; flex-direction: column; gap: 0.7rem; padding: 0.55rem 0 0;
-  }
-  .dashboard-shell--fit .dashboard-main-grid {
-    flex: 1 1 auto; min-height: 0;
-    grid-template-columns: minmax(0, 1.6fr) minmax(0, 0.95fr);
-    align-items: stretch; gap: 1rem;
-  }
-  .dashboard-shell--fit .metrics-rail { flex: 0 0 auto; }
-
-  /* Runs hero fills its column: run stack scrolls, outcomes pin at the foot. */
-  .dashboard-shell--fit .runs-hero { display: flex; flex-direction: column; min-height: 0; overflow: hidden; }
-  .dashboard-shell--fit .runs-stream {
-    flex: 1 1 auto; min-height: 0; overflow: auto; scrollbar-width: thin;
-    padding-right: 0.15rem;
-  }
-  .dashboard-shell--fit .runs-outcomes { flex: 0 0 auto; }
-
-  /* Sidebar: team + activity blocks scroll; the quality card stays fixed. */
-  .dashboard-shell--fit .dashboard-side-col {
-    min-height: 0; display: flex; flex-direction: column; gap: 0;
-  }
-  .dashboard-shell--fit .side-rail-block { min-height: 0; }
-  .dashboard-shell--fit .side-rail-block--grow { flex: 1 1 0; }
-
-  /* Empty-state journey also fits, scrolling internally only if very short. */
-  .dashboard-shell--fit .dashboard-flow--empty .getstarted {
-    flex: 1 1 auto; min-height: 0; overflow: auto; scrollbar-width: thin;
-  }
-}
-
-/* ══ /home redesign (2026-07): container-less metrics, runs-hero status, slim rail ══ */
-
-/* Metric strip — one framed row of hairline-divided mono figures. */
-.metrics-rail {
-  display: grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
-  min-width: 0;
-  border: 1px solid var(--border-soft);
-  border-radius: 0.7rem;
-  overflow: hidden;
-  background: color-mix(in srgb, var(--bg-elevated) 45%, transparent);
-}
-
-.metric-cell {
-  display: flex;
-  flex-direction: column;
-  gap: 0.3rem;
-  min-width: 0;
-  padding: 0.7rem 0.95rem;
-  border-left: 1px solid var(--border-soft);
-  color: var(--text-primary);
-  text-decoration: none;
-}
-
-.metric-cell:first-child { border-left: 0; }
-
-.metric-cell--link { transition: background 0.16s ease; }
-.metric-cell--link:hover { background: color-mix(in srgb, var(--brand) 7%, transparent); }
-.metric-cell--link:hover .metric-cell-num { color: var(--brand); }
-.metric-cell--link:focus-visible { outline: 2px solid var(--brand); outline-offset: -2px; }
-
-.metric-cell-num {
-  font-family: ui-monospace, monospace;
-  font-size: clamp(1.3rem, 2vw, 1.65rem);
-  font-weight: 800;
-  line-height: 1;
-  letter-spacing: -0.035em;
-  color: var(--text-primary);
-  transition: color 0.16s ease;
-}
-
-.metric-cell-label {
-  font-size: 0.57rem;
-  font-weight: 700;
-  letter-spacing: 0.085em;
-  text-transform: uppercase;
-  color: var(--text-muted);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-/* Wrap to 3 then 2 columns on narrow screens, keeping the grid hairlines. */
-@media (max-width: 1100px) {
-  .metrics-rail { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-  .metric-cell:nth-child(3n + 1) { border-left: 0; }
-  .metric-cell:nth-child(n + 4) { border-top: 1px solid var(--border-soft); }
-}
-
-@media (max-width: 560px) {
-  .metrics-rail { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .metric-cell:nth-child(3n + 1) { border-left: 1px solid var(--border-soft); }
-  .metric-cell:nth-child(2n + 1) { border-left: 0; }
-  .metric-cell:nth-child(n + 3) { border-top: 1px solid var(--border-soft); }
-}
-
-.side-rail-head .dashboard-section-kicker { margin: 0; }
-.side-rail-head .dashboard-inline-link { min-height: auto; }
-
-/* ── Quality stat card (right sidebar) ─────────────────────────────────────── */
-.quality-card {
-  display: flex; flex-direction: column;
-  border: 1px solid var(--border-soft); border-radius: 0.7rem;
-  background: color-mix(in srgb, var(--bg-elevated) 55%, transparent);
-  overflow: hidden;
-}
-.quality-stat {
-  display: flex; align-items: center; justify-content: space-between; gap: 0.75rem;
-  padding: 0.6rem 0.8rem;
-}
-.quality-stat + .quality-stat { border-top: 1px solid var(--border-soft); }
-.quality-stat-label { font-size: 0.62rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-muted); }
-.quality-stat-value {
-  font-family: ui-monospace, monospace; font-size: 0.95rem; font-weight: 750;
-  letter-spacing: -0.01em; color: var(--text-primary); text-transform: capitalize;
-}
-.quality-stat-value--danger { color: var(--danger); }
 
 /* Reduced motion: kill the runs-hero ambient loops and hover transforms. */
 @media (prefers-reduced-motion: reduce) {
@@ -3836,60 +2469,10 @@ select option {
     width: 100%;
   }
 
-  .side-tabs-list {
-    flex-direction: row;
-    overflow-x: auto;
-    gap: 0.35rem;
-  }
-
-  .side-tabs-group {
-    display: flex;
-    gap: 0.35rem;
-  }
-
-  .side-tabs-heading {
-    display: none;
-  }
-
   .side-tab {
     width: auto;
     white-space: nowrap;
   }
-}
-
-/* ── Project workspace ──────────────────────────────────────────────────────
-   Code, Pull requests and Pipeline runs. Two columns: the grouped section rail
-   reuses .side-tabs from the Teams page, so only the surrounding layout and the
-   panel internals are defined here.
-   ------------------------------------------------------------------------- */
-.project-sections {
-  display: grid;
-  grid-template-columns: minmax(0, 200px) minmax(0, 1fr);
-  gap: 1.5rem;
-  align-items: start;
-}
-
-/* Existing-repository onboarding: what setup will do, before it does it. */
-.existing-repo-notices {
-  list-style: none;
-  margin: 0.75rem 0 0;
-  padding: 0;
-  display: grid;
-  gap: 0.4rem;
-}
-
-.existing-repo-notice {
-  margin: 0.75rem 0 0;
-  padding: 0.55rem 0.75rem;
-  border-radius: 0.5rem;
-  border: 1px solid var(--border-subtle);
-  font-size: 0.78rem;
-  line-height: 1.45;
-  color: var(--text-secondary);
-}
-
-.existing-repo-notices .existing-repo-notice {
-  margin: 0;
 }
 
 /* Blocking is the one the push will actually fail on, so it reads differently
@@ -3898,11 +2481,6 @@ select option {
   border-color: rgba(248, 113, 113, 0.4);
   background: rgba(248, 113, 113, 0.06);
   color: #f87171;
-}
-
-.existing-repo-notice--ok {
-  border-color: rgba(63, 185, 80, 0.35);
-  background: rgba(63, 185, 80, 0.06);
 }
 
 /* ── Team workspace panel ───────────────────────────────────────────────────
@@ -3954,25 +2532,4 @@ select option {
   text-decoration: none;
   display: inline-flex;
   align-items: center;
-}
-
-/* The role control in a member row: sized to the badge it replaced, so the
-   roster still reads as a list rather than a form. */
-.hier-role-picker {
-  display: inline-flex;
-}
-
-.hier-role-select {
-  padding: 0.25rem 0.5rem;
-  border-radius: 999px;
-  border: 1px solid var(--border-subtle);
-  background: var(--surface-raised);
-  color: var(--text-secondary);
-  font-size: 0.72rem;
-  cursor: pointer;
-}
-
-.hier-role-select:disabled {
-  opacity: 0.55;
-  cursor: not-allowed;
 }

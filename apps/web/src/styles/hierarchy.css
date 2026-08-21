@@ -1,0 +1,87 @@
+/**
+ * Groups hierarchy surface: the group detail panels, member and role controls,
+ * side tab rails and activity feed.
+ * 
+ * Extracted from globals.css by which components actually use each class, not by
+ * name prefix — these carry no shared prefix. See src/features/README.md.
+ */
+
+/* ── Activity item ────────────────────────────────────────────────────────── */
+.activity-item {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  padding: 0.65rem 0.9rem;
+  border-radius: 0.5rem;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  transition: border-color 0.15s;
+}
+
+.activity-item:hover {
+  border-color: var(--border-brand);
+}
+
+.nav-link {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.38rem;
+  padding: 0.38rem 0.85rem;
+  border-radius: 0.55rem;
+  font-size: 0.83rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-decoration: none;
+  transition: color 0.18s ease;
+  outline: none;
+  letter-spacing: 0.005em;
+}
+
+.nav-link:hover {
+  color: var(--text-secondary);
+}
+
+.nav-link:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
+@media (max-width: 860px) {
+
+  .side-tabs-list {
+    flex-direction: row;
+    overflow-x: auto;
+    gap: 0.35rem;
+  }
+
+  .side-tabs-group {
+    display: flex;
+    gap: 0.35rem;
+  }
+
+  .side-tabs-heading {
+    display: none;
+  }
+}
+
+/* The role control in a member row: sized to the badge it replaced, so the
+   roster still reads as a list rather than a form. */
+.hier-role-picker {
+  display: inline-flex;
+}
+
+.hier-role-select {
+  padding: 0.25rem 0.5rem;
+  border-radius: 999px;
+  border: 1px solid var(--border-subtle);
+  background: var(--surface-raised);
+  color: var(--text-secondary);
+  font-size: 0.72rem;
+  cursor: pointer;
+}
+
+.hier-role-select:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}

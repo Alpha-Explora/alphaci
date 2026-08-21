@@ -530,3 +530,310 @@ html:not([data-theme="light"]) .dash-shell {
 .dashboard-main-grid { display: grid; grid-template-columns: 1fr; gap: 0.85rem; min-width: 0; }
 
 .dashboard-side-col { display: flex; flex-direction: column; gap: 0.85rem; min-width: 0; }
+
+/* ── Moved from globals.css ───────────────────────────────────────────────
+   Assigned by which components use these classes rather than by name prefix.
+   Appended, so they keep their original order relative to one another. */
+
+/* ── Hero chips / pills ─────────────────────────────────────────────────── */
+.hero-chip {
+  margin: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--border-brand);
+  background: var(--brand-light);
+  color: var(--brand);
+  font-size: 0.85rem;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  padding: 0.4rem 1rem 0.4rem 0.75rem;
+  width: fit-content;
+}
+
+.hero-chip::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--brand);
+  animation: flowPulse 1.8s ease-in-out infinite;
+  flex-shrink: 0;
+}
+
+/* Home dashboard: tab bar should sit directly under the welcome header with
+   no dead space, so it tightens the shared page gap instead of inheriting it. */
+.home-dash-content {
+  gap: 0.4rem;
+}
+
+/* ── Welcome banner: flatter, no outer border box ───────────────────────── */
+.welcome-banner-flat {
+  position: relative;
+  padding: 1.5rem 0 0.5rem;
+  border-bottom: 1px solid var(--border-soft);
+  overflow: hidden;
+}
+
+.welcome-banner-flat-accent {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--brand),
+    var(--accent-violet),
+    transparent
+  );
+  opacity: 0.5;
+}
+
+/* ── Recent-outcomes sparkline (runs-hero foot) ────────────────────────────── */
+.ops-block { display: flex; flex-direction: column; gap: 0.4rem; }
+
+.ops-block-label {
+  font-size: 0.62rem; font-weight: 750; letter-spacing: 0.09em; text-transform: uppercase; color: var(--text-muted);
+}
+
+.ops-spark { display: flex; align-items: flex-end; gap: 0.22rem; height: 2.1rem; }
+
+.ops-spark-bar {
+  flex: 1 1 0; min-width: 0.25rem; height: 100%;
+  border-radius: 2px; transform-origin: bottom;
+  background: color-mix(in srgb, var(--text-muted) 30%, transparent);
+}
+
+.ops-empty { margin: 0; color: var(--text-muted); font-size: 0.7rem; }
+
+/* ── Get-started journey (empty workspace) ─────────────────────────────────── */
+.getstarted {
+  min-width: 0;
+  padding: clamp(1.1rem, 2.5vw, 1.8rem);
+  border: 1px solid var(--border-soft);
+  border-radius: 1rem;
+  background:
+    radial-gradient(130% 120% at 0% 0%, color-mix(in srgb, var(--brand) 9%, transparent), transparent 52%),
+    radial-gradient(120% 120% at 100% 100%, color-mix(in srgb, var(--accent-violet) 8%, transparent), transparent 50%),
+    var(--bg-elevated);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+.getstarted-step.is-done:not(:last-child)::before { background: color-mix(in srgb, var(--success) 45%, transparent); }
+
+.getstarted-step.is-current { background: color-mix(in srgb, var(--brand) 7%, transparent); }
+
+.getstarted-step.is-done .getstarted-node {
+  border-color: var(--success); color: var(--success);
+  background: color-mix(in srgb, var(--success) 14%, transparent);
+}
+
+.getstarted-step.is-current .getstarted-node {
+  border-color: var(--brand); color: var(--brand);
+  background: color-mix(in srgb, var(--brand) 15%, transparent);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--brand) 14%, transparent);
+}
+
+.getstarted-step:not(.is-current):not(.is-done) .getstarted-copy strong { color: var(--text-secondary); }
+
+.getstarted-step.is-done .getstarted-state { color: var(--success); }
+
+.getstarted-step.is-current .getstarted-state { color: var(--brand); }
+
+@media (max-width: 560px) {
+  .run-card-link { flex-wrap: wrap; }
+  .run-card-side {
+    flex-direction: row; align-items: center; justify-content: space-between;
+    width: 100%; padding-left: 0; padding-top: 0.5rem;
+    border-left: 0; border-top: 1px solid var(--border-soft);
+  }
+  .run-track-cap { font-size: 0.5rem; }
+  .getstarted-step { grid-template-columns: 2.1rem 1fr; }
+  .getstarted-state { display: none; }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   Viewport-fit home dashboard — compact header, merged status strip, and a
+   height-locked main grid on tall desktops. Falls back to normal page scroll
+   below the fit breakpoint (short viewports / narrow / mobile).
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Compact welcome header ────────────────────────────────────────────────── */
+.home-header { padding: 0.85rem 0 0.7rem; }
+
+.home-header-row {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 1rem; flex-wrap: wrap;
+}
+
+.home-header-id { display: flex; align-items: center; gap: 0.75rem; min-width: 0; }
+
+.home-header-avatar {
+  width: 40px; height: 40px; flex: 0 0 auto; border-radius: 50%;
+  border: 2px solid var(--border-brand); box-shadow: 0 0 12px var(--brand-glow);
+}
+
+.home-header-avatar--fallback {
+  display: grid; place-items: center; box-shadow: none;
+  background: var(--brand-light); color: var(--brand);
+  font-size: 1.05rem; font-weight: 700;
+}
+
+.home-header-copy { display: flex; flex-direction: column; gap: 0.1rem; min-width: 0; }
+
+.home-header-eyebrow {
+  margin: 0; font-size: 0.63rem; font-weight: 700; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--brand);
+}
+
+.home-header-title {
+  margin: 0; padding: 0; border: none;
+  font-size: clamp(1.1rem, 1.9vw, 1.5rem); font-weight: 700; letter-spacing: -0.015em;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+
+.home-header-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+
+.home-header-btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  padding: 0.4rem 1rem; font-size: 0.8rem; min-height: 2.2rem;
+}
+
+.home-header-msg { margin: 0.55rem 0 0; }
+
+@media (min-width: 1024px) and (min-height: 720px) {
+  .dashboard-shell--fit { height: 100dvh; padding-bottom: 0; }
+  .dashboard-shell--fit .home-dash-content {
+    flex: 1 1 auto; min-height: 0; overflow: hidden;
+    padding-top: 0.9rem; padding-bottom: 0.9rem;
+  }
+  .dashboard-shell--fit .dashboard-flow {
+    flex: 1 1 auto; min-height: 0;
+    display: flex; flex-direction: column; gap: 0.7rem; padding: 0.55rem 0 0;
+  }
+  .dashboard-shell--fit .dashboard-main-grid {
+    flex: 1 1 auto; min-height: 0;
+    grid-template-columns: minmax(0, 1.6fr) minmax(0, 0.95fr);
+    align-items: stretch; gap: 1rem;
+  }
+  .dashboard-shell--fit .metrics-rail { flex: 0 0 auto; }
+
+  /* Runs hero fills its column: run stack scrolls, outcomes pin at the foot. */
+  .dashboard-shell--fit .runs-hero { display: flex; flex-direction: column; min-height: 0; overflow: hidden; }
+  .dashboard-shell--fit .runs-stream {
+    flex: 1 1 auto; min-height: 0; overflow: auto; scrollbar-width: thin;
+    padding-right: 0.15rem;
+  }
+  .dashboard-shell--fit .runs-outcomes { flex: 0 0 auto; }
+
+  /* Sidebar: team + activity blocks scroll; the quality card stays fixed. */
+  .dashboard-shell--fit .dashboard-side-col {
+    min-height: 0; display: flex; flex-direction: column; gap: 0;
+  }
+  .dashboard-shell--fit .side-rail-block { min-height: 0; }
+  .dashboard-shell--fit .side-rail-block--grow { flex: 1 1 0; }
+
+  /* Empty-state journey also fits, scrolling internally only if very short. */
+  .dashboard-shell--fit .dashboard-flow--empty .getstarted {
+    flex: 1 1 auto; min-height: 0; overflow: auto; scrollbar-width: thin;
+  }
+}
+
+/* ══ /home redesign (2026-07): container-less metrics, runs-hero status, slim rail ══ */
+
+/* Metric strip — one framed row of hairline-divided mono figures. */
+.metrics-rail {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  min-width: 0;
+  border: 1px solid var(--border-soft);
+  border-radius: 0.7rem;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--bg-elevated) 45%, transparent);
+}
+
+.metric-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  min-width: 0;
+  padding: 0.7rem 0.95rem;
+  border-left: 1px solid var(--border-soft);
+  color: var(--text-primary);
+  text-decoration: none;
+}
+
+.metric-cell:first-child { border-left: 0; }
+
+.metric-cell--link { transition: background 0.16s ease; }
+
+.metric-cell--link:hover { background: color-mix(in srgb, var(--brand) 7%, transparent); }
+
+.metric-cell--link:hover .metric-cell-num { color: var(--brand); }
+
+.metric-cell--link:focus-visible { outline: 2px solid var(--brand); outline-offset: -2px; }
+
+.metric-cell-num {
+  font-family: ui-monospace, monospace;
+  font-size: clamp(1.3rem, 2vw, 1.65rem);
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.035em;
+  color: var(--text-primary);
+  transition: color 0.16s ease;
+}
+
+.metric-cell-label {
+  font-size: 0.57rem;
+  font-weight: 700;
+  letter-spacing: 0.085em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (max-width: 1100px) {
+  .metrics-rail { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .metric-cell:nth-child(3n + 1) { border-left: 0; }
+  .metric-cell:nth-child(n + 4) { border-top: 1px solid var(--border-soft); }
+}
+
+@media (max-width: 560px) {
+  .metrics-rail { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .metric-cell:nth-child(3n + 1) { border-left: 1px solid var(--border-soft); }
+  .metric-cell:nth-child(2n + 1) { border-left: 0; }
+  .metric-cell:nth-child(n + 3) { border-top: 1px solid var(--border-soft); }
+}
+
+.side-rail-head .dashboard-section-kicker { margin: 0; }
+
+.side-rail-head .dashboard-inline-link { min-height: auto; }
+
+/* ── Quality stat card (right sidebar) ─────────────────────────────────────── */
+.quality-card {
+  display: flex; flex-direction: column;
+  border: 1px solid var(--border-soft); border-radius: 0.7rem;
+  background: color-mix(in srgb, var(--bg-elevated) 55%, transparent);
+  overflow: hidden;
+}
+
+.quality-stat {
+  display: flex; align-items: center; justify-content: space-between; gap: 0.75rem;
+  padding: 0.6rem 0.8rem;
+}
+
+.quality-stat + .quality-stat { border-top: 1px solid var(--border-soft); }
+
+.quality-stat-label { font-size: 0.62rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-muted); }
+
+.quality-stat-value {
+  font-family: ui-monospace, monospace; font-size: 0.95rem; font-weight: 750;
+  letter-spacing: -0.01em; color: var(--text-primary); text-transform: capitalize;
+}
+
+.quality-stat-value--danger { color: var(--danger); }

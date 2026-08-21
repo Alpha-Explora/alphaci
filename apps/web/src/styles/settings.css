@@ -339,3 +339,65 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* ── Moved from globals.css ───────────────────────────────────────────────
+   Assigned by which components use these classes rather than by name prefix.
+   Appended, so they keep their original order relative to one another. */
+
+/* ── Profile header gradient area ───────────────────────────────────────── */
+.profile-header {
+  position: relative;
+  border-radius: var(--radius-card);
+  overflow: hidden;
+  background: linear-gradient(
+    135deg,
+    rgba(88, 166, 255, 0.08) 0%,
+    rgba(52, 211, 153, 0.04) 60%,
+    rgba(17, 17, 22, 0.5) 100%
+  );
+  border: 1px solid rgba(88, 166, 255, 0.2);
+}
+
+.profile-header::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--brand), var(--brand-accent));
+}
+
+/* ── HoverField hover reveal ───────────────────── */
+.hover-field {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0.5rem 0.6rem;
+  border-radius: 0.5rem;
+  border: 1px solid transparent;
+  transition:
+    border-color 0.18s ease,
+    background 0.18s ease;
+}
+
+.hover-field:hover {
+  border-color: rgba(255, 255, 255, 0.07);
+  background: rgba(255, 255, 255, 0.025);
+}
+
+.hover-field-icon {
+  position: absolute;
+  top: 50%;
+  right: 0.65rem;
+  transform: translateY(-50%);
+  opacity: 0;
+  transition: opacity 0.18s ease;
+  color: var(--text-muted);
+  pointer-events: none;
+}
+
+.hover-field:hover .hover-field-icon {
+  opacity: 1;
+}

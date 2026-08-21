@@ -719,3 +719,42 @@
   padding-top: 0.85rem;
   border-top: 1px solid var(--border-soft);
 }
+
+/* ── Moved from globals.css ───────────────────────────────────────────────
+   Assigned by which components use these classes rather than by name prefix.
+   Appended, so they keep their original order relative to one another. */
+
+/* ── Section divider with label ─────────────────────────────────────────── */
+.section-divider {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--text-muted);
+  font-family: ui-monospace, monospace;
+  margin: 0;
+}
+
+.section-divider::before,
+.section-divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+@media (max-width: 768px) {
+  .app-sidebar:hover {
+    width: var(--sidebar-width);
+    box-shadow:
+      inset -1px 0 0 rgba(255, 255, 255, 0.06),
+      2px 0 40px rgba(99, 102, 241, 0.08),
+      4px 0 20px rgba(0, 0, 0, 0.3);
+  }
+}
+
+.app-sidebar[data-collapsed="true"] .workspace-switcher {
+  display: none;
+}

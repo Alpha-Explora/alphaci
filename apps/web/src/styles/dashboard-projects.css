@@ -1806,3 +1806,282 @@
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+/* ── Moved from globals.css ───────────────────────────────────────────────
+   Assigned by which components use these classes rather than by name prefix.
+   Appended, so they keep their original order relative to one another. */
+
+/* ── Section headers ────────────────────────────────────────────────────── */
+.section-header {
+  display: grid;
+  gap: 0.3rem;
+}
+
+.controls-panel {
+  padding: 1.5rem 1.25rem;
+}
+
+.enhancement-option:has(input:checked) {
+  border-color: var(--border-brand);
+  background: var(--brand-light);
+}
+
+.enhancement-option input[type="checkbox"] {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 2.2rem;
+  min-width: 2.2rem;
+  height: 1.25rem;
+  border-radius: var(--radius-pill);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-strong);
+  position: relative;
+  cursor: pointer;
+  flex-shrink: 0;
+  margin-top: 0.1rem;
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.enhancement-option input[type="checkbox"]::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 0.18rem;
+  transform: translateY(-50%);
+  width: 0.82rem;
+  height: 0.82rem;
+  border-radius: 50%;
+  background: var(--text-muted);
+  transition:
+    transform 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+    background 0.2s ease;
+}
+
+.enhancement-option input[type="checkbox"]:checked {
+  background: var(--brand-light);
+  border-color: var(--brand);
+}
+
+.enhancement-option input[type="checkbox"]:checked::before {
+  transform: translateY(-50%) translateX(0.95rem);
+  background: var(--brand);
+}
+
+.enhancement-option input[type="checkbox"]:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
+.enhancement-option input[type="checkbox"]:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.enhancement-option span {
+  font-size: 0.91rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.enhancement-option small {
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+}
+
+/* ── Left panel editorial treatment ─────────────────────────────────────────────── */
+.controls-panel-label {
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin: 0 0 0.65rem;
+  display: block;
+}
+
+/* ── Deployment target action clusters ───────────────────────────────────── */
+.target-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.6rem;
+}
+
+/* Primary actions: Edit + Sync */
+.target-actions-primary {
+  display: flex;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+/* Destructive action (Detach) — visually separated */
+.target-actions-destructive {
+  display: flex;
+  gap: 0.35rem;
+  justify-content: flex-end;
+}
+
+/* Detach button — danger tint */
+.target-action-btn--detach {
+  border-color: rgba(248, 113, 113, 0.3);
+  color: var(--danger);
+}
+
+.target-action-btn--detach:hover {
+  background: rgba(248, 113, 113, 0.07);
+  border-color: rgba(248, 113, 113, 0.55);
+  color: var(--danger);
+}
+
+/* Confirm-detach state emphasis */
+.target-action-btn--confirm {
+  border-color: rgba(248, 113, 113, 0.55);
+  color: var(--danger);
+  background: rgba(248, 113, 113, 0.06);
+}
+
+.deployment-provisioning-setup__header,
+.toggle-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.toggle-row {
+  min-width: max-content;
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+}
+
+/* Toggle switch — track + thumb, replaces bare checkbox for the primary
+   enable/disable control gating the whole deployment provisioning panel. */
+.toggle-switch-row {
+  cursor: pointer;
+}
+
+.toggle-switch-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.toggle-switch-track {
+  position: relative;
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  width: 2.15rem;
+  height: 1.2rem;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-pill);
+  background: rgba(162, 162, 172, 0.18);
+  transition:
+    background 0.15s,
+    border-color 0.15s;
+}
+
+.toggle-switch-thumb {
+  position: absolute;
+  top: 50%;
+  left: 0.15rem;
+  width: 0.85rem;
+  height: 0.85rem;
+  border-radius: 50%;
+  background: var(--text-secondary);
+  transform: translateY(-50%);
+  transition:
+    transform 0.15s ease,
+    background 0.15s;
+}
+
+.toggle-switch-input:checked ~ .toggle-switch-track {
+  border-color: rgba(88, 166, 255, 0.6);
+  background: var(--brand-light);
+}
+
+.toggle-switch-input:checked ~ .toggle-switch-track .toggle-switch-thumb {
+  background: var(--brand);
+  transform: translate(0.95rem, -50%);
+}
+
+.toggle-switch-input:focus-visible ~ .toggle-switch-track {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
+.toggle-switch-input:disabled ~ .toggle-switch-track {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+@media (max-width: 640px) {
+
+  .toggle-row {
+    min-width: 0;
+  }
+}
+
+.terminal-hash a {
+  color: #86efac;
+  text-decoration: none;
+  border-bottom: 1px dashed rgba(134, 239, 172, 0.4);
+}
+
+.terminal-hash a:hover {
+  color: #4ade80;
+}
+
+.terminal-path {
+  display: block;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  padding: 0.32rem 0.65rem;
+  background: #0d1117;
+  border: 1px solid rgba(88, 166, 255, 0.18);
+  border-left: 3px solid rgba(88, 166, 255, 0.7);
+  border-radius: 0 5px 5px 0;
+  box-shadow: -4px 0 14px rgba(88, 166, 255, 0.12);
+  font-size: 0.8rem;
+  color: var(--brand);
+  word-break: break-all;
+}
+
+.hosting-service-locked {
+  display: grid;
+  gap: 0.2rem;
+  padding: 0.75rem 0.85rem;
+  border: 1px solid rgba(88, 166, 255, 0.24);
+  border-radius: 7px;
+  background: rgba(88, 166, 255, 0.055);
+}
+
+.hosting-service-locked strong {
+  color: var(--text-primary);
+  font-size: 0.86rem;
+}
+
+.hosting-service-locked span {
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+
+/* ── Project workspace ──────────────────────────────────────────────────────
+   Code, Pull requests and Pipeline runs. Two columns: the grouped section rail
+   reuses .side-tabs from the Teams page, so only the surrounding layout and the
+   panel internals are defined here.
+   ------------------------------------------------------------------------- */
+.project-sections {
+  display: grid;
+  grid-template-columns: minmax(0, 200px) minmax(0, 1fr);
+  gap: 1.5rem;
+  align-items: start;
+}

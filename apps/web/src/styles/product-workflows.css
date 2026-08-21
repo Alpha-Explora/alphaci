@@ -560,3 +560,635 @@
     ),
     linear-gradient(180deg, #f7f7f9 0%, #f1f1f4 100%);
 }
+
+/* ── Moved from globals.css ───────────────────────────────────────────────
+   Assigned by which components use these classes rather than by name prefix.
+   Appended, so they keep their original order relative to one another. */
+
+/* ── Tab bar ─────────────────────────────────────────────────────────────── */
+.studio-tab-bar {
+  display: flex;
+  gap: 0;
+  padding: 0 var(--layout-gutter);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.studio-tab-bar::-webkit-scrollbar {
+  display: none;
+}
+
+/* Right-aligned cluster after the tabs (GitHub App status, etc.) */
+.studio-tab-trailing {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-left: auto;
+  padding-left: 1rem;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.studio-tab-button {
+  min-height: 2.55rem;
+  padding: 0.65rem 1rem;
+  border: none;
+  border-bottom: 0;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 0.92rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  transition:
+    color 0.2s ease,
+    border-color 0.2s ease;
+  white-space: nowrap;
+  border-radius: 0.65rem;
+  flex-shrink: 0;
+  position: relative;
+  z-index: 1;
+}
+
+.studio-tab-button:hover {
+  color: var(--text-primary);
+}
+
+.studio-tab-button:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
+.studio-tab-indicator {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  border-radius: 0.65rem;
+  border: 1px solid rgba(88, 166, 255, 0.26);
+  background:
+    linear-gradient(135deg, rgba(88, 166, 255, 0.12), rgba(45, 212, 191, 0.08)),
+    rgba(88, 166, 255, 0.04);
+  box-shadow:
+    0 0 20px rgba(88, 166, 255, 0.12),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.04);
+}
+
+.studio-tab-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+}
+
+/* ── Status banners ──────────────────────────────────────────────────────── */
+.status-banner {
+  padding: 0.6rem 0.9rem;
+  border-radius: 8px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  line-height: 1.45;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: normal;
+}
+
+/* ── Create repo button ─────────────────────────────────────── */
+.create-repo-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  width: 100%;
+  min-height: 2.8rem;
+}
+
+.create-repo-btn svg {
+  flex-shrink: 0;
+  opacity: 0.85;
+}
+
+.btn-spinner {
+  display: inline-block;
+  width: 0.95rem;
+  height: 0.95rem;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 0.75s linear infinite;
+  flex-shrink: 0;
+}
+
+.generate-workflow-hint {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ── Compact form pair row ─────────────────────────────────────────────────────── */
+.form-pair-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.6rem;
+  margin-bottom: 0.5rem;
+}
+
+@media (max-width: 600px) {
+  .form-pair-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ── Result banner (latest project created) ──────────────────────────────── */
+.latest-result-banner {
+  margin-bottom: 1.5rem;
+  padding: 1.25rem;
+  border-radius: var(--radius-card);
+  background: linear-gradient(
+    135deg,
+    rgba(52, 211, 153, 0.06) 0%,
+    rgba(17, 17, 22, 0.6) 100%
+  );
+  border: 1px solid rgba(52, 211, 153, 0.25);
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  box-shadow: var(--shadow-card);
+  position: relative;
+  overflow: hidden;
+}
+
+.latest-result-banner__header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.latest-result-banner__dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--success);
+  flex-shrink: 0;
+}
+
+.latest-result-banner__repo {
+  font-weight: 800;
+  font-size: 0.95rem;
+  color: var(--text-primary);
+  font-family: ui-monospace, monospace;
+}
+
+.latest-result-banner__actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.latest-result-banner__action-btn {
+  padding: 0.4rem 1rem;
+  font-size: 0.8rem;
+  min-height: 2.2rem;
+  display: inline-flex;
+  align-items: center;
+}
+
+.latest-result-banner__meta {
+  font-size: 0.76rem;
+  color: var(--text-muted);
+  margin: 0;
+  line-height: 1.4;
+}
+
+.latest-result-banner__sep {
+  color: var(--text-muted);
+  font-size: 0.78rem;
+}
+
+.latest-result-banner__filename {
+  color: var(--brand);
+  font-family: ui-monospace, monospace;
+}
+
+.latest-result-banner__commit-link {
+  margin-left: 0.75rem;
+  color: var(--text-muted);
+  font-family: ui-monospace, monospace;
+  font-size: 0.75rem;
+  text-decoration: none;
+}
+
+.latest-result-banner__sha {
+  color: var(--brand);
+  border-bottom: 1px dashed var(--brand);
+}
+
+.latest-result-banner__sha-plain {
+  margin-left: 0.75rem;
+  color: var(--text-muted);
+  font-size: 0.75rem;
+}
+
+.latest-result-banner__footer {
+  font-size: 0.76rem;
+  color: var(--text-muted);
+  margin: 0;
+  line-height: 1.4;
+}
+
+.latest-result-banner__action-btn--primary {
+  background: var(--brand);
+  color: #111116;
+  border-color: var(--brand);
+  font-weight: 600;
+}
+
+.latest-result-banner__action-btn--primary:hover {
+  filter: brightness(1.1);
+}
+
+.branch-chip--mono {
+  font-family: ui-monospace, monospace;
+  font-size: 0.7rem;
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-secondary);
+  border-color: var(--border-soft);
+}
+
+.readiness-empty-state {
+  display: grid;
+  gap: 0.55rem;
+  padding: 1rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg-panel);
+}
+
+.readiness-empty-state strong {
+  color: var(--text-primary);
+  font-size: 0.9rem;
+}
+
+.readiness-empty-state p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.82rem;
+  line-height: 1.5;
+}
+
+.create-repo-btn:hover::after,
+.generate-workflow-hint:hover::after {
+  content: " █";
+  font-family: ui-monospace, monospace;
+  font-size: 0.82em;
+  animation: cursorBlink 0.9s step-end infinite;
+  color: var(--brand);
+}
+
+/* create-repo-btn-premium: full-width primary CTA */
+.create-repo-btn-premium {
+  width: 100%;
+  min-height: 3rem;
+  font-size: 0.93rem;
+  gap: 0.55rem;
+  padding: 0.85rem 1.5rem;
+  letter-spacing: -0.01em;
+}
+
+/* ── Single-column layout ────────────────────────────────────────────── */
+.create-project-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: start;
+}
+
+.create-project-main {
+  padding: 2rem var(--layout-gutter);
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+/* Language/framework badge next to the "Create Project" title.
+   Same pill treatment for both single-repo and two-repo (backend + frontend) modes. */
+.cp-project-type-badge {
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 0.2rem 0.65rem;
+  border-radius: 999px;
+  background: rgba(88, 166, 255, 0.12);
+  color: var(--brand);
+  border: 1px solid rgba(88, 166, 255, 0.25);
+}
+
+/* Inline result — replaces the 3rd grid column */
+.cp-inline-result {
+  margin-top: 1.75rem;
+  padding-top: 1.75rem;
+  border-top: 1px solid var(--border-soft);
+}
+
+/* generate-yaml-link: tertiary action, low visual weight */
+.generate-yaml-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  background: none;
+  border: none;
+  padding: 0.3rem 0;
+  color: var(--text-muted);
+  font-size: 0.82rem;
+  font-family: inherit;
+  cursor: pointer;
+  transition: color 0.15s;
+  text-decoration: none;
+}
+
+.generate-yaml-link:hover:not(:disabled) {
+  color: var(--text-secondary);
+}
+
+.generate-yaml-link:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* Mode toggle — clean segmented control */
+.cp-mode-toggle {
+  display: inline-flex;
+  border-radius: 8px;
+  border: 1px solid var(--border-soft);
+  overflow: hidden;
+  margin-bottom: 1.75rem;
+}
+
+.cp-mode-btn {
+  padding: 0.5rem 1.25rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  font-family: inherit;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition:
+    background 0.15s,
+    color 0.15s;
+  white-space: nowrap;
+}
+
+.cp-mode-btn + .cp-mode-btn {
+  border-left: 1px solid var(--border-soft);
+}
+
+.cp-mode-btn[aria-pressed="true"] {
+  background: rgba(88, 166, 255, 0.1);
+  color: var(--brand);
+}
+
+@media (max-width: 860px) {
+  .create-project-main {
+    padding: 1.5rem var(--layout-gutter);
+  }
+}
+
+@media (max-width: 860px) {
+
+  .studio-tab-trailing {
+    width: 100%;
+    justify-content: flex-start;
+    margin-left: 0;
+    padding-left: 0;
+  }
+}
+
+.gh-app-install-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font-family: inherit;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--brand);
+  text-decoration: none;
+  cursor: pointer;
+  transition: color 0.15s ease;
+}
+
+.gh-app-install-link:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+.gh-app-install-link:hover {
+  color: #79c0ff;
+}
+
+.gh-app-install-link:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+  border-radius: 3px;
+}
+
+/* ── Project creation: one paired service surface ─────────────────────── */
+.service-pair-panel {
+  display: grid;
+  gap: 1rem;
+  margin-top: 0.35rem;
+  padding: 1rem;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg-surface);
+  box-shadow:
+    0 12px 28px rgba(10, 10, 14, 0.14),
+    inset 0 1px 0 rgba(255, 255, 255, 0.025);
+}
+
+.service-pair-panel__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-bottom: 0.8rem;
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.service-pair-panel__badge {
+  flex: 0 0 auto;
+  padding: 0.22rem 0.5rem;
+  border: 1px solid rgba(88, 166, 255, 0.32);
+  border-radius: 999px;
+  color: var(--brand-light);
+  background: rgba(88, 166, 255, 0.08);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.service-pair-panel__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1.25rem;
+}
+
+/* These are columns inside one combined container, not two nested cards. */
+.service-pair-panel__service {
+  display: grid;
+  align-content: start;
+  gap: 0.45rem;
+  min-width: 0;
+}
+
+.service-pair-panel__service + .service-pair-panel__service {
+  padding-left: 1.25rem;
+  border-left: 1px solid var(--border-soft);
+}
+
+.service-pair-panel__service-title {
+  margin-bottom: 0.15rem;
+  color: var(--text-primary);
+  font-size: 0.86rem;
+  font-weight: 700;
+}
+
+@media (max-width: 680px) {
+  .service-pair-panel__header {
+    flex-direction: column;
+  }
+
+  .service-pair-panel__grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .service-pair-panel__service + .service-pair-panel__service {
+    padding-top: 1rem;
+    padding-left: 0;
+    border-top: 1px solid var(--border-soft);
+    border-left: 0;
+  }
+}
+
+/* Two-sided labeled switch: "Repositories | Teams" flanking the toggle,
+   so the switch communicates both states at once instead of one word
+   swapping in a separate header line. */
+.rail-mode-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  min-width: 0;
+}
+
+.rail-mode-label {
+  flex: 0 0 auto;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: color 180ms ease;
+}
+
+.rail-mode-label:hover {
+  color: var(--text-secondary);
+}
+
+.rail-mode-label:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 3px;
+  border-radius: 3px;
+}
+
+.rail-mode-label.is-active {
+  color: var(--text-primary);
+  font-weight: 700;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rail-mode-label { transition: none; }
+}
+
+.project-ownership-toggle.is-individual .project-ownership-toggle__track {
+  border-color: color-mix(in srgb, var(--brand) 70%, var(--border-tile));
+  background: var(--brand);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand) 15%, transparent), inset 0 1px 2px rgba(0, 0, 0, 0.12);
+}
+
+.project-ownership-toggle.is-individual .project-ownership-toggle__thumb {
+  transform: translateX(1.18rem);
+  background: white;
+  box-shadow: 0 2px 7px color-mix(in srgb, var(--brand) 40%, rgba(0, 0, 0, 0.3));
+}
+
+.repo-wizard-progress__step.is-active {
+  color: var(--text-primary);
+  border-color: color-mix(in srgb, var(--brand) 45%, var(--border-soft));
+  background: color-mix(in srgb, var(--brand) 11%, transparent);
+  box-shadow: 0 10px 24px color-mix(in srgb, var(--brand) 12%, transparent);
+}
+
+.repo-wizard-progress__step.is-complete {
+  color: var(--text-secondary);
+}
+
+.repo-wizard-progress__step.is-active .repo-wizard-progress__number {
+  border-color: var(--brand);
+  color: white;
+  background: var(--brand);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--brand) 13%, transparent);
+  transform: scale(1.06);
+}
+
+.repo-wizard-progress__step.is-complete .repo-wizard-progress__number {
+  border-color: color-mix(in srgb, var(--brand) 55%, var(--border-soft));
+  color: var(--brand);
+  background: color-mix(in srgb, var(--brand) 10%, transparent);
+}
+
+/* Existing-repository onboarding: what setup will do, before it does it. */
+.existing-repo-notices {
+  list-style: none;
+  margin: 0.75rem 0 0;
+  padding: 0;
+  display: grid;
+  gap: 0.4rem;
+}
+
+.existing-repo-notice {
+  margin: 0.75rem 0 0;
+  padding: 0.55rem 0.75rem;
+  border-radius: 0.5rem;
+  border: 1px solid var(--border-subtle);
+  font-size: 0.78rem;
+  line-height: 1.45;
+  color: var(--text-secondary);
+}
+
+.existing-repo-notices .existing-repo-notice {
+  margin: 0;
+}
+
+.existing-repo-notice--ok {
+  border-color: rgba(63, 185, 80, 0.35);
+  background: rgba(63, 185, 80, 0.06);
+}
