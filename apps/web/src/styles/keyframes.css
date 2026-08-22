@@ -1,0 +1,235 @@
+/**
+ * Shared animation keyframes.
+ * 
+ * Keyframes are resolved by name, not by cascade order, so this file's position in
+ * the manifest does not matter. Surface-specific ones live with their surface —
+ * runs-spin and runsLivePulse are in runs.css.
+ */
+
+/* ── In-flow guard state (loading / error) ──────────────────────────────── */
+
+
+@keyframes state-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.55;
+  }
+}
+
+@keyframes authCardSweep {
+  0%,
+  30% {
+    transform: translateX(-140%) rotate(14deg);
+    opacity: 0;
+  }
+  50% {
+    opacity: 1;
+  }
+  78%,
+  100% {
+    transform: translateX(520%) rotate(14deg);
+    opacity: 0;
+  }
+}
+
+/* ── Skeleton ────────────────────────────────────────────────────────────── */
+@keyframes skeletonPulse {
+  0% {
+    opacity: 0.2;
+  }
+  50% {
+    opacity: 0.4;
+  }
+  100% {
+    opacity: 0.2;
+  }
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes glowSweep {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+/* ── Keyframes ───────────────────────────────────────────────────────────── */
+
+
+@keyframes flowPulse {
+  0%,
+  100% {
+    opacity: 0.4;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.15);
+  }
+}
+
+@keyframes flowTravel {
+  0% {
+    transform: translateX(-100%);
+    opacity: 0;
+  }
+  20% {
+    opacity: 1;
+  }
+  80% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(300%);
+    opacity: 0;
+  }
+}
+
+@keyframes glowPulse {
+  0%,
+  100% {
+    box-shadow:
+      0 0 8px rgba(31, 111, 235, 0.3),
+      0 0 20px rgba(31, 111, 235, 0.1);
+  }
+  50% {
+    box-shadow:
+      0 0 16px rgba(31, 111, 235, 0.5),
+      0 0 40px rgba(31, 111, 235, 0.2);
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   UI ENHANCEMENT PASS — new utility classes
+   ══════════════════════════════════════════════════════════════════════════════ */
+
+/* ── Orb drift animations for FlowBackground ─────────────────────────────── */
+
+
+/* ── CSS-driven FlowBackground orb animations (replaces JS-animated motion.div) */
+@keyframes orb-drift-a {
+  0%,
+  100% {
+    transform: translate(0%, 0%);
+  }
+  33% {
+    transform: translate(-8%, 6%);
+  }
+  66% {
+    transform: translate(4%, -4%);
+  }
+}
+
+@keyframes orb-drift-b {
+  0%,
+  100% {
+    transform: translate(0%, 0%);
+  }
+  33% {
+    transform: translate(10%, 8%);
+  }
+  66% {
+    transform: translate(-5%, 3%);
+  }
+}
+
+@keyframes orb-drift-c {
+  0%,
+  100% {
+    transform: translate(0%, 0%);
+  }
+  33% {
+    transform: translate(-6%, -5%);
+  }
+  66% {
+    transform: translate(8%, 3%);
+  }
+}
+
+@keyframes orb-drift-d {
+  0%,
+  100% {
+    transform: translate(0%, 0%);
+  }
+  33% {
+    transform: translate(5%, -7%);
+  }
+  66% {
+    transform: translate(-8%, 4%);
+  }
+}
+
+@keyframes orb-pulse-e {
+  0%,
+  100% {
+    transform: translateX(-50%) scale(1);
+    opacity: 0.14;
+  }
+  50% {
+    transform: translateX(-50%) scale(1.06);
+    opacity: 0.2;
+  }
+}
+
+/* ═══════════════════════════════════════════════════
+   UI OVERHAUL — HUD/TERMINAL AESTHETIC ADDITIONS
+   ═══════════════════════════════════════════════════ */
+
+
+/* ── Pipeline node HUD pulse (drop-shadow safe with clip-path) ── */
+@keyframes hudPulse {
+  0%,
+  100% {
+    filter: drop-shadow(0 0 4px rgba(88, 166, 255, 0.5))
+      drop-shadow(0 0 8px rgba(88, 166, 255, 0.25));
+  }
+  50% {
+    filter: drop-shadow(0 0 8px rgba(88, 166, 255, 0.9))
+      drop-shadow(0 0 18px rgba(88, 166, 255, 0.5));
+  }
+}
+
+/* ── Terminal cursor blink on hover ─────────────── */
+@keyframes cursorBlink {
+  0%,
+  100% {
+    opacity: 0.9;
+  }
+  50% {
+    opacity: 0;
+  }
+}
+
+@keyframes pipeline-loader-wave {
+  from {
+    transform: translate3d(-3%, 3%, 0) scale(1);
+  }
+  to {
+    transform: translate3d(3%, -3%, 0) scale(1.08);
+  }
+}
+
+/* ════════════════════════════════════════════════════════════════════════════
+   APP SIDEBAR — fixed left sidebar replacing the top nav dock
+   ════════════════════════════════════════════════════════════════════════════ */
+
+
+@keyframes sidebarEdgePulse {
+  0%,
+  100% {
+    opacity: 0.7;
+  }
+  50% {
+    opacity: 1;
+  }
+}

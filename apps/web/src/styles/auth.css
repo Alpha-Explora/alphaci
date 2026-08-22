@@ -1125,3 +1125,30 @@
     opacity: 0.45;
   }
 }
+
+/* ── Moved from globals.css ───────────────────────────────────────────────
+   Assigned by which components use these classes rather than by name prefix.
+   Appended, so they keep their original order relative to one another. */
+
+.hero-kicker {
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--brand);
+  margin: 0;
+}
+
+.auth-header .hero-kicker {
+  font-weight: 700;
+}
+
+@media (max-width: 720px) {
+  .auth-gate-ghost {
+    display: none !important;
+  }
+}
+
+.auth-shell-minimal .auth-header .hero-kicker {
+  font-size: 0.82rem;
+}

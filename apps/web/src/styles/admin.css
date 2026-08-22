@@ -1,0 +1,63 @@
+/**
+ * Admin console surface: the admin shell and its status chips.
+ * 
+ * Extracted from globals.css by usage. See src/features/README.md.
+ */
+
+/* ── Admin console: use the same typography as the signed-in dashboard ──── */
+.admin-shell {
+  font-family: var(--font-dash-body), "Plus Jakarta Sans", sans-serif;
+  letter-spacing: 0;
+  line-height: 1.55;
+}
+
+.admin-shell h1,
+.admin-shell h2,
+.admin-shell h3,
+.admin-shell h4 {
+  font-family: var(--font-dash-display), "Outfit", sans-serif;
+  letter-spacing: -0.02em;
+}
+
+/* ── Status chip variants — consolidated from inline styles ─────────────── */
+.status-chip {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 0.12rem 0.45rem;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+.status-chip-brand {
+  background: rgba(88, 166, 255, 0.1);
+  color: var(--brand);
+  border: 1px solid rgba(88, 166, 255, 0.2);
+}
+
+.status-chip-success {
+  background: rgba(52, 211, 153, 0.1);
+  color: var(--success);
+  border: 1px solid rgba(52, 211, 153, 0.2);
+}
+
+.status-chip-danger {
+  background: rgba(248, 113, 113, 0.1);
+  color: var(--danger);
+  border: 1px solid rgba(248, 113, 113, 0.2);
+}
+
+.status-chip-amber {
+  background: rgba(251, 191, 36, 0.1);
+  color: var(--accent-amber);
+  border: 1px solid rgba(251, 191, 36, 0.25);
+}
+
+.status-chip-muted {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-muted);
+  border: 1px solid var(--border-soft);
+}

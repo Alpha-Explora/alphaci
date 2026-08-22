@@ -1178,3 +1178,17 @@
 .run-card--featured .run-status-word { font-size: 0.85rem; }
 
 .run-card-time { font-variant-numeric: tabular-nums; }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   PIPELINE RUNS PAGE
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Spinner for running stage node */
+@keyframes runs-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}

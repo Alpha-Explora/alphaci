@@ -159,7 +159,14 @@ export function AddMemberDialog({
                 setSelectedUser(null);
                 setSearch(event.target.value);
               }}
-              placeholder="Search Alpha-Explora members by name or GitHub login"
+              /* Deliberately does not name the organization. The roster comes
+                 from whichever org GITHUB_ENFORCED_ORG points at, which this
+                 component has no way to know — the previous copy hardcoded
+                 "Alpha-Explora" and would have kept saying so while searching
+                 somewhere else entirely. If the org should be named here, it
+                 has to arrive as data: the backend already publishes it as
+                 `enforcedOrg` on /catalog/project-options. */
+              placeholder="Search organization members by name or GitHub login"
               autoComplete="off"
             />
             {results.length > 0 && (
