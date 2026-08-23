@@ -25,7 +25,7 @@
   padding: 0.5rem 1rem;
   font-weight: 700;
   z-index: 9999;
-  border-radius: 0 0 0.5rem 0;
+  border-radius: 0 0 0.5rem;
 }
 
 .skip-link:focus {
@@ -102,7 +102,7 @@
 }
 
 .primary-button {
-  color: #ffffff;
+  color: #fff;
   background: var(--brand);
   box-shadow: 0 1px 2px rgba(31, 111, 235, 0.3);
 }
@@ -174,7 +174,7 @@
   border: 1px solid var(--border);
   border-radius: var(--radius-card);
   background: var(--bg-surface);
-  animation: skeletonPulse 1.6s ease-in-out infinite;
+  animation: skeleton-pulse 1.6s ease-in-out infinite;
   min-height: 8rem;
 }
 
@@ -563,7 +563,7 @@
   width: 5px;
   height: 5px;
   border-radius: 50%;
-  background: currentColor;
+  background: currentcolor;
   flex-shrink: 0;
 }
 

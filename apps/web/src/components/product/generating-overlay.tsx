@@ -239,7 +239,7 @@ export function GeneratingOverlay({ isVisible }: GeneratingOverlayProps) {
                 borderRadius: "2px",
                 background: "linear-gradient(90deg, transparent, rgba(88, 166, 255, 0.6), transparent)",
                 backgroundSize: "200% 100%",
-                animation: "glowSweep 1.8s linear infinite",
+                animation: "glow-sweep 1.8s linear infinite",
               }}
             />
           </motion.div>

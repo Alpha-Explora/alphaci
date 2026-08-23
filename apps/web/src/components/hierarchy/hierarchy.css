@@ -48,7 +48,7 @@
 
 .hier-title {
   margin: 0;
-  font-family: var(--font-dash-display), "Outfit", sans-serif;
+  font-family: var(--font-dash-display), Outfit, sans-serif;
   font-size: clamp(1.35rem, 2.3vw, 1.9rem);
   font-weight: 700;
   color: var(--text-primary);
@@ -329,7 +329,7 @@ a.hier-card:hover {
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: currentColor;
+  background: currentcolor;
   flex-shrink: 0;
 }
 
@@ -940,7 +940,7 @@ a.hier-card:hover {
 }
 
 .hier-stat-num {
-  font-family: var(--font-dash-display), "Outfit", sans-serif;
+  font-family: var(--font-dash-display), Outfit, sans-serif;
   font-size: 1.2rem;
   font-weight: 700;
   color: var(--text-primary);

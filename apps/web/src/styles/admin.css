@@ -15,7 +15,7 @@
 .admin-shell h2,
 .admin-shell h3,
 .admin-shell h4 {
-  font-family: var(--font-dash-display), "Outfit", sans-serif;
+  font-family: var(--font-dash-display), Outfit, sans-serif;
   letter-spacing: -0.02em;
 }
 

@@ -50,7 +50,7 @@
   background: var(--accent-amber);
   border-color: var(--accent-amber);
   box-shadow: 0 0 6px rgba(245, 158, 11, 0.4);
-  animation: flowPulse 1.6s ease-in-out infinite;
+  animation: flow-pulse 1.6s ease-in-out infinite;
 }
 
 .pipeline-dot--cancelled {
@@ -365,7 +365,7 @@
   border-radius: 50%;
   background: var(--success);
   box-shadow: 0 0 6px rgba(52, 211, 153, 0.5);
-  animation: flowPulse 2s ease-in-out infinite;
+  animation: flow-pulse 2s ease-in-out infinite;
   flex-shrink: 0;
 }
 
@@ -853,7 +853,7 @@
   content: " █";
   font-family: ui-monospace, monospace;
   font-size: 0.82em;
-  animation: cursorBlink 0.9s step-end infinite;
+  animation: cursor-blink 0.9s step-end infinite;
   color: var(--brand);
 }
 

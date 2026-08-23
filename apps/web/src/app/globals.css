@@ -446,7 +446,7 @@ html[data-theme="light"] {
   background: rgba(31, 111, 235, 0.16); /* --brand-strong */
   border: 1.5px solid var(--brand-strong);
   box-shadow: 0 2px 10px rgba(31, 111, 235, 0.28);
-  animation: glowPulse 1.5s ease-in-out infinite;
+  animation: glow-pulse 1.5s ease-in-out infinite;
 }
 
 .pipeline-node.warning,
@@ -1212,7 +1212,7 @@ html[data-theme="light"] {
 }
 
 .pipeline-dot.active {
-  animation: hudPulse 1.6s ease-in-out infinite;
+  animation: hud-pulse 1.6s ease-in-out infinite;
   background: var(--brand-accent);
   border-color: var(--brand);
   box-shadow: none; /* replaced by drop-shadow filter */

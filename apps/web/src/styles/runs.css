@@ -862,10 +862,10 @@
   border-radius: 50%;
   background: var(--accent-amber);
   box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent-amber) 60%, transparent);
-  animation: runsLivePulse 1.6s ease-in-out infinite;
+  animation: runs-live-pulse 1.6s ease-in-out infinite;
 }
 
-@keyframes runsLivePulse {
+@keyframes runs-live-pulse {
   0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent-amber) 55%, transparent); }
   50% { box-shadow: 0 0 0 5px color-mix(in srgb, var(--accent-amber) 0%, transparent); }
 }
@@ -954,7 +954,7 @@
 .run-status-live {
   width: 0.4rem; height: 0.4rem; border-radius: 50%;
   background: var(--accent-amber);
-  animation: runsLivePulse 1.6s ease-in-out infinite;
+  animation: runs-live-pulse 1.6s ease-in-out infinite;
 }
 
 /* Horizontal pipeline track — the visual centerpiece spanning the card. */
@@ -995,7 +995,7 @@
   position: absolute;
   inset: 0;
   background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--accent-amber) 90%, transparent), transparent);
-  animation: flowTravel 1.8s ease-in-out infinite;
+  animation: flow-travel 1.8s ease-in-out infinite;
 }
 
 .run-card-foot {

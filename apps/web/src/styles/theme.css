@@ -39,7 +39,7 @@
 
 [data-theme="light"] .primary-button {
   background: var(--brand);
-  color: #ffffff;
+  color: #fff;
 }
 
 [data-theme="light"] .ghost-button {
@@ -139,7 +139,7 @@
 
 /* Primary button inside hero — text must stay white on dark button */
 [data-theme="light"] .raw-hero-grid .primary-button {
-  color: #ffffff !important;
+  color: #fff !important;
 }
 
 /* ── Deploy provider cards: Vercel stays near-black (it IS the brand), but
