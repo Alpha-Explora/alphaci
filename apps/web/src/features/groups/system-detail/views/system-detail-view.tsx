@@ -5,9 +5,9 @@ import { useParams } from "next/navigation";
 
 import { LifecycleStatusBadge } from "@/components/hierarchy/badges";
 import { CreateDeliveryProjectDialog } from "@/components/hierarchy/create-delivery-project-dialog";
+import { HierarchyPageShell } from "@/components/hierarchy/hierarchy-page-shell";
 import {
   Breadcrumb,
-  HierarchyPageShell,
   LoadingRows,
   PageHeader,
   ResourceBoundary,

@@ -5,11 +5,11 @@ import { useParams } from "next/navigation";
 import { useState } from "react";
 
 import { GroupStatusBadge, RoleBadge } from "@/components/hierarchy/badges";
+import { HierarchyPageShell } from "@/components/hierarchy/hierarchy-page-shell";
 import {
   Breadcrumb,
   FormDialog,
   GroupSubNav,
-  HierarchyPageShell,
   PageHeader,
   ResourceBoundary,
 } from "@/components/hierarchy/primitives";

@@ -6,9 +6,9 @@ import { AssignDeveloperDialog } from "@/components/hierarchy/assign-developer-d
 import { AssignmentPanel } from "@/components/hierarchy/assignment-panel";
 import { RepositoryStatusBadge } from "@/components/hierarchy/badges";
 import { ConfigurationPanel } from "@/components/hierarchy/configuration-panel";
+import { HierarchyPageShell } from "@/components/hierarchy/hierarchy-page-shell";
 import {
   Breadcrumb,
-  HierarchyPageShell,
   LoadingRows,
   PageHeader,
   ResourceBoundary,

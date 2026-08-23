@@ -4,8 +4,13 @@
  * The MVVM split is only real if crossing a layer fails the build. A `ui/`
  * file that fetches its own data is not a View, whatever the folder is called.
  *
- *   npm run boundaries        # fails on NEW violations only
- *   npm run boundaries:all    # shows everything, including the legacy baseline
+ *   npm run boundaries
+ *
+ * There is no known-violations baseline. There was one — it grandfathered a
+ * cycle through the hierarchy page shell and app-nav's direct reach into the
+ * notifications repository. Both are fixed, so the ratchet has nothing left to
+ * hold and the check is simply strict. Do not reintroduce the baseline to land
+ * a violation; fix the edge instead.
  */
 module.exports = {
   forbidden: [

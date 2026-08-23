@@ -6,10 +6,10 @@ import {
   ActivityFeed,
   ActivityFilters,
 } from "@/components/hierarchy/activity-feed";
+import { HierarchyPageShell } from "@/components/hierarchy/hierarchy-page-shell";
 import {
   Breadcrumb,
   GroupSubNav,
-  HierarchyPageShell,
   LoadingRows,
   PageHeader,
   ResourceBoundary,

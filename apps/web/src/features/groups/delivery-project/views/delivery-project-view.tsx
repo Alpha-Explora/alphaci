@@ -5,9 +5,9 @@ import { useParams } from "next/navigation";
 import { LifecycleStatusBadge } from "@/components/hierarchy/badges";
 import { CreateRepositoryDialog } from "@/components/hierarchy/create-repository-dialog";
 import { RepositoryTable } from "@/components/hierarchy/repository-table";
+import { HierarchyPageShell } from "@/components/hierarchy/hierarchy-page-shell";
 import {
   Breadcrumb,
-  HierarchyPageShell,
   LoadingRows,
   PageHeader,
   ResourceBoundary,

@@ -3,10 +3,10 @@
 import Link from "next/link";
 import { useParams } from "next/navigation";
 
+import { HierarchyPageShell } from "@/components/hierarchy/hierarchy-page-shell";
 import {
   Breadcrumb,
   GroupSubNav,
-  HierarchyPageShell,
   LoadingRows,
   PageHeader,
   ResourceBoundary,

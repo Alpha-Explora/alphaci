@@ -4,10 +4,10 @@ import { useParams } from "next/navigation";
 
 import { AddMemberDialog } from "@/components/hierarchy/add-member-dialog";
 import { MemberTable } from "@/components/hierarchy/member-table";
+import { HierarchyPageShell } from "@/components/hierarchy/hierarchy-page-shell";
 import {
   Breadcrumb,
   GroupSubNav,
-  HierarchyPageShell,
   LoadingRows,
   PageHeader,
   ResourceBoundary,
