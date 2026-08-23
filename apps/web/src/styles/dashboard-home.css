@@ -22,7 +22,7 @@
 .dash-shell h2,
 .dash-shell h3,
 .dash-shell h4 {
-  font-family: var(--font-dash-display), "Outfit", sans-serif;
+  font-family: var(--font-dash-display), Outfit, sans-serif;
   letter-spacing: -0.02em;
 }
 
@@ -124,7 +124,7 @@
   height: 5px;
   border-radius: 50%;
   background: var(--success);
-  animation: flowPulse 2s ease-in-out infinite;
+  animation: flow-pulse 2s ease-in-out infinite;
   flex-shrink: 0;
 }
 
@@ -558,7 +558,7 @@ html:not([data-theme="light"]) .dash-shell {
   height: 6px;
   border-radius: 50%;
   background: var(--brand);
-  animation: flowPulse 1.8s ease-in-out infinite;
+  animation: flow-pulse 1.8s ease-in-out infinite;
   flex-shrink: 0;
 }
 

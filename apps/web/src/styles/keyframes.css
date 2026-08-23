@@ -3,7 +3,7 @@
  * 
  * Keyframes are resolved by name, not by cascade order, so this file's position in
  * the manifest does not matter. Surface-specific ones live with their surface —
- * runs-spin and runsLivePulse are in runs.css.
+ * runs-spin and runs-live-pulse are in runs.css.
  */
 
 /* ── In-flow guard state (loading / error) ──────────────────────────────── */
@@ -19,7 +19,7 @@
   }
 }
 
-@keyframes authCardSweep {
+@keyframes auth-card-sweep {
   0%,
   30% {
     transform: translateX(-140%) rotate(14deg);
@@ -36,7 +36,7 @@
 }
 
 /* ── Skeleton ────────────────────────────────────────────────────────────── */
-@keyframes skeletonPulse {
+@keyframes skeleton-pulse {
   0% {
     opacity: 0.2;
   }
@@ -54,7 +54,7 @@
   }
 }
 
-@keyframes glowSweep {
+@keyframes glow-sweep {
   0% {
     background-position: 200% 0;
   }
@@ -66,7 +66,7 @@
 /* ── Keyframes ───────────────────────────────────────────────────────────── */
 
 
-@keyframes flowPulse {
+@keyframes flow-pulse {
   0%,
   100% {
     opacity: 0.4;
@@ -78,7 +78,7 @@
   }
 }
 
-@keyframes flowTravel {
+@keyframes flow-travel {
   0% {
     transform: translateX(-100%);
     opacity: 0;
@@ -95,7 +95,7 @@
   }
 }
 
-@keyframes glowPulse {
+@keyframes glow-pulse {
   0%,
   100% {
     box-shadow:
@@ -187,7 +187,7 @@
 
 
 /* ── Pipeline node HUD pulse (drop-shadow safe with clip-path) ── */
-@keyframes hudPulse {
+@keyframes hud-pulse {
   0%,
   100% {
     filter: drop-shadow(0 0 4px rgba(88, 166, 255, 0.5))
@@ -200,7 +200,7 @@
 }
 
 /* ── Terminal cursor blink on hover ─────────────── */
-@keyframes cursorBlink {
+@keyframes cursor-blink {
   0%,
   100% {
     opacity: 0.9;
@@ -224,7 +224,7 @@
    ════════════════════════════════════════════════════════════════════════════ */
 
 
-@keyframes sidebarEdgePulse {
+@keyframes sidebar-edge-pulse {
   0%,
   100% {
     opacity: 0.7;

@@ -4,8 +4,13 @@
  * The MVVM split is only real if crossing a layer fails the build. A `ui/`
  * file that fetches its own data is not a View, whatever the folder is called.
  *
- *   npm run boundaries        # fails on NEW violations only
- *   npm run boundaries:all    # shows everything, including the legacy baseline
+ *   npm run boundaries
+ *
+ * There is no known-violations baseline. There was one — it grandfathered a
+ * cycle through the hierarchy page shell and app-nav's direct reach into the
+ * notifications repository. Both are fixed, so the ratchet has nothing left to
+ * hold and the check is simply strict. Do not reintroduce the baseline to land
+ * a violation; fix the edge instead.
  */
 module.exports = {
   forbidden: [
@@ -70,11 +75,11 @@ module.exports = {
         'one. Without this rule the largest consumer surface in the repo is ' +
         'the one place a feature\'s internals are unguarded — routes and other ' +
         'features are already covered, components/ was the blind spot.\n' +
-        'The known-violations baseline grandfathers app-nav, which imports the ' +
-        'notifications repository directly to dodge a cycle: the inbox view ' +
-        'imports AppNav, so app-nav importing the inbox barrel closes a loop. ' +
-        'That is fixed by giving the shell its own view-model slice, not by ' +
-        'widening this rule.',
+        'app-nav used to reach straight into the notifications repository to ' +
+        'dodge a cycle: the inbox view imports AppNav, so app-nav importing ' +
+        'the inbox barrel closed a loop. The fix was a features/notifications/ ' +
+        'summary slice the shell can consume without touching the inbox — not ' +
+        'a wider rule.',
       from: { path: '^src/components/' },
       to: {
         path: '^src/features/',

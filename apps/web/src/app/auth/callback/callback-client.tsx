@@ -758,7 +758,7 @@ export function AuthCallbackClient() {
               borderRadius: "50%",
               background: fc.accent,
               boxShadow: `0 0 8px ${fc.accent}`,
-              animation: prefersReducedMotion ? undefined : "flowPulse 1.8s ease-in-out infinite",
+              animation: prefersReducedMotion ? undefined : "flow-pulse 1.8s ease-in-out infinite",
             }}
           />
           <span

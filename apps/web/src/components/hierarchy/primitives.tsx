@@ -3,117 +3,18 @@
 import "./hierarchy.css";
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
 import {
   useEffect,
   useId,
   useRef,
-  useState,
   type FormEvent,
   type ReactNode,
 } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 
-import { AppNav } from "@/components/layout/app-nav";
-import { FlowBackground } from "@/components/layout/flow-background";
-import { PipelineLoader } from "@/components/layout/pipeline-loader";
-import { WorkspaceProvider } from "@/components/layout/workspace-context";
-import { useAuthSession } from "@/hooks/use-auth-session";
 import type { ResourceState } from "@/hooks/use-hierarchy";
-import { logout } from "@/lib/api/client";
-import type { AuthMeResponse } from "@/lib/api/contracts";
-import { isGuest } from "@/lib/auth/subscription";
 
 const EASE_OUT: [number, number, number, number] = [0.25, 0, 0, 1];
-
-/* ── Page shell ───────────────────────────────────────────────────────────────
- * Encapsulates the auth guard + AppNav + dashboard chrome used by every existing
- * page, so the nine hierarchy routes don't each repeat 60 lines of boilerplate.
- * Renders children as a function of the authenticated session.
- */
-export function HierarchyPageShell({
-  children,
-}: {
-  children: (session: AuthMeResponse) => ReactNode;
-}) {
-  const router = useRouter();
-  const pathname = usePathname();
-  const { status, session, error, refresh } = useAuthSession();
-  const [isLoggingOut, setIsLoggingOut] = useState(false);
-
-  useEffect(() => {
-    if (status === "signed-out") {
-      router.replace(`/login?next=${encodeURIComponent(pathname)}`);
-    }
-  }, [status, router, pathname]);
-
-  async function handleLogout() {
-    setIsLoggingOut(true);
-    try {
-      await logout();
-      await refresh();
-      router.push("/");
-    } finally {
-      setIsLoggingOut(false);
-    }
-  }
-
-  if (status === "loading") {
-    return <PipelineLoader label="Loading your workspace" />;
-  }
-
-  if (status === "signed-out") {
-    return <PipelineLoader label="Redirecting to sign in" />;
-  }
-
-  if (status === "error") {
-    return (
-      <main className="dash-shell">
-        <FlowBackground />
-        <div className="state-body">
-          <div className="state-card">
-            <h1>Session verification failed</h1>
-            <p>{error ?? "We could not verify your session."}</p>
-            <div className="hero-actions">
-              <button
-                className="primary-button"
-                type="button"
-                onClick={() => void refresh()}
-              >
-                Retry
-              </button>
-              <Link className="ghost-button" href="/login">
-                Go to login
-              </Link>
-            </div>
-          </div>
-        </div>
-      </main>
-    );
-  }
-
-  const guest = isGuest(session);
-
-  return (
-    <WorkspaceProvider>
-      <main className="dash-shell" suppressHydrationWarning>
-        <a href="#main-content" className="skip-link">
-          Skip to main content
-        </a>
-        <FlowBackground variant="calm" />
-        <AppNav
-          guest={guest}
-          session={session}
-          onLogout={() => void handleLogout()}
-          isLoggingOut={isLoggingOut}
-        />
-        <div id="main-content" className="dash-page-content">
-          {session ? children(session) : null}
-        </div>
-      </main>
-    </WorkspaceProvider>
-  );
-}
 
 /* ── Breadcrumb ───────────────────────────────────────────────────────────── */
 

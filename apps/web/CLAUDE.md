@@ -1,255 +1,304 @@
-# CLAUDE.md — cicd-workflow-fe
+# CLAUDE.md — alphaci-enterprise-fe
 
-Next.js 16 (app router, React 19, Tailwind 4) frontend for the CI/CD-as-a-Service SaaS. See the workspace root [`../CLAUDE.md`](../CLAUDE.md) for product context and cross-repo flow, and [`../cicd-workflow-be/CLAUDE.md`](../cicd-workflow-be/CLAUDE.md) for API details.
+Next.js 16 (App Router, React 19, Tailwind 4) frontend for the ALPHACI CI/CD
+platform. See the workspace root [`../CLAUDE.md`](../CLAUDE.md) for product
+context and cross-repo flow, and the backend's `CLAUDE.md` for API details.
 
----
-
-## Current state
-
-All MVP product surfaces are built and functional. Auth, billing, dashboard, and Create Project are wired to the backend API.
-
-### Built pages
-
-| Route | Status | Description |
-|-------|--------|-------------|
-| `/` | Built | Landing page with auth-aware CTAs |
-| `/login` | Built | GitHub + Google OAuth via `OAuthAuthPage` |
-| `/signup` | Built | Same component as login, signup-labelled |
-| `/auth/callback` | Built | OAuth callback handler; routes straight to the requested path (no paywall) |
-| `/home` | Built | Dashboard: KPI cards, recent workflows, quick actions |
-| `/workflows` | Built | 3-tab Create Project surface (Setup, Current Projects, Catalog) |
-
-### Built components
-
-| Component | Description |
-|-----------|-------------|
-| `OAuthAuthPage` | Shared login/signup OAuth page with GitHub + Google buttons |
-| `WorkflowBuilder` | Orchestrates the 3-tab create-project interface; holds `createResult` state |
-| `WorkflowSetupTab` | Create Project form: repo name, visibility, service settings, catalog selectors, test toggles |
-| `SetupResultPanel` | Sidebar on Setup tab showing the latest created project with repo/actions/commit links |
-| `WorkflowCurrentTab` | Current tab: success banner for latest result, provisioned projects list, YAML history |
-| `WorkflowAllTab` | Catalog tab: template grid with "Use in Create Project" |
-| `WorkflowStudioTabs` | Accessible tab bar with keyboard navigation (arrow keys, Home, End) |
-| `FlowBackground` | Animated background (particles, ribbons, blobs) used on all pages |
-
-### Built hooks
-
-| Hook | Description |
-|------|-------------|
-| `useAuthSession` | Session fetch + loading/signed-in/signed-out/error states |
-| `useCreateProjectForm` | Form state for `POST /api/v1/projects`; slug-normalises repo/service names; validates before submit |
-| `useGithubInstallations` | Fetches install URL, links installations, detects all-repos access; auto-captures `?installation_id=` from callback URL |
-| `useProjectOptionsCatalog` | Loads repo shapes, project types, workflow recipes; cascading selection logic |
-| `useProvisionedProjects` | Fetches `GET /api/v1/projects`; supports prepending a fresh create result |
-| `useWorkflowCatalog` | Fetches templates + categories; local filtering |
-| `useWorkflowHistory` | Fetches `GET /api/v1/workflows/history` |
-
-### Built API client (`src/lib/api/`)
-
-| Module | Endpoints |
-|--------|-----------|
-| `auth.ts` | `GET /auth/github/start`, `GET /auth/google/start`, `GET /auth/me`, `POST /auth/logout` |
-| `catalog.ts` | `GET /catalog/categories`, `GET /catalog/templates`, `GET /catalog/project-options` |
-| `github.ts` | `GET /github/app/install-url`, `POST /github/installations`, `GET /github/installations/repos`, `GET /github/installations/accounts` |
-| `projects.ts` | `POST /api/v1/projects` (primary flow), `POST /api/v1/projects/setup` (existing repo), `GET /api/v1/projects` |
-| `workflows.ts` | `POST /workflows/generate`, `GET /workflows/history` |
-
-### Not yet built
-
-| Route | Description |
-|-------|-------------|
-| `/runs` | Workflow run history per repo — blocked on GitHub App webhook receiver in BE |
+npm package name is `cicd-fe-single`; the repo is `Alpha-Explora/alphaci-enterprise-fe`.
 
 ---
 
-## Billing model
+## Architecture: feature-sliced MVVM
 
-This deployment has **no payment gateway**. Entitlement is agreed by contract and
-granted administratively, so there is no checkout, no paywall, and no
-`/subscribe` route — they were removed along with the PayMongo integration.
+This is the thing to understand before changing anything. Routes under `src/app/`
+are a **routing table**, not a place for code. Almost every one is a single line:
 
-`getAuthenticatedRedirectPath` therefore sends every authenticated user to the
-path they asked for; only guests are redirected, to `/login`. On the backend,
-`SUBSCRIPTION_GATE_ENABLED=false` makes both the app and CI run validation treat
-every user as fully entitled.
-
----
-
-## Planned surfaces (future, post-MVP)
-
-- Runs page: polls BE for `workflow_run` events mirrored from GitHub App webhooks
-
----
-
-## Next.js config (`next.config.ts`)
-
-The config object is currently empty — no custom image domains, experimental flags, rewrites, redirects, or environment variable exposure have been added yet.
-
-```ts
-// next.config.ts
-const nextConfig: NextConfig = {
-  /* config options here */
-};
+```tsx
+export { RunsListView as default } from "@/features/runs/list";
 ```
 
----
-
-## TypeScript config (`tsconfig.json`)
-
-| Setting | Value |
-|---------|-------|
-| `target` | `ES2017` |
-| `strict` | `true` |
-| `allowJs` | `false` |
-| `moduleResolution` | `bundler` |
-| `jsx` | `react-jsx` |
-| `noEmit` | `true` |
-| `isolatedModules` | `true` |
-| `incremental` | `true` |
-| Path alias | `@/*` → `./src/*` |
-
-The `next` plugin is registered under `compilerOptions.plugins`. No additional path aliases beyond `@/*`.
-
----
-
-## Tailwind 4 + PostCSS (`postcss.config.mjs`, `src/app/globals.css`)
-
-Tailwind v4 does **not** use a `tailwind.config.js` file. Configuration is done entirely in CSS.
-
-**`postcss.config.mjs`** — single plugin:
-```js
-plugins: { "@tailwindcss/postcss": {} }
-```
-
-**`src/app/globals.css`** — Tailwind v4 entry point:
-- `@import "tailwindcss"` (v4 style — replaces the three `@tailwind` directives from v3)
-- `@theme inline` block defines design tokens as CSS variables: `--color-background`, `--color-foreground`, `--font-sans` (Geist Sans), `--font-mono` (Geist Mono)
-- CSS custom properties `--background` and `--foreground` are set at `:root` with a `prefers-color-scheme: dark` override
-
----
-
-## Test configuration
-
-### `jest.config.js`
-
-| Setting | Value |
-|---------|-------|
-| Test environment | `jest-environment-jsdom` |
-| Test roots | `<rootDir>/tests`, `<rootDir>/src` |
-| Setup file | `<rootDir>/jest.setup.js` (runs after framework is installed) |
-| Ignored paths | `/node_modules/`, `/.next/` |
-| Coverage collected from | `src/**/*.{ts,tsx}` excluding `.d.ts` files and all `src/app/**` files |
-| Coverage reporters | `text`, `lcov`, `json-summary` |
-| Coverage thresholds | branches ≥ 80%, functions ≥ 80%, lines ≥ 85%, statements ≥ 85% |
-
-Config is created via `nextJest({ dir: './' })` which wires up Next.js transforms automatically.
-
-### `jest.setup.js`
-
-```js
-require('@testing-library/jest-dom');
-```
-
-This globally imports all `@testing-library/jest-dom` matchers (e.g. `toBeInTheDocument`, `toHaveTextContent`) for every test file.
-
----
-
-## Existing test files
-
-### `tests/unit/sanity.test.ts`
-
-A trivial smoke test — `expect(true).toBe(true)` — used to verify the Jest pipeline is wired correctly. No imports, no subject under test.
-
-### `tests/unit/sum.test.ts`
-
-Tests `src/lib/sum.ts`. Three cases: positive numbers, negative numbers, mixed signs. This is the only non-trivial unit test that currently exists.
-
-### `tests/performance/k6-smoke.ts`
-
-A generic, reusable k6 smoke script. **Must be run with the k6 CLI, not Jest.** It is not picked up by `npm test`.
-
-Key behaviour:
-- Reads configuration entirely from environment variables — no hardcoded targets
-- `BASE_URL` (default `http://localhost:3000`), `SMOKE_PATHS` (comma-separated list of paths, default `/`), `SYSTEM_NAME` (default `generic-web`)
-- `MAX_DURATION_MS` (default `1000`) — per-request latency assertion
-- `EXPECTED_STATUSES` / `EXPECTED_STATUS` — allowed HTTP status codes; if `BASE_URL` matches `*.vercel.app` and no custom statuses are provided, automatically allows `200|401|403` (Vercel protected preview branches)
-- `EXPECTED_TEXT` — optional substring check on response body
-- k6 scenario: `constant-vus` executor; VU count from `K6_VUS` (default `1`), duration from `K6_DURATION` (default `30s`)
-- Thresholds: `http_req_failed < 1%`, `http_req_duration p(95) < 800ms`, `checks rate > 99%`
-
-### `tests/e2e/playwright-e2e.ts`
-
-A self-contained Playwright smoke script run via `npm run test:e2e` (`tsx tests/e2e/playwright-e2e.ts`). **Not a Playwright Test (`*.spec.ts`) file — it is a plain Node script.**
-
-Key behaviour:
-- Browser selected by `E2E_BROWSER` env var (default `chromium`; also accepts `firefox`, `webkit`); all browsers run headless
-- If `E2E_BASE_URL` is not set, spawns `npm run dev` on `127.0.0.1:PORT` (default port `4173`) and kills it on exit
-- If `E2E_BASE_URL` is set, connects to that external URL (timeout extended to 120 s)
-- Waits up to 45 s (or 120 s for external targets) for the server to respond
-- Navigates to the root URL; asserts the page body contains one of the known landing-page markers: `"Get started by editing"` or `"To get started, edit the page.tsx file."`
-- If the external target returns `401`/`403` or contains Vercel/auth-wall text, the test passes silently (protected preview branch)
-- Exits with code `1` on any unexpected failure
-
----
-
-## Docker setup
-
-### `Dockerfile` — three-stage build
-
-| Stage | Base image | Purpose |
-|-------|-----------|---------|
-| `base` | `node:24-alpine` | Shared base; runs `apk upgrade --no-cache` to patch OS packages |
-| `deps` | `base` | Copies `package*.json` and runs `npm ci` to install all dependencies |
-| `builder` | `base` | Copies `node_modules` from `deps`, copies the full source, runs `npm run build` |
-| `runner` | `base` | Production image; runs `npm ci --omit=dev`, removes npm/npx from the image, copies `.next/`, `public/`, and `next.config.ts` from `builder` |
-
-Exposed port: **3000**. Start command: `node node_modules/next/dist/bin/next start -p 3000`.
-
-### `.dockerignore`
-
-The following are excluded from the Docker build context:
+Business logic lives in `src/features/<domain>/<action>/`:
 
 ```
-node_modules
-.next
-coverage
-.git
-.github
-npm-debug.log*
+src/features/runs/
+├── model/          pure rules + types. No React, no fetch, no Next.
+├── data/           the ONLY place in the domain that does I/O.
+└── list/
+    ├── view-models/   state, effects, orchestration. Owns one `status`.
+    ├── views/         renders what the ViewModel gives it.
+    └── index.ts       the slice's public API — the only legal import path.
 ```
+
+`model/` and `data/` sit at domain level because sibling actions share them.
+Domains present today: `admin`, `groups`, `guide`, `home`, `notifications`,
+`projects`, `runs`, `settings`, `teams`, `workflows`.
+
+### The rules are enforced, not suggested
+
+| Command | What it checks |
+|---------|----------------|
+| `npm run boundaries` | dependency-cruiser: layer + cycle rules (see `.dependency-cruiser.cjs`) |
+| `npm run arch:check` | `scripts/check-boundaries.mjs`: thin-page, no-http-in-views, one-vm-status, no-react-in-model |
+| `npm run arch:check:touched` | the same, but only files changed vs `origin/main` |
+
+Both are **at zero** and there is no known-violations baseline. If you add a
+violation, fix the edge — do not re-add a baseline to land it.
+
+The rules in short:
+
+- **`routes-compose-only`** — `src/app/` may import a feature barrel and
+  `shared/`, nothing deeper.
+- **`no-deep-feature-imports`** — cross-feature imports go through `index.ts`.
+  Within your own domain, reach freely into `model/` and `data/`.
+- **`views-must-not-fetch`** — `views/` must not import `data/` at runtime.
+  Type-only imports are exempt: they are erased and carry no coupling.
+- **`components-barrel-only`** — `src/components/` (the pre-migration layout)
+  may consume a feature barrel, never reach past one.
+- **`shared-must-not-know-features`** — `src/shared/` sits below every feature.
+- **`no-circular`** — any cycle fails.
+
+### Migration policy: migrate-on-touch
+
+`src/components/` still holds ~16k lines that no feature owns. It is not a
+staging area — it is what has not been migrated yet. When you make a
+substantive change to a surface, move it into a feature slice first. Don't
+start a migration you aren't otherwise touching.
+
+`scripts/check-boundaries.mjs` and `scripts/lib/paths.mjs` are vendored
+byte-identical from the `next-feature-architecture` skill (the skill repo is
+read-only; `check-boundaries.mjs` dynamically imports `paths.mjs` at runtime,
+which is why both files are here). `scripts/**` is eslint-ignored.
+
+---
+
+## CSS
+
+`src/app/globals.css` is an **import manifest**, not a stylesheet — it went from
+13,339 lines to ~1,700. The import order in it is load-bearing:
+
+```css
+@import "tailwindcss";
+@import "../shared/styles/tokens.css";     /* then reset, typography */
+@import "../styles/base.css";              /* then keyframes, theme, surfaces */
+@import "../styles/components.css";        /* LAST, deliberately */
+```
+
+`components.css` is last because `.glass-panel` must beat `.section-card`,
+`.latest-result-banner` and `.team-detail-surface` — equal specificity, so
+source order decides. Three classes are still pinned in `globals.css` itself
+(`latest-result-banner__eyebrow`, `latest-result-banner__chips`,
+`studio-tab-bar--enhanced`); moving them flips a tie.
+
+### Lint tiers
+
+`npm run lint:css` runs stylelint over `src/**/*.css` in tiers
+(`stylelint.config.mjs` documents each decision):
+
+| Path | Severity |
+|------|----------|
+| `src/shared/styles/**` | error — tokens, reset, typography |
+| `src/features/**` | error — where new CSS goes |
+| `src/styles/**` | **warning**, under a ceiling — lifted out of globals.css |
+| `src/components/**` | **warning**, under a ceiling — `hierarchy.css`, predates the split |
+| `src/app/globals.css` | ignored — it is a manifest |
+
+The warning tier runs under `--max-warnings=749`, today's exact count. **When
+you fix warnings, lower the ceiling in `package.json` in the same commit** —
+slack you leave is slack the next person spends.
+
+Three stylelint rules are deliberately overridden. Read the reasoning in
+`stylelint.config.mjs` before touching them; each one, obeyed, breaks something:
+
+- `property-no-vendor-prefix` — off. Every hit is a prefix Safari still needs.
+- `selector-not-notation: "simple"` — the "complex" form silently drops specificity.
+- `declaration-block-no-redundant-longhand-properties` — ignores `overflow`.
+
+### Token debt
+
+`tokens.css` holds 191 tokens; the surface files still carry ~424 raw `rgba()`
+and ~117 hex literals. Substituting a token is **not** a no-op:
+`--accent-rose-glow` is `rgba(244,63,94,.3)` in dark and `rgba(225,29,72,.15)`
+in light, so replacing a literal that matches the dark value changes light
+theme. This is a reading job, not a codemod.
+
+**Verifying a CSS refactor:** flatten every changed file to a multiset of
+`at-rule context || selector { declarations }` and diff against `HEAD`. Equal
+multisets plus unchanged source order is the only real proof a "safe" edit
+didn't move a cascade winner.
 
 ---
 
 ## Data flow rules
 
-- **Never store provider tokens in the browser.** GitHub access token and Render/Vercel credentials live only in the BE session and Supabase.
-- All GitHub API calls are proxied through the BE. FE only talks to `NEXT_PUBLIC_API_URL` (the BE base URL).
-- The Create Project UI must be catalog-driven: read valid repo shapes, project
-  types, workflow recipes, defaults, and options from the backend instead of
-  hardcoding language/workflow combinations.
-- Use `credentials: "include"` on every `fetch` so the session cookie is sent cross-origin.
-- BE origin must be in `CORS_ORIGINS` env var on the BE side; session cookie name is `cicd_workflow_sid`.
+- **Never store provider tokens in the browser.** GitHub access token and
+  Render/Vercel credentials live only in the BE session and Supabase.
+- All GitHub API calls are proxied through the BE. FE talks only to
+  `NEXT_PUBLIC_API_URL`.
+- No direct Supabase client in the FE.
+- Use `credentials: "include"` on every fetch so the session cookie is sent
+  cross-origin. Session cookie name is `cicd_workflow_sid`; the FE origin must
+  be in the BE's `CORS_ORIGINS`.
+- The Create Project UI is catalog-driven — read repo shapes, project types,
+  workflow recipes and defaults from the backend rather than hardcoding
+  language/workflow combinations.
+
+### Sign-out
+
+Use `useAuthSession().signOut` / `isSigningOut`. Do not call `logout()` and
+`refresh()` by hand — three surfaces each had their own copy with its own
+`isLoggingOut` flag, and they drifted.
+
+### ViewModel conventions
+
+- One `status` per ViewModel (`arch:check` enforces this). Don't add a second
+  loading boolean beside it.
+- Guard async resolution with a **request counter**, not just an `active` flag,
+  so a slow first request cannot overwrite a fast second one.
+- Effects resolve; **handlers** own the loading transition. Setting state
+  synchronously inside an effect trips `react-hooks/set-state-in-effect`, and
+  every instance of it in this repo turned out to be a real bug.
+- Errors returned to views are display strings, never API objects.
+
+---
+
+## Routes
+
+22 routes; 14 static / 9 dynamic at build. Everything except `/`, `/login`,
+`/signup` and `/auth/callback` is a one-line re-export from a feature.
+
+```
+/                                    /admin
+/login  /signup  /auth/callback      /admin/feedback
+/home                                /admin/users/[id]
+/workflows                           /groups/[groupId]
+/runs                                /groups/[groupId]/activity
+/projects/[projectId]                /groups/[groupId]/members
+/teams                               /groups/[groupId]/systems
+/settings                            /groups/[groupId]/systems/[systemId]
+/inbox                               /groups/[groupId]/repositories/[repositoryId]
+/guide                               /groups/[groupId]/delivery-projects/[deliveryProjectId]
+```
+
+`/runs` is built and wired to the BE run history. (Earlier revisions of this
+file said it was blocked on the webhook receiver; it isn't.)
+
+---
+
+## API client (`src/lib/api/`)
+
+`request.ts` is the transport and exports `ApiError` (with `.status`).
+`client.ts` is a barrel. Domain modules: `admin`, `auth`, `capabilities`,
+`catalog`, `contracts` (types), `env-provisioning`, `existing-repos`, `github`,
+`hierarchy` + `hierarchy-contracts`, `project-workspace`, `projects`, `runs`,
+`usage`, `workflows`, `workspaces`.
+
+A feature's `data/` layer wraps these. Views and routes must not import them
+directly — `arch:check` fails on it.
+
+---
+
+## Billing model
+
+No payment gateway. Entitlement is agreed by contract and granted
+administratively: no checkout, no paywall, no `/subscribe`.
+`getAuthenticatedRedirectPath` sends every authenticated user to the path they
+asked for; only guests are redirected, to `/login`. On the backend,
+`SUBSCRIPTION_GATE_ENABLED=false` treats every user as fully entitled.
 
 ---
 
 ## Conventions
 
-- TypeScript strict mode — `"strict": true` in `tsconfig.json`; `allowJs: false`.
-- **Server components by default.** Use `"use client"` only for forms, interactive pickers, and components that need browser APIs.
-- No direct Supabase client in FE — all data goes through the BE API.
-- Tailwind 4 utility classes (no `tailwind.config.js`; configured via `@theme` in CSS).
-- No hardcoded API URLs — read from `process.env.NEXT_PUBLIC_API_URL`.
-- Path alias `@/` maps to `src/` — use it for all cross-directory imports.
+- TypeScript strict; `allowJs: false`. Path aliases: `@/` → `src/`,
+  `@shared/` → `src/shared/`, `@features/` → `src/features/`. Existing code
+  uses `@/` almost everywhere; prefer it for consistency.
+- `"use client"` only where a browser API, state or an event handler needs it.
+- Tailwind 4 — no `tailwind.config.js`; configured via CSS.
+- No hardcoded API URLs — read `process.env.NEXT_PUBLIC_API_URL`.
+- Conventional Commits. Never push to `main` directly.
 
 ---
 
-## ESLint config (`eslint.config.mjs`)
+## Config
 
-Uses the flat config format (ESLint 9+). Extends `eslint-config-next/core-web-vitals` and `eslint-config-next/typescript`. Ignores `.next/`, `out/`, `build/`, and `next-env.d.ts`. The `@typescript-eslint/no-require-imports` rule is disabled for `jest.config.js` and `jest.setup.js` because those files intentionally use CommonJS `require()`.
+**`next.config.ts`** — not empty:
+- `images.remotePatterns` allows GitHub and Google avatar hosts.
+- `turbopack.root` pins the workspace root.
+- A `headers()` rule sets `Cache-Control: no-store, must-revalidate` on
+  documents, with a negative lookahead excluding `/_next/*` (those are
+  content-hashed and must stay immutably cached). Without it the disk/bfcache
+  can serve a stale prerendered shell after a redeploy.
+
+**`eslint.config.mjs`** — flat config, extends `eslint-config-next`
+core-web-vitals + typescript. Ignores `.next/`, `out/`, `build/`,
+`next-env.d.ts` and `scripts/**`. CI runs it with `--max-warnings=0`.
+
+**`jest.config.js`** — jsdom; roots `tests/` and `src/`; setup
+`jest.setup.js` (imports `@testing-library/jest-dom`). Coverage excludes
+`src/app/**`. Thresholds: **branches 80, functions 90, lines 90, statements 90**.
 
 ---
 
-## Environment variables
+## Testing
+
+```bash
+npm test                # jest --runInBand
+npm run test:e2e        # tsx tests/e2e/playwright-e2e.ts (a plain Node script)
+```
+
+33 test files, ~373 tests. **10 tests in `tests/unit/project-env-panel.test.tsx`
+fail on `main`** — a jsdom `element.tagName` null in the suite's own
+`changeValue` helper, not a product bug. If your change leaves exactly those 10
+failing, you have not broken anything.
+
+`tests/performance/k6-smoke.ts` needs the k6 CLI and is not picked up by
+`npm test`.
+
+New `model/` code is the cheap place to add tests — it's pure, so it needs no
+DOM. `tests/unit/features/<domain>/model/` follows the feature layout.
+
+---
+
+## Commands
+
+```bash
+npm run dev             # next dev --turbopack, port 3000
+npm run build           # production build
+npm run typecheck       # tsc --noEmit -p tsconfig.typecheck.json
+npm run lint            # eslint
+npm run lint:css        # stylelint, tiered, with the warning ceiling
+npm run boundaries      # dependency-cruiser
+npm run arch:check      # MVVM layer checks
+npm run arch:new        # scaffold a feature slice (needs the NFA skill on disk)
+```
+
+Full local gate, in the order failures are cheapest to read:
+
+```bash
+npm run typecheck && npx eslint src --max-warnings=0 && npm run lint:css \
+  && npm run boundaries && npm run arch:check && npm test && npm run build
+```
+
+Lockfile is `package-lock.json` — use npm. Port 3000 must match `FRONTEND_URL`
+in the BE `.env`.
+
+### Key versions
+
+| Package | Version |
+|---------|---------|
+| `next` | ^16.2.4 |
+| `react` / `react-dom` | ^19.2.5 |
+| `tailwindcss` | ^4.2.4 |
+| `typescript` | ^6.0.3 |
+| `framer-motion` | ^12.38.0 |
+| `jest` | ^30.3.0 |
+| `stylelint` | ^17.14.1 |
+| `dependency-cruiser` | ^18.2.0 |
+| `playwright` | ^1.59.1 |
+
+---
+
+## Environment
 
 ```
 NEXT_PUBLIC_API_URL=http://localhost:4000    # BE base URL; must match FRONTEND_URL in BE
@@ -257,44 +306,11 @@ NEXT_PUBLIC_API_URL=http://localhost:4000    # BE base URL; must match FRONTEND_
 
 ---
 
-## Testing
+## Docker
 
-```bash
-npm test                # Jest + jsdom; unit tests under tests/unit/ and src/
-npm run test:watch      # Jest in watch mode
-npm run test:e2e        # Playwright smoke via tsx tests/e2e/playwright-e2e.ts
-# k6 smoke (requires k6 CLI installed separately):
-# k6 run tests/performance/k6-smoke.ts -e BASE_URL=http://localhost:3000
-```
-
-Coverage target: branches ≥ 80%, functions ≥ 80%, lines ≥ 85%, statements ≥ 85%.
-
-Note: `src/app/**` files are excluded from coverage collection (see `jest.config.js`). Only files under `src/lib/` and future non-app source directories count toward coverage thresholds.
-
----
-
-## Build and run
-
-```bash
-npm install
-npm run dev             # Next.js dev server on port 3000
-npm run build           # Production build
-npm start               # Serve production build on port 3000
-npm run lint            # ESLint (flat config, ESLint 9)
-```
-
-Lockfile is `package-lock.json` — use `npm` (not yarn/pnpm). Port 3000 must match `FRONTEND_URL` in the BE `.env`.
-
-### Key dependency versions
-
-| Package | Version |
-|---------|---------|
-| `next` | 16.2.1 |
-| `react` / `react-dom` | 19.2.4 |
-| `tailwindcss` | ^4.2.2 |
-| `@tailwindcss/postcss` | ^4.2.2 |
-| `jest` / `jest-environment-jsdom` | ^30.3.0 |
-| `@testing-library/jest-dom` | ^6.9.1 |
-| `playwright` | ^1.58.2 |
-| `typescript` | ^6.0.2 |
-| `tsx` | ^4.21.0 (runs the e2e script) |
+Four-stage `Dockerfile` on `node:24-alpine` (`base` → `deps` → `builder` →
+`runner`). `base` runs `apk upgrade --no-cache`. `runner` installs with
+`--omit=dev`, removes npm/npx from the image, and starts
+`node node_modules/next/dist/bin/next start -p 3000`. Exposes 3000.
+`.dockerignore` excludes `node_modules`, `.next`, `coverage`, `.git`,
+`.github`, `npm-debug.log*`.

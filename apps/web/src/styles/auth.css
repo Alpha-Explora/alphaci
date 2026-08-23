@@ -150,7 +150,7 @@
 .auth-shell-split h2,
 .auth-shell-split h3,
 .auth-shell-split h4 {
-  font-family: var(--font-dash-display), "Outfit", sans-serif;
+  font-family: var(--font-dash-display), Outfit, sans-serif;
   letter-spacing: -0.02em;
 }
 
@@ -232,7 +232,7 @@
     transparent
   );
   transform: rotate(14deg);
-  animation: authCardSweep 6s ease-in-out infinite;
+  animation: auth-card-sweep 6s ease-in-out infinite;
 }
 
 .auth-card-glint {
