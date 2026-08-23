@@ -4,12 +4,11 @@
 # orchestrator, so it runs and gives a verdict even before deployment
 # credentials exist.
 #
-# The baseline in .dependency-cruiser-known-violations.json records the violations
-# present when the structure was introduced. This job fails only on
-# violations *beyond* that baseline, so the count can go down and never up.
-# When you fix some, regenerate with:
-#   npx depcruise src --config .dependency-cruiser.cjs \
-#     --output-type baseline > .dependency-cruiser-known-violations.json
+# There is no known-violations baseline any more. There was one, holding a
+# cycle through the hierarchy page shell and app-nav's reach into the
+# notifications repository; both are fixed, so every check below is strict
+# and whole-tree. Do not reintroduce a baseline to land a violation — fix
+# the edge.
 name: Boundaries
 
 on:
@@ -43,7 +42,7 @@ jobs:
 
       - run: npm ci
 
-      - name: No new boundary violations
+      - name: Import graph (barrels, cycles, shared purity)
         run: npm run boundaries
 
       - name: Stylesheet token discipline
@@ -58,29 +57,16 @@ jobs:
       # token to authenticate with. Vendoring keeps the gate hermetic.
       # Re-sync with: node scripts/check-boundaries.mjs --help
       #
-      # Touched paths only, never the whole tree: the unmigrated routes carry
-      # 50 known thin-page violations that would drown the signal. On a pull
-      # request the diff base is the target branch; on a push it is the commit
-      # before the push.
-      - name: Feature architecture (touched paths)
-        run: |
-          if [ "${{ github.event_name }}" = "pull_request" ]; then
-            SINCE="origin/${{ github.base_ref }}"
-          else
-            SINCE="${{ github.event.before }}"
-          fi
-          # A first push to a new branch reports an all-zero "before" SHA.
-          case "$SINCE" in
-            ""|0000000000000000000000000000000000000000) SINCE="HEAD~1" ;;
-          esac
-          echo "Comparing against $SINCE"
-          node scripts/check-boundaries.mjs --cwd . --src auto --since "$SINCE"
+      # Whole tree, not touched paths. This used to diff against a base ref
+      # because the unmigrated routes carried ~50 thin-page violations that
+      # would drown the signal. Every vertical is migrated now and the count is
+      # zero, so scanning everything is strictly better: it catches a
+      # regression anywhere, not only in the files a PR happens to touch.
+      - name: Feature architecture
+        run: npm run arch:check
 
-      - name: Report remaining baseline debt
-        if: always()
-        run: |
-          COUNT=$(node -p "require('./.dependency-cruiser-known-violations.json').length")
-          echo "### Boundary debt: $COUNT known violations remaining" >> "$GITHUB_STEP_SUMMARY"
-          echo "" >> "$GITHUB_STEP_SUMMARY"
-          echo "Each one is a module reaching into another module's internals." >> "$GITHUB_STEP_SUMMARY"
-          echo "They are migrated away feature by feature — see src/features/README.md." >> "$GITHUB_STEP_SUMMARY"
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Lint
+        run: npx eslint src --max-warnings=0

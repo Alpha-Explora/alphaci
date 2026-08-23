@@ -63,14 +63,25 @@ Two gates, checking different things. Neither is convention.
 | `npm run boundaries` | the import graph: barrels, cycles, `shared/` purity |
 | `npm run arch:check` | the layers: thin routes, I/O placement, React in `model/` |
 
-`npm run boundaries` fails only on violations beyond
-`.dependency-cruiser-known-violations.json`, so the count can fall and never
-rise. `npm run arch:check:touched` scopes the layer rules to what you changed —
-the unmigrated routes still carry known thin-page violations.
+Both are strict and whole-tree, and both are at zero. There is no
+known-violations baseline: there was one, and it is deleted, because a baseline
+that grandfathers nothing is just a place for the next violation to hide.
+`npm run arch:check:touched` still exists for a fast local check of what you
+changed, but CI runs the whole tree.
+
+If you add a violation, fix the edge. Do not regenerate a baseline to land it.
 
 ## Migration status
 
-`notifications` is migrated. The remaining verticals still live in
-`app/`, `components/`, `hooks/` and `lib/`, and are moved one domain at a
-time as product work touches them — not on a schedule. `npm run arch:check`
-reports what is left.
+Every route is migrated. All 22 routes are one-line re-exports from a feature
+slice, except `/`, `/login`, `/signup` and `/auth/callback`, which are small
+enough to have nothing to extract.
+
+Domains: `admin`, `groups`, `guide`, `home`, `notifications`, `projects`,
+`runs`, `settings`, `teams`, `workflows`.
+
+What remains is not routes but `src/components/` — roughly 16k lines of shared
+components that no feature owns yet. The policy is **migrate-on-touch**: when
+you make a substantive change to one, move it into the feature that owns it
+first. Do not start a migration you are not otherwise touching, and do not
+treat `components/` as a staging area — it is simply what has not been moved.
