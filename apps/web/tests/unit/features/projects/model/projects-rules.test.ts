@@ -2,6 +2,9 @@ import { ApiError } from "../../../../../src/lib/api/request";
 import type { ProjectBranchPreview } from "../../../../../src/lib/api/contracts";
 import {
   canFramePreview,
+  domainNextStep,
+  domainScopeLabel,
+  domainStatus,
   isExternalRepo,
   previewKey,
   previewStatusLabel,
@@ -221,5 +224,73 @@ describe("shortCommitSha", () => {
 
   it("passes through a null sha rather than rendering 'null'", () => {
     expect(shortCommitSha(null)).toBeNull();
+  });
+});
+
+/* verified and misconfigured answer different questions — "do you own it" and
+ * "does DNS point here". A domain can be verified and still serve nothing, so
+ * collapsing them into one badge would call that ready. */
+describe("domainStatus", () => {
+  const base = { verified: true, misconfigured: false, lastErrorSafeMessage: null };
+
+  it("is live only when verified and DNS is pointed", () => {
+    expect(domainStatus(base)).toEqual({ label: "Live", tone: "ok" });
+  });
+
+  it("is pending while ownership is unconfirmed", () => {
+    expect(domainStatus({ ...base, verified: false }).tone).toBe("pending");
+  });
+
+  it("flags a verified domain whose DNS points elsewhere", () => {
+    expect(domainStatus({ ...base, misconfigured: true })).toEqual({
+      label: "DNS not pointed here",
+      tone: "danger",
+    });
+  });
+
+  it("does not claim live before DNS has been checked at all", () => {
+    const verdict = domainStatus({ ...base, misconfigured: null });
+    expect(verdict.label).toBe("Verified");
+    expect(verdict.tone).not.toBe("ok");
+  });
+});
+
+describe("domainNextStep", () => {
+  it("points at the record to add when there is a challenge", () => {
+    expect(
+      domainNextStep({
+        verified: false,
+        misconfigured: null,
+        verification: [{ type: "TXT", domain: "_v.example.com", value: "a" }],
+      }),
+    ).toContain("Add the record below");
+  });
+
+  it("says to wait when unverified with no challenge to act on", () => {
+    expect(
+      domainNextStep({ verified: false, misconfigured: null, verification: [] }),
+    ).toContain("Waiting on the provider");
+  });
+
+  it("distinguishes owned-but-unpointed from unverified", () => {
+    expect(
+      domainNextStep({ verified: true, misconfigured: true, verification: [] }),
+    ).toContain("still points elsewhere");
+  });
+
+  it("asks for nothing once the domain is serving", () => {
+    expect(
+      domainNextStep({ verified: true, misconfigured: false, verification: [] }),
+    ).toBeNull();
+  });
+});
+
+describe("domainScopeLabel", () => {
+  it("names the branch a hostname serves", () => {
+    expect(domainScopeLabel("feat/checkout")).toBe("branch: feat/checkout");
+  });
+
+  it("calls a branchless domain production", () => {
+    expect(domainScopeLabel(null)).toBe("production");
   });
 });

@@ -21,6 +21,7 @@
 /* Feature-owned CSS. Sits before components.css, which must stay last so
    .glass-panel keeps beating .section-card on source order. */
 @import "../features/projects/previews/branch-previews.css";
+@import "../features/projects/domains/project-domains.css";
 @import "../styles/components.css";
 
 /* ── Light mode component overrides ────────────────────────────── */

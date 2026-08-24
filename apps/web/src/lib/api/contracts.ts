@@ -370,6 +370,55 @@ export interface ValidateEnvVarsResponse {
   warnings: Array<{ code: string; message: string }>;
 }
 
+/**
+ * One DNS record the provider says must exist before a hostname will serve.
+ * Passed through from the provider verbatim — never generated locally, so the
+ * instructions cannot go stale when the provider changes them.
+ */
+export interface DomainVerificationChallenge {
+  type: string;
+  domain: string;
+  value: string;
+  reason: string;
+}
+
+export interface CustomDomain {
+  id: string;
+  projectId: string;
+  deploymentTargetId: string;
+  provider: EnvProvider;
+  hostname: string;
+  apexDomain: string | null;
+  /** Branch this hostname serves. Null for the production domain. */
+  gitBranch: string | null;
+  verified: boolean;
+  verification: DomainVerificationChallenge[];
+  /**
+   * Whether DNS points at the provider. Null until checked once, and separate
+   * from `verified`: a domain can be verified as owned and still not pointed
+   * at the deployment.
+   */
+  misconfigured: boolean | null;
+  lastCheckedAt: string | null;
+  lastErrorSafeMessage: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AddCustomDomainRequest {
+  deploymentTargetId: string;
+  hostname: string;
+  /** Omitted means the production domain. */
+  gitBranch?: string | null;
+}
+
+export interface RemoveCustomDomainResponse {
+  removed: true;
+  hostname: string;
+  /** Set when the local row was removed but the provider call failed. */
+  providerError: string | null;
+}
+
 export interface DeleteEnvVarMetadataResponse {
   removed: true;
   key: string;

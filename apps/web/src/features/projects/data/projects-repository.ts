@@ -1,13 +1,20 @@
 import { getProjectOptions } from "@/lib/api/catalog";
 import {
+  addProjectDomain,
   disconnectProject,
+  getProjectDomains,
   getProjectOverview,
   getProjectPreviews,
+  removeProjectDomain,
+  verifyProjectDomain,
 } from "@/lib/api/projects";
 
 import type {
+  AddCustomDomainRequest,
+  CustomDomain,
   ProjectOverviewResponse,
   ProjectPreviewsResponse,
+  RemoveCustomDomainResponse,
 } from "../model/projects-types";
 
 /* The only place in this domain that performs I/O. View-models call these;
@@ -20,6 +27,29 @@ export const projectsRepository = {
   /** One entry per branch, newest deployment each. */
   previews(projectId: string): Promise<ProjectPreviewsResponse> {
     return getProjectPreviews(projectId);
+  },
+
+  domains(projectId: string): Promise<CustomDomain[]> {
+    return getProjectDomains(projectId);
+  },
+
+  addDomain(
+    projectId: string,
+    body: AddCustomDomainRequest,
+  ): Promise<CustomDomain> {
+    return addProjectDomain(projectId, body);
+  },
+
+  /** Re-asks the provider whether the hostname is ready. */
+  verifyDomain(projectId: string, domainId: string): Promise<CustomDomain> {
+    return verifyProjectDomain(projectId, domainId);
+  },
+
+  removeDomain(
+    projectId: string,
+    domainId: string,
+  ): Promise<RemoveCustomDomainResponse> {
+    return removeProjectDomain(projectId, domainId);
   },
 
   /** The org every new repository is provisioned into, for the External badge. */

@@ -116,3 +116,54 @@ export function previewKey(preview: ProjectBranchPreview): string {
 export function shortCommitSha(commitSha: string | null): string | null {
   return commitSha ? commitSha.slice(0, 7) : null;
 }
+
+/* ── Custom domains ───────────────────────────────────────────────────────── */
+
+export type DomainStatusTone = "ok" | "pending" | "danger";
+
+/**
+ * What a domain's state means to the reader.
+ *
+ * `verified` and `misconfigured` answer different questions — one is "do you
+ * own it", the other "does DNS point here" — and a domain can be verified and
+ * still serve nothing. Collapsing them into one badge would call that ready.
+ */
+export function domainStatus(domain: {
+  verified: boolean;
+  misconfigured: boolean | null;
+  lastErrorSafeMessage: string | null;
+}): { label: string; tone: DomainStatusTone } {
+  if (!domain.verified) {
+    return { label: "Pending verification", tone: "pending" };
+  }
+  if (domain.misconfigured === true) {
+    return { label: "DNS not pointed here", tone: "danger" };
+  }
+  if (domain.misconfigured === null) {
+    return { label: "Verified", tone: "pending" };
+  }
+  return { label: "Live", tone: "ok" };
+}
+
+/** What the reader should do next, or null when nothing is required. */
+export function domainNextStep(domain: {
+  verified: boolean;
+  misconfigured: boolean | null;
+  verification: Array<{ type: string; domain: string; value: string }>;
+}): string | null {
+  if (!domain.verified && domain.verification.length > 0) {
+    return "Add the record below at your DNS provider, then check again.";
+  }
+  if (!domain.verified) {
+    return "Waiting on the provider to confirm ownership. Check again shortly.";
+  }
+  if (domain.misconfigured === true) {
+    return "Ownership is confirmed, but DNS still points elsewhere. Update the record, then check again.";
+  }
+  return null;
+}
+
+/** Label for which branch a hostname serves. */
+export function domainScopeLabel(gitBranch: string | null): string {
+  return gitBranch ? `branch: ${gitBranch}` : "production";
+}

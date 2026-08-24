@@ -75,6 +75,22 @@ jest.mock("../../src/lib/api/projects", () => ({
   syncDeploymentTarget: jest.fn(),
   detachDeploymentTarget: jest.fn(),
   getDeploymentTargetActions: jest.fn(),
+  // Resolved by default: these panels fetch on mount, and a bare jest.fn()
+  // returns undefined, which the view-models then call .then() on.
+  getProjectPreviews: jest.fn(() =>
+    Promise.resolve({
+      enabled: false,
+      liveProvidersEnabled: false,
+      branches: [],
+      providerError: null,
+    }),
+  ),
+  getProjectDomains: jest.fn(() => Promise.resolve([])),
+  addProjectDomain: jest.fn(() => Promise.resolve(null)),
+  verifyProjectDomain: jest.fn(() => Promise.resolve(null)),
+  removeProjectDomain: jest.fn(() =>
+    Promise.resolve({ removed: true, hostname: "", providerError: null }),
+  ),
 }));
 
 // The Current Projects rail now groups repositories by the user's groups —
@@ -114,6 +130,11 @@ const mockedProjectApi = jest.requireMock("../../src/lib/api/projects") as {
   syncDeploymentTarget: jest.Mock;
   detachDeploymentTarget: jest.Mock;
   getDeploymentTargetActions: jest.Mock;
+  getProjectPreviews: jest.Mock;
+  getProjectDomains: jest.Mock;
+  addProjectDomain: jest.Mock;
+  verifyProjectDomain: jest.Mock;
+  removeProjectDomain: jest.Mock;
 };
 
 const provisionedProject: ProvisionedProject = {

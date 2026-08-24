@@ -7,6 +7,7 @@ import { motion } from "framer-motion";
 import { ServiceLogsConsole } from "@/components/product/service-logs-console";
 // Feature barrel, never a deep path: `components-barrel-only` in
 // .dependency-cruiser.cjs fails the build on anything past index.ts.
+import { ProjectDomainsPanel } from "@/features/projects/domains";
 import { BranchPreviewsPanel } from "@/features/projects/previews";
 import { useCapabilities } from "@/hooks/use-capabilities";
 import {
@@ -100,34 +101,36 @@ type ProjectDetailTab =
  * see the rules that ran. Delivery, records and configuration sit after,
  * because they are consulted rather than worked in.
  */
-const PROJECT_DETAIL_TAB_GROUPS: ReadonlyArray<
-  SideTabGroup<ProjectDetailTab>
-> = [
-  {
-    heading: "Work",
-    items: [
-      { id: "overview", label: "Overview" },
-      { id: "code", label: "Code" },
-      { id: "pulls", label: "Pull requests" },
-    ],
-  },
-  {
-    heading: "Pipeline",
-    items: [
-      { id: "runs", label: "Pipeline runs" },
-      { id: "workflow", label: "Workflow" },
-    ],
-  },
-  {
-    heading: "Delivery",
-    items: [
-      { id: "hosting", label: "Hosting" },
-      { id: "environment", label: "Environment" },
-    ],
-  },
-  { heading: "Records", items: [{ id: "audit", label: "Audit" }] },
-  { heading: "Configuration", items: [{ id: "settings", label: "Settings" }] },
-];
+const PROJECT_DETAIL_TAB_GROUPS: ReadonlyArray<SideTabGroup<ProjectDetailTab>> =
+  [
+    {
+      heading: "Work",
+      items: [
+        { id: "overview", label: "Overview" },
+        { id: "code", label: "Code" },
+        { id: "pulls", label: "Pull requests" },
+      ],
+    },
+    {
+      heading: "Pipeline",
+      items: [
+        { id: "runs", label: "Pipeline runs" },
+        { id: "workflow", label: "Workflow" },
+      ],
+    },
+    {
+      heading: "Delivery",
+      items: [
+        { id: "hosting", label: "Hosting" },
+        { id: "environment", label: "Environment" },
+      ],
+    },
+    { heading: "Records", items: [{ id: "audit", label: "Audit" }] },
+    {
+      heading: "Configuration",
+      items: [{ id: "settings", label: "Settings" }],
+    },
+  ];
 
 // Mirrors the coverage presets offered on repository creation (see
 // workflow-setup-tab.tsx) so editing an existing project's threshold isn't a
@@ -348,7 +351,8 @@ function DeploymentTargetsList({
       return;
     }
 
-    const deleteProviderResource = deleteProviderResourceConfirmId === target.id;
+    const deleteProviderResource =
+      deleteProviderResourceConfirmId === target.id;
     setDetachingTargetId(target.id);
     setTargetMessage(null);
     try {
@@ -483,7 +487,9 @@ function DeploymentTargetsList({
                       >
                         <input
                           type="checkbox"
-                          checked={deleteProviderResourceConfirmId === target.id}
+                          checked={
+                            deleteProviderResourceConfirmId === target.id
+                          }
                           onChange={(event) =>
                             setDeleteProviderResourceConfirmId(
                               event.target.checked ? target.id : null,
@@ -685,8 +691,8 @@ function CiRunsList({
       ) : null}
       {response.liveGithubEnabled && response.mode === "local_mock" ? (
         <p className="env-empty-state" style={{ margin: 0 }}>
-          Live sync is enabled, but no GitHub Actions integration is
-          connected yet — the runs below are simulated, not live.
+          Live sync is enabled, but no GitHub Actions integration is connected
+          yet — the runs below are simulated, not live.
         </p>
       ) : null}
       {response.runs.length ? (
@@ -763,8 +769,8 @@ function DeploymentHistoryList({
       ) : null}
       {response.liveProvidersEnabled && response.mode === "local_mock" ? (
         <p className="env-empty-state" style={{ margin: 0 }}>
-          Live sync is enabled, but no provider integration is connected
-          yet — the deployments below are simulated, not live.
+          Live sync is enabled, but no provider integration is connected yet —
+          the deployments below are simulated, not live.
         </p>
       ) : null}
       {/* A provider that failed is not a provider that is missing. This used
@@ -1280,7 +1286,9 @@ export function ProjectDetailTabs({
       })
       .catch(() => {
         if (active) {
-          setCentralWorkflowTagsError("Unable to load available workflow refs.");
+          setCentralWorkflowTagsError(
+            "Unable to load available workflow refs.",
+          );
         }
       });
 
@@ -1540,157 +1548,152 @@ export function ProjectDetailTabs({
 
   return (
     <section className="project-detail-panel" aria-label="Project detail">
-                <div className="project-detail-header">
-                  <div>
-                    <h3>{selectedProject.repoFullName}</h3>
-                    <p>{selectedProject.serviceName}</p>
-                  </div>
-                  <span className="project-detail-header-badges">
-                    <span
-                      className={`project-status-badge ${statusVariant(selectedProject.status)}`}
-                    >
-                      {selectedProject.status}
-                    </span>
-                  </span>
-                </div>
+      <div className="project-detail-header">
+        <div>
+          <h3>{selectedProject.repoFullName}</h3>
+          <p>{selectedProject.serviceName}</p>
+        </div>
+        <span className="project-detail-header-badges">
+          <span
+            className={`project-status-badge ${statusVariant(selectedProject.status)}`}
+          >
+            {selectedProject.status}
+          </span>
+        </span>
+      </div>
 
-                <div className="project-detail-actions">
-                  {selectedProject.repoUrl ? (
-                    <>
-                      <a
-                        className="ghost-button"
-                        href={selectedProject.repoUrl}
-                        target="_blank"
-                        rel="noreferrer"
-                      >
-                        Repo <span aria-hidden="true">↗</span>
-                      </a>
-                      <a
-                        className="ghost-button"
-                        href={`${selectedProject.repoUrl}/actions`}
-                        target="_blank"
-                        rel="noreferrer"
-                      >
-                        Actions <span aria-hidden="true">↗</span>
-                      </a>
-                    </>
-                  ) : null}
-                  {selectedProject.githubCommitUrl ? (
-                    <a
-                      className="ghost-button"
-                      href={selectedProject.githubCommitUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                    >
-                      Commit <span aria-hidden="true">↗</span>
-                    </a>
-                  ) : null}
-                </div>
+      <div className="project-detail-actions">
+        {selectedProject.repoUrl ? (
+          <>
+            <a
+              className="ghost-button"
+              href={selectedProject.repoUrl}
+              target="_blank"
+              rel="noreferrer"
+            >
+              Repo <span aria-hidden="true">↗</span>
+            </a>
+            <a
+              className="ghost-button"
+              href={`${selectedProject.repoUrl}/actions`}
+              target="_blank"
+              rel="noreferrer"
+            >
+              Actions <span aria-hidden="true">↗</span>
+            </a>
+          </>
+        ) : null}
+        {selectedProject.githubCommitUrl ? (
+          <a
+            className="ghost-button"
+            href={selectedProject.githubCommitUrl}
+            target="_blank"
+            rel="noreferrer"
+          >
+            Commit <span aria-hidden="true">↗</span>
+          </a>
+        ) : null}
+      </div>
 
-                <div className="project-sections" data-tour="project-detail-tabs">
-                <SideTabs
-                  groups={PROJECT_DETAIL_TAB_GROUPS}
-                  value={projectDetailTab}
-                  onChange={setProjectDetailTab}
-                  label="Project sections"
-                  idPrefix="project-detail"
-                />
-                <div className="project-sections__body">
+      <div className="project-sections" data-tour="project-detail-tabs">
+        <SideTabs
+          groups={PROJECT_DETAIL_TAB_GROUPS}
+          value={projectDetailTab}
+          onChange={setProjectDetailTab}
+          label="Project sections"
+          idPrefix="project-detail"
+        />
+        <div className="project-sections__body">
+          {loadingProjectOverview ? (
+            <p className="env-empty-state">Loading project overview...</p>
+          ) : null}
+          {selectedOverviewError ? (
+            <p className="error-text" style={{ margin: 0 }}>
+              {selectedOverviewError}
+            </p>
+          ) : null}
 
-                {loadingProjectOverview ? (
-                  <p className="env-empty-state">Loading project overview...</p>
-                ) : null}
-                {selectedOverviewError ? (
-                  <p className="error-text" style={{ margin: 0 }}>
-                    {selectedOverviewError}
-                  </p>
-                ) : null}
-
-                {/* Keyed on the sub-tab so only this content fades in on
+          {/* Keyed on the sub-tab so only this content fades in on
                     switch — the project list rail is a sibling outside this
                     wrapper and never re-animates when you change tabs. */}
-                <motion.div
-                  key={projectDetailTab}
-                  initial={{ opacity: 0, y: 6 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.18 }}
-                >
-                {projectDetailTab === "overview" ? (
-                  <div
-                    style={{
-                      display: "flex",
-                      flexDirection: "column",
-                      gap: "1rem",
-                    }}
-                  >
-                    <dl className="project-detail-grid">
-                      <div>
-                        <dt>Workflow</dt>
-                        <dd>
-                          {selectedOverview?.workflow.path ??
-                            selectedProject.workflowPath}
-                        </dd>
-                      </div>
-                      <div>
-                        <dt>Checks</dt>
-                        <dd>{selectedChecks(selectedProject)}</dd>
-                      </div>
-                      {selectedProject.githubCommitSha ? (
-                        <div>
-                          <dt>Commit</dt>
-                          <dd>
-                            {selectedProject.githubCommitSha.slice(0, 10)}
-                          </dd>
-                        </div>
-                      ) : null}
-                      <div>
-                        <dt>Stages</dt>
-                        <dd>
-                          {selectedWorkflowFiles.length
-                            ? `${selectedWorkflowFiles.length} gated workflow stages`
-                            : "Not configured"}
-                        </dd>
-                      </div>
-                      <div>
-                        <dt>CI token</dt>
-                        <dd>
-                          {selectedOverview?.ciAuth.status ?? "Not loaded"}
-                        </dd>
-                      </div>
-                      <div>
-                        <dt>Targets</dt>
-                        <dd>
-                          {selectedOverview
-                            ? selectedOverview.deploymentTargets.count
-                            : "Not loaded"}
-                        </dd>
-                      </div>
-                    </dl>
+          <motion.div
+            key={projectDetailTab}
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.18 }}
+          >
+            {projectDetailTab === "overview" ? (
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "1rem",
+                }}
+              >
+                <dl className="project-detail-grid">
+                  <div>
+                    <dt>Workflow</dt>
+                    <dd>
+                      {selectedOverview?.workflow.path ??
+                        selectedProject.workflowPath}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt>Checks</dt>
+                    <dd>{selectedChecks(selectedProject)}</dd>
+                  </div>
+                  {selectedProject.githubCommitSha ? (
+                    <div>
+                      <dt>Commit</dt>
+                      <dd>{selectedProject.githubCommitSha.slice(0, 10)}</dd>
+                    </div>
+                  ) : null}
+                  <div>
+                    <dt>Stages</dt>
+                    <dd>
+                      {selectedWorkflowFiles.length
+                        ? `${selectedWorkflowFiles.length} gated workflow stages`
+                        : "Not configured"}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt>CI token</dt>
+                    <dd>{selectedOverview?.ciAuth.status ?? "Not loaded"}</dd>
+                  </div>
+                  <div>
+                    <dt>Targets</dt>
+                    <dd>
+                      {selectedOverview
+                        ? selectedOverview.deploymentTargets.count
+                        : "Not loaded"}
+                    </dd>
+                  </div>
+                </dl>
 
-                    {/* Branch previews.
+                {/* Branch previews.
 
                         High on Overview deliberately: the question this screen
                         gets asked most is "what does my branch look like right
                         now", and a link buried under Hosting does not answer
                         it. Capped here — the full list is under Hosting. */}
-                    {previewDeploymentsEnabled ? (
-                      <section aria-labelledby="overview-previews-heading">
-                        <h4
-                          className="ws-reported__head"
-                          id="overview-previews-heading"
-                        >
-                          Branch previews
-                        </h4>
-                        <BranchPreviewsPanel
-                          enabled
-                          limit={2}
-                          moreHref="the Hosting tab"
-                          projectId={selectedProject.id}
-                        />
-                      </section>
-                    ) : null}
+                {previewDeploymentsEnabled ? (
+                  <section aria-labelledby="overview-previews-heading">
+                    <h4
+                      className="ws-reported__head"
+                      id="overview-previews-heading"
+                    >
+                      Branch previews
+                    </h4>
+                    <BranchPreviewsPanel
+                      enabled
+                      limit={2}
+                      moreHref="the Hosting tab"
+                      projectId={selectedProject.id}
+                    />
+                  </section>
+                ) : null}
 
-                    {/* Developer access.
+                {/* Developer access.
 
                         Assignments are keyed on hierarchy.repositories, not on
                         this provisioned project, so the panel lives on the
@@ -1698,480 +1701,472 @@ export function ProjectDetailTabs({
                         it the assignment feature is built but unreachable.
                         Rendered only when BOTH ids resolve; a project in a
                         personal workspace has no assignment surface at all. */}
-                    {selectedOverview?.hierarchyRepositoryId &&
-                    selectedProject.workspaceId ? (
-                      <div
-                        className="env-metadata-row provisioned"
-                        style={{ alignItems: "center" }}
+                {selectedOverview?.hierarchyRepositoryId &&
+                selectedProject.workspaceId ? (
+                  <div
+                    className="env-metadata-row provisioned"
+                    style={{ alignItems: "center" }}
+                  >
+                    <span>
+                      <strong>Developer access</strong>
+                      <br />
+                      Grant or revoke this repository for members of the team
+                      that owns it.
+                    </span>
+                    <Link
+                      className="ghost-button target-action-btn"
+                      href={`/groups/${encodeURIComponent(selectedProject.workspaceId)}/repositories/${encodeURIComponent(selectedOverview.hierarchyRepositoryId)}`}
+                    >
+                      Manage access
+                    </Link>
+                  </div>
+                ) : null}
+
+                {syncSnapshot ? (
+                  <div
+                    className="env-metadata-row provisioned"
+                    style={{ alignItems: "center" }}
+                  >
+                    <span>
+                      <strong>Local snapshot</strong>
+                      <br />
+                      {syncSnapshot.latest
+                        ? `${syncSnapshot.latest.status} - ${syncSnapshot.latest.findings.length} finding${syncSnapshot.latest.findings.length === 1 ? "" : "s"} - ${formatDate(syncSnapshot.latest.completedAt)}`
+                        : "Not synced yet"}
+                    </span>
+                    {syncAvailable ? (
+                      <button
+                        className="ghost-button target-action-btn"
+                        type="button"
+                        disabled={syncingProjectId === selectedProject.id}
+                        onClick={handleProjectSync}
                       >
-                        <span>
-                          <strong>Developer access</strong>
-                          <br />
-                          Grant or revoke this repository for members of the
-                          team that owns it.
-                        </span>
-                        <Link
-                          className="ghost-button target-action-btn"
-                          href={`/groups/${encodeURIComponent(selectedProject.workspaceId)}/repositories/${encodeURIComponent(selectedOverview.hierarchyRepositoryId)}`}
-                        >
-                          Manage access
-                        </Link>
-                      </div>
-                    ) : null}
-
-                    {syncSnapshot ? (
-                      <div
-                        className="env-metadata-row provisioned"
-                        style={{ alignItems: "center" }}
-                      >
-                        <span>
-                          <strong>Local snapshot</strong>
-                          <br />
-                          {syncSnapshot.latest
-                            ? `${syncSnapshot.latest.status} - ${syncSnapshot.latest.findings.length} finding${syncSnapshot.latest.findings.length === 1 ? "" : "s"} - ${formatDate(syncSnapshot.latest.completedAt)}`
-                            : "Not synced yet"}
-                        </span>
-                        {syncAvailable ? (
-                          <button
-                            className="ghost-button target-action-btn"
-                            type="button"
-                            disabled={syncingProjectId === selectedProject.id}
-                            onClick={handleProjectSync}
-                          >
-                            {syncingProjectId === selectedProject.id
-                              ? "Syncing…"
-                              : "Sync now"}
-                          </button>
-                        ) : null}
-                      </div>
-                    ) : null}
-
-                    {syncMessage ? (
-                      <p className="error-text" style={{ margin: 0 }}>
-                        {syncMessage}
-                      </p>
-                    ) : null}
-
-                    {selectedProject.failureReason ? (
-                      <p className="error-text" style={{ margin: 0 }}>
-                        {selectedProject.failureReason}
-                      </p>
-                    ) : null}
-
-                    {selectedOverview?.health.checks.length ? (
-                      <div
-                        className="env-metadata-list"
-                        data-tour="sync-health"
-                      >
-                        {selectedOverview.health.checks.map((check) => (
-                          <div
-                            key={check.key}
-                            className={`env-metadata-row ${check.status === "error" ? "failed" : "provisioned"}`}
-                          >
-                            <span>{check.label}</span>
-                            <span>{check.message}</span>
-                          </div>
-                        ))}
-                      </div>
-                    ) : null}
-
-                    {driftDetectionEnabled &&
-                    selectedOverview?.capabilities.driftDetection ? (
-                      driftError ? (
-                        <p className="error-text" style={{ margin: 0 }}>
-                          {driftError}
-                        </p>
-                      ) : (
-                        <DriftFindingsPanel
-                          onRun={() => void handleRunDriftDetection()}
-                          onRepair={handleRepairDriftFinding}
-                          repairEnabled={driftRepairEnabled}
-                          response={driftResponse}
-                          running={runningDriftCheck}
-                          workflowUpdatePrEnabled={workflowUpdatePrEnabled}
-                        />
-                      )
+                        {syncingProjectId === selectedProject.id
+                          ? "Syncing…"
+                          : "Sync now"}
+                      </button>
                     ) : null}
                   </div>
                 ) : null}
 
-                {projectDetailTab === "workflow" ? (
+                {syncMessage ? (
+                  <p className="error-text" style={{ margin: 0 }}>
+                    {syncMessage}
+                  </p>
+                ) : null}
+
+                {selectedProject.failureReason ? (
+                  <p className="error-text" style={{ margin: 0 }}>
+                    {selectedProject.failureReason}
+                  </p>
+                ) : null}
+
+                {selectedOverview?.health.checks.length ? (
+                  <div className="env-metadata-list" data-tour="sync-health">
+                    {selectedOverview.health.checks.map((check) => (
+                      <div
+                        key={check.key}
+                        className={`env-metadata-row ${check.status === "error" ? "failed" : "provisioned"}`}
+                      >
+                        <span>{check.label}</span>
+                        <span>{check.message}</span>
+                      </div>
+                    ))}
+                  </div>
+                ) : null}
+
+                {driftDetectionEnabled &&
+                selectedOverview?.capabilities.driftDetection ? (
+                  driftError ? (
+                    <p className="error-text" style={{ margin: 0 }}>
+                      {driftError}
+                    </p>
+                  ) : (
+                    <DriftFindingsPanel
+                      onRun={() => void handleRunDriftDetection()}
+                      onRepair={handleRepairDriftFinding}
+                      repairEnabled={driftRepairEnabled}
+                      response={driftResponse}
+                      running={runningDriftCheck}
+                      workflowUpdatePrEnabled={workflowUpdatePrEnabled}
+                    />
+                  )
+                ) : null}
+              </div>
+            ) : null}
+
+            {projectDetailTab === "workflow" ? (
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "0.85rem",
+                }}
+              >
+                {workflowSettingsPreviewEnabled &&
+                selectedOverview?.capabilities.workflowSettings ? (
                   <div
+                    className="glass-panel"
                     style={{
+                      padding: "1rem",
                       display: "flex",
                       flexDirection: "column",
                       gap: "0.85rem",
                     }}
                   >
-                    {workflowSettingsPreviewEnabled &&
-                    selectedOverview?.capabilities.workflowSettings ? (
-                      <div
-                        className="glass-panel"
-                        style={{
-                          padding: "1rem",
-                          display: "flex",
-                          flexDirection: "column",
-                          gap: "0.85rem",
-                        }}
-                      >
-                        <div
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        gap: "0.75rem",
+                        alignItems: "center",
+                        flexWrap: "wrap",
+                      }}
+                    >
+                      <div>
+                        <h4 style={{ margin: 0, fontSize: "0.95rem" }}>
+                          Workflow settings
+                        </h4>
+                        <p
                           style={{
-                            display: "flex",
-                            justifyContent: "space-between",
-                            gap: "0.75rem",
-                            alignItems: "center",
-                            flexWrap: "wrap",
+                            margin: "0.25rem 0 0",
+                            color: "var(--text-secondary)",
+                            fontSize: "0.78rem",
                           }}
                         >
-                          <div>
-                            <h4 style={{ margin: 0, fontSize: "0.95rem" }}>
-                              Workflow settings
-                            </h4>
-                            <p
-                              style={{
-                                margin: "0.25rem 0 0",
-                                color: "var(--text-secondary)",
-                                fontSize: "0.78rem",
-                              }}
-                            >
-                              Preview only
-                            </p>
-                          </div>
-                          <button
-                            className="ghost-button"
-                            type="button"
-                            disabled={!workflowSettings || previewingWorkflow}
-                            onClick={handleWorkflowPreview}
-                            style={{
-                              minHeight: "2rem",
-                              padding: "0.35rem 0.85rem",
-                              fontSize: "0.78rem",
+                          Preview only
+                        </p>
+                      </div>
+                      <button
+                        className="ghost-button"
+                        type="button"
+                        disabled={!workflowSettings || previewingWorkflow}
+                        onClick={handleWorkflowPreview}
+                        style={{
+                          minHeight: "2rem",
+                          padding: "0.35rem 0.85rem",
+                          fontSize: "0.78rem",
+                        }}
+                      >
+                        {previewingWorkflow ? "Previewing..." : "Preview"}
+                      </button>
+                    </div>
+
+                    {workflowSettings ? (
+                      <div className="project-detail-grid">
+                        <label>
+                          <dt>Node version</dt>
+                          <select
+                            aria-label="Node version"
+                            value={workflowSettings.nodeVersion}
+                            disabled
+                          >
+                            <option value={workflowSettings.nodeVersion}>
+                              {workflowSettings.nodeVersion}
+                            </option>
+                          </select>
+                        </label>
+                        <label>
+                          <dt>
+                            Coverage threshold
+                            <HelpTip text="The minimum percentage of code that unit tests must exercise. Pipeline runs fail the Quality stage if coverage drops below this number." />
+                          </dt>
+                          <select
+                            aria-label="Coverage threshold"
+                            value={String(workflowSettings.coverageThreshold)}
+                            onChange={(event) => {
+                              setWorkflowSettings({
+                                ...workflowSettings,
+                                coverageThreshold: Number(event.target.value),
+                              });
                             }}
                           >
-                            {previewingWorkflow ? "Previewing..." : "Preview"}
-                          </button>
-                        </div>
-
-                        {workflowSettings ? (
-                          <div className="project-detail-grid">
-                            <label>
-                              <dt>Node version</dt>
-                              <select
-                                aria-label="Node version"
-                                value={workflowSettings.nodeVersion}
-                                disabled
+                            {!COVERAGE_THRESHOLD_OPTIONS.some(
+                              (option) =>
+                                option.value ===
+                                String(workflowSettings.coverageThreshold),
+                            ) ? (
+                              <option
+                                value={String(
+                                  workflowSettings.coverageThreshold,
+                                )}
                               >
-                                <option value={workflowSettings.nodeVersion}>
-                                  {workflowSettings.nodeVersion}
-                                </option>
-                              </select>
-                            </label>
-                            <label>
-                              <dt>
-                                Coverage threshold
-                                <HelpTip text="The minimum percentage of code that unit tests must exercise. Pipeline runs fail the Quality stage if coverage drops below this number." />
-                              </dt>
-                              <select
-                                aria-label="Coverage threshold"
-                                value={String(workflowSettings.coverageThreshold)}
-                                onChange={(event) => {
-                                  setWorkflowSettings({
-                                    ...workflowSettings,
-                                    coverageThreshold: Number(
-                                      event.target.value,
-                                    ),
-                                  });
-                                }}
-                              >
-                                {!COVERAGE_THRESHOLD_OPTIONS.some(
-                                  (option) =>
-                                    option.value ===
-                                    String(workflowSettings.coverageThreshold),
+                                {workflowSettings.coverageThreshold}% (current)
+                              </option>
+                            ) : null}
+                            {COVERAGE_THRESHOLD_OPTIONS.map((option) => (
+                              <option key={option.value} value={option.value}>
+                                {option.label}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+                        <label>
+                          <dt>
+                            Service path
+                            <HelpTip text="The folder inside the repository where this service's code lives. Used to scope which files trigger this workflow and where build commands run." />
+                          </dt>
+                          <input
+                            aria-label="Service path"
+                            value={workflowSettings.servicePath}
+                            onChange={(event) => {
+                              setWorkflowSettings({
+                                ...workflowSettings,
+                                servicePath: event.target.value,
+                              });
+                            }}
+                          />
+                        </label>
+                        <label>
+                          <dt>
+                            Central workflow ref
+                            <HelpTip text="The tag of cicd-external-project/cicd-workflow that this project's pipeline is pinned to. It supplies the reusable gated-stage logic — Access, Quality, Package — that every generated workflow calls into. Options are the real tags published on that repo." />
+                          </dt>
+                          <select
+                            aria-label="Central workflow ref"
+                            value={workflowSettings.centralWorkflowRef}
+                            disabled={!centralWorkflowTags}
+                            onChange={(event) => {
+                              setWorkflowSettings({
+                                ...workflowSettings,
+                                centralWorkflowRef: event.target.value,
+                              });
+                            }}
+                          >
+                            {centralWorkflowTags ? (
+                              <>
+                                {!centralWorkflowTags.includes(
+                                  workflowSettings.centralWorkflowRef,
                                 ) ? (
                                   <option
-                                    value={String(
-                                      workflowSettings.coverageThreshold,
-                                    )}
+                                    value={workflowSettings.centralWorkflowRef}
                                   >
-                                    {workflowSettings.coverageThreshold}%
+                                    {workflowSettings.centralWorkflowRef}{" "}
                                     (current)
                                   </option>
                                 ) : null}
-                                {COVERAGE_THRESHOLD_OPTIONS.map((option) => (
-                                  <option key={option.value} value={option.value}>
-                                    {option.label}
+                                {centralWorkflowTags.map((tag) => (
+                                  <option key={tag} value={tag}>
+                                    {tag}
                                   </option>
                                 ))}
-                              </select>
-                            </label>
-                            <label>
-                              <dt>
-                                Service path
-                                <HelpTip text="The folder inside the repository where this service's code lives. Used to scope which files trigger this workflow and where build commands run." />
-                              </dt>
+                              </>
+                            ) : (
+                              <option
+                                value={workflowSettings.centralWorkflowRef}
+                              >
+                                {centralWorkflowTagsError
+                                  ? workflowSettings.centralWorkflowRef
+                                  : "Loading tags..."}
+                              </option>
+                            )}
+                          </select>
+                          {centralWorkflowTagsError ? (
+                            <p
+                              className="error-text"
+                              style={{
+                                margin: "0.3rem 0 0",
+                                fontSize: "0.72rem",
+                              }}
+                            >
+                              {centralWorkflowTagsError}
+                            </p>
+                          ) : null}
+                        </label>
+                      </div>
+                    ) : (
+                      <p className="env-empty-state">
+                        Loading workflow settings...
+                      </p>
+                    )}
+
+                    {workflowSettings ? (
+                      <div>
+                        <span
+                          className="input-label"
+                          style={{
+                            display: "block",
+                            marginBottom: "0.5rem",
+                          }}
+                        >
+                          Workflow checks
+                        </span>
+                        <div
+                          className="enhancement-chips"
+                          aria-label="Workflow checks"
+                          role="group"
+                          style={{ gap: "0.5rem", flexWrap: "wrap" }}
+                        >
+                          {WORKFLOW_CHECK_OPTIONS.map((check) => (
+                            <motion.label
+                              key={check.key}
+                              className={`enhancement-chip-label-premium${workflowSettings.checks[check.key] ? " enhancement-chip-label--active" : ""}`}
+                              htmlFor={`workflow-check-${check.key}`}
+                              whileTap={{ scale: 0.95 }}
+                              transition={{
+                                type: "spring",
+                                stiffness: 500,
+                                damping: 20,
+                              }}
+                            >
                               <input
-                                aria-label="Service path"
-                                value={workflowSettings.servicePath}
+                                id={`workflow-check-${check.key}`}
+                                type="checkbox"
+                                checked={workflowSettings.checks[check.key]}
                                 onChange={(event) => {
                                   setWorkflowSettings({
                                     ...workflowSettings,
-                                    servicePath: event.target.value,
+                                    checks: {
+                                      ...workflowSettings.checks,
+                                      [check.key]: event.target.checked,
+                                    },
                                   });
                                 }}
                               />
-                            </label>
-                            <label>
-                              <dt>
-                                Central workflow ref
-                                <HelpTip text="The tag of cicd-external-project/cicd-workflow that this project's pipeline is pinned to. It supplies the reusable gated-stage logic — Access, Quality, Package — that every generated workflow calls into. Options are the real tags published on that repo." />
-                              </dt>
-                              <select
-                                aria-label="Central workflow ref"
-                                value={workflowSettings.centralWorkflowRef}
-                                disabled={!centralWorkflowTags}
-                                onChange={(event) => {
-                                  setWorkflowSettings({
-                                    ...workflowSettings,
-                                    centralWorkflowRef: event.target.value,
-                                  });
-                                }}
-                              >
-                                {centralWorkflowTags ? (
-                                  <>
-                                    {!centralWorkflowTags.includes(
-                                      workflowSettings.centralWorkflowRef,
-                                    ) ? (
-                                      <option
-                                        value={
-                                          workflowSettings.centralWorkflowRef
-                                        }
-                                      >
-                                        {workflowSettings.centralWorkflowRef}{" "}
-                                        (current)
-                                      </option>
-                                    ) : null}
-                                    {centralWorkflowTags.map((tag) => (
-                                      <option key={tag} value={tag}>
-                                        {tag}
-                                      </option>
-                                    ))}
-                                  </>
-                                ) : (
-                                  <option value={workflowSettings.centralWorkflowRef}>
-                                    {centralWorkflowTagsError
-                                      ? workflowSettings.centralWorkflowRef
-                                      : "Loading tags..."}
-                                  </option>
-                                )}
-                              </select>
-                              {centralWorkflowTagsError ? (
-                                <p
-                                  className="error-text"
-                                  style={{
-                                    margin: "0.3rem 0 0",
-                                    fontSize: "0.72rem",
-                                  }}
-                                >
-                                  {centralWorkflowTagsError}
-                                </p>
-                              ) : null}
-                            </label>
-                          </div>
-                        ) : (
-                          <p className="env-empty-state">
-                            Loading workflow settings...
-                          </p>
-                        )}
-
-                        {workflowSettings ? (
-                          <div>
-                            <span
-                              className="input-label"
-                              style={{
-                                display: "block",
-                                marginBottom: "0.5rem",
-                              }}
-                            >
-                              Workflow checks
-                            </span>
-                            <div
-                              className="enhancement-chips"
-                              aria-label="Workflow checks"
-                              role="group"
-                              style={{ gap: "0.5rem", flexWrap: "wrap" }}
-                            >
-                              {WORKFLOW_CHECK_OPTIONS.map((check) => (
-                                <motion.label
-                                  key={check.key}
-                                  className={`enhancement-chip-label-premium${workflowSettings.checks[check.key] ? " enhancement-chip-label--active" : ""}`}
-                                  htmlFor={`workflow-check-${check.key}`}
-                                  whileTap={{ scale: 0.95 }}
-                                  transition={{
-                                    type: "spring",
-                                    stiffness: 500,
-                                    damping: 20,
-                                  }}
-                                >
-                                  <input
-                                    id={`workflow-check-${check.key}`}
-                                    type="checkbox"
-                                    checked={workflowSettings.checks[check.key]}
-                                    onChange={(event) => {
-                                      setWorkflowSettings({
-                                        ...workflowSettings,
-                                        checks: {
-                                          ...workflowSettings.checks,
-                                          [check.key]: event.target.checked,
-                                        },
-                                      });
-                                    }}
-                                  />
-                                  <span
-                                    className="enhancement-chip-dot"
-                                    aria-hidden="true"
-                                  />
-                                  {check.label}
-                                </motion.label>
-                              ))}
-                            </div>
-                          </div>
-                        ) : null}
-
-                        <div>
-                          <h4
-                            style={{
-                              margin: "0 0 0.5rem",
-                              fontSize: "0.85rem",
-                            }}
-                          >
-                            Deploy target mappings
-                          </h4>
-                          {deploymentTargets.length ? (
-                            <div className="env-metadata-list">
-                              {deploymentTargets.map((target) => (
-                                <div
-                                  key={target.id}
-                                  className="env-metadata-row provisioned"
-                                >
-                                  <span>{target.slot}</span>
-                                  <span>
-                                    {target.providerProjectName} /{" "}
-                                    {target.branchName}
-                                  </span>
-                                </div>
-                              ))}
-                            </div>
-                          ) : (
-                            <p className="env-empty-state">
-                              No deployment target mappings.
-                            </p>
-                          )}
+                              <span
+                                className="enhancement-chip-dot"
+                                aria-hidden="true"
+                              />
+                              {check.label}
+                            </motion.label>
+                          ))}
                         </div>
-
-                        {workflowSettingsError ? (
-                          <p className="error-text" style={{ margin: 0 }}>
-                            {workflowSettingsError}
-                          </p>
-                        ) : null}
-
-                        {workflowPreview?.validationWarnings.length ? (
-                          <div className="env-metadata-list">
-                            {workflowPreview.validationWarnings.map(
-                              (warning) => (
-                                <div
-                                  key={`${warning.field}-${warning.message}`}
-                                  className="env-metadata-row failed"
-                                >
-                                  <span>{warning.field}</span>
-                                  <span>{warning.message}</span>
-                                </div>
-                              ),
-                            )}
-                          </div>
-                        ) : null}
-
-                        {workflowPreview ? (
-                          <>
-                            <div className="env-metadata-list">
-                              {workflowPreview.diffSummary.map((item) => (
-                                <div
-                                  key={item.path}
-                                  className="env-metadata-row provisioned"
-                                >
-                                  <span>{item.path}</span>
-                                  <span
-                                    className={
-                                      item.status === "changed"
-                                        ? "dash-badge-violet"
-                                        : "branch-chip"
-                                    }
-                                  >
-                                    {item.status}
-                                  </span>
-                                </div>
-                              ))}
-                            </div>
-                            {workflowUpdatePrEnabled ? (
-                              <div
-                                style={{
-                                  display: "flex",
-                                  gap: "0.75rem",
-                                  alignItems: "center",
-                                  flexWrap: "wrap",
-                                }}
-                              >
-                                <button
-                                  className="primary-button"
-                                  type="button"
-                                  disabled={creatingWorkflowPr}
-                                  onClick={handleCreateWorkflowPr}
-                                  style={{
-                                    minHeight: "2rem",
-                                    padding: "0.35rem 0.85rem",
-                                    fontSize: "0.78rem",
-                                  }}
-                                >
-                                  {creatingWorkflowPr
-                                    ? "Creating..."
-                                    : "Create update PR"}
-                                </button>
-                                {workflowUpdatePr ? (
-                                  <a
-                                    className="ghost-button"
-                                    href={workflowUpdatePr.pullRequestUrl}
-                                    target="_blank"
-                                    rel="noreferrer"
-                                    style={{
-                                      minHeight: "2rem",
-                                      padding: "0.35rem 0.85rem",
-                                      fontSize: "0.78rem",
-                                    }}
-                                  >
-                                    {workflowUpdatePr.pullRequestUrl}
-                                  </a>
-                                ) : null}
-                              </div>
-                            ) : null}
-                            {workflowUpdatePrError ? (
-                              <p className="error-text" style={{ margin: 0 }}>
-                                {workflowUpdatePrError}
-                              </p>
-                            ) : null}
-                          </>
-                        ) : null}
                       </div>
                     ) : null}
-                    {selectedWorkflowFiles.length ? (
-                      <WorkflowStageList files={selectedWorkflowFiles} />
-                    ) : (
-                      <p className="env-empty-state">
-                        No workflow file metadata is tracked yet.
+
+                    <div>
+                      <h4
+                        style={{
+                          margin: "0 0 0.5rem",
+                          fontSize: "0.85rem",
+                        }}
+                      >
+                        Deploy target mappings
+                      </h4>
+                      {deploymentTargets.length ? (
+                        <div className="env-metadata-list">
+                          {deploymentTargets.map((target) => (
+                            <div
+                              key={target.id}
+                              className="env-metadata-row provisioned"
+                            >
+                              <span>{target.slot}</span>
+                              <span>
+                                {target.providerProjectName} /{" "}
+                                {target.branchName}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="env-empty-state">
+                          No deployment target mappings.
+                        </p>
+                      )}
+                    </div>
+
+                    {workflowSettingsError ? (
+                      <p className="error-text" style={{ margin: 0 }}>
+                        {workflowSettingsError}
                       </p>
-                    )}
+                    ) : null}
+
+                    {workflowPreview?.validationWarnings.length ? (
+                      <div className="env-metadata-list">
+                        {workflowPreview.validationWarnings.map((warning) => (
+                          <div
+                            key={`${warning.field}-${warning.message}`}
+                            className="env-metadata-row failed"
+                          >
+                            <span>{warning.field}</span>
+                            <span>{warning.message}</span>
+                          </div>
+                        ))}
+                      </div>
+                    ) : null}
+
+                    {workflowPreview ? (
+                      <>
+                        <div className="env-metadata-list">
+                          {workflowPreview.diffSummary.map((item) => (
+                            <div
+                              key={item.path}
+                              className="env-metadata-row provisioned"
+                            >
+                              <span>{item.path}</span>
+                              <span
+                                className={
+                                  item.status === "changed"
+                                    ? "dash-badge-violet"
+                                    : "branch-chip"
+                                }
+                              >
+                                {item.status}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                        {workflowUpdatePrEnabled ? (
+                          <div
+                            style={{
+                              display: "flex",
+                              gap: "0.75rem",
+                              alignItems: "center",
+                              flexWrap: "wrap",
+                            }}
+                          >
+                            <button
+                              className="primary-button"
+                              type="button"
+                              disabled={creatingWorkflowPr}
+                              onClick={handleCreateWorkflowPr}
+                              style={{
+                                minHeight: "2rem",
+                                padding: "0.35rem 0.85rem",
+                                fontSize: "0.78rem",
+                              }}
+                            >
+                              {creatingWorkflowPr
+                                ? "Creating..."
+                                : "Create update PR"}
+                            </button>
+                            {workflowUpdatePr ? (
+                              <a
+                                className="ghost-button"
+                                href={workflowUpdatePr.pullRequestUrl}
+                                target="_blank"
+                                rel="noreferrer"
+                                style={{
+                                  minHeight: "2rem",
+                                  padding: "0.35rem 0.85rem",
+                                  fontSize: "0.78rem",
+                                }}
+                              >
+                                {workflowUpdatePr.pullRequestUrl}
+                              </a>
+                            ) : null}
+                          </div>
+                        ) : null}
+                        {workflowUpdatePrError ? (
+                          <p className="error-text" style={{ margin: 0 }}>
+                            {workflowUpdatePrError}
+                          </p>
+                        ) : null}
+                      </>
+                    ) : null}
                   </div>
                 ) : null}
+                {selectedWorkflowFiles.length ? (
+                  <WorkflowStageList files={selectedWorkflowFiles} />
+                ) : (
+                  <p className="env-empty-state">
+                    No workflow file metadata is tracked yet.
+                  </p>
+                )}
+              </div>
+            ) : null}
 
-                {/*
+            {/*
                   LIVE from GitHub — run, jobs, steps, console log — replacing
                   the old list, which could only show what our own workflow had
                   reported back to us. Both truths still exist: this is the
@@ -2179,204 +2174,223 @@ export function ProjectDetailTabs({
                   that is green here with no reported result is a real state,
                   and seeing both in one place is the diagnosis.
                 */}
-                {projectDetailTab === "runs" ? (
-                  <div
-                    role="tabpanel"
-                    id="project-detail-panel-runs"
-                    aria-labelledby="project-detail-tab-runs"
-                    style={{ display: "grid", gap: "1.25rem" }}
-                  >
-                    <PipelineRunsTab projectId={selectedProject.id} />
+            {projectDetailTab === "runs" ? (
+              <div
+                role="tabpanel"
+                id="project-detail-panel-runs"
+                aria-labelledby="project-detail-tab-runs"
+                style={{ display: "grid", gap: "1.25rem" }}
+              >
+                <PipelineRunsTab projectId={selectedProject.id} />
 
-                    {ciRunTrackingEnabled &&
-                    selectedOverview?.capabilities.ciRunTracking ? (
-                      <div className="ws-reported">
-                        <h3 className="ws-reported__head">
-                          Reported results
-                        </h3>
-                        <p className="ws-hint">
-                          What the workflow sent back to ALPHACI. If a run above
-                          is green but missing here, the report never arrived.
-                        </p>
-                        {ciRunsError ? (
-                          <p className="error-text" style={{ margin: 0 }}>
-                            {ciRunsError}
-                          </p>
-                        ) : (
-                          <CiRunsList response={ciRunsResponse} />
-                        )}
-                      </div>
-                    ) : null}
-                  </div>
-                ) : null}
-
-                {projectDetailTab === "code" ? (
-                  <div
-                    role="tabpanel"
-                    id="project-detail-panel-code"
-                    aria-labelledby="project-detail-tab-code"
-                  >
-                    <CodeTab projectId={selectedProject.id} />
-                  </div>
-                ) : null}
-
-                {projectDetailTab === "pulls" ? (
-                  <div
-                    role="tabpanel"
-                    id="project-detail-panel-pulls"
-                    aria-labelledby="project-detail-tab-pulls"
-                  >
-                    <PullRequestsTab projectId={selectedProject.id} />
-                  </div>
-                ) : null}
-
-                {projectDetailTab === "hosting" ? (
-                  <div
-                    style={{
-                      display: "flex",
-                      flexDirection: "column",
-                      gap: "1rem",
-                    }}
-                  >
-                    {envProvisioningEnabled &&
-                    selectedProject.status === "provisioned" &&
-                    deploymentTargets.length === 0 ? (
-                      <ProjectEnvPanel
-                        onTargetCreated={handleTargetCreated}
-                        project={selectedProject}
-                        section="hosting"
-                      />
-                    ) : !envProvisioningEnabled &&
-                      deploymentTargets.length === 0 ? (
-                      <p className="env-empty-state">
-                        Hosting service provisioning is not enabled.
-                      </p>
-                    ) : null}
-                    {previewDeploymentsEnabled ? (
-                      <section aria-labelledby="hosting-previews-heading">
-                        <h4
-                          className="ws-reported__head"
-                          id="hosting-previews-heading"
-                        >
-                          Branch previews
-                        </h4>
-                        <BranchPreviewsPanel
-                          enabled
-                          projectId={selectedProject.id}
-                        />
-                      </section>
-                    ) : null}
-
-                    {deploymentHistoryEnabled &&
-                    selectedOverview?.capabilities.deploymentHistory ? (
-                      deploymentsError ? (
-                        <p className="error-text" style={{ margin: 0 }}>
-                          {deploymentsError}
-                        </p>
-                      ) : (
-                        <DeploymentHistoryList response={deploymentsResponse} />
-                      )
-                    ) : (
-                      <p className="env-empty-state">
-                        Deployment history is not enabled.
-                      </p>
-                    )}
-                    <DeploymentTargetsList
-                      managementEnabled={projectTargetManagementEnabled}
-                      onDetached={handleTargetDetached}
-                      onTargetChanged={handleTargetChanged}
-                      projectId={selectedProject.id}
-                      targets={deploymentTargets}
-                    />
-                  </div>
-                ) : null}
-
-                {projectDetailTab === "environment" ? (
-                  <div
-                    style={{
-                      display: "flex",
-                      flexDirection: "column",
-                      gap: "1rem",
-                    }}
-                  >
-                    {envProvisioningEnabled &&
-                    selectedProject.status === "provisioned" ? (
-                      <ProjectEnvPanel
-                        project={selectedProject}
-                        section="variables"
-                      />
-                    ) : (
-                      <EnvMetadataList metadata={envMetadata} />
-                    )}
-                  </div>
-                ) : null}
-
-                {projectDetailTab === "audit" ? (
-                  auditError ? (
-                    <p className="error-text" style={{ margin: 0 }}>
-                      {auditError}
+                {ciRunTrackingEnabled &&
+                selectedOverview?.capabilities.ciRunTracking ? (
+                  <div className="ws-reported">
+                    <h3 className="ws-reported__head">Reported results</h3>
+                    <p className="ws-hint">
+                      What the workflow sent back to ALPHACI. If a run above is
+                      green but missing here, the report never arrived.
                     </p>
-                  ) : auditResponse?.items.length ? (
-                    <div className="env-metadata-list">
-                      {auditResponse.items.map((event) => (
-                        <div
-                          key={event.id}
-                          className="env-metadata-row provisioned"
-                        >
-                          <span>{event.eventCode}</span>
-                          <span>{event.message}</span>
-                        </div>
-                      ))}
-                    </div>
+                    {ciRunsError ? (
+                      <p className="error-text" style={{ margin: 0 }}>
+                        {ciRunsError}
+                      </p>
+                    ) : (
+                      <CiRunsList response={ciRunsResponse} />
+                    )}
+                  </div>
+                ) : null}
+              </div>
+            ) : null}
+
+            {projectDetailTab === "code" ? (
+              <div
+                role="tabpanel"
+                id="project-detail-panel-code"
+                aria-labelledby="project-detail-tab-code"
+              >
+                <CodeTab projectId={selectedProject.id} />
+              </div>
+            ) : null}
+
+            {projectDetailTab === "pulls" ? (
+              <div
+                role="tabpanel"
+                id="project-detail-panel-pulls"
+                aria-labelledby="project-detail-tab-pulls"
+              >
+                <PullRequestsTab projectId={selectedProject.id} />
+              </div>
+            ) : null}
+
+            {projectDetailTab === "hosting" ? (
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "1rem",
+                }}
+              >
+                {envProvisioningEnabled &&
+                selectedProject.status === "provisioned" &&
+                deploymentTargets.length === 0 ? (
+                  <ProjectEnvPanel
+                    onTargetCreated={handleTargetCreated}
+                    project={selectedProject}
+                    section="hosting"
+                  />
+                ) : !envProvisioningEnabled &&
+                  deploymentTargets.length === 0 ? (
+                  <p className="env-empty-state">
+                    Hosting service provisioning is not enabled.
+                  </p>
+                ) : null}
+                {previewDeploymentsEnabled ? (
+                  <section aria-labelledby="hosting-previews-heading">
+                    <h4
+                      className="ws-reported__head"
+                      id="hosting-previews-heading"
+                    >
+                      Branch previews
+                    </h4>
+                    <BranchPreviewsPanel
+                      enabled
+                      projectId={selectedProject.id}
+                    />
+                  </section>
+                ) : null}
+
+                {deploymentHistoryEnabled &&
+                selectedOverview?.capabilities.deploymentHistory ? (
+                  deploymentsError ? (
+                    <p className="error-text" style={{ margin: 0 }}>
+                      {deploymentsError}
+                    </p>
                   ) : (
-                    <p className="env-empty-state">No audit events yet.</p>
+                    <DeploymentHistoryList response={deploymentsResponse} />
                   )
-                ) : null}
+                ) : (
+                  <p className="env-empty-state">
+                    Deployment history is not enabled.
+                  </p>
+                )}
+                <DeploymentTargetsList
+                  managementEnabled={projectTargetManagementEnabled}
+                  onDetached={handleTargetDetached}
+                  onTargetChanged={handleTargetChanged}
+                  projectId={selectedProject.id}
+                  targets={deploymentTargets}
+                />
 
-                {projectDetailTab === "settings" ? (
-                  <dl className="project-detail-grid">
-                    <div>
-                      <dt>Project ID</dt>
-                      <dd>{selectedProject.id}</dd>
-                    </div>
-                    <div>
-                      <dt>Repository</dt>
-                      <dd>{selectedProject.repoFullName}</dd>
-                    </div>
-                    <div>
-                      <dt>Project type</dt>
-                      <dd>
-                        {selectedProject.projectTypeId ?? "Not configured"}
-                      </dd>
-                    </div>
-                    <div>
-                      <dt>Workflow recipe</dt>
-                      <dd>
-                        {selectedProject.workflowRecipeId ?? "Not configured"}
-                      </dd>
-                    </div>
-                    <div>
-                      <dt>Visibility</dt>
-                      <dd>{selectedProject.visibility ?? "Not configured"}</dd>
-                    </div>
-                    <div>
-                      <dt>Repo shape</dt>
-                      <dd>{selectedProject.repoShape ?? "Not configured"}</dd>
-                    </div>
-                  </dl>
+                {/* Gated like the rest of hosting: a domain attaches to a
+                        deployment target, so mounting this where provisioning
+                        is off guarantees a request the backend's
+                        EnvFeatureGuard refuses. */}
+                {envProvisioningEnabled ? (
+                  <section aria-labelledby="hosting-domains-heading">
+                    <h4
+                      className="ws-reported__head"
+                      id="hosting-domains-heading"
+                    >
+                      Custom domains
+                    </h4>
+                    <ProjectDomainsPanel
+                      enabled
+                      projectId={selectedProject.id}
+                      targets={deploymentTargets.map((target) => ({
+                        id: target.id,
+                        label: `${providerDisplayName(target.provider)} · ${target.providerProjectName}`,
+                      }))}
+                    />
+                  </section>
                 ) : null}
+              </div>
+            ) : null}
 
-                {/* The danger zone lives HERE and only here. It used to sit
+            {projectDetailTab === "environment" ? (
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "1rem",
+                }}
+              >
+                {envProvisioningEnabled &&
+                selectedProject.status === "provisioned" ? (
+                  <ProjectEnvPanel
+                    project={selectedProject}
+                    section="variables"
+                  />
+                ) : (
+                  <EnvMetadataList metadata={envMetadata} />
+                )}
+              </div>
+            ) : null}
+
+            {projectDetailTab === "audit" ? (
+              auditError ? (
+                <p className="error-text" style={{ margin: 0 }}>
+                  {auditError}
+                </p>
+              ) : auditResponse?.items.length ? (
+                <div className="env-metadata-list">
+                  {auditResponse.items.map((event) => (
+                    <div
+                      key={event.id}
+                      className="env-metadata-row provisioned"
+                    >
+                      <span>{event.eventCode}</span>
+                      <span>{event.message}</span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="env-empty-state">No audit events yet.</p>
+              )
+            ) : null}
+
+            {projectDetailTab === "settings" ? (
+              <dl className="project-detail-grid">
+                <div>
+                  <dt>Project ID</dt>
+                  <dd>{selectedProject.id}</dd>
+                </div>
+                <div>
+                  <dt>Repository</dt>
+                  <dd>{selectedProject.repoFullName}</dd>
+                </div>
+                <div>
+                  <dt>Project type</dt>
+                  <dd>{selectedProject.projectTypeId ?? "Not configured"}</dd>
+                </div>
+                <div>
+                  <dt>Workflow recipe</dt>
+                  <dd>
+                    {selectedProject.workflowRecipeId ?? "Not configured"}
+                  </dd>
+                </div>
+                <div>
+                  <dt>Visibility</dt>
+                  <dd>{selectedProject.visibility ?? "Not configured"}</dd>
+                </div>
+                <div>
+                  <dt>Repo shape</dt>
+                  <dd>{selectedProject.repoShape ?? "Not configured"}</dd>
+                </div>
+              </dl>
+            ) : null}
+
+            {/* The danger zone lives HERE and only here. It used to sit
                     below the whole tab set, which meant "Delete Project" was on
                     screen no matter which tab you were reading — including
                     while browsing code. Destructive actions belong with
                     configuration, not on every surface. */}
-                {projectDetailTab === "settings" && dangerZone ? (
-                  <div style={{ marginTop: "1.25rem" }}>{dangerZone}</div>
-                ) : null}
-                </motion.div>
-                </div>
-                </div>
+            {projectDetailTab === "settings" && dangerZone ? (
+              <div style={{ marginTop: "1.25rem" }}>{dangerZone}</div>
+            ) : null}
+          </motion.div>
+        </div>
+      </div>
     </section>
   );
 }

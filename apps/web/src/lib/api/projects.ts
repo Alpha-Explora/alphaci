@@ -11,8 +11,11 @@ import type {
   ProjectCiRun,
   ProjectCiRunRerunResponse,
   ProjectCiRunsResponse,
+  AddCustomDomainRequest,
+  CustomDomain,
   ProjectDeploymentsResponse,
   ProjectPreviewsResponse,
+  RemoveCustomDomainResponse,
   ProjectDriftResponse,
   ProjectDriftRepairAction,
   ProjectDriftRepairResponse,
@@ -130,6 +133,44 @@ export async function getProjectDeployments(
 ): Promise<ProjectDeploymentsResponse> {
   return request<ProjectDeploymentsResponse>(
     `/projects/${encodeURIComponent(projectId)}/deployments`,
+  );
+}
+
+export async function getProjectDomains(
+  projectId: string,
+): Promise<CustomDomain[]> {
+  return request<CustomDomain[]>(
+    `/projects/${encodeURIComponent(projectId)}/domains`,
+  );
+}
+
+export async function addProjectDomain(
+  projectId: string,
+  body: AddCustomDomainRequest,
+): Promise<CustomDomain> {
+  return request<CustomDomain>(
+    `/projects/${encodeURIComponent(projectId)}/domains`,
+    { method: "POST", body: JSON.stringify(body) },
+  );
+}
+
+export async function verifyProjectDomain(
+  projectId: string,
+  domainId: string,
+): Promise<CustomDomain> {
+  return request<CustomDomain>(
+    `/projects/${encodeURIComponent(projectId)}/domains/${encodeURIComponent(domainId)}/verify`,
+    { method: "POST" },
+  );
+}
+
+export async function removeProjectDomain(
+  projectId: string,
+  domainId: string,
+): Promise<RemoveCustomDomainResponse> {
+  return request<RemoveCustomDomainResponse>(
+    `/projects/${encodeURIComponent(projectId)}/domains/${encodeURIComponent(domainId)}`,
+    { method: "DELETE" },
   );
 }
 
