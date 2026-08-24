@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
 
-import { AppNav } from "@/components/layout/app-nav";
+import { AppNav } from "@/features/workspace/selection";
 import { FlowBackground } from "@/shared/layout/flow-background";
 import type { useAuthSession } from "@/features/auth/session";
 

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-import { useWorkspaceSelection } from "@/components/layout/workspace-context";
+import { useWorkspaceSelection } from "@/features/workspace/selection";
 
 import { homeRepository } from "../../data/home-repository";
 import { computeRunStats } from "../../model/home-rules";

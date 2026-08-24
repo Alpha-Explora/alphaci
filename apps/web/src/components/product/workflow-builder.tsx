@@ -17,7 +17,7 @@ import type {
   SetupProjectResponse,
 } from "@/lib/api/contracts";
 import { useCreateProjectForm } from "@/hooks/use-create-project-form";
-import { useCapabilities } from "@/hooks/use-capabilities";
+import { useCapabilities } from "@/features/capabilities/current";
 import { useDeploymentProvisioningForm } from "@/hooks/use-deployment-provisioning-form";
 import { useGithubInstallations } from "@/hooks/use-github-installations";
 import { useProjectOptionsCatalog } from "@/hooks/use-project-options-catalog";

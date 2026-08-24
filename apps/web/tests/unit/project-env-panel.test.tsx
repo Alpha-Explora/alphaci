@@ -4,7 +4,7 @@ import { createRoot, type Root } from "react-dom/client";
 import { ProjectEnvPanel } from "../../src/components/product/project-env-panel";
 import { ProjectDetailTabs } from "../../src/components/product/project-detail-tabs";
 import { WorkflowCurrentTab } from "../../src/components/product/workflow-current-tab";
-import { useCapabilities } from "../../src/hooks/use-capabilities";
+import { useCapabilities } from "../../src/features/capabilities/current";
 import { useProjectEnvProvisioning } from "../../src/hooks/use-project-env-provisioning";
 import type { ProvisionedProject } from "../../src/lib/api/contracts";
 import { getMyUsage } from "../../src/lib/api/usage";
@@ -49,7 +49,7 @@ jest.mock("framer-motion", () => {
   };
 });
 
-jest.mock("../../src/hooks/use-capabilities", () => ({
+jest.mock("../../src/features/capabilities/current", () => ({
   useCapabilities: jest.fn(),
 }));
 

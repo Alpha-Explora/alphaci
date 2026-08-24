@@ -6,10 +6,10 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, type ReactNode } from "react";
 
-import { AppNav } from "@/components/layout/app-nav";
+import { AppNav } from "@/features/workspace/selection";
 import { FlowBackground } from "@/shared/layout/flow-background";
 import { PipelineLoader } from "@/shared/layout/pipeline-loader";
-import { WorkspaceProvider } from "@/components/layout/workspace-context";
+import { WorkspaceProvider } from "@/features/workspace/selection";
 import { useAuthSession } from "@/features/auth/session";
 import type { AuthMeResponse } from "@/lib/api/contracts";
 import { isGuest } from "@/features/auth/session";

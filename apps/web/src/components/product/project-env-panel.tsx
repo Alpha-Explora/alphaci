@@ -2,7 +2,7 @@
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
 
-import { useCapabilities } from "@/hooks/use-capabilities";
+import { useCapabilities } from "@/features/capabilities/current";
 import { useProjectEnvProvisioning } from "@/hooks/use-project-env-provisioning";
 import type {
   EnvEnvironment,

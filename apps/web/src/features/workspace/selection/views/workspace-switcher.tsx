@@ -3,10 +3,12 @@
 import { useState } from "react";
 
 import { CreateGroupDialog } from "@/components/hierarchy/create-group-dialog";
-import { useAuthSession } from "@/features/auth/session";
-import type { WorkspacesMeResponse } from "@/lib/api/contracts";
-import { isGlobalCreatorRole } from "@/lib/api/hierarchy-contracts";
-import { useWorkspaceSelection } from "./workspace-context";
+import {
+  canCreateWorkspace,
+  type WorkspaceAppRole,
+  type WorkspacesMeResponse,
+} from "../model/workspace-types";
+import { useWorkspaceSelection } from "./workspace-selection-context";
 
 /**
  * Sentinel option value. A <select> can only carry values, so "create" rides in
@@ -29,19 +31,20 @@ const CREATE = "__create__";
  */
 export function WorkspaceSwitcher({
   workspaces,
+  appRole,
   onWorkspaceCreated,
 }: Readonly<{
   workspaces: WorkspacesMeResponse | null;
+  appRole?: WorkspaceAppRole | null;
   /** Lets the owner of the workspace list re-fetch after a create. */
   onWorkspaceCreated?: (workspaceId: string) => void;
 }>) {
-  const { session } = useAuthSession();
   const { selectedWorkspace, selectedWorkspaceId, setSelectedWorkspaceId } =
     useWorkspaceSelection();
   const [createOpen, setCreateOpen] = useState(false);
 
   const items = workspaces?.items ?? [];
-  const canCreate = isGlobalCreatorRole(session?.appRole);
+  const canCreate = canCreateWorkspace(appRole);
   const current =
     items.find((workspace) => workspace.id === selectedWorkspaceId) ??
     selectedWorkspace ??

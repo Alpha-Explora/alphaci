@@ -10,7 +10,7 @@ import {
   useState,
 } from "react";
 
-import type { WorkspaceSummary, WorkspacesMeResponse } from "@/lib/api/contracts";
+import type { WorkspaceSummary, WorkspacesMeResponse } from "../model/workspace-types";
 
 interface WorkspaceSelectionContextValue {
   selectedWorkspaceId: string | null;

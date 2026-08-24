@@ -2,7 +2,7 @@
 
 import { motion } from "framer-motion";
 
-import { AppNav } from "@/components/layout/app-nav";
+import { AppNav } from "@/features/workspace/selection";
 import { FlowBackground } from "@/shared/layout/flow-background";
 import { GroupWorkspacePanel } from "@/components/product/group-workspace-panel";
 import type { useAuthSession } from "@/features/auth/session";

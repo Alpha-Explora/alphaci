@@ -3,7 +3,7 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useState } from "react";
 
-import { useCapabilities } from "@/hooks/use-capabilities";
+import { useCapabilities } from "@/features/capabilities/current";
 import type {
   CreateProjectResult,
   DeploymentProvisioningResult,

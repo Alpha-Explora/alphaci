@@ -3,7 +3,7 @@
 import { useState } from "react";
 
 import { useApiResource } from "@/hooks/use-hierarchy";
-import { useCapabilities } from "@/hooks/use-capabilities";
+import { useCapabilities } from "@/features/capabilities/current";
 
 import { groupsRepository } from "../../data/groups-repository";
 import { isGroupManagerRole } from "../../model/groups-rules";

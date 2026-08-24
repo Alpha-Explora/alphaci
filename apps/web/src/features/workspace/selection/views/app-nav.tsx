@@ -2,26 +2,23 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { usePathname } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 
-import type { useAuthSession } from "@/features/auth/session";
+import type { AuthSession } from "@/features/auth/session";
+
 import {
   APP_ROLE_BADGE_LABELS,
-  type AppRole,
-  type WorkspacesMeResponse,
-} from "@/lib/api/contracts";
-import { useNotificationsSummaryViewModel } from "@/features/notifications/summary";
-import { getMyWorkspaces } from "@/lib/api/workspaces";
-import { useWorkspaceSelection } from "./workspace-context";
+  type WorkspaceAppRole,
+} from "../model/workspace-types";
+import { useAppNavViewModel } from "../view-models/use-app-nav-view-model";
 import { WorkspaceSwitcher } from "./workspace-switcher";
 
 /* ── Types ─────────────────────────────────────────────────────────────────── */
 
 interface AppNavProps {
   guest: boolean;
-  session: ReturnType<typeof useAuthSession>["session"];
+  session: AuthSession | null;
   onLogout: () => void;
   isLoggingOut: boolean;
 }
@@ -244,7 +241,7 @@ function SidebarNavItem({
    the rail is closed — 64px has no room for it, and the role is not urgent
    enough to earn an icon-only affordance. */
 
-function SidebarRoleBadge({ appRole }: Readonly<{ appRole: AppRole }>) {
+function SidebarRoleBadge({ appRole }: Readonly<{ appRole: WorkspaceAppRole }>) {
   return (
     <span className={`sidebar-role-badge sidebar-role-badge--${appRole}`}>
       {APP_ROLE_BADGE_LABELS[appRole]}
@@ -276,17 +273,14 @@ export function AppNav({
   onLogout,
   isLoggingOut,
 }: Readonly<AppNavProps>) {
-  const pathname = usePathname();
+  const { pathname, workspaces: workspaceVm, notifications } =
+    useAppNavViewModel({ guest });
   // Cleared on pointerleave. Clicking a nav link navigates but does NOT move
   // the mouse, so the rail stays hovered — and an expanded rail is 240px of
   // panel sitting on top of the page you just asked for. Suppressing hover
   // until the pointer leaves makes a click read as "take me there", not "take
   // me there and stay in the way". Keyboard focus is never suppressed.
   const [hoverSuppressed, setHoverSuppressed] = useState(false);
-  const [workspaces, setWorkspacesState] =
-    useState<WorkspacesMeResponse | null>(null);
-  const notifications = useNotificationsSummaryViewModel({ guest });
-  const { setWorkspaces, registerWorkspaceRefresh } = useWorkspaceSelection();
   const prefersReducedMotion = useReducedMotion();
   const reduced = prefersReducedMotion ?? false;
 
@@ -300,41 +294,8 @@ export function AppNav({
     (session?.appRole === "admin" || session?.platformRole === "super_admin");
   // Defaults to 'member' (rendered as "Developer") so the badge never blanks
   // out on an older cached session that predates appRole.
-  const appRole: AppRole = session?.appRole ?? "member";
-
-  const loadWorkspaces = useCallback(() => {
-    void getMyWorkspaces()
-      .then((response) => {
-        setWorkspacesState(response);
-        setWorkspaces(response);
-      })
-      .catch(() => undefined);
-  }, [setWorkspaces]);
-
-  // The header owns the fetch, so it hands it to the context — that is what
-  // lets a delete anywhere in the app drop the team from this picker.
-  useEffect(() => {
-    registerWorkspaceRefresh(loadWorkspaces);
-  }, [registerWorkspaceRefresh, loadWorkspaces]);
-
-  useEffect(() => {
-    if (guest) return;
-    let active = true;
-    void getMyWorkspaces()
-      .then((response) => {
-        if (!active) return;
-        setWorkspacesState(response);
-        setWorkspaces(response);
-      })
-      .catch(() => {
-        if (!active) return;
-        setWorkspacesState({ enabled: false, items: [] });
-        setWorkspaces(null);
-      });
-    return () => {
-      active = false;
-    };
-  }, [guest, setWorkspaces]);
+  const appRole: WorkspaceAppRole = session?.appRole ?? "member";
+  const loadWorkspaces = workspaceVm.loadWorkspaces;
 
   return (
     <>
@@ -375,7 +336,8 @@ export function AppNav({
               the rest of the app is scoped to, which is a header job. */}
           {!guest && (
             <WorkspaceSwitcher
-              workspaces={workspaces}
+              workspaces={workspaceVm.workspaces}
+              appRole={appRole}
               onWorkspaceCreated={loadWorkspaces}
             />
           )}

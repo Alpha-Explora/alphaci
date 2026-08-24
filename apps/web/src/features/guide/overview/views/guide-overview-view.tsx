@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useCallback } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 
-import { AppNav } from "@/components/layout/app-nav";
+import { AppNav } from "@/features/workspace/selection";
 import { FlowBackground } from "@/shared/layout/flow-background";
 import { PipelineLoader } from "@/shared/layout/pipeline-loader";
 import { PublicSiteNav } from "@/shared/layout/public-site-nav";

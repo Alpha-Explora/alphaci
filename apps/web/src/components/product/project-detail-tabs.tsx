@@ -5,7 +5,7 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 
 import { ServiceLogsConsole } from "@/components/product/service-logs-console";
-import { useCapabilities } from "@/hooks/use-capabilities";
+import { useCapabilities } from "@/features/capabilities/current";
 import { getCentralWorkflowTags } from "@/lib/api/catalog";
 import {
   createWorkflowUpdatePullRequest,

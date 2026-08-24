@@ -7,7 +7,7 @@ import { useReducedMotion } from "framer-motion";
 
 import { FlowBackground } from "@/shared/layout/flow-background";
 import { PipelineLoader } from "@/shared/layout/pipeline-loader";
-import { WorkspaceProvider } from "@/components/layout/workspace-context";
+import { WorkspaceProvider } from "@/features/workspace/selection";
 import { useAuthSession } from "@/features/auth/session";
 import { isGuest } from "@/features/auth/session";
 

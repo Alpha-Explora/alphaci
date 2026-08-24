@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { Fragment, useEffect } from "react";
 import { motion } from "framer-motion";
 
-import { AppNav } from "@/components/layout/app-nav";
+import { AppNav } from "@/features/workspace/selection";
 import { FlowBackground } from "@/shared/layout/flow-background";
 import { WelcomeModal } from "@/components/product/welcome-modal";
 import type { useAuthSession } from "@/features/auth/session";

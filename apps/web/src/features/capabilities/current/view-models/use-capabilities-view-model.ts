@@ -2,41 +2,53 @@
 
 import { useCallback, useEffect, useState } from "react";
 
-import { getCapabilities } from "@/lib/api/client";
+import {
+  disabledCapabilities,
+  getCapabilities,
+} from "../data/capabilities-repository";
 import type { CapabilitiesResponse } from "@/lib/api/contracts";
 
-export function useCapabilities() {
+export type CapabilitiesStatus = "loading" | "ready" | "error";
+
+export interface CapabilitiesViewModel {
+  capabilities: CapabilitiesResponse | null;
+  status: CapabilitiesStatus;
+  error: string | null;
+  loading: boolean;
+  loadCapabilities: () => Promise<void>;
+  envProvisioningEnabled: boolean;
+  deploymentOwnershipMode: "byo" | "flowci_managed";
+  projectSyncSnapshotsEnabled: boolean;
+  workflowSettingsPreviewEnabled: boolean;
+  workflowUpdatePrEnabled: boolean;
+  projectTargetManagementEnabled: boolean;
+  ciRunTrackingEnabled: boolean;
+  deploymentHistoryEnabled: boolean;
+  driftDetectionEnabled: boolean;
+  driftRepairEnabled: boolean;
+  usageQuotasEnabled: boolean;
+  workspacesEnabled: boolean;
+  auditEventsEnabled: boolean;
+  notificationsEnabled: boolean;
+  hierarchyEnabled: boolean;
+  hierarchyGithubSyncMode: "stub" | "live";
+}
+
+export function useCapabilitiesViewModel(): CapabilitiesViewModel {
   const [capabilities, setCapabilities] = useState<CapabilitiesResponse | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [status, setStatus] = useState<CapabilitiesStatus>("loading");
+  const [error, setError] = useState<string | null>(null);
 
   const loadCapabilities = useCallback(async () => {
-    setLoading(true);
+    setStatus("loading");
+    setError(null);
     try {
       setCapabilities(await getCapabilities());
+      setStatus("ready");
     } catch {
-      setCapabilities({
-        envProvisioning: { enabled: false, providers: [], environments: [], modes: [] },
-        projectSyncSnapshots: {
-          enabled: false,
-          liveGithubEnabled: false,
-          liveProvidersEnabled: false,
-          mode: "local_snapshot",
-        },
-        workflowSettingsPreview: { enabled: false },
-        workflowUpdatePr: { enabled: false },
-        projectTargetManagement: { enabled: false },
-        ciRunTracking: { enabled: false, liveGithubEnabled: false, mode: "local_mock" },
-        deploymentHistory: { enabled: false, liveProvidersEnabled: false, mode: "local_mock" },
-        driftDetection: { enabled: false, liveProviderChecksEnabled: false, mode: "local_snapshot" },
-        driftRepair: { enabled: false, liveRepairEnabled: false, mode: "local_safe" },
-        usageQuotas: { enabled: false },
-        workspaces: { enabled: false },
-        auditEvents: { enabled: false },
-        notifications: { enabled: false },
-        hierarchy: { enabled: false, githubSyncMode: "stub" },
-      });
-    } finally {
-      setLoading(false);
+      setCapabilities(disabledCapabilities());
+      setStatus("error");
+      setError("Capabilities are unavailable right now; optional features are hidden.");
     }
   }, []);
 
@@ -46,6 +58,9 @@ export function useCapabilities() {
 
   return {
     capabilities,
+    status,
+    error,
+    loading: status === "loading",
     envProvisioningEnabled: capabilities?.envProvisioning?.enabled === true,
     // Single ownership mode this deployment offers. 'flowci_managed' = deploys
     // are centralized on the organization's Render/Vercel; 'byo' = users connect
@@ -72,6 +87,5 @@ export function useCapabilities() {
     hierarchyEnabled: capabilities?.hierarchy?.enabled === true,
     hierarchyGithubSyncMode: capabilities?.hierarchy?.githubSyncMode ?? "stub",
     loadCapabilities,
-    loading,
   };
 }

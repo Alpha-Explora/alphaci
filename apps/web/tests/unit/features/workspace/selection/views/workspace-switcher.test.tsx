@@ -1,19 +1,8 @@
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 
-// The switcher reads the session to decide whether "+ Create workspace" is
-// offered. Stubbed so the component never reaches the network here.
-jest.mock("../../src/hooks/use-auth-session", () => ({
-  useAuthSession: () => ({
-    status: "signed-in",
-    session: { authenticated: true, appRole: "lead" },
-    error: null,
-    refresh: jest.fn(),
-  }),
-}));
-
-import { WorkspaceProvider } from "../../src/components/layout/workspace-context";
-import { WorkspaceSwitcher } from "../../src/components/layout/workspace-switcher";
+import { WorkspaceProvider } from "../../../../../../src/features/workspace/selection/views/workspace-selection-context";
+import { WorkspaceSwitcher } from "../../../../../../src/features/workspace/selection/views/workspace-switcher";
 
 const workspaces = {
   enabled: true,
@@ -63,7 +52,7 @@ describe("WorkspaceSwitcher", () => {
     act(() => {
       root!.render(
         <WorkspaceProvider>
-          <WorkspaceSwitcher workspaces={workspaces} />
+          <WorkspaceSwitcher workspaces={workspaces} appRole="lead" />
         </WorkspaceProvider>,
       );
     });
