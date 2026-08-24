@@ -3,7 +3,7 @@ import {
   getAuthenticatedRedirectPath,
   isGuest,
   isInternalUser,
-} from "@/lib/auth/subscription";
+} from "@/features/auth/session";
 
 const baseSession: AuthMeResponse = {
   authenticated: true,

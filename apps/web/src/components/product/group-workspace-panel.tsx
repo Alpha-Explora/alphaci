@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 
 import { useApiResource } from "@/hooks/use-hierarchy";
-import { useAuthSession } from "@/hooks/use-auth-session";
+import { useAuthSession } from "@/features/auth/session";
 import {
   archiveGroup,
   deleteGroup,

@@ -10,9 +10,9 @@ import { ThemeToggle } from "@/shared/layout/theme-toggle";
 import { WorkspaceMembersSection } from "@/components/settings/workspace-members-section";
 import { NotificationsPreferencesView } from "@/features/notifications/preferences";
 import { useNotificationsInboxViewModel } from "@/features/notifications/inbox";
-import type { useAuthSession } from "@/hooks/use-auth-session";
+import type { useAuthSession } from "@/features/auth/session";
 import { useCapabilities } from "@/hooks/use-capabilities";
-import { isGuest } from "@/lib/auth/subscription";
+import { isGuest } from "@/features/auth/session";
 
 import { canDeleteAccount } from "../../model/settings-rules";
 import {

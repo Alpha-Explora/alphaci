@@ -3,7 +3,7 @@
 import { useState } from "react";
 
 import { CreateGroupDialog } from "@/components/hierarchy/create-group-dialog";
-import { useAuthSession } from "@/hooks/use-auth-session";
+import { useAuthSession } from "@/features/auth/session";
 import type { WorkspacesMeResponse } from "@/lib/api/contracts";
 import { isGlobalCreatorRole } from "@/lib/api/hierarchy-contracts";
 import { useWorkspaceSelection } from "./workspace-context";

@@ -1,18 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 
 import { DitherBackground } from "@/shared/layout/dither-background";
 import { FlowBackground } from "@/shared/layout/flow-background";
 import { PublicSiteNav } from "@/shared/layout/public-site-nav";
-import { useAuthSession } from "@/hooks/use-auth-session";
-import { createGitHubLoginUrl, warmupBackend } from "@/lib/api/client";
-import { getAuthenticatedRedirectPath } from "@/lib/auth/subscription";
+import { useOAuthLoginViewModel } from "../view-models/use-oauth-login-view-model";
 
-interface OAuthAuthPageProps {
+interface OAuthLoginViewProps {
   mode: "login" | "signup";
   title: string;
   subtitle: string;
@@ -32,60 +28,17 @@ function GitHubGlyph() {
   );
 }
 
-function toSafeNextPath(raw: string | null): string {
-  if (!raw) return "/home";
-  if (raw.startsWith("/") && !raw.startsWith("//")) return raw;
-  return "/home";
-}
-
-export function OAuthAuthPage({
+export function OAuthLoginView({
   mode,
   title,
   subtitle,
   switchText,
   switchHref,
   switchCta,
-}: Readonly<OAuthAuthPageProps>) {
-  const router = useRouter();
-  const searchParams = useSearchParams();
+}: Readonly<OAuthLoginViewProps>) {
   const prefersReducedMotion = useReducedMotion();
-
-  const [isWarming, setIsWarming] = useState<boolean>(false);
-  const [browserOrigin, setBrowserOrigin] = useState<string | null>(null);
-
-  const { status, session } = useAuthSession();
-
-  const nextPath = useMemo(
-    () => toSafeNextPath(searchParams.get("next")),
-    [searchParams],
-  );
-  const githubCallbackReturnTo = useMemo(() => {
-    const callbackPath = new URLSearchParams({
-      intent: mode,
-      next: nextPath,
-      provider: "github",
-    });
-    const relativeCallbackPath = `/auth/callback?${callbackPath.toString()}`;
-    return browserOrigin
-      ? `${browserOrigin}${relativeCallbackPath}`
-      : relativeCallbackPath;
-  }, [browserOrigin, mode, nextPath]);
-
-  const githubLoginHref = useMemo(
-    () => createGitHubLoginUrl(githubCallbackReturnTo),
-    [githubCallbackReturnTo],
-  );
-
-  useEffect(() => {
-    setBrowserOrigin(window.location.origin);
-  }, []);
-
-  useEffect(() => {
-    if (status !== "signed-in") return;
-    const redirectPath = getAuthenticatedRedirectPath(session, nextPath);
-    if (redirectPath) router.replace(redirectPath);
-  }, [nextPath, router, session, status]);
-
+  const { status, isWarming, githubLoginHref, handleLogin } =
+    useOAuthLoginViewModel(mode);
 
   return (
     <main className="auth-shell-split auth-shell-minimal relative bg-zinc-50 text-zinc-950 dark:bg-zinc-950 dark:text-zinc-100">
@@ -182,18 +135,7 @@ export function OAuthAuthPage({
                   : "rgba(255,255,255,0.12)";
                 el.style.boxShadow = "none";
               }}
-              onClick={async (e) => {
-                e.preventDefault();
-                setIsWarming(true);
-                try {
-                  await warmupBackend();
-                } catch {
-                  // Intentionally swallowed — warmup failure must not block login.
-                } finally {
-                  setIsWarming(false);
-                }
-                window.location.href = githubLoginHref;
-              }}
+              onClick={(event) => void handleLogin(event)}
             >
               <span
                 aria-hidden="true"

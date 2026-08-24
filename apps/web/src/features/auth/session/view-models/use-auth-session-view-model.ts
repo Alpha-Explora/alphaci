@@ -2,14 +2,18 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { ApiError, getAuthSession, logout } from "@/lib/api/client";
-import type { AuthMeResponse } from "@/lib/api/contracts";
+import {
+  authErrorStatus,
+  getCurrentSession,
+  signOut as requestSignOut,
+} from "../data/auth-repository";
+import type { AuthSession } from "../model/auth-types";
 
 export type AuthSessionStatus = "loading" | "signed-out" | "signed-in" | "error";
 
-interface UseAuthSessionResult {
+export interface AuthSessionViewModel {
   status: AuthSessionStatus;
-  session: AuthMeResponse | null;
+  session: AuthSession | null;
   error: string | null;
   refresh: () => Promise<void>;
   /* Sign-out lives here rather than in each view. Nine surfaces were repeating
@@ -20,25 +24,26 @@ interface UseAuthSessionResult {
 }
 
 function getFriendlyAuthError(error: unknown): string {
-  if (error instanceof ApiError) {
-    if (error.status === 401 || error.status === 403) {
+  const status = authErrorStatus(error);
+  if (status !== null) {
+    if (status === 401 || status === 403) {
       return "Please sign in with GitHub to continue.";
     }
 
-    return `Session check failed with status ${error.status}.`;
+    return `Session check failed with status ${status}.`;
   }
 
   return "Unable to verify your session right now.";
 }
 
-export function useAuthSession(): UseAuthSessionResult {
+export function useAuthSessionViewModel(): AuthSessionViewModel {
   const [status, setStatus] = useState<AuthSessionStatus>("loading");
-  const [session, setSession] = useState<AuthMeResponse | null>(null);
+  const [session, setSession] = useState<AuthSession | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isSigningOut, setIsSigningOut] = useState(false);
   const requestVersionRef = useRef(0);
 
-  const applySession = useCallback((current: AuthMeResponse) => {
+  const applySession = useCallback((current: AuthSession) => {
     if (!current.authenticated) {
       setSession(null);
       setStatus("signed-out");
@@ -59,7 +64,7 @@ export function useAuthSession(): UseAuthSessionResult {
     setError(null);
 
     try {
-      const current = await getAuthSession();
+      const current = await getCurrentSession();
 
       if (requestVersion !== requestVersionRef.current) {
         return;
@@ -71,7 +76,8 @@ export function useAuthSession(): UseAuthSessionResult {
         return;
       }
 
-      if (cause instanceof ApiError && (cause.status === 401 || cause.status === 403)) {
+      const status = authErrorStatus(cause);
+      if (status === 401 || status === 403) {
         setSession(null);
         setStatus("signed-out");
         return;
@@ -90,7 +96,7 @@ export function useAuthSession(): UseAuthSessionResult {
 
     async function loadInitialSession() {
       try {
-        const current = await getAuthSession();
+        const current = await getCurrentSession();
 
         if (!active || requestVersion !== requestVersionRef.current) {
           return;
@@ -102,7 +108,8 @@ export function useAuthSession(): UseAuthSessionResult {
           return;
         }
 
-        if (cause instanceof ApiError && (cause.status === 401 || cause.status === 403)) {
+        const status = authErrorStatus(cause);
+        if (status === 401 || status === 403) {
           setSession(null);
           setStatus("signed-out");
           return;
@@ -140,7 +147,7 @@ export function useAuthSession(): UseAuthSessionResult {
       const requestVersion = requestVersionRef.current + 1;
       requestVersionRef.current = requestVersion;
 
-      void getAuthSession()
+      void getCurrentSession()
         .then((current) => {
           if (requestVersion !== requestVersionRef.current) return;
           applySession(current);
@@ -162,7 +169,7 @@ export function useAuthSession(): UseAuthSessionResult {
   const signOut = useCallback(async () => {
     setIsSigningOut(true);
     try {
-      await logout();
+      await requestSignOut();
       await refresh();
     } finally {
       setIsSigningOut(false);

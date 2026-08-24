@@ -1,159 +1,20 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 
 import { FlowBackground } from "@/shared/layout/flow-background";
 import { PipelineLoader } from "@/shared/layout/pipeline-loader";
+import type { PendingAccount } from "@/features/auth/session";
+import { useAuthCallbackViewModel } from "../view-models/use-auth-callback-view-model";
 import {
-  ApiError,
-  createGitHubLoginUrl,
-  getAuthSession,
-  getPendingAccount,
-  restoreAccount,
-  startFreshAccount,
-} from "@/lib/api/client";
-import type { PendingAccountResponse } from "@/lib/api/contracts";
-import { getAuthenticatedRedirectPath } from "@/lib/auth/subscription";
+  accountActionErrorMessage,
+  failedContent,
+  formatDate,
+} from "../model/callback-rules";
 
-type CallbackState = "checking" | "failed" | "archived_choice";
-type OAuthProvider = "github" | "google";
 type FreshConfirmState = "idle" | "confirming";
-
-function toSafeNextPath(raw: string | null): string {
-  if (!raw) {
-    return "/home";
-  }
-
-  if (raw.startsWith("/") && !raw.startsWith("//")) {
-    return raw;
-  }
-
-  return "/home";
-}
-
-function toSafeProvider(raw: string | null): OAuthProvider {
-  return raw === "google" ? "google" : "github";
-}
-
-function providerDisplayName(provider: OAuthProvider): "GitHub" | "Google" {
-  return provider === "google" ? "Google" : "GitHub";
-}
-
-function formatDate(iso: string): string {
-  try {
-    return new Intl.DateTimeFormat("en-US", {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    }).format(new Date(iso));
-  } catch {
-    return iso;
-  }
-}
-
-function statusMessage(authStatus: string, provider: OAuthProvider): string {
-  const providerName = providerDisplayName(provider);
-
-  switch (authStatus) {
-    case "success":
-      return `${providerName} sign in complete. Finalizing your session...`;
-    case "failed":
-      return `${providerName} sign in failed. Please retry.`;
-    case "invalid_state":
-      return "The OAuth state token was invalid. Please retry sign in.";
-    case "unavailable":
-      return `${providerName} OAuth is unavailable in this environment.`;
-    case "not_authorized":
-      return "This workspace is limited to members of the company GitHub organization. Ask an administrator to add you to the org, then sign in again.";
-    case "org_invite_pending":
-      return "You have a pending invitation to the company GitHub organization. Accept the invitation on GitHub, then sign in again.";
-    case "org_verification_failed":
-      // Distinct from not_authorized: this is NOT a confirmed non-member —
-      // GitHub could not confirm org membership (e.g. a permissions issue on
-      // our side), so telling the user to "ask to be added" would be wrong.
-      return "We could not verify your GitHub organization membership right now. Please retry sign-in in a moment. If this keeps happening, contact an administrator.";
-    case "archived_choice":
-      return "Checking archived account...";
-    default:
-      return "Finalizing sign in...";
-  }
-}
-
-/* ── Failure screen content (reason-aware) ──────────────────────────────────
- * The auth callback can fail for meaningfully different reasons. Each gets its
- * own headline, ghost word, and accent so the full-canvas screen reads as a
- * deliberate state, not a generic error. */
-interface FailedContent {
-  ghost: string;
-  label: string;
-  accent: string;
-  accentSoft: string;
-  headline: string;
-  body: string;
-  /** Optional external call-to-action rendered as the primary button. */
-  actionHref?: string;
-  actionLabel?: string;
-}
-
-/** Org logins are alphanumerics and hyphens; anything else is dropped so a
- * tampered ?org= query param can never steer the invitation link. */
-function safeOrgLogin(org: string | null): string | null {
-  return org && /^[a-zA-Z0-9-]+$/.test(org) ? org : null;
-}
-
-function failedContent(
-  authStatus: string,
-  message: string,
-  orgLogin: string | null,
-): FailedContent {
-  switch (authStatus) {
-    case "not_authorized":
-      return {
-        ghost: "ACCESS",
-        label: "Access restricted",
-        accent: "var(--accent-amber)",
-        accentSoft: "rgba(251, 191, 36, 0.12)",
-        headline: "This workspace is members-only",
-        body: "Access is limited to members of the company GitHub organization. Ask an administrator to add you to the org, then sign in again.",
-      };
-    case "org_invite_pending": {
-      const org = safeOrgLogin(orgLogin);
-      return {
-        ghost: "INVITE",
-        label: "Invitation pending",
-        accent: "var(--accent-amber)",
-        accentSoft: "rgba(251, 191, 36, 0.12)",
-        headline: "Accept your GitHub invitation",
-        body: "You've been invited to the company GitHub organization, but the invitation hasn't been accepted yet. Open it on GitHub, accept it, then sign in again.",
-        actionHref: org
-          ? `https://github.com/orgs/${org}/invitation`
-          : "https://github.com/settings/organizations",
-        actionLabel: "Open GitHub invitation",
-      };
-    }
-    case "org_verification_failed":
-      return {
-        ghost: "VERIFY",
-        label: "Verification failed",
-        accent: "var(--accent-amber)",
-        accentSoft: "rgba(251, 191, 36, 0.12)",
-        headline: "We couldn't verify your membership",
-        body: "GitHub didn't confirm your organization membership just now. Retry in a moment — if this keeps happening, contact an administrator.",
-      };
-    default:
-      return {
-        ghost: "RETRY",
-        label: "Sign-in interrupted",
-        accent: "var(--brand)",
-        accentSoft: "rgba(88, 166, 255, 0.12)",
-        headline: "Authentication needs a retry",
-        body: message,
-      };
-  }
-}
 
 const EASE_OUT: [number, number, number, number] = [0.25, 0, 0, 1];
 
@@ -171,12 +32,13 @@ const cardVariants = {
 
 function ArchivedChoiceCard({
   pending,
-  nextPath,
+  onRestore,
+  onStartFresh,
 }: {
-  pending: PendingAccountResponse & { pending: true };
-  nextPath: string;
+  pending: PendingAccount & { pending: true };
+  onRestore: () => Promise<void>;
+  onStartFresh: () => Promise<void>;
 }) {
-  const router = useRouter();
   const prefersReducedMotion = useReducedMotion();
 
   const [isRestoring, setIsRestoring] = useState(false);
@@ -190,14 +52,9 @@ function ArchivedChoiceCard({
     setIsRestoring(true);
     setRestoreError(null);
     try {
-      await restoreAccount();
-      router.replace(nextPath);
+      await onRestore();
     } catch (err) {
-      setRestoreError(
-        err instanceof ApiError
-          ? `Restore failed (${err.status}). Please try again.`
-          : "Restore failed. Please try again.",
-      );
+      setRestoreError(accountActionErrorMessage(err, "restore"));
       setIsRestoring(false);
     }
   }
@@ -206,14 +63,9 @@ function ArchivedChoiceCard({
     setIsStartingFresh(true);
     setFreshError(null);
     try {
-      await startFreshAccount();
-      router.replace(nextPath);
+      await onStartFresh();
     } catch (err) {
-      setFreshError(
-        err instanceof ApiError
-          ? `Could not start fresh (${err.status}). Please try again.`
-          : "Could not start fresh. Please try again.",
-      );
+      setFreshError(accountActionErrorMessage(err, "start-fresh"));
       setIsStartingFresh(false);
       setFreshConfirm("idle");
     }
@@ -508,110 +360,21 @@ function ArchivedSessionExpiredCard({ retryHref }: { retryHref: string }) {
 
 /* ── Main callback component ─────────────────────────────────────────────── */
 
-export function AuthCallbackClient() {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const authStatus = searchParams.get("auth") ?? "success";
-  const intent = searchParams.get("intent") === "signup" ? "signup" : "login";
-  const nextPath = toSafeNextPath(searchParams.get("next"));
-  const provider = toSafeProvider(searchParams.get("provider"));
-  const providerName = providerDisplayName(provider);
+export function AuthCallbackView() {
   const prefersReducedMotion = useReducedMotion();
-
-  const [state, setState] = useState<CallbackState>("checking");
-  const [message, setMessage] = useState<string>(statusMessage(authStatus, provider));
-  const [pendingAccount, setPendingAccount] = useState<PendingAccountResponse | null>(null);
-
-  // Track whether the pending-account fetch came back with pending:false
-  const [pendingSessionExpired, setPendingSessionExpired] = useState(false);
-
-  const retryLoginHref = useMemo(() => {
-    const callbackPath = new URLSearchParams({
-      intent,
-      next: nextPath,
-      provider,
-    });
-
-    const returnTo = `/auth/callback?${callbackPath.toString()}`;
-    return createGitHubLoginUrl(returnTo);
-  }, [intent, nextPath, provider]);
-
-  useEffect(() => {
-    setMessage(statusMessage(authStatus, provider));
-  }, [authStatus, provider]);
-
-  // Ref guards so async callbacks don't update state after unmount
-  const disposedRef = useRef(false);
-
-  useEffect(() => {
-    disposedRef.current = false;
-    return () => {
-      disposedRef.current = true;
-    };
-  }, []);
-
-  useEffect(() => {
-    if (
-      authStatus === "failed" ||
-      authStatus === "invalid_state" ||
-      authStatus === "unavailable" ||
-      authStatus === "not_authorized" ||
-      authStatus === "org_verification_failed"
-    ) {
-      setState("failed");
-      return;
-    }
-
-    if (authStatus === "archived_choice") {
-      async function loadPending() {
-        try {
-          const data = await getPendingAccount();
-          if (disposedRef.current) return;
-
-          if (!data.pending) {
-            setPendingSessionExpired(true);
-          } else {
-            setPendingAccount(data);
-          }
-          setState("archived_choice");
-        } catch {
-          if (disposedRef.current) return;
-          // Treat a fetch failure the same as an expired pending session
-          setPendingSessionExpired(true);
-          setState("archived_choice");
-        }
-      }
-      void loadPending();
-      return;
-    }
-
-    async function finalizeAuth() {
-      try {
-        const session = await getAuthSession();
-
-        if (!session.authenticated) {
-          throw new ApiError("Not authenticated", 401);
-        }
-
-        if (disposedRef.current) return;
-
-        const redirectPath = getAuthenticatedRedirectPath(session, nextPath);
-        if (redirectPath) router.replace(redirectPath);
-      } catch (error) {
-        if (disposedRef.current) return;
-
-        setState("failed");
-        if (error instanceof ApiError && (error.status === 401 || error.status === 403)) {
-          setMessage(`Sign in did not complete. Please connect your ${providerName} account again.`);
-          return;
-        }
-
-        setMessage("We could not complete your sign in flow. Please retry in a moment.");
-      }
-    }
-
-    void finalizeAuth();
-  }, [authStatus, nextPath, providerName, router]);
+  const {
+    state,
+    message,
+    authStatus,
+    intent,
+    providerName,
+    orgLogin,
+    pendingAccount,
+    pendingSessionExpired,
+    retryLoginHref,
+    onRestore,
+    onStartFresh,
+  } = useAuthCallbackViewModel();
 
   // ── Checking / loading ────────────────────────────────────────────────────
   if (state === "checking") {
@@ -628,8 +391,9 @@ export function AuthCallbackClient() {
             <ArchivedSessionExpiredCard retryHref={retryLoginHref} />
           ) : (
             <ArchivedChoiceCard
-              pending={pendingAccount as PendingAccountResponse & { pending: true }}
-              nextPath={nextPath}
+              pending={pendingAccount as PendingAccount & { pending: true }}
+              onRestore={onRestore}
+              onStartFresh={onStartFresh}
             />
           )}
         </div>
@@ -638,7 +402,7 @@ export function AuthCallbackClient() {
   }
 
   // ── Failed / error ────────────────────────────────────────────────────────
-  const fc = failedContent(authStatus, message, searchParams.get("org"));
+  const fc = failedContent(authStatus, message, orgLogin);
   const staggerContainer = {
     hidden: {},
     visible: { transition: { staggerChildren: 0.07, delayChildren: 0.08 } },

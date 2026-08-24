@@ -10,9 +10,9 @@ import { AppNav } from "@/components/layout/app-nav";
 import { FlowBackground } from "@/shared/layout/flow-background";
 import { PipelineLoader } from "@/shared/layout/pipeline-loader";
 import { WorkspaceProvider } from "@/components/layout/workspace-context";
-import { useAuthSession } from "@/hooks/use-auth-session";
+import { useAuthSession } from "@/features/auth/session";
 import type { AuthMeResponse } from "@/lib/api/contracts";
-import { isGuest } from "@/lib/auth/subscription";
+import { isGuest } from "@/features/auth/session";
 
 /* ── Page shell ───────────────────────────────────────────────────────────────
  * Encapsulates the auth guard + AppNav + dashboard chrome used by every existing

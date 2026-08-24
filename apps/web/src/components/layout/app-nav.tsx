@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 
-import type { useAuthSession } from "@/hooks/use-auth-session";
+import type { useAuthSession } from "@/features/auth/session";
 import {
   APP_ROLE_BADGE_LABELS,
   type AppRole,

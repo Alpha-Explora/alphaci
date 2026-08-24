@@ -10,8 +10,8 @@ import { FlowBackground } from "@/shared/layout/flow-background";
 import { PipelineLoader } from "@/shared/layout/pipeline-loader";
 import { WorkspaceProvider } from "@/components/layout/workspace-context";
 import { WorkflowBuilder } from "@/components/product/workflow-builder";
-import { useAuthSession } from "@/hooks/use-auth-session";
-import { isGuest } from "@/lib/auth/subscription";
+import { useAuthSession } from "@/features/auth/session";
+import { isGuest } from "@/features/auth/session";
 
 /* Level 0 in the skill's progressive depth: the studio's data belongs to
  * WorkflowBuilder and the hooks it owns, so this surface has no view-model and

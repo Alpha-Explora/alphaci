@@ -5,7 +5,7 @@ import { AnimatePresence, motion } from "framer-motion";
 
 import { AppNav } from "@/components/layout/app-nav";
 import { FlowBackground } from "@/shared/layout/flow-background";
-import type { useAuthSession } from "@/hooks/use-auth-session";
+import type { useAuthSession } from "@/features/auth/session";
 
 import { useRunsListViewModel } from "../view-models/use-runs-list-view-model";
 import { ProjectGroupSection } from "./project-group-section";

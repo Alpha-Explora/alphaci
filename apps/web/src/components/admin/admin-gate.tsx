@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { createContext, useContext } from "react";
 
-import { useAuthSession } from "@/hooks/use-auth-session";
+import { useAuthSession } from "@/features/auth/session";
 import type { PlatformRole } from "@/lib/api/contracts";
 
 interface AdminContextValue {

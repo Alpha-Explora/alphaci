@@ -10,8 +10,8 @@ import { FlowBackground } from "@/shared/layout/flow-background";
 import { PipelineLoader } from "@/shared/layout/pipeline-loader";
 import { PublicSiteNav } from "@/shared/layout/public-site-nav";
 import { FlowExplainer } from "@/components/product/flow-explainer";
-import { useAuthSession } from "@/hooks/use-auth-session";
-import { isGuest } from "@/lib/auth/subscription";
+import { useAuthSession } from "@/features/auth/session";
+import { isGuest } from "@/features/auth/session";
 
 /* Level 0 in the skill's progressive depth: the guide has no data of its own,
  * so there is no view-model and no data layer. Sign-out is the one action, and

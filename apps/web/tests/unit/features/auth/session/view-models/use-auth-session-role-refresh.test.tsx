@@ -1,7 +1,7 @@
 import { act, useEffect } from "react";
 import { createRoot, type Root } from "react-dom/client";
 
-import { useAuthSession } from "../../src/hooks/use-auth-session";
+import { useAuthSession } from "@/features/auth/session";
 import type { AuthMeResponse } from "../../src/lib/api/contracts";
 
 /* ── Mocks ───────────────────────────────────────────────────────────────── */
@@ -14,7 +14,7 @@ class MockApiError extends Error {
   }
 }
 
-jest.mock("../../src/lib/api/client", () => ({
+jest.mock("../../../../../../src/lib/api/auth", () => ({
   getAuthSession: (...args: unknown[]) => mockGetAuthSession(...args),
   ApiError: class extends Error {
     constructor(public readonly status: number) {

@@ -3,7 +3,7 @@
 import { useState } from "react";
 
 import { useApiResource } from "@/hooks/use-hierarchy";
-import { useAuthSession } from "@/hooks/use-auth-session";
+import { useAuthSession } from "@/features/auth/session";
 
 import { groupsRepository } from "../../data/groups-repository";
 import { isGlobalCreatorRole } from "../../model/groups-rules";

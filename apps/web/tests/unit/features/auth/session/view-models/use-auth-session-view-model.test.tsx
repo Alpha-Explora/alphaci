@@ -1,12 +1,13 @@
 import { act, useEffect } from "react";
 import { createRoot, type Root } from "react-dom/client";
 
-import { useAuthSession } from "../../src/hooks/use-auth-session";
-import { ApiError, getAuthSession } from "../../src/lib/api/client";
+import { useAuthSession } from "@/features/auth/session";
+import { getAuthSession } from "../../../../../../src/lib/api/auth";
+import { ApiError } from "../../../../../../src/lib/api/request";
 import type { AuthMeResponse } from "../../src/lib/api/contracts";
 
-jest.mock("../../src/lib/api/client", () => {
-  const actual = jest.requireActual("../../src/lib/api/client");
+jest.mock("../../../../../../src/lib/api/auth", () => {
+  const actual = jest.requireActual("../../../../../../src/lib/api/auth");
 
   return {
     ...actual,
