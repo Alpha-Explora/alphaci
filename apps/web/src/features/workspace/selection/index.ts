@@ -14,8 +14,12 @@ export {
 export { AppNav } from "./views/app-nav";
 export { WorkspaceSwitcher } from "./views/workspace-switcher";
 export type {
+  WorkspaceMemberSummary,
+} from "@/shared/api/contracts";
+export type {
   WorkspaceAppRole,
   WorkspaceRole,
   WorkspaceSummary,
   WorkspacesMeResponse,
 } from "./model/workspace-types";
+export * from "./data/workspaces-api";

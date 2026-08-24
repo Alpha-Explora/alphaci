@@ -1,6 +1,6 @@
 "use client";
 
-import { useApiResource } from "@/hooks/use-hierarchy";
+import { useApiResource } from "@/features/groups";
 import { useAuthSession } from "@/features/auth/session";
 
 import { groupsRepository } from "../../data/groups-repository";

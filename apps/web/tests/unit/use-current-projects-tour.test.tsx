@@ -9,12 +9,12 @@
 import { act, useEffect } from "react";
 import { createRoot, type Root } from "react-dom/client";
 
-import { useCurrentProjectsTour } from "../../src/hooks/use-current-projects-tour";
-import type { AuthMeResponse } from "../../src/lib/api/contracts";
+import { useCurrentProjectsTour } from "../../src/features/workflows/studio/view-models/use-current-projects-tour";
+import type { AuthMeResponse } from "../../src/shared/api/contracts";
 
 /* ── Mocks ───────────────────────────────────────────────────────────────── */
 
-jest.mock("../../src/lib/api/auth", () => ({
+jest.mock("../../src/features/auth/session/data/auth-api", () => ({
   completeOnboarding: jest.fn().mockResolvedValue({ ok: true }),
 }));
 
@@ -24,7 +24,7 @@ const mockDrive = jest.fn();
 const mockDestroy = jest.fn();
 let capturedOnFinished: (() => void) | undefined;
 
-jest.mock("../../src/lib/onboarding/current-projects-tour", () => ({
+jest.mock("../../src/features/workflows/studio/views/tours/current-projects-tour", () => ({
   createCurrentProjectsTour: jest.fn(
     (callbacks: { onFinished: () => void }) => {
       capturedOnFinished = callbacks.onFinished;

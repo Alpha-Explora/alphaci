@@ -1,5 +1,5 @@
-import { getCapabilities as requestCapabilities } from "@/lib/api/capabilities";
-import type { CapabilitiesResponse } from "@/lib/api/contracts";
+import { getCapabilities as requestCapabilities } from "@/features/capabilities/current/data/capabilities-api";
+import type { CapabilitiesResponse } from "@/shared/api/contracts";
 
 export async function getCapabilities(): Promise<CapabilitiesResponse> {
   return requestCapabilities();

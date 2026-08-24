@@ -1,17 +1,19 @@
-import { ApiError } from "@/lib/api/request";
+import { ApiError } from "@/shared/api/request";
 import {
   createGitHubLoginUrl as createLoginUrl,
+  completeOnboarding as requestCompleteOnboarding,
+  deleteAccount as requestDeleteAccount,
   getAuthSession as fetchAuthSession,
   getPendingAccount as fetchPendingAccount,
   logout as requestLogout,
   restoreAccount as requestRestoreAccount,
   startFreshAccount as requestStartFreshAccount,
   warmupBackend as requestWarmupBackend,
-} from "@/lib/api/auth";
+} from "@/features/auth/session/data/auth-api";
 import type {
   AuthMeResponse,
   PendingAccountResponse,
-} from "@/lib/api/contracts";
+} from "@/shared/api/contracts";
 
 import type { AuthSession } from "../model/auth-types";
 import type { PendingAccount } from "../model/pending-account";
@@ -43,6 +45,14 @@ export async function getCurrentSession(): Promise<AuthSession> {
 
 export async function signOut(): Promise<void> {
   await requestLogout();
+}
+
+export async function completeOnboarding(): Promise<void> {
+  await requestCompleteOnboarding();
+}
+
+export async function deleteAccount(): Promise<void> {
+  await requestDeleteAccount();
 }
 
 export async function getPendingAccount(): Promise<PendingAccount> {

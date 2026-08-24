@@ -5,15 +5,15 @@ import { useParams } from "next/navigation";
 import {
   ActivityFeed,
   ActivityFilters,
-} from "@/components/hierarchy/activity-feed";
-import { HierarchyPageShell } from "@/components/hierarchy/hierarchy-page-shell";
+  HierarchyPageShell,
+} from "@/features/groups/workspace";
 import {
   Breadcrumb,
   GroupSubNav,
   LoadingRows,
   PageHeader,
   ResourceBoundary,
-} from "@/components/hierarchy/primitives";
+} from "@/features/groups/workspace";
 
 import type { GroupSummary } from "../../model/groups-types";
 import { useGroupViewModel } from "../../view-models/use-group-view-model";

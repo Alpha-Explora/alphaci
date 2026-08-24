@@ -1,5 +1,4 @@
-import { AdminGate } from "@/components/admin/admin-gate";
-import { AdminHeader } from "@/components/admin/admin-header";
+import { AdminGate, AdminHeader } from "@/features/admin/users";
 
 export default function AdminLayout({
   children,

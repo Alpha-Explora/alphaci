@@ -1,13 +1,13 @@
 import { act, useEffect } from "react";
 import { createRoot, type Root } from "react-dom/client";
 
-import { useOnboardingTour } from "../../src/hooks/use-onboarding-tour";
-import type { AuthMeResponse } from "../../src/lib/api/contracts";
+import { useOnboardingTour } from "../../src/features/workflows/studio/view-models/use-onboarding-tour";
+import type { AuthMeResponse } from "../../src/shared/api/contracts";
 
 /* ── Mocks ───────────────────────────────────────────────────────────────── */
 
 // Prevent the auth API from making real network calls.
-jest.mock("../../src/lib/api/auth", () => ({
+jest.mock("../../src/features/auth/session/data/auth-api", () => ({
   completeOnboarding: jest.fn().mockResolvedValue({ ok: true, onboardingCompleted: true }),
 }));
 
@@ -19,7 +19,7 @@ const mockDrive = jest.fn();
 const mockDestroy = jest.fn();
 let capturedOnDestroyed: (() => void) | undefined;
 
-jest.mock("../../src/lib/onboarding/create-project-tour", () => ({
+jest.mock("../../src/features/workflows/studio/views/tours/create-project-tour", () => ({
   createProjectTour: jest.fn((callbacks: { onFinished: () => void }) => {
     // Capture the onDestroyed callback so tests can fire it manually.
     capturedOnDestroyed = callbacks.onFinished;

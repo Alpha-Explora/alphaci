@@ -8,7 +8,9 @@ export type {
 } from "./view-models/use-auth-session-view-model";
 export {
   authErrorStatus,
+  completeOnboarding,
   createGitHubLoginUrl,
+  deleteAccount,
   getCurrentSession,
   getPendingAccount,
   isAuthApiError,

@@ -9,7 +9,7 @@ import { AppNav } from "@/features/workspace/selection";
 import { FlowBackground } from "@/shared/layout/flow-background";
 import { PipelineLoader } from "@/shared/layout/pipeline-loader";
 import { PublicSiteNav } from "@/shared/layout/public-site-nav";
-import { FlowExplainer } from "@/components/product/flow-explainer";
+import { FlowExplainer } from "./flow-explainer";
 import { useAuthSession } from "@/features/auth/session";
 import { isGuest } from "@/features/auth/session";
 

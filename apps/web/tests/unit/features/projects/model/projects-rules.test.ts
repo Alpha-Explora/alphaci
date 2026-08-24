@@ -1,4 +1,4 @@
-import { ApiError } from "../../../../../src/lib/api/request";
+import { ApiError } from "../../../../../src/shared/api/request";
 import {
   isExternalRepo,
   projectStatusVariant,

@@ -2,7 +2,7 @@ import {
   getPendingAccount,
   restoreAccount,
   startFreshAccount,
-} from "../../src/lib/api/client";
+} from "../support/api-client";
 
 describe("account archive/restore API client", () => {
   const fetchMock = jest.fn();
@@ -86,7 +86,7 @@ describe("account archive/restore API client", () => {
         json: async () => ({ message: "Account not archived" }),
       });
 
-      const { ApiError } = await import("../../src/lib/api/client");
+      const { ApiError } = await import("../support/api-client");
       await expect(restoreAccount()).rejects.toBeInstanceOf(ApiError);
     });
   });
@@ -118,7 +118,7 @@ describe("account archive/restore API client", () => {
         json: async () => ({ message: "No pending account found" }),
       });
 
-      const { ApiError } = await import("../../src/lib/api/client");
+      const { ApiError } = await import("../support/api-client");
       await expect(startFreshAccount()).rejects.toBeInstanceOf(ApiError);
     });
   });

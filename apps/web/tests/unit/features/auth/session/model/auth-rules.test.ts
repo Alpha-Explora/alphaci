@@ -1,4 +1,4 @@
-import type { AuthMeResponse } from "@/lib/api/contracts";
+import type { AuthMeResponse } from "@/shared/api/contracts";
 import {
   getAuthenticatedRedirectPath,
   isGuest,

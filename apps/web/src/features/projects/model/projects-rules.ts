@@ -1,5 +1,5 @@
 /* Pure rules for the project detail surface. No React, no Next, no fetch. */
-import { ApiError } from "@/lib/api/request";
+import { ApiError } from "@/shared/api/request";
 
 /** Status-badge variant for a provisioned project. */
 export function projectStatusVariant(status: string): string {

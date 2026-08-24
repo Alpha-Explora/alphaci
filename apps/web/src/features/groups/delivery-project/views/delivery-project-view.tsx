@@ -2,17 +2,19 @@
 
 import { useParams } from "next/navigation";
 
-import { LifecycleStatusBadge } from "@/components/hierarchy/badges";
-import { CreateRepositoryDialog } from "@/components/hierarchy/create-repository-dialog";
-import { RepositoryTable } from "@/components/hierarchy/repository-table";
-import { HierarchyPageShell } from "@/components/hierarchy/hierarchy-page-shell";
+import {
+  CreateRepositoryDialog,
+  HierarchyPageShell,
+  LifecycleStatusBadge,
+  RepositoryTable,
+} from "@/features/groups/workspace";
 import {
   Breadcrumb,
   LoadingRows,
   PageHeader,
   ResourceBoundary,
   SectionHeader,
-} from "@/components/hierarchy/primitives";
+} from "@/features/groups/workspace";
 
 import { useDeliveryProjectViewModel } from "../view-models/use-delivery-project-view-model";
 

@@ -8,7 +8,7 @@ import { motion } from "framer-motion";
 
 import { AppNav } from "@/features/workspace/selection";
 import { FlowBackground } from "@/shared/layout/flow-background";
-import { WelcomeModal } from "@/components/product/welcome-modal";
+import { WelcomeModal } from "./welcome-modal";
 import type { useAuthSession } from "@/features/auth/session";
 import { isGuest } from "@/features/auth/session";
 

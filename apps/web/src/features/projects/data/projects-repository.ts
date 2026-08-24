@@ -1,5 +1,8 @@
-import { getProjectOptions } from "@/lib/api/catalog";
-import { disconnectProject, getProjectOverview } from "@/lib/api/projects";
+import { getProjectOptions } from "@/features/workflows";
+import {
+  disconnectProject,
+  getProjectOverview,
+} from "../detail/data/projects-api";
 
 import type { ProjectOverviewResponse } from "../model/projects-types";
 

@@ -1,4 +1,4 @@
-import { completeOnboarding } from "@/lib/api/auth";
+import { completeOnboarding } from "@/features/auth/session";
 import {
   getDeliveryProjectRepositories,
   getGroupActivity,
@@ -6,11 +6,11 @@ import {
   getMyAssignedRepositories,
   getMyGroups,
   getSystemDeliveryProjects,
-  getWorkflowHistory,
-} from "@/lib/api/client";
-import { getProjects } from "@/lib/api/projects";
-import { getRuns } from "@/lib/api/runs";
-import { isGroupManagerRole } from "@/lib/api/hierarchy-contracts";
+} from "@/features/groups";
+import { getWorkflowHistory } from "@/features/workflows";
+import { getProjects } from "@/features/projects";
+import { getRuns } from "@/features/runs";
+import { isGroupManagerRole } from "@/features/groups";
 
 import type {
   DeliveryPortfolioNode,

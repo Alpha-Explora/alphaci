@@ -4,9 +4,10 @@
  * each view: they are pure, but reaching into the API layer from a view is what
  * the boundary rules forbid, so the model is the way in. */
 export {
+  GROUP_ROLE_LABELS,
   isGlobalCreatorRole,
   isGroupManagerRole,
-} from "@/lib/api/hierarchy-contracts";
+} from "@/features/groups/data/hierarchy-contracts";
 
 /** Status-badge variant for a provisioned project on the group projects grid. */
 export function projectStatusVariant(status: string): string {

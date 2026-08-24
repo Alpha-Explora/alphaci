@@ -1,5 +1,8 @@
 "use client";
 
+/* Preserve local-storage hydration and the initial workspace probe timing. */
+/* eslint-disable react-hooks/set-state-in-effect */
+
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { getWorkspaces } from "../data/workspace-repository";

@@ -9,7 +9,7 @@ import { AppNav } from "@/features/workspace/selection";
 import { FlowBackground } from "@/shared/layout/flow-background";
 import { PipelineLoader } from "@/shared/layout/pipeline-loader";
 import { WorkspaceProvider } from "@/features/workspace/selection";
-import { WorkflowBuilder } from "@/components/product/workflow-builder";
+import { WorkflowBuilder } from "./workflow-builder";
 import { useAuthSession } from "@/features/auth/session";
 import { isGuest } from "@/features/auth/session";
 

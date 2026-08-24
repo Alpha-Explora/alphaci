@@ -75,6 +75,8 @@ const violations = [];
 const warnings = [];
 const ioImportRe = /\b(expo-secure-store|Server Action)\b/i;
 const fetchRe = /\bfetch\s*\(|\baxios\b/;
+const legacyRootRe =
+  /(?:^|\/)src\/(?:components|hooks)(?:\/|$)|(?:^|\/)src\/lib\/(?:api|auth|hosting|onboarding)(?:\/|$)/;
 
 for (const dir of walkDirs(root)) {
   const fileRel = rel(cwd, dir);
@@ -104,6 +106,15 @@ for (const file of files) {
   const code = stripNoise(text);
   const fileRel = rel(cwd, file);
   const specs = importSpecs(text);
+
+  if (legacyRootRe.test(fileRel)) {
+    push(
+      violations,
+      "no-legacy-source-roots",
+      fileRel,
+      "legacy components/hooks/domain-lib source must be owned by a feature or shared layer",
+    );
+  }
 
   const inViews = /features\/[^/]+\/[^/]+\/views\//.test(fileRel);
   const inSharedUi = /shared\/ui\//.test(fileRel) || /components\/ui\//.test(fileRel);

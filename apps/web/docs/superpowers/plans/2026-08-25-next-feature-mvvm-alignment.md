@@ -8,6 +8,32 @@
 
 **Tech Stack:** Next.js 16 App Router, React 19, TypeScript 6, Jest 30, dependency-cruiser, the vendored Next feature-architecture checker.
 
+## Implementation ledger
+
+This plan is being implemented on `codex/next-mvvm-implementation`, based on
+the protected `codex/next-mvvm-trunk` branch. `main` remains untouched and no
+pull request is opened against it during the migration.
+
+Completed in the implementation branch:
+
+- invisible `(access)`, `(public)`, and `(platform)` route groups with the
+  existing URL map preserved;
+- domain-free shell primitives moved to `shared/`, and product UI moved into
+  owning feature/action `views/` folders;
+- auth, workspace selection, capabilities, groups, projects, workflow studio,
+  home, teams, settings, guide, and admin public barrels updated;
+- domain API modules moved out of `src/lib/api/` into feature `data/` layers,
+  generic transport retained in `src/shared/api/`, and legacy source roots
+  emptied;
+- domain-only root barrels added where cross-action consumers need a stable
+  public contract, with dependency cycles removed;
+- architecture tests and strict legacy-root/dependency checks added.
+
+The implementation deliberately preserves existing component state timing and
+request payloads. The remaining checklist below is the review map for those
+behavior-preserving moves; no behavior change or persistent platform layout is
+part of this branch.
+
 ## Global Constraints
 
 - This is a behavior-preserving refactor: preserve routes, API requests, payloads, query parameters, redirects, copy, accessibility attributes, CSS selectors, and visual cascade.

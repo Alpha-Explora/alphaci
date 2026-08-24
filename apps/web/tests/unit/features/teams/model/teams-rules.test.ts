@@ -4,7 +4,7 @@ import {
   toUserError,
 } from "../../../../../src/features/teams/model/teams-rules";
 import type { Team } from "../../../../../src/features/teams/model/teams-types";
-import { ApiError } from "../../../../../src/lib/api/request";
+import { ApiError } from "../../../../../src/shared/api/request";
 
 function team(id: string, name = id): Team {
   return { id, name, memberCount: 1 } as Team;

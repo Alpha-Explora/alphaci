@@ -1,12 +1,17 @@
 "use client";
 
+/* The initial capability probe intentionally transitions state from an effect
+ * so the first render remains deterministic during the behavior-preserving
+ * migration. */
+/* eslint-disable react-hooks/set-state-in-effect */
+
 import { useCallback, useEffect, useState } from "react";
 
 import {
   disabledCapabilities,
   getCapabilities,
 } from "../data/capabilities-repository";
-import type { CapabilitiesResponse } from "@/lib/api/contracts";
+import type { CapabilitiesResponse } from "@/shared/api/contracts";
 
 export type CapabilitiesStatus = "loading" | "ready" | "error";
 

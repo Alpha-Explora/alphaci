@@ -8,7 +8,7 @@ import { motion, useReducedMotion } from "framer-motion";
 import { AppNav } from "@/features/workspace/selection";
 import { FlowBackground } from "@/shared/layout/flow-background";
 import { PipelineLoader } from "@/shared/layout/pipeline-loader";
-import { ProjectDetailTabs } from "@/components/product/project-detail-tabs";
+import { ProjectDetailTabs } from "./project-detail-tabs";
 import { RunsSkeleton } from "@/features/runs/list";
 import { useAuthSession } from "@/features/auth/session";
 import { isGuest } from "@/features/auth/session";

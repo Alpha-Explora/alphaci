@@ -2,11 +2,11 @@ import { act } from "react";
 import type { ReactNode } from "react";
 import { createRoot } from "react-dom/client";
 
-import { DeploymentProvisioningSetup } from "../../src/components/product/deployment-provisioning-setup";
-import { useProviderConnections } from "../../src/hooks/use-provider-connections";
-import type { DeploymentProvisioningRequest } from "../../src/lib/api/contracts";
+import { DeploymentProvisioningSetup } from "../../src/features/workflows/studio/views/deployment-provisioning-setup";
+import { useProviderConnections } from "../../src/features/workflows/studio/view-models/use-provider-connections";
+import type { DeploymentProvisioningRequest } from "../../src/shared/api/contracts";
 
-jest.mock("../../src/hooks/use-provider-connections", () => ({
+jest.mock("../../src/features/workflows/studio/view-models/use-provider-connections", () => ({
   useProviderConnections: jest.fn(),
 }));
 

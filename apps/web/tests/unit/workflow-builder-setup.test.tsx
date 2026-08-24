@@ -1,7 +1,7 @@
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 
-import { WorkflowBuilder } from "../../src/components/product/workflow-builder";
+import { WorkflowBuilder } from "../../src/features/workflows/studio/views/workflow-builder";
 import {
   createProject,
   createGithubRepo,
@@ -17,8 +17,8 @@ import {
   getTemplates,
   getWorkflowHistory,
   listProviderConnections,
-} from "../../src/lib/api/client";
-import type { ProjectOptionsResponse } from "../../src/lib/api/contracts";
+} from "../support/api-client";
+import type { ProjectOptionsResponse } from "../../src/shared/api/contracts";
 
 jest.mock("framer-motion", () => {
   const React = jest.requireActual("react");
@@ -52,23 +52,39 @@ jest.mock("next/navigation", () => ({
   useSearchParams: () => ({ get: () => null }),
 }));
 
-jest.mock("../../src/lib/api/client", () => ({
-  createGithubRepo: jest.fn(),
+jest.mock("../../src/features/projects/detail/data/projects-api", () => ({
   createProject: jest.fn(),
+  getProjects: jest.fn(),
+}));
+jest.mock("../../src/features/workflows/studio/data/existing-repos-api", () => ({
+  discoverExistingRepo: jest.fn(),
+}));
+jest.mock("../../src/features/workflows/studio/data/workflows-api", () => ({
   generateWorkflow: jest.fn(),
-  getCapabilities: jest.fn(),
+  getWorkflowHistory: jest.fn(),
+}));
+jest.mock("../../src/features/workflows/studio/data/catalog-api", () => ({
   getCategories: jest.fn(),
+  getProjectOptions: jest.fn(),
+  getTemplates: jest.fn(),
+}));
+jest.mock("../../src/features/workflows/studio/data/github-api", () => ({
+  createGithubRepo: jest.fn(),
   getGithubInstallationAccounts: jest.fn(),
   getGithubAppInstallUrl: jest.fn(),
-  // Current Projects tab groups the list by the user's groups.
-  getGroups: jest.fn().mockResolvedValue([]),
   getLinkedGithubRepos: jest.fn(),
-  getMyUsage: jest.fn(),
-  getProjectOptions: jest.fn(),
-  getProjects: jest.fn(),
-  getTemplates: jest.fn(),
-  getWorkflowHistory: jest.fn(),
+}));
+jest.mock("../../src/features/workflows/studio/data/env-provisioning-api", () => ({
   listProviderConnections: jest.fn(),
+}));
+jest.mock("../../src/features/capabilities/current/data/capabilities-api", () => ({
+  getCapabilities: jest.fn(),
+}));
+jest.mock("../../src/features/projects/detail/data/usage-api", () => ({
+  getMyUsage: jest.fn(),
+}));
+jest.mock("../../src/features/groups/data/hierarchy-api", () => ({
+  getGroups: jest.fn().mockResolvedValue([]),
 }));
 
 const mockedCreateProject = createProject as jest.MockedFunction<typeof createProject>;

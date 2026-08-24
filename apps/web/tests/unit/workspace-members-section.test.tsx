@@ -1,14 +1,14 @@
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 
-import { WorkspaceMembersSection } from "../../src/components/settings/workspace-members-section";
+import { WorkspaceMembersSection } from "../../src/features/settings/account/views/workspace-members-section";
 import {
   addWorkspaceMember,
   getWorkspaceMembers,
   removeWorkspaceMember,
-} from "../../src/lib/api/workspaces";
+} from "../../src/features/workspace/selection/data/workspaces-api";
 
-jest.mock("../../src/lib/api/workspaces", () => ({
+jest.mock("../../src/features/workspace/selection/data/workspaces-api", () => ({
   addWorkspaceMember: jest.fn(),
   getWorkspaceMembers: jest.fn(),
   removeWorkspaceMember: jest.fn(),

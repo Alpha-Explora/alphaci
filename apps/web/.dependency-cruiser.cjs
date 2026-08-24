@@ -99,6 +99,17 @@ module.exports = {
       to: { path: '^src/features/' },
     },
     {
+      name: 'no-legacy-source-roots',
+      severity: 'error',
+      comment:
+        'Legacy components, hooks, and domain-specific lib modules are retired. ' +
+        'Place new code in its owning feature or in a domain-free shared layer.',
+      from: {},
+      to: {
+        path: '^src/(components|hooks|lib/(api|auth|hosting|onboarding))/',
+      },
+    },
+    {
       name: 'no-circular',
       severity: 'error',
       comment: 'A cycle means neither side can be understood or moved alone.',

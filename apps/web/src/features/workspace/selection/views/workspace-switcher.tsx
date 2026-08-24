@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 
-import { CreateGroupDialog } from "@/components/hierarchy/create-group-dialog";
+import { CreateGroupDialog } from "@/features/groups/create";
 import {
   canCreateWorkspace,
   type WorkspaceAppRole,

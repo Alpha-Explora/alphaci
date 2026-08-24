@@ -1,4 +1,4 @@
-import { getRuns } from "@/lib/api/runs";
+import { getRuns } from "@/features/runs/data/runs-api";
 
 import type { RunGroup } from "../model/runs-types";
 

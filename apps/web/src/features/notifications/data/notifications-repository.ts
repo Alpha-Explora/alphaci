@@ -1,4 +1,4 @@
-import { request } from "@/lib/api/request";
+import { request } from "@/shared/api/request";
 
 import type {
   NotificationPreferences,

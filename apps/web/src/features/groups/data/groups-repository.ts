@@ -12,8 +12,8 @@ import {
   getSystemDeliveryProjects,
   reopenGroup,
   updateGroup,
-} from "@/lib/api/hierarchy";
-import { getProjects } from "@/lib/api/projects";
+} from "@/features/groups/data/hierarchy-api";
+import { getProjects } from "@/features/projects";
 
 import type {
   DeliveryProject,

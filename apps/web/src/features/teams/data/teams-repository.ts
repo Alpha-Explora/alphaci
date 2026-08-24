@@ -1,5 +1,5 @@
-import { getGroups } from "@/lib/api/hierarchy";
-import { getProjects } from "@/lib/api/projects";
+import { getGroups } from "@/features/groups";
+import { getProjects } from "@/features/projects";
 
 import type { ProvisionedProject, Team } from "../model/teams-types";
 

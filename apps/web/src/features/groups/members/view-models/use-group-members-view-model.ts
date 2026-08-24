@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 
-import { useApiResource } from "@/hooks/use-hierarchy";
+import { useApiResource } from "@/features/groups";
 
 import { groupsRepository } from "../../data/groups-repository";
 import { isGroupManagerRole } from "../../model/groups-rules";

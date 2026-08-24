@@ -2,17 +2,19 @@
 
 import { useParams } from "next/navigation";
 
-import { AssignDeveloperDialog } from "@/components/hierarchy/assign-developer-dialog";
-import { AssignmentPanel } from "@/components/hierarchy/assignment-panel";
-import { RepositoryStatusBadge } from "@/components/hierarchy/badges";
-import { ConfigurationPanel } from "@/components/hierarchy/configuration-panel";
-import { HierarchyPageShell } from "@/components/hierarchy/hierarchy-page-shell";
+import {
+  AssignDeveloperDialog,
+  AssignmentPanel,
+  ConfigurationPanel,
+  HierarchyPageShell,
+  RepositoryStatusBadge,
+} from "@/features/groups/workspace";
 import {
   Breadcrumb,
   LoadingRows,
   PageHeader,
   ResourceBoundary,
-} from "@/components/hierarchy/primitives";
+} from "@/features/groups/workspace";
 
 import { useRepositoryAccessViewModel } from "../view-models/use-repository-access-view-model";
 import { useRepositoryDetailViewModel } from "../view-models/use-repository-detail-view-model";
