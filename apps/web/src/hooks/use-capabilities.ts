@@ -63,6 +63,7 @@ export function useCapabilities() {
     projectTargetManagementEnabled: capabilities?.projectTargetManagement?.enabled === true,
     ciRunTrackingEnabled: capabilities?.ciRunTracking?.enabled === true,
     deploymentHistoryEnabled: capabilities?.deploymentHistory?.enabled === true,
+    previewDeploymentsEnabled: capabilities?.previewDeployments?.enabled === true,
     driftDetectionEnabled: capabilities?.driftDetection?.enabled === true,
     driftRepairEnabled: capabilities?.driftRepair?.enabled === true,
     usageQuotasEnabled: capabilities?.usageQuotas?.enabled === true,

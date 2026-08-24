@@ -362,9 +362,13 @@ export function DeploymentProvisioningSummary({
             {target.env.map((envSet) => (
               <div
                 className="deployment-provisioning-summary__env"
-                key={`${target.slot}-${envSet.environment}`}
+                key={`${target.slot}-${envSet.lane}-${envSet.gitBranch ?? ""}`}
               >
-                <span>{envSet.environment}</span>
+                <span>
+                  {envSet.lane === "production"
+                    ? "production"
+                    : `preview: ${envSet.gitBranch ?? "branch"}`}
+                </span>
                 <div>
                   {envSet.provisioned.map((variable) => (
                     <code key={`${variable.key}-ok`}>{variable.key}</code>
