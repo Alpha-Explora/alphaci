@@ -38,6 +38,7 @@ function response(
     enabled: true,
     liveProvidersEnabled: true,
     branches: [preview()],
+    providerError: null,
     ...overrides,
   };
 }
@@ -197,6 +198,40 @@ describe("BranchPreviewsView", () => {
     );
 
     expect(container.textContent).not.toContain("PR #");
+  });
+
+  /* "No branch has been deployed" is a claim about the repository. During a
+   * provider outage we have no basis for it, and making it anyway sends the
+   * reader to push a branch they have already pushed. */
+  it("reports the provider failure instead of claiming nothing is deployed", () => {
+    render(
+      <BranchPreviewsView
+        error={null}
+        previews={response({
+          branches: [],
+          providerError: "Could not reach Vercel to load deployment history.",
+        })}
+        status="ready"
+      />,
+    );
+
+    expect(container.textContent).toContain("Could not reach Vercel");
+    expect(container.textContent).not.toContain("Push a branch");
+  });
+
+  it("shows the failure alongside a partial list rather than hiding it", () => {
+    render(
+      <BranchPreviewsView
+        error={null}
+        previews={response({
+          providerError: "Could not reach Render to load deployment history.",
+        })}
+        status="ready"
+      />,
+    );
+
+    expect(container.textContent).toContain("Could not reach Render");
+    expect(container.querySelectorAll(".branch-preview")).toHaveLength(1);
   });
 
   it("tells the reader to push a branch when nothing is deployed", () => {

@@ -998,9 +998,15 @@ export interface ProjectDeploymentHistoryItem {
 
 export interface ProjectDeploymentsResponse {
   enabled: boolean;
-  mode: "local_mock" | "live";
+  /**
+   * `unavailable` means the provider was asked and did not answer — distinct
+   * from `local_mock`, which means there was nothing to ask.
+   */
+  mode: "local_mock" | "live" | "unavailable";
   liveProvidersEnabled: boolean;
   deployments: ProjectDeploymentHistoryItem[];
+  /** Safe message naming the providers that could not be reached. */
+  providerError: string | null;
 }
 
 /**
@@ -1035,6 +1041,8 @@ export interface ProjectPreviewsResponse {
   enabled: boolean;
   liveProvidersEnabled: boolean;
   branches: ProjectBranchPreview[];
+  /** Set when a provider could not be reached, so an empty list is not read as "nothing deployed". */
+  providerError: string | null;
 }
 
 export type ProjectDriftSeverity = "info" | "warning" | "error";

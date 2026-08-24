@@ -41,6 +41,13 @@ export function BranchPreviewsView({
     );
   }
 
+  // Checked before the empty case: "no branch has been deployed" is a claim
+  // about the repository, and it is not one we can make when the provider
+  // never answered.
+  if (previews.providerError && previews.branches.length === 0) {
+    return <p className="branch-previews__error">{previews.providerError}</p>;
+  }
+
   if (previews.branches.length === 0) {
     return (
       <p className="env-empty-state">
@@ -58,6 +65,10 @@ export function BranchPreviewsView({
 
   return (
     <div className="branch-previews">
+      {/* A partial list is worth showing, but not worth presenting as whole. */}
+      {previews.providerError ? (
+        <p className="branch-previews__error">{previews.providerError}</p>
+      ) : null}
       {shown.map((preview) => (
         <BranchPreviewCard key={previewKey(preview)} preview={preview} />
       ))}

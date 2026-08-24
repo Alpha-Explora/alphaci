@@ -767,6 +767,14 @@ function DeploymentHistoryList({
           yet — the deployments below are simulated, not live.
         </p>
       ) : null}
+      {/* A provider that failed is not a provider that is missing. This used
+          to render the "not connected yet" line above, which sent people to
+          reconnect an integration that was working. */}
+      {response.providerError ? (
+        <p className="error-text" style={{ margin: 0 }}>
+          {response.providerError}
+        </p>
+      ) : null}
       {response.deployments.length ? (
         <div className="env-metadata-list">
           {response.deployments.map((deployment) => (
