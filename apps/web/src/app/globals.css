@@ -18,6 +18,9 @@
 @import "../styles/app-shell.css";
 @import "../styles/hierarchy.css";
 @import "../styles/admin.css";
+/* Feature-owned CSS. Sits before components.css, which must stay last so
+   .glass-panel keeps beating .section-card on source order. */
+@import "../features/projects/previews/branch-previews.css";
 @import "../styles/components.css";
 
 /* ── Light mode component overrides ────────────────────────────── */

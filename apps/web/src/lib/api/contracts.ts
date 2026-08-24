@@ -1,7 +1,27 @@
 export type SubscriptionPlan = "free" | "pro";
 export type SubscriptionStatus = "inactive" | "active" | "canceled";
 export type EnvProvider = "render" | "vercel";
+/**
+ * Render's own environment naming on a deployment target. NOT the env-var lane
+ * — that is EnvLane. The two used to be one type, which made a Render service
+ * name and an environment-variable scope move together.
+ */
 export type EnvEnvironment = "test" | "uat" | "production";
+
+/**
+ * Deployment lane an environment variable applies to.
+ *
+ * `production` is the lane the provider's production branch deploys to and
+ * carries no branch of its own; `preview` is always scoped to one branch, which
+ * is what gives every branch its own set of values.
+ */
+export type EnvLane = "production" | "preview";
+
+/** A lane paired with its branch. gitBranch is null exactly when lane is production. */
+export interface EnvVarScope {
+  lane: EnvLane;
+  gitBranch: string | null;
+}
 export type EnvOwnershipMode = "byo" | "flowci_managed";
 export type EnvTargetSlot = "backend" | "frontend" | "standalone";
 export type DeploymentStrategy =
@@ -117,6 +137,11 @@ export interface CapabilitiesResponse {
     enabled: boolean;
     liveProvidersEnabled: boolean;
     mode: "local_mock";
+  };
+  previewDeployments?: {
+    enabled: boolean;
+    /** Providers that report a preview lane. Vercel-only today. */
+    providers: readonly string[];
   };
   driftDetection?: {
     enabled: boolean;
@@ -304,7 +329,9 @@ export interface EnvVarMetadata {
   id: string;
   projectId: string;
   deploymentTargetId: string;
-  environment: EnvEnvironment;
+  lane: EnvLane;
+  /** Null exactly when `lane` is production. */
+  gitBranch: string | null;
   key: string;
   provider: EnvProvider;
   valueStored: false;
@@ -317,7 +344,9 @@ export interface EnvVarMetadata {
 
 export interface ProvisionEnvVarsRequest {
   deploymentTargetId: string;
-  environment: EnvEnvironment;
+  lane: EnvLane;
+  /** Required for the preview lane; rejected for production. */
+  gitBranch?: string | null;
   vars: Array<{ key: string; value: string }>;
 }
 
@@ -328,7 +357,8 @@ export interface ProvisionEnvVarsResponse {
 
 export interface ValidateEnvVarsRequest {
   deploymentTargetId: string;
-  environment: EnvEnvironment;
+  lane: EnvLane;
+  gitBranch?: string | null;
   text: string;
 }
 
@@ -346,7 +376,9 @@ export interface DeleteEnvVarMetadataResponse {
 }
 
 export interface DeploymentProvisioningEnvSet {
-  environment: EnvEnvironment;
+  lane: EnvLane;
+  /** Omitted on preview means "the branch this target tracks". */
+  gitBranch?: string;
   vars: Array<{ key: string; value: string }>;
 }
 
@@ -410,9 +442,12 @@ export interface DeploymentProvisioningResult {
     dockerContext?: string | null;
     dockerfilePath?: string | null;
     imageUrl?: string | null;
+    /** Branch this target tracks. Names the branch for a preview-lane write. */
+    branchName?: string | null;
     errorSummary: string | null;
     env: Array<{
-      environment: EnvEnvironment;
+      lane: EnvLane;
+      gitBranch: string | null;
       provisioned: Array<{ key: string; status: "provisioned" }>;
       failed: Array<{ key: string; status: "failed"; errorSummary: string }>;
     }>;
@@ -941,13 +976,23 @@ export interface ProjectDeploymentHistoryItem {
   targetId: string;
   targetName: string;
   provider: EnvProvider;
+  /** Provider lane ('production' / 'preview') or the Render environment name. */
   environment: string | null;
   branch: string | null;
   commitSha: string | null;
+  commitMessage: string | null;
   status: DeploymentHistoryStatus;
   createdAt: string;
   readyAt: string | null;
-  providerUrl: string;
+  /** The deployed site itself — per-deployment on Vercel, per-service on Render. */
+  deploymentUrl: string | null;
+  /** Set when the deployment was built for a pull request. */
+  pullRequestNumber: number | null;
+  /** Provider console for this single deployment, when the provider has one. */
+  inspectorUrl: string | null;
+  /** Provider console for the project as a whole. */
+  dashboardUrl: string;
+  /** Provider console's deployment list for the project. */
   consoleUrl: string;
 }
 
@@ -956,6 +1001,40 @@ export interface ProjectDeploymentsResponse {
   mode: "local_mock" | "live";
   liveProvidersEnabled: boolean;
   deployments: ProjectDeploymentHistoryItem[];
+}
+
+/**
+ * One branch's current deployment. The unit is the branch, not the deployment:
+ * a push updates that branch's card rather than appending a row.
+ */
+export interface ProjectBranchPreview {
+  branch: string;
+  isProduction: boolean;
+  deploymentId: string;
+  targetId: string;
+  targetName: string;
+  provider: EnvProvider;
+  status: DeploymentHistoryStatus;
+  commitSha: string | null;
+  commitMessage: string | null;
+  pullRequestNumber: number | null;
+  previewUrl: string | null;
+  inspectorUrl: string | null;
+  createdAt: string;
+  readyAt: string | null;
+  /**
+   * null means undetermined. The UI must not frame it in that case — a browser
+   * fires no error event for an X-Frame-Options refusal, so an unverified
+   * embed shows an unexplained blank box.
+   */
+  embeddable: boolean | null;
+  embedBlockedReason: string | null;
+}
+
+export interface ProjectPreviewsResponse {
+  enabled: boolean;
+  liveProvidersEnabled: boolean;
+  branches: ProjectBranchPreview[];
 }
 
 export type ProjectDriftSeverity = "info" | "warning" | "error";

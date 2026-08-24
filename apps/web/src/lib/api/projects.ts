@@ -12,6 +12,7 @@ import type {
   ProjectCiRunRerunResponse,
   ProjectCiRunsResponse,
   ProjectDeploymentsResponse,
+  ProjectPreviewsResponse,
   ProjectDriftResponse,
   ProjectDriftRepairAction,
   ProjectDriftRepairResponse,
@@ -129,6 +130,14 @@ export async function getProjectDeployments(
 ): Promise<ProjectDeploymentsResponse> {
   return request<ProjectDeploymentsResponse>(
     `/projects/${encodeURIComponent(projectId)}/deployments`,
+  );
+}
+
+export async function getProjectPreviews(
+  projectId: string,
+): Promise<ProjectPreviewsResponse> {
+  return request<ProjectPreviewsResponse>(
+    `/projects/${encodeURIComponent(projectId)}/previews`,
   );
 }
 

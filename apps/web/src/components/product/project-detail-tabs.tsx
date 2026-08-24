@@ -5,7 +5,14 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 
 import { ServiceLogsConsole } from "@/components/product/service-logs-console";
+// Feature barrel, never a deep path: `components-barrel-only` in
+// .dependency-cruiser.cjs fails the build on anything past index.ts.
+import { BranchPreviewsPanel } from "@/features/projects/previews";
 import { useCapabilities } from "@/hooks/use-capabilities";
+import {
+  providerDisplayName,
+  providerPublicUrl,
+} from "@/lib/hosting/provider-urls";
 import { getCentralWorkflowTags } from "@/lib/api/catalog";
 import {
   createWorkflowUpdatePullRequest,
@@ -407,6 +414,20 @@ function DeploymentTargetsList({
                       Render env: {target.renderEnvironmentName}
                     </small>
                   ) : null}
+                  {/* The live URL the target answers on. providerPublicUrl was
+                      written and unit-tested but had no caller, so every
+                      target listed its provider id and not its address. */}
+                  {providerPublicUrl(target) ? (
+                    <small>
+                      <a
+                        href={providerPublicUrl(target) as string}
+                        rel="noreferrer noopener"
+                        target="_blank"
+                      >
+                        {providerPublicUrl(target)}
+                      </a>
+                    </small>
+                  ) : null}
                   <small style={{ color: "var(--text-muted)" }}>
                     ID: {target.providerProjectId}
                   </small>
@@ -637,7 +658,10 @@ function EnvMetadataList({
         <div key={item.id} className={`env-metadata-row ${item.status}`}>
           <span>{item.key}</span>
           <span>
-            {item.environment} - {item.status}
+            {item.lane === "production"
+              ? "production"
+              : `preview: ${item.gitBranch}`}{" "}
+            - {item.status}
           </span>
         </div>
       ))}
@@ -765,17 +789,53 @@ function DeploymentHistoryList({
                   {deployment.provider} -{" "}
                   {deployment.environment ?? "environment not tracked"} -{" "}
                   {deployment.status}
+                  {deployment.pullRequestNumber !== null
+                    ? ` - PR #${deployment.pullRequestNumber}`
+                    : ""}
                 </small>
                 <small>
                   Branch {deployment.branch ?? "not available"} - Commit{" "}
                   {deployment.commitSha ?? "not available"}
                 </small>
+                {deployment.commitMessage ? (
+                  <small>{deployment.commitMessage}</small>
+                ) : null}
                 <small>
                   Created {formatDate(deployment.createdAt)} - Ready{" "}
                   {deployment.readyAt
                     ? formatDate(deployment.readyAt)
                     : "not ready"}
                 </small>
+                {/* The deployed site and this deployment's own build log. Both
+                    were carried in the payload but never rendered, so the
+                    history was read-only text with nowhere to go. */}
+                <span className="deployment-history__links">
+                  {deployment.deploymentUrl ? (
+                    <a
+                      href={deployment.deploymentUrl}
+                      rel="noreferrer noopener"
+                      target="_blank"
+                    >
+                      Open site
+                    </a>
+                  ) : null}
+                  {deployment.inspectorUrl ? (
+                    <a
+                      href={deployment.inspectorUrl}
+                      rel="noreferrer noopener"
+                      target="_blank"
+                    >
+                      Build log
+                    </a>
+                  ) : null}
+                  <a
+                    href={deployment.consoleUrl}
+                    rel="noreferrer noopener"
+                    target="_blank"
+                  >
+                    {providerDisplayName(deployment.provider)} console
+                  </a>
+                </span>
               </span>
             </div>
           ))}
@@ -992,6 +1052,7 @@ export function ProjectDetailTabs({
     envProvisioningEnabled,
     ciRunTrackingEnabled,
     deploymentHistoryEnabled,
+    previewDeploymentsEnabled,
     driftDetectionEnabled,
     driftRepairEnabled,
     projectTargetManagementEnabled,
@@ -1598,6 +1659,29 @@ export function ProjectDetailTabs({
                       </div>
                     </dl>
 
+                    {/* Branch previews.
+
+                        High on Overview deliberately: the question this screen
+                        gets asked most is "what does my branch look like right
+                        now", and a link buried under Hosting does not answer
+                        it. Capped here — the full list is under Hosting. */}
+                    {previewDeploymentsEnabled ? (
+                      <section aria-labelledby="overview-previews-heading">
+                        <h4
+                          className="ws-reported__head"
+                          id="overview-previews-heading"
+                        >
+                          Branch previews
+                        </h4>
+                        <BranchPreviewsPanel
+                          enabled
+                          limit={2}
+                          moreHref="the Hosting tab"
+                          projectId={selectedProject.id}
+                        />
+                      </section>
+                    ) : null}
+
                     {/* Developer access.
 
                         Assignments are keyed on hierarchy.repositories, not on
@@ -2160,6 +2244,21 @@ export function ProjectDetailTabs({
                         Hosting service provisioning is not enabled.
                       </p>
                     ) : null}
+                    {previewDeploymentsEnabled ? (
+                      <section aria-labelledby="hosting-previews-heading">
+                        <h4
+                          className="ws-reported__head"
+                          id="hosting-previews-heading"
+                        >
+                          Branch previews
+                        </h4>
+                        <BranchPreviewsPanel
+                          enabled
+                          projectId={selectedProject.id}
+                        />
+                      </section>
+                    ) : null}
+
                     {deploymentHistoryEnabled &&
                     selectedOverview?.capabilities.deploymentHistory ? (
                       deploymentsError ? (

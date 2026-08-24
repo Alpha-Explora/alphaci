@@ -1,0 +1,174 @@
+/**
+ * Branch previews.
+ *
+ * First stylesheet under features/, which is the error tier: tokens only, no
+ * hex literals and no raw rgba(). Imported from app/globals.css before
+ * components.css, which has to stay last.
+ */
+
+.branch-previews {
+  display: grid;
+  gap: 1rem;
+}
+
+.branch-previews__error {
+  margin: 0;
+  color: var(--danger);
+  font-size: 0.8rem;
+}
+
+.branch-previews__more {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.78rem;
+}
+
+.branch-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 0.9rem;
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-card);
+  background: var(--bg-panel);
+}
+
+.branch-preview__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.branch-preview__branch {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin: 0;
+  font-size: 0.92rem;
+  font-weight: 650;
+  color: var(--text-primary);
+}
+
+/* A branch name is the identifier here, so it must not be re-wrapped or
+   silently shortened mid-token — it scrolls instead. */
+.branch-preview__branch-name {
+  overflow-x: auto;
+  /* No mono token exists yet; the stack is inline rather than inventing one. */
+  font-family: ui-monospace, sfmono-regular, menlo, monospace;
+  white-space: nowrap;
+}
+
+.branch-preview__badge {
+  flex: none;
+  padding: 0.1rem 0.4rem;
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--brand) 16%, transparent);
+  color: var(--brand);
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.branch-preview__meta,
+.branch-preview__commit {
+  margin: 0.2rem 0 0;
+  color: var(--text-muted);
+  font-size: 0.74rem;
+}
+
+.branch-preview__commit {
+  overflow: hidden;
+  color: var(--text-secondary);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.branch-preview__status {
+  flex: none;
+  padding: 0.18rem 0.5rem;
+  border-radius: var(--radius-pill);
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.branch-preview__status--ok {
+  background: color-mix(in srgb, var(--success) 14%, transparent);
+  color: var(--success);
+}
+
+.branch-preview__status--pending {
+  background: color-mix(in srgb, var(--accent-amber) 14%, transparent);
+  color: var(--accent-amber);
+}
+
+.branch-preview__status--danger {
+  background: color-mix(in srgb, var(--danger) 14%, transparent);
+  color: var(--danger);
+}
+
+/* ── The framed site ──────────────────────────────────────────────────────── */
+
+/**
+ * A fixed 16:10 window rather than a full-height frame: the point is to
+ * recognise the page at a glance, and an unbounded iframe would push every
+ * other branch off the screen.
+ */
+.branch-preview__viewport {
+  position: relative;
+  overflow: hidden;
+  aspect-ratio: 16 / 10;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-card);
+  background: var(--layer-1);
+}
+
+.branch-preview__viewport-status {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.76rem;
+  place-items: center;
+}
+
+.branch-preview__frame {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
+.branch-preview__placeholder {
+  display: grid;
+  margin: 0;
+  padding: 1.1rem 0.9rem;
+  border: 1px dashed var(--border-soft);
+  border-radius: var(--radius-card);
+  background: var(--layer-1);
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  text-align: center;
+  place-items: center;
+}
+
+.branch-preview__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+@media (max-width: 620px) {
+  .branch-preview__header {
+    flex-direction: column;
+  }
+
+  .branch-preview__actions > * {
+    flex: 1 1 auto;
+    text-align: center;
+  }
+}

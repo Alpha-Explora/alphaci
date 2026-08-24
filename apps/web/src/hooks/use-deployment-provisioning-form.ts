@@ -38,7 +38,9 @@ function defaultTarget(
     renderServiceType: provider === "render" ? "web_service" : undefined,
     renderRuntime: provider === "render" ? "docker" : undefined,
     renderInstanceType: provider === "render" ? "free" : undefined,
-    env: [{ environment: "uat", vars: [] }],
+    // Preview with no branch named: the wizard means "the branch this target
+    // tracks", which the backend resolves from the target itself.
+    env: [{ lane: "preview" as const, vars: [] }],
   };
 }
 
