@@ -8,7 +8,7 @@ import {
   useTransform,
   type MotionValue,
 } from "framer-motion";
-import { useTheme } from "@/lib/theme-context";
+import { useTheme } from "@/shared/layout/theme-context";
 
 /* FlowBackground
    ──────────────

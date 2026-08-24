@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Space_Grotesk, Plus_Jakarta_Sans, Outfit } from "next/font/google";
 import "./globals.css";
-import { ThemeProvider } from "@/lib/theme-context";
+import { ThemeProvider } from "@/shared/layout/theme-context";
 
 const displayFont = Space_Grotesk({
   variable: "--font-display",

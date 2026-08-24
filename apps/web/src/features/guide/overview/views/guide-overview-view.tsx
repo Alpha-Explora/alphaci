@@ -6,9 +6,9 @@ import { useCallback } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 
 import { AppNav } from "@/components/layout/app-nav";
-import { FlowBackground } from "@/components/layout/flow-background";
-import { PipelineLoader } from "@/components/layout/pipeline-loader";
-import { PublicSiteNav } from "@/components/layout/public-site-nav";
+import { FlowBackground } from "@/shared/layout/flow-background";
+import { PipelineLoader } from "@/shared/layout/pipeline-loader";
+import { PublicSiteNav } from "@/shared/layout/public-site-nav";
 import { FlowExplainer } from "@/components/product/flow-explainer";
 import { useAuthSession } from "@/hooks/use-auth-session";
 import { isGuest } from "@/lib/auth/subscription";

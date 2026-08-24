@@ -1,7 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { useTheme } from "@/lib/theme-context";
+import { useTheme } from "@/shared/layout/theme-context";
 
 interface ThemeToggleProps {
   size?: "sm" | "md";

@@ -3,7 +3,7 @@
 import { motion, useReducedMotion } from "framer-motion";
 import Image from "next/image";
 
-import { DitherBackground } from "@/components/layout/dither-background";
+import { DitherBackground } from "@/shared/layout/dither-background";
 
 interface PipelineLoaderProps {
   label?: string;

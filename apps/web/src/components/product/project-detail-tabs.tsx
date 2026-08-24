@@ -45,7 +45,7 @@ import { CodeTab } from "./workspace/code-tab";
 import { PipelineRunsTab } from "./workspace/pipeline-runs-tab";
 import { PullRequestsTab } from "./workspace/pull-requests-tab";
 import { ProjectEnvPanel } from "./project-env-panel";
-import { HelpTip } from "./help-tip";
+import { HelpTip } from "@/shared/ui/help-tip";
 
 import { formatDate } from "./workflow-builder-utils";
 

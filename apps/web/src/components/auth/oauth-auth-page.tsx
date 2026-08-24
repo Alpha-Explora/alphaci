@@ -5,9 +5,9 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 
-import { DitherBackground } from "@/components/layout/dither-background";
-import { FlowBackground } from "@/components/layout/flow-background";
-import { PublicSiteNav } from "@/components/layout/public-site-nav";
+import { DitherBackground } from "@/shared/layout/dither-background";
+import { FlowBackground } from "@/shared/layout/flow-background";
+import { PublicSiteNav } from "@/shared/layout/public-site-nav";
 import { useAuthSession } from "@/hooks/use-auth-session";
 import { createGitHubLoginUrl, warmupBackend } from "@/lib/api/client";
 import { getAuthenticatedRedirectPath } from "@/lib/auth/subscription";

@@ -5,8 +5,8 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 
-import { FlowBackground } from "@/components/layout/flow-background";
-import { PipelineLoader } from "@/components/layout/pipeline-loader";
+import { FlowBackground } from "@/shared/layout/flow-background";
+import { PipelineLoader } from "@/shared/layout/pipeline-loader";
 import {
   ApiError,
   createGitHubLoginUrl,

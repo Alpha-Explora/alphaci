@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 
-import { PipelineLoader } from "@/components/layout/pipeline-loader";
+import { PipelineLoader } from "@/shared/layout/pipeline-loader";
 
 import { AuthCallbackClient } from "./callback-client";
 

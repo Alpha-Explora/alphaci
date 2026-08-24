@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { useTheme } from "@/lib/theme-context";
+import { useTheme } from "@/shared/layout/theme-context";
 
 /* DitherBackground
    ────────────────

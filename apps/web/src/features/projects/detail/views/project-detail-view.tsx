@@ -6,8 +6,8 @@ import { useEffect, useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 
 import { AppNav } from "@/components/layout/app-nav";
-import { FlowBackground } from "@/components/layout/flow-background";
-import { PipelineLoader } from "@/components/layout/pipeline-loader";
+import { FlowBackground } from "@/shared/layout/flow-background";
+import { PipelineLoader } from "@/shared/layout/pipeline-loader";
 import { ProjectDetailTabs } from "@/components/product/project-detail-tabs";
 import { RunsSkeleton } from "@/features/runs/list";
 import { useAuthSession } from "@/hooks/use-auth-session";

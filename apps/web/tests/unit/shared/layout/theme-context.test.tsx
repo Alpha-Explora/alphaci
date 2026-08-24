@@ -1,5 +1,5 @@
 /**
- * Unit tests for src/lib/theme-context.tsx.
+ * Unit tests for src/shared/layout/theme-context.tsx.
  *
  * Uses the same Probe + createRoot pattern as the onboarding-tour hook
  * tests in this project to avoid multiple-React-instance issues with
@@ -9,7 +9,7 @@
 import { act, useEffect } from "react";
 import { createRoot, type Root } from "react-dom/client";
 
-import { ThemeProvider, useTheme } from "../../src/lib/theme-context";
+import { ThemeProvider, useTheme } from "../../../../src/shared/layout/theme-context";
 
 interface Snapshot {
   theme: "dark" | "light";

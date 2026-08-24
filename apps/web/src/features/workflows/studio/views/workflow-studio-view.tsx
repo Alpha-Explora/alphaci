@@ -6,8 +6,8 @@ import { useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 
 import { AppNav } from "@/components/layout/app-nav";
-import { FlowBackground } from "@/components/layout/flow-background";
-import { PipelineLoader } from "@/components/layout/pipeline-loader";
+import { FlowBackground } from "@/shared/layout/flow-background";
+import { PipelineLoader } from "@/shared/layout/pipeline-loader";
 import { WorkspaceProvider } from "@/components/layout/workspace-context";
 import { WorkflowBuilder } from "@/components/product/workflow-builder";
 import { useAuthSession } from "@/hooks/use-auth-session";

@@ -5,8 +5,8 @@ import Image from "next/image";
 import { AnimatePresence, motion } from "framer-motion";
 
 import { AppNav } from "@/components/layout/app-nav";
-import { FlowBackground } from "@/components/layout/flow-background";
-import { ThemeToggle } from "@/components/layout/theme-toggle";
+import { FlowBackground } from "@/shared/layout/flow-background";
+import { ThemeToggle } from "@/shared/layout/theme-toggle";
 import { WorkspaceMembersSection } from "@/components/settings/workspace-members-section";
 import { NotificationsPreferencesView } from "@/features/notifications/preferences";
 import { useNotificationsInboxViewModel } from "@/features/notifications/inbox";

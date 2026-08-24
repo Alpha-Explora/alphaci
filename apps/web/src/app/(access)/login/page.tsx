@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 
 import { OAuthAuthPage } from "@/components/auth/oauth-auth-page";
-import { PipelineLoader } from "@/components/layout/pipeline-loader";
+import { PipelineLoader } from "@/shared/layout/pipeline-loader";
 
 export default function LoginPage() {
   return (

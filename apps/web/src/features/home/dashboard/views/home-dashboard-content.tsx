@@ -7,7 +7,7 @@ import { Fragment, useEffect } from "react";
 import { motion } from "framer-motion";
 
 import { AppNav } from "@/components/layout/app-nav";
-import { FlowBackground } from "@/components/layout/flow-background";
+import { FlowBackground } from "@/shared/layout/flow-background";
 import { WelcomeModal } from "@/components/product/welcome-modal";
 import type { useAuthSession } from "@/hooks/use-auth-session";
 import { isGuest } from "@/lib/auth/subscription";
