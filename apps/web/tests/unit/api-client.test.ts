@@ -647,7 +647,7 @@ describe("API client project setup helpers", () => {
             {
               id: "personal-user-1",
               name: "Personal",
-              kind: "personal",
+              kind: "team",
               role: "admin",
             },
           ],
@@ -710,7 +710,7 @@ describe("API client project setup helpers", () => {
       });
 
     await expect(getMyWorkspaces()).resolves.toMatchObject({
-      items: [{ kind: "personal", role: "admin" }],
+      items: [{ kind: "team", role: "admin" }],
     });
     await expect(getNotifications()).resolves.toMatchObject({ unreadCount: 0 });
     await expect(markNotificationRead("notification-1")).resolves.toEqual({

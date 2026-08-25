@@ -14,7 +14,10 @@ import type {
   DiscoverExistingRepoResponse,
   SetupProjectRequest,
   SetupProjectResponse,
+  WorkspaceSummary,
 } from "@/shared/api/contracts";
+// Feature barrel, never a deep path into the slice.
+import { getMyWorkspaces } from "@/features/workspace";
 import { useCreateProjectForm } from "../view-models/use-create-project-form";
 import { useCapabilities } from "@/features/capabilities/current";
 import { useDeploymentProvisioningForm } from "../view-models/use-deployment-provisioning-form";
@@ -67,6 +70,15 @@ export function WorkflowBuilder({ guest = false, session, onboardingCompleted }:
   const [existingRepoFullName, setExistingRepoFullName] = useState("");
   const [existingRepoBaseBranch, setExistingRepoBaseBranch] = useState("main");
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  /**
+   * Teams the caller can create in. Every project belongs to a team, so the
+   * Setup tab outside a group context has to name one rather than let the
+   * server guess — guessing is what used to drop projects into a personal
+   * workspace no teammate could see. `null` means "not loaded yet".
+   */
+  const [workspaces, setWorkspaces] = useState<WorkspaceSummary[] | null>(null);
+  const [selectedCreateWorkspaceId, setSelectedCreateWorkspaceId] =
+    useState<string | null>(null);
 
   const catalog = useWorkflowCatalog();
   const projectCatalog = useProjectOptionsCatalog();
@@ -103,6 +115,32 @@ export function WorkflowBuilder({ guest = false, session, onboardingCompleted }:
   // Only run when the catalog's version list loads — not on every render.
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [projectCatalog.defaultNodeVersion]);
+
+  useEffect(() => {
+    if (guest) return;
+    let active = true;
+    void getMyWorkspaces()
+      .then((response) => {
+        if (!active) return;
+        setWorkspaces(response.items);
+        // Preselect only when there is nothing to choose. With several teams
+        // the pick is the caller's, so the field stays empty and the create
+        // button waits for it.
+        setSelectedCreateWorkspaceId((current) =>
+          current ?? (response.items.length === 1 ? response.items[0].id : null),
+        );
+      })
+      .catch(() => {
+        // Leave the list unknown rather than empty. An empty list is a claim
+        // that the caller belongs to no team, and the panel says so — which
+        // would be a lie told by a transient network failure. Unknown falls
+        // back to sending no team and letting the server decide, exactly as
+        // before this field existed.
+      });
+    return () => {
+      active = false;
+    };
+  }, [guest]);
 
 
   function handleTabKeyDown(event: KeyboardEvent<HTMLButtonElement>, currentTab: WorkflowTab) {
@@ -457,11 +495,14 @@ export function WorkflowBuilder({ guest = false, session, onboardingCompleted }:
               onChangeExistingRepoBaseBranch={setExistingRepoBaseBranch}
               onChangeExistingRepoFullName={setExistingRepoFullName}
               onChangeSetupMode={setSetupMode}
-              onCreateProject={guest ? () => { window.location.href = "/signup"; } : handleCreateProject}
+              onCreateProject={guest ? () => { window.location.href = "/signup"; } : () => void handleCreateProject(selectedCreateWorkspaceId ?? undefined)}
               onDiscoverExistingRepo={guest ? () => { window.location.href = "/signup"; } : handleDiscoverExistingRepo}
               onGenerateWorkflow={guest ? () => { window.location.href = "/signup"; } : handleGenerateWorkflow}
               onSetupExistingRepo={guest ? () => { window.location.href = "/signup"; } : handleSetupExistingRepo}
               creationScope="individual"
+              workspaces={workspaces}
+              selectedWorkspaceId={selectedCreateWorkspaceId}
+              onChangeWorkspace={setSelectedCreateWorkspaceId}
               projectCatalog={projectCatalog}
               onViewProject={() => setActiveTab("current")}
               reducedMotion={reducedMotion}

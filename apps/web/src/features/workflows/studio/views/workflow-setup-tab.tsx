@@ -11,6 +11,7 @@ import type {
   MvpProjectOptionKey,
   SetupProjectResponse,
   UsageLimitItem,
+  WorkspaceSummary,
 } from "@/shared/api/contracts";
 import { getMyUsage } from "@/features/projects";
 import type { CreateProjectFormState } from "../view-models/use-create-project-form";
@@ -88,6 +89,15 @@ function RepositoryCreationProgress({
 interface WorkflowSetupTabProps {
   createResult: CreateProjectResult | null;
   creationScope: "individual" | "group";
+  /**
+   * Teams the caller can create in — only supplied for the "individual" scope,
+   * where no group context has already fixed the answer. `null` while loading.
+   * A project always belongs to a team, so this is a required choice, not a
+   * refinement of one the server can make on its own.
+   */
+  workspaces?: WorkspaceSummary[] | null;
+  selectedWorkspaceId?: string | null;
+  onChangeWorkspace?: (workspaceId: string | null) => void;
   deploymentOwnershipMode: EnvOwnershipMode;
   deploymentProvisioning: DeploymentProvisioningFormState;
   envProvisioningEnabled: boolean;
@@ -171,6 +181,9 @@ export function WorkflowSetupTab({
   createResult,
   deploymentOwnershipMode,
   creationScope,
+  workspaces,
+  selectedWorkspaceId,
+  onChangeWorkspace,
   deploymentProvisioning,
   envProvisioningEnabled,
   existingRepoBaseBranch,
@@ -257,6 +270,20 @@ export function WorkflowSetupTab({
 
   const selectedProjectKind = inferSingleProjectKind(projectCatalog);
 
+  /* Team selection, for the scope with no group context to fix it. `workspaces`
+   * is undefined for the group scope and null while loading — in both cases
+   * there is nothing to choose and nothing to block on, so the create button
+   * behaves exactly as it did before. */
+  const isIndividualScope = creationScope === "individual";
+  const soleWorkspace =
+    isIndividualScope && workspaces?.length === 1 ? workspaces[0] : null;
+  const needsTeamChoice = isIndividualScope && (workspaces?.length ?? 0) > 1;
+  const hasNoTeam = isIndividualScope && workspaces?.length === 0;
+  // Blocked only on a choice the caller can actually make: with no team at all
+  // the server rejects the create with a message that explains why, which beats
+  // a permanently dead button with no explanation.
+  const teamChoiceMissing = needsTeamChoice && !selectedWorkspaceId;
+
   const wizardStepReady = [
     Boolean(
       projectCatalog.selectedRepoShapeId &&
@@ -274,7 +301,10 @@ export function WorkflowSetupTab({
     !deploymentProvisioning.renderVariablesMissing,
     !createDisabled,
   ];
-  const finalCreateDisabled = createDisabled || !wizardStepReady.slice(0, 4).every(Boolean);
+  const finalCreateDisabled =
+    createDisabled ||
+    teamChoiceMissing ||
+    !wizardStepReady.slice(0, 4).every(Boolean);
 
   function goToWizardStep(step: number) {
     const prerequisitesReady = wizardStepReady.slice(0, step).every(Boolean);
@@ -396,9 +426,49 @@ export function WorkflowSetupTab({
         {!isExistingMode ? (
           <div className={`repo-creation-scope repo-creation-scope--${creationScope}`} role="status">
             <span className="repo-creation-scope__dot" aria-hidden="true" />
-            <span><strong>{creationScope === "individual" ? "Individual repository" : "Group repository"}</strong>{" "}
-              {creationScope === "individual" ? "Only you own and manage this repository. It will not be added to a group." : "This repository belongs to the selected group."}
-            </span>
+            {creationScope === "group" ? (
+              <span>
+                <strong>Team repository</strong> This repository belongs to the
+                selected team, and every member of it can see the project.
+              </span>
+            ) : needsTeamChoice ? (
+              /* Several teams and no group context: the caller picks. This
+                 used to claim the repository belonged to nobody but them,
+                 which stopped being true when personal workspaces were
+                 removed — a project now always belongs to a team. */
+              <label className="repo-creation-scope__picker">
+                <span>
+                  <strong>Team</strong> Every member of the team you choose can
+                  see this project.
+                </span>
+                <select
+                  value={selectedWorkspaceId ?? ""}
+                  data-testid="setup-workspace-select"
+                  onChange={(event) =>
+                    onChangeWorkspace?.(event.target.value || null)
+                  }
+                >
+                  <option value="">Select a team…</option>
+                  {(workspaces ?? []).map((workspace) => (
+                    <option key={workspace.id} value={workspace.id}>
+                      {workspace.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            ) : hasNoTeam ? (
+              <span>
+                <strong>No team yet</strong> Every project belongs to a team.
+                Ask a team admin to add you to one before creating a project.
+              </span>
+            ) : (
+              <span>
+                <strong>Team repository</strong>{" "}
+                {soleWorkspace
+                  ? `This repository belongs to ${soleWorkspace.name}, and every member of it can see the project.`
+                  : "Every member of your team can see this project."}
+              </span>
+            )}
           </div>
         ) : null}
 

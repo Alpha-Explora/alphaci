@@ -215,7 +215,7 @@ async function installDashboardAuditApi(page: Page) {
         items: [
           {
             id: 'workspace-1',
-            name: 'Personal workspace',
+            name: 'Design team',
             kind: 'personal',
             role: 'admin',
           },
@@ -541,7 +541,7 @@ async function runDashboardAudit(page: Page, baseUrl: string) {
   await installDashboardAuditApi(page);
   await page.goto(`${baseUrl}/workflows`, { waitUntil: 'networkidle' });
   await expectVisibleText(page, 'Create & Manage Projects');
-  await expectVisibleText(page, 'Personal workspace');
+  await expectVisibleText(page, 'Design team');
   await page.getByRole('button', { name: 'Notifications' }).click();
   await expectVisibleText(page, 'Project created');
 

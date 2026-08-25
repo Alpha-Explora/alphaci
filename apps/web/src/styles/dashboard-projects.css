@@ -1495,6 +1495,32 @@
   box-shadow: 0 0 0 4px rgba(139, 124, 255, 0.14);
 }
 
+/* Team picker, shown in place of the scope note when the caller belongs to
+   more than one team and no group context has already chosen for them. */
+.repo-creation-scope__picker {
+  display: flex;
+  flex: 1 1 auto;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.repo-creation-scope__picker select {
+  min-width: 12rem;
+  padding: 0.34rem 0.5rem;
+  border: 1px solid var(--border-soft);
+  border-radius: 0.45rem;
+  color: var(--text-primary);
+  background: var(--surface-raised, transparent);
+  font: inherit;
+}
+
+.repo-creation-scope__picker select:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 1px;
+}
+
 .repo-individual-detail {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));

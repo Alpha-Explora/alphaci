@@ -606,7 +606,12 @@ export interface UsageMeResponse {
 export interface WorkspaceSummary {
   id: string;
   name: string;
-  kind: "personal" | "team";
+  /**
+   * A workspace IS a team — personal workspaces were removed, and the database
+   * CHECK now permits nothing else. Kept as a single-member union because the
+   * column is still selected and returned.
+   */
+  kind: "team";
   role: WorkspaceRole;
 }
 
