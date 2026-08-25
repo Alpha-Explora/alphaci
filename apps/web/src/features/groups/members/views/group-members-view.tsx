@@ -2,16 +2,14 @@
 
 import { useParams } from "next/navigation";
 
-import { AddMemberDialog } from "@/components/hierarchy/add-member-dialog";
-import { MemberTable } from "@/components/hierarchy/member-table";
-import { HierarchyPageShell } from "@/components/hierarchy/hierarchy-page-shell";
+import { AddMemberDialog, HierarchyPageShell, MemberTable } from "@/features/groups/workspace";
 import {
   Breadcrumb,
   GroupSubNav,
   LoadingRows,
   PageHeader,
   ResourceBoundary,
-} from "@/components/hierarchy/primitives";
+} from "@/features/groups/workspace";
 import type { AuthMeResponse, GroupSummary } from "../../model/groups-types";
 import { useGroupViewModel } from "../../view-models/use-group-view-model";
 import { useGroupMembersViewModel } from "../view-models/use-group-members-view-model";

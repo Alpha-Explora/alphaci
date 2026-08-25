@@ -5,10 +5,10 @@ import { useRouter } from "next/navigation";
 import { Suspense } from "react";
 import { useReducedMotion } from "framer-motion";
 
-import { FlowBackground } from "@/components/layout/flow-background";
-import { PipelineLoader } from "@/components/layout/pipeline-loader";
-import { useAuthSession } from "@/hooks/use-auth-session";
-import { isGuest } from "@/lib/auth/subscription";
+import { FlowBackground } from "@/shared/layout/flow-background";
+import { PipelineLoader } from "@/shared/layout/pipeline-loader";
+import { useAuthSession } from "@/features/auth/session";
+import { isGuest } from "@/features/auth/session";
 
 import { RunsListContent } from "./runs-list-content";
 

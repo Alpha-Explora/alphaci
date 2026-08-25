@@ -2,10 +2,10 @@
 
 import { motion } from "framer-motion";
 
-import { AppNav } from "@/components/layout/app-nav";
-import { FlowBackground } from "@/components/layout/flow-background";
-import { GroupWorkspacePanel } from "@/components/product/group-workspace-panel";
-import type { useAuthSession } from "@/hooks/use-auth-session";
+import { AppNav } from "@/features/workspace/selection";
+import { FlowBackground } from "@/shared/layout/flow-background";
+import { GroupWorkspacePanel } from "./group-workspace-panel";
+import type { useAuthSession } from "@/features/auth/session";
 
 import { memberCountLabel } from "../../model/teams-rules";
 import { useTeamsDetailViewModel } from "../view-models/use-teams-detail-view-model";

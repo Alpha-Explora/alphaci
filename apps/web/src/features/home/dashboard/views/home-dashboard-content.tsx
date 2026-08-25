@@ -6,12 +6,13 @@ import { useRouter } from "next/navigation";
 import { Fragment, useEffect } from "react";
 import { motion } from "framer-motion";
 
-import { AppNav } from "@/components/layout/app-nav";
-import { FlowBackground } from "@/components/layout/flow-background";
-import { WelcomeModal } from "@/components/product/welcome-modal";
-import type { useAuthSession } from "@/hooks/use-auth-session";
-import { isGuest } from "@/lib/auth/subscription";
+import { AppNav } from "@/features/workspace/selection";
+import { FlowBackground } from "@/shared/layout/flow-background";
+import { WelcomeModal } from "./welcome-modal";
+import type { useAuthSession } from "@/features/auth/session";
+import { isGuest } from "@/features/auth/session";
 
+import { isGlobalCreatorRole } from "../../model/home-rules";
 import { useHomeDashboardViewModel } from "../view-models/use-home-dashboard-view-model";
 import { DashboardWorkspaceOverview } from "./workspace-overview";
 
@@ -48,6 +49,9 @@ export function HomeDashboardContent({
   const vm = useHomeDashboardViewModel({ enabled });
 
   const guest = isGuest(session);
+  /* Creating a project is a Lead/Admin action, matching the server gate. A
+   * Developer is not shown a button that would only ever come back 403. */
+  const canCreateProjects = isGlobalCreatorRole(session?.appRole);
   const error = sessionError;
   const welcomeDismissed = vm.welcomeDismissed;
   const handleWelcomeDismiss = vm.dismissWelcome;
@@ -242,9 +246,11 @@ export function HomeDashboardContent({
                   >
                     Refresh
                   </button>
-                  <Link className="primary-button home-header-btn" href="/workflows?tab=setup">
-                    Create project
-                  </Link>
+                  {canCreateProjects ? (
+                    <Link className="primary-button home-header-btn" href="/workflows?tab=setup">
+                      Create project
+                    </Link>
+                  ) : null}
                 </>
               )}
             </div>

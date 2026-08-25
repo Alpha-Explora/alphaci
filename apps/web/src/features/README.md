@@ -47,7 +47,8 @@ violation, not a placeholder.
 3. I/O lives in `data/` and nowhere else.
 4. `app/` may import a barrel — a domain `index.ts` or an action
    `index.ts` — and `shared/`. Nothing deeper.
-5. `components/` may import a feature barrel, never a feature's internals.
+5. Legacy `components/`, `hooks/`, and domain-specific `lib/` roots are retired;
+   new code belongs to an owning feature or a domain-free shared module.
 6. No feature may reach into another feature's internals. Within your own
    domain, `model/` and `data/` are reachable.
 7. `shared/` may never import a feature.
@@ -77,11 +78,12 @@ Every route is migrated. All 22 routes are one-line re-exports from a feature
 slice, except `/`, `/login`, `/signup` and `/auth/callback`, which are small
 enough to have nothing to extract.
 
-Domains: `admin`, `groups`, `guide`, `home`, `notifications`, `projects`,
-`runs`, `settings`, `teams`, `workflows`.
+Domains: `admin`, `auth`, `capabilities`, `groups`, `guide`, `home`,
+`notifications`, `projects`, `runs`, `settings`, `teams`, `workflows`, and
+`workspace`.
 
-What remains is not routes but `src/components/` — roughly 16k lines of shared
-components that no feature owns yet. The policy is **migrate-on-touch**: when
-you make a substantive change to one, move it into the feature that owns it
-first. Do not start a migration you are not otherwise touching, and do not
-treat `components/` as a staging area — it is simply what has not been moved.
+The migration is complete at the source-root level: no code files remain under
+`src/components/`, `src/hooks/`, or domain-specific `src/lib/{api,auth,hosting,onboarding}/`.
+Domain UI and orchestration now have one owner, and generic transport remains
+only in `src/shared/api/`. Preserve this invariant when adding new features;
+do not recreate a legacy compatibility root.

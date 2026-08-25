@@ -1,14 +1,14 @@
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 
-import { WorkspaceMembersSection } from "../../src/components/settings/workspace-members-section";
+import { WorkspaceMembersSection } from "../../src/features/settings/account/views/workspace-members-section";
 import {
   addWorkspaceMember,
   getWorkspaceMembers,
   removeWorkspaceMember,
-} from "../../src/lib/api/workspaces";
+} from "../../src/features/workspace/selection/data/workspaces-api";
 
-jest.mock("../../src/lib/api/workspaces", () => ({
+jest.mock("../../src/features/workspace/selection/data/workspaces-api", () => ({
   addWorkspaceMember: jest.fn(),
   getWorkspaceMembers: jest.fn(),
   removeWorkspaceMember: jest.fn(),
@@ -21,8 +21,8 @@ const mockedRemoveMember = removeWorkspaceMember as jest.MockedFunction<typeof r
 
 const leadWorkspace = {
   id: "workspace-1",
-  name: "Personal workspace",
-  kind: "personal" as const,
+  name: "Design team",
+  kind: "team" as const,
   role: "admin" as const,
 };
 

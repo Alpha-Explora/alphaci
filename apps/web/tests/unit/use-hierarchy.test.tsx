@@ -5,8 +5,8 @@ import {
   useApiResource,
   timeAgo,
   type UseApiResourceResult,
-} from "../../src/hooks/use-hierarchy";
-import { ApiError } from "../../src/lib/api/request";
+} from "../../src/features/groups/view-models/use-hierarchy-resource";
+import { ApiError } from "../../src/shared/api/request";
 
 async function flushEffects() {
   await act(async () => {

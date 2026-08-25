@@ -5,15 +5,48 @@
  * than the whole domain. */
 export type {
   DeliveryProject,
+  GroupActivityItem,
+  GroupActivityQuery,
+  GroupActivityResponse,
   GroupMember,
+  GroupRole,
   GroupSummary,
   HierarchyRepository,
   HierarchySystem,
+  RepositoryAccessStatus,
+  RepositoryAccessStatusResponse,
+  RepositoryAssignment,
 } from "./model/groups-types";
+export type { MyAssignedRepository } from "./data/hierarchy-contracts";
+export type { AuthMeResponse, ProvisionedProject } from "./model/groups-types";
+export type {
+  GroupActivityType,
+  InternalUserDirectoryEntry,
+  RepositoryConfigurationResponse,
+} from "./data/hierarchy-contracts";
 
 export {
+  GROUP_ROLE_LABELS,
   isGlobalCreatorRole,
   isGroupManagerRole,
   projectStatusVariant,
   repoShortName,
 } from "./model/groups-rules";
+export * from "./data/hierarchy-api";
+export type {
+  AssignmentStatus,
+  ConfigurationItemMetadata,
+  ConfigurationType,
+  DeliveryProjectStatus,
+  GithubSyncState,
+  GroupMemberStatus,
+  GroupStatus,
+  RepositoryStatus,
+  SystemStatus,
+} from "./data/hierarchy-contracts";
+export {
+  timeAgo,
+  useApiResource,
+  type ResourceState,
+  type UseApiResourceResult,
+} from "./view-models/use-hierarchy-resource";

@@ -5,7 +5,7 @@ import {
   resetUserAppRoleToGithub,
   setUserAppRole,
   triageAdminFeedback,
-} from "@/lib/api/admin";
+} from "@/features/admin/data/admin-api";
 
 import type {
   AdminUserDetail,

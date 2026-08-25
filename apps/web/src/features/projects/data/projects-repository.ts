@@ -1,4 +1,4 @@
-import { getProjectOptions } from "@/lib/api/catalog";
+import { getProjectOptions } from "@/features/workflows";
 import {
   addProjectDomain,
   disconnectProject,
@@ -7,7 +7,7 @@ import {
   getProjectPreviews,
   removeProjectDomain,
   verifyProjectDomain,
-} from "@/lib/api/projects";
+} from "../detail/data/projects-api";
 
 import type {
   AddCustomDomainRequest,

@@ -1,13 +1,13 @@
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 
-import { ProjectEnvPanel } from "../../src/components/product/project-env-panel";
-import { ProjectDetailTabs } from "../../src/components/product/project-detail-tabs";
-import { WorkflowCurrentTab } from "../../src/components/product/workflow-current-tab";
-import { useCapabilities } from "../../src/hooks/use-capabilities";
-import { useProjectEnvProvisioning } from "../../src/hooks/use-project-env-provisioning";
-import type { ProvisionedProject } from "../../src/lib/api/contracts";
-import { getMyUsage } from "../../src/lib/api/usage";
+import { ProjectEnvPanel } from "../../src/features/projects/detail/views/project-env-panel";
+import { ProjectDetailTabs } from "../../src/features/projects/detail/views/project-detail-tabs";
+import { WorkflowCurrentTab } from "../../src/features/workflows/studio/views/workflow-current-tab";
+import { useCapabilities } from "../../src/features/capabilities/current";
+import { useProjectEnvProvisioning } from "../../src/features/projects/detail/view-models/use-project-env-provisioning-view-model";
+import type { ProvisionedProject } from "../../src/shared/api/contracts";
+import { getMyUsage } from "../../src/features/projects/detail/data/usage-api";
 
 jest.mock("framer-motion", () => {
   const React = jest.requireActual("react");
@@ -49,15 +49,15 @@ jest.mock("framer-motion", () => {
   };
 });
 
-jest.mock("../../src/hooks/use-capabilities", () => ({
+jest.mock("../../src/features/capabilities/current", () => ({
   useCapabilities: jest.fn(),
 }));
 
-jest.mock("../../src/hooks/use-project-env-provisioning", () => ({
+jest.mock("../../src/features/projects/detail/view-models/use-project-env-provisioning-view-model", () => ({
   useProjectEnvProvisioning: jest.fn(),
 }));
 
-jest.mock("../../src/lib/api/projects", () => ({
+jest.mock("../../src/features/projects/detail/data/projects-api", () => ({
   getProjectOverview: jest.fn(),
   getWorkflowSettings: jest.fn(),
   previewWorkflowSettings: jest.fn(),
@@ -95,12 +95,11 @@ jest.mock("../../src/lib/api/projects", () => ({
 
 // The Current Projects rail now groups repositories by the user's groups —
 // resolve to "no groups" so projects land in the Ungrouped bucket.
-jest.mock("../../src/lib/api/client", () => ({
-  ...jest.requireActual("../../src/lib/api/client"),
+jest.mock("../../src/features/groups/data/hierarchy-api", () => ({
   getGroups: jest.fn().mockResolvedValue([]),
 }));
 
-jest.mock("../../src/lib/api/usage", () => ({
+jest.mock("../../src/features/projects/detail/data/usage-api", () => ({
   getMyUsage: jest.fn(),
 }));
 
@@ -112,7 +111,7 @@ const mockedUseProjectEnvProvisioning =
     typeof useProjectEnvProvisioning
   >;
 const mockedGetMyUsage = getMyUsage as jest.MockedFunction<typeof getMyUsage>;
-const mockedProjectApi = jest.requireMock("../../src/lib/api/projects") as {
+const mockedProjectApi = jest.requireMock("../../src/features/projects/detail/data/projects-api") as {
   getProjectOverview: jest.Mock;
   getWorkflowSettings: jest.Mock;
   previewWorkflowSettings: jest.Mock;
@@ -599,7 +598,11 @@ describe("Project env provisioning UI", () => {
     jest.clearAllMocks();
   });
 
-  it("uses a split workspace listing groups and shows the group's repositories", async () => {
+  /* The rail is teams and nothing else. It previously carried an "Ungrouped"
+   * bucket and a Repositories/Teams toggle for projects owned by no team —
+   * both removed with personal workspaces, since every project now belongs to
+   * a team and that bucket could never fill. */
+  it("lists the caller's teams and shows the selected team's repositories", async () => {
     mockCapabilities(true);
     mockEnvHook();
 
@@ -611,20 +614,36 @@ describe("Project env provisioning UI", () => {
       status: "provisioned",
       workflowPath: ".github/workflows/10-alphaci-quality.yml",
       githubCommitSha: "def456",
+      workspaceId: "workspace-1",
     };
+    (
+      jest.requireMock("../../src/features/groups/data/hierarchy-api") as {
+        getGroups: jest.Mock;
+      }
+    ).getGroups.mockResolvedValueOnce([
+      {
+        id: "workspace-1",
+        name: "Platform",
+        description: null,
+        status: "active",
+      },
+    ] as never);
 
     const rendered = render(
       <WorkflowCurrentTab
         latestResult={null}
         loadingProjects={false}
         onOpenSetup={jest.fn()}
-        projects={[provisionedProject, frontendProject]}
+        renderGroupCreate={() => null}
+        projects={[
+          { ...provisionedProject, workspaceId: "workspace-1" },
+          frontendProject,
+        ]}
       />,
     );
     root = rendered.root;
 
-    // Flush the groups fetch (mocked to resolve with no groups) so both
-    // projects land in the Ungrouped bucket.
+    // Flush the groups fetch so both projects land in their team's bucket.
     await act(async () => {});
 
     expect(
@@ -632,28 +651,20 @@ describe("Project env provisioning UI", () => {
     ).not.toBeNull();
     expect(rendered.container.querySelector(".project-list")).not.toBeNull();
 
-    // Rail lists the group buckets, not individual repositories.
-    const ungroupedSelector =
-      rendered.container.querySelector<HTMLButtonElement>(
-        'button[data-project-id="__ungrouped__"]',
-      );
-    expect(ungroupedSelector).not.toBeNull();
-    expect(ungroupedSelector?.textContent).toContain("2 repositories");
+    // The rail is a team list — there is no ownership toggle beside it.
+    expect(
+      rendered.container.querySelector(".project-ownership-toggle"),
+    ).toBeNull();
+    expect(rendered.container.textContent).not.toContain(
+      "individual repositories",
+    );
 
-    // The detail panel lists every repository of the selected bucket, each
-    // linking to its full page (where the detail tabs now live).
     const detailPanel = rendered.container.querySelector(
       ".project-detail-panel",
     );
     expect(detailPanel).not.toBeNull();
-    expect(detailPanel?.textContent).toContain("orders-api");
-    expect(detailPanel?.textContent).toContain("web-client");
-    const fullPageLinks = Array.from(
-      rendered.container.querySelectorAll<HTMLAnchorElement>(
-        'a[href^="/projects/"]',
-      ),
-    );
-    expect(fullPageLinks).toHaveLength(2);
+    expect(detailPanel?.textContent).toContain("Platform");
+    expect(detailPanel?.textContent).toContain("2 repositories");
   });
 
   it("loads the project overview and renders control-center tabs with empty states", async () => {

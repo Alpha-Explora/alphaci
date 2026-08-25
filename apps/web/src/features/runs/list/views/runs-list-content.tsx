@@ -3,9 +3,9 @@
 import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
 
-import { AppNav } from "@/components/layout/app-nav";
-import { FlowBackground } from "@/components/layout/flow-background";
-import type { useAuthSession } from "@/hooks/use-auth-session";
+import { AppNav } from "@/features/workspace/selection";
+import { FlowBackground } from "@/shared/layout/flow-background";
+import type { useAuthSession } from "@/features/auth/session";
 
 import { useRunsListViewModel } from "../view-models/use-runs-list-view-model";
 import { ProjectGroupSection } from "./project-group-section";

@@ -11,7 +11,7 @@
  * does not throw, silencing the expected jsdom notice.
  */
 
-import { navigateToExternalUrl } from "../../src/lib/navigation";
+import { navigateToExternalUrl } from "../../src/features/workflows/studio/view-models/navigation";
 
 describe("navigateToExternalUrl", () => {
   it("calls window.location.assign with the given url without throwing", () => {

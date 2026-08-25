@@ -5,13 +5,13 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 
-import { AppNav } from "@/components/layout/app-nav";
-import { FlowBackground } from "@/components/layout/flow-background";
-import { PipelineLoader } from "@/components/layout/pipeline-loader";
-import { WorkspaceProvider } from "@/components/layout/workspace-context";
-import { WorkflowBuilder } from "@/components/product/workflow-builder";
-import { useAuthSession } from "@/hooks/use-auth-session";
-import { isGuest } from "@/lib/auth/subscription";
+import { AppNav } from "@/features/workspace/selection";
+import { FlowBackground } from "@/shared/layout/flow-background";
+import { PipelineLoader } from "@/shared/layout/pipeline-loader";
+import { WorkspaceProvider } from "@/features/workspace/selection";
+import { WorkflowBuilder } from "./workflow-builder";
+import { useAuthSession } from "@/features/auth/session";
+import { isGuest } from "@/features/auth/session";
 
 /* Level 0 in the skill's progressive depth: the studio's data belongs to
  * WorkflowBuilder and the hooks it owns, so this surface has no view-model and

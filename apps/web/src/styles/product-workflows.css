@@ -1087,59 +1087,6 @@
   }
 }
 
-/* Two-sided labeled switch: "Repositories | Teams" flanking the toggle,
-   so the switch communicates both states at once instead of one word
-   swapping in a separate header line. */
-.rail-mode-switch {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.55rem;
-  min-width: 0;
-}
-
-.rail-mode-label {
-  flex: 0 0 auto;
-  padding: 0;
-  border: 0;
-  background: transparent;
-  color: var(--text-muted);
-  font-size: 0.78rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: color 180ms ease;
-}
-
-.rail-mode-label:hover {
-  color: var(--text-secondary);
-}
-
-.rail-mode-label:focus-visible {
-  outline: 2px solid var(--brand);
-  outline-offset: 3px;
-  border-radius: 3px;
-}
-
-.rail-mode-label.is-active {
-  color: var(--text-primary);
-  font-weight: 700;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .rail-mode-label { transition: none; }
-}
-
-.project-ownership-toggle.is-individual .project-ownership-toggle__track {
-  border-color: color-mix(in srgb, var(--brand) 70%, var(--border-tile));
-  background: var(--brand);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand) 15%, transparent), inset 0 1px 2px rgba(0, 0, 0, 0.12);
-}
-
-.project-ownership-toggle.is-individual .project-ownership-toggle__thumb {
-  transform: translateX(1.18rem);
-  background: white;
-  box-shadow: 0 2px 7px color-mix(in srgb, var(--brand) 40%, rgba(0, 0, 0, 0.3));
-}
-
 .repo-wizard-progress__step.is-active {
   color: var(--text-primary);
   border-color: color-mix(in srgb, var(--brand) 45%, var(--border-soft));

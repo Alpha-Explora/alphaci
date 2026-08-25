@@ -13,3 +13,4 @@ export type {
 } from "./model/runs-types";
 
 export { groupRunsByProject, summarizeRuns } from "./model/runs-rules";
+export * from "./data/runs-api";

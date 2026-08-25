@@ -1,7 +1,7 @@
 import {
   discoverExistingRepo,
   setupExistingRepoPullRequest,
-} from "@/lib/api/existing-repos";
+} from "@/features/workflows/studio/data/existing-repos-api";
 
 const fetchMock = jest.fn();
 
@@ -38,6 +38,35 @@ describe("existing repo API client", () => {
       }),
     );
     expect(result.detectedProjectTypeId).toBe("nextjs");
+  });
+
+  /* The branch is optional on the wire so the server can ask the repository
+   * which branch it lives on. Sending a "main" default instead of omitting the
+   * field suppressed that lookup, and a repo on `master` was scanned on a
+   * branch it does not have — no package.json, so no detected project type. */
+  it("omits baseBranch entirely when the caller does not pin one", async () => {
+    fetchMock.mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        repoFullName: "tone/app",
+        baseBranch: "master",
+        detectedProjectTypeId: "nextjs",
+        recommendedWorkflowRecipeId: "standard",
+        serviceName: "app",
+        servicePath: ".",
+        warnings: [],
+      }),
+    });
+
+    const result = await discoverExistingRepo({ repoFullName: "tone/app" });
+
+    const body = JSON.parse(
+      (fetchMock.mock.calls[0]?.[1] as { body: string }).body,
+    ) as Record<string, unknown>;
+    expect(body).not.toHaveProperty("baseBranch");
+    // The server answers with the branch it actually scanned.
+    expect(result.baseBranch).toBe("master");
   });
 
   it("posts setup PR requests to the existing repos endpoint", async () => {

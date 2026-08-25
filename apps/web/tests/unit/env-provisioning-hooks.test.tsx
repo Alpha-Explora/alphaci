@@ -1,9 +1,9 @@
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 
-import { useDeploymentProvisioningForm } from "../../src/hooks/use-deployment-provisioning-form";
-import { useProjectEnvProvisioning } from "../../src/hooks/use-project-env-provisioning";
-import { useProviderConnections } from "../../src/hooks/use-provider-connections";
+import { useDeploymentProvisioningForm } from "../../src/features/workflows/studio/view-models/use-deployment-provisioning-form";
+import { useProjectEnvProvisioning } from "../../src/features/projects/detail/view-models/use-project-env-provisioning-view-model";
+import { useProviderConnections } from "../../src/features/workflows/studio/view-models/use-provider-connections";
 import {
   createDeploymentTarget,
   createProviderConnection,
@@ -14,14 +14,14 @@ import {
   provisionProjectEnvVars,
   revokeProviderConnection,
   validateProjectEnvVars,
-} from "../../src/lib/api/client";
+} from "../support/api-client";
 import type {
   DeploymentTarget,
   EnvVarMetadata,
   ProviderConnection,
-} from "../../src/lib/api/contracts";
+} from "../../src/shared/api/contracts";
 
-jest.mock("../../src/lib/api/client", () => ({
+jest.mock("../../src/features/workflows/studio/data/env-provisioning-api", () => ({
   createDeploymentTarget: jest.fn(),
   createProviderConnection: jest.fn(),
   deleteProjectEnvMetadata: jest.fn(),

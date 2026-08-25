@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 
-import { useWorkspaceSelection } from "@/components/layout/workspace-context";
+import { useWorkspaceSelection } from "@/features/workspace/selection";
 
 import { settingsRepository } from "../../data/settings-repository";
 import type {

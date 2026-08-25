@@ -1,7 +1,7 @@
 import { act, useState } from "react";
 import { createRoot, type Root } from "react-dom/client";
 
-import { SideTabs, type SideTabGroup } from "../../src/components/hierarchy/side-tabs";
+import { SideTabs, type SideTabGroup } from "../../src/features/groups/workspace/views/side-tabs";
 
 type Section = "overview" | "members" | "projects";
 

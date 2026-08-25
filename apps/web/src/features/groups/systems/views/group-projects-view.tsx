@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useParams } from "next/navigation";
 
-import { HierarchyPageShell } from "@/components/hierarchy/hierarchy-page-shell";
+import { HierarchyPageShell } from "@/features/groups/workspace";
 import {
   Breadcrumb,
   GroupSubNav,
@@ -11,7 +11,7 @@ import {
   PageHeader,
   ResourceBoundary,
   SectionHeader,
-} from "@/components/hierarchy/primitives";
+} from "@/features/groups/workspace";
 
 import { projectStatusVariant, repoShortName } from "../../model/groups-rules";
 import type { GroupSummary } from "../../model/groups-types";

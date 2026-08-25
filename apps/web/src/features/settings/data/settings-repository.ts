@@ -1,5 +1,5 @@
-import { deleteAccount } from "@/lib/api/auth";
-import { getMyWorkspaces } from "@/lib/api/workspaces";
+import { deleteAccount } from "@/features/auth/session";
+import { getMyWorkspaces } from "@/features/workspace";
 
 import type { WorkspacesMeResponse } from "../model/settings-types";
 
