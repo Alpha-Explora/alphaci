@@ -1485,16 +1485,6 @@
   box-shadow: 0 0 0 4px color-mix(in srgb, var(--brand) 15%, transparent);
 }
 
-.repo-creation-scope--individual {
-  border-color: color-mix(in srgb, var(--brand) 38%, var(--border-soft));
-  background: linear-gradient(105deg, color-mix(in srgb, var(--brand) 11%, transparent), transparent 65%);
-}
-
-.repo-creation-scope--group .repo-creation-scope__dot {
-  background: #8b7cff;
-  box-shadow: 0 0 0 4px rgba(139, 124, 255, 0.14);
-}
-
 /* Team picker, shown in place of the scope note when the caller belongs to
    more than one team and no group context has already chosen for them. */
 .repo-creation-scope__picker {
@@ -1519,101 +1509,6 @@
 .repo-creation-scope__picker select:focus-visible {
   outline: 2px solid var(--brand);
   outline-offset: 1px;
-}
-
-.repo-individual-detail {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  margin: 1rem 0;
-  overflow: hidden;
-  border: 1px solid var(--border-soft);
-  border-radius: 0.75rem;
-  background: rgba(255, 255, 255, 0.018);
-}
-
-.repo-individual-detail > div {
-  min-width: 0;
-  padding: 0.82rem 0.9rem;
-  border-right: 1px solid var(--border-soft);
-}
-
-.repo-individual-detail > div:last-child { border-right: 0; }
-
-.repo-individual-detail span {
-  display: block;
-  margin-bottom: 0.3rem;
-  color: var(--text-muted);
-  font-size: 0.65rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-.repo-individual-detail strong {
-  display: block;
-  overflow: hidden;
-  color: var(--text-primary);
-  font-size: 0.78rem;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-@media (max-width: 720px) {
-  .repo-individual-detail { grid-template-columns: 1fr; }
-  .repo-individual-detail > div { border-right: 0; border-bottom: 1px solid var(--border-soft); }
-  .repo-individual-detail > div:last-child { border-bottom: 0; }
-}
-
-.project-ownership-toggle {
-  display: inline-flex;
-  flex: 0 0 auto;
-  align-items: center;
-  justify-content: center;
-  width: 2.7rem;
-  height: 1.5rem;
-  padding: 0;
-  border: 0;
-  border-radius: 999px;
-  background: transparent;
-  cursor: pointer;
-}
-
-.project-ownership-toggle__track {
-  position: relative;
-  display: block;
-  width: 100%;
-  height: 100%;
-  border: 1px solid var(--border-tile);
-  border-radius: inherit;
-  background: rgba(255, 255, 255, 0.08);
-  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.2);
-  transition: background 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
-}
-
-.project-ownership-toggle__thumb {
-  position: absolute;
-  top: 0.18rem;
-  left: 0.18rem;
-  width: 0.98rem;
-  height: 0.98rem;
-  border-radius: 50%;
-  background: var(--text-secondary);
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.28);
-  transition: transform 180ms cubic-bezier(0.2, 0.9, 0.2, 1.15), background 180ms ease, box-shadow 180ms ease;
-}
-
-.project-ownership-toggle:hover .project-ownership-toggle__track {
-  border-color: color-mix(in srgb, var(--brand) 52%, var(--border-tile));
-}
-
-.project-ownership-toggle:focus-visible {
-  outline: 2px solid var(--brand);
-  outline-offset: 3px;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .project-ownership-toggle__track,
-  .project-ownership-toggle__thumb { transition: none; }
 }
 
 .repo-wizard-progress__step {

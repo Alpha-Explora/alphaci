@@ -386,9 +386,10 @@ export function WorkflowBuilder({ guest = false, session, onboardingCompleted }:
     }
   }
 
-  // The top-level Create Project tab always provisions an individual's
-  // repository. Group ownership is only supplied by the selected group panel.
-  function openIndividualSetup() {
+  // The top-level Create Project tab creates into a team like every other
+  // path — the team is auto-selected when the caller has one and picked when
+  // they have several. It used to provision an unowned personal repository.
+  function openCreateProject() {
     setActiveTab("setup");
   }
 
@@ -499,7 +500,7 @@ export function WorkflowBuilder({ guest = false, session, onboardingCompleted }:
               onDiscoverExistingRepo={guest ? () => { window.location.href = "/signup"; } : handleDiscoverExistingRepo}
               onGenerateWorkflow={guest ? () => { window.location.href = "/signup"; } : handleGenerateWorkflow}
               onSetupExistingRepo={guest ? () => { window.location.href = "/signup"; } : handleSetupExistingRepo}
-              creationScope="individual"
+              creationScope="choose-team"
               workspaces={workspaces}
               selectedWorkspaceId={selectedCreateWorkspaceId}
               onChangeWorkspace={setSelectedCreateWorkspaceId}
@@ -513,9 +514,8 @@ export function WorkflowBuilder({ guest = false, session, onboardingCompleted }:
             <WorkflowCurrentTab
               latestResult={createResult}
               loadingProjects={projects.loadingProjects}
-              onOpenSetup={openIndividualSetup}
+              onOpenSetup={openCreateProject}
               projects={projects.projects}
-              enforcedOrg={projectCatalog.enforcedOrg}
               renderGroupCreate={(selectedGroupId, onComplete) => (
                 <WorkflowSetupTab
                   form={createForm}
@@ -539,7 +539,7 @@ export function WorkflowBuilder({ guest = false, session, onboardingCompleted }:
                   onGenerateWorkflow={guest ? () => { window.location.href = "/signup"; } : handleGenerateWorkflow}
                   onSetupExistingRepo={guest ? () => { window.location.href = "/signup"; } : handleSetupExistingRepo}
                   projectCatalog={projectCatalog}
-                  creationScope="group"
+                  creationScope="in-team"
                   onViewProject={onComplete}
                   reducedMotion={reducedMotion}
                   createResult={createResult}

@@ -88,12 +88,19 @@ function RepositoryCreationProgress({
 
 interface WorkflowSetupTabProps {
   createResult: CreateProjectResult | null;
-  creationScope: "individual" | "group";
   /**
-   * Teams the caller can create in — only supplied for the "individual" scope,
-   * where no group context has already fixed the answer. `null` while loading.
-   * A project always belongs to a team, so this is a required choice, not a
-   * refinement of one the server can make on its own.
+   * Where the create was started from. "in-team" means a team panel already
+   * fixed the owning team; "choose-team" means the top-level Create Project
+   * tab, where the caller's team is auto-selected if they have one and picked
+   * if they have several. There is no unowned/individual scope — a project
+   * always belongs to a team.
+   */
+  creationScope: "choose-team" | "in-team";
+  /**
+   * Teams the caller can create in — only supplied for the "choose-team"
+   * scope, where no team context has already fixed the answer. `null` while
+   * loading. A project always belongs to a team, so this is a required choice,
+   * not a refinement of one the server can make on its own.
    */
   workspaces?: WorkspaceSummary[] | null;
   selectedWorkspaceId?: string | null;
@@ -270,15 +277,15 @@ export function WorkflowSetupTab({
 
   const selectedProjectKind = inferSingleProjectKind(projectCatalog);
 
-  /* Team selection, for the scope with no group context to fix it. `workspaces`
-   * is undefined for the group scope and null while loading — in both cases
+  /* Team selection, for the scope with no team context to fix it. `workspaces`
+   * is undefined for the in-team scope and null while loading — in both cases
    * there is nothing to choose and nothing to block on, so the create button
    * behaves exactly as it did before. */
-  const isIndividualScope = creationScope === "individual";
+  const mustChooseTeam = creationScope === "choose-team";
   const soleWorkspace =
-    isIndividualScope && workspaces?.length === 1 ? workspaces[0] : null;
-  const needsTeamChoice = isIndividualScope && (workspaces?.length ?? 0) > 1;
-  const hasNoTeam = isIndividualScope && workspaces?.length === 0;
+    mustChooseTeam && workspaces?.length === 1 ? workspaces[0] : null;
+  const needsTeamChoice = mustChooseTeam && (workspaces?.length ?? 0) > 1;
+  const hasNoTeam = mustChooseTeam && workspaces?.length === 0;
   // Blocked only on a choice the caller can actually make: with no team at all
   // the server rejects the create with a message that explains why, which beats
   // a permanently dead button with no explanation.
@@ -424,9 +431,9 @@ export function WorkflowSetupTab({
           )}
         </div>
         {!isExistingMode ? (
-          <div className={`repo-creation-scope repo-creation-scope--${creationScope}`} role="status">
+          <div className="repo-creation-scope" role="status">
             <span className="repo-creation-scope__dot" aria-hidden="true" />
-            {creationScope === "group" ? (
+            {creationScope === "in-team" ? (
               <span>
                 <strong>Team repository</strong> This repository belongs to the
                 selected team, and every member of it can see the project.
