@@ -11,29 +11,35 @@ import {
   getTemplates,
   getWorkflowHistory,
   linkGithubInstallation,
-} from "../../src/lib/api/client";
-import { navigateToExternalUrl } from "../../src/lib/navigation";
-import type { CatalogTemplate, ProjectOptionsResponse } from "../../src/lib/api/contracts";
-import { useCreateProjectForm } from "../../src/hooks/use-create-project-form";
-import { useGithubInstallations } from "../../src/hooks/use-github-installations";
-import { useProjectOptionsCatalog } from "../../src/hooks/use-project-options-catalog";
-import { useProvisionedProjects } from "../../src/hooks/use-provisioned-projects";
-import { useWorkflowCatalog } from "../../src/hooks/use-workflow-catalog";
-import { useWorkflowHistory } from "../../src/hooks/use-workflow-history";
+} from "../support/api-client";
+import { navigateToExternalUrl } from "../../src/features/workflows/studio/view-models/navigation";
+import type { CatalogTemplate, ProjectOptionsResponse } from "../../src/shared/api/contracts";
+import { useCreateProjectForm } from "../../src/features/workflows/studio/view-models/use-create-project-form";
+import { useGithubInstallations } from "../../src/features/workflows/studio/view-models/use-github-installations";
+import { useProjectOptionsCatalog } from "../../src/features/workflows/studio/view-models/use-project-options-catalog";
+import { useProvisionedProjects } from "../../src/features/workflows/studio/view-models/use-provisioned-projects";
+import { useWorkflowCatalog } from "../../src/features/workflows/studio/view-models/use-workflow-catalog";
+import { useWorkflowHistory } from "../../src/features/workflows/studio/view-models/use-workflow-history";
 
-jest.mock("../../src/lib/api/client", () => ({
+jest.mock("../../src/features/workflows/studio/data/catalog-api", () => ({
   getCategories: jest.fn(),
+  getProjectOptions: jest.fn(),
+  getTemplates: jest.fn(),
+}));
+jest.mock("../../src/features/workflows/studio/data/github-api", () => ({
   getGithubInstallationAccounts: jest.fn(),
   getGithubAppInstallUrl: jest.fn(),
   getLinkedGithubRepos: jest.fn(),
-  getProjectOptions: jest.fn(),
-  getProjects: jest.fn(),
-  getTemplates: jest.fn(),
-  getWorkflowHistory: jest.fn(),
   linkGithubInstallation: jest.fn(),
 }));
+jest.mock("../../src/features/projects/detail/data/projects-api", () => ({
+  getProjects: jest.fn(),
+}));
+jest.mock("../../src/features/workflows/studio/data/workflows-api", () => ({
+  getWorkflowHistory: jest.fn(),
+}));
 
-jest.mock("../../src/lib/navigation", () => ({
+jest.mock("../../src/features/workflows/studio/view-models/navigation", () => ({
   navigateToExternalUrl: jest.fn(),
 }));
 

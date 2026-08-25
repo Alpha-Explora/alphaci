@@ -1,5 +1,5 @@
-import { ApiError } from "../../../../../src/lib/api/request";
-import type { ProjectBranchPreview } from "../../../../../src/lib/api/contracts";
+import { ApiError } from "../../../../../src/shared/api/request";
+import type { ProjectBranchPreview } from "../../../../../src/shared/api/contracts";
 import {
   canFramePreview,
   domainNextStep,

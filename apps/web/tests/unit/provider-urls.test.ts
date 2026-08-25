@@ -1,10 +1,10 @@
-import type { DeploymentTarget } from "../../src/lib/api/contracts";
+import type { DeploymentTarget } from "../../src/shared/api/contracts";
 import {
   providerConsoleUrl,
   providerDashboardUrl,
   providerDisplayName,
   providerPublicUrl,
-} from "../../src/lib/hosting/provider-urls";
+} from "../../src/features/projects/detail/model/provider-urls";
 
 function target(overrides: Partial<DeploymentTarget>): DeploymentTarget {
   return {

@@ -12,7 +12,7 @@
     "test:watch": "jest --watch",
     "test:e2e": "tsx tests/e2e/playwright-e2e.ts",
     "boundaries": "depcruise src --config .dependency-cruiser.cjs",
-    "lint:css": "stylelint \"src/**/*.css\" --max-warnings=749",
+    "lint:css": "stylelint \"src/**/*.css\" --max-warnings=742",
     "arch:check": "node scripts/check-boundaries.mjs --cwd . --src auto",
     "arch:check:touched": "node scripts/check-boundaries.mjs --cwd . --src auto --since origin/main",
     "arch:new": "node \"${NFA:-$HOME/.agents/skills/next-feature-architecture}/scripts/scaffold-feature.mjs\""

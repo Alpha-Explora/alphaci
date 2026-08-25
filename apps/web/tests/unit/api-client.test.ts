@@ -41,7 +41,7 @@ import {
   validateProjectEnvVars,
   disconnectProject,
   syncProjects,
-} from "../../src/lib/api/client";
+} from "../support/api-client";
 import { notificationsRepository } from "../../src/features/notifications/data/notifications-repository";
 
 const getNotifications = notificationsRepository.list;
@@ -1364,7 +1364,7 @@ describe("API client project setup helpers", () => {
     process.env.NODE_ENV = "test";
     jest.resetModules();
 
-    const { getApiBaseUrl } = await import("../../src/lib/api/client");
+    const { getApiBaseUrl } = await import("../support/api-client");
 
     expect(getApiBaseUrl()).toBe("http://127.0.0.1:4500/api/v1");
   });
@@ -1377,7 +1377,7 @@ describe("API client project setup helpers", () => {
 
     const warnSpy = jest.spyOn(console, "warn").mockImplementation(() => {});
     try {
-      const { getApiBaseUrl } = await import("../../src/lib/api/client");
+      const { getApiBaseUrl } = await import("../support/api-client");
       expect(getApiBaseUrl()).toBe(
         "https://flowci-be-test.onrender.com/api/v1",
       );
@@ -1397,7 +1397,7 @@ describe("API client project setup helpers", () => {
 
     const errorSpy = jest.spyOn(console, "error").mockImplementation(() => {});
     try {
-      const { getApiBaseUrl } = await import("../../src/lib/api/client");
+      const { getApiBaseUrl } = await import("../support/api-client");
       // Build must not crash — it degrades to localhost...
       expect(getApiBaseUrl()).toBe("http://localhost:4000/api/v1");
       // ...but the misconfiguration is surfaced loudly for the operator.
@@ -1418,7 +1418,7 @@ describe("API client project setup helpers", () => {
 
     const warnSpy = jest.spyOn(console, "warn").mockImplementation(() => {});
     try {
-      const { getApiBaseUrl } = await import("../../src/lib/api/client");
+      const { getApiBaseUrl } = await import("../support/api-client");
       expect(getApiBaseUrl()).toBe(
         "https://alphaci-be-test.onrender.com/api/v1",
       );

@@ -10,7 +10,7 @@ export type {
   StageId,
   StageStatus,
   WorkflowHistoryItem,
-} from "@/lib/api/contracts";
+} from "@/shared/api/contracts";
 export type {
   DeliveryProject,
   GroupActivityItem,
@@ -18,14 +18,14 @@ export type {
   HierarchyRepository,
   HierarchySystem,
   MyAssignedRepository,
-} from "@/lib/api/hierarchy-contracts";
+} from "@/features/groups";
 
-import type { RunGroup, RunOverallStatus, StageId } from "@/lib/api/contracts";
+import type { RunGroup, RunOverallStatus, StageId } from "@/shared/api/contracts";
 import type {
   DeliveryProject,
   HierarchyRepository,
   HierarchySystem,
-} from "@/lib/api/hierarchy-contracts";
+} from "@/features/groups";
 
 /** Lifecycle of one independently-loaded dashboard section. */
 export type SectionStatus = "loading" | "ready" | "error";

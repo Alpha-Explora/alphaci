@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useParams } from "next/navigation";
 
-import { useAdminContext } from "@/components/admin/admin-gate";
+import { useAdminContext } from "@/features/admin/users";
 
 import { ROLE_ORDER } from "../../model/admin-rules";
 import { APP_ROLE_LABELS, type AppRole } from "../../model/admin-types";

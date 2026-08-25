@@ -1,8 +1,12 @@
 "use client";
 
+/* Preserve the existing pagination reset timing while this action is moved
+ * behind its feature VM. */
+/* eslint-disable react-hooks/set-state-in-effect */
+
 import { useEffect, useMemo, useState } from "react";
 
-import { useApiResource } from "@/hooks/use-hierarchy";
+import { useApiResource } from "@/features/groups";
 
 import { groupsRepository } from "../../data/groups-repository";
 import type {

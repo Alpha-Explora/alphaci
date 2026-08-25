@@ -8,7 +8,7 @@ export type {
   ProjectPreviewsResponse,
   ProvisionedProject,
   RemoveCustomDomainResponse,
-} from "@/lib/api/contracts";
+} from "@/shared/api/contracts";
 
 /** Lifecycle of the project overview load. */
 export type ProjectStatus = "loading" | "ready" | "error";

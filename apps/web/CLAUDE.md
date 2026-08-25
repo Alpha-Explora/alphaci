@@ -30,8 +30,9 @@ src/features/runs/
 ```
 
 `model/` and `data/` sit at domain level because sibling actions share them.
-Domains present today: `admin`, `groups`, `guide`, `home`, `notifications`,
-`projects`, `runs`, `settings`, `teams`, `workflows`.
+Domains present today: `admin`, `auth`, `capabilities`, `groups`, `guide`,
+`home`, `notifications`, `projects`, `runs`, `settings`, `teams`, `workflows`,
+`workspace`.
 
 ### The rules are enforced, not suggested
 
@@ -52,17 +53,18 @@ The rules in short:
   Within your own domain, reach freely into `model/` and `data/`.
 - **`views-must-not-fetch`** — `views/` must not import `data/` at runtime.
   Type-only imports are exempt: they are erased and carry no coupling.
-- **`components-barrel-only`** — `src/components/` (the pre-migration layout)
-  may consume a feature barrel, never reach past one.
+- **`no-legacy-source-roots`** — `src/components/`, `src/hooks/`, and
+  domain-specific `src/lib/` modules are retired; new code must be owned by a
+  feature or by `shared/`.
 - **`shared-must-not-know-features`** — `src/shared/` sits below every feature.
 - **`no-circular`** — any cycle fails.
 
-### Migration policy: migrate-on-touch
+### Migration policy
 
-`src/components/` still holds ~16k lines that no feature owns. It is not a
-staging area — it is what has not been migrated yet. When you make a
-substantive change to a surface, move it into a feature slice first. Don't
-start a migration you aren't otherwise touching.
+The architecture migration has removed the legacy source roots. Keep routes
+thin, import cross-feature code through public barrels, and put new domain UI,
+orchestration, and transport in the owning feature slice. Shared code must stay
+domain-free.
 
 `scripts/check-boundaries.mjs` and `scripts/lib/paths.mjs` are vendored
 byte-identical from the `next-feature-architecture` skill (the skill repo is
@@ -184,16 +186,12 @@ file said it was blocked on the webhook receiver; it isn't.)
 
 ---
 
-## API client (`src/lib/api/`)
+## API ownership
 
-`request.ts` is the transport and exports `ApiError` (with `.status`).
-`client.ts` is a barrel. Domain modules: `admin`, `auth`, `capabilities`,
-`catalog`, `contracts` (types), `env-provisioning`, `existing-repos`, `github`,
-`hierarchy` + `hierarchy-contracts`, `project-workspace`, `projects`, `runs`,
-`usage`, `workflows`, `workspaces`.
-
-A feature's `data/` layer wraps these. Views and routes must not import them
-directly — `arch:check` fails on it.
+`src/shared/api/` owns only generic transport (`request` and `ApiError`). Each
+domain's endpoint functions and DTO-facing types live beside its feature
+`data/` layer. Other features consume those operations through a domain or
+action barrel; routes never import data modules directly.
 
 ---
 

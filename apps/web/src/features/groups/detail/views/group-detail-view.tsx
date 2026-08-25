@@ -4,15 +4,14 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useState } from "react";
 
-import { GroupStatusBadge, RoleBadge } from "@/components/hierarchy/badges";
-import { HierarchyPageShell } from "@/components/hierarchy/hierarchy-page-shell";
+import { GroupStatusBadge, HierarchyPageShell, RoleBadge } from "@/features/groups/workspace";
 import {
   Breadcrumb,
   FormDialog,
   GroupSubNav,
   PageHeader,
   ResourceBoundary,
-} from "@/components/hierarchy/primitives";
+} from "@/features/groups/workspace";
 
 import type { GroupSummary } from "../../model/groups-types";
 import { useGroupDetailViewModel } from "../view-models/use-group-detail-view-model";

@@ -1,8 +1,8 @@
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 
-import { DeploymentProvisioningSummary } from "../../src/components/product/setup-result-panel";
-import type { DeploymentProvisioningResult } from "../../src/lib/api/contracts";
+import { DeploymentProvisioningSummary } from "../../src/features/workflows/studio/views/setup-result-panel";
+import type { DeploymentProvisioningResult } from "../../src/shared/api/contracts";
 
 jest.mock("framer-motion", () => {
   const React = jest.requireActual("react");

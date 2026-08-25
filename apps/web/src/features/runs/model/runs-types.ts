@@ -13,9 +13,9 @@ export type {
   StageId,
   StageReport,
   StageStatus,
-} from "@/lib/api/contracts";
+} from "@/shared/api/contracts";
 
-import type { RunGroup, RunOverallStatus } from "@/lib/api/contracts";
+import type { RunGroup, RunOverallStatus } from "@/shared/api/contracts";
 
 /** Lifecycle of the runs list, as the view-model reports it. */
 export type RunsStatus = "idle" | "loading" | "ready" | "error";

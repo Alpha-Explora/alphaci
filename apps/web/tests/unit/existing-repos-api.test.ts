@@ -1,7 +1,7 @@
 import {
   discoverExistingRepo,
   setupExistingRepoPullRequest,
-} from "@/lib/api/existing-repos";
+} from "@/features/workflows/studio/data/existing-repos-api";
 
 const fetchMock = jest.fn();
 

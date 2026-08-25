@@ -1,5 +1,5 @@
 /* Domain types for the settings surface. */
-export type { WorkspacesMeResponse } from "@/lib/api/contracts";
+export type { WorkspacesMeResponse } from "@/shared/api/contracts";
 
 /** The sections the settings rail switches between. */
 export type SettingsSection =

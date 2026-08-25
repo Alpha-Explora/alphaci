@@ -5,7 +5,7 @@ import {
   getCapabilities,
   provisionProjectEnvVars,
   syncDeploymentTarget,
-} from "../../src/lib/api/client";
+} from "../support/api-client";
 
 describe("env provisioning API helpers", () => {
   const fetchMock = jest.fn();

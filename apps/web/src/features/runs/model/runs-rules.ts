@@ -3,7 +3,7 @@
  * No React, no Next, no fetch — everything here is directly callable from a
  * test. These assertions were previously reachable only by rendering the route
  * and reading the DOM. */
-import { ApiError } from "@/lib/api/request";
+import { ApiError } from "@/shared/api/request";
 
 import type {
   ProjectRunGroup,

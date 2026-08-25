@@ -6,7 +6,7 @@ import {
   toUserError,
 } from "../../../../../src/features/runs/model/runs-rules";
 import type { RunGroup } from "../../../../../src/features/runs/model/runs-types";
-import { ApiError } from "../../../../../src/lib/api/request";
+import { ApiError } from "../../../../../src/shared/api/request";
 
 /* These assertions were previously reachable only by rendering /runs and
  * inspecting the DOM: the grouping, the summary counts and the error mapping

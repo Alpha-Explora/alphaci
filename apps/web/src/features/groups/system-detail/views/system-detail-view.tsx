@@ -3,16 +3,18 @@
 import Link from "next/link";
 import { useParams } from "next/navigation";
 
-import { LifecycleStatusBadge } from "@/components/hierarchy/badges";
-import { CreateDeliveryProjectDialog } from "@/components/hierarchy/create-delivery-project-dialog";
-import { HierarchyPageShell } from "@/components/hierarchy/hierarchy-page-shell";
+import {
+  CreateDeliveryProjectDialog,
+  HierarchyPageShell,
+  LifecycleStatusBadge,
+} from "@/features/groups/workspace";
 import {
   Breadcrumb,
   LoadingRows,
   PageHeader,
   ResourceBoundary,
   SectionHeader,
-} from "@/components/hierarchy/primitives";
+} from "@/features/groups/workspace";
 
 import { useSystemDetailViewModel } from "../view-models/use-system-detail-view-model";
 

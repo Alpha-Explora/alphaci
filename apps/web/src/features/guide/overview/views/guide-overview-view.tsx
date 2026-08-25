@@ -5,13 +5,13 @@ import { useRouter } from "next/navigation";
 import { useCallback } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 
-import { AppNav } from "@/components/layout/app-nav";
-import { FlowBackground } from "@/components/layout/flow-background";
-import { PipelineLoader } from "@/components/layout/pipeline-loader";
-import { PublicSiteNav } from "@/components/layout/public-site-nav";
-import { FlowExplainer } from "@/components/product/flow-explainer";
-import { useAuthSession } from "@/hooks/use-auth-session";
-import { isGuest } from "@/lib/auth/subscription";
+import { AppNav } from "@/features/workspace/selection";
+import { FlowBackground } from "@/shared/layout/flow-background";
+import { PipelineLoader } from "@/shared/layout/pipeline-loader";
+import { PublicSiteNav } from "@/shared/layout/public-site-nav";
+import { FlowExplainer } from "./flow-explainer";
+import { useAuthSession } from "@/features/auth/session";
+import { isGuest } from "@/features/auth/session";
 
 /* Level 0 in the skill's progressive depth: the guide has no data of its own,
  * so there is no view-model and no data layer. Sign-out is the one action, and

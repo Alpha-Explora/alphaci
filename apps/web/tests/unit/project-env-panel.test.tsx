@@ -1,13 +1,13 @@
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 
-import { ProjectEnvPanel } from "../../src/components/product/project-env-panel";
-import { ProjectDetailTabs } from "../../src/components/product/project-detail-tabs";
-import { WorkflowCurrentTab } from "../../src/components/product/workflow-current-tab";
-import { useCapabilities } from "../../src/hooks/use-capabilities";
-import { useProjectEnvProvisioning } from "../../src/hooks/use-project-env-provisioning";
-import type { ProvisionedProject } from "../../src/lib/api/contracts";
-import { getMyUsage } from "../../src/lib/api/usage";
+import { ProjectEnvPanel } from "../../src/features/projects/detail/views/project-env-panel";
+import { ProjectDetailTabs } from "../../src/features/projects/detail/views/project-detail-tabs";
+import { WorkflowCurrentTab } from "../../src/features/workflows/studio/views/workflow-current-tab";
+import { useCapabilities } from "../../src/features/capabilities/current";
+import { useProjectEnvProvisioning } from "../../src/features/projects/detail/view-models/use-project-env-provisioning-view-model";
+import type { ProvisionedProject } from "../../src/shared/api/contracts";
+import { getMyUsage } from "../../src/features/projects/detail/data/usage-api";
 
 jest.mock("framer-motion", () => {
   const React = jest.requireActual("react");
@@ -49,15 +49,15 @@ jest.mock("framer-motion", () => {
   };
 });
 
-jest.mock("../../src/hooks/use-capabilities", () => ({
+jest.mock("../../src/features/capabilities/current", () => ({
   useCapabilities: jest.fn(),
 }));
 
-jest.mock("../../src/hooks/use-project-env-provisioning", () => ({
+jest.mock("../../src/features/projects/detail/view-models/use-project-env-provisioning-view-model", () => ({
   useProjectEnvProvisioning: jest.fn(),
 }));
 
-jest.mock("../../src/lib/api/projects", () => ({
+jest.mock("../../src/features/projects/detail/data/projects-api", () => ({
   getProjectOverview: jest.fn(),
   getWorkflowSettings: jest.fn(),
   previewWorkflowSettings: jest.fn(),
@@ -95,12 +95,11 @@ jest.mock("../../src/lib/api/projects", () => ({
 
 // The Current Projects rail now groups repositories by the user's groups —
 // resolve to "no groups" so projects land in the Ungrouped bucket.
-jest.mock("../../src/lib/api/client", () => ({
-  ...jest.requireActual("../../src/lib/api/client"),
+jest.mock("../../src/features/groups/data/hierarchy-api", () => ({
   getGroups: jest.fn().mockResolvedValue([]),
 }));
 
-jest.mock("../../src/lib/api/usage", () => ({
+jest.mock("../../src/features/projects/detail/data/usage-api", () => ({
   getMyUsage: jest.fn(),
 }));
 
@@ -112,7 +111,7 @@ const mockedUseProjectEnvProvisioning =
     typeof useProjectEnvProvisioning
   >;
 const mockedGetMyUsage = getMyUsage as jest.MockedFunction<typeof getMyUsage>;
-const mockedProjectApi = jest.requireMock("../../src/lib/api/projects") as {
+const mockedProjectApi = jest.requireMock("../../src/features/projects/detail/data/projects-api") as {
   getProjectOverview: jest.Mock;
   getWorkflowSettings: jest.Mock;
   previewWorkflowSettings: jest.Mock;

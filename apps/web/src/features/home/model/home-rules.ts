@@ -1,7 +1,7 @@
 /* Pure rules for the home dashboard. No React, no Next, no fetch — all of this
  * is directly callable from a test. It came out of a 1,492-line route where the
  * only way to assert any of it was to render the page. */
-export { isGroupManagerRole } from "@/lib/api/hierarchy-contracts";
+export { isGroupManagerRole } from "@/features/groups";
 
 import type {
   ConnectorTone,

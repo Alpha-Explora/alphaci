@@ -9,7 +9,7 @@
 import {
   getProjectTourSteps,
   createProjectTour,
-} from "../../src/lib/onboarding/create-project-tour";
+} from "../../src/features/workflows/studio/views/tours/create-project-tour";
 
 // driver.js imports CSS at module level which jest-environment-jsdom cannot
 // process. Stub the entire module so the tests focus on step logic only.
