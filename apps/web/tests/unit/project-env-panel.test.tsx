@@ -617,7 +617,7 @@ describe("Project env provisioning UI", () => {
       workspaceId: "workspace-1",
     };
     (
-      jest.requireMock("../../src/lib/api/client") as {
+      jest.requireMock("../../src/features/groups/data/hierarchy-api") as {
         getGroups: jest.Mock;
       }
     ).getGroups.mockResolvedValueOnce([

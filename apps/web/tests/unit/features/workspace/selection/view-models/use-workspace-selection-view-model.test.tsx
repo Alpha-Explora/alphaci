@@ -31,9 +31,16 @@ describe("useWorkspaceSelectionViewModel", () => {
     };
     mockedGetWorkspaces.mockResolvedValue(response);
 
-    let snapshot: ReturnType<typeof useWorkspaceSelectionViewModel> | null = null;
+    const captured: {
+      snapshot: ReturnType<typeof useWorkspaceSelectionViewModel> | null;
+    } = { snapshot: null };
     function Probe() {
-      snapshot = useWorkspaceSelectionViewModel({ enabled: true });
+      /* A probe component exists to hand the hook's return value back to the
+       * test, which is the one case this rule cannot model: the write is the
+       * point, and there is no effect to move it into without changing what is
+       * being asserted. */
+      // eslint-disable-next-line react-hooks/immutability
+      captured.snapshot = useWorkspaceSelectionViewModel({ enabled: true });
       return null;
     }
 
@@ -48,8 +55,8 @@ describe("useWorkspaceSelectionViewModel", () => {
     });
 
     expect(mockedGetWorkspaces).toHaveBeenCalledTimes(1);
-    expect(snapshot?.status).toBe("ready");
-    expect(snapshot?.workspaces).toEqual(response);
+    expect(captured.snapshot?.status).toBe("ready");
+    expect(captured.snapshot?.workspaces).toEqual(response);
     expect(window.localStorage.getItem("flowci.workspaceId")).toBe("workspace-1");
   });
 
