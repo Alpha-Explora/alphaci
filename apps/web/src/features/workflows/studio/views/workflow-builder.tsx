@@ -68,7 +68,13 @@ export function WorkflowBuilder({ guest = false, session, onboardingCompleted }:
     useState<SetupProjectResponse | null>(null);
   const [setupMode, setSetupMode] = useState<"new" | "existing">("new");
   const [existingRepoFullName, setExistingRepoFullName] = useState("");
-  const [existingRepoBaseBranch, setExistingRepoBaseBranch] = useState("main");
+  /**
+   * Empty means "ask the repository". Discovery resolves the repo's own
+   * default branch when the caller sends nothing; defaulting this to "main"
+   * meant the request always carried a branch, so that lookup never ran and a
+   * `master` repo was scanned on a branch it does not have.
+   */
+  const [existingRepoBaseBranch, setExistingRepoBaseBranch] = useState("");
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   /**
    * Teams the caller can create in. Every project belongs to a team, so the
@@ -254,13 +260,19 @@ export function WorkflowBuilder({ guest = false, session, onboardingCompleted }:
     setStatusMessage(`Scanning ${repoFullName} for a matching workflow recipe...`);
 
     try {
+      const branchOverride = existingRepoBaseBranch.trim();
       const response = await discoverExistingRepo({
         repoFullName,
-        baseBranch: existingRepoBaseBranch.trim() || "main",
+        // Omitted, not defaulted: the field is optional so the server can ask
+        // the repository which branch it lives on.
+        ...(branchOverride ? { baseBranch: branchOverride } : {}),
       });
 
       setExistingRepoDiscovery(response);
       setCreateResult(null);
+      // Show what was actually scanned, so a repo on `master` reads back as
+      // `master` rather than leaving the field blank.
+      setExistingRepoBaseBranch(response.baseBranch);
 
       if (response.detectedProjectTypeId) {
         projectCatalog.setSelectedProjectTypeId(response.detectedProjectTypeId);

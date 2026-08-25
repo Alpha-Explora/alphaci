@@ -571,7 +571,7 @@ export function WorkflowSetupTab({
                     id="existing-base-branch"
                     value={existingRepoBaseBranch}
                     onChange={(event) => onChangeExistingRepoBaseBranch(event.target.value)}
-                    placeholder="main"
+                    placeholder="Detected from the repository"
                     className="premium-input"
                   />
                 </div>
