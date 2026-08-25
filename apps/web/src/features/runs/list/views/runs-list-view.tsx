@@ -1,14 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { Suspense } from "react";
 import { useReducedMotion } from "framer-motion";
 
 import { FlowBackground } from "@/shared/layout/flow-background";
 import { PipelineLoader } from "@/shared/layout/pipeline-loader";
-import { useAuthSession } from "@/features/auth/session";
-import { isGuest } from "@/features/auth/session";
+import { isGuest, useAuthSession, useSignOutAndRedirect } from "@/features/auth/session";
 
 import { RunsListContent } from "./runs-list-content";
 
@@ -21,15 +19,11 @@ import { RunsListContent } from "./runs-list-content";
  * its own I/O is the thing this layer exists to prevent.
  */
 export function RunsListView() {
-  const router = useRouter();
-  const { status, session, error: sessionError, refresh, signOut, isSigningOut } =
-    useAuthSession();
+  const { status, session, error: sessionError, refresh } = useAuthSession();
+  const { signOutAndRedirect, isSigningOut } = useSignOutAndRedirect();
   const prefersReducedMotion = useReducedMotion();
 
-  async function handleLogout() {
-    await signOut();
-    router.push("/");
-  }
+  const handleLogout = signOutAndRedirect;
 
   if (status === "loading") {
     return <PipelineLoader label="Loading pipeline runs" />;

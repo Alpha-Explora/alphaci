@@ -5,6 +5,7 @@ import { createContext, useContext } from "react";
 
 import { useAuthSession } from "@/features/auth/session";
 import type { PlatformRole } from "@/shared/api/contracts";
+import { canAccessAdmin, isSuperAdmin } from "../../model/admin-rules";
 
 interface AdminContextValue {
   role: PlatformRole;
@@ -39,16 +40,10 @@ export function AdminGate({ children }: { children: React.ReactNode }) {
     );
   }
 
-  // Admin Console access is the GLOBAL admin tier: app_role 'admin', or the
-  // permanent super-admin. Leads and members are excluded even if they hold a
-  // legacy platform-admin row. Mirrors the BE PlatformAdminGuard.
-  const isSuperAdmin = session?.platformRole === "super_admin";
-  const canAccessAdmin =
-    status === "signed-in" &&
-    Boolean(session?.authenticated) &&
-    (isSuperAdmin || session?.appRole === "admin");
+  const superAdmin = isSuperAdmin(session);
+  const hasAccess = canAccessAdmin(session);
 
-  if (!canAccessAdmin) {
+  if (!hasAccess) {
     return (
       <main className="dash-shell" style={{ minHeight: "60vh", display: "grid", placeItems: "center" }}>
         <div className="glass-panel" style={{ textAlign: "center", padding: "3rem 2rem", maxWidth: "26rem" }}>
@@ -67,9 +62,9 @@ export function AdminGate({ children }: { children: React.ReactNode }) {
   return (
     <AdminContext.Provider
       value={{
-        role: session.platformRole ?? "admin",
-        isSuperAdmin,
-        currentUserId: session.user.id,
+        role: session?.platformRole ?? "admin",
+        isSuperAdmin: superAdmin,
+        currentUserId: session!.user.id,
       }}
     >
       {children}

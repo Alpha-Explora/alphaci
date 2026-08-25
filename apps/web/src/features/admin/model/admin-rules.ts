@@ -3,8 +3,32 @@ import { ApiError } from "@/shared/api/request";
 
 import type { AppRole, FeedbackStatus } from "./admin-types";
 
+/** Shape of the session facts the gate needs. Kept structural so the model
+ * does not import the session feature. */
+export interface AdminAccessSession {
+  authenticated?: boolean;
+  platformRole?: string | null;
+  appRole?: string | null;
+}
+
 /** Roles the console offers, most privileged first. */
 export const ROLE_ORDER: AppRole[] = ["admin", "lead", "member"];
+
+/**
+ * Admin Console access is the GLOBAL admin tier: app_role 'admin', or the
+ * permanent super-admin. Leads and members are excluded even if they hold a
+ * legacy platform-admin row. Mirrors the BE PlatformAdminGuard.
+ */
+export function canAccessAdmin(
+  session: AdminAccessSession | null | undefined,
+): boolean {
+  if (!session?.authenticated) return false;
+  return session.platformRole === "super_admin" || session.appRole === "admin";
+}
+
+export function isSuperAdmin(session: AdminAccessSession | null | undefined): boolean {
+  return session?.platformRole === "super_admin";
+}
 
 /** Triage cycles forward and wraps, so one control advances any record. */
 export const NEXT_FEEDBACK_STATUS: Record<FeedbackStatus, FeedbackStatus> = {

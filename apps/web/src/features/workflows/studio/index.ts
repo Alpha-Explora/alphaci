@@ -6,4 +6,4 @@ export {
   formatDate,
   formatQuotaStatus,
   toSlug,
-} from "./views/workflow-builder-utils";
+} from "./model/workflow-studio-rules";

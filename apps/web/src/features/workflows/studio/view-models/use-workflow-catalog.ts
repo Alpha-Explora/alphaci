@@ -7,7 +7,7 @@ import { useEffect, useMemo, useState } from "react";
 
 import { getCategories, getTemplates } from "@/features/workflows/studio/data/catalog-api";
 import type { CatalogTemplate, CategorySummary } from "@/shared/api/contracts";
-import { categoryFallbacks, chooseSelectedTemplate } from "../views/workflow-builder-utils";
+import { categoryFallbacks, chooseSelectedTemplate } from "../model/workflow-studio-rules";
 
 export function useWorkflowCatalog() {
   const [categories, setCategories] = useState<CategorySummary[]>([]);
@@ -97,6 +97,10 @@ export function useWorkflowCatalog() {
     catalogError,
     filteredTemplates,
     loadingCatalog,
+    /** Uniform status field: loading or ready, per the VM contract. */
+    status: loadingCatalog ? ("loading" as const) : ("ready" as const),
+    /** Uniform error field: same as catalogError. */
+    error: catalogError,
     searchQuery,
     selectedCategory,
     selectedStack,

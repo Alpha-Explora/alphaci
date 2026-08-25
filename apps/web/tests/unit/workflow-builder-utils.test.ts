@@ -2,7 +2,7 @@ import {
   cleanUserMessage,
   formatApiError,
   formatQuotaStatus,
-} from "../../src/features/workflows/studio/views/workflow-builder-utils";
+} from "../../src/features/workflows/studio/model/workflow-studio-rules";
 
 describe("workflow-builder-utils error formatting", () => {
   it("cleans duplicate GitHub repository payloads", () => {

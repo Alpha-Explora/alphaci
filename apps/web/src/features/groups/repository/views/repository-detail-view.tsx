@@ -1,7 +1,6 @@
 "use client";
 
-import { useParams } from "next/navigation";
-
+import { useGroupRepositoryRouteViewModel } from "@/features/groups";
 import {
   AssignDeveloperDialog,
   AssignmentPanel,
@@ -191,13 +190,13 @@ function RepositoryDetail({
 
 /** Public view for the repository detail route. */
 export function RepositoryDetailView() {
-  const params = useParams<{ groupId: string; repositoryId: string }>();
+  const { groupId, repositoryId } = useGroupRepositoryRouteViewModel();
   return (
     <HierarchyPageShell>
       {() => (
         <RepositoryDetail
-          groupId={params.groupId}
-          repositoryId={params.repositoryId}
+          groupId={groupId}
+          repositoryId={repositoryId}
         />
       )}
     </HierarchyPageShell>

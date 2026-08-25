@@ -1,8 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useParams } from "next/navigation";
-
+import { useGroupSystemRouteViewModel } from "@/features/groups";
 import {
   CreateDeliveryProjectDialog,
   HierarchyPageShell,
@@ -137,11 +136,11 @@ function SystemDetail({
 
 /** Public view for the system detail route. */
 export function SystemDetailView() {
-  const params = useParams<{ groupId: string; systemId: string }>();
+  const { groupId, systemId } = useGroupSystemRouteViewModel();
   return (
     <HierarchyPageShell>
       {() => (
-        <SystemDetail groupId={params.groupId} systemId={params.systemId} />
+        <SystemDetail groupId={groupId} systemId={systemId} />
       )}
     </HierarchyPageShell>
   );

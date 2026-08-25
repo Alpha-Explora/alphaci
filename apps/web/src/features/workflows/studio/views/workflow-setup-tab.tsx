@@ -24,7 +24,7 @@ import {
 
 import { DeploymentProvisioningSetup } from "./deployment-provisioning-setup";
 import { SetupResultPanel } from "./setup-result-panel";
-import { formatQuotaStatus } from "./workflow-builder-utils";
+import { formatQuotaStatus } from "../model/workflow-studio-rules";
 import { HelpTip } from "@/shared/ui/help-tip";
 
 /**

@@ -20,3 +20,17 @@ This is the single rule that stops `shared/` becoming what
 `components/product/` became — 17 files and 10,149 lines with no owner.
 
 A primitive that knows what a "project" is does not belong here.
+
+## On api/contracts.ts
+
+contracts.ts is a **deliberate** shared surface, not a transitional file.
+The backend is a modular monolith with one wire vocabulary; the frontend
+mirrors that with one typed contract module that every feature data layer
+consumes. Feature model/ files re-export the subset their slice uses, so a
+backend contract change surfaces in exactly one place per feature.
+
+The alternative - per-domain contract files - was evaluated and deferred:
+it duplicates cross-domain enums (env providers, roles, slots) that the
+backend defines once, and the mapping layer it requires would add ceremony
+without changing what the views render. Revisit if the backend ever splits
+into separately-versioned services.

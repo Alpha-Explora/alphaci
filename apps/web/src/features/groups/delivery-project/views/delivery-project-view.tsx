@@ -1,7 +1,6 @@
 "use client";
 
-import { useParams } from "next/navigation";
-
+import { useGroupDeliveryProjectRouteViewModel } from "@/features/groups";
 import {
   CreateRepositoryDialog,
   HierarchyPageShell,
@@ -110,13 +109,13 @@ function DeliveryProjectDetail({
 
 /** Public view for the delivery project route. */
 export function DeliveryProjectView() {
-  const params = useParams<{ groupId: string; deliveryProjectId: string }>();
+  const { groupId, deliveryProjectId } = useGroupDeliveryProjectRouteViewModel();
   return (
     <HierarchyPageShell>
       {() => (
         <DeliveryProjectDetail
-          groupId={params.groupId}
-          deliveryProjectId={params.deliveryProjectId}
+          groupId={groupId}
+          deliveryProjectId={deliveryProjectId}
         />
       )}
     </HierarchyPageShell>

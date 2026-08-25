@@ -2,6 +2,7 @@ export {
   useAuthSessionViewModel,
   useAuthSessionViewModel as useAuthSession,
 } from "./view-models/use-auth-session-view-model";
+export { useSignOutAndRedirect } from "./view-models/use-sign-out-and-redirect";
 export type {
   AuthSessionStatus,
   AuthSessionViewModel,
