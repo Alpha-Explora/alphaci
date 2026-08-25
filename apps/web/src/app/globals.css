@@ -898,26 +898,6 @@ html[data-theme="light"] {
   font-size: 0.76rem;
 }
 
-.project-detail-actions .ghost-button {
-  min-height: 1.85rem;
-  padding: 0.32rem 0.65rem;
-  border-radius: 6px;
-  border-color: var(--border-brand);
-  background: var(--brand-light);
-  color: var(--brand);
-  font-size: 0.72rem;
-  font-weight: 600;
-  transition:
-    background 0.15s ease,
-    box-shadow 0.15s ease,
-    color 0.15s ease;
-}
-
-.project-detail-actions .ghost-button:hover {
-  color: var(--brand);
-  box-shadow: 0 0 10px var(--brand-glow);
-}
-
 
 .project-inner-tab.active {
   color: var(--brand);

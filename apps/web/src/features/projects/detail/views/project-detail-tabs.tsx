@@ -1564,39 +1564,6 @@ export function ProjectDetailTabs({
         </span>
       </div>
 
-      <div className="project-detail-actions">
-        {selectedProject.repoUrl ? (
-          <>
-            <a
-              className="ghost-button"
-              href={selectedProject.repoUrl}
-              target="_blank"
-              rel="noreferrer"
-            >
-              Repo <span aria-hidden="true">↗</span>
-            </a>
-            <a
-              className="ghost-button"
-              href={`${selectedProject.repoUrl}/actions`}
-              target="_blank"
-              rel="noreferrer"
-            >
-              Actions <span aria-hidden="true">↗</span>
-            </a>
-          </>
-        ) : null}
-        {selectedProject.githubCommitUrl ? (
-          <a
-            className="ghost-button"
-            href={selectedProject.githubCommitUrl}
-            target="_blank"
-            rel="noreferrer"
-          >
-            Commit <span aria-hidden="true">↗</span>
-          </a>
-        ) : null}
-      </div>
-
       <div className="project-sections" data-tour="project-detail-tabs">
         <SideTabs
           groups={PROJECT_DETAIL_TAB_GROUPS}

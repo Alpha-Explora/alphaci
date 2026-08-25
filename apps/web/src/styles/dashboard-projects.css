@@ -340,16 +340,6 @@
   font-size: 0.78rem;
 }
 
-.project-detail-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.4rem;
-  padding: 0.65rem 0 0.75rem;
-  margin-bottom: 0.4rem;
-  border-top: 1px solid var(--border-soft);
-  border-bottom: 1px solid var(--border-soft);
-}
-
 .project-workspace .project-status-badge {
   border-radius: 6px;
   letter-spacing: 0;
