@@ -1,6 +1,5 @@
 "use client";
 
-import { useParams } from "next/navigation";
 
 import {
   ActivityFeed,
@@ -16,7 +15,7 @@ import {
 } from "@/features/groups/workspace";
 
 import type { GroupSummary } from "../../model/groups-types";
-import { useGroupViewModel } from "../../view-models/use-group-view-model";
+import { useGroupRouteViewModel, useGroupViewModel } from "@/features/groups";
 import { useGroupActivityViewModel } from "../view-models/use-group-activity-view-model";
 
 function ActivityInner({ group }: Readonly<{ group: GroupSummary }>) {
@@ -77,8 +76,8 @@ function ActivityInner({ group }: Readonly<{ group: GroupSummary }>) {
 }
 
 function ActivityResolver() {
-  const params = useParams<{ groupId: string }>();
-  const vm = useGroupViewModel(params.groupId);
+  const { groupId } = useGroupRouteViewModel();
+  const vm = useGroupViewModel(groupId);
 
   if (vm.status !== "ready" || !vm.group) {
     return (

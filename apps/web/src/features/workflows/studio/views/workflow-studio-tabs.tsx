@@ -3,7 +3,7 @@
 import type { KeyboardEvent } from "react";
 import { motion } from "framer-motion";
 
-import type { WorkflowTab } from "./workflow-builder-utils";
+import type { WorkflowTab } from "../model/workflow-studio-rules";
 
 interface WorkflowStudioTabsProps {
   activeTab: WorkflowTab;

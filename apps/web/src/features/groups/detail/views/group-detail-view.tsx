@@ -1,9 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useParams } from "next/navigation";
 import { useState } from "react";
 
+import { useGroupRouteViewModel } from "@/features/groups";
 import { GroupStatusBadge, HierarchyPageShell, RoleBadge } from "@/features/groups/workspace";
 import {
   Breadcrumb,
@@ -277,10 +277,10 @@ function GroupOverview({ groupId }: Readonly<{ groupId: string }>) {
 
 /** Public view for the group overview route. */
 export function GroupDetailView() {
-  const params = useParams<{ groupId: string }>();
+  const { groupId } = useGroupRouteViewModel();
   return (
     <HierarchyPageShell>
-      {() => <GroupOverview groupId={params.groupId} />}
+      {() => <GroupOverview groupId={groupId} />}
     </HierarchyPageShell>
   );
 }

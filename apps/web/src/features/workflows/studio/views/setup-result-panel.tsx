@@ -10,7 +10,7 @@ import type {
   SetupProjectResponse,
   WorkflowFileMetadata,
 } from "@/shared/api/contracts";
-import { cleanUserMessage } from "./workflow-builder-utils";
+import { cleanUserMessage } from "../model/workflow-studio-rules";
 
 interface SetupResultPanelProps {
   existingRepoResult?: SetupProjectResponse | null;

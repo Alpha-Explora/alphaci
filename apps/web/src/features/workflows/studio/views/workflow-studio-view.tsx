@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 
@@ -10,17 +9,16 @@ import { FlowBackground } from "@/shared/layout/flow-background";
 import { PipelineLoader } from "@/shared/layout/pipeline-loader";
 import { WorkspaceProvider } from "@/features/workspace/selection";
 import { WorkflowBuilder } from "./workflow-builder";
-import { useAuthSession } from "@/features/auth/session";
-import { isGuest } from "@/features/auth/session";
+import { isGuest, useAuthSession, useSignOutAndRedirect } from "@/features/auth/session";
 
 /* Level 0 in the skill's progressive depth: the studio's data belongs to
  * WorkflowBuilder and the hooks it owns, so this surface has no view-model and
  * no data layer of its own. Sign-out is the one action, via useAuthSession. */
 
 export function WorkflowStudioView() {
-  const router = useRouter();
   const prefersReducedMotion = useReducedMotion();
-  const { status, session, error, refresh, signOut, isSigningOut } =
+  const { status, session, error, refresh } = useAuthSession();
+  const { signOutAndRedirect, isSigningOut } = useSignOutAndRedirect();
     useAuthSession();
   // Surfaced rather than swallowed: a failed sign-out leaves the user signed in.
   const [logoutMessage, setLogoutMessage] = useState<string | null>(null);
@@ -28,8 +26,7 @@ export function WorkflowStudioView() {
   async function handleLogout() {
     setLogoutMessage(null);
     try {
-      await signOut();
-      router.push("/");
+      await signOutAndRedirect();
     } catch {
       setLogoutMessage("Sign out failed. Please retry, or use the Home link.");
     }

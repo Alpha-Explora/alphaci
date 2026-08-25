@@ -25,7 +25,7 @@ import { KeyboardShortcuts } from "./dashboard-chrome";
 import { GetStartedJourney } from "./get-started-journey";
 import { sectionVariants } from "./motion";
 import { PipelineActivity } from "./pipeline-activity";
-import { useCountUp } from "./use-count-up";
+import { useCountUp } from "./count-up";
 
 /** Container-less metric cell: a quiet mono figure on a hairline, not a card. */
 export function DashboardMetric({

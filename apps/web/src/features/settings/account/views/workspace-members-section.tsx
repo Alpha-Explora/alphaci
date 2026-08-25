@@ -6,6 +6,8 @@
 
 import { useEffect, useMemo, useState } from "react";
 
+import { canManageWorkspaceMembers } from "../../model/settings-rules";
+
 import type {
   WorkspaceMemberSummary,
   WorkspaceRole,
@@ -34,7 +36,7 @@ export function WorkspaceMembersSection({
   const [loginOrEmail, setLoginOrEmail] = useState("");
   const [role, setRole] = useState<WorkspaceRole>("member");
   const [message, setMessage] = useState<string | null>(null);
-  const canManage = workspace.role === "admin" || workspace.role === "delegated_lead";
+  const canManage = canManageWorkspaceMembers(workspace.role);
   const leadCount = useMemo(
     () => members.filter((member) => member.role === "admin").length,
     [members],

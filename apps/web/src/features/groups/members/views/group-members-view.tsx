@@ -1,6 +1,6 @@
 "use client";
 
-import { useParams } from "next/navigation";
+
 
 import { AddMemberDialog, HierarchyPageShell, MemberTable } from "@/features/groups/workspace";
 import {
@@ -11,7 +11,7 @@ import {
   ResourceBoundary,
 } from "@/features/groups/workspace";
 import type { AuthMeResponse, GroupSummary } from "../../model/groups-types";
-import { useGroupViewModel } from "../../view-models/use-group-view-model";
+import { useGroupRouteViewModel, useGroupViewModel } from "@/features/groups";
 import { useGroupMembersViewModel } from "../view-models/use-group-members-view-model";
 
 function MembersInner({
@@ -79,8 +79,8 @@ function MembersInner({
 }
 
 function MembersResolver({ session }: Readonly<{ session: AuthMeResponse }>) {
-  const params = useParams<{ groupId: string }>();
-  const vm = useGroupViewModel(params.groupId);
+  const { groupId } = useGroupRouteViewModel();
+  const vm = useGroupViewModel(groupId);
 
   if (vm.status !== "ready" || !vm.group) {
     return (

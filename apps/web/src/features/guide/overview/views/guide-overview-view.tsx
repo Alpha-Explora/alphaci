@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useCallback } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 
@@ -10,8 +9,7 @@ import { FlowBackground } from "@/shared/layout/flow-background";
 import { PipelineLoader } from "@/shared/layout/pipeline-loader";
 import { PublicSiteNav } from "@/shared/layout/public-site-nav";
 import { FlowExplainer } from "./flow-explainer";
-import { useAuthSession } from "@/features/auth/session";
-import { isGuest } from "@/features/auth/session";
+import { isGuest, useAuthSession, useSignOutAndRedirect } from "@/features/auth/session";
 
 /* Level 0 in the skill's progressive depth: the guide has no data of its own,
  * so there is no view-model and no data layer. Sign-out is the one action, and
@@ -281,10 +279,10 @@ deploy:
 }
 
 export function GuideOverviewView() {
-  const router = useRouter();
   const prefersReducedMotion = useReducedMotion();
   const reduced = prefersReducedMotion ?? false;
-  const { status, session, error, signOut, isSigningOut } = useAuthSession();
+  const { status, session, error } = useAuthSession();
+  const { signOutAndRedirect, isSigningOut } = useSignOutAndRedirect();
 
   const handleNavClick = useCallback(
     (event: React.MouseEvent<HTMLAnchorElement>, id: string) => {
@@ -303,8 +301,7 @@ export function GuideOverviewView() {
 
   async function handleLogout() {
     // Non-fatal on failure: the nav still offers a retry.
-    await signOut();
-    router.push("/");
+    await signOutAndRedirect();
   }
 
   if (status === "loading") {

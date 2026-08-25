@@ -12,7 +12,7 @@ import {
   linkGithubInstallation,
 } from "@/features/workflows/studio/data/github-api";
 import type { GithubInstallationAccount, LinkedGitHubRepo } from "@/shared/api/contracts";
-import { formatApiError } from "../views/workflow-builder-utils";
+import { formatApiError } from "../model/workflow-studio-rules";
 import { navigateToExternalUrl } from "./navigation";
 
 export function useGithubInstallations(

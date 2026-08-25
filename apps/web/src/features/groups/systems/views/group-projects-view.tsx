@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { useParams } from "next/navigation";
 
 import { HierarchyPageShell } from "@/features/groups/workspace";
 import {
@@ -15,7 +14,7 @@ import {
 
 import { projectStatusVariant, repoShortName } from "../../model/groups-rules";
 import type { GroupSummary } from "../../model/groups-types";
-import { useGroupViewModel } from "../../view-models/use-group-view-model";
+import { useGroupRouteViewModel, useGroupViewModel } from "@/features/groups";
 import { useGroupProjectsViewModel } from "../view-models/use-group-projects-view-model";
 
 function ProjectsInner({ group }: Readonly<{ group: GroupSummary }>) {
@@ -96,8 +95,8 @@ function ProjectsInner({ group }: Readonly<{ group: GroupSummary }>) {
 }
 
 function ProjectsResolver() {
-  const params = useParams<{ groupId: string }>();
-  const vm = useGroupViewModel(params.groupId);
+  const { groupId } = useGroupRouteViewModel();
+  const vm = useGroupViewModel(groupId);
 
   if (vm.status !== "ready" || !vm.group) {
     return (

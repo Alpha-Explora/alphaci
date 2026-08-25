@@ -1,6 +1,6 @@
 "use client";
 
-import { useApiResource } from "@/features/groups";
+import { useApiResource } from "./use-hierarchy-resource";
 
 import { groupsRepository } from "../data/groups-repository";
 import type { GroupSummary } from "../model/groups-types";

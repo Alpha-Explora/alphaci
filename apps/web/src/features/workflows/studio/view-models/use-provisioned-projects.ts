@@ -17,6 +17,7 @@ import type {
 export function useProvisionedProjects(setStatusMessage: (message: string) => void) {
   const [projects, setProjects] = useState<ProvisionedProject[]>([]);
   const [loadingProjects, setLoadingProjects] = useState(false);
+  const [projectsError, setProjectsError] = useState<string | null>(null);
 
   const loadProjects = useCallback(async (silent = false) => {
     if (!silent) {
@@ -29,7 +30,9 @@ export function useProvisionedProjects(setStatusMessage: (message: string) => vo
       // The API enforces group/assignment visibility for this unfiltered query.
       const response = await getProjects(100);
       setProjects(response.items);
+      setProjectsError(null);
     } catch {
+      setProjectsError("Provisioned project history is temporarily unavailable.");
       if (!silent) {
         setStatusMessage("Provisioned project history is temporarily unavailable.");
       }
@@ -91,6 +94,10 @@ export function useProvisionedProjects(setStatusMessage: (message: string) => vo
   return {
     loadProjects,
     loadingProjects,
+    /** Uniform status field per the VM contract. */
+    status: loadingProjects ? ("loading" as const) : ("ready" as const),
+    /** User-safe load error. */
+    error: projectsError,
     prependCreateResult,
     prependSetupResult,
     projects,

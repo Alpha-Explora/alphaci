@@ -3,7 +3,7 @@
 import { useCallback, useState } from "react";
 
 import type { CreateProjectRequest, MvpProjectOptionKey } from "@/shared/api/contracts";
-import { toSlug } from "../views/workflow-builder-utils";
+import { toSlug } from "../model/workflow-studio-rules";
 
 type CreateProjectPayloadResult =
   | { ok: true; payload: CreateProjectRequest }
