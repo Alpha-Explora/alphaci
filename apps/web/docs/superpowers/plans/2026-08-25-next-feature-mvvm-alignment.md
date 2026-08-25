@@ -10,9 +10,11 @@
 
 ## Implementation ledger
 
-This plan is being implemented on `codex/next-mvvm-implementation`, based on
-the protected `codex/next-mvvm-trunk` branch. `main` remains untouched and no
-pull request is opened against it during the migration.
+**STATUS: COMPLETE.** This plan was implemented on
+`codex/next-mvvm-implementation`, merged to `main` through PRs #7 and #9.
+`main` is the single trunk going forward; the trunk and implementation
+branches have been retired. The checklist below is kept as the review map for
+the behavior-preserving moves that were made.
 
 Completed in the implementation branch:
 
