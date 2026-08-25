@@ -28,6 +28,7 @@ export function WorkflowBuilder({ guest = false, session, onboardingCompleted }:
     activeTab, setActiveTab, statusMessage, isCreatingProject, isDiscoveringExistingRepo, isSettingUpExistingRepo,
     createResult, existingRepoDiscovery, existingRepoResult, setupMode, setSetupMode,
     existingRepoFullName, setExistingRepoFullName, existingRepoBaseBranch, setExistingRepoBaseBranch,
+    workspaces, selectedCreateWorkspaceId, setSelectedCreateWorkspaceId,
     handleTabKeyDown, handleStudioTabChange, openIndividualSetup,
     handleCreateProject, handleDiscoverExistingRepo, handleSetupExistingRepo, handleGenerateWorkflow,
     catalog, projectCatalog, projects, createForm, deploymentProvisioning,
@@ -132,11 +133,14 @@ export function WorkflowBuilder({ guest = false, session, onboardingCompleted }:
               onChangeExistingRepoBaseBranch={setExistingRepoBaseBranch}
               onChangeExistingRepoFullName={setExistingRepoFullName}
               onChangeSetupMode={setSetupMode}
-              onCreateProject={guest ? () => { window.location.href = "/signup"; } : handleCreateProject}
+              onCreateProject={guest ? () => { window.location.href = "/signup"; } : () => void handleCreateProject(selectedCreateWorkspaceId ?? undefined)}
               onDiscoverExistingRepo={guest ? () => { window.location.href = "/signup"; } : handleDiscoverExistingRepo}
               onGenerateWorkflow={guest ? () => { window.location.href = "/signup"; } : handleGenerateWorkflow}
               onSetupExistingRepo={guest ? () => { window.location.href = "/signup"; } : handleSetupExistingRepo}
-              creationScope="individual"
+              creationScope="choose-team"
+              workspaces={workspaces}
+              selectedWorkspaceId={selectedCreateWorkspaceId}
+              onChangeWorkspace={setSelectedCreateWorkspaceId}
               projectCatalog={projectCatalog}
               onViewProject={openIndividualSetup}
               reducedMotion={reducedMotion}
@@ -149,7 +153,6 @@ export function WorkflowBuilder({ guest = false, session, onboardingCompleted }:
               loadingProjects={projects.loadingProjects}
               onOpenSetup={openIndividualSetup}
               projects={projects.projects}
-              enforcedOrg={projectCatalog.enforcedOrg}
               renderGroupCreate={(selectedGroupId, onComplete) => (
                 <WorkflowSetupTab
                   form={createForm}
@@ -173,7 +176,7 @@ export function WorkflowBuilder({ guest = false, session, onboardingCompleted }:
                   onGenerateWorkflow={guest ? () => { window.location.href = "/signup"; } : handleGenerateWorkflow}
                   onSetupExistingRepo={guest ? () => { window.location.href = "/signup"; } : handleSetupExistingRepo}
                   projectCatalog={projectCatalog}
-                  creationScope="group"
+                  creationScope="in-team"
                   onViewProject={onComplete}
                   reducedMotion={reducedMotion}
                   createResult={createResult}

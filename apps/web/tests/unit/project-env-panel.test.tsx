@@ -75,6 +75,22 @@ jest.mock("../../src/features/projects/detail/data/projects-api", () => ({
   syncDeploymentTarget: jest.fn(),
   detachDeploymentTarget: jest.fn(),
   getDeploymentTargetActions: jest.fn(),
+  // Resolved by default: these panels fetch on mount, and a bare jest.fn()
+  // returns undefined, which the view-models then call .then() on.
+  getProjectPreviews: jest.fn(() =>
+    Promise.resolve({
+      enabled: false,
+      liveProvidersEnabled: false,
+      branches: [],
+      providerError: null,
+    }),
+  ),
+  getProjectDomains: jest.fn(() => Promise.resolve([])),
+  addProjectDomain: jest.fn(() => Promise.resolve(null)),
+  verifyProjectDomain: jest.fn(() => Promise.resolve(null)),
+  removeProjectDomain: jest.fn(() =>
+    Promise.resolve({ removed: true, hostname: "", providerError: null }),
+  ),
 }));
 
 // The Current Projects rail now groups repositories by the user's groups —
@@ -113,6 +129,11 @@ const mockedProjectApi = jest.requireMock("../../src/features/projects/detail/da
   syncDeploymentTarget: jest.Mock;
   detachDeploymentTarget: jest.Mock;
   getDeploymentTargetActions: jest.Mock;
+  getProjectPreviews: jest.Mock;
+  getProjectDomains: jest.Mock;
+  addProjectDomain: jest.Mock;
+  verifyProjectDomain: jest.Mock;
+  removeProjectDomain: jest.Mock;
 };
 
 const provisionedProject: ProvisionedProject = {
@@ -577,7 +598,11 @@ describe("Project env provisioning UI", () => {
     jest.clearAllMocks();
   });
 
-  it("uses a split workspace listing groups and shows the group's repositories", async () => {
+  /* The rail is teams and nothing else. It previously carried an "Ungrouped"
+   * bucket and a Repositories/Teams toggle for projects owned by no team —
+   * both removed with personal workspaces, since every project now belongs to
+   * a team and that bucket could never fill. */
+  it("lists the caller's teams and shows the selected team's repositories", async () => {
     mockCapabilities(true);
     mockEnvHook();
 
@@ -589,20 +614,36 @@ describe("Project env provisioning UI", () => {
       status: "provisioned",
       workflowPath: ".github/workflows/10-alphaci-quality.yml",
       githubCommitSha: "def456",
+      workspaceId: "workspace-1",
     };
+    (
+      jest.requireMock("../../src/features/groups/data/hierarchy-api") as {
+        getGroups: jest.Mock;
+      }
+    ).getGroups.mockResolvedValueOnce([
+      {
+        id: "workspace-1",
+        name: "Platform",
+        description: null,
+        status: "active",
+      },
+    ] as never);
 
     const rendered = render(
       <WorkflowCurrentTab
         latestResult={null}
         loadingProjects={false}
         onOpenSetup={jest.fn()}
-        projects={[provisionedProject, frontendProject]}
+        renderGroupCreate={() => null}
+        projects={[
+          { ...provisionedProject, workspaceId: "workspace-1" },
+          frontendProject,
+        ]}
       />,
     );
     root = rendered.root;
 
-    // Flush the groups fetch (mocked to resolve with no groups) so both
-    // projects land in the Ungrouped bucket.
+    // Flush the groups fetch so both projects land in their team's bucket.
     await act(async () => {});
 
     expect(
@@ -610,28 +651,20 @@ describe("Project env provisioning UI", () => {
     ).not.toBeNull();
     expect(rendered.container.querySelector(".project-list")).not.toBeNull();
 
-    // Rail lists the group buckets, not individual repositories.
-    const ungroupedSelector =
-      rendered.container.querySelector<HTMLButtonElement>(
-        'button[data-project-id="__ungrouped__"]',
-      );
-    expect(ungroupedSelector).not.toBeNull();
-    expect(ungroupedSelector?.textContent).toContain("2 repositories");
+    // The rail is a team list — there is no ownership toggle beside it.
+    expect(
+      rendered.container.querySelector(".project-ownership-toggle"),
+    ).toBeNull();
+    expect(rendered.container.textContent).not.toContain(
+      "individual repositories",
+    );
 
-    // The detail panel lists every repository of the selected bucket, each
-    // linking to its full page (where the detail tabs now live).
     const detailPanel = rendered.container.querySelector(
       ".project-detail-panel",
     );
     expect(detailPanel).not.toBeNull();
-    expect(detailPanel?.textContent).toContain("orders-api");
-    expect(detailPanel?.textContent).toContain("web-client");
-    const fullPageLinks = Array.from(
-      rendered.container.querySelectorAll<HTMLAnchorElement>(
-        'a[href^="/projects/"]',
-      ),
-    );
-    expect(fullPageLinks).toHaveLength(2);
+    expect(detailPanel?.textContent).toContain("Platform");
+    expect(detailPanel?.textContent).toContain("2 repositories");
   });
 
   it("loads the project overview and renders control-center tabs with empty states", async () => {
@@ -1312,7 +1345,11 @@ describe("Project env provisioning UI", () => {
           status: "ready",
           createdAt: "2026-06-12T00:00:00.000Z",
           readyAt: "2026-06-12T00:05:00.000Z",
-          providerUrl: "https://dashboard.render.com/web/srv-1",
+          commitMessage: null,
+          deploymentUrl: "https://orders-api-test.onrender.com",
+          pullRequestNumber: null,
+          inspectorUrl: null,
+          dashboardUrl: "https://dashboard.render.com/web/srv-1",
           consoleUrl: "https://dashboard.render.com/web/srv-1/logs",
         },
         {
@@ -2652,7 +2689,8 @@ describe("Project env provisioning UI", () => {
           id: "meta-1",
           projectId: "project-1",
           deploymentTargetId: "target-1",
-          environment: "test",
+          lane: "preview" as const,
+          gitBranch: "test",
           key: "DATABASE_URL",
           provider: "render",
           valueStored: false,
@@ -2775,7 +2813,8 @@ describe("Project env provisioning UI", () => {
           id: "meta-1",
           projectId: "project-1",
           deploymentTargetId: "target-render",
-          environment: "test",
+          lane: "preview" as const,
+          gitBranch: "test",
           key: "DATABASE_URL",
           provider: "render",
           valueStored: false,
@@ -2873,7 +2912,8 @@ describe("Project env provisioning UI", () => {
           id: "meta-1",
           projectId: "project-1",
           deploymentTargetId: "target-1",
-          environment: "test",
+          lane: "preview" as const,
+          gitBranch: "test",
           key: "DATABASE_URL",
           provider: "render",
           valueStored: false,
@@ -2904,7 +2944,8 @@ describe("Project env provisioning UI", () => {
 
     expect(provision).toHaveBeenCalledWith({
       deploymentTargetId: "target-1",
-      environment: "uat",
+      lane: "preview",
+      gitBranch: "test",
       vars: [{ key: "DATABASE_URL", value: "postgres://secret" }],
     });
     expect(valueInput.value).toBe("");
@@ -2975,7 +3016,8 @@ describe("Project env provisioning UI", () => {
           id: "meta-1",
           projectId: "project-1",
           deploymentTargetId: "target-render",
-          environment: "test",
+          lane: "preview" as const,
+          gitBranch: "test",
           key: "DATABASE_URL",
           provider: "render",
           valueStored: false,
@@ -2988,7 +3030,8 @@ describe("Project env provisioning UI", () => {
           id: "meta-2",
           projectId: "project-1",
           deploymentTargetId: "target-vercel",
-          environment: "production",
+          lane: "production" as const,
+          gitBranch: null,
           key: "API_KEY",
           provider: "vercel",
           valueStored: false,
@@ -3038,7 +3081,8 @@ describe("Project env provisioning UI", () => {
           id: "meta-1",
           projectId: "project-1",
           deploymentTargetId: "target-render",
-          environment: "test",
+          lane: "preview" as const,
+          gitBranch: "test",
           key: "DATABASE_URL",
           provider: "render",
           valueStored: false,
@@ -3085,7 +3129,8 @@ describe("Project env provisioning UI", () => {
           id: "meta-2",
           projectId: "project-1",
           deploymentTargetId: "target-vercel",
-          environment: "production",
+          lane: "production" as const,
+          gitBranch: null,
           key: "API_KEY",
           provider: "vercel",
           valueStored: false,
@@ -3131,7 +3176,8 @@ describe("Project env provisioning UI", () => {
 
     expect(provision).toHaveBeenCalledWith({
       deploymentTargetId: "target-vercel",
-      environment: "production",
+      lane: "production",
+      gitBranch: null,
       vars: [{ key: "API_KEY", value: "new-secret" }],
     });
     expect(rendered.container.textContent).not.toContain("new-secret");
@@ -3144,7 +3190,8 @@ describe("Project env provisioning UI", () => {
           id: "meta-1",
           projectId: "project-1",
           deploymentTargetId: "target-1",
-          environment: "test",
+          lane: "preview" as const,
+          gitBranch: "test",
           key: "API_KEY",
           provider: "vercel",
           valueStored: false,

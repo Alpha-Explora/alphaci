@@ -7,7 +7,7 @@ import type {
   DeploymentProvisioningRequest,
   DeploymentProvisioningTargetRequest,
   DeploymentProvisioningVariableGroup,
-  EnvEnvironment,
+  EnvLane,
   EnvOwnershipMode,
   EnvProvider,
   EnvTargetSlot,
@@ -33,7 +33,12 @@ interface DeploymentProvisioningSetupProps {
   onEnabledChange?: (enabled: boolean) => void;
 }
 
-const environments: EnvEnvironment[] = ["uat", "production"];
+/** The two lanes a provider has. Preview is scoped to the target's branch. */
+const lanes: EnvLane[] = ["preview", "production"];
+
+function laneLabel(lane: EnvLane): string {
+  return lane === "production" ? "Production" : "Branch (preview)";
+}
 const renderRuntimeOptions: Array<{ value: RenderRuntime; label: string }> = [
   { value: "docker", label: "Dockerfile" },
   { value: "node", label: "Node.js / Bun" },
@@ -44,14 +49,10 @@ const renderRuntimeOptions: Array<{ value: RenderRuntime; label: string }> = [
   { value: "elixir", label: "Elixir" },
 ];
 
-function blankEnvSet(
-  environment: EnvEnvironment = "uat",
-): DeploymentProvisioningEnvSet {
-  return { environment, vars: [] };
-}
-
-function activeEnvironment(environment: EnvEnvironment): EnvEnvironment {
-  return environment === "test" ? "uat" : environment;
+function blankEnvSet(lane: EnvLane = "preview"): DeploymentProvisioningEnvSet {
+  // gitBranch stays unset: omitted means "the branch this target tracks",
+  // which is what the wizard is configuring.
+  return { lane, vars: [] };
 }
 
 function activeBranch(branchName: string | undefined): "uat" | "main" {
@@ -92,7 +93,7 @@ function fallbackTarget(
         : provider === "render"
           ? "Dockerfile"
           : undefined,
-    env: [{ environment: "uat", vars: [] }],
+    env: [blankEnvSet()],
   };
 }
 
@@ -609,11 +610,7 @@ export function DeploymentProvisioningSetup({
                   ) : null}
 
                   {providerGroups.map(({ group, groupIndex }) => {
-                    const rawEnvSet = group.env[0] ?? blankEnvSet();
-                    const envSet = {
-                      ...rawEnvSet,
-                      environment: activeEnvironment(rawEnvSet.environment),
-                    };
+                    const envSet = group.env[0] ?? blankEnvSet();
                     const sharedVars = envVarsForDisplay(envSet);
                     const providerTargetKeys = providerTargets.map(
                       (target) => target.key,
@@ -727,7 +724,7 @@ export function DeploymentProvisioningSetup({
                             <span>Environment</span>
                             <select
                               aria-label={`Variable group environment ${groupIndex + 1}`}
-                              value={envSet.environment}
+                              value={envSet.lane}
                               onChange={(event) =>
                                 onChange(
                                   updateVariableGroupAt(
@@ -739,8 +736,8 @@ export function DeploymentProvisioningSetup({
                                       env: [
                                         {
                                           ...envSet,
-                                          environment: event.target
-                                            .value as EnvEnvironment,
+                                          lane: event.target
+                                            .value as EnvLane,
                                         },
                                       ],
                                     },
@@ -748,9 +745,9 @@ export function DeploymentProvisioningSetup({
                                 )
                               }
                             >
-                              {environments.map((environment) => (
-                                <option key={environment} value={environment}>
-                                  {environment}
+                              {lanes.map((lane) => (
+                                <option key={lane} value={lane}>
+                                  {laneLabel(lane)}
                                 </option>
                               ))}
                             </select>
@@ -941,11 +938,7 @@ export function DeploymentProvisioningSetup({
           </section>
 
           {targets.map((target, targetIndex) => {
-            const rawEnvSet = target.env?.[0] ?? blankEnvSet();
-            const envSet = {
-              ...rawEnvSet,
-              environment: activeEnvironment(rawEnvSet.environment),
-            };
+            const envSet = target.env?.[0] ?? blankEnvSet();
             const vars = envVarsForDisplay(envSet);
             const matchingConnections = activeProviderConnections.filter(
               (connection) => connection.provider === target.provider,
@@ -1318,24 +1311,23 @@ export function DeploymentProvisioningSetup({
                           ? "Provisioning environment"
                           : `Provisioning environment ${targetIndex + 1}`
                       }
-                      value={envSet.environment}
+                      value={envSet.lane}
                       onChange={(event) =>
                         onChange(
                           updateTargetAt(value, targetIndex, {
                             env: [
                               {
                                 ...envSet,
-                                environment: event.target
-                                  .value as EnvEnvironment,
+                                lane: event.target.value as EnvLane,
                               },
                             ],
                           }),
                         )
                       }
                     >
-                      {environments.map((environment) => (
-                        <option key={environment} value={environment}>
-                          {environment}
+                      {lanes.map((lane) => (
+                        <option key={lane} value={lane}>
+                          {laneLabel(lane)}
                         </option>
                       ))}
                     </select>

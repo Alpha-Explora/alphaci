@@ -75,7 +75,7 @@ describe("DeploymentProvisioningSetup", () => {
           buildCommand: "npm ci && npm run build",
           startCommand: "npm run start:prod",
           env: [
-            { environment: "test", vars: [{ key: "DATABASE_URL", value: "" }] },
+            { lane: "preview" as const, vars: [{ key: "DATABASE_URL", value: "" }] },
           ],
         },
       ],
@@ -139,7 +139,7 @@ describe("DeploymentProvisioningSetup", () => {
           rootDirectory: ".",
           buildCommand: "npm ci && npm run build",
           startCommand: "npm run start:prod",
-          env: [{ environment: "test", vars: [] }],
+          env: [{ lane: "preview" as const, vars: [] }],
         },
       ],
     };
@@ -186,7 +186,7 @@ describe("DeploymentProvisioningSetup", () => {
           targetBranches: ["frontend:vercel:test"],
           env: [
             {
-              environment: "test",
+              lane: "preview" as const,
               vars: [{ key: "API_URL", value: "" }],
             },
           ],
@@ -201,7 +201,7 @@ describe("DeploymentProvisioningSetup", () => {
           branchName: "test",
           rootDirectory: ".",
           buildCommand: "npm ci && npm run build",
-          env: [{ environment: "test", vars: [] }],
+          env: [{ lane: "preview" as const, vars: [] }],
         },
         {
           slot: "frontend",
@@ -211,7 +211,7 @@ describe("DeploymentProvisioningSetup", () => {
           branchName: "test",
           rootDirectory: ".",
           buildCommand: "npm run build",
-          env: [{ environment: "test", vars: [] }],
+          env: [{ lane: "preview" as const, vars: [] }],
         },
       ],
     };
@@ -254,7 +254,7 @@ describe("DeploymentProvisioningSetup", () => {
             targetBranches: ["frontend:vercel:uat"],
             env: [
               {
-                environment: "uat",
+                lane: "preview" as const,
                 vars: [{ key: "API_URL", value: "https://api.example.com" }],
               },
             ],
@@ -262,7 +262,7 @@ describe("DeploymentProvisioningSetup", () => {
         ],
         targets: [
           expect.objectContaining({
-            env: [{ environment: "test", vars: [] }],
+            env: [{ lane: "preview" as const, vars: [] }],
           }),
           expect.objectContaining({
             provider: "vercel",
@@ -288,7 +288,7 @@ describe("DeploymentProvisioningSetup", () => {
           rootDirectory: ".",
           buildCommand: "npm ci && npm run build",
           startCommand: "npm run start:prod",
-          env: [{ environment: "test", vars: [] }],
+          env: [{ lane: "preview" as const, vars: [] }],
         },
         {
           slot: "frontend",
@@ -300,7 +300,7 @@ describe("DeploymentProvisioningSetup", () => {
           buildCommand: "npm run build",
           env: [
             {
-              environment: "test",
+              lane: "preview" as const,
               vars: [{ key: "NEXT_PUBLIC_API_URL", value: "" }],
             },
           ],
@@ -378,7 +378,7 @@ describe("DeploymentProvisioningSetup", () => {
           branchName: "test",
           rootDirectory: ".",
           buildCommand: "npm run build",
-          env: [{ environment: "test", vars: [] }],
+          env: [{ lane: "preview" as const, vars: [] }],
         },
       ],
     };

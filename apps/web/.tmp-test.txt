@@ -1,0 +1,752 @@
+FAIL tests/unit/project-env-panel.test.tsx (18.318 s)
+  ● Console
+
+    console.error
+      An update to ProjectEnvPanel inside a test was not wrapped in act(...).
+      
+      When testing, code that causes React state updates should be wrapped into act(...):
+      
+      act(() => {
+        /* fire events that update state */
+      });
+      /* assert on the output */
+      
+      This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+
+      284 |       .then((usage) => {
+      285 |         if (!cancelled && usage.enabled) {
+    > 286 |           setUsageItems(usage.items);
+          |           ^
+      287 |         }
+      288 |       })
+      289 |       .catch(() => {
+
+      at node_modules/.pnpm/react-dom@19.2.8_react@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:18758:19
+      at runWithFiberInDEV (node_modules/.pnpm/react-dom@19.2.8_react@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:874:13)
+      at warnIfUpdatesNotWrappedWithActDEV (node_modules/.pnpm/react-dom@19.2.8_react@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:18757:9)
+      at scheduleUpdateOnFiber (node_modules/.pnpm/react-dom@19.2.8_react@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:16409:11)
+      at dispatchSetStateInternal (node_modules/.pnpm/react-dom@19.2.8_react@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:9170:13)
+      at dispatchSetState (node_modules/.pnpm/react-dom@19.2.8_react@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:9127:7)
+      at setUsageItems (src/features/projects/detail/views/project-env-panel.tsx:286:11)
+
+    console.error
+      An update to ProjectDomainsPanel inside a test was not wrapped in act(...).
+      
+      When testing, code that causes React state updates should be wrapped into act(...):
+      
+      act(() => {
+        /* fire events that update state */
+      });
+      /* assert on the output */
+      
+      This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+
+      56 |       .then((response) => {
+      57 |         if (!active || id !== req.current) return;
+    > 58 |         setDomains(response);
+         |         ^
+      59 |         setError(null);
+      60 |         setStatus("ready");
+      61 |       })
+
+      at node_modules/.pnpm/react-dom@19.2.8_react@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:18758:19
+      at runWithFiberInDEV (node_modules/.pnpm/react-dom@19.2.8_react@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:874:13)
+      at warnIfUpdatesNotWrappedWithActDEV (node_modules/.pnpm/react-dom@19.2.8_react@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:18757:9)
+      at scheduleUpdateOnFiber (node_modules/.pnpm/react-dom@19.2.8_react@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:16409:11)
+      at dispatchSetStateInternal (node_modules/.pnpm/react-dom@19.2.8_react@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:9170:13)
+      at dispatchSetState (node_modules/.pnpm/react-dom@19.2.8_react@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:9127:7)
+      at setDomains (src/features/projects/domains/view-models/use-project-domains-view-model.ts:58:9)
+
+    console.error
+      An update to ProjectDomainsPanel inside a test was not wrapped in act(...).
+      
+      When testing, code that causes React state updates should be wrapped into act(...):
+      
+      act(() => {
+        /* fire events that update state */
+      });
+      /* assert on the output */
+      
+      This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+
+      57 |         if (!active || id !== req.current) return;
+      58 |         setDomains(response);
+    > 59 |         setError(null);
+         |         ^
+      60 |         setStatus("ready");
+      61 |       })
+      62 |       .catch(() => {
+
+      at node_modules/.pnpm/react-dom@19.2.8_react@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:18758:19
+      at runWithFiberInDEV (node_modules/.pnpm/react-dom@19.2.8_react@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:874:13)
+      at warnIfUpdatesNotWrappedWithActDEV (node_modules/.pnpm/react-dom@19.2.8_react@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:18757:9)
+      at scheduleUpdateOnFiber (node_modules/.pnpm/react-dom@19.2.8_react@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:16409:11)
+      at dispatchSetStateInternal (node_modules/.pnpm/react-dom@19.2.8_react@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:9170:13)
+      at dispatchSetState (node_modules/.pnpm/react-dom@19.2.8_react@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:9127:7)
+      at setError (src/features/projects/domains/view-models/use-project-domains-view-model.ts:59:9)
+
+    console.error
+      An update to ProjectDomainsPanel inside a test was not wrapped in act(...).
+      
+      When testing, code that causes React state updates should be wrapped into act(...):
+      
+      act(() => {
+        /* fire events that update state */
+      });
+      /* assert on the output */
+      
+      This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+
+      58 |         setDomains(response);
+      59 |         setError(null);
+    > 60 |         setStatus("ready");
+         |         ^
+      61 |       })
+      62 |       .catch(() => {
+      63 |         if (!active || id !== req.current) return;
+
+      at node_modules/.pnpm/react-dom@19.2.8_react@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:18758:19
+      at runWithFiberInDEV (node_modules/.pnpm/react-dom@19.2.8_react@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:874:13)
+      at warnIfUpdatesNotWrappedWithActDEV (node_modules/.pnpm/react-dom@19.2.8_react@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:18757:9)
+      at scheduleUpdateOnFiber (node_modules/.pnpm/react-dom@19.2.8_react@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:16409:11)
+      at dispatchSetStateInternal (node_modules/.pnpm/react-dom@19.2.8_react@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:9170:13)
+      at dispatchSetState (node_modules/.pnpm/react-dom@19.2.8_react@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:9127:7)
+      at setStatus (src/features/projects/domains/view-models/use-project-domains-view-model.ts:60:9)
+
+    console.error
+      An update to ProjectDomainsPanel inside a test was not wrapped in act(...).
+      
+      When testing, code that causes React state updates should be wrapped into act(...):
+      
+      act(() => {
+        /* fire events that update state */
+      });
+      /* assert on the output */
+      
+      This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+
+      56 |       .then((response) => {
+      57 |         if (!active || id !== req.current) return;
+    > 58 |         setDomains(response);
+         |         ^
+      59 |         setError(null);
+      60 |         setStatus("ready");
+      61 |       })
+
+      at node_modules/.pnpm/react-dom@19.2.8_react@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:18758:19
+      at runWithFiberInDEV (node_modules/.pnpm/react-dom@19.2.8_react@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:874:13)
+      at warnIfUpdatesNotWrappedWithActDEV (node_modules/.pnpm/react-dom@19.2.8_react@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:18757:9)
+      at scheduleUpdateOnFiber (node_modules/.pnpm/react-dom@19.2.8_react@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:16409:11)
+      at dispatchSetStateInternal (node_modules/.pnpm/react-dom@19.2.8_react@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:9170:13)
+      at dispatchSetState (node_modules/.pnpm/react-dom@19.2.8_react@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:9127:7)
+      at setDomains (src/features/projects/domains/view-models/use-project-domains-view-model.ts:58:9)
+
+    console.error
+      An update to ProjectDomainsPanel inside a test was not wrapped in act(...).
+      
+      When testing, code that causes React state updates should be wrapped into act(...):
+      
+      act(() => {
+        /* fire events that update state */
+      });
+      /* assert on the output */
+      
+      This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+
+      57 |         if (!active || id !== req.current) return;
+      58 |         setDomains(response);
+    > 59 |         setError(null);
+         |         ^
+      60 |         setStatus("ready");
+      61 |       })
+      62 |       .catch(() => {
+
+      at node_modules/.pnpm/react-dom@19.2.8_react@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:18758:19
+      at runWithFiberInDEV (node_modules/.pnpm/react-dom@19.2.8_react@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:874:13)
+      at warnIfUpdatesNotWrappedWithActDEV (node_modules/.pnpm/react-dom@19.2.8_react@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:18757:9)
+      at scheduleUpdateOnFiber (node_modules/.pnpm/react-dom@19.2.8_react@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:16409:11)
+      at dispatchSetStateInternal (node_modules/.pnpm/react-dom@19.2.8_react@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:9170:13)
+      at dispatchSetState (node_modules/.pnpm/react-dom@19.2.8_react@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:9127:7)
+      at setError (src/features/projects/domains/view-models/use-project-domains-view-model.ts:59:9)
+
+    console.error
+      An update to ProjectDomainsPanel inside a test was not wrapped in act(...).
+      
+      When testing, code that causes React state updates should be wrapped into act(...):
+      
+      act(() => {
+        /* fire events that update state */
+      });
+      /* assert on the output */
+      
+      This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+
+      58 |         setDomains(response);
+      59 |         setError(null);
+    > 60 |         setStatus("ready");
+         |         ^
+      61 |       })
+      62 |       .catch(() => {
+      63 |         if (!active || id !== req.current) return;
+
+      at node_modules/.pnpm/react-dom@19.2.8_react@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:18758:19
+      at runWithFiberInDEV (node_modules/.pnpm/react-dom@19.2.8_react@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:874:13)
+      at warnIfUpdatesNotWrappedWithActDEV (node_modules/.pnpm/react-dom@19.2.8_react@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:18757:9)
+      at scheduleUpdateOnFiber (node_modules/.pnpm/react-dom@19.2.8_react@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:16409:11)
+      at dispatchSetStateInternal (node_modules/.pnpm/react-dom@19.2.8_react@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:9170:13)
+      at dispatchSetState (node_modules/.pnpm/react-dom@19.2.8_react@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:9127:7)
+      at setStatus (src/features/projects/domains/view-models/use-project-domains-view-model.ts:60:9)
+
+    console.error
+      An update to ProjectDomainsPanel inside a test was not wrapped in act(...).
+      
+      When testing, code that causes React state updates should be wrapped into act(...):
+      
+      act(() => {
+        /* fire events that update state */
+      });
+      /* assert on the output */
+      
+      This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+
+      56 |       .then((response) => {
+      57 |         if (!active || id !== req.current) return;
+    > 58 |         setDomains(response);
+         |         ^
+      59 |         setError(null);
+      60 |         setStatus("ready");
+      61 |       })
+
+      at node_modules/.pnpm/react-dom@19.2.8_react@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:18758:19
+      at runWithFiberInDEV (node_modules/.pnpm/react-dom@19.2.8_react@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:874:13)
+      at warnIfUpdatesNotWrappedWithActDEV (node_modules/.pnpm/react-dom@19.2.8_react@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:18757:9)
+      at scheduleUpdateOnFiber (node_modules/.pnpm/react-dom@19.2.8_react@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:16409:11)
+      at dispatchSetStateInternal (node_modules/.pnpm/react-dom@19.2.8_react@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:9170:13)
+      at dispatchSetState (node_modules/.pnpm/react-dom@19.2.8_react@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:9127:7)
+      at setDomains (src/features/projects/domains/view-models/use-project-domains-view-model.ts:58:9)
+
+    console.error
+      An update to ProjectDomainsPanel inside a test was not wrapped in act(...).
+      
+      When testing, code that causes React state updates should be wrapped into act(...):
+      
+      act(() => {
+        /* fire events that update state */
+      });
+      /* assert on the output */
+      
+      This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+
+      57 |         if (!active || id !== req.current) return;
+      58 |         setDomains(response);
+    > 59 |         setError(null);
+         |         ^
+      60 |         setStatus("ready");
+      61 |       })
+      62 |       .catch(() => {
+
+      at node_modules/.pnpm/react-dom@19.2.8_react@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:18758:19
+      at runWithFiberInDEV (node_modules/.pnpm/react-dom@19.2.8_react@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:874:13)
+      at warnIfUpdatesNotWrappedWithActDEV (node_modules/.pnpm/react-dom@19.2.8_react@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:18757:9)
+      at scheduleUpdateOnFiber (node_modules/.pnpm/react-dom@19.2.8_react@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:16409:11)
+      at dispatchSetStateInternal (node_modules/.pnpm/react-dom@19.2.8_react@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:9170:13)
+      at dispatchSetState (node_modules/.pnpm/react-dom@19.2.8_react@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:9127:7)
+      at setError (src/features/projects/domains/view-models/use-project-domains-view-model.ts:59:9)
+
+    console.error
+      An update to ProjectDomainsPanel inside a test was not wrapped in act(...).
+      
+      When testing, code that causes React state updates should be wrapped into act(...):
+      
+      act(() => {
+        /* fire events that update state */
+      });
+      /* assert on the output */
+      
+      This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+
+      58 |         setDomains(response);
+      59 |         setError(null);
+    > 60 |         setStatus("ready");
+         |         ^
+      61 |       })
+      62 |       .catch(() => {
+      63 |         if (!active || id !== req.current) return;
+
+      at node_modules/.pnpm/react-dom@19.2.8_react@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:18758:19
+      at runWithFiberInDEV (node_modules/.pnpm/react-dom@19.2.8_react@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:874:13)
+      at warnIfUpdatesNotWrappedWithActDEV (node_modules/.pnpm/react-dom@19.2.8_react@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:18757:9)
+      at scheduleUpdateOnFiber (node_modules/.pnpm/react-dom@19.2.8_react@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:16409:11)
+      at dispatchSetStateInternal (node_modules/.pnpm/react-dom@19.2.8_react@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:9170:13)
+      at dispatchSetState (node_modules/.pnpm/react-dom@19.2.8_react@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:9127:7)
+      at setStatus (src/features/projects/domains/view-models/use-project-domains-view-model.ts:60:9)
+
+    console.error
+      React does not recognize the `whileInView` prop on a DOM element. If you intentionally want it to appear in the DOM as a custom attribute, spell it as lowercase `whileinview` instead. If you accidentally passed it from a parent component, remove it from the DOM element.
+
+      at validateProperty (node_modules/.pnpm/react-dom@19.2.8_react@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:3001:19)
+      at warnUnknownProperties (node_modules/.pnpm/react-dom@19.2.8_react@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:3146:9)
+      at validatePropertiesInDevelopment (node_modules/.pnpm/react-dom@19.2.8_react@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:19868:9)
+      at setInitialProperties (node_modules/.pnpm/react-dom@19.2.8_react@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:20491:7)
+      at completeWork (node_modules/.pnpm/react-dom@19.2.8_react@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:12662:18)
+      at runWithFiberInDEV (node_modules/.pnpm/react-dom@19.2.8_react@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:874:13)
+      at completeUnitOfWork (node_modules/.pnpm/react-dom@19.2.8_react@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:17777:19)
+      at performUnitOfWork (node_modules/.pnpm/react-dom@19.2.8_react@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:17658:11)
+      at workLoopSync (node_modules/.pnpm/react-dom@19.2.8_react@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:17469:41)
+      at renderRootSync (node_modules/.pnpm/react-dom@19.2.8_react@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:17450:11)
+      at performWorkOnRoot (node_modules/.pnpm/react-dom@19.2.8_react@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:16504:11)
+      at performWorkOnRootViaSchedulerTask (node_modules/.pnpm/react-dom@19.2.8_react@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:18957:7)
+      at flushActQueue (node_modules/.pnpm/react@19.2.8/node_modules/react/cjs/react.development.js:590:34)
+      at node_modules/.pnpm/react@19.2.8/node_modules/react/cjs/react.development.js:847:21
+
+    console.error
+      An update to WorkflowCurrentTab inside a test was not wrapped in act(...).
+      
+      When testing, code that causes React state updates should be wrapped into act(...):
+      
+      act(() => {
+        /* fire events that update state */
+      });
+      /* assert on the output */
+      
+      This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+
+      75 |       .then((items) => {
+      76 |         if (active) {
+    > 77 |           setGroups(items);
+         |           ^
+      78 |           setGroupsError(null);
+      79 |         }
+      80 |       })
+
+      at node_modules/.pnpm/react-dom@19.2.8_react@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:18758:19
+      at runWithFiberInDEV (node_modules/.pnpm/react-dom@19.2.8_react@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:874:13)
+      at warnIfUpdatesNotWrappedWithActDEV (node_modules/.pnpm/react-dom@19.2.8_react@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:18757:9)
+      at scheduleUpdateOnFiber (node_modules/.pnpm/react-dom@19.2.8_react@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:16409:11)
+      at dispatchSetStateInternal (node_modules/.pnpm/react-dom@19.2.8_react@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:9170:13)
+      at dispatchSetState (node_modules/.pnpm/react-dom@19.2.8_react@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:9127:7)
+      at setGroups (src/features/workflows/studio/views/workflow-current-tab.tsx:77:11)
+
+    console.error
+      An update to WorkflowCurrentTab inside a test was not wrapped in act(...).
+      
+      When testing, code that causes React state updates should be wrapped into act(...):
+      
+      act(() => {
+        /* fire events that update state */
+      });
+      /* assert on the output */
+      
+      This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+
+      76 |         if (active) {
+      77 |           setGroups(items);
+    > 78 |           setGroupsError(null);
+         |           ^
+      79 |         }
+      80 |       })
+      81 |       .catch(() => {
+
+      at node_modules/.pnpm/react-dom@19.2.8_react@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:18758:19
+      at runWithFiberInDEV (node_modules/.pnpm/react-dom@19.2.8_react@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:874:13)
+      at warnIfUpdatesNotWrappedWithActDEV (node_modules/.pnpm/react-dom@19.2.8_react@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:18757:9)
+      at scheduleUpdateOnFiber (node_modules/.pnpm/react-dom@19.2.8_react@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:16409:11)
+      at dispatchSetStateInternal (node_modules/.pnpm/react-dom@19.2.8_react@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:9170:13)
+      at dispatchSetState (node_modules/.pnpm/react-dom@19.2.8_react@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:9127:7)
+      at setGroupsError (src/features/workflows/studio/views/workflow-current-tab.tsx:78:11)
+
+    console.error
+      An update to ProjectEnvPanel inside a test was not wrapped in act(...).
+      
+      When testing, code that causes React state updates should be wrapped into act(...):
+      
+      act(() => {
+        /* fire events that update state */
+      });
+      /* assert on the output */
+      
+      This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+
+      284 |       .then((usage) => {
+      285 |         if (!cancelled && usage.enabled) {
+    > 286 |           setUsageItems(usage.items);
+          |           ^
+      287 |         }
+      288 |       })
+      289 |       .catch(() => {
+
+      at node_modules/.pnpm/react-dom@19.2.8_react@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:18758:19
+      at runWithFiberInDEV (node_modules/.pnpm/react-dom@19.2.8_react@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:874:13)
+      at warnIfUpdatesNotWrappedWithActDEV (node_modules/.pnpm/react-dom@19.2.8_react@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:18757:9)
+      at scheduleUpdateOnFiber (node_modules/.pnpm/react-dom@19.2.8_react@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:16409:11)
+      at dispatchSetStateInternal (node_modules/.pnpm/react-dom@19.2.8_react@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:9170:13)
+      at dispatchSetState (node_modules/.pnpm/react-dom@19.2.8_react@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:9127:7)
+      at setUsageItems (src/features/projects/detail/views/project-env-panel.tsx:286:11)
+
+    console.error
+      An update to ProjectEnvPanel inside a test was not wrapped in act(...).
+      
+      When testing, code that causes React state updates should be wrapped into act(...):
+      
+      act(() => {
+        /* fire events that update state */
+      });
+      /* assert on the output */
+      
+      This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+
+      284 |       .then((usage) => {
+      285 |         if (!cancelled && usage.enabled) {
+    > 286 |           setUsageItems(usage.items);
+          |           ^
+      287 |         }
+      288 |       })
+      289 |       .catch(() => {
+
+      at node_modules/.pnpm/react-dom@19.2.8_react@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:18758:19
+      at runWithFiberInDEV (node_modules/.pnpm/react-dom@19.2.8_react@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:874:13)
+      at warnIfUpdatesNotWrappedWithActDEV (node_modules/.pnpm/react-dom@19.2.8_react@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:18757:9)
+      at scheduleUpdateOnFiber (node_modules/.pnpm/react-dom@19.2.8_react@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:16409:11)
+      at dispatchSetStateInternal (node_modules/.pnpm/react-dom@19.2.8_react@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:9170:13)
+      at dispatchSetState (node_modules/.pnpm/react-dom@19.2.8_react@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:9127:7)
+      at setUsageItems (src/features/projects/detail/views/project-env-panel.tsx:286:11)
+
+    console.error
+      An update to ProjectEnvPanel inside a test was not wrapped in act(...).
+      
+      When testing, code that causes React state updates should be wrapped into act(...):
+      
+      act(() => {
+        /* fire events that update state */
+      });
+      /* assert on the output */
+      
+      This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+
+      284 |       .then((usage) => {
+      285 |         if (!cancelled && usage.enabled) {
+    > 286 |           setUsageItems(usage.items);
+          |           ^
+      287 |         }
+      288 |       })
+      289 |       .catch(() => {
+
+      at node_modules/.pnpm/react-dom@19.2.8_react@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:18758:19
+      at runWithFiberInDEV (node_modules/.pnpm/react-dom@19.2.8_react@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:874:13)
+      at warnIfUpdatesNotWrappedWithActDEV (node_modules/.pnpm/react-dom@19.2.8_react@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:18757:9)
+      at scheduleUpdateOnFiber (node_modules/.pnpm/react-dom@19.2.8_react@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:16409:11)
+      at dispatchSetStateInternal (node_modules/.pnpm/react-dom@19.2.8_react@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:9170:13)
+      at dispatchSetState (node_modules/.pnpm/react-dom@19.2.8_react@19.2.8/node_modules/react-dom/cjs/react-dom-client.development.js:9127:7)
+      at setUsageItems (src/features/projects/detail/views/project-env-panel.tsx:286:11)
+
+  ● Project env provisioning UI › renders mixed Render and Vercel deployment history from the local contract
+
+    expect(received).not.toBeNull()
+
+    Received: null
+
+      1407 |         'a[href="https://dashboard.render.com/web/srv-1"]',
+      1408 |       ),
+    > 1409 |     ).not.toBeNull();
+           |           ^
+      1410 |     expect(
+      1411 |       rendered.container.querySelector(
+      1412 |         'a[href="https://vercel.com/flowci-team/orders-web"]',
+
+      at Object.toBeNull (tests/unit/project-env-panel.test.tsx:1409:11)
+
+  ● Project env provisioning UI › opens target edit drawer with the current metadata values
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: "backend"
+    Received: undefined
+
+      1510 |         'select[aria-label="Target slot"]',
+      1511 |       )?.value,
+    > 1512 |     ).toBe("backend");
+           |       ^
+      1513 |     expect(
+      1514 |       rendered.container.querySelector<HTMLInputElement>(
+      1515 |         'input[aria-label="Target branch"]',
+
+      at Object.toBe (tests/unit/project-env-panel.test.tsx:1512:7)
+
+  ● Project env provisioning UI › saves edited deployment target metadata and syncs local findings
+
+    TypeError: Cannot read properties of null (reading 'tagName')
+
+      223 |      */
+      224 |     const prototype =
+    > 225 |       element.tagName === "SELECT"
+          |               ^
+      226 |         ? HTMLSelectElement.prototype
+      227 |         : element.tagName === "TEXTAREA"
+      228 |           ? HTMLTextAreaElement.prototype
+
+      at tagName (tests/unit/project-env-panel.test.tsx:225:15)
+      at process.env.NODE_ENV.exports.act (node_modules/.pnpm/react@19.2.8/node_modules/react/cjs/react.development.js:814:22)
+      at changeValue (tests/unit/project-env-panel.test.tsx:214:6)
+      at Object.changeValue (tests/unit/project-env-panel.test.tsx:1593:5)
+
+  ● Project env provisioning UI › previews workflow settings after editing all workflow inputs
+
+    TypeError: Cannot read properties of null (reading 'tagName')
+
+      223 |      */
+      224 |     const prototype =
+    > 225 |       element.tagName === "SELECT"
+          |               ^
+      226 |         ? HTMLSelectElement.prototype
+      227 |         : element.tagName === "TEXTAREA"
+      228 |           ? HTMLTextAreaElement.prototype
+
+      at tagName (tests/unit/project-env-panel.test.tsx:225:15)
+      at process.env.NODE_ENV.exports.act (node_modules/.pnpm/react@19.2.8/node_modules/react/cjs/react.development.js:814:22)
+      at changeValue (tests/unit/project-env-panel.test.tsx:214:6)
+      at Object.changeValue (tests/unit/project-env-panel.test.tsx:2391:5)
+
+  ● Project env provisioning UI › shows env key quota and disables provisioning when the limit is reached
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: true
+    Received: undefined
+
+      2680 |         (button) => button.textContent === "Provision",
+      2681 |       )?.disabled,
+    > 2682 |     ).toBe(true);
+           |       ^
+      2683 |   });
+      2684 |
+      2685 |   it("groups env provisioning into target, variables, and provisioned sections", () => {
+
+      at Object.toBe (tests/unit/project-env-panel.test.tsx:2682:7)
+
+  ● Project env provisioning UI › updates target creation fields and env row controls
+
+    TypeError: Cannot read properties of undefined (reading 'click')
+
+      2722 |     act(() => {
+      2723 |       Array.from(rendered.container.querySelectorAll("button"))
+    > 2724 |         .find((button) => button.textContent === "Vercel frontend")!
+           |                                                  ^
+      2725 |         .click();
+      2726 |     });
+      2727 |     changeValue(
+
+      at tests/unit/project-env-panel.test.tsx:2724:50
+      at process.env.NODE_ENV.exports.act (node_modules/.pnpm/react@19.2.8/node_modules/react/cjs/react.development.js:814:22)
+      at Object.<anonymous> (tests/unit/project-env-panel.test.tsx:2722:8)
+
+  ● Project env provisioning UI › shows clean errors for env validation, provisioning, and deletion failures
+
+    TypeError: Cannot read properties of null (reading 'tagName')
+
+      223 |      */
+      224 |     const prototype =
+    > 225 |       element.tagName === "SELECT"
+          |               ^
+      226 |         ? HTMLSelectElement.prototype
+      227 |         : element.tagName === "TEXTAREA"
+      228 |           ? HTMLTextAreaElement.prototype
+
+      at tagName (tests/unit/project-env-panel.test.tsx:225:15)
+      at process.env.NODE_ENV.exports.act (node_modules/.pnpm/react@19.2.8/node_modules/react/cjs/react.development.js:814:22)
+      at changeValue (tests/unit/project-env-panel.test.tsx:214:6)
+      at Object.changeValue (tests/unit/project-env-panel.test.tsx:2835:5)
+
+  ● Project env provisioning UI › clears submitted values and shows metadata without secret values
+
+    TypeError: Cannot read properties of null (reading 'tagName')
+
+      223 |      */
+      224 |     const prototype =
+    > 225 |       element.tagName === "SELECT"
+          |               ^
+      226 |         ? HTMLSelectElement.prototype
+      227 |         : element.tagName === "TEXTAREA"
+      228 |           ? HTMLTextAreaElement.prototype
+
+      at tagName (tests/unit/project-env-panel.test.tsx:225:15)
+      at process.env.NODE_ENV.exports.act (node_modules/.pnpm/react@19.2.8/node_modules/react/cjs/react.development.js:814:22)
+      at changeValue (tests/unit/project-env-panel.test.tsx:214:6)
+      at Object.changeValue (tests/unit/project-env-panel.test.tsx:2937:5)
+
+  ● Project env provisioning UI › validates bulk .env text and clears parsed values before provisioning
+
+    TypeError: Cannot read properties of null (reading 'tagName')
+
+      223 |      */
+      224 |     const prototype =
+    > 225 |       element.tagName === "SELECT"
+          |               ^
+      226 |         ? HTMLSelectElement.prototype
+      227 |         : element.tagName === "TEXTAREA"
+      228 |           ? HTMLTextAreaElement.prototype
+
+      at tagName (tests/unit/project-env-panel.test.tsx:225:15)
+      at process.env.NODE_ENV.exports.act (node_modules/.pnpm/react@19.2.8/node_modules/react/cjs/react.development.js:814:22)
+      at changeValue (tests/unit/project-env-panel.test.tsx:214:6)
+      at Object.changeValue (tests/unit/project-env-panel.test.tsx:2975:5)
+
+
+Summary of all failing tests
+FAIL tests/unit/project-env-panel.test.tsx (18.318 s)
+  ● Project env provisioning UI › renders mixed Render and Vercel deployment history from the local contract
+
+    expect(received).not.toBeNull()
+
+    Received: null
+
+      1407 |         'a[href="https://dashboard.render.com/web/srv-1"]',
+      1408 |       ),
+    > 1409 |     ).not.toBeNull();
+           |           ^
+      1410 |     expect(
+      1411 |       rendered.container.querySelector(
+      1412 |         'a[href="https://vercel.com/flowci-team/orders-web"]',
+
+      at Object.toBeNull (tests/unit/project-env-panel.test.tsx:1409:11)
+
+  ● Project env provisioning UI › opens target edit drawer with the current metadata values
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: "backend"
+    Received: undefined
+
+      1510 |         'select[aria-label="Target slot"]',
+      1511 |       )?.value,
+    > 1512 |     ).toBe("backend");
+           |       ^
+      1513 |     expect(
+      1514 |       rendered.container.querySelector<HTMLInputElement>(
+      1515 |         'input[aria-label="Target branch"]',
+
+      at Object.toBe (tests/unit/project-env-panel.test.tsx:1512:7)
+
+  ● Project env provisioning UI › saves edited deployment target metadata and syncs local findings
+
+    TypeError: Cannot read properties of null (reading 'tagName')
+
+      223 |      */
+      224 |     const prototype =
+    > 225 |       element.tagName === "SELECT"
+          |               ^
+      226 |         ? HTMLSelectElement.prototype
+      227 |         : element.tagName === "TEXTAREA"
+      228 |           ? HTMLTextAreaElement.prototype
+
+      at tagName (tests/unit/project-env-panel.test.tsx:225:15)
+      at process.env.NODE_ENV.exports.act (node_modules/.pnpm/react@19.2.8/node_modules/react/cjs/react.development.js:814:22)
+      at changeValue (tests/unit/project-env-panel.test.tsx:214:6)
+      at Object.changeValue (tests/unit/project-env-panel.test.tsx:1593:5)
+
+  ● Project env provisioning UI › previews workflow settings after editing all workflow inputs
+
+    TypeError: Cannot read properties of null (reading 'tagName')
+
+      223 |      */
+      224 |     const prototype =
+    > 225 |       element.tagName === "SELECT"
+          |               ^
+      226 |         ? HTMLSelectElement.prototype
+      227 |         : element.tagName === "TEXTAREA"
+      228 |           ? HTMLTextAreaElement.prototype
+
+      at tagName (tests/unit/project-env-panel.test.tsx:225:15)
+      at process.env.NODE_ENV.exports.act (node_modules/.pnpm/react@19.2.8/node_modules/react/cjs/react.development.js:814:22)
+      at changeValue (tests/unit/project-env-panel.test.tsx:214:6)
+      at Object.changeValue (tests/unit/project-env-panel.test.tsx:2391:5)
+
+  ● Project env provisioning UI › shows env key quota and disables provisioning when the limit is reached
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: true
+    Received: undefined
+
+      2680 |         (button) => button.textContent === "Provision",
+      2681 |       )?.disabled,
+    > 2682 |     ).toBe(true);
+           |       ^
+      2683 |   });
+      2684 |
+      2685 |   it("groups env provisioning into target, variables, and provisioned sections", () => {
+
+      at Object.toBe (tests/unit/project-env-panel.test.tsx:2682:7)
+
+  ● Project env provisioning UI › updates target creation fields and env row controls
+
+    TypeError: Cannot read properties of undefined (reading 'click')
+
+      2722 |     act(() => {
+      2723 |       Array.from(rendered.container.querySelectorAll("button"))
+    > 2724 |         .find((button) => button.textContent === "Vercel frontend")!
+           |                                                  ^
+      2725 |         .click();
+      2726 |     });
+      2727 |     changeValue(
+
+      at tests/unit/project-env-panel.test.tsx:2724:50
+      at process.env.NODE_ENV.exports.act (node_modules/.pnpm/react@19.2.8/node_modules/react/cjs/react.development.js:814:22)
+      at Object.<anonymous> (tests/unit/project-env-panel.test.tsx:2722:8)
+
+  ● Project env provisioning UI › shows clean errors for env validation, provisioning, and deletion failures
+
+    TypeError: Cannot read properties of null (reading 'tagName')
+
+      223 |      */
+      224 |     const prototype =
+    > 225 |       element.tagName === "SELECT"
+          |               ^
+      226 |         ? HTMLSelectElement.prototype
+      227 |         : element.tagName === "TEXTAREA"
+      228 |           ? HTMLTextAreaElement.prototype
+
+      at tagName (tests/unit/project-env-panel.test.tsx:225:15)
+      at process.env.NODE_ENV.exports.act (node_modules/.pnpm/react@19.2.8/node_modules/react/cjs/react.development.js:814:22)
+      at changeValue (tests/unit/project-env-panel.test.tsx:214:6)
+      at Object.changeValue (tests/unit/project-env-panel.test.tsx:2835:5)
+
+  ● Project env provisioning UI › clears submitted values and shows metadata without secret values
+
+    TypeError: Cannot read properties of null (reading 'tagName')
+
+      223 |      */
+      224 |     const prototype =
+    > 225 |       element.tagName === "SELECT"
+          |               ^
+      226 |         ? HTMLSelectElement.prototype
+      227 |         : element.tagName === "TEXTAREA"
+      228 |           ? HTMLTextAreaElement.prototype
+
+      at tagName (tests/unit/project-env-panel.test.tsx:225:15)
+      at process.env.NODE_ENV.exports.act (node_modules/.pnpm/react@19.2.8/node_modules/react/cjs/react.development.js:814:22)
+      at changeValue (tests/unit/project-env-panel.test.tsx:214:6)
+      at Object.changeValue (tests/unit/project-env-panel.test.tsx:2937:5)
+
+  ● Project env provisioning UI › validates bulk .env text and clears parsed values before provisioning
+
+    TypeError: Cannot read properties of null (reading 'tagName')
+
+      223 |      */
+      224 |     const prototype =
+    > 225 |       element.tagName === "SELECT"
+          |               ^
+      226 |         ? HTMLSelectElement.prototype
+      227 |         : element.tagName === "TEXTAREA"
+      228 |           ? HTMLTextAreaElement.prototype
+
+      at tagName (tests/unit/project-env-panel.test.tsx:225:15)
+      at process.env.NODE_ENV.exports.act (node_modules/.pnpm/react@19.2.8/node_modules/react/cjs/react.development.js:814:22)
+      at changeValue (tests/unit/project-env-panel.test.tsx:214:6)
+      at Object.changeValue (tests/unit/project-env-panel.test.tsx:2975:5)
+
+
+Test Suites: 1 failed, 42 passed, 43 total
+Tests:       9 failed, 453 passed, 462 total
+Snapshots:   0 total
+Time:        66.876 s
+Ran all test suites.

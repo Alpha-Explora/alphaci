@@ -21,8 +21,8 @@ const mockedRemoveMember = removeWorkspaceMember as jest.MockedFunction<typeof r
 
 const leadWorkspace = {
   id: "workspace-1",
-  name: "Personal workspace",
-  kind: "personal" as const,
+  name: "Design team",
+  kind: "team" as const,
   role: "admin" as const,
 };
 

@@ -21,12 +21,6 @@ interface WorkflowCurrentTabProps {
   onOpenSetup: () => void;
   renderGroupCreate: (groupId: string, onComplete: () => void) => React.ReactNode;
   projects: ProvisionedProject[];
-  /**
-   * Login of the org every new repository must belong to. Used only to label
-   * already-attached repos outside this org as "External" — never to hide
-   * them, since existing external attachments stay untouched.
-   */
-  enforcedOrg?: string;
 }
 
 const cardVariants = {
@@ -38,50 +32,39 @@ const cardVariants = {
   },
 };
 
-function statusVariant(status: string): string {
-  if (status === "provisioned") return "provisioned";
-  if (status === "provisioning" || status === "pending") return "provisioning";
-  return "failed";
-}
-
 const GROUP_LIST_PAGE_SIZE = 8;
 
+/** One team. Every entry has a group now that the ungrouped bucket is gone. */
 interface GroupListEntry {
   key: string;
   name: string;
   description: string | null;
   projects: ProvisionedProject[];
-  /** Null for the ungrouped bucket — no group page to link to. */
-  groupId: string | null;
-  /** The full group summary (null for the ungrouped bucket). */
-  group: GroupSummary | null;
+  groupId: string;
+  group: GroupSummary;
 }
 
 /**
- * Current Projects — group-centric split pane. The left rail lists the user's
- * GROUPS (plus an "Ungrouped" bucket for personal/legacy projects); the right
- * pane lists the selected group's repositories. Creating a system in a group
- * provisions its repository, so each repo here is a system of the group. The
- * per-project detail tabs live on the full page (/projects/[id]) via
- * ProjectDetailTabs — "Open full page" is the way into them.
+ * Current Projects — team-centric split pane. The left rail lists the user's
+ * TEAMS; the right pane lists the selected team's repositories. Creating a
+ * system in a team provisions its repository, so each repo here is a system of
+ * the team. The per-project detail tabs live on the full page (/projects/[id])
+ * via ProjectDetailTabs — "Open full page" is the way into them.
+ *
+ * There is no individual/personal side any more. A workspace IS a team and
+ * every project belongs to one, so the old Repositories/Teams toggle addressed
+ * a bucket that could never fill — it advertised a capability and then reported
+ * that the reader had none of it.
  */
-function isExternalRepo(repoFullName: string, enforcedOrg?: string): boolean {
-  if (!enforcedOrg) return false;
-  return repoFullName.split("/")[0]?.toLowerCase() !== enforcedOrg.toLowerCase();
-}
-
 export function WorkflowCurrentTab({
   latestResult,
   loadingProjects,
   onOpenSetup,
   renderGroupCreate,
   projects,
-  enforcedOrg,
 }: Readonly<WorkflowCurrentTabProps>) {
   const [groups, setGroups] = useState<GroupSummary[] | null>(null);
   const [groupsError, setGroupsError] = useState<string | null>(null);
-  const [railMode, setRailMode] = useState<"groups" | "individual">("groups");
-  const [selectedIndividualProjectId, setSelectedIndividualProjectId] = useState<string | null>(null);
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
   const [groupListQuery, setGroupListQuery] = useState("");
   const [groupListPage, setGroupListPage] = useState(1);
@@ -121,18 +104,6 @@ export function WorkflowCurrentTab({
     return list;
   }, [groups, projects]);
 
-  const individualProjects = useMemo(() => {
-    const groupIds = new Set((groups ?? []).map((group) => group.id));
-    // isOwner is viewer-relative: without it, an admin/manager who can see a
-    // project via oversight visibility (not actual ownership) would have it
-    // fall into "individual repositories" alongside their own projects.
-    return projects.filter(
-      (project) =>
-        project.isOwner &&
-        (!project.workspaceId || !groupIds.has(project.workspaceId)),
-    );
-  }, [groups, projects]);
-
   const filteredEntries = useMemo(() => {
     const query = groupListQuery.trim().toLowerCase();
     if (!query) return entries;
@@ -166,9 +137,6 @@ export function WorkflowCurrentTab({
 
 
   const loading = loadingProjects || groups === null;
-  const selectedIndividualProject =
-    individualProjects.find((project) => project.id === selectedIndividualProjectId) ??
-    individualProjects[0] ?? null;
 
 
   return (
@@ -296,7 +264,7 @@ export function WorkflowCurrentTab({
             />
           ))}
         </div>
-      ) : entries.length === 0 && individualProjects.length === 0 ? (
+      ) : entries.length === 0 ? (
         <div
           className="glass-panel"
           style={{
@@ -370,45 +338,11 @@ export function WorkflowCurrentTab({
           <div className="project-list-rail">
             <aside
               className="project-list"
-              aria-label={railMode === "groups" ? "Teams" : "Repositories"}
+              aria-label="Teams"
               data-tour="projects-list"
             >
-              <div className="project-list-header">
-                <div className="rail-mode-switch" role="group" aria-label="Switch between repositories and teams">
-                  <button
-                    type="button"
-                    className={`rail-mode-label${railMode === "individual" ? " is-active" : ""}`}
-                    aria-pressed={railMode === "individual"}
-                    onClick={() => setRailMode("individual")}
-                  >
-                    Repositories
-                  </button>
-                  <button
-                    className={`project-ownership-toggle${railMode === "individual" ? " is-individual" : ""}`}
-                    type="button"
-                    role="switch"
-                    aria-checked={railMode === "individual"}
-                    aria-label={railMode === "individual" ? "Show team repositories" : "Show my repositories"}
-                    title={railMode === "individual" ? "Show team repositories" : "Show my repositories"}
-                    onClick={() => setRailMode((mode) => mode === "groups" ? "individual" : "groups")}
-                  >
-                    <span className="project-ownership-toggle__track" aria-hidden="true">
-                      <span className="project-ownership-toggle__thumb" />
-                    </span>
-                  </button>
-                  <button
-                    type="button"
-                    className={`rail-mode-label${railMode === "groups" ? " is-active" : ""}`}
-                    aria-pressed={railMode === "groups"}
-                    onClick={() => setRailMode("groups")}
-                  >
-                    Teams
-                  </button>
-                </div>
-              </div>
               <div className="project-list-body">
-                {railMode === "groups" ? (
-                  <>
+                <>
               <input
                 className="project-list-search"
                 aria-label="Search groups"
@@ -475,81 +409,11 @@ export function WorkflowCurrentTab({
                 </div>
               ) : null}
                 </>
-              ) : (
-                <>
-                  <p className="project-list-empty" style={{ marginBottom: "0.6rem" }}>Repositories you create for yourself.</p>
-                  {individualProjects.length === 0 ? (
-                    <div className="project-list-empty">
-                      No individual repositories yet.
-                      <button type="button" className="inline-link" onClick={onOpenSetup}>Create one</button>
-                    </div>
-                  ) : individualProjects.map((project) => {
-                    const selected = selectedIndividualProject?.id === project.id;
-                    return (
-                      <button
-                        key={project.id}
-                        className={`project-list-item${selected ? " selected" : ""}`}
-                        type="button"
-                        aria-pressed={selected}
-                        onClick={() => setSelectedIndividualProjectId(project.id)}
-                      >
-                        <span className="project-list-title">
-                          {project.repoFullName.split("/").at(-1) ?? project.repoFullName}
-                          {isExternalRepo(project.repoFullName, enforcedOrg) ? (
-                            <span className="project-status-badge external" style={{ marginLeft: "0.4rem" }}>External</span>
-                          ) : null}
-                        </span>
-                        <span className="project-list-meta">{project.status}</span>
-                      </button>
-                    );
-                  })}
-                  <button type="button" className="ghost-button" onClick={onOpenSetup} style={{ marginTop: "0.75rem", width: "100%" }}>
-                    Create individual repository
-                  </button>
-                </>
-                )}
               </div>
             </aside>
           </div>
           <div className="project-detail-column">
-            {railMode === "individual" ? (
-              <motion.article
-                key={selectedIndividualProject?.id ?? "individual-empty"}
-                variants={cardVariants}
-                initial="hidden"
-                animate="show"
-                className="project-detail-panel"
-              >
-                {selectedIndividualProject ? (
-                  <>
-                    <div className="project-detail-header">
-                      <div><h3>{selectedIndividualProject.repoFullName.split("/").at(-1) ?? selectedIndividualProject.repoFullName}</h3><p>Your individual repository. It is not owned by a group.</p></div>
-                      <span className="project-detail-header-badges">
-                        <span className={`project-status-badge ${statusVariant(selectedIndividualProject.status)}`}>{selectedIndividualProject.status}</span>
-                        {isExternalRepo(selectedIndividualProject.repoFullName, enforcedOrg) ? (
-                          <span className="project-status-badge external">External</span>
-                        ) : null}
-                      </span>
-                    </div>
-                    <div className="repo-individual-detail">
-                      <div><span>Repository</span><strong>{selectedIndividualProject.repoFullName}</strong></div>
-                      <div><span>Service</span><strong>{selectedIndividualProject.serviceName}</strong></div>
-                      <div><span>Workflow</span><strong>{selectedIndividualProject.workflowPath}</strong></div>
-                    </div>
-                    <div className="latest-result-banner__actions">
-                      {selectedIndividualProject.repoUrl ? <a className="latest-result-banner__action-btn latest-result-banner__action-btn--primary" href={selectedIndividualProject.repoUrl} target="_blank" rel="noreferrer">Open repository</a> : null}
-                      <Link className="latest-result-banner__action-btn" href={`/projects/${encodeURIComponent(selectedIndividualProject.id)}`}>Open project</Link>
-                    </div>
-                  </>
-                ) : (
-                  <div className="env-empty-state">
-                    <strong>Build something of your own</strong>
-                    <p>Create an individual repository without assigning it to a group.</p>
-                    <button type="button" className="primary-button" onClick={onOpenSetup}>Create individual repository</button>
-                  </div>
-                )}
-              </motion.article>
-            ) : selectedEntry ? (
+            {selectedEntry ? (
               <motion.article
                 key={selectedEntry.key}
                 variants={cardVariants}
@@ -577,73 +441,16 @@ export function WorkflowCurrentTab({
                   </span>
                 </div>
 
-                {selectedEntry.group ? (
-                  <GroupWorkspacePanel
-                    group={selectedEntry.group}
-                    projects={selectedEntry.projects}
-                    renderCreateProject={(onComplete) => renderGroupCreate(selectedEntry.group!.id, onComplete)}
-                    onDeleted={handleGroupDeleted}
-                  />
-                ) : selectedEntry.projects.length === 0 ? (
-                  <p className="env-empty-state">No projects here yet.</p>
-                ) : (
-                  // Ungrouped bucket: a plain list of the projects.
-                  <div className="env-metadata-list">
-                    {selectedEntry.projects.map((project) => (
-                      <div
-                        key={project.id}
-                        className="env-metadata-row provisioned"
-                        style={{ alignItems: "center", gap: "0.75rem" }}
-                      >
-                        <span style={{ minWidth: 0 }}>
-                          <strong style={{ wordBreak: "break-all" }}>
-                            {project.repoFullName}
-                          </strong>
-                          <br />
-                          <span
-                            style={{
-                              color: "var(--text-muted)",
-                              fontSize: "0.78rem",
-                            }}
-                          >
-                            {project.serviceName}
-                          </span>
-                        </span>
-                        <span
-                          style={{
-                            display: "flex",
-                            gap: "0.5rem",
-                            alignItems: "center",
-                            flexWrap: "wrap",
-                            justifyContent: "flex-end",
-                          }}
-                        >
-                          <span
-                            className={`project-status-badge ${statusVariant(project.status)}`}
-                          >
-                            {project.status}
-                          </span>
-                          {project.repoUrl ? (
-                            <a
-                              className="ghost-button target-action-btn"
-                              href={project.repoUrl}
-                              target="_blank"
-                              rel="noreferrer"
-                            >
-                              Repo <span aria-hidden="true">↗</span>
-                            </a>
-                          ) : null}
-                          <Link
-                            className="ghost-button target-action-btn"
-                            href={`/projects/${encodeURIComponent(project.id)}`}
-                          >
-                            Open full page <span aria-hidden="true">↗</span>
-                          </Link>
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                )}
+                {/* Every entry is a team — `entries` is built from the group
+                    list — so the panel is the only branch. The plain-list
+                    fallback that used to sit here served the Ungrouped bucket,
+                    which no longer exists. */}
+                <GroupWorkspacePanel
+                  group={selectedEntry.group}
+                  projects={selectedEntry.projects}
+                  renderCreateProject={(onComplete) => renderGroupCreate(selectedEntry.group.id, onComplete)}
+                  onDeleted={handleGroupDeleted}
+                />
               </motion.article>
             ) : null}
           </div>

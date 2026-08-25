@@ -29,6 +29,8 @@ export interface CapabilitiesViewModel {
   projectTargetManagementEnabled: boolean;
   ciRunTrackingEnabled: boolean;
   deploymentHistoryEnabled: boolean;
+  /** Gates the per-branch preview panel on Overview and Hosting. */
+  previewDeploymentsEnabled: boolean;
   driftDetectionEnabled: boolean;
   driftRepairEnabled: boolean;
   usageQuotasEnabled: boolean;
@@ -83,6 +85,7 @@ export function useCapabilitiesViewModel(): CapabilitiesViewModel {
     projectTargetManagementEnabled: capabilities?.projectTargetManagement?.enabled === true,
     ciRunTrackingEnabled: capabilities?.ciRunTracking?.enabled === true,
     deploymentHistoryEnabled: capabilities?.deploymentHistory?.enabled === true,
+    previewDeploymentsEnabled: capabilities?.previewDeployments?.enabled === true,
     driftDetectionEnabled: capabilities?.driftDetection?.enabled === true,
     driftRepairEnabled: capabilities?.driftRepair?.enabled === true,
     usageQuotasEnabled: capabilities?.usageQuotas?.enabled === true,

@@ -13,8 +13,12 @@ export { projectsRepository } from "./data/projects-repository";
 export type {
   DeploymentTarget,
   EnvEnvironment,
+  /* A lane is production-or-preview, distinct from the Render environment name
+   * — see the header of shared/api/contracts. The env panel needs both. */
+  EnvLane,
   EnvProvider,
   EnvTargetSlot,
+  EnvVarScope,
   EnvVarMetadata,
   ProjectAuditEventsResponse,
   ProjectCiRunsResponse,

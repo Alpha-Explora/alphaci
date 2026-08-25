@@ -5,7 +5,8 @@ import { FormEvent, useEffect, useMemo, useState } from "react";
 import { useCapabilities } from "@/features/capabilities/current";
 import { useProjectEnvProvisioning } from "../view-models/use-project-env-provisioning-view-model";
 import type {
-  EnvEnvironment,
+  EnvLane,
+  EnvVarScope,
   EnvProvider,
   DeploymentTarget,
   RenderRuntime,
@@ -101,8 +102,24 @@ function activeBranch(branchName: string | null | undefined): string {
   return branchName === "main" ? "main" : "uat";
 }
 
-function activeEnvironment(environment: EnvEnvironment): EnvEnvironment {
-  return environment === "test" ? "uat" : environment;
+/**
+ * Label for a lane/branch pair.
+ *
+ * Replaces activeEnvironment, which rewrote 'test' to 'uat' on the way to the
+ * screen. That rewrite existed because test and uat both wrote to one Vercel
+ * record, so showing both would have shown the same values twice — the lane
+ * model removes the collision instead of hiding it.
+ */
+function scopeLabel(scope: { lane: EnvLane; gitBranch: string | null }): string {
+  return scope.lane === "production" ? "production" : `preview: ${scope.gitBranch}`;
+}
+
+/** Stable value for the scope filter select. */
+function scopeFilterValue(scope: {
+  lane: EnvLane;
+  gitBranch: string | null;
+}): string {
+  return scope.lane === "production" ? "production" : `preview:${scope.gitBranch}`;
 }
 
 export function ProjectEnvPanel({
@@ -133,7 +150,11 @@ export function ProjectEnvPanel({
   const hosting = useMemo(() => hostingForProject(project), [project]);
   const provider = hosting.provider;
   const slot = hosting.slot;
-  const [environment, setEnvironment] = useState<EnvEnvironment>("uat");
+  const [lane, setLane] = useState<EnvLane>("preview");
+  // The branch a preview-lane write applies to. Defaults below to whichever
+  // branch the selected target tracks, which is the one the reader is looking
+  // at; it stays editable because a preview can exist for any branch.
+  const [previewBranch, setPreviewBranch] = useState("");
   const [projectName, setProjectName] = useState(`${project.serviceName}-uat`);
   const [providerProjectId, setProviderProjectId] = useState("");
   const [providerProjectName, setProviderProjectName] = useState(
@@ -153,9 +174,9 @@ export function ProjectEnvPanel({
   const [bulkValidation, setBulkValidation] =
     useState<ValidateEnvVarsResponse | null>(null);
   const [filterTargetId, setFilterTargetId] = useState("all");
-  const [filterEnvironment, setFilterEnvironment] = useState<
-    "all" | EnvEnvironment
-  >("all");
+  // A scope filter value, not an enum: the set of branches is open-ended, so
+  // the options are derived from what is provisioned (see presentScopes).
+  const [filterEnvironment, setFilterEnvironment] = useState<string>("all");
   const [filterStatus, setFilterStatus] = useState<
     "all" | EnvVarMetadata["status"]
   >("all");
@@ -164,6 +185,49 @@ export function ProjectEnvPanel({
 
   const activeTargetId = targetId || targets[0]?.id || "";
   const activeTarget = targets.find((target) => target.id === activeTargetId);
+
+  /** Branches to offer for a preview write: the ones targets already track. */
+  const knownBranches = useMemo(
+    () =>
+      [
+        ...new Set(
+          targets
+            .map((target) => target.branchName)
+            .filter((branch): branch is string => Boolean(branch)),
+        ),
+      ].sort(),
+    [targets],
+  );
+
+  /**
+   * The scope a write will land on.
+   *
+   * An untouched branch field means "the branch this target tracks" rather
+   * than an error, so switching target moves the default with it instead of
+   * making the reader retype what is already on screen.
+   */
+  const activeScope = useMemo<EnvVarScope>(() => {
+    if (lane === "production") {
+      return { lane: "production", gitBranch: null };
+    }
+    const branch = previewBranch.trim() || activeTarget?.branchName || "";
+    return { lane: "preview", gitBranch: branch || null };
+  }, [activeTarget?.branchName, lane, previewBranch]);
+
+  /** Scopes that actually have variables, for the filter select. */
+  const presentScopes = useMemo(() => {
+    const byValue = new Map<string, { value: string; label: string }>();
+    for (const item of metadata) {
+      byValue.set(scopeFilterValue(item), {
+        value: scopeFilterValue(item),
+        label: scopeLabel(item),
+      });
+    }
+    return [...byValue.values()].sort((a, b) =>
+      a.label.localeCompare(b.label),
+    );
+  }, [metadata]);
+
   const matchingConnections = providerConnections.filter(
     (connection) => connection.provider === provider,
   );
@@ -204,7 +268,7 @@ export function ProjectEnvPanel({
         return false;
       if (
         filterEnvironment !== "all" &&
-        activeEnvironment(item.environment) !== filterEnvironment
+        scopeFilterValue(item) !== filterEnvironment
       )
         return false;
       if (filterStatus !== "all" && item.status !== filterStatus) return false;
@@ -283,7 +347,7 @@ export function ProjectEnvPanel({
     try {
       await provision({
         deploymentTargetId: activeTargetId,
-        environment,
+        ...activeScope,
         vars: rows,
       });
       setRows([{ key: "", value: "" }]);
@@ -302,7 +366,7 @@ export function ProjectEnvPanel({
     try {
       const result = await validateEnvText({
         deploymentTargetId: activeTargetId,
-        environment,
+        ...activeScope,
         text: bulkEnvText,
       });
       setBulkValidation(result);
@@ -345,7 +409,8 @@ export function ProjectEnvPanel({
 
   function startReProvision(item: EnvVarMetadata) {
     setTargetId(item.deploymentTargetId);
-    setEnvironment(item.environment);
+    setLane(item.lane);
+    setPreviewBranch(item.gitBranch ?? "");
     setRows([{ key: item.key, value: "" }]);
     setIsAddingVariable(true);
     setMessage(`Re-enter the value for ${item.key} before provisioning.`);
@@ -558,23 +623,44 @@ export function ProjectEnvPanel({
             <div className="env-variable-subheader">
               <div>
                 <strong>Variables</strong>
-                <span>Add keys individually for this environment.</span>
+                <span>
+                  {lane === "production"
+                    ? "These values apply to the production branch."
+                    : "These values apply to this branch only."}
+                </span>
               </div>
-              <div className="env-environment-tabs" aria-label="Environment">
-                {(["uat", "production"] as EnvEnvironment[]).map((env) => (
+              <div className="env-environment-tabs" aria-label="Deployment lane">
+                {(["production", "preview"] as EnvLane[]).map((value) => (
                   <button
-                    key={env}
+                    key={value}
                     className={
-                      environment === env ? "primary-button" : "ghost-button"
+                      lane === value ? "primary-button" : "ghost-button"
                     }
                     type="button"
-                    onClick={() => setEnvironment(env)}
+                    onClick={() => setLane(value)}
                   >
-                    {env}
+                    {value === "production" ? "Production" : "Branch"}
                   </button>
                 ))}
               </div>
             </div>
+
+            {lane === "preview" ? (
+              <label className="env-branch-field">
+                <span>Branch</span>
+                <input
+                  list="env-known-branches"
+                  onChange={(event) => setPreviewBranch(event.target.value)}
+                  placeholder="feature/checkout"
+                  value={previewBranch}
+                />
+                <datalist id="env-known-branches">
+                  {knownBranches.map((branch) => (
+                    <option key={branch} value={branch} />
+                  ))}
+                </datalist>
+              </label>
+            ) : null}
 
             <div className="env-variable-column-labels" aria-hidden="true">
               <span>Key</span>
@@ -783,15 +869,16 @@ export function ProjectEnvPanel({
             <select
               aria-label="Filter environment"
               value={filterEnvironment}
-              onChange={(event) =>
-                setFilterEnvironment(
-                  event.target.value as "all" | EnvEnvironment,
-                )
-              }
+              onChange={(event) => setFilterEnvironment(event.target.value)}
             >
               <option value="all">All environments</option>
-              <option value="uat">uat</option>
-              <option value="production">production</option>
+              {/* Built from what is actually provisioned: the set of branches is
+                  open-ended, so a hardcoded list would go stale. */}
+              {presentScopes.map((scope) => (
+                <option key={scope.value} value={scope.value}>
+                  {scope.label}
+                </option>
+              ))}
             </select>
             <select
               aria-label="Filter status"
@@ -814,9 +901,7 @@ export function ProjectEnvPanel({
               <div key={item.id} className={`env-metadata-row ${item.status}`}>
                 <span>{item.key}</span>
                 <span>
-                  {targets.find((target) => target.id === item.deploymentTargetId)
-                    ?.branchName ?? "unknown branch"}{" "}
-                  - {activeEnvironment(item.environment)} - {item.status}
+                  {scopeLabel(item)} - {item.status}
                   {item.errorSummary
                     ? ` - ${cleanUserMessage(item.errorSummary)}`
                     : ""}

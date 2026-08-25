@@ -296,7 +296,7 @@ function DeleteGroupControl({
         title={`Delete "${group.name}"?`}
         description={
           projectCount > 0
-            ? `This permanently deletes the group and its membership. Its ${projectCount} ${projectCount === 1 ? "repository stays" : "repositories stay"} on GitHub and move to your individual repositories. This cannot be undone.`
+            ? `This permanently deletes the team and its membership. Its ${projectCount} ${projectCount === 1 ? "repository stays" : "repositories stay"} on GitHub, but ${projectCount === 1 ? "the project belongs" : "the projects belong"} to no team afterwards and will not be listed here. Move ${projectCount === 1 ? "it" : "them"} to another team first. This cannot be undone.`
             : "This permanently deletes the group, its membership, and its systems. This cannot be undone."
         }
         submitLabel="Delete group"
@@ -558,8 +558,9 @@ function Settings({
         <div>
           <strong>Delete this team</strong>
           <p>
-            Removes the team and its membership. Its repositories stay on GitHub
-            and move to your individual repositories.
+            Removes the team and its membership. Its repositories stay on
+            GitHub, but the projects end up belonging to no team and stop being
+            listed here — move them to another team first.
           </p>
         </div>
         <DeleteGroupControl
