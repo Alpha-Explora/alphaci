@@ -8,6 +8,7 @@ import {
   type WorkspaceAppRole,
   type WorkspacesMeResponse,
 } from "../model/workspace-types";
+import type { WorkspaceSelectionStatus } from "../view-models/use-workspace-selection-view-model";
 import { useWorkspaceSelection } from "./workspace-selection-context";
 
 /**
@@ -32,10 +33,21 @@ const CREATE = "__create__";
 export function WorkspaceSwitcher({
   workspaces,
   appRole,
+  status = "ready",
+  onRetry,
   onWorkspaceCreated,
 }: Readonly<{
   workspaces: WorkspacesMeResponse | null;
   appRole?: WorkspaceAppRole | null;
+  /**
+   * Load state, so a failed fetch can say so instead of vanishing.
+   * `enabled: false` reaches this component for two very different reasons —
+   * the feature is switched off, or the request failed — and only the status
+   * tells them apart.
+   */
+  status?: WorkspaceSelectionStatus;
+  /** Re-runs the failed load, so the error state is recoverable in place. */
+  onRetry?: () => void;
   /** Lets the owner of the workspace list re-fetch after a create. */
   onWorkspaceCreated?: (workspaceId: string) => void;
 }>) {
@@ -51,8 +63,48 @@ export function WorkspaceSwitcher({
     items[0] ??
     null;
 
-  if (workspaces?.enabled === false || (items.length === 0 && !canCreate)) {
+  /* The header slot keeps its place in every state.
+   *
+   * It used to return null whenever anything was less than perfect, so a
+   * failed request looked exactly like a feature that was switched off, and
+   * both looked like a UI that had lost its workspace control. A team lead
+   * reported the dropdown as "missing" for precisely this reason. */
+
+  if (status === "error") {
+    return (
+      <div className="team-switcher team-switcher--notice" role="status">
+        <span>Workspaces unavailable</span>
+        {onRetry ? (
+          <button type="button" className="inline-link" onClick={onRetry}>
+            Retry
+          </button>
+        ) : null}
+      </div>
+    );
+  }
+
+  // Genuinely switched off by configuration — there is no workspace concept to
+  // show, which is different from having none.
+  if (workspaces?.enabled === false) {
     return null;
+  }
+
+  if (status === "loading" || workspaces === null) {
+    return (
+      <div className="team-switcher team-switcher--notice" aria-hidden="true">
+        <span>Loading workspaces…</span>
+      </div>
+    );
+  }
+
+  /* Belongs to no team and cannot make one — say so rather than disappear.
+   * The action here is somebody else's, so there is no button to offer. */
+  if (items.length === 0 && !canCreate) {
+    return (
+      <div className="team-switcher team-switcher--notice" role="status">
+        <span>No team yet</span>
+      </div>
+    );
   }
 
   /* No workspaces yet, but this caller may make one. A <select> whose only

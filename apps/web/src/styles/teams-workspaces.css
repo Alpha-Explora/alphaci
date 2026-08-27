@@ -196,6 +196,19 @@
   min-width: 0;
 }
 
+/* Non-interactive header states — loading, unavailable, or belonging to no
+   team. The slot keeps its footprint so the header does not reflow as the
+   workspace list resolves. */
+.team-switcher--notice {
+  gap: 0.4rem;
+  padding: 0.36rem 0.6rem;
+  border: 1px solid var(--border-soft);
+  border-radius: 0.5rem;
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  white-space: nowrap;
+}
+
 /* Shown in place of the picker when the caller belongs to no workspace yet.
    Sized to sit on the header row rather than inherit the primary button's
    full page-action height. */
