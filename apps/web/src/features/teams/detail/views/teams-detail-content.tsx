@@ -7,6 +7,11 @@ import { FlowBackground } from "@/shared/layout/flow-background";
 import { GroupWorkspacePanel } from "./group-workspace-panel";
 import type { useAuthSession } from "@/features/auth/session";
 
+import {
+  canCreateWorkspace,
+  useWorkspaceSelection,
+} from "@/features/workspace/selection";
+
 import { memberCountLabel } from "../../model/teams-rules";
 import { useTeamsDetailViewModel } from "../view-models/use-teams-detail-view-model";
 import { TeamsEmptyState } from "./teams-empty-state";
@@ -38,6 +43,7 @@ export function TeamsDetailContent({
   enabled: boolean;
 }>) {
   const vm = useTeamsDetailViewModel({ guest, enabled });
+  const { setSelectedWorkspaceId } = useWorkspaceSelection();
 
   return (
     <main className="dash-shell" suppressHydrationWarning>
@@ -117,7 +123,15 @@ export function TeamsDetailContent({
             />
           </div>
         ) : (
-          <TeamsEmptyState />
+          <TeamsEmptyState
+            canCreate={canCreateWorkspace(session?.appRole)}
+            onCreated={(workspaceId) => {
+              // Select it and reload, so the page fills in with the new team
+              // instead of continuing to say the caller has none.
+              setSelectedWorkspaceId(workspaceId);
+              vm.reload();
+            }}
+          />
         )}
       </div>
     </main>

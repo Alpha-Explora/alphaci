@@ -55,6 +55,34 @@ export function WorkspaceSwitcher({
     return null;
   }
 
+  /* No workspaces yet, but this caller may make one. A <select> whose only
+   * entry is an action is not a picker — there is nothing to pick between, and
+   * the affordance reads as an empty control rather than a thing to press. The
+   * button says what it does. Leads land here on their first sign-in, so this
+   * is the first thing they see. */
+  if (items.length === 0) {
+    return (
+      <div className="team-switcher">
+        <button
+          type="button"
+          className="primary-button team-switcher-create"
+          data-testid="create-workspace-button"
+          onClick={() => setCreateOpen(true)}
+        >
+          + Create workspace
+        </button>
+        <CreateGroupDialog
+          open={createOpen}
+          onClose={() => setCreateOpen(false)}
+          onCreated={(group) => {
+            setSelectedWorkspaceId(group.id);
+            onWorkspaceCreated?.(group.id);
+          }}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="team-switcher">
       <label className="team-switcher-field">

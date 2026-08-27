@@ -196,6 +196,16 @@
   min-width: 0;
 }
 
+/* Shown in place of the picker when the caller belongs to no workspace yet.
+   Sized to sit on the header row rather than inherit the primary button's
+   full page-action height. */
+.team-switcher-create {
+  padding: 0.36rem 0.75rem;
+  font-size: 0.8rem;
+  white-space: nowrap;
+  min-height: 0;
+}
+
 .team-switcher-field {
   display: flex;
   min-width: 0;
