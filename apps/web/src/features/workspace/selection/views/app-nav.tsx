@@ -338,6 +338,8 @@ export function AppNav({
             <WorkspaceSwitcher
               workspaces={workspaceVm.workspaces}
               appRole={appRole}
+              status={workspaceVm.status}
+              onRetry={loadWorkspaces}
               onWorkspaceCreated={loadWorkspaces}
             />
           )}

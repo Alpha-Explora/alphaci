@@ -1,7 +1,30 @@
 "use client";
 
-/** Shown when the caller belongs to no team at all. */
-export function TeamsEmptyState() {
+import { useState } from "react";
+
+import { CreateGroupDialog } from "@/features/groups/create";
+
+/**
+ * Shown when the caller belongs to no team at all.
+ *
+ * A Lead or Admin gets the button here, not a sentence pointing at the header.
+ * This is the screen they land on with nothing to their name, so the one action
+ * that resolves the state belongs on it — telling someone where else to click
+ * is a worse answer than letting them click.
+ *
+ * A Developer keeps the explanatory copy, because for them the resolution
+ * genuinely is somebody else adding them.
+ */
+export function TeamsEmptyState({
+  canCreate = false,
+  onCreated,
+}: Readonly<{
+  canCreate?: boolean;
+  /** Lets the page reload itself once the workspace exists. */
+  onCreated?: (workspaceId: string) => void;
+}>) {
+  const [createOpen, setCreateOpen] = useState(false);
+
   return (
     <div
       className="glass-panel"
@@ -32,10 +55,29 @@ export function TeamsEmptyState() {
           maxWidth: "32rem",
         }}
       >
-        Use <strong>+ Create workspace</strong> in the header to make one — a
-        workspace is a team. If you expect to be in one already, a team lead has
-        to add you.
+        {canCreate
+          ? "A workspace is a team. Create one to start adding people and projects to it."
+          : "A team lead has to add you to one. Once they do, their projects appear here."}
       </p>
+
+      {canCreate ? (
+        <>
+          <button
+            type="button"
+            className="primary-button"
+            data-testid="teams-create-workspace-button"
+            style={{ marginTop: "0.5rem" }}
+            onClick={() => setCreateOpen(true)}
+          >
+            + Create workspace
+          </button>
+          <CreateGroupDialog
+            open={createOpen}
+            onClose={() => setCreateOpen(false)}
+            onCreated={(group) => onCreated?.(group.id)}
+          />
+        </>
+      ) : null}
     </div>
   );
 }
