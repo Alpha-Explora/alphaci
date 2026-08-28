@@ -150,6 +150,91 @@ describe("WorkspaceSwitcher", () => {
     ).toBeNull();
     expect(container.querySelector("select")).toBeNull();
     expect(container.textContent).toContain("No team yet");
+    /* The role it thinks you have is the whole point of this state: it is what
+     * separates "you really have no team" from "your role was misjudged". */
+    expect(container.textContent).toContain("Developer");
+  });
+
+  /* The reason this state exists at all. A Lead who is misidentified as a
+   * Developer lands here instead of on the create button, and the two are
+   * indistinguishable unless the notice says which role it acted on. This is
+   * the exact shape of the "cannot see the workspace dropdown" report. */
+  it("names the role it acted on, so a misjudged lead is visible", () => {
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    root = createRoot(container);
+
+    act(() => {
+      root!.render(
+        <WorkspaceProvider>
+          <WorkspaceSwitcher
+            workspaces={{ enabled: true, items: [] }}
+            appRole="member"
+            onRetry={() => undefined}
+          />
+        </WorkspaceProvider>,
+      );
+    });
+
+    expect(container.textContent).toContain("Signed in as Developer");
+  });
+
+  /* An admin adding you to a team is the common exit from this state, and it
+   * happens on someone else's screen. Re-reading the list in place beats
+   * telling the user to reload a page they have no reason to suspect. */
+  it("offers a re-check that re-reads the team list", () => {
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    root = createRoot(container);
+    const onRetry = jest.fn();
+
+    act(() => {
+      root!.render(
+        <WorkspaceProvider>
+          <WorkspaceSwitcher
+            workspaces={{ enabled: true, items: [] }}
+            appRole="member"
+            onRetry={onRetry}
+          />
+        </WorkspaceProvider>,
+      );
+    });
+
+    const button = Array.from(container.querySelectorAll("button")).find(
+      (candidate) => candidate.textContent === "Check again",
+    );
+    expect(button).toBeDefined();
+
+    act(() => {
+      button!.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+
+    expect(onRetry).toHaveBeenCalledTimes(1);
+  });
+
+  /* A Lead must still get the button, never this notice — that is the
+   * behaviour the whole fix exists to protect. */
+  it("never shows the no-team notice to a lead", () => {
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    root = createRoot(container);
+
+    act(() => {
+      root!.render(
+        <WorkspaceProvider>
+          <WorkspaceSwitcher
+            workspaces={{ enabled: true, items: [] }}
+            appRole="lead"
+            onRetry={() => undefined}
+          />
+        </WorkspaceProvider>,
+      );
+    });
+
+    expect(container.textContent).not.toContain("No team yet");
+    expect(
+      container.querySelector('[data-testid="create-workspace-button"]'),
+    ).not.toBeNull();
   });
 
   /* A failed request used to render exactly like a disabled feature: nothing

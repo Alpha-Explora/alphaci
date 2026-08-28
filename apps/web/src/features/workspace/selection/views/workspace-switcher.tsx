@@ -4,6 +4,7 @@ import { useState } from "react";
 
 import { CreateGroupDialog } from "@/features/groups/create";
 import {
+  APP_ROLE_BADGE_LABELS,
   canCreateWorkspace,
   type WorkspaceAppRole,
   type WorkspacesMeResponse,
@@ -97,12 +98,32 @@ export function WorkspaceSwitcher({
     );
   }
 
-  /* Belongs to no team and cannot make one — say so rather than disappear.
-   * The action here is somebody else's, so there is no button to offer. */
+  /* Belongs to no team and cannot make one.
+   *
+   * Creating a workspace is a Lead/Admin action, so the way out of this state
+   * is somebody else's — hence no create button. But "No team yet" on its own
+   * was still a dead end, and a misleading one: it is also what a genuine Lead
+   * sees when the app has misjudged their role, which is exactly how a Lead
+   * came to be reported as "cannot see the workspace dropdown". The two causes
+   * look identical and the message named neither.
+   *
+   * So this state now answers both questions it used to raise. The role label
+   * is the tell — a Lead reading "Developer" here can see in one glance that
+   * the problem is their role and not their teams, and say so. "Check again"
+   * re-reads the TEAM LIST (not the role), which is the common case: an admin
+   * has just added them and a reload should not be the way to find out. */
   if (items.length === 0 && !canCreate) {
     return (
       <div className="team-switcher team-switcher--notice" role="status">
-        <span>No team yet</span>
+        <span>No team yet — ask an admin to add you to one</span>
+        <span className="team-switcher-role-hint">
+          Signed in as {APP_ROLE_BADGE_LABELS[appRole ?? "member"]}
+        </span>
+        {onRetry ? (
+          <button type="button" className="inline-link" onClick={onRetry}>
+            Check again
+          </button>
+        ) : null}
       </div>
     );
   }
