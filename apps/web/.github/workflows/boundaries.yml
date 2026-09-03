@@ -65,6 +65,9 @@ jobs:
       - name: Feature architecture
         run: npm run arch:check
 
+      - name: Documentation
+        run: npm run check:documentation
+
       - name: Typecheck
         run: npm run typecheck
 
