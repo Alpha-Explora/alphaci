@@ -1,9 +1,5 @@
 "use client";
 
-/* Catalog defaults are intentionally reconciled in effects to preserve the
- * current selection semantics while the hook is feature-owned. */
-/* eslint-disable react-hooks/set-state-in-effect */
-
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { getProjectOptions } from "@/features/workflows/studio/data/catalog-api";

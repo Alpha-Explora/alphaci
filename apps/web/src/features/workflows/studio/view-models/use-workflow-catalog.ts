@@ -1,8 +1,5 @@
 "use client";
 
-/* Preserve the catalog's selection reconciliation semantics. */
-/* eslint-disable react-hooks/set-state-in-effect */
-
 import { useEffect, useMemo, useState } from "react";
 
 import { getCategories, getTemplates } from "@/features/workflows/studio/data/catalog-api";

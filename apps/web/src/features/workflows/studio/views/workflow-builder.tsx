@@ -115,7 +115,6 @@ function WorkflowStudioGuideLinks({
 
 function sendGuestToSignup() {
   // Guest CTAs leave the studio with a full navigation, matching the original hop.
-  // eslint-disable-next-line @next/next/no-location-assign-relative-destination -- original guest signup hop
   window.location.assign("/signup");
 }
 

@@ -1,9 +1,5 @@
 "use client";
 
-/* Preserve the member list's loading transition when the selected workspace
- * changes. */
-/* eslint-disable react-hooks/set-state-in-effect */
-
 import { useEffect, useMemo, useState } from "react";
 
 import { canManageWorkspaceMembers } from "../../model/settings-rules";

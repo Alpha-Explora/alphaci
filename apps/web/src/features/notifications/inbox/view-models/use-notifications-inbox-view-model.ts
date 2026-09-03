@@ -1,8 +1,5 @@
 "use client";
 
-/* The inbox probe keeps its loading transition synchronous with activation. */
-/* eslint-disable react-hooks/set-state-in-effect */
-
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { notificationsRepository } from "../../data/notifications-repository";

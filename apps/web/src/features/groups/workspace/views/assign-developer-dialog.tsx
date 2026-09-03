@@ -1,8 +1,5 @@
 "use client";
 
-/* Preserve the existing open-triggered member lookup transition. */
-/* eslint-disable react-hooks/set-state-in-effect */
-
 import { useEffect, useState } from "react";
 
 import { createRepositoryAssignment, getGroupMembers } from "@/features/groups";

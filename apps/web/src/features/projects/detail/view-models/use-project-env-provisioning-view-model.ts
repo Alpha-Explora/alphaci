@@ -1,9 +1,5 @@
 "use client";
 
-/* Preserve the existing provisioning probe timing while keeping its I/O in
- * the feature ViewModel. */
-/* eslint-disable react-hooks/set-state-in-effect */
-
 import { useCallback, useEffect, useState } from "react";
 
 import {

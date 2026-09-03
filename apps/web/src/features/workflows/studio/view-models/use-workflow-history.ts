@@ -1,8 +1,5 @@
 "use client";
 
-/* Preserve the history probe's initial transition. */
-/* eslint-disable react-hooks/set-state-in-effect */
-
 import { useCallback, useEffect, useState } from "react";
 
 import { getWorkflowHistory } from "@/features/workflows/studio/data/workflows-api";

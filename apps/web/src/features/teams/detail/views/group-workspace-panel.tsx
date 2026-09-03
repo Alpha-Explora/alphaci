@@ -1,8 +1,5 @@
 "use client";
 
-/* Preserve the pagination reset that accompanies a refreshed activity page. */
-/* eslint-disable react-hooks/set-state-in-effect */
-
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import Link from "next/link";
 
