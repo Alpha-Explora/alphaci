@@ -17,6 +17,18 @@ import { useWorkspaceSelection } from "./workspace-selection-context";
  */
 const CREATE = "__create__";
 
+function findCurrentWorkspace(
+  items: WorkspacesMeResponse["items"],
+  selectedWorkspaceId: string | null,
+  selectedWorkspace: WorkspacesMeResponse["items"][number] | null,
+) {
+  return items.find((workspace) => workspace.id === selectedWorkspaceId) ?? selectedWorkspace ?? items[0] ?? null;
+}
+
+function shouldHideSwitcher(workspaces: WorkspacesMeResponse | null, itemCount: number, canCreate: boolean) {
+  return workspaces?.enabled === false || (itemCount === 0 && !canCreate);
+}
+
 /**
  * The workspace picker, in the header.
  *
@@ -45,13 +57,9 @@ export function WorkspaceSwitcher({
 
   const items = workspaces?.items ?? [];
   const canCreate = canCreateWorkspace(appRole);
-  const current =
-    items.find((workspace) => workspace.id === selectedWorkspaceId) ??
-    selectedWorkspace ??
-    items[0] ??
-    null;
+  const current = findCurrentWorkspace(items, selectedWorkspaceId, selectedWorkspace);
 
-  if (workspaces?.enabled === false || (items.length === 0 && !canCreate)) {
+  if (shouldHideSwitcher(workspaces, items.length, canCreate)) {
     return null;
   }
 

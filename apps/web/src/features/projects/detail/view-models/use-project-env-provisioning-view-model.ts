@@ -21,13 +21,16 @@ import type {
   EnvVarMetadata,
   ProviderConnection,
   ProvisionEnvVarsRequest,
+  UsageLimitItem,
   ValidateEnvVarsRequest,
 } from "@/shared/api/contracts";
+import { getMyUsage } from "../data/usage-api";
 
 export function useProjectEnvProvisioning(projectId: string, enabled = true) {
   const [targets, setTargets] = useState<DeploymentTarget[]>([]);
   const [metadata, setMetadata] = useState<EnvVarMetadata[]>([]);
   const [providerConnections, setProviderConnections] = useState<ProviderConnection[]>([]);
+  const [usageItems, setUsageItems] = useState<UsageLimitItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
 
@@ -51,6 +54,24 @@ export function useProjectEnvProvisioning(projectId: string, enabled = true) {
   useEffect(() => {
     void load();
   }, [load]);
+
+  useEffect(() => {
+    let cancelled = false;
+    void getMyUsage()
+      .then((usage) => {
+        if (!cancelled && usage.enabled) {
+          setUsageItems(usage.items);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setUsageItems([]);
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   async function addTarget(payload: CreateDeploymentTargetRequest) {
     setSaving(true);
@@ -99,6 +120,7 @@ export function useProjectEnvProvisioning(projectId: string, enabled = true) {
     removeMetadata,
     saving,
     targets,
+    usageItems,
     validateEnvText,
   };
 }

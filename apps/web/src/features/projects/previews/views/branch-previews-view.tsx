@@ -21,6 +21,27 @@ export function BranchPreviewsView({
   limit,
   moreHref,
 }: Readonly<BranchPreviewsViewProps>) {
+  const unavailable = previewUnavailableState(previews, status, error);
+  if (unavailable) return unavailable;
+
+  const readyPreviews = previews as ProjectPreviewsResponse;
+  const shown = typeof limit === "number" ? readyPreviews.branches.slice(0, limit) : readyPreviews.branches;
+  const hidden = readyPreviews.branches.length - shown.length;
+
+  return (
+    <div className="branch-previews">
+      {readyPreviews.providerError ? <p className="branch-previews__error">{readyPreviews.providerError}</p> : null}
+      {shown.map((preview) => <BranchPreviewCard key={previewKey(preview)} preview={preview} />)}
+      {hidden > 0 ? <MoreBranches hidden={hidden} moreHref={moreHref} /> : null}
+    </div>
+  );
+}
+
+function previewUnavailableState(
+  previews: ProjectPreviewsResponse | null,
+  status: BranchPreviewsViewProps["status"],
+  error: string | null,
+) {
   if (status === "error") {
     return <p className="branch-previews__error">{error}</p>;
   }
@@ -56,28 +77,9 @@ export function BranchPreviewsView({
       </p>
     );
   }
+  return null;
+}
 
-  const shown =
-    typeof limit === "number"
-      ? previews.branches.slice(0, limit)
-      : previews.branches;
-  const hidden = previews.branches.length - shown.length;
-
-  return (
-    <div className="branch-previews">
-      {/* A partial list is worth showing, but not worth presenting as whole. */}
-      {previews.providerError ? (
-        <p className="branch-previews__error">{previews.providerError}</p>
-      ) : null}
-      {shown.map((preview) => (
-        <BranchPreviewCard key={previewKey(preview)} preview={preview} />
-      ))}
-      {hidden > 0 ? (
-        <p className="branch-previews__more">
-          {hidden} more {hidden === 1 ? "branch" : "branches"}
-          {moreHref ? ` in ${moreHref}` : ""}.
-        </p>
-      ) : null}
-    </div>
-  );
+function MoreBranches({ hidden, moreHref }: Readonly<{ hidden: number; moreHref?: string }>) {
+  return <p className="branch-previews__more">{hidden} more {hidden === 1 ? "branch" : "branches"}{moreHref ? ` in ${moreHref}` : ""}.</p>;
 }

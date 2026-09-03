@@ -20,3 +20,27 @@ export function projectStatusVariant(status: string): string {
 export function repoShortName(repoFullName: string): string {
   return repoFullName.split("/")[1] ?? repoFullName;
 }
+
+export function groupDisplayName(group: { name: string } | null | undefined): string {
+  return group?.name ?? "Group";
+}
+
+export function shouldShowAssignmentReconcile(
+  canManage: boolean,
+  assignmentStatus: string,
+  syncState: string | undefined,
+): boolean {
+  if (!canManage) return false;
+  if (assignmentStatus === "failed") return true;
+  return syncState === "failed" || syncState === "drift_detected";
+}
+
+export function shouldShowAssignmentRevoke(
+  canManage: boolean,
+  desiredState: string,
+  assignmentStatus: string,
+): boolean {
+  if (!canManage) return false;
+  if (desiredState !== "assigned") return false;
+  return assignmentStatus !== "revoked";
+}

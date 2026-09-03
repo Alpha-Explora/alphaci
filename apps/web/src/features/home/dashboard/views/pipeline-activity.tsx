@@ -239,68 +239,8 @@ export function PipelineActivity({
 
       {/* Operational signal folded in from the retired scope banner:
          the one line answering "is anything wrong?". */}
-      <div className="runs-hero-status" role="status">
-        {loading ? (
-          <span className="runs-hero-signal runs-hero-signal--idle">
-            Refreshing signals…
-          </span>
-        ) : attentionItems.length ? (
-          attentionItems.map((item) => (
-            <Link
-              key={item.label}
-              href={item.href}
-              className={`runs-hero-chip runs-hero-chip--${item.tone}`}
-              title={item.detail}
-            >
-              <span className="runs-hero-chip-dot" aria-hidden="true" />
-              {item.label}
-              <span aria-hidden="true">→</span>
-            </Link>
-          ))
-        ) : (
-          <span className="runs-hero-signal">
-            <span className="runs-hero-chip-dot" aria-hidden="true" />
-            All systems operational
-          </span>
-        )}
-      </div>
-
-      {loading ? (
-        <div className="runs-stream">
-          <RunCardSkeleton />
-          <RunCardSkeleton />
-        </div>
-      ) : latest ? (
-        <motion.div
-          className="runs-stream"
-          variants={reduced ? undefined : runListVariants}
-          initial={reduced ? false : "hidden"}
-          animate="visible"
-        >
-          <RunActivityCard run={latest} reduced={reduced} featured />
-          {rest.map((run) => (
-            <RunActivityCard key={run.runId} run={run} reduced={reduced} />
-          ))}
-        </motion.div>
-      ) : (
-        <div className="runs-stream">
-          <Link href="/workflows?tab=setup" className="runs-empty">
-            <span className="runs-empty-icon" aria-hidden="true">
-              <QuickActionRunIcon />
-            </span>
-            <span>
-              <strong>No runs yet</strong>
-              <small>
-                Push to a provisioned repository and its per-stage status
-                streams in here live.
-              </small>
-            </span>
-            <span className="dashboard-row-arrow" aria-hidden="true">
-              →
-            </span>
-          </Link>
-        </div>
-      )}
+      <PipelineSignals loading={loading} attentionItems={attentionItems} />
+      <RunsStream loading={loading} latest={latest} rest={rest} reduced={reduced} />
 
       {/* Recent outcomes sparkline pinned at the foot of the hero. */}
       <div className="runs-outcomes ops-block">
@@ -309,5 +249,21 @@ export function PipelineActivity({
       </div>
     </motion.section>
   );
+}
+
+function PipelineSignals({ loading, attentionItems }: Readonly<{ loading: boolean; attentionItems: AttentionItem[] }>) {
+  if (loading) return <div className="runs-hero-status" role="status"><span className="runs-hero-signal runs-hero-signal--idle">Refreshing signals…</span></div>;
+  if (attentionItems.length) return <div className="runs-hero-status" role="status">{attentionItems.map((item) => <Link key={item.label} href={item.href} className={`runs-hero-chip runs-hero-chip--${item.tone}`} title={item.detail}><span className="runs-hero-chip-dot" aria-hidden="true" />{item.label}<span aria-hidden="true">→</span></Link>)}</div>;
+  return <div className="runs-hero-status" role="status"><span className="runs-hero-signal"><span className="runs-hero-chip-dot" aria-hidden="true" />All systems operational</span></div>;
+}
+
+function RunsStream({ loading, latest, rest, reduced }: Readonly<{ loading: boolean; latest: RunGroup | null; rest: RunGroup[]; reduced: boolean | null }>) {
+  if (loading) return <div className="runs-stream"><RunCardSkeleton /><RunCardSkeleton /></div>;
+  if (!latest) return <EmptyRuns />;
+  return <motion.div className="runs-stream" variants={reduced ? undefined : runListVariants} initial={reduced ? false : "hidden"} animate="visible"><RunActivityCard run={latest} reduced={reduced} featured />{rest.map((run) => <RunActivityCard key={run.runId} run={run} reduced={reduced} />)}</motion.div>;
+}
+
+function EmptyRuns() {
+  return <div className="runs-stream"><Link href="/workflows?tab=setup" className="runs-empty"><span className="runs-empty-icon" aria-hidden="true"><QuickActionRunIcon /></span><span><strong>No runs yet</strong><small>Push to a provisioned repository and its per-stage status streams in here live.</small></span><span className="dashboard-row-arrow" aria-hidden="true">→</span></Link></div>;
 }
 

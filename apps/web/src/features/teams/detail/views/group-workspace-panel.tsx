@@ -3,7 +3,7 @@
 /* Preserve the pagination reset that accompanies a refreshed activity page. */
 /* eslint-disable react-hooks/set-state-in-effect */
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import Link from "next/link";
 
 import { useApiResource } from "@/features/groups";
@@ -312,6 +312,224 @@ function DeleteGroupControl({
   );
 }
 
+function memberDisplayName(member: GroupMember | undefined): string {
+  return member?.name || member?.login || "";
+}
+
+function TeamDetailsSettings({
+  name,
+  description,
+  saving,
+  dirty,
+  onChangeName,
+  onChangeDescription,
+  onSave,
+}: Readonly<{
+  name: string;
+  description: string;
+  saving: boolean;
+  dirty: boolean;
+  onChangeName: (value: string) => void;
+  onChangeDescription: (value: string) => void;
+  onSave: () => void;
+}>) {
+  return (
+    <section className="team-settings__block">
+      <h4>Details</h4>
+      <label className="hier-field">
+        <span className="hier-field-label">Name</span>
+        <input
+          className="premium-input"
+          value={name}
+          onChange={(event) => onChangeName(event.target.value)}
+          disabled={saving}
+        />
+      </label>
+      <label className="hier-field">
+        <span className="hier-field-label">Description</span>
+        <textarea
+          className="premium-input"
+          rows={2}
+          value={description}
+          onChange={(event) => onChangeDescription(event.target.value)}
+          disabled={saving}
+        />
+      </label>
+      <div className="team-settings__actions">
+        <button
+          type="button"
+          className="primary-button group-section-action"
+          disabled={saving || !dirty}
+          onClick={onSave}
+        >
+          {saving ? "Saving…" : "Save changes"}
+        </button>
+      </div>
+    </section>
+  );
+}
+
+function TeamLeadPicker({
+  candidates,
+  transferTo,
+  onChangeTransferTo,
+  onAskConfirm,
+}: Readonly<{
+  candidates: GroupMember[];
+  transferTo: string;
+  onChangeTransferTo: (value: string) => void;
+  onAskConfirm: () => void;
+}>) {
+  return (
+    <div className="team-settings__actions">
+      <select
+        className="ws-select"
+        value={transferTo}
+        onChange={(event) => onChangeTransferTo(event.target.value)}
+      >
+        <option value="">Choose a member…</option>
+        {candidates.map((member) => (
+          <option key={member.userId} value={member.userId}>
+            {memberDisplayName(member)}
+          </option>
+        ))}
+      </select>
+      <button
+        type="button"
+        className="ghost-button group-section-action"
+        disabled={!transferTo}
+        onClick={onAskConfirm}
+      >
+        Transfer lead
+      </button>
+    </div>
+  );
+}
+
+function TeamLeadConfirm({
+  label,
+  busy,
+  onConfirm,
+  onCancel,
+}: Readonly<{
+  label: string;
+  busy: boolean;
+  onConfirm: () => void;
+  onCancel: () => void;
+}>) {
+  return (
+    <div className="team-settings__actions">
+      <span className="team-settings__lede">
+        Hand the team to <strong>{label}</strong>?
+      </span>
+      <button
+        type="button"
+        className="confirm-btn-danger group-section-action"
+        disabled={busy}
+        onClick={onConfirm}
+      >
+        {busy ? "Transferring…" : "Yes, transfer"}
+      </button>
+      <button
+        type="button"
+        className="ghost-button group-section-action"
+        onClick={onCancel}
+      >
+        Cancel
+      </button>
+    </div>
+  );
+}
+
+function TeamLeadSettings({
+  candidates,
+  transferTo,
+  confirmTransfer,
+  busy,
+  onChangeTransferTo,
+  onAskConfirm,
+  onConfirm,
+  onCancel,
+}: Readonly<{
+  candidates: GroupMember[];
+  transferTo: string;
+  confirmTransfer: boolean;
+  busy: boolean;
+  onChangeTransferTo: (value: string) => void;
+  onAskConfirm: () => void;
+  onConfirm: () => void;
+  onCancel: () => void;
+}>) {
+  let body: ReactNode = (
+    <p className="team-settings__lede">
+      There is nobody to transfer to yet. Add another member first.
+    </p>
+  );
+  if (candidates.length > 0 && !confirmTransfer) {
+    body = (
+      <TeamLeadPicker
+        candidates={candidates}
+        transferTo={transferTo}
+        onChangeTransferTo={onChangeTransferTo}
+        onAskConfirm={onAskConfirm}
+      />
+    );
+  } else if (candidates.length > 0) {
+    body = (
+      <TeamLeadConfirm
+        label={memberDisplayName(
+          candidates.find((member) => member.userId === transferTo),
+        )}
+        busy={busy}
+        onConfirm={onConfirm}
+        onCancel={onCancel}
+      />
+    );
+  }
+  return (
+    <section className="team-settings__block">
+      <h4>Lead</h4>
+      <p className="team-settings__lede">
+        A team keeps exactly one Lead. Transferring hands it to another member
+        and makes you a Delegated lead — the only way to change who owns a
+        team without deleting it.
+      </p>
+      {body}
+    </section>
+  );
+}
+
+function TeamArchiveSettings({
+  archived,
+  busy,
+  onToggle,
+}: Readonly<{
+  archived: boolean;
+  busy: boolean;
+  onToggle: () => void;
+}>) {
+  return (
+    <section className="team-settings__block">
+      <h4>{archived ? "Reopen" : "Archive"}</h4>
+      <p className="team-settings__lede">
+        {archived
+          ? "This team is archived. Reopening restores it everywhere."
+          : "Archiving hides the team without deleting anything. Its repositories stay on GitHub and it can be reopened."}
+      </p>
+      <div className="team-settings__actions">
+        <button
+          type="button"
+          className="ghost-button group-section-action"
+          disabled={busy}
+          onClick={onToggle}
+        >
+          {archived ? "Reopen team" : "Archive team"}
+        </button>
+      </div>
+    </section>
+  );
+}
+
 /**
  * Everything a Lead can change about the team itself.
  *
@@ -428,121 +646,30 @@ function Settings({
 
   return (
     <div className="team-settings">
-      <section className="team-settings__block">
-        <h4>Details</h4>
-        <label className="hier-field">
-          <span className="hier-field-label">Name</span>
-          <input
-            className="premium-input"
-            value={name}
-            onChange={(event) => setName(event.target.value)}
-            disabled={saving}
-          />
-        </label>
-        <label className="hier-field">
-          <span className="hier-field-label">Description</span>
-          <textarea
-            className="premium-input"
-            rows={2}
-            value={description}
-            onChange={(event) => setDescription(event.target.value)}
-            disabled={saving}
-          />
-        </label>
-        <div className="team-settings__actions">
-          <button
-            type="button"
-            className="primary-button group-section-action"
-            disabled={saving || !dirty}
-            onClick={() => void handleSave()}
-          >
-            {saving ? "Saving…" : "Save changes"}
-          </button>
-        </div>
-      </section>
-
-      <section className="team-settings__block">
-        <h4>Lead</h4>
-        <p className="team-settings__lede">
-          A team keeps exactly one Lead. Transferring hands it to another member
-          and makes you a Delegated lead — the only way to change who owns a
-          team without deleting it.
-        </p>
-        {candidates.length === 0 ? (
-          <p className="team-settings__lede">
-            There is nobody to transfer to yet. Add another member first.
-          </p>
-        ) : !confirmTransfer ? (
-          <div className="team-settings__actions">
-            <select
-              className="ws-select"
-              value={transferTo}
-              onChange={(event) => setTransferTo(event.target.value)}
-            >
-              <option value="">Choose a member…</option>
-              {candidates.map((member) => (
-                <option key={member.userId} value={member.userId}>
-                  {member.name || member.login}
-                </option>
-              ))}
-            </select>
-            <button
-              type="button"
-              className="ghost-button group-section-action"
-              disabled={!transferTo}
-              onClick={() => setConfirmTransfer(true)}
-            >
-              Transfer lead
-            </button>
-          </div>
-        ) : (
-          <div className="team-settings__actions">
-            <span className="team-settings__lede">
-              Hand the team to{" "}
-              <strong>
-                {candidates.find((m) => m.userId === transferTo)?.name ??
-                  candidates.find((m) => m.userId === transferTo)?.login}
-              </strong>
-              ?
-            </span>
-            <button
-              type="button"
-              className="confirm-btn-danger group-section-action"
-              disabled={busy}
-              onClick={() => void handleTransfer()}
-            >
-              {busy ? "Transferring…" : "Yes, transfer"}
-            </button>
-            <button
-              type="button"
-              className="ghost-button group-section-action"
-              onClick={() => setConfirmTransfer(false)}
-            >
-              Cancel
-            </button>
-          </div>
-        )}
-      </section>
-
-      <section className="team-settings__block">
-        <h4>{archived ? "Reopen" : "Archive"}</h4>
-        <p className="team-settings__lede">
-          {archived
-            ? "This team is archived. Reopening restores it everywhere."
-            : "Archiving hides the team without deleting anything. Its repositories stay on GitHub and it can be reopened."}
-        </p>
-        <div className="team-settings__actions">
-          <button
-            type="button"
-            className="ghost-button group-section-action"
-            disabled={busy}
-            onClick={() => void handleArchiveToggle()}
-          >
-            {archived ? "Reopen team" : "Archive team"}
-          </button>
-        </div>
-      </section>
-
+      <TeamDetailsSettings
+        name={name}
+        description={description}
+        saving={saving}
+        dirty={dirty}
+        onChangeName={setName}
+        onChangeDescription={setDescription}
+        onSave={() => void handleSave()}
+      />
+      <TeamLeadSettings
+        candidates={candidates}
+        transferTo={transferTo}
+        confirmTransfer={confirmTransfer}
+        busy={busy}
+        onChangeTransferTo={setTransferTo}
+        onAskConfirm={() => setConfirmTransfer(true)}
+        onConfirm={() => void handleTransfer()}
+        onCancel={() => setConfirmTransfer(false)}
+      />
+      <TeamArchiveSettings
+        archived={archived}
+        busy={busy}
+        onToggle={() => void handleArchiveToggle()}
+      />
       {message ? (
         <p className="team-settings__ok" role="status">
           {message}
@@ -553,7 +680,6 @@ function Settings({
           {error}
         </p>
       ) : null}
-
       <div className="group-danger-zone">
         <div>
           <strong>Delete this team</strong>
@@ -573,29 +699,11 @@ function Settings({
   );
 }
 
-export function GroupWorkspacePanel({ group, projects, renderCreateProject, createHref, onDeleted, onMembershipChanged }: Readonly<GroupWorkspacePanelProps>) {
-  // Declared with the other hooks: the create section returns early below,
-  // and a hook after that point would not run on every render.
-  const [addMemberOpen, setAddMemberOpen] = useState(false);
-  const { session } = useAuthSession();
-  const [section, setSection] = useState<GroupSection>("overview");
-  const canCreate = isGlobalCreatorRole(session?.appRole);
-  const canManage = isGroupManagerRole(group.role);
-
-  if (section === "create") {
-    return (
-      <>
-        <div className="project-detail-header">
-          <div><h3>Create repository in {group.name}</h3><p>The repository will be owned by this team.</p></div>
-          <button type="button" className="ghost-button" onClick={() => setSection("projects")}>Back to repositories</button>
-        </div>
-        {renderCreateProject(() => setSection("projects"))}
-      </>
-    );
-  }
-
-  // Headings rather than a flat list: they turn five entries into a map of what
-  // a team HAS, and that reading survives the list growing.
+function teamSectionGroups(
+  group: GroupSummary,
+  projects: ProvisionedProject[],
+  canManage: boolean,
+): SideTabGroup<Exclude<GroupSection, "create">>[] {
   const groups: SideTabGroup<Exclude<GroupSection, "create">>[] = [
     { heading: "Team", items: [{ id: "overview", label: "Overview" }] },
     {
@@ -609,15 +717,164 @@ export function GroupWorkspacePanel({ group, projects, renderCreateProject, crea
       ],
     },
     { heading: "Records", items: [{ id: "activity", label: "Activity & audit" }] },
-    ...(canManage
-      ? [
-          {
-            heading: "Configuration",
-            items: [{ id: "settings" as const, label: "Settings" }],
-          },
-        ]
-      : []),
   ];
+  if (canManage) {
+    groups.push({
+      heading: "Configuration",
+      items: [{ id: "settings", label: "Settings" }],
+    });
+  }
+  return groups;
+}
+
+function GroupCreateScreen({
+  groupName,
+  renderCreateProject,
+  onBack,
+}: Readonly<{
+  groupName: string;
+  renderCreateProject: (onComplete: () => void) => ReactNode;
+  onBack: () => void;
+}>) {
+  return (
+    <>
+      <div className="project-detail-header">
+        <div><h3>Create repository in {groupName}</h3><p>The repository will be owned by this team.</p></div>
+        <button type="button" className="ghost-button" onClick={onBack}>Back to repositories</button>
+      </div>
+      {renderCreateProject(onBack)}
+    </>
+  );
+}
+
+function GroupSectionCount({
+  current,
+  memberCount,
+  projectCount,
+}: Readonly<{
+  current: Exclude<GroupSection, "create">;
+  memberCount: number;
+  projectCount: number;
+}>) {
+  if (current === "members") {
+    return <span className="group-section-count">{memberCount}</span>;
+  }
+  if (current === "projects") {
+    return <span className="group-section-count">{projectCount}</span>;
+  }
+  return null;
+}
+
+function GroupSectionAction({
+  current,
+  canManage,
+  canCreate,
+  createHref,
+  onAddMember,
+  onCreate,
+}: Readonly<{
+  current: Exclude<GroupSection, "create">;
+  canManage: boolean;
+  canCreate: boolean;
+  createHref?: string;
+  onAddMember: () => void;
+  onCreate: () => void;
+}>) {
+  if (current === "members" && canManage) {
+    return (
+      <button
+        type="button"
+        className="primary-button group-section-action"
+        onClick={onAddMember}
+      >
+        Add member
+      </button>
+    );
+  }
+  if (current !== "projects" || !canCreate) return null;
+  if (createHref) {
+    return (
+      <Link className="primary-button group-section-action" href={createHref}>
+        Create repository
+      </Link>
+    );
+  }
+  return (
+    <button
+      type="button"
+      className="primary-button group-section-action"
+      onClick={onCreate}
+    >
+      Create repository
+    </button>
+  );
+}
+
+function GroupSectionBody({
+  current,
+  group,
+  projects,
+  canCreate,
+  canManage,
+  addMemberOpen,
+  onCloseAdd,
+  onMembershipChanged,
+  onDeleted,
+}: Readonly<{
+  current: Exclude<GroupSection, "create">;
+  group: GroupSummary;
+  projects: ProvisionedProject[];
+  canCreate: boolean;
+  canManage: boolean;
+  addMemberOpen: boolean;
+  onCloseAdd: () => void;
+  onMembershipChanged?: () => void;
+  onDeleted?: (groupId: string) => void;
+}>) {
+  if (current === "overview") return <Overview group={group} projects={projects} />;
+  if (current === "members") {
+    return (
+      <Members
+        group={group}
+        addOpen={addMemberOpen}
+        onCloseAdd={onCloseAdd}
+        onMembershipChanged={onMembershipChanged}
+      />
+    );
+  }
+  if (current === "projects") {
+    return <Projects projects={projects} canCreate={canCreate} />;
+  }
+  if (current === "activity") return <Activity group={group} />;
+  if (current === "settings" && canManage) {
+    return (
+      <Settings
+        group={group}
+        projectCount={projects.length}
+        onDeleted={onDeleted}
+        onChanged={onMembershipChanged}
+      />
+    );
+  }
+  return null;
+}
+
+export function GroupWorkspacePanel({ group, projects, renderCreateProject, createHref, onDeleted, onMembershipChanged }: Readonly<GroupWorkspacePanelProps>) {
+  const [addMemberOpen, setAddMemberOpen] = useState(false);
+  const { session } = useAuthSession();
+  const [section, setSection] = useState<GroupSection>("overview");
+  const canCreate = isGlobalCreatorRole(session?.appRole);
+  const canManage = isGroupManagerRole(group.role);
+
+  if (section === "create") {
+    return (
+      <GroupCreateScreen
+        groupName={group.name}
+        renderCreateProject={renderCreateProject}
+        onBack={() => setSection("projects")}
+      />
+    );
+  }
 
   const titles: Record<Exclude<GroupSection, "create">, string> = {
     overview: "Overview",
@@ -626,13 +883,12 @@ export function GroupWorkspacePanel({ group, projects, renderCreateProject, crea
     activity: "Activity & audit",
     settings: "Settings",
   };
-
   const current = section;
 
   return (
     <div className="group-workspace">
       <SideTabs
-        groups={groups}
+        groups={teamSectionGroups(group, projects, canManage)}
         value={current}
         onChange={setSection}
         label="Team sections"
@@ -646,69 +902,35 @@ export function GroupWorkspacePanel({ group, projects, renderCreateProject, crea
         aria-labelledby={`group-tab-${current}`}
         tabIndex={0}
       >
-        {/*
-          ONE header for the section: its name, how many of the thing it holds,
-          and the single action that belongs to it. Each section used to draw
-          this heading and then the component inside drew its own, so the panel
-          read "Members / Members 2" — the same word twice, one line apart.
-        */}
         <div className="group-section-head">
           <h3 className="group-section-title">
             {titles[current]}
-            {current === "members" ? (
-              <span className="group-section-count">{group.memberCount}</span>
-            ) : null}
-            {current === "projects" ? (
-              <span className="group-section-count">{projects.length}</span>
-            ) : null}
+            <GroupSectionCount
+              current={current}
+              memberCount={group.memberCount}
+              projectCount={projects.length}
+            />
           </h3>
-          {current === "members" && canManage ? (
-            <button
-              type="button"
-              className="primary-button group-section-action"
-              onClick={() => setAddMemberOpen(true)}
-            >
-              Add member
-            </button>
-          ) : null}
-          {current === "projects" && canCreate ? (
-            createHref ? (
-              <Link className="primary-button group-section-action" href={createHref}>
-                Create repository
-              </Link>
-            ) : (
-              <button
-                type="button"
-                className="primary-button group-section-action"
-                onClick={() => setSection("create")}
-              >
-                Create repository
-              </button>
-            )
-          ) : null}
+          <GroupSectionAction
+            current={current}
+            canManage={canManage}
+            canCreate={canCreate}
+            createHref={createHref}
+            onAddMember={() => setAddMemberOpen(true)}
+            onCreate={() => setSection("create")}
+          />
         </div>
-
-        {current === "overview" ? <Overview group={group} projects={projects} /> : null}
-        {current === "members" ? (
-          <Members
-            group={group}
-            addOpen={addMemberOpen}
-            onCloseAdd={() => setAddMemberOpen(false)}
-            onMembershipChanged={onMembershipChanged}
-          />
-        ) : null}
-        {current === "projects" ? (
-          <Projects projects={projects} canCreate={canCreate} />
-        ) : null}
-        {current === "activity" ? <Activity group={group} /> : null}
-        {current === "settings" && canManage ? (
-          <Settings
-            group={group}
-            projectCount={projects.length}
-            onDeleted={onDeleted}
-            onChanged={onMembershipChanged}
-          />
-        ) : null}
+        <GroupSectionBody
+          current={current}
+          group={group}
+          projects={projects}
+          canCreate={canCreate}
+          canManage={canManage}
+          addMemberOpen={addMemberOpen}
+          onCloseAdd={() => setAddMemberOpen(false)}
+          onMembershipChanged={onMembershipChanged}
+          onDeleted={onDeleted}
+        />
       </div>
     </div>
   );

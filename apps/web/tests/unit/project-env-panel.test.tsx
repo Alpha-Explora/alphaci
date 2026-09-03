@@ -103,6 +103,18 @@ jest.mock("../../src/features/projects/detail/data/usage-api", () => ({
   getMyUsage: jest.fn(),
 }));
 
+jest.mock("../../src/features/workflows/studio/data/catalog-api", () => {
+  const actual = jest.requireActual(
+    "../../src/features/workflows/studio/data/catalog-api",
+  ) as Record<string, unknown>;
+  return {
+    ...actual,
+    getCentralWorkflowTags: jest.fn(() =>
+      Promise.resolve({ tags: ["v1", "v2"] }),
+    ),
+  };
+});
+
 const mockedUseCapabilities = useCapabilities as jest.MockedFunction<
   typeof useCapabilities
 >;
@@ -208,30 +220,47 @@ function render(ui: React.ReactNode) {
 }
 
 function changeValue(
-  element: HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement,
+  element: {
+    nodeName?: string;
+    dispatchEvent: (event: Event) => boolean;
+  } | null,
   value: string,
 ) {
+  if (!element?.nodeName) {
+    throw new Error("changeValue: form control was not found");
+  }
+
   act(() => {
     /*
-     * Picked by TAG NAME, not `instanceof`.
-     *
-     * `instanceof` compares against the constructor on the test file's global,
-     * and an element rendered into a container jsdom created elsewhere does not
-     * always match it — so a real <select> fell through to the input branch and
-     * jsdom rejected the setter with "'set value' called on an object that is
-     * not a valid instance of HTMLInputElement". tagName carries no realm.
+     * Prefer the element's own prototype setter. `instanceof` and a foreign
+     * realm's HTMLInputElement.prototype both fail in jsdom when the node was
+     * created in a different document; tagName on a missing query is null.
      */
-    const prototype =
-      element.tagName === "SELECT"
+    const proto = Object.getPrototypeOf(element) as object | null;
+    const nodeName = element.nodeName.toUpperCase();
+    const fallbackPrototype =
+      nodeName === "SELECT"
         ? HTMLSelectElement.prototype
-        : element.tagName === "TEXTAREA"
+        : nodeName === "TEXTAREA"
           ? HTMLTextAreaElement.prototype
           : HTMLInputElement.prototype;
-    const descriptor = Object.getOwnPropertyDescriptor(prototype, "value");
+    const descriptor =
+      (proto && Object.getOwnPropertyDescriptor(proto, "value")) ||
+      Object.getOwnPropertyDescriptor(fallbackPrototype, "value");
     descriptor?.set?.call(element, value);
     element.dispatchEvent(new Event("input", { bubbles: true }));
     element.dispatchEvent(new Event("change", { bubbles: true }));
   });
+}
+
+function clickButton(container: ParentNode, label: string) {
+  const button = Array.from(container.querySelectorAll("button")).find(
+    (item) => item.textContent === label,
+  );
+  if (!button) {
+    throw new Error(`Button "${label}" was not found`);
+  }
+  button.click();
 }
 
 function mockCapabilities(
@@ -314,6 +343,7 @@ function mockEnvHook(
     removeMetadata: jest.fn(),
     saving: false,
     targets: [],
+    usageItems: [],
     validateEnvText: jest.fn(),
     ...overrides,
   });
@@ -1404,17 +1434,19 @@ describe("Project env provisioning UI", () => {
     expect(rendered.container.textContent).toContain("def456");
     expect(
       rendered.container.querySelector(
-        'a[href="https://dashboard.render.com/web/srv-1"]',
+        'a[href="https://orders-api-test.onrender.com"]',
       ),
     ).not.toBeNull();
     expect(
       rendered.container.querySelector(
-        'a[href="https://vercel.com/flowci-team/orders-web"]',
+        'a[href="https://dashboard.render.com/web/srv-1/logs"]',
       ),
     ).not.toBeNull();
-    expect(rendered.container.textContent).toContain(
-      "Provider activation — coming soon",
-    );
+    expect(
+      rendered.container.querySelector(
+        'a[href="https://vercel.com/flowci-team/orders-web/deployments"]',
+      ),
+    ).not.toBeNull();
   });
 
   it("shows a simulated-data caveat for deployment history when live sync is enabled but nothing is connected", async () => {
@@ -1505,11 +1537,7 @@ describe("Project env provisioning UI", () => {
         'input[aria-label="Target display name"]',
       )?.value,
     ).toBe("orders-api-test");
-    expect(
-      rendered.container.querySelector<HTMLSelectElement>(
-        'select[aria-label="Target slot"]',
-      )?.value,
-    ).toBe("backend");
+    expect(rendered.container.textContent).toContain("Render backend");
     expect(
       rendered.container.querySelector<HTMLInputElement>(
         'input[aria-label="Target branch"]',
@@ -1589,12 +1617,6 @@ describe("Project env provisioning UI", () => {
         'input[aria-label="Target display name"]',
       )!,
       "orders-api-uat",
-    );
-    changeValue(
-      rendered.container.querySelector<HTMLSelectElement>(
-        'select[aria-label="Target slot"]',
-      )!,
-      "backend",
     );
     changeValue(
       rendered.container.querySelector<HTMLInputElement>(
@@ -2388,22 +2410,26 @@ describe("Project env provisioning UI", () => {
       await Promise.resolve();
     });
 
+    await act(async () => {
+      await Promise.resolve();
+    });
+
     changeValue(
-      rendered.container.querySelector<HTMLInputElement>(
-        'input[aria-label="Coverage threshold"]',
-      )!,
-      "95",
+      rendered.container.querySelector<HTMLSelectElement>(
+        'select[aria-label="Coverage threshold"]',
+      ),
+      "90",
     );
     changeValue(
       rendered.container.querySelector<HTMLInputElement>(
         'input[aria-label="Service path"]',
-      )!,
+      ),
       "apps/api",
     );
     changeValue(
-      rendered.container.querySelector<HTMLInputElement>(
-        'input[aria-label="Central workflow ref"]',
-      )!,
+      rendered.container.querySelector<HTMLSelectElement>(
+        'select[aria-label="Central workflow ref"]',
+      ),
       "v2",
     );
 
@@ -2419,7 +2445,7 @@ describe("Project env provisioning UI", () => {
       "project-1",
       expect.objectContaining({
         centralWorkflowRef: "v2",
-        coverageThreshold: 95,
+        coverageThreshold: 90,
         nodeVersion: "24",
         servicePath: "apps/api",
       }),
@@ -2628,10 +2654,9 @@ describe("Project env provisioning UI", () => {
   });
 
   it("shows env key quota and disables provisioning when the limit is reached", async () => {
-    mockedGetMyUsage.mockResolvedValueOnce({
-      enabled: true,
-      plan: "free",
-      items: [
+    mockEnvHook({
+      targets: [renderTarget],
+      usageItems: [
         { code: "projects", current: 1, limit: 5, upgradeRequired: false },
         {
           code: "managed_render_services",
@@ -2654,16 +2679,10 @@ describe("Project env provisioning UI", () => {
         { code: "env_keys", current: 25, limit: 25, upgradeRequired: true },
       ],
     });
-    mockEnvHook({ targets: [renderTarget] });
 
     const rendered = render(<ProjectEnvPanel project={provisionedProject} />);
     root = rendered.root;
 
-    await act(async () => {
-      await Promise.resolve();
-    });
-
-    // The quota moved from a sentence to a counter in the usage grid.
     expect(rendered.container.textContent).toContain("Env keys");
     expect(rendered.container.textContent).toContain("25 / 25");
     expect(rendered.container.textContent).toContain(
@@ -2675,6 +2694,10 @@ describe("Project env provisioning UI", () => {
     );
     expect(rendered.container.textContent).toContain("Deployment targets");
     expect(rendered.container.textContent).toContain("2 / 5");
+
+    act(() => {
+      clickButton(rendered.container, "Add variable");
+    });
     expect(
       Array.from(rendered.container.querySelectorAll("button")).find(
         (button) => button.textContent === "Provision",
@@ -2720,48 +2743,17 @@ describe("Project env provisioning UI", () => {
     root = rendered.root;
 
     act(() => {
-      Array.from(rendered.container.querySelectorAll("button"))
-        .find((button) => button.textContent === "Vercel frontend")!
-        .click();
+      clickButton(rendered.container, "Add variable");
     });
     changeValue(
       rendered.container.querySelector<HTMLInputElement>(
-        'input[placeholder="Provider project name"]',
-      )!,
-      "orders-web",
-    );
-    changeValue(
-      rendered.container.querySelector<HTMLInputElement>(
-        'input[placeholder="Root directory"]',
-      )!,
-      "apps/web",
-    );
-    changeValue(
-      rendered.container.querySelector<HTMLInputElement>(
-        'input[placeholder="Build command"]',
-      )!,
-      "npm run build",
-    );
-    changeValue(
-      rendered.container.querySelector<HTMLInputElement>(
-        'input[placeholder="Branch"]',
-      )!,
+        'input[placeholder="feature/checkout"]',
+      ),
       "uat",
-    );
-    changeValue(
-      rendered.container.querySelector<HTMLSelectElement>(
-        'select[aria-label="Active deployment target"]',
-      )!,
-      "target-render",
     );
 
     act(() => {
-      Array.from(rendered.container.querySelectorAll("button"))
-        .find((button) => button.textContent === "uat")!
-        .click();
-      Array.from(rendered.container.querySelectorAll("button"))
-        .find((button) => button.textContent === "Add row")!
-        .click();
+      clickButton(rendered.container, "Add row");
     });
     expect(
       rendered.container.querySelectorAll<HTMLInputElement>(
@@ -2783,7 +2775,7 @@ describe("Project env provisioning UI", () => {
     ).toHaveLength(1);
     expect(
       rendered.container.querySelector<HTMLInputElement>(
-        'input[placeholder="Branch"]',
+        'input[placeholder="feature/checkout"]',
       )?.value,
     ).toBe("uat");
     expect(
@@ -2829,9 +2821,15 @@ describe("Project env provisioning UI", () => {
     const rendered = render(<ProjectEnvPanel project={provisionedProject} />);
     root = rendered.root;
 
+    act(() => {
+      clickButton(rendered.container, "Add variable");
+    });
+    act(() => {
+      clickButton(rendered.container, "Paste a .env file");
+    });
     const textarea = rendered.container.querySelector<HTMLTextAreaElement>(
       'textarea[aria-label="Bulk env text"]',
-    )!;
+    );
     changeValue(textarea, "BROKEN");
     await act(async () => {
       Array.from(rendered.container.querySelectorAll("button"))
@@ -2927,12 +2925,15 @@ describe("Project env provisioning UI", () => {
 
     const rendered = render(<ProjectEnvPanel project={provisionedProject} />);
     root = rendered.root;
+    act(() => {
+      clickButton(rendered.container, "Add variable");
+    });
     const keyInput = rendered.container.querySelector<HTMLInputElement>(
       'input[placeholder="DATABASE_URL"]',
-    )!;
+    );
     const valueInput = rendered.container.querySelector<HTMLInputElement>(
       'input[placeholder="Value"]',
-    )!;
+    );
 
     changeValue(keyInput, "DATABASE_URL");
     changeValue(valueInput, "postgres://secret");
@@ -2948,7 +2949,9 @@ describe("Project env provisioning UI", () => {
       gitBranch: "test",
       vars: [{ key: "DATABASE_URL", value: "postgres://secret" }],
     });
-    expect(valueInput.value).toBe("");
+    expect(
+      rendered.container.querySelector('input[placeholder="Value"]'),
+    ).toBeNull();
     expect(rendered.container.textContent).toContain("DATABASE_URL");
     expect(rendered.container.textContent).not.toContain("postgres://secret");
   });
@@ -2969,9 +2972,15 @@ describe("Project env provisioning UI", () => {
     const rendered = render(<ProjectEnvPanel project={provisionedProject} />);
     root = rendered.root;
 
+    act(() => {
+      clickButton(rendered.container, "Add variable");
+    });
+    act(() => {
+      clickButton(rendered.container, "Paste a .env file");
+    });
     const textarea = rendered.container.querySelector<HTMLTextAreaElement>(
       'textarea[aria-label="Bulk env text"]',
-    )!;
+    );
     changeValue(
       textarea,
       'DATABASE_URL=postgres://secret\nAPI_KEY="super-secret"',
@@ -2985,7 +2994,8 @@ describe("Project env provisioning UI", () => {
 
     expect(validateEnvText).toHaveBeenCalledWith({
       deploymentTargetId: "target-render",
-      environment: "uat",
+      lane: "preview",
+      gitBranch: "test",
       text: 'DATABASE_URL=postgres://secret\nAPI_KEY="super-secret"',
     });
     expect(rendered.container.textContent).toContain("DATABASE_URL");

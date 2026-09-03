@@ -9,6 +9,10 @@ import { ROLE_ORDER } from "../../model/admin-rules";
 import { APP_ROLE_LABELS, type AppRole } from "../../model/admin-types";
 import { useAdminUserDetailViewModel } from "../view-models/use-admin-user-detail-view-model";
 
+type UserDetail = NonNullable<
+  ReturnType<typeof useAdminUserDetailViewModel>["detail"]
+>;
+
 /** Public view for one user in the admin console. */
 export function AdminUserDetailView() {
   const params = useParams<{ id: string }>();
@@ -43,158 +47,151 @@ export function AdminUserDetailView() {
     <section aria-label="User detail" style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
       <Link href="/admin" style={{ color: "var(--text-secondary)", textDecoration: "none", fontSize: "0.85rem" }}>← All users</Link>
 
-      <header className="glass-panel" style={{ padding: "1.25rem 1.5rem", borderRadius: "0.75rem" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: "1rem" }}>
-          <div>
-            <h1 style={{ fontSize: "1.4rem", fontWeight: 800, margin: 0 }}>{detail.login}</h1>
-            <p style={{ color: "var(--text-secondary)", fontSize: "0.85rem", margin: "0.35rem 0 0" }}>
-              {detail.displayName ?? "—"}{detail.email ? ` · ${detail.email}` : ""}
-            </p>
-            <p style={{ color: "var(--text-muted)", fontSize: "0.75rem", margin: "0.35rem 0 0", fontFamily: "ui-monospace, monospace" }}>{detail.id}</p>
-          </div>
-          {detail.subscription && (
-            <span className="status-chip status-chip-brand" style={{ alignSelf: "start" }}>
-              {detail.subscription.plan} · {detail.subscription.status}
-            </span>
-          )}
-        </div>
-      </header>
-
-      <div className="glass-panel" style={{ padding: "1rem 1.25rem", borderRadius: "0.75rem", display: "flex", alignItems: "center", gap: "1rem", flexWrap: "wrap" }}>
-          <span style={{ fontWeight: 600, fontSize: "0.9rem" }}>Role</span>
-          <select
-            aria-label="Global role"
-            value={detail.appRole}
-            disabled={
-              roleBusy ||
-              detail.id === currentUserId ||
-              // Only the super-admin can touch the Admin tier — for everyone
-              // else the control is read-only when the target is already an
-              // Admin (can't demote) since Lead/Member changes are the only
-              // ones they're allowed and those don't apply to an Admin.
-              (!isSuperAdmin && detail.appRole === "admin")
-            }
-            onChange={(event) => void handleSetRole(event.target.value as AppRole)}
-            style={{ padding: "0.4rem 0.75rem", fontSize: "0.85rem", borderRadius: "0.5rem", minWidth: "9rem" }}
-          >
-            {ROLE_ORDER.map((r) => (
-              <option
-                key={r}
-                value={r}
-                // A regular Admin cannot promote anyone to Admin.
-                disabled={r === "admin" && !isSuperAdmin && detail.appRole !== "admin"}
-              >
-                {APP_ROLE_LABELS[r]}
-              </option>
-            ))}
-          </select>
-          {/* Provenance — answers "why is this user a Lead?" without having to
-              read the audit log. A 'manual' pin is the reason automatic GitHub
-              team sync appears to be doing nothing for this user, so it is
-              surfaced right next to the control that caused it. */}
-          {detail.appRoleSource === "manual" ? (
-            <span
-              className="status-chip status-chip-amber"
-              title="Set in the Console. GitHub team sync skips this user until it is reset."
-            >
-              pinned manually
-            </span>
-          ) : (
-            <span
-              className="status-chip status-chip-muted"
-              title="Follows the GitHub org teams (team-lead / developers). Re-derived on each sign-in."
-            >
-              from GitHub teams
-            </span>
-          )}
-
-          {detail.appRoleSource === "manual" && detail.id !== currentUserId && (
-            <button
-              type="button"
-              className="ghost-button"
-              disabled={roleBusy || (!isSuperAdmin && detail.appRole === "admin")}
-              onClick={() => void handleResetRole()}
-              style={{ padding: "0.35rem 0.85rem", fontSize: "0.78rem", minHeight: "2rem" }}
-            >
-              Reset to GitHub
-            </button>
-          )}
-
-          <span style={{ fontSize: "0.78rem", color: "var(--text-muted)" }}>
-            Admin = full access · Lead = create/manage groups & invite · Member = assigned repos only
-          </span>
-          <span style={{ fontSize: "0.78rem", color: "var(--text-muted)" }}>
-            Setting a role here pins it — GitHub team changes stop applying to
-            this user until you reset it.
-          </span>
-          {detail.id === currentUserId && (
-            <span style={{ fontSize: "0.8rem", color: "var(--text-secondary)" }}>You can&apos;t change your own role.</span>
-          )}
-          {!isSuperAdmin && detail.id !== currentUserId && (
-            <span style={{ fontSize: "0.8rem", color: "var(--text-muted)" }}>Only the super-admin can change Admin-level roles.</span>
-          )}
-          {roleMessage && <span style={{ fontSize: "0.8rem", color: "var(--text-secondary)" }}>{roleMessage}</span>}
-        </div>
-
-      <div style={{ display: "grid", gap: "1.5rem", gridTemplateColumns: "repeat(auto-fit, minmax(18rem, 1fr))" }}>
-        <Panel title={`Recent errors (${detail.recentErrors.length})`}>
-          {detail.recentErrors.length === 0 ? (
-            <Empty label="No recent failures." />
-          ) : (
-            detail.recentErrors.map((err) => (
-              <div key={err.id} style={rowStyle}>
-                <span className="status-chip status-chip-danger">{err.stage}</span>
-                <span style={{ fontSize: "0.8rem" }}>{err.repo_full_name}</span>
-                <span style={{ color: "var(--text-muted)", fontSize: "0.72rem" }}>{err.branch} · {fmt(err.created_at)}</span>
-              </div>
-            ))
-          )}
-        </Panel>
-
-        <Panel title={`Projects (${detail.projects.length})`}>
-          {detail.projects.length === 0 ? (
-            <Empty label="No projects." />
-          ) : (
-            detail.projects.map((p) => (
-              <div key={p.id} style={rowStyle}>
-                <span style={{ fontSize: "0.8rem", fontWeight: 600 }}>{p.repo_full_name}</span>
-                <span className={`status-chip ${p.status === "provisioned" ? "status-chip-success" : "status-chip-muted"}`}>{p.status}</span>
-                {p.is_example && <span className="status-chip status-chip-muted">example</span>}
-              </div>
-            ))
-          )}
-        </Panel>
-
-        <Panel title={`Workflows (${detail.workflows.length})`}>
-          {detail.workflows.length === 0 ? (
-            <Empty label="No workflows generated." />
-          ) : (
-            detail.workflows.map((w) => (
-              <div key={w.id} style={rowStyle}>
-                <span style={{ fontSize: "0.8rem", fontWeight: 600 }}>{w.service_name}</span>
-                <span style={{ color: "var(--text-muted)", fontSize: "0.72rem" }}>{w.stack} · {fmt(w.created_at)}</span>
-              </div>
-            ))
-          )}
-        </Panel>
-
-        <Panel title={`Activity (${detail.recentActivity.length})`}>
-          {detail.recentActivity.length === 0 ? (
-            <Empty label="No recent activity." />
-          ) : (
-            detail.recentActivity.map((a) => (
-              <div key={a.id} style={rowStyle}>
-                <span style={{ fontSize: "0.78rem", fontFamily: "ui-monospace, monospace" }}>{a.event_code}</span>
-                <span style={{ color: "var(--text-muted)", fontSize: "0.72rem" }}>{fmt(a.created_at)}</span>
-              </div>
-            ))
-          )}
-        </Panel>
-      </div>
+      <UserHeader detail={detail} />
+      <RoleControl
+        detail={detail}
+        currentUserId={currentUserId}
+        isSuperAdmin={isSuperAdmin}
+        roleBusy={roleBusy}
+        roleMessage={roleMessage}
+        onSetRole={handleSetRole}
+        onResetRole={handleResetRole}
+      />
+      <DetailPanels detail={detail} />
     </section>
   );
 }
 
+function UserHeader({ detail }: Readonly<{ detail: UserDetail }>) {
+  return (
+    <header className="glass-panel" style={{ padding: "1.25rem 1.5rem", borderRadius: "0.75rem" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: "1rem" }}>
+        <div>
+          <h1 style={{ fontSize: "1.4rem", fontWeight: 800, margin: 0 }}>{detail.login}</h1>
+          <p style={{ color: "var(--text-secondary)", fontSize: "0.85rem", margin: "0.35rem 0 0" }}>
+            {detail.displayName ?? "—"}{detail.email ? ` · ${detail.email}` : ""}
+          </p>
+          <p style={{ color: "var(--text-muted)", fontSize: "0.75rem", margin: "0.35rem 0 0", fontFamily: "ui-monospace, monospace" }}>{detail.id}</p>
+        </div>
+        {detail.subscription && (
+          <span className="status-chip status-chip-brand" style={{ alignSelf: "start" }}>
+            {detail.subscription.plan} · {detail.subscription.status}
+          </span>
+        )}
+      </div>
+    </header>
+  );
+}
+
+function RoleControl({
+  detail, currentUserId, isSuperAdmin, roleBusy, roleMessage, onSetRole, onResetRole,
+}: Readonly<{
+  detail: UserDetail;
+  currentUserId: string | null;
+  isSuperAdmin: boolean;
+  roleBusy: boolean;
+  roleMessage: string | null;
+  onSetRole: (role: AppRole) => void;
+  onResetRole: () => void;
+}>) {
+  return (
+    <div className="glass-panel" style={{ padding: "1rem 1.25rem", borderRadius: "0.75rem", display: "flex", alignItems: "center", gap: "1rem", flexWrap: "wrap" }}>
+      <span style={{ fontWeight: 600, fontSize: "0.9rem" }}>Role</span>
+      <RoleSelect detail={detail} currentUserId={currentUserId} isSuperAdmin={isSuperAdmin} roleBusy={roleBusy} onSetRole={onSetRole} />
+      <RoleProvenance detail={detail} currentUserId={currentUserId} isSuperAdmin={isSuperAdmin} roleBusy={roleBusy} onResetRole={onResetRole} />
+      <RoleMessages detail={detail} currentUserId={currentUserId} isSuperAdmin={isSuperAdmin} roleMessage={roleMessage} />
+    </div>
+  );
+}
+
+function RoleSelect({ detail, currentUserId, isSuperAdmin, roleBusy, onSetRole }: Readonly<{
+  detail: UserDetail; currentUserId: string | null; isSuperAdmin: boolean; roleBusy: boolean;
+  onSetRole: (role: AppRole) => void;
+}>) {
+  const disabled = roleBusy || detail.id === currentUserId || (!isSuperAdmin && detail.appRole === "admin");
+  return (
+    <select aria-label="Global role" value={detail.appRole} disabled={disabled}
+      onChange={(event) => onSetRole(event.target.value as AppRole)}
+      style={{ padding: "0.4rem 0.75rem", fontSize: "0.85rem", borderRadius: "0.5rem", minWidth: "9rem" }}>
+      {ROLE_ORDER.map((role) => (
+        <option key={role} value={role} disabled={role === "admin" && !isSuperAdmin && detail.appRole !== "admin"}>
+          {APP_ROLE_LABELS[role]}
+        </option>
+      ))}
+    </select>
+  );
+}
+
+function RoleProvenance({ detail, currentUserId, isSuperAdmin, roleBusy, onResetRole }: Readonly<{
+  detail: UserDetail; currentUserId: string | null; isSuperAdmin: boolean; roleBusy: boolean; onResetRole: () => void;
+}>) {
+  const manual = detail.appRoleSource === "manual";
+  return (
+    <>
+      <span className={`status-chip ${manual ? "status-chip-amber" : "status-chip-muted"}`}
+        title={manual ? "Set in the Console. GitHub team sync skips this user until it is reset." : "Follows the GitHub org teams (team-lead / developers). Re-derived on each sign-in."}>
+        {manual ? "pinned manually" : "from GitHub teams"}
+      </span>
+      {manual && detail.id !== currentUserId && (
+        <button type="button" className="ghost-button"
+          disabled={roleBusy || (!isSuperAdmin && detail.appRole === "admin")}
+          onClick={onResetRole}
+          style={{ padding: "0.35rem 0.85rem", fontSize: "0.78rem", minHeight: "2rem" }}>
+          Reset to GitHub
+        </button>
+      )}
+    </>
+  );
+}
+
+function RoleMessages({ detail, currentUserId, isSuperAdmin, roleMessage }: Readonly<{
+  detail: UserDetail; currentUserId: string | null; isSuperAdmin: boolean; roleMessage: string | null;
+}>) {
+  return (
+    <>
+      <span style={{ fontSize: "0.78rem", color: "var(--text-muted)" }}>Admin = full access · Lead = create/manage groups & invite · Member = assigned repos only</span>
+      <span style={{ fontSize: "0.78rem", color: "var(--text-muted)" }}>Setting a role here pins it — GitHub team changes stop applying to this user until you reset it.</span>
+      {detail.id === currentUserId && <span style={{ fontSize: "0.8rem", color: "var(--text-secondary)" }}>You can&apos;t change your own role.</span>}
+      {!isSuperAdmin && detail.id !== currentUserId && <span style={{ fontSize: "0.8rem", color: "var(--text-muted)" }}>Only the super-admin can change Admin-level roles.</span>}
+      {roleMessage && <span style={{ fontSize: "0.8rem", color: "var(--text-secondary)" }}>{roleMessage}</span>}
+    </>
+  );
+}
+
+function DetailPanels({ detail }: Readonly<{ detail: UserDetail }>) {
+  return (
+    <div style={{ display: "grid", gap: "1.5rem", gridTemplateColumns: "repeat(auto-fit, minmax(18rem, 1fr))" }}>
+      <RecentErrorsPanel detail={detail} />
+      <ProjectsPanel detail={detail} />
+      <WorkflowsPanel detail={detail} />
+      <ActivityPanel detail={detail} />
+    </div>
+  );
+}
+
+function RecentErrorsPanel({ detail }: Readonly<{ detail: UserDetail }>) {
+  return <Panel title={`Recent errors (${detail.recentErrors.length})`}>{detail.recentErrors.length === 0 ? <Empty label="No recent failures." /> : detail.recentErrors.map((err) => (
+    <div key={err.id} style={rowStyle}><span className="status-chip status-chip-danger">{err.stage}</span><span style={{ fontSize: "0.8rem" }}>{err.repo_full_name}</span><span style={{ color: "var(--text-muted)", fontSize: "0.72rem" }}>{err.branch} · {fmt(err.created_at)}</span></div>
+  ))}</Panel>;
+}
+
+function ProjectsPanel({ detail }: Readonly<{ detail: UserDetail }>) {
+  return <Panel title={`Projects (${detail.projects.length})`}>{detail.projects.length === 0 ? <Empty label="No projects." /> : detail.projects.map((project) => (
+    <div key={project.id} style={rowStyle}><span style={{ fontSize: "0.8rem", fontWeight: 600 }}>{project.repo_full_name}</span><span className={`status-chip ${project.status === "provisioned" ? "status-chip-success" : "status-chip-muted"}`}>{project.status}</span>{project.is_example && <span className="status-chip status-chip-muted">example</span>}</div>
+  ))}</Panel>;
+}
+
+function WorkflowsPanel({ detail }: Readonly<{ detail: UserDetail }>) {
+  return <Panel title={`Workflows (${detail.workflows.length})`}>{detail.workflows.length === 0 ? <Empty label="No workflows generated." /> : detail.workflows.map((workflow) => (
+    <div key={workflow.id} style={rowStyle}><span style={{ fontSize: "0.8rem", fontWeight: 600 }}>{workflow.service_name}</span><span style={{ color: "var(--text-muted)", fontSize: "0.72rem" }}>{workflow.stack} · {fmt(workflow.created_at)}</span></div>
+  ))}</Panel>;
+}
+
+function ActivityPanel({ detail }: Readonly<{ detail: UserDetail }>) {
+  return <Panel title={`Activity (${detail.recentActivity.length})`}>{detail.recentActivity.length === 0 ? <Empty label="No recent activity." /> : detail.recentActivity.map((activity) => (
+    <div key={activity.id} style={rowStyle}><span style={{ fontSize: "0.78rem", fontFamily: "ui-monospace, monospace" }}>{activity.event_code}</span><span style={{ color: "var(--text-muted)", fontSize: "0.72rem" }}>{fmt(activity.created_at)}</span></div>
+  ))}</Panel>;
+}
 
 function Panel({ title, children }: Readonly<{ title: string; children: React.ReactNode }>) {
   return (

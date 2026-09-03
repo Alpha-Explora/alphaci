@@ -416,4 +416,48 @@ describe("DeploymentProvisioningSetup", () => {
 
     rendered.unmount();
   });
+
+  it("falls back to a Render backend target when none are provided", () => {
+    const onChange = jest.fn();
+    const rendered = render(
+      <DeploymentProvisioningSetup
+        enabled
+        repoShape="single-app"
+        selectedProjectKind="backend"
+        value={{ enabled: true, targets: [] }}
+        onChange={onChange}
+      />,
+    );
+
+    expect(rendered.container.textContent).toContain("Render backend");
+    expect(
+      rendered.container.querySelector<HTMLSelectElement>(
+        "select[aria-label='Render runtime']",
+      ),
+    ).toHaveValue("docker");
+
+    rendered.unmount();
+  });
+
+  it("falls back to a Vercel frontend target for frontend projects", () => {
+    const onChange = jest.fn();
+    const rendered = render(
+      <DeploymentProvisioningSetup
+        enabled
+        repoShape="single-app"
+        selectedProjectKind="frontend"
+        value={{ enabled: true, targets: [] }}
+        onChange={onChange}
+      />,
+    );
+
+    expect(rendered.container.textContent).toContain("Vercel frontend");
+    expect(
+      rendered.container.querySelector<HTMLSelectElement>(
+        "select[aria-label='Render runtime']",
+      ),
+    ).toBeNull();
+
+    rendered.unmount();
+  });
 });

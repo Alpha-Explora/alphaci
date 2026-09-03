@@ -3,11 +3,12 @@
 import { useCallback, useState } from "react";
 
 import type { CreateProjectRequest, MvpProjectOptionKey } from "@/shared/api/contracts";
+import {
+  buildCreateProjectPayload,
+  sanitizeRepoNameInput,
+} from "../model/create-project-payload";
+import { effectiveDualServiceName } from "../model/setup-tab-rules";
 import { toSlug } from "../model/workflow-studio-rules";
-
-type CreateProjectPayloadResult =
-  | { ok: true; payload: CreateProjectRequest }
-  | { ok: false; message: string };
 
 interface BuildPayloadInput {
   isMicroservicesShape: boolean;
@@ -19,28 +20,6 @@ interface BuildPayloadInput {
   ownerType?: "personal" | "organization";
   installationId?: number;
   deploymentProvisioning?: CreateProjectRequest["deploymentProvisioning"];
-}
-
-// GitHub repository names allow letters, digits, '.', '_' and '-'. We keep the
-// existing lowercase convention. Anything else (including '/', which separates
-// owner/repo) is dropped and whitespace becomes a hyphen.
-//
-// This runs on every keystroke of a controlled input, so it must never touch
-// the *edges* of the value: trimming a trailing '-' here makes it impossible to
-// ever type "my-app", because each separator is a trailing separator for the
-// keystroke that produces it. Edge trimming belongs in normalizeRepoName.
-function sanitizeRepoNameInput(value: string): string {
-  return value
-    .toLowerCase()
-    .replace(/^\s+/, "")
-    .replaceAll(/\s+/g, "-")
-    .replaceAll(/[^a-z0-9._-]/g, "");
-}
-
-// Submit-time form: GitHub rejects names that begin or end with a separator, so
-// the edges are trimmed once, when the value is final.
-function normalizeRepoName(value: string): string {
-  return sanitizeRepoNameInput(value).replaceAll(/^[-._]+|[-._]+$/g, "");
 }
 
 export function useCreateProjectForm() {
@@ -93,171 +72,38 @@ export function useCreateProjectForm() {
     setFrontendServiceNameState(toSlug(value));
   }, []);
 
-  const effectiveBackendServiceName = backendServiceNameTouched
-    ? backendServiceName
-    : repoName
-      ? `${toSlug(repoName)}-backend`
-      : "";
-  const effectiveFrontendServiceName = frontendServiceNameTouched
-    ? frontendServiceName
-    : repoName
-      ? `${toSlug(repoName)}-frontend`
-      : "";
+  const effectiveBackendServiceName = effectiveDualServiceName(
+    backendServiceNameTouched,
+    backendServiceName,
+    repoName,
+    "backend",
+  );
+  const effectiveFrontendServiceName = effectiveDualServiceName(
+    frontendServiceNameTouched,
+    frontendServiceName,
+    repoName,
+    "frontend",
+  );
 
-  function buildPayload(input: BuildPayloadInput): CreateProjectPayloadResult {
-    const normalizedRepoName = normalizeRepoName(repoName);
-    if (!normalizedRepoName) {
-      return { ok: false, message: "Repository name is required." };
-    }
-
-    if (!input.repoShapeId) {
-      return { ok: false, message: "Choose a repository shape." };
-    }
-
-    const coverage = Number(coverageThreshold);
-    if (!Number.isInteger(coverage) || coverage < 0 || coverage > 100) {
-      return { ok: false, message: "Coverage threshold must be between 0 and 100." };
-    }
-
-    const normalizedOutputFileName = outputFileName.trim() || "ci.yml";
-    if (
-      normalizedOutputFileName.includes("/") ||
-      normalizedOutputFileName.includes("\\") ||
-      !/\.ya?ml$/i.test(normalizedOutputFileName)
-    ) {
-      return { ok: false, message: "Workflow file name must be a .yml or .yaml basename." };
-    }
-
-    const ownerType = input.ownerType ?? "personal";
-    if (ownerType === "organization" && !input.installationId) {
-      return { ok: false, message: "Choose a linked GitHub organization." };
-    }
-
-    const ownerFields: Pick<CreateProjectRequest, "ownerType" | "installationId"> =
-      input.ownerType
-        ? {
-            ownerType,
-            ...(ownerType === "organization" && input.installationId
-              ? { installationId: input.installationId }
-              : {}),
-          }
-        : {};
-
-    if (input.isMicroservicesShape) {
-      const normalizedBackendName = toSlug(
-        effectiveBackendServiceName || `${normalizedRepoName}-backend`,
-      );
-      const normalizedFrontendName = toSlug(
-        effectiveFrontendServiceName || `${normalizedRepoName}-frontend`,
-      );
-
-      return {
-        ok: true,
-        payload: {
-          repoName: normalizedRepoName,
-          visibility,
-          ...ownerFields,
-          repoShape: input.repoShapeId,
-          // projectTypeId is required on the contract; use backend as the primary slot.
-          projectTypeId: backendProjectTypeId,
-          workflowRecipeId: backendWorkflowRecipeId,
-          // serviceName/servicePath are satisfied by the primary slot for non-microservices
-          // consumers of the contract — the microservicesConfig carries the full detail.
-          serviceName: normalizedBackendName,
-          servicePath: backendServicePath.trim() || "backend/",
-          nodeVersion: nodeVersion.trim() || "24",
-          coverageThreshold: coverage,
-          tests: input.tests,
-          outputFileName: normalizedOutputFileName,
-          ...(input.deploymentProvisioning ? { deploymentProvisioning: input.deploymentProvisioning } : {}),
-          microservicesConfig: {
-            backend: {
-              projectTypeId: backendProjectTypeId,
-              workflowRecipeId: backendWorkflowRecipeId,
-              serviceName: normalizedBackendName,
-              servicePath: backendServicePath.trim() || "backend/",
-            },
-            frontend: {
-              projectTypeId: frontendProjectTypeId,
-              workflowRecipeId: frontendWorkflowRecipeId,
-              serviceName: normalizedFrontendName,
-              servicePath: frontendServicePath.trim() || "frontend/",
-            },
-          },
-        },
-      };
-    }
-
-    if (input.isMultiRepoShape) {
-      const normalizedBackendName = toSlug(
-        effectiveBackendServiceName || `${normalizedRepoName}-backend`,
-      );
-      const normalizedFrontendName = toSlug(
-        effectiveFrontendServiceName || `${normalizedRepoName}-frontend`,
-      );
-
-      return {
-        ok: true,
-        payload: {
-          repoName: normalizedRepoName,
-          visibility,
-          ...ownerFields,
-          repoShape: input.repoShapeId,
-          projectTypeId: backendProjectTypeId,
-          workflowRecipeId: backendWorkflowRecipeId,
-          serviceName: normalizedBackendName,
-          servicePath: backendServicePath.trim() || "backend/",
-          nodeVersion: nodeVersion.trim() || "24",
-          coverageThreshold: coverage,
-          tests: input.tests,
-          outputFileName: normalizedOutputFileName,
-          ...(input.deploymentProvisioning ? { deploymentProvisioning: input.deploymentProvisioning } : {}),
-          multiRepoConfig: {
-            backend: {
-              projectTypeId: backendProjectTypeId,
-              workflowRecipeId: backendWorkflowRecipeId,
-              serviceName: normalizedBackendName,
-              servicePath: backendServicePath.trim() || "backend/",
-            },
-            frontend: {
-              projectTypeId: frontendProjectTypeId,
-              workflowRecipeId: frontendWorkflowRecipeId,
-              serviceName: normalizedFrontendName,
-              servicePath: frontendServicePath.trim() || "frontend/",
-            },
-          },
-        },
-      };
-    }
-
-    if (!input.projectTypeId) {
-      return { ok: false, message: "Choose a project type." };
-    }
-
-    if (!input.workflowRecipeId) {
-      return { ok: false, message: "Choose a workflow recipe." };
-    }
-
-    const normalizedServiceName = toSlug(serviceName || normalizedRepoName);
-
-    return {
-      ok: true,
-      payload: {
-        repoName: normalizedRepoName,
-        visibility,
-        ...ownerFields,
-        repoShape: input.repoShapeId,
-        projectTypeId: input.projectTypeId,
-        workflowRecipeId: input.workflowRecipeId,
-        serviceName: normalizedServiceName,
-        servicePath: servicePath.trim() || ".",
-        nodeVersion: nodeVersion.trim() || "24",
-        coverageThreshold: coverage,
-        tests: input.tests,
-        outputFileName: normalizedOutputFileName,
-        ...(input.deploymentProvisioning ? { deploymentProvisioning: input.deploymentProvisioning } : {}),
-      },
-    };
+  function buildPayload(input: BuildPayloadInput) {
+    return buildCreateProjectPayload({
+      repoName,
+      visibility,
+      serviceName,
+      servicePath,
+      nodeVersion,
+      coverageThreshold,
+      outputFileName,
+      backendProjectTypeId,
+      backendWorkflowRecipeId,
+      backendServiceName: effectiveBackendServiceName,
+      backendServicePath,
+      frontendProjectTypeId,
+      frontendWorkflowRecipeId,
+      frontendServiceName: effectiveFrontendServiceName,
+      frontendServicePath,
+      ...input,
+    });
   }
 
   return {

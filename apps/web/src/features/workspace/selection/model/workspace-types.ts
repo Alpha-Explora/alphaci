@@ -23,3 +23,29 @@ export const APP_ROLE_BADGE_LABELS: Record<WorkspaceAppRole, string> = {
 export function canCreateWorkspace(appRole: WorkspaceAppRole | null | undefined) {
   return appRole === "admin" || appRole === "lead";
 }
+
+export function navAvatarInitial(session: {
+  user: { name?: string; login?: string };
+} | null): string {
+  return (session?.user.name ?? session?.user.login ?? "U")
+    .slice(0, 1)
+    .toUpperCase();
+}
+
+export function isPlatformAdminUser(
+  guest: boolean,
+  session: { appRole?: string; platformRole?: string | null } | null,
+): boolean {
+  if (guest) return false;
+  return session?.appRole === "admin" || session?.platformRole === "super_admin";
+}
+
+export function sessionAppRole(
+  session: { appRole?: WorkspaceAppRole } | null,
+): WorkspaceAppRole {
+  return session?.appRole ?? "member";
+}
+
+export function reducedMotionEnabled(value: boolean | null): boolean {
+  return value ?? false;
+}

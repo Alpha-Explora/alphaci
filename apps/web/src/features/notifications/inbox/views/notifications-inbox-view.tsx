@@ -19,6 +19,9 @@ import {
   NotificationGlyph,
 } from "./notification-utils";
 
+type InboxViewModel = ReturnType<typeof useNotificationsInboxViewModel>;
+type InboxRow = InboxViewModel["rows"][number];
+
 /* ── Icons ─────────────────────────────────────────────────────────────────── */
 
 function InboxIcon({ size = 16 }: { size?: number }) {
@@ -59,21 +62,9 @@ function NotificationsInboxContent() {
 
   /* The View owns no data. Everything below comes from the ViewModel, which is
    * the only place that knows an API exists — see model/use-inbox.ts. */
-  const {
-    rows,
-    unreadCount,
-    unreadItemCount,
-    totalCount,
-    isEnabled,
-    status: notificationsStatus,
-    error: notificationsError,
-    filter,
-    setFilter,
-    markingId,
-    isMarkingAll,
-    markRead: handleMarkRead,
-    markAllRead: handleMarkAllRead,
-  } = useNotificationsInboxViewModel(status === "signed-in" && !guest);
+  const notificationsVm = useNotificationsInboxViewModel(
+    status === "signed-in" && !guest,
+  );
 
   useEffect(() => {
     if (status === "signed-out") {
@@ -93,36 +84,23 @@ function NotificationsInboxContent() {
 
   /* ── Error ── */
   if (status === "error") {
-    return (
-      <main className="flow-shell page-shell">
-        <FlowBackground />
-        <div className="state-body">
-          <div className="state-card">
-            <h1>Session verification failed</h1>
-            <p>
-              We could not verify your session. Please retry or sign in again.
-            </p>
-            <div className="hero-actions">
-              <button
-                className="primary-button"
-                type="button"
-                onClick={() => void refresh()}
-              >
-                Retry
-              </button>
-              <Link className="ghost-button" href="/login?next=/inbox">
-                Go to login
-              </Link>
-            </div>
-            {error ? <p className="error-text inbox-error-inline">{error}</p> : null}
-          </div>
-        </div>
-      </main>
-    );
+    return <SessionError error={error} onRetry={refresh} />;
   }
 
   if (status === "signed-out") return null;
 
+  return <InboxPage guest={guest} session={session} isLoggingOut={isLoggingOut} onLogout={handleLogout}
+    prefersReducedMotion={prefersReducedMotion} vm={notificationsVm} />;
+}
+
+function SessionError({ error, onRetry }: Readonly<{ error: string | null; onRetry: () => void }>) {
+  return <main className="flow-shell page-shell"><FlowBackground /><div className="state-body"><div className="state-card"><h1>Session verification failed</h1><p>We could not verify your session. Please retry or sign in again.</p><div className="hero-actions"><button className="primary-button" type="button" onClick={onRetry}>Retry</button><Link className="ghost-button" href="/login?next=/inbox">Go to login</Link></div>{error ? <p className="error-text inbox-error-inline">{error}</p> : null}</div></div></main>;
+}
+
+function InboxPage({ guest, session, isLoggingOut, onLogout, prefersReducedMotion, vm }: Readonly<{
+  guest: boolean; session: ReturnType<typeof useAuthSession>["session"]; isLoggingOut: boolean;
+  onLogout: () => Promise<void>; prefersReducedMotion: boolean | null; vm: InboxViewModel;
+}>) {
   return (
     <main className="dash-shell" suppressHydrationWarning>
       <a href="#main-content" className="skip-link">
@@ -133,180 +111,48 @@ function NotificationsInboxContent() {
       <AppNav
         guest={guest}
         session={session}
-        onLogout={() => void handleLogout()}
+        onLogout={() => void onLogout()}
         isLoggingOut={isLoggingOut}
       />
 
       <div id="main-content" className="dash-page-content inbox-page">
-        {/* ── Page header ── */}
-        <motion.div
-          className="inbox-header"
-          initial={prefersReducedMotion ? false : { opacity: 0, y: 14 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.35, ease: [0.25, 0, 0, 1] }}
-        >
-          <div>
-            <p className="inbox-kicker">ALPHACI / INBOX</p>
-            <h1 className="inbox-title">
-              <InboxIcon size={20} />
-              Inbox
-              {unreadCount > 0 && (
-                <span className="notification-center-unread-chip">
-                  {unreadCount} unread
-                </span>
-              )}
-            </h1>
-            <p className="inbox-subtitle">
-              System notifications — project provisioning, workflow runs,
-              membership, and sync events.
-            </p>
-          </div>
-
-          <div className="inbox-toolbar">
-            {/* Gmail-style filter tabs with live counts */}
-            <div
-              role="group"
-              aria-label="Filter notifications"
-              className="inbox-filter-tabs"
-            >
-              <button
-                type="button"
-                className={`inbox-filter-tab${filter === "all" ? " inbox-filter-tab--active" : ""}`}
-                aria-pressed={filter === "all"}
-                onClick={() => setFilter("all")}
-              >
-                All
-                <span className="inbox-filter-tab-count">{totalCount}</span>
-              </button>
-              <button
-                type="button"
-                className={`inbox-filter-tab${filter === "unread" ? " inbox-filter-tab--active" : ""}`}
-                aria-pressed={filter === "unread"}
-                onClick={() => setFilter("unread")}
-              >
-                Unread
-                <span className="inbox-filter-tab-count">
-                  {unreadItemCount}
-                </span>
-              </button>
-            </div>
-
-            {unreadItemCount > 0 && (
-              <button
-                type="button"
-                className="dash-action-btn"
-                disabled={isMarkingAll}
-                onClick={() => void handleMarkAllRead()}
-              >
-                {isMarkingAll ? "Marking..." : "Mark all read"}
-              </button>
-            )}
-          </div>
-        </motion.div>
-
-        {notificationsError && (
-          <p className="error-text inbox-error-inline">{notificationsError}</p>
-        )}
-
-        {/* ── Content states ── */}
-        {guest ? (
-          <div className="settings-card">
-            <div className="settings-section-body">
-              <p className="inbox-state-copy">
-                Sign in to start receiving system notifications.
-              </p>
-              <Link href="/login" className="primary-button inbox-state-cta">
-                Sign in
-              </Link>
-            </div>
-          </div>
-        ) : notificationsStatus === "loading" ? (
-          <p className="inbox-loading-text">Loading notifications...</p>
-        ) : !isEnabled ? (
-          <div className="settings-card">
-            <div className="settings-section-body">
-              <p className="inbox-state-copy">
-                Notifications are not enabled for this deployment.
-              </p>
-            </div>
-          </div>
-        ) : rows.length === 0 ? (
-          <motion.div
-            className="settings-card"
-            initial={prefersReducedMotion ? false : { opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.25 }}
-          >
-            <div className="settings-section-body inbox-empty">
-              <span className="inbox-empty-icon" aria-hidden="true">
-                <InboxIcon size={28} />
-              </span>
-              <p className="inbox-empty-title">
-                {filter === "unread" ? "No unread notifications" : "All caught up"}
-              </p>
-              <p className="inbox-empty-sub">
-                {filter === "unread"
-                  ? "Everything in your inbox has been read."
-                  : "New activity on your projects and workflows will show up here."}
-              </p>
-            </div>
-          </motion.div>
-        ) : (
-          <div className="inbox-list">
-            {rows.map((row) =>
-              row.type === "header" ? (
-                <p key={`header-${row.label}`} className="inbox-day-label">
-                  {row.label}
-                </p>
-              ) : (
-                <motion.article
-                  key={row.item.id}
-                  className={`inbox-row${row.item.readAt ? " inbox-row--read" : ""}`}
-                  title={`${row.item.title} · ${notificationLabel(row.item.eventCode)}`}
-                  initial={prefersReducedMotion ? false : { opacity: 0, y: 6 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{
-                    duration: 0.18,
-                    delay: prefersReducedMotion
-                      ? 0
-                      : Math.min(row.index * 0.015, 0.3),
-                  }}
-                >
-                  <NotificationGlyph item={row.item} />
-                  <span className="inbox-row-text">
-                    <strong className="inbox-row-title">
-                      {row.item.title}
-                    </strong>
-                    <span className="inbox-row-snippet">{row.item.body}</span>
-                  </span>
-                  <time
-                    dateTime={row.item.createdAt}
-                    className="inbox-row-time"
-                  >
-                    {formatNotificationTime(row.item.createdAt)}
-                  </time>
-                  {row.item.readAt ? (
-                    <span className="inbox-row-action dash-badge-violet">
-                      Read
-                    </span>
-                  ) : (
-                    <button
-                      type="button"
-                      className="inbox-row-action dash-action-btn"
-                      disabled={markingId === row.item.id || isMarkingAll}
-                      onClick={() => void handleMarkRead(row.item.id)}
-                    >
-                      {markingId === row.item.id ? "Saving..." : "Mark read"}
-                    </button>
-                  )}
-                </motion.article>
-              ),
-            )}
-          </div>
-        )}
+        <InboxHeader vm={vm} reduced={prefersReducedMotion} />
+        {vm.error && <p className="error-text inbox-error-inline">{vm.error}</p>}
+        <InboxState guest={guest} vm={vm} reduced={prefersReducedMotion} />
       </div>
     </main>
   );
+}
+
+function InboxHeader({ vm, reduced }: Readonly<{ vm: InboxViewModel; reduced: boolean | null }>) {
+  return <motion.div className="inbox-header" initial={reduced ? false : { opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35, ease: [0.25, 0, 0, 1] }}><div><p className="inbox-kicker">ALPHACI / INBOX</p><h1 className="inbox-title"><InboxIcon size={20} />Inbox{vm.unreadCount > 0 && <span className="notification-center-unread-chip">{vm.unreadCount} unread</span>}</h1><p className="inbox-subtitle">System notifications — project provisioning, workflow runs, membership, and sync events.</p></div><InboxToolbar vm={vm} /></motion.div>;
+}
+
+function InboxToolbar({ vm }: Readonly<{ vm: InboxViewModel }>) {
+  return <div className="inbox-toolbar"><div role="group" aria-label="Filter notifications" className="inbox-filter-tabs"><button type="button" className={`inbox-filter-tab${vm.filter === "all" ? " inbox-filter-tab--active" : ""}`} aria-pressed={vm.filter === "all"} onClick={() => vm.setFilter("all")}>All<span className="inbox-filter-tab-count">{vm.totalCount}</span></button><button type="button" className={`inbox-filter-tab${vm.filter === "unread" ? " inbox-filter-tab--active" : ""}`} aria-pressed={vm.filter === "unread"} onClick={() => vm.setFilter("unread")}>Unread<span className="inbox-filter-tab-count">{vm.unreadItemCount}</span></button></div>{vm.unreadItemCount > 0 && <button type="button" className="dash-action-btn" disabled={vm.isMarkingAll} onClick={() => void vm.markAllRead()}>{vm.isMarkingAll ? "Marking..." : "Mark all read"}</button>}</div>;
+}
+
+function InboxState({ guest, vm, reduced }: Readonly<{ guest: boolean; vm: InboxViewModel; reduced: boolean | null }>) {
+  if (guest) return <div className="settings-card"><div className="settings-section-body"><p className="inbox-state-copy">Sign in to start receiving system notifications.</p><Link href="/login" className="primary-button inbox-state-cta">Sign in</Link></div></div>;
+  if (vm.status === "loading") return <p className="inbox-loading-text">Loading notifications...</p>;
+  if (!vm.isEnabled) return <div className="settings-card"><div className="settings-section-body"><p className="inbox-state-copy">Notifications are not enabled for this deployment.</p></div></div>;
+  if (vm.rows.length === 0) return <EmptyInbox filter={vm.filter} reduced={reduced} />;
+  return <div className="inbox-list">{vm.rows.map((row) => <NotificationRow key={row.type === "header" ? `header-${row.label}` : row.item.id} row={row} reduced={reduced} vm={vm} />)}</div>;
+}
+
+function EmptyInbox({ filter, reduced }: Readonly<{ filter: InboxViewModel["filter"]; reduced: boolean | null }>) {
+  const unread = filter === "unread";
+  return <motion.div className="settings-card" initial={reduced ? false : { opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.25 }}><div className="settings-section-body inbox-empty"><span className="inbox-empty-icon" aria-hidden="true"><InboxIcon size={28} /></span><p className="inbox-empty-title">{unread ? "No unread notifications" : "All caught up"}</p><p className="inbox-empty-sub">{unread ? "Everything in your inbox has been read." : "New activity on your projects and workflows will show up here."}</p></div></motion.div>;
+}
+
+function NotificationRow({ row, reduced, vm }: Readonly<{ row: InboxRow; reduced: boolean | null; vm: InboxViewModel }>) {
+  if (row.type === "header") return <p className="inbox-day-label">{row.label}</p>;
+  return <motion.article className={`inbox-row${row.item.readAt ? " inbox-row--read" : ""}`} title={`${row.item.title} · ${notificationLabel(row.item.eventCode)}`} initial={reduced ? false : { opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.18, delay: reduced ? 0 : Math.min(row.index * 0.015, 0.3) }}><NotificationGlyph item={row.item} /><span className="inbox-row-text"><strong className="inbox-row-title">{row.item.title}</strong><span className="inbox-row-snippet">{row.item.body}</span></span><time dateTime={row.item.createdAt} className="inbox-row-time">{formatNotificationTime(row.item.createdAt)}</time><NotificationAction row={row} vm={vm} /></motion.article>;
+}
+
+function NotificationAction({ row, vm }: Readonly<{ row: Extract<InboxRow, { type: "item" }>; vm: InboxViewModel }>) {
+  if (row.item.readAt) return <span className="inbox-row-action dash-badge-violet">Read</span>;
+  return <button type="button" className="inbox-row-action dash-action-btn" disabled={vm.markingId === row.item.id || vm.isMarkingAll} onClick={() => void vm.markRead(row.item.id)}>{vm.markingId === row.item.id ? "Saving..." : "Mark read"}</button>;
 }
 
 export function NotificationsInboxView() {

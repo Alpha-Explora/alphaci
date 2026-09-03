@@ -11,12 +11,15 @@ export {
 
 import type {
   ConnectorTone,
+  DeliveryPortfolioNode,
+  MyAssignedRepository,
   ProjectTone,
   ProvisionedProject,
   RunGroup,
   RunStats,
   StageId,
   StageStatus,
+  WorkspaceAttentionItem,
 } from "./home-types";
 
 export const RUN_STAGE_ORDER: StageId[] = ["access", "quality", "package"];
@@ -53,6 +56,121 @@ export function projectTone(status: ProvisionedProject["status"]): ProjectTone {
   if (status === "provisioning") return "warn";
   if (status === "failed") return "danger";
   return "muted"; // orphaned
+}
+
+export function failedDeliveryProjects(
+  projects: ProvisionedProject[],
+): ProvisionedProject[] {
+  return projects.filter(
+    (project) => project.status === "failed" || project.status === "orphaned",
+  );
+}
+
+export function syncingAccessAssignments(
+  assignments: MyAssignedRepository[],
+): MyAssignedRepository[] {
+  return assignments.filter(
+    (assignment) =>
+      assignment.effectiveState === "failed" ||
+      assignment.effectiveState === "pending" ||
+      assignment.effectiveState === "unknown",
+  );
+}
+
+export function workspacePortfolioCounts(portfolio: DeliveryPortfolioNode[]): {
+  deliveryProjectCount: number;
+  repositoryCount: number;
+} {
+  let deliveryProjectCount = 0;
+  let repositoryCount = 0;
+  for (const node of portfolio) {
+    deliveryProjectCount += node.deliveryProjects.length;
+    for (const deliveryProject of node.deliveryProjects) {
+      repositoryCount += deliveryProject.repositories.length;
+    }
+  }
+  return { deliveryProjectCount, repositoryCount };
+}
+
+export function isEmptyWorkspace(input: {
+  loading: boolean;
+  projectCount: number;
+  runCount: number;
+  deliveryProjectCount: number;
+}): boolean {
+  return (
+    !input.loading &&
+    input.projectCount === 0 &&
+    input.runCount === 0 &&
+    input.deliveryProjectCount === 0
+  );
+}
+
+function countSuffix(count: number, singular: string, plural: string): string {
+  if (count === 1) return singular;
+  return plural;
+}
+
+export function buildWorkspaceAttentionItems(input: {
+  failedProjectCount: number;
+  syncingAssignmentCount: number;
+  groupId: string | undefined;
+}): WorkspaceAttentionItem[] {
+  const items: WorkspaceAttentionItem[] = [];
+  if (input.failedProjectCount) {
+    items.push({
+      tone: "danger",
+      label: `${input.failedProjectCount} project${countSuffix(input.failedProjectCount, "", "s")} need attention`,
+      detail: "Review failed or disconnected delivery work.",
+      href: "/workflows?tab=current",
+    });
+  }
+  if (input.syncingAssignmentCount) {
+    items.push({
+      tone: "warning",
+      label: `${input.syncingAssignmentCount} access update${countSuffix(input.syncingAssignmentCount, "", "s")} in progress`,
+      detail: "GitHub permissions are still being verified.",
+      href: input.groupId ? `/groups/${input.groupId}` : "/workflows?tab=current",
+    });
+  }
+  return items;
+}
+
+export function dashboardWelcomeName(session: {
+  user: { login?: string; name?: string };
+} | null | undefined): string {
+  return session?.user.login ?? session?.user.name ?? "there";
+}
+
+export function dashboardOverviewBusy(
+  projectsLoading: boolean,
+  workspaceLoading: boolean,
+  runsLoading: boolean,
+  historyLoading: boolean,
+): boolean {
+  return projectsLoading || workspaceLoading || runsLoading || historyLoading;
+}
+
+export function firstDashboardError(
+  projectsError: string | null,
+  historyError: string | null,
+  workspaceOverviewError: string | null,
+): string | null {
+  return projectsError ?? historyError ?? workspaceOverviewError;
+}
+
+export function shouldShowWelcomeModal(input: {
+  signedIn: boolean;
+  guest: boolean;
+  welcomeDismissed: boolean;
+  onboardingCompleted: boolean | undefined;
+}): boolean {
+  return (
+    input.signedIn &&
+    !input.guest &&
+    !input.welcomeDismissed &&
+    input.onboardingCompleted === false
+  );
 }
 
 /** Human label for a provisioned-project status. */

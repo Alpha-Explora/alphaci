@@ -153,6 +153,13 @@ function LockIcon() {
   );
 }
 
+const STATE_DEFAULTS = {
+  empty: { title: "Nothing here yet", message: "There's nothing to show in this view right now." },
+  forbidden: { title: "You don't have access", message: "Your role in this group doesn't allow you to view this. Ask a group lead if you need access." },
+  notfound: { title: "Not found", message: "This item doesn't exist, or you don't have access to it." },
+  error: { title: "Something went wrong", message: "We couldn't load this view. Please try again." },
+} as const;
+
 export function LoadingRows({ rows = 3 }: { rows?: number }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }} aria-hidden="true">
@@ -176,38 +183,15 @@ export function StateView({
   action?: ReactNode;
   onRetry?: () => void;
 }) {
-  const defaults: Record<typeof variant, { title: string; message: string; danger?: boolean }> = {
-    empty: {
-      title: title ?? "Nothing here yet",
-      message: message ?? "There's nothing to show in this view right now.",
-    },
-    forbidden: {
-      title: title ?? "You don't have access",
-      message:
-        message ??
-        "Your role in this group doesn't allow you to view this. Ask a group lead if you need access.",
-      danger: false,
-    },
-    notfound: {
-      title: title ?? "Not found",
-      message:
-        message ??
-        "This item doesn't exist, or you don't have access to it.",
-    },
-    error: {
-      title: title ?? "Something went wrong",
-      message: message ?? "We couldn't load this view. Please try again.",
-      danger: true,
-    },
-  } as const;
-
-  const conf = defaults[variant];
+  const defaults = STATE_DEFAULTS[variant];
+  const conf = { title: title ?? defaults.title, message: message ?? defaults.message };
   const useLock = variant === "forbidden";
+  const danger = variant === "error";
 
   return (
     <div className="hier-state" role={variant === "error" ? "alert" : undefined}>
       <span
-        className={`hier-state-icon${conf.danger ? " hier-state-icon--danger" : ""}`}
+        className={`hier-state-icon${danger ? " hier-state-icon--danger" : ""}`}
         aria-hidden="true"
       >
         {useLock ? <LockIcon /> : <InfoIcon />}

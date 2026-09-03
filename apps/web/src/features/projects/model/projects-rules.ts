@@ -38,6 +38,32 @@ export function toOverviewError(cause: unknown): string {
   return "Could not load this project. Please retry.";
 }
 
+export function routeProjectId(
+  params: { projectId?: string } | null | undefined,
+): string {
+  return params?.projectId ?? "";
+}
+
+export function overviewProject<T>(
+  overview: { project: T } | null | undefined,
+): T | null {
+  return overview?.project ?? null;
+}
+
+export function projectRepoFullName(
+  project: { repoFullName?: string } | null,
+): string | null {
+  return project?.repoFullName ?? null;
+}
+
+export function isSignedInMember(status: string, guest: boolean): boolean {
+  return status === "signed-in" && !guest;
+}
+
+export function reducedMotionFlag(value: boolean | null): boolean {
+  return value ?? false;
+}
+
 /* ── Branch previews ──────────────────────────────────────────────────────── */
 
 export type PreviewStatusTone = "ok" | "pending" | "danger";

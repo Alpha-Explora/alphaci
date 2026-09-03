@@ -288,6 +288,107 @@ function ServiceUrlLine({ url }: Readonly<{ url: string }>) {
   );
 }
 
+function provisioningStatusCopy(status: DeploymentProvisioningResult["status"]): string {
+  if (status === "completed") return "Provider targets were created.";
+  if (status === "partial") return "Some provider provisioning steps need attention.";
+  return "Provider provisioning failed.";
+}
+
+function TargetEnvSet({
+  target,
+  envSet,
+}: Readonly<{
+  target: ProvisionedTargetSummary;
+  envSet: ProvisionedTargetSummary["env"][number];
+}>) {
+  const label =
+    envSet.lane === "production"
+      ? "production"
+      : `preview: ${envSet.gitBranch ?? "branch"}`;
+  return (
+    <div
+      className="deployment-provisioning-summary__env"
+      key={`${target.slot}-${envSet.lane}-${envSet.gitBranch ?? ""}`}
+    >
+      <span>{label}</span>
+      <div>
+        {envSet.provisioned.map((variable) => (
+          <code key={`${variable.key}-ok`}>{variable.key}</code>
+        ))}
+        {envSet.failed.map((variable) => (
+          <code className="failed" key={`${variable.key}-failed`}>
+            {variable.key}
+            {variable.errorSummary
+              ? ` failed: ${cleanUserMessage(variable.errorSummary)}`
+              : " failed"}
+          </code>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function ProvisionedTargetCard({
+  target,
+  index,
+}: Readonly<{
+  target: ProvisionedTargetSummary;
+  index: number;
+}>) {
+  const serviceUrl = provisioningTargetUrl(target);
+  const details = renderTargetDetails(target);
+  const secretNames = githubSecretNames(target.providerMetadata);
+  return (
+    <article
+      className={`deployment-provisioning-summary__target ${target.status}`}
+      key={`${target.slot}-${target.provider}-${target.deploymentTargetId ?? index}`}
+    >
+      <div>
+        <strong>{formatProvider(target.provider)}</strong>
+        <span>
+          {target.providerProjectName ??
+            target.providerProjectId ??
+            target.slot}
+        </span>
+      </div>
+      <p className="helper-text" style={{ margin: 0 }}>
+        {target.slot} - {target.status} - {deploymentRouteLabel(target)}
+        {target.errorSummary
+          ? ` - ${cleanUserMessage(target.errorSummary)}`
+          : ""}
+      </p>
+      {serviceUrl ? <ServiceUrlLine url={serviceUrl} /> : null}
+      {details.length > 0 ? (
+        <p className="helper-text" style={{ margin: 0 }}>
+          {details.join(" - ")}
+        </p>
+      ) : null}
+      {hasRenderDeploymentSecrets(target) ? (
+        <p className="helper-text" style={{ margin: 0 }}>
+          Render API deployment secrets installed
+        </p>
+      ) : null}
+      {secretNames.length > 0 ? (
+        <div className="deployment-provisioning-summary__env">
+          <span>GitHub secrets</span>
+          <div>
+            {secretNames.map((secretName) => (
+              <code key={secretName}>{secretName}</code>
+            ))}
+          </div>
+        </div>
+      ) : null}
+      {target.env.map((envSet) => (
+        <TargetEnvSet
+          key={`${target.slot}-${envSet.lane}-${envSet.gitBranch ?? ""}`}
+          target={target}
+          envSet={envSet}
+        />
+      ))}
+    </article>
+  );
+}
+
 export function DeploymentProvisioningSummary({
   result,
 }: Readonly<{ result?: DeploymentProvisioningResult }>) {
@@ -301,11 +402,7 @@ export function DeploymentProvisioningSummary({
         <div>
           <h4>Deployment provisioning</h4>
           <p className="helper-text" style={{ margin: "0.25rem 0 0" }}>
-            {result.status === "completed"
-              ? "Provider targets were created."
-              : result.status === "partial"
-                ? "Some provider provisioning steps need attention."
-                : "Provider provisioning failed."}
+            {provisioningStatusCopy(result.status)}
           </p>
         </div>
         <span
@@ -316,78 +413,248 @@ export function DeploymentProvisioningSummary({
       </div>
       <div className="deployment-provisioning-summary__targets">
         {result.targets.map((target, index) => (
-          <article
-            className={`deployment-provisioning-summary__target ${target.status}`}
+          <ProvisionedTargetCard
+            target={target}
+            index={index}
             key={`${target.slot}-${target.provider}-${target.deploymentTargetId ?? index}`}
-          >
-            <div>
-              <strong>{formatProvider(target.provider)}</strong>
-              <span>
-                {target.providerProjectName ??
-                  target.providerProjectId ??
-                  target.slot}
-              </span>
-            </div>
-            <p className="helper-text" style={{ margin: 0 }}>
-              {target.slot} - {target.status} - {deploymentRouteLabel(target)}
-              {target.errorSummary
-                ? ` - ${cleanUserMessage(target.errorSummary)}`
-                : ""}
-            </p>
-            {provisioningTargetUrl(target) ? (
-              <ServiceUrlLine url={provisioningTargetUrl(target)!} />
-            ) : null}
-            {renderTargetDetails(target).length > 0 ? (
-              <p className="helper-text" style={{ margin: 0 }}>
-                {renderTargetDetails(target).join(" - ")}
-              </p>
-            ) : null}
-            {hasRenderDeploymentSecrets(target) ? (
-              <p className="helper-text" style={{ margin: 0 }}>
-                Render API deployment secrets installed
-              </p>
-            ) : null}
-            {githubSecretNames(target.providerMetadata).length > 0 ? (
-              <div className="deployment-provisioning-summary__env">
-                <span>GitHub secrets</span>
-                <div>
-                  {githubSecretNames(target.providerMetadata).map(
-                    (secretName) => (
-                      <code key={secretName}>{secretName}</code>
-                    ),
-                  )}
-                </div>
-              </div>
-            ) : null}
-            {target.env.map((envSet) => (
-              <div
-                className="deployment-provisioning-summary__env"
-                key={`${target.slot}-${envSet.lane}-${envSet.gitBranch ?? ""}`}
-              >
-                <span>
-                  {envSet.lane === "production"
-                    ? "production"
-                    : `preview: ${envSet.gitBranch ?? "branch"}`}
-                </span>
-                <div>
-                  {envSet.provisioned.map((variable) => (
-                    <code key={`${variable.key}-ok`}>{variable.key}</code>
-                  ))}
-                  {envSet.failed.map((variable) => (
-                    <code className="failed" key={`${variable.key}-failed`}>
-                      {variable.key}
-                      {variable.errorSummary
-                        ? ` failed: ${cleanUserMessage(variable.errorSummary)}`
-                        : " failed"}
-                    </code>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </article>
+          />
         ))}
       </div>
     </section>
+  );
+}
+
+function ExistingRepoResultView({
+  existingRepoResult,
+  repoUrl,
+  onViewProject,
+}: Readonly<{
+  existingRepoResult: NonNullable<SetupResultPanelProps["existingRepoResult"]>;
+  repoUrl: string | null;
+  onViewProject: () => void;
+}>) {
+  return (
+    <motion.div
+      key={existingRepoResult.githubCommitSha}
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -8 }}
+      style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}
+    >
+      <div className="result-repo-header">
+        <span className="result-status-dot" aria-hidden="true" />
+        <a
+          href={repoUrl ?? undefined}
+          target="_blank"
+          rel="noreferrer"
+          className="result-repo-name"
+        >
+          {existingRepoResult.repoFullName}
+        </a>
+      </div>
+      <div className="result-branches">
+        <span className="branch-chip">{existingRepoResult.status}</span>
+      </div>
+      <div>
+        <p
+          className="helper-text"
+          style={{
+            margin: "0 0 0.3rem",
+            fontSize: "0.72rem",
+            color: "var(--text-muted)",
+          }}
+        >
+          Workflow file
+        </p>
+        <div className="terminal-path">{existingRepoResult.workflowPath}</div>
+      </div>
+      <WorkflowFilesList files={existingRepoResult.workflowFiles} />
+      <DeploymentProvisioningSummary
+        result={existingRepoResult.deploymentProvisioning}
+      />
+      <div>
+        <p
+          className="helper-text"
+          style={{
+            margin: "0 0 0.3rem",
+            fontSize: "0.72rem",
+            color: "var(--text-muted)",
+          }}
+        >
+          Commit
+        </p>
+        <div className="terminal-hash">
+          <CommitLink
+            sha={existingRepoResult.githubCommitSha}
+            url={existingRepoResult.githubCommitUrl}
+          />
+        </div>
+      </div>
+      <div className="result-actions">
+        {repoUrl ? (
+          <a
+            className="primary-button"
+            href={repoUrl}
+            target="_blank"
+            rel="noreferrer"
+          >
+            Open repo
+          </a>
+        ) : null}
+        {repoUrl ? (
+          <a
+            className="ghost-button"
+            href={`${repoUrl}/blob/${existingRepoResult.githubCommitSha}/${existingRepoResult.workflowPath}`}
+            target="_blank"
+            rel="noreferrer"
+          >
+            View workflow
+          </a>
+        ) : null}
+        <button
+          className="ghost-button"
+          type="button"
+          onClick={onViewProject}
+        >
+          View projects
+        </button>
+      </div>
+      <p
+        className="helper-text"
+        style={{
+          fontSize: "0.78rem",
+          color: "var(--text-muted)",
+          margin: 0,
+        }}
+      >
+        Workflow committed to <code>{existingRepoResult.workflowPath}</code>{" "}
+        on the repository&apos;s default branch. Push to <code>test</code>{" "}
+        to trigger your first CI run.
+      </p>
+    </motion.div>
+  );
+}
+
+function CreatedProjectResultView({
+  setupResult,
+  envProvisioningEnabled,
+  onViewProject,
+}: Readonly<{
+  setupResult: CreateProjectResult;
+  envProvisioningEnabled: boolean;
+  onViewProject: () => void;
+}>) {
+  return (
+    <motion.div
+      key={setupResult.repoUrl}
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -8 }}
+      style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}
+    >
+      <div className="result-repo-header">
+        <span className="result-status-dot" aria-hidden="true" />
+        <a
+          href={setupResult.repoUrl}
+          target="_blank"
+          rel="noreferrer"
+          className="result-repo-name"
+        >
+          {setupResult.repoFullName}
+        </a>
+      </div>
+      <div className="result-branches">
+        <span className="branch-chip">{setupResult.status}</span>
+        <span className="branch-chip">{setupResult.projectTypeId}</span>
+        <span className="branch-chip">{setupResult.workflowRecipeId}</span>
+      </div>
+      <div>
+        <p
+          className="helper-text"
+          style={{
+            margin: "0 0 0.3rem",
+            fontSize: "0.72rem",
+            color: "var(--text-muted)",
+          }}
+        >
+          Workflow file
+        </p>
+        <div className="terminal-path">{setupResult.workflowPath}</div>
+      </div>
+      <WorkflowFilesList files={setupResult.workflowFiles} />
+      <DeploymentProvisioningSummary
+        result={setupResult.deploymentProvisioning}
+      />
+      <div>
+        <p
+          className="helper-text"
+          style={{
+            margin: "0 0 0.3rem",
+            fontSize: "0.72rem",
+            color: "var(--text-muted)",
+          }}
+        >
+          Commit
+        </p>
+        <div className="terminal-hash">
+          <CommitLink
+            sha={setupResult.githubCommitSha}
+            url={setupResult.githubCommitUrl}
+          />
+        </div>
+      </div>
+      <SecondaryRepoSection
+        url={setupResult.secondaryRepoUrl}
+        fullName={setupResult.secondaryRepoFullName}
+      />
+      <div className="result-actions">
+        <a
+          className="primary-button"
+          href={setupResult.repoUrl}
+          target="_blank"
+          rel="noreferrer"
+        >
+          Open repo
+        </a>
+        <a
+          className="ghost-button"
+          href={`${setupResult.repoUrl}/blob/main/${setupResult.workflowPath}`}
+          target="_blank"
+          rel="noreferrer"
+        >
+          View workflow
+        </a>
+        <SecondaryRepoLink url={setupResult.secondaryRepoUrl} />
+        {envProvisioningEnabled ? (
+          <button
+            className="ghost-button"
+            type="button"
+            onClick={onViewProject}
+          >
+            Configure env vars
+          </button>
+        ) : null}
+        <button
+          className="ghost-button"
+          type="button"
+          onClick={onViewProject}
+        >
+          View projects
+        </button>
+      </div>
+      <p
+        className="helper-text"
+        style={{
+          fontSize: "0.78rem",
+          color: "var(--text-muted)",
+          margin: 0,
+        }}
+      >
+        Workflow committed to <code>{setupResult.workflowPath}</code> on{" "}
+        <code>main</code>. Push to <code>test</code> to trigger your first
+        CI run.
+      </p>
+    </motion.div>
   );
 }
 
@@ -413,225 +680,17 @@ export function SetupResultPanel({
       </p>
       <AnimatePresence mode="wait">
         {existingRepoResult ? (
-          <motion.div
-            key={existingRepoResult.githubCommitSha}
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -8 }}
-            style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}
-          >
-            <div className="result-repo-header">
-              <span className="result-status-dot" aria-hidden="true" />
-              <a
-                href={repoUrl ?? undefined}
-                target="_blank"
-                rel="noreferrer"
-                className="result-repo-name"
-              >
-                {existingRepoResult.repoFullName}
-              </a>
-            </div>
-
-            <div className="result-branches">
-              <span className="branch-chip">{existingRepoResult.status}</span>
-            </div>
-
-            <div>
-              <p
-                className="helper-text"
-                style={{
-                  margin: "0 0 0.3rem",
-                  fontSize: "0.72rem",
-                  color: "var(--text-muted)",
-                }}
-              >
-                Workflow file
-              </p>
-              <div className="terminal-path">{existingRepoResult.workflowPath}</div>
-            </div>
-            <WorkflowFilesList files={existingRepoResult.workflowFiles} />
-            <DeploymentProvisioningSummary
-              result={existingRepoResult.deploymentProvisioning}
-            />
-            <div>
-              <p
-                className="helper-text"
-                style={{
-                  margin: "0 0 0.3rem",
-                  fontSize: "0.72rem",
-                  color: "var(--text-muted)",
-                }}
-              >
-                Commit
-              </p>
-              <div className="terminal-hash">
-                <CommitLink
-                  sha={existingRepoResult.githubCommitSha}
-                  url={existingRepoResult.githubCommitUrl}
-                />
-              </div>
-            </div>
-
-            <div className="result-actions">
-              {repoUrl ? (
-                <a
-                  className="primary-button"
-                  href={repoUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  Open repo
-                </a>
-              ) : null}
-              {repoUrl ? (
-                <a
-                  className="ghost-button"
-                  href={`${repoUrl}/blob/${existingRepoResult.githubCommitSha}/${existingRepoResult.workflowPath}`}
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  View workflow
-                </a>
-              ) : null}
-              <button
-                className="ghost-button"
-                type="button"
-                onClick={onViewProject}
-              >
-                View projects
-              </button>
-            </div>
-
-            <p
-              className="helper-text"
-              style={{
-                fontSize: "0.78rem",
-                color: "var(--text-muted)",
-                margin: 0,
-              }}
-            >
-              Workflow committed to <code>{existingRepoResult.workflowPath}</code>{" "}
-              on the repository&apos;s default branch. Push to <code>test</code>{" "}
-              to trigger your first CI run.
-            </p>
-          </motion.div>
+          <ExistingRepoResultView
+            existingRepoResult={existingRepoResult}
+            repoUrl={repoUrl}
+            onViewProject={onViewProject}
+          />
         ) : setupResult ? (
-          <motion.div
-            key={setupResult.repoUrl}
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -8 }}
-            style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}
-          >
-            <div className="result-repo-header">
-              <span className="result-status-dot" aria-hidden="true" />
-              <a
-                href={setupResult.repoUrl}
-                target="_blank"
-                rel="noreferrer"
-                className="result-repo-name"
-              >
-                {setupResult.repoFullName}
-              </a>
-            </div>
-
-            <div className="result-branches">
-              <span className="branch-chip">{setupResult.status}</span>
-              <span className="branch-chip">{setupResult.projectTypeId}</span>
-              <span className="branch-chip">
-                {setupResult.workflowRecipeId}
-              </span>
-            </div>
-
-            <div>
-              <p
-                className="helper-text"
-                style={{
-                  margin: "0 0 0.3rem",
-                  fontSize: "0.72rem",
-                  color: "var(--text-muted)",
-                }}
-              >
-                Workflow file
-              </p>
-              <div className="terminal-path">{setupResult.workflowPath}</div>
-            </div>
-            <WorkflowFilesList files={setupResult.workflowFiles} />
-            <DeploymentProvisioningSummary
-              result={setupResult.deploymentProvisioning}
-            />
-            <div>
-              <p
-                className="helper-text"
-                style={{
-                  margin: "0 0 0.3rem",
-                  fontSize: "0.72rem",
-                  color: "var(--text-muted)",
-                }}
-              >
-                Commit
-              </p>
-              <div className="terminal-hash">
-                <CommitLink
-                  sha={setupResult.githubCommitSha}
-                  url={setupResult.githubCommitUrl}
-                />
-              </div>
-            </div>
-            <SecondaryRepoSection
-              url={setupResult.secondaryRepoUrl}
-              fullName={setupResult.secondaryRepoFullName}
-            />
-
-            <div className="result-actions">
-              <a
-                className="primary-button"
-                href={setupResult.repoUrl}
-                target="_blank"
-                rel="noreferrer"
-              >
-                Open repo
-              </a>
-              <a
-                className="ghost-button"
-                href={`${setupResult.repoUrl}/blob/main/${setupResult.workflowPath}`}
-                target="_blank"
-                rel="noreferrer"
-              >
-                View workflow
-              </a>
-              <SecondaryRepoLink url={setupResult.secondaryRepoUrl} />
-              {envProvisioningEnabled ? (
-                <button
-                  className="ghost-button"
-                  type="button"
-                  onClick={onViewProject}
-                >
-                  Configure env vars
-                </button>
-              ) : null}
-              <button
-                className="ghost-button"
-                type="button"
-                onClick={onViewProject}
-              >
-                View projects
-              </button>
-            </div>
-
-            <p
-              className="helper-text"
-              style={{
-                fontSize: "0.78rem",
-                color: "var(--text-muted)",
-                margin: 0,
-              }}
-            >
-              Workflow committed to <code>{setupResult.workflowPath}</code> on{" "}
-              <code>main</code>. Push to <code>test</code> to trigger your first
-              CI run.
-            </p>
-          </motion.div>
+          <CreatedProjectResultView
+            setupResult={setupResult}
+            envProvisioningEnabled={envProvisioningEnabled}
+            onViewProject={onViewProject}
+          />
         ) : null}
       </AnimatePresence>
     </aside>

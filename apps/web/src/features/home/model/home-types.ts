@@ -44,6 +44,14 @@ export type ProjectTone = "ok" | "warn" | "danger" | "muted";
 /** Colour of a connector segment between two pipeline stages. */
 export type ConnectorTone = "success" | "danger" | "flowing" | "pending";
 
+/** A dashboard chip pointing at work that needs a person. */
+export interface WorkspaceAttentionItem {
+  tone: string;
+  label: string;
+  detail: string;
+  href: string;
+}
+
 /** Run analytics derived client-side from the recent-runs window. */
 export interface RunStats {
   /** Most-recent-first window used for rate and breakdown (up to 10). */

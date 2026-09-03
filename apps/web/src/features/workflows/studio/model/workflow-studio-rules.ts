@@ -334,3 +334,18 @@ function stripNoisyApiPayload(message: string): string {
     .replaceAll(/\s+/g, " ")
     .trim();
 }
+
+export function studioSessionFields(session: {
+  user: { login?: string; onboardingCompleted?: boolean };
+  subscription: { plan?: string };
+} | null | undefined): {
+  login: string;
+  plan: string;
+  onboardingCompleted: boolean | undefined;
+} {
+  return {
+    login: session?.user.login ?? "builder",
+    plan: session?.subscription.plan ?? "pro",
+    onboardingCompleted: session?.user.onboardingCompleted,
+  };
+}

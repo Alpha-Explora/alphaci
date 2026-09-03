@@ -1,10 +1,7 @@
 "use client";
 
-import Link from "next/link";
-import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { Fragment, useEffect } from "react";
-import { motion } from "framer-motion";
+import { useEffect } from "react";
 
 import { AppNav } from "@/features/workspace/selection";
 import { FlowBackground } from "@/shared/layout/flow-background";
@@ -12,11 +9,24 @@ import { WelcomeModal } from "./welcome-modal";
 import type { useAuthSession } from "@/features/auth/session";
 import { isGuest } from "@/features/auth/session";
 
-import { isGlobalCreatorRole } from "../../model/home-rules";
+import {
+  dashboardOverviewBusy,
+  dashboardWelcomeName,
+  firstDashboardError,
+  isGlobalCreatorRole,
+  shouldShowWelcomeModal,
+} from "../../model/home-rules";
 import { useHomeDashboardViewModel } from "../view-models/use-home-dashboard-view-model";
 import { DashboardWorkspaceOverview } from "./workspace-overview";
-
-import { sectionVariants } from "./motion";
+import {
+  dashboardShortcutHref,
+  isEditableShortcutTarget,
+} from "./dashboard-shortcuts";
+import {
+  DashboardLoadErrors,
+  GuestPreviewBanner,
+  HomeDashboardHeader,
+} from "./home-dashboard-header";
 
 /**
  * The home dashboard itself.
@@ -70,50 +80,38 @@ export function HomeDashboardContent({
   const workspaceOverviewLoading = vm.workspace.status === "loading";
   const workspaceOverviewError = vm.workspace.error;
   const refreshDashboard = vm.reload;
+  const loadError = firstDashboardError(
+    projectsError,
+    historyError,
+    workspaceOverviewError,
+  );
+  const overviewBusy = dashboardOverviewBusy(
+    projectsLoading,
+    workspaceOverviewLoading,
+    runsLoading,
+    historyLoading,
+  );
 
-  // Single-key dashboard shortcuts. Navigation is a view concern, and this
-  // deliberately ignores keystrokes aimed at an editable target.
   useEffect(() => {
     function handleDashboardShortcut(event: KeyboardEvent) {
       if (event.metaKey || event.ctrlKey || event.altKey) return;
-      const target = event.target;
-      if (
-        target instanceof HTMLInputElement ||
-        target instanceof HTMLTextAreaElement ||
-        target instanceof HTMLSelectElement ||
-        (target instanceof HTMLElement && target.isContentEditable)
-      ) {
-        return;
-      }
-
-      const key = event.key.toLowerCase();
-      if (key === "n") {
-        event.preventDefault();
-        router.push("/workflows?tab=setup");
-      } else if (key === "w") {
-        event.preventDefault();
-        router.push("/workflows?tab=current");
-      } else if (key === "r") {
-        event.preventDefault();
-        router.push("/runs");
-      }
+      if (isEditableShortcutTarget(event.target)) return;
+      const href = dashboardShortcutHref(event.key.toLowerCase());
+      if (!href) return;
+      event.preventDefault();
+      router.push(href);
     }
 
     window.addEventListener("keydown", handleDashboardShortcut);
     return () => window.removeEventListener("keydown", handleDashboardShortcut);
   }, [router]);
 
-  // Show the welcome modal for authenticated new users who have not yet
-  // completed onboarding and have not dismissed it this session.
-  const showWelcome =
-    status === "signed-in" &&
-    !guest &&
-    !welcomeDismissed &&
-    session?.user.onboardingCompleted === false;
-
-  const avatarInitial = (session?.user.name ?? session?.user.login ?? "U")
-    .slice(0, 1)
-    .toUpperCase();
+  const showWelcome = shouldShowWelcomeModal({
+    signedIn: enabled,
+    guest,
+    welcomeDismissed,
+    onboardingCompleted: session?.user.onboardingCompleted,
+  });
 
   return (
     <main
@@ -133,145 +131,25 @@ export function HomeDashboardContent({
         isLoggingOut={isLoggingOut}
       />
 
-      {/* Welcome modal — shown once for new authenticated users */}
-      {showWelcome && (
-        <WelcomeModal
-          displayName={session?.user.login ?? session?.user.name ?? "there"}
-          onDismiss={handleWelcomeDismiss}
-        />
-      )}
-
-      {guest && (
-        <div
-          className="guest-banner glass-panel"
-          role="alert"
-          style={{
-            background:
-              "linear-gradient(135deg, rgba(88, 166, 255, 0.08) 0%, rgba(17, 17, 22, 0.7) 100%)",
-            border: "1px solid var(--border-brand)",
-            padding: "1rem var(--layout-gutter)",
-            borderRadius: "0",
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            flexWrap: "wrap",
-            gap: "1rem",
-          }}
-        >
-          <p
-            style={{
-              margin: 0,
-              color: "var(--text-primary)",
-              fontWeight: 500,
-              fontSize: "0.88rem",
-            }}
-          >
-            You are viewing ALPHACI in preview mode. Sign up to unlock all
-            features.
-          </p>
-          <div style={{ display: "flex", gap: "0.5rem" }}>
-            <Link
-              className="primary-button"
-              href="/signup"
-              style={{ padding: "0.4rem 1rem", fontSize: "0.82rem" }}
-            >
-              Sign up free
-            </Link>
-            <Link
-              className="ghost-button"
-              href="/login"
-              style={{ padding: "0.4rem 0.9rem", fontSize: "0.82rem" }}
-            >
-              Log in
-            </Link>
-          </div>
-        </div>
-      )}
+      <HomeDashboardNotices
+        showWelcome={showWelcome}
+        guest={guest}
+        displayName={dashboardWelcomeName(session)}
+        onWelcomeDismiss={handleWelcomeDismiss}
+        loadError={loadError}
+        onRetry={refreshDashboard}
+      />
 
       <div id="main-content" className="dash-page-content home-dash-content">
-        {/* ── Compact welcome header — single row, no latest-run widget ── */}
-        <motion.section
-          className="welcome-banner-flat home-header"
-          aria-label="Welcome"
-          custom={0}
-          variants={sectionVariants}
-          initial={prefersReducedMotion ? false : "hidden"}
-          animate="visible"
-        >
-          <div className="welcome-banner-flat-accent" aria-hidden="true" />
-
-          <div className="home-header-row">
-            <div className="home-header-id">
-              {!guest &&
-                (session?.user.avatarUrl ? (
-                  <Image
-                    src={session.user.avatarUrl}
-                    alt={session.user.name ?? session.user.login}
-                    className="home-header-avatar"
-                    width={40}
-                    height={40}
-                    unoptimized
-                  />
-                ) : (
-                  <span className="home-header-avatar home-header-avatar--fallback" aria-hidden="true">
-                    {avatarInitial}
-                  </span>
-                ))}
-              <div className="home-header-copy">
-                <p className="home-header-eyebrow">SYSTEM.DASHBOARD</p>
-                <h1 className="home-header-title">
-                  {guest
-                    ? "ALPHACI Dashboard"
-                    : `Welcome back, ${session?.user.name ?? session?.user.login ?? "builder"}.`}
-                </h1>
-              </div>
-            </div>
-
-            <div className="home-header-actions">
-              {guest ? (
-                <>
-                  <Link className="primary-button home-header-btn" href="/signup">
-                    Sign up free
-                  </Link>
-                  <Link className="ghost-button home-header-btn" href="/login">
-                    Log in
-                  </Link>
-                </>
-              ) : (
-                <>
-                  <button
-                    className="ghost-button home-header-btn"
-                    type="button"
-                    onClick={refreshDashboard}
-                  >
-                    Refresh
-                  </button>
-                  {canCreateProjects ? (
-                    <Link className="primary-button home-header-btn" href="/workflows?tab=setup">
-                      Create project
-                    </Link>
-                  ) : null}
-                </>
-              )}
-            </div>
-          </div>
-
-          {error ? <p className="error-text home-header-msg">{error}</p> : null}
-          {logoutMessage ? (
-            <p className="error-text home-header-msg">{logoutMessage}</p>
-          ) : null}
-        </motion.section>
-
-        {/* One continuous dashboard flow — no internal tabs or modes. */}
-        {!guest && (projectsError || historyError || workspaceOverviewError) ? (
-          <div className="dashboard-load-errors" role="alert">
-            <span aria-hidden="true">!</span>
-            <p>{projectsError ?? historyError ?? workspaceOverviewError}</p>
-            <button className="error-retry-btn" type="button" onClick={refreshDashboard}>
-              Retry
-            </button>
-          </div>
-        ) : null}
+        <HomeDashboardHeader
+          guest={guest}
+          session={session}
+          canCreateProjects={canCreateProjects}
+          prefersReducedMotion={prefersReducedMotion}
+          error={error}
+          logoutMessage={logoutMessage}
+          onRefresh={refreshDashboard}
+        />
 
         <DashboardWorkspaceOverview
           group={currentGroup}
@@ -281,7 +159,7 @@ export function HomeDashboardContent({
           projects={projects}
           runs={recentRuns}
           workflowHistoryCount={history.length}
-          loading={projectsLoading || workspaceOverviewLoading || runsLoading || historyLoading}
+          loading={overviewBusy}
           reduced={prefersReducedMotion}
         />
       </div>
@@ -289,3 +167,30 @@ export function HomeDashboardContent({
   );
 }
 
+function HomeDashboardNotices({
+  showWelcome,
+  guest,
+  displayName,
+  onWelcomeDismiss,
+  loadError,
+  onRetry,
+}: Readonly<{
+  showWelcome: boolean;
+  guest: boolean;
+  displayName: string;
+  onWelcomeDismiss: () => void;
+  loadError: string | null;
+  onRetry: () => void;
+}>) {
+  return (
+    <>
+      {showWelcome ? (
+        <WelcomeModal displayName={displayName} onDismiss={onWelcomeDismiss} />
+      ) : null}
+      {guest ? <GuestPreviewBanner /> : null}
+      {!guest && loadError ? (
+        <DashboardLoadErrors message={loadError} onRetry={onRetry} />
+      ) : null}
+    </>
+  );
+}

@@ -126,92 +126,9 @@ export function MemberTable({
           />
         ) : null}
         <div className="hier-panel">
-          {activeMembers.map((member) => {
-            const isLastLead = member.role === "admin" && leadCount <= 1;
-            const isSelf = member.userId === currentUserId;
-            const removed = member.memberStatus === "removed";
-            return (
-              <div key={member.id} className="hier-row">
-                <div className="hier-row-identity">
-                  <Avatar
-                    login={member.login}
-                    name={member.name}
-                    avatarUrl={member.avatarUrl}
-                  />
-                  <div className="hier-row-name">
-                    <strong>{member.name || member.login}</strong>
-                    <span>
-                      @{member.login}
-                      {member.email ? ` · ${member.email}` : ""}
-                    </span>
-                  </div>
-                </div>
-                <div className="hier-row-actions">
-                  <MemberStatusBadge status={member.memberStatus} />
-                  {/*
-                    Role is EDITABLE by a manager (2026-08-18). It used to be a
-                    read-only badge pointing at the Admin Console, but the
-                    Console sets the GLOBAL role (app_role) — a different axis
-                    entirely — so there was no way anywhere in the product to
-                    make somebody a Lead of a team, while the Add member dialog
-                    promised exactly that.
-
-                    The last Lead cannot be demoted, mirroring the backend's
-                    row-locked guard; the control is disabled rather than
-                    hidden so the reason can be read from the tooltip.
-                  */}
-                  {canManage && !removed ? (
-                    <label className="hier-role-picker">
-                      <span className="sr-only">
-                        Role for {member.name || member.login}
-                      </span>
-                      <select
-                        className="hier-role-select"
-                        value={member.role}
-                        disabled={busyId === member.id || isLastLead}
-                        title={
-                          isLastLead
-                            ? "A team must keep at least one Lead"
-                            : undefined
-                        }
-                        onChange={(event) =>
-                          void handleRoleChange(
-                            member,
-                            event.target.value as GroupRole,
-                          )
-                        }
-                      >
-                        {ASSIGNABLE_ROLES.map((role) => (
-                          <option key={role} value={role}>
-                            {GROUP_ROLE_LABELS[role]}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                  ) : (
-                    <RoleBadge role={member.role} />
-                  )}
-                  {canManage && !removed && (
-                    <button
-                      type="button"
-                      className="hier-btn-danger"
-                      disabled={busyId === member.id || isLastLead || isSelf}
-                      title={
-                        isLastLead
-                          ? "A group must keep at least one group lead"
-                          : isSelf
-                            ? "You can't remove yourself"
-                            : undefined
-                      }
-                      onClick={() => void handleRemove(member)}
-                    >
-                      Remove
-                    </button>
-                  )}
-                </div>
-              </div>
-            );
-          })}
+          {activeMembers.map((member) => <MemberRow key={member.id} member={member} leadCount={leadCount}
+            canManage={canManage} currentUserId={currentUserId} busyId={busyId}
+            onRoleChange={handleRoleChange} onRemove={handleRemove} />)}
         </div>
       </section>
 
@@ -222,4 +139,37 @@ export function MemberTable({
       )}
     </div>
   );
+}
+
+function MemberRow({ member, leadCount, canManage, currentUserId, busyId, onRoleChange, onRemove }: Readonly<{
+  member: GroupMember; leadCount: number; canManage: boolean; currentUserId: string; busyId: string | null;
+  onRoleChange: (member: GroupMember, role: GroupRole) => Promise<void>; onRemove: (member: GroupMember) => Promise<void>;
+}>) {
+  const isLastLead = member.role === "admin" && leadCount <= 1;
+  const removed = member.memberStatus === "removed";
+  return (
+    <div className="hier-row">
+      <div className="hier-row-identity"><Avatar login={member.login} name={member.name} avatarUrl={member.avatarUrl} /><div className="hier-row-name"><strong>{member.name || member.login}</strong><span>@{member.login}{member.email ? ` · ${member.email}` : ""}</span></div></div>
+      <div className="hier-row-actions">
+        <MemberStatusBadge status={member.memberStatus} />
+        <MemberRoleControl member={member} canEdit={canManage && !removed} busy={busyId === member.id} isLastLead={isLastLead} onRoleChange={onRoleChange} />
+        {canManage && !removed && <RemoveMemberButton member={member} busy={busyId === member.id} isLastLead={isLastLead} isSelf={member.userId === currentUserId} onRemove={onRemove} />}
+      </div>
+    </div>
+  );
+}
+
+function MemberRoleControl({ member, canEdit, busy, isLastLead, onRoleChange }: Readonly<{
+  member: GroupMember; canEdit: boolean; busy: boolean; isLastLead: boolean;
+  onRoleChange: (member: GroupMember, role: GroupRole) => Promise<void>;
+}>) {
+  if (!canEdit) return <RoleBadge role={member.role} />;
+  return <label className="hier-role-picker"><span className="sr-only">Role for {member.name || member.login}</span><select className="hier-role-select" value={member.role} disabled={busy || isLastLead} title={isLastLead ? "A team must keep at least one Lead" : undefined} onChange={(event) => void onRoleChange(member, event.target.value as GroupRole)}>{ASSIGNABLE_ROLES.map((role) => <option key={role} value={role}>{GROUP_ROLE_LABELS[role]}</option>)}</select></label>;
+}
+
+function RemoveMemberButton({ member, busy, isLastLead, isSelf, onRemove }: Readonly<{
+  member: GroupMember; busy: boolean; isLastLead: boolean; isSelf: boolean; onRemove: (member: GroupMember) => Promise<void>;
+}>) {
+  const title = isLastLead ? "A group must keep at least one group lead" : isSelf ? "You can't remove yourself" : undefined;
+  return <button type="button" className="hier-btn-danger" disabled={busy || isLastLead || isSelf} title={title} onClick={() => void onRemove(member)}>Remove</button>;
 }

@@ -1,14 +1,42 @@
 import { getProjectOptions } from "@/features/workflows";
 import {
   addProjectDomain,
+  createWorkflowUpdatePullRequest as requestWorkflowUpdatePullRequest,
+  detachDeploymentTarget as requestDetachDeploymentTarget,
   disconnectProject,
+  getProjectAuditEvents,
+  getProjectCiRuns,
+  getProjectDeployments,
   getProjectDomains,
+  getProjectDrift,
   getProjectOverview,
   getProjectPreviews,
+  getWorkflowSettings,
+  previewWorkflowSettings as requestPreviewWorkflowSettings,
   removeProjectDomain,
+  repairProjectDriftFinding,
+  runProjectDriftDetection,
+  syncDeploymentTarget as requestSyncDeploymentTarget,
+  syncProjectSnapshot,
+  updateDeploymentTarget as requestUpdateDeploymentTarget,
   verifyProjectDomain,
 } from "../detail/data/projects-api";
 
+import type {
+  DeploymentTarget,
+  DeploymentTargetSyncResponse,
+  DetachDeploymentTargetResponse,
+  ProjectAuditEventsResponse,
+  ProjectCiRunsResponse,
+  ProjectDeploymentsResponse,
+  ProjectDriftRepairAction,
+  ProjectDriftResponse,
+  ProjectSyncSnapshotResponse,
+  UpdateDeploymentTargetRequest,
+  WorkflowSettings,
+  WorkflowSettingsPreviewResponse,
+  WorkflowUpdatePullRequestResponse,
+} from "@/shared/api/contracts";
 import type {
   AddCustomDomainRequest,
   CustomDomain,
@@ -74,5 +102,80 @@ export const projectsRepository = {
         ? { deleteGithubRepo: true, confirmRepoName: repoFullName }
         : undefined,
     );
+  },
+
+  workflowSettings(projectId: string): Promise<WorkflowSettings> {
+    return getWorkflowSettings(projectId).then((response) => response.settings);
+  },
+
+  previewWorkflowSettings(
+    projectId: string,
+    settings: WorkflowSettings,
+  ): Promise<WorkflowSettingsPreviewResponse> {
+    return requestPreviewWorkflowSettings(projectId, settings);
+  },
+
+  createWorkflowUpdatePullRequest(
+    projectId: string,
+    settings: WorkflowSettings,
+  ): Promise<WorkflowUpdatePullRequestResponse> {
+    return requestWorkflowUpdatePullRequest(projectId, settings);
+  },
+
+  ciRuns(projectId: string): Promise<ProjectCiRunsResponse> {
+    return getProjectCiRuns(projectId);
+  },
+
+  deployments(projectId: string): Promise<ProjectDeploymentsResponse> {
+    return getProjectDeployments(projectId);
+  },
+
+  drift(projectId: string): Promise<ProjectDriftResponse> {
+    return getProjectDrift(projectId);
+  },
+
+  runDrift(projectId: string): Promise<ProjectDriftResponse> {
+    return runProjectDriftDetection(projectId);
+  },
+
+  repairDrift(
+    projectId: string,
+    findingId: string,
+    action: ProjectDriftRepairAction,
+  ) {
+    return repairProjectDriftFinding(projectId, findingId, action);
+  },
+
+  audit(projectId: string): Promise<ProjectAuditEventsResponse> {
+    return getProjectAuditEvents(projectId);
+  },
+
+  syncSnapshot(projectId: string): Promise<ProjectSyncSnapshotResponse> {
+    return syncProjectSnapshot(projectId);
+  },
+
+  updateDeploymentTarget(
+    projectId: string,
+    targetId: string,
+    payload: UpdateDeploymentTargetRequest,
+  ): Promise<DeploymentTarget> {
+    return requestUpdateDeploymentTarget(projectId, targetId, payload);
+  },
+
+  syncDeploymentTarget(
+    projectId: string,
+    targetId: string,
+  ): Promise<DeploymentTargetSyncResponse> {
+    return requestSyncDeploymentTarget(projectId, targetId);
+  },
+
+  detachDeploymentTarget(
+    projectId: string,
+    targetId: string,
+    deleteProviderResource: boolean,
+  ): Promise<DetachDeploymentTargetResponse> {
+    return requestDetachDeploymentTarget(projectId, targetId, {
+      deleteProviderResource,
+    });
   },
 };

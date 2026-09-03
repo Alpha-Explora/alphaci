@@ -9,6 +9,10 @@ import type { AuthSession } from "@/features/auth/session";
 
 import {
   APP_ROLE_BADGE_LABELS,
+  isPlatformAdminUser,
+  navAvatarInitial,
+  reducedMotionEnabled,
+  sessionAppRole,
   type WorkspaceAppRole,
 } from "../model/workspace-types";
 import { useAppNavViewModel } from "../view-models/use-app-nav-view-model";
@@ -282,19 +286,10 @@ export function AppNav({
   // me there and stay in the way". Keyboard focus is never suppressed.
   const [hoverSuppressed, setHoverSuppressed] = useState(false);
   const prefersReducedMotion = useReducedMotion();
-  const reduced = prefersReducedMotion ?? false;
-
-  const avatarInitial = (session?.user.name ?? session?.user.login ?? "U")
-    .slice(0, 1)
-    .toUpperCase();
-  // The Admin tab is the GLOBAL admin tier: app_role 'admin' or the permanent
-  // super-admin. Leads and members don't see it. Mirrors the BE guard.
-  const isPlatformAdmin =
-    !guest &&
-    (session?.appRole === "admin" || session?.platformRole === "super_admin");
-  // Defaults to 'member' (rendered as "Developer") so the badge never blanks
-  // out on an older cached session that predates appRole.
-  const appRole: WorkspaceAppRole = session?.appRole ?? "member";
+  const reduced = reducedMotionEnabled(prefersReducedMotion);
+  const avatarInitial = navAvatarInitial(session);
+  const isPlatformAdmin = isPlatformAdminUser(guest, session);
+  const appRole = sessionAppRole(session);
   const loadWorkspaces = workspaceVm.loadWorkspaces;
 
   return (
@@ -315,176 +310,81 @@ export function AppNav({
           It starts to the right of the closed rail rather than spanning the
           full width, so the rail keeps its own brand mark and the expanded
           rail paints over this bar rather than beside it. */}
-      <header className="app-header">
-        <div className="app-header-left">
-          <Link
-            href="/home"
-            className="app-header-brand"
-            aria-label="ALPHACI — home"
-          >
-            <Image
-              src="/brand-logo.png"
-              alt="ALPHACI"
-              width={138}
-              height={46}
-              unoptimized
-              priority
-              className="app-header-brand-image"
-            />
-          </Link>
-          {/* Teams live here rather than in the rail: picking one changes what
-              the rest of the app is scoped to, which is a header job. */}
-          {!guest && (
-            <WorkspaceSwitcher
-              workspaces={workspaceVm.workspaces}
-              appRole={appRole}
-              onWorkspaceCreated={loadWorkspaces}
-            />
-          )}
-        </div>
-
-        <div className="app-header-right">
-          {guest ? (
-            <>
-              <Link className="ghost-button app-header-btn" href="/login">
-                Log in
-              </Link>
-              <Link className="primary-button app-header-btn" href="/signup">
-                Sign up
-              </Link>
-            </>
-          ) : (
-            <>
-              <div className="app-header-identity">
-                <span className="app-header-login">
-                  {session?.user.login ?? "user"}
-                </span>
-                <SidebarRoleBadge appRole={appRole} />
-              </div>
-
-              <span className="app-header-avatar-ring">
-                {session?.user.avatarUrl ? (
-                  <Image
-                    src={session.user.avatarUrl}
-                    alt={session.user.name ?? session.user.login}
-                    width={32}
-                    height={32}
-                    className="app-header-avatar"
-                    unoptimized
-                  />
-                ) : (
-                  <span className="app-header-avatar-fallback" aria-hidden="true">
-                    {avatarInitial}
-                  </span>
-                )}
-              </span>
-
-              <button
-                type="button"
-                onClick={onLogout}
-                disabled={isLoggingOut}
-                className="app-header-signout"
-              >
-                {isLoggingOut ? (
-                  <span className="sidebar-signout-spinner" aria-hidden="true" />
-                ) : (
-                  <SignOutIcon size={14} />
-                )}
-                <span>{isLoggingOut ? "Signing out…" : "Sign out"}</span>
-              </button>
-            </>
-          )}
-        </div>
-      </header>
-
-      <aside
-        className="app-sidebar"
-        data-hover-suppressed={hoverSuppressed ? "true" : "false"}
-        onPointerLeave={() => setHoverSuppressed(false)}
-        aria-label="Primary navigation"
-      >
-        <div className="sidebar-edge-gradient" aria-hidden="true" />
-
-        {/* ── Primary nav ───────────────────────────────────────── */}
-        <nav className="sidebar-nav" aria-label="Primary">
-          <SidebarSectionLabel text="Main" />
-
-          <SidebarNavItem
-            href="/home"
-            label="Home"
-            icon={DashboardIcon}
-            isActive={pathname === "/home"}
-            reduced={reduced}
-            onNavigate={() => setHoverSuppressed(true)}
-          />
-          {/*
-            "Projects" points at /workflows, and that mismatch is now the ONLY
-            one left: the second bar used to be labelled "Workflows" while
-            pointing at /runs, so the two names read in the opposite order to
-            their routes. Pipeline runs live inside a project now, so that bar
-            is gone and the confusion goes with it. /runs survives as the
-            cross-project view — the one question a per-project tab cannot
-            answer — reached from Home rather than from here.
-          */}
-          <SidebarNavItem
-            href="/workflows"
-            label="Projects"
-            icon={WorkflowsIcon}
-            isActive={pathname === "/workflows"}
-            reduced={reduced}
-            onNavigate={() => setHoverSuppressed(true)}
-          />
-
-          {/* The header picks the WORKSPACE; this lists the teams inside it.
-              Selection is a header job, browsing is a nav job. */}
-          {!guest && (
-            <SidebarNavItem
-              href="/teams"
-              label="Teams"
-              icon={TeamsIcon}
-              isActive={pathname === "/teams" || pathname.startsWith("/groups")}
-              reduced={reduced}
-              onNavigate={() => setHoverSuppressed(true)}
-            />
-          )}
-          {!guest && (
-            <SidebarNavItem
-              href="/inbox"
-              label="Inbox"
-              icon={InboxIcon}
-              isActive={pathname === "/inbox"}
-              reduced={reduced}
-              onNavigate={() => setHoverSuppressed(true)}
-              badgeCount={notifications.unreadCount}
-            />
-          )}
-
-          <SidebarSectionLabel text="Account" />
-
-          {!guest && (
-            <SidebarNavItem
-              href="/settings"
-              label="Settings"
-              icon={SettingsIcon}
-              isActive={pathname === "/settings"}
-              reduced={reduced}
-              onNavigate={() => setHoverSuppressed(true)}
-            />
-          )}
-
-          {isPlatformAdmin && (
-            <SidebarNavItem
-              href="/admin"
-              label="Admin"
-              icon={AdminIcon}
-              isActive={pathname.startsWith("/admin")}
-              reduced={reduced}
-              onNavigate={() => setHoverSuppressed(true)}
-            />
-          )}
-        </nav>
-
-      </aside>
+      <AppHeader guest={guest} session={session} appRole={appRole} avatarInitial={avatarInitial}
+        workspaces={workspaceVm.workspaces} loadWorkspaces={loadWorkspaces}
+        onLogout={onLogout} isLoggingOut={isLoggingOut} />
+      <AppSidebar pathname={pathname} guest={guest} reduced={reduced}
+        isPlatformAdmin={isPlatformAdmin} unreadCount={notifications.unreadCount}
+        hoverSuppressed={hoverSuppressed}
+        onNavigate={() => setHoverSuppressed(true)}
+        onPointerLeave={() => setHoverSuppressed(false)} />
     </>
+  );
+}
+
+function AppHeader({ guest, session, appRole, avatarInitial, workspaces, loadWorkspaces, onLogout, isLoggingOut }: Readonly<{
+  guest: boolean; session: AuthSession | null; appRole: WorkspaceAppRole; avatarInitial: string;
+  workspaces: Parameters<typeof WorkspaceSwitcher>[0]["workspaces"];
+  loadWorkspaces: (workspaceId: string) => void; onLogout: () => void; isLoggingOut: boolean;
+}>) {
+  return (
+    <header className="app-header">
+      <div className="app-header-left">
+        <Link href="/home" className="app-header-brand" aria-label="ALPHACI — home">
+          <Image src="/brand-logo.png" alt="ALPHACI" width={138} height={46} unoptimized priority className="app-header-brand-image" />
+        </Link>
+        {!guest && <WorkspaceSwitcher workspaces={workspaces} appRole={appRole} onWorkspaceCreated={loadWorkspaces} />}
+      </div>
+      <HeaderActions guest={guest} session={session} appRole={appRole} avatarInitial={avatarInitial}
+        onLogout={onLogout} isLoggingOut={isLoggingOut} />
+    </header>
+  );
+}
+
+function HeaderActions({ guest, session, appRole, avatarInitial, onLogout, isLoggingOut }: Readonly<{
+  guest: boolean; session: AuthSession | null; appRole: WorkspaceAppRole; avatarInitial: string;
+  onLogout: () => void; isLoggingOut: boolean;
+}>) {
+  if (guest) {
+    return <div className="app-header-right"><Link className="ghost-button app-header-btn" href="/login">Log in</Link><Link className="primary-button app-header-btn" href="/signup">Sign up</Link></div>;
+  }
+  return (
+    <div className="app-header-right">
+      <div className="app-header-identity"><span className="app-header-login">{session?.user.login ?? "user"}</span><SidebarRoleBadge appRole={appRole} /></div>
+      <HeaderAvatar session={session} avatarInitial={avatarInitial} />
+      <button type="button" onClick={onLogout} disabled={isLoggingOut} className="app-header-signout">
+        {isLoggingOut ? <span className="sidebar-signout-spinner" aria-hidden="true" /> : <SignOutIcon size={14} />}
+        <span>{isLoggingOut ? "Signing out…" : "Sign out"}</span>
+      </button>
+    </div>
+  );
+}
+
+function HeaderAvatar({ session, avatarInitial }: Readonly<{ session: AuthSession | null; avatarInitial: string }>) {
+  return (
+    <span className="app-header-avatar-ring">
+      {session?.user.avatarUrl ? <Image src={session.user.avatarUrl} alt={session.user.name ?? session.user.login} width={32} height={32} className="app-header-avatar" unoptimized /> : <span className="app-header-avatar-fallback" aria-hidden="true">{avatarInitial}</span>}
+    </span>
+  );
+}
+
+function AppSidebar({ pathname, guest, reduced, isPlatformAdmin, unreadCount, hoverSuppressed, onNavigate, onPointerLeave }: Readonly<{
+  pathname: string; guest: boolean; reduced: boolean; isPlatformAdmin: boolean; unreadCount: number;
+  hoverSuppressed: boolean; onNavigate: () => void; onPointerLeave: () => void;
+}>) {
+  return (
+    <aside className="app-sidebar" data-hover-suppressed={hoverSuppressed ? "true" : "false"} onPointerLeave={onPointerLeave} aria-label="Primary navigation">
+      <div className="sidebar-edge-gradient" aria-hidden="true" />
+      <nav className="sidebar-nav" aria-label="Primary">
+        <SidebarSectionLabel text="Main" />
+        <SidebarNavItem href="/home" label="Home" icon={DashboardIcon} isActive={pathname === "/home"} reduced={reduced} onNavigate={onNavigate} />
+        <SidebarNavItem href="/workflows" label="Projects" icon={WorkflowsIcon} isActive={pathname === "/workflows"} reduced={reduced} onNavigate={onNavigate} />
+        {!guest && <SidebarNavItem href="/teams" label="Teams" icon={TeamsIcon} isActive={pathname === "/teams" || pathname.startsWith("/groups")} reduced={reduced} onNavigate={onNavigate} />}
+        {!guest && <SidebarNavItem href="/inbox" label="Inbox" icon={InboxIcon} isActive={pathname === "/inbox"} reduced={reduced} onNavigate={onNavigate} badgeCount={unreadCount} />}
+        <SidebarSectionLabel text="Account" />
+        {!guest && <SidebarNavItem href="/settings" label="Settings" icon={SettingsIcon} isActive={pathname === "/settings"} reduced={reduced} onNavigate={onNavigate} />}
+        {isPlatformAdmin && <SidebarNavItem href="/admin" label="Admin" icon={AdminIcon} isActive={pathname.startsWith("/admin")} reduced={reduced} onNavigate={onNavigate} />}
+      </nav>
+    </aside>
   );
 }

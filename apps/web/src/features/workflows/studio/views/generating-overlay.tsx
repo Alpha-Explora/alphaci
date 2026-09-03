@@ -64,101 +64,33 @@ function PipelineProgressNodes() {
       ))}
 
       {/* Nodes */}
-      {PIPELINE_STAGES.map((stage, i) => {
-        const isActive = i === activeIdx;
-        const isPassed = i < activeIdx;
-        return (
-          <g key={stage}>
-            {/* Outer glow ring — only on active */}
-            {isActive && (
-              <motion.circle
-                cx={NODE_CX[i]}
-                cy={28}
-                r={15}
-                fill="none"
-                stroke="rgba(88, 166, 255,0.25)"
-                strokeWidth="1"
-                initial={{ r: 12, opacity: 0.6 }}
-                animate={{ r: [12, 16, 12], opacity: [0.6, 0, 0.6] }}
-                transition={{ duration: 1.2, ease: "easeOut", repeat: Infinity }}
-              />
-            )}
-            {/* Main circle */}
-            <motion.circle
-              cx={NODE_CX[i]}
-              cy={28}
-              r={10}
-              fill={
-                isActive
-                  ? "rgba(88, 166, 255,0.15)"
-                  : isPassed
-                  ? "rgba(52,211,153,0.12)"
-                  : "rgba(17, 17, 22,0.6)"
-              }
-              stroke={
-                isActive
-                  ? "rgba(88, 166, 255,0.9)"
-                  : isPassed
-                  ? "rgba(52,211,153,0.6)"
-                  : "rgba(255,255,255,0.12)"
-              }
-              strokeWidth="1.5"
-              animate={{
-                filter: isActive
-                  ? "drop-shadow(0 0 6px rgba(88, 166, 255,0.8))"
-                  : "none",
-              }}
-              transition={{ duration: 0.28, ease: "easeOut" }}
-            />
-            {/* Check mark for passed nodes */}
-            {isPassed && (
-              <motion.path
-                d={`M ${NODE_CX[i] - 4} 28 L ${NODE_CX[i] - 1} 31 L ${NODE_CX[i] + 5} 24`}
-                fill="none"
-                stroke="rgba(52,211,153,0.9)"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                initial={{ pathLength: 0 }}
-                animate={{ pathLength: 1 }}
-                transition={{ duration: 0.22 }}
-              />
-            )}
-            {/* Active dot */}
-            {isActive && (
-              <motion.circle
-                cx={NODE_CX[i]}
-                cy={28}
-                r={3}
-                fill="rgba(88, 166, 255,0.9)"
-                animate={{ opacity: [1, 0.5, 1] }}
-                transition={{ duration: 0.8, repeat: Infinity }}
-              />
-            )}
-            {/* Label */}
-            <text
-              x={NODE_CX[i]}
-              y={50}
-              textAnchor="middle"
-              fontSize="9"
-              fontFamily="ui-monospace, monospace"
-              letterSpacing="0.05em"
-              fill={
-                isActive
-                  ? "rgba(88, 166, 255,0.9)"
-                  : isPassed
-                  ? "rgba(52,211,153,0.7)"
-                  : "rgba(116, 116, 127,0.6)"
-              }
-              style={{ transition: "fill 0.3s ease" }}
-            >
-              {stage.toUpperCase()}
-            </text>
-          </g>
-        );
-      })}
+      {PIPELINE_STAGES.map((stage, index) => <PipelineNode key={stage} stage={stage} index={index} activeIndex={activeIdx} />)}
     </svg>
   );
+}
+
+function nodeTone(active: boolean, passed: boolean, activeColor: string, passedColor: string, pendingColor: string) {
+  if (active) return activeColor;
+  if (passed) return passedColor;
+  return pendingColor;
+}
+
+function PipelineNode({ stage, index, activeIndex }: Readonly<{ stage: string; index: number; activeIndex: number }>) {
+  const isActive = index === activeIndex;
+  const isPassed = index < activeIndex;
+  const cx = NODE_CX[index];
+  return <g>
+    {isActive && <motion.circle cx={cx} cy={28} r={15} fill="none" stroke="rgba(88, 166, 255,0.25)" strokeWidth="1" initial={{ r: 12, opacity: 0.6 }} animate={{ r: [12, 16, 12], opacity: [0.6, 0, 0.6] }} transition={{ duration: 1.2, ease: "easeOut", repeat: Infinity }} />}
+    <motion.circle cx={cx} cy={28} r={10}
+      fill={nodeTone(isActive, isPassed, "rgba(88, 166, 255,0.15)", "rgba(52,211,153,0.12)", "rgba(17, 17, 22,0.6)")}
+      stroke={nodeTone(isActive, isPassed, "rgba(88, 166, 255,0.9)", "rgba(52,211,153,0.6)", "rgba(255,255,255,0.12)")}
+      strokeWidth="1.5" animate={{ filter: isActive ? "drop-shadow(0 0 6px rgba(88, 166, 255,0.8))" : "none" }} transition={{ duration: 0.28, ease: "easeOut" }} />
+    {isPassed && <motion.path d={`M ${cx - 4} 28 L ${cx - 1} 31 L ${cx + 5} 24`} fill="none" stroke="rgba(52,211,153,0.9)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" initial={{ pathLength: 0 }} animate={{ pathLength: 1 }} transition={{ duration: 0.22 }} />}
+    {isActive && <motion.circle cx={cx} cy={28} r={3} fill="rgba(88, 166, 255,0.9)" animate={{ opacity: [1, 0.5, 1] }} transition={{ duration: 0.8, repeat: Infinity }} />}
+    <text x={cx} y={50} textAnchor="middle" fontSize="9" fontFamily="ui-monospace, monospace" letterSpacing="0.05em"
+      fill={nodeTone(isActive, isPassed, "rgba(88, 166, 255,0.9)", "rgba(52,211,153,0.7)", "rgba(116, 116, 127,0.6)")}
+      style={{ transition: "fill 0.3s ease" }}>{stage.toUpperCase()}</text>
+  </g>;
 }
 
 export function GeneratingOverlay({ isVisible }: GeneratingOverlayProps) {
