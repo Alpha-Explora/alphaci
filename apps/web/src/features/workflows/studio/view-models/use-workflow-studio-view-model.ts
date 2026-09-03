@@ -8,7 +8,6 @@ import { createProject, setupProject } from "@/features/projects";
 import type {
   CreateProjectResult,
   DiscoverExistingRepoResponse,
-  SetupProjectRequest,
   SetupProjectResponse,
   WorkspaceSummary,
 } from "@/shared/api/contracts";
@@ -31,6 +30,10 @@ import {
   WORKFLOW_TABS,
   type WorkflowTab,
 } from "../model/workflow-studio-rules";
+import {
+  buildGenerateWorkflowPayload,
+  buildSetupExistingRepoPayload,
+} from "../model/studio-command-payloads";
 
 /**
  * ViewModel for the Workflow Studio surface.
@@ -292,35 +295,20 @@ export function useWorkflowStudioViewModel(options: {
       return;
     }
 
-    const coverage = Number(createForm.coverageThreshold);
-    const safeCoverage =
-      Number.isFinite(coverage) && coverage >= 0 && coverage <= 100 ? coverage : 80;
-    const fallbackServiceName = repoFullName.split("/").at(-1) ?? "service";
-
-    // Mirror the backend's resolveTemplateId formula: look up the selected
-    // recipe's per-project-type template mapping, falling back to the
-    // conventional projectType-recipe naming when no mapping exists.
-    const recipeId = projectCatalog.selectedWorkflowRecipeId || "standard";
-    const recipe = projectCatalog.recipesForSelectedProject.find(
-      (item) => item.id === recipeId,
-    );
-    const templateId =
-      recipe?.templateByProjectType[projectCatalog.selectedProjectTypeId] ??
-      `${projectCatalog.selectedProjectTypeId}-${recipeId}`;
-
-    const payload: SetupProjectRequest = {
-      templateId,
+    const payload = buildSetupExistingRepoPayload({
       repoFullName,
-      serviceName:
-        createForm.serviceName ||
-        existingRepoDiscovery?.serviceName ||
-        fallbackServiceName,
-      servicePath: createForm.servicePath || existingRepoDiscovery?.servicePath || ".",
-      nodeVersion: createForm.nodeVersion || "24",
-      coverageThreshold: safeCoverage,
-      outputFileName: createForm.outputFileName || "ci.yml",
+      selectedProjectTypeId: projectCatalog.selectedProjectTypeId,
+      selectedWorkflowRecipeId: projectCatalog.selectedWorkflowRecipeId,
+      recipesForSelectedProject: projectCatalog.recipesForSelectedProject,
+      serviceName: createForm.serviceName,
+      discoveredServiceName: existingRepoDiscovery?.serviceName,
+      servicePath: createForm.servicePath,
+      discoveredServicePath: existingRepoDiscovery?.servicePath,
+      nodeVersion: createForm.nodeVersion,
+      coverageThreshold: createForm.coverageThreshold,
+      outputFileName: createForm.outputFileName,
       deploymentProvisioning: deploymentProvisioning.payload,
-    };
+    });
 
     setIsSettingUpExistingRepo(true);
     setStatusMessage(`Committing CI/CD workflow to ${repoFullName}...`);
@@ -344,43 +332,30 @@ export function useWorkflowStudioViewModel(options: {
   }
 
   async function handleGenerateWorkflow() {
-    const serviceName = createForm.serviceName || createForm.repoName;
-    if (!serviceName) {
-      setStatusMessage("Enter a service name to generate a workflow.");
+    const payloadResult = buildGenerateWorkflowPayload({
+      serviceName: createForm.serviceName,
+      repoName: createForm.repoName,
+      selectedTemplateId: catalog.selectedTemplate?.id,
+      allTemplates: catalog.allTemplates,
+      selectedProjectTypeId: projectCatalog.selectedProjectType?.id,
+      servicePath: createForm.servicePath,
+      nodeVersion: createForm.nodeVersion,
+      coverageThreshold: createForm.coverageThreshold,
+    });
+    if (!payloadResult.ok) {
+      setStatusMessage(payloadResult.message);
       return;
     }
-
-    const templateId =
-      catalog.selectedTemplate?.id ??
-      catalog.allTemplates.find(
-        (t) => t.stack === projectCatalog.selectedProjectType?.id,
-      )?.id ??
-      catalog.allTemplates[0]?.id;
-
-    if (!templateId) {
-      setStatusMessage("No workflow templates available. Check catalog configuration.");
-      return;
-    }
-
-    const coverage = Number(createForm.coverageThreshold);
-    const safeCoverage =
-      Number.isFinite(coverage) && coverage >= 0 && coverage <= 100 ? coverage : 80;
 
     setIsCreatingProject(true);
     setStatusMessage("Generating workflow YAML...");
 
     try {
-      await generateWorkflow({
-        templateId,
-        serviceName,
-        servicePath: createForm.servicePath || ".",
-        nodeVersion: createForm.nodeVersion || "24",
-        coverageThreshold: safeCoverage,
-      });
+      await generateWorkflow(payloadResult.payload);
       await history.loadHistory(true);
       setActiveTab("current");
       setStatusMessage(
-        `Workflow generated for "${serviceName}". Copy or download it from the Generated YAML History section.`,
+        `Workflow generated for "${payloadResult.payload.serviceName}". Copy or download it from the Generated YAML History section.`,
       );
     } catch (error) {
       setStatusMessage(formatApiError(error, "Workflow generation failed"));

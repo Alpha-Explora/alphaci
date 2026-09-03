@@ -1,9 +1,5 @@
 "use client";
 
-/* The EventSource effect resets the console before opening its replacement
- * stream; keep that sequencing unchanged. */
-/* eslint-disable react-hooks/set-state-in-effect */
-
 import { useEffect, useRef, useState } from "react";
 
 import type { DeploymentTarget } from "@/features/projects";

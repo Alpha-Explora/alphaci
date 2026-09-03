@@ -191,79 +191,136 @@ export function ProjectDomainsView({
   return (
     <div className="project-domains">
       {error ? <p className="project-domains__error">{error}</p> : null}
-
-      {targets.length === 0 ? (
-        <p className="env-empty-state">
-          Add a hosting service first — a domain attaches to a deployment
-          target.
-        </p>
-      ) : (
-        <form
-          className="project-domains__form"
-          onSubmit={(event) => {
-            event.preventDefault();
-            void onAdd(activeTargetId, hostname, gitBranch).then((added) => {
-              if (added) {
-                setHostname("");
-                setGitBranch("");
-              }
-            });
-          }}
-        >
-          <label>
-            <span>Hostname</span>
-            <input
-              onChange={(event) => setHostname(event.target.value)}
-              placeholder="app.example.com"
-              value={hostname}
-            />
-          </label>
-          {targets.length > 1 ? (
-            <label>
-              <span>Service</span>
-              <select
-                onChange={(event) => setTargetId(event.target.value)}
-                value={activeTargetId}
-              >
-                {targets.map((target) => (
-                  <option key={target.id} value={target.id}>
-                    {target.label}
-                  </option>
-                ))}
-              </select>
-            </label>
-          ) : null}
-          <label>
-            <span>Branch (optional)</span>
-            <input
-              onChange={(event) => setGitBranch(event.target.value)}
-              placeholder="leave empty for production"
-              value={gitBranch}
-            />
-          </label>
-          <button
-            className="primary-button"
-            disabled={isAdding || !hostname.trim()}
-            type="submit"
-          >
-            {isAdding ? "Adding…" : "Add domain"}
-          </button>
-        </form>
-      )}
-
-      {domains.length === 0 ? (
-        <p className="env-empty-state">No custom domains yet.</p>
-      ) : (
-        domains.map((domain) => (
-          <DomainRow
-            busy={busyDomainId === domain.id}
-            domain={domain}
-            key={domain.id}
-            onRemove={onRemove}
-            onVerify={onVerify}
-          />
-        ))
-      )}
+      <DomainAddForm
+        targets={targets}
+        hostname={hostname}
+        gitBranch={gitBranch}
+        activeTargetId={activeTargetId}
+        isAdding={isAdding}
+        onHostname={setHostname}
+        onGitBranch={setGitBranch}
+        onTargetId={setTargetId}
+        onAdd={onAdd}
+      />
+      <DomainList
+        domains={domains}
+        busyDomainId={busyDomainId}
+        onRemove={onRemove}
+        onVerify={onVerify}
+      />
     </div>
+  );
+}
+
+function DomainAddForm({
+  targets,
+  hostname,
+  gitBranch,
+  activeTargetId,
+  isAdding,
+  onHostname,
+  onGitBranch,
+  onTargetId,
+  onAdd,
+}: Readonly<{
+  targets: Array<{ id: string; label: string }>;
+  hostname: string;
+  gitBranch: string;
+  activeTargetId: string;
+  isAdding: boolean;
+  onHostname: (value: string) => void;
+  onGitBranch: (value: string) => void;
+  onTargetId: (value: string) => void;
+  onAdd: ProjectDomainsViewProps["onAdd"];
+}>) {
+  if (targets.length === 0) {
+    return (
+      <p className="env-empty-state">
+        Add a hosting service first — a domain attaches to a deployment
+        target.
+      </p>
+    );
+  }
+  return (
+    <form
+      className="project-domains__form"
+      onSubmit={(event) => {
+        event.preventDefault();
+        void onAdd(activeTargetId, hostname, gitBranch).then((added) => {
+          if (added) {
+            onHostname("");
+            onGitBranch("");
+          }
+        });
+      }}
+    >
+      <label>
+        <span>Hostname</span>
+        <input
+          onChange={(event) => onHostname(event.target.value)}
+          placeholder="app.example.com"
+          value={hostname}
+        />
+      </label>
+      {targets.length > 1 ? (
+        <label>
+          <span>Service</span>
+          <select
+            onChange={(event) => onTargetId(event.target.value)}
+            value={activeTargetId}
+          >
+            {targets.map((target) => (
+              <option key={target.id} value={target.id}>
+                {target.label}
+              </option>
+            ))}
+          </select>
+        </label>
+      ) : null}
+      <label>
+        <span>Branch (optional)</span>
+        <input
+          onChange={(event) => onGitBranch(event.target.value)}
+          placeholder="leave empty for production"
+          value={gitBranch}
+        />
+      </label>
+      <button
+        className="primary-button"
+        disabled={isAdding || !hostname.trim()}
+        type="submit"
+      >
+        {isAdding ? "Adding…" : "Add domain"}
+      </button>
+    </form>
+  );
+}
+
+function DomainList({
+  domains,
+  busyDomainId,
+  onRemove,
+  onVerify,
+}: Readonly<{
+  domains: CustomDomain[];
+  busyDomainId: string | null;
+  onRemove: (domainId: string) => void;
+  onVerify: (domainId: string) => void;
+}>) {
+  if (domains.length === 0) {
+    return <p className="env-empty-state">No custom domains yet.</p>;
+  }
+  return (
+    <>
+      {domains.map((domain) => (
+        <DomainRow
+          busy={busyDomainId === domain.id}
+          domain={domain}
+          key={domain.id}
+          onRemove={onRemove}
+          onVerify={onVerify}
+        />
+      ))}
+    </>
   );
 }

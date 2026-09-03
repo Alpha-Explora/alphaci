@@ -126,100 +126,187 @@ export function CodeTab({ projectId }: { projectId: string }) {
 
   return (
     <div className="ws-panel">
-      <div className="ws-toolbar">
-        {branches.length > 0 && (
-          <label className="ws-branch">
-            <span className="ws-branch__label">Branch</span>
-            <select
-              className="ws-select"
-              value={chosenRef ?? resolvedRef ?? ""}
-              onChange={(event) => {
-                setLoading(true);
-                setChosenRef(event.target.value);
-                setResolvedRef(event.target.value);
-                // A path is only valid within the branch it was found in, so
-                // switching branches returns to the root rather than 404ing on
-                // a file that exists in one branch and not the other.
-                setPath("");
-              }}
-            >
-              {branches.map((branch) => (
-                <option key={branch.name} value={branch.name}>
-                  {branch.name}
-                </option>
-              ))}
-            </select>
-          </label>
-        )}
-
-        <nav className="ws-crumbs" aria-label="File path">
-          <button type="button" className="ws-crumb" onClick={() => goTo("")}>
-            root
-          </button>
-          {crumbs.map((crumb) => (
-            <span key={crumb.path}>
-              <span className="ws-crumb-sep" aria-hidden="true">
-                /
-              </span>
-              <button
-                type="button"
-                className="ws-crumb"
-                onClick={() => goTo(crumb.path)}
-              >
-                {crumb.label}
-              </button>
-            </span>
-          ))}
-        </nav>
-      </div>
-
-      {loading ? (
-        <WorkspaceLoading rows={6} />
-      ) : error ? (
-        <WorkspaceError message={error} onRetry={load} />
-      ) : file ? (
-        <FileView file={file} />
-      ) : listing && listing.entries.length > 0 ? (
-        <ul className="ws-tree">
-          {path && (
-            <li>
-              <button
-                type="button"
-                className="ws-tree__row"
-                onClick={() => goTo(path.split("/").slice(0, -1).join("/"))}
-              >
-                <span className="ws-tree__icon" aria-hidden="true">
-                  ↰
-                </span>
-                <span className="ws-tree__name">..</span>
-              </button>
-            </li>
-          )}
-          {listing.entries.map((entry) => (
-            <li key={entry.sha || entry.path}>
-              <button
-                type="button"
-                className="ws-tree__row"
-                onClick={() => openEntry(entry)}
-              >
-                <span className="ws-tree__icon" aria-hidden="true">
-                  {entry.type === "dir" ? "▸" : "•"}
-                </span>
-                <span className="ws-tree__name">{entry.name}</span>
-                {entry.type === "file" && (
-                  <span className="ws-tree__size">{formatBytes(entry.size)}</span>
-                )}
-              </button>
-            </li>
-          ))}
-        </ul>
-      ) : (
-        <WorkspaceEmpty
-          title="Nothing here"
-          message="This branch has no files at this path yet."
-        />
-      )}
+      <CodeToolbar
+        branches={branches}
+        chosenRef={chosenRef}
+        resolvedRef={resolvedRef}
+        crumbs={crumbs}
+        onPickBranch={(nextRef) => {
+          setLoading(true);
+          setChosenRef(nextRef);
+          setResolvedRef(nextRef);
+          setPath("");
+        }}
+        onGoTo={goTo}
+      />
+      <CodeBrowserBody
+        loading={loading}
+        error={error}
+        file={file}
+        listing={listing}
+        path={path}
+        onRetry={load}
+        onOpen={openEntry}
+        onGoTo={goTo}
+      />
     </div>
+  );
+}
+
+function CodeToolbar({
+  branches,
+  chosenRef,
+  resolvedRef,
+  crumbs,
+  onPickBranch,
+  onGoTo,
+}: Readonly<{
+  branches: RepoBranch[];
+  chosenRef: string | null;
+  resolvedRef: string | null;
+  crumbs: Array<{ label: string; path: string }>;
+  onPickBranch: (nextRef: string) => void;
+  onGoTo: (nextPath: string) => void;
+}>) {
+  return (
+    <div className="ws-toolbar">
+      {branches.length > 0 ? (
+        <label className="ws-branch">
+          <span className="ws-branch__label">Branch</span>
+          <select
+            className="ws-select"
+            value={chosenRef ?? resolvedRef ?? ""}
+            onChange={(event) => onPickBranch(event.target.value)}
+          >
+            {branches.map((branch) => (
+              <option key={branch.name} value={branch.name}>
+                {branch.name}
+              </option>
+            ))}
+          </select>
+        </label>
+      ) : null}
+
+      <nav className="ws-crumbs" aria-label="File path">
+        <button type="button" className="ws-crumb" onClick={() => onGoTo("")}>
+          root
+        </button>
+        {crumbs.map((crumb) => (
+          <span key={crumb.path}>
+            <span className="ws-crumb-sep" aria-hidden="true">
+              /
+            </span>
+            <button
+              type="button"
+              className="ws-crumb"
+              onClick={() => onGoTo(crumb.path)}
+            >
+              {crumb.label}
+            </button>
+          </span>
+        ))}
+      </nav>
+    </div>
+  );
+}
+
+function CodeEntries({
+  listing,
+  path,
+  onOpen,
+  onGoTo,
+}: Readonly<{
+  listing: RepoContentListing;
+  path: string;
+  onOpen: (entry: RepoContentEntry) => void;
+  onGoTo: (nextPath: string) => void;
+}>) {
+  return (
+    <ul className="ws-tree">
+      {path ? (
+        <li>
+          <button
+            type="button"
+            className="ws-tree__row"
+            onClick={() => onGoTo(path.split("/").slice(0, -1).join("/"))}
+          >
+            <span className="ws-tree__icon" aria-hidden="true">
+              ↰
+            </span>
+            <span className="ws-tree__name">..</span>
+          </button>
+        </li>
+      ) : null}
+      {listing.entries.map((entry) => (
+        <CodeEntryRow key={entry.sha || entry.path} entry={entry} onOpen={onOpen} />
+      ))}
+    </ul>
+  );
+}
+
+function CodeEntryRow({
+  entry,
+  onOpen,
+}: Readonly<{
+  entry: RepoContentEntry;
+  onOpen: (entry: RepoContentEntry) => void;
+}>) {
+  return (
+    <li>
+      <button
+        type="button"
+        className="ws-tree__row"
+        onClick={() => onOpen(entry)}
+      >
+        <span className="ws-tree__icon" aria-hidden="true">
+          {entry.type === "dir" ? "▸" : "•"}
+        </span>
+        <span className="ws-tree__name">{entry.name}</span>
+        {entry.type === "file" ? (
+          <span className="ws-tree__size">{formatBytes(entry.size)}</span>
+        ) : null}
+      </button>
+    </li>
+  );
+}
+
+function CodeBrowserBody({
+  loading,
+  error,
+  file,
+  listing,
+  path,
+  onRetry,
+  onOpen,
+  onGoTo,
+}: Readonly<{
+  loading: boolean;
+  error: string | null;
+  file: NonNullable<RepoContentListing["file"]> | null;
+  listing: RepoContentListing | null;
+  path: string;
+  onRetry: () => void;
+  onOpen: (entry: RepoContentEntry) => void;
+  onGoTo: (nextPath: string) => void;
+}>) {
+  if (loading) return <WorkspaceLoading rows={6} />;
+  if (error) return <WorkspaceError message={error} onRetry={onRetry} />;
+  if (file) return <FileView file={file} />;
+  if (listing && listing.entries.length > 0) {
+    return (
+      <CodeEntries
+        listing={listing}
+        path={path}
+        onOpen={onOpen}
+        onGoTo={onGoTo}
+      />
+    );
+  }
+  return (
+    <WorkspaceEmpty
+      title="Nothing here"
+      message="This branch has no files at this path yet."
+    />
   );
 }
 

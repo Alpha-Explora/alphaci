@@ -1,8 +1,5 @@
 "use client";
 
-/* Preserve the debounced lookup's immediate reset when the dialog closes. */
-/* eslint-disable react-hooks/set-state-in-effect */
-
 import { useEffect, useState } from "react";
 
 import { addGroupMember, searchEligibleGroupUsers } from "@/features/groups";

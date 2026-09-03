@@ -1,8 +1,5 @@
 "use client";
 
-/* Preserve the provider connection probe's initial transition. */
-/* eslint-disable react-hooks/set-state-in-effect */
-
 import { useCallback, useEffect, useState } from "react";
 
 import {

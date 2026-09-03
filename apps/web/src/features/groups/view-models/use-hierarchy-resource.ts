@@ -2,7 +2,6 @@
 
 /* These refs deliberately track the latest fetcher/options without changing
  * the dependency identity that controls a request. */
-/* eslint-disable react-hooks/refs, react-hooks/use-memo */
 
 import { useCallback, useEffect, useRef, useState } from "react";
 

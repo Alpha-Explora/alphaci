@@ -1,8 +1,5 @@
 "use client";
 
-/* Preserve the preferences probe's initial loading transition. */
-/* eslint-disable react-hooks/set-state-in-effect */
-
 import { useCallback, useEffect, useState } from "react";
 
 import { notificationsRepository } from "../../data/notifications-repository";

@@ -12,6 +12,7 @@ import {
   accountActionErrorMessage,
   failedContent,
   formatDate,
+  type FailedContent,
 } from "../model/callback-rules";
 
 type FreshConfirmState = "idle" | "confirming";
@@ -28,7 +29,314 @@ const cardVariants = {
   },
 };
 
-/* ── Archived-choice card ─────────────────────────────────────────────────── */
+function cardMotionProps(prefersReducedMotion: boolean | null) {
+  return {
+    variants: prefersReducedMotion ? undefined : cardVariants,
+    initial: prefersReducedMotion ? false : ("hidden" as const),
+    animate: "visible" as const,
+  };
+}
+
+function busyButtonStyle(busy: boolean, idleOpacity = 1) {
+  return {
+    cursor: busy ? ("not-allowed" as const) : ("pointer" as const),
+    opacity: busy ? 0.6 : idleOpacity,
+  };
+}
+
+function ArchivedChoiceIcon() {
+  return (
+    <div
+      className="state-icon"
+      aria-hidden="true"
+      style={{
+        background: "rgba(251, 191, 36, 0.08)",
+        border: "1px solid rgba(251, 191, 36, 0.25)",
+      }}
+    >
+      <svg
+        width="20"
+        height="20"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="var(--accent-amber)"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <polyline points="21 8 21 21 3 21 3 8" />
+        <rect x="1" y="3" width="22" height="5" />
+        <line x1="10" y1="12" x2="14" y2="12" />
+      </svg>
+    </div>
+  );
+}
+
+function ArchivedAccountDates({
+  pending,
+}: Readonly<{ pending: PendingAccount & { pending: true } }>) {
+  const archivedOn = pending.archivedAt ? formatDate(pending.archivedAt) : null;
+  const purgeOn = pending.purgeAt ? formatDate(pending.purgeAt) : null;
+  return (
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        gap: "0.5rem",
+        textAlign: "left",
+        width: "100%",
+        background: "rgba(251, 191, 36, 0.04)",
+        border: "1px solid rgba(251, 191, 36, 0.15)",
+        borderRadius: "0.75rem",
+        padding: "0.9rem 1rem",
+      }}
+    >
+      {archivedOn ? (
+        <p style={{ margin: 0, fontSize: "0.82rem", color: "var(--text-secondary)" }}>
+          <span style={{ color: "var(--text-muted)" }}>Archived on:</span>{" "}
+          <strong style={{ color: "var(--text-primary)" }}>{archivedOn}</strong>
+        </p>
+      ) : null}
+      {purgeOn ? (
+        <p style={{ margin: 0, fontSize: "0.82rem", color: "var(--text-secondary)" }}>
+          <span style={{ color: "var(--danger)", fontWeight: 600 }}>Permanent deletion:</span>{" "}
+          <strong style={{ color: "var(--danger)" }}>{purgeOn}</strong>
+        </p>
+      ) : null}
+      {pending.retentionDays != null ? (
+        <p style={{ margin: 0, fontSize: "0.78rem", color: "var(--text-muted)" }}>
+          Archived accounts are permanently deleted after {pending.retentionDays} days. Restoring
+          before that date recovers everything.
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
+function RestoreAccountAction({
+  isRestoring,
+  isStartingFresh,
+  restoreError,
+  onRestore,
+}: Readonly<{
+  isRestoring: boolean;
+  isStartingFresh: boolean;
+  restoreError: string | null;
+  onRestore: () => void;
+}>) {
+  const busy = isRestoring || isStartingFresh;
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem", width: "100%" }}>
+      <button
+        type="button"
+        onClick={onRestore}
+        disabled={busy}
+        className="primary-button"
+        style={{
+          width: "100%",
+          minHeight: "2.75rem",
+          padding: "0.65rem 1.5rem",
+          fontSize: "0.95rem",
+          ...busyButtonStyle(busy),
+        }}
+        aria-busy={isRestoring}
+      >
+        {isRestoring ? "Restoring..." : "Restore my account"}
+      </button>
+      {restoreError ? (
+        <p
+          role="alert"
+          style={{ margin: 0, fontSize: "0.8rem", color: "var(--danger)", textAlign: "center" }}
+        >
+          {restoreError}
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
+function StartFreshIdleButton({
+  prefersReducedMotion,
+  disabled,
+  onClick,
+}: Readonly<{
+  prefersReducedMotion: boolean | null;
+  disabled: boolean;
+  onClick: () => void;
+}>) {
+  return (
+    <motion.button
+      key="start-fresh-btn"
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      className="ghost-button"
+      initial={prefersReducedMotion ? false : { opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.15 }}
+      style={{
+        width: "100%",
+        minHeight: "2.75rem",
+        padding: "0.65rem 1.5rem",
+        fontSize: "0.88rem",
+        cursor: disabled ? "not-allowed" : "pointer",
+        opacity: disabled ? 0.5 : 1,
+      }}
+      aria-expanded={false}
+    >
+      Start fresh with a new account
+    </motion.button>
+  );
+}
+
+function StartFreshConfirm({
+  prefersReducedMotion,
+  isStartingFresh,
+  onConfirm,
+  onCancel,
+}: Readonly<{
+  prefersReducedMotion: boolean | null;
+  isStartingFresh: boolean;
+  onConfirm: () => void;
+  onCancel: () => void;
+}>) {
+  return (
+    <motion.div
+      key="start-fresh-confirm"
+      initial={prefersReducedMotion ? false : { opacity: 0, y: 6 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.18 }}
+      style={{
+        background: "rgba(248, 113, 113, 0.06)",
+        border: "1px solid rgba(248, 113, 113, 0.2)",
+        borderRadius: "0.75rem",
+        padding: "0.85rem 1rem",
+        display: "flex",
+        flexDirection: "column",
+        gap: "0.65rem",
+      }}
+      role="group"
+      aria-label="Confirm start fresh"
+    >
+      <p
+        style={{
+          margin: 0,
+          fontSize: "0.82rem",
+          color: "var(--danger)",
+          fontWeight: 600,
+          lineHeight: 1.4,
+        }}
+      >
+        This permanently deletes your archived account and all its data. Your GitHub
+        repositories and workflow files on GitHub are not affected.
+      </p>
+      <div style={{ display: "flex", gap: "0.5rem" }}>
+        <button
+          type="button"
+          onClick={onConfirm}
+          disabled={isStartingFresh}
+          style={{
+            flex: 1,
+            fontSize: "0.82rem",
+            fontWeight: 700,
+            color: "#fff",
+            padding: "0.45rem 0.85rem",
+            borderRadius: "0.5rem",
+            border: "1px solid rgba(248, 113, 113, 0.6)",
+            background: isStartingFresh
+              ? "rgba(248, 113, 113, 0.2)"
+              : "rgba(248, 113, 113, 0.7)",
+            cursor: isStartingFresh ? "not-allowed" : "pointer",
+            opacity: isStartingFresh ? 0.6 : 1,
+            transition: "all 0.2s ease",
+          }}
+          aria-busy={isStartingFresh}
+        >
+          {isStartingFresh ? "Creating account..." : "Yes, delete and start fresh"}
+        </button>
+        <button
+          type="button"
+          onClick={onCancel}
+          disabled={isStartingFresh}
+          style={{
+            fontSize: "0.82rem",
+            fontWeight: 600,
+            color: "var(--text-secondary)",
+            padding: "0.45rem 0.85rem",
+            borderRadius: "0.5rem",
+            border: "1px solid var(--border-strong)",
+            background: "transparent",
+            cursor: isStartingFresh ? "not-allowed" : "pointer",
+            transition: "all 0.2s ease",
+          }}
+        >
+          Cancel
+        </button>
+      </div>
+    </motion.div>
+  );
+}
+
+function StartFreshAction({
+  prefersReducedMotion,
+  isRestoring,
+  isStartingFresh,
+  freshConfirm,
+  freshError,
+  onAskConfirm,
+  onConfirm,
+  onCancel,
+}: Readonly<{
+  prefersReducedMotion: boolean | null;
+  isRestoring: boolean;
+  isStartingFresh: boolean;
+  freshConfirm: FreshConfirmState;
+  freshError: string | null;
+  onAskConfirm: () => void;
+  onConfirm: () => void;
+  onCancel: () => void;
+}>) {
+  const disabled = isRestoring || isStartingFresh;
+  return (
+    <div
+      style={{
+        width: "100%",
+        borderTop: "1px solid var(--border-soft)",
+        paddingTop: "0.85rem",
+        display: "flex",
+        flexDirection: "column",
+        gap: "0.5rem",
+      }}
+    >
+      <AnimatePresence mode="wait">
+        {freshConfirm === "idle" ? (
+          <StartFreshIdleButton
+            prefersReducedMotion={prefersReducedMotion}
+            disabled={disabled}
+            onClick={onAskConfirm}
+          />
+        ) : (
+          <StartFreshConfirm
+            prefersReducedMotion={prefersReducedMotion}
+            isStartingFresh={isStartingFresh}
+            onConfirm={onConfirm}
+            onCancel={onCancel}
+          />
+        )}
+      </AnimatePresence>
+      {freshError ? (
+        <p
+          role="alert"
+          style={{ margin: 0, fontSize: "0.8rem", color: "var(--danger)", textAlign: "center" }}
+        >
+          {freshError}
+        </p>
+      ) : null}
+    </div>
+  );
+}
 
 function ArchivedChoiceCard({
   pending,
@@ -40,10 +348,8 @@ function ArchivedChoiceCard({
   onStartFresh: () => Promise<void>;
 }) {
   const prefersReducedMotion = useReducedMotion();
-
   const [isRestoring, setIsRestoring] = useState(false);
   const [restoreError, setRestoreError] = useState<string | null>(null);
-
   const [isStartingFresh, setIsStartingFresh] = useState(false);
   const [freshError, setFreshError] = useState<string | null>(null);
   const [freshConfirm, setFreshConfirm] = useState<FreshConfirmState>("idle");
@@ -71,252 +377,49 @@ function ArchivedChoiceCard({
     }
   }
 
-  const archivedOn = pending.archivedAt ? formatDate(pending.archivedAt) : null;
-  const purgeOn = pending.purgeAt ? formatDate(pending.purgeAt) : null;
-
   return (
     <motion.div
-      variants={prefersReducedMotion ? undefined : cardVariants}
-      initial={prefersReducedMotion ? false : "hidden"}
-      animate="visible"
+      {...cardMotionProps(prefersReducedMotion)}
       className="state-card"
       role="main"
       aria-labelledby="archived-heading"
     >
-      {/* Icon — amber archive indicator */}
-      <div
-        className="state-icon"
-        aria-hidden="true"
-        style={{
-          background: "rgba(251, 191, 36, 0.08)",
-          border: "1px solid rgba(251, 191, 36, 0.25)",
-        }}
-      >
-        <svg
-          width="20"
-          height="20"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="var(--accent-amber)"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          <polyline points="21 8 21 21 3 21 3 8" />
-          <rect x="1" y="3" width="22" height="5" />
-          <line x1="10" y1="12" x2="14" y2="12" />
-        </svg>
-      </div>
-
+      <ArchivedChoiceIcon />
       <p className="hero-kicker" style={{ margin: 0 }}>
         Welcome back, <span style={{ fontFamily: "ui-monospace, monospace" }}>@{pending.login}</span>
       </p>
-
       <h1 id="archived-heading" style={{ fontSize: "clamp(1.2rem, 2.2vw, 1.45rem)" }}>
         Your account is archived
       </h1>
-
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          gap: "0.5rem",
-          textAlign: "left",
-          width: "100%",
-          background: "rgba(251, 191, 36, 0.04)",
-          border: "1px solid rgba(251, 191, 36, 0.15)",
-          borderRadius: "0.75rem",
-          padding: "0.9rem 1rem",
+      <ArchivedAccountDates pending={pending} />
+      <RestoreAccountAction
+        isRestoring={isRestoring}
+        isStartingFresh={isStartingFresh}
+        restoreError={restoreError}
+        onRestore={() => void handleRestore()}
+      />
+      <StartFreshAction
+        prefersReducedMotion={prefersReducedMotion}
+        isRestoring={isRestoring}
+        isStartingFresh={isStartingFresh}
+        freshConfirm={freshConfirm}
+        freshError={freshError}
+        onAskConfirm={() => setFreshConfirm("confirming")}
+        onConfirm={() => void handleStartFresh()}
+        onCancel={() => {
+          setFreshConfirm("idle");
+          setFreshError(null);
         }}
-      >
-        {archivedOn && (
-          <p style={{ margin: 0, fontSize: "0.82rem", color: "var(--text-secondary)" }}>
-            <span style={{ color: "var(--text-muted)" }}>Archived on:</span>{" "}
-            <strong style={{ color: "var(--text-primary)" }}>{archivedOn}</strong>
-          </p>
-        )}
-        {purgeOn && (
-          <p style={{ margin: 0, fontSize: "0.82rem", color: "var(--text-secondary)" }}>
-            <span style={{ color: "var(--danger)", fontWeight: 600 }}>Permanent deletion:</span>{" "}
-            <strong style={{ color: "var(--danger)" }}>{purgeOn}</strong>
-          </p>
-        )}
-        {pending.retentionDays != null && (
-          <p style={{ margin: 0, fontSize: "0.78rem", color: "var(--text-muted)" }}>
-            Archived accounts are permanently deleted after {pending.retentionDays} days. Restoring
-            before that date recovers everything.
-          </p>
-        )}
-      </div>
-
-      {/* Primary action — restore */}
-      <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem", width: "100%" }}>
-        <button
-          type="button"
-          onClick={() => void handleRestore()}
-          disabled={isRestoring || isStartingFresh}
-          className="primary-button"
-          style={{
-            width: "100%",
-            minHeight: "2.75rem",
-            padding: "0.65rem 1.5rem",
-            fontSize: "0.95rem",
-            cursor: isRestoring || isStartingFresh ? "not-allowed" : "pointer",
-            opacity: isRestoring || isStartingFresh ? 0.6 : 1,
-          }}
-          aria-busy={isRestoring}
-        >
-          {isRestoring ? "Restoring..." : "Restore my account"}
-        </button>
-
-        {restoreError && (
-          <p
-            role="alert"
-            style={{ margin: 0, fontSize: "0.8rem", color: "var(--danger)", textAlign: "center" }}
-          >
-            {restoreError}
-          </p>
-        )}
-      </div>
-
-      {/* Destructive action — start fresh */}
-      <div
-        style={{
-          width: "100%",
-          borderTop: "1px solid var(--border-soft)",
-          paddingTop: "0.85rem",
-          display: "flex",
-          flexDirection: "column",
-          gap: "0.5rem",
-        }}
-      >
-        <AnimatePresence mode="wait">
-          {freshConfirm === "idle" ? (
-            <motion.button
-              key="start-fresh-btn"
-              type="button"
-              onClick={() => setFreshConfirm("confirming")}
-              disabled={isRestoring || isStartingFresh}
-              className="ghost-button"
-              initial={prefersReducedMotion ? false : { opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.15 }}
-              style={{
-                width: "100%",
-                minHeight: "2.75rem",
-                padding: "0.65rem 1.5rem",
-                fontSize: "0.88rem",
-                cursor: isRestoring || isStartingFresh ? "not-allowed" : "pointer",
-                opacity: isRestoring || isStartingFresh ? 0.5 : 1,
-              }}
-              aria-expanded={false}
-            >
-              Start fresh with a new account
-            </motion.button>
-          ) : (
-            <motion.div
-              key="start-fresh-confirm"
-              initial={prefersReducedMotion ? false : { opacity: 0, y: 6 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.18 }}
-              style={{
-                background: "rgba(248, 113, 113, 0.06)",
-                border: "1px solid rgba(248, 113, 113, 0.2)",
-                borderRadius: "0.75rem",
-                padding: "0.85rem 1rem",
-                display: "flex",
-                flexDirection: "column",
-                gap: "0.65rem",
-              }}
-              role="group"
-              aria-label="Confirm start fresh"
-            >
-              <p
-                style={{
-                  margin: 0,
-                  fontSize: "0.82rem",
-                  color: "var(--danger)",
-                  fontWeight: 600,
-                  lineHeight: 1.4,
-                }}
-              >
-                This permanently deletes your archived account and all its data. Your GitHub
-                repositories and workflow files on GitHub are not affected.
-              </p>
-              <div style={{ display: "flex", gap: "0.5rem" }}>
-                <button
-                  type="button"
-                  onClick={() => void handleStartFresh()}
-                  disabled={isStartingFresh}
-                  style={{
-                    flex: 1,
-                    fontSize: "0.82rem",
-                    fontWeight: 700,
-                    color: "#fff",
-                    padding: "0.45rem 0.85rem",
-                    borderRadius: "0.5rem",
-                    border: "1px solid rgba(248, 113, 113, 0.6)",
-                    background: isStartingFresh
-                      ? "rgba(248, 113, 113, 0.2)"
-                      : "rgba(248, 113, 113, 0.7)",
-                    cursor: isStartingFresh ? "not-allowed" : "pointer",
-                    opacity: isStartingFresh ? 0.6 : 1,
-                    transition: "all 0.2s ease",
-                  }}
-                  aria-busy={isStartingFresh}
-                >
-                  {isStartingFresh ? "Creating account..." : "Yes, delete and start fresh"}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setFreshConfirm("idle");
-                    setFreshError(null);
-                  }}
-                  disabled={isStartingFresh}
-                  style={{
-                    fontSize: "0.82rem",
-                    fontWeight: 600,
-                    color: "var(--text-secondary)",
-                    padding: "0.45rem 0.85rem",
-                    borderRadius: "0.5rem",
-                    border: "1px solid var(--border-strong)",
-                    background: "transparent",
-                    cursor: isStartingFresh ? "not-allowed" : "pointer",
-                    transition: "all 0.2s ease",
-                  }}
-                >
-                  Cancel
-                </button>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {freshError && (
-          <p
-            role="alert"
-            style={{ margin: 0, fontSize: "0.8rem", color: "var(--danger)", textAlign: "center" }}
-          >
-            {freshError}
-          </p>
-        )}
-      </div>
+      />
     </motion.div>
   );
 }
-
-/* ── Archived-choice no-pending fallback ─────────────────────────────────── */
 
 function ArchivedSessionExpiredCard({ retryHref }: { retryHref: string }) {
   const prefersReducedMotion = useReducedMotion();
   return (
     <motion.div
-      variants={prefersReducedMotion ? undefined : cardVariants}
-      initial={prefersReducedMotion ? false : "hidden"}
-      animate="visible"
+      {...cardMotionProps(prefersReducedMotion)}
       className="state-card"
     >
       <div
@@ -358,50 +461,65 @@ function ArchivedSessionExpiredCard({ retryHref }: { retryHref: string }) {
   );
 }
 
-/* ── Main callback component ─────────────────────────────────────────────── */
+function AuthFailedActions({
+  fc,
+  retryLoginHref,
+  providerName,
+}: Readonly<{
+  fc: FailedContent;
+  retryLoginHref: string;
+  providerName: string;
+}>) {
+  return (
+    <div
+      style={{ display: "flex", gap: "0.85rem", flexWrap: "wrap", marginTop: "0.4rem" }}
+    >
+      {fc.actionHref ? (
+        <a
+          className="primary-button"
+          href={fc.actionHref}
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{ borderRadius: "999px", padding: "0.9rem 1.9rem", fontWeight: 700 }}
+        >
+          {fc.actionLabel}
+        </a>
+      ) : null}
+      <Link
+        className={fc.actionHref ? "ghost-button" : "primary-button"}
+        href={retryLoginHref}
+        style={{ borderRadius: "999px", padding: "0.9rem 1.9rem", fontWeight: fc.actionHref ? 600 : 700 }}
+      >
+        Retry {providerName} sign in
+      </Link>
+      <Link
+        className="ghost-button"
+        href="/"
+        style={{ borderRadius: "999px", padding: "0.9rem 1.75rem", fontWeight: 600 }}
+      >
+        Return to sign-in
+      </Link>
+    </div>
+  );
+}
 
-export function AuthCallbackView() {
-  const prefersReducedMotion = useReducedMotion();
-  const {
-    state,
-    message,
-    authStatus,
-    intent,
-    providerName,
-    orgLogin,
-    pendingAccount,
-    pendingSessionExpired,
-    retryLoginHref,
-    onRestore,
-    onStartFresh,
-  } = useAuthCallbackViewModel();
-
-  // ── Checking / loading ────────────────────────────────────────────────────
-  if (state === "checking") {
-    return <PipelineLoader label={message} />;
-  }
-
-  // ── Archived choice ───────────────────────────────────────────────────────
-  if (state === "archived_choice") {
-    return (
-      <main className="dash-shell">
-        <FlowBackground />
-        <div className="state-body">
-          {pendingSessionExpired || pendingAccount === null ? (
-            <ArchivedSessionExpiredCard retryHref={retryLoginHref} />
-          ) : (
-            <ArchivedChoiceCard
-              pending={pendingAccount as PendingAccount & { pending: true }}
-              onRestore={onRestore}
-              onStartFresh={onStartFresh}
-            />
-          )}
-        </div>
-      </main>
-    );
-  }
-
-  // ── Failed / error ────────────────────────────────────────────────────────
+function AuthFailedGate({
+  prefersReducedMotion,
+  authStatus,
+  message,
+  orgLogin,
+  intent,
+  providerName,
+  retryLoginHref,
+}: Readonly<{
+  prefersReducedMotion: boolean | null;
+  authStatus: string;
+  message: string;
+  orgLogin: string | null;
+  intent: string;
+  providerName: string;
+  retryLoginHref: string;
+}>) {
   const fc = failedContent(authStatus, message, orgLogin);
   const staggerContainer = {
     hidden: {},
@@ -415,6 +533,7 @@ export function AuthCallbackView() {
       transition: { duration: 0.55, ease: [0.22, 1, 0.36, 1] as const },
     },
   };
+  const itemVariants = prefersReducedMotion ? undefined : rise;
 
   return (
     <main
@@ -428,8 +547,6 @@ export function AuthCallbackView() {
       }}
     >
       <FlowBackground />
-
-      {/* Corner frame markers — Lusion-style viewport frame */}
       <div aria-hidden="true" style={{ position: "fixed", inset: 0, zIndex: 2, pointerEvents: "none" }}>
         {[
           { top: "1.5rem", left: "1.5rem" },
@@ -452,10 +569,6 @@ export function AuthCallbackView() {
           </span>
         ))}
       </div>
-
-      {/* Oversized ghost word — fills the empty canvas on the right.
-          Hidden on narrow viewports (see globals.css) where the full-width
-          content would otherwise sit on top of it. */}
       <span
         aria-hidden="true"
         className="auth-gate-ghost"
@@ -477,8 +590,6 @@ export function AuthCallbackView() {
       >
         {fc.ghost}
       </span>
-
-      {/* Content — anchored left, using the full canvas height */}
       <motion.div
         initial={prefersReducedMotion ? false : "hidden"}
         animate="visible"
@@ -495,16 +606,11 @@ export function AuthCallbackView() {
           gap: "1.4rem",
         }}
       >
-        <motion.p
-          variants={prefersReducedMotion ? undefined : rise}
-          className="file-path-label"
-          style={{ margin: 0 }}
-        >
+        <motion.p variants={itemVariants} className="file-path-label" style={{ margin: 0 }}>
           auth / access-gate
         </motion.p>
-
         <motion.div
-          variants={prefersReducedMotion ? undefined : rise}
+          variants={itemVariants}
           style={{
             display: "inline-flex",
             alignItems: "center",
@@ -538,9 +644,8 @@ export function AuthCallbackView() {
             {fc.label}
           </span>
         </motion.div>
-
         <motion.h1
-          variants={prefersReducedMotion ? undefined : rise}
+          variants={itemVariants}
           style={{
             margin: 0,
             fontSize: "clamp(2.25rem, 5.5vw, 4.5rem)",
@@ -553,9 +658,8 @@ export function AuthCallbackView() {
         >
           {fc.headline}
         </motion.h1>
-
         <motion.p
-          variants={prefersReducedMotion ? undefined : rise}
+          variants={itemVariants}
           style={{
             margin: 0,
             fontSize: "clamp(1rem, 1.4vw, 1.15rem)",
@@ -566,40 +670,11 @@ export function AuthCallbackView() {
         >
           {fc.body}
         </motion.p>
-
-        <motion.div
-          variants={prefersReducedMotion ? undefined : rise}
-          style={{ display: "flex", gap: "0.85rem", flexWrap: "wrap", marginTop: "0.4rem" }}
-        >
-          {fc.actionHref ? (
-            <a
-              className="primary-button"
-              href={fc.actionHref}
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{ borderRadius: "999px", padding: "0.9rem 1.9rem", fontWeight: 700 }}
-            >
-              {fc.actionLabel}
-            </a>
-          ) : null}
-          <Link
-            className={fc.actionHref ? "ghost-button" : "primary-button"}
-            href={retryLoginHref}
-            style={{ borderRadius: "999px", padding: "0.9rem 1.9rem", fontWeight: fc.actionHref ? 600 : 700 }}
-          >
-            Retry {providerName} sign in
-          </Link>
-          <Link
-            className="ghost-button"
-            href="/"
-            style={{ borderRadius: "999px", padding: "0.9rem 1.75rem", fontWeight: 600 }}
-          >
-            Return to sign-in
-          </Link>
+        <motion.div variants={itemVariants}>
+          <AuthFailedActions fc={fc} retryLoginHref={retryLoginHref} providerName={providerName} />
         </motion.div>
-
         <motion.div
-          variants={prefersReducedMotion ? undefined : rise}
+          variants={itemVariants}
           style={{
             marginTop: "1.6rem",
             paddingTop: "1.25rem",
@@ -622,5 +697,81 @@ export function AuthCallbackView() {
         </motion.div>
       </motion.div>
     </main>
+  );
+}
+
+function ArchivedChoiceScreen({
+  pendingSessionExpired,
+  pendingAccount,
+  retryLoginHref,
+  onRestore,
+  onStartFresh,
+}: Readonly<{
+  pendingSessionExpired: boolean;
+  pendingAccount: PendingAccount | null;
+  retryLoginHref: string;
+  onRestore: () => Promise<void>;
+  onStartFresh: () => Promise<void>;
+}>) {
+  const expired = pendingSessionExpired || pendingAccount === null;
+  return (
+    <main className="dash-shell">
+      <FlowBackground />
+      <div className="state-body">
+        {expired ? (
+          <ArchivedSessionExpiredCard retryHref={retryLoginHref} />
+        ) : (
+          <ArchivedChoiceCard
+            pending={pendingAccount as PendingAccount & { pending: true }}
+            onRestore={onRestore}
+            onStartFresh={onStartFresh}
+          />
+        )}
+      </div>
+    </main>
+  );
+}
+
+export function AuthCallbackView() {
+  const prefersReducedMotion = useReducedMotion();
+  const {
+    state,
+    message,
+    authStatus,
+    intent,
+    providerName,
+    orgLogin,
+    pendingAccount,
+    pendingSessionExpired,
+    retryLoginHref,
+    onRestore,
+    onStartFresh,
+  } = useAuthCallbackViewModel();
+
+  if (state === "checking") {
+    return <PipelineLoader label={message} />;
+  }
+  if (state === "archived_choice") {
+    return (
+      <ArchivedChoiceScreen
+        pendingSessionExpired={pendingSessionExpired}
+        pendingAccount={pendingAccount}
+        retryLoginHref={retryLoginHref}
+        onRestore={onRestore}
+        onStartFresh={onStartFresh}
+      />
+    );
+  }
+
+  return (
+    <AuthFailedGate
+      prefersReducedMotion={prefersReducedMotion}
+      authStatus={authStatus}
+      message={message}
+      orgLogin={orgLogin}
+      intent={intent}
+      providerName={providerName}
+      retryLoginHref={retryLoginHref}
+    />
   );
 }

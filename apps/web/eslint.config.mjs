@@ -43,6 +43,15 @@ const eslintConfig = defineConfig([
       ],
     },
   },
+  // Production functions must stay at McCabe ≤ 10. ESLint's complexity metric
+  // is the CI lock; `scripts/check-complexity.cjs` is the AST audit used to
+  // drive extracts. Views are not exempt — JSX `&&` / ternaries count.
+  {
+    files: ["src/**/*.{ts,tsx}"],
+    rules: {
+      complexity: ["error", 10],
+    },
+  },
 ]);
 
 export default eslintConfig;

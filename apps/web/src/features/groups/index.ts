@@ -27,10 +27,13 @@ export type {
 
 export {
   GROUP_ROLE_LABELS,
+  groupDisplayName,
   isGlobalCreatorRole,
   isGroupManagerRole,
   projectStatusVariant,
   repoShortName,
+  shouldShowAssignmentReconcile,
+  shouldShowAssignmentRevoke,
 } from "./model/groups-rules";
 export * from "./data/hierarchy-api";
 export type {

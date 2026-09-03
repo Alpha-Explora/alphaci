@@ -1,8 +1,5 @@
 "use client";
 
-/* Preserve the current-projects probe timing during the architecture move. */
-/* eslint-disable react-hooks/set-state-in-effect */
-
 import { useCallback, useEffect, useState } from "react";
 
 import { getProjects } from "@/features/projects";

@@ -10,6 +10,7 @@ import type {
   EnvProvider,
   EnvTargetSlot,
 } from "@/shared/api/contracts";
+import { sanitizeProvisioningTarget } from "../model/deployment-provisioning-rules";
 
 function defaultProviderForSlot(slot: EnvTargetSlot): EnvProvider {
   return slot === "frontend" ? "vercel" : "render";
@@ -178,12 +179,7 @@ export function useDeploymentProvisioningForm() {
     );
 
     const targets = request.targets.map((target) => ({
-      ...target,
-      projectName: target.projectName?.trim() || undefined,
-      branchName: target.branchName?.trim() || "uat",
-      rootDirectory: target.rootDirectory?.trim() || undefined,
-      buildCommand: target.buildCommand?.trim() || undefined,
-      startCommand: target.startCommand?.trim() || undefined,
+      ...sanitizeProvisioningTarget(target),
       env: sanitizedEnvSets(target.env),
     }));
 

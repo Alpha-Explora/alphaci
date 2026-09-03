@@ -12,6 +12,7 @@ import {
   getCapabilities,
 } from "../data/capabilities-repository";
 import type { CapabilitiesResponse } from "@/shared/api/contracts";
+import { capabilityViewFlags } from "../model/capability-flags";
 
 export type CapabilitiesStatus = "loading" | "ready" | "error";
 
@@ -68,32 +69,7 @@ export function useCapabilitiesViewModel(): CapabilitiesViewModel {
     status,
     error,
     loading: status === "loading",
-    envProvisioningEnabled: capabilities?.envProvisioning?.enabled === true,
-    // Single ownership mode this deployment offers. 'flowci_managed' = deploys
-    // are centralized on the organization's Render/Vercel; 'byo' = users connect
-    // their own provider accounts. Defaults to 'flowci_managed' (the safer,
-    // centralized choice) while capabilities are still loading or on fetch
-    // failure, so BYO UI never flashes/appears unless the backend explicitly
-    // advertises it.
-    deploymentOwnershipMode:
-      capabilities?.envProvisioning?.modes?.[0] === "byo"
-        ? ("byo" as const)
-        : ("flowci_managed" as const),
-    projectSyncSnapshotsEnabled: capabilities?.projectSyncSnapshots?.enabled === true,
-    workflowSettingsPreviewEnabled: capabilities?.workflowSettingsPreview?.enabled === true,
-    workflowUpdatePrEnabled: capabilities?.workflowUpdatePr?.enabled === true,
-    projectTargetManagementEnabled: capabilities?.projectTargetManagement?.enabled === true,
-    ciRunTrackingEnabled: capabilities?.ciRunTracking?.enabled === true,
-    deploymentHistoryEnabled: capabilities?.deploymentHistory?.enabled === true,
-    previewDeploymentsEnabled: capabilities?.previewDeployments?.enabled === true,
-    driftDetectionEnabled: capabilities?.driftDetection?.enabled === true,
-    driftRepairEnabled: capabilities?.driftRepair?.enabled === true,
-    usageQuotasEnabled: capabilities?.usageQuotas?.enabled === true,
-    workspacesEnabled: capabilities?.workspaces?.enabled === true,
-    auditEventsEnabled: capabilities?.auditEvents?.enabled === true,
-    notificationsEnabled: capabilities?.notifications?.enabled === true,
-    hierarchyEnabled: capabilities?.hierarchy?.enabled === true,
-    hierarchyGithubSyncMode: capabilities?.hierarchy?.githubSyncMode ?? "stub",
+    ...capabilityViewFlags(capabilities),
     loadCapabilities,
   };
 }

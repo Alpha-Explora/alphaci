@@ -1,8 +1,5 @@
 "use client";
 
-/* Preserve installation callback URL cleanup and its immediate state update. */
-/* eslint-disable react-hooks/set-state-in-effect */
-
 import { useCallback, useEffect, useRef, useState, type ChangeEvent } from "react";
 
 import {

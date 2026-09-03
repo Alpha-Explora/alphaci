@@ -6,6 +6,7 @@ import { CreateGroupDialog } from "@/features/groups/create";
 import {
   APP_ROLE_BADGE_LABELS,
   canCreateWorkspace,
+  workspaceSwitcherKind,
   type WorkspaceAppRole,
   type WorkspacesMeResponse,
 } from "../model/workspace-types";
@@ -18,6 +19,182 @@ import { useWorkspaceSelection } from "./workspace-selection-context";
  * beside the dropdown, which is the thing this replaced.
  */
 const CREATE = "__create__";
+
+function workspaceItems(workspaces: WorkspacesMeResponse | null) {
+  return workspaces?.items ?? [];
+}
+
+function findCurrentWorkspace(
+  items: WorkspacesMeResponse["items"],
+  selectedWorkspaceId: string | null,
+  selectedWorkspace: WorkspacesMeResponse["items"][number] | null,
+) {
+  return items.find((workspace) => workspace.id === selectedWorkspaceId) ?? selectedWorkspace ?? items[0] ?? null;
+}
+
+function currentWorkspaceId(current: WorkspacesMeResponse["items"][number] | null) {
+  return current?.id ?? "";
+}
+
+function SwitcherRetryNotice({
+  message,
+  action,
+  onRetry,
+}: Readonly<{ message: string; action: string; onRetry?: () => void }>) {
+  return (
+    <div className="team-switcher team-switcher--notice" role="status">
+      <span>{message}</span>
+      {onRetry ? (
+        <button type="button" className="inline-link" onClick={onRetry}>
+          {action}
+        </button>
+      ) : null}
+    </div>
+  );
+}
+
+function SwitcherLoadingNotice() {
+  return (
+    <div className="team-switcher team-switcher--notice" aria-hidden="true">
+      <span>Loading workspaces…</span>
+    </div>
+  );
+}
+
+function NoTeamNotice({
+  appRole,
+  onRetry,
+}: Readonly<{ appRole?: WorkspaceAppRole | null; onRetry?: () => void }>) {
+  return (
+    <div className="team-switcher team-switcher--notice" role="status">
+      <span>No team yet — ask an admin to add you to one</span>
+      <span className="team-switcher-role-hint">
+        Signed in as {APP_ROLE_BADGE_LABELS[appRole ?? "member"]}
+      </span>
+      {onRetry ? (
+        <button type="button" className="inline-link" onClick={onRetry}>
+          Check again
+        </button>
+      ) : null}
+    </div>
+  );
+}
+
+function createdWorkspaceHandler(
+  setSelectedWorkspaceId: (id: string | null) => void,
+  onWorkspaceCreated?: (workspaceId: string) => void,
+) {
+  return (group: { id: string }) => {
+    setSelectedWorkspaceId(group.id);
+    onWorkspaceCreated?.(group.id);
+  };
+}
+
+function EmptyWorkspaceCreate({
+  createOpen,
+  setCreateOpen,
+  onCreated,
+}: Readonly<{
+  createOpen: boolean;
+  setCreateOpen: (open: boolean) => void;
+  onCreated: (group: { id: string }) => void;
+}>) {
+  return (
+    <div className="team-switcher">
+      <button
+        type="button"
+        className="primary-button team-switcher-create"
+        data-testid="create-workspace-button"
+        onClick={() => setCreateOpen(true)}
+      >
+        + Create workspace
+      </button>
+      <CreateGroupDialog
+        open={createOpen}
+        onClose={() => setCreateOpen(false)}
+        onCreated={onCreated}
+      />
+    </div>
+  );
+}
+
+function CreateWorkspaceOptions() {
+  return (
+    <>
+      <option disabled>──────────</option>
+      <option value={CREATE}>+ Create workspace</option>
+    </>
+  );
+}
+
+function applyWorkspaceSelectChange(
+  value: string,
+  currentId: string,
+  select: HTMLSelectElement,
+  setCreateOpen: (open: boolean) => void,
+  setSelectedWorkspaceId: (id: string | null) => void,
+) {
+  if (value === CREATE) {
+    select.value = currentId;
+    setCreateOpen(true);
+    return;
+  }
+  setSelectedWorkspaceId(value || null);
+}
+
+function WorkspacePicker({
+  items,
+  currentId,
+  canCreate,
+  createOpen,
+  setCreateOpen,
+  setSelectedWorkspaceId,
+  onCreated,
+}: Readonly<{
+  items: WorkspacesMeResponse["items"];
+  currentId: string;
+  canCreate: boolean;
+  createOpen: boolean;
+  setCreateOpen: (open: boolean) => void;
+  setSelectedWorkspaceId: (id: string | null) => void;
+  onCreated: (group: { id: string }) => void;
+}>) {
+  return (
+    <div className="team-switcher">
+      <label className="team-switcher-field">
+        <span className="sr-only">Active workspace</span>
+        <select
+          aria-label="Active workspace"
+          value={currentId}
+          onChange={(event) =>
+            applyWorkspaceSelectChange(
+              event.target.value,
+              currentId,
+              event.target,
+              setCreateOpen,
+              setSelectedWorkspaceId,
+            )
+          }
+          className="team-switcher-select"
+        >
+          {items.map((workspace) => (
+            <option key={workspace.id} value={workspace.id}>
+              {workspace.name}
+            </option>
+          ))}
+          {canCreate ? <CreateWorkspaceOptions /> : null}
+        </select>
+      </label>
+      {canCreate ? (
+        <CreateGroupDialog
+          open={createOpen}
+          onClose={() => setCreateOpen(false)}
+          onCreated={onCreated}
+        />
+      ) : null}
+    </div>
+  );
+}
 
 /**
  * The workspace picker, in the header.
@@ -56,149 +233,42 @@ export function WorkspaceSwitcher({
     useWorkspaceSelection();
   const [createOpen, setCreateOpen] = useState(false);
 
-  const items = workspaces?.items ?? [];
+  const items = workspaceItems(workspaces);
   const canCreate = canCreateWorkspace(appRole);
-  const current =
-    items.find((workspace) => workspace.id === selectedWorkspaceId) ??
-    selectedWorkspace ??
-    items[0] ??
-    null;
+  const current = findCurrentWorkspace(items, selectedWorkspaceId, selectedWorkspace);
+  const onCreated = createdWorkspaceHandler(setSelectedWorkspaceId, onWorkspaceCreated);
+  const kind = workspaceSwitcherKind(status, workspaces, items.length, canCreate);
 
-  /* The header slot keeps its place in every state.
-   *
-   * It used to return null whenever anything was less than perfect, so a
-   * failed request looked exactly like a feature that was switched off, and
-   * both looked like a UI that had lost its workspace control. A team lead
-   * reported the dropdown as "missing" for precisely this reason. */
-
-  if (status === "error") {
+  if (kind === "error") {
     return (
-      <div className="team-switcher team-switcher--notice" role="status">
-        <span>Workspaces unavailable</span>
-        {onRetry ? (
-          <button type="button" className="inline-link" onClick={onRetry}>
-            Retry
-          </button>
-        ) : null}
-      </div>
+      <SwitcherRetryNotice
+        message="Workspaces unavailable"
+        action="Retry"
+        onRetry={onRetry}
+      />
     );
   }
-
-  // Genuinely switched off by configuration — there is no workspace concept to
-  // show, which is different from having none.
-  if (workspaces?.enabled === false) {
-    return null;
-  }
-
-  if (status === "loading" || workspaces === null) {
+  if (kind === "disabled") return null;
+  if (kind === "loading") return <SwitcherLoadingNotice />;
+  if (kind === "no-team") return <NoTeamNotice appRole={appRole} onRetry={onRetry} />;
+  if (kind === "create") {
     return (
-      <div className="team-switcher team-switcher--notice" aria-hidden="true">
-        <span>Loading workspaces…</span>
-      </div>
+      <EmptyWorkspaceCreate
+        createOpen={createOpen}
+        setCreateOpen={setCreateOpen}
+        onCreated={onCreated}
+      />
     );
   }
-
-  /* Belongs to no team and cannot make one.
-   *
-   * Creating a workspace is a Lead/Admin action, so the way out of this state
-   * is somebody else's — hence no create button. But "No team yet" on its own
-   * was still a dead end, and a misleading one: it is also what a genuine Lead
-   * sees when the app has misjudged their role, which is exactly how a Lead
-   * came to be reported as "cannot see the workspace dropdown". The two causes
-   * look identical and the message named neither.
-   *
-   * So this state now answers both questions it used to raise. The role label
-   * is the tell — a Lead reading "Developer" here can see in one glance that
-   * the problem is their role and not their teams, and say so. "Check again"
-   * re-reads the TEAM LIST (not the role), which is the common case: an admin
-   * has just added them and a reload should not be the way to find out. */
-  if (items.length === 0 && !canCreate) {
-    return (
-      <div className="team-switcher team-switcher--notice" role="status">
-        <span>No team yet — ask an admin to add you to one</span>
-        <span className="team-switcher-role-hint">
-          Signed in as {APP_ROLE_BADGE_LABELS[appRole ?? "member"]}
-        </span>
-        {onRetry ? (
-          <button type="button" className="inline-link" onClick={onRetry}>
-            Check again
-          </button>
-        ) : null}
-      </div>
-    );
-  }
-
-  /* No workspaces yet, but this caller may make one. A <select> whose only
-   * entry is an action is not a picker — there is nothing to pick between, and
-   * the affordance reads as an empty control rather than a thing to press. The
-   * button says what it does. Leads land here on their first sign-in, so this
-   * is the first thing they see. */
-  if (items.length === 0) {
-    return (
-      <div className="team-switcher">
-        <button
-          type="button"
-          className="primary-button team-switcher-create"
-          data-testid="create-workspace-button"
-          onClick={() => setCreateOpen(true)}
-        >
-          + Create workspace
-        </button>
-        <CreateGroupDialog
-          open={createOpen}
-          onClose={() => setCreateOpen(false)}
-          onCreated={(group) => {
-            setSelectedWorkspaceId(group.id);
-            onWorkspaceCreated?.(group.id);
-          }}
-        />
-      </div>
-    );
-  }
-
   return (
-    <div className="team-switcher">
-      <label className="team-switcher-field">
-        <span className="sr-only">Active workspace</span>
-        <select
-          aria-label="Active workspace"
-          value={current?.id ?? ""}
-          onChange={(event) => {
-            if (event.target.value === CREATE) {
-              // Never let the sentinel become the selection — reopen on the
-              // workspace the user was already in, then show the dialog.
-              event.target.value = current?.id ?? "";
-              setCreateOpen(true);
-              return;
-            }
-            setSelectedWorkspaceId(event.target.value || null);
-          }}
-          className="team-switcher-select"
-        >
-          {items.map((workspace) => (
-            <option key={workspace.id} value={workspace.id}>
-              {workspace.name}
-            </option>
-          ))}
-          {canCreate ? (
-            <>
-              <option disabled>──────────</option>
-              <option value={CREATE}>+ Create workspace</option>
-            </>
-          ) : null}
-        </select>
-      </label>
-
-      {canCreate ? (
-        <CreateGroupDialog
-          open={createOpen}
-          onClose={() => setCreateOpen(false)}
-          onCreated={(group) => {
-            setSelectedWorkspaceId(group.id);
-            onWorkspaceCreated?.(group.id);
-          }}
-        />
-      ) : null}
-    </div>
+    <WorkspacePicker
+      items={items}
+      currentId={currentWorkspaceId(current)}
+      canCreate={canCreate}
+      createOpen={createOpen}
+      setCreateOpen={setCreateOpen}
+      setSelectedWorkspaceId={setSelectedWorkspaceId}
+      onCreated={onCreated}
+    />
   );
 }

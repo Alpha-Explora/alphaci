@@ -6,6 +6,14 @@ import { motion } from "framer-motion";
 import type { ProvisionedProject, RunGroup } from "../../model/home-types";
 import { EASE_OUT, sectionVariants } from "./motion";
 
+interface JourneyStep {
+  title: string;
+  desc: string;
+  done: boolean;
+  href?: string;
+  cta?: string;
+}
+
 /* ── Get-started journey — shown when the workspace is effectively empty ────── */
 
 export function CheckMark() {
@@ -44,13 +52,7 @@ export function GetStartedJourney({
   const hasWorkflow = historyCount > 0 || hasProvisioned;
   const hasRuns = runs.length > 0;
 
-  const steps: Array<{
-    title: string;
-    desc: string;
-    done: boolean;
-    href?: string;
-    cta?: string;
-  }> = [
+  const steps: JourneyStep[] = [
     {
       title: "Create a project",
       desc: "Name a service and pick what its pipeline should check.",
@@ -124,39 +126,7 @@ export function GetStartedJourney({
       </div>
 
       <ol className="getstarted-steps">
-        {steps.map((step, index) => {
-          const isCurrent = index === activeIndex && !step.done;
-          return (
-            <motion.li
-              key={step.title}
-              className={`getstarted-step${step.done ? " is-done" : ""}${isCurrent ? " is-current" : ""}`}
-              initial={reduced ? false : { opacity: 0, x: -12 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{
-                duration: 0.35,
-                ease: EASE_OUT,
-                delay: reduced ? 0 : 0.1 + index * 0.08,
-              }}
-            >
-              <span className="getstarted-node" aria-hidden="true">
-                {step.done ? <CheckMark /> : index + 1}
-              </span>
-              <div className="getstarted-copy">
-                <strong>{step.title}</strong>
-                <small>{step.desc}</small>
-                {isCurrent && step.href ? (
-                  <Link href={step.href} className="getstarted-cta">
-                    {step.cta}
-                    <span aria-hidden="true">→</span>
-                  </Link>
-                ) : null}
-              </div>
-              <span className="getstarted-state" aria-hidden="true">
-                {step.done ? "Done" : isCurrent ? "Now" : ""}
-              </span>
-            </motion.li>
-          );
-        })}
+        {steps.map((step, index) => <JourneyStepItem key={step.title} step={step} index={index} activeIndex={activeIndex} reduced={reduced} />)}
       </ol>
 
       <div className="getstarted-resources">
@@ -169,6 +139,33 @@ export function GetStartedJourney({
       </div>
     </motion.section>
   );
+}
+
+function JourneyStepItem({ step, index, activeIndex, reduced }: Readonly<{ step: JourneyStep; index: number; activeIndex: number; reduced: boolean | null }>) {
+  const isCurrent = index === activeIndex && !step.done;
+  return <motion.li className={journeyStepClass(step.done, isCurrent)} initial={reduced ? false : { opacity: 0, x: -12 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.35, ease: EASE_OUT, delay: reduced ? 0 : 0.1 + index * 0.08 }}>
+    <JourneyNode done={step.done} index={index} />
+    <div className="getstarted-copy"><strong>{step.title}</strong><small>{step.desc}</small><JourneyCta step={step} isCurrent={isCurrent} /></div>
+    <JourneyState done={step.done} isCurrent={isCurrent} />
+  </motion.li>;
+}
+
+function journeyStepClass(done: boolean, current: boolean) {
+  return `getstarted-step${done ? " is-done" : ""}${current ? " is-current" : ""}`;
+}
+
+function JourneyNode({ done, index }: Readonly<{ done: boolean; index: number }>) {
+  return <span className="getstarted-node" aria-hidden="true">{done ? <CheckMark /> : index + 1}</span>;
+}
+
+function JourneyCta({ step, isCurrent }: Readonly<{ step: JourneyStep; isCurrent: boolean }>) {
+  if (!isCurrent || !step.href) return null;
+  return <Link href={step.href} className="getstarted-cta">{step.cta}<span aria-hidden="true">→</span></Link>;
+}
+
+function JourneyState({ done, isCurrent }: Readonly<{ done: boolean; isCurrent: boolean }>) {
+  if (done) return <span className="getstarted-state" aria-hidden="true">Done</span>;
+  return <span className="getstarted-state" aria-hidden="true">{isCurrent ? "Now" : ""}</span>;
 }
 
 /** Container-less metric cell: a quiet mono figure on a hairline, not a card. */

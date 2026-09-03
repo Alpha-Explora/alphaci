@@ -45,148 +45,47 @@ export function OAuthLoginView({
       <FlowBackground variant="calm" />
       <DitherBackground />
       <PublicSiteNav active="pricing" fixed showActions={false} />
-
-      <div className="auth-left-panel">
-        <div className="auth-internal-welcome">
-          <motion.div
-            className="auth-internal-copy"
-            initial={prefersReducedMotion ? undefined : { opacity: 0, y: 16 }}
-            animate={prefersReducedMotion ? undefined : { opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.2 }}
-          >
-            <p className="auth-internal-kicker">Internal workspace</p>
-            <h2>Alphaexplora internal access</h2>
-            <p>
-              Sign in with your company GitHub to manage governed delivery
-              workflows, organization repositories, provider connections, and
-              deployments — all from one secure place.
-            </p>
-          </motion.div>
-
-          <p className="auth-minimal-note">
-            Access is gated on Alphaexplora organization membership — external
-            accounts can&apos;t get in.
-          </p>
-        </div>
-      </div>
-
-      <div className="auth-right-panel">
-        <motion.div
-          className="auth-card-shell bg-white dark:bg-zinc-900"
-          initial={
-            prefersReducedMotion
-              ? undefined
-              : { opacity: 0, y: 14, scale: 0.985 }
-          }
-          animate={
-            prefersReducedMotion ? undefined : { opacity: 1, y: 0, scale: 1 }
-          }
-          transition={{ duration: 0.42, ease: [0.22, 1, 0.36, 1] }}
-        >
-          <div className="auth-header">
-            <motion.p
-              className="hero-kicker"
-              initial={prefersReducedMotion ? undefined : { opacity: 0, y: 8 }}
-              animate={prefersReducedMotion ? undefined : { opacity: 1, y: 0 }}
-            >
-              {mode === "login" ? "Log in" : "Sign up"}
-            </motion.p>
-            <motion.h1
-              initial={prefersReducedMotion ? undefined : { opacity: 0, y: 14 }}
-              animate={prefersReducedMotion ? undefined : { opacity: 1, y: 0 }}
-              transition={{ duration: 0.35 }}
-            >
-              {title}
-            </motion.h1>
-            <p className="auth-subtitle">{subtitle}</p>
-          </div>
-
-          <div className="auth-provider-single">
-            <motion.a
-              href={githubLoginHref}
-              aria-disabled={isWarming}
-              className="auth-github-cta"
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "0.75rem",
-                width: "100%",
-                padding: "0.9rem 1.5rem",
-                background: "rgba(255,255,255,0.05)",
-                border: "1px solid rgba(255,255,255,0.12)",
-                borderRadius: "0.75rem",
-                textDecoration: "none",
-                transition: "border-color 0.2s ease, box-shadow 0.2s ease",
-                cursor: "pointer",
-                ...(isWarming ? { pointerEvents: "none", opacity: 0.6 } : {}),
-              }}
-              onMouseEnter={(e) => {
-                const el = e.currentTarget as HTMLAnchorElement;
-                el.style.borderColor = "rgba(162, 162, 172, 0.44)";
-                el.style.boxShadow = "0 12px 24px rgba(10, 10, 14, 0.2)";
-              }}
-              onMouseLeave={(e) => {
-                const el = e.currentTarget as HTMLAnchorElement;
-                const isLight =
-                  document.documentElement.getAttribute("data-theme") ===
-                  "light";
-                el.style.borderColor = isLight
-                  ? "rgba(0,0,0,0.12)"
-                  : "rgba(255,255,255,0.12)";
-                el.style.boxShadow = "none";
-              }}
-              onClick={(event) => void handleLogin(event)}
-            >
-              <span
-                aria-hidden="true"
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  flexShrink: 0,
-                  width: "20px",
-                  height: "20px",
-                  color: "var(--text-primary)",
-                }}
-              >
-                <GitHubGlyph />
-              </span>
-              <span
-                style={{
-                  fontWeight: 700,
-                  fontSize: "1rem",
-                  color: "var(--text-primary)",
-                  letterSpacing: "0.02em",
-                }}
-              >
-                {isWarming
-                  ? "Connecting..."
-                  : mode === "login"
-                    ? "Continue with GitHub"
-                    : "Sign up with GitHub"}
-              </span>
-            </motion.a>
-          </div>
-
-          {status === "loading" ? (
-            <p className="helper-text">Checking current session...</p>
-          ) : null}
-
-          <div
-            className="auth-trust-strip"
-            aria-label="ALPHACI sign in protections"
-          >
-            <span>GitHub OAuth</span>
-            <span>Branch-safe setup</span>
-            <span>Encrypted provider tokens</span>
-          </div>
-
-          {switchText && switchHref && switchCta ? (
-            <p className="auth-switch-text">
-              {switchText} <Link href={switchHref}>{switchCta}</Link>
-            </p>
-          ) : null}
-        </motion.div>
-      </div>
+      <InternalAccessPanel reduced={prefersReducedMotion} />
+      <LoginCard mode={mode} title={title} subtitle={subtitle} switchText={switchText} switchHref={switchHref}
+        switchCta={switchCta} reduced={prefersReducedMotion} status={status} isWarming={isWarming}
+        githubLoginHref={githubLoginHref} handleLogin={handleLogin} />
     </main>
   );
+}
+
+function InternalAccessPanel({ reduced }: Readonly<{ reduced: boolean | null }>) {
+  return <div className="auth-left-panel"><div className="auth-internal-welcome"><motion.div className="auth-internal-copy" initial={reduced ? undefined : { opacity: 0, y: 16 }} animate={reduced ? undefined : { opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.2 }}><p className="auth-internal-kicker">Internal workspace</p><h2>Alphaexplora internal access</h2><p>Sign in with your company GitHub to manage governed delivery workflows, organization repositories, provider connections, and deployments — all from one secure place.</p></motion.div><p className="auth-minimal-note">Access is gated on Alphaexplora organization membership — external accounts can&apos;t get in.</p></div></div>;
+}
+
+function LoginCard({ mode, title, subtitle, switchText, switchHref, switchCta, reduced, status, isWarming, githubLoginHref, handleLogin }: Readonly<OAuthLoginViewProps & {
+  reduced: boolean | null; status: string; isWarming: boolean; githubLoginHref: string;
+  handleLogin: ReturnType<typeof useOAuthLoginViewModel>["handleLogin"];
+}>) {
+  return <div className="auth-right-panel"><motion.div className="auth-card-shell bg-white dark:bg-zinc-900" initial={reduced ? undefined : { opacity: 0, y: 14, scale: 0.985 }} animate={reduced ? undefined : { opacity: 1, y: 0, scale: 1 }} transition={{ duration: 0.42, ease: [0.22, 1, 0.36, 1] }}>
+    <LoginHeader mode={mode} title={title} subtitle={subtitle} reduced={reduced} />
+    <GitHubLoginButton mode={mode} isWarming={isWarming} href={githubLoginHref} handleLogin={handleLogin} />
+    {status === "loading" ? <p className="helper-text">Checking current session...</p> : null}
+    <div className="auth-trust-strip" aria-label="ALPHACI sign in protections"><span>GitHub OAuth</span><span>Branch-safe setup</span><span>Encrypted provider tokens</span></div>
+    <SwitchPrompt text={switchText} href={switchHref} cta={switchCta} />
+  </motion.div></div>;
+}
+
+function LoginHeader({ mode, title, subtitle, reduced }: Readonly<{ mode: OAuthLoginViewProps["mode"]; title: string; subtitle: string; reduced: boolean | null }>) {
+  return <div className="auth-header"><motion.p className="hero-kicker" initial={reduced ? undefined : { opacity: 0, y: 8 }} animate={reduced ? undefined : { opacity: 1, y: 0 }}>{mode === "login" ? "Log in" : "Sign up"}</motion.p><motion.h1 initial={reduced ? undefined : { opacity: 0, y: 14 }} animate={reduced ? undefined : { opacity: 1, y: 0 }} transition={{ duration: 0.35 }}>{title}</motion.h1><p className="auth-subtitle">{subtitle}</p></div>;
+}
+
+function GitHubLoginButton({ mode, isWarming, href, handleLogin }: Readonly<{ mode: OAuthLoginViewProps["mode"]; isWarming: boolean; href: string; handleLogin: ReturnType<typeof useOAuthLoginViewModel>["handleLogin"] }>) {
+  const label = isWarming ? "Connecting..." : mode === "login" ? "Continue with GitHub" : "Sign up with GitHub";
+  return <div className="auth-provider-single"><motion.a href={href} aria-disabled={isWarming} className="auth-github-cta" style={{ display: "flex", alignItems: "center", gap: "0.75rem", width: "100%", padding: "0.9rem 1.5rem", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.12)", borderRadius: "0.75rem", textDecoration: "none", transition: "border-color 0.2s ease, box-shadow 0.2s ease", cursor: "pointer", ...(isWarming ? { pointerEvents: "none", opacity: 0.6 } : {}) }} onMouseEnter={(event) => { event.currentTarget.style.borderColor = "rgba(162, 162, 172, 0.44)"; event.currentTarget.style.boxShadow = "0 12px 24px rgba(10, 10, 14, 0.2)"; }} onMouseLeave={resetGitHubButton} onClick={(event) => void handleLogin(event)}><span aria-hidden="true" style={{ display: "flex", alignItems: "center", flexShrink: 0, width: "20px", height: "20px", color: "var(--text-primary)" }}><GitHubGlyph /></span><span style={{ fontWeight: 700, fontSize: "1rem", color: "var(--text-primary)", letterSpacing: "0.02em" }}>{label}</span></motion.a></div>;
+}
+
+function resetGitHubButton(event: React.MouseEvent<HTMLAnchorElement>) {
+  const isLight = document.documentElement.getAttribute("data-theme") === "light";
+  event.currentTarget.style.borderColor = isLight ? "rgba(0,0,0,0.12)" : "rgba(255,255,255,0.12)";
+  event.currentTarget.style.boxShadow = "none";
+}
+
+function SwitchPrompt({ text, href, cta }: Readonly<{ text?: string; href?: string; cta?: string }>) {
+  if (!text || !href || !cta) return null;
+  return <p className="auth-switch-text">{text} <Link href={href}>{cta}</Link></p>;
 }

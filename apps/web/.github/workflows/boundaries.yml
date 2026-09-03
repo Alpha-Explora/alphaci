@@ -71,10 +71,8 @@ jobs:
       - name: Lint
         run: npx eslint src --max-warnings=0
 
-      # 10 tests in tests/unit/project-env-panel.test.tsx fail on main with a
-      # jsdom element.tagName null inside the suite's own changeValue helper
-      # (see CLAUDE.md). They are a known pre-existing baseline, not a
-      # regression from this branch, so CI runs the rest of the suite until
-      # that file is repaired separately. Remove the exclusion once fixed.
+      - name: Cyclomatic complexity
+        run: npm run complexity
+
       - name: Unit tests
-        run: npm test -- --testPathIgnorePatterns "/project-env-panel\.test\.tsx$"
+        run: npm test
