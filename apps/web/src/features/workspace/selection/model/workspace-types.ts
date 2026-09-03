@@ -24,6 +24,33 @@ export function canCreateWorkspace(appRole: WorkspaceAppRole | null | undefined)
   return appRole === "admin" || appRole === "lead";
 }
 
+export type WorkspaceSwitcherKind =
+  | "error"
+  | "disabled"
+  | "loading"
+  | "no-team"
+  | "create"
+  | "picker";
+
+/**
+ * Which header slot to show. Order is the product rule: a failed load must
+ * never look like "feature off", and a lead with no team must never land on
+ * the developer notice.
+ */
+export function workspaceSwitcherKind(
+  status: "idle" | "loading" | "ready" | "error",
+  workspaces: WorkspacesMeResponse | null,
+  itemCount: number,
+  canCreate: boolean,
+): WorkspaceSwitcherKind {
+  if (status === "error") return "error";
+  if (workspaces?.enabled === false) return "disabled";
+  if (status === "loading" || workspaces === null) return "loading";
+  if (itemCount === 0 && !canCreate) return "no-team";
+  if (itemCount === 0) return "create";
+  return "picker";
+}
+
 export function navAvatarInitial(session: {
   user: { name?: string; login?: string };
 } | null): string {

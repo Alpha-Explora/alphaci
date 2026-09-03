@@ -72,6 +72,10 @@ describe("useWorkflowStudioViewModel", () => {
   async function renderVm(props?: { guest?: boolean; session?: null }) {
     let snapshot: ReturnType<typeof useWorkflowStudioViewModel> | null = null;
     function Probe() {
+      /* A probe component exists to hand the hook's return value back to the
+       * test — the one shape this rule cannot model, since the write IS the
+       * assertion and there is no effect to move it into. */
+      // eslint-disable-next-line react-hooks/globals
       snapshot = useWorkflowStudioViewModel({
         guest: props?.guest ?? false,
         session: props?.session ?? null,
@@ -94,6 +98,8 @@ describe("useWorkflowStudioViewModel", () => {
   function renderVmSync(props?: { guest?: boolean; session?: null }) {
     let snapshot: ReturnType<typeof useWorkflowStudioViewModel> | null = null;
     function Probe() {
+      // See renderVm above — same probe pattern, same reason.
+      // eslint-disable-next-line react-hooks/globals
       snapshot = useWorkflowStudioViewModel({
         guest: props?.guest ?? false,
         session: props?.session ?? null,

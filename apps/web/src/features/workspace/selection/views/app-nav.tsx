@@ -311,7 +311,8 @@ export function AppNav({
           full width, so the rail keeps its own brand mark and the expanded
           rail paints over this bar rather than beside it. */}
       <AppHeader guest={guest} session={session} appRole={appRole} avatarInitial={avatarInitial}
-        workspaces={workspaceVm.workspaces} loadWorkspaces={loadWorkspaces}
+        workspaces={workspaceVm.workspaces} workspaceStatus={workspaceVm.status}
+        loadWorkspaces={loadWorkspaces}
         onLogout={onLogout} isLoggingOut={isLoggingOut} />
       <AppSidebar pathname={pathname} guest={guest} reduced={reduced}
         isPlatformAdmin={isPlatformAdmin} unreadCount={notifications.unreadCount}
@@ -322,10 +323,11 @@ export function AppNav({
   );
 }
 
-function AppHeader({ guest, session, appRole, avatarInitial, workspaces, loadWorkspaces, onLogout, isLoggingOut }: Readonly<{
+function AppHeader({ guest, session, appRole, avatarInitial, workspaces, workspaceStatus, loadWorkspaces, onLogout, isLoggingOut }: Readonly<{
   guest: boolean; session: AuthSession | null; appRole: WorkspaceAppRole; avatarInitial: string;
   workspaces: Parameters<typeof WorkspaceSwitcher>[0]["workspaces"];
-  loadWorkspaces: (workspaceId: string) => void; onLogout: () => void; isLoggingOut: boolean;
+  workspaceStatus: NonNullable<Parameters<typeof WorkspaceSwitcher>[0]["status"]>;
+  loadWorkspaces: () => void; onLogout: () => void; isLoggingOut: boolean;
 }>) {
   return (
     <header className="app-header">
@@ -333,7 +335,15 @@ function AppHeader({ guest, session, appRole, avatarInitial, workspaces, loadWor
         <Link href="/home" className="app-header-brand" aria-label="ALPHACI — home">
           <Image src="/brand-logo.png" alt="ALPHACI" width={138} height={46} unoptimized priority className="app-header-brand-image" />
         </Link>
-        {!guest && <WorkspaceSwitcher workspaces={workspaces} appRole={appRole} onWorkspaceCreated={loadWorkspaces} />}
+        {!guest && (
+          <WorkspaceSwitcher
+            workspaces={workspaces}
+            appRole={appRole}
+            status={workspaceStatus}
+            onRetry={loadWorkspaces}
+            onWorkspaceCreated={loadWorkspaces}
+          />
+        )}
       </div>
       <HeaderActions guest={guest} session={session} appRole={appRole} avatarInitial={avatarInitial}
         onLogout={onLogout} isLoggingOut={isLoggingOut} />

@@ -22,4 +22,7 @@ export type {
   WorkspaceSummary,
   WorkspacesMeResponse,
 } from "./model/workspace-types";
+/* Who may create a workspace. Exported because the Teams empty state offers
+   the same action as the header switcher and must agree with it. */
+export { canCreateWorkspace } from "./model/workspace-types";
 export * from "./data/workspaces-api";
