@@ -221,7 +221,7 @@ export function useWorkflowStudioViewModel(options: {
         githubCommitUrl: response.githubCommitUrl,
         projectTypeId: response.projectTypeId,
         workflowRecipeId: response.workflowRecipeId,
-        branchesCreated: ["main", "uat", "develop"],
+        branchesCreated: response.branchesCreated ?? [],
         additionalWorkflowPaths: response.additionalWorkflowPaths,
         secondaryRepoFullName: response.secondaryRepoFullName,
         secondaryRepoUrl: response.secondaryRepoUrl,

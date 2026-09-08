@@ -862,6 +862,12 @@ export interface CreateProjectResponse {
   githubCommitUrl: string | null;
   projectTypeId: string;
   workflowRecipeId: string;
+  /**
+   * Branches provisioning created. Optional because an older backend does not
+   * send it; the caller falls back rather than inventing a list, which is how
+   * the success screen came to name a branch that was never created.
+   */
+  branchesCreated?: string[];
   additionalWorkflowPaths?: string[];
   secondaryRepoFullName?: string;
   secondaryRepoUrl?: string;
