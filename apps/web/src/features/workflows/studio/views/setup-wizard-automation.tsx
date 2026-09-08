@@ -71,6 +71,14 @@ export function SetupWizardAutomation({
   form,
   projectCatalog,
 }: Readonly<WizardStepProps>) {
+  // The catalog declares the runtime per stack ('node', 'dotnet', ...). Reading
+  // it here keeps the form from offering a choice the pipeline will not honour:
+  // a non-Node stack takes its runtime version from the catalog, so there is
+  // nothing here for the user to pick.
+  const runtime = projectCatalog.selectedProjectType?.runtime ?? "node";
+  const runsOnNode = runtime === "node";
+  const runtimeLabel = projectCatalog.selectedProjectType?.language ?? runtime;
+
   return (
     <>
       <div style={{ marginTop: "1.5rem" }}>
@@ -87,19 +95,37 @@ export function SetupWizardAutomation({
       </div>
 
       <div className="form-pair-row" style={{ marginTop: "1.5rem", gap: "1rem" }}>
-        <div>
-          <label className="input-label" htmlFor="node-version" style={labelAccentStyle}>
-            Node version
-          </label>
-          <select
-            id="node-version"
-            value={form.nodeVersion}
-            onChange={(event) => form.setNodeVersion(event.target.value)}
-            className="premium-input"
-          >
-            <NodeVersionOptions versions={projectCatalog.nodeVersions} />
-          </select>
-        </div>
+        {/*
+          Only shown for stacks that run on Node. The field used to render for
+          every stack, so a .NET project was asked to choose a Node version and
+          the review step then confirmed one back. A non-Node stack takes its
+          runtime version from the workflow engine catalog instead, which is
+          why there is nothing to pick here.
+        */}
+        {runsOnNode ? (
+          <div>
+            <label className="input-label" htmlFor="node-version" style={labelAccentStyle}>
+              Node version
+            </label>
+            <select
+              id="node-version"
+              value={form.nodeVersion}
+              onChange={(event) => form.setNodeVersion(event.target.value)}
+              className="premium-input"
+            >
+              <NodeVersionOptions versions={projectCatalog.nodeVersions} />
+            </select>
+          </div>
+        ) : (
+          <div>
+            <label className="input-label" style={labelAccentStyle}>
+              Runtime
+            </label>
+            <div className="premium-input" aria-readonly="true">
+              {runtimeLabel}
+            </div>
+          </div>
+        )}
         <div>
           <label className="input-label" htmlFor="coverage-threshold" style={labelAccentStyle}>
             Coverage
