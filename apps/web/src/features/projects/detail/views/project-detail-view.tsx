@@ -24,6 +24,7 @@ import {
 } from "../../model/projects-rules";
 import { useProjectDetailViewModel } from "../view-models/use-project-detail-view-model";
 import { ProjectDangerZone } from "./project-danger-zone";
+import { PROMOTION_FLOW_LABEL } from "@/shared/api/pipeline-branches";
 
 const EASE_OUT: [number, number, number, number] = [0.25, 0, 0, 1];
 
@@ -207,7 +208,7 @@ function ProjectDetailHeader({
         </div>
         <div>
           <span>Promotion</span>
-          <strong>test &gt; uat &gt; main</strong>
+          <strong>{PROMOTION_FLOW_LABEL}</strong>
         </div>
         <div>
           <span>Stages</span>

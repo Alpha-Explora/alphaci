@@ -1,6 +1,7 @@
 "use client";
 
 import { motion, useReducedMotion } from "framer-motion";
+import { PROMOTION_BRANCHES } from "@/shared/api/pipeline-branches";
 
 /* ── Stage motif icons (shared visual language with the /runs pipeline) ──── */
 
@@ -85,7 +86,9 @@ const GATE_STAGES = [
   },
 ] as const;
 
-const PROMOTION_RUNGS = ["uat", "main"] as const;
+// Derived from the branch model rather than listed, which is how this came to
+// show only the tiers above the working branch.
+const PROMOTION_RUNGS = PROMOTION_BRANCHES;
 
 export type FlowExplainerVariant = "full" | "compact";
 
