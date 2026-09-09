@@ -3,6 +3,7 @@
  * Actions are imported from their own slice (`@/features/runs/list`) so a
  * consumer pulls in one action rather than the whole domain. */
 export type {
+  BranchRunGroup,
   ProjectRunGroup,
   RunGroup,
   RunOverallStatus,
@@ -12,5 +13,9 @@ export type {
   StageReport,
 } from "./model/runs-types";
 
-export { groupRunsByProject, summarizeRuns } from "./model/runs-rules";
+export {
+  groupRunsByBranch,
+  groupRunsByProject,
+  summarizeRuns,
+} from "./model/runs-rules";
 export * from "./data/runs-api";
