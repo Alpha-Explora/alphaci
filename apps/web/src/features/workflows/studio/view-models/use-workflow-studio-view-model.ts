@@ -89,7 +89,9 @@ export function useWorkflowStudioViewModel(options: {
   const history = useWorkflowHistory(setStatusMessage);
   const projects = useProvisionedProjects(setStatusMessage);
   const createForm = useCreateProjectForm();
-  const deploymentProvisioning = useDeploymentProvisioningForm();
+  const deploymentProvisioning = useDeploymentProvisioningForm(
+    projectCatalog.selectedRepoShapeId,
+  );
   const { deploymentOwnershipMode, envProvisioningEnabled } = useCapabilities();
   const github = useGithubInstallations(setStatusMessage, () => undefined);
 
