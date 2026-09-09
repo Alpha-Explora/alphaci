@@ -17,22 +17,32 @@
  * back its own full run type.
  */
 
+import type { RunGroup } from "@/shared/api/contracts";
 import {
   PIPELINE_BRANCHES,
   isPipelineBranch,
   pipelineBranchRank,
 } from "@/shared/api/pipeline-branches";
 
-/** The two fields the grouping needs from a run. */
+import { groupRunsByCommit, type CommitRunGroup } from "./runs-by-commit";
+
+/** The fields the grouping needs from a run. */
 export interface BranchRun {
   headBranch: string;
+  headSha: string;
   createdAt: string;
 }
 
-/** One branch's runs, newest first. */
+/** One branch's history, newest commit first. */
 export interface BranchRunSection<T extends BranchRun> {
   branch: string;
-  runs: T[];
+  /**
+   * The branch's commits, each holding the several workflow runs it triggered.
+   *
+   * Commits rather than runs, because one push produces one run per chained
+   * workflow and listing them flat repeated every commit three times.
+   */
+  commits: CommitRunGroup<T>[];
   /** False for a branch outside the declared flow, so the view can mark it. */
   isPipelineBranch: boolean;
 }
@@ -59,6 +69,7 @@ function createdAtMs(run: BranchRun): number {
  */
 export function groupRunsByPipelineBranch<T extends BranchRun>(
   runs: readonly T[],
+  reports: readonly RunGroup[] = [],
 ): BranchRunSection<T>[] {
   const byBranch = new Map<string, T[]>();
   for (const run of runs) {
@@ -72,9 +83,7 @@ export function groupRunsByPipelineBranch<T extends BranchRun>(
 
   const sections = [...byBranch.entries()].map(([branch, branchRuns]) => ({
     branch,
-    runs: [...branchRuns].sort(
-      (left, right) => createdAtMs(right) - createdAtMs(left),
-    ),
+    commits: groupRunsByCommit(branchRuns, reports),
     isPipelineBranch: isPipelineBranch(branch),
   }));
 
@@ -82,7 +91,7 @@ export function groupRunsByPipelineBranch<T extends BranchRun>(
   // with runs is never duplicated by its own placeholder.
   for (const branch of PIPELINE_BRANCHES) {
     if (!byBranch.has(branch)) {
-      sections.push({ branch, runs: [], isPipelineBranch: true });
+      sections.push({ branch, commits: [], isPipelineBranch: true });
     }
   }
 
@@ -92,8 +101,8 @@ export function groupRunsByPipelineBranch<T extends BranchRun>(
     if (leftOrder !== rightOrder) return leftOrder - rightOrder;
 
     // Two unknown branches: newest activity first.
-    const leftLatest = left.runs[0];
-    const rightLatest = right.runs[0];
+    const leftLatest = left.commits[0]?.latest;
+    const rightLatest = right.commits[0]?.latest;
     if (!leftLatest || !rightLatest) return 0;
     return createdAtMs(rightLatest) - createdAtMs(leftLatest);
   });

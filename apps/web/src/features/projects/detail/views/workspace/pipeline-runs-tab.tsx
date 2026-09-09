@@ -20,6 +20,11 @@ import {
 import { diagnoseRunWithoutJobs } from "../../model/run-diagnosis";
 import type { BranchRunSection } from "../../model/runs-by-branch";
 import {
+  commitStageProblems,
+  stagePillTone,
+  type CommitRunGroup,
+} from "../../model/runs-by-commit";
+import {
   RUNS_POLL_MS,
   usePipelineRunsViewModel,
 } from "../../view-models/use-pipeline-runs-view-model";
@@ -124,6 +129,13 @@ export function PipelineRunsTab({
         </span>
       </div>
 
+      {runsView.reportsUnavailable && (
+        <p className="ws-hint">
+          Showing what GitHub executed. Our own stage grading could not be read,
+          so the per-stage diagnosis is missing from these commits.
+        </p>
+      )}
+
       {runsView.sections.map((section) => (
         <BranchSection
           key={section.branch}
@@ -136,7 +148,7 @@ export function PipelineRunsTab({
 }
 
 /**
- * One branch's runs, under a heading that names the branch.
+ * One branch's history, under a heading that names the branch.
  *
  * A branch outside the declared flow is marked rather than hidden: a repository
  * connected with its own conventions still has real runs, and silently dropping
@@ -157,26 +169,127 @@ function BranchSection({
           <span className="ws-runsection__foreign">outside the flow</span>
         )}
         <span className="ws-runsection__count">
-          {section.runs.length === 1 ? "1 run" : `${section.runs.length} runs`}
+          {section.commits.length === 1
+            ? "1 commit"
+            : `${section.commits.length} commits`}
         </span>
       </div>
 
-      {section.runs.length === 0 ? (
+      {section.commits.length === 0 ? (
         <p className="ws-runsection__empty">
           Nothing has run on this branch yet.
         </p>
       ) : (
         <ul className="ws-runs">
-          {section.runs.map((run) => (
-            <RunRow
-              key={`${run.id}-${run.runAttempt}`}
+          {section.commits.map((commit) => (
+            <CommitRow
+              key={commit.commitSha}
               projectId={projectId}
-              run={run}
+              commit={commit}
             />
           ))}
         </ul>
       )}
     </section>
+  );
+}
+
+/**
+ * One commit, and what its pipeline did.
+ *
+ * The stage problems show WITHOUT expanding. They are the reason someone opened
+ * this tab — a stage that never started, or one that will never run because an
+ * earlier one failed — and putting the diagnosis behind a click means the tab
+ * still answers "something is wrong" without answering "what".
+ *
+ * The workflow runs themselves are behind the caret, because a commit produces
+ * one per chained workflow and the list of three is detail, not headline.
+ */
+function CommitRow({
+  projectId,
+  commit,
+}: {
+  projectId: string;
+  commit: CommitRunGroup<WorkflowRunSummary>;
+}) {
+  const [open, setOpen] = useState(false);
+  const problems = commitStageProblems(commit.report);
+  const { latest } = commit;
+
+  return (
+    <li className="ws-run">
+      <button
+        type="button"
+        className="ws-run__head"
+        aria-expanded={open}
+        onClick={() => setOpen(!open)}
+      >
+        <span className="ws-run__caret" aria-hidden="true">
+          {open ? "▾" : "▸"}
+        </span>
+        <StatusPill status={latest.status} conclusion={latest.conclusion} />
+        <code className="ws-commit__sha">{commit.commitSha.slice(0, 7)}</code>
+        <span className="ws-run__title">
+          {latest.displayTitle || latest.name || `Run #${latest.runNumber}`}
+        </span>
+        <span className="ws-run__meta">
+          {commit.runs.length === 1
+            ? "1 workflow"
+            : `${commit.runs.length} workflows`}
+          {latest.actor ? ` · ${latest.actor}` : ""}
+        </span>
+      </button>
+
+      {commit.report && (
+        <ul className="ws-stages" aria-label="Pipeline stages">
+          {commit.report.stages.map((stage) => (
+            <li key={stage.stage} className="ws-stages__item">
+              <span className={`ws-pill ws-pill--${stagePillTone(stage.status)}`}>
+                {stage.stage}
+              </span>
+              <span className="ws-stages__status">
+                {stage.status.replace(/_/g, " ")}
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {problems.length > 0 && (
+        <div className="ws-diagnosis">
+          {problems.map((stage) =>
+            stage.friendlyMessages.map((message, index) => (
+              <div
+                key={`${stage.stage}-${index}`}
+                className={`ws-diagnosis__item ws-diagnosis__item--${message.severity}`}
+              >
+                <p className="ws-diagnosis__title">
+                  {stage.stage}: {message.title}
+                </p>
+                <p className="ws-diagnosis__detail">{message.detail}</p>
+                {message.hint && (
+                  <p className="ws-diagnosis__hint">{message.hint}</p>
+                )}
+              </div>
+            )),
+          )}
+        </div>
+      )}
+
+      {open && (
+        <div className="ws-run__body">
+          <ul className="ws-jobs">
+            {commit.runs.map((run) => (
+              <RunRow
+                key={`${run.id}-${run.runAttempt}`}
+                projectId={projectId}
+                run={run}
+              />
+            ))}
+          </ul>
+        </div>
+      )}
+    </li>
   );
 }
 

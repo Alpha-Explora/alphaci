@@ -7,6 +7,8 @@ import {
   type WorkflowRunSummary,
 } from "../data/project-workspace-api";
 import type { ProjectStatus } from "../../model/projects-types";
+import { getRuns } from "@/features/runs";
+import type { RunGroup } from "@/shared/api/contracts";
 import {
   groupRunsByPipelineBranch,
   type BranchRunSection,
@@ -28,6 +30,14 @@ export interface PipelineRunsViewModel {
   sections: BranchRunSection<WorkflowRunSummary>[];
   /** True only when GitHub reported no runs at all, on any branch. */
   isEmpty: boolean;
+  /**
+   * True when our own graded reports could not be read.
+   *
+   * Not an error for the tab: the executions are still the truth about what
+   * ran, and showing them without the grading beats showing nothing. The view
+   * says the diagnosis is unavailable rather than pretending every stage passed.
+   */
+  reportsUnavailable: boolean;
   actionsUrl: string | null;
   repoFullName: string | null;
   reload: () => void;
@@ -57,6 +67,8 @@ export function usePipelineRunsViewModel(options: {
   const { projectId, actionsUrl } = options;
 
   const [runs, setRuns] = useState<WorkflowRunSummary[]>([]);
+  const [reports, setReports] = useState<RunGroup[]>([]);
+  const [reportsUnavailable, setReportsUnavailable] = useState(false);
   const [url, setUrl] = useState<string | null>(actionsUrl ?? null);
   const [repoFullName, setRepoFullName] = useState<string | null>(null);
   const [status, setStatus] = useState<ProjectStatus>("loading");
@@ -70,13 +82,34 @@ export function usePipelineRunsViewModel(options: {
    * raise the spinner itself.
    */
   const load = useCallback(() => {
+    /*
+     * Two sources, deliberately not one request.
+     *
+     * The executions come from GitHub and say what RAN. The reports come from
+     * our own ci_run_reports and say how it was GRADED. They are joined on the
+     * commit SHA, which the backend already established is the only value the
+     * stages of one execution share.
+     *
+     * The grading is fetched second and allowed to fail on its own. If our
+     * report endpoint is down, what GitHub executed is still true and still
+     * worth showing — degrading to "no diagnosis" is honest, where failing the
+     * whole tab would hide working information.
+     */
     return getProjectWorkflowRuns(projectId)
-      .then((data) => {
+      .then(async (data) => {
         setRuns(data.runs);
         setUrl(data.actionsUrl);
         setRepoFullName(data.repoFullName);
         setError(null);
         setStatus("ready");
+
+        try {
+          const graded = await getRuns(data.repoFullName);
+          setReports(graded.runs);
+          setReportsUnavailable(false);
+        } catch {
+          setReportsUnavailable(true);
+        }
       })
       .catch(() => {
         setError("The run list could not be read from GitHub.");
@@ -98,8 +131,9 @@ export function usePipelineRunsViewModel(options: {
   return {
     status,
     error,
-    sections: groupRunsByPipelineBranch(runs),
+    sections: groupRunsByPipelineBranch(runs, reports),
     isEmpty: runs.length === 0,
+    reportsUnavailable,
     actionsUrl: url,
     repoFullName,
     reload,

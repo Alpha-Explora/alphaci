@@ -1,8 +1,9 @@
 import { groupRunsByPipelineBranch } from "@/features/projects/detail/model/runs-by-branch";
 import { PIPELINE_BRANCHES } from "@/shared/api/pipeline-branches";
 
-function run(headBranch: string, createdAt: string) {
-  return { headBranch, createdAt };
+/** A GitHub run. `sha` defaults per-call so each run is its own commit. */
+function run(headBranch: string, createdAt: string, headSha = createdAt) {
+  return { headBranch, headSha, createdAt };
 }
 
 describe("groupRunsByPipelineBranch", () => {
@@ -14,8 +15,8 @@ describe("groupRunsByPipelineBranch", () => {
     ]);
 
     expect(sections.map((s) => s.branch)).toEqual([...PIPELINE_BRANCHES]);
-    expect(sections[1]!.runs).toEqual([]);
-    expect(sections[2]!.runs).toEqual([]);
+    expect(sections[1]!.commits).toEqual([]);
+    expect(sections[2]!.commits).toEqual([]);
   });
 
   it("orders sections by the promotion flow, not alphabetically", () => {
@@ -50,20 +51,34 @@ describe("groupRunsByPipelineBranch", () => {
     const sections = groupRunsByPipelineBranch([]);
 
     expect(sections).toHaveLength(PIPELINE_BRANCHES.length);
-    expect(sections.every((s) => s.runs.length === 0)).toBe(true);
+    expect(sections.every((s) => s.commits.length === 0)).toBe(true);
   });
 
-  it("sorts runs within a branch newest first", () => {
+  it("collapses the workflows of one commit into a single entry", () => {
+    // access, quality and package are three runs of ONE execution. Listed flat
+    // they repeated the commit three times, which is what made the tab noisy.
     const sections = groupRunsByPipelineBranch([
-      run("dev", "2026-09-10T08:00:00Z"),
-      run("dev", "2026-09-10T12:00:00Z"),
-      run("dev", "2026-09-10T10:00:00Z"),
+      run("dev", "2026-09-10T10:00:00Z", "abc1234"),
+      run("dev", "2026-09-10T10:01:00Z", "abc1234"),
+      run("dev", "2026-09-10T10:02:00Z", "abc1234"),
     ]);
 
-    expect(sections[0]!.runs.map((r) => r.createdAt)).toEqual([
-      "2026-09-10T12:00:00Z",
-      "2026-09-10T10:00:00Z",
-      "2026-09-10T08:00:00Z",
+    expect(sections[0]!.commits).toHaveLength(1);
+    expect(sections[0]!.commits[0]!.runs).toHaveLength(3);
+    expect(sections[0]!.commits[0]!.commitSha).toBe("abc1234");
+  });
+
+  it("sorts commits within a branch newest first", () => {
+    const sections = groupRunsByPipelineBranch([
+      run("dev", "2026-09-10T08:00:00Z", "older"),
+      run("dev", "2026-09-10T12:00:00Z", "newest"),
+      run("dev", "2026-09-10T10:00:00Z", "middle"),
+    ]);
+
+    expect(sections[0]!.commits.map((c) => c.commitSha)).toEqual([
+      "newest",
+      "middle",
+      "older",
     ]);
   });
 
@@ -82,12 +97,12 @@ describe("groupRunsByPipelineBranch", () => {
   it("renders rather than throws when a timestamp is unusable", () => {
     // Losing one row's position beats a run list that will not render.
     const sections = groupRunsByPipelineBranch([
-      run("dev", "not-a-date"),
-      run("dev", "2026-09-10T10:00:00Z"),
+      run("dev", "not-a-date", "broken"),
+      run("dev", "2026-09-10T10:00:00Z", "fine"),
     ]);
 
-    expect(sections[0]!.runs).toHaveLength(2);
-    expect(sections[0]!.runs[0]!.createdAt).toBe("2026-09-10T10:00:00Z");
+    expect(sections[0]!.commits).toHaveLength(2);
+    expect(sections[0]!.commits[0]!.commitSha).toBe("fine");
   });
 
   it("does not duplicate a declared branch that has runs", () => {
@@ -96,6 +111,6 @@ describe("groupRunsByPipelineBranch", () => {
     ]);
 
     expect(sections.filter((s) => s.branch === "uat")).toHaveLength(1);
-    expect(sections.find((s) => s.branch === "uat")!.runs).toHaveLength(1);
+    expect(sections.find((s) => s.branch === "uat")!.commits).toHaveLength(1);
   });
 });
