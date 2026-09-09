@@ -3,9 +3,11 @@
  * No React, no Next, no fetch — everything here is directly callable from a
  * test. These assertions were previously reachable only by rendering the route
  * and reading the DOM. */
+import { PIPELINE_BRANCHES } from "@/shared/api/pipeline-branches";
 import { ApiError } from "@/shared/api/request";
 
 import type {
+  BranchRunGroup,
   ProjectRunGroup,
   RunGroup,
   RunOverallStatus,
@@ -59,6 +61,54 @@ export function groupRunsByProject(runs: RunGroup[]): ProjectRunGroup[] {
       (left, right) =>
         startedAtMs(right.latestRun) - startedAtMs(left.latestRun),
     );
+}
+
+/**
+ * Group one project's runs by the branch they ran on.
+ *
+ * A flat list of runs is hard to read because the branches interleave: a push
+ * to dev, a promotion PR into uat and a main deploy all land next to each other
+ * with nothing but a label to tell them apart. Grouped by branch, each column
+ * reads as its own history.
+ *
+ * Ordered by the promotion flow rather than alphabetically, so the view runs in
+ * the direction the pipeline does. A branch outside the flow — a leftover, or a
+ * repository someone connected with its own conventions — sorts after the known
+ * ones rather than being dropped.
+ */
+export function groupRunsByBranch(runs: RunGroup[]): BranchRunGroup[] {
+  const byBranch = new Map<string, RunGroup[]>();
+  for (const run of runs) {
+    const bucket = byBranch.get(run.branch);
+    if (bucket) {
+      bucket.push(run);
+    } else {
+      byBranch.set(run.branch, [run]);
+    }
+  }
+
+  return Array.from(byBranch.entries())
+    .map(([branch, branchRuns]) => {
+      const sorted = [...branchRuns].sort(
+        (left, right) => startedAtMs(right) - startedAtMs(left),
+      );
+      return { branch, runs: sorted, latestRun: sorted[0]! };
+    })
+    .sort((left, right) => {
+      const leftRank = PIPELINE_BRANCHES.indexOf(
+        left.branch as (typeof PIPELINE_BRANCHES)[number],
+      );
+      const rightRank = PIPELINE_BRANCHES.indexOf(
+        right.branch as (typeof PIPELINE_BRANCHES)[number],
+      );
+      // Unknown branches rank last, then fall back to recency between them.
+      const leftOrder = leftRank === -1 ? PIPELINE_BRANCHES.length : leftRank;
+      const rightOrder = rightRank === -1 ? PIPELINE_BRANCHES.length : rightRank;
+
+      return leftOrder !== rightOrder
+        ? leftOrder - rightOrder
+        : startedAtMs(right.latestRun) - startedAtMs(left.latestRun);
+    });
 }
 
 /** Headline counts for the summary strip. */

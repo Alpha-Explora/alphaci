@@ -27,6 +27,18 @@ export interface ProjectRunGroup {
   latestRun: RunGroup;
 }
 
+/**
+ * Runs for one branch, newest first, with its most recent run hoisted.
+ *
+ * The branch is the unit a person reads a pipeline by: what is on dev, what
+ * reached uat, what shipped. A flat list interleaves all three.
+ */
+export interface BranchRunGroup {
+  branch: string;
+  runs: RunGroup[];
+  latestRun: RunGroup;
+}
+
 /** Headline counts for the summary strip. */
 export interface RunsSummary {
   total: number;

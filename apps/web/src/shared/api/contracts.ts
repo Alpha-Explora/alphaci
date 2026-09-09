@@ -1294,8 +1294,25 @@ export interface PendingAccountResponse {
 export type RunOverallStatus =
   "success" | "failure" | "running" | "cancelled" | "partial";
 export type StageId = "access" | "quality" | "package";
+/**
+ * A stage's state.
+ *
+ * `pending` used to cover every stage that had not reported, which hid the case
+ * that mattered: a workflow rejected before any job ran cannot report, so a
+ * broken pipeline looked merely slow. Two states separate that out.
+ *
+ *   blocked  an earlier stage did not pass, so this one was never triggered
+ *   stalled  the stage before it succeeded and nothing ever arrived — the
+ *            workflow did not start, and never will
+ */
 export type StageStatus =
-  "success" | "failure" | "running" | "cancelled" | "pending";
+  | "success"
+  | "failure"
+  | "running"
+  | "cancelled"
+  | "pending"
+  | "blocked"
+  | "stalled";
 export type MessageSeverity = "info" | "warning" | "error" | "success";
 
 export interface FriendlyMessage {

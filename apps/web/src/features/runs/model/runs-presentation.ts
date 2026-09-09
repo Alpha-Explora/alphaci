@@ -106,6 +106,24 @@ export function stageStatusColors(status: StageStatus): StageColors {
         bg: "rgba(255,255,255,0.04)",
         iconColor: "var(--text-muted)",
       };
+    // A stage that never started is a broken pipeline, not a quiet one, so it
+    // reads like a failure rather than like something still waiting.
+    case "stalled":
+      return {
+        ring: "var(--danger)",
+        glow: "rgba(248,113,113,0.4)",
+        bg: "rgba(248,113,113,0.1)",
+        iconColor: "var(--danger)",
+      };
+    // Blocked is a consequence of an earlier failure, not a problem of its own.
+    // It stays muted so the stage that actually broke is what draws the eye.
+    case "blocked":
+      return {
+        ring: "var(--border-strong)",
+        glow: "transparent",
+        bg: "rgba(255,255,255,0.02)",
+        iconColor: "var(--text-muted)",
+      };
   }
 }
 

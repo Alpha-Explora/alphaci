@@ -18,6 +18,7 @@ import {
   WorkspaceError,
   WorkspaceLoading,
 } from "./workspace-states";
+import { diagnoseRunWithoutJobs } from "../../model/run-diagnosis";
 
 /** How often the run LIST refreshes while the tab is open. */
 const POLL_MS = 15_000;
@@ -162,6 +163,13 @@ function RunRow({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Why this run has no jobs, for the empty state below. Derived from the run
+  // itself, which the row already holds — no extra request.
+  const diagnosis = diagnoseRunWithoutJobs({
+    status: run.status,
+    conclusion: run.conclusion,
+  });
+
   // Jobs load ON EXPAND, and are never fetched by the parent's list poll.
   //
   // `showSpinner` is false for refreshes: a run that is still executing
@@ -250,9 +258,12 @@ function RunRow({
               ))}
             </ul>
           ) : (
+            // A run with no jobs is not one thing. A workflow rejected before
+            // any job ran is a real failure with a nameable cause, and saying
+            // "may have been cancelled" sent people looking in the wrong place.
             <WorkspaceEmpty
-              title="No jobs"
-              message="This run recorded no jobs. It may have been cancelled before starting."
+              title={diagnosis.title}
+              message={diagnosis.message}
             />
           )}
         </div>
