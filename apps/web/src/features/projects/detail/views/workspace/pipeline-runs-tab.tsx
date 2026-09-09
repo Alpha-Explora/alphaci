@@ -6,7 +6,6 @@ import Link from "next/link";
 import {
   getProjectJobLog,
   getProjectRunJobs,
-  getProjectWorkflowRuns,
   type JobLogResponse,
   type RunJob,
   type WorkflowRunSummary,
@@ -19,19 +18,30 @@ import {
   WorkspaceLoading,
 } from "./workspace-states";
 import { diagnoseRunWithoutJobs } from "../../model/run-diagnosis";
-
-/** How often the run LIST refreshes while the tab is open. */
-const POLL_MS = 15_000;
+import type { BranchRunSection } from "../../model/runs-by-branch";
+import {
+  RUNS_POLL_MS,
+  usePipelineRunsViewModel,
+} from "../../view-models/use-pipeline-runs-view-model";
 
 /**
- * Live GitHub Actions runs for this project: run → jobs → steps → console log.
+ * Live GitHub Actions runs for this project: branch → run → jobs → steps → log.
  *
- * THE FETCHING RULE, which is the whole reason this component is shaped the way
- * it is: only the run list polls. A run's jobs load when someone expands that
- * run, and a job's log loads when someone opens that job — neither is ever
- * fetched inside the poll. The GitHub rate limit is shared by the entire
- * organisation, so pulling jobs for ten runs every fifteen seconds would drain
- * it and take every other GitHub call in the product down with it.
+ * Runs are read PER BRANCH, because that is the unit a pipeline is actually
+ * asked about: what is on dev, what reached uat, what shipped. A flat list
+ * interleaved all three with nothing but a label to separate them.
+ *
+ * Every declared branch keeps its section even with no runs. An empty `uat`
+ * means nothing has been promoted yet, and that is worth saying out loud — a
+ * section that disappears cannot.
+ *
+ * THE FETCHING RULE, which is why the row components are shaped the way they
+ * are: only the run list polls, and it now polls in the view-model. A run's
+ * jobs load when someone expands that run, and a job's log when someone opens
+ * that job — neither is ever fetched on the tick. The GitHub rate limit is
+ * shared by the entire organisation, so pulling jobs for ten runs every fifteen
+ * seconds would drain it and take every other GitHub call in the product down
+ * with it.
  *
  * This replaces the old "Runs" tab, which showed only what our own workflow had
  * reported back to us. That record is still the truth about grading; this is the
@@ -46,58 +56,30 @@ export function PipelineRunsTab({
   projectId: string;
   actionsUrl?: string | null;
 }) {
-  const [repoFullName, setRepoFullName] = useState<string | null>(null);
-  const [runs, setRuns] = useState<WorkflowRunSummary[]>([]);
-  const [url, setUrl] = useState<string | null>(actionsUrl ?? null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const runsView = usePipelineRunsViewModel({ projectId, actionsUrl });
 
-  /*
-   * Every setState happens in a promise callback. `loading` starts true, so the
-   * first render shows the skeleton without the effect having to raise it —
-   * setting state synchronously inside an effect body cascades renders
-   * (react-hooks/set-state-in-effect). The Retry button is an event handler,
-   * so it may raise the spinner itself.
-   */
-  const load = useCallback(
-    () => {
-      return getProjectWorkflowRuns(projectId)
-        .then((data) => {
-          setRuns(data.runs);
-          setUrl(data.actionsUrl);
-          setRepoFullName(data.repoFullName);
-          setError(null);
-        })
-        .catch(() => {
-          setError("The run list could not be read from GitHub.");
-        })
-        .finally(() => setLoading(false));
-    },
-    [projectId],
-  );
+  if (runsView.status === "loading") return <WorkspaceLoading rows={5} />;
+  if (runsView.status === "error")
+    return (
+      <WorkspaceError
+        message={runsView.error ?? "The run list could not be read."}
+        onRetry={runsView.reload}
+      />
+    );
 
-  useEffect(() => {
-    // `loading` already starts true, so the first paint shows the skeleton
-    // without this effect touching state.
-    void load();
-    const handle = window.setInterval(() => void load(), POLL_MS);
-    return () => window.clearInterval(handle);
-  }, [load]);
-
-  if (loading) return <WorkspaceLoading rows={5} />;
-  if (error) return <WorkspaceError message={error} onRetry={() => {
-          setLoading(true);
-          void load();
-        }} />;
-
-  if (runs.length === 0) {
+  if (runsView.isEmpty) {
     return (
       <WorkspaceEmpty
         title="No runs yet"
         message="Push a commit, or open a pull request, and the run will appear here."
         action={
-          url ? (
-            <a className="ws-link" href={url} target="_blank" rel="noopener noreferrer">
+          runsView.actionsUrl ? (
+            <a
+              className="ws-link"
+              href={runsView.actionsUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
               Open Actions on GitHub ↗
             </a>
           ) : undefined
@@ -110,7 +92,7 @@ export function PipelineRunsTab({
     <div className="ws-panel">
       <div className="ws-toolbar ws-toolbar--between">
         <span className="ws-hint">
-          Refreshes every {POLL_MS / 1000} seconds
+          Refreshes every {RUNS_POLL_MS / 1000} seconds
         </span>
         <span className="ws-toolbar__links">
           {/*
@@ -122,17 +104,17 @@ export function PipelineRunsTab({
           <Link
             className="ws-link"
             href={
-              repoFullName
-                ? `/runs?repoFullName=${encodeURIComponent(repoFullName)}`
+              runsView.repoFullName
+                ? `/runs?repoFullName=${encodeURIComponent(runsView.repoFullName)}`
                 : "/runs"
             }
           >
             Runs across all projects →
           </Link>
-          {url && (
+          {runsView.actionsUrl && (
             <a
               className="ws-link"
-              href={url}
+              href={runsView.actionsUrl}
               target="_blank"
               rel="noopener noreferrer"
             >
@@ -142,12 +124,59 @@ export function PipelineRunsTab({
         </span>
       </div>
 
-      <ul className="ws-runs">
-        {runs.map((run) => (
-          <RunRow key={`${run.id}-${run.runAttempt}`} projectId={projectId} run={run} />
-        ))}
-      </ul>
+      {runsView.sections.map((section) => (
+        <BranchSection
+          key={section.branch}
+          projectId={projectId}
+          section={section}
+        />
+      ))}
     </div>
+  );
+}
+
+/**
+ * One branch's runs, under a heading that names the branch.
+ *
+ * A branch outside the declared flow is marked rather than hidden: a repository
+ * connected with its own conventions still has real runs, and silently dropping
+ * them would make the tab lie about what executed.
+ */
+function BranchSection({
+  projectId,
+  section,
+}: {
+  projectId: string;
+  section: BranchRunSection<WorkflowRunSummary>;
+}) {
+  return (
+    <section className="ws-runsection">
+      <div className="ws-runsection__head">
+        <h3 className="ws-runsection__branch">{section.branch}</h3>
+        {!section.isPipelineBranch && (
+          <span className="ws-runsection__foreign">outside the flow</span>
+        )}
+        <span className="ws-runsection__count">
+          {section.runs.length === 1 ? "1 run" : `${section.runs.length} runs`}
+        </span>
+      </div>
+
+      {section.runs.length === 0 ? (
+        <p className="ws-runsection__empty">
+          Nothing has run on this branch yet.
+        </p>
+      ) : (
+        <ul className="ws-runs">
+          {section.runs.map((run) => (
+            <RunRow
+              key={`${run.id}-${run.runAttempt}`}
+              projectId={projectId}
+              run={run}
+            />
+          ))}
+        </ul>
+      )}
+    </section>
   );
 }
 
@@ -203,7 +232,7 @@ function RunRow({
   const isRunning = run.status !== "completed";
   useEffect(() => {
     if (!open || !isRunning) return;
-    const handle = window.setInterval(() => void loadJobs(false), POLL_MS);
+    const handle = window.setInterval(() => void loadJobs(false), RUNS_POLL_MS);
     return () => window.clearInterval(handle);
   }, [open, isRunning, loadJobs]);
 

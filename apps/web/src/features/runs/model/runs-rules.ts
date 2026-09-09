@@ -3,7 +3,7 @@
  * No React, no Next, no fetch — everything here is directly callable from a
  * test. These assertions were previously reachable only by rendering the route
  * and reading the DOM. */
-import { PIPELINE_BRANCHES } from "@/shared/api/pipeline-branches";
+import { pipelineBranchRank } from "@/shared/api/pipeline-branches";
 import { ApiError } from "@/shared/api/request";
 
 import type {
@@ -95,15 +95,9 @@ export function groupRunsByBranch(runs: RunGroup[]): BranchRunGroup[] {
       return { branch, runs: sorted, latestRun: sorted[0]! };
     })
     .sort((left, right) => {
-      const leftRank = PIPELINE_BRANCHES.indexOf(
-        left.branch as (typeof PIPELINE_BRANCHES)[number],
-      );
-      const rightRank = PIPELINE_BRANCHES.indexOf(
-        right.branch as (typeof PIPELINE_BRANCHES)[number],
-      );
       // Unknown branches rank last, then fall back to recency between them.
-      const leftOrder = leftRank === -1 ? PIPELINE_BRANCHES.length : leftRank;
-      const rightOrder = rightRank === -1 ? PIPELINE_BRANCHES.length : rightRank;
+      const leftOrder = pipelineBranchRank(left.branch);
+      const rightOrder = pipelineBranchRank(right.branch);
 
       return leftOrder !== rightOrder
         ? leftOrder - rightOrder

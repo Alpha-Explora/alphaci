@@ -956,3 +956,57 @@
   font-size: 0.8rem;
   color: #3fb950;
 }
+
+/* Per-branch run sections in the Pipeline runs tab.
+ *
+ * Distinct from `.ws-branch`, which is the code tab's branch PICKER. These are
+ * headings over a run list, one per tier of the promotion flow.
+ *
+ * Deliberately light: a heading and a rule, no card. The runs inside are
+ * already bordered objects, and wrapping bordered rows in another bordered box
+ * flattens the hierarchy instead of clarifying it. */
+.ws-runsection {
+  display: grid;
+  gap: 0.6rem;
+  margin-top: 1.1rem;
+}
+
+.ws-runsection__head {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+  padding-bottom: 0.4rem;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.ws-runsection__branch {
+  margin: 0;
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  font-family: var(--font-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
+}
+
+.ws-runsection__count {
+  margin-left: auto;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+/* A branch the product does not provision. Marked, never hidden. */
+.ws-runsection__foreign {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-secondary);
+  border: 1px solid var(--border-subtle);
+  border-radius: 0.4rem;
+  padding: 0.05rem 0.35rem;
+}
+
+.ws-runsection__empty {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}

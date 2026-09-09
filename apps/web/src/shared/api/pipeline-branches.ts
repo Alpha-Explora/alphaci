@@ -27,3 +27,27 @@ export const PROMOTION_BRANCHES = PIPELINE_BRANCHES.slice(1);
 
 /** The flow as a label, e.g. "dev > uat > main". */
 export const PROMOTION_FLOW_LABEL = PIPELINE_BRANCHES.join(" > ");
+
+/**
+ * Where a branch sits in the promotion flow, for ordering.
+ *
+ * Lives here, beside the flow itself, because two different features order by
+ * it over two different shapes: the runs list groups our own `RunGroup` reports
+ * by `branch`, and a project's Pipeline runs tab groups GitHub's
+ * `WorkflowRunSummary` executions by `headBranch`. Written out at each call
+ * site it would be the same `indexOf` twice, which is how "test" outlived its
+ * own retirement in three views.
+ *
+ * A branch outside the flow — a leftover, or a repository someone connected
+ * with its own conventions — ranks after every known tier rather than being
+ * dropped, so it stays visible without displacing the pipeline.
+ */
+export function pipelineBranchRank(branch: string): number {
+  const rank = (PIPELINE_BRANCHES as readonly string[]).indexOf(branch);
+  return rank === -1 ? PIPELINE_BRANCHES.length : rank;
+}
+
+/** True when a branch is one the product actually provisions. */
+export function isPipelineBranch(branch: string): boolean {
+  return (PIPELINE_BRANCHES as readonly string[]).includes(branch);
+}
