@@ -1167,3 +1167,53 @@
   justify-self: start;
   font-size: 0.72rem;
 }
+
+/* Reviewing a pull request without leaving the product.
+ *
+ * This replaced a single "Review and merge on GitHub" link, so the layout is
+ * deliberately plain: the checks, what GitHub says about merging, and the
+ * action. No card — the pull request row around it is already an object. */
+.ws-prreview {
+  display: grid;
+  gap: 0.6rem;
+}
+
+.ws-prchecks {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.3rem;
+}
+
+.ws-prchecks__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.8rem;
+}
+
+.ws-prchecks__name {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.ws-prreview__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+/* GitHub's own sentence about the last merge attempt. A refusal is an answer,
+ * so it is styled as information with weight, not as a crash. */
+.ws-prreview__outcome {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.ws-prreview__outcome--failed {
+  color: var(--danger);
+}

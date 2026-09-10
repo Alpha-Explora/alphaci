@@ -224,3 +224,62 @@ export function getProjectRunFailureLog(projectId: string, runId: number) {
     `/projects/${projectId}/workspace/runs/${String(runId)}/failure-log`,
   );
 }
+
+/** One check GitHub ran against a pull request's head commit. */
+export interface PullRequestCheck {
+  name: string;
+  status: string;
+  conclusion: string | null;
+  detailsUrl: string | null;
+  startedAt: string | null;
+  completedAt: string | null;
+}
+
+/**
+ * A pull request with what it takes to decide about it.
+ *
+ * `mergeableState` is the field that explains a refusal: `blocked` is a
+ * protection rule, `dirty` a conflict, `clean` will merge, and `unknown` means
+ * GitHub has not finished working it out yet.
+ */
+export interface PullRequestDetail extends PullRequestSummary {
+  mergeable: boolean | null;
+  mergeableState: string;
+  headSha: string;
+  body: string | null;
+}
+
+export interface PullRequestDetailResponse {
+  repoFullName: string;
+  pullRequest: PullRequestDetail;
+  checks: PullRequestCheck[];
+  /** True when the viewer opened it — GitHub forbids approving your own. */
+  viewerIsAuthor: boolean;
+}
+
+/** What happened when the system asked GitHub to merge. */
+export interface PullRequestMergeResponse {
+  merged: boolean;
+  message: string;
+  sha: string | null;
+}
+
+export function getProjectPullRequestDetail(
+  projectId: string,
+  pullNumber: number,
+) {
+  return request<PullRequestDetailResponse>(
+    `${base(projectId)}/pull-requests/${pullNumber}`,
+  );
+}
+
+export function mergeProjectPullRequest(
+  projectId: string,
+  pullNumber: number,
+  method: "merge" | "squash" | "rebase" = "merge",
+) {
+  return request<PullRequestMergeResponse>(
+    `${base(projectId)}/pull-requests/${pullNumber}/merge`,
+    { method: "POST", body: JSON.stringify({ method }) },
+  );
+}
