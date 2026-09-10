@@ -1147,3 +1147,23 @@
   color: var(--text-secondary);
   font-family: var(--font-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
 }
+
+/* Log lines, rendered individually so the failure can be marked.
+ *
+ * `##[error]` is the line the whole panel exists to surface; leaving it the
+ * same weight as analyzer provisioning output is how it got lost in the first
+ * place. */
+.ws-console__line {
+  display: block;
+  white-space: pre;
+}
+
+.ws-console__line--error {
+  color: var(--danger);
+  font-weight: 600;
+}
+
+.ws-diagnosis__more {
+  justify-self: start;
+  font-size: 0.72rem;
+}

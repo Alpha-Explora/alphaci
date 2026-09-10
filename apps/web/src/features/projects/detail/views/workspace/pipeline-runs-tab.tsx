@@ -32,6 +32,7 @@ import {
 } from "../../view-models/use-pipeline-runs-view-model";
 import {
   useStageFailureLogViewModel,
+  type RunFailureLogResponse,
   type StageFailureLogViewModel,
 } from "../../view-models/use-stage-failure-log-view-model";
 import type { StageReport } from "@/shared/api/contracts";
@@ -585,6 +586,34 @@ function StageFailureOutput({ view }: { view: StageFailureLogViewModel }) {
 
   if (!log.lines || log.lines.length === 0) return null;
 
+  return <FailureLogLines log={log} />;
+}
+
+/**
+ * How many lines of the excerpt to show before someone asks for more.
+ *
+ * The excerpt ENDS at the error, so its tail is the part worth reading: a tool
+ * prints why it is unhappy and then exits. Twelve lines reaches back past the
+ * message into whatever printed it, and stops well short of the analyzer
+ * provisioning that fills the rest.
+ */
+const VISIBLE_TAIL_LINES = 12;
+
+/**
+ * The log excerpt, opening on the error rather than ending with it.
+ *
+ * Rendering all of it put the failure at the BOTTOM of a scrolling box, so the
+ * panel opened on "Provisioning analyzer assemblies" and "Processing plugin"
+ * lines while the reason sat below the fold. Showing forty lines of context and
+ * hiding the conclusion is the same failure as saying nothing — it just looks
+ * more thorough.
+ */
+function FailureLogLines({ log }: { log: RunFailureLogResponse }) {
+  const [showAll, setShowAll] = useState(false);
+  const all = log.lines ?? [];
+  const hidden = Math.max(0, all.length - VISIBLE_TAIL_LINES);
+  const shown = showAll || hidden === 0 ? all : all.slice(-VISIBLE_TAIL_LINES);
+
   return (
     <div className="ws-diagnosis__log">
       <p className="ws-diagnosis__logmeta">
@@ -592,8 +621,32 @@ function StageFailureOutput({ view }: { view: StageFailureLogViewModel }) {
         {log.stepName ? ` › ${log.stepName}` : ""}
         {log.truncated ? " · earlier output omitted" : ""}
       </p>
+      {hidden > 0 && (
+        <button
+          type="button"
+          className="ghost-button ws-diagnosis__more"
+          onClick={() => setShowAll(!showAll)}
+        >
+          {showAll
+            ? `Hide the earlier ${String(hidden)} lines`
+            : `Show ${String(hidden)} earlier lines`}
+        </button>
+      )}
       <pre className="ws-console">
-        <code>{log.lines.join("\n")}</code>
+        <code>
+          {shown.map((line, index) => (
+            <span
+              key={index}
+              className={
+                line.includes("##[error]")
+                  ? "ws-console__line ws-console__line--error"
+                  : "ws-console__line"
+              }
+            >
+              {line || " "}
+            </span>
+          ))}
+        </code>
       </pre>
       {log.jobUrl && (
         <a

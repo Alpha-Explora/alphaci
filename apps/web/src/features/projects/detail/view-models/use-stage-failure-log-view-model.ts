@@ -6,6 +6,14 @@ import {
   getProjectRunFailureLog,
   type RunFailureLogResponse,
 } from "../data/project-workspace-api";
+
+/*
+ * Re-exported so a View can name what it renders without importing from
+ * `data/`. The boundary checks treat any view -> data edge as a violation,
+ * type-only or not, and they are right to: the ViewModel owns this contract,
+ * so the shape should come from it rather than from the transport beneath it.
+ */
+export type { RunFailureLogResponse };
 import type { ProjectStatus } from "../../model/projects-types";
 
 export interface StageFailureLogViewModel {

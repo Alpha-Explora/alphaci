@@ -174,9 +174,16 @@ describe("PipelineRunsTab failure output", () => {
       jobUrl: "https://github.com/org/repo/actions/runs/999/job/1",
       truncated: false,
       foundErrorMarker: true,
+      // Shaped like the real excerpt: 30 lines of analyzer provisioning, then
+      // the reason. Rendering it in order buried the reason below the fold.
       lines: [
+        ...Array.from(
+          { length: 30 },
+          (_, i) => `Processing plugin: noise-${String(i)}`,
+        ),
         "sonar-project.properties files are not understood by the SonarScanner for .NET.",
         "Post-processing failed. Exit code: 1",
+        "##[error]Process completed with exit code 1.",
       ],
     });
   });
@@ -238,5 +245,122 @@ describe("PipelineRunsTab failure output", () => {
     });
 
     expect(mockedFailureLog).not.toHaveBeenCalled();
+  });
+});
+
+/**
+ * A forty-line excerpt whose last line is the failure renders with the failure
+ * out of sight unless the tail is what gets shown. Showing lots of context and
+ * hiding the conclusion is the same failure as saying nothing.
+ */
+describe("PipelineRunsTab log excerpt", () => {
+  let root: Root | null = null;
+  let host: HTMLDivElement;
+
+  beforeEach(() => {
+    host = document.createElement("div");
+    document.body.appendChild(host);
+
+    mockedRuns.mockResolvedValue({
+      repoFullName: "org/repo",
+      actionsUrl: "https://github.com/org/repo/actions",
+      runs: [
+        {
+          id: 1,
+          name: "ALPHACI Quality",
+          displayTitle: "ci: add ALPHACI workflow",
+          headBranch: "dev",
+          headSha: "a98cf829",
+          event: "push",
+          status: "completed",
+          conclusion: "failure",
+          runNumber: 1,
+          runAttempt: 1,
+          htmlUrl: "https://github.com/org/repo/actions/runs/1",
+          actor: "bot",
+          createdAt: "2026-09-09T08:00:00Z",
+          updatedAt: "2026-09-09T08:01:00Z",
+        },
+      ],
+    });
+
+    mockedReports.mockResolvedValue({
+      runs: [
+        {
+          runId: 999,
+          repoFullName: "org/repo",
+          branch: "dev",
+          commitSha: "a98cf829",
+          startedAt: "2026-09-09T08:00:00Z",
+          overallStatus: "failure",
+          stages: [
+            {
+              stage: "quality",
+              status: "failure",
+              runId: 999,
+              friendlyMessages: [],
+              githubRunUrl: "https://github.com/org/repo/actions/runs/999",
+              updatedAt: "2026-09-09T08:01:00Z",
+            },
+          ],
+        },
+      ],
+    });
+
+    mockedFailureLog.mockResolvedValue({
+      available: true,
+      jobName: "sonar / SonarCloud .NET Analysis",
+      stepName: "Run SonarSource/sonarcloud-github-action",
+      jobUrl: "https://github.com/org/repo/actions/runs/999/job/1",
+      truncated: false,
+      foundErrorMarker: true,
+      lines: [
+        ...Array.from(
+          { length: 30 },
+          (_, i) => `Processing plugin: noise-${String(i)}`,
+        ),
+        "sonar-project.properties files are not understood by the SonarScanner for .NET.",
+        "Post-processing failed. Exit code: 1",
+        "##[error]Process completed with exit code 1.",
+      ],
+    });
+  });
+
+  afterEach(() => {
+    act(() => root?.unmount());
+    host.remove();
+    jest.clearAllMocks();
+  });
+
+  it("shows the error without anyone expanding anything", async () => {
+    await act(async () => {
+      root = createRoot(host);
+      root.render(<PipelineRunsTab projectId="p1" />);
+    });
+
+    const shown = host.querySelector("pre")?.textContent ?? "";
+    expect(shown).toContain("Post-processing failed");
+    expect(shown).toContain("sonar-project.properties files are not understood");
+  });
+
+  it("keeps the provisioning noise out of the way until asked", async () => {
+    await act(async () => {
+      root = createRoot(host);
+      root.render(<PipelineRunsTab projectId="p1" />);
+    });
+
+    const shown = host.querySelector("pre")?.textContent ?? "";
+    expect(shown).not.toContain("noise-0");
+    expect(host.textContent).toContain("earlier lines");
+  });
+
+  it("marks the error line so it is findable at a glance", async () => {
+    await act(async () => {
+      root = createRoot(host);
+      root.render(<PipelineRunsTab projectId="p1" />);
+    });
+
+    const errorLine = host.querySelector(".ws-console__line--error");
+    expect(errorLine?.textContent).toContain("Process completed with exit code 1");
   });
 });
