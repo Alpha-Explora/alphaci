@@ -22,12 +22,18 @@ import type {
   WorkspaceAttentionItem,
 } from "./home-types";
 
-export const RUN_STAGE_ORDER: StageId[] = ["access", "quality", "package"];
+export const RUN_STAGE_ORDER: StageId[] = [
+  "access",
+  "quality",
+  "package",
+  "verify",
+];
 
 export const RUN_STAGE_LABELS: Record<StageId, string> = {
   access: "Access",
   quality: "Quality",
   package: "Package",
+  verify: "Verify",
 };
 
 /**
@@ -225,6 +231,7 @@ export function computeRunStats(runs: RunGroup[]): RunStats {
     access: 0,
     quality: 0,
     package: 0,
+    verify: 0,
   };
   for (const run of sample) {
     for (const stage of run.stages) {

@@ -1,4 +1,4 @@
-import type { RunOverallStatus, StageStatus, MessageSeverity } from "./runs-types";
+import type { RunOverallStatus, StageStatus, MessageSeverity, StageId } from "./runs-types";
 
 /* ── Color tokens for overall run status ─────────────────────────────────── */
 
@@ -209,7 +209,7 @@ export function shortSha(sha: string): string {
 
 /* ── Stage display name ──────────────────────────────────────────────────── */
 
-export function stageLabel(stage: "access" | "quality" | "package"): string {
+export function stageLabel(stage: StageId): string {
   switch (stage) {
     case "access":
       return "Access";
@@ -217,5 +217,7 @@ export function stageLabel(stage: "access" | "quality" | "package"): string {
       return "Quality";
     case "package":
       return "Package";
+    case "verify":
+      return "Verify";
   }
 }

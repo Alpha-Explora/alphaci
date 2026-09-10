@@ -1293,7 +1293,15 @@ export interface PendingAccountResponse {
 
 export type RunOverallStatus =
   "success" | "failure" | "running" | "cancelled" | "partial";
-export type StageId = "access" | "quality" | "package";
+/**
+ * Mirrors STAGE_ORDER in the backend's pipelines/ci/application/stages.ts, and
+ * the CHECK constraint on workflow.ci_run_reports.stage. All three widen
+ * together or a stage the pipeline reports is one this client cannot render.
+ *
+ * `verify` is the only one that needs a running service: the first three read
+ * source, and none of them can say whether what was deployed actually works.
+ */
+export type StageId = "access" | "quality" | "package" | "verify";
 /**
  * A stage's state.
  *
