@@ -20,11 +20,13 @@ import {
 import { diagnoseRunWithoutJobs } from "../../model/run-diagnosis";
 import type { BranchRunSection } from "../../model/runs-by-branch";
 import {
+  commitHeadline,
   commitStageProblems,
   stagePillTone,
   type CommitRunGroup,
 } from "../../model/runs-by-commit";
 import {
+  ALL_BRANCHES,
   RUNS_POLL_MS,
   usePipelineRunsViewModel,
 } from "../../view-models/use-pipeline-runs-view-model";
@@ -96,6 +98,24 @@ export function PipelineRunsTab({
   return (
     <div className="ws-panel">
       <div className="ws-toolbar ws-toolbar--between">
+        <label className="ws-branchpick">
+          <span className="ws-branchpick__label">Branch</span>
+          <select
+            className="ws-select"
+            value={runsView.selectedBranch}
+            onChange={(event) => runsView.selectBranch(event.target.value)}
+          >
+            {runsView.visibleSections.map((section) => (
+              <option key={section.branch} value={section.branch}>
+                {section.branch}
+                {section.commits.length > 0
+                  ? ` (${String(section.commits.length)})`
+                  : " — no runs"}
+              </option>
+            ))}
+            <option value={ALL_BRANCHES}>All branches</option>
+          </select>
+        </label>
         <span className="ws-hint">
           Refreshes every {RUNS_POLL_MS / 1000} seconds
         </span>
@@ -136,7 +156,7 @@ export function PipelineRunsTab({
         </p>
       )}
 
-      {runsView.sections.map((section) => (
+      {runsView.visibleSections.map((section) => (
         <BranchSection
           key={section.branch}
           projectId={projectId}
@@ -214,6 +234,7 @@ function CommitRow({
 }) {
   const [open, setOpen] = useState(false);
   const problems = commitStageProblems(commit.report);
+  const headline = commitHeadline(commit);
   const { latest } = commit;
 
   return (
@@ -227,7 +248,15 @@ function CommitRow({
         <span className="ws-run__caret" aria-hidden="true">
           {open ? "▾" : "▸"}
         </span>
-        <StatusPill status={latest.status} conclusion={latest.conclusion} />
+        {/*
+          From the REPORT when we have one. Showing the newest run's conclusion
+          put `SUCCESS` above a red `QUALITY failure`: the package workflow had
+          gone green while the pipeline had not. Erring green is the dangerous
+          direction for a headline.
+        */}
+        <span className={`ws-pill ws-pill--${headline.tone}`}>
+          {headline.label.replace(/_/g, " ")}
+        </span>
         <code className="ws-commit__sha">{commit.commitSha.slice(0, 7)}</code>
         <span className="ws-run__title">
           {latest.displayTitle || latest.name || `Run #${latest.runNumber}`}
@@ -258,20 +287,66 @@ function CommitRow({
       {problems.length > 0 && (
         <div className="ws-diagnosis">
           {problems.map((stage) =>
-            stage.friendlyMessages.map((message, index) => (
+            stage.friendlyMessages.length > 0 ? (
+              stage.friendlyMessages.map((message, index) => (
+                <div
+                  key={`${stage.stage}-${index}`}
+                  className={`ws-diagnosis__item ws-diagnosis__item--${message.severity}`}
+                >
+                  <p className="ws-diagnosis__title">
+                    {stage.stage}: {message.title}
+                  </p>
+                  <p className="ws-diagnosis__detail">{message.detail}</p>
+                  {message.hint && (
+                    <p className="ws-diagnosis__hint">{message.hint}</p>
+                  )}
+                  {message.items && message.items.length > 0 && (
+                    <ul className="ws-diagnosis__items">
+                      {message.items.map((item, itemIndex) => (
+                        <li key={itemIndex} className="ws-diagnosis__item-row">
+                          <code className="ws-diagnosis__item-label">
+                            {item.label}
+                          </code>
+                          {item.sub && (
+                            <span className="ws-diagnosis__item-sub">
+                              {item.sub}
+                            </span>
+                          )}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              ))
+            ) : (
+              /*
+                A stage that failed and captured no explanation. Saying nothing
+                here is the behaviour this whole tab exists to remove — a red
+                pill with no words is what sent people to GitHub. Naming the
+                gap is at least true, and points somewhere.
+              */
               <div
-                key={`${stage.stage}-${index}`}
-                className={`ws-diagnosis__item ws-diagnosis__item--${message.severity}`}
+                key={`${stage.stage}-nodetail`}
+                className="ws-diagnosis__item ws-diagnosis__item--error"
               >
                 <p className="ws-diagnosis__title">
-                  {stage.stage}: {message.title}
+                  {stage.stage}: {stage.status}
                 </p>
-                <p className="ws-diagnosis__detail">{message.detail}</p>
-                {message.hint && (
-                  <p className="ws-diagnosis__hint">{message.hint}</p>
-                )}
+                <p className="ws-diagnosis__detail">
+                  No detail was captured for this failure.
+                </p>
+                <p className="ws-diagnosis__hint">
+                  <a
+                    className="ws-link"
+                    href={stage.githubRunUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    Open this stage on GitHub ↗
+                  </a>
+                </p>
               </div>
-            )),
+            ),
           )}
         </div>
       )}

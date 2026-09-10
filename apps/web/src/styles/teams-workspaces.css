@@ -1085,3 +1085,48 @@
   color: var(--text-secondary);
   font-style: italic;
 }
+
+/* Branch picker in the Pipeline runs toolbar. */
+.ws-branchpick {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.ws-branchpick__label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-secondary);
+}
+
+/* The individual errors behind a failure: file, line, and what is wrong.
+ *
+ * A list rather than a log dump. Each row is one thing to go and fix, which is
+ * the difference between reading a diagnosis and reading output. */
+.ws-diagnosis__items {
+  list-style: none;
+  margin: 0.4rem 0 0;
+  padding: 0;
+  display: grid;
+  gap: 0.25rem;
+}
+
+.ws-diagnosis__item-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.4rem;
+  font-size: 0.75rem;
+}
+
+.ws-diagnosis__item-label {
+  font-family: var(--font-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
+  color: var(--text-primary);
+}
+
+.ws-diagnosis__item-sub {
+  color: var(--text-secondary);
+  min-width: 0;
+  overflow-wrap: anywhere;
+}

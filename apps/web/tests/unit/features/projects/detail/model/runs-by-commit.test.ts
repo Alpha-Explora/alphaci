@@ -1,4 +1,5 @@
 import {
+  commitHeadline,
   commitStageProblems,
   groupRunsByCommit,
   stagePillTone,
@@ -105,8 +106,10 @@ describe("commitStageProblems", () => {
     expect(commitStageProblems(null)).toEqual([]);
   });
 
-  it("keeps only the stages carrying something to say", () => {
-    // A passing stage needs no words; the pill already said it.
+  it("keeps every stage that did not pass, message or not", () => {
+    // A passing stage needs no words; the pill already said it. A blocked one
+    // does, even carrying no message of its own — it is part of the story of
+    // why the pipeline stopped.
     const problems = commitStageProblems(
       report("abc", [
         stage("access", "success"),
@@ -122,7 +125,7 @@ describe("commitStageProblems", () => {
       ]),
     );
 
-    expect(problems.map((s) => s.stage)).toEqual(["quality"]);
+    expect(problems.map((s) => s.stage)).toEqual(["quality", "package"]);
   });
 });
 
@@ -140,5 +143,81 @@ describe("stagePillTone", () => {
   it("maps the plainly good and in-flight states", () => {
     expect(stagePillTone("success")).toBe("success");
     expect(stagePillTone("running")).toBe("running");
+  });
+});
+
+describe("commitHeadline", () => {
+  const ghRun = (conclusion: string | null, status = "completed") => ({
+    headSha: "abc",
+    createdAt: "2026-09-10T10:00:00Z",
+    status,
+    conclusion,
+  });
+
+  it("takes the headline from the report, not the newest run", () => {
+    // The screenshot bug: the package workflow went green, so the newest run
+    // said success while the pipeline as a whole had a failed quality stage.
+    const [commit] = groupRunsByCommit(
+      [ghRun("success")],
+      [
+        {
+          ...report("abc", [stage("quality", "failure")]),
+          overallStatus: "failure",
+        },
+      ],
+    );
+
+    const headline = commitHeadline(commit!);
+    expect(headline.label).toBe("failure");
+    expect(headline.tone).toBe("failure");
+    expect(headline.fromReport).toBe(true);
+  });
+
+  it("falls back to the run when nothing graded the commit", () => {
+    const [commit] = groupRunsByCommit([ghRun("success")], []);
+
+    const headline = commitHeadline(commit!);
+    expect(headline.label).toBe("success");
+    expect(headline.fromReport).toBe(false);
+  });
+
+  it("reads an unfinished run as running", () => {
+    const [commit] = groupRunsByCommit([ghRun(null, "in_progress")], []);
+
+    expect(commitHeadline(commit!).tone).toBe("running");
+  });
+
+  it("does not paint a partial pipeline green", () => {
+    const [commit] = groupRunsByCommit(
+      [ghRun("success")],
+      [{ ...report("abc", []), overallStatus: "partial" }],
+    );
+
+    expect(commitHeadline(commit!).tone).toBe("neutral");
+  });
+});
+
+describe("commitStageProblems — silence is the bug", () => {
+  it("keeps a failed stage that captured no explanation", () => {
+    // Requiring a message hid exactly the case the tab exists for: a red pill
+    // with nothing said. The view can then name the gap instead of showing
+    // nothing at all.
+    const problems = commitStageProblems(
+      report("abc", [stage("quality", "failure", [])]),
+    );
+
+    expect(problems.map((s) => s.stage)).toEqual(["quality"]);
+  });
+
+  it("stays quiet about stages that have not run yet", () => {
+    const problems = commitStageProblems(
+      report("abc", [
+        stage("access", "success"),
+        stage("quality", "running"),
+        stage("package", "pending"),
+      ]),
+    );
+
+    expect(problems).toEqual([]);
   });
 });
