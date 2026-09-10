@@ -334,6 +334,43 @@
   background: var(--layer-2);
 }
 
+/*
+ * Per-tool outcomes inside an expanded stage.
+ *
+ * A three-column grid so the marks, the tool names and the conclusions each
+ * line up down the list rather than drifting with the length of the name
+ * beside them. Colour comes from the tone, set inline per row, and is never
+ * the only signal: every row also carries a mark, so the list still reads
+ * without colour vision.
+ */
+.runs-stage-checks {
+  display: grid;
+  gap: 0.3rem 0.6rem;
+  grid-template-columns: auto 1fr auto;
+  align-items: baseline;
+  margin: 0 0 0.35rem;
+  padding: 0 0 0.6rem;
+  border-bottom: 1px solid var(--border-tile);
+  list-style: none;
+  font-size: 0.8125rem;
+}
+
+.runs-stage-checks li {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: subgrid;
+}
+
+.runs-stage-checks li > :nth-child(2) {
+  color: var(--text-primary);
+}
+
+.runs-stage-checks li > :last-child {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+  text-transform: lowercase;
+}
+
 .runs-card-footer {
   display: flex;
   align-items: center;

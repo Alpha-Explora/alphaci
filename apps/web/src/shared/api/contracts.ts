@@ -649,7 +649,6 @@ export interface UpdateWorkspaceMemberRoleRequest {
   role: WorkspaceRole;
 }
 
-
 export interface ProjectAuditEvent {
   id: string;
   eventCode: string;
@@ -1350,6 +1349,26 @@ export interface StageReport {
   updatedAt: string;
   /** Raw CI log output for this stage. Present only when the backend includes it. */
   rawLogs?: string;
+  /**
+   * What each tool inside the stage concluded.
+   *
+   * A stage status answers "did quality pass"; it cannot answer "did the
+   * licence scan pass". On dev the gates are advisory, so a stage is routinely
+   * green with a failing tool inside it — which is exactly the case the single
+   * status bar could not show.
+   *
+   * Absent for a stage reported by a pipeline generated before per-tool
+   * reporting. Absent means "not known", never "no tools ran".
+   */
+  checks?: StageCheck[];
+}
+
+/** One tool's outcome inside a stage. */
+export interface StageCheck {
+  name: string;
+  conclusion: string;
+  startedAt?: string;
+  completedAt?: string;
 }
 
 export interface RunGroup {

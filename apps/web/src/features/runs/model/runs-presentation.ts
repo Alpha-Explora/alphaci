@@ -1,4 +1,9 @@
-import type { RunOverallStatus, StageStatus, MessageSeverity, StageId } from "./runs-types";
+import type {
+  RunOverallStatus,
+  StageStatus,
+  MessageSeverity,
+  StageId,
+} from "./runs-types";
 
 /* ── Color tokens for overall run status ─────────────────────────────────── */
 
@@ -220,4 +225,64 @@ export function stageLabel(stage: StageId): string {
     case "verify":
       return "Verify";
   }
+}
+
+/** How a tool's outcome should read: the semantic tone, not a colour. */
+export type CheckTone = "passed" | "failed" | "skipped" | "running";
+
+/**
+ * Map a GitHub job conclusion onto a tone.
+ *
+ * `skipped` is deliberately its own tone rather than folded into "passed".
+ * A skipped tool proved nothing, and showing it green is the same mistake the
+ * pipeline itself used to make when a stage of entirely skipped jobs reported
+ * success. An unrecognised conclusion also lands here rather than in "passed" —
+ * an outcome nobody has interpreted is not evidence that anything worked.
+ */
+export function checkTone(conclusion: string): CheckTone {
+  switch (conclusion) {
+    case "success":
+      return "passed";
+    case "failure":
+    case "timed_out":
+    case "action_required":
+      return "failed";
+    case "running":
+    case "in_progress":
+    case "queued":
+      return "running";
+    default:
+      return "skipped";
+  }
+}
+
+/**
+ * Turn a job id into something readable.
+ *
+ * Job ids are written for the pipeline — `dotnet-tests`, `sbom` — and the
+ * reader wants the tool. Known ids get a real name; anything else is
+ * de-hyphenated rather than dropped, so a stack this build has never heard of
+ * still shows its tools instead of a blank row.
+ */
+export function checkLabel(name: string): string {
+  const known: Record<string, string> = {
+    "validate-access": "Access check",
+    "branch-policy": "Branch policy",
+    "dotnet-tests": "Unit tests & coverage",
+    "backend-tests": "Unit tests & coverage",
+    "frontend-tests": "Unit tests & coverage",
+    lint: "Format & style",
+    typecheck: "Static analysis",
+    security: "Dependency audit",
+    secrets: "Secret scan",
+    licenses: "Licence scan",
+    sbom: "SBOM export",
+    sonar: "Code quality & SAST",
+    build: "Build & publish",
+  };
+
+  return (
+    known[name] ??
+    name.replace(/[-_]/g, " ").replace(/^./, (c) => c.toUpperCase())
+  );
 }
