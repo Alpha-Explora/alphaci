@@ -105,7 +105,9 @@ export function PipelineRunsTab({
             value={runsView.selectedBranch}
             onChange={(event) => runsView.selectBranch(event.target.value)}
           >
-            {runsView.visibleSections.map((section) => (
+            {/* EVERY branch. visibleSections is the FILTERED list, and using it
+                here collapses the picker to the branch already selected. */}
+            {runsView.sections.map((section) => (
               <option key={section.branch} value={section.branch}>
                 {section.branch}
                 {section.commits.length > 0
