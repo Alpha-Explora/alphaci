@@ -30,6 +30,11 @@ import {
   RUNS_POLL_MS,
   usePipelineRunsViewModel,
 } from "../../view-models/use-pipeline-runs-view-model";
+import {
+  useStageFailureLogViewModel,
+  type StageFailureLogViewModel,
+} from "../../view-models/use-stage-failure-log-view-model";
+import type { StageReport } from "@/shared/api/contracts";
 
 /**
  * Live GitHub Actions runs for this project: branch → run → jobs → steps → log.
@@ -105,7 +110,9 @@ export function PipelineRunsTab({
             value={runsView.selectedBranch}
             onChange={(event) => runsView.selectBranch(event.target.value)}
           >
-            {runsView.visibleSections.map((section) => (
+            {/* EVERY branch. visibleSections is the FILTERED list, and using it
+                here collapses the picker to the branch already selected. */}
+            {runsView.sections.map((section) => (
               <option key={section.branch} value={section.branch}>
                 {section.branch}
                 {section.commits.length > 0
@@ -286,68 +293,13 @@ function CommitRow({
 
       {problems.length > 0 && (
         <div className="ws-diagnosis">
-          {problems.map((stage) =>
-            stage.friendlyMessages.length > 0 ? (
-              stage.friendlyMessages.map((message, index) => (
-                <div
-                  key={`${stage.stage}-${index}`}
-                  className={`ws-diagnosis__item ws-diagnosis__item--${message.severity}`}
-                >
-                  <p className="ws-diagnosis__title">
-                    {stage.stage}: {message.title}
-                  </p>
-                  <p className="ws-diagnosis__detail">{message.detail}</p>
-                  {message.hint && (
-                    <p className="ws-diagnosis__hint">{message.hint}</p>
-                  )}
-                  {message.items && message.items.length > 0 && (
-                    <ul className="ws-diagnosis__items">
-                      {message.items.map((item, itemIndex) => (
-                        <li key={itemIndex} className="ws-diagnosis__item-row">
-                          <code className="ws-diagnosis__item-label">
-                            {item.label}
-                          </code>
-                          {item.sub && (
-                            <span className="ws-diagnosis__item-sub">
-                              {item.sub}
-                            </span>
-                          )}
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </div>
-              ))
-            ) : (
-              /*
-                A stage that failed and captured no explanation. Saying nothing
-                here is the behaviour this whole tab exists to remove — a red
-                pill with no words is what sent people to GitHub. Naming the
-                gap is at least true, and points somewhere.
-              */
-              <div
-                key={`${stage.stage}-nodetail`}
-                className="ws-diagnosis__item ws-diagnosis__item--error"
-              >
-                <p className="ws-diagnosis__title">
-                  {stage.stage}: {stage.status}
-                </p>
-                <p className="ws-diagnosis__detail">
-                  No detail was captured for this failure.
-                </p>
-                <p className="ws-diagnosis__hint">
-                  <a
-                    className="ws-link"
-                    href={stage.githubRunUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    Open this stage on GitHub ↗
-                  </a>
-                </p>
-              </div>
-            ),
-          )}
+          {problems.map((stage) => (
+            <StageDiagnosis
+              key={stage.stage}
+              projectId={projectId}
+              stage={stage}
+            />
+          ))}
         </div>
       )}
 
@@ -486,6 +438,174 @@ function RunRow({
         </div>
       )}
     </li>
+  );
+}
+
+
+/**
+ * One failing stage: what we know, and the error output itself.
+ *
+ * The hint used to read "Open the workflow logs, fix the first failed job
+ * listed below, then re-run the workflow" — an instruction to go and do the
+ * diagnosis somewhere else. Knowing a stage failed and making someone leave to
+ * find out why is announcing a failure, not reporting one. The output now
+ * loads here, unasked.
+ *
+ * Stages that never executed are excluded from fetching: `blocked` and
+ * `stalled` have no log, and asking for one would be a wasted call.
+ */
+function StageDiagnosis({
+  projectId,
+  stage,
+}: {
+  projectId: string;
+  stage: StageReport;
+}) {
+  const ran = stage.status === "failure" || stage.status === "cancelled";
+  const failureLog = useStageFailureLogViewModel({
+    projectId,
+    runId: stage.runId,
+    enabled: ran,
+  });
+
+  return (
+    <div
+      className={`ws-diagnosis__item ws-diagnosis__item--${
+        stage.friendlyMessages[0]?.severity ?? "error"
+      }`}
+    >
+      <p className="ws-diagnosis__title">
+        {stage.stage}:{" "}
+        {stage.friendlyMessages[0]?.title ?? String(stage.status)}
+      </p>
+
+      {/*
+        The hint gives way to real output, and only then. "Open the workflow
+        logs, fix the first failed job" is worthless beside the log itself —
+        but "Fix the quality stage and the rest of the pipeline will run" is
+        the most useful thing we can say about a blocked stage, which has no
+        log of its own to show.
+      */}
+      <StageSummary
+        stage={stage}
+        showHint={!failureLog.log?.available}
+      />
+      {ran && <StageFailureOutput view={failureLog} />}
+    </div>
+  );
+}
+
+/** What our own grading said about the stage, before any log is read. */
+function StageSummary({
+  stage,
+  showHint,
+}: {
+  stage: StageReport;
+  showHint: boolean;
+}) {
+  if (stage.friendlyMessages.length === 0) {
+    return (
+      <p className="ws-diagnosis__detail">
+        {stage.status === "blocked"
+          ? "This stage was never triggered."
+          : "No summary was captured for this failure."}
+      </p>
+    );
+  }
+
+  return (
+    <>
+      {stage.friendlyMessages.map((message, index) => (
+        <div key={index}>
+          <p className="ws-diagnosis__detail">{message.detail}</p>
+          {showHint && message.hint && (
+            <p className="ws-diagnosis__hint">{message.hint}</p>
+          )}
+          {message.items && message.items.length > 0 && (
+            <ul className="ws-diagnosis__items">
+              {message.items.map((item, itemIndex) => (
+                <li key={itemIndex} className="ws-diagnosis__item-row">
+                  <code className="ws-diagnosis__item-label">{item.label}</code>
+                  {item.sub && (
+                    <span className="ws-diagnosis__item-sub">{item.sub}</span>
+                  )}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      ))}
+    </>
+  );
+}
+
+
+/**
+ * Why there is no output, said plainly.
+ *
+ * Both cases are normal rather than errors: GitHub expires logs on a retention
+ * window, and a run rejected before any job started genuinely has no failed job
+ * to read.
+ */
+function LogUnavailable({
+  reason,
+}: {
+  reason?: "no-failed-job" | "log-expired";
+}) {
+  return (
+    <p className="ws-diagnosis__hint">
+      {reason === "log-expired"
+        ? "GitHub has expired the log for this run, so the output is no longer available."
+        : "No job in this run reported a failure, which usually means the workflow was rejected before any job started."}
+    </p>
+  );
+}
+
+/** The error output itself, or an honest account of why there is none. */
+function StageFailureOutput({ view }: { view: StageFailureLogViewModel }) {
+  if (view.status === "loading") {
+    return <p className="ws-diagnosis__hint">Reading the error output…</p>;
+  }
+
+  if (view.status === "error") {
+    return (
+      <p className="ws-diagnosis__hint">
+        {view.error}{" "}
+        <button type="button" className="ghost-button" onClick={view.reload}>
+          Retry
+        </button>
+      </p>
+    );
+  }
+
+  const log = view.log;
+  if (!log) return null;
+
+  if (!log.available) return <LogUnavailable reason={log.reason} />;
+
+  if (!log.lines || log.lines.length === 0) return null;
+
+  return (
+    <div className="ws-diagnosis__log">
+      <p className="ws-diagnosis__logmeta">
+        {log.jobName}
+        {log.stepName ? ` › ${log.stepName}` : ""}
+        {log.truncated ? " · earlier output omitted" : ""}
+      </p>
+      <pre className="ws-console">
+        <code>{log.lines.join("\n")}</code>
+      </pre>
+      {log.jobUrl && (
+        <a
+          className="ws-link"
+          href={log.jobUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          Open the full log on GitHub ↗
+        </a>
+      )}
+    </div>
   );
 }
 
