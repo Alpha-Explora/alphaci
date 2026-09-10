@@ -1130,3 +1130,20 @@
   min-width: 0;
   overflow-wrap: anywhere;
 }
+
+/* The failing job's error output, inside the diagnosis.
+ *
+ * Sits in the card rather than behind a link, because the card exists to
+ * answer "why did this fail" and a link answers "somewhere else". */
+.ws-diagnosis__log {
+  margin-top: 0.5rem;
+  display: grid;
+  gap: 0.35rem;
+}
+
+.ws-diagnosis__logmeta {
+  margin: 0;
+  font-size: 0.72rem;
+  color: var(--text-secondary);
+  font-family: var(--font-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
+}

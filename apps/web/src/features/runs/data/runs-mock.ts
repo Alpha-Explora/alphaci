@@ -20,6 +20,7 @@ export const MOCK_RUNS: RunsResponse = {
       stages: [
         {
           stage: "access",
+          runId: 11001,
           status: "success",
           githubRunUrl:
             "https://github.com/acme-org/api-service/actions/runs/11001",
@@ -36,6 +37,7 @@ export const MOCK_RUNS: RunsResponse = {
         },
         {
           stage: "quality",
+          runId: 11002,
           status: "success",
           githubRunUrl:
             "https://github.com/acme-org/api-service/actions/runs/11002",
@@ -52,6 +54,7 @@ export const MOCK_RUNS: RunsResponse = {
         },
         {
           stage: "package",
+          runId: 11003,
           status: "success",
           githubRunUrl:
             "https://github.com/acme-org/api-service/actions/runs/11003",
@@ -80,6 +83,7 @@ export const MOCK_RUNS: RunsResponse = {
       stages: [
         {
           stage: "access",
+          runId: 22001,
           status: "success",
           githubRunUrl:
             "https://github.com/acme-org/web-frontend/actions/runs/22001",
@@ -95,6 +99,7 @@ export const MOCK_RUNS: RunsResponse = {
         },
         {
           stage: "quality",
+          runId: 22002,
           status: "failure",
           githubRunUrl:
             "https://github.com/acme-org/web-frontend/actions/runs/22002",
@@ -146,6 +151,7 @@ export const MOCK_RUNS: RunsResponse = {
         },
         {
           stage: "package",
+          runId: 22003,
           status: "pending",
           githubRunUrl:
             "https://github.com/acme-org/web-frontend/actions/runs/22003",
@@ -166,6 +172,7 @@ export const MOCK_RUNS: RunsResponse = {
       stages: [
         {
           stage: "access",
+          runId: 33001,
           status: "failure",
           githubRunUrl:
             "https://github.com/acme-org/infra-scripts/actions/runs/33001",
@@ -191,6 +198,7 @@ export const MOCK_RUNS: RunsResponse = {
         },
         {
           stage: "quality",
+          runId: 33002,
           status: "cancelled",
           githubRunUrl:
             "https://github.com/acme-org/infra-scripts/actions/runs/33002",
@@ -209,6 +217,7 @@ export const MOCK_RUNS: RunsResponse = {
         },
         {
           stage: "package",
+          runId: 33003,
           status: "cancelled",
           githubRunUrl:
             "https://github.com/acme-org/infra-scripts/actions/runs/33003",

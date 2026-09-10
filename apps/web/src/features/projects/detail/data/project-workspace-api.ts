@@ -201,3 +201,26 @@ export function getProjectPullRequestFiles(
     `${base(projectId)}/pull-requests/${pullNumber}/files`,
   );
 }
+
+/**
+ * The error output of whichever job failed in a run.
+ *
+ * `available: false` is a normal answer: GitHub expires logs, and a run can
+ * conclude in failure with no failed job when the workflow itself was rejected.
+ */
+export interface RunFailureLogResponse {
+  available: boolean;
+  reason?: "no-failed-job" | "log-expired";
+  jobName?: string;
+  stepName?: string;
+  jobUrl?: string;
+  lines?: string[];
+  truncated?: boolean;
+  foundErrorMarker?: boolean;
+}
+
+export function getProjectRunFailureLog(projectId: string, runId: number) {
+  return request<RunFailureLogResponse>(
+    `/projects/${projectId}/workspace/runs/${String(runId)}/failure-log`,
+  );
+}

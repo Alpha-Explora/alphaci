@@ -1335,6 +1335,8 @@ export interface FriendlyMessage {
 export interface StageReport {
   stage: StageId;
   status: StageStatus;
+  /** The GitHub run this stage executed in, for fetching its failure output. */
+  runId: number;
   friendlyMessages: FriendlyMessage[];
   githubRunUrl: string;
   updatedAt: string;
