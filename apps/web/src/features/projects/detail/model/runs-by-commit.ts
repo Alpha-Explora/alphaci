@@ -17,7 +17,11 @@
  * the runs of a commit are one object.
  */
 
-import type { RunGroup, StageReport } from "@/shared/api/contracts";
+import type {
+  RunGroup,
+  RunOverallStatus,
+  StageReport,
+} from "@/shared/api/contracts";
 
 /** The two fields the grouping needs from a GitHub run. */
 export interface CommitRun {
@@ -93,16 +97,84 @@ export function groupRunsByCommit<T extends CommitRun>(
 /**
  * The stages of a commit worth saying something about.
  *
- * A stage that passed needs no words; the pill already says so. Everything else
- * carries a message the resolver wrote — why it was blocked, why it is
- * considered stalled — and those are the sentences someone opened the tab to
- * read. Filtering here keeps the view from deciding what counts as a problem.
+ * A stage that passed needs no words; the pill already says so. A stage still
+ * pending or running has nothing to report yet. Everything else is a problem
+ * and belongs in front of the reader.
+ *
+ * This deliberately does NOT require the stage to carry a message. Requiring
+ * one hid the most important case in the product: a genuine `failure` whose
+ * explanation was never captured rendered as silence, so the view showed a red
+ * pill and said nothing at all. Silence is the one thing it must not do — the
+ * view says "no detail captured" instead, which is at least true and points
+ * somewhere.
  */
 export function commitStageProblems(report: RunGroup | null): StageReport[] {
   if (!report) return [];
   return report.stages.filter(
-    (stage) => stage.status !== "success" && stage.friendlyMessages.length > 0,
+    (stage) =>
+      stage.status !== "success" &&
+      stage.status !== "pending" &&
+      stage.status !== "running",
   );
+}
+
+/** How a commit's headline reads: the word, and the tone to paint it. */
+export interface CommitHeadline {
+  label: string;
+  tone: "success" | "failure" | "running" | "neutral";
+  /** True when this came from our grading rather than a single GitHub run. */
+  fromReport: boolean;
+}
+
+const OVERALL_TONE: Record<
+  RunOverallStatus,
+  "success" | "failure" | "running" | "neutral"
+> = {
+  success: "success",
+  failure: "failure",
+  running: "running",
+  cancelled: "neutral",
+  partial: "neutral",
+};
+
+/**
+ * The headline status for a commit.
+ *
+ * It must come from the REPORT when we have one. The header used to show the
+ * latest GitHub run's conclusion, which produced a row reading `SUCCESS` above
+ * a `QUALITY failure` pill — the package workflow had succeeded, so the newest
+ * run was green while the pipeline as a whole was not. A headline that
+ * contradicts the detail beneath it is worse than no headline, and it errs
+ * green, which is the dangerous direction.
+ *
+ * Without a report there is nothing to contradict, so the run's own conclusion
+ * is the honest answer.
+ */
+export function commitHeadline<
+  T extends CommitRun & { status: string; conclusion: string | null },
+>(commit: CommitRunGroup<T>): CommitHeadline {
+  if (commit.report) {
+    return {
+      label: commit.report.overallStatus,
+      tone: OVERALL_TONE[commit.report.overallStatus],
+      fromReport: true,
+    };
+  }
+
+  const { status, conclusion } = commit.latest;
+  const label = status === "completed" ? (conclusion ?? "completed") : status;
+  const tone: CommitHeadline["tone"] =
+    status !== "completed"
+      ? status === "queued" || status === "waiting"
+        ? "neutral"
+        : "running"
+      : conclusion === "success"
+        ? "success"
+        : conclusion === "failure" || conclusion === "timed_out"
+          ? "failure"
+          : "neutral";
+
+  return { label, tone, fromReport: false };
 }
 
 /**
