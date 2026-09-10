@@ -39,6 +39,14 @@ function fallbackStageMessage(stage: StageReport): FriendlyMessage {
         detail: "ALPHACI received the failed result but GitHub did not provide the failed build step for this commit.",
         hint: "Open the GitHub workflow, fix the first failed build or package step, then re-run the workflow.",
       },
+      // Verify drove a DEPLOYED service, so the same red has three possible
+      // homes: the code, the deployment, or the environment it was pointed at.
+      // Sending someone to re-read the diff first is wrong two times in three.
+      verify: {
+        title: "The deployed service failed its API checks",
+        detail: "ALPHACI received the failed result but GitHub did not provide the failing request or assertion for this commit.",
+        hint: "Check the deployment answered at all before reading the code: an environment that never started fails every request the same way.",
+      },
     };
     return { severity: "error", ...guidance[stage.stage] };
   }
