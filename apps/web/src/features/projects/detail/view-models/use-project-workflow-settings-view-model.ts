@@ -10,6 +10,7 @@ import type {
   WorkflowSettingsPreviewResponse,
   WorkflowUpdatePullRequestResponse,
 } from "@/shared/api/contracts";
+import { apiErrorReason } from "../model/api-error-reason";
 import { useLazyProjectQuery } from "./use-lazy-project-query";
 
 export interface ProjectWorkflowSettingsViewModel {
@@ -95,8 +96,10 @@ export function useProjectWorkflowSettingsViewModel(options: {
       settingsQuery.replace(result.settings);
       setUpdatePr(null);
       setUpdatePrError(null);
-    } catch {
-      settingsQuery.fail("Unable to preview workflow settings.");
+    } catch (error) {
+      settingsQuery.fail(
+        apiErrorReason(error, "Unable to preview workflow settings."),
+      );
     } finally {
       setPreviewing(false);
     }
@@ -112,8 +115,10 @@ export function useProjectWorkflowSettingsViewModel(options: {
         settingsQuery.data,
       );
       setUpdatePr(result);
-    } catch {
-      setUpdatePrError("Unable to create workflow update PR.");
+    } catch (error) {
+      setUpdatePrError(
+        apiErrorReason(error, "Unable to create workflow update PR."),
+      );
     } finally {
       setCreatingPr(false);
     }
