@@ -83,7 +83,9 @@ export function groupRunsByPipelineBranch<T extends BranchRun>(
 
   const sections = [...byBranch.entries()].map(([branch, branchRuns]) => ({
     branch,
-    commits: groupRunsByCommit(branchRuns, reports),
+    // The branch is passed so the report join matches on branch AND sha: a
+    // promoted commit exists on several tiers, each with its own report.
+    commits: groupRunsByCommit(branchRuns, reports, branch),
     isPipelineBranch: isPipelineBranch(branch),
   }));
 

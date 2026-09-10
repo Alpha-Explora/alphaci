@@ -47,6 +47,7 @@ describe("groupRunsByCommit", () => {
         run("abc", "2026-09-10T10:01:00Z"),
       ],
       [],
+      "dev",
     );
 
     expect(commits).toHaveLength(1);
@@ -59,6 +60,7 @@ describe("groupRunsByCommit", () => {
     const commits = groupRunsByCommit(
       [run("abc", "2026-09-10T10:00:00Z")],
       [report("abc", [stage("access", "success")])],
+      "dev",
     );
 
     expect(commits[0]!.report).not.toBeNull();
@@ -71,6 +73,7 @@ describe("groupRunsByCommit", () => {
     const commits = groupRunsByCommit(
       [run("ungraded", "2026-09-10T10:00:00Z")],
       [report("other", [stage("access", "success")])],
+      "dev",
     );
 
     expect(commits[0]!.report).toBeNull();
@@ -83,6 +86,7 @@ describe("groupRunsByCommit", () => {
         report("abc", [stage("quality", "failure")]),
         report("abc", [stage("quality", "success")]),
       ],
+      "dev",
     );
 
     expect(commits[0]!.report!.stages[0]!.status).toBe("failure");
@@ -95,6 +99,7 @@ describe("groupRunsByCommit", () => {
         run("newer", "2026-09-10T12:00:00Z"),
       ],
       [],
+      "dev",
     );
 
     expect(commits.map((c) => c.commitSha)).toEqual(["newer", "older"]);
@@ -165,6 +170,7 @@ describe("commitHeadline", () => {
           overallStatus: "failure",
         },
       ],
+      "dev",
     );
 
     const headline = commitHeadline(commit!);
@@ -174,7 +180,7 @@ describe("commitHeadline", () => {
   });
 
   it("falls back to the run when nothing graded the commit", () => {
-    const [commit] = groupRunsByCommit([ghRun("success")], []);
+    const [commit] = groupRunsByCommit([ghRun("success")], [], "dev");
 
     const headline = commitHeadline(commit!);
     expect(headline.label).toBe("success");
@@ -182,7 +188,7 @@ describe("commitHeadline", () => {
   });
 
   it("reads an unfinished run as running", () => {
-    const [commit] = groupRunsByCommit([ghRun(null, "in_progress")], []);
+    const [commit] = groupRunsByCommit([ghRun(null, "in_progress")], [], "dev");
 
     expect(commitHeadline(commit!).tone).toBe("running");
   });
@@ -191,6 +197,7 @@ describe("commitHeadline", () => {
     const [commit] = groupRunsByCommit(
       [ghRun("success")],
       [{ ...report("abc", []), overallStatus: "partial" }],
+      "dev",
     );
 
     expect(commitHeadline(commit!).tone).toBe("neutral");
@@ -219,5 +226,72 @@ describe("commitStageProblems — silence is the bug", () => {
     );
 
     expect(problems).toEqual([]);
+  });
+});
+
+describe("groupRunsByCommit — the report must match the branch, not just the sha", () => {
+  /*
+   * Taken from real data: Alphaexplora-Sandbox/testapp1234 commit a98cf82
+   * exists on dev, uat and main, because a promotion fast-forwards the same
+   * commit onto the next tier. Each branch ran its own pipeline and has its own
+   * report:
+   *
+   *   dev   access success, quality failure          (no package row at all)
+   *   main  access success, quality failure, package success
+   *
+   * Keying the join on the sha alone attached whichever report came first, and
+   * the product showed `dev` with PACKAGE success — reading main's report for
+   * dev's commit. Dev's package should read blocked, since dev's quality
+   * failed. Reporting a stage as passing when it never ran on that branch is
+   * the worst direction for this to be wrong in.
+   */
+  const devReport = {
+    runId: 1,
+    repoFullName: "o/r",
+    branch: "dev",
+    commitSha: "a98cf82",
+    startedAt: "2026-09-09T08:00:00Z",
+    overallStatus: "failure" as const,
+    stages: [
+      stage("access", "success"),
+      stage("quality", "failure"),
+      stage("package", "blocked"),
+    ],
+  };
+
+  const mainReport = {
+    ...devReport,
+    branch: "main",
+    overallStatus: "failure" as const,
+    stages: [
+      stage("access", "success"),
+      stage("quality", "failure"),
+      stage("package", "success"),
+    ],
+  };
+
+  const ghRun = { headSha: "a98cf82", createdAt: "2026-09-09T08:00:00Z" };
+
+  it("does not read another branch's report for the same commit", () => {
+    // main is listed first, so a sha-only join would take it.
+    const commits = groupRunsByCommit([ghRun], [mainReport, devReport], "dev");
+
+    expect(commits[0]!.report!.branch).toBe("dev");
+    const pkg = commits[0]!.report!.stages.find((s) => s.stage === "package");
+    expect(pkg!.status).toBe("blocked");
+  });
+
+  it("gives each branch its own report for the same commit", () => {
+    const onMain = groupRunsByCommit([ghRun], [mainReport, devReport], "main");
+
+    expect(onMain[0]!.report!.branch).toBe("main");
+    const pkg = onMain[0]!.report!.stages.find((s) => s.stage === "package");
+    expect(pkg!.status).toBe("success");
+  });
+
+  it("leaves the report null when this branch never graded the commit", () => {
+    const onUat = groupRunsByCommit([ghRun], [mainReport, devReport], "uat");
+
+    expect(onUat[0]!.report).toBeNull();
   });
 });

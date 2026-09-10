@@ -53,15 +53,29 @@ function createdAtMs(run: CommitRun): number {
 /**
  * Group a branch's runs by commit, newest commit first, attaching our report.
  *
- * Reports are indexed by SHA rather than searched per commit, so a project with
- * a long history does not turn the join quadratic.
+ * Reports are indexed rather than searched per commit, so a project with a long
+ * history does not turn the join quadratic.
+ *
+ * THE KEY IS BRANCH AND SHA, not SHA alone.
+ *
+ * A promotion fast-forwards the same commit onto the next tier, so one SHA
+ * exists on dev, uat and main — with a separate report for each, because each
+ * ran its own pipeline. Keying on SHA alone attached whichever report happened
+ * to come first, and it showed: `dev` displayed `PACKAGE success` for a commit
+ * whose dev pipeline recorded only access and quality. It was reading main's
+ * report. Dev's package should have read `blocked`, since dev's quality failed.
+ *
+ * A stage reported as passing when it never ran on that branch is the worst
+ * direction for this to be wrong in.
  */
 export function groupRunsByCommit<T extends CommitRun>(
   runs: readonly T[],
   reports: readonly RunGroup[],
+  branch: string,
 ): CommitRunGroup<T>[] {
   const reportBySha = new Map<string, RunGroup>();
   for (const report of reports) {
+    if (report.branch !== branch) continue;
     // Rows arrive newest first; keep the first seen for a SHA so a re-run does
     // not lose to an older attempt of the same commit.
     if (!reportBySha.has(report.commitSha)) {
