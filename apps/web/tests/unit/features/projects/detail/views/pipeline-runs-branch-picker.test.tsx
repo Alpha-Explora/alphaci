@@ -18,7 +18,13 @@ jest.mock(
   }),
 );
 
+/* Only the network call is stubbed. The rest of the barrel is pure rules —
+ * checkTone, checkLabel, summarizeChecks — and replacing them with nothing
+ * made the view throw the moment it started rendering the check roster. A
+ * mock that erases more of a module than the test needs breaks on the next
+ * thing that module legitimately grows. */
 jest.mock("../../../../../../src/features/runs", () => ({
+  ...jest.requireActual("../../../../../../src/features/runs"),
   getRuns: jest.fn(),
 }));
 
@@ -340,7 +346,9 @@ describe("PipelineRunsTab log excerpt", () => {
 
     const shown = host.querySelector("pre")?.textContent ?? "";
     expect(shown).toContain("Post-processing failed");
-    expect(shown).toContain("sonar-project.properties files are not understood");
+    expect(shown).toContain(
+      "sonar-project.properties files are not understood",
+    );
   });
 
   it("keeps the provisioning noise out of the way until asked", async () => {
@@ -361,6 +369,8 @@ describe("PipelineRunsTab log excerpt", () => {
     });
 
     const errorLine = host.querySelector(".ws-console__line--error");
-    expect(errorLine?.textContent).toContain("Process completed with exit code 1");
+    expect(errorLine?.textContent).toContain(
+      "Process completed with exit code 1",
+    );
   });
 });

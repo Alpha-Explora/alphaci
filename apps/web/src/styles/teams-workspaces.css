@@ -1033,8 +1033,95 @@
 
 .ws-stages__item {
   display: inline-flex;
+  /* Column so the check roster can open beneath its stage instead of shoving
+     the next stage along the row. The pill and status stay on one line. */
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.25rem;
+}
+
+.ws-stages__head {
+  display: inline-flex;
   align-items: center;
   gap: 0.35rem;
+}
+
+/* Which tools ran inside a stage.
+ *
+ * A count first, the roster on demand. Seven ticks under every stage of every
+ * clean run is a panel people stop opening — but a stage that says nothing
+ * about the tools underneath it is how "green" stopped being worth anything
+ * here, so the count is always visible and the names are one click away. */
+.ws-checks {
+  font-size: 0.7rem;
+}
+
+.ws-checks__summary {
+  color: var(--text-secondary);
+  cursor: pointer;
+  list-style: none;
+}
+
+.ws-checks__summary::-webkit-details-marker {
+  display: none;
+}
+
+.ws-checks__summary::before {
+  content: "▸ ";
+}
+
+.ws-checks[open] .ws-checks__summary::before {
+  content: "▾ ";
+}
+
+.ws-checks__summary:focus-visible {
+  outline: 2px solid var(--focus-ring, currentColor);
+  outline-offset: 2px;
+}
+
+.ws-checks__list {
+  list-style: none;
+  margin: 0.3rem 0 0;
+  padding: 0;
+  display: grid;
+  gap: 0.15rem;
+  /* Marks, names and outcomes line up down the list rather than drifting with
+     the length of the name beside them. */
+  grid-template-columns: auto 1fr auto;
+}
+
+.ws-checks__row {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: subgrid;
+  gap: 0.4rem;
+  align-items: baseline;
+}
+
+/* Colour is never the only signal — every row carries a mark as well. */
+.ws-checks__row--passed .ws-checks__mark {
+  color: var(--success, #2a6e48);
+}
+
+.ws-checks__row--failed .ws-checks__mark {
+  color: var(--danger, #a83a32);
+}
+
+.ws-checks__row--running .ws-checks__mark {
+  color: var(--info, #2d5f8b);
+}
+
+.ws-checks__row--skipped .ws-checks__mark {
+  color: var(--text-muted, #6b7484);
+}
+
+.ws-checks__name {
+  color: var(--text-primary);
+}
+
+.ws-checks__outcome {
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
 }
 
 .ws-stages__status {
