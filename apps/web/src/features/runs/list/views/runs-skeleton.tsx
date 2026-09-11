@@ -26,7 +26,14 @@ function SkeletonBlock({
 
 function SkeletonNode() {
   return (
-    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "0.5rem" }}>
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        gap: "0.5rem",
+      }}
+    >
       <SkeletonBlock width="48px" height="48px" radius="50%" />
       <SkeletonBlock width="40px" height="0.6rem" />
     </div>
@@ -37,10 +44,21 @@ function SkeletonCard() {
   return (
     <div
       className="glass-panel"
-      style={{ padding: "clamp(1.1rem, 2vw, 1.5rem)", display: "grid", gap: "1rem" }}
+      style={{
+        padding: "clamp(1.1rem, 2vw, 1.5rem)",
+        display: "grid",
+        gap: "1rem",
+      }}
     >
       {/* Header */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "0.6rem" }}>
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "flex-start",
+          gap: "0.6rem",
+        }}
+      >
         <div style={{ display: "grid", gap: "0.5rem" }}>
           <SkeletonBlock width="14rem" height="1rem" />
           <SkeletonBlock width="8rem" height="0.75rem" />

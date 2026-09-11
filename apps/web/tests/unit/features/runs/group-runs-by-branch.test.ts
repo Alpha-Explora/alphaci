@@ -1,7 +1,11 @@
 import { groupRunsByBranch } from "@/features/runs/model/runs-rules";
 import type { RunGroup } from "@/shared/api/contracts";
 
-const run = (branch: string, startedAt: string, commitSha = "abc123"): RunGroup => ({
+const run = (
+  branch: string,
+  startedAt: string,
+  commitSha = "abc123",
+): RunGroup => ({
   runId: 1,
   repoFullName: "org/repo",
   branch,

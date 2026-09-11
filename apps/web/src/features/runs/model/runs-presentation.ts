@@ -1,4 +1,9 @@
-import type { RunOverallStatus, StageStatus, MessageSeverity } from "./runs-types";
+import type {
+  RunOverallStatus,
+  StageStatus,
+  MessageSeverity,
+  StageId,
+} from "./runs-types";
 
 /* ── Color tokens for overall run status ─────────────────────────────────── */
 
@@ -209,7 +214,7 @@ export function shortSha(sha: string): string {
 
 /* ── Stage display name ──────────────────────────────────────────────────── */
 
-export function stageLabel(stage: "access" | "quality" | "package"): string {
+export function stageLabel(stage: StageId): string {
   switch (stage) {
     case "access":
       return "Access";
@@ -217,5 +222,100 @@ export function stageLabel(stage: "access" | "quality" | "package"): string {
       return "Quality";
     case "package":
       return "Package";
+    case "verify":
+      return "Verify";
   }
+}
+
+/** How a tool's outcome should read: the semantic tone, not a colour. */
+export type CheckTone = "passed" | "failed" | "skipped" | "running";
+
+/**
+ * Map a GitHub job conclusion onto a tone.
+ *
+ * `skipped` is deliberately its own tone rather than folded into "passed".
+ * A skipped tool proved nothing, and showing it green is the same mistake the
+ * pipeline itself used to make when a stage of entirely skipped jobs reported
+ * success. An unrecognised conclusion also lands here rather than in "passed" —
+ * an outcome nobody has interpreted is not evidence that anything worked.
+ */
+export function checkTone(conclusion: string): CheckTone {
+  switch (conclusion) {
+    case "success":
+      return "passed";
+    case "failure":
+    case "timed_out":
+    case "action_required":
+      return "failed";
+    case "running":
+    case "in_progress":
+    case "queued":
+      return "running";
+    default:
+      return "skipped";
+  }
+}
+
+/**
+ * Turn a job id into something readable.
+ *
+ * Job ids are written for the pipeline — `dotnet-tests`, `sbom` — and the
+ * reader wants the tool. Known ids get a real name; anything else is
+ * de-hyphenated rather than dropped, so a stack this build has never heard of
+ * still shows its tools instead of a blank row.
+ */
+export function checkLabel(name: string): string {
+  const known: Record<string, string> = {
+    "validate-access": "Access check",
+    "branch-policy": "Branch policy",
+    "dotnet-tests": "Unit tests & coverage",
+    "backend-tests": "Unit tests & coverage",
+    "frontend-tests": "Unit tests & coverage",
+    lint: "Format & style",
+    typecheck: "Static analysis",
+    security: "Dependency audit",
+    secrets: "Secret scan",
+    licenses: "Licence scan",
+    sbom: "SBOM export",
+    sonar: "Code quality & SAST",
+    build: "Build & publish",
+  };
+
+  return (
+    known[name] ??
+    name.replace(/[-_]/g, " ").replace(/^./, (c) => c.toUpperCase())
+  );
+}
+
+/** How a stage's tool roster reads at a glance. */
+export interface CheckSummary {
+  passed: number;
+  total: number;
+}
+
+/**
+ * Count what actually passed inside a stage.
+ *
+ * Returns null — not a zero summary — when the stage reports no checks. A
+ * pipeline generated before per-tool reporting is "not known", and rendering
+ * that as "0 of 0 checks passed" states something false about a run that may
+ * have exercised every tool it had.
+ *
+ * Only `passed` counts toward the numerator. A skipped or unrecognised
+ * conclusion proved nothing, and folding it in would rebuild the bug this
+ * whole line of work came from — a stage of entirely skipped jobs reporting
+ * success — inside the number meant to expose it.
+ */
+export function summarizeChecks(
+  checks: readonly { conclusion: string }[] | undefined,
+): CheckSummary | null {
+  if (checks === undefined || checks.length === 0) {
+    return null;
+  }
+
+  return {
+    passed: checks.filter((check) => checkTone(check.conclusion) === "passed")
+      .length,
+    total: checks.length,
+  };
 }

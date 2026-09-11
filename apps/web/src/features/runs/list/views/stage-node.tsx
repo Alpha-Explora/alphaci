@@ -9,7 +9,17 @@ import { stageStatusColors, stageLabel } from "../../model/runs-presentation";
 
 function CheckIcon() {
   return (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <svg
+      width="14"
+      height="14"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
       <polyline points="20 6 9 17 4 12" />
     </svg>
   );
@@ -17,7 +27,17 @@ function CheckIcon() {
 
 function XIcon() {
   return (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <svg
+      width="14"
+      height="14"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
       <line x1="18" y1="6" x2="6" y2="18" />
       <line x1="6" y1="6" x2="18" y2="18" />
     </svg>
@@ -26,7 +46,17 @@ function XIcon() {
 
 function ClockIcon() {
   return (
-    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <svg
+      width="13"
+      height="13"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
       <circle cx="12" cy="12" r="10" />
       <polyline points="12 6 12 12 16 14" />
     </svg>
@@ -54,7 +84,13 @@ function SpinnerIcon({ color }: { color: string }) {
 
 /* ── Stage node icon selector ────────────────────────────────────────────── */
 
-function StageIcon({ status, iconColor }: { status: StageReport["status"]; iconColor: string }) {
+function StageIcon({
+  status,
+  iconColor,
+}: {
+  status: StageReport["status"];
+  iconColor: string;
+}) {
   switch (status) {
     case "success":
       return <CheckIcon />;
@@ -106,7 +142,13 @@ interface StageNodeProps {
   onToggle: () => void;
 }
 
-export function StageNode({ stage, index, isExpanded, reduced, onToggle }: StageNodeProps) {
+export function StageNode({
+  stage,
+  index,
+  isExpanded,
+  reduced,
+  onToggle,
+}: StageNodeProps) {
   const colors = stageStatusColors(stage.status);
   const label = stageLabel(stage.stage);
   const delay = index * 0.1;

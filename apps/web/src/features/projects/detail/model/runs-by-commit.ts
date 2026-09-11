@@ -105,31 +105,55 @@ export function groupRunsByCommit<T extends CommitRun>(
         report: reportBySha.get(commitSha) ?? null,
       };
     })
-    .sort((left, right) => createdAtMs(right.latest) - createdAtMs(left.latest));
+    .sort(
+      (left, right) => createdAtMs(right.latest) - createdAtMs(left.latest),
+    );
 }
 
 /**
  * The stages of a commit worth saying something about.
  *
- * A stage that passed needs no words; the pill already says so. A stage still
- * pending or running has nothing to report yet. Everything else is a problem
- * and belongs in front of the reader.
+ * A stage still pending or running has nothing to report yet. Everything that
+ * failed belongs in front of the reader — and so does a stage that PASSED
+ * while carrying warnings.
  *
- * This deliberately does NOT require the stage to carry a message. Requiring
- * one hid the most important case in the product: a genuine `failure` whose
- * explanation was never captured rendered as silence, so the view showed a red
- * pill and said nothing at all. Silence is the one thing it must not do — the
- * view says "no detail captured" instead, which is at least true and points
- * somewhere.
+ * "A stage that passed needs no words" was true until the gates became
+ * per-branch. On dev they are advisory: a stage finds three committed secrets,
+ * a forbidden licence and twelve formatter diagnostics, and still concludes
+ * `success` because none of them block on the working branch. Filtering on
+ * status alone meant the project page showed nothing at all for that commit —
+ * on the one branch where there was still time to act, and for a developer
+ * whose next step is a promotion those findings will fail.
+ *
+ * So the test is no longer "did it fail" but "is there something to say".
+ *
+ * This deliberately does NOT require a failed stage to carry a message.
+ * Requiring one hid the most important case in the product: a genuine
+ * `failure` whose explanation was never captured rendered as silence, so the
+ * view showed a red pill and said nothing at all. Silence is the one thing it
+ * must not do — the view says "no detail captured" instead, which is at least
+ * true and points somewhere.
  */
 export function commitStageProblems(report: RunGroup | null): StageReport[] {
   if (!report) return [];
-  return report.stages.filter(
-    (stage) =>
-      stage.status !== "success" &&
-      stage.status !== "pending" &&
-      stage.status !== "running",
-  );
+
+  return report.stages.filter((stage) => {
+    if (stage.status === "pending" || stage.status === "running") {
+      return false;
+    }
+
+    if (stage.status !== "success") {
+      return true;
+    }
+
+    // Passed, but not silently: a warning here is a block one branch later.
+    // `info` does not qualify — a note that the SBOM listed 51 components is
+    // not something to put in front of someone reading a green pipeline.
+    return stage.friendlyMessages.some(
+      (message) =>
+        message.severity === "warning" || message.severity === "error",
+    );
+  });
 }
 
 /** How a commit's headline reads: the word, and the tone to paint it. */
