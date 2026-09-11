@@ -11,6 +11,8 @@ import {
   type WorkflowRunSummary,
 } from "@/features/projects";
 
+import { checkLabel, checkTone, summarizeChecks } from "@/features/runs";
+
 import {
   StatusPill,
   WorkspaceEmpty,
@@ -281,12 +283,17 @@ function CommitRow({
         <ul className="ws-stages" aria-label="Pipeline stages">
           {commit.report.stages.map((stage) => (
             <li key={stage.stage} className="ws-stages__item">
-              <span className={`ws-pill ws-pill--${stagePillTone(stage.status)}`}>
-                {stage.stage}
+              <span className="ws-stages__head">
+                <span
+                  className={`ws-pill ws-pill--${stagePillTone(stage.status)}`}
+                >
+                  {stage.stage}
+                </span>
+                <span className="ws-stages__status">
+                  {stage.status.replace(/_/g, " ")}
+                </span>
               </span>
-              <span className="ws-stages__status">
-                {stage.status.replace(/_/g, " ")}
-              </span>
+              <StageChecks stage={stage} />
             </li>
           ))}
         </ul>
@@ -420,7 +427,10 @@ function RunRow({
           {loading ? (
             <WorkspaceLoading rows={3} />
           ) : error ? (
-            <WorkspaceError message={error} onRetry={() => void loadJobs(true)} />
+            <WorkspaceError
+              message={error}
+              onRetry={() => void loadJobs(true)}
+            />
           ) : jobs && jobs.length > 0 ? (
             <ul className="ws-jobs">
               {jobs.map((job) => (
@@ -441,7 +451,6 @@ function RunRow({
     </li>
   );
 }
-
 
 /**
  * One failing stage: what we know, and the error output itself.
@@ -487,12 +496,62 @@ function StageDiagnosis({
         the most useful thing we can say about a blocked stage, which has no
         log of its own to show.
       */}
-      <StageSummary
-        stage={stage}
-        showHint={!failureLog.log?.available}
-      />
+      <StageSummary stage={stage} showHint={!failureLog.log?.available} />
       {ran && <StageFailureOutput view={failureLog} />}
     </div>
+  );
+}
+
+/**
+ * Which tools ran inside a stage, folded away until asked for.
+ *
+ * A count first, the roster on demand. Listing seven ticks under every stage
+ * of every clean run is a panel people stop opening, and a stage that says
+ * nothing about the tools underneath it is how "green" stopped being worth
+ * anything here — this platform stored twenty-four consecutive package
+ * successes that built nothing. "7 of 7 checks passed" is the short answer to
+ * the question those rows taught people to ask.
+ *
+ * Renders nothing at all when the stage carries no checks: a pipeline
+ * generated before per-tool reporting is "not known", which is a different
+ * claim from "no tools ran" and must not be dressed up as 0 of 0.
+ */
+function StageChecks({ stage }: { stage: StageReport }) {
+  const checks = stage.checks ?? [];
+  const summary = summarizeChecks(stage.checks);
+  if (summary === null) {
+    return null;
+  }
+
+  return (
+    <details className="ws-checks">
+      <summary className="ws-checks__summary">
+        {summary.passed} of {summary.total} checks passed
+      </summary>
+      <ul className="ws-checks__list">
+        {checks.map((check) => {
+          const tone = checkTone(check.conclusion);
+          return (
+            <li
+              key={check.name}
+              className={`ws-checks__row ws-checks__row--${tone}`}
+            >
+              <span aria-hidden="true" className="ws-checks__mark">
+                {tone === "passed"
+                  ? "✓"
+                  : tone === "failed"
+                    ? "✗"
+                    : tone === "running"
+                      ? "●"
+                      : "–"}
+              </span>
+              <span className="ws-checks__name">{checkLabel(check.name)}</span>
+              <span className="ws-checks__outcome">{check.conclusion}</span>
+            </li>
+          );
+        })}
+      </ul>
+    </details>
   );
 }
 
@@ -539,7 +598,6 @@ function StageSummary({
     </>
   );
 }
-
 
 /**
  * Why there is no output, said plainly.

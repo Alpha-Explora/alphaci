@@ -286,3 +286,36 @@ export function checkLabel(name: string): string {
     name.replace(/[-_]/g, " ").replace(/^./, (c) => c.toUpperCase())
   );
 }
+
+/** How a stage's tool roster reads at a glance. */
+export interface CheckSummary {
+  passed: number;
+  total: number;
+}
+
+/**
+ * Count what actually passed inside a stage.
+ *
+ * Returns null — not a zero summary — when the stage reports no checks. A
+ * pipeline generated before per-tool reporting is "not known", and rendering
+ * that as "0 of 0 checks passed" states something false about a run that may
+ * have exercised every tool it had.
+ *
+ * Only `passed` counts toward the numerator. A skipped or unrecognised
+ * conclusion proved nothing, and folding it in would rebuild the bug this
+ * whole line of work came from — a stage of entirely skipped jobs reporting
+ * success — inside the number meant to expose it.
+ */
+export function summarizeChecks(
+  checks: readonly { conclusion: string }[] | undefined,
+): CheckSummary | null {
+  if (checks === undefined || checks.length === 0) {
+    return null;
+  }
+
+  return {
+    passed: checks.filter((check) => checkTone(check.conclusion) === "passed")
+      .length,
+    total: checks.length,
+  };
+}

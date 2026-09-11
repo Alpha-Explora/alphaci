@@ -7,6 +7,7 @@ import {
   stageLabel,
   checkTone,
   checkLabel,
+  summarizeChecks,
 } from "../../../../../src/features/runs/model/runs-presentation";
 
 describe("runStatusColors", () => {
@@ -193,5 +194,51 @@ describe("per-tool check presentation", () => {
     // A stack this build predates must show its tools, not a blank row.
     expect(checkLabel("mutation-testing")).toBe("Mutation testing");
     expect(checkLabel("k6_load")).toBe("K6 load");
+  });
+});
+
+describe("summarizeChecks", () => {
+  /*
+   * "Not known" and "nothing ran" are different claims. A pipeline generated
+   * before per-tool reporting sends no checks, and rendering that as
+   * "0 of 0 checks passed" states something false about a run that may well
+   * have exercised every tool it had.
+   */
+  it("returns null when the stage reports no checks", () => {
+    expect(summarizeChecks(undefined)).toBeNull();
+    expect(summarizeChecks([])).toBeNull();
+  });
+
+  it("counts what passed against what ran", () => {
+    expect(
+      summarizeChecks([
+        { conclusion: "success" },
+        { conclusion: "success" },
+        { conclusion: "failure" },
+      ]),
+    ).toEqual({ passed: 2, total: 3 });
+  });
+
+  /*
+   * A skipped tool proved nothing. Counting it as passed would rebuild the bug
+   * this whole line of work came from — a stage of entirely skipped jobs
+   * reporting success — inside the number meant to expose it.
+   */
+  it("does not count a skipped tool as passed", () => {
+    expect(
+      summarizeChecks([{ conclusion: "success" }, { conclusion: "skipped" }]),
+    ).toEqual({ passed: 1, total: 2 });
+  });
+
+  it("does not count an unrecognised conclusion as passed", () => {
+    expect(summarizeChecks([{ conclusion: "some_future_conclusion" }])).toEqual(
+      { passed: 0, total: 1 },
+    );
+  });
+
+  it("reports a fully clean stage as all passed", () => {
+    expect(
+      summarizeChecks([{ conclusion: "success" }, { conclusion: "success" }]),
+    ).toEqual({ passed: 2, total: 2 });
   });
 });
