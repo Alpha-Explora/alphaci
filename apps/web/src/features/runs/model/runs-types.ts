@@ -36,7 +36,17 @@ export interface ProjectRunGroup {
 export interface BranchRunGroup {
   branch: string;
   runs: RunGroup[];
-  latestRun: RunGroup;
+  /**
+   * Null for a declared branch that has recorded nothing.
+   *
+   * An empty `uat` is information: it means nothing has been promoted yet, and
+   * a section that silently vanishes cannot say that. Matches
+   * `BranchRunSection` in the projects feature, which draws the same
+   * distinction for a single project's GitHub runs.
+   */
+  latestRun: RunGroup | null;
+  /** False for a branch outside the declared flow, so the view can mark it. */
+  isPipelineBranch: boolean;
 }
 
 /** Headline counts for the summary strip. */
