@@ -51,3 +51,30 @@ export function pipelineBranchRank(branch: string): number {
 export function isPipelineBranch(branch: string): boolean {
   return (PIPELINE_BRANCHES as readonly string[]).includes(branch);
 }
+
+/**
+ * A pull request's merge ref, as GitHub reports it on a `pull_request` run.
+ *
+ * A run triggered by a pull request carries `refs/pull/4/merge`, which reaches
+ * us as the branch `4/merge`. Rendered literally it sits in the runs list
+ * beside dev, uat and main looking like a branch nobody in the team
+ * recognises — and there is one per pull request, so they accumulate.
+ */
+const PULL_REQUEST_MERGE_REF = /^(\d+)\/merge$/;
+
+/**
+ * What to call a branch on screen.
+ *
+ * Only the display changes. The underlying value stays exactly as reported,
+ * because it is what joins a run to its reports and to GitHub; renaming it
+ * anywhere but the label would break that join.
+ */
+export function branchDisplayLabel(branch: string): string {
+  const pullRequest = PULL_REQUEST_MERGE_REF.exec(branch);
+  return pullRequest ? `PR #${pullRequest[1]}` : branch;
+}
+
+/** True when this "branch" is really a pull request's merge ref. */
+export function isPullRequestRef(branch: string): boolean {
+  return PULL_REQUEST_MERGE_REF.test(branch);
+}

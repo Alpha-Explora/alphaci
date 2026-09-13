@@ -3,7 +3,11 @@
  * No React, no Next, no fetch — everything here is directly callable from a
  * test. These assertions were previously reachable only by rendering the route
  * and reading the DOM. */
-import { pipelineBranchRank } from "@/shared/api/pipeline-branches";
+import {
+  PIPELINE_BRANCHES,
+  isPipelineBranch,
+  pipelineBranchRank,
+} from "@/shared/api/pipeline-branches";
 import { ApiError } from "@/shared/api/request";
 
 import type {
@@ -87,22 +91,55 @@ export function groupRunsByBranch(runs: RunGroup[]): BranchRunGroup[] {
     }
   }
 
-  return Array.from(byBranch.entries())
-    .map(([branch, branchRuns]) => {
+  const groups: BranchRunGroup[] = [...byBranch.entries()].map(
+    ([branch, branchRuns]) => {
       const sorted = [...branchRuns].sort(
         (left, right) => startedAtMs(right) - startedAtMs(left),
       );
-      return { branch, runs: sorted, latestRun: sorted[0]! };
-    })
-    .sort((left, right) => {
-      // Unknown branches rank last, then fall back to recency between them.
-      const leftOrder = pipelineBranchRank(left.branch);
-      const rightOrder = pipelineBranchRank(right.branch);
+      return {
+        branch,
+        runs: sorted,
+        latestRun: sorted[0] ?? null,
+        isPipelineBranch: isPipelineBranch(branch),
+      };
+    },
+  );
 
-      return leftOrder !== rightOrder
-        ? leftOrder - rightOrder
-        : startedAtMs(right.latestRun) - startedAtMs(left.latestRun);
-    });
+  /*
+   * Declared branches that recorded nothing still get a section.
+   *
+   * An empty `uat` is a fact - nothing has been promoted yet - and a section
+   * that silently vanishes cannot state it. Added after the map so a branch
+   * with runs is never duplicated by its own placeholder, and only for the
+   * branches the product actually provisions: inventing empty sections for
+   * branches nobody declared would be noise, where an absent `uat` is not.
+   *
+   * The same rule the projects feature applies to one project's GitHub runs,
+   * so the two views answer "what is on uat" the same way.
+   */
+  for (const branch of PIPELINE_BRANCHES) {
+    if (!byBranch.has(branch)) {
+      groups.push({
+        branch,
+        runs: [],
+        latestRun: null,
+        isPipelineBranch: true,
+      });
+    }
+  }
+
+  return groups.sort((left, right) => {
+    const leftOrder = pipelineBranchRank(left.branch);
+    const rightOrder = pipelineBranchRank(right.branch);
+    if (leftOrder !== rightOrder) return leftOrder - rightOrder;
+
+    // Two unknown branches: newest activity first. A declared branch with no
+    // runs has no timestamp to compare, and holds its place in the flow.
+    const leftLatest = left.latestRun;
+    const rightLatest = right.latestRun;
+    if (!leftLatest || !rightLatest) return 0;
+    return startedAtMs(rightLatest) - startedAtMs(leftLatest);
+  });
 }
 
 /** Headline counts for the summary strip. */
