@@ -8,6 +8,7 @@ import {
   checkTone,
   checkLabel,
   summarizeChecks,
+  formatFailedJobs,
 } from "../../../../../src/features/runs/model/runs-presentation";
 
 describe("runStatusColors", () => {
@@ -240,5 +241,55 @@ describe("summarizeChecks", () => {
     expect(
       summarizeChecks([{ conclusion: "success" }, { conclusion: "success" }]),
     ).toEqual({ passed: 2, total: 2 });
+  });
+});
+
+/*
+ * The payload behind this is what the workflow posts as `rawLogs`, which is
+ * not log output at all - it is the names of the jobs GitHub recorded as
+ * failed, one per line, each carrying the same prefix.
+ */
+describe("formatFailedJobs", () => {
+  it("drops the prefix the workflow repeats on every line", () => {
+    const raw =
+      "Failed GitHub Actions job: docker-backend-main / Docker Build & Push > Build and Push";
+
+    expect(formatFailedJobs(raw)).toBe(
+      "docker-backend-main / Docker Build & Push > Build and Push",
+    );
+  });
+
+  it("keeps every job when several failed", () => {
+    const raw = [
+      "Failed GitHub Actions job: lint / .NET Format Check",
+      "Failed GitHub Actions job: sonar / SonarCloud .NET Analysis",
+    ].join("\n");
+
+    expect(formatFailedJobs(raw).split("\n")).toEqual([
+      "lint / .NET Format Check",
+      "sonar / SonarCloud .NET Analysis",
+    ]);
+  });
+
+  it("handles carriage returns, which a Windows runner emits", () => {
+    const raw =
+      "Failed GitHub Actions job: build\r\nFailed GitHub Actions job: test";
+
+    expect(formatFailedJobs(raw).split("\n")).toEqual(["build", "test"]);
+  });
+
+  /*
+   * Showing an unrecognised payload beats blanking the panel: the point of
+   * this section is to name the failed job, and a reader who gets nothing
+   * cannot tell a missing payload from a payload we failed to parse.
+   */
+  it("returns the original text when no line carries the prefix", () => {
+    expect(formatFailedJobs("something else entirely")).toBe(
+      "something else entirely",
+    );
+  });
+
+  it("returns the original text when the payload is only blank lines", () => {
+    expect(formatFailedJobs("\n\n")).toBe("\n\n");
   });
 });
