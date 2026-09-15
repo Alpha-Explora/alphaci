@@ -284,13 +284,16 @@ export interface DisconnectProjectRequest {
   confirmRepoName?: string;
 }
 
+/**
+ * A completed disconnect.
+ *
+ * Only ever a success. When GitHub refuses to delete the repository the
+ * project is kept and the request fails with 409, whose body carries `code`
+ * and a `message` written for the user - read it with apiErrorReason.
+ */
 export interface DisconnectProjectResponse {
   ok: boolean;
   githubRepoDeleted?: boolean;
-  githubRepoDeleteError?: {
-    code: "missing_scope" | "not_found" | "other";
-    message: string;
-  };
 }
 
 export interface DetachDeploymentTargetResponse {
