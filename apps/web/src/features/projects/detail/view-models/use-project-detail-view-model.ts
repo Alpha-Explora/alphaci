@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 
 import { projectsRepository } from "../../data/projects-repository";
 import { toOverviewError } from "../../model/projects-rules";
+import { apiErrorReason } from "../model/api-error-reason";
 import type {
   ProjectOverviewResponse,
   ProjectStatus,
@@ -116,9 +117,22 @@ export function useProjectDetailViewModel(options: {
       );
       // Stays true: the project is gone and the caller is navigating away.
       return true;
-    } catch {
+    } catch (error) {
+      /*
+       * The server's reason, not a stand-in for it.
+       *
+       * When GitHub refuses to delete the repository the backend keeps the
+       * project and answers 409 with why: the organisation restricts OAuth
+       * apps, the token lacks delete_repo, the session needs signing in again.
+       * This used to replace every one of those with "verify permissions and
+       * try again", and before that the refusal arrived inside a success, so
+       * two deletions GitHub had refused were reported as done.
+       */
       setDeleteError(
-        "Failed to delete project. Please verify permissions and try again.",
+        apiErrorReason(
+          error,
+          "The project could not be deleted. Please try again.",
+        ),
       );
       setIsDeleting(false);
       return false;
