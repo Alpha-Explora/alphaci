@@ -23,6 +23,7 @@ export interface CapabilitiesViewModel {
   loading: boolean;
   loadCapabilities: () => Promise<void>;
   envProvisioningEnabled: boolean;
+  clientCompositionEnabled: boolean;
   deploymentOwnershipMode: "byo" | "flowci_managed";
   projectSyncSnapshotsEnabled: boolean;
   workflowSettingsPreviewEnabled: boolean;

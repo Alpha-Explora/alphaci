@@ -151,10 +151,17 @@ function escapeRegExp(value) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
-function stubSource(barrel) {
+function stubSource(barrel, artifactSymbols = []) {
   const name = barrel.split('/').pop() || 'excludedFeature';
   const identifier = name.replace(/[^A-Za-z0-9_$]/g, '_');
-  return `import { notFound } from "next/navigation";\n\nexport function ${identifier}(): never {\n  return notFound();\n}\n\nexport default ${identifier};\n`;
+  const namedExports = [...new Set(artifactSymbols)]
+    .filter((symbol) => /^[A-Za-z_$][A-Za-z0-9_$]*$/.test(symbol))
+    .map(
+      (symbol) =>
+        `export function ${symbol}(): never {\n  return notFound();\n}`,
+    )
+    .join("\n\n");
+  return `import { notFound } from "next/navigation";\n\nexport function ${identifier}(): never {\n  return notFound();\n}\n${namedExports ? `\n${namedExports}\n` : ""}\nexport default ${identifier};\n`;
 }
 
 function stubFileName(barrel) {
@@ -174,7 +181,14 @@ function writeCapabilityStubs(projection, stubDirectory) {
   fs.rmSync(stubDirectory, { recursive: true, force: true });
   fs.mkdirSync(stubDirectory, { recursive: true });
   for (const barrel of projection.excludedFeatureBarrels) {
-    fs.writeFileSync(path.join(stubDirectory, stubFileName(barrel)), stubSource(barrel), 'utf8');
+    const artifactSymbols = projection.excludedSurfaces
+      .filter((surface) => (surface.featureBarrels || []).includes(barrel))
+      .flatMap((surface) => surface.artifactSymbols || []);
+    fs.writeFileSync(
+      path.join(stubDirectory, stubFileName(barrel)),
+      stubSource(barrel, artifactSymbols),
+      'utf8',
+    );
   }
   return createAliasEntries(projection, stubDirectory);
 }
@@ -187,7 +201,17 @@ function packageDriftErrors(snapshot, pkg, packageDirectory = PACKAGE_DIR) {
   if (!/^\d+\.\d+\.\d+$/.test(metadata.version || '')) {
     return [`capability package version must be a release version, found ${metadata.version || '<missing>'}`];
   }
-  const fields = ['key', 'maturity', 'editions', 'requires', 'surface'];
+  const fields = [
+    'key',
+    'context',
+    'description',
+    'maturity',
+    'configuration',
+    'configurationFlags',
+    'editions',
+    'requires',
+    'surface',
+  ];
   const normalize = (record) => Object.fromEntries(fields.map((field) => [field, record[field]]));
   const expected = snapshot.map(normalize);
   const actual = pkg.catalog.map(normalize);

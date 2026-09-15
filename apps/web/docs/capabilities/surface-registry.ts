@@ -17,7 +17,8 @@ export const CAPABILITY_SURFACES = [
     ],
     "featureBarrels": [
       "@/features/settings"
-    ]
+    ],
+    "artifactSymbols": []
   },
   {
     "key": "identity.hierarchy",
@@ -34,7 +35,8 @@ export const CAPABILITY_SURFACES = [
     "featureBarrels": [
       "@/features/groups",
       "@/features/teams"
-    ]
+    ],
+    "artifactSymbols": []
   },
   {
     "key": "identity.sso-scim",
@@ -42,7 +44,8 @@ export const CAPABILITY_SURFACES = [
     "viewFlag": null,
     "domains": [],
     "routes": [],
-    "featureBarrels": []
+    "featureBarrels": [],
+    "artifactSymbols": []
   },
   {
     "key": "identity.lms-lti",
@@ -50,7 +53,8 @@ export const CAPABILITY_SURFACES = [
     "viewFlag": null,
     "domains": [],
     "routes": [],
-    "featureBarrels": []
+    "featureBarrels": [],
+    "artifactSymbols": []
   },
   {
     "key": "identity.cohort-policy",
@@ -58,7 +62,8 @@ export const CAPABILITY_SURFACES = [
     "viewFlag": null,
     "domains": [],
     "routes": [],
-    "featureBarrels": []
+    "featureBarrels": [],
+    "artifactSymbols": []
   },
   {
     "key": "identity.edu-provisioning",
@@ -66,7 +71,8 @@ export const CAPABILITY_SURFACES = [
     "viewFlag": null,
     "domains": [],
     "routes": [],
-    "featureBarrels": []
+    "featureBarrels": [],
+    "artifactSymbols": []
   },
   {
     "key": "identity.ferpa-workflows",
@@ -74,7 +80,8 @@ export const CAPABILITY_SURFACES = [
     "viewFlag": null,
     "domains": [],
     "routes": [],
-    "featureBarrels": []
+    "featureBarrels": [],
+    "artifactSymbols": []
   },
   {
     "key": "identity.edition-entitlements",
@@ -82,7 +89,8 @@ export const CAPABILITY_SURFACES = [
     "viewFlag": null,
     "domains": [],
     "routes": [],
-    "featureBarrels": []
+    "featureBarrels": [],
+    "artifactSymbols": []
   },
   {
     "key": "platform.audit-events",
@@ -94,7 +102,8 @@ export const CAPABILITY_SURFACES = [
     "routes": [],
     "featureBarrels": [
       "@/features/capabilities"
-    ]
+    ],
+    "artifactSymbols": []
   },
   {
     "key": "platform.notifications",
@@ -111,7 +120,8 @@ export const CAPABILITY_SURFACES = [
     "featureBarrels": [
       "@/features/notifications",
       "@/features/settings"
-    ]
+    ],
+    "artifactSymbols": []
   },
   {
     "key": "platform.data-residency",
@@ -119,7 +129,8 @@ export const CAPABILITY_SURFACES = [
     "viewFlag": null,
     "domains": [],
     "routes": [],
-    "featureBarrels": []
+    "featureBarrels": [],
+    "artifactSymbols": []
   },
   {
     "key": "billing.subscription-gate",
@@ -127,7 +138,8 @@ export const CAPABILITY_SURFACES = [
     "viewFlag": null,
     "domains": [],
     "routes": [],
-    "featureBarrels": []
+    "featureBarrels": [],
+    "artifactSymbols": []
   },
   {
     "key": "billing.usage-quotas",
@@ -139,7 +151,8 @@ export const CAPABILITY_SURFACES = [
     "routes": [],
     "featureBarrels": [
       "@/features/capabilities"
-    ]
+    ],
+    "artifactSymbols": []
   },
   {
     "key": "billing.checkout",
@@ -147,7 +160,8 @@ export const CAPABILITY_SURFACES = [
     "viewFlag": null,
     "domains": [],
     "routes": [],
-    "featureBarrels": []
+    "featureBarrels": [],
+    "artifactSymbols": []
   },
   {
     "key": "runtime.env-provisioning",
@@ -164,7 +178,8 @@ export const CAPABILITY_SURFACES = [
     "featureBarrels": [
       "@/features/workflows",
       "@/features/projects"
-    ]
+    ],
+    "artifactSymbols": []
   },
   {
     "key": "runtime.gcp-deployments",
@@ -181,7 +196,8 @@ export const CAPABILITY_SURFACES = [
     "featureBarrels": [
       "@/features/workflows",
       "@/features/projects"
-    ]
+    ],
+    "artifactSymbols": []
   },
   {
     "key": "runtime.deployment-history",
@@ -195,7 +211,8 @@ export const CAPABILITY_SURFACES = [
     ],
     "featureBarrels": [
       "@/features/projects"
-    ]
+    ],
+    "artifactSymbols": []
   },
   {
     "key": "runtime.preview-deployments",
@@ -209,7 +226,8 @@ export const CAPABILITY_SURFACES = [
     ],
     "featureBarrels": [
       "@/features/projects"
-    ]
+    ],
+    "artifactSymbols": []
   },
   {
     "key": "runtime.drift-detection",
@@ -223,7 +241,8 @@ export const CAPABILITY_SURFACES = [
     ],
     "featureBarrels": [
       "@/features/projects"
-    ]
+    ],
+    "artifactSymbols": []
   },
   {
     "key": "runtime.drift-repair",
@@ -237,7 +256,8 @@ export const CAPABILITY_SURFACES = [
     ],
     "featureBarrels": [
       "@/features/projects"
-    ]
+    ],
+    "artifactSymbols": []
   },
   {
     "key": "runtime.managed-secrets",
@@ -245,7 +265,8 @@ export const CAPABILITY_SURFACES = [
     "viewFlag": null,
     "domains": [],
     "routes": [],
-    "featureBarrels": []
+    "featureBarrels": [],
+    "artifactSymbols": []
   },
   {
     "key": "runtime.air-gap-packaging",
@@ -253,7 +274,8 @@ export const CAPABILITY_SURFACES = [
     "viewFlag": null,
     "domains": [],
     "routes": [],
-    "featureBarrels": []
+    "featureBarrels": [],
+    "artifactSymbols": []
   },
   {
     "key": "runtime.customer-isolation",
@@ -261,7 +283,25 @@ export const CAPABILITY_SURFACES = [
     "viewFlag": null,
     "domains": [],
     "routes": [],
-    "featureBarrels": []
+    "featureBarrels": [],
+    "artifactSymbols": []
+  },
+  {
+    "key": "runtime.client-composition",
+    "apiField": "clientComposition",
+    "viewFlag": "clientCompositionEnabled",
+    "domains": [
+      "settings"
+    ],
+    "routes": [
+      "/settings"
+    ],
+    "featureBarrels": [
+      "@/features/settings/client-composition"
+    ],
+    "artifactSymbols": [
+      "EnterpriseClientCompositionSettingsView"
+    ]
   },
   {
     "key": "projects.sync-snapshots",
@@ -275,7 +315,8 @@ export const CAPABILITY_SURFACES = [
     ],
     "featureBarrels": [
       "@/features/projects"
-    ]
+    ],
+    "artifactSymbols": []
   },
   {
     "key": "projects.workflow-settings-preview",
@@ -289,7 +330,8 @@ export const CAPABILITY_SURFACES = [
     ],
     "featureBarrels": [
       "@/features/projects"
-    ]
+    ],
+    "artifactSymbols": []
   },
   {
     "key": "projects.workflow-update-pr",
@@ -303,7 +345,8 @@ export const CAPABILITY_SURFACES = [
     ],
     "featureBarrels": [
       "@/features/projects"
-    ]
+    ],
+    "artifactSymbols": []
   },
   {
     "key": "projects.target-management",
@@ -317,7 +360,8 @@ export const CAPABILITY_SURFACES = [
     ],
     "featureBarrels": [
       "@/features/projects"
-    ]
+    ],
+    "artifactSymbols": []
   },
   {
     "key": "pipelines.ci-run-tracking",
@@ -334,7 +378,8 @@ export const CAPABILITY_SURFACES = [
     "featureBarrels": [
       "@/features/runs",
       "@/features/projects"
-    ]
+    ],
+    "artifactSymbols": []
   },
   {
     "key": "pipelines.github-enterprise-server",
@@ -342,6 +387,7 @@ export const CAPABILITY_SURFACES = [
     "viewFlag": null,
     "domains": [],
     "routes": [],
-    "featureBarrels": []
+    "featureBarrels": [],
+    "artifactSymbols": []
   }
 ] as const;

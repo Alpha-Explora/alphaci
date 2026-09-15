@@ -1,5 +1,9 @@
 # Directory Update Log
 
+## 2026-09-15
+
+* **Creation**: Added the real Enterprise client-composition settings surface. It is gated by the backend-owned `runtime.client-composition` capability and `clientComposition.enabled` projection, while hosted/EDU profile stubs and artifact scans fail closed on the exported `EnterpriseClientCompositionSettingsView` symbol.
+
 ## 2026-09-11
 
 * **Update**: Added the backend package's deterministic provenance artifact to the frontend vendor fixture, checked it against `docs/capabilities/catalog.provenance.json`, and made package drift checks recompute the canonical artifact digest without requiring a sibling checkout.

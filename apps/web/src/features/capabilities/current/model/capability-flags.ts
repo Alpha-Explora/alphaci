@@ -2,6 +2,7 @@ import type { CapabilitiesResponse, EnvOwnershipMode } from "@/shared/api/contra
 
 export type CapabilityViewFlags = {
   envProvisioningEnabled: boolean;
+  clientCompositionEnabled: boolean;
   deploymentOwnershipMode: EnvOwnershipMode;
   projectSyncSnapshotsEnabled: boolean;
   workflowSettingsPreviewEnabled: boolean;
@@ -22,6 +23,7 @@ export type CapabilityViewFlags = {
 
 const DISABLED_CAPABILITY_FLAGS: CapabilityViewFlags = {
   envProvisioningEnabled: false,
+  clientCompositionEnabled: false,
   deploymentOwnershipMode: "flowci_managed",
   projectSyncSnapshotsEnabled: false,
   workflowSettingsPreviewEnabled: false,
@@ -60,8 +62,12 @@ export function capabilityViewFlags(
   if (!capabilities) {
     return DISABLED_CAPABILITY_FLAGS;
   }
+  const capabilityKeys = capabilities.capabilityKeys ?? [];
   return {
     envProvisioningEnabled: optionalEnabled(capabilities.envProvisioning),
+    clientCompositionEnabled:
+      capabilityKeys.includes("runtime.client-composition") &&
+      capabilities.clientComposition?.enabled === true,
     deploymentOwnershipMode: ownershipMode(capabilities.envProvisioning?.modes),
     projectSyncSnapshotsEnabled: optionalEnabled(capabilities.projectSyncSnapshots),
     workflowSettingsPreviewEnabled: optionalEnabled(capabilities.workflowSettingsPreview),

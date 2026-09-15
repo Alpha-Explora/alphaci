@@ -56,6 +56,7 @@ This table lists every current catalog capability in package order. Status is de
 | `runtime.managed-secrets` | `not-implemented` | Managed secret storage, including Vault integration. No frontend surface. Not implemented in the backend catalog. |
 | `runtime.air-gap-packaging` | `not-implemented` | Air-gap packaging of the application as a deployment target. No frontend surface. Not implemented in the backend catalog. |
 | `runtime.customer-isolation` | `not-implemented` | Customer-managed operational isolation as a tenancy option. No frontend surface. Not implemented in the backend catalog. |
+| `runtime.client-composition` | `configuration-gated` | Enterprise client composition through a declared or deployment-mounted deny-only policy. Frontend surface: `/settings`. Configuration: composition.client.enabled and an Enterprise client policy source. |
 | `projects.sync-snapshots` | `configuration-gated` | Project synchronization snapshot reads and findings. Frontend surface: `/projects/[projectId]`. Configuration: projectSyncSnapshots.enabled. |
 | `projects.workflow-settings-preview` | `available` | Workflow settings preview and validation. Frontend surface: `/projects/[projectId]`. Configuration: workflowSettingsPreview.enabled. |
 | `projects.workflow-update-pr` | `configuration-gated` | Workflow update pull-request requests. Frontend surface: `/projects/[projectId]`. Configuration: workflowUpdatePr.enabled. |

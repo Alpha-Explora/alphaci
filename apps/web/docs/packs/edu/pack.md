@@ -24,7 +24,7 @@ sources:
 
 - Build profile: `hosted` (`saas`, `edu`)
 - Runtime selection behavior: The build-time profile resolver projects the versioned catalog and aliases excluded feature barrels to fail-closed `notFound()` stubs. Runtime capability truth still comes from `/api/v1/capabilities`.
-- Excluded frontend feature barrels: none in the current surface registry
+- Excluded frontend feature barrels: `@/features/settings/client-composition`
 - Current frontend applicability: The same Next.js application exposes the shared capability catalog. An institution-hosted or shared deployment target remains a separate deployment value.
 
 ## Capability status
@@ -56,6 +56,7 @@ This table lists every current catalog capability in package order. Status is de
 | `runtime.managed-secrets` | `not-applicable` | Not part of this pack composition. |
 | `runtime.air-gap-packaging` | `not-applicable` | Not part of this pack composition. |
 | `runtime.customer-isolation` | `not-applicable` | Not part of this pack composition. |
+| `runtime.client-composition` | `not-applicable` | Not part of this pack composition. |
 | `projects.sync-snapshots` | `configuration-gated` | Project synchronization snapshot reads and findings. Frontend surface: `/projects/[projectId]`. Configuration: projectSyncSnapshots.enabled. |
 | `projects.workflow-settings-preview` | `available` | Workflow settings preview and validation. Frontend surface: `/projects/[projectId]`. Configuration: workflowSettingsPreview.enabled. |
 | `projects.workflow-update-pr` | `configuration-gated` | Workflow update pull-request requests. Frontend surface: `/projects/[projectId]`. Configuration: workflowUpdatePr.enabled. |
@@ -65,7 +66,7 @@ This table lists every current catalog capability in package order. Status is de
 
 ## Build and exclusion
 
-- Excluded capability keys: 6
+- Excluded capability keys: 7
 - The build resolver aliases any excluded feature barrel to a `notFound()` stub. Route names may remain in the build manifest; implementation code is the excluded unit.
 
 ## Deployment scope

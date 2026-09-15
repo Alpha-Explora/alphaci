@@ -31,8 +31,9 @@ The backend package publishes each capability's surface block. The frontend cons
 | `domains` | Feature domains that present the behavior. |
 | `routes` | App Router paths that present the behavior. |
 | `featureBarrels` | Feature import barrels used by build-profile exclusion. |
+| `artifactSymbols` | Real exported implementation symbols that an excluded profile must not contain; excluded barrels generate fail-closed named stubs for type-safe route composition. |
 
-The [generated matrix](/capabilities/capability-matrix.generated.md) is derived from the local `@alphaci/capability-catalog` package and its documentation snapshot. `surface-registry.ts` is generated from the package and is not a second source. The package metadata is intentionally separate from the live `/api/v1/capabilities` response.
+The [generated matrix](/capabilities/capability-matrix.generated.md) is derived from the local `@alphaci/capability-catalog` package and its documentation snapshot. `surface-registry.ts` is generated from the package and is not a second source. The package metadata is intentionally separate from the live `/api/v1/capabilities` response. Runtime availability still comes from the backend response and its configuration projection; package metadata only describes the contract and exclusion boundary.
 
 ## Package provenance and integrity
 
@@ -75,7 +76,7 @@ Applicable capability composition is evaluated in this order:
 build -> edition manifest -> deployment configuration -> tenant override
 ```
 
-Each layer can narrow the set. No layer can enable a capability that is not present in the preceding layer. The frontend may only hide surfaces the backend already disabled or left unimplemented.
+Each layer can narrow the set. No layer can enable a capability that is not present in the preceding layer. The frontend may only hide surfaces the backend already disabled or left unimplemented. For `runtime.client-composition`, the settings surface additionally requires the backend-owned `clientComposition.enabled` projection and renders only the active deny-only client metadata.
 
 ## Naming and ownership
 

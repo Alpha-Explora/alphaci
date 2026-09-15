@@ -52,7 +52,12 @@ export function SettingsContent({
   isCompactLayout: boolean;
   onDeleted: () => void;
 }>) {
-  const { workspacesEnabled, notificationsEnabled } = useCapabilities();
+  const {
+    capabilities,
+    clientCompositionEnabled,
+    workspacesEnabled,
+    notificationsEnabled,
+  } = useCapabilities();
   const vm = useSettingsViewModel({ workspacesEnabled });
 
   const guest = isGuest(session);
@@ -127,6 +132,11 @@ export function SettingsContent({
                 workspacesEnabled={workspacesEnabled}
                 workspaces={vm.workspaces}
                 workspacesError={vm.workspacesError}
+                clientComposition={
+                  clientCompositionEnabled
+                    ? capabilities?.clientComposition ?? null
+                    : null
+                }
                 notificationsEnabled={notificationsEnabled}
                 notificationsError={notificationsError}
                 notificationsStatus={notificationsStatus}
@@ -170,6 +180,7 @@ function SettingsSectionSwitch(
     workspacesEnabled: boolean;
     workspaces: ReturnType<typeof useSettingsViewModel>["workspaces"];
     workspacesError: string | null;
+    clientComposition: import("@/shared/api/contracts").ClientCompositionInfo | null;
     notificationsEnabled: boolean;
     notificationsError: string | null;
     notificationsStatus: ReturnType<
@@ -202,6 +213,7 @@ function SettingsSectionSwitch(
         workspacesEnabled={props.workspacesEnabled}
         workspaces={props.workspaces}
         workspacesError={props.workspacesError}
+        clientComposition={props.clientComposition}
         notificationsEnabled={props.notificationsEnabled}
         notificationsError={props.notificationsError}
         notificationsStatus={props.notificationsStatus}

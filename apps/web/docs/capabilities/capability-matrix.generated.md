@@ -48,6 +48,7 @@ This matrix is generated from the versioned `@alphaci/capability-catalog` packag
 | `runtime.managed-secrets` | `runtime` | not-implemented | none | none | none |
 | `runtime.air-gap-packaging` | `runtime` | not-implemented | none | none | none |
 | `runtime.customer-isolation` | `runtime` | not-implemented | none | none | none |
+| `runtime.client-composition` | `runtime` | limited | `clientComposition` | `clientCompositionEnabled` | `/settings` |
 | `projects.sync-snapshots` | `projects` | limited | `projectSyncSnapshots` | `projectSyncSnapshotsEnabled` | `/projects/[projectId]` |
 | `projects.workflow-settings-preview` | `projects` | stable | `workflowSettingsPreview` | `workflowSettingsPreviewEnabled` | `/projects/[projectId]` |
 | `projects.workflow-update-pr` | `projects` | limited | `workflowUpdatePr` | `workflowUpdatePrEnabled` | `/projects/[projectId]` |

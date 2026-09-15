@@ -4,6 +4,8 @@
 
 ### Added
 
+- Added the real Enterprise client-composition settings surface, gated by the backend-owned capability/configuration projection and backed by the package-owned artifact symbol `EnterpriseClientCompositionSettingsView`.
+- Added frontend profile tests proving hosted/EDU output aliases the excluded barrel to a fail-closed named stub and does not contain the Enterprise implementation symbol.
 - Added backend-owned capability package provenance, a checked-in expected release record, canonical artifact-digest verification, and focused tamper tests for the vendored fixture.
 - Added the local `@alphaci/capability-catalog` release fixture, profile resolver, package drift gate, and build-profile checks for frontend exclusion.
 - Added an OKF v0.2 current-state documentation bundle covering architecture, capabilities, composition packs, runbooks, and change history.

@@ -11,6 +11,7 @@ const {
   readSurfaceRegistry,
   resolveBuildProfile,
   resolveProfile,
+  scanBuildOutput,
   stubSource,
 } = require("../../../../../scripts/lib/capability-profile.cjs");
 /* eslint-enable @typescript-eslint/no-require-imports */
@@ -40,9 +41,15 @@ describe("frontend build profile resolver", () => {
       "runtime.managed-secrets",
       "runtime.air-gap-packaging",
       "runtime.customer-isolation",
+      "runtime.client-composition",
       "pipelines.github-enterprise-server",
     ]);
-    expect(first.excludedFeatureBarrels).toEqual([]);
+    expect(first.excludedFeatureBarrels).toEqual([
+      "@/features/settings/client-composition",
+    ]);
+    expect(first.excludedArtifactSymbols).toEqual([
+      "EnterpriseClientCompositionSettingsView",
+    ]);
   });
 
   it("projects enterprise deterministically and keeps current surfaces included", () => {
@@ -58,6 +65,36 @@ describe("frontend build profile resolver", () => {
     ]);
     expect(projection.includedFeatureBarrels).toContain("@/features/projects");
     expect(projection.excludedFeatureBarrels).toEqual([]);
+    expect(projection.includedArtifactSymbols).toContain(
+      "EnterpriseClientCompositionSettingsView",
+    );
+    expect(projection.excludedArtifactSymbols).toEqual([]);
+  });
+
+  it("rejects a hosted output containing the Enterprise implementation symbol", () => {
+    const projection = project("hosted");
+    const outputDirectory = path.join(
+      root,
+      ".next",
+      "test-hosted-client-composition-artifact",
+    );
+    fs.rmSync(outputDirectory, { recursive: true, force: true });
+    fs.mkdirSync(outputDirectory, { recursive: true });
+    fs.writeFileSync(
+      path.join(outputDirectory, "bundle.js"),
+      "const EnterpriseClientCompositionSettingsView = null;\n",
+      "utf8",
+    );
+
+    try {
+      expect(scanBuildOutput(outputDirectory, projection)).toEqual([
+        expect.objectContaining({
+          symbol: "EnterpriseClientCompositionSettingsView",
+        }),
+      ]);
+    } finally {
+      fs.rmSync(outputDirectory, { recursive: true, force: true });
+    }
   });
 
   it("fails clearly for an unknown profile", () => {
@@ -84,6 +121,11 @@ describe("frontend build profile resolver", () => {
 
   it("generates a notFound stub for any future excluded barrel", () => {
     expect(stubSource("@/features/future-exclusive")).toContain("return notFound();");
+    expect(
+      stubSource("@/features/settings/client-composition", [
+        "EnterpriseClientCompositionSettingsView",
+      ]),
+    ).toContain("export function EnterpriseClientCompositionSettingsView");
   });
 
   it("keeps profile membership data-driven", () => {

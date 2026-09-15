@@ -111,11 +111,22 @@ export interface AuthMeResponse {
   appRoleSource?: AppRoleSource;
 }
 
+export interface ClientCompositionInfo {
+  /** True only when the backend selected and resolved a client policy. */
+  enabled: boolean;
+  clientId: string | null;
+  displayName: string | null;
+  edition: CapabilityEdition | null;
+  disabledCapabilities: CapabilityKey[];
+}
+
 export interface CapabilitiesResponse {
   /** Edition selected by the backend composition resolver. */
   edition: CapabilityEdition;
   /** Ordered capability keys after backend composition narrowing. */
   capabilityKeys: CapabilityKey[];
+  /** Backend-owned Enterprise client composition projection. */
+  clientComposition: ClientCompositionInfo;
   envProvisioning: {
     enabled: boolean;
     providers: EnvProvider[];

@@ -65,7 +65,22 @@ jobs:
       - name: Feature architecture
         run: npm run arch:check
 
-      - name: Documentation
+      - name: Capability package provenance
+        run: npm run check:capability-package
+
+      - name: Capability surface
+        run: npm run check:capabilities
+
+      - name: Build-profile conformance
+        run: npm run check:profiles
+
+      - name: Hosted profile artifact build
+        run: node scripts/build-profile.cjs --profile hosted
+
+      - name: Enterprise profile artifact build
+        run: node scripts/build-profile.cjs --profile enterprise
+
+      - name: Documentation and generated maps
         run: npm run check:documentation
 
       - name: Typecheck

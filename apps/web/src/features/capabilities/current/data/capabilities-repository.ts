@@ -10,6 +10,13 @@ export function disabledCapabilities(): CapabilitiesResponse {
   return {
     edition: "enterprise",
     capabilityKeys: [],
+    clientComposition: {
+      enabled: false,
+      clientId: null,
+      displayName: null,
+      edition: null,
+      disabledCapabilities: [],
+    },
     envProvisioning: { enabled: false, providers: [], environments: [], modes: [] },
     projectSyncSnapshots: {
       enabled: false,
