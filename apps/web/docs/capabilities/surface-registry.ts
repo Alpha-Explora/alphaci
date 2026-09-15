@@ -133,6 +133,23 @@ export const CAPABILITY_SURFACES = [
     "artifactSymbols": []
   },
   {
+    "key": "platform.public-site",
+    "apiField": null,
+    "viewFlag": "publicSiteEnabled",
+    "domains": [
+      "public-site"
+    ],
+    "routes": [
+      "/",
+      "/pricing",
+      "/guide"
+    ],
+    "featureBarrels": [
+      "@/features/public-site"
+    ],
+    "artifactSymbols": []
+  },
+  {
     "key": "billing.subscription-gate",
     "apiField": null,
     "viewFlag": null,

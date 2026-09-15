@@ -1,4 +1,5 @@
 import type { CapabilitiesResponse, EnvOwnershipMode } from "@/shared/api/contracts";
+import { PUBLIC_SITE_ENABLED } from "@/shared/composition/build-profile";
 
 export type CapabilityViewFlags = {
   envProvisioningEnabled: boolean;
@@ -17,6 +18,7 @@ export type CapabilityViewFlags = {
   workspacesEnabled: boolean;
   auditEventsEnabled: boolean;
   notificationsEnabled: boolean;
+  publicSiteEnabled: boolean;
   hierarchyEnabled: boolean;
   hierarchyGithubSyncMode: "stub" | "live";
 };
@@ -38,6 +40,7 @@ const DISABLED_CAPABILITY_FLAGS: CapabilityViewFlags = {
   workspacesEnabled: false,
   auditEventsEnabled: false,
   notificationsEnabled: false,
+  publicSiteEnabled: false,
   hierarchyEnabled: false,
   hierarchyGithubSyncMode: "stub",
 };
@@ -82,6 +85,7 @@ export function capabilityViewFlags(
     workspacesEnabled: optionalEnabled(capabilities.workspaces),
     auditEventsEnabled: optionalEnabled(capabilities.auditEvents),
     notificationsEnabled: optionalEnabled(capabilities.notifications),
+    publicSiteEnabled: PUBLIC_SITE_ENABLED,
     hierarchyEnabled: optionalEnabled(capabilities.hierarchy),
     hierarchyGithubSyncMode: hierarchySyncMode(capabilities.hierarchy),
   };

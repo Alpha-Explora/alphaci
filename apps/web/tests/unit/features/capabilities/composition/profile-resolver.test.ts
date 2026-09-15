@@ -61,10 +61,11 @@ describe("frontend build profile resolver", () => {
       "identity.cohort-policy",
       "identity.edu-provisioning",
       "identity.ferpa-workflows",
+      "platform.public-site",
       "billing.checkout",
     ]);
     expect(projection.includedFeatureBarrels).toContain("@/features/projects");
-    expect(projection.excludedFeatureBarrels).toEqual([]);
+    expect(projection.excludedFeatureBarrels).toEqual(["@/features/public-site"]);
     expect(projection.includedArtifactSymbols).toContain(
       "EnterpriseClientCompositionSettingsView",
     );

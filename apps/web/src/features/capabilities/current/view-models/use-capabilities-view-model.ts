@@ -39,6 +39,7 @@ export interface CapabilitiesViewModel {
   workspacesEnabled: boolean;
   auditEventsEnabled: boolean;
   notificationsEnabled: boolean;
+  publicSiteEnabled: boolean;
   hierarchyEnabled: boolean;
   hierarchyGithubSyncMode: "stub" | "live";
 }

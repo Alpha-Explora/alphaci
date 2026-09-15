@@ -44,6 +44,7 @@ This table lists every current catalog capability in package order. Status is de
 | `platform.audit-events` | `available` | Project audit event recording through the application outbox. Compatibility flag is loaded by the capabilities view-model. No dedicated route yet hides or shows a panel from this flag. Configuration: auditEvents.enabled. |
 | `platform.notifications` | `available` | In-app notification requests and persistence. Frontend surface: `/inbox`, `/settings`. Configuration: notifications.enabled. |
 | `platform.data-residency` | `not-applicable` | Not part of this pack composition. |
+| `platform.public-site` | `not-implemented` | Public marketing site: landing, pricing, and guide pages served to unauthenticated visitors. The landing is served from the `@/features/public-site` barrel. Not implemented in the backend catalog. |
 | `billing.subscription-gate` | `available` | Subscription entitlement gating for authenticated access and CI run validation. No paywall or `/subscribe` route. Access gating is enforced by the backend session. Configuration: subscription.gateEnabled. |
 | `billing.usage-quotas` | `configuration-gated` | Usage tracking and quota policy checks. Compatibility flag is loaded by the capabilities view-model. No dedicated route yet hides or shows a panel from this flag. Configuration: usageQuotas.enabled. |
 | `billing.checkout` | `not-implemented` | Self-serve payment checkout. No frontend surface. Not implemented in the backend catalog. |
