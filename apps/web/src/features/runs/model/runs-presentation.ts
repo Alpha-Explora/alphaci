@@ -319,3 +319,21 @@ export function summarizeChecks(
     total: checks.length,
   };
 }
+/**
+ * The failed-job names, without the prefix the workflow writes on each line.
+ *
+ * The payload repeats "Failed GitHub Actions job:" on every entry, which the
+ * surrounding heading already says once. Repeating it per line pushes the job
+ * name - the only part that differs - off to the right of the column.
+ *
+ * Falls back to the original text when nothing matches, so an unrecognised
+ * payload is still shown rather than silently blanked.
+ */
+export function formatFailedJobs(rawLogs: string): string {
+  const lines = rawLogs
+    .split(/\r?\n/)
+    .map((line) => line.replace(/^Failed GitHub Actions job:\s*/i, "").trim())
+    .filter((line) => line.length > 0);
+
+  return lines.length > 0 ? lines.join("\n") : rawLogs;
+}

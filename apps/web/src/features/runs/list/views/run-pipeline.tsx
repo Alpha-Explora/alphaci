@@ -7,7 +7,11 @@ import type {
   RunGroup,
   StageReport,
 } from "../../model/runs-types";
-import { checkLabel, checkTone } from "../../model/runs-presentation";
+import {
+  checkLabel,
+  checkTone,
+  formatFailedJobs,
+} from "../../model/runs-presentation";
 import { StageNode, StageConnector } from "./stage-node";
 import { MessageCard } from "./message-card";
 
@@ -215,7 +219,19 @@ export function RunPipeline({ run, reduced }: RunPipelineProps) {
                 />
               ))}
 
-              {/* Raw logs — rendered only when the backend provides them */}
+              {/*
+                The names of the jobs GitHub recorded as failed — not log
+                output, despite the field being called rawLogs. The workflow
+                posts `Failed GitHub Actions job: <job> > <step>` here, so a
+                summary promising logs was writing a cheque the payload does
+                not cover, and a reader who opened it for an error message
+                found a job name instead.
+
+                It earns its place when annotations are present: the message
+                card then lists files and lines, and this is the only thing
+                naming which job produced them. Real log output lives in the
+                project's Pipeline runs tab, which fetches it per stage.
+              */}
               {expandedStageData.rawLogs && (
                 <details
                   style={{
@@ -254,7 +270,7 @@ export function RunPipeline({ run, reduced }: RunPipelineProps) {
                       <polyline points="4 17 10 11 4 5" />
                       <line x1="12" y1="19" x2="20" y2="19" />
                     </svg>
-                    View raw logs
+                    Which jobs GitHub reported as failed
                   </summary>
                   <pre
                     style={{
@@ -271,7 +287,7 @@ export function RunPipeline({ run, reduced }: RunPipelineProps) {
                       wordBreak: "break-word",
                     }}
                   >
-                    {expandedStageData.rawLogs}
+                    {formatFailedJobs(expandedStageData.rawLogs)}
                   </pre>
                 </details>
               )}
