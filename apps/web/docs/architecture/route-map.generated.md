@@ -16,7 +16,7 @@ The current App Router exposes **22 pages**. Routes under `src/app/` are a routi
 
 | Route | Page module | Feature composition |
 |---|---|---|
-| `/` | `src/app/page.tsx` | `inline route composition` |
+| `/` | `src/app/page.tsx` | `@/features/public-site` |
 | `/admin` | `src/app/(platform)/admin/page.tsx` | `@/features/admin/users` |
 | `/admin/feedback` | `src/app/(platform)/admin/feedback/page.tsx` | `@/features/admin/feedback` |
 | `/admin/users/[id]` | `src/app/(platform)/admin/users/[id]/page.tsx` | `@/features/admin/user-detail` |

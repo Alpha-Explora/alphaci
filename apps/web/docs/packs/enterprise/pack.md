@@ -24,7 +24,7 @@ sources:
 
 - Build profile: `enterprise` (`enterprise`)
 - Runtime selection behavior: The build-time profile resolver projects the versioned catalog and aliases excluded feature barrels to fail-closed `notFound()` stubs. Runtime capability truth still comes from `/api/v1/capabilities`.
-- Excluded frontend feature barrels: none in the current surface registry
+- Excluded frontend feature barrels: `@/features/public-site`
 - Current frontend applicability: The same Next.js application exposes the shared capability catalog under the Enterprise evidence bar. A customer-managed deployment target remains separate from edition identity.
 
 ## Capability status
@@ -67,7 +67,7 @@ This table lists every current catalog capability in package order. Status is de
 
 ## Build and exclusion
 
-- Excluded capability keys: 5
+- Excluded capability keys: 6
 - The build resolver aliases any excluded feature barrel to a `notFound()` stub. Route names may remain in the build manifest; implementation code is the excluded unit.
 
 ## Deployment scope

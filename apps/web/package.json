@@ -4,7 +4,13 @@
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack",
+    "dev:saas": "node scripts/run-edition.mjs saas next dev --turbopack",
+    "dev:edu": "node scripts/run-edition.mjs edu next dev --turbopack",
+    "dev:enterprise": "node scripts/run-edition.mjs enterprise next dev --turbopack",
     "build": "next build",
+    "build:saas": "node scripts/run-edition.mjs saas next build",
+    "build:edu": "node scripts/run-edition.mjs edu next build",
+    "build:enterprise": "node scripts/run-edition.mjs enterprise next build",
     "start": "next start",
     "lint": "eslint",
     "typecheck": "tsc --noEmit -p tsconfig.typecheck.json",

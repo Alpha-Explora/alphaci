@@ -36,6 +36,7 @@ This matrix is generated from the versioned `@alphaci/capability-catalog` packag
 | `platform.audit-events` | `platform-ops` | stable | `auditEvents` | `auditEventsEnabled` | none |
 | `platform.notifications` | `platform-ops` | stable | `notifications` | `notificationsEnabled` | `/inbox`, `/settings` |
 | `platform.data-residency` | `platform-ops` | not-implemented | none | none | none |
+| `platform.public-site` | `platform-ops` | not-implemented | none | `publicSiteEnabled` | `/`, `/pricing`, `/guide` |
 | `billing.subscription-gate` | `billing` | stable | none | none | none |
 | `billing.usage-quotas` | `billing` | limited | `usageQuotas` | `usageQuotasEnabled` | none |
 | `billing.checkout` | `billing` | not-implemented | none | none | none |
