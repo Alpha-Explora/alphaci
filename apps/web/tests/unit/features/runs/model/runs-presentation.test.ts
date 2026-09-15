@@ -8,6 +8,7 @@ import {
   checkTone,
   checkLabel,
   summarizeChecks,
+  checkSummaryLabel,
   formatFailedJobs,
 } from "../../../../../src/features/runs/model/runs-presentation";
 
@@ -217,7 +218,7 @@ describe("summarizeChecks", () => {
         { conclusion: "success" },
         { conclusion: "failure" },
       ]),
-    ).toEqual({ passed: 2, total: 3 });
+    ).toEqual({ passed: 2, failed: 1, skipped: 0, running: 0, total: 3 });
   });
 
   /*
@@ -228,19 +229,98 @@ describe("summarizeChecks", () => {
   it("does not count a skipped tool as passed", () => {
     expect(
       summarizeChecks([{ conclusion: "success" }, { conclusion: "skipped" }]),
-    ).toEqual({ passed: 1, total: 2 });
+    ).toEqual({ passed: 1, failed: 0, skipped: 1, running: 0, total: 2 });
   });
 
   it("does not count an unrecognised conclusion as passed", () => {
     expect(summarizeChecks([{ conclusion: "some_future_conclusion" }])).toEqual(
-      { passed: 0, total: 1 },
+      { passed: 0, failed: 0, skipped: 1, running: 0, total: 1 },
     );
   });
 
   it("reports a fully clean stage as all passed", () => {
     expect(
       summarizeChecks([{ conclusion: "success" }, { conclusion: "success" }]),
-    ).toEqual({ passed: 2, total: 2 });
+    ).toEqual({ passed: 2, failed: 0, skipped: 0, running: 0, total: 2 });
+  });
+});
+
+/*
+ * The counts below are the real package stage of stpetertestfe: four tools
+ * passed, four deploy jobs were skipped because they belong to other branches,
+ * and one — the Vercel production deploy — actually failed.
+ *
+ * It read "4 of 9 checks passed", which makes five tools look wrong when one
+ * is. Someone opening a red stage is looking for what broke, and that line
+ * made them count backwards to find out whether the other five were failures
+ * or skips: the two things they most need to tell apart.
+ */
+describe("checkSummaryLabel", () => {
+  const packageStage = [
+    { conclusion: "success" },
+    { conclusion: "success" },
+    { conclusion: "success" },
+    { conclusion: "success" },
+    { conclusion: "skipped" },
+    { conclusion: "skipped" },
+    { conclusion: "skipped" },
+    { conclusion: "skipped" },
+    { conclusion: "failure" },
+  ];
+
+  const label = (checks: { conclusion: string }[]) =>
+    checkSummaryLabel(summarizeChecks(checks)!);
+
+  it("leads with the failure and separates skipped from passed", () => {
+    expect(label(packageStage)).toBe("1 failed, 4 passed, 4 skipped");
+  });
+
+  it("no longer makes a skipped tool look like a broken one", () => {
+    expect(label(packageStage)).not.toBe("4 of 9 checks passed");
+  });
+
+  it("keeps the original phrasing when everything ran and passed", () => {
+    // Nothing to disambiguate, and this says it better than a list of one.
+    expect(
+      label([
+        { conclusion: "success" },
+        { conclusion: "success" },
+        { conclusion: "success" },
+      ]),
+    ).toBe("3 of 3 checks passed");
+  });
+
+  it("says what is skipped even when nothing failed", () => {
+    // A healthy uat package: the dev and main deploys do not apply to it.
+    expect(
+      label([
+        { conclusion: "success" },
+        { conclusion: "success" },
+        { conclusion: "skipped" },
+      ]),
+    ).toBe("2 passed, 1 skipped");
+  });
+
+  it("puts a running tool ahead of the ones that finished", () => {
+    expect(
+      label([{ conclusion: "in_progress" }, { conclusion: "success" }]),
+    ).toBe("1 running, 1 passed");
+  });
+
+  /*
+   * A pipeline newer than this build can send a conclusion none of the four
+   * tones match. Saying how many checks there are beats saying nothing.
+   */
+  it("still says something when every conclusion is unrecognised", () => {
+    const summary = {
+      passed: 0,
+      failed: 0,
+      skipped: 0,
+      running: 0,
+      total: 3,
+    };
+
+    expect(checkSummaryLabel(summary)).toBe("3 checks");
   });
 });
 

@@ -11,7 +11,12 @@ import {
   type WorkflowRunSummary,
 } from "@/features/projects";
 
-import { checkLabel, checkTone, summarizeChecks } from "@/features/runs";
+import {
+  checkLabel,
+  checkSummaryLabel,
+  checkTone,
+  summarizeChecks,
+} from "@/features/runs";
 
 import {
   StatusPill,
@@ -526,7 +531,7 @@ function StageChecks({ stage }: { stage: StageReport }) {
   return (
     <details className="ws-checks">
       <summary className="ws-checks__summary">
-        {summary.passed} of {summary.total} checks passed
+        {checkSummaryLabel(summary)}
       </summary>
       <ul className="ws-checks__list">
         {checks.map((check) => {
