@@ -288,8 +288,25 @@ export function checkLabel(name: string): string {
 }
 
 /** How a stage's tool roster reads at a glance. */
+/**
+ * What the tools in one stage concluded, counted apart.
+ *
+ * `passed` and `total` alone could not say what a stage did. The package stage
+ * runs one deploy job per branch and skips the two that do not apply, so a
+ * perfectly healthy uat package reads 4 passed out of 9 — and a reader cannot
+ * tell those five apart from five broken tools. On the run that prompted this,
+ * four were skipped by design and exactly one had failed.
+ *
+ * Skipped stays separate from passed rather than being dropped from the total.
+ * Counting a skipped tool as passed would rebuild the original bug — a stage of
+ * entirely skipped jobs reporting success — inside the number meant to expose
+ * it; hiding it would leave the reader unable to see that a deploy never ran.
+ */
 export interface CheckSummary {
   passed: number;
+  failed: number;
+  skipped: number;
+  running: number;
   total: number;
 }
 
@@ -313,9 +330,42 @@ export function summarizeChecks(
     return null;
   }
 
+  const count = (tone: CheckTone) =>
+    checks.filter((check) => checkTone(check.conclusion) === tone).length;
+
   return {
-    passed: checks.filter((check) => checkTone(check.conclusion) === "passed")
-      .length,
+    passed: count("passed"),
+    failed: count("failed"),
+    skipped: count("skipped"),
+    running: count("running"),
     total: checks.length,
   };
+}
+
+/**
+ * The one line above the folded tool list.
+ *
+ * Problems lead. Someone opening a red stage is looking for what broke, and
+ * "4 of 9 checks passed" made them count backwards to find out whether the
+ * other five were failures or skips — the two things they most need to tell
+ * apart.
+ *
+ * A stage where everything ran and passed keeps its original phrasing. There
+ * is nothing to disambiguate there, and "8 of 8 checks passed" says it better
+ * than a list of one.
+ */
+export function checkSummaryLabel(summary: CheckSummary): string {
+  if (summary.passed === summary.total) {
+    return `${summary.passed} of ${summary.total} checks passed`;
+  }
+
+  const parts: string[] = [];
+  if (summary.failed > 0) parts.push(`${summary.failed} failed`);
+  if (summary.running > 0) parts.push(`${summary.running} running`);
+  if (summary.passed > 0) parts.push(`${summary.passed} passed`);
+  if (summary.skipped > 0) parts.push(`${summary.skipped} skipped`);
+
+  // Every conclusion fell outside the four tones — possible for a pipeline
+  // newer than this build. Say how many there are rather than nothing.
+  return parts.length > 0 ? parts.join(", ") : `${summary.total} checks`;
 }

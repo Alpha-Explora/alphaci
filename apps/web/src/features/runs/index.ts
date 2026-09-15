@@ -26,6 +26,7 @@ export {
   checkLabel,
   checkTone,
   summarizeChecks,
+  checkSummaryLabel,
 } from "./model/runs-presentation";
 export type { CheckSummary, CheckTone } from "./model/runs-presentation";
 export * from "./data/runs-api";
