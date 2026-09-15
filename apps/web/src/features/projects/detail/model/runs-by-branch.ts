@@ -25,9 +25,20 @@ import {
 } from "@/shared/api/pipeline-branches";
 
 import { groupRunsByCommit, type CommitRunGroup } from "./runs-by-commit";
+import {
+  indexReportedIdentities,
+  reportedBranch,
+} from "./reported-run-identity";
 
-/** The fields the grouping needs from a run. */
+/**
+ * The fields the grouping needs from a run.
+ *
+ * `id` is here because `headBranch` cannot be trusted on its own: a chained
+ * stage carries the default branch rather than the one it ran for, and the run
+ * id is what lets our own report correct it.
+ */
 export interface BranchRun {
+  id: number;
   headBranch: string;
   headSha: string;
   createdAt: string;
@@ -71,13 +82,22 @@ export function groupRunsByPipelineBranch<T extends BranchRun>(
   runs: readonly T[],
   reports: readonly RunGroup[] = [],
 ): BranchRunSection<T>[] {
+  /*
+   * Filed under the branch our report recorded, not the one GitHub labelled
+   * the run with. Only `access` is push-triggered and therefore honestly
+   * labelled; every chained stage claims the default branch, which silently
+   * emptied `dev` and `uat` while burying their runs under `main`.
+   */
+  const identities = indexReportedIdentities(reports);
+
   const byBranch = new Map<string, T[]>();
   for (const run of runs) {
-    const bucket = byBranch.get(run.headBranch);
+    const branch = reportedBranch(run, identities);
+    const bucket = byBranch.get(branch);
     if (bucket) {
       bucket.push(run);
     } else {
-      byBranch.set(run.headBranch, [run]);
+      byBranch.set(branch, [run]);
     }
   }
 
@@ -85,7 +105,7 @@ export function groupRunsByPipelineBranch<T extends BranchRun>(
     branch,
     // The branch is passed so the report join matches on branch AND sha: a
     // promoted commit exists on several tiers, each with its own report.
-    commits: groupRunsByCommit(branchRuns, reports, branch),
+    commits: groupRunsByCommit(branchRuns, reports, branch, identities),
     isPipelineBranch: isPipelineBranch(branch),
   }));
 

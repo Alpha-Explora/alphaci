@@ -23,8 +23,21 @@ import type {
   StageReport,
 } from "@/shared/api/contracts";
 
-/** The two fields the grouping needs from a GitHub run. */
+import {
+  indexReportedIdentities,
+  reportedCommitSha,
+  type ReportedIdentity,
+} from "./reported-run-identity";
+
+/**
+ * The fields the grouping needs from a GitHub run.
+ *
+ * `id` is here for the same reason it is on `BranchRun`: `headSha` is the
+ * branch's head rather than the triggering commit on every chained stage, so
+ * the run id is what lets our report correct it.
+ */
 export interface CommitRun {
+  id: number;
   headSha: string;
   createdAt: string;
 }
@@ -72,6 +85,9 @@ export function groupRunsByCommit<T extends CommitRun>(
   runs: readonly T[],
   reports: readonly RunGroup[],
   branch: string,
+  identities: ReadonlyMap<number, ReportedIdentity> = indexReportedIdentities(
+    reports,
+  ),
 ): CommitRunGroup<T>[] {
   const reportBySha = new Map<string, RunGroup>();
   for (const report of reports) {
@@ -83,13 +99,23 @@ export function groupRunsByCommit<T extends CommitRun>(
     }
   }
 
+  /*
+   * Keyed on the commit our report recorded, not the run's head_sha.
+   *
+   * A chained run is stamped with the branch's CURRENT head, so five pushes
+   * in quick succession left every chained run claiming the last commit while
+   * their reports were filed under the commits that actually triggered them.
+   * The two never met: the quality report sat on a commit with no run group,
+   * and a stage that ran seven times rendered as "Stage never started".
+   */
   const byCommit = new Map<string, T[]>();
   for (const run of runs) {
-    const bucket = byCommit.get(run.headSha);
+    const commitSha = reportedCommitSha(run, identities);
+    const bucket = byCommit.get(commitSha);
     if (bucket) {
       bucket.push(run);
     } else {
-      byCommit.set(run.headSha, [run]);
+      byCommit.set(commitSha, [run]);
     }
   }
 
