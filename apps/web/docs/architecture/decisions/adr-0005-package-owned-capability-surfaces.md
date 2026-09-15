@@ -19,6 +19,8 @@ The backend authoring source carries each capability's UI surface: compatibility
 
 The backend publishes the surface block, including `artifactSymbols`, in the versioned `@alphaci/capability-catalog` package. The frontend vendors that package and uses its catalog records as the input to capability profile resolution, package checks, surface validation, and fail-closed implementation stubs.
 
+`artifactSymbols` identify implementation names for exclusion scanning only. Excluded feature aliases expose a default `notFound()` stub and never re-emit those implementation names.
+
 `docs/capabilities/catalog.snapshot.json` includes the published surface fields so documentation drift is visible. `docs/capabilities/surface-registry.ts` remains because the OKF bundle references it, but it is generated from the vendored package and must not be edited by hand.
 
 ## Consequences

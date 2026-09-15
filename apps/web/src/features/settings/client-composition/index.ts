@@ -1,1 +1,1 @@
-export { EnterpriseClientCompositionSettingsView } from "./views/enterprise-client-composition-settings-view";
+export { EnterpriseClientCompositionSettingsView as default } from "./views/enterprise-client-composition-settings-view";

@@ -120,12 +120,40 @@ describe("frontend build profile resolver", () => {
   });
 
   it("generates a notFound stub for any future excluded barrel", () => {
-    expect(stubSource("@/features/future-exclusive")).toContain("return notFound();");
-    expect(
-      stubSource("@/features/settings/client-composition", [
-        "EnterpriseClientCompositionSettingsView",
-      ]),
-    ).toContain("export function EnterpriseClientCompositionSettingsView");
+    const stub = stubSource("@/features/settings/client-composition");
+
+    expect(stub).toContain("return notFound();");
+    expect(stub).toContain("export default client_composition;");
+    expect(stub).not.toContain("EnterpriseClientCompositionSettingsView");
+  });
+
+  it("does not scan the generated stub but still rejects the implementation symbol", () => {
+    const projection = project("hosted");
+    const outputDirectory = path.join(root, ".next", "test-hosted-client-composition-stub");
+    fs.rmSync(outputDirectory, { recursive: true, force: true });
+    fs.mkdirSync(outputDirectory, { recursive: true });
+
+    try {
+      fs.writeFileSync(
+        path.join(outputDirectory, "stub.js"),
+        stubSource("@/features/settings/client-composition"),
+        "utf8",
+      );
+      expect(scanBuildOutput(outputDirectory, projection)).toEqual([]);
+
+      fs.writeFileSync(
+        path.join(outputDirectory, "bundle.js"),
+        "const EnterpriseClientCompositionSettingsView = null;\n",
+        "utf8",
+      );
+      expect(scanBuildOutput(outputDirectory, projection)).toEqual([
+        expect.objectContaining({
+          symbol: "EnterpriseClientCompositionSettingsView",
+        }),
+      ]);
+    } finally {
+      fs.rmSync(outputDirectory, { recursive: true, force: true });
+    }
   });
 
   it("keeps profile membership data-driven", () => {

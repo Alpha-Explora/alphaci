@@ -2,7 +2,7 @@ import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 
 import type { ClientCompositionInfo } from "../../../../src/shared/api/contracts";
-import { EnterpriseClientCompositionSettingsView } from "../../../../src/features/settings/client-composition";
+import EnterpriseClientCompositionSettingsView from "../../../../src/features/settings/client-composition";
 
 const activeComposition: ClientCompositionInfo = {
   enabled: true,

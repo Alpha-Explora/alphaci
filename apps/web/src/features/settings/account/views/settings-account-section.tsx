@@ -8,7 +8,7 @@ import type {
   NotificationsStatus,
 } from "@/features/notifications";
 import { NotificationsPreferencesView } from "@/features/notifications/preferences";
-import { EnterpriseClientCompositionSettingsView } from "@/features/settings/client-composition";
+import EnterpriseClientCompositionSettingsView from "@/features/settings/client-composition";
 import type { ClientCompositionInfo } from "@/shared/api/contracts";
 
 import type { WorkspacesMeResponse } from "../../model/settings-types";

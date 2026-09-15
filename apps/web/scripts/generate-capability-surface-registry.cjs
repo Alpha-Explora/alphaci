@@ -41,7 +41,7 @@ function main() {
   const expected = render();
   if (process.argv.includes('--check')) {
     const actual = fs.existsSync(OUTPUT) ? fs.readFileSync(OUTPUT, 'utf8') : '';
-    if (actual !== expected) {
+    if (normalizeLineEndings(actual) !== normalizeLineEndings(expected)) {
       console.error('Generated output is stale: docs/capabilities/surface-registry.ts');
       process.exitCode = 1;
       return;
@@ -52,6 +52,10 @@ function main() {
   fs.writeFileSync(OUTPUT, expected, 'utf8');
   const metadata = readJson(path.join(PACKAGE_DIR, 'package.json'));
   console.log('Generated docs/capabilities/surface-registry.ts from @alphaci/capability-catalog@' + metadata.version + '.');
+}
+
+function normalizeLineEndings(value) {
+  return value.replace(/\r\n?/g, '\n');
 }
 
 if (require.main === module) main();

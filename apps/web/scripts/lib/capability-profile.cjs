@@ -151,17 +151,13 @@ function escapeRegExp(value) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
-function stubSource(barrel, artifactSymbols = []) {
+// artifactSymbols are implementation names that the profile scanner proves absent.
+// Fail-closed aliases expose only a default notFound entry so they cannot satisfy
+// an implementation-symbol scan accidentally.
+function stubSource(barrel) {
   const name = barrel.split('/').pop() || 'excludedFeature';
   const identifier = name.replace(/[^A-Za-z0-9_$]/g, '_');
-  const namedExports = [...new Set(artifactSymbols)]
-    .filter((symbol) => /^[A-Za-z_$][A-Za-z0-9_$]*$/.test(symbol))
-    .map(
-      (symbol) =>
-        `export function ${symbol}(): never {\n  return notFound();\n}`,
-    )
-    .join("\n\n");
-  return `import { notFound } from "next/navigation";\n\nexport function ${identifier}(): never {\n  return notFound();\n}\n${namedExports ? `\n${namedExports}\n` : ""}\nexport default ${identifier};\n`;
+  return `import { notFound } from "next/navigation";\n\nfunction ${identifier}(): never {\n  return notFound();\n}\n\nexport default ${identifier};\n`;
 }
 
 function stubFileName(barrel) {
@@ -181,12 +177,9 @@ function writeCapabilityStubs(projection, stubDirectory) {
   fs.rmSync(stubDirectory, { recursive: true, force: true });
   fs.mkdirSync(stubDirectory, { recursive: true });
   for (const barrel of projection.excludedFeatureBarrels) {
-    const artifactSymbols = projection.excludedSurfaces
-      .filter((surface) => (surface.featureBarrels || []).includes(barrel))
-      .flatMap((surface) => surface.artifactSymbols || []);
     fs.writeFileSync(
       path.join(stubDirectory, stubFileName(barrel)),
-      stubSource(barrel, artifactSymbols),
+      stubSource(barrel),
       'utf8',
     );
   }

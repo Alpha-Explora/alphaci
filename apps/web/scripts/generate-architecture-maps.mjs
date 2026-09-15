@@ -483,7 +483,7 @@ function writeOrCheck(relativePath, content, check) {
   const file = path.join(ROOT, relativePath);
   if (check) {
     const current = fs.existsSync(file) ? fs.readFileSync(file, 'utf8') : null;
-    if (current !== content) {
+    if (current === null || normalizeLineEndings(current) !== normalizeLineEndings(content)) {
       console.error(`Generated output is stale: ${relativePath}`);
       return false;
     }
@@ -492,6 +492,10 @@ function writeOrCheck(relativePath, content, check) {
   fs.mkdirSync(path.dirname(file), { recursive: true });
   fs.writeFileSync(file, content, 'utf8');
   return true;
+}
+
+function normalizeLineEndings(value) {
+  return value.replace(/\r\n?/g, '\n');
 }
 
 function main() {
