@@ -26,9 +26,11 @@ export function useOAuthLoginViewModel(
   const searchParams = useSearchParams();
   const { status, session } = useAuthSessionViewModel();
   const [isWarming, setIsWarming] = useState(false);
-  const [browserOrigin] = useState<string | null>(() =>
-    typeof window === "undefined" ? null : window.location.origin,
-  );
+  const [browserOrigin, setBrowserOrigin] = useState<string | null>(null);
+
+  useEffect(() => {
+    setBrowserOrigin(window.location.origin);
+  }, []);
 
   const nextPath = useMemo(
     () => toSafeNextPath(searchParams.get("next")),
