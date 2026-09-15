@@ -1304,3 +1304,33 @@
 .ws-prreview__outcome--failed {
   color: var(--danger);
 }
+
+/*
+ * Whether a commit opened its promotion pull request.
+ *
+ * Quiet by default: a promotion that happened is good news and does not need
+ * to shout, while one that did not is the case worth noticing — so the blocked
+ * variant carries the danger rail and the rest stay muted. A promotion that
+ * simply did not run is neither, and reads as a note.
+ */
+.ws-promotion {
+  margin: 0.4rem 0 0;
+  padding: 0.35rem 0 0.35rem 0.6rem;
+  font-size: 0.78rem;
+  line-height: 1.5;
+  color: var(--text-secondary);
+  border-left: 2px solid var(--border-soft);
+}
+
+.ws-promotion--opened {
+  border-left-color: var(--success);
+}
+
+.ws-promotion--blocked {
+  border-left-color: var(--danger);
+  color: var(--text-primary);
+}
+
+.ws-promotion--quiet {
+  font-style: italic;
+}
