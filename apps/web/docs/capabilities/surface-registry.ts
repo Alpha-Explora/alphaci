@@ -4,14 +4,16 @@ export const CAPABILITY_SURFACES = [
     "apiField": "workspaces",
     "viewFlag": "workspacesEnabled",
     "domains": ["settings"],
-    "routes": ["/settings"]
+    "routes": ["/settings"],
+    "featureBarrels": ["@/features/settings"]
   },
   {
     "key": "identity.hierarchy",
     "apiField": "hierarchy",
     "viewFlag": "hierarchyEnabled",
     "domains": ["groups", "teams"],
-    "routes": ["/teams", "/groups/[groupId]"]
+    "routes": ["/teams", "/groups/[groupId]"],
+    "featureBarrels": ["@/features/groups", "@/features/teams"]
   },
   {
     "key": "identity.sso-scim",
@@ -60,14 +62,16 @@ export const CAPABILITY_SURFACES = [
     "apiField": "auditEvents",
     "viewFlag": "auditEventsEnabled",
     "domains": ["capabilities"],
-    "routes": []
+    "routes": [],
+    "featureBarrels": ["@/features/capabilities"]
   },
   {
     "key": "platform.notifications",
     "apiField": "notifications",
     "viewFlag": "notificationsEnabled",
     "domains": ["notifications", "settings"],
-    "routes": ["/inbox", "/settings"]
+    "routes": ["/inbox", "/settings"],
+    "featureBarrels": ["@/features/notifications", "@/features/settings"]
   },
   {
     "key": "platform.data-residency",
@@ -88,7 +92,8 @@ export const CAPABILITY_SURFACES = [
     "apiField": "usageQuotas",
     "viewFlag": "usageQuotasEnabled",
     "domains": ["capabilities"],
-    "routes": []
+    "routes": [],
+    "featureBarrels": ["@/features/capabilities"]
   },
   {
     "key": "billing.checkout",
@@ -102,42 +107,48 @@ export const CAPABILITY_SURFACES = [
     "apiField": "envProvisioning",
     "viewFlag": "envProvisioningEnabled",
     "domains": ["workflows", "projects"],
-    "routes": ["/workflows", "/projects/[projectId]"]
+    "routes": ["/workflows", "/projects/[projectId]"],
+    "featureBarrels": ["@/features/workflows", "@/features/projects"]
   },
   {
     "key": "runtime.gcp-deployments",
     "apiField": null,
     "viewFlag": null,
     "domains": ["workflows", "projects"],
-    "routes": ["/workflows", "/projects/[projectId]"]
+    "routes": ["/workflows", "/projects/[projectId]"],
+    "featureBarrels": ["@/features/workflows", "@/features/projects"]
   },
   {
     "key": "runtime.deployment-history",
     "apiField": "deploymentHistory",
     "viewFlag": "deploymentHistoryEnabled",
     "domains": ["projects"],
-    "routes": ["/projects/[projectId]"]
+    "routes": ["/projects/[projectId]"],
+    "featureBarrels": ["@/features/projects"]
   },
   {
     "key": "runtime.preview-deployments",
     "apiField": "previewDeployments",
     "viewFlag": "previewDeploymentsEnabled",
     "domains": ["projects"],
-    "routes": ["/projects/[projectId]"]
+    "routes": ["/projects/[projectId]"],
+    "featureBarrels": ["@/features/projects"]
   },
   {
     "key": "runtime.drift-detection",
     "apiField": "driftDetection",
     "viewFlag": "driftDetectionEnabled",
     "domains": ["projects"],
-    "routes": ["/projects/[projectId]"]
+    "routes": ["/projects/[projectId]"],
+    "featureBarrels": ["@/features/projects"]
   },
   {
     "key": "runtime.drift-repair",
     "apiField": "driftRepair",
     "viewFlag": "driftRepairEnabled",
     "domains": ["projects"],
-    "routes": ["/projects/[projectId]"]
+    "routes": ["/projects/[projectId]"],
+    "featureBarrels": ["@/features/projects"]
   },
   {
     "key": "runtime.managed-secrets",
@@ -165,35 +176,40 @@ export const CAPABILITY_SURFACES = [
     "apiField": "projectSyncSnapshots",
     "viewFlag": "projectSyncSnapshotsEnabled",
     "domains": ["projects"],
-    "routes": ["/projects/[projectId]"]
+    "routes": ["/projects/[projectId]"],
+    "featureBarrels": ["@/features/projects"]
   },
   {
     "key": "projects.workflow-settings-preview",
     "apiField": "workflowSettingsPreview",
     "viewFlag": "workflowSettingsPreviewEnabled",
     "domains": ["projects"],
-    "routes": ["/projects/[projectId]"]
+    "routes": ["/projects/[projectId]"],
+    "featureBarrels": ["@/features/projects"]
   },
   {
     "key": "projects.workflow-update-pr",
     "apiField": "workflowUpdatePr",
     "viewFlag": "workflowUpdatePrEnabled",
     "domains": ["projects"],
-    "routes": ["/projects/[projectId]"]
+    "routes": ["/projects/[projectId]"],
+    "featureBarrels": ["@/features/projects"]
   },
   {
     "key": "projects.target-management",
     "apiField": "projectTargetManagement",
     "viewFlag": "projectTargetManagementEnabled",
     "domains": ["projects"],
-    "routes": ["/projects/[projectId]"]
+    "routes": ["/projects/[projectId]"],
+    "featureBarrels": ["@/features/projects"]
   },
   {
     "key": "pipelines.ci-run-tracking",
     "apiField": "ciRunTracking",
     "viewFlag": "ciRunTrackingEnabled",
     "domains": ["runs", "projects"],
-    "routes": ["/runs", "/projects/[projectId]"]
+    "routes": ["/runs", "/projects/[projectId]"],
+    "featureBarrels": ["@/features/runs", "@/features/projects"]
   },
   {
     "key": "pipelines.github-enterprise-server",

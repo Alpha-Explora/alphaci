@@ -42,7 +42,7 @@ This snapshot is generated from the current source tree. It is descriptive evide
 | Tests | `npm test` | Jest |
 | Dependency boundaries | `npm run boundaries` | dependency-cruiser |
 | Feature architecture | `npm run arch:check` | thin routes, view I/O, model purity |
-| Capability surfaces | `npm run check:capabilities` | catalog snapshot, compatibility fields, and pack catalogs |
+| Capability package and surfaces | `npm run check:capability-package` and `npm run check:capabilities` | package drift, compatibility fields, and pack catalogs |
 | OKF bundle | `npm run check:okf` | OKF v0.2 bundle validator |
 | Documentation | `npm run check:documentation` | naming, stale-claim, generated-map, and documentation policy checker |
 

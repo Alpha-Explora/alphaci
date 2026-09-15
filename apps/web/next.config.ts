@@ -1,8 +1,29 @@
 import type { NextConfig } from "next";
+import { createRequire } from "node:module";
 import { dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
+const require = createRequire(import.meta.url);
+const {
+  loadCatalogPackage,
+  readSurfaceRegistry,
+  resolveBuildProfile,
+  resolveProfile,
+  writeCapabilityStubs,
+} = require("./scripts/lib/capability-profile.cjs");
+
 const rootDir = dirname(fileURLToPath(import.meta.url));
+const buildProfile = resolveBuildProfile(process.env.ALPHACI_BUILD_PROFILE);
+const catalogPackage = loadCatalogPackage();
+const profileProjection = resolveProfile(buildProfile, {
+  catalog: catalogPackage.catalog,
+  manifests: catalogPackage.manifests,
+  surfaces: readSurfaceRegistry(),
+});
+const capabilityAliases = writeCapabilityStubs(
+  profileProjection,
+  `${rootDir}/.next/capability-stubs`,
+);
 
 const nextConfig: NextConfig = {
   images: {
@@ -14,6 +35,15 @@ const nextConfig: NextConfig = {
   },
   turbopack: {
     root: rootDir,
+    resolveAlias: capabilityAliases,
+  },
+  webpack(config) {
+    config.resolve ??= {};
+    config.resolve.alias = {
+      ...(config.resolve.alias || {}),
+      ...capabilityAliases,
+    };
+    return config;
   },
   async headers() {
     return [

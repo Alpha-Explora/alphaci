@@ -23,7 +23,7 @@ sources:
 
 SaaS, EDU, and Enterprise are composition packs of one product. This frontend is one application. A pack selects and documents capabilities; it does not own feature domains, routes, or wire contracts.
 
-When the sibling backend registry is present, `docs/capabilities/catalog.snapshot.json` must match it. Pack status is derived from catalog maturity and edition applicability, not invented per pack.
+The frontend consumes the versioned `@alphaci/capability-catalog` package owned by the backend. The checked-in snapshot mirrors the package's public fields for portable documentation. Pack status is derived from catalog maturity and edition applicability, not invented per pack.
 
 ## Rejected alternatives
 

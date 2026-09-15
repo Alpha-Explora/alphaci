@@ -19,6 +19,9 @@
     "arch:new": "node \"${NFA:-$HOME/.agents/skills/next-feature-architecture}/scripts/scaffold-feature.mjs\"",
     "check:okf": "node scripts/check-okf-bundle.cjs docs",
     "check:capabilities": "node scripts/check-capabilities.cjs",
+    "check:capability-package": "node scripts/check-capability-package.cjs",
+    "check:profiles": "node scripts/check-build-profiles.cjs",
+    "build:profile": "node scripts/build-profile.cjs",
     "generate:architecture-maps": "node scripts/generate-architecture-maps.mjs",
     "check:documentation": "node scripts/check-documentation.cjs"
   },

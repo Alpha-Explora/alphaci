@@ -1,3 +1,8 @@
+import type {
+  CapabilityKey,
+  Edition as CapabilityEdition,
+} from "@alphaci/capability-catalog";
+
 export type SubscriptionPlan = "free" | "pro";
 export type SubscriptionStatus = "inactive" | "active" | "canceled";
 export type EnvProvider = "render" | "vercel";
@@ -107,6 +112,10 @@ export interface AuthMeResponse {
 }
 
 export interface CapabilitiesResponse {
+  /** Edition selected by the backend composition resolver. */
+  edition: CapabilityEdition;
+  /** Ordered capability keys after backend composition narrowing. */
+  capabilityKeys: CapabilityKey[];
   envProvisioning: {
     enabled: boolean;
     providers: EnvProvider[];

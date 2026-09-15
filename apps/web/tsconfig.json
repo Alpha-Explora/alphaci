@@ -31,6 +31,9 @@
       ],
       "@features/*": [
         "./src/features/*"
+      ],
+      "@alphaci/capability-catalog": [
+        "./vendor/@alphaci/capability-catalog"
       ]
     },
     "types": [

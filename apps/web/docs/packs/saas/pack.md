@@ -22,13 +22,14 @@ sources:
 
 ## Current composition
 
-- Documentation status: `documentation-only`
-- Runtime selection behavior: No pack-selection resolver is implemented in this frontend.
+- Build profile: `hosted` (`saas`, `edu`)
+- Runtime selection behavior: The build-time profile resolver projects the versioned catalog and aliases excluded feature barrels to fail-closed `notFound()` stubs. Runtime capability truth still comes from `/api/v1/capabilities`.
+- Excluded frontend feature barrels: none in the current surface registry
 - Current frontend applicability: The same Next.js application exposes the shared capability catalog. Hosted deployment is a deployment-target and configuration concern, not a separate frontend.
 
 ## Capability status
 
-This table lists every current catalog capability in snapshot order. Status is derived from capability maturity and edition applicability. Pack-specific gaps that are not registry keys stay in Explicit non-support.
+This table lists every current catalog capability in package order. Status is derived from capability maturity and edition applicability. Pack-specific gaps that are not registry keys stay in Explicit non-support.
 
 | Capability key | Status | Evidence or limit |
 |---|---|---|
@@ -62,6 +63,11 @@ This table lists every current catalog capability in snapshot order. Status is d
 | `pipelines.ci-run-tracking` | `configuration-gated` | CI run report ingestion and tracking. Frontend surface: `/runs`, `/projects/[projectId]`. Configuration: ciRunTracking.enabled. |
 | `pipelines.github-enterprise-server` | `not-applicable` | Not part of this pack composition. |
 
+## Build and exclusion
+
+- Excluded capability keys: 6
+- The build resolver aliases any excluded feature barrel to a `notFound()` stub. Route names may remain in the build manifest; implementation code is the excluded unit.
+
 ## Deployment scope
 
 SaaS is an edition composition reference. This frontend is one deployable. Provider choice remains a Runtime concern consumed through compatibility flags, not a pack-specific UI tree.
@@ -77,5 +83,5 @@ Marketing-site behavior is not a frontend capability and is not a registry key. 
 ## Ownership and verification
 
 - Feature owners: the domains in the [feature map](/architecture/feature-map.generated.md).
-- Source: `docs/capabilities/catalog.snapshot.json` and `docs/capabilities/surface-registry.ts`.
+- Source: `@alphaci/capability-catalog@0.1.0`, `docs/capabilities/catalog.snapshot.json`, and `docs/capabilities/surface-registry.ts`.
 - Verification: `npm run check:documentation`.

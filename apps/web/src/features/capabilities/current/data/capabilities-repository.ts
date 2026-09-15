@@ -8,6 +8,8 @@ export async function getCapabilities(): Promise<CapabilitiesResponse> {
 /** Safe fallback: optional capability UI stays hidden when the probe fails. */
 export function disabledCapabilities(): CapabilitiesResponse {
   return {
+    edition: "enterprise",
+    capabilityKeys: [],
     envProvisioning: { enabled: false, providers: [], environments: [], modes: [] },
     projectSyncSnapshots: {
       enabled: false,

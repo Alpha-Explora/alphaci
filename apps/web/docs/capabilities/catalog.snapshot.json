@@ -231,8 +231,7 @@
     ],
     "configuration": "gcpDeployments.enabled plus GCP provider configuration",
     "configurationFlags": [
-      "gcpDeployments.enabled",
-      "gcpDeployments.dedicatedProjectsEnabled"
+      "gcpDeployments.enabled"
     ],
     "requires": []
   },
@@ -248,8 +247,7 @@
     ],
     "configuration": "deploymentHistory.enabled",
     "configurationFlags": [
-      "deploymentHistory.enabled",
-      "deploymentHistory.liveProvidersEnabled"
+      "deploymentHistory.enabled"
     ],
     "requires": []
   },
@@ -283,8 +281,7 @@
     ],
     "configuration": "driftDetection.enabled",
     "configurationFlags": [
-      "driftDetection.enabled",
-      "driftLiveChecks.enabled"
+      "driftDetection.enabled"
     ],
     "requires": []
   },
@@ -300,8 +297,7 @@
     ],
     "configuration": "driftRepair.enabled",
     "configurationFlags": [
-      "driftRepair.enabled",
-      "driftRepair.liveRepairEnabled"
+      "driftRepair.enabled"
     ],
     "requires": []
   },
@@ -353,9 +349,7 @@
     ],
     "configuration": "projectSyncSnapshots.enabled",
     "configurationFlags": [
-      "projectSyncSnapshots.enabled",
-      "projectSyncSnapshots.liveGithubEnabled",
-      "projectSyncSnapshots.liveProvidersEnabled"
+      "projectSyncSnapshots.enabled"
     ],
     "requires": []
   },
@@ -419,8 +413,7 @@
     ],
     "configuration": "ciRunTracking.enabled",
     "configurationFlags": [
-      "ciRunTracking.enabled",
-      "ciRunTracking.liveGithubEnabled"
+      "ciRunTracking.enabled"
     ],
     "requires": []
   },

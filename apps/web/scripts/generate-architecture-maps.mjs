@@ -7,12 +7,12 @@ import { fileURLToPath } from 'node:url';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const require = createRequire(import.meta.url);
+const SNAPSHOT = path.join(ROOT, 'docs/capabilities/catalog.snapshot.json');
 const {
-  SNAPSHOT,
-  siblingRegistryPath,
-  readRegistry,
-  writeSnapshot,
-} = require('./sync-catalog-snapshot.cjs');
+  loadCatalogPackage,
+  packageDriftErrors,
+  resolveProfile,
+} = require('./lib/capability-profile.cjs');
 const { readSurfaceRegistry, expectedPackStatus } = require('./check-capabilities.cjs');
 
 const DOMAIN_OWNERS = [
@@ -86,6 +86,7 @@ const DOMAIN_OWNERS = [
 const PACKS = [
   {
     edition: 'saas',
+    profile: 'hosted',
     displayName: 'SaaS',
     file: 'docs/packs/saas/pack.md',
     composition:
@@ -99,6 +100,7 @@ const PACKS = [
   },
   {
     edition: 'edu',
+    profile: 'hosted',
     displayName: 'EDU',
     file: 'docs/packs/edu/pack.md',
     composition:
@@ -112,6 +114,7 @@ const PACKS = [
   },
   {
     edition: 'enterprise',
+    profile: 'enterprise',
     displayName: 'Enterprise',
     file: 'docs/packs/enterprise/pack.md',
     composition:
@@ -173,17 +176,31 @@ function concept({ type, title, description, tags, sources = [], body }) {
   return lines.join('\n');
 }
 
-function loadCapabilities(check) {
-  const registryPath = siblingRegistryPath();
-  if (fs.existsSync(registryPath)) {
-    const capabilities = readRegistry(registryPath);
-    if (!check) writeSnapshot(capabilities);
-    return capabilities;
-  }
+function loadCatalog() {
   if (!fs.existsSync(SNAPSHOT)) {
-    throw new Error('Catalog snapshot is missing and no sibling backend registry was found');
+    throw new Error('Catalog snapshot is missing; obtain the versioned capability package and refresh the documentation snapshot');
   }
-  return JSON.parse(fs.readFileSync(SNAPSHOT, 'utf8'));
+  const snapshot = JSON.parse(fs.readFileSync(SNAPSHOT, 'utf8'));
+  const catalogPackage = loadCatalogPackage();
+  const driftErrors = packageDriftErrors(snapshot, catalogPackage);
+  if (driftErrors.length > 0) {
+    throw new Error(driftErrors.join('; '));
+  }
+
+  const detailsByKey = new Map(snapshot.map((record) => [record.key, record]));
+  const capabilities = catalogPackage.catalog.map((record) => {
+    const details = detailsByKey.get(record.key);
+    if (!details) {
+      throw new Error(`Catalog snapshot is missing package key ${record.key}`);
+    }
+    return { ...details, ...record };
+  });
+
+  return {
+    capabilities,
+    manifests: catalogPackage.manifests,
+    packageVersion: catalogPackage.version,
+  };
 }
 
 function countSourceFiles(directory) {
@@ -317,7 +334,7 @@ This snapshot is generated from the current source tree. It is descriptive evide
 | Tests | \`npm test\` | Jest |
 | Dependency boundaries | \`npm run boundaries\` | dependency-cruiser |
 | Feature architecture | \`npm run arch:check\` | thin routes, view I/O, model purity |
-| Capability surfaces | \`npm run check:capabilities\` | catalog snapshot, compatibility fields, and pack catalogs |
+| Capability package and surfaces | \`npm run check:capability-package\` and \`npm run check:capabilities\` | package drift, compatibility fields, and pack catalogs |
 | OKF bundle | \`npm run check:okf\` | OKF v0.2 bundle validator |
 | Documentation | \`npm run check:documentation\` | naming, stale-claim, generated-map, and documentation policy checker |
 
@@ -345,13 +362,14 @@ function generateCapabilityMatrix(capabilities, surfaces) {
     description: 'Generated inventory of shared catalog keys and the frontend surfaces that consume them.',
     tags: ['capabilities', 'map', 'packs'],
     sources: [
+      { id: 'catalog-package', resource: 'vendor/@alphaci/capability-catalog', title: 'Versioned capability catalog fixture' },
       { id: 'catalog-snapshot', resource: 'docs/capabilities/catalog.snapshot.json', title: 'Shared catalog snapshot' },
       { id: 'surface-registry', resource: 'docs/capabilities/surface-registry.ts', title: 'Frontend surface map' },
       { id: 'capability-endpoint', resource: 'src/features/capabilities/current/data/capabilities-api.ts', title: 'Compatibility capability client' },
     ],
     body: `# Capability matrix
 
-This matrix is generated from the shared catalog snapshot and the frontend surface registry. The backend repository owns capability keys, maturity, and pack applicability. This frontend does not replace \`/api/v1/capabilities\` and does not implement entitlement resolution.
+This matrix is generated from the versioned \`@alphaci/capability-catalog\` package and the frontend surface registry. The checked-in snapshot supplies the backend-owned descriptions and configuration notes used for documentation. This frontend does not replace \`/api/v1/capabilities\` and does not implement entitlement resolution.
 
 | Capability key | Context | Maturity | Compatibility field | View flag | Frontend routes |
 |---|---|---|---|---|---|
@@ -363,7 +381,7 @@ ${rows.join('\n')}
 - **not-implemented** keys must remain without a compatibility field until the backend provides the behavior.
 - A loaded flag that does not yet hide a route is still recorded. The Teams and group routes currently remain visible to authenticated users even though \`hierarchyEnabled\` is loaded.
 
-Pack profiles list every key in snapshot order. Pack status is derived from maturity and edition applicability.`,
+Pack profiles list every key in package order. Pack status is derived from maturity and edition applicability.`,
   });
 }
 
@@ -390,8 +408,13 @@ function packEvidence(capability, edition, surface) {
   return `${capability.description} ${surfaceText} Configuration: ${capability.configuration}.`;
 }
 
-function generatePack(pack, capabilities, surfaces) {
+function generatePack(pack, capabilities, manifests, surfaces, packageVersion) {
   const byKey = new Map(surfaces.map((surface) => [surface.key, surface]));
+  const profile = resolveProfile(pack.profile, {
+    catalog: capabilities,
+    manifests,
+    surfaces,
+  });
   const rows = capabilities.map((capability) => {
     const surface = byKey.get(capability.key) ?? { routes: [] };
     const status = expectedPackStatus(capability, pack.edition);
@@ -416,17 +439,23 @@ function generatePack(pack, capabilities, surfaces) {
 
 ## Current composition
 
-- Documentation status: \`documentation-only\`
-- Runtime selection behavior: No pack-selection resolver is implemented in this frontend.
+- Build profile: \`${pack.profile}\` (${profile.packs.map((item) => `\`${item}\``).join(', ')})
+- Runtime selection behavior: The build-time profile resolver projects the versioned catalog and aliases excluded feature barrels to fail-closed \`notFound()\` stubs. Runtime capability truth still comes from \`/api/v1/capabilities\`.
+- Excluded frontend feature barrels: ${profile.excludedFeatureBarrels.length > 0 ? profile.excludedFeatureBarrels.map((barrel) => `\`${barrel}\``).join(', ') : 'none in the current surface registry'}
 - Current frontend applicability: ${pack.composition}
 
 ## Capability status
 
-This table lists every current catalog capability in snapshot order. Status is derived from capability maturity and edition applicability. Pack-specific gaps that are not registry keys stay in Explicit non-support.
+This table lists every current catalog capability in package order. Status is derived from capability maturity and edition applicability. Pack-specific gaps that are not registry keys stay in Explicit non-support.
 
 | Capability key | Status | Evidence or limit |
 |---|---|---|
 ${rows.join('\n')}
+
+## Build and exclusion
+
+- Excluded capability keys: ${profile.excludedCapabilityKeys.length}
+- The build resolver aliases any excluded feature barrel to a \`notFound()\` stub. Route names may remain in the build manifest; implementation code is the excluded unit.
 
 ## Deployment scope
 
@@ -443,7 +472,7 @@ ${pack.nonSupport}
 ## Ownership and verification
 
 - Feature owners: the domains in the [feature map](/architecture/feature-map.generated.md).
-- Source: \`docs/capabilities/catalog.snapshot.json\` and \`docs/capabilities/surface-registry.ts\`.
+- Source: \`@alphaci/capability-catalog@${packageVersion}\`, \`docs/capabilities/catalog.snapshot.json\`, and \`docs/capabilities/surface-registry.ts\`.
 - Verification: \`npm run check:documentation\`.`,
   });
 }
@@ -465,22 +494,20 @@ function writeOrCheck(relativePath, content, check) {
 
 function main() {
   const check = process.argv.includes('--check');
-  const capabilities = loadCapabilities(check);
+  const { capabilities, manifests, packageVersion } = loadCatalog();
   const surfaces = readSurfaceRegistry();
   const outputs = [
     ['docs/architecture/route-map.generated.md', generateRouteMap()],
     ['docs/architecture/feature-map.generated.md', generateFeatureMap()],
     ['docs/architecture/architecture-checks.generated.md', generateArchitectureChecks()],
     ['docs/capabilities/capability-matrix.generated.md', generateCapabilityMatrix(capabilities, surfaces)],
-    ...PACKS.map((pack) => [pack.file, generatePack(pack, capabilities, surfaces)]),
+    ...PACKS.map((pack) => [
+      pack.file,
+      generatePack(pack, capabilities, manifests, surfaces, packageVersion),
+    ]),
   ];
 
   let clean = true;
-  if (check && fs.existsSync(siblingRegistryPath())) {
-    const expected = `${JSON.stringify(readRegistry(siblingRegistryPath()), null, 2)}\n`;
-    clean = writeOrCheck('docs/capabilities/catalog.snapshot.json', expected, true) && clean;
-  }
-
   for (const [relativePath, content] of outputs) {
     clean = writeOrCheck(relativePath, content, check) && clean;
   }

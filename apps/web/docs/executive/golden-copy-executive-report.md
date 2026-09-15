@@ -15,7 +15,7 @@ status: stable
 - **Main control:** A screen is not called available until it has an owner, working behavior, tests, operating instructions, and a capability status that matches the backend catalog.
 **Document purpose:** Give a new reader the full frontend picture without needing prior history or another document.
 
-The Golden Copy is the complete reference set. The backend owns the product catalog. This frontend snapshots that catalog and records which screens consume it. This document is the self-contained summary and implementation guide for the UI.
+The Golden Copy is the complete reference set. The backend owns the versioned product catalog package. This frontend keeps a local package fixture, a documentation snapshot, and a surface map of the screens that consume it. This document is the self-contained summary and implementation guide for the UI.
 
 ## 1. What this document is
 
@@ -66,7 +66,7 @@ Report
 
 The architecture says **where** UI responsibility lives. The capability list says **what** is provided. The packs say **how the capabilities are grouped**. The runbooks say **how the work is operated**. Evidence says **whether the statement is trustworthy**. This report brings those answers together.
 
-Capability keys are not invented here. They are owned by the backend catalog and copied into `docs/capabilities/catalog.snapshot.json`.
+Capability keys are not invented here. They are owned by the backend `@alphaci/capability-catalog` package and mirrored into `docs/capabilities/catalog.snapshot.json` for portable documentation.
 
 ## 3. Current product shape
 
@@ -93,7 +93,7 @@ There is no `/subscribe` route. Authenticated users continue to the path they as
 
 ### Capability status
 
-The capability list is shared across all packs. A capability is not copied three times for SaaS, EDU, and Enterprise. Each pack profile lists every current snapshot capability in that same order so the three catalogs can be compared row by row.
+The capability list is shared across all packs. A capability is not copied three times for SaaS, EDU, and Enterprise. Each pack profile lists every current package capability in that same order so the three catalogs can be compared row by row.
 
 | Capability area | What the UI currently covers | Current status |
 |---|---|---|
@@ -218,7 +218,7 @@ If any answer is not yet acceptable, the capability remains limited, setup-depen
 
 | Risk | Level | Control |
 |---|---|---|
-| The snapshot drifts from the backend catalog. | High | Refresh the snapshot from the sibling registry and run the documentation check. |
+| The package fixture or snapshot drifts from the backend catalog. | High | Update the reviewed package artifact, refresh the documentation snapshot, and run the package, capability, and documentation checks. |
 | Enterprise work becomes a separate UI copy. | High | Build shared screens once and keep one pack and status language. |
 | Parallel work creates conflicting definitions. | High | One owner per area and shared contract review before reuse. |
 | A compatibility flag is loaded but the screen ignores it. | Medium | Record the gap in the surface map instead of implying the panel is gated. |
@@ -246,7 +246,7 @@ The report should remain readable and portable. The detailed records can contain
 |---|---|
 | Product structure | One Next.js application with feature domains mapped to six backend areas. |
 | Hosting choices | GCP, Render, and Vercel appear when the backend advertises them. |
-| Capability records | Shared capability names and status are snapshotted for SaaS, EDU, and Enterprise. |
+| Capability records | Shared capability names, status, applicability, and dependency edges come from the versioned package and are mirrored for SaaS, EDU, and Enterprise. |
 | Pack records | All three packs list the shared catalog. Pack-specific gaps use `not-implemented` or `not-applicable` status. |
 | Operating guidance | Verification and session procedures are recorded. |
 | Automated proof | Document format, naming, generated maps, feature boundaries, capability surfaces, tests, and builds can be checked. |

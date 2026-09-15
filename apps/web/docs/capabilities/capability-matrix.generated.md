@@ -5,6 +5,9 @@ description: "Generated inventory of shared catalog keys and the frontend surfac
 tags: [capabilities, map, packs]
 status: stable
 sources:
+  - id: "catalog-package"
+    resource: "vendor/@alphaci/capability-catalog"
+    title: "Versioned capability catalog fixture"
   - id: "catalog-snapshot"
     resource: "docs/capabilities/catalog.snapshot.json"
     title: "Shared catalog snapshot"
@@ -18,7 +21,7 @@ sources:
 
 # Capability matrix
 
-This matrix is generated from the shared catalog snapshot and the frontend surface registry. The backend repository owns capability keys, maturity, and pack applicability. This frontend does not replace `/api/v1/capabilities` and does not implement entitlement resolution.
+This matrix is generated from the versioned `@alphaci/capability-catalog` package and the frontend surface registry. The checked-in snapshot supplies the backend-owned descriptions and configuration notes used for documentation. This frontend does not replace `/api/v1/capabilities` and does not implement entitlement resolution.
 
 | Capability key | Context | Maturity | Compatibility field | View flag | Frontend routes |
 |---|---|---|---|---|---|
@@ -58,4 +61,4 @@ This matrix is generated from the shared catalog snapshot and the frontend surfa
 - **not-implemented** keys must remain without a compatibility field until the backend provides the behavior.
 - A loaded flag that does not yet hide a route is still recorded. The Teams and group routes currently remain visible to authenticated users even though `hierarchyEnabled` is loaded.
 
-Pack profiles list every key in snapshot order. Pack status is derived from maturity and edition applicability.
+Pack profiles list every key in package order. Pack status is derived from maturity and edition applicability.

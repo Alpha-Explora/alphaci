@@ -25,7 +25,7 @@ This frontend remains one codebase with one route tree. It produces more than on
 
 Exclusion is derived from the capability surface registry, which already records the domains and routes each capability owns. No pack-specific route tree, duplicated screen, or edition folder is introduced, and no edition comparison enters source.
 
-The capability catalog is consumed as a published, versioned dependency owned by the backend. A local sibling checkout is not a contract.
+The capability catalog is consumed as a versioned dependency owned by the backend. This repository currently keeps a local release fixture under `vendor/@alphaci/capability-catalog` because no package registry is configured; a sibling checkout is not a contract.
 
 ## Rejected alternatives
 
@@ -37,9 +37,9 @@ The capability catalog is consumed as a published, versioned dependency owned by
 
 - Each profile is built and verified separately.
 - Route paths for excluded features may still appear in build output even when their implementation does not. Removing the paths themselves requires pruning the route tree before the build and is not adopted.
-- Catalog drift becomes a reviewable dependency change instead of an unverified local step.
+- Catalog drift becomes a reviewable package-artifact change instead of an unverified local step. The package check compares the local fixture with the documentation snapshot.
 - Pack profiles and the capability matrix are updated by the change that implements profiles, not by this record.
 
 ## Verification
 
-Each profile is built and its output scanned for symbols belonging to excluded packs. The catalog dependency is checked against the version the backend publishes.
+Each profile is resolved and its build aliases are checked for excluded feature barrels. The local catalog artifact is checked against the backend package shape; publication is a separate release operation.

@@ -31,7 +31,7 @@ Each surface record contains:
 | `domains` | Feature domains that present the behavior. |
 | `routes` | App Router paths that present the behavior. |
 
-The [generated matrix](/capabilities/capability-matrix.generated.md) is derived from `catalog.snapshot.json` and `surface-registry.ts`. The snapshot is intentionally separate from the live `/api/v1/capabilities` response.
+The [generated matrix](/capabilities/capability-matrix.generated.md) is derived from the local `@alphaci/capability-catalog` package, its documentation snapshot, and `surface-registry.ts`. The package metadata is intentionally separate from the live `/api/v1/capabilities` response.
 
 `deploymentOwnershipMode` and `hierarchyGithubSyncMode` are details of existing capabilities, not separate catalog keys.
 
@@ -45,7 +45,7 @@ Maturity values are owned by the backend catalog and snapshotted here:
 
 `not-implemented` is a useful negative declaration. It must not be interpreted as a disabled entitlement that this frontend already resolves. A `not-implemented` record must not claim a compatibility field.
 
-Pack profiles project snapshot records with a fourth status, `not-applicable`, when the pack edition is absent from `editions`. That pack status is not a maturity value.
+Pack profiles project package records with a fourth status, `not-applicable`, when the pack edition is absent from `editions`. That pack status is not a maturity value.
 
 ## Narrowing composition
 
@@ -64,8 +64,8 @@ Each layer can narrow the set. No layer can enable a capability that is not pres
 - Record missing UI for an implemented backend key as an honest surface gap, not as `not-implemented`.
 - Update the snapshot, surface map, and generated matrix with the change that changes the behavior.
 
-A capability change that alters keys, maturity, or edition applicability must update every pack profile in the same change. Pack tables are a comparable projection of the snapshot; they are not a second catalog.
+A capability change that alters keys, maturity, or edition applicability must update the backend package artifact and every pack profile in the same change. Pack tables are a comparable projection of the package; they are not a second catalog.
 
 ## Verification
 
-Run `npm run check:capabilities`, `npm run generate:architecture-maps -- --check`, and `npm run check:documentation`. Review any capability change against the [shared catalog decision](/architecture/decisions/adr-0003-shared-catalog-and-packs.md) and [pack contract](/packs/pack-contract.md). The capability check includes pack catalog completeness and sibling-registry snapshot matching when the backend checkout is present.
+Run `npm run check:capability-package`, `npm run check:capabilities`, `npm run check:profiles`, `npm run generate:architecture-maps -- --check`, and `npm run check:documentation`. Review any capability change against the [shared catalog decision](/architecture/decisions/adr-0003-shared-catalog-and-packs.md) and [pack contract](/packs/pack-contract.md). The capability check includes package drift, pack catalog completeness, and surface-map completeness.

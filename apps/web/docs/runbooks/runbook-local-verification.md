@@ -1,7 +1,7 @@
 ---
 type: "Playbook"
 title: "Local frontend verification"
-description: "Reproducible local checks for code, architecture, documentation, and the shared catalog snapshot."
+description: "Reproducible local checks for code, architecture, documentation, and the versioned capability package."
 tags: [runbook, verification, development]
 status: stable
 sources:
@@ -27,12 +27,13 @@ Use this sequence before merging a change that affects source, styles, capabilit
 
 ```bash
 npm run generate:architecture-maps
+npm run check:capability-package
 npm run check:okf
 npm run check:capabilities
 npm run check:documentation
 ```
 
-When the sibling backend checkout is present, the generate step refreshes `docs/capabilities/catalog.snapshot.json` from that registry.
+The frontend profile and documentation checks consume `vendor/@alphaci/capability-catalog`. Update that fixture as a reviewed package change, then regenerate the maps; do not use a sibling checkout as the contract.
 
 ## Full local loop
 
