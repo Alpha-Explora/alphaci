@@ -20,6 +20,7 @@ import {
   WorkspaceLoading,
 } from "./workspace-states";
 import { diagnoseRunWithoutJobs } from "../../model/run-diagnosis";
+import { promotionReadiness } from "../../model/promotion-readiness";
 import type { BranchRunSection } from "../../model/runs-by-branch";
 import {
   commitHeadline,
@@ -37,7 +38,7 @@ import {
   type RunFailureLogResponse,
   type StageFailureLogViewModel,
 } from "../../view-models/use-stage-failure-log-view-model";
-import type { StageReport } from "@/shared/api/contracts";
+import type { RunGroup, StageReport } from "@/shared/api/contracts";
 
 /**
  * Live GitHub Actions runs for this project: branch → run → jobs → steps → log.
@@ -215,6 +216,7 @@ function BranchSection({
             <CommitRow
               key={commit.commitSha}
               projectId={projectId}
+              branch={section.branch}
               commit={commit}
             />
           ))}
@@ -237,9 +239,11 @@ function BranchSection({
  */
 function CommitRow({
   projectId,
+  branch,
   commit,
 }: {
   projectId: string;
+  branch: string;
   commit: CommitRunGroup<WorkflowRunSummary>;
 }) {
   const [open, setOpen] = useState(false);
@@ -298,6 +302,8 @@ function CommitRow({
           ))}
         </ul>
       )}
+
+      <PromotionNote branch={branch} report={commit.report} />
 
       {problems.length > 0 && (
         <div className="ws-diagnosis">
@@ -464,6 +470,65 @@ function RunRow({
  * Stages that never executed are excluded from fetching: `blocked` and
  * `stalled` have no log, and asking for one would be a wasted call.
  */
+/**
+ * Whether this commit opened its promotion pull request, and if not, why not.
+ *
+ * The promotion job is conditional, so when its requirements are unmet it
+ * SKIPS - the quietest outcome there is. Nothing is red, nothing failed, and
+ * no pull request appears, which looks identical to a promotion nobody wanted.
+ * Across three sandbox repositories those jobs have skipped 40 times and run 0,
+ * and the only way to discover that was to go and count them.
+ *
+ * Rendered for the package stage only, which is where the promotion job lives,
+ * and rendered as nothing when the branch does not promote or the stage
+ * reported no checks - "not known" must not read as "did not promote".
+ */
+function PromotionNote({
+  branch,
+  report,
+}: {
+  branch: string;
+  report: RunGroup | null;
+}) {
+  const packageStage = report?.stages.find(
+    (stage: StageReport) => stage.stage === "package",
+  );
+  const readiness = promotionReadiness(branch, packageStage?.checks);
+
+  if (readiness.state === "not-applicable") {
+    return null;
+  }
+
+  if (readiness.state === "opened") {
+    return (
+      <p className="ws-promotion ws-promotion--opened">
+        Promotion pull request into {readiness.target} is open.
+      </p>
+    );
+  }
+
+  if (readiness.state === "blocked") {
+    return (
+      <p className="ws-promotion ws-promotion--blocked">
+        Not promoted to {readiness.target}:{" "}
+        {readiness.blockedBy.map(checkLabel).join(", ")} failed.
+      </p>
+    );
+  }
+
+  /*
+   * Skipped with nothing failing. Saying what we know and stopping there:
+   * naming a cause we cannot see is how the failed-job hints ended up telling
+   * people to build locally when a registry push had failed.
+   */
+  return (
+    <p className="ws-promotion ws-promotion--quiet">
+      No promotion pull request into {readiness.target} was opened for this
+      commit.
+    </p>
+  );
+}
+
 function StageDiagnosis({
   projectId,
   stage,
