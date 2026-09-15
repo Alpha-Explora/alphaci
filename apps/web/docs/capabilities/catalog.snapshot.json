@@ -13,7 +13,20 @@
     "configurationFlags": [
       "workspaces.enabled"
     ],
-    "requires": []
+    "requires": [],
+    "surface": {
+      "apiField": "workspaces",
+      "viewFlag": "workspacesEnabled",
+      "domains": [
+        "settings"
+      ],
+      "routes": [
+        "/settings"
+      ],
+      "featureBarrels": [
+        "@/features/settings"
+      ]
+    }
   },
   {
     "key": "identity.hierarchy",
@@ -29,7 +42,23 @@
     "configurationFlags": [
       "hierarchy.enabled"
     ],
-    "requires": []
+    "requires": [],
+    "surface": {
+      "apiField": "hierarchy",
+      "viewFlag": "hierarchyEnabled",
+      "domains": [
+        "groups",
+        "teams"
+      ],
+      "routes": [
+        "/teams",
+        "/groups/[groupId]"
+      ],
+      "featureBarrels": [
+        "@/features/groups",
+        "@/features/teams"
+      ]
+    }
   },
   {
     "key": "identity.sso-scim",
@@ -43,7 +72,14 @@
     "configurationFlags": [],
     "requires": [
       "identity.workspaces"
-    ]
+    ],
+    "surface": {
+      "apiField": null,
+      "viewFlag": null,
+      "domains": [],
+      "routes": [],
+      "featureBarrels": []
+    }
   },
   {
     "key": "identity.lms-lti",
@@ -57,7 +93,14 @@
     "configurationFlags": [],
     "requires": [
       "identity.workspaces"
-    ]
+    ],
+    "surface": {
+      "apiField": null,
+      "viewFlag": null,
+      "domains": [],
+      "routes": [],
+      "featureBarrels": []
+    }
   },
   {
     "key": "identity.cohort-policy",
@@ -71,7 +114,14 @@
     "configurationFlags": [],
     "requires": [
       "identity.hierarchy"
-    ]
+    ],
+    "surface": {
+      "apiField": null,
+      "viewFlag": null,
+      "domains": [],
+      "routes": [],
+      "featureBarrels": []
+    }
   },
   {
     "key": "identity.edu-provisioning",
@@ -85,7 +135,14 @@
     "configurationFlags": [],
     "requires": [
       "identity.workspaces"
-    ]
+    ],
+    "surface": {
+      "apiField": null,
+      "viewFlag": null,
+      "domains": [],
+      "routes": [],
+      "featureBarrels": []
+    }
   },
   {
     "key": "identity.ferpa-workflows",
@@ -99,7 +156,14 @@
     "configurationFlags": [],
     "requires": [
       "identity.workspaces"
-    ]
+    ],
+    "surface": {
+      "apiField": null,
+      "viewFlag": null,
+      "domains": [],
+      "routes": [],
+      "featureBarrels": []
+    }
   },
   {
     "key": "identity.edition-entitlements",
@@ -113,7 +177,14 @@
     ],
     "configuration": "Not implemented in this backend. No AppConfig flag.",
     "configurationFlags": [],
-    "requires": []
+    "requires": [],
+    "surface": {
+      "apiField": null,
+      "viewFlag": null,
+      "domains": [],
+      "routes": [],
+      "featureBarrels": []
+    }
   },
   {
     "key": "platform.audit-events",
@@ -129,7 +200,18 @@
     "configurationFlags": [
       "auditEvents.enabled"
     ],
-    "requires": []
+    "requires": [],
+    "surface": {
+      "apiField": "auditEvents",
+      "viewFlag": "auditEventsEnabled",
+      "domains": [
+        "capabilities"
+      ],
+      "routes": [],
+      "featureBarrels": [
+        "@/features/capabilities"
+      ]
+    }
   },
   {
     "key": "platform.notifications",
@@ -145,7 +227,23 @@
     "configurationFlags": [
       "notifications.enabled"
     ],
-    "requires": []
+    "requires": [],
+    "surface": {
+      "apiField": "notifications",
+      "viewFlag": "notificationsEnabled",
+      "domains": [
+        "notifications",
+        "settings"
+      ],
+      "routes": [
+        "/inbox",
+        "/settings"
+      ],
+      "featureBarrels": [
+        "@/features/notifications",
+        "@/features/settings"
+      ]
+    }
   },
   {
     "key": "platform.data-residency",
@@ -157,7 +255,14 @@
     ],
     "configuration": "Not implemented in this backend. No AppConfig flag.",
     "configurationFlags": [],
-    "requires": []
+    "requires": [],
+    "surface": {
+      "apiField": null,
+      "viewFlag": null,
+      "domains": [],
+      "routes": [],
+      "featureBarrels": []
+    }
   },
   {
     "key": "billing.subscription-gate",
@@ -173,7 +278,14 @@
     "configurationFlags": [
       "subscription.gateEnabled"
     ],
-    "requires": []
+    "requires": [],
+    "surface": {
+      "apiField": null,
+      "viewFlag": null,
+      "domains": [],
+      "routes": [],
+      "featureBarrels": []
+    }
   },
   {
     "key": "billing.usage-quotas",
@@ -189,7 +301,18 @@
     "configurationFlags": [
       "usageQuotas.enabled"
     ],
-    "requires": []
+    "requires": [],
+    "surface": {
+      "apiField": "usageQuotas",
+      "viewFlag": "usageQuotasEnabled",
+      "domains": [
+        "capabilities"
+      ],
+      "routes": [],
+      "featureBarrels": [
+        "@/features/capabilities"
+      ]
+    }
   },
   {
     "key": "billing.checkout",
@@ -201,7 +324,14 @@
     ],
     "configuration": "Not implemented in this backend. No AppConfig flag.",
     "configurationFlags": [],
-    "requires": []
+    "requires": [],
+    "surface": {
+      "apiField": null,
+      "viewFlag": null,
+      "domains": [],
+      "routes": [],
+      "featureBarrels": []
+    }
   },
   {
     "key": "runtime.env-provisioning",
@@ -217,7 +347,23 @@
     "configurationFlags": [
       "envProvisioning.enabled"
     ],
-    "requires": []
+    "requires": [],
+    "surface": {
+      "apiField": "envProvisioning",
+      "viewFlag": "envProvisioningEnabled",
+      "domains": [
+        "workflows",
+        "projects"
+      ],
+      "routes": [
+        "/workflows",
+        "/projects/[projectId]"
+      ],
+      "featureBarrels": [
+        "@/features/workflows",
+        "@/features/projects"
+      ]
+    }
   },
   {
     "key": "runtime.gcp-deployments",
@@ -233,7 +379,23 @@
     "configurationFlags": [
       "gcpDeployments.enabled"
     ],
-    "requires": []
+    "requires": [],
+    "surface": {
+      "apiField": null,
+      "viewFlag": null,
+      "domains": [
+        "workflows",
+        "projects"
+      ],
+      "routes": [
+        "/workflows",
+        "/projects/[projectId]"
+      ],
+      "featureBarrels": [
+        "@/features/workflows",
+        "@/features/projects"
+      ]
+    }
   },
   {
     "key": "runtime.deployment-history",
@@ -249,7 +411,20 @@
     "configurationFlags": [
       "deploymentHistory.enabled"
     ],
-    "requires": []
+    "requires": [],
+    "surface": {
+      "apiField": "deploymentHistory",
+      "viewFlag": "deploymentHistoryEnabled",
+      "domains": [
+        "projects"
+      ],
+      "routes": [
+        "/projects/[projectId]"
+      ],
+      "featureBarrels": [
+        "@/features/projects"
+      ]
+    }
   },
   {
     "key": "runtime.preview-deployments",
@@ -267,7 +442,20 @@
     ],
     "requires": [
       "runtime.deployment-history"
-    ]
+    ],
+    "surface": {
+      "apiField": "previewDeployments",
+      "viewFlag": "previewDeploymentsEnabled",
+      "domains": [
+        "projects"
+      ],
+      "routes": [
+        "/projects/[projectId]"
+      ],
+      "featureBarrels": [
+        "@/features/projects"
+      ]
+    }
   },
   {
     "key": "runtime.drift-detection",
@@ -283,7 +471,20 @@
     "configurationFlags": [
       "driftDetection.enabled"
     ],
-    "requires": []
+    "requires": [],
+    "surface": {
+      "apiField": "driftDetection",
+      "viewFlag": "driftDetectionEnabled",
+      "domains": [
+        "projects"
+      ],
+      "routes": [
+        "/projects/[projectId]"
+      ],
+      "featureBarrels": [
+        "@/features/projects"
+      ]
+    }
   },
   {
     "key": "runtime.drift-repair",
@@ -299,7 +500,20 @@
     "configurationFlags": [
       "driftRepair.enabled"
     ],
-    "requires": []
+    "requires": [],
+    "surface": {
+      "apiField": "driftRepair",
+      "viewFlag": "driftRepairEnabled",
+      "domains": [
+        "projects"
+      ],
+      "routes": [
+        "/projects/[projectId]"
+      ],
+      "featureBarrels": [
+        "@/features/projects"
+      ]
+    }
   },
   {
     "key": "runtime.managed-secrets",
@@ -311,7 +525,14 @@
     ],
     "configuration": "Not implemented in this backend. No AppConfig flag.",
     "configurationFlags": [],
-    "requires": []
+    "requires": [],
+    "surface": {
+      "apiField": null,
+      "viewFlag": null,
+      "domains": [],
+      "routes": [],
+      "featureBarrels": []
+    }
   },
   {
     "key": "runtime.air-gap-packaging",
@@ -323,7 +544,14 @@
     ],
     "configuration": "Not implemented in this backend. No AppConfig flag.",
     "configurationFlags": [],
-    "requires": []
+    "requires": [],
+    "surface": {
+      "apiField": null,
+      "viewFlag": null,
+      "domains": [],
+      "routes": [],
+      "featureBarrels": []
+    }
   },
   {
     "key": "runtime.customer-isolation",
@@ -335,7 +563,14 @@
     ],
     "configuration": "Not implemented in this backend. No AppConfig flag.",
     "configurationFlags": [],
-    "requires": []
+    "requires": [],
+    "surface": {
+      "apiField": null,
+      "viewFlag": null,
+      "domains": [],
+      "routes": [],
+      "featureBarrels": []
+    }
   },
   {
     "key": "projects.sync-snapshots",
@@ -351,7 +586,20 @@
     "configurationFlags": [
       "projectSyncSnapshots.enabled"
     ],
-    "requires": []
+    "requires": [],
+    "surface": {
+      "apiField": "projectSyncSnapshots",
+      "viewFlag": "projectSyncSnapshotsEnabled",
+      "domains": [
+        "projects"
+      ],
+      "routes": [
+        "/projects/[projectId]"
+      ],
+      "featureBarrels": [
+        "@/features/projects"
+      ]
+    }
   },
   {
     "key": "projects.workflow-settings-preview",
@@ -367,7 +615,20 @@
     "configurationFlags": [
       "workflowSettingsPreview.enabled"
     ],
-    "requires": []
+    "requires": [],
+    "surface": {
+      "apiField": "workflowSettingsPreview",
+      "viewFlag": "workflowSettingsPreviewEnabled",
+      "domains": [
+        "projects"
+      ],
+      "routes": [
+        "/projects/[projectId]"
+      ],
+      "featureBarrels": [
+        "@/features/projects"
+      ]
+    }
   },
   {
     "key": "projects.workflow-update-pr",
@@ -383,7 +644,20 @@
     "configurationFlags": [
       "workflowUpdatePr.enabled"
     ],
-    "requires": []
+    "requires": [],
+    "surface": {
+      "apiField": "workflowUpdatePr",
+      "viewFlag": "workflowUpdatePrEnabled",
+      "domains": [
+        "projects"
+      ],
+      "routes": [
+        "/projects/[projectId]"
+      ],
+      "featureBarrels": [
+        "@/features/projects"
+      ]
+    }
   },
   {
     "key": "projects.target-management",
@@ -399,7 +673,20 @@
     "configurationFlags": [
       "projectTargetManagement.enabled"
     ],
-    "requires": []
+    "requires": [],
+    "surface": {
+      "apiField": "projectTargetManagement",
+      "viewFlag": "projectTargetManagementEnabled",
+      "domains": [
+        "projects"
+      ],
+      "routes": [
+        "/projects/[projectId]"
+      ],
+      "featureBarrels": [
+        "@/features/projects"
+      ]
+    }
   },
   {
     "key": "pipelines.ci-run-tracking",
@@ -415,7 +702,23 @@
     "configurationFlags": [
       "ciRunTracking.enabled"
     ],
-    "requires": []
+    "requires": [],
+    "surface": {
+      "apiField": "ciRunTracking",
+      "viewFlag": "ciRunTrackingEnabled",
+      "domains": [
+        "runs",
+        "projects"
+      ],
+      "routes": [
+        "/runs",
+        "/projects/[projectId]"
+      ],
+      "featureBarrels": [
+        "@/features/runs",
+        "@/features/projects"
+      ]
+    }
   },
   {
     "key": "pipelines.github-enterprise-server",
@@ -427,6 +730,13 @@
     ],
     "configuration": "Not implemented in this backend. No AppConfig flag.",
     "configurationFlags": [],
-    "requires": []
+    "requires": [],
+    "surface": {
+      "apiField": null,
+      "viewFlag": null,
+      "domains": [],
+      "routes": [],
+      "featureBarrels": []
+    }
   }
 ]

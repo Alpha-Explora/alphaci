@@ -83,5 +83,5 @@ Marketing-site behavior is not a frontend capability and is not a registry key. 
 ## Ownership and verification
 
 - Feature owners: the domains in the [feature map](/architecture/feature-map.generated.md).
-- Source: `@alphaci/capability-catalog@0.1.0`, `docs/capabilities/catalog.snapshot.json`, and `docs/capabilities/surface-registry.ts`.
+- Source: `@alphaci/capability-catalog@0.2.0`, `docs/capabilities/catalog.snapshot.json`, and `docs/capabilities/surface-registry.ts`.
 - Verification: `npm run check:documentation`.

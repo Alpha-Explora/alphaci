@@ -2,14 +2,15 @@
 'use strict';
 
 /**
- * Binds the frontend capability surface map to the shared catalog snapshot
+ * Binds the frontend capability surface map to the versioned catalog package
  * and the live compatibility response shape.
  *
- * The backend owns capability keys, maturity, and pack applicability.
- * This frontend snapshots that catalog and records which screens consume it.
+ * The backend owns capability keys, maturity, pack applicability, and surface
+ * data. The frontend keeps a documentation snapshot and a generated registry
+ * view for the OKF bundle; neither is authoritative.
  *
  * Checks:
- *   1. surface-registry keys match the snapshot in snapshot order
+ *   1. package surfaces and the generated surface registry match in key order
  *   2. every CapabilitiesResponse field is claimed by one apiField
  *   3. every CapabilityViewFlags *Enabled leaf is claimed by one viewFlag
  *   4. pack profiles list every snapshot key in order with derived status
@@ -50,15 +51,21 @@ function readJson(file) {
   return JSON.parse(fs.readFileSync(file, 'utf8'));
 }
 
-function readSurfaceRegistry() {
+function readGeneratedSurfaceRegistry() {
   const source = fs.readFileSync(SURFACE_REGISTRY, 'utf8');
   const match = /export const CAPABILITY_SURFACES = (\[[\s\S]*?\])\s+as const;\s*$/m.exec(
     source,
   );
   if (!match) {
-    throw new Error('surface-registry.ts must export a JSON-shaped CAPABILITY_SURFACES array');
+    throw new Error('surface-registry.ts must export a JSON-shaped generated CAPABILITY_SURFACES array');
   }
   return JSON.parse(match[1]);
+}
+
+function generatedSurfaceErrors(expected, actual) {
+  return JSON.stringify(actual) === JSON.stringify(expected)
+    ? []
+    : ['docs/capabilities/surface-registry.ts is stale or differs from the vendored capability package'];
 }
 
 function expectedPackStatus(capability, edition) {
@@ -254,10 +261,12 @@ function collect() {
   }
   const snapshot = readJson(SNAPSHOT);
   const capabilities = catalogPackage.catalog;
-  const surfaces = readSurfaceRegistry();
+  const surfaces = catalogPackage.surfaces;
+  const generatedSurfaces = readGeneratedSurfaceRegistry();
   const packageDrift = packageDriftErrors(snapshot, catalogPackage);
   return [
     ...packageDrift,
+    ...generatedSurfaceErrors(surfaces, generatedSurfaces),
     ...surfaceCatalogErrors(capabilities, surfaces),
     ...packCatalogErrors(capabilities),
   ];
@@ -281,5 +290,5 @@ if (require.main === module) main();
 module.exports = {
   collect,
   expectedPackStatus,
-  readSurfaceRegistry,
+  readGeneratedSurfaceRegistry,
 };

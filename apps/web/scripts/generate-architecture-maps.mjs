@@ -11,9 +11,10 @@ const SNAPSHOT = path.join(ROOT, 'docs/capabilities/catalog.snapshot.json');
 const {
   loadCatalogPackage,
   packageDriftErrors,
+  readSurfaceRegistry,
   resolveProfile,
 } = require('./lib/capability-profile.cjs');
-const { readSurfaceRegistry, expectedPackStatus } = require('./check-capabilities.cjs');
+const { expectedPackStatus } = require('./check-capabilities.cjs');
 
 const DOMAIN_OWNERS = [
   {
@@ -274,7 +275,8 @@ function generateFeatureMap() {
     tags: ['architecture', 'features', 'map'],
     sources: [
       { id: 'features', resource: 'src/features', title: 'Feature domain tree' },
-      { id: 'surface-registry', resource: 'docs/capabilities/surface-registry.ts', title: 'Capability surface map' },
+     { id: 'surface-registry', resource: 'docs/capabilities/surface-registry.ts', title: 'Capability surface map' },
+      { id: 'surface-registry', resource: 'docs/capabilities/surface-registry.ts', title: 'Generated capability surface view' },
     ],
     body: `# Frontend feature map
 

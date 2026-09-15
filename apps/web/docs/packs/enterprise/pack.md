@@ -83,5 +83,5 @@ No additional non-registry product areas. Catalog rows with status `not-implemen
 ## Ownership and verification
 
 - Feature owners: the domains in the [feature map](/architecture/feature-map.generated.md).
-- Source: `@alphaci/capability-catalog@0.1.0`, `docs/capabilities/catalog.snapshot.json`, and `docs/capabilities/surface-registry.ts`.
+- Source: `@alphaci/capability-catalog@0.2.0`, `docs/capabilities/catalog.snapshot.json`, and `docs/capabilities/surface-registry.ts`.
 - Verification: `npm run check:documentation`.

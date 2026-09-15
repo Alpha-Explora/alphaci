@@ -21,7 +21,7 @@ A capability is a named product behavior owned by one backend bounded context. T
 
 ## Record shape
 
-Each surface record contains:
+The backend package publishes each capability's surface block. The frontend consumes that block; the checked-in registry below is generated only for the OKF documentation bundle.
 
 | Field | Meaning |
 |---|---|
@@ -30,8 +30,9 @@ Each surface record contains:
 | `viewFlag` | `CapabilityViewFlags` boolean, or `null` when no view flag exists. |
 | `domains` | Feature domains that present the behavior. |
 | `routes` | App Router paths that present the behavior. |
+| `featureBarrels` | Feature import barrels used by build-profile exclusion. |
 
-The [generated matrix](/capabilities/capability-matrix.generated.md) is derived from the local `@alphaci/capability-catalog` package, its documentation snapshot, and `surface-registry.ts`. The package metadata is intentionally separate from the live `/api/v1/capabilities` response.
+The [generated matrix](/capabilities/capability-matrix.generated.md) is derived from the local `@alphaci/capability-catalog` package and its documentation snapshot. `surface-registry.ts` is generated from the package and is not a second source. The package metadata is intentionally separate from the live `/api/v1/capabilities` response.
 
 `deploymentOwnershipMode` and `hierarchyGithubSyncMode` are details of existing capabilities, not separate catalog keys.
 
@@ -62,7 +63,7 @@ Each layer can narrow the set. No layer can enable a capability that is not pres
 - Do not invent frontend-only capability keys.
 - Put provider-neutral keys in the owning backend context, not under a provider name or a feature folder name.
 - Record missing UI for an implemented backend key as an honest surface gap, not as `not-implemented`.
-- Update the snapshot, surface map, and generated matrix with the change that changes the behavior.
+- Update the backend source/package and regenerate the frontend snapshot, generated surface view, and matrix with the change that changes the behavior.
 
 A capability change that alters keys, maturity, or edition applicability must update the backend package artifact and every pack profile in the same change. Pack tables are a comparable projection of the package; they are not a second catalog.
 

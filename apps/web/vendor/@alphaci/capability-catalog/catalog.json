@@ -1,31 +1,592 @@
 [
-  { "key": "identity.workspaces", "maturity": "stable", "editions": ["saas", "edu", "enterprise"], "requires": [] },
-  { "key": "identity.hierarchy", "maturity": "stable", "editions": ["saas", "edu", "enterprise"], "requires": [] },
-  { "key": "identity.sso-scim", "maturity": "not-implemented", "editions": ["enterprise"], "requires": ["identity.workspaces"] },
-  { "key": "identity.lms-lti", "maturity": "not-implemented", "editions": ["edu"], "requires": ["identity.workspaces"] },
-  { "key": "identity.cohort-policy", "maturity": "not-implemented", "editions": ["edu"], "requires": ["identity.hierarchy"] },
-  { "key": "identity.edu-provisioning", "maturity": "not-implemented", "editions": ["edu"], "requires": ["identity.workspaces"] },
-  { "key": "identity.ferpa-workflows", "maturity": "not-implemented", "editions": ["edu"], "requires": ["identity.workspaces"] },
-  { "key": "identity.edition-entitlements", "maturity": "not-implemented", "editions": ["saas", "edu", "enterprise"], "requires": [] },
-  { "key": "platform.audit-events", "maturity": "stable", "editions": ["saas", "edu", "enterprise"], "requires": [] },
-  { "key": "platform.notifications", "maturity": "stable", "editions": ["saas", "edu", "enterprise"], "requires": [] },
-  { "key": "platform.data-residency", "maturity": "not-implemented", "editions": ["enterprise"], "requires": [] },
-  { "key": "billing.subscription-gate", "maturity": "stable", "editions": ["saas", "edu", "enterprise"], "requires": [] },
-  { "key": "billing.usage-quotas", "maturity": "limited", "editions": ["saas", "edu", "enterprise"], "requires": [] },
-  { "key": "billing.checkout", "maturity": "not-implemented", "editions": ["saas"], "requires": [] },
-  { "key": "runtime.env-provisioning", "maturity": "limited", "editions": ["saas", "edu", "enterprise"], "requires": [] },
-  { "key": "runtime.gcp-deployments", "maturity": "limited", "editions": ["saas", "edu", "enterprise"], "requires": [] },
-  { "key": "runtime.deployment-history", "maturity": "limited", "editions": ["saas", "edu", "enterprise"], "requires": [] },
-  { "key": "runtime.preview-deployments", "maturity": "limited", "editions": ["saas", "edu", "enterprise"], "requires": ["runtime.deployment-history"] },
-  { "key": "runtime.drift-detection", "maturity": "limited", "editions": ["saas", "edu", "enterprise"], "requires": [] },
-  { "key": "runtime.drift-repair", "maturity": "limited", "editions": ["saas", "edu", "enterprise"], "requires": [] },
-  { "key": "runtime.managed-secrets", "maturity": "not-implemented", "editions": ["enterprise"], "requires": [] },
-  { "key": "runtime.air-gap-packaging", "maturity": "not-implemented", "editions": ["enterprise"], "requires": [] },
-  { "key": "runtime.customer-isolation", "maturity": "not-implemented", "editions": ["enterprise"], "requires": [] },
-  { "key": "projects.sync-snapshots", "maturity": "limited", "editions": ["saas", "edu", "enterprise"], "requires": [] },
-  { "key": "projects.workflow-settings-preview", "maturity": "stable", "editions": ["saas", "edu", "enterprise"], "requires": [] },
-  { "key": "projects.workflow-update-pr", "maturity": "limited", "editions": ["saas", "edu", "enterprise"], "requires": [] },
-  { "key": "projects.target-management", "maturity": "stable", "editions": ["saas", "edu", "enterprise"], "requires": [] },
-  { "key": "pipelines.ci-run-tracking", "maturity": "limited", "editions": ["saas", "edu", "enterprise"], "requires": [] },
-  { "key": "pipelines.github-enterprise-server", "maturity": "not-implemented", "editions": ["enterprise"], "requires": [] }
+  {
+    "key": "identity.workspaces",
+    "maturity": "stable",
+    "editions": [
+      "saas",
+      "edu",
+      "enterprise"
+    ],
+    "requires": [],
+    "surface": {
+      "apiField": "workspaces",
+      "viewFlag": "workspacesEnabled",
+      "domains": [
+        "settings"
+      ],
+      "routes": [
+        "/settings"
+      ],
+      "featureBarrels": [
+        "@/features/settings"
+      ]
+    }
+  },
+  {
+    "key": "identity.hierarchy",
+    "maturity": "stable",
+    "editions": [
+      "saas",
+      "edu",
+      "enterprise"
+    ],
+    "requires": [],
+    "surface": {
+      "apiField": "hierarchy",
+      "viewFlag": "hierarchyEnabled",
+      "domains": [
+        "groups",
+        "teams"
+      ],
+      "routes": [
+        "/teams",
+        "/groups/[groupId]"
+      ],
+      "featureBarrels": [
+        "@/features/groups",
+        "@/features/teams"
+      ]
+    }
+  },
+  {
+    "key": "identity.sso-scim",
+    "maturity": "not-implemented",
+    "editions": [
+      "enterprise"
+    ],
+    "requires": [
+      "identity.workspaces"
+    ],
+    "surface": {
+      "apiField": null,
+      "viewFlag": null,
+      "domains": [],
+      "routes": [],
+      "featureBarrels": []
+    }
+  },
+  {
+    "key": "identity.lms-lti",
+    "maturity": "not-implemented",
+    "editions": [
+      "edu"
+    ],
+    "requires": [
+      "identity.workspaces"
+    ],
+    "surface": {
+      "apiField": null,
+      "viewFlag": null,
+      "domains": [],
+      "routes": [],
+      "featureBarrels": []
+    }
+  },
+  {
+    "key": "identity.cohort-policy",
+    "maturity": "not-implemented",
+    "editions": [
+      "edu"
+    ],
+    "requires": [
+      "identity.hierarchy"
+    ],
+    "surface": {
+      "apiField": null,
+      "viewFlag": null,
+      "domains": [],
+      "routes": [],
+      "featureBarrels": []
+    }
+  },
+  {
+    "key": "identity.edu-provisioning",
+    "maturity": "not-implemented",
+    "editions": [
+      "edu"
+    ],
+    "requires": [
+      "identity.workspaces"
+    ],
+    "surface": {
+      "apiField": null,
+      "viewFlag": null,
+      "domains": [],
+      "routes": [],
+      "featureBarrels": []
+    }
+  },
+  {
+    "key": "identity.ferpa-workflows",
+    "maturity": "not-implemented",
+    "editions": [
+      "edu"
+    ],
+    "requires": [
+      "identity.workspaces"
+    ],
+    "surface": {
+      "apiField": null,
+      "viewFlag": null,
+      "domains": [],
+      "routes": [],
+      "featureBarrels": []
+    }
+  },
+  {
+    "key": "identity.edition-entitlements",
+    "maturity": "not-implemented",
+    "editions": [
+      "saas",
+      "edu",
+      "enterprise"
+    ],
+    "requires": [],
+    "surface": {
+      "apiField": null,
+      "viewFlag": null,
+      "domains": [],
+      "routes": [],
+      "featureBarrels": []
+    }
+  },
+  {
+    "key": "platform.audit-events",
+    "maturity": "stable",
+    "editions": [
+      "saas",
+      "edu",
+      "enterprise"
+    ],
+    "requires": [],
+    "surface": {
+      "apiField": "auditEvents",
+      "viewFlag": "auditEventsEnabled",
+      "domains": [
+        "capabilities"
+      ],
+      "routes": [],
+      "featureBarrels": [
+        "@/features/capabilities"
+      ]
+    }
+  },
+  {
+    "key": "platform.notifications",
+    "maturity": "stable",
+    "editions": [
+      "saas",
+      "edu",
+      "enterprise"
+    ],
+    "requires": [],
+    "surface": {
+      "apiField": "notifications",
+      "viewFlag": "notificationsEnabled",
+      "domains": [
+        "notifications",
+        "settings"
+      ],
+      "routes": [
+        "/inbox",
+        "/settings"
+      ],
+      "featureBarrels": [
+        "@/features/notifications",
+        "@/features/settings"
+      ]
+    }
+  },
+  {
+    "key": "platform.data-residency",
+    "maturity": "not-implemented",
+    "editions": [
+      "enterprise"
+    ],
+    "requires": [],
+    "surface": {
+      "apiField": null,
+      "viewFlag": null,
+      "domains": [],
+      "routes": [],
+      "featureBarrels": []
+    }
+  },
+  {
+    "key": "billing.subscription-gate",
+    "maturity": "stable",
+    "editions": [
+      "saas",
+      "edu",
+      "enterprise"
+    ],
+    "requires": [],
+    "surface": {
+      "apiField": null,
+      "viewFlag": null,
+      "domains": [],
+      "routes": [],
+      "featureBarrels": []
+    }
+  },
+  {
+    "key": "billing.usage-quotas",
+    "maturity": "limited",
+    "editions": [
+      "saas",
+      "edu",
+      "enterprise"
+    ],
+    "requires": [],
+    "surface": {
+      "apiField": "usageQuotas",
+      "viewFlag": "usageQuotasEnabled",
+      "domains": [
+        "capabilities"
+      ],
+      "routes": [],
+      "featureBarrels": [
+        "@/features/capabilities"
+      ]
+    }
+  },
+  {
+    "key": "billing.checkout",
+    "maturity": "not-implemented",
+    "editions": [
+      "saas"
+    ],
+    "requires": [],
+    "surface": {
+      "apiField": null,
+      "viewFlag": null,
+      "domains": [],
+      "routes": [],
+      "featureBarrels": []
+    }
+  },
+  {
+    "key": "runtime.env-provisioning",
+    "maturity": "limited",
+    "editions": [
+      "saas",
+      "edu",
+      "enterprise"
+    ],
+    "requires": [],
+    "surface": {
+      "apiField": "envProvisioning",
+      "viewFlag": "envProvisioningEnabled",
+      "domains": [
+        "workflows",
+        "projects"
+      ],
+      "routes": [
+        "/workflows",
+        "/projects/[projectId]"
+      ],
+      "featureBarrels": [
+        "@/features/workflows",
+        "@/features/projects"
+      ]
+    }
+  },
+  {
+    "key": "runtime.gcp-deployments",
+    "maturity": "limited",
+    "editions": [
+      "saas",
+      "edu",
+      "enterprise"
+    ],
+    "requires": [],
+    "surface": {
+      "apiField": null,
+      "viewFlag": null,
+      "domains": [
+        "workflows",
+        "projects"
+      ],
+      "routes": [
+        "/workflows",
+        "/projects/[projectId]"
+      ],
+      "featureBarrels": [
+        "@/features/workflows",
+        "@/features/projects"
+      ]
+    }
+  },
+  {
+    "key": "runtime.deployment-history",
+    "maturity": "limited",
+    "editions": [
+      "saas",
+      "edu",
+      "enterprise"
+    ],
+    "requires": [],
+    "surface": {
+      "apiField": "deploymentHistory",
+      "viewFlag": "deploymentHistoryEnabled",
+      "domains": [
+        "projects"
+      ],
+      "routes": [
+        "/projects/[projectId]"
+      ],
+      "featureBarrels": [
+        "@/features/projects"
+      ]
+    }
+  },
+  {
+    "key": "runtime.preview-deployments",
+    "maturity": "limited",
+    "editions": [
+      "saas",
+      "edu",
+      "enterprise"
+    ],
+    "requires": [
+      "runtime.deployment-history"
+    ],
+    "surface": {
+      "apiField": "previewDeployments",
+      "viewFlag": "previewDeploymentsEnabled",
+      "domains": [
+        "projects"
+      ],
+      "routes": [
+        "/projects/[projectId]"
+      ],
+      "featureBarrels": [
+        "@/features/projects"
+      ]
+    }
+  },
+  {
+    "key": "runtime.drift-detection",
+    "maturity": "limited",
+    "editions": [
+      "saas",
+      "edu",
+      "enterprise"
+    ],
+    "requires": [],
+    "surface": {
+      "apiField": "driftDetection",
+      "viewFlag": "driftDetectionEnabled",
+      "domains": [
+        "projects"
+      ],
+      "routes": [
+        "/projects/[projectId]"
+      ],
+      "featureBarrels": [
+        "@/features/projects"
+      ]
+    }
+  },
+  {
+    "key": "runtime.drift-repair",
+    "maturity": "limited",
+    "editions": [
+      "saas",
+      "edu",
+      "enterprise"
+    ],
+    "requires": [],
+    "surface": {
+      "apiField": "driftRepair",
+      "viewFlag": "driftRepairEnabled",
+      "domains": [
+        "projects"
+      ],
+      "routes": [
+        "/projects/[projectId]"
+      ],
+      "featureBarrels": [
+        "@/features/projects"
+      ]
+    }
+  },
+  {
+    "key": "runtime.managed-secrets",
+    "maturity": "not-implemented",
+    "editions": [
+      "enterprise"
+    ],
+    "requires": [],
+    "surface": {
+      "apiField": null,
+      "viewFlag": null,
+      "domains": [],
+      "routes": [],
+      "featureBarrels": []
+    }
+  },
+  {
+    "key": "runtime.air-gap-packaging",
+    "maturity": "not-implemented",
+    "editions": [
+      "enterprise"
+    ],
+    "requires": [],
+    "surface": {
+      "apiField": null,
+      "viewFlag": null,
+      "domains": [],
+      "routes": [],
+      "featureBarrels": []
+    }
+  },
+  {
+    "key": "runtime.customer-isolation",
+    "maturity": "not-implemented",
+    "editions": [
+      "enterprise"
+    ],
+    "requires": [],
+    "surface": {
+      "apiField": null,
+      "viewFlag": null,
+      "domains": [],
+      "routes": [],
+      "featureBarrels": []
+    }
+  },
+  {
+    "key": "projects.sync-snapshots",
+    "maturity": "limited",
+    "editions": [
+      "saas",
+      "edu",
+      "enterprise"
+    ],
+    "requires": [],
+    "surface": {
+      "apiField": "projectSyncSnapshots",
+      "viewFlag": "projectSyncSnapshotsEnabled",
+      "domains": [
+        "projects"
+      ],
+      "routes": [
+        "/projects/[projectId]"
+      ],
+      "featureBarrels": [
+        "@/features/projects"
+      ]
+    }
+  },
+  {
+    "key": "projects.workflow-settings-preview",
+    "maturity": "stable",
+    "editions": [
+      "saas",
+      "edu",
+      "enterprise"
+    ],
+    "requires": [],
+    "surface": {
+      "apiField": "workflowSettingsPreview",
+      "viewFlag": "workflowSettingsPreviewEnabled",
+      "domains": [
+        "projects"
+      ],
+      "routes": [
+        "/projects/[projectId]"
+      ],
+      "featureBarrels": [
+        "@/features/projects"
+      ]
+    }
+  },
+  {
+    "key": "projects.workflow-update-pr",
+    "maturity": "limited",
+    "editions": [
+      "saas",
+      "edu",
+      "enterprise"
+    ],
+    "requires": [],
+    "surface": {
+      "apiField": "workflowUpdatePr",
+      "viewFlag": "workflowUpdatePrEnabled",
+      "domains": [
+        "projects"
+      ],
+      "routes": [
+        "/projects/[projectId]"
+      ],
+      "featureBarrels": [
+        "@/features/projects"
+      ]
+    }
+  },
+  {
+    "key": "projects.target-management",
+    "maturity": "stable",
+    "editions": [
+      "saas",
+      "edu",
+      "enterprise"
+    ],
+    "requires": [],
+    "surface": {
+      "apiField": "projectTargetManagement",
+      "viewFlag": "projectTargetManagementEnabled",
+      "domains": [
+        "projects"
+      ],
+      "routes": [
+        "/projects/[projectId]"
+      ],
+      "featureBarrels": [
+        "@/features/projects"
+      ]
+    }
+  },
+  {
+    "key": "pipelines.ci-run-tracking",
+    "maturity": "limited",
+    "editions": [
+      "saas",
+      "edu",
+      "enterprise"
+    ],
+    "requires": [],
+    "surface": {
+      "apiField": "ciRunTracking",
+      "viewFlag": "ciRunTrackingEnabled",
+      "domains": [
+        "runs",
+        "projects"
+      ],
+      "routes": [
+        "/runs",
+        "/projects/[projectId]"
+      ],
+      "featureBarrels": [
+        "@/features/runs",
+        "@/features/projects"
+      ]
+    }
+  },
+  {
+    "key": "pipelines.github-enterprise-server",
+    "maturity": "not-implemented",
+    "editions": [
+      "enterprise"
+    ],
+    "requires": [],
+    "surface": {
+      "apiField": null,
+      "viewFlag": null,
+      "domains": [],
+      "routes": [],
+      "featureBarrels": []
+    }
+  }
 ]

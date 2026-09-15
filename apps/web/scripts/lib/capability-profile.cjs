@@ -16,19 +16,23 @@ function readJson(file) {
 
 function loadCatalogPackage() {
   const metadata = readJson(path.join(PACKAGE_DIR, 'package.json'));
+  const catalog = readJson(path.join(PACKAGE_DIR, 'catalog.json'));
   return {
     metadata,
     version: metadata.version,
-    catalog: readJson(path.join(PACKAGE_DIR, 'catalog.json')),
+    catalog,
     manifests: readJson(path.join(PACKAGE_DIR, 'manifests.json')),
+    surfaces: catalog.map((record) => {
+      if (!record.surface) {
+        throw new Error(`capability ${record.key} is missing its published surface`);
+      }
+      return { key: record.key, ...record.surface };
+    }),
   };
 }
 
 function readSurfaceRegistry() {
-  const source = fs.readFileSync(path.join(ROOT, 'docs/capabilities/surface-registry.ts'), 'utf8');
-  const match = /export const CAPABILITY_SURFACES = (\[[\s\S]*?\])\s+as const;\s*$/m.exec(source);
-  if (!match) throw new Error('surface-registry.ts must export a JSON-shaped CAPABILITY_SURFACES array');
-  return JSON.parse(match[1]);
+  return loadCatalogPackage().surfaces;
 }
 
 function resolveBuildProfile(value = process.env.ALPHACI_BUILD_PROFILE || 'enterprise') {
@@ -175,7 +179,7 @@ function packageDriftErrors(snapshot, pkg) {
   if (!/^\d+\.\d+\.\d+$/.test(metadata.version || '')) {
     return [`capability package version must be a release version, found ${metadata.version || '<missing>'}`];
   }
-  const fields = ['key', 'maturity', 'editions', 'requires'];
+  const fields = ['key', 'maturity', 'editions', 'requires', 'surface'];
   const normalize = (record) => Object.fromEntries(fields.map((field) => [field, record[field]]));
   const expected = snapshot.map(normalize);
   const actual = pkg.catalog.map(normalize);

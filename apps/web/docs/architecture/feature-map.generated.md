@@ -11,6 +11,9 @@ sources:
   - id: "surface-registry"
     resource: "docs/capabilities/surface-registry.ts"
     title: "Capability surface map"
+  - id: "surface-registry"
+    resource: "docs/capabilities/surface-registry.ts"
+    title: "Generated capability surface view"
 ---
 
 # Frontend feature map
