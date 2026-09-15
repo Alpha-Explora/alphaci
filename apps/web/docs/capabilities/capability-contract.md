@@ -34,6 +34,25 @@ The backend package publishes each capability's surface block. The frontend cons
 
 The [generated matrix](/capabilities/capability-matrix.generated.md) is derived from the local `@alphaci/capability-catalog` package and its documentation snapshot. `surface-registry.ts` is generated from the package and is not a second source. The package metadata is intentionally separate from the live `/api/v1/capabilities` response.
 
+## Package provenance and integrity
+
+The backend package includes `provenance.json` beside its catalog files. It
+binds the package name and version to the stable source repository identifier
+`github.com/Alpha-Explora/alphaci-enterprise-be`, the authoritative source path
+`src/kernel/composition/catalog.source.json`, the catalog source digest, and a
+deterministic artifact digest. The digest contract covers the ordered files
+`package.json`, `catalog.json`, `index.d.ts`, `index.js`, and `manifests.json`
+with LF-normalized text; `provenance.json` is excluded to avoid a circular
+hash.
+
+The vendored package is the frontend build and profile input. The checked-in
+`docs/capabilities/catalog.provenance.json` is the expected release record for
+that vendor fixture, not a second source of catalog facts. The package drift
+checker verifies the provenance fields and recomputes the canonical artifact
+digest locally, so isolated frontend CI does not depend on a sibling backend
+checkout. A future cross-repository source comparison may supplement this
+check, but is not required for the frontend gate.
+
 `deploymentOwnershipMode` and `hierarchyGithubSyncMode` are details of existing capabilities, not separate catalog keys.
 
 ## Maturity

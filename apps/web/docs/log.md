@@ -2,6 +2,8 @@
 
 ## 2026-09-11
 
+* **Update**: Added the backend package's deterministic provenance artifact to the frontend vendor fixture, checked it against `docs/capabilities/catalog.provenance.json`, and made package drift checks recompute the canonical artifact digest without requiring a sibling checkout.
+* **Creation**: Recorded ADR-0006. The frontend treats the backend-generated provenance as the package integrity boundary; the expected release record and documentation snapshot remain verification inputs rather than catalog owners.
 * **Update**: Re-vendored `@alphaci/capability-catalog@0.2.0` with backend-owned capability surfaces, regenerated the catalog snapshot and surface view, and added package/snapshot/generated-file drift checks.
 * **Creation**: Recorded ADR-0005. The frontend profile resolver consumes surface data from the versioned package; `docs/capabilities/surface-registry.ts` remains only as a generated OKF documentation view.
 

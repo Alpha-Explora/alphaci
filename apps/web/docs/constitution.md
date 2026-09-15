@@ -50,7 +50,7 @@ The [capability contract](/capabilities/capability-contract.md) and [pack contra
 
 ## Shared catalog
 
-Capability keys, maturity, pack applicability, dependency edges, and capability surfaces are owned by the backend package `@alphaci/capability-catalog`. This repository keeps a local fixture at `vendor/@alphaci/capability-catalog`, a documentation snapshot at `docs/capabilities/catalog.snapshot.json`, and a generated surface view at `docs/capabilities/surface-registry.ts`. Neither documentation file is authoritative.
+Capability keys, maturity, pack applicability, dependency edges, capability surfaces, and package provenance are owned by the backend package `@alphaci/capability-catalog`. This repository keeps a local fixture at `vendor/@alphaci/capability-catalog`, an expected provenance record at `docs/capabilities/catalog.provenance.json`, a documentation snapshot at `docs/capabilities/catalog.snapshot.json`, and a generated surface view at `docs/capabilities/surface-registry.ts`. The expected record and documentation files are verification inputs, not authoritative catalog sources.
 
 ## Documentation contract
 

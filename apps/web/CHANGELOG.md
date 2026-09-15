@@ -4,6 +4,7 @@
 
 ### Added
 
+- Added backend-owned capability package provenance, a checked-in expected release record, canonical artifact-digest verification, and focused tamper tests for the vendored fixture.
 - Added the local `@alphaci/capability-catalog` release fixture, profile resolver, package drift gate, and build-profile checks for frontend exclusion.
 - Added an OKF v0.2 current-state documentation bundle covering architecture, capabilities, composition packs, runbooks, and change history.
 - Added a shared catalog snapshot and surface map so SaaS, EDU, and Enterprise pack profiles stay comparable with the backend Golden Copy.

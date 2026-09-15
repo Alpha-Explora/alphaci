@@ -25,9 +25,9 @@ The backend publishes the surface block in the versioned `@alphaci/capability-ca
 
 - Surface changes are authored in the backend composition source, released with the package, and re-vendored by the frontend.
 - Frontend profile exclusion and compatibility checks use the same versioned surface contract as the package drift check.
-- A stale package, snapshot, or generated documentation registry fails the frontend checks.
+- A stale or tampered package, snapshot, provenance record, or generated documentation registry fails the frontend checks.
 - The frontend no longer owns an independent surface map.
 
 ## Verification
 
-Run `node scripts/check-capability-package.cjs`, `node scripts/check-capabilities.cjs`, `node scripts/check-build-profiles.cjs`, and `node scripts/check-documentation.cjs`.
+Run `node scripts/check-capability-package.cjs`, `node scripts/check-capabilities.cjs`, `node scripts/check-build-profiles.cjs`, and `node scripts/check-documentation.cjs`. The package check validates the vendored provenance and recomputes its canonical artifact digest.
