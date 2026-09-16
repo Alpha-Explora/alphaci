@@ -1,3 +1,4 @@
+import { projectsRepository } from "../../src/features/projects/data/projects-repository";
 import {
   createProject,
   createProviderConnection,
@@ -1185,6 +1186,42 @@ describe("API client project setup helpers", () => {
         }),
       }),
     );
+  });
+
+  it("sends only the deletions the user ticked, with the typed repo name for GitHub", async () => {
+    const ok = () => ({
+      ok: true,
+      status: 200,
+      json: async () => ({ ok: true, githubRepoDeleted: false }),
+    });
+    fetchMock.mockResolvedValueOnce(ok()).mockResolvedValueOnce(ok());
+
+    await projectsRepository.disconnect(
+      "project-1",
+      {
+        deleteGithubRepo: false,
+        deleteProviderResources: true,
+        deleteSonarProject: true,
+      },
+      "acme/project-1",
+    );
+    await projectsRepository.disconnect(
+      "project-1",
+      {
+        deleteGithubRepo: false,
+        deleteProviderResources: false,
+        deleteSonarProject: false,
+      },
+      "acme/project-1",
+    );
+
+    const [, withOptIns] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(JSON.parse(String(withOptIns.body))).toEqual({
+      deleteProviderResources: true,
+      deleteSonarProject: true,
+    });
+    const [, plain] = fetchMock.mock.calls[1] as [string, RequestInit];
+    expect(plain.body).toBeUndefined();
   });
 
   it("resolves a generic githubRepoDeleteError when GitHub deletion fails", async () => {
