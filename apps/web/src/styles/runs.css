@@ -334,6 +334,43 @@
   background: var(--layer-2);
 }
 
+/*
+ * Per-tool outcomes inside an expanded stage.
+ *
+ * A three-column grid so the marks, the tool names and the conclusions each
+ * line up down the list rather than drifting with the length of the name
+ * beside them. Colour comes from the tone, set inline per row, and is never
+ * the only signal: every row also carries a mark, so the list still reads
+ * without colour vision.
+ */
+.runs-stage-checks {
+  display: grid;
+  gap: 0.3rem 0.6rem;
+  grid-template-columns: auto 1fr auto;
+  align-items: baseline;
+  margin: 0 0 0.35rem;
+  padding: 0 0 0.6rem;
+  border-bottom: 1px solid var(--border-tile);
+  list-style: none;
+  font-size: 0.8125rem;
+}
+
+.runs-stage-checks li {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: subgrid;
+}
+
+.runs-stage-checks li > :nth-child(2) {
+  color: var(--text-primary);
+}
+
+.runs-stage-checks li > :last-child {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+  text-transform: lowercase;
+}
+
 .runs-card-footer {
   display: flex;
   align-items: center;
@@ -592,10 +629,85 @@
   }
 }
 
+/* ── Branch sections inside a repository ───────────────────────────────── */
+
+.runs-branch-group {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.runs-branch-group-header {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0.1rem 0.15rem 0.3rem;
+  border-bottom: 1px solid var(--border-layer);
+  font-size: 0.78rem;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.runs-branch-group-dot {
+  width: 0.45rem;
+  height: 0.45rem;
+  border-radius: 50%;
+  flex-shrink: 0;
+  align-self: center;
+}
+
+.runs-branch-group-name {
+  font-family: var(--font-mono, ui-monospace, monospace);
+  letter-spacing: -0.01em;
+}
+
+/* Secondary by design: the branch name is what the eye needs first, and the
+   status recap is there for the person who did not expand anything. */
+.runs-branch-group-meta {
+  margin-left: auto;
+  font-size: 0.72rem;
+  font-weight: 400;
+  color: var(--text-muted);
+}
+
+.runs-branch-group-body {
+  display: grid;
+  gap: 0.5rem;
+}
+
+/* A branch outside dev/uat/main is marked rather than hidden: a repository
+   connected with its own conventions still shows its runs, but never reads as
+   part of the promotion flow. */
+.runs-branch-group-tag {
+  padding: 0.05rem 0.35rem;
+  border: 1px solid var(--border-layer);
+  border-radius: 0.25rem;
+  font-size: 0.62rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.runs-branch-group-empty {
+  margin: 0;
+  padding: 0.5rem 0.15rem;
+  font-size: 0.74rem;
+  color: var(--text-muted);
+}
+
+@media (max-width: 640px) {
+  .runs-branch-group-meta {
+    display: none;
+  }
+}
+
 /* ── Commit-first workflow history ─────────────────────────────────────── */
 
 .runs-project-group-body {
-  gap: 0.5rem;
+  /* Branch sections, not run cards, are the children here now; they carry
+     their own internal spacing, so the outer gap separates branches. */
+  gap: 1.15rem;
 }
 
 .runs-run-card--commit {

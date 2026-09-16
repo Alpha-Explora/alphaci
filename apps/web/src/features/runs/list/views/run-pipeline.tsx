@@ -2,11 +2,33 @@
 
 import { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import type { FriendlyMessage, RunGroup, StageReport } from "../../model/runs-types";
+import type {
+  FriendlyMessage,
+  RunGroup,
+  StageReport,
+} from "../../model/runs-types";
+import {
+  checkLabel,
+  checkTone,
+  formatFailedJobs,
+} from "../../model/runs-presentation";
 import { StageNode, StageConnector } from "./stage-node";
 import { MessageCard } from "./message-card";
 
-const STAGE_ORDER: Array<StageReport["stage"]> = ["access", "quality", "package"];
+const STAGE_ORDER: Array<StageReport["stage"]> = [
+  "access",
+  "quality",
+  "package",
+  "verify",
+];
+
+/** Colour per tone, kept beside the tones so the two cannot drift apart. */
+const TONE_COLOR: Record<ReturnType<typeof checkTone>, string> = {
+  passed: "var(--success, #2a6e48)",
+  failed: "var(--danger, #a83a32)",
+  running: "var(--info, #2d5f8b)",
+  skipped: "var(--text-muted, #6b7484)",
+};
 
 interface RunPipelineProps {
   run: RunGroup;
@@ -23,21 +45,36 @@ function preferredStage(run: RunGroup): StageReport["stage"] | null {
 
 function fallbackStageMessage(stage: StageReport): FriendlyMessage {
   if (stage.status === "failure") {
-    const guidance: Record<StageReport["stage"], { title: string; detail: string; hint: string }> = {
+    const guidance: Record<
+      StageReport["stage"],
+      { title: string; detail: string; hint: string }
+    > = {
       access: {
         title: "Access check failed before details were reported",
-        detail: "ALPHACI received the failed result but GitHub did not provide the failed job output for this commit.",
+        detail:
+          "ALPHACI received the failed result but GitHub did not provide the failed job output for this commit.",
         hint: "Open the GitHub workflow, fix the first failed access step, then re-run. Check the ALPHACI_TOKEN secret and GitHub App repository access first.",
       },
       quality: {
         title: "Quality check failed before details were reported",
-        detail: "ALPHACI received the failed result but GitHub did not provide test, lint, typecheck, or scan details for this commit.",
+        detail:
+          "ALPHACI received the failed result but GitHub did not provide test, lint, typecheck, or scan details for this commit.",
         hint: "Open the GitHub workflow, fix the first failed quality step, then re-run. New ALPHACI workflows report the failed job name here automatically.",
       },
       package: {
         title: "Build or package check failed before details were reported",
-        detail: "ALPHACI received the failed result but GitHub did not provide the failed build step for this commit.",
+        detail:
+          "ALPHACI received the failed result but GitHub did not provide the failed build step for this commit.",
         hint: "Open the GitHub workflow, fix the first failed build or package step, then re-run the workflow.",
+      },
+      // Verify drove a DEPLOYED service, so the same red has three possible
+      // homes: the code, the deployment, or the environment it was pointed at.
+      // Sending someone to re-read the diff first is wrong two times in three.
+      verify: {
+        title: "The deployed service failed its API checks",
+        detail:
+          "ALPHACI received the failed result but GitHub did not provide the failing request or assertion for this commit.",
+        hint: "Check the deployment answered at all before reading the code: an environment that never started fails every request the same way.",
       },
     };
     return { severity: "error", ...guidance[stage.stage] };
@@ -70,7 +107,9 @@ function fallbackStageMessage(stage: StageReport): FriendlyMessage {
 }
 
 export function RunPipeline({ run, reduced }: RunPipelineProps) {
-  const [expandedStage, setExpandedStage] = useState<StageReport["stage"] | null>(() => preferredStage(run));
+  const [expandedStage, setExpandedStage] = useState<
+    StageReport["stage"] | null
+  >(() => preferredStage(run));
 
   // Build an ordered map of stages
   const stageMap = new Map(run.stages.map((s) => [s.stage, s]));
@@ -131,21 +170,68 @@ export function RunPipeline({ run, reduced }: RunPipelineProps) {
             transition={{ duration: 0.28, ease: [0.25, 0, 0, 1] }}
             style={{ overflow: "hidden" }}
           >
-            <div
-              className="runs-messages-panel"
-            >
+            <div className="runs-messages-panel">
+              {/*
+                Per-tool outcomes, above the messages.
+                A stage status answers "did quality pass"; it cannot answer
+                "did the licence scan pass". On dev the gates are advisory, so
+                a green stage with a failing tool inside it is the normal case,
+                and it is precisely what the single status bar could not show.
+                Absent for a pipeline generated before per-tool reporting —
+                rendered as nothing rather than as an empty list, because
+                "not known" and "no tools ran" are different claims.
+              */}
+              {expandedStageData.checks &&
+                expandedStageData.checks.length > 0 && (
+                  <ul className="runs-stage-checks">
+                    {expandedStageData.checks.map((check) => {
+                      const tone = checkTone(check.conclusion);
+                      return (
+                        <li
+                          key={check.name}
+                          style={{ color: TONE_COLOR[tone] }}
+                        >
+                          <span aria-hidden="true">
+                            {tone === "passed"
+                              ? "✓"
+                              : tone === "failed"
+                                ? "✗"
+                                : tone === "running"
+                                  ? "●"
+                                  : "–"}
+                          </span>
+                          <span>{checkLabel(check.name)}</span>
+                          <span>{check.conclusion}</span>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+
               {(expandedStageData.friendlyMessages.length > 0
                 ? expandedStageData.friendlyMessages
                 : [fallbackStageMessage(expandedStageData)]
               ).map((msg, i) => (
-                  <MessageCard
-                    key={i}
-                    message={msg}
-                    githubRunUrl={expandedStageData.githubRunUrl}
-                  />
-                ))}
+                <MessageCard
+                  key={i}
+                  message={msg}
+                  githubRunUrl={expandedStageData.githubRunUrl}
+                />
+              ))}
 
-              {/* Raw logs — rendered only when the backend provides them */}
+              {/*
+                The names of the jobs GitHub recorded as failed — not log
+                output, despite the field being called rawLogs. The workflow
+                posts `Failed GitHub Actions job: <job> > <step>` here, so a
+                summary promising logs was writing a cheque the payload does
+                not cover, and a reader who opened it for an error message
+                found a job name instead.
+
+                It earns its place when annotations are present: the message
+                card then lists files and lines, and this is the only thing
+                naming which job produced them. Real log output lives in the
+                project's Pipeline runs tab, which fetches it per stage.
+              */}
               {expandedStageData.rawLogs && (
                 <details
                   style={{
@@ -184,7 +270,7 @@ export function RunPipeline({ run, reduced }: RunPipelineProps) {
                       <polyline points="4 17 10 11 4 5" />
                       <line x1="12" y1="19" x2="20" y2="19" />
                     </svg>
-                    View raw logs
+                    Which jobs GitHub reported as failed
                   </summary>
                   <pre
                     style={{
@@ -192,7 +278,8 @@ export function RunPipeline({ run, reduced }: RunPipelineProps) {
                       padding: "0.75rem",
                       fontSize: "0.72rem",
                       lineHeight: 1.6,
-                      fontFamily: "ui-monospace, 'Cascadia Code', 'Fira Code', monospace",
+                      fontFamily:
+                        "ui-monospace, 'Cascadia Code', 'Fira Code', monospace",
                       color: "var(--text-secondary)",
                       background: "rgba(0,0,0,0.3)",
                       overflowX: "auto",
@@ -200,7 +287,7 @@ export function RunPipeline({ run, reduced }: RunPipelineProps) {
                       wordBreak: "break-word",
                     }}
                   >
-                    {expandedStageData.rawLogs}
+                    {formatFailedJobs(expandedStageData.rawLogs)}
                   </pre>
                 </details>
               )}

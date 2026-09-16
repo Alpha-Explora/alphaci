@@ -11,6 +11,7 @@ import { WorkspaceProvider } from "@/features/workspace/selection";
 import { WorkflowBuilder } from "./workflow-builder";
 import { isGuest, useAuthSession, useSignOutAndRedirect } from "@/features/auth/session";
 import { studioSessionFields } from "../model/workflow-studio-rules";
+import { PROMOTION_FLOW_LABEL } from "@/shared/api/pipeline-branches";
 
 /* Level 0 in the skill's progressive depth: the studio's data belongs to
  * WorkflowBuilder and the hooks it owns, so this surface has no view-model and
@@ -197,7 +198,7 @@ function StudioPageHeader({ reduced }: Readonly<{ reduced: boolean }>) {
         </div>
         <div>
           <span>Promotion</span>
-          <strong>test &gt; uat &gt; main</strong>
+          <strong>{PROMOTION_FLOW_LABEL}</strong>
         </div>
         <div>
           <span>Stages</span>

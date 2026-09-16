@@ -252,7 +252,7 @@ function CentralWorkflowRefField({
     <label>
       <dt>
         Central workflow ref
-        <HelpTip text="The tag of cicd-external-project/cicd-workflow that this project's pipeline is pinned to. It supplies the reusable gated-stage logic — Access, Quality, Package — that every generated workflow calls into. Options are the real tags published on that repo." />
+        <HelpTip text="The tag of Alpha-Explora/alphaci-workflow that this project's pipeline is pinned to. It supplies the reusable gated-stage logic — Access, Quality, Package — that every generated workflow calls into. Options are the real tags published on that repo." />
       </dt>
       <select
         aria-label="Central workflow ref"

@@ -1,4 +1,9 @@
-import type { RunOverallStatus, StageStatus, MessageSeverity } from "./runs-types";
+import type {
+  RunOverallStatus,
+  StageStatus,
+  MessageSeverity,
+  StageId,
+} from "./runs-types";
 
 /* ── Color tokens for overall run status ─────────────────────────────────── */
 
@@ -106,6 +111,24 @@ export function stageStatusColors(status: StageStatus): StageColors {
         bg: "rgba(255,255,255,0.04)",
         iconColor: "var(--text-muted)",
       };
+    // A stage that never started is a broken pipeline, not a quiet one, so it
+    // reads like a failure rather than like something still waiting.
+    case "stalled":
+      return {
+        ring: "var(--danger)",
+        glow: "rgba(248,113,113,0.4)",
+        bg: "rgba(248,113,113,0.1)",
+        iconColor: "var(--danger)",
+      };
+    // Blocked is a consequence of an earlier failure, not a problem of its own.
+    // It stays muted so the stage that actually broke is what draws the eye.
+    case "blocked":
+      return {
+        ring: "var(--border-strong)",
+        glow: "transparent",
+        bg: "rgba(255,255,255,0.02)",
+        iconColor: "var(--text-muted)",
+      };
   }
 }
 
@@ -191,7 +214,7 @@ export function shortSha(sha: string): string {
 
 /* ── Stage display name ──────────────────────────────────────────────────── */
 
-export function stageLabel(stage: "access" | "quality" | "package"): string {
+export function stageLabel(stage: StageId): string {
   switch (stage) {
     case "access":
       return "Access";
@@ -199,5 +222,169 @@ export function stageLabel(stage: "access" | "quality" | "package"): string {
       return "Quality";
     case "package":
       return "Package";
+    case "verify":
+      return "Verify";
   }
+}
+
+/** How a tool's outcome should read: the semantic tone, not a colour. */
+export type CheckTone = "passed" | "failed" | "skipped" | "running";
+
+/**
+ * Map a GitHub job conclusion onto a tone.
+ *
+ * `skipped` is deliberately its own tone rather than folded into "passed".
+ * A skipped tool proved nothing, and showing it green is the same mistake the
+ * pipeline itself used to make when a stage of entirely skipped jobs reported
+ * success. An unrecognised conclusion also lands here rather than in "passed" —
+ * an outcome nobody has interpreted is not evidence that anything worked.
+ */
+export function checkTone(conclusion: string): CheckTone {
+  switch (conclusion) {
+    case "success":
+      return "passed";
+    case "failure":
+    case "timed_out":
+    case "action_required":
+      return "failed";
+    case "running":
+    case "in_progress":
+    case "queued":
+      return "running";
+    default:
+      return "skipped";
+  }
+}
+
+/**
+ * Turn a job id into something readable.
+ *
+ * Job ids are written for the pipeline — `dotnet-tests`, `sbom` — and the
+ * reader wants the tool. Known ids get a real name; anything else is
+ * de-hyphenated rather than dropped, so a stack this build has never heard of
+ * still shows its tools instead of a blank row.
+ */
+export function checkLabel(name: string): string {
+  const known: Record<string, string> = {
+    "validate-access": "Access check",
+    "branch-policy": "Branch policy",
+    "dotnet-tests": "Unit tests & coverage",
+    "backend-tests": "Unit tests & coverage",
+    "frontend-tests": "Unit tests & coverage",
+    lint: "Format & style",
+    typecheck: "Static analysis",
+    security: "Dependency audit",
+    secrets: "Secret scan",
+    licenses: "Licence scan",
+    sbom: "SBOM export",
+    sonar: "Code quality & SAST",
+    build: "Build & publish",
+  };
+
+  return (
+    known[name] ??
+    name.replace(/[-_]/g, " ").replace(/^./, (c) => c.toUpperCase())
+  );
+}
+
+/** How a stage's tool roster reads at a glance. */
+/**
+ * What the tools in one stage concluded, counted apart.
+ *
+ * `passed` and `total` alone could not say what a stage did. The package stage
+ * runs one deploy job per branch and skips the two that do not apply, so a
+ * perfectly healthy uat package reads 4 passed out of 9 — and a reader cannot
+ * tell those five apart from five broken tools. On the run that prompted this,
+ * four were skipped by design and exactly one had failed.
+ *
+ * Skipped stays separate from passed rather than being dropped from the total.
+ * Counting a skipped tool as passed would rebuild the original bug — a stage of
+ * entirely skipped jobs reporting success — inside the number meant to expose
+ * it; hiding it would leave the reader unable to see that a deploy never ran.
+ */
+export interface CheckSummary {
+  passed: number;
+  failed: number;
+  skipped: number;
+  running: number;
+  total: number;
+}
+
+/**
+ * Count what actually passed inside a stage.
+ *
+ * Returns null — not a zero summary — when the stage reports no checks. A
+ * pipeline generated before per-tool reporting is "not known", and rendering
+ * that as "0 of 0 checks passed" states something false about a run that may
+ * have exercised every tool it had.
+ *
+ * Only `passed` counts toward the numerator. A skipped or unrecognised
+ * conclusion proved nothing, and folding it in would rebuild the bug this
+ * whole line of work came from — a stage of entirely skipped jobs reporting
+ * success — inside the number meant to expose it.
+ */
+export function summarizeChecks(
+  checks: readonly { conclusion: string }[] | undefined,
+): CheckSummary | null {
+  if (checks === undefined || checks.length === 0) {
+    return null;
+  }
+
+  const count = (tone: CheckTone) =>
+    checks.filter((check) => checkTone(check.conclusion) === tone).length;
+
+  return {
+    passed: count("passed"),
+    failed: count("failed"),
+    skipped: count("skipped"),
+    running: count("running"),
+    total: checks.length,
+  };
+}
+
+/**
+ * The one line above the folded tool list.
+ *
+ * Problems lead. Someone opening a red stage is looking for what broke, and
+ * "4 of 9 checks passed" made them count backwards to find out whether the
+ * other five were failures or skips — the two things they most need to tell
+ * apart.
+ *
+ * A stage where everything ran and passed keeps its original phrasing. There
+ * is nothing to disambiguate there, and "8 of 8 checks passed" says it better
+ * than a list of one.
+ */
+export function checkSummaryLabel(summary: CheckSummary): string {
+  if (summary.passed === summary.total) {
+    return `${summary.passed} of ${summary.total} checks passed`;
+  }
+
+  const parts: string[] = [];
+  if (summary.failed > 0) parts.push(`${summary.failed} failed`);
+  if (summary.running > 0) parts.push(`${summary.running} running`);
+  if (summary.passed > 0) parts.push(`${summary.passed} passed`);
+  if (summary.skipped > 0) parts.push(`${summary.skipped} skipped`);
+
+  // Every conclusion fell outside the four tones — possible for a pipeline
+  // newer than this build. Say how many there are rather than nothing.
+  return parts.length > 0 ? parts.join(", ") : `${summary.total} checks`;
+}
+
+/**
+ * The failed-job names, without the prefix the workflow writes on each line.
+ *
+ * The payload repeats "Failed GitHub Actions job:" on every entry, which the
+ * surrounding heading already says once. Repeating it per line pushes the job
+ * name - the only part that differs - off to the right of the column.
+ *
+ * Falls back to the original text when nothing matches, so an unrecognised
+ * payload is still shown rather than silently blanked.
+ */
+export function formatFailedJobs(rawLogs: string): string {
+  const lines = rawLogs
+    .split(/\r?\n/)
+    .map((line) => line.replace(/^Failed GitHub Actions job:\s*/i, "").trim())
+    .filter((line) => line.length > 0);
+
+  return lines.length > 0 ? lines.join("\n") : rawLogs;
 }

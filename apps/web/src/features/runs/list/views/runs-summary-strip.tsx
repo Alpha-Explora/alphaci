@@ -23,7 +23,9 @@ export function RunsSummaryStrip({
       <div className="runs-summary-card runs-summary-card--primary">
         <span>Tracked commits</span>
         <strong>{summary.total}</strong>
-        <p>{repoFullName ? "Filtered repository" : "Across all repositories"}</p>
+        <p>
+          {repoFullName ? "Filtered repository" : "Across all repositories"}
+        </p>
       </div>
       <div className="runs-summary-card">
         <span>Running</span>

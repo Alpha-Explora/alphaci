@@ -25,11 +25,22 @@ function reviewOutputFile(outputFileName: string): string {
   return outputFileName;
 }
 
-function reviewNodeVersion(nodeVersion: string): string {
-  if (!nodeVersion) {
-    return "default";
+/**
+ * The runtime line, for whatever runtime the stack actually uses.
+ *
+ * This read "Node <version>" for every stack, so a .NET project was confirmed
+ * back as Node 24 — a version its pipeline never receives, since a non-Node
+ * stack takes the SDK from the workflow engine catalog.
+ */
+function reviewRuntime(
+  runtime: string | undefined,
+  language: string | undefined,
+  nodeVersion: string,
+): string {
+  if ((runtime ?? "node") !== "node") {
+    return language ?? runtime ?? "runtime from catalog";
   }
-  return nodeVersion;
+  return `Node ${nodeVersion || "default"}`;
 }
 
 function reviewDeliveryLabel(enabled: boolean): string {
@@ -106,7 +117,7 @@ export function SetupWizardReview({
           <div><dt>Visibility</dt><dd>{form.visibility}</dd></div>
           <div><dt>Shape</dt><dd>{selectedShapeLabel(projectCatalog.allRepoShapes, projectCatalog.selectedRepoShapeId)}</dd></div>
           <div><dt>Workflow</dt><dd>{reviewWorkflowLabel(projectCatalog.selectedWorkflowRecipe?.label)} · {reviewOutputFile(form.outputFileName)}</dd></div>
-          <div><dt>Runtime</dt><dd>Node {reviewNodeVersion(form.nodeVersion)} · {form.coverageThreshold}% coverage</dd></div>
+          <div><dt>Runtime</dt><dd>{reviewRuntime(projectCatalog.selectedProjectType?.runtime, projectCatalog.selectedProjectType?.language, form.nodeVersion)} · {form.coverageThreshold}% coverage</dd></div>
           <div><dt>Delivery</dt><dd>{reviewDeliveryLabel(deploymentProvisioning.enabled)}</dd></div>
         </dl>
         <div className="repo-wizard-review__checks">

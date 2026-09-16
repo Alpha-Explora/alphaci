@@ -302,15 +302,26 @@ export interface DetachDeploymentTargetRequest {
 export interface DisconnectProjectRequest {
   deleteGithubRepo?: boolean;
   confirmRepoName?: string;
+  /** Also delete the live Render/Vercel resources behind the project's targets. */
+  deleteProviderResources?: boolean;
+  /** Also delete the project's SonarCloud project. */
+  deleteSonarProject?: boolean;
 }
 
+/**
+ * A completed disconnect.
+ *
+ * Only ever a success. When GitHub, Render/Vercel or SonarCloud refuses a
+ * requested deletion the project is kept and the request fails with 409, whose body carries `code`
+ * and a `message` written for the user - read it with apiErrorReason.
+ */
 export interface DisconnectProjectResponse {
   ok: boolean;
   githubRepoDeleted?: boolean;
-  githubRepoDeleteError?: {
-    code: "missing_scope" | "not_found" | "other";
-    message: string;
-  };
+  /** Live Render/Vercel resources deleted; present only when requested. */
+  providerResourcesDeleted?: number;
+  /** Present only when requested: false when there was no SonarCloud project. */
+  sonarProjectDeleted?: boolean;
 }
 
 export interface DetachDeploymentTargetResponse {
@@ -669,7 +680,6 @@ export interface UpdateWorkspaceMemberRoleRequest {
   role: WorkspaceRole;
 }
 
-
 export interface ProjectAuditEvent {
   id: string;
   eventCode: string;
@@ -882,6 +892,12 @@ export interface CreateProjectResponse {
   githubCommitUrl: string | null;
   projectTypeId: string;
   workflowRecipeId: string;
+  /**
+   * Branches provisioning created. Optional because an older backend does not
+   * send it; the caller falls back rather than inventing a list, which is how
+   * the success screen came to name a branch that was never created.
+   */
+  branchesCreated?: string[];
   additionalWorkflowPaths?: string[];
   secondaryRepoFullName?: string;
   secondaryRepoUrl?: string;
@@ -1307,9 +1323,34 @@ export interface PendingAccountResponse {
 
 export type RunOverallStatus =
   "success" | "failure" | "running" | "cancelled" | "partial";
-export type StageId = "access" | "quality" | "package";
+/**
+ * Mirrors STAGE_ORDER in the backend's pipelines/ci/application/stages.ts, and
+ * the CHECK constraint on workflow.ci_run_reports.stage. All three widen
+ * together or a stage the pipeline reports is one this client cannot render.
+ *
+ * `verify` is the only one that needs a running service: the first three read
+ * source, and none of them can say whether what was deployed actually works.
+ */
+export type StageId = "access" | "quality" | "package" | "verify";
+/**
+ * A stage's state.
+ *
+ * `pending` used to cover every stage that had not reported, which hid the case
+ * that mattered: a workflow rejected before any job ran cannot report, so a
+ * broken pipeline looked merely slow. Two states separate that out.
+ *
+ *   blocked  an earlier stage did not pass, so this one was never triggered
+ *   stalled  the stage before it succeeded and nothing ever arrived — the
+ *            workflow did not start, and never will
+ */
 export type StageStatus =
-  "success" | "failure" | "running" | "cancelled" | "pending";
+  | "success"
+  | "failure"
+  | "running"
+  | "cancelled"
+  | "pending"
+  | "blocked"
+  | "stalled";
 export type MessageSeverity = "info" | "warning" | "error" | "success";
 
 export interface FriendlyMessage {
@@ -1332,11 +1373,33 @@ export interface FriendlyMessage {
 export interface StageReport {
   stage: StageId;
   status: StageStatus;
+  /** The GitHub run this stage executed in, for fetching its failure output. */
+  runId: number;
   friendlyMessages: FriendlyMessage[];
   githubRunUrl: string;
   updatedAt: string;
   /** Raw CI log output for this stage. Present only when the backend includes it. */
   rawLogs?: string;
+  /**
+   * What each tool inside the stage concluded.
+   *
+   * A stage status answers "did quality pass"; it cannot answer "did the
+   * licence scan pass". On dev the gates are advisory, so a stage is routinely
+   * green with a failing tool inside it — which is exactly the case the single
+   * status bar could not show.
+   *
+   * Absent for a stage reported by a pipeline generated before per-tool
+   * reporting. Absent means "not known", never "no tools ran".
+   */
+  checks?: StageCheck[];
+}
+
+/** One tool's outcome inside a stage. */
+export interface StageCheck {
+  name: string;
+  conclusion: string;
+  startedAt?: string;
+  completedAt?: string;
 }
 
 export interface RunGroup {

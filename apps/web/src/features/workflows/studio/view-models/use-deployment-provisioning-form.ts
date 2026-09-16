@@ -16,9 +16,26 @@ function defaultProviderForSlot(slot: EnvTargetSlot): EnvProvider {
   return slot === "frontend" ? "vercel" : "render";
 }
 
+/**
+ * Root directory for a slot, given the repo shape.
+ *
+ * Only the microservices scaffold has backend/ and frontend/ directories. A
+ * single-app repo carries its service at the root, and each multi-repo
+ * repository carries a flat standalone scaffold. Defaulting every backend slot
+ * to "backend" pointed Render at a folder that does not exist, and the deploy
+ * failed after a green build.
+ */
+function defaultRootDirectory(
+  slot: EnvTargetSlot,
+  repoShapeId: string | undefined,
+): string {
+  return repoShapeId === "microservices" ? slot : ".";
+}
+
 function defaultTarget(
   slot: EnvTargetSlot,
   projectName: string,
+  repoShapeId?: string,
 ): DeploymentProvisioningTargetRequest {
   const normalizedSlot: EnvTargetSlot =
     slot === "frontend" ? "frontend" : "backend";
@@ -31,7 +48,7 @@ function defaultTarget(
     ownershipMode: "flowci_managed",
     projectName,
     branchName: "uat",
-    rootDirectory: normalizedSlot === "backend" ? "backend" : ".",
+    rootDirectory: defaultRootDirectory(normalizedSlot, repoShapeId),
     buildCommand:
       provider === "render" ? "npm ci && npm run build" : "npm run build",
     startCommand: provider === "render" ? "npm run start:prod" : undefined,
@@ -137,17 +154,17 @@ function countRenderVariables(
   return branchVarCount + groupVarCount;
 }
 
-export function useDeploymentProvisioningForm() {
+export function useDeploymentProvisioningForm(repoShapeId?: string) {
   const [enabled, setEnabled] = useState(false);
   const [request, setRequest] = useState<DeploymentProvisioningRequest>({
     enabled: false,
-    targets: [defaultTarget("backend", "")],
+    targets: [defaultTarget("backend", "", repoShapeId)],
   });
 
   function setDefaultTarget(slot: EnvTargetSlot, projectName: string) {
     setRequest({
       enabled: true,
-      targets: [defaultTarget(slot, projectName)],
+      targets: [defaultTarget(slot, projectName, repoShapeId)],
     });
     setEnabled(true);
   }
@@ -158,7 +175,7 @@ export function useDeploymentProvisioningForm() {
     setRequest({
       enabled: true,
       targets: targets.map((target) =>
-        defaultTarget(target.slot, target.projectName),
+        defaultTarget(target.slot, target.projectName, repoShapeId),
       ),
     });
     setEnabled(true);

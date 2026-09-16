@@ -26,6 +26,7 @@ import type {
   DeploymentTarget,
   DeploymentTargetSyncResponse,
   DetachDeploymentTargetResponse,
+  DisconnectProjectResponse,
   ProjectAuditEventsResponse,
   ProjectCiRunsResponse,
   ProjectDeploymentsResponse,
@@ -86,21 +87,33 @@ export const projectsRepository = {
   },
 
   /**
-   * Disconnects the project, optionally deleting the GitHub repository too.
+   * Disconnects the project, optionally deleting the GitHub repository, the
+   * live Render/Vercel resources and the SonarCloud project too.
    *
    * The repo name is echoed back as confirmation, which is what makes the
-   * destructive branch deliberate rather than a checkbox away.
+   * destructive GitHub branch deliberate rather than a checkbox away.
    */
   disconnect(
     projectId: string,
-    deleteGithubRepo: boolean,
+    options: {
+      deleteGithubRepo: boolean;
+      deleteProviderResources: boolean;
+      deleteSonarProject: boolean;
+    },
     repoFullName: string,
-  ): Promise<unknown> {
+  ): Promise<DisconnectProjectResponse> {
+    const body = {
+      ...(options.deleteGithubRepo
+        ? { deleteGithubRepo: true, confirmRepoName: repoFullName }
+        : {}),
+      ...(options.deleteProviderResources
+        ? { deleteProviderResources: true }
+        : {}),
+      ...(options.deleteSonarProject ? { deleteSonarProject: true } : {}),
+    };
     return disconnectProject(
       projectId,
-      deleteGithubRepo
-        ? { deleteGithubRepo: true, confirmRepoName: repoFullName }
-        : undefined,
+      Object.keys(body).length > 0 ? body : undefined,
     );
   },
 
