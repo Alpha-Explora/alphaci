@@ -7,8 +7,8 @@ import type { ProjectDetailViewModel } from "../view-models/use-project-detail-v
  *
  * It lives here rather than inside ProjectDetailTabs because deleting navigates
  * away, and the route is what owns navigation. The two-step confirmation and
- * the typed repo name are the whole point: the destructive branch has to be
- * deliberate, not a checkbox away.
+ * the typed repo name are the whole point: every destructive branch (GitHub,
+ * Render/Vercel, SonarCloud) has to be deliberate, not a checkbox away.
  */
 export function ProjectDangerZone({
   vm,
@@ -23,6 +23,11 @@ export function ProjectDangerZone({
   const setConfirmDelete = vm.setConfirmDelete;
   const deleteGithubRepoOptIn = vm.deleteGithubRepoOptIn;
   const setDeleteGithubRepoOptIn = vm.setDeleteGithubRepoOptIn;
+  const optIns: DeleteOptIns = {
+    github: deleteGithubRepoOptIn,
+    providerResources: vm.deleteProviderResourcesOptIn,
+    sonarProject: vm.deleteSonarProjectOptIn,
+  };
   const confirmRepoNameInput = vm.confirmRepoNameInput;
   const setConfirmRepoNameInput = vm.setConfirmRepoNameInput;
   const deleteError = vm.deleteError;
@@ -47,12 +52,15 @@ export function ProjectDangerZone({
         {confirmDelete ? (
           <DeleteProjectConfirm
             repoName={repoName}
-            deleteGithubRepoOptIn={deleteGithubRepoOptIn}
+            optIns={optIns}
             confirmRepoNameInput={confirmRepoNameInput}
             deleteError={deleteError}
             isDeleting={isDeleting}
-            onToggleGithub={(checked) => {
-              setDeleteGithubRepoOptIn(checked);
+            onToggle={(key, checked) => {
+              if (key === "github") setDeleteGithubRepoOptIn(checked);
+              if (key === "providerResources")
+                vm.setDeleteProviderResourcesOptIn(checked);
+              if (key === "sonarProject") vm.setDeleteSonarProjectOptIn(checked);
               setConfirmRepoNameInput("");
             }}
             onConfirmName={setConfirmRepoNameInput}
@@ -60,6 +68,8 @@ export function ProjectDangerZone({
             onCancel={() => {
               setConfirmDelete(false);
               setDeleteGithubRepoOptIn(false);
+              vm.setDeleteProviderResourcesOptIn(false);
+              vm.setDeleteSonarProjectOptIn(false);
               setConfirmRepoNameInput("");
               setDeleteError(null);
             }}
@@ -88,7 +98,7 @@ function DeleteProjectIdle({ onStart }: Readonly<{ onStart: () => void }>) {
           Delete Project
         </h3>
         <p style={{ margin: 0, fontSize: "0.78rem", color: "var(--text-secondary)" }}>
-          Disconnect this project from ALPHACI. You can optionally delete the GitHub repository.
+          Disconnect this project from ALPHACI. You can optionally delete the GitHub repository, its Render/Vercel deployments and its SonarCloud project.
         </p>
       </div>
       <button
@@ -103,40 +113,72 @@ function DeleteProjectIdle({ onStart }: Readonly<{ onStart: () => void }>) {
   );
 }
 
+type DeleteOptInKey = "github" | "providerResources" | "sonarProject";
+type DeleteOptIns = Record<DeleteOptInKey, boolean>;
+
+function anyOptIn(optIns: DeleteOptIns): boolean {
+  return optIns.github || optIns.providerResources || optIns.sonarProject;
+}
+
 function deleteConfirmDisabled(
   isDeleting: boolean,
-  deleteGithubRepoOptIn: boolean,
+  optIns: DeleteOptIns,
   confirmRepoNameInput: string,
   repoName: string,
 ): boolean {
   if (isDeleting) return true;
-  if (!deleteGithubRepoOptIn) return false;
+  if (!anyOptIn(optIns)) return false;
   return confirmRepoNameInput !== repoName;
 }
 
-function deleteConfirmLabel(isDeleting: boolean, deleteGithubRepoOptIn: boolean): string {
+function deleteConfirmLabel(isDeleting: boolean, optIns: DeleteOptIns): string {
   if (isDeleting) return "Deleting...";
-  if (deleteGithubRepoOptIn) return "Delete repo & disconnect";
+  if (anyOptIn(optIns)) return "Delete selected & disconnect";
   return "Yes, disconnect";
 }
 
+const DELETE_OPT_INS: ReadonlyArray<{
+  key: DeleteOptInKey;
+  title: string;
+  detail: (repoName: string) => string;
+}> = [
+  {
+    key: "github",
+    title: "Also delete the GitHub repository",
+    detail: (repoName) =>
+      `Permanently deletes ${repoName} on GitHub — this cannot be undone.`,
+  },
+  {
+    key: "providerResources",
+    title: "Also delete the Render / Vercel deployments",
+    detail: () =>
+      "Permanently deletes the live services and projects behind this project's deployment targets.",
+  },
+  {
+    key: "sonarProject",
+    title: "Also delete the SonarCloud project",
+    detail: () =>
+      "Permanently deletes the SonarCloud project and its analysis history.",
+  },
+];
+
 function DeleteProjectConfirm({
   repoName,
-  deleteGithubRepoOptIn,
+  optIns,
   confirmRepoNameInput,
   deleteError,
   isDeleting,
-  onToggleGithub,
+  onToggle,
   onConfirmName,
   onDelete,
   onCancel,
 }: Readonly<{
   repoName: string;
-  deleteGithubRepoOptIn: boolean;
+  optIns: DeleteOptIns;
   confirmRepoNameInput: string;
   deleteError: string | null;
   isDeleting: boolean;
-  onToggleGithub: (checked: boolean) => void;
+  onToggle: (key: DeleteOptInKey, checked: boolean) => void;
   onConfirmName: (value: string) => void;
   onDelete: () => void;
   onCancel: () => void;
@@ -171,31 +213,34 @@ function DeleteProjectConfirm({
             color: "var(--text-muted)",
           }}
         >
-          The project will be disconnected from ALPHACI. The GitHub repository will be kept unless you opt in below.
+          The project will be disconnected from ALPHACI. The GitHub repository, deployments and SonarCloud project are kept unless you opt in below.
         </p>
       </div>
 
-      <label
-        className="enhancement-option"
-        style={{ cursor: "pointer", display: "flex", alignItems: "flex-start", gap: "0.5rem" }}
-      >
-        <input
-          type="checkbox"
-          checked={deleteGithubRepoOptIn}
-          onChange={(e) => onToggleGithub(e.target.checked)}
-          style={{ marginTop: "0.2rem" }}
-        />
-        <span style={{ display: "flex", flexDirection: "column", gap: "0.15rem" }}>
-          <span style={{ fontSize: "0.83rem", fontWeight: 600, color: "var(--text-primary)" }}>
-            Also delete the GitHub repository
+      {DELETE_OPT_INS.map((option) => (
+        <label
+          key={option.key}
+          className="enhancement-option"
+          style={{ cursor: "pointer", display: "flex", alignItems: "flex-start", gap: "0.5rem" }}
+        >
+          <input
+            type="checkbox"
+            checked={optIns[option.key]}
+            onChange={(e) => onToggle(option.key, e.target.checked)}
+            style={{ marginTop: "0.2rem" }}
+          />
+          <span style={{ display: "flex", flexDirection: "column", gap: "0.15rem" }}>
+            <span style={{ fontSize: "0.83rem", fontWeight: 600, color: "var(--text-primary)" }}>
+              {option.title}
+            </span>
+            <span style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>
+              {option.detail(repoName)}
+            </span>
           </span>
-          <span style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>
-            Permanently deletes {repoName} on GitHub — this cannot be undone.
-          </span>
-        </span>
-      </label>
+        </label>
+      ))}
 
-      {deleteGithubRepoOptIn ? (
+      {anyOptIn(optIns) ? (
         <div style={{ display: "flex", flexDirection: "column", gap: "0.4rem" }}>
           <label
             htmlFor="confirm-repo-name-input"
@@ -242,14 +287,14 @@ function DeleteProjectConfirm({
           onClick={() => void onDelete()}
           disabled={deleteConfirmDisabled(
             isDeleting,
-            deleteGithubRepoOptIn,
+            optIns,
             confirmRepoNameInput,
             repoName,
           )}
           className="confirm-btn-danger"
           style={{ padding: "0.45rem 1rem", fontSize: "0.82rem" }}
         >
-          {deleteConfirmLabel(isDeleting, deleteGithubRepoOptIn)}
+          {deleteConfirmLabel(isDeleting, optIns)}
         </button>
         <button
           type="button"

@@ -282,18 +282,26 @@ export interface DetachDeploymentTargetRequest {
 export interface DisconnectProjectRequest {
   deleteGithubRepo?: boolean;
   confirmRepoName?: string;
+  /** Also delete the live Render/Vercel resources behind the project's targets. */
+  deleteProviderResources?: boolean;
+  /** Also delete the project's SonarCloud project. */
+  deleteSonarProject?: boolean;
 }
 
 /**
  * A completed disconnect.
  *
- * Only ever a success. When GitHub refuses to delete the repository the
- * project is kept and the request fails with 409, whose body carries `code`
+ * Only ever a success. When GitHub, Render/Vercel or SonarCloud refuses a
+ * requested deletion the project is kept and the request fails with 409, whose body carries `code`
  * and a `message` written for the user - read it with apiErrorReason.
  */
 export interface DisconnectProjectResponse {
   ok: boolean;
   githubRepoDeleted?: boolean;
+  /** Live Render/Vercel resources deleted; present only when requested. */
+  providerResourcesDeleted?: number;
+  /** Present only when requested: false when there was no SonarCloud project. */
+  sonarProjectDeleted?: boolean;
 }
 
 export interface DetachDeploymentTargetResponse {
