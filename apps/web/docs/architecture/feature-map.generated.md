@@ -11,6 +11,9 @@ sources:
   - id: "surface-registry"
     resource: "docs/capabilities/surface-registry.ts"
     title: "Capability surface map"
+  - id: "surface-registry"
+    resource: "docs/capabilities/surface-registry.ts"
+    title: "Generated capability surface view"
 ---
 
 # Frontend feature map
@@ -20,7 +23,7 @@ Feature domains are UI ownership boundaries. They consume backend bounded contex
 | Feature domain | Backend context | Current responsibility | Source files |
 |---|---|---|---:|
 | `admin` | `identity-access` | platform administration, user review, and feedback | 16 |
-| `auth` | `identity-access` | sign-in, callback, and session presentation | 17 |
+| `auth` | `identity-access` | sign-in, callback, and session presentation | 18 |
 | `capabilities` | `identity-access` | compatibility capability consumption from /api/v1/capabilities | 6 |
 | `groups` | `identity-access` | hierarchy groups, systems, repositories, members, activity, and delivery projects | 47 |
 | `guide` | `platform-ops` | in-product guide | 3 |
@@ -28,7 +31,7 @@ Feature domains are UI ownership boundaries. They consume backend bounded contex
 | `notifications` | `platform-ops` | inbox and notification preferences | 15 |
 | `projects` | `projects` | project detail, environments, hosting, drift, previews, and workflow settings | 64 |
 | `runs` | `pipelines` | CI run history presentation | 20 |
-| `settings` | `identity-access` | account, workspace, and notification settings | 18 |
+| `settings` | `identity-access` | account, workspace, and notification settings | 20 |
 | `teams` | `identity-access` | team listing over hierarchy groups | 10 |
 | `workflows` | `projects` | project creation and workflow studio | 48 |
 | `workspace` | `identity-access` | application shell, navigation, and workspace switching | 10 |

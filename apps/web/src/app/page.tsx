@@ -1,15 +1,10 @@
 import { redirect } from "next/navigation";
 
-/**
- * ALPHACI CI/CD Platform is an internal employee workspace — there is no
- * public landing page. The root path sends visitors straight to sign-in.
- *
- * We redirect to /login unconditionally rather than trying to detect an
- * existing session here: the session cookie is owned by the backend origin
- * (different host/port), so it is not readable from the frontend. The /login
- * page calls the backend `/auth/me` with credentials and bounces already
- * authenticated users on to /home.
- */
+import LandingView from "@/features/public-site";
+import { PUBLIC_SITE_ENABLED } from "@/shared/composition/build-profile";
+
 export default function RootPage() {
-  redirect("/login");
+  if (!PUBLIC_SITE_ENABLED) redirect("/login");
+
+  return <LandingView />;
 }

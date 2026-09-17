@@ -42,3 +42,16 @@ npm run dev
 ```
 
 Set `NEXT_PUBLIC_API_BASE_URL` to the backend origin, usually `http://localhost:4000`. Port 3000 must match `FRONTEND_URL` in the backend environment.
+
+Run a product edition locally with the paired composition variables:
+
+```powershell
+npm run dev:saas
+npm run dev:edu
+npm run dev:enterprise
+```
+
+SaaS serves the marketing landing at `/`; EDU and Enterprise redirect `/` to
+`/login` for now. To create a production build for one edition, use the
+matching `build:saas`, `build:edu`, or `build:enterprise` script. The
+equivalent checked-in environment presets are in `deploy/env/`.

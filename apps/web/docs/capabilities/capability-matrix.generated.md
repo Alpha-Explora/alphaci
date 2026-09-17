@@ -5,6 +5,9 @@ description: "Generated inventory of shared catalog keys and the frontend surfac
 tags: [capabilities, map, packs]
 status: stable
 sources:
+  - id: "catalog-package"
+    resource: "vendor/@alphaci/capability-catalog"
+    title: "Versioned capability catalog fixture"
   - id: "catalog-snapshot"
     resource: "docs/capabilities/catalog.snapshot.json"
     title: "Shared catalog snapshot"
@@ -18,7 +21,7 @@ sources:
 
 # Capability matrix
 
-This matrix is generated from the shared catalog snapshot and the frontend surface registry. The backend repository owns capability keys, maturity, and pack applicability. This frontend does not replace `/api/v1/capabilities` and does not implement entitlement resolution.
+This matrix is generated from the versioned `@alphaci/capability-catalog` package and the frontend surface registry. The checked-in snapshot supplies the backend-owned descriptions and configuration notes used for documentation. This frontend does not replace `/api/v1/capabilities` and does not implement entitlement resolution.
 
 | Capability key | Context | Maturity | Compatibility field | View flag | Frontend routes |
 |---|---|---|---|---|---|
@@ -33,6 +36,7 @@ This matrix is generated from the shared catalog snapshot and the frontend surfa
 | `platform.audit-events` | `platform-ops` | stable | `auditEvents` | `auditEventsEnabled` | none |
 | `platform.notifications` | `platform-ops` | stable | `notifications` | `notificationsEnabled` | `/inbox`, `/settings` |
 | `platform.data-residency` | `platform-ops` | not-implemented | none | none | none |
+| `platform.public-site` | `platform-ops` | not-implemented | none | `publicSiteEnabled` | `/`, `/pricing`, `/guide` |
 | `billing.subscription-gate` | `billing` | stable | none | none | none |
 | `billing.usage-quotas` | `billing` | limited | `usageQuotas` | `usageQuotasEnabled` | none |
 | `billing.checkout` | `billing` | not-implemented | none | none | none |
@@ -45,6 +49,7 @@ This matrix is generated from the shared catalog snapshot and the frontend surfa
 | `runtime.managed-secrets` | `runtime` | not-implemented | none | none | none |
 | `runtime.air-gap-packaging` | `runtime` | not-implemented | none | none | none |
 | `runtime.customer-isolation` | `runtime` | not-implemented | none | none | none |
+| `runtime.client-composition` | `runtime` | limited | `clientComposition` | `clientCompositionEnabled` | `/settings` |
 | `projects.sync-snapshots` | `projects` | limited | `projectSyncSnapshots` | `projectSyncSnapshotsEnabled` | `/projects/[projectId]` |
 | `projects.workflow-settings-preview` | `projects` | stable | `workflowSettingsPreview` | `workflowSettingsPreviewEnabled` | `/projects/[projectId]` |
 | `projects.workflow-update-pr` | `projects` | limited | `workflowUpdatePr` | `workflowUpdatePrEnabled` | `/projects/[projectId]` |
@@ -58,4 +63,4 @@ This matrix is generated from the shared catalog snapshot and the frontend surfa
 - **not-implemented** keys must remain without a compatibility field until the backend provides the behavior.
 - A loaded flag that does not yet hide a route is still recorded. The Teams and group routes currently remain visible to authenticated users even though `hierarchyEnabled` is loaded.
 
-Pack profiles list every key in snapshot order. Pack status is derived from maturity and edition applicability.
+Pack profiles list every key in package order. Pack status is derived from maturity and edition applicability.

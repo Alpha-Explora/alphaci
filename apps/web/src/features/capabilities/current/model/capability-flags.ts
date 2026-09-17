@@ -1,7 +1,9 @@
 import type { CapabilitiesResponse, EnvOwnershipMode } from "@/shared/api/contracts";
+import { PUBLIC_SITE_ENABLED } from "@/shared/composition/build-profile";
 
 export type CapabilityViewFlags = {
   envProvisioningEnabled: boolean;
+  clientCompositionEnabled: boolean;
   deploymentOwnershipMode: EnvOwnershipMode;
   projectSyncSnapshotsEnabled: boolean;
   workflowSettingsPreviewEnabled: boolean;
@@ -16,12 +18,14 @@ export type CapabilityViewFlags = {
   workspacesEnabled: boolean;
   auditEventsEnabled: boolean;
   notificationsEnabled: boolean;
+  publicSiteEnabled: boolean;
   hierarchyEnabled: boolean;
   hierarchyGithubSyncMode: "stub" | "live";
 };
 
 const DISABLED_CAPABILITY_FLAGS: CapabilityViewFlags = {
   envProvisioningEnabled: false,
+  clientCompositionEnabled: false,
   deploymentOwnershipMode: "flowci_managed",
   projectSyncSnapshotsEnabled: false,
   workflowSettingsPreviewEnabled: false,
@@ -36,6 +40,7 @@ const DISABLED_CAPABILITY_FLAGS: CapabilityViewFlags = {
   workspacesEnabled: false,
   auditEventsEnabled: false,
   notificationsEnabled: false,
+  publicSiteEnabled: false,
   hierarchyEnabled: false,
   hierarchyGithubSyncMode: "stub",
 };
@@ -60,8 +65,12 @@ export function capabilityViewFlags(
   if (!capabilities) {
     return DISABLED_CAPABILITY_FLAGS;
   }
+  const capabilityKeys = capabilities.capabilityKeys ?? [];
   return {
     envProvisioningEnabled: optionalEnabled(capabilities.envProvisioning),
+    clientCompositionEnabled:
+      capabilityKeys.includes("runtime.client-composition") &&
+      capabilities.clientComposition?.enabled === true,
     deploymentOwnershipMode: ownershipMode(capabilities.envProvisioning?.modes),
     projectSyncSnapshotsEnabled: optionalEnabled(capabilities.projectSyncSnapshots),
     workflowSettingsPreviewEnabled: optionalEnabled(capabilities.workflowSettingsPreview),
@@ -76,6 +85,7 @@ export function capabilityViewFlags(
     workspacesEnabled: optionalEnabled(capabilities.workspaces),
     auditEventsEnabled: optionalEnabled(capabilities.auditEvents),
     notificationsEnabled: optionalEnabled(capabilities.notifications),
+    publicSiteEnabled: PUBLIC_SITE_ENABLED,
     hierarchyEnabled: optionalEnabled(capabilities.hierarchy),
     hierarchyGithubSyncMode: hierarchySyncMode(capabilities.hierarchy),
   };

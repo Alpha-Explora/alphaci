@@ -167,6 +167,19 @@ function capabilityRegistryErrors() {
   ];
 }
 
+function generatedSurfaceRegistryErrors() {
+  const result = spawnSync(
+    process.execPath,
+    [path.join(__dirname, 'generate-capability-surface-registry.cjs'), '--check'],
+    { cwd: ROOT, encoding: 'utf8' },
+  );
+  if (result.status === 0) return [];
+  return [
+    'generated capability surface registry is stale or cannot be regenerated: ' +
+      (result.stderr || result.stdout).trim(),
+  ];
+}
+
 function main() {
   const errors = [
     ...requiredFileErrors(),
@@ -175,6 +188,7 @@ function main() {
     ...sourceBranchErrors(),
     ...changelogErrors(),
     ...generatedMapErrors(),
+    ...generatedSurfaceRegistryErrors(),
     ...capabilityRegistryErrors(),
     ...validateBundle(DOCS),
   ];

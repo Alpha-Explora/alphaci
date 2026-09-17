@@ -4,19 +4,27 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
 import {
+  authErrorStatus,
   createGitHubLoginUrl,
+  devQuickLogin,
   useAuthSessionViewModel,
   warmupBackend,
   getAuthenticatedRedirectPath,
 } from "@/features/auth/session";
+import { getApiBaseUrl } from "@/shared/api/request";
 
 import { toSafeNextPath } from "../model/login-rules";
+import { canUseDevQuickLogin } from "../model/dev-quick-login";
 
 export interface OAuthLoginViewModel {
   status: ReturnType<typeof useAuthSessionViewModel>["status"];
   isWarming: boolean;
   githubLoginHref: string;
   handleLogin: (event: React.MouseEvent<HTMLAnchorElement>) => Promise<void>;
+  canQuickLogin: boolean;
+  isQuickLoggingIn: boolean;
+  quickLoginError: string | null;
+  handleQuickLogin: () => Promise<void>;
 }
 
 export function useOAuthLoginViewModel(
@@ -24,11 +32,15 @@ export function useOAuthLoginViewModel(
 ): OAuthLoginViewModel {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { status, session } = useAuthSessionViewModel();
+  const { status, session, refresh } = useAuthSessionViewModel();
   const [isWarming, setIsWarming] = useState(false);
-  const [browserOrigin] = useState<string | null>(() =>
-    typeof window === "undefined" ? null : window.location.origin,
-  );
+  const [isQuickLoggingIn, setIsQuickLoggingIn] = useState(false);
+  const [quickLoginError, setQuickLoginError] = useState<string | null>(null);
+  const [browserOrigin, setBrowserOrigin] = useState<string | null>(null);
+
+  useEffect(() => {
+    setBrowserOrigin(window.location.origin);
+  }, []);
 
   const nextPath = useMemo(
     () => toSafeNextPath(searchParams.get("next")),
@@ -50,6 +62,16 @@ export function useOAuthLoginViewModel(
     () => createGitHubLoginUrl(githubCallbackReturnTo),
     [githubCallbackReturnTo],
   );
+
+  const canQuickLogin = canUseDevQuickLogin({
+    nodeEnv: process.env.NODE_ENV,
+    featureFlag: process.env.NEXT_PUBLIC_DEV_QUICK_LOGIN,
+    browserOrigin,
+    apiBaseUrl: getApiBaseUrl(),
+    apiBaseUrlConfigured: Boolean(
+      process.env.NEXT_PUBLIC_API_BASE_URL || process.env.NEXT_PUBLIC_API_URL,
+    ),
+  });
 
   useEffect(() => {
     if (status !== "signed-in") return;
@@ -73,5 +95,34 @@ export function useOAuthLoginViewModel(
     [githubLoginHref],
   );
 
-  return { status, isWarming, githubLoginHref, handleLogin };
+  const handleQuickLogin = useCallback(async () => {
+    if (!canQuickLogin || isQuickLoggingIn) return;
+
+    setIsQuickLoggingIn(true);
+    setQuickLoginError(null);
+    try {
+      await devQuickLogin();
+      await refresh();
+    } catch (cause) {
+      const statusCode = authErrorStatus(cause);
+      setQuickLoginError(
+        statusCode === 404
+          ? "Quick login is not enabled for this local environment."
+          : "Unable to start the local development session.",
+      );
+    } finally {
+      setIsQuickLoggingIn(false);
+    }
+  }, [canQuickLogin, isQuickLoggingIn, refresh]);
+
+  return {
+    status,
+    isWarming,
+    githubLoginHref,
+    handleLogin,
+    canQuickLogin,
+    isQuickLoggingIn,
+    quickLoginError,
+    handleQuickLogin,
+  };
 }

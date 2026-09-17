@@ -20,13 +20,13 @@ Use the exact headings below for each pack profile. Replace bracketed values wit
 
 ## Current composition
 
-- Documentation status: `documentation-only`
-- Runtime selection behavior: `[describe only if implemented]`
+- Build profile: `[profile]` (`[pack membership]`)
+- Runtime selection behavior: `[describe the profile resolver and fail-closed exclusions]`
 - Current frontend applicability: `[evidence]`
 
 ## Capability status
 
-List every snapshot capability in snapshot order. Do not sample. Status must match the shared catalog rule in the [pack contract](pack-contract.md).
+List every package capability in package order. Do not sample. Status must match the shared catalog rule in the [pack contract](pack-contract.md).
 
 | Capability key | Status | Evidence or limit |
 |---|---|---|

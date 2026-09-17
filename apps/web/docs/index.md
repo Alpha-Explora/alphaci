@@ -3,14 +3,14 @@ okf_version: "0.2"
 ---
 # AlphaCI frontend knowledge bundle
 
-This bundle describes the current AlphaCI frontend as one Next.js deployable. It uses the same Golden Copy vocabulary as the backend: architecture, capability, pack, runbook, evidence, and report. The backend repository owns the product catalog. This frontend snapshots that catalog and records the screens that consume it.
+This bundle describes the current AlphaCI frontend as one Next.js deployable. It uses the same Golden Copy vocabulary as the backend: architecture, capability, pack, runbook, evidence, and report. The backend repository owns the versioned product catalog package, including capability surfaces. This frontend keeps a local package fixture, a documentation snapshot, and a generated surface view for the screens that consume it.
 
 ## Foundations
 
 * [Executive and implementation report](executive/) - self-contained current UI position and Enterprise-first implementation program.
 * [Constitution](constitution.md) - executable current-state invariants.
 * [Architecture](architecture/) - feature ownership, routes, checks, and decisions.
-* [Capabilities](capabilities/) - consumption contract, shared catalog snapshot, and generated matrix.
+* [Capabilities](capabilities/) - package consumption contract, documentation snapshot, and generated matrix.
 * [Packs](packs/) - comparable SaaS, EDU, and Enterprise composition references.
 * [Runbooks](runbooks/) - verification and session procedures.
 

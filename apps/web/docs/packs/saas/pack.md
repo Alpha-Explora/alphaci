@@ -22,13 +22,14 @@ sources:
 
 ## Current composition
 
-- Documentation status: `documentation-only`
-- Runtime selection behavior: No pack-selection resolver is implemented in this frontend.
+- Build profile: `hosted` (`saas`, `edu`)
+- Runtime selection behavior: The build-time profile resolver projects the versioned catalog and aliases excluded feature barrels to fail-closed `notFound()` stubs. Runtime capability truth still comes from `/api/v1/capabilities`.
+- Excluded frontend feature barrels: `@/features/settings/client-composition`
 - Current frontend applicability: The same Next.js application exposes the shared capability catalog. Hosted deployment is a deployment-target and configuration concern, not a separate frontend.
 
 ## Capability status
 
-This table lists every current catalog capability in snapshot order. Status is derived from capability maturity and edition applicability. Pack-specific gaps that are not registry keys stay in Explicit non-support.
+This table lists every current catalog capability in package order. Status is derived from capability maturity and edition applicability. Pack-specific gaps that are not registry keys stay in Explicit non-support.
 
 | Capability key | Status | Evidence or limit |
 |---|---|---|
@@ -43,6 +44,7 @@ This table lists every current catalog capability in snapshot order. Status is d
 | `platform.audit-events` | `available` | Project audit event recording through the application outbox. Compatibility flag is loaded by the capabilities view-model. No dedicated route yet hides or shows a panel from this flag. Configuration: auditEvents.enabled. |
 | `platform.notifications` | `available` | In-app notification requests and persistence. Frontend surface: `/inbox`, `/settings`. Configuration: notifications.enabled. |
 | `platform.data-residency` | `not-applicable` | Not part of this pack composition. |
+| `platform.public-site` | `not-implemented` | Public marketing site: landing, pricing, and guide pages served to unauthenticated visitors. Frontend surface: `/`, `/pricing`, `/guide`. Not implemented in the backend catalog. |
 | `billing.subscription-gate` | `available` | Subscription entitlement gating for authenticated access and CI run validation. No paywall or `/subscribe` route. Access gating is enforced by the backend session. Configuration: subscription.gateEnabled. |
 | `billing.usage-quotas` | `configuration-gated` | Usage tracking and quota policy checks. Compatibility flag is loaded by the capabilities view-model. No dedicated route yet hides or shows a panel from this flag. Configuration: usageQuotas.enabled. |
 | `billing.checkout` | `not-implemented` | Self-serve payment checkout. No frontend surface. Not implemented in the backend catalog. |
@@ -55,12 +57,18 @@ This table lists every current catalog capability in snapshot order. Status is d
 | `runtime.managed-secrets` | `not-applicable` | Not part of this pack composition. |
 | `runtime.air-gap-packaging` | `not-applicable` | Not part of this pack composition. |
 | `runtime.customer-isolation` | `not-applicable` | Not part of this pack composition. |
+| `runtime.client-composition` | `not-applicable` | Not part of this pack composition. |
 | `projects.sync-snapshots` | `configuration-gated` | Project synchronization snapshot reads and findings. Frontend surface: `/projects/[projectId]`. Configuration: projectSyncSnapshots.enabled. |
 | `projects.workflow-settings-preview` | `available` | Workflow settings preview and validation. Frontend surface: `/projects/[projectId]`. Configuration: workflowSettingsPreview.enabled. |
 | `projects.workflow-update-pr` | `configuration-gated` | Workflow update pull-request requests. Frontend surface: `/projects/[projectId]`. Configuration: workflowUpdatePr.enabled. |
 | `projects.target-management` | `available` | Project target management composition with Runtime. Frontend surface: `/projects/[projectId]`. Configuration: projectTargetManagement.enabled. |
 | `pipelines.ci-run-tracking` | `configuration-gated` | CI run report ingestion and tracking. Frontend surface: `/runs`, `/projects/[projectId]`. Configuration: ciRunTracking.enabled. |
 | `pipelines.github-enterprise-server` | `not-applicable` | Not part of this pack composition. |
+
+## Build and exclusion
+
+- Excluded capability keys: 7
+- The build resolver aliases any excluded feature barrel to a `notFound()` stub. Route names may remain in the build manifest; implementation code is the excluded unit.
 
 ## Deployment scope
 
@@ -77,5 +85,5 @@ Marketing-site behavior is not a frontend capability and is not a registry key. 
 ## Ownership and verification
 
 - Feature owners: the domains in the [feature map](/architecture/feature-map.generated.md).
-- Source: `docs/capabilities/catalog.snapshot.json` and `docs/capabilities/surface-registry.ts`.
+- Source: `@alphaci/capability-catalog@0.2.0`, `docs/capabilities/catalog.snapshot.json`, and `docs/capabilities/surface-registry.ts`.
 - Verification: `npm run check:documentation`.

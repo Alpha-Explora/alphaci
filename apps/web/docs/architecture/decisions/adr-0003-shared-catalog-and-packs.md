@@ -23,12 +23,12 @@ sources:
 
 SaaS, EDU, and Enterprise are composition packs of one product. This frontend is one application. A pack selects and documents capabilities; it does not own feature domains, routes, or wire contracts.
 
-When the sibling backend registry is present, `docs/capabilities/catalog.snapshot.json` must match it. Pack status is derived from catalog maturity and edition applicability, not invented per pack.
+The frontend consumes the versioned `@alphaci/capability-catalog` package owned by the backend. The checked-in snapshot mirrors the package's public fields for portable documentation. Pack status is derived from catalog maturity and edition applicability, not invented per pack.
 
 ## Rejected alternatives
 
 - A separate frontend implementation for each pack was rejected.
-- Pack-specific route trees or edition folders were rejected.
+- Pack-specific route trees, duplicated screens, and edition folders were rejected. Removing a pack's source from a build artifact is not covered by this rejection; see ADR-0004.
 - A tenant or environment toggle that shows a capability absent from the catalog was rejected.
 
 ## Consequences

@@ -1,10 +1,37 @@
 import type { NextConfig } from "next";
+import { createRequire } from "node:module";
 import { dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { BUILD_EDITION, BUILD_PROFILE } from "./src/shared/composition/build-profile";
+
+const require = createRequire(import.meta.url);
+const {
+  loadCatalogPackage,
+  readSurfaceRegistry,
+  resolveBuildProfile,
+  resolveProfile,
+  writeCapabilityStubs,
+} = require("./scripts/lib/capability-profile.cjs");
+
 const rootDir = dirname(fileURLToPath(import.meta.url));
+const buildProfile = resolveBuildProfile(BUILD_PROFILE);
+const catalogPackage = loadCatalogPackage();
+const profileProjection = resolveProfile(buildProfile, {
+  catalog: catalogPackage.catalog,
+  manifests: catalogPackage.manifests,
+  surfaces: readSurfaceRegistry(),
+});
+const capabilityAliases = writeCapabilityStubs(
+  profileProjection,
+  `${rootDir}/.next/capability-stubs`,
+);
 
 const nextConfig: NextConfig = {
+  env: {
+    NEXT_PUBLIC_ALPHACI_BUILD_PROFILE: buildProfile,
+    NEXT_PUBLIC_ALPHACI_EDITION: BUILD_EDITION,
+  },
   images: {
     remotePatterns: [
       { protocol: "https", hostname: "avatars.githubusercontent.com" },
@@ -14,6 +41,15 @@ const nextConfig: NextConfig = {
   },
   turbopack: {
     root: rootDir,
+    resolveAlias: capabilityAliases,
+  },
+  webpack(config) {
+    config.resolve ??= {};
+    config.resolve.alias = {
+      ...(config.resolve.alias || {}),
+      ...capabilityAliases,
+    };
+    return config;
   },
   async headers() {
     return [

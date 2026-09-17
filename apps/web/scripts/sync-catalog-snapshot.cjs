@@ -1,49 +1,51 @@
 'use strict';
 
+// Documentation helper. Active checks and builds consume the versioned local
+// @alphaci/capability-catalog fixture; this script refreshes the richer
+// documentation snapshot without consulting a sibling checkout.
+
 const fs = require('node:fs');
 const path = require('node:path');
 
 const ROOT = path.resolve(__dirname, '..');
 const SNAPSHOT = path.join(ROOT, 'docs/capabilities/catalog.snapshot.json');
+const VENDOR_PACKAGE = path.join(ROOT, 'vendor', '@alphaci', 'capability-catalog');
 
-function siblingRegistryPath() {
-  if (process.env.ALPHACI_BE_ROOT) {
-    return path.join(process.env.ALPHACI_BE_ROOT, 'docs/capabilities/registry.ts');
-  }
-  return path.resolve(ROOT, '..', 'alphaci-enterprise-be', 'docs/capabilities/registry.ts');
-}
-
-function readRegistry(file) {
-  const source = fs.readFileSync(file, 'utf8');
-  const match = /export const CAPABILITIES = (\[[\s\S]*?\])\s+as const;\s*$/m.exec(source);
-  if (!match) {
-    throw new Error(`${file} must export a JSON-shaped CAPABILITIES array`);
-  }
-  return JSON.parse(match[1]);
+function readJson(file) {
+  return JSON.parse(fs.readFileSync(file, 'utf8'));
 }
 
 function writeSnapshot(capabilities) {
   fs.mkdirSync(path.dirname(SNAPSHOT), { recursive: true });
-  fs.writeFileSync(SNAPSHOT, `${JSON.stringify(capabilities, null, 2)}\n`, 'utf8');
+  fs.writeFileSync(SNAPSHOT, JSON.stringify(capabilities, null, 2) + '\n', 'utf8');
 }
 
 function main() {
-  const registry = siblingRegistryPath();
-  if (!fs.existsSync(registry)) {
-    console.error(`Backend capability registry not found: ${registry}`);
-    process.exitCode = 1;
-    return;
-  }
-  const capabilities = readRegistry(registry);
+  const existing = readJson(SNAPSHOT);
+  const detailsByKey = new Map(existing.map((record) => [record.key, record]));
+  const catalog = readJson(path.join(VENDOR_PACKAGE, 'catalog.json'));
+  const capabilities = catalog.map((record) => {
+    const details = detailsByKey.get(record.key);
+    if (!details) {
+      throw new Error('Snapshot is missing documentation details for ' + record.key);
+    }
+    return {
+      ...details,
+      key: record.key,
+      maturity: record.maturity,
+      editions: record.editions,
+      requires: record.requires,
+      surface: record.surface,
+    };
+  });
   writeSnapshot(capabilities);
-  console.log(`Wrote ${capabilities.length} capabilities to docs/capabilities/catalog.snapshot.json`);
+  console.log('Wrote ' + capabilities.length + ' capabilities to docs/capabilities/catalog.snapshot.json');
 }
 
 if (require.main === module) main();
 
 module.exports = {
   SNAPSHOT,
-  siblingRegistryPath,
-  readRegistry,
+  VENDOR_PACKAGE,
   writeSnapshot,
 };

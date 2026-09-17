@@ -2,29 +2,27 @@
 'use strict';
 
 /**
- * Binds the frontend capability surface map to the shared catalog snapshot
+ * Binds the frontend capability surface map to the versioned catalog package
  * and the live compatibility response shape.
  *
- * The backend owns capability keys, maturity, and pack applicability.
- * This frontend snapshots that catalog and records which screens consume it.
+ * The backend owns capability keys, maturity, pack applicability, and surface
+ * data. The frontend keeps a documentation snapshot and a generated registry
+ * view for the OKF bundle; neither is authoritative.
  *
  * Checks:
- *   1. surface-registry keys match the snapshot in snapshot order
+ *   1. package surfaces and the generated surface registry match in key order
  *   2. every CapabilitiesResponse field is claimed by one apiField
  *   3. every CapabilityViewFlags *Enabled leaf is claimed by one viewFlag
  *   4. pack profiles list every snapshot key in order with derived status
- *   5. when the sibling backend registry is present, the snapshot matches it
+ *   5. the checked-in local package artifact matches the documentation snapshot
  */
 
 const fs = require('node:fs');
 const path = require('node:path');
-const {
-  SNAPSHOT,
-  siblingRegistryPath,
-  readRegistry,
-} = require('./sync-catalog-snapshot.cjs');
-
 const ROOT = path.resolve(__dirname, '..');
+const SNAPSHOT = path.join(ROOT, 'docs/capabilities/catalog.snapshot.json');
+const { loadCatalogPackage, packageDriftErrors } = require('./lib/capability-profile.cjs');
+
 const SURFACE_REGISTRY = path.join(ROOT, 'docs/capabilities/surface-registry.ts');
 const CONTRACTS = path.join(ROOT, 'src/shared/api/contracts.ts');
 const VIEW_FLAGS = path.join(
@@ -47,20 +45,27 @@ const NON_CAPABILITY_VIEW_FLAGS = new Set([
   'deploymentOwnershipMode',
   'hierarchyGithubSyncMode',
 ]);
+const NON_CAPABILITY_API_FIELDS = new Set(['edition', 'capabilityKeys']);
 
 function readJson(file) {
   return JSON.parse(fs.readFileSync(file, 'utf8'));
 }
 
-function readSurfaceRegistry() {
+function readGeneratedSurfaceRegistry() {
   const source = fs.readFileSync(SURFACE_REGISTRY, 'utf8');
   const match = /export const CAPABILITY_SURFACES = (\[[\s\S]*?\])\s+as const;\s*$/m.exec(
     source,
   );
   if (!match) {
-    throw new Error('surface-registry.ts must export a JSON-shaped CAPABILITY_SURFACES array');
+    throw new Error('surface-registry.ts must export a JSON-shaped generated CAPABILITY_SURFACES array');
   }
   return JSON.parse(match[1]);
+}
+
+function generatedSurfaceErrors(expected, actual) {
+  return JSON.stringify(actual) === JSON.stringify(expected)
+    ? []
+    : ['docs/capabilities/surface-registry.ts is stale or differs from the vendored capability package'];
 }
 
 function expectedPackStatus(capability, edition) {
@@ -112,33 +117,6 @@ function readInterfaceFields(source, interfaceName) {
   return fields;
 }
 
-function snapshotSyncErrors(capabilities) {
-  const registryPath = siblingRegistryPath();
-  if (!fs.existsSync(registryPath)) return [];
-  const backend = readRegistry(registryPath);
-  const errors = [];
-  const max = Math.max(backend.length, capabilities.length);
-  for (let index = 0; index < max; index += 1) {
-    const expected = backend[index];
-    const actual = capabilities[index];
-    const at = `docs/capabilities/catalog.snapshot.json row ${index + 1}`;
-    if (!expected) {
-      errors.push(`${at}: extra snapshot key ${actual.key}`);
-      continue;
-    }
-    if (!actual) {
-      errors.push(`${at}: missing backend key ${expected.key}`);
-      continue;
-    }
-    if (JSON.stringify(actual) !== JSON.stringify(expected)) {
-      errors.push(
-        `${at}: snapshot does not match backend registry for ${expected.key}. Run npm run generate:architecture-maps`,
-      );
-    }
-  }
-  return errors;
-}
-
 function surfaceCatalogErrors(capabilities, surfaces) {
   const errors = [];
   const max = Math.max(capabilities.length, surfaces.length);
@@ -184,6 +162,7 @@ function surfaceCatalogErrors(capabilities, surfaces) {
     'CapabilitiesResponse',
   );
   for (const field of contractFields) {
+    if (NON_CAPABILITY_API_FIELDS.has(field)) continue;
     if (!seenApi.has(field)) {
       errors.push(
         `src/shared/api/contracts.ts: CapabilitiesResponse.${field} is not claimed by surface-registry apiField`,
@@ -274,10 +253,20 @@ function collect() {
   if (!fs.existsSync(SNAPSHOT)) {
     return ['docs/capabilities/catalog.snapshot.json: catalog snapshot is missing'];
   }
-  const capabilities = readJson(SNAPSHOT);
-  const surfaces = readSurfaceRegistry();
+  let catalogPackage;
+  try {
+    catalogPackage = loadCatalogPackage();
+  } catch (error) {
+    return [`@alphaci/capability-catalog: ${error.message}`];
+  }
+  const snapshot = readJson(SNAPSHOT);
+  const capabilities = catalogPackage.catalog;
+  const surfaces = catalogPackage.surfaces;
+  const generatedSurfaces = readGeneratedSurfaceRegistry();
+  const packageDrift = packageDriftErrors(snapshot, catalogPackage);
   return [
-    ...snapshotSyncErrors(capabilities),
+    ...packageDrift,
+    ...generatedSurfaceErrors(surfaces, generatedSurfaces),
     ...surfaceCatalogErrors(capabilities, surfaces),
     ...packCatalogErrors(capabilities),
   ];
@@ -301,5 +290,5 @@ if (require.main === module) main();
 module.exports = {
   collect,
   expectedPackStatus,
-  readSurfaceRegistry,
+  readGeneratedSurfaceRegistry,
 };

@@ -8,6 +8,8 @@ import type {
   NotificationsStatus,
 } from "@/features/notifications";
 import { NotificationsPreferencesView } from "@/features/notifications/preferences";
+import EnterpriseClientCompositionSettingsView from "@/features/settings/client-composition";
+import type { ClientCompositionInfo } from "@/shared/api/contracts";
 
 import type { WorkspacesMeResponse } from "../../model/settings-types";
 import {
@@ -497,6 +499,7 @@ export function SettingsAccountSection({
   workspacesEnabled,
   workspaces,
   workspacesError,
+  clientComposition,
   notificationsEnabled,
   notificationsError,
   notificationsStatus,
@@ -510,6 +513,7 @@ export function SettingsAccountSection({
   workspacesEnabled: boolean;
   workspaces: WorkspacesMeResponse | null;
   workspacesError: string | null;
+  clientComposition: ClientCompositionInfo | null;
   notificationsEnabled: boolean;
   notificationsError: string | null;
   notificationsStatus: NotificationsStatus;
@@ -540,6 +544,11 @@ export function SettingsAccountSection({
           notificationItems={notificationItems}
           markingNotificationId={markingNotificationId}
           onMarkRead={onMarkRead}
+        />
+      ) : null}
+      {clientComposition ? (
+        <EnterpriseClientCompositionSettingsView
+          composition={clientComposition}
         />
       ) : null}
     </>
