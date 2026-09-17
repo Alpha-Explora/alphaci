@@ -1,6 +1,7 @@
 "use client";
 
 import { MotionConfig, motion, useReducedMotion } from "framer-motion";
+import { useRouter } from "next/navigation";
 
 import { useWorkflowStudioViewModel } from "../view-models/use-workflow-studio-view-model";
 import {
@@ -113,15 +114,12 @@ function WorkflowStudioGuideLinks({
   return null;
 }
 
-function sendGuestToSignup() {
-  // Guest CTAs leave the studio with a full navigation, matching the original hop.
-  window.location.assign("/signup");
-}
-
 export function WorkflowBuilder({ guest = false, session, onboardingCompleted }: Readonly<WorkflowBuilderProps>) {
+  const router = useRouter();
   const prefersReducedMotion = useReducedMotion();
   const reducedMotion = prefersReducedMotion === true;
   const vm = useWorkflowStudioViewModel({ guest, session, onboardingCompleted });
+  const sendGuestToSignup = () => router.push("/signup");
   const {
     activeTab, statusMessage, isCreatingProject, isDiscoveringExistingRepo, isSettingUpExistingRepo,
     createResult, existingRepoDiscovery, existingRepoResult, setupMode, setSetupMode,
