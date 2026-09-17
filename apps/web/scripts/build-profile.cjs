@@ -11,7 +11,7 @@ const profileIndex = process.argv.indexOf('--profile');
 const requested = profileIndex >= 0 ? process.argv[profileIndex + 1] : undefined;
 const profile = resolveBuildProfile(requested);
 const nextBin = require.resolve('next/dist/bin/next');
-const result = spawnSync(process.execPath, [nextBin, 'build'], {
+const result = spawnSync(process.execPath, [nextBin, 'build', '--webpack'], {
   cwd: process.cwd(),
   env: { ...process.env, ALPHACI_BUILD_PROFILE: profile },
   stdio: 'inherit',
