@@ -9,6 +9,12 @@ export async function getAuthSession(): Promise<AuthMeResponse> {
   return request<AuthMeResponse>("/auth/me");
 }
 
+export async function devQuickLogin(): Promise<{ ok: boolean }> {
+  return request<{ ok: boolean }>("/auth/dev/quick-login", {
+    method: "POST",
+  });
+}
+
 export async function logout(): Promise<void> {
   await request<{ ok: boolean }>("/auth/logout", {
     method: "POST",

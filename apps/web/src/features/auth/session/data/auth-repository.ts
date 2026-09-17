@@ -2,6 +2,7 @@ import { ApiError } from "@/shared/api/request";
 import {
   createGitHubLoginUrl as createLoginUrl,
   completeOnboarding as requestCompleteOnboarding,
+  devQuickLogin as requestDevQuickLogin,
   deleteAccount as requestDeleteAccount,
   getAuthSession as fetchAuthSession,
   getPendingAccount as fetchPendingAccount,
@@ -41,6 +42,10 @@ function mapPendingAccount(dto: PendingAccountResponse): PendingAccount {
 
 export async function getCurrentSession(): Promise<AuthSession> {
   return mapSession(await fetchAuthSession());
+}
+
+export async function devQuickLogin(): Promise<void> {
+  await requestDevQuickLogin();
 }
 
 export async function signOut(): Promise<void> {

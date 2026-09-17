@@ -11,6 +11,7 @@ export {
   authErrorStatus,
   completeOnboarding,
   createGitHubLoginUrl,
+  devQuickLogin,
   deleteAccount,
   getCurrentSession,
   getPendingAccount,

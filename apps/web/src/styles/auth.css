@@ -747,6 +747,29 @@
   transform: translateX(120%);
 }
 
+.auth-dev-quick-login {
+  width: 100%;
+  margin-top: 0.75rem;
+  padding: 0.65rem 1rem;
+  border: 1px dashed rgba(162, 162, 172, 0.42);
+  border-radius: 0.65rem;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 0.82rem;
+  cursor: pointer;
+}
+
+.auth-dev-quick-login:hover:not(:disabled),
+.auth-dev-quick-login:focus-visible {
+  border-color: var(--brand);
+  color: var(--text-primary);
+}
+
+.auth-dev-quick-login:disabled {
+  cursor: wait;
+  opacity: 0.6;
+}
+
 .auth-trust-strip {
   display: flex;
   flex-wrap: wrap;

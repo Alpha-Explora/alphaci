@@ -23,7 +23,7 @@ Feature domains are UI ownership boundaries. They consume backend bounded contex
 | Feature domain | Backend context | Current responsibility | Source files |
 |---|---|---|---:|
 | `admin` | `identity-access` | platform administration, user review, and feedback | 16 |
-| `auth` | `identity-access` | sign-in, callback, and session presentation | 17 |
+| `auth` | `identity-access` | sign-in, callback, and session presentation | 18 |
 | `capabilities` | `identity-access` | compatibility capability consumption from /api/v1/capabilities | 6 |
 | `groups` | `identity-access` | hierarchy groups, systems, repositories, members, activity, and delivery projects | 47 |
 | `guide` | `platform-ops` | in-product guide | 3 |

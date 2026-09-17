@@ -37,7 +37,16 @@ export function OAuthLoginView({
   switchCta,
 }: Readonly<OAuthLoginViewProps>) {
   const prefersReducedMotion = useReducedMotion();
-  const { status, isWarming, githubLoginHref, handleLogin } =
+  const {
+    status,
+    isWarming,
+    githubLoginHref,
+    handleLogin,
+    canQuickLogin,
+    isQuickLoggingIn,
+    quickLoginError,
+    handleQuickLogin,
+  } =
     useOAuthLoginViewModel(mode);
 
   return (
@@ -48,7 +57,9 @@ export function OAuthLoginView({
       <InternalAccessPanel reduced={prefersReducedMotion} />
       <LoginCard mode={mode} title={title} subtitle={subtitle} switchText={switchText} switchHref={switchHref}
         switchCta={switchCta} reduced={prefersReducedMotion} status={status} isWarming={isWarming}
-        githubLoginHref={githubLoginHref} handleLogin={handleLogin} />
+        githubLoginHref={githubLoginHref} handleLogin={handleLogin}
+        canQuickLogin={canQuickLogin} isQuickLoggingIn={isQuickLoggingIn}
+        quickLoginError={quickLoginError} handleQuickLogin={handleQuickLogin} />
     </main>
   );
 }
@@ -57,17 +68,27 @@ function InternalAccessPanel({ reduced }: Readonly<{ reduced: boolean | null }>)
   return <div className="auth-left-panel"><div className="auth-internal-welcome"><motion.div className="auth-internal-copy" initial={reduced ? undefined : { opacity: 0, y: 16 }} animate={reduced ? undefined : { opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.2 }}><p className="auth-internal-kicker">Internal workspace</p><h2>Alphaexplora internal access</h2><p>Sign in with your company GitHub to manage governed delivery workflows, organization repositories, provider connections, and deployments — all from one secure place.</p></motion.div><p className="auth-minimal-note">Access is gated on Alphaexplora organization membership — external accounts can&apos;t get in.</p></div></div>;
 }
 
-function LoginCard({ mode, title, subtitle, switchText, switchHref, switchCta, reduced, status, isWarming, githubLoginHref, handleLogin }: Readonly<OAuthLoginViewProps & {
+function LoginCard({ mode, title, subtitle, switchText, switchHref, switchCta, reduced, status, isWarming, githubLoginHref, handleLogin, canQuickLogin, isQuickLoggingIn, quickLoginError, handleQuickLogin }: Readonly<OAuthLoginViewProps & {
   reduced: boolean | null; status: string; isWarming: boolean; githubLoginHref: string;
   handleLogin: ReturnType<typeof useOAuthLoginViewModel>["handleLogin"];
+  canQuickLogin: boolean; isQuickLoggingIn: boolean; quickLoginError: string | null;
+  handleQuickLogin: ReturnType<typeof useOAuthLoginViewModel>["handleQuickLogin"];
 }>) {
   return <div className="auth-right-panel"><motion.div className="auth-card-shell bg-white dark:bg-zinc-900" initial={reduced ? undefined : { opacity: 0, y: 14, scale: 0.985 }} animate={reduced ? undefined : { opacity: 1, y: 0, scale: 1 }} transition={{ duration: 0.42, ease: [0.22, 1, 0.36, 1] }}>
     <LoginHeader mode={mode} title={title} subtitle={subtitle} reduced={reduced} />
     <GitHubLoginButton mode={mode} isWarming={isWarming} href={githubLoginHref} handleLogin={handleLogin} />
+    {mode === "login" && canQuickLogin ? <DevQuickLoginButton isLoggingIn={isQuickLoggingIn} onClick={handleQuickLogin} /> : null}
+    {quickLoginError ? <p className="helper-text" role="alert">{quickLoginError}</p> : null}
     {status === "loading" ? <p className="helper-text">Checking current session...</p> : null}
     <div className="auth-trust-strip" aria-label="ALPHACI sign in protections"><span>GitHub OAuth</span><span>Branch-safe setup</span><span>Encrypted provider tokens</span></div>
     <SwitchPrompt text={switchText} href={switchHref} cta={switchCta} />
   </motion.div></div>;
+}
+
+function DevQuickLoginButton({ isLoggingIn, onClick }: Readonly<{ isLoggingIn: boolean; onClick: () => Promise<void> }>) {
+  return <button type="button" className="auth-dev-quick-login" disabled={isLoggingIn} onClick={() => void onClick()}>
+    {isLoggingIn ? "Starting local session..." : "Quick login · local development"}
+  </button>;
 }
 
 function LoginHeader({ mode, title, subtitle, reduced }: Readonly<{ mode: OAuthLoginViewProps["mode"]; title: string; subtitle: string; reduced: boolean | null }>) {
