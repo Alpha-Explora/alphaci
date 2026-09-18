@@ -47,11 +47,16 @@ function PreviewViewport({
   );
 }
 
-export function BranchPreviewCard({
+/**
+ * The actions under a preview, extracted so the card itself stays within the
+ * complexity budget: the address of an environment with nothing deployed to it
+ * is rendered differently from a live one, and that branch belongs beside the
+ * other action rules rather than inside the card's layout.
+ */
+function PreviewActions({
   preview,
 }: Readonly<{ preview: ProjectBranchPreview }>) {
   const [copied, setCopied] = useState(false);
-  const sha = shortCommitSha(preview.commitSha);
 
   async function copyUrl() {
     if (!preview.previewUrl) return;
@@ -64,6 +69,61 @@ export function BranchPreviewCard({
       // Open action still works, so there is nothing to escalate.
     }
   }
+
+  return (
+    <footer className="branch-preview__actions">
+      {preview.previewUrl ? (
+        <>
+          {/*
+           * The address of an environment with nothing deployed to it is
+           * shown, not linked: it resolves to nothing until the first
+           * release, and a link that 404s reads as a broken deployment
+           * rather than an empty one. Copy still helps — it is the address
+           * to configure things against.
+           */}
+          {preview.status === "not_deployed" ? (
+            <code className="branch-preview__pending-url">
+              {preview.previewUrl}
+            </code>
+          ) : (
+            <a
+              className="ghost-button target-action-btn"
+              href={preview.previewUrl}
+              target="_blank"
+              rel="noreferrer noopener"
+            >
+              Open site
+            </a>
+          )}
+          <button
+            className="ghost-button target-action-btn"
+            type="button"
+            onClick={() => void copyUrl()}
+          >
+            {copied ? "Copied" : "Copy URL"}
+          </button>
+        </>
+      ) : null}
+      {preview.inspectorUrl ? (
+        <a
+          className="ghost-button target-action-btn"
+          href={preview.inspectorUrl}
+          target="_blank"
+          rel="noreferrer noopener"
+        >
+          {preview.status === "not_deployed"
+            ? "Provider dashboard"
+            : "Build logs"}
+        </a>
+      ) : null}
+    </footer>
+  );
+}
+
+export function BranchPreviewCard({
+  preview,
+}: Readonly<{ preview: ProjectBranchPreview }>) {
+  const sha = shortCommitSha(preview.commitSha);
 
   return (
     <article className="branch-preview">
@@ -105,37 +165,7 @@ export function BranchPreviewCard({
         </p>
       )}
 
-      <footer className="branch-preview__actions">
-        {preview.previewUrl ? (
-          <>
-            <a
-              className="ghost-button target-action-btn"
-              href={preview.previewUrl}
-              target="_blank"
-              rel="noreferrer noopener"
-            >
-              Open site
-            </a>
-            <button
-              className="ghost-button target-action-btn"
-              type="button"
-              onClick={() => void copyUrl()}
-            >
-              {copied ? "Copied" : "Copy URL"}
-            </button>
-          </>
-        ) : null}
-        {preview.inspectorUrl ? (
-          <a
-            className="ghost-button target-action-btn"
-            href={preview.inspectorUrl}
-            target="_blank"
-            rel="noreferrer noopener"
-          >
-            Build logs
-          </a>
-        ) : null}
-      </footer>
+      <PreviewActions preview={preview} />
     </article>
   );
 }

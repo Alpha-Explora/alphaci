@@ -162,6 +162,26 @@
   gap: 0.4rem;
 }
 
+/*
+ * The address of an environment with nothing deployed to it.
+ *
+ * Sits where "Open site" would, and deliberately does not look like a button:
+ * it resolves to nothing until the first release, so it reads as an address
+ * rather than as something to click.
+ */
+.branch-preview__pending-url {
+  overflow: hidden;
+  max-width: 100%;
+  padding: 0.35rem 0.55rem;
+  border: 1px dashed var(--border-soft);
+  border-radius: var(--radius-input, 6px);
+  background: var(--layer-1);
+  color: var(--text-muted);
+  font-size: 0.74rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 @media (max-width: 620px) {
   .branch-preview__header {
     flex-direction: column;

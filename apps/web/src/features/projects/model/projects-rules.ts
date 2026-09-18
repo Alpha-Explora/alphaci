@@ -78,6 +78,7 @@ const PREVIEW_STATUS_LABELS: Record<
   failed: "Failed",
   canceled: "Canceled",
   unknown: "Unknown",
+  not_deployed: "Not deployed yet",
 };
 
 export function previewStatusLabel(
@@ -118,6 +119,16 @@ export function canFramePreview(preview: ProjectBranchPreview): boolean {
 export function previewUnavailableReason(
   preview: ProjectBranchPreview,
 ): string {
+  /*
+   * An environment, not a failure. It exists, it has an address, and nothing
+   * has been released to it - so the reader is told what will fill it rather
+   * than shown an error for something that has not gone wrong.
+   */
+  if (preview.status === "not_deployed") {
+    return preview.previewUrl
+      ? `Nothing has been deployed here yet. The first release to ${preview.branch} appears at this address.`
+      : `Nothing has been deployed here yet. The first release to ${preview.branch} appears here.`;
+  }
   if (preview.status === "queued" || preview.status === "building") {
     return "This branch is still deploying. The preview appears once it is live.";
   }

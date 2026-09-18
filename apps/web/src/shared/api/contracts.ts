@@ -1103,20 +1103,33 @@ export interface ProjectDeploymentsResponse {
  * One branch's current deployment. The unit is the branch, not the deployment:
  * a push updates that branch's card rather than appending a row.
  */
+/**
+ * `not_deployed` is an environment that exists and has never been released to.
+ *
+ * Deliberately not a DeploymentHistoryStatus: nothing ran, so there is no
+ * provider status to report. The branch is still a real environment with a
+ * real address, and a freshly provisioned project is made entirely of them.
+ */
+export type ProjectBranchPreviewStatus =
+  | DeploymentHistoryStatus
+  | "not_deployed";
+
 export interface ProjectBranchPreview {
   branch: string;
   isProduction: boolean;
-  deploymentId: string;
+  /** Null when nothing has been deployed to this environment yet. */
+  deploymentId: string | null;
   targetId: string;
   targetName: string;
   provider: EnvProvider;
-  status: DeploymentHistoryStatus;
+  status: ProjectBranchPreviewStatus;
   commitSha: string | null;
   commitMessage: string | null;
   pullRequestNumber: number | null;
   previewUrl: string | null;
   inspectorUrl: string | null;
-  createdAt: string;
+  /** Null for an environment with no deployment to date. */
+  createdAt: string | null;
   readyAt: string | null;
   /**
    * null means undetermined. The UI must not frame it in that case — a browser
