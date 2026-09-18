@@ -39,7 +39,7 @@ The [generated matrix](/capabilities/capability-matrix.generated.md) is derived 
 
 The backend package includes `provenance.json` beside its catalog files. It
 binds the package name and version to the stable source repository identifier
-`github.com/Alpha-Explora/alphaci-enterprise-be`, the authoritative source path
+`github.com/Alpha-Explora/alphaci-golden-copy-be`, the authoritative source path
 `src/kernel/composition/catalog.source.json`, the catalog source digest, and a
 deterministic artifact digest. The digest contract covers the ordered files
 `package.json`, `catalog.json`, `index.d.ts`, `index.js`, and `manifests.json`

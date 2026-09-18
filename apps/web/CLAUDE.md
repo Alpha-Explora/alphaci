@@ -1,4 +1,4 @@
-# CLAUDE.md — alphaci-enterprise-fe
+# CLAUDE.md — alphaci-golden-copy-fe
 
 Next.js 16 (App Router, React 19, Tailwind 4) frontend for the ALPHACI CI/CD
 platform. Canonical current-state documentation is the OKF bundle under
@@ -7,7 +7,8 @@ platform. Canonical current-state documentation is the OKF bundle under
 See the workspace root [`../CLAUDE.md`](../CLAUDE.md) for product
 context and cross-repo flow, and the backend's `CLAUDE.md` for API details.
 
-npm package name is `cicd-fe-single`; the repo is `Alpha-Explora/alphaci-enterprise-fe`.
+npm package name is `cicd-fe-single`; the repo is `Alpha-Explora/alphaci-golden-copy-fe`
+(renamed from `alphaci-enterprise-fe`; the local checkout folder still uses the old name).
 
 ---
 
