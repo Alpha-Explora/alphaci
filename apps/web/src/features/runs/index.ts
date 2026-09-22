@@ -29,4 +29,15 @@ export {
   checkSummaryLabel,
 } from "./model/runs-presentation";
 export type { CheckSummary, CheckTone } from "./model/runs-presentation";
+
+/* A job log, read as the steps and tools that wrote it. Pure rules, so they
+ * belong here beside the rest of the run vocabulary. */
+export { parseJobLog } from "./model/job-log-sections";
+export type {
+  JobLogLine,
+  JobLogSection,
+  JobLogSeverity,
+} from "./model/job-log-sections";
+export { summarizeJobLog, toolResultForSection } from "./model/tool-results";
+export type { ToolOutcome, ToolResult } from "./model/tool-results";
 export * from "./data/runs-api";

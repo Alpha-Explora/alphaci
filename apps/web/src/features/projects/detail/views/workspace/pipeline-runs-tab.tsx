@@ -18,6 +18,7 @@ import {
   summarizeChecks,
 } from "@/features/runs";
 
+import { JobLogView } from "./job-log-view";
 import {
   StatusPill,
   WorkspaceEmpty,
@@ -843,17 +844,7 @@ function JobRow({ projectId, job }: { projectId: string; job: RunJob }) {
           ) : error ? (
             <WorkspaceError message={error} onRetry={loadLog} />
           ) : log && log.available ? (
-            <>
-              {log.truncated && (
-                <p className="ws-hint">
-                  Showing the end of the log — the earlier output was too long
-                  to send.
-                </p>
-              )}
-              <pre className="ws-console">
-                <code>{log.content}</code>
-              </pre>
-            </>
+            <JobLogView content={log.content} truncated={log.truncated} />
           ) : (
             <WorkspaceEmpty
               title="No log available"
