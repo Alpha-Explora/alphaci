@@ -1712,11 +1712,6 @@
   min-width: 0;
 }
 
-@media (max-width: 900px) {
-  .project-sections {
-    grid-template-columns: minmax(0, 1fr);
-  }
-}
 
 /* ── Moved from globals.css ───────────────────────────────────────────────
    Assigned by which components use these classes rather than by name prefix.
@@ -1986,13 +1981,130 @@
 }
 
 /* ── Project workspace ──────────────────────────────────────────────────────
-   Code, Pull requests and Pipeline runs. Two columns: the grouped section rail
-   reuses .side-tabs from the Teams page, so only the surrounding layout and the
-   panel internals are defined here.
+   Code, Pull requests and Pipeline runs. One column: the sections are a strip
+   across the top (ProjectDetailTopTabs), so the panel keeps the full width —
+   which is what diffs and run logs need. The Teams page keeps the side rail.
    ------------------------------------------------------------------------- */
 .project-sections {
   display: grid;
-  grid-template-columns: minmax(0, 200px) minmax(0, 1fr);
-  gap: 1.5rem;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1.25rem;
   align-items: start;
+}
+
+/* The strip scrolls; the page does not. Nine tabs do not fit a narrow window,
+   and wrapping would change the bar's height with the viewport and push the
+   panel down a row at some widths. */
+.project-tabs {
+  overflow-x: auto;
+  border-bottom: 1px solid var(--border-soft);
+  /* Fades what is scrolled out of reach at each end. The inset matches the
+     list's own padding, so with everything visible the fade lands on empty
+     space and nothing looks dimmed. */
+  -webkit-mask-image: linear-gradient(
+    to right,
+    transparent 0,
+    black 0.5rem,
+    black calc(100% - 0.5rem),
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    to right,
+    transparent 0,
+    black 0.5rem,
+    black calc(100% - 0.5rem),
+    transparent 100%
+  );
+  scrollbar-width: none;
+}
+
+/* The strip is its own scroll affordance; a bar under it would sit between the
+   tabs and the panel they control. */
+.project-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.project-tabs__list {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  /* Keeps every tab at its natural width so the strip scrolls instead of
+     squeezing nine labels into the viewport. */
+  min-width: max-content;
+  padding: 0 0.5rem 0.4rem;
+}
+
+.project-tabs__group {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+/* The cluster boundary, drawn as a border rather than an element: a separator
+   node inside a tablist is one more thing for a screen reader to step over,
+   and it carries no meaning a sighted reader does not get from the gap. */
+.project-tabs__group + .project-tabs__group {
+  margin-left: 0.5rem;
+  padding-left: 0.75rem;
+  border-left: 1px solid var(--border-soft);
+}
+
+.project-tab {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.45rem 0.8rem;
+  border: none;
+  border-radius: 0.5rem;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 0.86rem;
+  font-weight: 500;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease;
+}
+
+.project-tab:hover:not(.project-tab--selected) {
+  background: color-mix(in srgb, var(--text-primary) 6%, transparent);
+  color: var(--text-primary);
+}
+
+.project-tab:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
+/* Solid brand, as in the rail: the strip sits on the page surface, where a
+   tint reads as a hover state rather than as the open section. */
+.project-tab--selected {
+  background: var(--brand);
+  color: white;
+  font-weight: 700;
+}
+
+.project-tab__badge {
+  flex-shrink: 0;
+  min-width: 1.25rem;
+  padding: 0.05rem 0.35rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--text-primary) 10%, transparent);
+  color: var(--text-muted);
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.project-tab--selected .project-tab__badge {
+  background: color-mix(in srgb, white 22%, transparent);
+  color: white;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .project-tab {
+    transition: none;
+  }
 }
