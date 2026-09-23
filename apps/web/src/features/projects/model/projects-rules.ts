@@ -1,7 +1,10 @@
 /* Pure rules for the project detail surface. No React, no Next, no fetch. */
 import { ApiError } from "@/shared/api/request";
 
-import type { ProjectBranchPreview } from "./projects-types";
+import type {
+  ProjectBranchPreview,
+  ProjectPreviewsResponse,
+} from "./projects-types";
 
 /** Status-badge variant for a provisioned project. */
 export function projectStatusVariant(status: string): string {
@@ -152,6 +155,99 @@ export function previewKey(preview: ProjectBranchPreview): string {
 /** Short commit for display, or null when the provider reported none. */
 export function shortCommitSha(commitSha: string | null): string | null {
   return commitSha ? commitSha.slice(0, 7) : null;
+}
+
+/**
+ * The strict sandbox: what every framed deployment gets at minimum, and all it
+ * gets when its origin cannot be told apart from the dashboard's.
+ */
+export const PREVIEW_FRAME_SANDBOX = "allow-scripts allow-forms allow-popups";
+
+/**
+ * The sandbox for one framed deployment, given the dashboard's own origin.
+ *
+ * Without `allow-same-origin` the framed page runs in an opaque origin, so any
+ * site that touches cookies or storage at boot throws and never gets past its
+ * loader. Granting it is only an escape when the page shares the dashboard's
+ * origin: `allow-scripts` would then let it reach into the parent and strip
+ * its own sandbox. A cross-origin page cannot touch the parent either way, so
+ * it gets its real origin; a same-origin, non-http(s) or unparseable address,
+ * or an origin not known yet, gets the strict sandbox. One function, so the
+ * thumbnail and the full viewport cannot drift apart.
+ */
+export function previewFrameSandbox(
+  frameUrl: string,
+  dashboardOrigin: string | null,
+): string {
+  if (!dashboardOrigin) return PREVIEW_FRAME_SANDBOX;
+  let frame: URL;
+  try {
+    frame = new URL(frameUrl);
+  } catch {
+    return PREVIEW_FRAME_SANDBOX;
+  }
+  const isWeb = frame.protocol === "https:" || frame.protocol === "http:";
+  if (!isWeb || frame.origin === dashboardOrigin) return PREVIEW_FRAME_SANDBOX;
+  return `${PREVIEW_FRAME_SANDBOX} allow-same-origin`;
+}
+
+/**
+ * The previews that make up the Production Deployment card, one per target.
+ *
+ * A project with a frontend and a backend slot has a production environment
+ * for each, and neither is "the" production deployment over the other.
+ */
+export function productionPreviews(
+  previews: ProjectPreviewsResponse | null,
+): ProjectBranchPreview[] {
+  return previews?.branches.filter((preview) => preview.isProduction) ?? [];
+}
+
+/** The commit on GitHub, when both halves of the address are known. */
+export function commitUrl(
+  repoFullName: string | null | undefined,
+  commitSha: string | null,
+): string | null {
+  if (!repoFullName || !commitSha) return null;
+  return `https://github.com/${repoFullName}/commit/${commitSha}`;
+}
+
+/** "https://web-app.vercel.app/" -> "web-app.vercel.app". Unparseable URLs pass through. */
+export function displayHost(url: string): string {
+  try {
+    return new URL(url).host;
+  } catch {
+    return url;
+  }
+}
+
+/**
+ * Coarse relative time for a deployment: "just now", "12m ago", "5h ago",
+ * "3d ago". Reads the clock, so a caller that needs determinism passes `now`.
+ */
+export function deployedAgo(iso: string, now: number = Date.now()): string {
+  const minutes = Math.floor((now - new Date(iso).getTime()) / 60_000);
+  if (minutes < 1) return "just now";
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  return `${Math.floor(hours / 24)}d ago`;
+}
+
+/** "2h ago by tone", "2h ago", or what to say when nothing has deployed. */
+export function createdLabel(
+  preview: Pick<ProjectBranchPreview, "createdAt" | "createdBy">,
+  now: number = Date.now(),
+): string {
+  if (!preview.createdAt) return "Nothing deployed yet";
+  const ago = deployedAgo(preview.createdAt, now);
+  return preview.createdBy ? `${ago} by ${preview.createdBy}` : ago;
+}
+
+export function previewProviderLabel(
+  provider: ProjectBranchPreview["provider"],
+): string {
+  return provider === "vercel" ? "Vercel" : "Render";
 }
 
 /* ── Custom domains ───────────────────────────────────────────────────────── */

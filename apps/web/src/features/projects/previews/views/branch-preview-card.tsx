@@ -4,45 +4,47 @@ import { useState } from "react";
 
 import {
   canFramePreview,
+  previewFrameSandbox,
+  previewProviderLabel,
   previewStatusLabel,
   previewStatusTone,
   previewUnavailableReason,
   shortCommitSha,
 } from "../../model/projects-rules";
 import type { ProjectBranchPreview } from "../../model/projects-types";
-
-function providerLabel(provider: ProjectBranchPreview["provider"]): string {
-  return provider === "vercel" ? "Vercel" : "Render";
-}
+import { useDashboardOrigin } from "../view-models/use-dashboard-origin";
 
 /**
  * The framed preview.
  *
  * Only mounted once the backend has confirmed the site allows framing, so this
- * component never has to guess. The sandbox deliberately withholds
- * `allow-same-origin`: combining it with `allow-scripts` would let the framed
- * page escape the sandbox entirely, and the page here is a customer deployment
- * rather than our own origin.
+ * component never has to guess. The sandbox comes from previewFrameSandbox,
+ * which grants `allow-same-origin` only to a page on another origin than the
+ * dashboard's, so the frame waits until that origin is known.
  */
 function PreviewViewport({
   preview,
 }: Readonly<{ preview: ProjectBranchPreview }>) {
   const [loaded, setLoaded] = useState(false);
+  const origin = useDashboardOrigin();
+  const url = preview.previewUrl ?? "";
 
   return (
     <div className="branch-preview__viewport">
       {!loaded ? (
         <p className="branch-preview__viewport-status">Loading preview…</p>
       ) : null}
-      <iframe
-        className="branch-preview__frame"
-        src={preview.previewUrl ?? ""}
-        title={`Preview of branch ${preview.branch}`}
-        loading="lazy"
-        onLoad={() => setLoaded(true)}
-        sandbox="allow-scripts allow-forms allow-popups"
-        referrerPolicy="no-referrer"
-      />
+      {origin ? (
+        <iframe
+          className="branch-preview__frame"
+          src={url}
+          title={`Preview of branch ${preview.branch}`}
+          loading="lazy"
+          onLoad={() => setLoaded(true)}
+          sandbox={previewFrameSandbox(url, origin)}
+          referrerPolicy="no-referrer"
+        />
+      ) : null}
     </div>
   );
 }
@@ -138,7 +140,7 @@ export function BranchPreviewCard({
             ) : null}
           </h4>
           <p className="branch-preview__meta">
-            {providerLabel(preview.provider)} · {preview.targetName}
+            {previewProviderLabel(preview.provider)} · {preview.targetName}
             {preview.pullRequestNumber !== null
               ? ` · PR #${preview.pullRequestNumber}`
               : ""}

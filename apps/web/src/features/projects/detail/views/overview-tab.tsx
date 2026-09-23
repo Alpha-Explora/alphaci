@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 
-import { BranchPreviewsPanel } from "@/features/projects/previews";
+import { ProductionDeploymentPanel } from "@/features/projects/previews";
 import { formatDate } from "@/features/workflows";
 import type {
   ProjectOverviewResponse,
@@ -37,14 +37,14 @@ export function OverviewTab({
         gap: "1rem",
       }}
     >
+      <OverviewPreviews
+        enabled={vm.previewDeploymentsEnabled}
+        project={project}
+      />
       <OverviewFacts
         project={project}
         overview={vm.overview}
         files={vm.workflowFiles}
-      />
-      <OverviewPreviews
-        enabled={vm.previewDeploymentsEnabled}
-        projectId={project.id}
       />
       <DeveloperAccessRow project={project} overview={vm.overview} />
       <SnapshotRow
@@ -107,23 +107,21 @@ function CommitFact({ sha }: Readonly<{ sha: string | null }>) {
   );
 }
 
+/**
+ * First on the Overview: what is live is the first question asked of a
+ * project, and the facts grid below describes how it got there.
+ */
 function OverviewPreviews({
   enabled,
-  projectId,
-}: Readonly<{ enabled: boolean; projectId: string }>) {
+  project,
+}: Readonly<{ enabled: boolean; project: ProvisionedProject }>) {
   if (!enabled) return null;
   return (
-    <section aria-labelledby="overview-previews-heading">
-      <h4 className="ws-reported__head" id="overview-previews-heading">
-        Branch previews
-      </h4>
-      <BranchPreviewsPanel
-        enabled
-        limit={2}
-        moreHref="the Hosting tab"
-        projectId={projectId}
-      />
-    </section>
+    <ProductionDeploymentPanel
+      enabled
+      projectId={project.id}
+      repoFullName={project.repoFullName}
+    />
   );
 }
 

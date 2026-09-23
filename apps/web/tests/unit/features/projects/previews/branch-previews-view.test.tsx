@@ -98,16 +98,18 @@ describe("BranchPreviewsView", () => {
     );
   });
 
-  /* The security-relevant assertions. allow-same-origin alongside
-   * allow-scripts would let the framed customer page escape the sandbox. */
-  it("sandboxes the frame without allow-same-origin", () => {
+  /* The security-relevant assertions. allow-same-origin is granted only
+   * because the fixture is on another origin than jsdom's localhost; the
+   * same-origin case is covered by previewFrameSandbox's own tests. */
+  it("sandboxes the frame, with its real origin only because it is cross-origin", () => {
     render(
       <BranchPreviewsView error={null} previews={response()} status="ready" />,
     );
 
     const sandbox = container.querySelector("iframe")?.getAttribute("sandbox");
     expect(sandbox).toContain("allow-scripts");
-    expect(sandbox).not.toContain("allow-same-origin");
+    expect(sandbox).toContain("allow-same-origin");
+    expect(sandbox).not.toContain("allow-top-navigation");
   });
 
   it("does not frame a site that blocks embedding, and explains why", () => {

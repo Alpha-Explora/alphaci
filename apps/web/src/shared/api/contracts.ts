@@ -1126,7 +1126,21 @@ export interface ProjectBranchPreview {
   commitSha: string | null;
   commitMessage: string | null;
   pullRequestNumber: number | null;
+  /**
+   * Who started the newest deployment. Optional because a backend older than
+   * the field omits it; absent and null read the same.
+   */
+  createdBy?: string | null;
+  /**
+   * The environment's stable address where the backend knows it (the
+   * provider's domain for the branch), otherwise the deployment's own.
+   */
   previewUrl: string | null;
+  /**
+   * This one deployment's own address. Linked, never framed: on Vercel it sits
+   * behind deployment protection. Optional for the same reason as createdBy.
+   */
+  deploymentUrl?: string | null;
   inspectorUrl: string | null;
   /** Null for an environment with no deployment to date. */
   createdAt: string | null;
