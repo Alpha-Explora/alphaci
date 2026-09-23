@@ -5,6 +5,7 @@
  * surface, so when those contracts are decomposed per-domain only this file
  * changes rather than every view. */
 export type {
+  AddGroupMemberRequest,
   DeliveryProject,
   GroupActivityItem,
   GroupActivityQuery,
@@ -14,6 +15,7 @@ export type {
   GroupSummary,
   HierarchyRepository,
   HierarchySystem,
+  InternalUserDirectoryEntry,
   RepositoryAccessStatus,
   RepositoryAccessStatusResponse,
   RepositoryAssignment,

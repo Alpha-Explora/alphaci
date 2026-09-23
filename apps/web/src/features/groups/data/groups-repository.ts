@@ -1,4 +1,5 @@
 import {
+  addGroupMember,
   archiveGroup,
   getDeliveryProject,
   getDeliveryProjectRepositories,
@@ -11,11 +12,13 @@ import {
   getSystem,
   getSystemDeliveryProjects,
   reopenGroup,
+  searchEligibleGroupUsers,
   updateGroup,
 } from "@/features/groups/data/hierarchy-api";
 import { getProjects } from "@/features/projects";
 
 import type {
+  AddGroupMemberRequest,
   DeliveryProject,
   GroupActivityQuery,
   GroupActivityResponse,
@@ -23,6 +26,7 @@ import type {
   GroupSummary,
   HierarchyRepository,
   HierarchySystem,
+  InternalUserDirectoryEntry,
   ProvisionedProject,
   RepositoryAccessStatusResponse,
   RepositoryAssignment,
@@ -70,6 +74,21 @@ export const groupsRepository = {
 
   members(groupId: string): Promise<GroupMember[]> {
     return getGroupMembers(groupId);
+  },
+
+  /** The deployment's member directory, minus people already in the group. */
+  eligibleMembers(
+    groupId: string,
+    search: string,
+  ): Promise<InternalUserDirectoryEntry[]> {
+    return searchEligibleGroupUsers(groupId, search);
+  },
+
+  addMember(
+    groupId: string,
+    payload: AddGroupMemberRequest,
+  ): Promise<GroupMember> {
+    return addGroupMember(groupId, payload);
   },
 
   system(systemId: string): Promise<HierarchySystem> {
