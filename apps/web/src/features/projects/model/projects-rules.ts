@@ -3,6 +3,7 @@ import { ApiError } from "@/shared/api/request";
 
 import type {
   ProjectBranchPreview,
+  ProjectBranchPreviewSurface,
   ProjectPreviewsResponse,
 } from "./projects-types";
 
@@ -278,6 +279,27 @@ export function previewProviderLabel(
   provider: ProjectBranchPreview["provider"],
 ): string {
   return provider === "vercel" ? "Vercel" : "Render";
+}
+
+/**
+ * The host's display name: the backend's provider descriptor label, or the
+ * older fixed rule when a backend predates the field.
+ */
+export function previewHostLabel(
+  preview: Pick<ProjectBranchPreview, "provider" | "providerLabel">,
+): string {
+  return preview.providerLabel || previewProviderLabel(preview.provider);
+}
+
+/**
+ * What the card's media slot shows. The backend decides (a backend target on
+ * a host that serves logs gets `logs`); a backend older than the field gets
+ * the page, which is all it could show before.
+ */
+export function previewSurface(
+  preview: Pick<ProjectBranchPreview, "surface">,
+): ProjectBranchPreviewSurface {
+  return preview.surface === "logs" ? "logs" : "page";
 }
 
 /* ── Custom domains ───────────────────────────────────────────────────────── */

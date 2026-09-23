@@ -4,6 +4,7 @@ export type {
   CustomDomain,
   DomainVerificationChallenge,
   ProjectBranchPreview,
+  ProjectBranchPreviewSurface,
   ProjectOverviewResponse,
   ProjectPreviewsResponse,
   ProvisionedProject,

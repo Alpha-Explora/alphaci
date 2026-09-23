@@ -534,8 +534,15 @@ a.deploy-card__sha:hover {
   outline-offset: 2px;
 }
 
+/* A backend card's logs want the width a thumbnail did not: the log column
+   leads and the facts take the rest. */
+.deploy-card__body--logs {
+  grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+}
+
 @media (max-width: 900px) {
-  .deploy-card__body {
+  .deploy-card__body,
+  .deploy-card__body--logs {
     grid-template-columns: minmax(0, 1fr);
   }
 }

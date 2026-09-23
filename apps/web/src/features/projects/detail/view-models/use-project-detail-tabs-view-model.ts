@@ -3,6 +3,7 @@
 import { useState } from "react";
 
 import { useCapabilities } from "@/features/capabilities/current";
+import type { DeploymentLogFocus } from "@/features/projects/deployment-logs";
 import { projectsRepository } from "../../data/projects-repository";
 import type { ProjectStatus } from "../../model/projects-types";
 import type {
@@ -36,6 +37,12 @@ import type { ProjectWorkflowSettingsViewModel } from "./use-project-workflow-se
 export interface ProjectDetailTabsViewModel {
   tab: ProjectDetailTab;
   setTab: (tab: ProjectDetailTab) => void;
+  /**
+   * The target whose logs Hosting should open with, set when the Overview's
+   * card asks for its full logs. Cleared by choosing a tab by hand.
+   */
+  logFocus: DeploymentLogFocus | null;
+  openTargetLogs: (focus: DeploymentLogFocus) => void;
   status: ProjectStatus;
   error: string | null;
   overview: ProjectOverviewResponse | null;
@@ -104,7 +111,8 @@ export function useProjectDetailTabsViewModel(options: {
   workflowFilesFallback: WorkflowFileMetadata[] | null | undefined;
 }): ProjectDetailTabsViewModel {
   const { projectId, workflowFilesFallback } = options;
-  const [tab, setTab] = useState<ProjectDetailTab>("overview");
+  const [tab, setTabState] = useState<ProjectDetailTab>("overview");
+  const [logFocus, setLogFocus] = useState<DeploymentLogFocus | null>(null);
   const [syncingProjectId, setSyncingProjectId] = useState<string | null>(null);
   const [syncMessage, setSyncMessage] = useState<string | null>(null);
   const [runningDriftCheck, setRunningDriftCheck] = useState(false);
@@ -172,6 +180,16 @@ export function useProjectDetailTabsViewModel(options: {
     snapshotEnabled: tabData.snapshotEnabled,
   });
 
+  function setTab(next: ProjectDetailTab) {
+    setLogFocus(null);
+    setTabState(next);
+  }
+
+  function openTargetLogs(focus: DeploymentLogFocus) {
+    setLogFocus(focus);
+    setTabState("hosting");
+  }
+
   function handleTargetChanged(target: DeploymentTarget) {
     overviewQuery.setData((current) =>
       applyTargetChange(current, projectId, target),
@@ -232,6 +250,8 @@ export function useProjectDetailTabsViewModel(options: {
   return {
     tab,
     setTab,
+    logFocus,
+    openTargetLogs,
     status: overviewQuery.status,
     error: overviewQuery.error,
     overview,
