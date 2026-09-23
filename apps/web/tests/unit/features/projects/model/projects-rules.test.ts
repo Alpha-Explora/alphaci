@@ -2,14 +2,20 @@ import { ApiError } from "../../../../../src/shared/api/request";
 import type { ProjectBranchPreview } from "../../../../../src/shared/api/contracts";
 import {
   canFramePreview,
+  commitUrl,
+  createdLabel,
+  deployedAgo,
+  displayHost,
   domainNextStep,
   domainScopeLabel,
   domainStatus,
   isExternalRepo,
+  previewFrameSandbox,
   previewKey,
   previewStatusLabel,
   previewStatusTone,
   previewUnavailableReason,
+  productionPreviews,
   projectStatusVariant,
   shortCommitSha,
   toOverviewError,
@@ -208,6 +214,43 @@ describe("previewUnavailableReason", () => {
   });
 });
 
+describe("previewFrameSandbox", () => {
+  const dashboard = "https://alphaci.example.com";
+
+  it("gives a cross-origin page its real origin, so it can read its own storage", () => {
+    expect(previewFrameSandbox("https://web-app.vercel.app/", dashboard)).toBe(
+      "allow-scripts allow-forms allow-popups allow-same-origin",
+    );
+  });
+
+  /* allow-scripts plus allow-same-origin on our own origin could reach into
+   * the dashboard and strip the sandbox. */
+  it("keeps the strict sandbox for a page on the dashboard's own origin", () => {
+    expect(
+      previewFrameSandbox("https://alphaci.example.com/projects", dashboard),
+    ).not.toContain("allow-same-origin");
+  });
+
+  it("treats another port or scheme as another origin", () => {
+    expect(
+      previewFrameSandbox("https://alphaci.example.com:8443/", dashboard),
+    ).toContain("allow-same-origin");
+    expect(
+      previewFrameSandbox("http://alphaci.example.com/", dashboard),
+    ).toContain("allow-same-origin");
+  });
+
+  it.each([
+    ["an unknown dashboard origin", "https://web-app.vercel.app", null],
+    ["an unparseable address", "not a url", dashboard],
+    ["a non-web scheme", "data:text/html,<p>hi</p>", dashboard],
+  ])("keeps the strict sandbox for %s", (_case, url, origin) => {
+    expect(previewFrameSandbox(url, origin)).toBe(
+      "allow-scripts allow-forms allow-popups",
+    );
+  });
+});
+
 describe("previewKey", () => {
   it("keeps the same branch distinct per deployment target", () => {
     const frontend = preview({ targetId: "target-fe", branch: "main" });
@@ -292,5 +335,89 @@ describe("domainScopeLabel", () => {
 
   it("calls a branchless domain production", () => {
     expect(domainScopeLabel(null)).toBe("production");
+  });
+});
+
+describe("productionPreviews", () => {
+  it("keeps every production environment, one per target", () => {
+    const web = preview({ isProduction: true, targetId: "web" });
+    const api = preview({ isProduction: true, targetId: "api" });
+    const branches = [preview(), web, api];
+
+    expect(
+      productionPreviews({
+        enabled: true,
+        liveProvidersEnabled: true,
+        branches,
+        providerError: null,
+      }),
+    ).toEqual([web, api]);
+  });
+
+  it("is empty before previews have loaded", () => {
+    expect(productionPreviews(null)).toEqual([]);
+  });
+});
+
+describe("commitUrl", () => {
+  it("points at the commit on GitHub", () => {
+    expect(commitUrl("tone/orders-api", "ea738449c1d")).toBe(
+      "https://github.com/tone/orders-api/commit/ea738449c1d",
+    );
+  });
+
+  it("is null without both the repository and the commit", () => {
+    expect(commitUrl(null, "ea73844")).toBeNull();
+    expect(commitUrl("tone/orders-api", null)).toBeNull();
+  });
+});
+
+describe("displayHost", () => {
+  it("drops the scheme and path", () => {
+    expect(displayHost("https://web-app.vercel.app/login")).toBe(
+      "web-app.vercel.app",
+    );
+  });
+
+  it("passes an unparseable value through", () => {
+    expect(displayHost("not a url")).toBe("not a url");
+  });
+});
+
+describe("deployedAgo", () => {
+  const now = Date.parse("2026-09-23T12:00:00.000Z");
+
+  it.each([
+    ["2026-09-23T11:59:40.000Z", "just now"],
+    ["2026-09-23T11:48:00.000Z", "12m ago"],
+    ["2026-09-23T10:00:00.000Z", "2h ago"],
+    ["2026-09-20T12:00:00.000Z", "3d ago"],
+  ])("reads %s as %s", (iso, label) => {
+    expect(deployedAgo(iso, now)).toBe(label);
+  });
+});
+
+describe("createdLabel", () => {
+  const now = Date.parse("2026-09-23T12:00:00.000Z");
+
+  it("names who deployed, when the provider says", () => {
+    expect(
+      createdLabel(
+        { createdAt: "2026-09-23T10:00:00.000Z", createdBy: "LloydLim1" },
+        now,
+      ),
+    ).toBe("2h ago by LloydLim1");
+  });
+
+  it("omits the name when the provider does not say, or the backend predates it", () => {
+    expect(createdLabel({ createdAt: "2026-09-23T10:00:00.000Z" }, now)).toBe(
+      "2h ago",
+    );
+  });
+
+  it("says nothing has deployed rather than inventing a time", () => {
+    expect(createdLabel({ createdAt: null, createdBy: null }, now)).toBe(
+      "Nothing deployed yet",
+    );
   });
 });

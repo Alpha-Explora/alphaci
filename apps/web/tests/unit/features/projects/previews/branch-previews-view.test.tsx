@@ -98,16 +98,18 @@ describe("BranchPreviewsView", () => {
     );
   });
 
-  /* The security-relevant assertions. allow-same-origin alongside
-   * allow-scripts would let the framed customer page escape the sandbox. */
-  it("sandboxes the frame without allow-same-origin", () => {
+  /* The security-relevant assertions. allow-same-origin is granted only
+   * because the fixture is on another origin than jsdom's localhost; the
+   * same-origin case is covered by previewFrameSandbox's own tests. */
+  it("sandboxes the frame, with its real origin only because it is cross-origin", () => {
     render(
       <BranchPreviewsView error={null} previews={response()} status="ready" />,
     );
 
     const sandbox = container.querySelector("iframe")?.getAttribute("sandbox");
     expect(sandbox).toContain("allow-scripts");
-    expect(sandbox).not.toContain("allow-same-origin");
+    expect(sandbox).toContain("allow-same-origin");
+    expect(sandbox).not.toContain("allow-top-navigation");
   });
 
   it("does not frame a site that blocks embedding, and explains why", () => {
@@ -234,7 +236,13 @@ describe("BranchPreviewsView", () => {
     expect(container.querySelectorAll(".branch-preview")).toHaveLength(1);
   });
 
-  it("tells the reader to push a branch when nothing is deployed", () => {
+  /*
+   * An empty list now means the project has no hosting target at all, not
+   * merely nothing deployed: an environment that exists and has never been
+   * released to arrives as a card of its own. Telling the reader to push a
+   * branch here would point at the wrong thing to fix.
+   */
+  it("asks for a hosting target when there are no environments at all", () => {
     render(
       <BranchPreviewsView
         error={null}
@@ -243,7 +251,80 @@ describe("BranchPreviewsView", () => {
       />,
     );
 
-    expect(container.textContent).toContain("Push a branch");
+    expect(container.textContent).toContain("No hosting target yet");
+  });
+
+  /*
+   * The state a freshly provisioned project is entirely made of: the
+   * environment exists, has an address, and nothing has been released to it.
+   * Shown rather than hidden, because the panel exists to say where a
+   * deployment lives and that question has an answer before the first deploy.
+   */
+  describe("an environment with nothing deployed to it", () => {
+    const pending = preview({
+      branch: "uat",
+      status: "not_deployed",
+      deploymentId: null,
+      createdAt: null,
+      readyAt: null,
+      commitSha: null,
+      commitMessage: null,
+      pullRequestNumber: null,
+      embeddable: false,
+      previewUrl: "https://orders-api-uat.onrender.com",
+      inspectorUrl: "https://dashboard.render.com/web/srv-1",
+    });
+
+    it("renders it as a card rather than hiding it", () => {
+      render(
+        <BranchPreviewsView
+          error={null}
+          previews={response({ branches: [pending] })}
+          status="ready"
+        />,
+      );
+
+      expect(container.textContent).toContain("uat");
+      expect(container.textContent).toContain("Not deployed yet");
+      expect(container.textContent).toContain(
+        "Nothing has been deployed here yet",
+      );
+    });
+
+    /*
+     * The address resolves to nothing until the first release, so a link that
+     * 404s would read as a broken deployment rather than an empty one.
+     */
+    it("shows the address without linking it", () => {
+      render(
+        <BranchPreviewsView
+          error={null}
+          previews={response({ branches: [pending] })}
+          status="ready"
+        />,
+      );
+
+      expect(container.textContent).toContain(
+        "https://orders-api-uat.onrender.com",
+      );
+      const links = [...container.querySelectorAll("a")].map((anchor) =>
+        anchor.getAttribute("href"),
+      );
+      expect(links).not.toContain("https://orders-api-uat.onrender.com");
+      expect(container.textContent).not.toContain("Open site");
+    });
+
+    it("never frames an address with nothing behind it", () => {
+      render(
+        <BranchPreviewsView
+          error={null}
+          previews={response({ branches: [pending] })}
+          status="ready"
+        />,
+      );
+
+      expect(container.querySelector("iframe")).toBeNull();
+    });
   });
 
   it("asks for a provider when none is connected", () => {

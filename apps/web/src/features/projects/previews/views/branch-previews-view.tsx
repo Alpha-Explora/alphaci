@@ -69,11 +69,17 @@ function previewUnavailableState(
     return <p className="branch-previews__error">{previews.providerError}</p>;
   }
 
+  /*
+   * Reaching here means the project has no hosting target at all, not merely
+   * nothing deployed: an environment that exists but has never been released
+   * to now arrives as a card of its own. Saying "nothing deployed yet" here
+   * would point at the wrong thing to fix.
+   */
   if (previews.branches.length === 0) {
     return (
       <p className="env-empty-state">
-        No branch has been deployed yet. Push a branch to give it its own
-        preview.
+        No hosting target yet. Add one and each branch gets its own
+        environment here.
       </p>
     );
   }

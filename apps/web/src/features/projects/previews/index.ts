@@ -6,10 +6,13 @@
  * mount previews through this barrel rather than reaching past it.
  */
 export { BranchPreviewsPanel } from "./views/branch-previews-panel";
+export { ProductionDeploymentPanel } from "./views/production-deployment-panel";
 
 /* Presentation without the fetch, for fixtures and tests. */
 export { BranchPreviewsView } from "./views/branch-previews-view";
 export type { BranchPreviewsViewProps } from "./views/branch-previews-view";
+export { ProductionDeploymentView } from "./views/production-deployment-view";
+export type { ProductionDeploymentViewProps } from "./views/production-deployment-view";
 
 export {
   useBranchPreviewsViewModel,
