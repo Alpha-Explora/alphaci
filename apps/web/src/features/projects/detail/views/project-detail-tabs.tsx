@@ -30,6 +30,8 @@ export { WorkflowStageList } from "./workflow-stage-list";
  */
 interface ProjectDetailTabsProps {
   project: ProvisionedProject;
+  /** The repo sits outside the enforced organisation. Decided by the page. */
+  external?: boolean;
   /**
    * The delete flow, rendered at the foot of Settings.
    *
@@ -65,6 +67,7 @@ const TAB_PANELS: Record<
 
 export function ProjectDetailTabs({
   project,
+  external = false,
   dangerZone,
 }: Readonly<ProjectDetailTabsProps>) {
   const vm = useProjectDetailTabsViewModel({
@@ -74,8 +77,11 @@ export function ProjectDetailTabs({
   const TabPanel = TAB_PANELS[vm.tab];
 
   return (
-    <section className="project-detail-panel" aria-label="Project detail">
-      <ProjectDetailHeader project={project} />
+    <section
+      className="project-detail-panel project-detail-panel--page"
+      aria-label="Project detail"
+    >
+      <ProjectDetailHeader project={project} external={external} />
       <div className="project-sections" data-tour="project-detail-tabs">
         <ProjectDetailTopTabs
           groups={PROJECT_DETAIL_TAB_GROUPS}
@@ -101,13 +107,18 @@ export function ProjectDetailTabs({
   );
 }
 
+/**
+ * The page's identity. It is the route's only heading, so it is the h1 and
+ * wears the same title style as the other full pages.
+ */
 function ProjectDetailHeader({
   project,
-}: Readonly<{ project: ProvisionedProject }>) {
+  external,
+}: Readonly<{ project: ProvisionedProject; external: boolean }>) {
   return (
     <div className="project-detail-header">
       <div>
-        <h3>{project.repoFullName}</h3>
+        <h1 className="workflow-page-title">{project.repoFullName}</h1>
         <p>{project.serviceName}</p>
       </div>
       <span className="project-detail-header-badges">
@@ -116,6 +127,9 @@ function ProjectDetailHeader({
         >
           {project.status}
         </span>
+        {external ? (
+          <span className="project-status-badge external">External</span>
+        ) : null}
       </span>
     </div>
   );

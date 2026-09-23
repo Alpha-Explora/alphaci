@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
-import { motion, useReducedMotion } from "framer-motion";
 
 import { AppNav } from "@/features/workspace/selection";
 import { FlowBackground } from "@/shared/layout/flow-background";
@@ -18,15 +17,10 @@ import {
   isSignedInMember,
   overviewProject,
   projectRepoFullName,
-  projectStatusVariant as statusVariant,
-  reducedMotionFlag,
   routeProjectId,
 } from "../../model/projects-rules";
 import { useProjectDetailViewModel } from "../view-models/use-project-detail-view-model";
 import { ProjectDangerZone } from "./project-danger-zone";
-import { PROMOTION_FLOW_LABEL } from "@/shared/api/pipeline-branches";
-
-const EASE_OUT: [number, number, number, number] = [0.25, 0, 0, 1];
 
 function ProjectSessionError({
   sessionError,
@@ -139,86 +133,6 @@ function ProjectOverviewError({
   );
 }
 
-function ProjectDetailHeader({
-  reduced,
-  repoName,
-  project,
-  enforcedOrg,
-}: Readonly<{
-  reduced: boolean;
-  repoName: string;
-  project: NonNullable<
-    ReturnType<typeof useProjectDetailViewModel>["overview"]
-  >["project"] | null;
-  enforcedOrg: string | undefined;
-}>) {
-  return (
-    <motion.div
-      className="workflow-page-header workflow-page-header--compact project-page-header"
-      initial={reduced ? false : { opacity: 0, y: 8 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.28, ease: EASE_OUT }}
-    >
-      <div className="workflow-page-header-left">
-        <p className="workflow-page-breadcrumb">
-          <span style={{ opacity: 0.55 }}>ALPHACI</span>
-          <span className="workflow-page-breadcrumb-sep">/</span>
-          <Link href="/workflows" className="inline-link">
-            Projects
-          </Link>
-          <span className="workflow-page-breadcrumb-sep">/</span>
-          <span>{repoName}</span>
-        </p>
-        <div className="workflow-page-title-row">
-          <h1 className="workflow-page-title">{repoName}</h1>
-          <div className="workflow-page-studio-badge">
-            <span className="workflow-studio-led" aria-hidden="true" />
-            Project overview
-          </div>
-          {project ? (
-            <span
-              className={`project-status-badge ${statusVariant(project.status)}`}
-            >
-              {project.status}
-            </span>
-          ) : null}
-          {project && isExternalRepo(project.repoFullName, enforcedOrg) ? (
-            <span className="project-status-badge external">External</span>
-          ) : null}
-        </div>
-        {project ? (
-          <p
-            style={{
-              margin: "0.4rem 0 0",
-              color: "var(--text-secondary)",
-              fontSize: "0.86rem",
-            }}
-          >
-            {project.repoFullName} · {project.serviceName}
-          </p>
-        ) : null}
-      </div>
-      <div
-        className="workflow-page-signal-strip"
-        aria-label="Project workflow model"
-      >
-        <div>
-          <span>Mode</span>
-          <strong>PR-safe updates</strong>
-        </div>
-        <div>
-          <span>Promotion</span>
-          <strong>{PROMOTION_FLOW_LABEL}</strong>
-        </div>
-        <div>
-          <span>Stages</span>
-          <strong>Access, Quality, Package</strong>
-        </div>
-      </div>
-    </motion.div>
-  );
-}
-
 function ProjectDetailBody({
   guest,
   projectId,
@@ -226,6 +140,7 @@ function ProjectDetailBody({
   overviewError,
   logoutMessage,
   project,
+  enforcedOrg,
   dangerZone,
   onRetry,
 }: Readonly<{
@@ -237,6 +152,7 @@ function ProjectDetailBody({
   project: NonNullable<
     ReturnType<typeof useProjectDetailViewModel>["overview"]
   >["project"] | null;
+  enforcedOrg: string | undefined;
   dangerZone: ReactNode;
   onRetry: () => void;
 }>) {
@@ -274,15 +190,15 @@ function ProjectDetailBody({
       {logoutNotice}
       <div style={{ display: "grid", gap: "1.5rem" }}>
         {project ? (
-          <ProjectDetailTabs project={project} dangerZone={dangerZone} />
+          <ProjectDetailTabs
+            project={project}
+            external={isExternalRepo(project.repoFullName, enforcedOrg)}
+            dangerZone={dangerZone}
+          />
         ) : null}
       </div>
     </>
   );
-}
-
-function projectRepoName(repoFullName: string | null): string {
-  return repoFullName?.split("/")[1] ?? repoFullName ?? "Project";
 }
 
 /** Public view for one project's detail route. */
@@ -290,7 +206,6 @@ export function ProjectDetailView() {
   const router = useRouter();
   const params = useParams<{ projectId: string }>();
   const projectId = routeProjectId(params);
-  const prefersReducedMotion = useReducedMotion();
   const {
     status,
     session,
@@ -348,8 +263,6 @@ export function ProjectDetailView() {
   }
   if (status === "signed-out") return null;
 
-  const reduced = reducedMotionFlag(prefersReducedMotion);
-  const repoName = projectRepoName(repoFullName);
   const dangerZone = (
     <ProjectDangerZone
       vm={vm}
@@ -376,12 +289,6 @@ export function ProjectDetailView() {
       />
 
       <div id="main-content" className="dash-page-content project-page-shell">
-        <ProjectDetailHeader
-          reduced={reduced}
-          repoName={repoName}
-          project={project}
-          enforcedOrg={enforcedOrg}
-        />
         <div className="project-page-body">
           <ProjectDetailBody
             guest={guest}
@@ -390,6 +297,7 @@ export function ProjectDetailView() {
             overviewError={overviewError}
             logoutMessage={logoutMessage}
             project={project}
+            enforcedOrg={enforcedOrg}
             dangerZone={dangerZone}
             onRetry={() => void loadOverview()}
           />

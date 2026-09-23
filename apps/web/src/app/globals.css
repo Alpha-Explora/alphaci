@@ -1477,24 +1477,11 @@ html[data-theme="light"] {
   }
 }
 
-/* Full project pages share the studio header, but use a stable two-column
-   composition so the operational signals read as part of the header instead
-   of floating beside the project identity. */
+/* The full project page owns its spacing through .project-page-body, so the
+   shared page-content padding and gap are switched off here. */
 .dash-page-content.project-page-shell {
   gap: 0;
   padding: 0;
-}
-
-.project-page-header .workflow-page-signal-strip {
-  width: 100%;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-}
-
-@media (max-width: 640px) {
-
-  .project-page-header .workflow-page-signal-strip {
-    grid-template-columns: 1fr;
-  }
 }
 
 /* ── driver.js onboarding tour — dark glass theme overrides ────────────── */

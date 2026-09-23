@@ -278,6 +278,22 @@
   padding: 1rem;
 }
 
+/* On the full project page the panel IS the page, so it drops the card chrome
+   and spans gutter to gutter. The base class stays for the compact button
+   sizing in globals.css; the /workflows split view keeps its card. */
+.project-detail-panel--page {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  padding: 0;
+}
+
+/* Long org/repo names have no spaces to wrap at. */
+.project-detail-panel--page .project-detail-header h1 {
+  overflow-wrap: anywhere;
+}
+
 .project-detail-header {
   display: flex;
   align-items: flex-start;
@@ -1234,24 +1250,10 @@
   }
 }
 
-.project-page-header {
-  display: grid;
-  grid-template-columns: minmax(18rem, 1fr) minmax(34rem, 0.95fr);
-  align-items: center;
-  gap: clamp(1rem, 3vw, 3rem);
-}
-
 .project-page-body {
   display: grid;
   gap: 1rem;
   padding: 1.5rem var(--layout-gutter) 2.5rem;
-}
-
-@media (max-width: 1080px) {
-  .project-page-header {
-    grid-template-columns: 1fr;
-    align-items: start;
-  }
 }
 
 @media (max-width: 640px) {
