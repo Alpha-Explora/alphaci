@@ -187,16 +187,50 @@ export function previewFrameSandbox(
   return `${PREVIEW_FRAME_SANDBOX} allow-same-origin`;
 }
 
+export type OverviewPreviews = {
+  /** At most one per target: the Production Deployment cards. */
+  production: ProjectBranchPreview[];
+  /** Everything else, in the order received: the Active branches rows. */
+  branches: ProjectBranchPreview[];
+};
+
 /**
- * The previews that make up the Production Deployment card, one per target.
+ * The Overview's split: a production card per target, every other branch a row.
  *
- * A project with a frontend and a backend slot has a production environment
- * for each, and neither is "the" production deployment over the other.
+ * Per target, because a project with a frontend and a backend slot has a
+ * production environment for each and neither is "the" one. At most one per
+ * target, because a provider can label a second branch's deployment
+ * production - Vercel reports the deploy target, and the platform deploys
+ * every branch through it - which drew that branch as a second, identical
+ * card. The list arrives production-first, so the first one a target offers
+ * keeps the card and any other becomes a row like the rest.
  */
-export function productionPreviews(
+export function splitOverviewPreviews(
   previews: ProjectPreviewsResponse | null,
-): ProjectBranchPreview[] {
-  return previews?.branches.filter((preview) => preview.isProduction) ?? [];
+): OverviewPreviews {
+  const production: ProjectBranchPreview[] = [];
+  const branches: ProjectBranchPreview[] = [];
+  const carded = new Set<string>();
+
+  for (const preview of previews?.branches ?? []) {
+    if (preview.isProduction && !carded.has(preview.targetId)) {
+      carded.add(preview.targetId);
+      production.push(preview);
+    } else {
+      branches.push(preview);
+    }
+  }
+
+  return { production, branches };
+}
+
+/** The pull request on GitHub, when both halves of the address are known. */
+export function pullRequestUrl(
+  repoFullName: string | null | undefined,
+  pullRequestNumber: number | null,
+): string | null {
+  if (!repoFullName || pullRequestNumber === null) return null;
+  return `https://github.com/${repoFullName}/pull/${pullRequestNumber}`;
 }
 
 /** The commit on GitHub, when both halves of the address are known. */
