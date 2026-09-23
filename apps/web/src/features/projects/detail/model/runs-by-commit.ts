@@ -269,3 +269,24 @@ export function stagePillTone(
       return "neutral";
   }
 }
+
+/**
+ * The stage a commit's detail panel opens on: what the reader came to find out.
+ *
+ * A failure leads, because that is the question being asked of a red pipeline.
+ * Otherwise the first stage that actually ran something, so the panel opens on
+ * a roster rather than the empty space a `blocked` stage has to show — blocked
+ * is a consequence of an earlier failure, and opening there would put the
+ * effect in front of the cause.
+ *
+ * `stalled` counts as a failure for the same reason `stagePillTone` paints it
+ * as one: the stage never started and the pipeline will not continue on its
+ * own.
+ */
+export function openingStage(stages: readonly StageReport[]): string {
+  const failed = stages.find(
+    (stage) => stage.status === "failure" || stage.status === "stalled",
+  );
+  const ran = stages.find((stage) => (stage.checks ?? []).length > 0);
+  return (failed ?? ran ?? stages[0])?.stage ?? "";
+}
