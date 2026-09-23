@@ -2,6 +2,7 @@ import {
   commitHeadline,
   commitStageProblems,
   groupRunsByCommit,
+  openingStage,
   stagePillTone,
 } from "@/features/projects/detail/model/runs-by-commit";
 import type { RunGroup, StageReport } from "@/shared/api/contracts";
@@ -376,5 +377,61 @@ describe("commitStageProblems — a stage that passed with warnings", () => {
     );
 
     expect(problems.map((s) => s.stage)).toEqual(["quality"]);
+  });
+});
+
+describe("openingStage", () => {
+  const ran = (
+    name: StageReport["stage"],
+    status: StageReport["status"],
+    conclusions: string[],
+  ): StageReport => ({
+    ...stage(name, status),
+    checks: conclusions.map((conclusion, index) => ({
+      name: `check-${String(index)}`,
+      conclusion,
+    })),
+  });
+
+  it("opens on the failed stage, because that is the question being asked", () => {
+    expect(
+      openingStage([
+        ran("access", "success", ["success"]),
+        ran("quality", "failure", ["failure"]),
+        stage("package", "blocked"),
+      ]),
+    ).toBe("quality");
+  });
+
+  it("treats a stalled stage as the failure it is", () => {
+    expect(
+      openingStage([
+        ran("access", "success", ["success"]),
+        stage("quality", "stalled"),
+      ]),
+    ).toBe("quality");
+  });
+
+  /*
+   * A blocked stage has no checks, so opening on it shows an empty panel —
+   * the effect in front of the cause.
+   */
+  it("skips stages that ran nothing when the pipeline is green", () => {
+    expect(
+      openingStage([
+        stage("access", "blocked"),
+        ran("quality", "success", ["success"]),
+      ]),
+    ).toBe("quality");
+  });
+
+  it("falls back to the first stage when none ran anything", () => {
+    expect(
+      openingStage([stage("access", "blocked"), stage("quality", "blocked")]),
+    ).toBe("access");
+  });
+
+  it("returns an empty selection for a report with no stages", () => {
+    expect(openingStage([])).toBe("");
   });
 });
