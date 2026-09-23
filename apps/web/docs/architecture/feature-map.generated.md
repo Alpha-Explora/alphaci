@@ -29,8 +29,8 @@ Feature domains are UI ownership boundaries. They consume backend bounded contex
 | `guide` | `platform-ops` | in-product guide | 3 |
 | `home` | `platform-ops` | authenticated home dashboard | 18 |
 | `notifications` | `platform-ops` | inbox and notification preferences | 15 |
-| `projects` | `projects` | project detail, environments, hosting, drift, previews, and workflow settings | 64 |
-| `runs` | `pipelines` | CI run history presentation | 20 |
+| `projects` | `projects` | project detail, environments, hosting, drift, previews, and workflow settings | 66 |
+| `runs` | `pipelines` | CI run history presentation | 22 |
 | `settings` | `identity-access` | account, workspace, and notification settings | 20 |
 | `teams` | `identity-access` | team listing over hierarchy groups | 10 |
 | `workflows` | `projects` | project creation and workflow studio | 48 |
