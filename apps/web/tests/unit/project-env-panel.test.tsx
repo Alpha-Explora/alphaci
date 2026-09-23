@@ -794,6 +794,35 @@ describe("Project env provisioning UI", () => {
     );
   });
 
+  it("titles the page with the repository and badges an external repo", async () => {
+    mockCapabilities(true, true);
+    mockEnvHook();
+    mockedProjectApi.getProjectOverview.mockRejectedValue(new Error("offline"));
+
+    const rendered = render(<ProjectDetailTabs project={provisionedProject} />);
+    root = rendered.root;
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    // The page header is gone, so this is the route's only title.
+    const titles = rendered.container.querySelectorAll("h1");
+    expect(titles).toHaveLength(1);
+    expect(titles[0]?.textContent).toBe(provisionedProject.repoFullName);
+    expect(rendered.container.textContent).not.toContain("External");
+
+    act(() => {
+      rendered.root.render(
+        <ProjectDetailTabs project={provisionedProject} external />,
+      );
+    });
+
+    expect(
+      rendered.container.querySelector(".project-status-badge.external")
+        ?.textContent,
+    ).toBe("External");
+  });
+
   it("runs local project sync and renders the latest snapshot state", async () => {
     mockCapabilities(true, true);
     mockEnvHook();

@@ -310,48 +310,113 @@
 }
 
 /* ── Team projects list (right sidebar) ────────────────────────────────────── */
-.team-projects-list { display: flex; flex-direction: column; }
+.team-projects-list {
+  display: flex;
+  flex-direction: column;
+}
 
 .team-project-row {
-  display: flex; align-items: center; gap: 0.6rem;
-  min-height: 3rem; padding: 0.5rem 0;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  min-height: 3rem;
+  padding: 0.5rem 0;
   border-bottom: 1px solid var(--border-soft);
-  color: var(--text-primary); text-decoration: none;
-  transition: padding-left 0.16s ease, color 0.16s ease;
+  color: var(--text-primary);
+  text-decoration: none;
+  transition:
+    padding-left 0.16s ease,
+    color 0.16s ease;
 }
 
-.team-project-row:last-child { border-bottom: 0; }
+.team-project-row:last-child {
+  border-bottom: 0;
+}
 
-.team-project-row:hover { padding-left: 0.3rem; color: var(--brand); }
+.team-project-row:hover {
+  padding-left: 0.3rem;
+  color: var(--brand);
+}
 
-.team-status-dot { width: 0.55rem; height: 0.55rem; flex: 0 0 auto; border-radius: 50%; background: var(--text-muted); }
+.team-status-dot {
+  width: 0.55rem;
+  height: 0.55rem;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: var(--text-muted);
+}
 
-.team-status-dot--ok { background: var(--success); box-shadow: 0 0 0 3px color-mix(in srgb, var(--success) 13%, transparent); }
+.team-status-dot--ok {
+  background: var(--success);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--success) 13%, transparent);
+}
 
-.team-status-dot--warn { background: var(--accent-amber); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-amber) 13%, transparent); }
+.team-status-dot--warn {
+  background: var(--accent-amber);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-amber) 13%, transparent);
+}
 
-.team-status-dot--danger { background: var(--danger); box-shadow: 0 0 0 3px color-mix(in srgb, var(--danger) 13%, transparent); }
+.team-status-dot--danger {
+  background: var(--danger);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--danger) 13%, transparent);
+}
 
-.team-status-dot--muted { background: var(--text-muted); }
+.team-status-dot--muted {
+  background: var(--text-muted);
+}
 
-.team-project-copy { display: flex; flex-direction: column; gap: 0.1rem; min-width: 0; flex: 1; }
+.team-project-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  min-width: 0;
+  flex: 1;
+}
 
-.team-project-copy strong { font-size: 0.8rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.team-project-copy strong {
+  font-size: 0.8rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 
-.team-project-copy small { color: var(--text-muted); font-size: 0.68rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.team-project-copy small {
+  color: var(--text-muted);
+  font-size: 0.68rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 
 .team-status-badge {
-  flex: 0 0 auto; padding: 0.16rem 0.45rem; border-radius: var(--radius-pill);
-  font-size: 0.6rem; font-weight: 750; line-height: 1; white-space: nowrap;
+  flex: 0 0 auto;
+  padding: 0.16rem 0.45rem;
+  border-radius: var(--radius-pill);
+  font-size: 0.6rem;
+  font-weight: 750;
+  line-height: 1;
+  white-space: nowrap;
 }
 
-.team-status-badge--ok { color: var(--success); background: color-mix(in srgb, var(--success) 12%, transparent); }
+.team-status-badge--ok {
+  color: var(--success);
+  background: color-mix(in srgb, var(--success) 12%, transparent);
+}
 
-.team-status-badge--warn { color: var(--accent-amber); background: color-mix(in srgb, var(--accent-amber) 12%, transparent); }
+.team-status-badge--warn {
+  color: var(--accent-amber);
+  background: color-mix(in srgb, var(--accent-amber) 12%, transparent);
+}
 
-.team-status-badge--danger { color: var(--danger); background: color-mix(in srgb, var(--danger) 12%, transparent); }
+.team-status-badge--danger {
+  color: var(--danger);
+  background: color-mix(in srgb, var(--danger) 12%, transparent);
+}
 
-.team-status-badge--muted { color: var(--text-muted); background: color-mix(in srgb, var(--text-muted) 14%, transparent); }
+.team-status-badge--muted {
+  color: var(--text-muted);
+  background: color-mix(in srgb, var(--text-muted) 14%, transparent);
+}
 
 /* The team detail now fills the page rather than sitting beside a list rail —
    the header dropdown selects the team, so a second list was the same rows
@@ -557,6 +622,32 @@
   border: 1px solid var(--border-subtle);
   border-radius: 0.75rem;
   overflow: hidden;
+}
+
+/* One commit, one card.
+ *
+ * A commit's row carries its stages, its promotion note and its diagnosis, so
+ * consecutive commits ran together into one wall of text separated by a hairline
+ * — the reader could not see where one execution ended and the next began. The
+ * card gets its own surface and a header rule so the boundary is structural
+ * rather than something to be inferred from the content. */
+.ws-run {
+  background: var(--bg-surface);
+}
+
+.ws-run + .ws-run {
+  margin-top: 0.15rem;
+}
+
+.ws-run > .ws-run__head {
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+/* The commit's own identity leads the header and is not allowed to wrap away
+   from the status beside it. */
+.ws-run__head .ws-commit__sha {
+  font-weight: 600;
+  color: var(--text-primary);
 }
 
 .ws-run__head,
@@ -842,7 +933,9 @@
   padding: 0.7rem 0.9rem;
   border: 1px solid var(--border-subtle);
   border-radius: 0.7rem;
-  transition: background 0.15s ease, border-color 0.15s ease;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease;
 }
 
 .team-repo:hover {
@@ -1021,23 +1114,112 @@
   padding: 0.05rem 0.3rem;
 }
 
-/* The three pipeline stages of one commit, as graded by our own reports. */
-.ws-stages {
-  list-style: none;
-  margin: 0;
-  padding: 0 0.75rem 0.6rem;
-  display: flex;
-  flex-wrap: wrap;
+/* The pipeline stages of one commit, as graded by our own reports.
+ *
+ * A rail of stages beside one panel, rather than a row of stages each opening
+ * its own roster downward. Four independent disclosures meant four clicks to
+ * read one pipeline, and every expansion pushed the stages under it down the
+ * page; the stage names are the navigation, so they hold a column that does
+ * not move while the detail changes beside them. */
+.ws-board {
+  display: grid;
+  /* The rail takes its width from the longest stage name and then stops, so
+     the panel keeps the room. */
+  grid-template-columns: minmax(8rem, max-content) 1fr;
   gap: 0.75rem;
+  padding: 0 0.75rem 0.7rem;
+  align-items: start;
 }
 
-.ws-stages__item {
+.ws-board__rail {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.15rem;
+}
+
+.ws-board__stage {
+  display: grid;
+  gap: 0.15rem;
+  width: 100%;
+  padding: 0.35rem 0.5rem;
+  border: 0;
+  border-left: 2px solid transparent;
+  border-radius: 0.4rem;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.ws-board__stage:hover {
+  background: var(--surface-hover);
+}
+
+.ws-board__stage:focus-visible {
+  outline: 2px solid var(--focus-ring, currentColor);
+  outline-offset: -2px;
+}
+
+/* The selected stage is marked by the rule and the surface, never by colour
+   alone — the pill beside it is already carrying the status colour. */
+.ws-board__stage--current {
+  background: var(--surface-hover);
+  border-left-color: var(--text-primary);
+}
+
+.ws-board__stage-head {
   display: inline-flex;
-  /* Column so the check roster can open beneath its stage instead of shoving
-     the next stage along the row. The pill and status stay on one line. */
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 0.25rem;
+  align-items: center;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+}
+
+.ws-board__stage-count {
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+}
+
+.ws-board__panel {
+  min-width: 0;
+  font-size: 0.7rem;
+}
+
+.ws-board__panel:focus-visible {
+  outline: 2px solid var(--focus-ring, currentColor);
+  outline-offset: 2px;
+  border-radius: 0.4rem;
+}
+
+.ws-board__empty {
+  margin: 0;
+  color: var(--text-secondary);
+}
+
+/* Narrow screens have no room for two columns; the rail becomes a header. */
+@media (max-width: 40rem) {
+  .ws-board {
+    grid-template-columns: 1fr;
+  }
+
+  .ws-board__rail {
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(0, 1fr);
+    overflow-x: auto;
+  }
+
+  .ws-board__stage {
+    border-left: 0;
+    border-bottom: 2px solid transparent;
+    border-radius: 0.4rem 0.4rem 0 0;
+  }
+
+  .ws-board__stage--current {
+    border-left: 0;
+    border-bottom-color: var(--text-primary);
+  }
 }
 
 .ws-stages__head {
@@ -1048,40 +1230,12 @@
 
 /* Which tools ran inside a stage.
  *
- * A count first, the roster on demand. Seven ticks under every stage of every
- * clean run is a panel people stop opening — but a stage that says nothing
- * about the tools underneath it is how "green" stopped being worth anything
- * here, so the count is always visible and the names are one click away. */
-.ws-checks {
-  font-size: 0.7rem;
-}
-
-.ws-checks__summary {
-  color: var(--text-secondary);
-  cursor: pointer;
-  list-style: none;
-}
-
-.ws-checks__summary::-webkit-details-marker {
-  display: none;
-}
-
-.ws-checks__summary::before {
-  content: "▸ ";
-}
-
-.ws-checks[open] .ws-checks__summary::before {
-  content: "▾ ";
-}
-
-.ws-checks__summary:focus-visible {
-  outline: 2px solid var(--focus-ring, currentColor);
-  outline-offset: 2px;
-}
-
+ * The count now rides on the rail button and the roster fills the panel, so
+ * the per-stage disclosure these rules dressed is gone. What remains is the
+ * roster itself. */
 .ws-checks__list {
   list-style: none;
-  margin: 0.3rem 0 0;
+  margin: 0;
   padding: 0;
   display: grid;
   gap: 0.15rem;
@@ -1253,6 +1407,127 @@
 .ws-diagnosis__more {
   justify-self: start;
   font-size: 0.72rem;
+}
+
+/* ── A job log, read as the tools that wrote it ─────────────────────────────
+   The roster answers "what ran and what did each say"; the sections answer
+   "show me". Only failed sections open, so a green step's output is one click
+   away rather than four hundred lines in the way.
+   ------------------------------------------------------------------------- */
+.ws-joblog {
+  display: grid;
+  gap: 0.6rem;
+}
+
+.ws-toolsum {
+  list-style: none;
+  margin: 0;
+  padding: 0.6rem 0.7rem;
+  display: grid;
+  gap: 0.3rem;
+  border: 1px solid var(--border-subtle);
+  border-radius: 0.6rem;
+}
+
+.ws-toolsum__row {
+  display: grid;
+  /* The verdict column is what people scan, so it holds its own track rather
+     than wrapping under a long tool name. */
+  grid-template-columns: 1rem minmax(0, 1fr) auto;
+  align-items: baseline;
+  gap: 0.5rem;
+  font-size: 0.8rem;
+}
+
+.ws-toolsum__mark {
+  font-weight: 700;
+  text-align: center;
+}
+
+.ws-toolsum__row--passed .ws-toolsum__mark {
+  color: var(--success);
+}
+
+.ws-toolsum__row--failed .ws-toolsum__mark {
+  color: var(--danger);
+}
+
+.ws-toolsum__row--failed .ws-toolsum__name {
+  font-weight: 700;
+}
+
+.ws-toolsum__name {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  color: var(--text-primary);
+}
+
+.ws-toolsum__detail {
+  color: var(--text-secondary);
+  font-family: var(--font-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
+  font-size: 0.74rem;
+  text-align: right;
+}
+
+.ws-joblog__sections {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.3rem;
+}
+
+.ws-joblog__summary {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.35rem 0.5rem;
+  border-radius: 0.45rem;
+  cursor: pointer;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.ws-joblog__summary:hover {
+  background: color-mix(in srgb, var(--text-primary) 6%, transparent);
+  color: var(--text-primary);
+}
+
+.ws-joblog__mark {
+  font-weight: 700;
+}
+
+.ws-joblog__mark--passed {
+  color: var(--success);
+}
+
+.ws-joblog__mark--failed {
+  color: var(--danger);
+}
+
+.ws-joblog__title {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Pushed to the end so the durations line up down the list. */
+.ws-joblog__time {
+  margin-left: auto;
+  flex-shrink: 0;
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.ws-joblog__section .ws-console {
+  margin-top: 0.3rem;
+  max-height: 22rem;
+}
+
+.ws-console__line--warning {
+  color: var(--warning);
 }
 
 /* Reviewing a pull request without leaving the product.

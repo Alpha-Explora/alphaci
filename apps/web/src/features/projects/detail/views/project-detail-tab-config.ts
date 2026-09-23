@@ -3,13 +3,19 @@ import { type SideTabGroup } from "@/features/groups/workspace";
 import type { ProjectDetailTab } from "../model/project-detail-tab-rules";
 
 /**
- * Grouped, and in a SIDE rail rather than a strip across the top.
+ * Grouped, and in a strip across the top rather than a SIDE rail.
  *
- * Nine entries will not fit a horizontal strip legibly, and the three new ones
- * are the reason: Code, Pull requests and Pipeline runs are where the work
- * actually is, so hiding them behind an overflow would bury the point of the
- * page. The headings turn a flat list into a map of what a project HAS, which
- * is the same reasoning — and the same component — as the Teams page.
+ * The rail was here because nine entries do not fit a strip comfortably, and
+ * it cost the page a 200px column on every screen — beside Code, diffs and run
+ * logs, which are the widest things the product shows. The strip gives that
+ * width back; the nine entries are kept legible by scrolling rather than
+ * wrapping or hiding any behind an overflow menu.
+ *
+ * The groups survive the move, drawn as clusters separated by a rule instead
+ * of by headings: a heading per group would make the bar two rows tall, and
+ * the clusters alone still say a project HAS work, a pipeline, delivery,
+ * records and configuration. ProjectDetailTopTabs draws them; the Teams page
+ * keeps the rail, where a heading still costs nothing.
  *
  * The order follows the order work moves in: read it, propose it, watch it run,
  * see the rules that ran. Delivery, records and configuration sit after,

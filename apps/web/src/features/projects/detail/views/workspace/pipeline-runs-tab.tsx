@@ -18,6 +18,7 @@ import {
   summarizeChecks,
 } from "@/features/runs";
 
+import { JobLogView } from "./job-log-view";
 import {
   StatusPill,
   WorkspaceEmpty,
@@ -30,6 +31,7 @@ import type { BranchRunSection } from "../../model/runs-by-branch";
 import {
   commitHeadline,
   commitStageProblems,
+  openingStage,
   stagePillTone,
   type CommitRunGroup,
 } from "../../model/runs-by-commit";
@@ -288,25 +290,7 @@ function CommitRow({
         </span>
       </button>
 
-      {commit.report && (
-        <ul className="ws-stages" aria-label="Pipeline stages">
-          {commit.report.stages.map((stage) => (
-            <li key={stage.stage} className="ws-stages__item">
-              <span className="ws-stages__head">
-                <span
-                  className={`ws-pill ws-pill--${stagePillTone(stage.status)}`}
-                >
-                  {stage.stage}
-                </span>
-                <span className="ws-stages__status">
-                  {stage.status.replace(/_/g, " ")}
-                </span>
-              </span>
-              <StageChecks stage={stage} />
-            </li>
-          ))}
-        </ul>
-      )}
+      {commit.report && <StageBoard report={commit.report} />}
 
       <PromotionNote branch={branch} report={commit.report} />
 
@@ -586,42 +570,129 @@ function StageDiagnosis({
  * generated before per-tool reporting is "not known", which is a different
  * claim from "no tools ran" and must not be dressed up as 0 of 0.
  */
-function StageChecks({ stage }: { stage: StageReport }) {
-  const checks = stage.checks ?? [];
-  const summary = summarizeChecks(stage.checks);
-  if (summary === null) {
+/**
+ * A commit's stages as a rail beside their checks, rather than stacked above
+ * them.
+ *
+ * Every stage used to carry its own `<details>`, so reading a four-stage
+ * pipeline meant four separate expansions, and each one pushed the stages
+ * below it further down the page. The stage names are the navigation here —
+ * they belong in one column that does not move, with the detail in a panel
+ * that changes beside it.
+ *
+ * A tablist rather than a set of buttons: one of these is selected at a time
+ * and the panel is its content, which is what the pattern is for, and it gives
+ * arrow-key movement between stages for free in the browsers that implement
+ * it.
+ */
+function StageBoard({ report }: { report: RunGroup }) {
+  const { stages } = report;
+  const [selected, setSelected] = useState(() => openingStage(stages));
+  const active = stages.find((stage) => stage.stage === selected) ?? stages[0];
+
+  if (!active) {
     return null;
   }
 
   return (
-    <details className="ws-checks">
-      <summary className="ws-checks__summary">
-        {checkSummaryLabel(summary)}
-      </summary>
-      <ul className="ws-checks__list">
-        {checks.map((check) => {
-          const tone = checkTone(check.conclusion);
+    <div className="ws-board">
+      <ul
+        className="ws-board__rail"
+        role="tablist"
+        aria-label="Pipeline stages"
+      >
+        {stages.map((stage) => {
+          const summary = summarizeChecks(stage.checks);
+          const current = stage.stage === active.stage;
           return (
-            <li
-              key={check.name}
-              className={`ws-checks__row ws-checks__row--${tone}`}
-            >
-              <span aria-hidden="true" className="ws-checks__mark">
-                {tone === "passed"
-                  ? "✓"
-                  : tone === "failed"
-                    ? "✗"
-                    : tone === "running"
-                      ? "●"
-                      : "–"}
-              </span>
-              <span className="ws-checks__name">{checkLabel(check.name)}</span>
-              <span className="ws-checks__outcome">{check.conclusion}</span>
+            <li key={stage.stage} role="presentation">
+              <button
+                type="button"
+                role="tab"
+                id={`stage-tab-${report.commitSha}-${stage.stage}`}
+                aria-selected={current}
+                aria-controls={`stage-panel-${report.commitSha}`}
+                className={`ws-board__stage${current ? " ws-board__stage--current" : ""}`}
+                onClick={() => setSelected(stage.stage)}
+              >
+                <span className="ws-board__stage-head">
+                  <span
+                    className={`ws-pill ws-pill--${stagePillTone(stage.status)}`}
+                  >
+                    {stage.stage}
+                  </span>
+                  <span className="ws-stages__status">
+                    {stage.status.replace(/_/g, " ")}
+                  </span>
+                </span>
+                {/* The count stays visible on every stage, selected or not, so
+                    a clean run still says what ran underneath it. */}
+                {summary && (
+                  <span className="ws-board__stage-count">
+                    {checkSummaryLabel(summary)}
+                  </span>
+                )}
+              </button>
             </li>
           );
         })}
       </ul>
-    </details>
+
+      <div
+        className="ws-board__panel"
+        role="tabpanel"
+        id={`stage-panel-${report.commitSha}`}
+        aria-labelledby={`stage-tab-${report.commitSha}-${active.stage}`}
+        tabIndex={0}
+      >
+        <StageChecks stage={active} />
+      </div>
+    </div>
+  );
+}
+
+/**
+ * The tools that ran inside the selected stage.
+ *
+ * Says so when there are none rather than rendering nothing: a blocked stage
+ * with an empty panel reads as a loading failure, and "did not run" is both
+ * true and the answer to why it is empty.
+ */
+function StageChecks({ stage }: { stage: StageReport }) {
+  const checks = stage.checks ?? [];
+  if (checks.length === 0) {
+    return (
+      <p className="ws-board__empty">
+        No checks ran in {stage.stage}
+        {stage.status === "blocked" ? " — an earlier stage failed." : "."}
+      </p>
+    );
+  }
+
+  return (
+    <ul className="ws-checks__list">
+      {checks.map((check) => {
+        const tone = checkTone(check.conclusion);
+        return (
+          <li
+            key={check.name}
+            className={`ws-checks__row ws-checks__row--${tone}`}
+          >
+            <span aria-hidden="true" className="ws-checks__mark">
+              {tone === "passed"
+                ? "✓"
+                : tone === "failed"
+                  ? "✗"
+                  : tone === "running"
+                    ? "●"
+                    : "–"}
+            </span>
+            <span className="ws-checks__name">{checkLabel(check.name)}</span>
+            <span className="ws-checks__outcome">{check.conclusion}</span>
+          </li>
+        );
+      })}
+    </ul>
   );
 }
 
@@ -843,17 +914,7 @@ function JobRow({ projectId, job }: { projectId: string; job: RunJob }) {
           ) : error ? (
             <WorkspaceError message={error} onRetry={loadLog} />
           ) : log && log.available ? (
-            <>
-              {log.truncated && (
-                <p className="ws-hint">
-                  Showing the end of the log — the earlier output was too long
-                  to send.
-                </p>
-              )}
-              <pre className="ws-console">
-                <code>{log.content}</code>
-              </pre>
-            </>
+            <JobLogView content={log.content} truncated={log.truncated} />
           ) : (
             <WorkspaceEmpty
               title="No log available"
