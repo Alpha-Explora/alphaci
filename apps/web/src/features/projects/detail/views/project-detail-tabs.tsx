@@ -3,13 +3,13 @@
 import type { ReactNode } from "react";
 import { motion } from "framer-motion";
 
-import { SideTabs } from "@/features/groups/workspace";
 import { projectStatusVariant } from "../../model/projects-rules";
 import type { ProvisionedProject } from "@/features/projects";
 import type { ProjectDetailTab } from "../model/project-detail-tab-rules";
 import { useProjectDetailTabsViewModel } from "../view-models/use-project-detail-tabs-view-model";
 import type { ProjectDetailTabsViewModel } from "../view-models/use-project-detail-tabs-view-model";
 import { PROJECT_DETAIL_TAB_GROUPS } from "./project-detail-tab-config";
+import { ProjectDetailTopTabs } from "./project-detail-top-tabs";
 import { OverviewTab } from "./overview-tab";
 import { WorkflowTab } from "./workflow-tab";
 import { RunsTab } from "./runs-tab";
@@ -77,7 +77,7 @@ export function ProjectDetailTabs({
     <section className="project-detail-panel" aria-label="Project detail">
       <ProjectDetailHeader project={project} />
       <div className="project-sections" data-tour="project-detail-tabs">
-        <SideTabs
+        <ProjectDetailTopTabs
           groups={PROJECT_DETAIL_TAB_GROUPS}
           value={vm.tab}
           onChange={vm.setTab}
