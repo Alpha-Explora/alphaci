@@ -197,13 +197,13 @@
 
 .deploy-cards {
   display: grid;
-  gap: 1rem;
+  gap: 0.85rem;
 }
 
 .deploy-card {
   display: grid;
-  gap: 1rem;
-  padding: 1.1rem 1.2rem 1.25rem;
+  gap: 0.8rem;
+  padding: 0.85rem 1rem 1rem;
   border: 1px solid var(--border-soft);
   border-radius: var(--radius-card);
   background: var(--bg-panel);
@@ -214,14 +214,16 @@
   align-items: flex-start;
   justify-content: space-between;
   gap: 1rem;
-  padding-bottom: 0.9rem;
+  padding-bottom: 0.7rem;
   border-bottom: 1px solid var(--border-subtle);
 }
 
-.deploy-card__title {
+/* Two classes, to outrank `.section-card h2` and `.tab-content-panel h2`,
+   which otherwise set the card's title in the page-heading size. */
+.deploy-card .deploy-card__title {
   margin: 0;
   color: var(--text-primary);
-  font-size: 1.05rem;
+  font-size: 0.95rem;
   font-weight: 650;
 }
 
@@ -245,12 +247,13 @@
   flex: none;
 }
 
-/* Thumbnail beside the facts, as on the provider's own deployment page; one
-   column once the card is too narrow for both. */
+/* A fixed-width thumbnail beside the facts, as on the provider's own
+   deployment page, so the card stays short on a wide screen; one column once
+   the card is too narrow for both. */
 .deploy-card__body {
   display: grid;
-  grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
-  gap: 1.25rem 1.5rem;
+  grid-template-columns: minmax(0, 20rem) minmax(0, 1fr);
+  gap: 1rem 1.5rem;
   align-items: start;
 }
 
@@ -315,7 +318,7 @@
 .deploy-card__facts {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 1rem 1.25rem;
+  gap: 0.75rem 1.25rem;
   margin: 0;
 }
 
@@ -328,9 +331,9 @@
 }
 
 .deploy-card__fact dt {
-  margin: 0 0 0.3rem;
+  margin: 0 0 0.2rem;
   color: var(--text-muted);
-  font-size: 0.74rem;
+  font-size: 0.72rem;
 }
 
 /* A single shrinkable column: an implicit grid track grows to its content,
@@ -341,7 +344,7 @@
   gap: 0.3rem;
   margin: 0;
   color: var(--text-primary);
-  font-size: 0.86rem;
+  font-size: 0.82rem;
   font-weight: 600;
 }
 
@@ -415,6 +418,122 @@ a.deploy-card__sha:hover {
   font-weight: 500;
 }
 
+/* ── Active branches ──────────────────────────────────────────────────────── */
+
+.active-branches {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.active-branches .active-branches__title {
+  margin: 0.35rem 0 0;
+  color: var(--text-primary);
+  font-size: 0.95rem;
+  font-weight: 650;
+}
+
+/* The list owns the columns and every row takes them through subgrid, so a
+   long branch name or a missing pull request in one row cannot push the
+   status and commit of that row out of line with the others. */
+.active-branches__list {
+  display: grid;
+  overflow: hidden;
+  grid-template-columns:
+    fit-content(18rem) max-content minmax(0, 1fr) max-content max-content
+    1.75rem;
+  column-gap: 0.9rem;
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-card);
+  background: var(--bg-panel);
+  list-style: none;
+}
+
+.active-branch {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: subgrid;
+  align-items: center;
+  padding: 0.6rem 1rem;
+  color: var(--text-primary);
+  font-size: 0.8rem;
+}
+
+/* Pinned, so a row without a pull request or a live address keeps its
+   other cells under their neighbours'. */
+.active-branch__branch { grid-column: 1; }
+.active-branch__status {
+  grid-column: 2;
+  white-space: nowrap;
+}
+.active-branch__commit { grid-column: 3; }
+
+.active-branch + .active-branch {
+  border-top: 1px solid var(--border-subtle);
+}
+
+.active-branch__branch,
+.active-branch__status,
+.active-branch__commit {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-width: 0;
+}
+
+.active-branch__branch .deploy-card__branch {
+  overflow: hidden;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.active-branch__muted {
+  color: var(--text-muted);
+}
+
+.active-branch__created {
+  grid-column: 5;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.active-branch__chip {
+  display: inline-flex;
+  grid-column: 4;
+  justify-self: start;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.15rem 0.5rem;
+  border: 1px solid var(--border-soft);
+  border-radius: 999px;
+  color: var(--text-secondary);
+  font-size: 0.74rem;
+  text-decoration: none;
+}
+
+.active-branch__chip:hover,
+.active-branch__visit:hover {
+  color: var(--brand);
+}
+
+.active-branch__visit {
+  display: inline-grid;
+  grid-column: 6;
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 0.4rem;
+  color: var(--text-secondary);
+  place-items: center;
+}
+
+.active-branch__visit:focus-visible,
+.active-branch__chip:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
 @media (max-width: 900px) {
   .deploy-card__body {
     grid-template-columns: minmax(0, 1fr);
@@ -428,5 +547,38 @@ a.deploy-card__sha:hover {
 
   .deploy-card__facts {
     grid-template-columns: minmax(0, 1fr);
+  }
+
+  /* Branch and status on the first line, the commit under them. */
+  .active-branches__list {
+    grid-template-columns: minmax(0, 1fr) max-content 1.75rem;
+    column-gap: 0.75rem;
+  }
+
+  .active-branch {
+    row-gap: 0.35rem;
+  }
+
+  .active-branch__branch {
+    grid-row: 1;
+  }
+
+  .active-branch__status {
+    grid-row: 1;
+  }
+
+  .active-branch__commit {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+
+  .active-branch__chip,
+  .active-branch__created {
+    display: none;
+  }
+
+  .active-branch__visit {
+    grid-column: 3;
+    grid-row: 1;
   }
 }

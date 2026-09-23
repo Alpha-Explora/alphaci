@@ -1,8 +1,12 @@
 "use client";
 
-import { previewKey, productionPreviews } from "../../model/projects-rules";
+import { previewKey, splitOverviewPreviews } from "../../model/projects-rules";
+import { ActiveBranchesList } from "./active-branches-list";
 import { BranchPreviewsView, type BranchPreviewsViewProps } from "./branch-previews-view";
 import { ProductionDeploymentCard } from "./production-deployment-card";
+
+/** Rows before the rest are left to the Hosting tab, which lists them all. */
+const ACTIVE_BRANCH_ROWS = 5;
 
 export type ProductionDeploymentViewProps = Pick<
   BranchPreviewsViewProps,
@@ -13,8 +17,9 @@ export type ProductionDeploymentViewProps = Pick<
 };
 
 /**
- * The Overview's deployment summary: the production environment as a full
- * card, and a count of the rest, which live on the Hosting tab.
+ * The Overview's deployment summary: the production environment as a card,
+ * and every other branch as a one-line row under it, as the provider's own
+ * project page lays them out.
  *
  * Anything short of a loaded production environment falls back to the branch
  * list. It already words every "not yet" case - loading, switched off, no
@@ -27,7 +32,10 @@ export function ProductionDeploymentView({
   error,
   repoFullName,
 }: Readonly<ProductionDeploymentViewProps>) {
-  const production = status === "ready" ? productionPreviews(previews) : [];
+  const { production, branches } =
+    status === "ready"
+      ? splitOverviewPreviews(previews)
+      : { production: [], branches: [] };
 
   if (production.length === 0) {
     return (
@@ -46,8 +54,6 @@ export function ProductionDeploymentView({
     );
   }
 
-  const others = (previews?.branches.length ?? 0) - production.length;
-
   return (
     <section aria-label="Production deployment" className="deploy-cards">
       {production.map((preview) => (
@@ -57,12 +63,11 @@ export function ProductionDeploymentView({
           repoFullName={repoFullName}
         />
       ))}
-      {others > 0 ? (
-        <p className="branch-previews__more">
-          {others} more {others === 1 ? "environment" : "environments"} on the
-          Hosting tab.
-        </p>
-      ) : null}
+      <ActiveBranchesList
+        branches={branches}
+        limit={ACTIVE_BRANCH_ROWS}
+        repoFullName={repoFullName}
+      />
     </section>
   );
 }

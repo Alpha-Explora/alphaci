@@ -15,7 +15,8 @@ import {
   previewStatusLabel,
   previewStatusTone,
   previewUnavailableReason,
-  productionPreviews,
+  pullRequestUrl,
+  splitOverviewPreviews,
   projectStatusVariant,
   shortCommitSha,
   toOverviewError,
@@ -338,24 +339,60 @@ describe("domainScopeLabel", () => {
   });
 });
 
-describe("productionPreviews", () => {
-  it("keeps every production environment, one per target", () => {
+describe("splitOverviewPreviews", () => {
+  function split(branches: ProjectBranchPreview[]) {
+    return splitOverviewPreviews({
+      enabled: true,
+      liveProvidersEnabled: true,
+      branches,
+      providerError: null,
+    });
+  }
+
+  it("cards one production environment per target, the rest are rows", () => {
     const web = preview({ isProduction: true, targetId: "web" });
     const api = preview({ isProduction: true, targetId: "api" });
-    const branches = [preview(), web, api];
+    const uat = preview({ branch: "uat", targetId: "web" });
 
-    expect(
-      productionPreviews({
-        enabled: true,
-        liveProvidersEnabled: true,
-        branches,
-        providerError: null,
-      }),
-    ).toEqual([web, api]);
+    expect(split([web, api, uat])).toEqual({
+      production: [web, api],
+      branches: [uat],
+    });
+  });
+
+  /* Vercel labels any deployment made with the production target as
+   * production, and the platform deploys every branch that way, so one
+   * target could offer two. The first keeps the card; the second is a row. */
+  it("demotes a second production-labelled branch of the same target to a row", () => {
+    const main = preview({ isProduction: true, branch: "main", targetId: "web" });
+    const feature = preview({
+      isProduction: true,
+      branch: "feat/cicd-system-validation",
+      status: "failed",
+      targetId: "web",
+    });
+
+    expect(split([main, feature])).toEqual({
+      production: [main],
+      branches: [feature],
+    });
   });
 
   it("is empty before previews have loaded", () => {
-    expect(productionPreviews(null)).toEqual([]);
+    expect(splitOverviewPreviews(null)).toEqual({ production: [], branches: [] });
+  });
+});
+
+describe("pullRequestUrl", () => {
+  it("builds the pull request address", () => {
+    expect(pullRequestUrl("tone/web-app", 47)).toBe(
+      "https://github.com/tone/web-app/pull/47",
+    );
+  });
+
+  it("is null without a repository or a pull request", () => {
+    expect(pullRequestUrl(null, 47)).toBeNull();
+    expect(pullRequestUrl("tone/web-app", null)).toBeNull();
   });
 });
 

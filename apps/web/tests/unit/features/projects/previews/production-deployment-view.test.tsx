@@ -161,16 +161,65 @@ describe("ProductionDeploymentView", () => {
     expect(container.textContent).toContain("Nothing deployed yet");
   });
 
-  it("counts the other environments and points at the Hosting tab", () => {
+  it("lists the other branches as one-line rows under a single card", () => {
     render([
       production(),
-      production({ isProduction: false, branch: "uat", targetId: "target-1" }),
+      production({
+        isProduction: false,
+        branch: "feat/org-member-directory",
+        deploymentId: "dpl_2",
+        commitSha: "3fjeeb0a1",
+        commitMessage: "feat(groups): list workspace candidates",
+        pullRequestNumber: 47,
+        previewUrl: "https://web-app-git-feat-org.vercel.app",
+      }),
     ]);
 
     expect(container.querySelectorAll("article")).toHaveLength(1);
-    expect(container.textContent).toContain(
-      "1 more environment on the Hosting tab.",
+    const rows = container.querySelectorAll(".active-branch");
+    expect(rows).toHaveLength(1);
+    const row = rows[0]?.textContent ?? "";
+    expect(row).toContain("feat/org-member-directory");
+    expect(row).toContain("Live");
+    expect(row).toContain("3fjeeb0");
+    expect(row).toContain("#47");
+    expect(link("#47")?.getAttribute("href")).toBe(
+      "https://github.com/tone/web-app/pull/47",
     );
+    expect(link("Visit web-app-git-feat-org.vercel.app")).toBeDefined();
+  });
+
+  /* The production screen that prompted this: a failed deployment of a
+   * feature branch that Vercel also called production drew a second card. */
+  it("never draws a second card for the same target", () => {
+    render([
+      production(),
+      production({
+        branch: "feat/cicd-system-validation",
+        deploymentId: "dpl_3",
+        status: "failed",
+      }),
+    ]);
+
+    expect(container.querySelectorAll("article")).toHaveLength(1);
+    const row = container.querySelector(".active-branch")?.textContent ?? "";
+    expect(row).toContain("feat/cicd-system-validation");
+    expect(row).toContain("Failed");
+    expect(link("Visit web-app.vercel.app")).toBeUndefined();
+  });
+
+  it("leaves rows past the limit to the Hosting tab", () => {
+    const others = Array.from({ length: 7 }, (_, index) =>
+      production({
+        isProduction: false,
+        branch: `feat/branch-${index}`,
+        deploymentId: `dpl_${index + 10}`,
+      }),
+    );
+    render([production(), ...others]);
+
+    expect(container.querySelectorAll(".active-branch")).toHaveLength(5);
+    expect(container.textContent).toContain("2 more branches on the Hosting tab.");
   });
 
   it("falls back to the branch list when there is no production environment", () => {
