@@ -3,6 +3,7 @@ import { createRequire } from "node:module";
 import { dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { apiProxyRewrites } from "./src/shared/api/api-proxy-rewrites";
 import { BUILD_EDITION, BUILD_PROFILE } from "./src/shared/composition/build-profile";
 
 const require = createRequire(import.meta.url);
@@ -50,6 +51,11 @@ const nextConfig: NextConfig = {
       ...capabilityAliases,
     };
     return config;
+  },
+  // Rewrites compile into the build output, so API_PROXY_TARGET must be set at
+  // build time, the same as NEXT_PUBLIC_* values.
+  async rewrites() {
+    return apiProxyRewrites(process.env.API_PROXY_TARGET);
   },
   async headers() {
     return [

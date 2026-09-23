@@ -1395,6 +1395,16 @@ describe("API client project setup helpers", () => {
     );
   });
 
+  it("keeps a relative base for the same-origin proxy (API_PROXY_TARGET)", async () => {
+    process.env.NEXT_PUBLIC_API_BASE_URL = "/api/v1";
+    process.env.NODE_ENV = "production";
+    jest.resetModules();
+
+    const { getApiBaseUrl } = await import("../support/api-client");
+
+    expect(getApiBaseUrl()).toBe("/api/v1");
+  });
+
   it("accepts NEXT_PUBLIC_API_URL for non-production local development", async () => {
     delete process.env.NEXT_PUBLIC_API_BASE_URL;
     process.env.NEXT_PUBLIC_API_URL = "http://127.0.0.1:4500";
