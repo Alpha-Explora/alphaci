@@ -1,0 +1,394 @@
+/**
+ * Deployment logs: the Production Deployment card's tail and the Hosting
+ * console. Error tier: tokens only, no hex and no raw rgba(). Imported from
+ * app/globals.css before components.css, which has to stay last.
+ *
+ * One line per row, oldest at the top, the way the host's own deploy page
+ * lays them out: [instance] time message, errors red, warnings amber.
+ */
+
+/* ── Shared line list ─────────────────────────────────────────────────── */
+
+.deploy-logs__frame {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  border: 1px solid var(--border-subtle);
+  border-radius: 0.75rem;
+  background: var(--bg-soft);
+}
+
+.deploy-logs__scroller {
+  flex: 1 1 0;
+  overflow-y: auto;
+  min-height: 0;
+  padding: 0.45rem 0;
+  /* No mono token exists yet; the stack matches branch-previews.css. */
+  font-family: ui-monospace, sfmono-regular, menlo, monospace;
+  font-size: 0.72rem;
+  line-height: 1.5;
+  overscroll-behavior: contain;
+}
+
+.deploy-logs__scroller:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: -2px;
+  border-radius: inherit;
+}
+
+.deploy-logs__line {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+  padding: 0 0.7rem;
+  color: var(--text-primary);
+}
+
+.deploy-logs__line--danger {
+  background: color-mix(in srgb, var(--danger) 9%, transparent);
+  color: var(--danger);
+}
+
+.deploy-logs__line--warning {
+  background: color-mix(in srgb, var(--warning) 8%, transparent);
+  color: var(--warning);
+}
+
+.deploy-logs__line--muted {
+  color: var(--text-muted);
+}
+
+.deploy-logs__instance,
+.deploy-logs__time {
+  flex: none;
+  color: var(--text-muted);
+  white-space: nowrap;
+  user-select: none;
+}
+
+.deploy-logs__message {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+.deploy-logs__state {
+  display: grid;
+  flex: 1 1 auto;
+  place-items: center;
+  margin: 0;
+  padding: 1rem;
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  text-align: center;
+}
+
+.deploy-logs__state--error {
+  color: var(--danger);
+}
+
+.deploy-logs__older {
+  display: flex;
+  justify-content: center;
+  padding: 0.2rem 0 0.45rem;
+}
+
+.deploy-logs__older-button,
+.deploy-logs__pill,
+.deploy-logs__chip {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  background: var(--bg-elevated);
+  color: var(--text-secondary);
+  font: inherit;
+  font-family: inherit;
+  font-size: 0.7rem;
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    color 0.15s ease,
+    background 0.15s ease;
+}
+
+.deploy-logs__older-button {
+  padding: 0.15rem 0.7rem;
+}
+
+.deploy-logs__older-button:hover,
+.deploy-logs__pill:hover,
+.deploy-logs__chip:hover {
+  border-color: var(--border-brand);
+  color: var(--text-primary);
+}
+
+.deploy-logs__older-button:disabled {
+  cursor: progress;
+  opacity: 0.6;
+}
+
+.deploy-logs__older-button:focus-visible,
+.deploy-logs__pill:focus-visible,
+.deploy-logs__chip:focus-visible,
+.deploy-logs__control:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
+/* Floats over the bottom edge while the reader is scrolled up. */
+.deploy-logs__pill {
+  position: absolute;
+  bottom: 0.5rem;
+  left: 50%;
+  padding: 0.2rem 0.75rem;
+  border-color: var(--border-brand);
+  background: var(--brand-strong);
+  /* White on the brand fill in both themes, as .primary-button has it. */
+  color: white;
+  font-weight: 600;
+  box-shadow: var(--glow-brand);
+  transform: translateX(-50%);
+}
+
+.deploy-logs__pill:hover {
+  color: white;
+}
+
+.deploy-logs__notice {
+  margin: 0;
+  padding: 0.45rem 0.7rem;
+  border: 1px solid var(--border-amber);
+  border-radius: 0.6rem;
+  background: var(--accent-amber-light);
+  color: var(--text-secondary);
+  font-size: 0.74rem;
+}
+
+.deploy-logs__notice--danger {
+  border-color: var(--border-coral);
+  background: var(--accent-rose-light);
+}
+
+.deploy-logs__notice strong {
+  color: var(--text-primary);
+}
+
+/* Notices stack above the lines; the lines take whatever height is left. */
+.deploy-logs__body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  min-height: 0;
+}
+
+.deploy-logs__body > .deploy-logs__frame {
+  flex: 1 1 0;
+}
+
+/* ── Status badge ─────────────────────────────────────────────────────── */
+
+.deploy-logs__badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: var(--text-secondary);
+  font-size: 0.7rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.deploy-logs__dot {
+  width: 0.45rem;
+  height: 0.45rem;
+  border-radius: 50%;
+  background: var(--text-muted);
+}
+
+.deploy-logs__badge--live .deploy-logs__dot {
+  background: var(--success);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--success) 22%, transparent);
+  animation: state-pulse 1.8s ease-in-out infinite;
+}
+
+.deploy-logs__badge--simulated {
+  padding: 0.05rem 0.45rem;
+  border: 1px solid var(--border-amber);
+  border-radius: var(--radius-pill);
+  background: var(--accent-amber-light);
+  color: var(--warning);
+}
+
+.deploy-logs__badge--simulated .deploy-logs__dot {
+  background: var(--warning);
+}
+
+.deploy-logs__badge--unavailable .deploy-logs__dot {
+  background: var(--danger);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .deploy-logs__badge--live .deploy-logs__dot {
+    animation: none;
+  }
+}
+
+.deploy-logs__chip {
+  padding: 0.12rem 0.55rem;
+}
+
+.deploy-logs__chip--danger {
+  border-color: var(--border-coral);
+  color: var(--danger);
+}
+
+.deploy-logs__chip[aria-pressed="true"] {
+  border-color: var(--danger);
+  background: color-mix(in srgb, var(--danger) 16%, transparent);
+  color: var(--danger);
+}
+
+.deploy-logs__chip--static {
+  cursor: default;
+}
+
+.deploy-logs__zone {
+  color: var(--text-muted);
+  font-size: 0.7rem;
+  white-space: nowrap;
+}
+
+/* ── Card tail ────────────────────────────────────────────────────────── */
+
+/* About the height the page thumbnail had, so a backend card is no taller. */
+.deploy-logs-tail {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 0.45rem;
+  height: 15rem;
+  min-width: 0;
+}
+
+.deploy-logs-tail__bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.45rem 0.6rem;
+}
+
+.deploy-logs-tail__spacer {
+  flex: 1 1 auto;
+}
+
+.deploy-logs-tail__open {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--brand);
+  font: inherit;
+  font-size: 0.72rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.deploy-logs-tail__open:hover {
+  text-decoration: underline;
+}
+
+.deploy-logs-tail__open:focus-visible {
+  border-radius: 0.25rem;
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
+
+/* ── Hosting console ──────────────────────────────────────────────────── */
+
+.deploy-logs-console {
+  display: grid;
+  gap: 0.75rem;
+  margin-top: 1rem;
+  padding: 1rem 1.1rem;
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-card);
+  background: var(--bg-panel);
+}
+
+.deploy-logs-console__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem 1rem;
+  padding-bottom: 0.6rem;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.deploy-logs-console__title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 0.86rem;
+  font-weight: 650;
+}
+
+.deploy-logs-console__controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* base.css stretches every field to 100%; these sit in a row. */
+.deploy-logs__control {
+  width: auto;
+  min-height: 2rem;
+  padding: 0.3rem 0.6rem;
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  background: var(--bg-elevated);
+  color: var(--text-secondary);
+  font: inherit;
+  font-size: 0.78rem;
+}
+
+.deploy-logs__control--search {
+  min-width: 11rem;
+  color: var(--text-primary);
+}
+
+.deploy-logs__toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.deploy-logs__toggle input {
+  width: auto;
+  margin: 0;
+  padding: 0;
+}
+
+.deploy-logs-console__lines {
+  height: 24rem;
+}
+
+@media (max-width: 620px) {
+  .deploy-logs__control,
+  .deploy-logs__control--search {
+    /* 16px stops iOS zooming into a focused field. */
+    flex: 1 1 100%;
+    font-size: 1rem;
+  }
+
+  .deploy-logs-console__lines {
+    height: 20rem;
+  }
+}

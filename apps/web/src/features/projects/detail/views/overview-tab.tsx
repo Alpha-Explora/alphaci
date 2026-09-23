@@ -39,6 +39,7 @@ export function OverviewTab({
     >
       <OverviewPreviews
         enabled={vm.previewDeploymentsEnabled}
+        onOpenFullLogs={vm.openTargetLogs}
         project={project}
       />
       <OverviewFacts
@@ -113,12 +114,18 @@ function CommitFact({ sha }: Readonly<{ sha: string | null }>) {
  */
 function OverviewPreviews({
   enabled,
+  onOpenFullLogs,
   project,
-}: Readonly<{ enabled: boolean; project: ProvisionedProject }>) {
+}: Readonly<{
+  enabled: boolean;
+  onOpenFullLogs: ProjectDetailTabsViewModel["openTargetLogs"];
+  project: ProvisionedProject;
+}>) {
   if (!enabled) return null;
   return (
     <ProductionDeploymentPanel
       enabled
+      onOpenFullLogs={onOpenFullLogs}
       projectId={project.id}
       repoFullName={project.repoFullName}
     />

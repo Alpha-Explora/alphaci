@@ -1,20 +1,34 @@
 "use client";
 
-import { useEffect, useRef, useState, type CSSProperties } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+  type ReactNode,
+} from "react";
 
+import {
+  DeploymentLogTail,
+  type DeploymentLogFocus,
+} from "@/features/projects/deployment-logs";
 import {
   canFramePreview,
   commitUrl,
   createdLabel,
   displayHost,
   previewFrameSandbox,
-  previewProviderLabel,
+  previewHostLabel,
   previewStatusLabel,
   previewStatusTone,
+  previewSurface,
   previewUnavailableReason,
   shortCommitSha,
 } from "../../model/projects-rules";
-import type { ProjectBranchPreview } from "../../model/projects-types";
+import type {
+  ProjectBranchPreview,
+  ProjectBranchPreviewSurface,
+} from "../../model/projects-types";
 import { useDashboardOrigin } from "../view-models/use-dashboard-origin";
 import {
   BranchIcon,
@@ -30,6 +44,14 @@ type CardProps = Readonly<{
   preview: ProjectBranchPreview;
   /** Owner/name on GitHub, for the commit link. */
   repoFullName?: string | null;
+}>;
+
+type SurfaceProps = Readonly<{
+  preview: ProjectBranchPreview;
+  /** Needed by the logs surface; the page surface does without. */
+  projectId?: string;
+  /** Opens the Hosting tab's full logs for this target. */
+  onOpenFullLogs?: (focus: DeploymentLogFocus) => void;
 }>;
 
 /**
@@ -101,16 +123,52 @@ function FramedThumbnail({ url }: Readonly<{ url: string }>) {
   );
 }
 
-function DeploymentThumbnail({ preview }: CardProps) {
-  if (canFramePreview(preview) && preview.previewUrl) {
-    return <FramedThumbnail url={preview.previewUrl} />;
-  }
+function EmptySurface({ preview }: SurfaceProps) {
   return (
     <p className="deploy-card__thumb deploy-card__thumb--empty">
       {previewUnavailableReason(preview)}
     </p>
   );
 }
+
+/** A frontend's media: the live page, shrunk. */
+function PageSurface({ preview }: SurfaceProps) {
+  if (canFramePreview(preview) && preview.previewUrl) {
+    return <FramedThumbnail url={preview.previewUrl} />;
+  }
+  return <EmptySurface preview={preview} />;
+}
+
+/**
+ * A backend's media: its current deploy's logs. A JSON API has no page worth
+ * a thumbnail, and what a reader wants of one is whether it started and what
+ * it is erroring on. With no deploy there is no window, so the same "nothing
+ * deployed" state as the page surface stands in.
+ */
+function LogsSurface({ preview, projectId, onOpenFullLogs }: SurfaceProps) {
+  if (!preview.logWindow || !projectId) return <EmptySurface preview={preview} />;
+  return (
+    <DeploymentLogTail
+      logWindow={preview.logWindow}
+      onOpenFullLogs={onOpenFullLogs}
+      projectId={projectId}
+      providerLabel={previewHostLabel(preview)}
+      targetId={preview.targetId}
+    />
+  );
+}
+
+/**
+ * The card's media slot, looked up by the surface the backend chose. A new
+ * surface is a new entry here, never a branch on which host it is.
+ */
+const PREVIEW_SURFACES: Record<
+  ProjectBranchPreviewSurface,
+  (props: SurfaceProps) => ReactNode
+> = {
+  page: PageSurface,
+  logs: LogsSurface,
+};
 
 function Fact({
   label,
@@ -260,20 +318,32 @@ function DeploymentActions({ preview, repoFullName }: CardProps) {
  * One production environment, laid out like the provider's own deployment
  * page: what is live, where it answers, and what put it there.
  */
-export function ProductionDeploymentCard({ preview, repoFullName }: CardProps) {
+export function ProductionDeploymentCard({
+  preview,
+  repoFullName,
+  projectId,
+  onOpenFullLogs,
+}: CardProps & SurfaceProps) {
+  const surface = previewSurface(preview);
+  const Surface = PREVIEW_SURFACES[surface];
+
   return (
-    <article className="deploy-card">
+    <article className="deploy-card" data-surface={surface}>
       <header className="deploy-card__head">
         <div>
           <h2 className="deploy-card__title">Production Deployment</h2>
           <p className="deploy-card__subtitle">
-            {previewProviderLabel(preview.provider)} · {preview.targetName}
+            {previewHostLabel(preview)} · {preview.targetName}
           </p>
         </div>
         <DeploymentActions preview={preview} repoFullName={repoFullName} />
       </header>
-      <div className="deploy-card__body">
-        <DeploymentThumbnail preview={preview} />
+      <div className={`deploy-card__body deploy-card__body--${surface}`}>
+        <Surface
+          onOpenFullLogs={onOpenFullLogs}
+          preview={preview}
+          projectId={projectId}
+        />
         <DeploymentFacts preview={preview} repoFullName={repoFullName} />
       </div>
     </article>

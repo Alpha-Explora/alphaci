@@ -1,5 +1,6 @@
 "use client";
 
+import type { DeploymentLogFocus } from "@/features/projects/deployment-logs";
 import { previewKey, splitOverviewPreviews } from "../../model/projects-rules";
 import { ActiveBranchesList } from "./active-branches-list";
 import { BranchPreviewsView, type BranchPreviewsViewProps } from "./branch-previews-view";
@@ -14,6 +15,10 @@ export type ProductionDeploymentViewProps = Pick<
 > & {
   /** Owner/name on GitHub, for the commit link. */
   repoFullName?: string | null;
+  /** The project the previews belong to; a backend card's logs need it. */
+  projectId?: string;
+  /** Opens the Hosting tab's full logs for a backend card's target. */
+  onOpenFullLogs?: (focus: DeploymentLogFocus) => void;
 };
 
 /**
@@ -31,6 +36,8 @@ export function ProductionDeploymentView({
   status,
   error,
   repoFullName,
+  projectId,
+  onOpenFullLogs,
 }: Readonly<ProductionDeploymentViewProps>) {
   const { production, branches } =
     status === "ready"
@@ -59,7 +66,9 @@ export function ProductionDeploymentView({
       {production.map((preview) => (
         <ProductionDeploymentCard
           key={previewKey(preview)}
+          onOpenFullLogs={onOpenFullLogs}
           preview={preview}
+          projectId={projectId}
           repoFullName={repoFullName}
         />
       ))}

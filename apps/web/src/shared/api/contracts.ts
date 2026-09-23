@@ -1152,7 +1152,27 @@ export interface ProjectBranchPreview {
    */
   embeddable: boolean | null;
   embedBlockedReason: string | null;
+  /*
+   * The five fields below are optional: a backend older than the logs surface
+   * omits them all, and the card then shows the page, labelled as before.
+   */
+  /** The deployment target's slot. */
+  slot?: EnvTargetSlot | null;
+  /** `logs` for a backend target whose host serves logs; otherwise `page`. */
+  surface?: ProjectBranchPreviewSurface;
+  /** The host's display name, from its provider descriptor. */
+  providerLabel?: string;
+  /** The host can serve logs and its client implements them. */
+  logsAvailable?: boolean;
+  /**
+   * The current deploy's span: from its createdAt, `endTime: null` while it
+   * is the live one. Null for an environment nothing was deployed to.
+   */
+  logWindow?: { startTime: string; endTime: string | null } | null;
 }
+
+/** What a deployment card shows in its media slot. */
+export type ProjectBranchPreviewSurface = "page" | "logs";
 
 export interface ProjectPreviewsResponse {
   enabled: boolean;

@@ -2,8 +2,11 @@
 
 import { useState } from "react";
 
-import { ServiceLogsConsole } from "./service-logs-console";
-import { providerPublicUrl } from "../model/provider-urls";
+import {
+  DeploymentLogsConsole,
+  type DeploymentLogFocus,
+} from "@/features/projects/deployment-logs";
+import { providerDisplayName, providerPublicUrl } from "../model/provider-urls";
 import {
   detachButtonLabel,
   hostingProviderLabel,
@@ -19,12 +22,15 @@ import type {
 } from "@/features/projects";
 
 export function DeploymentTargetsList({
+  logFocus = null,
   managementEnabled,
   onDetached,
   onTargetChanged,
   projectId,
   targets,
 }: Readonly<{
+  /** Open this target's logs on mount: the Overview card asked for them. */
+  logFocus?: DeploymentLogFocus | null;
   managementEnabled: boolean;
   onDetached: (targetId: string) => void;
   onTargetChanged: (target: DeploymentTarget) => void;
@@ -48,7 +54,7 @@ export function DeploymentTargetsList({
   const [deleteProviderResourceConfirmId, setDeleteProviderResourceConfirmId] =
     useState<string | null>(null);
   const [activeLogTargetId, setActiveLogTargetId] = useState<string | null>(
-    null,
+    logFocus?.targetId ?? null,
   );
 
   if (!targets.length) {
@@ -68,6 +74,7 @@ export function DeploymentTargetsList({
             vm={vm}
             isDetachConfirm={detachConfirmTargetId === target.id}
             isLogsOpen={activeLogTargetId === target.id}
+            logFocus={logFocus?.targetId === target.id ? logFocus : null}
             deleteProviderResourceChecked={
               deleteProviderResourceConfirmId === target.id
             }
@@ -183,6 +190,7 @@ function DeploymentTargetCard({
   vm,
   isDetachConfirm,
   isLogsOpen,
+  logFocus,
   deleteProviderResourceChecked,
   onOpenEdit,
   onToggleLogs,
@@ -195,6 +203,7 @@ function DeploymentTargetCard({
   vm: ReturnType<typeof useDeploymentTargetsViewModel>;
   isDetachConfirm: boolean;
   isLogsOpen: boolean;
+  logFocus: DeploymentLogFocus | null;
   deleteProviderResourceChecked: boolean;
   onOpenEdit: () => void;
   onToggleLogs: () => void;
@@ -223,6 +232,7 @@ function DeploymentTargetCard({
       </div>
       <TargetLogs
         isLogsOpen={isLogsOpen}
+        logFocus={logFocus}
         projectId={projectId}
         target={target}
       />
@@ -230,17 +240,32 @@ function DeploymentTargetCard({
   );
 }
 
+/**
+ * A target's log console. Opened from the Overview card it scopes to that
+ * card's deploy and scrolls into view; opened here, it starts on the last hour.
+ */
 function TargetLogs({
   isLogsOpen,
+  logFocus,
   projectId,
   target,
 }: Readonly<{
   isLogsOpen: boolean;
+  logFocus: DeploymentLogFocus | null;
   projectId: string;
   target: DeploymentTarget;
 }>) {
   if (!isLogsOpen) return null;
-  return <ServiceLogsConsole projectId={projectId} target={target} />;
+  return (
+    <DeploymentLogsConsole
+      deployWindow={logFocus?.window ?? null}
+      focusOnMount={logFocus !== null}
+      projectId={projectId}
+      providerLabel={providerDisplayName(target.provider)}
+      targetId={target.id}
+      targetName={target.providerProjectName}
+    />
+  );
 }
 
 function DeploymentTargetMeta({
