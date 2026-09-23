@@ -60,10 +60,6 @@ export function isSignedInMember(status: string, guest: boolean): boolean {
   return status === "signed-in" && !guest;
 }
 
-export function reducedMotionFlag(value: boolean | null): boolean {
-  return value ?? false;
-}
-
 /* ── Branch previews ──────────────────────────────────────────────────────── */
 
 export type PreviewStatusTone = "ok" | "pending" | "danger";
