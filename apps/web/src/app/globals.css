@@ -23,6 +23,7 @@
 @import "../features/projects/previews/branch-previews.css";
 @import "../features/projects/deployment-logs/deployment-logs.css";
 @import "../features/projects/domains/project-domains.css";
+@import "../features/projects/detail/views/workspace/pull-request-authoring.css";
 @import "../styles/components.css";
 
 /* ── Light mode component overrides ────────────────────────────── */

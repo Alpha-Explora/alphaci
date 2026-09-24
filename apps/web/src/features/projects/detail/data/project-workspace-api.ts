@@ -283,3 +283,81 @@ export function mergeProjectPullRequest(
     { method: "POST", body: JSON.stringify({ method }) },
   );
 }
+
+/** One commit a comparison would bring into the base. */
+export interface ComparisonCommit {
+  sha: string;
+  /** The first line of the commit message only. */
+  headline: string;
+  author: string | null;
+  authoredAt: string | null;
+}
+
+/**
+ * What a pull request from `head` into `base` would contain.
+ *
+ * `status` is GitHub's word for how the branches relate. `identical` and
+ * `behind` both mean there is nothing to merge.
+ */
+export interface BranchComparison {
+  status: "ahead" | "behind" | "diverged" | "identical";
+  aheadBy: number;
+  behindBy: number;
+  totalCommits: number;
+  commits: ComparisonCommit[];
+  files: PullRequestFile[];
+  /** GitHub lists at most 300 files; true means `files` is a prefix. */
+  filesTruncated: boolean;
+}
+
+export interface BranchComparisonResponse {
+  repoFullName: string;
+  base: string;
+  head: string;
+  comparison: BranchComparison;
+  /** A pull request already open from `head` into `base`, if any. */
+  existingPullRequest: PullRequestSummary | null;
+}
+
+export interface CreatePullRequestInput {
+  base: string;
+  head: string;
+  title: string;
+  body?: string;
+  draft?: boolean;
+}
+
+/**
+ * GitHub's answer to opening a pull request. A refusal ("No commits between
+ * main and feature") is `created: false` with GitHub's sentence, not an error.
+ */
+export type CreatePullRequestResponse =
+  | { created: true; pullRequest: PullRequestSummary }
+  | { created: false; message: string };
+
+/* `base` is taken by the URL helper above, and it is also the natural name for
+ * the base branch below; the alias keeps both readable. */
+const workspaceUrl = base;
+
+/** On open only, never polled — a comparison carries every diff. */
+export function compareProjectBranches(
+  projectId: string,
+  base: string,
+  head: string,
+) {
+  const query = new URLSearchParams({ base, head });
+  return request<BranchComparisonResponse>(
+    `${workspaceUrl(projectId)}/compare?${query.toString()}`,
+  );
+}
+
+/** Opens the pull request as the signed-in person, with their GitHub token. */
+export function createProjectPullRequest(
+  projectId: string,
+  input: CreatePullRequestInput,
+) {
+  return request<CreatePullRequestResponse>(
+    `${workspaceUrl(projectId)}/pull-requests`,
+    { method: "POST", body: JSON.stringify(input) },
+  );
+}
