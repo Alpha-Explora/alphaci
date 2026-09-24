@@ -77,6 +77,31 @@ button.ws-link {
   font-size: 0.85rem;
 }
 
+.ws-compose__banner:has(.ws-compose__fix) {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+}
+
+.ws-compose__fix {
+  flex-shrink: 0;
+  padding: 0.3rem 0.7rem;
+  border: 1px solid var(--border-strong);
+  border-radius: 0.5rem;
+  background: var(--bg-base);
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 0.82rem;
+  cursor: pointer;
+}
+
+.ws-compose__fix:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 1px;
+}
+
 .ws-compose__banner--ready {
   border-color: var(--success);
   background: var(--accent-emerald-light);

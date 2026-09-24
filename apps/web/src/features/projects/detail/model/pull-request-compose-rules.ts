@@ -4,10 +4,17 @@
  */
 
 import type {
-  BranchComparison,
+  BranchComparisonResponse,
   ComparisonCommit,
-  PullRequestSummary,
 } from "../data/project-workspace-api";
+
+/**
+ * Something the banner can offer to fix what it describes, so the person is
+ * not left to work out the remedy from the sentence.
+ */
+export type ComposeAction =
+  | { kind: "swap" }
+  | { kind: "open-existing"; number: number };
 
 /**
  * What the compose screen should say about a comparison, and whether the
@@ -21,39 +28,68 @@ export interface ComposeReadiness {
   canCreate: boolean;
   tone: "ready" | "warning" | "blocked";
   message: string;
+  action?: ComposeAction;
 }
 
 /**
  * Decide whether a pull request from `head` into `base` should be offered.
  *
- * The cases to consider (GitHub's `status` is in `comparison.status`):
- *   - `identical`: the branches point at the same commit.
- *   - `behind`: head has nothing base lacks, only base has moved on.
- *   - `diverged`: head has commits, and base also has commits head lacks —
- *     it may conflict, or the checks may run against a stale base.
- *   - `ahead`: the clean case.
- *   - `existing`: a pull request for this pair is already open; GitHub would
- *     refuse a second one with a 422.
+ * Blocked only where GitHub would refuse, or where the pull request would be
+ * empty; a pull request that is merely risky is allowed with a warning,
+ * because the person may have reasons the comparison cannot see.
  *
- * TODO(you): replace the placeholder below. See the note in the reply.
+ *   - existing: already open. GitHub would 422 a second one, so the answer is
+ *     the pull request that exists, one click away inside the product.
+ *   - identical: the same commit on both sides; nothing to propose.
+ *   - behind: head has nothing base lacks. This is nearly always the two
+ *     pickers the wrong way round, so the fix offered is swapping them.
+ *   - diverged: base moved on after head branched. It can still merge, but
+ *     it may conflict and its checks run against a base that is out of date.
+ *   - ahead: the clean case, and the banner stays quiet.
  */
 export function describeComparison(
-  comparison: BranchComparison,
-  existing: PullRequestSummary | null,
+  compare: BranchComparisonResponse,
 ): ComposeReadiness {
-  // Placeholder so the screen works end to end; it only refuses the cases
-  // GitHub itself would refuse, and says nothing about the rest.
-  if (existing) {
+  const { base, head, comparison, existingPullRequest } = compare;
+
+  if (existingPullRequest) {
     return {
       canCreate: false,
       tone: "blocked",
-      message: `Already open as #${String(existing.number)}.`,
+      message: `${head} → ${base} is already open as #${String(existingPullRequest.number)}: ${existingPullRequest.title}`,
+      action: { kind: "open-existing", number: existingPullRequest.number },
     };
   }
+
   if (comparison.aheadBy === 0) {
-    return { canCreate: false, tone: "blocked", message: "Nothing to merge." };
+    if (comparison.behindBy === 0) {
+      return {
+        canCreate: false,
+        tone: "blocked",
+        message: `${head} and ${base} point at the same commit, so there is nothing to merge.`,
+      };
+    }
+    return {
+      canCreate: false,
+      tone: "blocked",
+      message: `${head} has no commits that ${base} lacks; ${base} is ${commits(comparison.behindBy)} ahead of it. The branches may be the wrong way round.`,
+      action: { kind: "swap" },
+    };
   }
+
+  if (comparison.behindBy > 0) {
+    return {
+      canCreate: true,
+      tone: "warning",
+      message: `${base} has ${commits(comparison.behindBy)} that ${head} does not. This can still be opened, but it may conflict, and its checks will run against an older ${base}. Consider updating ${head} first.`,
+    };
+  }
+
   return { canCreate: true, tone: "ready", message: "" };
+}
+
+function commits(count: number): string {
+  return `${String(count)} commit${count === 1 ? "" : "s"}`;
 }
 
 /**
