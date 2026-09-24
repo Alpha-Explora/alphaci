@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import {
   getProjectPullRequestFiles,
@@ -48,6 +48,9 @@ export function PullRequestsTab({ projectId }: { projectId: string }) {
   // Bumped to re-read the list when the filter did not change, e.g. after
   // opening a pull request while "Open" was already selected.
   const [reloadKey, setReloadKey] = useState(0);
+  // The pull request to open expanded when the list next renders — set when
+  // the compose screen points at one that already exists.
+  const [focusNumber, setFocusNumber] = useState<number | null>(null);
   const [items, setItems] = useState<PullRequestSummary[]>([]);
   const [pullsUrl, setPullsUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -83,6 +86,15 @@ export function PullRequestsTab({ projectId }: { projectId: string }) {
     setReloadKey((key) => key + 1);
   }, []);
 
+  const handleViewExisting = useCallback((pullNumber: number) => {
+    setComposing(false);
+    setNotice(null);
+    setFocusNumber(pullNumber);
+    setLoading(true);
+    setFilter("open");
+    setReloadKey((key) => key + 1);
+  }, []);
+
   if (composing) {
     return (
       <div className="ws-panel">
@@ -90,6 +102,7 @@ export function PullRequestsTab({ projectId }: { projectId: string }) {
           projectId={projectId}
           onCancel={() => setComposing(false)}
           onCreated={handleCreated}
+          onViewExisting={handleViewExisting}
         />
       </div>
     );
@@ -112,6 +125,7 @@ export function PullRequestsTab({ projectId }: { projectId: string }) {
               aria-pressed={filter === option.id}
               onClick={() => {
                 setLoading(true);
+                setFocusNumber(null);
                 setFilter(option.id);
               }}
             >
@@ -135,6 +149,7 @@ export function PullRequestsTab({ projectId }: { projectId: string }) {
             className="primary-button"
             onClick={() => {
               setNotice(null);
+              setFocusNumber(null);
               setComposing(true);
             }}
           >
@@ -165,7 +180,12 @@ export function PullRequestsTab({ projectId }: { projectId: string }) {
       ) : (
         <ul className="ws-prs">
           {items.map((pr) => (
-            <PullRequestRow key={pr.number} projectId={projectId} pr={pr} />
+            <PullRequestRow
+              key={pr.number}
+              projectId={projectId}
+              pr={pr}
+              focused={pr.number === focusNumber}
+            />
           ))}
         </ul>
       )}
@@ -176,32 +196,49 @@ export function PullRequestsTab({ projectId }: { projectId: string }) {
 function PullRequestRow({
   projectId,
   pr,
+  focused = false,
 }: {
   projectId: string;
   pr: PullRequestSummary;
+  /** Open expanded and scrolled into view, e.g. arriving from compose. */
+  focused?: boolean;
 }) {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(focused);
   const [files, setFiles] = useState<PullRequestFile[] | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(focused);
   const [error, setError] = useState<string | null>(null);
+  const rowRef = useRef<HTMLLIElement>(null);
+
+  // Resolves only; whoever starts a load raises `loading` first.
+  const fetchFiles = useCallback(() => {
+    return getProjectPullRequestFiles(projectId, pr.number)
+      .then(setFiles)
+      .catch(() => setError("The changed files could not be read."))
+      .finally(() => setLoading(false));
+  }, [projectId, pr.number]);
 
   // Files load on expand. A diff for every pull request in the list would be
   // dozens of requests for something nobody has asked to read yet.
   const loadFiles = useCallback(() => {
     setLoading(true);
     setError(null);
-    getProjectPullRequestFiles(projectId, pr.number)
-      .then(setFiles)
-      .catch(() => setError("The changed files could not be read."))
-      .finally(() => setLoading(false));
-  }, [projectId, pr.number]);
+    void fetchFiles();
+  }, [fetchFiles]);
+
+  // A focused row starts expanded, so it loads without waiting for a click.
+  // `loading` already started true for it, so nothing is set synchronously.
+  useEffect(() => {
+    if (!focused) return;
+    rowRef.current?.scrollIntoView?.({ block: "nearest" });
+    void fetchFiles();
+  }, [focused, fetchFiles]);
 
   // Merged is a distinct state from closed, and conflating them loses the only
   // thing anyone wants to know about a finished pull request.
   const stateLabel = pr.merged ? "merged" : pr.state;
 
   return (
-    <li className="ws-pr">
+    <li className="ws-pr" ref={rowRef}>
       <button
         type="button"
         className="ws-pr__head"
@@ -230,22 +267,38 @@ function PullRequestRow({
       {open && (
         <div className="ws-pr__body">
           <PullRequestReview projectId={projectId} pr={pr} />
-
-          {loading ? (
-            <WorkspaceLoading rows={3} />
-          ) : error ? (
-            <WorkspaceError message={error} onRetry={loadFiles} />
-          ) : files && files.length > 0 ? (
-            <DiffView files={files} />
-          ) : (
-            <WorkspaceEmpty
-              title="No file changes"
-              message="This pull request has no changed files to show."
-            />
-          )}
+          <PullRequestFiles
+            files={files}
+            loading={loading}
+            error={error}
+            onRetry={loadFiles}
+          />
         </div>
       )}
     </li>
+  );
+}
+
+/** A pull request's changed files, or why they are not shown. */
+function PullRequestFiles({
+  files,
+  loading,
+  error,
+  onRetry,
+}: Readonly<{
+  files: PullRequestFile[] | null;
+  loading: boolean;
+  error: string | null;
+  onRetry: () => void;
+}>) {
+  if (loading) return <WorkspaceLoading rows={3} />;
+  if (error) return <WorkspaceError message={error} onRetry={onRetry} />;
+  if (files && files.length > 0) return <DiffView files={files} />;
+  return (
+    <WorkspaceEmpty
+      title="No file changes"
+      message="This pull request has no changed files to show."
+    />
   );
 }
 

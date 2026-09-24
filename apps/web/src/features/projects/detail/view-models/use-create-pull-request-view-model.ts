@@ -192,10 +192,7 @@ export function useCreatePullRequestViewModel(options: {
   }, [branchesLoaded, base, head, runCompare, loadBranches]);
 
   const readiness = useMemo(
-    () =>
-      compare
-        ? describeComparison(compare.comparison, compare.existingPullRequest)
-        : null,
+    () => (compare ? describeComparison(compare) : null),
     [compare],
   );
 

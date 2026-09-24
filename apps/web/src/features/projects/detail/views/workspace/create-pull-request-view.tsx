@@ -21,10 +21,13 @@ export function CreatePullRequestView({
   projectId,
   onCancel,
   onCreated,
+  onViewExisting,
 }: Readonly<{
   projectId: string;
   onCancel: () => void;
   onCreated: (pullRequest: PullRequestSummary) => void;
+  /** Leave compose for a pull request that is already open for this pair. */
+  onViewExisting: (pullNumber: number) => void;
 }>) {
   const vm = useCreatePullRequestViewModel({ projectId, onCreated });
 
@@ -44,7 +47,7 @@ export function CreatePullRequestView({
       ) : (
         <>
           <BranchPickers vm={vm} />
-          <ComposeBody vm={vm} />
+          <ComposeBody vm={vm} onViewExisting={onViewExisting} />
         </>
       )}
     </section>
@@ -107,7 +110,13 @@ function BranchPickers({ vm }: Readonly<{ vm: CreatePullRequestViewModel }>) {
   );
 }
 
-function ComposeBody({ vm }: Readonly<{ vm: CreatePullRequestViewModel }>) {
+function ComposeBody({
+  vm,
+  onViewExisting,
+}: Readonly<{
+  vm: CreatePullRequestViewModel;
+  onViewExisting: (pullNumber: number) => void;
+}>) {
   if (vm.status === "error") {
     return (
       <WorkspaceError
@@ -132,7 +141,11 @@ function ComposeBody({ vm }: Readonly<{ vm: CreatePullRequestViewModel }>) {
 
   return (
     <>
-      <ReadinessBanner readiness={vm.readiness} />
+      <ReadinessBanner
+        readiness={vm.readiness}
+        onSwap={vm.swapBranches}
+        onViewExisting={onViewExisting}
+      />
       <ComparisonSummary compare={vm.compare} />
       {vm.readiness.canCreate && <ComposeForm vm={vm} />}
       <DiffView
@@ -145,16 +158,37 @@ function ComposeBody({ vm }: Readonly<{ vm: CreatePullRequestViewModel }>) {
 
 function ReadinessBanner({
   readiness,
-}: Readonly<{ readiness: ComposeReadiness }>) {
+  onSwap,
+  onViewExisting,
+}: Readonly<{
+  readiness: ComposeReadiness;
+  onSwap: () => void;
+  onViewExisting: (pullNumber: number) => void;
+}>) {
   if (!readiness.message) return null;
+  const { action } = readiness;
 
   return (
-    <p
+    <div
       className={`ws-compose__banner ws-compose__banner--${readiness.tone}`}
       role={readiness.tone === "blocked" ? "alert" : "status"}
     >
-      {readiness.message}
-    </p>
+      <span>{readiness.message}</span>
+      {action?.kind === "swap" && (
+        <button type="button" className="ws-compose__fix" onClick={onSwap}>
+          Swap branches
+        </button>
+      )}
+      {action?.kind === "open-existing" && (
+        <button
+          type="button"
+          className="ws-compose__fix"
+          onClick={() => onViewExisting(action.number)}
+        >
+          Go to #{action.number}
+        </button>
+      )}
+    </div>
   );
 }
 
