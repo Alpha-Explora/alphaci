@@ -589,7 +589,6 @@
 /* Code, diffs and console output each scroll INSIDE their own box, so the page
    body never scrolls sideways because one line happened to be long. */
 .ws-code,
-.ws-diff,
 .ws-console {
   margin: 0;
   padding: 0.9rem;

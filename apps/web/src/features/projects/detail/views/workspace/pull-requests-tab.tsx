@@ -9,6 +9,8 @@ import {
   type PullRequestSummary,
 } from "@/features/projects";
 
+import { CreatePullRequestView } from "./create-pull-request-view";
+import { DiffView } from "./diff-view";
 import {
   WorkspaceEmpty,
   WorkspaceError,
@@ -31,20 +33,21 @@ const FILTERS: ReadonlyArray<{ id: StateFilter; label: string }> = [
 ];
 
 /**
- * Pull requests for this project, with their changed files.
+ * Pull requests for this project: what is in flight, what each one changes,
+ * and opening a new one between any two branches.
  *
- * READ-ONLY, and that is a decision rather than an unfinished edge. Opening,
- * reviewing and merging are things every user of this product can already do on
- * GitHub with an account they already have — unlike the education tier, whose
- * students have no GitHub account and for whom an in-app merge is the only
- * route that exists. Rebuilding review here would mean owning a write path
- * GitHub does better, so each row links out for the parts we do not do.
- *
- * What this view earns its place with is the answer to "what is in flight on
- * this project right now", without leaving the page you were already on.
+ * ALPHACI is where the team works, so proposing, reading and merging a change
+ * all happen here. The pull requests are still GitHub's — branch protection
+ * only counts reviews and merges GitHub knows about — which is why "Open on
+ * GitHub" stays available as a secondary link rather than the way forward.
  */
 export function PullRequestsTab({ projectId }: { projectId: string }) {
   const [filter, setFilter] = useState<StateFilter>("open");
+  const [composing, setComposing] = useState(false);
+  const [notice, setNotice] = useState<string | null>(null);
+  // Bumped to re-read the list when the filter did not change, e.g. after
+  // opening a pull request while "Open" was already selected.
+  const [reloadKey, setReloadKey] = useState(0);
   const [items, setItems] = useState<PullRequestSummary[]>([]);
   const [pullsUrl, setPullsUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -70,10 +73,35 @@ export function PullRequestsTab({ projectId }: { projectId: string }) {
 
   useEffect(() => {
     void load();
-  }, [load]);
+  }, [load, reloadKey]);
+
+  const handleCreated = useCallback((pr: PullRequestSummary) => {
+    setComposing(false);
+    setNotice(`Pull request #${String(pr.number)} opened: ${pr.headRef} → ${pr.baseRef}.`);
+    setLoading(true);
+    setFilter("open");
+    setReloadKey((key) => key + 1);
+  }, []);
+
+  if (composing) {
+    return (
+      <div className="ws-panel">
+        <CreatePullRequestView
+          projectId={projectId}
+          onCancel={() => setComposing(false)}
+          onCreated={handleCreated}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="ws-panel">
+      {notice && (
+        <p className="ws-compose__banner ws-compose__banner--ready" role="status">
+          {notice}
+        </p>
+      )}
       <div className="ws-toolbar ws-toolbar--between">
         <div className="ws-filters" role="group" aria-label="Pull request state">
           {FILTERS.map((option) => (
@@ -91,16 +119,28 @@ export function PullRequestsTab({ projectId }: { projectId: string }) {
             </button>
           ))}
         </div>
-        {pullsUrl && (
-          <a
-            className="ws-link"
-            href={pullsUrl}
-            target="_blank"
-            rel="noopener noreferrer"
+        <div className="ws-toolbar__end">
+          {pullsUrl && (
+            <a
+              className="ws-link"
+              href={pullsUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Open on GitHub ↗
+            </a>
+          )}
+          <button
+            type="button"
+            className="primary-button"
+            onClick={() => {
+              setNotice(null);
+              setComposing(true);
+            }}
           >
-            Open on GitHub ↗
-          </a>
-        )}
+            New pull request
+          </button>
+        </div>
       </div>
 
       {loading ? (
@@ -196,32 +236,7 @@ function PullRequestRow({
           ) : error ? (
             <WorkspaceError message={error} onRetry={loadFiles} />
           ) : files && files.length > 0 ? (
-            <ul className="ws-files">
-              {files.map((file) => (
-                <li key={file.filename} className="ws-file-row">
-                  <div className="ws-file-row__head">
-                    <span className={`ws-pill ws-pill--${file.status}`}>
-                      {file.status}
-                    </span>
-                    <span className="ws-file-row__name">{file.filename}</span>
-                    <span className="ws-file-row__counts">
-                      <span className="ws-add">+{file.additions}</span>{" "}
-                      <span className="ws-del">−{file.deletions}</span>
-                    </span>
-                  </div>
-                  {file.patch ? (
-                    <pre className="ws-diff">
-                      <code>{file.patch}</code>
-                    </pre>
-                  ) : (
-                    <p className="ws-hint">
-                      Diff not shown — this file is binary, or the change is too
-                      large to display.
-                    </p>
-                  )}
-                </li>
-              ))}
-            </ul>
+            <DiffView files={files} />
           ) : (
             <WorkspaceEmpty
               title="No file changes"
