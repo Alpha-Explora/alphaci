@@ -19,6 +19,9 @@ import type { ProjectStatus } from "../../model/projects-types";
  */
 export type { PullRequestCheck, PullRequestDetail, PullRequestDetailResponse };
 
+/** GitHub's three ways to merge; which ones a repository allows is its own setting. */
+export type MergeMethod = "merge" | "squash" | "rebase";
+
 export interface PullRequestReviewViewModel {
   status: ProjectStatus;
   detail: PullRequestDetailResponse | null;
@@ -27,6 +30,8 @@ export interface PullRequestReviewViewModel {
   /** GitHub's answer to the last merge attempt, refusal or success. */
   mergeMessage: string | null;
   mergeFailed: boolean;
+  mergeMethod: MergeMethod;
+  setMergeMethod: (method: MergeMethod) => void;
   merge: () => Promise<void>;
   reload: () => void;
 }
@@ -47,8 +52,10 @@ export function usePullRequestReviewViewModel(options: {
   pullNumber: number;
   /** False while the row is collapsed, so nothing is fetched unasked. */
   enabled: boolean;
+  /** Told when GitHub reports the merge happened, so the list can move on. */
+  onMerged?: (pullNumber: number) => void;
 }): PullRequestReviewViewModel {
-  const { projectId, pullNumber, enabled } = options;
+  const { projectId, pullNumber, enabled, onMerged } = options;
 
   const [status, setStatus] = useState<ProjectStatus>("loading");
   const [detail, setDetail] = useState<PullRequestDetailResponse | null>(null);
@@ -56,6 +63,7 @@ export function usePullRequestReviewViewModel(options: {
   const [merging, setMerging] = useState(false);
   const [mergeMessage, setMergeMessage] = useState<string | null>(null);
   const [mergeFailed, setMergeFailed] = useState(false);
+  const [mergeMethod, setMergeMethod] = useState<MergeMethod>("merge");
 
   const load = useCallback(() => {
     return getProjectPullRequestDetail(projectId, pullNumber)
@@ -97,10 +105,15 @@ export function usePullRequestReviewViewModel(options: {
     setMergeMessage(null);
     setMergeFailed(false);
     try {
-      const result = await mergeProjectPullRequest(projectId, pullNumber);
+      const result = await mergeProjectPullRequest(
+        projectId,
+        pullNumber,
+        mergeMethod,
+      );
       setMergeMessage(result.message);
       setMergeFailed(!result.merged);
       await load();
+      if (result.merged) onMerged?.(pullNumber);
     } catch (cause: unknown) {
       setMergeMessage(
         apiErrorReason(cause, "The merge request could not be sent."),
@@ -109,7 +122,7 @@ export function usePullRequestReviewViewModel(options: {
     } finally {
       setMerging(false);
     }
-  }, [projectId, pullNumber, load]);
+  }, [projectId, pullNumber, mergeMethod, load, onMerged]);
 
   return {
     status,
@@ -118,6 +131,8 @@ export function usePullRequestReviewViewModel(options: {
     merging,
     mergeMessage,
     mergeFailed,
+    mergeMethod,
+    setMergeMethod,
     merge,
     reload,
   };
