@@ -60,6 +60,16 @@ export function visibleProjectDetailTabs(
   return PROJECT_DETAIL_TABS.filter((tab) => qaVisible || !QA_TABS.has(tab));
 }
 
+/**
+ * The tab a deep link asks for: `/projects/:id#qa` opens QA Studio. Unknown or
+ * empty hashes give null (start on Overview). Visibility is still decided by
+ * `resolveVisibleTab`, so a link can never reveal a gated tab.
+ */
+export function tabFromHash(hash: string | null | undefined): ProjectDetailTab | null {
+  const id = (hash ?? "").replace(/^#/, "");
+  return (PROJECT_DETAIL_TABS as ReadonlyArray<string>).includes(id) ? (id as ProjectDetailTab) : null;
+}
+
 /** The selected tab, or Overview when the selection is not (or no longer) visible. */
 export function resolveVisibleTab(
   tab: ProjectDetailTab,

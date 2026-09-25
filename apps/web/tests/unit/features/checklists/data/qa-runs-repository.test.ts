@@ -1,11 +1,13 @@
-import { request } from "../../../../../src/shared/api/request";
+import { request, requestText } from "../../../../../src/shared/api/request";
 import { qaRunsRepository } from "../../../../../src/features/checklists/data/qa-runs-repository";
 
 jest.mock("../../../../../src/shared/api/request", () => ({
   request: jest.fn().mockResolvedValue({}),
+  requestText: jest.fn().mockResolvedValue("# QA Report"),
 }));
 
 const mockRequest = request as jest.MockedFunction<typeof request>;
+const mockRequestText = requestText as jest.MockedFunction<typeof requestText>;
 
 function lastCall(): [string, RequestInit | undefined] {
   const call = mockRequest.mock.calls[mockRequest.mock.calls.length - 1];
@@ -69,5 +71,21 @@ describe("qaRunsRepository", () => {
 
     await qaRunsRepository.returnedItems("p1");
     expect(lastCall()[0]).toBe("/projects/p1/qa-returned-items");
+  });
+
+  it("reads the JSON report with format=json through the JSON transport", async () => {
+    await qaRunsRepository.report("p/1", "r 1");
+    expect(lastCall()).toEqual(["/projects/p%2F1/qa-runs/r%201/report?format=json", undefined]);
+    expect(mockRequestText).not.toHaveBeenCalled();
+  });
+
+  it("reads the Markdown report with format=md as text, never parsed as JSON", async () => {
+    mockRequest.mockClear();
+    const markdown = await qaRunsRepository.reportMarkdown("p1", "r1");
+    expect(markdown).toBe("# QA Report");
+    expect(mockRequestText).toHaveBeenCalledWith("/projects/p1/qa-runs/r1/report?format=md", {
+      headers: { Accept: "text/markdown" },
+    });
+    expect(mockRequest).not.toHaveBeenCalled();
   });
 });
