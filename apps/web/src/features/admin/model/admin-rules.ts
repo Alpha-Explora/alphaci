@@ -12,7 +12,7 @@ export interface AdminAccessSession {
 }
 
 /** Roles the console offers, most privileged first. */
-export const ROLE_ORDER: AppRole[] = ["admin", "lead", "member"];
+export const ROLE_ORDER: AppRole[] = ["admin", "lead", "qa", "member"];
 
 /**
  * Admin Console access is the GLOBAL admin tier: app_role 'admin', or the

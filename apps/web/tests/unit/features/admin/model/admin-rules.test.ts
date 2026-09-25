@@ -33,7 +33,7 @@ describe("admin access rules", () => {
   });
 
   it("orders roles most-privileged first", () => {
-    expect(ROLE_ORDER).toEqual(["admin", "lead", "member"]);
+    expect(ROLE_ORDER).toEqual(["admin", "lead", "qa", "member"]);
   });
 });
 
