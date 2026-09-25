@@ -106,3 +106,52 @@ describe("promotionReadiness", () => {
     ).toBe("not-applicable");
   });
 });
+
+/*
+ * The report is a snapshot taken when the package stage reports, and the
+ * promotion job finishes AFTER that. "No promotion pull request was opened"
+ * was false for every commit caught mid-flight; the live run settles it.
+ */
+describe("promotionReadiness — a promotion still running at report time", () => {
+  const inFlight = [
+    check("build", "success"),
+    check("deploy-render-api-dev", "success"),
+    check("promote-to-uat", "in_progress"),
+  ];
+
+  it("says it was in progress, not that it did not happen", () => {
+    expect(promotionReadiness("dev", inFlight)).toEqual({
+      state: "in-progress",
+      target: "uat",
+      blockedBy: [],
+    });
+  });
+
+  it("stays in progress while GitHub is still running the package run", () => {
+    expect(
+      promotionReadiness("dev", inFlight, { status: "in_progress", conclusion: null }).state,
+    ).toBe("in-progress");
+  });
+
+  it("reads opened once GitHub finished the package run green", () => {
+    expect(
+      promotionReadiness("dev", inFlight, { status: "completed", conclusion: "success" }).state,
+    ).toBe("opened");
+  });
+
+  it("reads failed when GitHub finished the package run as failed", () => {
+    expect(
+      promotionReadiness("dev", inFlight, { status: "completed", conclusion: "failure" }).state,
+    ).toBe("failed");
+  });
+
+  it("does not let the live run override a finished promotion job", () => {
+    expect(
+      promotionReadiness(
+        "dev",
+        [check("promote-to-uat", "success")],
+        { status: "completed", conclusion: "failure" },
+      ).state,
+    ).toBe("opened");
+  });
+});

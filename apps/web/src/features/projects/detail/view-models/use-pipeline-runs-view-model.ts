@@ -21,6 +21,8 @@ import {
   type BranchRunSection,
 } from "../model/runs-by-branch";
 
+/* Re-exported so the views name the run shape without importing from `data/`. */
+export type { WorkflowRunSummary };
 
 /** The picker value meaning "do not filter". */
 export const ALL_BRANCHES = "all";
