@@ -276,3 +276,38 @@ button.ws-link {
   color: var(--text-secondary);
   font-style: italic;
 }
+
+/* ── Merge ────────────────────────────────────────────────────────────── */
+
+.ws-mergeaction {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.ws-mergestate {
+  margin: 0;
+  padding: 0.45rem 0.7rem;
+  border-left: 3px solid var(--border-subtle);
+  font-size: 0.85rem;
+  color: var(--text-primary);
+}
+
+.ws-mergestate--ok {
+  border-left-color: var(--success);
+}
+
+.ws-mergestate--caution {
+  border-left-color: var(--warning);
+  background: var(--accent-amber-light);
+}
+
+.ws-mergestate--blocked {
+  border-left-color: var(--danger);
+  background: var(--accent-rose-light);
+}
+
+.ws-mergestate--pending {
+  color: var(--text-secondary);
+}

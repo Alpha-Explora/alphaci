@@ -20,9 +20,14 @@ import {
   usePullRequestReviewViewModel,
   type PullRequestCheck,
   type PullRequestDetail,
+  type MergeMethod,
   type PullRequestDetailResponse,
   type PullRequestReviewViewModel,
 } from "../../view-models/use-pull-request-review-view-model";
+import {
+  explainMergeState,
+  mergeButtonLabel,
+} from "../../model/pull-request-merge-rules";
 
 type StateFilter = "open" | "closed" | "all";
 
@@ -48,8 +53,9 @@ export function PullRequestsTab({ projectId }: { projectId: string }) {
   // Bumped to re-read the list when the filter did not change, e.g. after
   // opening a pull request while "Open" was already selected.
   const [reloadKey, setReloadKey] = useState(0);
-  // The pull request to open expanded when the list next renders — set when
-  // the compose screen points at one that already exists.
+  // The pull request to open expanded when the list next renders: the one
+  // just created, so its merge controls are right there, or one the compose
+  // screen pointed at because it already exists.
   const [focusNumber, setFocusNumber] = useState<number | null>(null);
   const [items, setItems] = useState<PullRequestSummary[]>([]);
   const [pullsUrl, setPullsUrl] = useState<string | null>(null);
@@ -81,8 +87,18 @@ export function PullRequestsTab({ projectId }: { projectId: string }) {
   const handleCreated = useCallback((pr: PullRequestSummary) => {
     setComposing(false);
     setNotice(`Pull request #${String(pr.number)} opened: ${pr.headRef} → ${pr.baseRef}.`);
+    setFocusNumber(pr.number);
     setLoading(true);
     setFilter("open");
+    setReloadKey((key) => key + 1);
+  }, []);
+
+  // A merge changes the row's state and usually empties it from "Open", so
+  // the list is re-read rather than patched in place.
+  const handleMerged = useCallback((pullNumber: number) => {
+    setNotice(`Pull request #${String(pullNumber)} merged.`);
+    setFocusNumber(null);
+    setLoading(true);
     setReloadKey((key) => key + 1);
   }, []);
 
@@ -185,6 +201,7 @@ export function PullRequestsTab({ projectId }: { projectId: string }) {
               projectId={projectId}
               pr={pr}
               focused={pr.number === focusNumber}
+              onMerged={handleMerged}
             />
           ))}
         </ul>
@@ -197,9 +214,11 @@ function PullRequestRow({
   projectId,
   pr,
   focused = false,
+  onMerged,
 }: {
   projectId: string;
   pr: PullRequestSummary;
+  onMerged: (pullNumber: number) => void;
   /** Open expanded and scrolled into view, e.g. arriving from compose. */
   focused?: boolean;
 }) {
@@ -266,7 +285,7 @@ function PullRequestRow({
 
       {open && (
         <div className="ws-pr__body">
-          <PullRequestReview projectId={projectId} pr={pr} />
+          <PullRequestReview projectId={projectId} pr={pr} onMerged={onMerged} />
           <PullRequestFiles
             files={files}
             loading={loading}
@@ -317,11 +336,17 @@ function PullRequestFiles({
 function PullRequestReview({
   projectId,
   pr,
-}: Readonly<{ projectId: string; pr: PullRequestSummary }>) {
+  onMerged,
+}: Readonly<{
+  projectId: string;
+  pr: PullRequestSummary;
+  onMerged: (pullNumber: number) => void;
+}>) {
   const review = usePullRequestReviewViewModel({
     projectId,
     pullNumber: pr.number,
     enabled: true,
+    onMerged,
   });
 
   if (review.status === "loading") {
@@ -393,47 +418,38 @@ function PullRequestChecks({
 }
 
 /**
- * Whether GitHub will allow the merge, said in words.
- *
- * `blocked` is the interesting one and the reason this is worth rendering: it
- * means the checks may be green while a protection rule still stands in the
- * way, which is exactly the state that makes a bare "merge failed" baffling.
+ * Whether GitHub will allow the merge, said in words — see explainMergeState
+ * for what each of GitHub's states means to the person deciding.
  */
 function MergeState({
   detail,
 }: Readonly<{ detail: PullRequestDetailResponse }>) {
-  const { mergeableState, merged } = {
-    mergeableState: detail.pullRequest.mergeableState,
-    merged: detail.pullRequest.merged,
-  };
+  if (detail.pullRequest.merged) {
+    return <p className="ws-hint">This pull request is merged.</p>;
+  }
 
-  if (merged) return <p className="ws-hint">This pull request is merged.</p>;
-
-  const explanation =
-    mergeableState === "blocked"
-      ? "GitHub is holding this back: a branch protection rule on the base branch is not satisfied yet, usually a required review."
-      : mergeableState === "dirty"
-        ? "The branch conflicts with its base and has to be updated before it can merge."
-        : mergeableState === "unknown"
-          ? "GitHub has not finished working out whether this can merge. Reload in a moment."
-          : mergeableState === "clean"
-            ? "GitHub will accept this merge."
-            : `GitHub reports this as '${mergeableState}'.`;
-
-  return (
-    <p className="ws-hint">
-      {explanation}
-      {detail.viewerIsAuthor && (
-        <>
-          {" "}
-          You opened this pull request, and GitHub does not allow approving your
-          own — a second reviewer, or an admin merge, is needed.
-        </>
-      )}
-    </p>
+  const { tone, message } = explainMergeState(
+    detail.pullRequest.draft ? "draft" : detail.pullRequest.mergeableState,
+    detail.viewerIsAuthor,
   );
+
+  return <p className={`ws-mergestate ws-mergestate--${tone}`}>{message}</p>;
 }
 
+const MERGE_METHODS: ReadonlyArray<{ id: MergeMethod; label: string }> = [
+  { id: "merge", label: "Create a merge commit" },
+  { id: "squash", label: "Squash and merge" },
+  { id: "rebase", label: "Rebase and merge" },
+];
+
+/**
+ * The merge action: how to merge, and doing it.
+ *
+ * Disabled only when GitHub has already said no (`mergeable === false`) or
+ * the pull request is a draft. Every other case is left to GitHub, whose
+ * refusal is shown verbatim below — a repository that disallows squash says
+ * so in its own words.
+ */
 function MergeButton({
   pr,
   review,
@@ -444,14 +460,33 @@ function MergeButton({
   if (pr.merged || pr.state === "closed") return null;
 
   return (
-    <button
-      type="button"
-      className="primary-button"
-      disabled={review.merging || pr.mergeable === false}
-      onClick={() => void review.merge()}
-    >
-      {review.merging ? "Merging…" : "Merge"}
-    </button>
+    <div className="ws-mergeaction">
+      <label className="ws-mergeaction__method">
+        <span className="sr-only">Merge method</span>
+        <select
+          className="ws-select"
+          value={review.mergeMethod}
+          disabled={review.merging}
+          onChange={(event) =>
+            review.setMergeMethod(event.target.value as MergeMethod)
+          }
+        >
+          {MERGE_METHODS.map((method) => (
+            <option key={method.id} value={method.id}>
+              {method.label}
+            </option>
+          ))}
+        </select>
+      </label>
+      <button
+        type="button"
+        className="primary-button"
+        disabled={review.merging || pr.mergeable === false || pr.draft}
+        onClick={() => void review.merge()}
+      >
+        {review.merging ? "Merging…" : mergeButtonLabel(review.mergeMethod)}
+      </button>
+    </div>
   );
 }
 

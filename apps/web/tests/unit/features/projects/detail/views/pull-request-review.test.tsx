@@ -148,7 +148,9 @@ describe("PullRequestsTab review panel", () => {
     // offer an action that can only fail.
     await render();
 
-    expect(host.textContent).toContain("does not allow approving your own");
+    // The fixture is `blocked`; on a branch with no review rule the sentence
+    // is deliberately absent (see pull-request-merge-rules.test.ts).
+    expect(host.textContent).toContain("does not let you approve your own");
   });
 
   it("repeats GitHub's refusal verbatim after a failed merge", async () => {
