@@ -194,3 +194,29 @@ export function BracesIcon() {
     </Glyph>
   );
 }
+
+export function PlayIcon() {
+  return (
+    <Glyph size={14}>
+      <path d="M5 3.1v9.8a.6.6 0 0 0 .9.52l7.9-4.9a.6.6 0 0 0 0-1.03L5.9 2.58A.6.6 0 0 0 5 3.1Z" />
+    </Glyph>
+  );
+}
+
+export function FlaskIcon({ size = 16 }: Readonly<{ size?: number }>) {
+  return (
+    <Glyph size={size}>
+      <path d="M6 1.75h4M6.75 1.75v4.5L2.9 12.6A1.1 1.1 0 0 0 3.85 14.25h8.3a1.1 1.1 0 0 0 .95-1.65L9.25 6.25v-4.5" />
+      <path d="M4.6 10h6.8" />
+    </Glyph>
+  );
+}
+
+export function InfoIcon() {
+  return (
+    <Glyph size={13}>
+      <circle cx="8" cy="8" r="5.75" />
+      <path d="M8 7.25v3.5M8 5.25v.01" />
+    </Glyph>
+  );
+}

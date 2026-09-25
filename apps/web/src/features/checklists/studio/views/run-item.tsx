@@ -1,10 +1,12 @@
 "use client";
 
-import type { FormEvent } from "react";
+import { useId, type FormEvent } from "react";
 
 import { PersonaBadge, SeverityBadge, StatusPill, VerificationBadge } from "../../items";
 import { RetestForm, type RequestRetestViewModel } from "../../returned";
 import { needsTestIdentifier } from "../../model/checklist-rules";
+import { normalizeAutomatedResult } from "../../model/qa-automation-rules";
+import type { QaRunAutomationResult } from "../../model/qa-automation-types";
 import {
   agoLabel,
   allowedItemStatuses,
@@ -25,6 +27,13 @@ import type {
   QaRunItemStatus,
 } from "../../model/qa-run-types";
 import type { QaItemEditorViewModel } from "../view-models/use-qa-item-editor-view-model";
+import { useDisclosure } from "../view-models/use-remembered-flag";
+import {
+  AutomatedDetails,
+  AutomatedDiffersHint,
+  AutomatedToggle,
+  type ItemAutomationContext,
+} from "./run-item-automation";
 import { StatusMarker } from "./status-marker";
 import { HistoryIcon } from "./studio-icons";
 
@@ -34,6 +43,8 @@ type ItemProps = Readonly<{
   run: QaRun;
   editor: QaItemEditorViewModel;
   retest: RequestRetestViewModel;
+  /** The run's normalised CI results, for the item badge's "why unknown". */
+  automation: QaRunAutomationResult;
   onReload: () => void;
 }>;
 
@@ -94,7 +105,7 @@ function StatusSelect({
   index,
   run,
   editor,
-}: Omit<ItemProps, "retest" | "onReload">) {
+}: Omit<ItemProps, "retest" | "onReload" | "automation">) {
   const allowed = allowedItemStatuses(item, run);
   const draft = editor.openItemId === item.id ? editor.draft : null;
   const value = draft?.status ?? item.status;
@@ -235,7 +246,7 @@ function detailsLabel(item: QaRunItem): string {
   return item.notes || item.reproductionSteps ? "Edit notes" : "Add notes";
 }
 
-function ItemControls({ item, index, run, editor, retest }: Omit<ItemProps, "onReload">) {
+function ItemControls({ item, index, run, editor, retest }: Omit<ItemProps, "onReload" | "automation">) {
   const editable = canEditItem(item, run);
   const retestable = canRequestRetest(item, run);
   const editing = editor.openItemId === item.id;
@@ -265,6 +276,36 @@ function ItemControls({ item, index, run, editor, retest }: Omit<ItemProps, "onR
   );
 }
 
+/** The item's automated result with what the badge needs to explain it, or null for a manual item. */
+function automationContext(item: QaRunItem, run: QaRun, automation: QaRunAutomationResult): ItemAutomationContext | null {
+  const result = normalizeAutomatedResult(item.automated);
+  return result ? { result, automation, commitSha: run.commitSha } : null;
+}
+
+/**
+ * Title, the recorded status and — when CI reported on the item — the
+ * Automated badge, whose details open right below. Information only: the
+ * recorded status is never changed by what CI says.
+ */
+function ItemHead({ item, run, automation }: Readonly<{ item: QaRunItem; run: QaRun; automation: QaRunAutomationResult }>) {
+  const [open, toggle] = useDisclosure();
+  const detailsId = useId();
+  const automated = automationContext(item, run, automation);
+  return (
+    <>
+      <div className="qa-run-item__head">
+        <span className="qa-run-item__title">{item.title}</span>
+        <span className="qa-run-item__states">
+          <StatusPill status={item.status} />
+          {automated ? <AutomatedToggle context={automated} open={open} controls={detailsId} onToggle={toggle} /> : null}
+        </span>
+      </div>
+      {automated ? <AutomatedDetails id={detailsId} context={automated} hidden={!open} /> : null}
+      {automated ? <AutomatedDiffersHint recorded={item.status} result={automated.result} /> : null}
+    </>
+  );
+}
+
 /**
  * One item on the run: what to check, who checks it and how, what was found,
  * and — for those allowed — the control to record the result. Everything the
@@ -279,10 +320,7 @@ export function RunItem(props: ItemProps) {
     <li className={`qa-run-item${editor.openItemId === item.id ? " qa-run-item--open" : ""}`}>
       <StatusMarker status={item.status} index={index} />
       <div className="qa-run-item__body">
-        <div className="qa-run-item__head">
-          <span className="qa-run-item__title">{item.title}</span>
-          <StatusPill status={item.status} />
-        </div>
+        <ItemHead item={item} run={run} automation={props.automation} />
         {item.description ? <p className="qa-run-item__desc">{item.description}</p> : null}
         <div className="qa-run-item__tags">
           <PersonaBadge persona={item.targetPersona} />

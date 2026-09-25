@@ -115,3 +115,56 @@
   background: var(--accent-amber-light);
   color: var(--warning);
 }
+
+/* Automated result: what CI concluded, never the tester's status. It must not
+   be mistaken for the status pill beside it, so it inverts that pill's recipe:
+   square corners, a dashed outline instead of a fill, a flask instead of a
+   dot, and a quiet "Automated" label before the verdict. */
+.qa-auto-badge {
+  --qa-tone: var(--text-secondary);
+  --qa-tone-edge: var(--border-strong);
+
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.32rem;
+  padding: 0.14rem 0.45rem 0.14rem 0.38rem;
+  border: 1px dashed var(--qa-tone-edge);
+  border-radius: 0.3rem;
+  background: transparent;
+  color: var(--qa-tone);
+  font-size: 0.68rem;
+  font-weight: 650;
+  line-height: 1.35;
+  white-space: nowrap;
+}
+
+.qa-auto-badge__glyph {
+  flex-shrink: 0;
+  width: 1.15em;
+  height: 1.15em;
+}
+
+.qa-auto-badge__label {
+  padding-right: 0.32rem;
+  border-right: 1px solid var(--border-strong);
+  color: var(--text-muted);
+  font-size: 0.88em;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.qa-auto-badge__status {
+  font-weight: 700;
+}
+
+.qa-auto-badge--success {
+  --qa-tone: var(--success);
+  --qa-tone-edge: var(--success);
+}
+
+.qa-auto-badge--danger {
+  --qa-tone: var(--danger);
+  --qa-tone-edge: var(--danger);
+}

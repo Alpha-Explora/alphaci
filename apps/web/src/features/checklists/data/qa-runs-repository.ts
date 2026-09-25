@@ -10,6 +10,7 @@ import type {
   UpdateQaRunItemInput,
 } from "../model/qa-run-types";
 import type { QaReport } from "../model/qa-report-types";
+import type { QaAutomationDispatchWire } from "../model/qa-automation-types";
 
 /* The only place in the checklists domain that talks to the QA run endpoints.
  *
@@ -115,6 +116,16 @@ export const qaRunsRepository = {
     return requestText(`${runPath(projectId, runId)}/report${query({ format: "md" })}`, {
       headers: { Accept: "text/markdown" },
     });
+  },
+
+  /**
+   * Starts the project's verify workflow (Playwright) for this run's branch.
+   * 202 carries which ref and head commit it started on, and whether that is
+   * still the run's commit. No body: the server picks the workflow and ref
+   * from the run, so a stale page cannot aim it anywhere else.
+   */
+  dispatchAutomation(projectId: string, runId: string): Promise<QaAutomationDispatchWire> {
+    return request<QaAutomationDispatchWire>(`${runPath(projectId, runId)}/automation/dispatch`, post());
   },
 
   returnedItems(projectId: string): Promise<QaReturnedItemsResponse> {

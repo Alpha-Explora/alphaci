@@ -15,6 +15,7 @@ import {
   summaryBreakdown,
 } from "../../model/qa-report-rules";
 import type { QaReport } from "../../model/qa-report-types";
+import { AutomatedResultsBody } from "./qa-report-automation";
 import { ChecklistTable, DefectLog, SignoffRecord } from "./qa-report-sections";
 import { LockIcon, PulseIcon } from "./report-icons";
 
@@ -189,18 +190,12 @@ function ExecutiveSummary({ report }: Readonly<{ report: QaReport }>) {
   );
 }
 
-/* ── 4. Automated results ────────────────────────────────────────────────── */
+/* ── 3. Automated results ────────────────────────────────────────────────── */
 
-function AutomatedResults() {
+function AutomatedResults({ report }: Readonly<{ report: QaReport }>) {
   return (
     <ReportSection id="qa-report-automated" number="03" title="Automated results">
-      <div className="qa-report-empty">
-        <p className="qa-report-empty__title">Not available yet</p>
-        <p>
-          Automated test results are not collected into QA reports yet. Items verified by Playwright,
-          unit tests or Bruno are recorded in the checklist above with the result the tester entered.
-        </p>
-      </div>
+      <AutomatedResultsBody report={report} />
     </ReportSection>
   );
 }
@@ -221,7 +216,7 @@ export function QaReportDocument({ report }: Readonly<{ report: QaReport }>) {
       <ReportSection id="qa-report-checklist" number="02" title="Checklist">
         <ChecklistTable items={report.run.items} />
       </ReportSection>
-      <AutomatedResults />
+      <AutomatedResults report={report} />
       <ReportSection id="qa-report-defects" number="04" title="Defect log">
         <DefectLog defects={report.defects} />
       </ReportSection>

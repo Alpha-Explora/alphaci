@@ -1,0 +1,115 @@
+"use client";
+
+import "./automation.css";
+
+import { AutomatedBadge } from "../../items";
+import {
+  AUTOMATED_DIFFERS_HINT,
+  automatedDiffers,
+  automatedScopeLabel,
+  automatedSentence,
+  automatedSourceLabel,
+  automatedStatusTone,
+  stageName,
+  stageResultFor,
+} from "../../model/qa-automation-rules";
+import type { QaAutomatedItemResult, QaRunAutomationResult } from "../../model/qa-automation-types";
+import { agoLabel } from "../../model/qa-run-rules";
+import type { QaRunItemStatus } from "../../model/qa-run-types";
+import { ExternalIcon, InfoIcon } from "./studio-icons";
+
+export interface ItemAutomationContext {
+  result: QaAutomatedItemResult;
+  automation: QaRunAutomationResult;
+  commitSha: string | null;
+}
+
+function sentenceOf({ result, automation, commitSha }: ItemAutomationContext): string {
+  return automatedSentence(result, { commitSha, stageResult: stageResultFor(automation, result.stage) });
+}
+
+/**
+ * The Automated badge as a disclosure button: hover shows the sentence,
+ * activating it opens the details below the item. It sits beside the manual
+ * status pill and never changes it.
+ */
+export function AutomatedToggle({
+  context,
+  open,
+  controls,
+  onToggle,
+}: Readonly<{ context: ItemAutomationContext; open: boolean; controls: string; onToggle: () => void }>) {
+  return (
+    <button
+      type="button"
+      className="qa-auto-toggle"
+      aria-expanded={open}
+      aria-controls={controls}
+      title={sentenceOf(context)}
+      onClick={onToggle}
+    >
+      <AutomatedBadge status={context.result.status} />
+      <span className="sr-only">{open ? " — hide details" : " — show details"}</span>
+    </button>
+  );
+}
+
+/** "Playwright E2E · This spec · Verify stage · 3m ago". */
+function metaLine(result: QaAutomatedItemResult): string {
+  return [
+    automatedSourceLabel(result.source),
+    automatedScopeLabel(result.scope),
+    result.stage ? `${stageName(result.stage)} stage` : null,
+    result.reportedAt ? `reported ${agoLabel(result.reportedAt)}` : null,
+  ]
+    .filter(Boolean)
+    .join(" · ");
+}
+
+/** A secondary way out to GitHub — the tester's workflow stays here. */
+export function ViewRunLink({ href, label = "View run" }: Readonly<{ href: string; label?: string }>) {
+  return (
+    <a className="qa-auto-link" href={href} target="_blank" rel="noopener noreferrer">
+      {label}
+      <ExternalIcon />
+      <span className="sr-only"> (opens GitHub in a new tab)</span>
+    </a>
+  );
+}
+
+/** The expanded details: the sentence, where it came from, and the matched failure. */
+export function AutomatedDetails({
+  id,
+  context,
+  hidden,
+}: Readonly<{ id: string; context: ItemAutomationContext; hidden: boolean }>) {
+  const { result } = context;
+  const failure = result.status === "failed" ? result.failure : null;
+  return (
+    <div id={id} hidden={hidden} className={`qa-auto-detail qa-auto-detail--${automatedStatusTone(result.status)}`}>
+      <p className="qa-auto-detail__sentence">{sentenceOf(context)}</p>
+      <p className="qa-auto-detail__meta">{metaLine(result)}</p>
+      {failure ? (
+        <div className="qa-auto-detail__failure">
+          <code className="qa-auto-detail__name">{failure.name}</code>
+          {failure.message ? <p className="qa-auto-detail__message">{failure.message}</p> : null}
+        </div>
+      ) : null}
+      {result.runUrl ? <ViewRunLink href={result.runUrl} /> : null}
+    </div>
+  );
+}
+
+/** A quiet note, never a prompt: the recorded status is the tester's call. */
+export function AutomatedDiffersHint({
+  recorded,
+  result,
+}: Readonly<{ recorded: QaRunItemStatus; result: QaAutomatedItemResult }>) {
+  if (!automatedDiffers(recorded, result.status)) return null;
+  return (
+    <p className="qa-auto-hint">
+      <InfoIcon />
+      {AUTOMATED_DIFFERS_HINT}
+    </p>
+  );
+}
