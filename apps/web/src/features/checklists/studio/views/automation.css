@@ -1,0 +1,728 @@
+/* ── QA Studio → automated test results ──────────────────────────────────────
+   Two surfaces:
+
+   .qa-auto          the run's "Automated tests" panel above the items: one
+                     card per CI stage (verify, quality), "Run Playwright",
+                     and the dispatch confirmation.
+   .qa-auto-toggle   the item's Automated badge as a disclosure button, with
+                     its details (.qa-auto-detail) and the quiet
+                     disagreement hint (.qa-auto-hint).
+
+   CI is a second opinion, never the verdict, so nothing here borrows the
+   status pill's filled look: stage cards carry their tone in a left rule,
+   the badge in a dashed outline. Tokens only; the light theme re-tints
+   through tokens.css.
+   ------------------------------------------------------------------------- */
+
+/* ── The item's states: recorded status, then CI's ────────────────────────── */
+
+.qa-run-item__states {
+  display: inline-flex;
+  flex-wrap: wrap;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.35rem;
+}
+
+.qa-auto-toggle {
+  display: inline-flex;
+  padding: 0;
+  border: 0;
+  border-radius: 0.35rem;
+  background: none;
+  font: inherit;
+  cursor: pointer;
+  transition: transform 140ms ease-out;
+}
+
+.qa-auto-toggle:hover .qa-auto-badge {
+  border-style: solid;
+  background: var(--bg-soft);
+}
+
+.qa-auto-toggle[aria-expanded="true"] .qa-auto-badge {
+  border-style: solid;
+  background: var(--bg-soft);
+}
+
+.qa-auto-toggle:active {
+  transform: translateY(1px);
+}
+
+.qa-auto-toggle:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
+.qa-auto-detail {
+  --qa-tone: var(--border-strong);
+
+  display: grid;
+  justify-items: start;
+  gap: 0.3rem;
+  padding: 0.55rem 0.7rem;
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--qa-tone);
+  border-radius: 0.55rem;
+  background: var(--bg-soft);
+  animation: qa-auto-reveal 180ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.qa-auto-detail[hidden] {
+  display: none;
+}
+
+.qa-auto-detail--success {
+  --qa-tone: var(--success);
+}
+
+.qa-auto-detail--danger {
+  --qa-tone: var(--danger);
+}
+
+.qa-auto-detail__sentence {
+  margin: 0;
+  font-size: 0.8rem;
+  font-weight: 600;
+  line-height: 1.45;
+  color: var(--text-primary);
+  overflow-wrap: anywhere;
+}
+
+.qa-auto-detail__meta {
+  margin: 0;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
+.qa-auto-detail__failure {
+  display: grid;
+  gap: 0.2rem;
+  width: 100%;
+  padding: 0.45rem 0.55rem;
+  border-radius: 0.4rem;
+  background: var(--accent-rose-light);
+}
+
+.qa-auto-detail__name,
+.qa-auto-failure__name {
+  padding: 0;
+  background: none;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.72rem;
+  font-weight: 600;
+  line-height: 1.45;
+  color: var(--text-primary);
+  overflow-wrap: anywhere;
+}
+
+.qa-auto-detail__message,
+.qa-auto-failure__message {
+  margin: 0;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.7rem;
+  line-height: 1.5;
+  color: var(--text-secondary);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.qa-auto-hint {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin: 0;
+  font-size: 0.72rem;
+  font-style: italic;
+  color: var(--text-muted);
+}
+
+.qa-auto-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.74rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.qa-auto-link .qa-glyph {
+  width: 0.8rem;
+  height: 0.8rem;
+  transition: transform 140ms ease-out;
+}
+
+.qa-auto-link:hover {
+  color: var(--brand);
+  text-decoration: underline;
+}
+
+.qa-auto-link:hover .qa-glyph {
+  transform: translate(1px, -1px);
+}
+
+.qa-auto-link:focus-visible {
+  border-radius: 0.2rem;
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
+/* ── The panel ───────────────────────────────────────────────────────────── */
+
+/* Side by side the run pane has a fixed height and only the items scroll, so
+   the panel is capped (and scrolls itself) — it can never starve the items. */
+.qa-auto {
+  flex-shrink: 0;
+  display: grid;
+  gap: 0.55rem;
+  max-height: calc(var(--qa-pane-height) * 0.42);
+  padding: 0.55rem 0.7rem 0.65rem;
+  border: 1px solid var(--border);
+  border-radius: 0.7rem;
+  background: var(--bg-frost);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+}
+
+.qa-auto[data-collapsed="true"] {
+  padding-bottom: 0.55rem;
+}
+
+.qa-auto__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.45rem 0.75rem;
+}
+
+.qa-auto__toggle {
+  display: inline-flex;
+  flex: 1 1 12rem;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem 0.5rem;
+  min-width: 0;
+  min-height: 2rem;
+  padding: 0.2rem 0.3rem 0.2rem 0.1rem;
+  border: 0;
+  border-radius: 0.45rem;
+  background: none;
+  font: inherit;
+  text-align: left;
+  color: var(--text-primary);
+  cursor: pointer;
+}
+
+.qa-auto__toggle > .qa-glyph {
+  flex-shrink: 0;
+  color: var(--text-muted);
+  transition: transform 160ms ease-out;
+}
+
+.qa-auto__toggle[aria-expanded="false"] > .qa-glyph {
+  transform: rotate(-90deg);
+}
+
+.qa-auto__toggle:hover > .qa-glyph {
+  color: var(--text-primary);
+}
+
+.qa-auto__toggle:focus-visible,
+.qa-auto__run:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
+.qa-auto__title {
+  font-size: 0.74rem;
+  font-weight: 750;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.qa-auto__chips {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.3rem 0.5rem;
+}
+
+.qa-auto__chip {
+  padding: 0.05rem 0.4rem;
+  border-left: 2px solid var(--border-strong);
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.qa-auto__chip--success {
+  border-left-color: var(--success);
+}
+
+.qa-auto__chip--danger {
+  border-left-color: var(--danger);
+}
+
+.qa-auto__chip--brand {
+  border-left-color: var(--brand);
+}
+
+.qa-auto__chip--none {
+  border-left-color: transparent;
+  font-weight: 500;
+  color: var(--text-muted);
+}
+
+/* Compact on purpose: its own class, not .primary-button — the global
+   buttons are hero-scale and win on source order. */
+.qa-auto__run {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 2rem;
+  padding: 0.3rem 0.7rem 0.3rem 0.6rem;
+  border: 1px solid var(--border-brand);
+  border-radius: 0.55rem;
+  background: var(--brand-light);
+  color: var(--brand);
+  font: inherit;
+  font-size: 0.76rem;
+  font-weight: 700;
+  line-height: 1.2;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    border-color 140ms ease-out,
+    color 140ms ease-out,
+    transform 140ms ease-out;
+}
+
+.qa-auto__run:hover:not(:disabled) {
+  border-color: var(--brand);
+  color: var(--text-primary);
+}
+
+.qa-auto__run:hover:not(:disabled) .qa-glyph {
+  transform: translateX(1px);
+}
+
+.qa-auto__run .qa-glyph {
+  transition: transform 140ms ease-out;
+}
+
+.qa-auto__run:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.qa-auto__run:disabled {
+  border-color: var(--border-strong);
+  background: transparent;
+  color: var(--text-muted);
+  cursor: not-allowed;
+}
+
+.qa-auto__reason {
+  margin: -0.2rem 0 0;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
+/* The live region stays mounted (empty) so its first message is announced;
+   empty, it takes no room. */
+.qa-auto__live {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.qa-auto__live:empty {
+  margin-top: -0.55rem;
+}
+
+.qa-auto__confirm,
+.qa-auto__warning {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0.5rem 0.65rem;
+  border-radius: 0.5rem;
+  font-size: 0.76rem;
+  line-height: 1.45;
+  color: var(--text-primary);
+}
+
+.qa-auto__confirm {
+  border: 1px solid var(--border-brand);
+  background: var(--brand-light);
+}
+
+.qa-auto__warning {
+  border: 1px solid var(--border-amber);
+  background: var(--accent-amber-light);
+}
+
+.qa-auto__warning > .qa-glyph {
+  flex-shrink: 0;
+  margin-top: 0.1rem;
+  color: var(--warning);
+}
+
+.qa-auto__watching {
+  color: var(--text-secondary);
+}
+
+/* A beacon while ALPHACI is still watching for the results. */
+.qa-auto__pulse {
+  flex-shrink: 0;
+  width: 0.5rem;
+  height: 0.5rem;
+  margin-top: 0.32rem;
+  border-radius: 50%;
+  background: var(--brand);
+}
+
+.qa-auto__pulse[data-watching="true"] {
+  animation: qa-auto-beacon 1.6s ease-out infinite;
+}
+
+.qa-auto__error .qa-auto__signin {
+  min-height: 0;
+  padding: 0.3rem 0.7rem;
+  font-size: 0.76rem;
+}
+
+.qa-auto__body[hidden] {
+  display: none;
+}
+
+/* ── Stage cards ─────────────────────────────────────────────────────────── */
+
+.qa-auto__stages {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.qa-auto-stage {
+  --qa-tone: var(--border-strong);
+
+  display: grid;
+  gap: 0.3rem;
+  margin: 0;
+  padding: 0.5rem 0.65rem 0.5rem 0.7rem;
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--qa-tone);
+  border-radius: 0.55rem;
+  background: var(--bg-soft);
+}
+
+.qa-auto-stage--success {
+  --qa-tone: var(--success);
+}
+
+.qa-auto-stage--danger {
+  --qa-tone: var(--danger);
+}
+
+.qa-auto-stage--brand {
+  --qa-tone: var(--brand);
+}
+
+.qa-auto-stage--missing {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.2rem 0.75rem;
+  border-left-style: dashed;
+  background: transparent;
+}
+
+.qa-auto-stage__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem 0.75rem;
+}
+
+.qa-studio .qa-auto-stage__title {
+  min-width: 0;
+  margin: 0;
+  font-family: inherit;
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0;
+  color: var(--text-primary);
+}
+
+.qa-auto-stage__coverage {
+  font-weight: 500;
+  color: var(--text-muted);
+}
+
+.qa-auto-stage__figures {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.qa-auto-stage__count {
+  font-size: 0.78rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  color: var(--text-primary);
+}
+
+.qa-auto-stage__bar {
+  width: 4.5rem;
+  height: 0.3rem;
+  border-radius: var(--radius-pill);
+  background: var(--accent-rose-light);
+  overflow: hidden;
+}
+
+.qa-auto-stage--success .qa-auto-stage__bar,
+.qa-auto-stage--brand .qa-auto-stage__bar {
+  background: var(--border-strong);
+}
+
+.qa-auto-stage__fill {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--success);
+  transform-origin: left center;
+  animation: qa-auto-fill 520ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.qa-auto-stage__failed {
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+  color: var(--danger);
+}
+
+.qa-auto-stage__none {
+  margin: 0;
+  font-size: 0.74rem;
+  color: var(--text-muted);
+}
+
+.qa-auto-stage__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.3rem 0.8rem;
+  margin: 0;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
+.qa-auto-stage__meta time {
+  font-variant-numeric: tabular-nums;
+  color: var(--text-secondary);
+}
+
+.qa-auto-stage__toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  padding: 0.05rem 0.3rem 0.05rem 0.35rem;
+  border: 1px solid var(--accent-rose-glow);
+  border-radius: 0.3rem;
+  background: var(--accent-rose-light);
+  font: inherit;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.qa-auto-stage__toggle .qa-glyph {
+  transition: transform 160ms ease-out;
+}
+
+.qa-auto-stage__toggle[aria-expanded="true"] .qa-glyph {
+  transform: rotate(180deg);
+}
+
+.qa-auto-stage__toggle:hover {
+  border-color: var(--danger);
+}
+
+.qa-auto-stage__toggle:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
+/* ── Failures ────────────────────────────────────────────────────────────── */
+
+.qa-auto-failures {
+  display: grid;
+  gap: 0.35rem;
+  animation: qa-auto-reveal 180ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.qa-auto-failures[hidden] {
+  display: none;
+}
+
+.qa-auto-failures__list {
+  display: grid;
+  gap: 0.3rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.qa-auto-failure {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.4rem;
+  align-items: start;
+  padding: 0.4rem 0.5rem;
+  border-radius: 0.4rem;
+  background: var(--accent-rose-light);
+}
+
+.qa-auto-failure > .qa-glyph {
+  width: 0.8rem;
+  height: 0.8rem;
+  margin-top: 0.15rem;
+  color: var(--danger);
+}
+
+.qa-auto-failure__body {
+  display: grid;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.qa-auto-failure__message {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+}
+
+.qa-auto-failures__note {
+  margin: 0;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+/* ── Empty ───────────────────────────────────────────────────────────────── */
+
+.qa-auto__empty {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.65rem;
+  align-items: start;
+  padding: 0.65rem 0.75rem;
+  border: 1px dashed var(--border-strong);
+  border-radius: 0.55rem;
+}
+
+.qa-auto__empty-icon {
+  display: inline-flex;
+  padding: 0.35rem;
+  border-radius: 0.45rem;
+  background: var(--bg-soft);
+  color: var(--text-muted);
+}
+
+.qa-auto__empty-title {
+  margin: 0;
+  font-size: 0.8rem;
+  font-weight: 650;
+  color: var(--text-primary);
+  overflow-wrap: anywhere;
+}
+
+.qa-auto__empty-text {
+  margin: 0.15rem 0 0;
+  font-size: 0.74rem;
+  line-height: 1.5;
+  color: var(--text-muted);
+}
+
+/* ── Motion ──────────────────────────────────────────────────────────────── */
+
+@keyframes qa-auto-reveal {
+  from {
+    opacity: 0;
+    transform: translateY(-3px);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes qa-auto-fill {
+  from {
+    transform: scaleX(0);
+  }
+
+  to {
+    transform: scaleX(1);
+  }
+}
+
+@keyframes qa-auto-beacon {
+  0% {
+    box-shadow: 0 0 0 0 var(--border-brand);
+  }
+
+  70% {
+    box-shadow: 0 0 0 0.4rem transparent;
+  }
+
+  100% {
+    box-shadow: 0 0 0 0 transparent;
+  }
+}
+
+/* Stacked panes scroll with the page: no cap needed. */
+@media (max-width: 1100px) {
+  .qa-auto {
+    max-height: none;
+    overflow-y: visible;
+  }
+}
+
+@media (max-width: 560px) {
+  .qa-run-item__states {
+    justify-content: flex-start;
+  }
+
+  .qa-auto__run {
+    flex: 1 1 100%;
+    justify-content: center;
+    min-height: 2.5rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .qa-auto-detail,
+  .qa-auto-failures,
+  .qa-auto-stage__fill,
+  .qa-auto__pulse[data-watching="true"] {
+    animation: none;
+  }
+
+  .qa-auto-toggle,
+  .qa-auto__toggle > .qa-glyph,
+  .qa-auto__run,
+  .qa-auto__run .qa-glyph,
+  .qa-auto-stage__toggle .qa-glyph,
+  .qa-auto-link .qa-glyph {
+    transition: none;
+  }
+}

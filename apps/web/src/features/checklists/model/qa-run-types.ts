@@ -9,6 +9,7 @@ import type {
   ChecklistTargetPersona,
   ChecklistVerificationType,
 } from "./checklist-types";
+import type { QaAutomatedResultWire, QaRunAutomationWire } from "./qa-automation-types";
 
 export type QaRunItemStatus =
   | "pending"
@@ -65,6 +66,12 @@ export interface QaRunItem {
   /** Server-decided for this viewer and this item's persona. */
   canUpdate: boolean;
   previous: QaPreviousResult | null;
+  /**
+   * What CI reported for this item on this run's commit. Null for manual
+   * items; ABSENT from older backends and older frozen reports. Read it only
+   * through `normalizeAutomatedResult`. Never changes `status`.
+   */
+  automated?: QaAutomatedResultWire | null;
 }
 
 export interface QaSignoff {
@@ -112,6 +119,11 @@ export interface QaRunListItem {
 export interface QaRun extends QaRunListItem {
   items: QaRunItem[];
   permissions: QaRunPermissions;
+  /**
+   * Per-stage CI results for this run's exact branch and commit. ABSENT from
+   * older backends. Read it only through `normalizeRunAutomation`.
+   */
+  automation?: QaRunAutomationWire | null;
 }
 
 export interface QaRunListResponse {

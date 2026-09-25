@@ -11,6 +11,7 @@ import {
 } from "../../model/qa-report-rules";
 import type { QaReport, QaReportDefect, QaReportSignoffEntry } from "../../model/qa-report-types";
 import type { QaDefectSeverity, QaFixRequest, QaRunItem } from "../../model/qa-run-types";
+import { ItemAutomatedCell } from "./qa-report-automation";
 
 /* ── Shared ──────────────────────────────────────────────────────────────── */
 
@@ -50,6 +51,7 @@ function ItemRow({ item }: Readonly<{ item: QaRunItem }>) {
       <td>
         <StatusPill status={item.status} />
         {item.verifiedBy ? <span className="qa-report-table__sub">{actorLabel(item.verifiedBy)}</span> : null}
+        <ItemAutomatedCell item={item} />
       </td>
       <td>
         {item.defectSeverity ? <Severity severity={item.defectSeverity} /> : null}

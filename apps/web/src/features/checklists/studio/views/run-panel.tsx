@@ -11,10 +11,12 @@ import {
 } from "../../model/qa-run-rules";
 import type { QaRun } from "../../model/qa-run-types";
 import type { QaRunViewModel } from "../view-models/use-qa-run-view-model";
+import { useQaAutomationViewModel } from "../view-models/use-qa-automation-view-model";
 import { useQaExportViewModel, type QaExportViewModel } from "../view-models/use-qa-export-view-model";
 import { useQaItemEditorViewModel } from "../view-models/use-qa-item-editor-view-model";
 import { useQaReopenViewModel } from "../view-models/use-qa-reopen-view-model";
 import { useQaSignoffViewModel } from "../view-models/use-qa-signoff-view-model";
+import { AutomationPanel } from "./automation-panel";
 import { ExportMenu, ExportStatus } from "./export-menu";
 import { RunItem } from "./run-item";
 import { RunSummary, SignoffBanner, SignoffDialog, SignoffFooter } from "./run-signoff";
@@ -117,7 +119,13 @@ function RunHeader({ run, exporter }: Readonly<{ run: QaRun; exporter: QaExportV
 }
 
 /** A run and everything that can be done to it. Mounted only once a run exists. */
-function RunBody({ projectId, vm, run }: Readonly<{ projectId: string; vm: QaRunViewModel; run: QaRun }>) {
+function RunBody({
+  projectId,
+  vm,
+  run,
+  appRole,
+}: Readonly<{ projectId: string; vm: QaRunViewModel; run: QaRun; appRole: AppRole | null | undefined }>) {
+  const automation = useQaAutomationViewModel({ projectId, run, appRole, onRun: vm.applyRun });
   const editor = useQaItemEditorViewModel({ projectId, run, onRun: vm.applyRun });
   const signoff = useQaSignoffViewModel({ projectId, run, onRun: vm.applyRun });
   const reopen = useQaReopenViewModel({ projectId, run, onRun: vm.applyRun });
@@ -131,6 +139,7 @@ function RunBody({ projectId, vm, run }: Readonly<{ projectId: string; vm: QaRun
       <RunHeader run={run} exporter={exporter} />
       <SignoffBanner run={run} reopen={reopen} />
       <RunSummary run={run} />
+      <AutomationPanel vm={automation} run={run} />
       <ol className="qa-run__items">
         {items.map((item, index) => (
           <RunItem
@@ -140,6 +149,7 @@ function RunBody({ projectId, vm, run }: Readonly<{ projectId: string; vm: QaRun
             run={run}
             editor={editor}
             retest={retest}
+            automation={automation.automation}
             onReload={vm.reload}
           />
         ))}
@@ -174,5 +184,5 @@ export function RunPanel({
   }
   if (!vm.run) return <StartRun vm={vm} branch={branch} appRole={appRole} />;
   // Keyed by run: a reopened or newly started run gets fresh drafts and dialogs.
-  return <RunBody key={vm.run.id} projectId={projectId} vm={vm} run={vm.run} />;
+  return <RunBody key={vm.run.id} projectId={projectId} vm={vm} run={vm.run} appRole={appRole} />;
 }
