@@ -142,4 +142,16 @@ describe("groupRunsByPipelineBranch, with mislabelled chained runs", () => {
     expect(dev?.commits[0]?.commitSha).toBe(TRIGGERING);
     expect(dev?.commits[0]?.report).not.toBeNull();
   });
+
+  it("leaves out a pull request's chained run instead of filing it under main", () => {
+    // GitHub labels it `main`; our report says it ran for `7/merge`. The
+    // filter has to see the corrected branch, or the PR's run lands on main.
+    const sections = groupRunsByPipelineBranch(
+      [chainedRun(34806900001)],
+      [report("7/merge", TRIGGERING, [stage(34806900001)])],
+    );
+
+    expect(sections.map((s) => s.branch)).toEqual(["dev", "uat", "main"]);
+    expect(sections.every((s) => s.commits.length === 0)).toBe(true);
+  });
 });

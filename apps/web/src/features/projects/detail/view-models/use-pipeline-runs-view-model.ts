@@ -77,7 +77,7 @@ export interface PipelineRunsViewModel {
    */
   status: ProjectStatus;
   error: string | null;
-  /** Every branch, in promotion order, empty ones included — for the picker. */
+  /** dev, uat and main, empty ones included — for the picker. */
   sections: BranchRunSection<WorkflowRunSummary>[];
   /** Just the branch being looked at, or all of them when that is the choice. */
   visibleSections: BranchRunSection<WorkflowRunSummary>[];
@@ -133,7 +133,7 @@ export function usePipelineRunsViewModel(options: {
    * elsewhere. This hook exists for exactly this — a server snapshot of
    * `dev`, a client snapshot from storage, and no state to keep in sync.
    */
-  const selectedBranch = useSyncExternalStore(
+  const storedBranch = useSyncExternalStore(
     subscribeToStoredBranch,
     () => readStoredBranch(projectId),
     () => WORKING_BRANCH,
@@ -206,18 +206,26 @@ export function usePipelineRunsViewModel(options: {
   );
 
   /*
-   * Falling back to showing everything, rather than an empty panel, when the
-   * remembered branch is not in this project. A repository connected with its
-   * own conventions may have no `dev` at all, and a blank tab would look like
-   * a loading bug rather than a choice.
+   * A remembered branch that is no longer offered reads as "All branches".
+   *
+   * The picker used to list pull-request merge refs, so storage still holds
+   * values like `7/merge`. Showing everything while the <select> was handed a
+   * value it has no option for put the first option, `dev`, on screen above
+   * all three sections - the control and the panel disagreeing.
    */
-  const visibleSections = useMemo(() => {
-    if (selectedBranch === ALL_BRANCHES) return sections;
-    const match = sections.find(
-      (section) => section.branch === selectedBranch,
-    );
-    return match ? [match] : sections;
-  }, [sections, selectedBranch]);
+  const effectiveBranch = sections.some(
+    (section) => section.branch === storedBranch,
+  )
+    ? storedBranch
+    : ALL_BRANCHES;
+
+  const visibleSections = useMemo(
+    () =>
+      effectiveBranch === ALL_BRANCHES
+        ? sections
+        : sections.filter((section) => section.branch === effectiveBranch),
+    [sections, effectiveBranch],
+  );
 
   const selectBranch = useCallback(
     (branch: string) => {
@@ -231,7 +239,7 @@ export function usePipelineRunsViewModel(options: {
     error,
     sections,
     visibleSections,
-    selectedBranch,
+    selectedBranch: effectiveBranch,
     selectBranch,
     isEmpty: runs.length === 0,
     reportsUnavailable,
