@@ -7,6 +7,7 @@ import type { DeploymentLogFocus } from "@/features/projects/deployment-logs";
 import { projectsRepository } from "../../data/projects-repository";
 import type { ProjectStatus } from "../../model/projects-types";
 import type {
+  AppRole,
   DeploymentTarget,
   ProjectAuditEventsResponse,
   ProjectCiRunsResponse,
@@ -28,6 +29,8 @@ import {
   isWorkflowSettingsQueryEnabled,
   overviewCapabilityFlags,
   overviewTabData,
+  resolveVisibleTab,
+  visibleProjectDetailTabs,
   type ProjectDetailTab,
 } from "../model/project-detail-tab-rules";
 import { useLazyProjectQuery } from "./use-lazy-project-query";
@@ -37,6 +40,8 @@ import type { ProjectWorkflowSettingsViewModel } from "./use-project-workflow-se
 export interface ProjectDetailTabsViewModel {
   tab: ProjectDetailTab;
   setTab: (tab: ProjectDetailTab) => void;
+  /** The tabs this viewer gets, in strip order. */
+  visibleTabs: ProjectDetailTab[];
   /**
    * The target whose logs Hosting should open with, set when the Overview's
    * card asks for its full logs. Cleared by choosing a tab by hand.
@@ -109,15 +114,22 @@ function loadAudit(projectId: string): Promise<ProjectAuditEventsResponse> {
 export function useProjectDetailTabsViewModel(options: {
   projectId: string;
   workflowFilesFallback: WorkflowFileMetadata[] | null | undefined;
+  appRole?: AppRole;
 }): ProjectDetailTabsViewModel {
-  const { projectId, workflowFilesFallback } = options;
-  const [tab, setTabState] = useState<ProjectDetailTab>("overview");
+  const { projectId, workflowFilesFallback, appRole } = options;
+  const [selectedTab, setTabState] = useState<ProjectDetailTab>("overview");
   const [logFocus, setLogFocus] = useState<DeploymentLogFocus | null>(null);
   const [syncingProjectId, setSyncingProjectId] = useState<string | null>(null);
   const [syncMessage, setSyncMessage] = useState<string | null>(null);
   const [runningDriftCheck, setRunningDriftCheck] = useState(false);
 
   const caps = useCapabilities();
+  const visibleTabs = visibleProjectDetailTabs(appRole, {
+    qaChecklistsEnabled: caps.qaChecklistsEnabled,
+  });
+  // Derived, not reset by an effect: if the flag turns off under a selected
+  // Checklists tab, the strip falls back to Overview on the same render.
+  const tab = resolveVisibleTab(selectedTab, visibleTabs);
   const overviewQuery = useLazyProjectQuery<ProjectOverviewResponse>({
     projectId,
     enabled: Boolean(projectId),
@@ -250,6 +262,7 @@ export function useProjectDetailTabsViewModel(options: {
   return {
     tab,
     setTab,
+    visibleTabs,
     logFocus,
     openTargetLogs,
     status: overviewQuery.status,

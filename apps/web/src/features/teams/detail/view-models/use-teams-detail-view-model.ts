@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
+import { useCapabilities } from "@/features/capabilities/current";
 import { useWorkspaceSelection } from "@/features/workspace/selection";
 
 import { teamsRepository } from "../../data/teams-repository";
@@ -23,6 +24,8 @@ export interface TeamsDetailViewModel {
   reload: () => void;
   /** Re-read the team list only — membership changed, the team still exists. */
   refreshTeam: () => void;
+  /** Backend capability: show the QA checklists section. */
+  qaChecklistsEnabled: boolean;
 }
 
 /**
@@ -40,6 +43,7 @@ export function useTeamsDetailViewModel(options: {
 }): TeamsDetailViewModel {
   const { guest, enabled } = options;
   const { selectedWorkspaceId, refreshWorkspaces } = useWorkspaceSelection();
+  const { qaChecklistsEnabled } = useCapabilities();
 
   const [teams, setTeams] = useState<Team[] | null>(null);
   // Kept with the team it belongs to, so projects are derived rather than
@@ -132,5 +136,6 @@ export function useTeamsDetailViewModel(options: {
     error,
     reload,
     refreshTeam,
+    qaChecklistsEnabled,
   };
 }

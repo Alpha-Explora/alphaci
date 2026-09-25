@@ -381,6 +381,24 @@ export const CAPABILITY_SURFACES = [
     "artifactSymbols": []
   },
   {
+    "key": "projects.qa-checklists",
+    "apiField": "qaChecklists",
+    "viewFlag": "qaChecklistsEnabled",
+    "domains": [
+      "checklists",
+      "projects",
+      "teams"
+    ],
+    "routes": [
+      "/projects/[projectId]",
+      "/teams"
+    ],
+    "featureBarrels": [
+      "@/features/checklists"
+    ],
+    "artifactSymbols": []
+  },
+  {
     "key": "pipelines.ci-run-tracking",
     "apiField": "ciRunTracking",
     "viewFlag": "ciRunTrackingEnabled",

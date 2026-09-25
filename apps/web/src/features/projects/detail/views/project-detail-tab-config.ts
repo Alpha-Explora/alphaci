@@ -30,6 +30,7 @@ export const PROJECT_DETAIL_TAB_GROUPS: ReadonlyArray<
       { id: "overview", label: "Overview" },
       { id: "code", label: "Code" },
       { id: "pulls", label: "Pull requests" },
+      { id: "checklists", label: "Checklists" },
     ],
   },
   {
@@ -52,3 +53,16 @@ export const PROJECT_DETAIL_TAB_GROUPS: ReadonlyArray<
     items: [{ id: "settings", label: "Settings" }],
   },
 ];
+
+/**
+ * The groups with only the tabs this viewer gets. A group left empty is
+ * dropped, so a hidden tab never leaves a stray divider in the strip.
+ */
+export function projectDetailTabGroups(
+  visible: ReadonlyArray<ProjectDetailTab>,
+): Array<SideTabGroup<ProjectDetailTab>> {
+  return PROJECT_DETAIL_TAB_GROUPS.map((group) => ({
+    ...group,
+    items: group.items.filter((item) => visible.includes(item.id)),
+  })).filter((group) => group.items.length > 0);
+}

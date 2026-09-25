@@ -12,7 +12,11 @@ import {
   useWorkspaceSelection,
 } from "@/features/workspace/selection";
 
-import { memberCountLabel } from "../../model/teams-rules";
+import { QA_CHECKLISTS_SECTION } from "@/features/checklists";
+import { WorkspaceChecklistsSection } from "@/features/checklists/manage";
+
+import { memberCountLabel, type TeamsDeepLink } from "../../model/teams-rules";
+import type { ProvisionedProject, Team } from "../../model/teams-types";
 import { useTeamsDetailViewModel } from "../view-models/use-teams-detail-view-model";
 import { TeamsEmptyState } from "./teams-empty-state";
 
@@ -27,7 +31,56 @@ const EASE_OUT: [number, number, number, number] = [0.25, 0, 0, 1];
  * creating a team. Two ways to do one thing, one of them hidden a page deep, is
  * how the earlier "0 teams in Team1 Test" confusion started.
  */
+/**
+ * The QA checklists section for this team, or null when the backend has the
+ * capability off. Opens on the deep-linked checklist only when the link was
+ * for this same team.
+ */
+function qaChecklistsSection(
+  enabled: boolean,
+  team: Team,
+  projects: ProvisionedProject[],
+  deepLink: TeamsDeepLink | undefined,
+) {
+  if (!enabled) return null;
+  const linkedHere = !deepLink?.workspaceId || deepLink.workspaceId === team.id;
+  return (
+    <WorkspaceChecklistsSection
+      key={team.id}
+      workspaceId={team.id}
+      projects={projects.map((project) => ({
+        id: project.id,
+        name: project.repoFullName,
+        detail: project.serviceName,
+      }))}
+      initialChecklistId={linkedHere ? deepLink?.checklistId : null}
+    />
+  );
+}
+
+function deepLinkSection(deepLink: TeamsDeepLink | undefined): "qa-checklists" | undefined {
+  return deepLink?.section === QA_CHECKLISTS_SECTION ? "qa-checklists" : undefined;
+}
+
+function TeamsHeaderLede({ qaChecklistsEnabled }: Readonly<{ qaChecklistsEnabled: boolean }>) {
+  return (
+    <p
+      style={{
+        margin: "0.4rem 0 0",
+        color: "var(--text-secondary)",
+        fontSize: "0.86rem",
+      }}
+    >
+      {qaChecklistsEnabled
+        ? "Members, activity, the repositories this team owns, and its QA checklists."
+        : "Members, activity, and the repositories this team owns."}{" "}
+      Switch or create a team from the picker in the header.
+    </p>
+  );
+}
+
 export function TeamsDetailContent({
+  deepLink,
   guest,
   session,
   onLogout,
@@ -35,6 +88,8 @@ export function TeamsDetailContent({
   prefersReducedMotion,
   enabled,
 }: Readonly<{
+  /** What the /teams link asked to open, read once on arrival. */
+  deepLink?: TeamsDeepLink;
   guest: boolean;
   session: ReturnType<typeof useAuthSession>["session"];
   onLogout: () => void;
@@ -83,16 +138,7 @@ export function TeamsDetailContent({
                 </div>
               ) : null}
             </div>
-            <p
-              style={{
-                margin: "0.4rem 0 0",
-                color: "var(--text-secondary)",
-                fontSize: "0.86rem",
-              }}
-            >
-              Members, activity, and the repositories this team owns. Switch or
-              create a team from the picker in the header.
-            </p>
+            <TeamsHeaderLede qaChecklistsEnabled={vm.qaChecklistsEnabled} />
           </div>
         </motion.div>
 
@@ -120,6 +166,13 @@ export function TeamsDetailContent({
               // was a button pointing at the same place.
               createHref={`/workflows?tab=setup&group=${encodeURIComponent(vm.team.id)}`}
               renderCreateProject={() => null}
+              qaChecklists={qaChecklistsSection(
+                vm.qaChecklistsEnabled,
+                vm.team,
+                vm.projects,
+                deepLink,
+              )}
+              initialSection={deepLinkSection(deepLink)}
             />
           </div>
         ) : (

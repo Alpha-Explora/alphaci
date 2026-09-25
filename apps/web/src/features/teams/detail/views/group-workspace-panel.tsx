@@ -29,12 +29,14 @@ import { ActivityFeed, ActivityFilters, AddMemberDialog, FormDialog, MemberTable
 import {
   SideTabs,
   type SideTabGroup,
+  type SideTabItem,
 } from "@/features/groups/workspace";
 
 type GroupSection =
   | "overview"
   | "members"
   | "projects"
+  | "qa-checklists"
   | "activity"
   | "settings"
   | "create";
@@ -63,6 +65,15 @@ interface GroupWorkspacePanelProps {
    * from page load while the table below showed the truth.
    */
   onMembershipChanged?: () => void;
+  /**
+   * The team's QA checklists section, already built by the caller — or
+   * null/undefined when the capability is off, which hides the rail entry.
+   * Passed in rather than built here so this panel stays ignorant of the
+   * checklists domain and its capability flag.
+   */
+  qaChecklists?: ReactNode;
+  /** Open on this section instead of Overview (deep links). */
+  initialSection?: "qa-checklists";
 }
 
 function statusVariant(status: string): string {
@@ -700,19 +711,19 @@ function teamSectionGroups(
   group: GroupSummary,
   projects: ProvisionedProject[],
   canManage: boolean,
+  hasQaChecklists: boolean,
 ): SideTabGroup<Exclude<GroupSection, "create">>[] {
+  const workItems: Array<SideTabItem<Exclude<GroupSection, "create">>> = [
+    { id: "projects", label: "Repositories", badge: projects.length },
+  ];
+  if (hasQaChecklists) workItems.push({ id: "qa-checklists", label: "QA checklists" });
   const groups: SideTabGroup<Exclude<GroupSection, "create">>[] = [
     { heading: "Team", items: [{ id: "overview", label: "Overview" }] },
     {
       heading: "People",
       items: [{ id: "members", label: "Members", badge: group.memberCount }],
     },
-    {
-      heading: "Work",
-      items: [
-        { id: "projects", label: "Repositories", badge: projects.length },
-      ],
-    },
+    { heading: "Work", items: workItems },
     { heading: "Records", items: [{ id: "activity", label: "Activity & audit" }] },
   ];
   if (canManage) {
@@ -856,10 +867,30 @@ function GroupSectionBody({
   return null;
 }
 
-export function GroupWorkspacePanel({ group, projects, renderCreateProject, createHref, onDeleted, onMembershipChanged }: Readonly<GroupWorkspacePanelProps>) {
+const SECTION_TITLES: Record<Exclude<GroupSection, "create">, string> = {
+  overview: "Overview",
+  members: "Members",
+  projects: "Repositories",
+  "qa-checklists": "QA checklists",
+  activity: "Activity & audit",
+  settings: "Settings",
+};
+
+/**
+ * The section to draw. QA checklists falls back to Overview while the section
+ * is unavailable (capability off, or not loaded yet) so a deep link never
+ * lands on an empty panel.
+ */
+function visibleSection(section: GroupSection, hasQaChecklists: boolean): GroupSection {
+  return section === "qa-checklists" && !hasQaChecklists ? "overview" : section;
+}
+
+export function GroupWorkspacePanel({ group, projects, renderCreateProject, createHref, onDeleted, onMembershipChanged, qaChecklists, initialSection }: Readonly<GroupWorkspacePanelProps>) {
   const [addMemberOpen, setAddMemberOpen] = useState(false);
   const { session } = useAuthSession();
-  const [section, setSection] = useState<GroupSection>("overview");
+  const [selectedSection, setSection] = useState<GroupSection>(initialSection ?? "overview");
+  const hasQaChecklists = Boolean(qaChecklists);
+  const section = visibleSection(selectedSection, hasQaChecklists);
   const canCreate = isGlobalCreatorRole(session?.appRole);
   const canManage = isGroupManagerRole(group.role);
 
@@ -873,19 +904,12 @@ export function GroupWorkspacePanel({ group, projects, renderCreateProject, crea
     );
   }
 
-  const titles: Record<Exclude<GroupSection, "create">, string> = {
-    overview: "Overview",
-    members: "Members",
-    projects: "Repositories",
-    activity: "Activity & audit",
-    settings: "Settings",
-  };
   const current = section;
 
   return (
     <div className="group-workspace">
       <SideTabs
-        groups={teamSectionGroups(group, projects, canManage)}
+        groups={teamSectionGroups(group, projects, canManage, hasQaChecklists)}
         value={current}
         onChange={setSection}
         label="Team sections"
@@ -899,35 +923,43 @@ export function GroupWorkspacePanel({ group, projects, renderCreateProject, crea
         aria-labelledby={`group-tab-${current}`}
         tabIndex={0}
       >
-        <div className="group-section-head">
-          <h3 className="group-section-title">
-            {titles[current]}
-            <GroupSectionCount
+        {current === "qa-checklists" ? (
+          // The section draws its own head row: its action depends on a
+          // permission only it loads.
+          qaChecklists
+        ) : (
+          <>
+            <div className="group-section-head">
+              <h3 className="group-section-title">
+                {SECTION_TITLES[current]}
+                <GroupSectionCount
+                  current={current}
+                  memberCount={group.memberCount}
+                  projectCount={projects.length}
+                />
+              </h3>
+              <GroupSectionAction
+                current={current}
+                canManage={canManage}
+                canCreate={canCreate}
+                createHref={createHref}
+                onAddMember={() => setAddMemberOpen(true)}
+                onCreate={() => setSection("create")}
+              />
+            </div>
+            <GroupSectionBody
               current={current}
-              memberCount={group.memberCount}
-              projectCount={projects.length}
+              group={group}
+              projects={projects}
+              canCreate={canCreate}
+              canManage={canManage}
+              addMemberOpen={addMemberOpen}
+              onCloseAdd={() => setAddMemberOpen(false)}
+              onMembershipChanged={onMembershipChanged}
+              onDeleted={onDeleted}
             />
-          </h3>
-          <GroupSectionAction
-            current={current}
-            canManage={canManage}
-            canCreate={canCreate}
-            createHref={createHref}
-            onAddMember={() => setAddMemberOpen(true)}
-            onCreate={() => setSection("create")}
-          />
-        </div>
-        <GroupSectionBody
-          current={current}
-          group={group}
-          projects={projects}
-          canCreate={canCreate}
-          canManage={canManage}
-          addMemberOpen={addMemberOpen}
-          onCloseAdd={() => setAddMemberOpen(false)}
-          onMembershipChanged={onMembershipChanged}
-          onDeleted={onDeleted}
-        />
+          </>
+        )}
       </div>
     </div>
   );

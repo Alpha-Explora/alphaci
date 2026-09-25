@@ -42,10 +42,21 @@ const WorkspaceSelectionContext = createContext<WorkspaceSelectionContextValue>(
   registerWorkspaceRefresh: () => undefined,
 });
 
-export function WorkspaceProvider({ children }: { children: ReactNode }) {
+export function WorkspaceProvider({
+  children,
+  initialWorkspaceId = null,
+}: {
+  children: ReactNode;
+  /**
+   * A team to open on instead of the remembered one — set by a deep link such
+   * as a project's "Manage in team". Still checked against the caller's
+   * workspaces when the header loads them, like any stored selection.
+   */
+  initialWorkspaceId?: string | null;
+}) {
   const [selectedWorkspaceId, setSelectedWorkspaceIdState] = useState<string | null>(() => {
-    if (typeof window === "undefined") return null;
-    return window.localStorage.getItem(STORAGE_KEY);
+    if (typeof window === "undefined") return initialWorkspaceId;
+    return initialWorkspaceId ?? window.localStorage.getItem(STORAGE_KEY);
   });
   const [workspaces, setWorkspacesState] = useState<WorkspacesMeResponse | null>(null);
   /*

@@ -54,6 +54,7 @@ This matrix is generated from the versioned `@alphaci/capability-catalog` packag
 | `projects.workflow-settings-preview` | `projects` | stable | `workflowSettingsPreview` | `workflowSettingsPreviewEnabled` | `/projects/[projectId]` |
 | `projects.workflow-update-pr` | `projects` | limited | `workflowUpdatePr` | `workflowUpdatePrEnabled` | `/projects/[projectId]` |
 | `projects.target-management` | `projects` | stable | `projectTargetManagement` | `projectTargetManagementEnabled` | `/projects/[projectId]` |
+| `projects.qa-checklists` | `projects` | limited | `qaChecklists` | `qaChecklistsEnabled` | `/projects/[projectId]`, `/teams` |
 | `pipelines.ci-run-tracking` | `pipelines` | limited | `ciRunTracking` | `ciRunTrackingEnabled` | `/runs`, `/projects/[projectId]` |
 | `pipelines.github-enterprise-server` | `pipelines` | not-implemented | none | none | none |
 

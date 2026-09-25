@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useReducedMotion } from "framer-motion";
 
 import { FlowBackground } from "@/shared/layout/flow-background";
@@ -11,6 +11,10 @@ import { WorkspaceProvider } from "@/features/workspace/selection";
 import { useAuthSession } from "@/features/auth/session";
 import { isGuest } from "@/features/auth/session";
 
+import {
+  EMPTY_TEAMS_DEEP_LINK,
+  parseTeamsDeepLink,
+} from "../../model/teams-rules";
 import { TeamsDetailContent } from "./teams-detail-content";
 
 /**
@@ -25,6 +29,13 @@ export function TeamsDetailView() {
   const { status, session, error: sessionError, refresh, signOut, isSigningOut } =
     useAuthSession();
   const prefersReducedMotion = useReducedMotion();
+  // Read once on arrival. The first client render is the session loader on
+  // both sides of hydration, so nothing rendered depends on it yet.
+  const [deepLink] = useState(() =>
+    typeof window === "undefined"
+      ? EMPTY_TEAMS_DEEP_LINK
+      : parseTeamsDeepLink(window.location.search),
+  );
 
   useEffect(() => {
     if (status === "signed-out") router.replace("/login?next=/teams");
@@ -73,8 +84,9 @@ export function TeamsDetailView() {
   if (status === "signed-out") return null;
 
   return (
-    <WorkspaceProvider>
+    <WorkspaceProvider initialWorkspaceId={deepLink.workspaceId}>
       <TeamsDetailContent
+        deepLink={deepLink}
         guest={isGuest(session)}
         session={session}
         onLogout={() => void handleLogout()}

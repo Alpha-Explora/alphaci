@@ -33,6 +33,11 @@ const DOMAIN_OWNERS = [
     owns: 'compatibility capability consumption from /api/v1/capabilities',
   },
   {
+    id: 'checklists',
+    backendContext: 'projects',
+    owns: 'team QA checklists, their items and sharing, and the project Checklists tab',
+  },
+  {
     id: 'groups',
     backendContext: 'identity-access',
     owns: 'hierarchy groups, systems, repositories, members, activity, and delivery projects',
