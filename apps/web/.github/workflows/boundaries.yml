@@ -90,5 +90,11 @@ jobs:
       - name: Cyclomatic complexity
         run: npm run complexity
 
+      # The whole Jest suite (no path filter), with coverage: jest.config.js
+      # sets collectCoverage and a global coverageThreshold, so a coverage drop
+      # below the floor fails this step as surely as a failing test. --ci makes
+      # a missing snapshot a failure instead of writing it (Actions sets CI=true,
+      # which implies the same; the flag keeps it true however the job is run).
+      # Browser E2E (npm run test:e2e) stays local: this job installs no browser.
       - name: Unit tests
-        run: npm test
+        run: npm test -- --ci
