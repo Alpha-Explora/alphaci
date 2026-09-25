@@ -570,6 +570,12 @@
   color: var(--brand);
 }
 
+.sidebar-role-badge--qa {
+  border-color: color-mix(in srgb, var(--accent-teal) 45%, transparent);
+  background: color-mix(in srgb, var(--accent-teal) 12%, transparent);
+  color: var(--accent-teal);
+}
+
 .sidebar-role-badge--member {
   border-color: var(--border);
   background: transparent;

@@ -155,6 +155,28 @@ describe("WorkspaceSwitcher", () => {
     expect(container.textContent).toContain("Developer");
   });
 
+  /* QA Team members verify work; they never create workspaces. The notice
+   * names their role so a misjudged tester is as visible as a misjudged lead. */
+  it("never offers create-workspace to QA Team, and names the role", () => {
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    root = createRoot(container);
+
+    act(() => {
+      root!.render(
+        <WorkspaceProvider>
+          <WorkspaceSwitcher workspaces={{ enabled: true, items: [] }} appRole="qa" />
+        </WorkspaceProvider>,
+      );
+    });
+
+    expect(
+      container.querySelector('[data-testid="create-workspace-button"]'),
+    ).toBeNull();
+    expect(container.textContent).not.toContain("+ Create workspace");
+    expect(container.textContent).toContain("Signed in as QA Team");
+  });
+
   /* The reason this state exists at all. A Lead who is misidentified as a
    * Developer lands here instead of on the create button, and the two are
    * indistinguishable unless the notice says which role it acted on. This is

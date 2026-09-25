@@ -74,19 +74,20 @@ export interface SubscriptionInfo {
 export type PlatformRole = "admin" | "super_admin";
 
 /** Global hierarchy role — the single source of truth for create capabilities. */
-export type AppRole = "admin" | "lead" | "member";
+export type AppRole = "admin" | "lead" | "qa" | "member";
 
 /** Provenance of {@link AppRole} — see AuthMeResponse.appRoleSource. */
 export type AppRoleSource = "github_team" | "manual";
 
 /**
  * User-facing labels for the global role. These mirror the GitHub org teams
- * that drive them (`team-lead` / `developers`), so what a user sees in the app
- * matches what they were added to in GitHub.
+ * that drive them (`team-lead` / `qa-team` / `developers`), so what a user sees
+ * in the app matches what they were added to in GitHub.
  */
 export const APP_ROLE_BADGE_LABELS: Record<AppRole, string> = {
   admin: "Admin",
   lead: "Team lead",
+  qa: "QA Team",
   member: "Developer",
 };
 
@@ -97,7 +98,7 @@ export interface AuthMeResponse {
   /** null for ordinary users; set for platform admins. Gates the /admin surface. */
   platformRole?: PlatformRole | null;
   /**
-   * Global hierarchy role ('admin' | 'lead' | 'member'). Gates create actions
+   * Global hierarchy role ('admin' | 'lead' | 'qa' | 'member'). Gates create actions
    * (systems/repositories) in the Groups UI — only admin/lead may create.
    * Optional so older cached sessions deserialize safely (defaults to 'member').
    */

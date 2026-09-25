@@ -2,7 +2,7 @@ export type SubscriptionPlan = "free" | "pro";
 export type SubscriptionStatus = "inactive" | "active" | "canceled";
 export type SubscriptionProvider = "mock" | "supabase" | "manual" | "paymongo";
 export type PlatformRole = "admin" | "super_admin";
-export type AppRole = "admin" | "lead" | "member";
+export type AppRole = "admin" | "lead" | "qa" | "member";
 export type AppRoleSource = "github_team" | "manual";
 
 export interface AuthSessionUser {

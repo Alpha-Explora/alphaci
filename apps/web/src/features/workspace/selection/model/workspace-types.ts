@@ -1,3 +1,5 @@
+import { APP_ROLE_BADGE_LABELS, type AppRole } from "@/shared/api/contracts";
+
 export type WorkspaceRole = "admin" | "delegated_lead" | "member" | "viewer";
 
 export interface WorkspaceSummary {
@@ -12,14 +14,12 @@ export interface WorkspacesMeResponse {
   items: WorkspaceSummary[];
 }
 
-export type WorkspaceAppRole = "admin" | "lead" | "member";
+/** The global app role; one definition, owned by the API contract. */
+export type WorkspaceAppRole = AppRole;
 
-export const APP_ROLE_BADGE_LABELS: Record<WorkspaceAppRole, string> = {
-  admin: "Admin",
-  lead: "Team lead",
-  member: "Developer",
-};
+export { APP_ROLE_BADGE_LABELS };
 
+/** Only Team leads and Admins create workspaces; QA Team and Developers cannot. */
 export function canCreateWorkspace(appRole: WorkspaceAppRole | null | undefined) {
   return appRole === "admin" || appRole === "lead";
 }

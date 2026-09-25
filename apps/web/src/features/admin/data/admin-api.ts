@@ -9,6 +9,7 @@ export type { AppRole, AppRoleSource };
 export const APP_ROLE_LABELS: Record<AppRole, string> = {
   admin: "Admin",
   lead: "Lead",
+  qa: "QA Team",
   member: "Member",
 };
 
