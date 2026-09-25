@@ -36,3 +36,16 @@ export type {
   WorkflowSettingsPreviewResponse,
   WorkflowUpdatePullRequestResponse,
 } from "@/shared/api/contracts";
+
+/* Preview framing rules, shared with the QA Studio so the thumbnail, the full
+ * viewport and the studio frame cannot drift apart. Pure functions only. */
+export {
+  canFramePreview,
+  displayHost,
+  previewFrameSandbox,
+  previewUnavailableReason,
+} from "./model/projects-rules";
+export type {
+  ProjectBranchPreview,
+  ProjectPreviewsResponse,
+} from "./model/projects-types";

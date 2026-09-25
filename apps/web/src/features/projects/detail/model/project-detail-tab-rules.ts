@@ -20,6 +20,7 @@ export type ProjectDetailTab =
   | "workflow"
   | "hosting"
   | "environment"
+  | "qa"
   | "audit"
   | "settings";
 
@@ -33,16 +34,21 @@ export const PROJECT_DETAIL_TABS: ReadonlyArray<ProjectDetailTab> = [
   "workflow",
   "hosting",
   "environment",
+  "qa",
   "audit",
   "settings",
 ];
 
+/** The tabs that exist only with the QA checklists capability. */
+const QA_TABS: ReadonlySet<ProjectDetailTab> = new Set(["checklists", "qa"]);
+
 /**
  * The tabs this viewer gets, in strip order.
  *
- * Checklists is the first capability-gated tab: it exists only when the
+ * Checklists and QA Studio are capability-gated: they exist only when the
  * backend reports `qaChecklistsEnabled`, and only for a session with a known
- * app role — every role can read checklists, but a session the backend has
+ * app role — every role can read checklists and runs (what each role may
+ * change is decided per item by the server), but a session the backend has
  * not assigned a role to has nothing to read them as. Every other tab is
  * unconditional, exactly as before this rule existed.
  */
@@ -50,10 +56,8 @@ export function visibleProjectDetailTabs(
   appRole: AppRole | null | undefined,
   flags: Readonly<{ qaChecklistsEnabled: boolean }>,
 ): ProjectDetailTab[] {
-  const checklistsVisible = flags.qaChecklistsEnabled && Boolean(appRole);
-  return PROJECT_DETAIL_TABS.filter(
-    (tab) => tab !== "checklists" || checklistsVisible,
-  );
+  const qaVisible = flags.qaChecklistsEnabled && Boolean(appRole);
+  return PROJECT_DETAIL_TABS.filter((tab) => qaVisible || !QA_TABS.has(tab));
 }
 
 /** The selected tab, or Overview when the selection is not (or no longer) visible. */

@@ -1,0 +1,1248 @@
+/* ── Project → QA Studio ─────────────────────────────────────────────────────
+   Toolbar across the top, then the deployed page (~60%) beside the run
+   (~40%). Surfaces follow the project page's graphite ladder (layer-1 cards,
+   border-layer edges) so the tab reads as part of the same product; colour is
+   reserved for state — success / danger / warning / brand — and nothing else.
+   Tokens only; the light theme re-tints through tokens.css.
+   ------------------------------------------------------------------------- */
+
+.qa-studio {
+  --qa-pane-height: clamp(32rem, calc(100dvh - 8rem), 54rem);
+
+  display: grid;
+  gap: 1rem;
+  min-width: 0;
+}
+
+/* The global ghost button draws a transparent border; give it an edge here. */
+.qa-studio .ghost-button {
+  border-color: var(--border-strong);
+}
+
+.qa-glyph {
+  flex-shrink: 0;
+}
+
+/* ── Toolbar ─────────────────────────────────────────────────────────────── */
+.qa-toolbar {
+  display: grid;
+  gap: 0.5rem;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid var(--border-layer);
+  border-radius: 0.8rem;
+  background: var(--layer-1);
+}
+
+.qa-toolbar__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem;
+  min-width: 0;
+}
+
+.qa-toolbar__row--address {
+  flex-wrap: nowrap;
+  padding-top: 0.55rem;
+  border-top: 1px solid var(--border);
+}
+
+.qa-toolbar__env {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex: 0 1 auto;
+  min-width: 0;
+}
+
+.qa-toolbar__label {
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.qa-toolbar .qa-toolbar__select {
+  width: auto;
+  min-width: 0;
+  max-width: 18rem;
+  padding-block: 0.4rem;
+  font-size: 0.82rem;
+}
+
+.qa-toolbar__actions {
+  display: flex;
+  gap: 0.35rem;
+}
+
+.qa-toolbar__error {
+  margin: 0;
+}
+
+/* Segmented device switch. */
+.qa-device-switch {
+  display: inline-flex;
+  padding: 0.18rem;
+  border: 1px solid var(--border-strong);
+  border-radius: 0.6rem;
+  background: var(--bg-soft);
+}
+
+.qa-device-switch__option {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-height: 2rem;
+  padding: 0.3rem 0.6rem;
+  border: 0;
+  border-radius: 0.45rem;
+  background: transparent;
+  color: var(--text-muted);
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.16s ease, color 0.16s ease;
+}
+
+.qa-device-switch__option:hover {
+  color: var(--text-primary);
+}
+
+.qa-device-switch__option--on {
+  background: var(--layer-2);
+  color: var(--text-primary);
+  box-shadow: var(--shadow-soft);
+}
+
+.qa-device-switch__px {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.66rem;
+  font-weight: 500;
+  color: var(--text-muted);
+}
+
+/* Route field: "host" + path in one box, like an address bar. */
+.qa-route {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex: 1 1 16rem;
+  min-width: 0;
+}
+
+.qa-route__box {
+  display: flex;
+  align-items: center;
+  flex: 1 1 auto;
+  min-width: 0;
+  border: 1px solid var(--border-strong);
+  border-radius: 0.55rem;
+  background: var(--bg-soft);
+  transition: border-color 0.16s ease, box-shadow 0.16s ease;
+}
+
+.qa-route__box:focus-within {
+  border-color: var(--accent-indigo);
+  box-shadow: 0 0 0 3px var(--accent-indigo-light);
+}
+
+.qa-route__box--invalid,
+.qa-route__box--invalid:focus-within {
+  border-color: var(--danger);
+}
+
+.qa-route__host {
+  flex-shrink: 1;
+  min-width: 0;
+  max-width: 60%;
+  padding-left: 0.65rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.76rem;
+  color: var(--text-muted);
+}
+
+.qa-route .qa-route__input {
+  flex: 1 1 6rem;
+  min-width: 4rem;
+  max-width: none;
+  padding: 0.42rem 0.6rem 0.42rem 0.1rem;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.82rem;
+}
+
+.qa-route .qa-route__input:focus {
+  box-shadow: none;
+}
+
+.qa-icon-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.2rem;
+  height: 2.2rem;
+  flex-shrink: 0;
+  border: 1px solid var(--border-strong);
+  border-radius: 0.55rem;
+  background: var(--bg-soft);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: color 0.16s ease, border-color 0.16s ease, transform 0.16s ease;
+}
+
+.qa-icon-button:hover:not(:disabled) {
+  color: var(--text-primary);
+  border-color: var(--border-brand);
+}
+
+.qa-icon-button:active:not(:disabled) {
+  transform: scale(0.95);
+}
+
+.qa-icon-button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* Commit chip. */
+.qa-commit {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  margin-left: auto;
+  min-width: 0;
+}
+
+.qa-commit__ref {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.28rem 0.55rem;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-pill);
+  background: var(--bg-soft);
+  color: var(--text-secondary);
+}
+
+.qa-commit__ref code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.76rem;
+  color: var(--text-primary);
+}
+
+.qa-commit__source {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.74rem;
+  font-weight: 600;
+}
+
+.qa-commit__source--deployment {
+  color: var(--success);
+}
+
+.qa-commit__source--branch_head {
+  padding: 0.22rem 0.55rem;
+  border: 1px solid var(--border-amber);
+  border-radius: var(--radius-pill);
+  background: var(--accent-amber-light);
+  color: var(--warning);
+}
+
+/* ── Panes ───────────────────────────────────────────────────────────────── */
+.qa-studio__panes {
+  display: grid;
+  grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+  gap: 1rem;
+  align-items: start;
+}
+
+/* Both panes share one height and only the item list scrolls: the app shell
+   is a scroll container that never scrolls, so a sticky preview would never
+   stick. Side by side, the page, the summary and Sign off all stay in view
+   while items are worked through. */
+.qa-studio__preview {
+  height: var(--qa-pane-height);
+  min-width: 0;
+}
+
+/* Nothing to frame: size to the message instead of a tall empty box. */
+.qa-studio__preview[data-framed="false"] {
+  height: auto;
+}
+
+.qa-studio__run {
+  min-width: 0;
+}
+
+.qa-studio__run > .qa-run-card {
+  display: flex;
+  flex-direction: column;
+  max-height: var(--qa-pane-height);
+}
+
+.qa-run-card > .qa-run {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.qa-run > .qa-run__items {
+  flex: 1 1 auto;
+  min-height: 0;
+  margin-right: -0.4rem;
+  padding-right: 0.4rem;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+}
+
+.qa-preview {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  border: 1px solid var(--border-layer);
+  border-radius: 0.9rem;
+  background: var(--layer-1);
+  overflow: hidden;
+}
+
+.qa-preview__caption {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.5rem 0.85rem;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.74rem;
+  color: var(--text-muted);
+}
+
+.qa-preview__scale {
+  padding: 0.1rem 0.45rem;
+  border-radius: var(--radius-pill);
+  background: var(--brand-light);
+  color: var(--brand);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+/* The stage the device sits on: a faint dot grid, so a narrow device reads as
+   an object placed on a surface rather than a page with a missing margin. */
+.qa-stage {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+  background-color: var(--bg-soft);
+  background-image: radial-gradient(var(--border-strong) 1px, transparent 1px);
+  background-size: 18px 18px;
+}
+
+.qa-stage[data-device="tablet"],
+.qa-stage[data-device="mobile"] {
+  padding: 1rem;
+}
+
+.qa-stage[data-device="desktop"] {
+  background-image: none;
+}
+
+/* Lays out at the device's real width, then shrinks to fit the pane. */
+.qa-device {
+  position: relative;
+  flex-shrink: 0;
+  width: var(--qa-device-width, 100%);
+  height: var(--qa-device-height, 100%);
+  transform: scale(var(--qa-scale, 1));
+  transform-origin: top center;
+  background: var(--bg-base);
+}
+
+.qa-stage[data-device="tablet"] .qa-device,
+.qa-stage[data-device="mobile"] .qa-device {
+  border: 1px solid var(--border-strong);
+  border-radius: 1rem;
+  overflow: hidden;
+  box-shadow: var(--shadow-elevated);
+}
+
+.qa-device__frame {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  background: var(--bg-base);
+}
+
+.qa-device__loading {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  pointer-events: none;
+}
+
+.qa-stage--empty {
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.9rem;
+  min-height: 20rem;
+  padding: 2rem 1.5rem;
+  text-align: center;
+  background-image: none;
+}
+
+.qa-stage__reason {
+  margin: 0;
+  max-width: 42ch;
+  font-size: 0.86rem;
+  line-height: 1.55;
+  color: var(--text-secondary);
+}
+
+.qa-stage .qa-stage__open {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  text-decoration: none;
+}
+
+.qa-skeleton-stage {
+  height: var(--qa-pane-height);
+}
+
+.qa-skeleton-card {
+  height: 22rem;
+}
+
+/* ── States ──────────────────────────────────────────────────────────────── */
+.qa-panel-state {
+  display: grid;
+  justify-items: center;
+  gap: 0.6rem;
+  padding: clamp(1.5rem, 4vw, 2.5rem) 1.25rem;
+  border: 1px dashed var(--border-strong);
+  border-radius: 0.8rem;
+  background: var(--bg-surface);
+  text-align: center;
+}
+
+.qa-studio__preview > .qa-panel-state {
+  min-height: 20rem;
+  align-content: center;
+}
+
+.qa-panel-state--danger {
+  border-style: solid;
+  border-color: var(--accent-rose-glow);
+  background: var(--accent-rose-light);
+}
+
+.qa-studio .qa-panel-state__title {
+  margin: 0;
+  font-family: inherit;
+  letter-spacing: -0.005em;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.qa-panel-state__text {
+  margin: 0;
+  max-width: 44ch;
+  font-size: 0.82rem;
+  line-height: 1.55;
+  color: var(--text-secondary);
+}
+
+.qa-form-error {
+  margin: 0;
+  font-size: 0.76rem;
+  font-weight: 500;
+  line-height: 1.45;
+  color: var(--danger);
+}
+
+.qa-required {
+  font-weight: 500;
+  color: var(--text-muted);
+}
+
+.qa-text-button {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--brand);
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.qa-text-button:hover:not(:disabled) {
+  text-decoration: underline;
+}
+
+.qa-text-button:disabled {
+  color: var(--text-muted);
+  cursor: not-allowed;
+}
+
+/* ── Run card ────────────────────────────────────────────────────────────── */
+.qa-run-card {
+  display: grid;
+  gap: 0.9rem;
+  padding: clamp(0.9rem, 1.6vw, 1.15rem);
+  border: 1px solid var(--border-layer);
+  border-radius: 0.9rem;
+  background: var(--layer-1);
+  box-shadow: var(--shadow-soft);
+}
+
+.qa-run-card__head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding-bottom: 0.85rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.qa-run-card__picker {
+  display: grid;
+  gap: 0.3rem;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.qa-run-card__picker .hier-select {
+  max-width: none;
+  font-weight: 600;
+}
+
+.qa-studio .qa-run-card__title {
+  margin: 0;
+  font-family: inherit;
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--text-primary);
+  overflow-wrap: anywhere;
+}
+
+.qa-run-card__count {
+  flex-shrink: 0;
+  padding-bottom: 0.3rem;
+  font-size: 0.74rem;
+  color: var(--text-muted);
+}
+
+.qa-run-card__wait,
+.qa-run-card__started {
+  margin: 0;
+  font-size: 0.76rem;
+  color: var(--text-muted);
+}
+
+.qa-run-card__started strong {
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.qa-run-card__foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  padding-top: 0.85rem;
+  border-top: 1px solid var(--border);
+}
+
+.qa-run-card__foot-text {
+  flex: 1 1 12rem;
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.qa-run {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.qa-run-skeleton {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.qa-run-skeleton__bar {
+  height: 3.5rem;
+}
+
+.qa-run-skeleton__row {
+  height: 4.75rem;
+}
+
+/* ── Summary ─────────────────────────────────────────────────────────────── */
+.qa-summary {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 0.45rem 1rem;
+  padding: 0.75rem 0.85rem;
+  border: 1px solid var(--border);
+  border-radius: 0.7rem;
+  background: var(--bg-frost);
+}
+
+.qa-summary__score {
+  display: flex;
+  align-items: baseline;
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.qa-summary__passed {
+  font-size: 1.6rem;
+  font-weight: 750;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  color: var(--text-primary);
+}
+
+.qa-summary__total {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.qa-summary__bar {
+  display: flex;
+  gap: 2px;
+  height: 0.5rem;
+  border-radius: var(--radius-pill);
+  background: var(--bg-soft);
+  overflow: hidden;
+}
+
+.qa-summary__segment {
+  flex-basis: 0;
+  min-width: 4px;
+  background: var(--border-tile);
+}
+
+.qa-summary__segment--in_progress {
+  background: var(--brand);
+}
+
+.qa-summary__segment--passed {
+  background: var(--success);
+}
+
+.qa-summary__segment--failed {
+  background: var(--danger);
+}
+
+.qa-summary__segment--blocked {
+  background: var(--accent-rose);
+}
+
+.qa-summary__segment--returned_to_dev {
+  background: var(--warning);
+}
+
+.qa-summary__facts {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 1rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.76rem;
+  color: var(--text-muted);
+}
+
+.qa-summary__fact--warn {
+  color: var(--warning);
+  font-weight: 600;
+}
+
+.qa-summary__fact--danger {
+  color: var(--danger);
+  font-weight: 600;
+}
+
+/* ── Items ───────────────────────────────────────────────────────────────── */
+.qa-run__items {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.qa-run-item {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.8rem;
+  align-items: start;
+  padding: 0.8rem 0.85rem;
+  border: 1px solid var(--border);
+  border-radius: 0.7rem;
+  background: var(--bg-frost);
+  transition: border-color 0.16s ease;
+}
+
+.qa-run-item--open {
+  border-color: var(--border-brand);
+}
+
+.qa-marker {
+  --qa-tone: var(--text-muted);
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.9rem;
+  height: 1.9rem;
+  border-radius: 0.5rem;
+  border: 1px solid var(--border-strong);
+  background: var(--bg-soft);
+  color: var(--qa-tone);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.72rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.qa-marker--brand {
+  --qa-tone: var(--brand);
+
+  border-color: var(--border-brand);
+}
+
+.qa-marker--success {
+  --qa-tone: var(--success);
+
+  border-color: var(--success);
+  background: var(--accent-emerald-light);
+}
+
+.qa-marker--danger {
+  --qa-tone: var(--danger);
+
+  border-color: var(--accent-rose-glow);
+  background: var(--accent-rose-light);
+}
+
+.qa-marker--warning {
+  --qa-tone: var(--warning);
+
+  border-color: var(--border-amber);
+  background: var(--accent-amber-light);
+}
+
+.qa-run-item__body {
+  display: grid;
+  gap: 0.4rem;
+  min-width: 0;
+}
+
+.qa-run-item__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.6rem;
+}
+
+.qa-run-item__title {
+  font-size: 0.88rem;
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--text-primary);
+  overflow-wrap: anywhere;
+}
+
+.qa-run-item__desc {
+  margin: 0;
+  font-size: 0.8rem;
+  line-height: 1.55;
+  color: var(--text-secondary);
+  white-space: pre-line;
+}
+
+.qa-run-item__tags {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.qa-run-item__test {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+  background: var(--bg-soft);
+  border: 1px solid var(--border);
+  border-radius: 0.35rem;
+  padding: 0.1rem 0.4rem;
+  overflow-wrap: anywhere;
+}
+
+.qa-run-item__previous,
+.qa-run-item__readonly {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin: 0;
+  font-size: 0.74rem;
+  color: var(--text-muted);
+}
+
+.qa-run-item__by {
+  margin: 0;
+  font-size: 0.74rem;
+  color: var(--text-muted);
+}
+
+.qa-run-item__by strong {
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.qa-run-item__readonly {
+  font-style: italic;
+}
+
+.qa-run-item__facts {
+  display: grid;
+  justify-items: start;
+  gap: 0.45rem;
+  padding: 0.6rem 0.7rem;
+  border-radius: 0.55rem;
+  background: var(--bg-soft);
+}
+
+.qa-run-item__facts--defect {
+  border-left: 2px solid var(--danger);
+}
+
+.qa-run-item__text {
+  display: grid;
+  gap: 0.1rem;
+}
+
+.qa-run-item__text-label {
+  font-size: 0.64rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.qa-run-item__text p {
+  margin: 0;
+  font-size: 0.8rem;
+  line-height: 1.55;
+  color: var(--text-secondary);
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+
+.qa-fix-note {
+  display: grid;
+  gap: 0.2rem;
+  padding: 0.55rem 0.7rem;
+  border: 1px solid var(--border-brand);
+  border-radius: 0.55rem;
+  background: var(--brand-light);
+}
+
+.qa-fix-note__head {
+  margin: 0;
+  font-size: 0.76rem;
+  color: var(--text-secondary);
+}
+
+.qa-fix-note__head strong {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.qa-fix-note__text {
+  margin: 0;
+  font-size: 0.8rem;
+  line-height: 1.5;
+  color: var(--text-primary);
+  white-space: pre-line;
+}
+
+.qa-run-item__controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.85rem;
+  margin-top: 0.15rem;
+}
+
+/* The re-test form takes the row's full width once opened. */
+.qa-run-item__controls .qa-retest {
+  flex: 1 1 100%;
+}
+
+.qa-status-select .hier-select {
+  width: auto;
+  min-width: 10.5rem;
+  max-width: none;
+  padding-block: 0.38rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.qa-run-item__saving {
+  font-size: 0.74rem;
+  color: var(--text-muted);
+}
+
+.qa-item-editor {
+  display: grid;
+  gap: 0.6rem;
+  margin-top: 0.2rem;
+  padding: 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 0.6rem;
+  background: var(--bg-soft);
+}
+
+.qa-item-editor .qa-editor-field {
+  margin: 0;
+}
+
+.qa-item-editor .hier-select,
+.qa-item-editor .hier-textarea {
+  max-width: none;
+  font-size: 0.82rem;
+}
+
+.qa-item-editor .hier-textarea {
+  min-height: 3.5rem;
+}
+
+.qa-item-editor__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
+.qa-inline-alert {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  padding: 0.55rem 0.7rem;
+  border: 1px solid var(--accent-rose-glow);
+  border-radius: 0.55rem;
+  background: var(--accent-rose-light);
+}
+
+.qa-inline-alert p {
+  flex: 1 1 14rem;
+  margin: 0;
+  font-size: 0.78rem;
+  line-height: 1.45;
+  color: var(--text-primary);
+}
+
+/* ── Signed-off banner ───────────────────────────────────────────────────── */
+.qa-signoff-banner {
+  --qa-tone: var(--success);
+  --qa-tone-fill: var(--accent-emerald-light);
+
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 0.75rem;
+  padding: 0.85rem 0.95rem;
+  border: 1px solid var(--qa-tone);
+  border-radius: 0.75rem;
+  background: var(--qa-tone-fill);
+}
+
+.qa-signoff-banner--warning {
+  --qa-tone: var(--warning);
+  --qa-tone-fill: var(--accent-amber-light);
+}
+
+.qa-signoff-banner--danger {
+  --qa-tone: var(--danger);
+  --qa-tone-fill: var(--accent-rose-light);
+}
+
+.qa-signoff-banner__seal {
+  display: inline-flex;
+  color: var(--qa-tone);
+}
+
+.qa-signoff-banner__body {
+  display: grid;
+  gap: 0.3rem;
+  min-width: 0;
+}
+
+.qa-signoff-banner__title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.qa-signoff-banner__meta,
+.qa-signoff-banner__note {
+  margin: 0;
+  font-size: 0.76rem;
+  color: var(--text-secondary);
+}
+
+.qa-signoff-banner__meta strong {
+  font-weight: 600;
+}
+
+.qa-signoff-banner__note {
+  color: var(--text-muted);
+}
+
+.qa-signoff-banner__text {
+  margin: 0;
+  font-size: 0.82rem;
+  line-height: 1.55;
+  color: var(--text-primary);
+  white-space: pre-line;
+}
+
+.qa-signoff-banner__conditions {
+  display: grid;
+  gap: 0.1rem;
+  padding: 0.45rem 0.6rem;
+  border-radius: 0.5rem;
+  background: var(--bg-soft);
+}
+
+.qa-signoff-banner__conditions span {
+  font-size: 0.64rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.qa-signoff-banner__conditions p {
+  margin: 0;
+  font-size: 0.8rem;
+  line-height: 1.5;
+  color: var(--text-primary);
+  white-space: pre-line;
+}
+
+/* ── Signoff dialog ──────────────────────────────────────────────────────── */
+.qa-verdicts {
+  display: grid;
+  gap: 0.45rem;
+  margin: 0 0 0.95rem;
+  padding: 0;
+  border: 0;
+}
+
+.qa-verdicts legend {
+  margin-bottom: 0.45rem;
+}
+
+.qa-verdict {
+  --qa-tone: var(--text-muted);
+
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  padding: 0.6rem 0.7rem;
+  border: 1px solid var(--border-strong);
+  border-radius: 0.6rem;
+  background: var(--bg-soft);
+  cursor: pointer;
+  transition: border-color 0.16s ease, background 0.16s ease;
+}
+
+.qa-verdict--success {
+  --qa-tone: var(--success);
+}
+
+.qa-verdict--warning {
+  --qa-tone: var(--warning);
+}
+
+.qa-verdict--danger {
+  --qa-tone: var(--danger);
+}
+
+.qa-verdict input {
+  width: auto;
+  margin-top: 0.2rem;
+  accent-color: var(--qa-tone);
+}
+
+.qa-verdict--on {
+  border-color: var(--qa-tone);
+}
+
+.qa-verdict--off {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.qa-verdict__text {
+  display: grid;
+  gap: 0.1rem;
+}
+
+.qa-verdict__name {
+  font-size: 0.86rem;
+  font-weight: 650;
+  color: var(--text-primary);
+}
+
+.qa-verdict--on .qa-verdict__name {
+  color: var(--qa-tone);
+}
+
+.qa-verdict__hint {
+  font-size: 0.76rem;
+  line-height: 1.45;
+  color: var(--text-secondary);
+}
+
+.hier-dialog .qa-form-error {
+  margin-top: -0.4rem;
+}
+
+/* ── Narrow screens ──────────────────────────────────────────────────────── */
+@media (max-width: 1100px) {
+  .qa-studio__panes {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .qa-studio__preview {
+    height: 32rem;
+  }
+
+  .qa-studio__run > .qa-run-card {
+    max-height: none;
+  }
+
+  .qa-run > .qa-run__items {
+    overflow-y: visible;
+  }
+
+  .qa-commit {
+    margin-left: 0;
+  }
+}
+
+@media (max-width: 560px) {
+  .qa-studio__preview {
+    height: 28rem;
+  }
+
+  .qa-toolbar__env {
+    flex: 1 1 100%;
+  }
+
+  .qa-toolbar__env .qa-toolbar__select {
+    flex: 1 1 auto;
+  }
+
+  /* The pixel widths are in the tooltip; the labels carry the choice. */
+  .qa-device-switch__px {
+    display: none;
+  }
+
+  .qa-device-switch {
+    flex: 1 1 100%;
+  }
+
+  .qa-device-switch__option {
+    flex: 1 1 0;
+    justify-content: center;
+    padding-inline: 0.4rem;
+  }
+
+  /* The environment picker already names where; the path gets the width. */
+  .qa-route__host {
+    display: none;
+  }
+
+  .qa-route .qa-route__input {
+    padding-left: 0.6rem;
+  }
+
+  .qa-route {
+    flex-basis: 100%;
+  }
+
+  .qa-run-item {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.55rem;
+    padding: 0.75rem;
+  }
+
+  .qa-marker {
+    display: none;
+  }
+
+  .qa-run-item__head {
+    flex-direction: column;
+    gap: 0.35rem;
+  }
+
+  .qa-signoff-banner {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .qa-signoff-banner__seal {
+    display: none;
+  }
+
+  .qa-run-card__foot .primary-button {
+    width: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .qa-device-switch__option,
+  .qa-icon-button,
+  .qa-run-item,
+  .qa-verdict {
+    transition: none;
+  }
+}

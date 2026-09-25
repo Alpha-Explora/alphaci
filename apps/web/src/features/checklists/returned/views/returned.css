@@ -1,0 +1,219 @@
+/* ── Returned by QA (Overview card) + the re-test form ───────────────────────
+   The card sits in the Overview stack beside the deployment card, so it uses
+   the same layer-1 surface; a warning-toned edge on the left says "needs you"
+   without shouting like an error. Tokens only.
+   ------------------------------------------------------------------------- */
+
+.qa-returned {
+  display: grid;
+  gap: 0.9rem;
+  padding: clamp(1rem, 2vw, 1.35rem);
+  border: 1px solid var(--border-layer);
+  border-left: 3px solid var(--warning);
+  border-radius: 0.9rem;
+  background: var(--layer-1);
+  box-shadow: var(--shadow-soft);
+}
+
+/* The global ghost button draws a transparent border; give it an edge here. */
+.qa-returned .ghost-button,
+.qa-returned-error .ghost-button {
+  border-color: var(--border-strong);
+}
+
+.qa-returned__header {
+  display: grid;
+  gap: 0.3rem;
+}
+
+/* Two classes: `.tab-content-panel h2`-style rules must not restyle it. */
+.qa-returned .qa-returned__heading {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--text-primary);
+}
+
+.qa-returned__count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.35rem;
+  height: 1.35rem;
+  padding: 0 0.4rem;
+  border-radius: var(--radius-pill);
+  background: var(--accent-amber-light);
+  border: 1px solid var(--border-amber);
+  color: var(--warning);
+  font-size: 0.72rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.qa-returned__lede {
+  margin: 0;
+  max-width: 64ch;
+  font-size: 0.82rem;
+  line-height: 1.55;
+  color: var(--text-secondary);
+}
+
+.qa-returned__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.6rem;
+}
+
+.qa-returned__row {
+  display: grid;
+  gap: 0.5rem;
+  padding: 0.85rem 0.95rem;
+  border: 1px solid var(--border);
+  border-radius: 0.7rem;
+  background: var(--bg-frost);
+}
+
+.qa-returned__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.qa-returned__title {
+  font-size: 0.9rem;
+  font-weight: 650;
+  line-height: 1.4;
+  color: var(--text-primary);
+  overflow-wrap: anywhere;
+}
+
+.qa-returned__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem 0;
+  margin: 0;
+  font-size: 0.76rem;
+  color: var(--text-muted);
+}
+
+.qa-returned__meta > * + *::before {
+  content: "·";
+  margin: 0 0.45rem;
+  color: var(--border-tile);
+}
+
+.qa-returned__meta code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.74rem;
+  color: var(--text-secondary);
+}
+
+.qa-returned__meta strong,
+.qa-returned__requested strong {
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.qa-returned__detail {
+  display: grid;
+  gap: 0.15rem;
+}
+
+.qa-returned__detail-label {
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.qa-returned__detail p {
+  margin: 0;
+  max-width: 72ch;
+  font-size: 0.82rem;
+  line-height: 1.55;
+  color: var(--text-secondary);
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+
+.qa-returned__requested {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.2rem 0.4rem;
+  margin: 0.15rem 0 0;
+  padding: 0.5rem 0.7rem;
+  border-radius: 0.55rem;
+  background: var(--brand-light);
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+}
+
+.qa-returned__requested-note {
+  flex-basis: 100%;
+  color: var(--text-primary);
+  white-space: pre-line;
+}
+
+.qa-returned-error {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  padding: 0.7rem 0.95rem;
+  border: 1px solid var(--accent-rose-glow);
+  border-radius: 0.7rem;
+  background: var(--accent-rose-light);
+}
+
+.qa-returned-error p {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--text-primary);
+}
+
+/* ── Re-test form (also used inside the studio) ──────────────────────────── */
+.qa-retest__trigger {
+  justify-self: start;
+}
+
+.qa-retest {
+  display: grid;
+  gap: 0.55rem;
+  padding: 0.75rem;
+  border: 1px solid var(--border-brand);
+  border-radius: 0.65rem;
+  background: var(--bg-soft);
+}
+
+.qa-retest .qa-retest__field {
+  margin: 0;
+}
+
+.qa-retest .qa-retest__note {
+  max-width: none;
+  min-height: 3.5rem;
+}
+
+.qa-retest__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
+.qa-retest__error {
+  margin: 0;
+  font-size: 0.76rem;
+  font-weight: 500;
+  line-height: 1.45;
+  color: var(--danger);
+}
