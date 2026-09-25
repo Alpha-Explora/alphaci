@@ -1,0 +1,1145 @@
+/* ── QA report (print page) ──────────────────────────────────────────────────
+   One fixed template, two media:
+
+   screen  a document sheet on the app's graphite (or light) desk, following
+           the theme tokens, with a sticky toolbar above it.
+   print   A4 paper. The sheet's theme tokens are remapped onto the --print-*
+           paper-and-ink tokens (tokens.css), so every rule below renders black
+           on white without a second copy of the stylesheet. Status and severity
+           colours survive (print-color-adjust: exact) in their darker print
+           tones, and every colour sits beside a word, so greyscale still reads.
+
+   Tokens only. Section order and the table's columns are the report contract;
+   change them together with the Markdown export.
+   ------------------------------------------------------------------------- */
+
+.qa-report-page {
+  --qa-report-mono: ui-monospace, "SFMono-Regular", "Cascadia Code", menlo, consolas, monospace;
+  --qa-report-display: var(--font-dash-display), outfit, var(--font-display), sans-serif;
+  --qa-report-measure: 60rem;
+
+  min-height: 100dvh;
+  background-color: var(--bg-base);
+  background-image: radial-gradient(var(--border-soft) 1px, transparent 1px);
+  background-size: 22px 22px;
+  color: var(--text-primary);
+  font-family: var(--font-dash-body), "Plus Jakarta Sans", var(--font-body), sans-serif;
+  letter-spacing: 0;
+}
+
+.qa-report-page__main {
+  padding: clamp(1rem, 3vw, 2.5rem) 1rem 4rem;
+}
+
+/* The light theme's muted grey (#a2a2ac) is ~2.4:1 on a white sheet — too
+   faint for a document's labels. The paper-ink muted tone is the same role at
+   AA contrast, so a light sheet borrows it. */
+[data-theme="light"] .qa-report-page {
+  --text-muted: var(--print-ink-muted);
+}
+
+/* ── Toolbar ─────────────────────────────────────────────────────────────── */
+
+.qa-report-toolbar {
+  position: sticky;
+  z-index: 10;
+  top: 0;
+  border-bottom: 1px solid var(--border-layer);
+  background: var(--bg-frost);
+  -webkit-backdrop-filter: blur(14px) saturate(160%);
+  backdrop-filter: blur(14px) saturate(160%);
+}
+
+.qa-report-toolbar__inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  max-width: var(--qa-report-measure);
+  margin: 0 auto;
+  padding: 0.6rem 1rem;
+}
+
+.qa-report-toolbar__actions {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.qa-report-toolbar__back,
+.qa-report-toolbar__print {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-height: 2.25rem;
+  padding: 0.4rem 0.75rem;
+  border-radius: 0.55rem;
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 650;
+  line-height: 1.2;
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    background-color 140ms ease-out,
+    border-color 140ms ease-out,
+    color 140ms ease-out;
+}
+
+.qa-report-toolbar__back {
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text-secondary);
+}
+
+.qa-report-toolbar__back:hover {
+  background: var(--layer-2);
+  color: var(--text-primary);
+}
+
+.qa-report-toolbar__back:hover .qa-report-glyph {
+  transform: translateX(-2px);
+}
+
+.qa-report-glyph {
+  flex-shrink: 0;
+  transition: transform 140ms ease-out;
+}
+
+.qa-report-toolbar__print {
+  border: 1px solid var(--border-brand);
+  background: var(--brand-light);
+  color: var(--brand);
+}
+
+.qa-report-toolbar__print:hover:not(:disabled) {
+  border-color: var(--brand);
+  color: var(--text-primary);
+}
+
+.qa-report-toolbar__print:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.qa-report-toolbar__print:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.qa-report-toolbar__back:focus-visible,
+.qa-report-toolbar__print:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
+/* ── The sheet ───────────────────────────────────────────────────────────── */
+
+.qa-report-sheet {
+  --qa-tone: var(--text-secondary);
+  --qa-tone-fill: var(--layer-2);
+
+  max-width: var(--qa-report-measure);
+  margin: 0 auto;
+  padding: clamp(1.25rem, 4.5vw, 3.25rem);
+  border: 1px solid var(--border-layer);
+  border-top: 4px solid var(--qa-tone);
+  border-radius: 1rem;
+  background: var(--layer-1);
+  box-shadow: var(--shadow-card);
+  animation: qa-report-in 360ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes qa-report-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.qa-report--success {
+  --qa-tone: var(--success);
+  --qa-tone-fill: var(--accent-emerald-light);
+}
+
+.qa-report--warning {
+  --qa-tone: var(--warning);
+  --qa-tone-fill: var(--accent-amber-light);
+}
+
+.qa-report--danger {
+  --qa-tone: var(--danger);
+  --qa-tone-fill: var(--accent-rose-light);
+}
+
+.qa-report-sheet--skeleton {
+  display: grid;
+  gap: 1.1rem;
+  border-top-color: var(--border-layer);
+}
+
+.qa-report-skeleton {
+  display: block;
+  border-radius: 0.5rem;
+  background: linear-gradient(90deg, var(--layer-2) 0%, var(--layer-2-hover) 50%, var(--layer-2) 100%);
+  background-size: 200% 100%;
+  animation: qa-report-shimmer 1.4s ease-in-out infinite;
+}
+
+@keyframes qa-report-shimmer {
+  from {
+    background-position: 100% 0;
+  }
+
+  to {
+    background-position: -100% 0;
+  }
+}
+
+.qa-report-skeleton--title {
+  width: 45%;
+  height: 3rem;
+}
+
+.qa-report-skeleton--meta {
+  height: 7.5rem;
+}
+
+.qa-report-skeleton--block {
+  height: 6rem;
+}
+
+.qa-report-skeleton--table {
+  height: 16rem;
+}
+
+.qa-report-state {
+  display: grid;
+  justify-items: start;
+  gap: 0.6rem;
+  border-top-color: var(--border-layer);
+}
+
+.qa-report-state__title {
+  font-family: var(--qa-report-display);
+  font-size: 1.35rem;
+  font-weight: 750;
+  letter-spacing: -0.015em;
+}
+
+.qa-report-state__text {
+  margin: 0 0 0.4rem;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+
+.qa-report-mono {
+  font-family: var(--qa-report-mono);
+  font-size: 0.92em;
+  letter-spacing: 0;
+}
+
+.qa-report-muted {
+  color: var(--text-muted);
+}
+
+.qa-report-prose {
+  margin: 0;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+/* ── 1. Masthead, state note, metadata ───────────────────────────────────── */
+
+.qa-report-masthead {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1.25rem;
+  padding-bottom: 1.1rem;
+  border-bottom: 2px solid var(--text-primary);
+}
+
+.qa-report-masthead__title {
+  min-width: 0;
+}
+
+.qa-report-masthead__eyebrow {
+  margin: 0 0 0.35rem;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.qa-report-masthead h1 {
+  font-family: var(--qa-report-display);
+  font-size: clamp(2rem, 4.6vw, 2.85rem);
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.035em;
+}
+
+.qa-report-masthead__project {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.2rem 0.6rem;
+  margin: 0.6rem 0 0;
+  font-size: 0.95rem;
+  color: var(--text-secondary);
+}
+
+.qa-report-masthead__name {
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+/* The verdict as an inked stamp: a double rule in the verdict's tone. */
+.qa-report-stamp {
+  flex-shrink: 0;
+  display: grid;
+  justify-items: end;
+  gap: 0.15rem;
+  padding: 0.55rem 0.9rem 0.6rem;
+  border: 1.5px solid var(--qa-tone);
+  border-radius: 0.45rem;
+  outline: 1px solid var(--qa-tone);
+  outline-offset: 2px;
+  background: var(--qa-tone-fill);
+  color: var(--qa-tone);
+}
+
+.qa-report-stamp--neutral {
+  --qa-tone: var(--text-secondary);
+  --qa-tone-fill: transparent;
+
+  border-style: dashed;
+  outline-color: transparent;
+}
+
+.qa-report-stamp--success {
+  --qa-tone: var(--success);
+  --qa-tone-fill: var(--accent-emerald-light);
+}
+
+.qa-report-stamp--warning {
+  --qa-tone: var(--warning);
+  --qa-tone-fill: var(--accent-amber-light);
+}
+
+.qa-report-stamp--danger {
+  --qa-tone: var(--danger);
+  --qa-tone-fill: var(--accent-rose-light);
+}
+
+.qa-report-stamp__label {
+  font-size: 0.6rem;
+  font-weight: 750;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  opacity: 0.85;
+}
+
+.qa-report-stamp__value {
+  font-family: var(--qa-report-display);
+  font-size: 1.15rem;
+  font-weight: 800;
+  line-height: 1.1;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.qa-report-state-note {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem 0.5rem;
+  margin: 1rem 0;
+  padding: 0.55rem 0.8rem;
+  border: 1px solid var(--border-brand);
+  border-radius: 0.6rem;
+  background: var(--brand-light);
+  font-size: 0.8rem;
+  line-height: 1.4;
+}
+
+.qa-report-state-note .qa-report-glyph {
+  color: var(--brand);
+}
+
+.qa-report-state-note strong {
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.qa-report-state-note span {
+  color: var(--text-secondary);
+}
+
+.qa-report-state-note--live {
+  border-color: var(--border-amber);
+  background: var(--accent-amber-light);
+}
+
+.qa-report-state-note--live .qa-report-glyph {
+  color: var(--warning);
+}
+
+/* Six facts on a hairline grid: the 1px gap shows the grid's own background. */
+.qa-report-meta {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1px;
+  margin: 0;
+  overflow: hidden;
+  border: 1px solid var(--border-layer);
+  border-radius: 0.75rem;
+  background: var(--border-layer);
+}
+
+.qa-report-meta__cell {
+  padding: 0.7rem 0.9rem 0.75rem;
+  background: var(--layer-1);
+}
+
+.qa-report-meta dt {
+  margin-bottom: 0.2rem;
+  font-size: 0.64rem;
+  font-weight: 700;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.qa-report-meta dd {
+  margin: 0;
+  font-size: 0.88rem;
+  font-weight: 650;
+  line-height: 1.35;
+  color: var(--text-primary);
+  overflow-wrap: anywhere;
+}
+
+.qa-report-meta__aside {
+  display: block;
+  margin-top: 0.1rem;
+  font-size: 0.74rem;
+  font-weight: 500;
+  color: var(--text-muted);
+}
+
+/* ── Sections ────────────────────────────────────────────────────────────── */
+
+.qa-report-section {
+  margin-top: clamp(1.75rem, 3.5vw, 2.4rem);
+}
+
+.qa-report-section__head {
+  display: flex;
+  align-items: baseline;
+  gap: 0.7rem;
+  margin-bottom: 0.95rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--border-strong);
+  break-after: avoid;
+}
+
+.qa-report-section__num {
+  font-family: var(--qa-report-mono);
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--brand);
+}
+
+.qa-report-section__title {
+  font-family: var(--qa-report-display);
+  font-size: 1.12rem;
+  font-weight: 750;
+  letter-spacing: -0.015em;
+}
+
+.qa-report-empty {
+  padding: 0.9rem 1.05rem;
+  border: 1px dashed var(--border-strong);
+  border-radius: 0.7rem;
+  font-size: 0.82rem;
+  line-height: 1.5;
+  color: var(--text-secondary);
+  break-inside: avoid;
+}
+
+.qa-report-empty p {
+  margin: 0;
+}
+
+.qa-report-empty .qa-report-empty__title {
+  margin-bottom: 0.2rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+/* ── 2. Executive summary ────────────────────────────────────────────────── */
+
+.qa-report-summary {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 1.25rem 1.75rem;
+  break-inside: avoid;
+}
+
+.qa-report-summary__label {
+  margin: 0;
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.qa-report-summary__figure {
+  margin: 0.1rem 0 0.8rem;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.qa-report-summary__big {
+  margin-right: 0.3rem;
+  font-family: var(--qa-report-display);
+  font-size: clamp(2rem, 4.2vw, 2.6rem);
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  color: var(--text-primary);
+}
+
+.qa-report-summary__pct {
+  font-weight: 750;
+  color: var(--text-primary);
+}
+
+.qa-report-bar {
+  display: flex;
+  height: 0.65rem;
+  overflow: hidden;
+  border: 1px solid var(--border-layer);
+  border-radius: var(--radius-pill);
+  background: var(--layer-2);
+}
+
+.qa-report-bar__segment {
+  display: block;
+  height: 100%;
+  background: var(--border-strong);
+}
+
+.qa-report-bar__segment + .qa-report-bar__segment {
+  box-shadow: inset 1px 0 0 var(--layer-1);
+}
+
+.qa-report-bar__segment--passed {
+  background: var(--success);
+}
+
+.qa-report-bar__segment--failed {
+  background: var(--danger);
+}
+
+.qa-report-bar__segment--blocked {
+  background: var(--accent-coral);
+}
+
+.qa-report-bar__segment--returned_to_dev {
+  background: var(--warning);
+}
+
+.qa-report-bar__segment--in_progress {
+  background: var(--brand);
+}
+
+.qa-report-bar__segment--pending {
+  background: var(--text-muted);
+}
+
+.qa-report-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 1.1rem;
+  margin: 0.6rem 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
+
+.qa-report-legend li {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.qa-report-legend strong {
+  font-weight: 750;
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.qa-report-legend__swatch {
+  width: 0.6rem;
+  height: 0.6rem;
+  border-radius: 0.15rem;
+}
+
+.qa-report-summary__facts {
+  display: flex;
+  gap: 0.65rem;
+}
+
+.qa-report-fact {
+  display: grid;
+  gap: 0.1rem;
+  min-width: 7.5rem;
+  padding: 0.65rem 0.9rem 0.7rem;
+  border: 1px solid var(--border-layer);
+  border-radius: 0.7rem;
+  background: var(--layer-2);
+}
+
+.qa-report-fact__value {
+  font-family: var(--qa-report-display);
+  font-size: 1.75rem;
+  font-weight: 800;
+  line-height: 1.05;
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.qa-report-fact__label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.qa-report-fact--warning {
+  border-color: var(--border-amber);
+  background: var(--accent-amber-light);
+}
+
+.qa-report-fact--warning .qa-report-fact__value {
+  color: var(--warning);
+}
+
+.qa-report-fact--danger {
+  border-color: var(--accent-rose-glow);
+  background: var(--accent-rose-light);
+}
+
+.qa-report-fact--danger .qa-report-fact__value {
+  color: var(--danger);
+}
+
+/* ── 3. Checklist table ──────────────────────────────────────────────────── */
+
+/* position: relative is load-bearing: the sr-only labels inside the table are
+   absolutely positioned, and without a positioned scroller their containing
+   block is the page — they escape the scroll clip and widen the phone layout. */
+.qa-report-table-wrap {
+  position: relative;
+  overflow-x: auto;
+  border: 1px solid var(--border-layer);
+  border-radius: 0.7rem;
+}
+
+.qa-report-table {
+  width: 100%;
+  min-width: 46rem;
+  border-collapse: collapse;
+  table-layout: fixed;
+  font-size: 0.8rem;
+  line-height: 1.45;
+}
+
+.qa-report-table__col-num {
+  width: 2.6rem;
+}
+
+.qa-report-table__col-item {
+  width: 26%;
+}
+
+.qa-report-table__col-persona {
+  width: 9.5%;
+}
+
+.qa-report-table__col-verify {
+  width: 20%;
+}
+
+/* Wide enough for the longest pill ("Returned to dev") at print size. */
+.qa-report-table__col-status {
+  width: 17%;
+}
+
+.qa-report-table thead {
+  display: table-header-group;
+}
+
+.qa-report-table th {
+  padding: 0.55rem 0.6rem;
+  border-bottom: 1.5px solid var(--border-strong);
+  background: var(--layer-2);
+  font-size: 0.64rem;
+  font-weight: 750;
+  letter-spacing: 0.09em;
+  text-align: left;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.qa-report-table td {
+  padding: 0.65rem 0.6rem;
+  border-bottom: 1px solid var(--border-layer);
+  vertical-align: top;
+  color: var(--text-secondary);
+  overflow-wrap: anywhere;
+}
+
+.qa-report-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.qa-report-table tr {
+  break-inside: avoid;
+}
+
+/* Everything inside the table is sized in em, off the table's own size, so
+   the 8pt print table scales as one piece (rem would ignore it). */
+.qa-report-table__num {
+  font-family: var(--qa-report-mono);
+  font-size: 0.94em;
+  color: var(--text-muted);
+}
+
+.qa-report-table__title {
+  display: block;
+  font-weight: 650;
+  color: var(--text-primary);
+}
+
+.qa-report-table__sub {
+  display: block;
+  margin-top: 0.2em;
+  font-size: 0.92em;
+  color: var(--text-muted);
+}
+
+.qa-report-table__test {
+  display: block;
+  width: fit-content;
+  max-width: 100%;
+  margin-top: 0.35em;
+  padding: 0.1em 0.35em;
+  border-radius: 0.25rem;
+  background: var(--layer-2);
+  font-family: var(--qa-report-mono);
+  font-size: 0.88em;
+  line-height: 1.4;
+  color: var(--text-secondary);
+  overflow-wrap: anywhere;
+}
+
+.qa-report-table .qa-pill {
+  font-size: 0.86em;
+}
+
+.qa-report-table .qa-pill__dot {
+  flex-shrink: 0;
+}
+
+.qa-report-table .qa-severity {
+  margin-bottom: 0.35em;
+  font-size: 0.78em;
+}
+
+/* ── 5. Defect log ───────────────────────────────────────────────────────── */
+
+.qa-report-defects {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.qa-report-defect {
+  --qa-defect-tone: var(--border-strong);
+
+  padding: 0.85rem 1rem 0.5rem;
+  border: 1px solid var(--border-layer);
+  border-left: 4px solid var(--qa-defect-tone);
+  border-radius: 0.7rem;
+  break-inside: avoid;
+}
+
+.qa-report-defect--blocker {
+  --qa-defect-tone: var(--danger);
+}
+
+.qa-report-defect--major {
+  --qa-defect-tone: var(--accent-coral);
+}
+
+.qa-report-defect--minor {
+  --qa-defect-tone: var(--warning);
+}
+
+.qa-report-defect__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.4rem 0.9rem;
+  margin-bottom: 0.4rem;
+}
+
+.qa-report-defect__title {
+  min-width: 0;
+  font-family: inherit;
+  font-size: 0.92rem;
+  font-weight: 700;
+  line-height: 1.35;
+  letter-spacing: 0;
+}
+
+.qa-report-defect__num {
+  font-family: var(--qa-report-mono);
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.qa-report-defect__tags {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.qa-report-defect__body {
+  margin: 0;
+}
+
+.qa-report-defect__body > div {
+  display: grid;
+  grid-template-columns: 9.5rem minmax(0, 1fr);
+  gap: 0.75rem;
+  padding: 0.45rem 0;
+  border-top: 1px solid var(--border-layer);
+}
+
+.qa-report-defect__body dt {
+  padding-top: 0.1rem;
+  font-size: 0.64rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.qa-report-defect__body dd {
+  margin: 0;
+  font-size: 0.82rem;
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+
+.qa-report-prose--steps {
+  padding: 0.5rem 0.65rem;
+  border-radius: 0.4rem;
+  background: var(--layer-2);
+  font-family: var(--qa-report-mono);
+  font-size: 0.76rem;
+  color: var(--text-primary);
+}
+
+.qa-report-prose--quote {
+  margin-top: 0.35rem;
+  padding-left: 0.65rem;
+  border-left: 2px solid var(--border-strong);
+  color: var(--text-primary);
+}
+
+/* ── 6. Sign-off ─────────────────────────────────────────────────────────── */
+
+.qa-report-signoff {
+  display: grid;
+  gap: 0.6rem;
+  padding: 0.95rem 1.05rem;
+  border: 1px solid var(--border-layer);
+  border-radius: 0.7rem;
+  font-size: 0.84rem;
+  color: var(--text-secondary);
+  break-inside: avoid;
+}
+
+.qa-report-signoff__line,
+.qa-report-history__line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem 0.7rem;
+}
+
+.qa-report-signoff__line strong {
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.qa-report-conditions {
+  padding: 0.55rem 0.75rem;
+  border-left: 3px solid var(--warning);
+  border-radius: 0.4rem;
+  background: var(--accent-amber-light);
+  color: var(--text-primary);
+}
+
+.qa-report-conditions__label {
+  display: block;
+  margin-bottom: 0.15rem;
+  font-size: 0.64rem;
+  font-weight: 750;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--warning);
+}
+
+.qa-report-history {
+  margin-top: 1.1rem;
+}
+
+.qa-report-history__title {
+  margin-bottom: 0.55rem;
+  font-family: inherit;
+  font-size: 0.74rem;
+  font-weight: 750;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.qa-report-history__list {
+  display: grid;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.qa-report-history__item {
+  display: grid;
+  gap: 0.45rem;
+  padding: 0.65rem 0.85rem;
+  border: 1px solid var(--border-layer);
+  border-radius: 0.6rem;
+  background: var(--layer-2);
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  break-inside: avoid;
+}
+
+/* ── Footer ──────────────────────────────────────────────────────────────── */
+
+.qa-report-footer {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.35rem 1rem;
+  margin-top: 2.5rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--border-strong);
+  font-size: 0.7rem;
+  color: var(--text-muted);
+}
+
+/* ── Narrow screens ──────────────────────────────────────────────────────── */
+
+@media (max-width: 720px) {
+  .qa-report-masthead {
+    flex-direction: column;
+  }
+
+  .qa-report-stamp {
+    justify-items: start;
+  }
+
+  .qa-report-meta {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .qa-report-summary {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .qa-report-defect__body > div {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.15rem;
+  }
+}
+
+@media (max-width: 460px) {
+  .qa-report-toolbar__back {
+    padding-inline: 0.4rem;
+  }
+
+  .qa-report-meta {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .qa-report-summary__facts > .qa-report-fact {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .qa-report-sheet,
+  .qa-report-skeleton {
+    animation: none;
+  }
+
+  .qa-report-glyph,
+  .qa-report-toolbar__back,
+  .qa-report-toolbar__print {
+    transition: none;
+  }
+}
+
+/* ── Print ───────────────────────────────────────────────────────────────── */
+
+@page {
+  size: a4;
+  margin: 16mm 14mm 18mm;
+
+  @bottom-left {
+    content: "ALPHACI · QA Report";
+    font-size: 8pt;
+    color: var(--print-ink-muted);
+  }
+
+  @bottom-right {
+    content: "Page " counter(page) " of " counter(pages);
+    font-size: 8pt;
+    color: var(--print-ink-muted);
+  }
+}
+
+@media print {
+  html:has(.qa-report-page),
+  html:has(.qa-report-page) body {
+    background: var(--print-paper);
+  }
+
+  /* Theme tokens → paper and ink, for everything inside the page (the shared
+     status/severity pills included). */
+  .qa-report-page {
+    --bg-base: var(--print-paper);
+    --layer-1: var(--print-paper);
+    --layer-2: var(--print-tint);
+    --layer-2-hover: var(--print-tint);
+    --text-primary: var(--print-ink);
+    --text-secondary: var(--print-ink-soft);
+    --text-muted: var(--print-ink-muted);
+    --border-layer: var(--print-rule-soft);
+    --border-strong: var(--print-rule);
+    --border-soft: transparent;
+    --brand: var(--print-brand);
+    --brand-light: var(--print-brand-tint);
+    --border-brand: var(--print-brand);
+    --success: var(--print-success);
+    --accent-emerald-light: var(--print-success-tint);
+    --warning: var(--print-warning);
+    --accent-amber-light: var(--print-warning-tint);
+    --border-amber: var(--print-warning);
+    --danger: var(--print-danger);
+    --accent-rose-light: var(--print-danger-tint);
+    --accent-rose-glow: var(--print-danger);
+    --accent-coral: var(--print-danger);
+    --bg-frost: var(--print-paper);
+
+    min-height: 0;
+    background: var(--print-paper);
+    color: var(--print-ink);
+    font-size: 9.5pt;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+
+  [data-print="hide"] {
+    display: none;
+  }
+
+  .qa-report-page__main {
+    padding: 0;
+  }
+
+  .qa-report-sheet {
+    max-width: none;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+    animation: none;
+  }
+
+  .qa-report-masthead h1 {
+    font-size: 24pt;
+  }
+
+  .qa-report-masthead,
+  .qa-report-state-note,
+  .qa-report-meta,
+  .qa-report-summary {
+    break-inside: avoid;
+  }
+
+  .qa-report-section {
+    margin-top: 7mm;
+  }
+
+  /* The screen wrapper scrolls; paper cannot, so the table takes the page
+     width and its header repeats on every page it spans. */
+  .qa-report-table-wrap {
+    overflow: visible;
+    border: 0;
+    border-radius: 0;
+  }
+
+  .qa-report-table {
+    min-width: 0;
+    font-size: 8pt;
+    border-top: 1px solid var(--print-rule);
+  }
+
+  .qa-report-table th {
+    font-size: 6.5pt;
+  }
+
+  .qa-report-table td,
+  .qa-report-table th {
+    padding: 1.6mm;
+  }
+
+  .qa-report-table tbody tr:last-child td {
+    border-bottom: 1px solid var(--print-rule);
+  }
+
+  .qa-report-footer {
+    margin-top: 8mm;
+  }
+}

@@ -16,6 +16,8 @@ const routeFiles: Record<string, string> = {
   "/teams": "(platform)/teams/page.tsx",
   "/workflows": "(platform)/workflows/page.tsx",
   "/projects/[projectId]": "(platform)/projects/[projectId]/page.tsx",
+  "/projects/[projectId]/qa/report/[runId]":
+    "(platform)/projects/[projectId]/qa/report/[runId]/page.tsx",
   "/admin": "(platform)/admin/page.tsx",
   "/admin/feedback": "(platform)/admin/feedback/page.tsx",
   "/admin/users/[id]": "(platform)/admin/users/[id]/page.tsx",

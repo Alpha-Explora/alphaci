@@ -149,6 +149,28 @@
   --input-measure: 32rem; /* readability cap for form inputs (spec) */
   --tab-min-height: 3rem;
   --surface: var(--bg-surface);
+
+  /* ── Print (paper) ─────────────────────────────────────────── */
+  /* Theme-independent on purpose: a printed page is white paper and dark
+     ink whichever theme the screen was in. Printable surfaces remap their
+     theme tokens onto these under @media print (see the QA report). Tones
+     are the darker, higher-contrast members of each semantic family so
+     they stay legible on paper and in greyscale. */
+  --print-paper: #fff;
+  --print-ink: #111116;
+  --print-ink-soft: #363642;
+  --print-ink-muted: #5c5c68;
+  --print-rule: #c9c9d1;
+  --print-rule-soft: #e4e4ea;
+  --print-tint: #f4f4f7;
+  --print-success: #047857;
+  --print-success-tint: #e7f6ef;
+  --print-warning: #b45309;
+  --print-warning-tint: #fdf3e2;
+  --print-danger: #b91c1c;
+  --print-danger-tint: #fdecec;
+  --print-brand: #0550ae;
+  --print-brand-tint: #e8f0fb;
 }
 
 [data-theme="light"] {

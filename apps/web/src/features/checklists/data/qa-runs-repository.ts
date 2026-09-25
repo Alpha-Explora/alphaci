@@ -1,4 +1,4 @@
-import { request } from "@/shared/api/request";
+import { request, requestText } from "@/shared/api/request";
 
 import type {
   CreateQaRunInput,
@@ -9,6 +9,7 @@ import type {
   QaSignoffInput,
   UpdateQaRunItemInput,
 } from "../model/qa-run-types";
+import type { QaReport } from "../model/qa-report-types";
 
 /* The only place in the checklists domain that talks to the QA run endpoints.
  *
@@ -102,6 +103,18 @@ export const qaRunsRepository = {
 
   reopen(projectId: string, runId: string): Promise<QaRun> {
     return request<QaRun>(`${runPath(projectId, runId)}/reopen`, post());
+  },
+
+  /** The `qa-report/v1` JSON. For a signed-off run it describes the frozen copy. */
+  report(projectId: string, runId: string): Promise<QaReport> {
+    return request<QaReport>(`${runPath(projectId, runId)}/report${query({ format: "json" })}`);
+  },
+
+  /** The same report as GitHub-flavoured Markdown, ready to paste into a PR. */
+  reportMarkdown(projectId: string, runId: string): Promise<string> {
+    return requestText(`${runPath(projectId, runId)}/report${query({ format: "md" })}`, {
+      headers: { Accept: "text/markdown" },
+    });
   },
 
   returnedItems(projectId: string): Promise<QaReturnedItemsResponse> {

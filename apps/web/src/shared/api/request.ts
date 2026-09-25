@@ -64,7 +64,8 @@ export function getApiBaseUrl(): string {
   return API_BASE_URL;
 }
 
-export async function request<T>(path: string, init?: RequestInit): Promise<T> {
+/** Fetch with the session cookie, throwing ApiError on any non-2xx reply. */
+async function send(path: string, init?: RequestInit): Promise<Response> {
   const response = await fetch(`${API_BASE_URL}${path}`, {
     ...init,
     credentials: "include",
@@ -90,6 +91,23 @@ export async function request<T>(path: string, init?: RequestInit): Promise<T> {
 
     throw new ApiError(`Request failed with status ${response.status}`, response.status, details);
   }
+
+  return response;
+}
+
+/**
+ * A plain-text body (Markdown, CSV…). Same cookie, headers and ApiError as
+ * `request`; a reply sent as a download (Content-Disposition: attachment) is
+ * still readable here — the attachment header only matters to navigation.
+ */
+export async function requestText(path: string, init?: RequestInit): Promise<string> {
+  const response = await send(path, init);
+  if (response.status === 204) return "";
+  return response.text();
+}
+
+export async function request<T>(path: string, init?: RequestInit): Promise<T> {
+  const response = await send(path, init);
 
   if (response.status === 204) {
     return undefined as T;

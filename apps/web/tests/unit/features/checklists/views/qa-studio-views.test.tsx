@@ -147,6 +147,23 @@ describe("QaStudioPanel", () => {
     expect(runs.current).toHaveBeenCalledWith("project-1", { branch: "main", checklistId: "cl-1" });
   });
 
+  it.each<AppRole>(["member", "qa", "lead"])(
+    "offers Export report in the run header to a %s once a run is loaded",
+    async (role) => {
+      setup({ run: runAs(role, { items: ITEMS }) });
+      const container = await studio(role);
+      const head = container.querySelector(".qa-run__head");
+      const exportButton = head?.querySelector('button[aria-haspopup="menu"]');
+      expect(exportButton?.textContent).toContain("Export report");
+    },
+  );
+
+  it("offers no export before a run exists", async () => {
+    setup({ run: null });
+    const container = await studio("qa");
+    expect(container.querySelector('button[aria-haspopup="menu"]')).toBeNull();
+  });
+
   it("explains a preview that cannot be framed and warns when testing the branch head", async () => {
     setup({
       run: null,

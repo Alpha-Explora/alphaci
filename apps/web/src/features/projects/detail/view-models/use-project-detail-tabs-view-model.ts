@@ -30,6 +30,7 @@ import {
   overviewCapabilityFlags,
   overviewTabData,
   resolveVisibleTab,
+  tabFromHash,
   visibleProjectDetailTabs,
   type ProjectDetailTab,
 } from "../model/project-detail-tab-rules";
@@ -121,7 +122,11 @@ export function useProjectDetailTabsViewModel(options: {
   appRole?: AppRole;
 }): ProjectDetailTabsViewModel {
   const { projectId, workflowFilesFallback, appRole } = options;
-  const [selectedTab, setTabState] = useState<ProjectDetailTab>("overview");
+  // A deep link (#qa) picks the first tab. Safe to read window here: the tab
+  // set only mounts client-side, once the project overview has loaded.
+  const [selectedTab, setTabState] = useState<ProjectDetailTab>(
+    () => (typeof window === "undefined" ? null : tabFromHash(window.location.hash)) ?? "overview",
+  );
   const [logFocus, setLogFocus] = useState<DeploymentLogFocus | null>(null);
   const [syncingProjectId, setSyncingProjectId] = useState<string | null>(null);
   const [syncMessage, setSyncMessage] = useState<string | null>(null);

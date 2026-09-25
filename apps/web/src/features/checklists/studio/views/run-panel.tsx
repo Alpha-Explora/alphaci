@@ -11,9 +11,11 @@ import {
 } from "../../model/qa-run-rules";
 import type { QaRun } from "../../model/qa-run-types";
 import type { QaRunViewModel } from "../view-models/use-qa-run-view-model";
+import { useQaExportViewModel, type QaExportViewModel } from "../view-models/use-qa-export-view-model";
 import { useQaItemEditorViewModel } from "../view-models/use-qa-item-editor-view-model";
 import { useQaReopenViewModel } from "../view-models/use-qa-reopen-view-model";
 import { useQaSignoffViewModel } from "../view-models/use-qa-signoff-view-model";
+import { ExportMenu, ExportStatus } from "./export-menu";
 import { RunItem } from "./run-item";
 import { RunSummary, SignoffBanner, SignoffDialog, SignoffFooter } from "./run-signoff";
 
@@ -97,13 +99,20 @@ function StartRun({
   );
 }
 
-function RunHeader({ run }: Readonly<{ run: QaRun }>) {
+/** Who started the run, and the export menu — offered to everyone who can see the run. */
+function RunHeader({ run, exporter }: Readonly<{ run: QaRun; exporter: QaExportViewModel }>) {
   const ago = agoLabel(run.createdAt);
   return (
-    <p className="qa-run-card__started">
-      Started by <strong>@{run.createdBy.login}</strong>
-      {ago ? ` · ${ago}` : ""} · checklist version {run.checklistVersion}
-    </p>
+    <div className="qa-run__head">
+      <div className="qa-run__head-row">
+        <p className="qa-run-card__started">
+          Started by <strong>@{run.createdBy.login}</strong>
+          {ago ? ` · ${ago}` : ""} · checklist version {run.checklistVersion}
+        </p>
+        <ExportMenu vm={exporter} />
+      </div>
+      <ExportStatus vm={exporter} />
+    </div>
   );
 }
 
@@ -113,12 +122,13 @@ function RunBody({ projectId, vm, run }: Readonly<{ projectId: string; vm: QaRun
   const signoff = useQaSignoffViewModel({ projectId, run, onRun: vm.applyRun });
   const reopen = useQaReopenViewModel({ projectId, run, onRun: vm.applyRun });
   const retest = useRequestRetestViewModel({ projectId, onDone: vm.applyRun });
+  const exporter = useQaExportViewModel({ projectId, runId: run.id });
   const items = [...run.items].sort((a, b) => a.position - b.position);
   const open = run.status === "open";
 
   return (
     <div className="qa-run">
-      <RunHeader run={run} />
+      <RunHeader run={run} exporter={exporter} />
       <SignoffBanner run={run} reopen={reopen} />
       <RunSummary run={run} />
       <ol className="qa-run__items">

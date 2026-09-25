@@ -150,3 +150,47 @@ export function SealIcon() {
     </Glyph>
   );
 }
+
+export function ExportIcon() {
+  return (
+    <Glyph size={15}>
+      <path d="M8 2.25v7.5M5 6.75l3 3 3-3" />
+      <path d="M2.75 10.5v1.75c0 .83.67 1.5 1.5 1.5h7.5c.83 0 1.5-.67 1.5-1.5V10.5" />
+    </Glyph>
+  );
+}
+
+export function ChevronDownIcon() {
+  return (
+    <Glyph size={13}>
+      <path d="m4.25 6.25 3.75 3.75 3.75-3.75" />
+    </Glyph>
+  );
+}
+
+export function DocumentIcon() {
+  return (
+    <Glyph>
+      <path d="M9.25 1.75H4.5c-.69 0-1.25.56-1.25 1.25v10c0 .69.56 1.25 1.25 1.25h7c.69 0 1.25-.56 1.25-1.25V5.25L9.25 1.75Z" />
+      <path d="M9.25 1.75v3.5h3.5M5.5 8.5h5M5.5 11h3.5" />
+    </Glyph>
+  );
+}
+
+export function CopyIcon() {
+  return (
+    <Glyph>
+      <rect x="5.25" y="5.25" width="8.5" height="8.5" rx="1.4" />
+      <path d="M10.75 5.25V3.5c0-.69-.56-1.25-1.25-1.25H3.5c-.69 0-1.25.56-1.25 1.25v6c0 .69.56 1.25 1.25 1.25h1.75" />
+    </Glyph>
+  );
+}
+
+export function BracesIcon() {
+  return (
+    <Glyph>
+      <path d="M5.5 2.25c-1.25 0-1.75.6-1.75 1.75v2.2c0 .9-.55 1.55-1.5 1.8.95.25 1.5.9 1.5 1.8V12c0 1.15.5 1.75 1.75 1.75" />
+      <path d="M10.5 2.25c1.25 0 1.75.6 1.75 1.75v2.2c0 .9.55 1.55 1.5 1.8-.95.25-1.5.9-1.5 1.8V12c0 1.15-.5 1.75-1.75 1.75" />
+    </Glyph>
+  );
+}

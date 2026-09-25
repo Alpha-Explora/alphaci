@@ -1,0 +1,225 @@
+/* ── QA Studio → run header → "Export report" ────────────────────────────────
+   A compact menu button beside "Started by…". It owns its own button class
+   rather than .ghost-button: the global buttons are hero-scale and win on
+   source order, which made every earlier compact attempt a specificity fight.
+   Tokens only; the light theme re-tints through tokens.css.
+   ------------------------------------------------------------------------- */
+
+.qa-run__head {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.qa-run__head-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.5rem 0.75rem;
+}
+
+.qa-run__head-row .qa-run-card__started {
+  flex: 1 1 14rem;
+  min-width: 0;
+}
+
+.qa-export {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.qa-export__trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 2rem;
+  padding: 0.3rem 0.55rem 0.3rem 0.65rem;
+  border: 1px solid var(--border-strong);
+  border-radius: 0.55rem;
+  background: var(--layer-2);
+  color: var(--text-secondary);
+  font: inherit;
+  font-size: 0.76rem;
+  font-weight: 650;
+  line-height: 1.2;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    color 140ms ease-out,
+    border-color 140ms ease-out,
+    background-color 140ms ease-out;
+}
+
+.qa-export__trigger:hover,
+.qa-export__trigger[aria-expanded="true"] {
+  border-color: var(--border-brand);
+  background: var(--layer-2-hover);
+  color: var(--text-primary);
+}
+
+.qa-export__trigger:active {
+  transform: translateY(1px);
+}
+
+.qa-export__trigger:focus-visible,
+.qa-export__item:focus-visible,
+.qa-export__dismiss:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
+.qa-export__trigger[aria-busy="true"] {
+  cursor: progress;
+}
+
+/* The chevron turns with the menu, so the open state reads without colour. */
+.qa-export__trigger > .qa-glyph:last-child {
+  color: var(--text-muted);
+  transition: transform 160ms ease-out;
+}
+
+.qa-export__trigger[aria-expanded="true"] > .qa-glyph:last-child {
+  transform: rotate(180deg);
+}
+
+.qa-export__trigger--done,
+.qa-export__trigger--done:hover {
+  border-color: var(--success);
+  background: var(--accent-emerald-light);
+  color: var(--success);
+}
+
+.qa-export__trigger--done > .qa-glyph:last-child {
+  color: inherit;
+}
+
+.qa-export__menu {
+  position: absolute;
+  z-index: 30;
+  top: calc(100% + 0.4rem);
+  right: 0;
+  display: grid;
+  gap: 0.15rem;
+  width: min(19rem, calc(100vw - 2rem));
+  padding: 0.35rem;
+  border: 1px solid var(--border-tile);
+  border-radius: 0.8rem;
+  background: var(--layer-2);
+  box-shadow: var(--shadow-elevated);
+  transform-origin: top right;
+  animation: qa-export-in 150ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes qa-export-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.98);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.qa-export__item {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  gap: 0.65rem;
+  width: 100%;
+  padding: 0.55rem 0.6rem;
+  border: 0;
+  border-radius: 0.55rem;
+  background: transparent;
+  color: var(--text-primary);
+  font: inherit;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.qa-export__item:hover,
+.qa-export__item:focus {
+  background: var(--layer-2-hover);
+  outline: none;
+}
+
+.qa-export__item[aria-disabled="true"] {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.qa-export__item-icon {
+  display: inline-flex;
+  margin-top: 0.1rem;
+  color: var(--brand);
+}
+
+.qa-export__item-text {
+  display: grid;
+  gap: 0.12rem;
+}
+
+.qa-export__item-title {
+  font-size: 0.8rem;
+  font-weight: 650;
+  line-height: 1.25;
+}
+
+.qa-export__item-hint {
+  font-size: 0.7rem;
+  line-height: 1.35;
+  color: var(--text-muted);
+}
+
+.qa-export__error {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 0.55rem 0.7rem;
+  border: 1px solid var(--accent-rose-glow);
+  border-left-width: 3px;
+  border-left-color: var(--danger);
+  border-radius: 0.55rem;
+  background: var(--accent-rose-light);
+  animation: qa-export-in 150ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.qa-export__error p {
+  flex: 1 1 auto;
+  margin: 0;
+  font-size: 0.76rem;
+  line-height: 1.45;
+  color: var(--text-primary);
+}
+
+.qa-export__dismiss {
+  flex-shrink: 0;
+  padding: 0.1rem 0.35rem;
+  border: 0;
+  border-radius: 0.35rem;
+  background: transparent;
+  color: var(--text-secondary);
+  font: inherit;
+  font-size: 0.72rem;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.qa-export__dismiss:hover {
+  color: var(--text-primary);
+  text-decoration: underline;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .qa-export__trigger,
+  .qa-export__trigger > .qa-glyph:last-child {
+    transition: none;
+  }
+
+  .qa-export__menu,
+  .qa-export__error {
+    animation: none;
+  }
+}
