@@ -5,10 +5,11 @@ import { motion } from "framer-motion";
 
 import { projectStatusVariant } from "../../model/projects-rules";
 import type { ProvisionedProject } from "@/features/projects";
+import type { AppRole } from "@/shared/api/contracts";
 import type { ProjectDetailTab } from "../model/project-detail-tab-rules";
 import { useProjectDetailTabsViewModel } from "../view-models/use-project-detail-tabs-view-model";
 import type { ProjectDetailTabsViewModel } from "../view-models/use-project-detail-tabs-view-model";
-import { PROJECT_DETAIL_TAB_GROUPS } from "./project-detail-tab-config";
+import { projectDetailTabGroups } from "./project-detail-tab-config";
 import { ProjectDetailTopTabs } from "./project-detail-top-tabs";
 import { OverviewTab } from "./overview-tab";
 import { WorkflowTab } from "./workflow-tab";
@@ -19,6 +20,7 @@ import { AuditTab } from "./audit-tab";
 import { SettingsTab } from "./settings-tab";
 import { CodeTabPanel } from "./code-tab-panel";
 import { PullsTabPanel } from "./pulls-tab-panel";
+import { ChecklistsTabPanel } from "./checklists-tab-panel";
 
 export { WorkflowStageList } from "./workflow-stage-list";
 
@@ -42,6 +44,8 @@ interface ProjectDetailTabsProps {
    * configuration, and nowhere else.
    */
   dangerZone?: ReactNode;
+  /** The viewer's app role. Decides, with the capability flag, whether Checklists shows. */
+  appRole?: AppRole;
 }
 
 interface ProjectDetailTabPanelProps {
@@ -57,6 +61,7 @@ const TAB_PANELS: Record<
   overview: OverviewTab,
   code: CodeTabPanel,
   pulls: PullsTabPanel,
+  checklists: ChecklistsTabPanel,
   runs: RunsTab,
   workflow: WorkflowTab,
   hosting: HostingTab,
@@ -69,10 +74,12 @@ export function ProjectDetailTabs({
   project,
   external = false,
   dangerZone,
+  appRole,
 }: Readonly<ProjectDetailTabsProps>) {
   const vm = useProjectDetailTabsViewModel({
     projectId: project.id,
     workflowFilesFallback: project.workflowFiles,
+    appRole,
   });
   const TabPanel = TAB_PANELS[vm.tab];
 
@@ -84,7 +91,7 @@ export function ProjectDetailTabs({
       <ProjectDetailHeader project={project} external={external} />
       <div className="project-sections" data-tour="project-detail-tabs">
         <ProjectDetailTopTabs
-          groups={PROJECT_DETAIL_TAB_GROUPS}
+          groups={projectDetailTabGroups(vm.visibleTabs)}
           value={vm.tab}
           onChange={vm.setTab}
           label="Project sections"

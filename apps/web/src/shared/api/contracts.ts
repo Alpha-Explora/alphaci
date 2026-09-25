@@ -196,6 +196,13 @@ export interface CapabilitiesResponse {
     enabled: boolean;
     githubSyncMode: "stub" | "live";
   };
+  /**
+   * Workspace-scoped QA checklists shared to projects (`projects.qa-checklists`).
+   * Gates the team's QA checklists section and the project Checklists tab.
+   */
+  qaChecklists?: {
+    enabled: boolean;
+  };
 }
 
 export interface ProviderConnection {

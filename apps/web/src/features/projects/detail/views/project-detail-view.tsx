@@ -7,6 +7,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import { AppNav } from "@/features/workspace/selection";
 import { FlowBackground } from "@/shared/layout/flow-background";
 import { PipelineLoader } from "@/shared/layout/pipeline-loader";
+import type { AppRole } from "@/shared/api/contracts";
 import { ProjectDetailTabs } from "./project-detail-tabs";
 import { RunsSkeleton } from "@/features/runs/list";
 import { useAuthSession } from "@/features/auth/session";
@@ -142,6 +143,7 @@ function ProjectDetailBody({
   project,
   enforcedOrg,
   dangerZone,
+  appRole,
   onRetry,
 }: Readonly<{
   guest: boolean;
@@ -154,6 +156,7 @@ function ProjectDetailBody({
   >["project"] | null;
   enforcedOrg: string | undefined;
   dangerZone: ReactNode;
+  appRole: AppRole | undefined;
   onRetry: () => void;
 }>) {
   const logoutNotice = logoutMessage ? (
@@ -194,6 +197,7 @@ function ProjectDetailBody({
             project={project}
             external={isExternalRepo(project.repoFullName, enforcedOrg)}
             dangerZone={dangerZone}
+            appRole={appRole}
           />
         ) : null}
       </div>
@@ -299,6 +303,7 @@ export function ProjectDetailView() {
             project={project}
             enforcedOrg={enforcedOrg}
             dangerZone={dangerZone}
+            appRole={session?.appRole}
             onRetry={() => void loadOverview()}
           />
         </div>

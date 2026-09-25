@@ -1,4 +1,5 @@
 import type {
+  AppRole,
   DeploymentTarget,
   DeploymentTargetSyncResponse,
   DetachDeploymentTargetResponse,
@@ -14,12 +15,54 @@ export type ProjectDetailTab =
   | "overview"
   | "code"
   | "pulls"
+  | "checklists"
   | "runs"
   | "workflow"
   | "hosting"
   | "environment"
   | "audit"
   | "settings";
+
+/** Every tab, in strip order. */
+export const PROJECT_DETAIL_TABS: ReadonlyArray<ProjectDetailTab> = [
+  "overview",
+  "code",
+  "pulls",
+  "checklists",
+  "runs",
+  "workflow",
+  "hosting",
+  "environment",
+  "audit",
+  "settings",
+];
+
+/**
+ * The tabs this viewer gets, in strip order.
+ *
+ * Checklists is the first capability-gated tab: it exists only when the
+ * backend reports `qaChecklistsEnabled`, and only for a session with a known
+ * app role — every role can read checklists, but a session the backend has
+ * not assigned a role to has nothing to read them as. Every other tab is
+ * unconditional, exactly as before this rule existed.
+ */
+export function visibleProjectDetailTabs(
+  appRole: AppRole | null | undefined,
+  flags: Readonly<{ qaChecklistsEnabled: boolean }>,
+): ProjectDetailTab[] {
+  const checklistsVisible = flags.qaChecklistsEnabled && Boolean(appRole);
+  return PROJECT_DETAIL_TABS.filter(
+    (tab) => tab !== "checklists" || checklistsVisible,
+  );
+}
+
+/** The selected tab, or Overview when the selection is not (or no longer) visible. */
+export function resolveVisibleTab(
+  tab: ProjectDetailTab,
+  visible: ReadonlyArray<ProjectDetailTab>,
+): ProjectDetailTab {
+  return visible.includes(tab) ? tab : "overview";
+}
 
 export const COVERAGE_THRESHOLD_OPTIONS: Array<{ value: string; label: string }> =
   [

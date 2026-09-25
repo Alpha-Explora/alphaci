@@ -21,6 +21,7 @@ export type CapabilityViewFlags = {
   publicSiteEnabled: boolean;
   hierarchyEnabled: boolean;
   hierarchyGithubSyncMode: "stub" | "live";
+  qaChecklistsEnabled: boolean;
 };
 
 const DISABLED_CAPABILITY_FLAGS: CapabilityViewFlags = {
@@ -43,6 +44,7 @@ const DISABLED_CAPABILITY_FLAGS: CapabilityViewFlags = {
   publicSiteEnabled: false,
   hierarchyEnabled: false,
   hierarchyGithubSyncMode: "stub",
+  qaChecklistsEnabled: false,
 };
 
 function optionalEnabled(flag: { enabled: boolean } | undefined): boolean {
@@ -88,5 +90,6 @@ export function capabilityViewFlags(
     publicSiteEnabled: PUBLIC_SITE_ENABLED,
     hierarchyEnabled: optionalEnabled(capabilities.hierarchy),
     hierarchyGithubSyncMode: hierarchySyncMode(capabilities.hierarchy),
+    qaChecklistsEnabled: optionalEnabled(capabilities.qaChecklists),
   };
 }

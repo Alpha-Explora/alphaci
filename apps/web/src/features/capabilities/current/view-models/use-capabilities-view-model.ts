@@ -42,6 +42,8 @@ export interface CapabilitiesViewModel {
   publicSiteEnabled: boolean;
   hierarchyEnabled: boolean;
   hierarchyGithubSyncMode: "stub" | "live";
+  /** Gates the team QA checklists section and the project Checklists tab. */
+  qaChecklistsEnabled: boolean;
 }
 
 export function useCapabilitiesViewModel(): CapabilitiesViewModel {

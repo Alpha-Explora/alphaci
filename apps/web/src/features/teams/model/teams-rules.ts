@@ -46,3 +46,31 @@ export function toUserError(err: unknown): string {
       return GENERIC_LOAD_ERROR;
   }
 }
+
+/** What a /teams link asks to open. Every field is optional in the URL. */
+export interface TeamsDeepLink {
+  workspaceId: string | null;
+  section: string | null;
+  checklistId: string | null;
+}
+
+export const EMPTY_TEAMS_DEEP_LINK: TeamsDeepLink = {
+  workspaceId: null,
+  section: null,
+  checklistId: null,
+};
+
+/**
+ * Read `?workspace=…&section=…&checklist=…` from a location search string.
+ *
+ * Parsed from a plain string so the page does not need useSearchParams (and
+ * the Suspense boundary it demands) for a value read once on arrival.
+ */
+export function parseTeamsDeepLink(search: string): TeamsDeepLink {
+  const params = new URLSearchParams(search);
+  return {
+    workspaceId: params.get("workspace") || null,
+    section: params.get("section") || null,
+    checklistId: params.get("checklist") || null,
+  };
+}

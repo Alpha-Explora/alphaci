@@ -62,6 +62,7 @@ This table lists every current catalog capability in package order. Status is de
 | `projects.workflow-settings-preview` | `available` | Workflow settings preview and validation. Frontend surface: `/projects/[projectId]`. Configuration: workflowSettingsPreview.enabled. |
 | `projects.workflow-update-pr` | `configuration-gated` | Workflow update pull-request requests. Frontend surface: `/projects/[projectId]`. Configuration: workflowUpdatePr.enabled. |
 | `projects.target-management` | `available` | Project target management composition with Runtime. Frontend surface: `/projects/[projectId]`. Configuration: projectTargetManagement.enabled. |
+| `projects.qa-checklists` | `configuration-gated` | QA checklist definitions and per-project sharing. Frontend surface: `/projects/[projectId]`, `/teams`. Configuration: qaChecklists.enabled. |
 | `pipelines.ci-run-tracking` | `configuration-gated` | CI run report ingestion and tracking. Frontend surface: `/runs`, `/projects/[projectId]`. Configuration: ciRunTracking.enabled. |
 | `pipelines.github-enterprise-server` | `not-applicable` | Not part of this pack composition. |
 

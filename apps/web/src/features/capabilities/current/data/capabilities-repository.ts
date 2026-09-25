@@ -36,5 +36,6 @@ export function disabledCapabilities(): CapabilitiesResponse {
     auditEvents: { enabled: false },
     notifications: { enabled: false },
     hierarchy: { enabled: false, githubSyncMode: "stub" },
+    qaChecklists: { enabled: false },
   };
 }

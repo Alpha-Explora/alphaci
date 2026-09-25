@@ -17,7 +17,7 @@ export { CreateRepositoryDialog } from "./views/create-repository-dialog";
 export { HierarchyPageShell } from "./views/hierarchy-page-shell";
 export { MemberTable } from "./views/member-table";
 export { RepositoryTable } from "./views/repository-table";
-export { SideTabs, type SideTabGroup } from "./views/side-tabs";
+export { SideTabs, type SideTabGroup, type SideTabItem } from "./views/side-tabs";
 export {
   Avatar,
   Breadcrumb,

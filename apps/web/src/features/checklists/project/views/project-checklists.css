@@ -1,0 +1,93 @@
+/* ── Project → Checklists tab ────────────────────────────────────────────────
+   One card per shared checklist, items inside. The cards use the same
+   graphite ladder as the tab's other panels (layer-1 surface, crisp
+   border-layer edge) so the tab does not read as a different product.
+   ------------------------------------------------------------------------- */
+
+.qa-project-panel {
+  display: grid;
+  gap: 1rem;
+}
+
+.qa-project-panel__lede {
+  margin: 0;
+  max-width: 64ch;
+  font-size: 0.84rem;
+  line-height: 1.55;
+  color: var(--text-secondary);
+}
+
+.qa-project-panel__cards {
+  display: grid;
+  gap: 1rem;
+}
+
+.qa-project-card {
+  display: grid;
+  gap: 0.85rem;
+  padding: clamp(1rem, 2vw, 1.35rem);
+  border: 1px solid var(--border-layer);
+  border-radius: 0.9rem;
+  background: var(--layer-1);
+  box-shadow: var(--shadow-soft);
+}
+
+.qa-project-card__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem 1rem;
+  flex-wrap: wrap;
+}
+
+.qa-project-card__titles {
+  display: grid;
+  gap: 0.3rem;
+  min-width: 0;
+  flex: 1 1 16rem;
+}
+
+/* Two classes so a surrounding `.section-card h2`-style rule cannot restyle it. */
+.qa-project-panel .qa-project-card__title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--text-primary);
+  overflow-wrap: anywhere;
+}
+
+.qa-project-card__meta {
+  display: flex;
+  flex-wrap: wrap;
+  margin: 0;
+  font-size: 0.76rem;
+  color: var(--text-muted);
+}
+
+.qa-project-card__meta > span + span::before {
+  content: "·";
+  margin: 0 0.45rem;
+  color: var(--border-tile);
+}
+
+.qa-project-card__desc {
+  margin: 0;
+  max-width: 68ch;
+  font-size: 0.82rem;
+  line-height: 1.55;
+  color: var(--text-secondary);
+  white-space: pre-line;
+}
+
+.qa-project-card__manage {
+  padding: 0.4rem 0.8rem;
+  min-height: 2rem;
+  font-size: 0.78rem;
+  border-radius: 0.55rem;
+  white-space: nowrap;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+}
+

@@ -1,5 +1,6 @@
 import {
   memberCountLabel,
+  parseTeamsDeepLink,
   resolveSelectedTeam,
   toUserError,
 } from "../../../../../src/features/teams/model/teams-rules";
@@ -73,5 +74,22 @@ describe("toUserError", () => {
   it("never leaks the underlying error text", () => {
     const leaky = new ApiError("token abc123 rejected by upstream", 500);
     expect(toUserError(leaky)).not.toMatch(/abc123/);
+  });
+});
+
+describe("parseTeamsDeepLink", () => {
+  it("reads the team, section and checklist a link asks for", () => {
+    expect(
+      parseTeamsDeepLink("?workspace=ws-1&section=qa-checklists&checklist=cl-1"),
+    ).toEqual({ workspaceId: "ws-1", section: "qa-checklists", checklistId: "cl-1" });
+  });
+
+  it("treats missing or empty values as absent", () => {
+    expect(parseTeamsDeepLink("")).toEqual({
+      workspaceId: null,
+      section: null,
+      checklistId: null,
+    });
+    expect(parseTeamsDeepLink("?workspace=").workspaceId).toBeNull();
   });
 });

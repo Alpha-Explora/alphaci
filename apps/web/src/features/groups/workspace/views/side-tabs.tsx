@@ -1,6 +1,8 @@
 "use client";
 
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
+
+import { revealScrollDelta } from "../../model/side-tab-scroll";
 
 /**
  * A vertical, grouped tab rail — the side-panel form of a tab strip.
@@ -60,6 +62,21 @@ export function SideTabs<T extends string>({
   footer?: React.ReactNode;
 }>) {
   const refs = useRef<Record<string, HTMLButtonElement | null>>({});
+  const listRef = useRef<HTMLDivElement | null>(null);
+
+  // Below the tablet breakpoint the rail is a horizontally scrolling row.
+  // Keep the open section in view there; only the strip's own scrollLeft
+  // moves, so the page never jumps. A no-op while the rail is vertical.
+  useEffect(() => {
+    const list = listRef.current;
+    const item = refs.current[value];
+    if (!list || !item || list.scrollWidth <= list.clientWidth) return;
+    const delta = revealScrollDelta(
+      list.getBoundingClientRect(),
+      item.getBoundingClientRect(),
+    );
+    if (delta !== 0) list.scrollLeft += delta;
+  }, [value]);
 
   // Flattened per render: arrows cross group boundaries, so the ring is over
   // every item rather than over each group separately.
@@ -96,6 +113,7 @@ export function SideTabs<T extends string>({
         aria-label={label}
         aria-orientation="vertical"
         onKeyDown={handleKeyDown}
+        ref={listRef}
         className="side-tabs-list"
       >
         {groups.map((group, groupIndex) => (
