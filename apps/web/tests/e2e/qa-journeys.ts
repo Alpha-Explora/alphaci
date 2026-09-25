@@ -1,0 +1,1651 @@
+import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
+
+import type { Browser, BrowserContext, Locator, Page, Route } from 'playwright';
+
+import type {
+  AppRole,
+  AuthMeResponse,
+  CapabilitiesResponse,
+  ProjectOptionsResponse,
+  ProjectOverviewResponse,
+  ProjectPreviewsResponse,
+  ProvisionedProject,
+  WorkflowFileMetadata,
+} from '../../src/shared/api/contracts';
+import type { GroupSummary } from '../../src/features/groups/data/hierarchy-contracts';
+import type { NotificationsResponse } from '../../src/features/notifications/model/notifications-types';
+import type { WorkspacesMeResponse } from '../../src/features/workspace/selection/model/workspace-types';
+import type {
+  ChecklistTargetPersona,
+  ChecklistVerificationType,
+  QaChecklist,
+  QaChecklistItemInput,
+  QaChecklistListResponse,
+} from '../../src/features/checklists/model/checklist-types';
+import type {
+  QaAutomatedResultWire,
+  QaAutomationDispatchWire,
+  QaRunAutomationWire,
+  QaStageAutomationWire,
+} from '../../src/features/checklists/model/qa-automation-types';
+import type { QaReport } from '../../src/features/checklists/model/qa-report-types';
+import type {
+  QaActor,
+  QaCurrentRunResponse,
+  QaDefectSeverity,
+  QaFixRequest,
+  QaReturnedItem,
+  QaReturnedItemsResponse,
+  QaRun,
+  QaRunItem,
+  QaRunItemStatus,
+  QaSignoff,
+  QaVerdict,
+} from '../../src/features/checklists/model/qa-run-types';
+import { json, text } from './support';
+
+/* QA journeys — the QA checklist feature driven end to end, one persona at a
+ * time, against a stateful mock of the backend.
+ *
+ * Run by playwright-e2e.ts when E2E_QA_JOURNEYS=1. Every journey opens its own
+ * browser context with its own QaMockBackend, so a write in one journey never
+ * leaks into the next.
+ *
+ * The mock mirrors the backend contract, not just its shapes:
+ *   - response bodies are typed with the frontend's own wire types (the same
+ *     ones the app parses), and
+ *   - the rules the UI depends on are ported from the backend (the
+ *     alphaci-golden-copy-be repo, src/modules/projects/), with its error
+ *     messages: domain/qa-run-access.rules.ts (who may do what),
+ *     application/qa-runs/qa-runs.service.ts (severity required, verdict
+ *     rules, re-test only from returned_to_dev, rowVersion conflicts),
+ *     application/qa-runs/qa-automation-matching.ts (how an item gets its
+ *     automated result), qa-report.mapper.ts (the report JSON) and
+ *     application/qa-checklists/qa-checklists.service.ts (who manages
+ *     checklists, what sharing accepts).
+ * So a UI change that starts sending something the real server would refuse
+ * fails here as a 4xx instead of passing against a permissive fake.
+ *
+ * A journey fails on any mock reply of 400 or more, any /api/v1 call nothing
+ * mocks (a 404), any uncaught page error and any console error.
+ *
+ * Local run (Windows needs webpack; Next 16 dev refuses its own dev resources
+ * to a 127.0.0.1 origin, so browse via localhost):
+ *   NEXT_PUBLIC_API_BASE_URL=http://localhost:4862/api/v1 npx next dev --webpack --port 4862
+ *   E2E_QA_JOURNEYS=1 E2E_BASE_URL=http://localhost:4862 npm run test:e2e
+ * E2E_QA_ONLY=b,c runs a subset; E2E_BROWSER_EXECUTABLE_PATH points at a local
+ * Chromium; E2E_QA_ARTIFACTS=<dir> saves a screenshot of a failed journey. */
+
+/* ── People, places and time ─────────────────────────────────────────────── */
+
+const MINUTE = 60_000;
+const ago = (ms: number) => new Date(Date.now() - ms).toISOString();
+
+interface Person extends QaActor {
+  name: string;
+  email: string;
+}
+
+const PEOPLE: Record<AppRole, Person> = {
+  admin: { id: 'user-admin', login: 'ria-admin', name: 'Ria Admin', email: 'ria@example.test' },
+  lead: { id: 'user-lead', login: 'tone-lead', name: 'Tone Lead', email: 'tone@example.test' },
+  qa: { id: 'user-qa', login: 'ana-qa', name: 'Ana QA', email: 'ana@example.test' },
+  member: { id: 'user-dev', login: 'miguel-dev', name: 'Miguel Dev', email: 'miguel@example.test' },
+};
+
+const ROLE_BADGES: Record<AppRole, string> = {
+  admin: 'Admin',
+  lead: 'Team lead',
+  qa: 'QA Team',
+  member: 'Developer',
+};
+
+const WORKSPACE = { id: 'ws-checkout', name: 'Checkout squad' };
+const PROJECT_ID = 'project-1';
+const MAIN_SHA = 'a1b2c3d4e5f60718293a4b5c6d7e8f9012345678';
+const PREVIEW_ORIGIN = 'https://storefront-web.vercel.app';
+const VERIFY_RUN_URL = 'https://github.com/tone/storefront-web/actions/runs/11873450921';
+const QUALITY_RUN_URL = 'https://github.com/tone/storefront-web/actions/runs/11873450377';
+
+type TeamProject = ProvisionedProject & { workflowFiles: WorkflowFileMetadata[]; workspaceId: string };
+
+const PROJECTS: TeamProject[] = [
+  {
+    id: PROJECT_ID,
+    repoFullName: 'tone/storefront-web',
+    serviceName: 'storefront-web',
+    templateId: 'fe-nextjs',
+  },
+  {
+    id: 'project-2',
+    repoFullName: 'tone/orders-api',
+    serviceName: 'orders-api',
+    templateId: 'be-nestjs',
+  },
+].map((entry) => ({
+  ...entry,
+  workflowPath: '.github/workflows/00-alphaci-access.yml',
+  workflowFiles: [
+    { stage: 'access', name: 'ALPHACI Access Gate', path: '.github/workflows/00-alphaci-access.yml', gated: true },
+    { stage: 'quality', name: 'ALPHACI Quality', path: '.github/workflows/10-alphaci-quality.yml', gated: true },
+  ],
+  status: 'provisioned' as const,
+  githubCommitSha: MAIN_SHA,
+  githubCommitUrl: `https://github.com/${entry.repoFullName}/commit/${MAIN_SHA}`,
+  failureReason: null,
+  repoUrl: `https://github.com/${entry.repoFullName}`,
+  visibility: 'private',
+  repoShape: 'single',
+  projectTypeId: null,
+  workflowRecipeId: null,
+  projectOptions: {},
+  workspaceId: WORKSPACE.id,
+}));
+
+/* The checklist journey (a) writes, as the lead types it. Journeys (b) and (c)
+ * start from this same checklist already saved and shared. */
+const RELEASE_CHECKLIST = {
+  name: 'Release smoke test',
+  description: 'Run before every promotion to production.',
+  items: [
+    {
+      title: 'Checkout completes with a saved card',
+      description: 'Use the staging Visa ending 4242.',
+      targetPersona: 'qa',
+      verificationType: 'playwright',
+      testIdentifier: 'e2e/checkout.spec.ts › pays with a saved card',
+    },
+    {
+      title: 'Coupon total matches the cart lines',
+      description: null,
+      targetPersona: 'all',
+      verificationType: 'manual',
+      testIdentifier: null,
+    },
+    {
+      title: 'Order confirmation email arrives',
+      description: null,
+      targetPersona: 'all',
+      verificationType: 'manual',
+      testIdentifier: null,
+    },
+  ] satisfies QaChecklistItemInput[],
+};
+
+/* A developer-owned check, added for the developer journey (c) so its studio
+ * has an item a Developer may change beside items only QA may. */
+const DEVELOPER_ITEM: QaChecklistItemInput = {
+  title: 'Cart total unit tests pass',
+  description: null,
+  targetPersona: 'developer',
+  verificationType: 'unit_test',
+  testIdentifier: 'src/cart/cart-total.test.ts',
+};
+
+/** The verify stage failed on exactly the Playwright item's spec file. */
+const VERIFY_FAILURE_NAME = 'e2e/checkout.spec.ts > checkout > pays with a saved card';
+const VERIFY_FAILURE_MESSAGE = 'Expected "Order placed" but the page said "Card declined".';
+
+function defaultAutomation(): Required<QaRunAutomationWire> {
+  return {
+    verify: {
+      stage: 'verify',
+      status: 'failure',
+      runId: 11873450921,
+      runUrl: VERIFY_RUN_URL,
+      reportedAt: ago(12 * MINUTE),
+      tests: {
+        total: 20,
+        passed: 19,
+        failed: 1,
+        failures: [{ name: VERIFY_FAILURE_NAME, message: VERIFY_FAILURE_MESSAGE }],
+        failuresTruncated: false,
+      },
+    },
+    quality: {
+      stage: 'quality',
+      status: 'success',
+      runId: 11873450377,
+      runUrl: QUALITY_RUN_URL,
+      reportedAt: ago(15 * MINUTE),
+      tests: { total: 142, passed: 142, failed: 0, failures: [], failuresTruncated: false },
+    },
+  };
+}
+
+/* ── Backend rules, ported ───────────────────────────────────────────────── */
+
+/* qa-run-access.rules.ts, verbatim in behaviour. */
+function personaAllowsRole(persona: ChecklistTargetPersona, role: AppRole): boolean {
+  if (role === 'admin' || role === 'lead') return true;
+  if (persona === 'all') return true;
+  if (persona === 'developer') return role === 'member';
+  return role === 'qa';
+}
+const canCreateRun = (role: AppRole) => role === 'qa' || role === 'lead' || role === 'admin';
+const canSetReturnedToDev = canCreateRun;
+const canSignOff = canCreateRun;
+const canDispatchAutomation = canCreateRun;
+const canRequestRetest = (role: AppRole) => role === 'member' || role === 'lead' || role === 'admin';
+const canReopenRun = (role: AppRole) => role === 'lead' || role === 'admin';
+/* QaAccessService.canManage: global project creators (admin, lead). */
+const canManageChecklists = (role: AppRole) => role === 'admin' || role === 'lead';
+
+const OPEN_DEFECT_STATUSES: ReadonlyArray<QaRunItemStatus> = ['failed', 'blocked', 'returned_to_dev'];
+
+/* qa-automation-matching.ts. */
+function itemSpecFile(testIdentifier: string): string {
+  const cuts = [testIdentifier.indexOf(' › '), testIdentifier.indexOf(' > ')].filter((i) => i >= 0);
+  return (cuts.length === 0 ? testIdentifier : testIdentifier.slice(0, Math.min(...cuts))).trim();
+}
+function failureSpecFile(name: string): string {
+  const cut = name.indexOf(' > ');
+  return (cut === -1 ? name : name.slice(0, cut)).trim();
+}
+function normalizeSpecPath(path: string): string {
+  const forward = path.replace(/\\/g, '/');
+  return forward.startsWith('./') ? forward.slice(2) : forward;
+}
+function specFilesMatch(a: string, b: string): boolean {
+  return a === b || a.endsWith(`/${b}`) || b.endsWith(`/${a}`);
+}
+function stageLevel(status: QaStageAutomationWire['status']): 'passed' | 'failed' | 'unknown' {
+  if (status === 'running' || status === 'cancelled') return 'unknown';
+  return status === 'success' ? 'passed' : 'failed';
+}
+function matchAutomated(
+  item: { verificationType: ChecklistVerificationType; testIdentifier: string | null },
+  automation: Required<QaRunAutomationWire>,
+): QaAutomatedResultWire | null {
+  if (item.verificationType === 'manual') return null;
+  const source = item.verificationType;
+  const stage = source === 'unit_test' ? 'quality' : 'verify';
+  const report = stage === 'quality' ? automation.quality : automation.verify;
+  const base = {
+    source,
+    stage,
+    runId: report?.runId ?? null,
+    runUrl: report?.runUrl ?? null,
+    reportedAt: report?.reportedAt ?? null,
+  } as const;
+  const none = { matchedSpec: null, failure: null };
+  if (!report) return { ...base, ...none, status: 'not_run', scope: 'stage' };
+  if (report.status === 'running' || report.status === 'cancelled') {
+    return { ...base, ...none, status: 'unknown', scope: 'stage' };
+  }
+  const tests = report.tests;
+  if (source !== 'playwright' || !tests || tests.total === 0) {
+    return { ...base, ...none, status: stageLevel(report.status), scope: 'stage' };
+  }
+  if (!item.testIdentifier) {
+    return { ...base, ...none, status: tests.failed === 0 ? 'passed' : 'failed', scope: 'stage' };
+  }
+  const itemFile = normalizeSpecPath(itemSpecFile(item.testIdentifier));
+  const match = (tests.failures ?? []).find((failure) =>
+    specFilesMatch(normalizeSpecPath(failureSpecFile(failure.name ?? '')), itemFile),
+  );
+  if (match) {
+    return { ...base, status: 'failed', scope: 'spec', matchedSpec: itemFile, failure: { name: match.name, message: match.message } };
+  }
+  if (tests.failed === 0) return { ...base, ...none, status: 'passed', scope: 'suite' };
+  if (!tests.failuresTruncated) return { ...base, status: 'passed', scope: 'spec', matchedSpec: itemFile, failure: null };
+  return { ...base, ...none, status: 'unknown', scope: 'suite' };
+}
+
+/* ── The stateful mock backend ───────────────────────────────────────────── */
+
+class HttpError extends Error {
+  constructor(
+    readonly status: number,
+    readonly body: unknown,
+  ) {
+    super(`HTTP ${status}`);
+  }
+}
+
+const REASONS: Record<number, string> = { 400: 'Bad Request', 403: 'Forbidden', 404: 'Not Found', 409: 'Conflict' };
+
+/** A Nest HttpException with a string message, as the client receives it. */
+function nestError(status: number, message: string): HttpError {
+  return new HttpError(status, { statusCode: status, message, error: REASONS[status] });
+}
+
+interface ItemRow {
+  id: string;
+  position: number;
+  title: string;
+  description: string | null;
+  targetPersona: ChecklistTargetPersona;
+  verificationType: ChecklistVerificationType;
+  testIdentifier: string | null;
+  status: QaRunItemStatus;
+  notes: string | null;
+  defectSeverity: QaDefectSeverity | null;
+  reproductionSteps: string | null;
+  fixRequest: QaFixRequest | null;
+  verifiedBy: QaActor | null;
+  verifiedAt: string | null;
+  rowVersion: number;
+  updatedAt: number;
+}
+
+interface RunRow {
+  id: string;
+  checklistId: string;
+  checklistName: string;
+  checklistVersion: number;
+  branch: string;
+  commitSha: string;
+  status: 'open' | 'signed_off';
+  createdBy: QaActor;
+  createdAt: string;
+  updatedAt: string;
+  items: ItemRow[];
+  signoff: QaSignoff | null;
+  /** The run exactly as it was signed, as the report serves it. */
+  frozen: QaRun | null;
+}
+
+interface RecordedCall {
+  method: string;
+  path: string;
+  query: URLSearchParams;
+  body: unknown;
+  accept: string | null;
+  status: number;
+  /** When the mock answered, for "the app has stopped asking". */
+  at: number;
+}
+
+interface ApiRequest {
+  method: string;
+  path: string;
+  query: URLSearchParams;
+  body: Record<string, unknown>;
+}
+
+interface ApiReply {
+  status?: number;
+  body: unknown;
+  /** Set for a non-JSON reply (the Markdown report). */
+  contentType?: string;
+}
+
+type Handler = (match: RegExpExecArray, request: ApiRequest) => ApiReply;
+
+class QaMockBackend {
+  readonly calls: RecordedCall[] = [];
+  /** Every reply of 400 or more: each fails the journey (the UI must never send what the server refuses). */
+  readonly refusals: string[] = [];
+  readonly checklists: QaChecklist[] = [];
+  readonly runs: RunRow[] = [];
+  automation: Required<QaRunAutomationWire> = defaultAutomation();
+  private seq = 0;
+  private readonly routes: Array<[string, RegExp, Handler]>;
+
+  constructor(
+    readonly role: AppRole,
+    private readonly qaCapability: 'enabled' | 'absent' = 'enabled',
+  ) {
+    this.routes = this.buildRoutes();
+  }
+
+  get actor(): QaActor {
+    const person = PEOPLE[this.role];
+    return { id: person.id, login: person.login };
+  }
+
+  private nextId(prefix: string): string {
+    this.seq += 1;
+    return `${prefix}-${this.seq}`;
+  }
+
+  callsTo(method: string, pathPattern: RegExp): RecordedCall[] {
+    return this.calls.filter((call) => call.method === method && pathPattern.test(call.path));
+  }
+
+  /* ── Seeding ── */
+
+  seedChecklist(input: { name: string; description: string | null; items: QaChecklistItemInput[] }, sharedProjectIds: string[]): QaChecklist {
+    const at = ago(3 * 24 * 60 * MINUTE);
+    const checklist: QaChecklist = {
+      id: this.nextId('checklist'),
+      workspaceId: WORKSPACE.id,
+      name: input.name,
+      description: input.description,
+      version: 1,
+      archivedAt: null,
+      createdBy: PEOPLE.lead.id,
+      createdAt: at,
+      updatedAt: at,
+      items: this.toChecklistItems(input.items),
+      sharedProjectIds,
+    };
+    this.checklists.push(checklist);
+    return checklist;
+  }
+
+  /** As the repository stores them: a position per submitted index, absent optionals as null. */
+  private toChecklistItems(items: QaChecklistItemInput[]): QaChecklist['items'] {
+    return items.map((item, index) => ({
+      id: this.nextId('checklist-item'),
+      position: index,
+      title: item.title,
+      description: item.description ?? null,
+      targetPersona: item.targetPersona,
+      verificationType: item.verificationType,
+      testIdentifier: item.testIdentifier ?? null,
+    }));
+  }
+
+  seedRun(checklist: QaChecklist, createdBy: QaActor): RunRow {
+    const run = this.createRunRow(checklist, 'main', createdBy);
+    this.runs.push(run);
+    return run;
+  }
+
+  /** Record what QA did to an item, the way PATCH would have left it. */
+  seedItem(run: RunRow, position: number, patch: Partial<ItemRow>) {
+    const item = run.items.find((entry) => entry.position === position);
+    assert.ok(item, `run ${run.id} has no item at position ${position}`);
+    Object.assign(item, { rowVersion: item.rowVersion + 1 }, patch);
+  }
+
+  /* ── Routing ── */
+
+  async handle(route: Route) {
+    const request = route.request();
+    const url = new URL(request.url());
+    const path = url.pathname.replace(/^\/api\/v1/, '');
+    let body: Record<string, unknown> = {};
+    try {
+      body = (request.postDataJSON() as Record<string, unknown> | null) ?? {};
+    } catch {
+      body = {};
+    }
+    const apiRequest: ApiRequest = { method: request.method(), path, query: url.searchParams, body };
+    const reply = this.dispatch(apiRequest);
+    const status = reply.status ?? 200;
+    this.calls.push({
+      method: apiRequest.method,
+      path,
+      query: url.searchParams,
+      body,
+      accept: (await request.allHeaders()).accept ?? null,
+      status,
+      at: Date.now(),
+    });
+    if (status >= 400) {
+      this.refusals.push(`${status} ${apiRequest.method} ${path}${url.search} ${JSON.stringify(reply.body)}`);
+    }
+    if (reply.contentType) return text(route, status, String(reply.body), reply.contentType);
+    return json(route, reply.body, status);
+  }
+
+  private dispatch(request: ApiRequest): ApiReply {
+    for (const [method, pattern, handler] of this.routes) {
+      if (method !== request.method) continue;
+      const match = pattern.exec(request.path);
+      if (!match) continue;
+      try {
+        return handler(match, request);
+      } catch (error) {
+        if (error instanceof HttpError) return { status: error.status, body: error.body };
+        throw error;
+      }
+    }
+    return { status: 404, body: `No E2E fixture for ${request.method} ${request.path}`, contentType: 'text/plain' };
+  }
+
+  private buildRoutes(): Array<[string, RegExp, Handler]> {
+    const P = '([^/]+)';
+    return [
+      ['GET', /^\/auth\/me$/, () => ({ body: this.authMe() })],
+      ['GET', /^\/capabilities$/, () => ({ body: this.capabilities() })],
+      ['GET', /^\/workspaces\/me$/, () => ({ body: this.workspacesMe() })],
+      ['GET', /^\/groups$/, () => ({ body: [this.group()] })],
+      ['GET', /^\/notifications$/, () => ({ body: { enabled: true, unreadCount: 0, items: [] } satisfies NotificationsResponse })],
+      // The project page reads only enforcedOrg (to label repositories outside it "External").
+      ['GET', /^\/catalog\/project-options$/, () => ({ body: this.projectOptions() })],
+      ['GET', /^\/projects$/, (_m, req) => ({ body: { items: this.projectsFor(req.query.get('workspaceId')) } })],
+      ['GET', new RegExp(`^/projects/${P}/overview$`), (m) => ({ body: this.overview(m[1]) })],
+      ['GET', new RegExp(`^/projects/${P}/previews$`), (m) => ({ body: this.previews(m[1]) })],
+      // Checklists
+      ['GET', new RegExp(`^/workspaces/${P}/qa-checklists$`), (m, req) => ({ body: this.listWorkspaceChecklists(m[1], req.query) })],
+      ['POST', new RegExp(`^/workspaces/${P}/qa-checklists$`), (m, req) => ({ status: 201, body: this.createChecklist(m[1], req.body) })],
+      ['GET', new RegExp(`^/qa-checklists/${P}$`), (m) => ({ body: this.requireChecklist(m[1]) })],
+      ['PUT', new RegExp(`^/qa-checklists/${P}/projects$`), (m, req) => ({ body: this.shareChecklist(m[1], req.body) })],
+      ['GET', new RegExp(`^/projects/${P}/qa-checklists$`), (m) => ({ body: this.listProjectChecklists(m[1]) })],
+      // Runs
+      ['GET', new RegExp(`^/projects/${P}/qa-runs/current$`), (_m, req) => ({ body: this.currentRun(req.query) })],
+      ['POST', new RegExp(`^/projects/${P}/qa-runs$`), (_m, req) => this.createRun(req.body)],
+      ['GET', new RegExp(`^/projects/${P}/qa-runs/${P}$`), (m) => ({ body: this.assembleRun(this.requireRun(m[2])) })],
+      ['PATCH', new RegExp(`^/projects/${P}/qa-runs/${P}/items/${P}$`), (m, req) => ({ body: this.updateItem(m[2], m[3], req.body) })],
+      ['POST', new RegExp(`^/projects/${P}/qa-runs/${P}/items/${P}/request-retest$`), (m, req) => ({ body: this.requestRetest(m[2], m[3], req.body) })],
+      ['POST', new RegExp(`^/projects/${P}/qa-runs/${P}/signoff$`), (m, req) => ({ body: this.signoff(m[2], req.body) })],
+      ['GET', new RegExp(`^/projects/${P}/qa-runs/${P}/report$`), (m, req) => this.report(m[2], req.query.get('format'))],
+      ['POST', new RegExp(`^/projects/${P}/qa-runs/${P}/automation/dispatch$`), (m) => ({ status: 202, body: this.dispatchAutomation(m[2]) })],
+      ['GET', new RegExp(`^/projects/${P}/qa-returned-items$`), () => ({ body: { items: this.returnedItems() } satisfies QaReturnedItemsResponse })],
+    ];
+  }
+
+  /* ── Session, capabilities, workspace ── */
+
+  private authMe(): AuthMeResponse {
+    const person = PEOPLE[this.role];
+    return {
+      authenticated: true,
+      user: { id: person.id, login: person.login, name: person.name, email: person.email, onboardingCompleted: true },
+      subscription: { plan: 'pro', status: 'active', provider: 'manual', updatedAt: ago(90 * 24 * 60 * MINUTE) },
+      platformRole: null,
+      appRole: this.role,
+      appRoleSource: 'github_team',
+    };
+  }
+
+  /** The backend's CapabilitiesController shape for an enterprise deployment. */
+  private capabilities(): CapabilitiesResponse {
+    const capabilities: CapabilitiesResponse = {
+      edition: 'enterprise',
+      capabilityKeys: [],
+      clientComposition: { enabled: false, clientId: null, displayName: null, edition: null, disabledCapabilities: [] },
+      envProvisioning: { enabled: true, providers: ['render', 'vercel'], environments: ['test', 'uat', 'production'], modes: ['flowci_managed'] },
+      projectSyncSnapshots: { enabled: true, liveGithubEnabled: false, liveProvidersEnabled: false, mode: 'local_snapshot' },
+      workflowSettingsPreview: { enabled: true },
+      workflowUpdatePr: { enabled: true },
+      qaChecklists: { enabled: true },
+      projectTargetManagement: { enabled: true },
+      ciRunTracking: { enabled: true, liveGithubEnabled: false, mode: 'local_mock' },
+      deploymentHistory: { enabled: true, liveProvidersEnabled: true, mode: 'local_mock' },
+      previewDeployments: { enabled: true, providers: ['vercel'] },
+      driftDetection: { enabled: true, liveProviderChecksEnabled: false, mode: 'local_snapshot' },
+      driftRepair: { enabled: true, liveRepairEnabled: false, mode: 'local_safe' },
+      usageQuotas: { enabled: true },
+      workspaces: { enabled: true },
+      auditEvents: { enabled: true },
+      notifications: { enabled: true },
+      hierarchy: { enabled: true, githubSyncMode: 'stub' },
+    };
+    if (this.qaCapability === 'absent') {
+      // An older or differently composed backend that never sends the field.
+      // The app must read that as "off" — not as "on", and not crash.
+      delete capabilities.qaChecklists;
+    }
+    return capabilities;
+  }
+
+  private workspacesMe(): WorkspacesMeResponse {
+    return {
+      enabled: true,
+      items: [{ id: WORKSPACE.id, name: WORKSPACE.name, kind: 'team', role: this.role === 'lead' || this.role === 'admin' ? 'admin' : 'member' }],
+    };
+  }
+
+  private group(): GroupSummary {
+    return {
+      id: WORKSPACE.id,
+      name: WORKSPACE.name,
+      description: 'Storefront checkout and payments.',
+      businessUnit: null,
+      status: 'active',
+      role: this.role === 'lead' || this.role === 'admin' ? 'admin' : 'member',
+      memberStatus: 'active',
+      memberCount: 3,
+      systemCount: 0,
+      createdAt: ago(120 * 24 * 60 * MINUTE),
+      archivedAt: null,
+    };
+  }
+
+  private projectOptions(): ProjectOptionsResponse {
+    return { repoShapes: [], projectTypes: [], recipes: [], nodeVersions: [], enforcedOrg: 'tone' };
+  }
+
+  private projectsFor(workspaceId: string | null): ProvisionedProject[] {
+    return PROJECTS.filter((project) => !workspaceId || project.workspaceId === workspaceId);
+  }
+
+  private requireProject(projectId: string): TeamProject {
+    const project = PROJECTS.find((entry) => entry.id === projectId);
+    if (!project) throw nestError(404, 'Project not found');
+    return project;
+  }
+
+  private overview(projectId: string): ProjectOverviewResponse {
+    const project = this.requireProject(projectId);
+    return {
+      project: { ...project, createdAt: ago(60 * 24 * 60 * MINUTE), updatedAt: ago(24 * 60 * MINUTE) },
+      workflow: { path: project.workflowPath, files: project.workflowFiles, stageCount: project.workflowFiles.length, history: [] },
+      deploymentTargets: { items: [], count: 0 },
+      environment: { items: [], count: 0, failedCount: 0 },
+      ciAuth: { status: 'active', tokenPresent: true, tokenPrefix: 'aci_live', createdAt: ago(60 * 24 * 60 * MINUTE), updatedAt: ago(60 * 24 * 60 * MINUTE), revokedAt: null },
+      health: { summary: 'ok', checks: [] },
+      syncSnapshot: { enabled: false, mode: 'local_snapshot', latest: null },
+      capabilities: { envProvisioning: true, workflowSettings: false, syncSnapshots: false, ciRunTracking: false, deploymentHistory: false, driftDetection: false },
+      hierarchyRepositoryId: null,
+    };
+  }
+
+  private previews(projectId: string): ProjectPreviewsResponse {
+    const project = this.requireProject(projectId);
+    if (project.id !== PROJECT_ID) return { enabled: true, liveProvidersEnabled: true, providerError: null, branches: [] };
+    return {
+      enabled: true,
+      liveProvidersEnabled: true,
+      providerError: null,
+      branches: [
+        {
+          branch: 'main',
+          isProduction: true,
+          deploymentId: 'dpl-main',
+          targetId: 'target-web',
+          targetName: 'storefront-web',
+          provider: 'vercel',
+          status: 'ready',
+          commitSha: MAIN_SHA,
+          commitMessage: 'fix(cart): apply coupons per line',
+          pullRequestNumber: null,
+          createdBy: PEOPLE.member.login,
+          previewUrl: PREVIEW_ORIGIN,
+          deploymentUrl: null,
+          inspectorUrl: null,
+          createdAt: ago(40 * MINUTE),
+          readyAt: ago(38 * MINUTE),
+          embeddable: true,
+          embedBlockedReason: null,
+          slot: 'frontend',
+          surface: 'page',
+          providerLabel: 'Vercel',
+          logsAvailable: false,
+          logWindow: null,
+        },
+      ],
+    };
+  }
+
+  /* ── Checklists (qa-checklists.service.ts) ── */
+
+  private requireChecklist(checklistId: string): QaChecklist {
+    const checklist = this.checklists.find((entry) => entry.id === checklistId);
+    if (!checklist) throw nestError(404, 'Checklist not found');
+    return checklist;
+  }
+
+  private assertManage() {
+    if (!canManageChecklists(this.role)) {
+      throw nestError(403, 'Only a workspace lead or admin can manage QA checklists');
+    }
+  }
+
+  private listWorkspaceChecklists(workspaceId: string, query: URLSearchParams): QaChecklistListResponse {
+    if (workspaceId !== WORKSPACE.id) throw nestError(404, 'Checklist not found');
+    const includeArchived = query.get('includeArchived') === 'true';
+    return {
+      items: this.checklists.filter((entry) => includeArchived || entry.archivedAt === null),
+      canManage: canManageChecklists(this.role),
+    };
+  }
+
+  private createChecklist(workspaceId: string, body: Record<string, unknown>): QaChecklist {
+    if (workspaceId !== WORKSPACE.id) throw nestError(404, 'Checklist not found');
+    this.assertManage();
+    const name = typeof body.name === 'string' ? body.name.trim() : '';
+    if (!name) throw nestError(400, 'name must not be blank');
+    if (this.checklists.some((entry) => entry.archivedAt === null && entry.name === name)) {
+      throw nestError(409, `A checklist named "${name}" already exists in this workspace.`);
+    }
+    const now = new Date().toISOString();
+    const items = (body.items as QaChecklistItemInput[] | undefined) ?? [];
+    const checklist: QaChecklist = {
+      id: this.nextId('checklist'),
+      workspaceId,
+      name,
+      description: (body.description as string | null | undefined) ?? null,
+      version: 1,
+      archivedAt: null,
+      createdBy: this.actor.id,
+      createdAt: now,
+      updatedAt: now,
+      items: this.toChecklistItems(items),
+      sharedProjectIds: [],
+    };
+    this.checklists.push(checklist);
+    return checklist;
+  }
+
+  private shareChecklist(checklistId: string, body: Record<string, unknown>): QaChecklist {
+    const checklist = this.requireChecklist(checklistId);
+    this.assertManage();
+    if (checklist.archivedAt) throw nestError(409, 'Checklist is archived');
+    const requested = [...new Set((body.projectIds as string[] | undefined) ?? [])];
+    const rejected = requested.filter((id) => !PROJECTS.some((p) => p.id === id && p.workspaceId === checklist.workspaceId));
+    if (rejected.length > 0) {
+      throw nestError(400, `These project ids are not in this checklist's workspace: ${rejected.join(', ')}`);
+    }
+    // Sharing does not bump the checklist version: only content edits do.
+    checklist.sharedProjectIds = requested;
+    return checklist;
+  }
+
+  private listProjectChecklists(projectId: string): QaChecklistListResponse {
+    const project = this.requireProject(projectId);
+    return {
+      items: this.checklists
+        .filter((entry) => entry.archivedAt === null && entry.sharedProjectIds.includes(project.id))
+        .sort((a, b) => b.createdAt.localeCompare(a.createdAt)),
+      canManage: Boolean(project.workspaceId) && canManageChecklists(this.role),
+    };
+  }
+
+  /* ── Runs (qa-runs.service.ts) ── */
+
+  private createRunRow(checklist: QaChecklist, branch: string, createdBy: QaActor): RunRow {
+    const id = this.nextId('run');
+    const now = new Date().toISOString();
+    return {
+      id,
+      checklistId: checklist.id,
+      checklistName: checklist.name,
+      checklistVersion: checklist.version,
+      branch,
+      commitSha: MAIN_SHA,
+      status: 'open',
+      createdBy,
+      createdAt: now,
+      updatedAt: now,
+      signoff: null,
+      frozen: null,
+      items: checklist.items.map((item) => ({
+        ...item,
+        id: this.nextId('run-item'),
+        status: 'pending',
+        notes: null,
+        defectSeverity: null,
+        reproductionSteps: null,
+        fixRequest: null,
+        verifiedBy: null,
+        verifiedAt: null,
+        rowVersion: 1,
+        updatedAt: Date.now(),
+      })),
+    };
+  }
+
+  private requireRun(runId: string): RunRow {
+    const run = this.runs.find((entry) => entry.id === runId);
+    if (!run) throw nestError(404, 'QA run not found');
+    return run;
+  }
+
+  private requireOpen(run: RunRow) {
+    if (run.status === 'signed_off') throw nestError(409, 'This run is signed off. Reopen it to make changes.');
+  }
+
+  private requireHostedBranch(branch: string) {
+    if (branch !== 'uat' && branch !== 'main') {
+      throw nestError(400, 'QA verification runs are only supported on hosted branches (uat, main).');
+    }
+  }
+
+  /** Commit resolution: the storefront's main is deployed at MAIN_SHA; nothing else resolves. */
+  private resolveCommit(branch: string): { commitSha: string; commitSource: 'deployment' } | null {
+    return branch === 'main' ? { commitSha: MAIN_SHA, commitSource: 'deployment' } : null;
+  }
+
+  private currentRun(query: URLSearchParams): QaCurrentRunResponse {
+    const branch = (query.get('branch') ?? '').trim();
+    this.requireHostedBranch(branch);
+    const resolved = this.resolveCommit(branch);
+    if (!resolved) return { commitSha: null, commitSource: null, run: null };
+    const checklistId = query.get('checklistId')?.trim();
+    const run = checklistId
+      ? this.runs.find((entry) => entry.checklistId === checklistId && entry.branch === branch && entry.commitSha === resolved.commitSha)
+      : undefined;
+    return { ...resolved, run: run ? this.assembleRun(run) : null };
+  }
+
+  private createRun(body: Record<string, unknown>): ApiReply {
+    if (!canCreateRun(this.role)) throw nestError(403, 'Only QA, a lead, or an admin may start a verification run.');
+    const branch = String(body.branch ?? '').trim();
+    this.requireHostedBranch(branch);
+    const checklist = this.checklists.find(
+      (entry) => entry.id === body.checklistId && entry.archivedAt === null && entry.sharedProjectIds.includes(PROJECT_ID),
+    );
+    if (!checklist) throw nestError(409, 'This checklist is not shared to this project, or is archived.');
+    const resolved = this.resolveCommit(branch);
+    if (!resolved) throw nestError(409, `No deployed or pushed commit was found for ${branch}.`);
+    const existing = this.runs.find(
+      (entry) => entry.checklistId === checklist.id && entry.branch === branch && entry.commitSha === resolved.commitSha,
+    );
+    if (existing) return { status: 200, body: this.assembleRun(existing) };
+    const run = this.createRunRow(checklist, branch, this.actor);
+    this.runs.push(run);
+    return { status: 201, body: this.assembleRun(run) };
+  }
+
+  private updateItem(runId: string, itemId: string, body: Record<string, unknown>): QaRun {
+    const run = this.requireRun(runId);
+    const item = run.items.find((entry) => entry.id === itemId);
+    if (!item) throw nestError(404, 'QA run item not found');
+    this.requireOpen(run);
+    if (!personaAllowsRole(item.targetPersona, this.role)) throw nestError(403, 'You are not allowed to update this item.');
+    const status = body.status as QaRunItemStatus | undefined;
+    if (status === 'returned_to_dev' && !canSetReturnedToDev(this.role)) {
+      throw nestError(403, 'Only QA, a lead, or an admin may return an item to development.');
+    }
+    const severity = body.defectSeverity !== undefined ? (body.defectSeverity as QaDefectSeverity | null) : item.defectSeverity;
+    if ((status === 'failed' || status === 'returned_to_dev') && !severity) {
+      throw nestError(400, 'A defect severity is required to mark this item failed or returned to dev.');
+    }
+    if (body.expectedRowVersion !== item.rowVersion) {
+      throw new HttpError(409, {
+        code: 'QA_ITEM_STALE',
+        message: `This item has changed (expected row version ${String(body.expectedRowVersion)}); reload and try again.`,
+      });
+    }
+    if (status !== undefined) {
+      item.status = status;
+      const cleared = status === 'pending' || status === 'in_progress';
+      item.verifiedBy = cleared ? null : this.actor;
+      item.verifiedAt = cleared ? null : new Date().toISOString();
+      // Returning an item opens a new fix round; an earlier "fixed" no longer applies.
+      if (status === 'returned_to_dev') item.fixRequest = null;
+    }
+    if (body.notes !== undefined) item.notes = body.notes as string | null;
+    if (body.defectSeverity !== undefined) item.defectSeverity = body.defectSeverity as QaDefectSeverity | null;
+    if (body.reproductionSteps !== undefined) item.reproductionSteps = body.reproductionSteps as string | null;
+    item.rowVersion += 1;
+    item.updatedAt = Date.now();
+    run.updatedAt = new Date().toISOString();
+    return this.assembleRun(run);
+  }
+
+  private requestRetest(runId: string, itemId: string, body: Record<string, unknown>): QaRun {
+    const run = this.requireRun(runId);
+    const item = run.items.find((entry) => entry.id === itemId);
+    if (!item) throw nestError(404, 'QA run item not found');
+    this.requireOpen(run);
+    if (!canRequestRetest(this.role)) throw nestError(403, 'Only a developer, lead, or admin may request a retest.');
+    if (item.status !== 'returned_to_dev') throw nestError(409, 'This item is not currently returned to dev.');
+    item.status = 'pending';
+    item.fixRequest = { requestedAt: new Date().toISOString(), requestedBy: this.actor, note: (body.note as string | undefined) ?? null };
+    item.verifiedBy = null;
+    item.verifiedAt = null;
+    item.rowVersion += 1;
+    item.updatedAt = Date.now();
+    return this.assembleRun(run);
+  }
+
+  private signoff(runId: string, body: Record<string, unknown>): QaRun {
+    const run = this.requireRun(runId);
+    this.requireOpen(run);
+    if (!canSignOff(this.role)) throw nestError(403, 'Only QA, a lead, or an admin may sign off a run.');
+    const verdict = body.verdict as QaVerdict;
+    if (verdict === 'APPROVED') {
+      const notPassed = run.items.filter((item) => item.status !== 'passed').length;
+      if (notPassed > 0) {
+        throw nestError(409, `${notPassed} item(s) are not yet passed; an APPROVED sign-off requires every item to be passed.`);
+      }
+    }
+    if (verdict === 'CONDITIONAL') {
+      if (run.items.some((item) => item.status === 'pending' || item.status === 'in_progress')) {
+        throw nestError(409, 'A CONDITIONAL sign-off requires no item to remain pending or in progress.');
+      }
+      if (typeof body.conditions !== 'string' || !body.conditions.trim()) {
+        throw nestError(400, 'conditions is required for a CONDITIONAL verdict.');
+      }
+    }
+    const now = new Date().toISOString();
+    run.signoff = {
+      id: this.nextId('signoff'),
+      verdict,
+      summary: (body.summary as string | undefined) ?? null,
+      conditions: (body.conditions as string | undefined) ?? null,
+      signedBy: this.actor,
+      signedAt: now,
+    };
+    run.status = 'signed_off';
+    run.updatedAt = now;
+    run.frozen = this.assembleRun(run);
+    return this.assembleRun(run);
+  }
+
+  private dispatchAutomation(runId: string): QaAutomationDispatchWire {
+    const run = this.requireRun(runId);
+    if (!canDispatchAutomation(this.role)) throw nestError(403, 'Only QA, a lead, or an admin may run Playwright for this run.');
+    this.requireOpen(run);
+    return { workflowFile: '40-alphaci-verify.yml', ref: run.branch, headSha: run.commitSha, targetsRunCommit: true };
+  }
+
+  private returnedItems(): QaReturnedItem[] {
+    return this.runs
+      .filter((run) => run.status === 'open')
+      .flatMap((run) => run.items.filter((item) => item.status === 'returned_to_dev').map((item) => ({ run, item })))
+      .sort((a, b) => b.item.updatedAt - a.item.updatedAt)
+      .map(({ run, item }) => ({
+        runId: run.id,
+        branch: run.branch,
+        commitSha: run.commitSha,
+        checklistName: run.checklistName,
+        item: this.toRunItem(run, item),
+      }));
+  }
+
+  /* ── Assembly (row → contract) ── */
+
+  private toRunItem(run: RunRow, row: ItemRow): QaRunItem {
+    const { updatedAt: _updatedAt, ...fields } = row;
+    return {
+      ...fields,
+      runId: run.id,
+      canUpdate: run.status === 'open' && personaAllowsRole(row.targetPersona, this.role),
+      previous: null,
+      automated: matchAutomated(row, this.automation),
+    };
+  }
+
+  private summary(items: ItemRow[]) {
+    const byStatus: Record<QaRunItemStatus, number> = { pending: 0, in_progress: 0, passed: 0, failed: 0, blocked: 0, returned_to_dev: 0 };
+    let blockers = 0;
+    for (const item of items) {
+      byStatus[item.status] += 1;
+      if (OPEN_DEFECT_STATUSES.includes(item.status) && item.defectSeverity === 'blocker') blockers += 1;
+    }
+    const openDefects = OPEN_DEFECT_STATUSES.reduce((sum, status) => sum + byStatus[status], 0);
+    return { total: items.length, byStatus, openDefects, blockers };
+  }
+
+  assembleRun(run: RunRow): QaRun {
+    const open = run.status === 'open';
+    return {
+      id: run.id,
+      projectId: PROJECT_ID,
+      checklistId: run.checklistId,
+      checklistName: run.checklistName,
+      checklistVersion: run.checklistVersion,
+      branch: run.branch,
+      commitSha: run.commitSha,
+      commitSource: 'deployment',
+      status: run.status,
+      createdBy: run.createdBy,
+      createdAt: run.createdAt,
+      updatedAt: run.updatedAt,
+      summary: this.summary(run.items),
+      signoff: run.signoff,
+      items: [...run.items].sort((a, b) => a.position - b.position).map((item) => this.toRunItem(run, item)),
+      permissions: {
+        canUpdateItems: open && run.items.some((item) => personaAllowsRole(item.targetPersona, this.role)),
+        canReturnToDev: open && canSetReturnedToDev(this.role),
+        canRequestRetest: open && canRequestRetest(this.role),
+        canSignOff: open && canSignOff(this.role),
+        canReopen: !open && canReopenRun(this.role),
+      },
+      automation: this.automation,
+    };
+  }
+
+  /** qa-report.service.ts + qa-report.mapper.ts: a signed-off run reports its frozen copy. */
+  buildReport(runId: string): QaReport {
+    const row = this.requireRun(runId);
+    const run = row.frozen ?? this.assembleRun(row);
+    const { byStatus, total, openDefects, blockers } = run.summary;
+    const rank = (severity: QaDefectSeverity | null) => (severity === null ? 3 : { blocker: 0, major: 1, minor: 2 }[severity]);
+    return {
+      schemaVersion: 'qa-report/v1',
+      generatedAt: new Date().toISOString(),
+      frozen: row.frozen !== null,
+      project: { id: PROJECT_ID, repoFullName: PROJECTS[0].repoFullName, name: PROJECTS[0].serviceName },
+      run,
+      summary: {
+        totalItems: total,
+        passed: byStatus.passed,
+        failed: byStatus.failed,
+        blocked: byStatus.blocked,
+        returnedToDev: byStatus.returned_to_dev,
+        pending: byStatus.pending,
+        inProgress: byStatus.in_progress,
+        completionRate: total > 0 ? Math.round((byStatus.passed / total) * 10000) / 10000 : 0,
+        openDefects,
+        blockers,
+        verdict: run.signoff?.verdict ?? null,
+      },
+      defects: run.items
+        .filter((item): item is QaRunItem & { status: 'failed' | 'blocked' | 'returned_to_dev' } => OPEN_DEFECT_STATUSES.includes(item.status))
+        .map((item) => ({
+          position: item.position,
+          title: item.title,
+          status: item.status,
+          severity: item.defectSeverity,
+          notes: item.notes,
+          reproductionSteps: item.reproductionSteps,
+          targetPersona: item.targetPersona,
+          fixRequest: item.fixRequest,
+        }))
+        .sort((a, b) => rank(a.severity) - rank(b.severity) || a.position - b.position),
+      automatedResults: run.automation ?? null,
+      signoffHistory: [],
+    };
+  }
+
+  /** The Markdown the report endpoint serves. The client copies it verbatim, so its exact text does not matter here. */
+  reportMarkdown(runId: string): string {
+    const report = this.buildReport(runId);
+    const rows = report.run.items.map((item) => `| ${item.position + 1} | ${item.title} | ${item.status} |`);
+    return [
+      `# QA Report — ${report.project.repoFullName}`,
+      '',
+      `**Verdict:** ${report.summary.verdict ?? 'Not signed off'} · \`${report.run.branch}\` @ \`${report.run.commitSha.slice(0, 7)}\``,
+      '',
+      '| # | Item | Status |',
+      '|---|------|--------|',
+      ...rows,
+      '',
+    ].join('\n');
+  }
+
+  private report(runId: string, format: string | null): ApiReply {
+    if (format === 'md') return { body: this.reportMarkdown(runId), contentType: 'text/markdown; charset=utf-8' };
+    return { body: this.buildReport(runId) };
+  }
+}
+
+/* ── Assertions ──────────────────────────────────────────────────────────── */
+
+const WAIT_MS = 15_000;
+
+async function eventually(description: string, check: () => Promise<boolean> | boolean, timeout = WAIT_MS) {
+  const deadline = Date.now() + timeout;
+  while (Date.now() < deadline) {
+    if (await check()) return;
+    await new Promise((resolve) => setTimeout(resolve, 100));
+  }
+  throw new Error(`Timed out after ${timeout}ms waiting for: ${description}`);
+}
+
+async function visible(locator: Locator, description: string) {
+  try {
+    await locator.first().waitFor({ state: 'visible', timeout: WAIT_MS });
+  } catch (error) {
+    throw new Error(`Expected to see ${description}`, { cause: error });
+  }
+}
+
+async function absent(locator: Locator, description: string) {
+  await eventually(`${description} to be absent`, async () => (await locator.count()) === 0);
+}
+
+const API_QUIET_MS = 750;
+
+/**
+ * For a control that must never appear. Absence is only meaningful once the
+ * app has what would show it, so this waits until capabilities were served
+ * and the app has made no API call for API_QUIET_MS (every gate here renders
+ * from a response, in the same task that receives it), then checks once.
+ * Settles on the mock, not on 'networkidle': the dev server's own traffic and
+ * the framed preview page are not the app waiting for data.
+ */
+async function neverShown(backend: QaMockBackend, locator: Locator, description: string, since = 0) {
+  await eventually('the capabilities response to be served', () =>
+    backend.calls.some((call) => call.path === '/capabilities' && call.at >= since),
+  );
+  await eventually(`the app to stop calling the API for ${API_QUIET_MS}ms`, () => {
+    const last = backend.calls.at(-1);
+    return last !== undefined && Date.now() - last.at >= API_QUIET_MS;
+  });
+  assert.equal(await locator.count(), 0, `${description} must not be shown`);
+}
+
+/** The DOM text, not innerText: CSS text-transform (the uppercase role badge) must not change what is asserted. */
+async function textOf(locator: Locator): Promise<string> {
+  return ((await locator.first().textContent()) ?? '').replace(/\s+/g, ' ').trim();
+}
+
+async function expectText(locator: Locator, expected: string | RegExp, description: string) {
+  await eventually(`${description} to read ${String(expected)}`, async () => {
+    if ((await locator.count()) === 0) return false;
+    const actual = await textOf(locator);
+    return typeof expected === 'string' ? actual.includes(expected) : expected.test(actual);
+  });
+}
+
+function onlyCall<T>(calls: T[], description: string): T {
+  assert.equal(calls.length, 1, `expected exactly one ${description}, saw ${calls.length}`);
+  return calls[0];
+}
+
+/* ── Page helpers ────────────────────────────────────────────────────────── */
+
+async function openProjectTab(page: Page, baseUrl: string, tab: string) {
+  await page.goto(`${baseUrl}/projects/${PROJECT_ID}`, { waitUntil: 'domcontentloaded' });
+  const tabs = page.getByRole('tablist', { name: 'Project sections' });
+  await visible(tabs.getByRole('tab', { name: 'Overview' }), 'the project section tabs');
+  if (tab !== 'Overview') await tabs.getByRole('tab', { name: tab, exact: true }).click();
+}
+
+async function expectRoleBadge(page: Page, role: AppRole) {
+  const badge = page.locator(`.app-header-identity .sidebar-role-badge--${role}`);
+  await expectText(badge, ROLE_BADGES[role], `the header role badge for ${role}`);
+}
+
+function runItem(page: Page, title: string): Locator {
+  return page.locator('li.qa-run-item').filter({ has: page.locator('.qa-run-item__title', { hasText: title }) });
+}
+
+/** The recorded status pill beside an item's title (not the Automated badge next to it). */
+const STATUS_PILL = '.qa-run-item__states > .qa-pill';
+
+function statusSelect(page: Page, position: number): Locator {
+  return page.locator('label.qa-status-select').filter({ hasText: `Status of item ${position}` }).locator('select');
+}
+
+/* ── Journeys ────────────────────────────────────────────────────────────── */
+
+interface JourneyContext {
+  page: Page;
+  context: BrowserContext;
+  backend: QaMockBackend;
+  baseUrl: string;
+}
+
+interface Journey {
+  id: string;
+  title: string;
+  backend: () => QaMockBackend;
+  /** Browser permissions the journey needs (clipboard for Copy PR Markdown). */
+  permissions?: string[];
+  run: (ctx: JourneyContext) => Promise<void>;
+}
+
+/** (a) Team lead writes a checklist, shares it, and it lands on the project. */
+async function leadCreatesAndSharesChecklist({ page, backend, baseUrl }: JourneyContext) {
+  await page.goto(`${baseUrl}/teams`, { waitUntil: 'domcontentloaded' });
+  await expectRoleBadge(page, 'lead');
+  // The contrast for journey (d): a lead's workspace picker offers creation.
+  await eventually('the workspace picker to offer "+ Create workspace" to a lead', async () =>
+    (await page.getByLabel('Active workspace').locator('option', { hasText: '+ Create workspace' }).count()) === 1,
+  );
+
+  await page.getByRole('tablist', { name: 'Team sections' }).getByRole('tab', { name: /QA checklists/ }).click();
+  await visible(page.getByText('No QA checklists yet'), 'the empty checklist list');
+  await page.getByRole('button', { name: 'Create the first checklist' }).click();
+
+  await page.getByPlaceholder('Release smoke test').fill(RELEASE_CHECKLIST.name);
+  await page.getByPlaceholder('When to run it and what it protects (optional)').fill(RELEASE_CHECKLIST.description);
+  for (const [index, item] of RELEASE_CHECKLIST.items.entries()) {
+    const n = index + 1;
+    await page.getByRole('button', { name: 'Add item' }).click();
+    await page.getByLabel(`Item ${n} title`).fill(item.title);
+    await page.getByLabel(`Who runs item ${n}`).selectOption(item.targetPersona);
+    await page.getByLabel(`How item ${n} is verified`).selectOption(item.verificationType);
+    if (item.testIdentifier) await page.getByLabel(`Test identifier for item ${n}`).fill(item.testIdentifier);
+    if (item.description) await page.getByLabel(`Item ${n} notes`).fill(item.description);
+  }
+  await page.getByRole('button', { name: 'Create checklist' }).click();
+
+  // The detail screen of what was just saved.
+  const detail = page.locator('article.qa-detail');
+  await expectText(detail.locator('.qa-detail__title'), RELEASE_CHECKLIST.name, 'the saved checklist title');
+  await expectText(detail.locator('.qa-detail__meta'), '3 items', 'the item count');
+  await expectText(detail.locator('.qa-detail__meta'), '1 automated', 'the automated count');
+  await expectText(detail.locator('.qa-detail__meta'), 'Version 1', 'the version');
+  await expectText(detail.locator('.qa-detail__shared'), 'No projects yet.', 'the unshared note');
+
+  const create = onlyCall(backend.callsTo('POST', /^\/workspaces\/ws-checkout\/qa-checklists$/), 'checklist create');
+  assert.equal(create.status, 201);
+  assert.deepEqual(create.body, {
+    name: RELEASE_CHECKLIST.name,
+    description: RELEASE_CHECKLIST.description,
+    items: RELEASE_CHECKLIST.items,
+  });
+
+  await detail.getByRole('button', { name: 'Share', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: `Share “${RELEASE_CHECKLIST.name}”` });
+  await visible(dialog, 'the share dialog');
+  await dialog.getByRole('checkbox', { name: /tone\/storefront-web/ }).check();
+  await expectText(dialog.locator('.qa-share__legend'), '1 of 2 projects', 'the share selection summary');
+  await dialog.getByRole('button', { name: 'Save sharing' }).click();
+  await absent(dialog, 'the share dialog');
+  await expectText(detail.locator('.qa-detail__chips'), 'tone/storefront-web', 'the shared project chip');
+  const created = backend.checklists[0];
+  const share = onlyCall(backend.callsTo('PUT', new RegExp(`^/qa-checklists/${created.id}/projects$`)), 'share request');
+  assert.deepEqual(share.body, { projectIds: [PROJECT_ID] });
+
+  await page.getByRole('button', { name: 'All checklists' }).click();
+  const row = page.locator('button.qa-list-row').filter({ hasText: RELEASE_CHECKLIST.name });
+  await expectText(row, 'Shared to 1 project', 'the list row sharing summary');
+
+  await openProjectTab(page, baseUrl, 'Checklists');
+  const card = page.locator('section.qa-project-card').filter({ has: page.getByRole('heading', { name: RELEASE_CHECKLIST.name }) });
+  await visible(card, 'the shared checklist on the project Checklists tab');
+  await expectText(card.locator('.qa-project-card__meta'), '3 items', 'the project card item count');
+  for (const item of RELEASE_CHECKLIST.items) {
+    await visible(card.locator('.qa-item__title', { hasText: item.title }), `the item "${item.title}"`);
+  }
+  await expectText(card.locator('code.qa-item__test'), RELEASE_CHECKLIST.items[0].testIdentifier ?? '', 'the Playwright test identifier');
+  await visible(card.getByRole('link', { name: 'Manage in team' }), 'the lead-only Manage in team link');
+}
+
+/** (b) QA verifies the checklist on main, returns a defect, rejects, exports. */
+async function qaVerifiesAndSignsOff({ page, context, backend, baseUrl }: JourneyContext) {
+  // window.print() is the browser's; count calls instead of opening a dialog.
+  await context.addInitScript(() => {
+    const target = window as unknown as { __qaPrintCalls: number };
+    target.__qaPrintCalls = 0;
+    window.print = () => {
+      target.__qaPrintCalls += 1;
+    };
+  });
+  const checklist = backend.checklists[0];
+  const [first, second, third] = RELEASE_CHECKLIST.items;
+
+  await openProjectTab(page, baseUrl, 'QA Studio');
+  await expectRoleBadge(page, 'qa');
+  await expectText(page.locator('.qa-run-card__title'), checklist.name, 'the checklist under test');
+  await expectText(page.getByLabel('Commit under test'), 'main @ a1b2c3d', 'the commit chip');
+
+  await page.getByRole('button', { name: 'Start QA run on main @ a1b2c3d' }).click();
+  await visible(runItem(page, first.title), 'the run items');
+  const start = onlyCall(backend.callsTo('POST', /^\/projects\/project-1\/qa-runs$/), 'run start');
+  assert.equal(start.status, 201);
+  // Only the checklist and branch: the server, never the page, picks the commit.
+  assert.deepEqual(start.body, { checklistId: checklist.id, branch: 'main' });
+  const run = backend.runs[0];
+  const [item1, item2, item3] = run.items;
+  const patchesTo = (itemId: string) => backend.callsTo('PATCH', new RegExp(`/qa-runs/${run.id}/items/${itemId}$`));
+
+  // CI failed on the Playwright item's own spec: it wears an Automated · Failed badge.
+  const automated = runItem(page, first.title).locator('.qa-auto-badge');
+  await expectText(automated, 'Automated', 'the automated badge');
+  await expectText(automated, 'Failed', 'the automated status');
+  await runItem(page, first.title).locator('button.qa-auto-toggle').click();
+  await expectText(runItem(page, first.title).locator('.qa-auto-detail__name'), VERIFY_FAILURE_NAME, 'the matched failing test');
+  for (const title of [second.title, third.title]) {
+    assert.equal(await runItem(page, title).locator('.qa-auto-badge').count(), 0, `manual item "${title}" has no automated badge`);
+  }
+  await visible(page.getByRole('button', { name: 'Run Playwright' }), 'Run Playwright for QA');
+
+  // 1 → Passed, saved as soon as it is picked.
+  await statusSelect(page, 1).selectOption('passed');
+  await expectText(runItem(page, first.title).locator(STATUS_PILL), 'Passed', 'item 1 passed');
+  assert.deepEqual(onlyCall(patchesTo(item1.id), 'item 1 update').body, { expectedRowVersion: 1, status: 'passed' });
+  // Automated evidence never rewrites what the tester recorded.
+  assert.equal(backend.runs[0].items[0].status, 'passed');
+
+  // 2 → Failed needs a severity first: the UI refuses to send it without one.
+  await statusSelect(page, 2).selectOption('failed');
+  const editor = runItem(page, second.title).locator('form.qa-item-editor');
+  await visible(editor, 'the item 2 details editor');
+  await editor.getByRole('button', { name: 'Mark Failed' }).click();
+  await expectText(editor.getByRole('alert'), 'Choose a severity before marking this item Failed.', 'the severity validation');
+  assert.equal(patchesTo(item2.id).length, 0, 'Failed without a severity must not be sent');
+  await editor.locator('label', { hasText: 'Severity' }).locator('select').selectOption('major');
+  await editor.getByPlaceholder('What went wrong').fill('Coupon applied twice on a two-line cart.');
+  await editor.getByRole('button', { name: 'Mark Failed' }).click();
+  await absent(editor, 'the item 2 details editor');
+  await expectText(runItem(page, second.title).locator(STATUS_PILL), 'Failed', 'item 2 failed');
+  await expectText(runItem(page, second.title).locator('.qa-run-item__facts .qa-severity'), 'Major', 'item 2 severity');
+  assert.deepEqual(onlyCall(patchesTo(item2.id), 'item 2 update').body, {
+    expectedRowVersion: 1,
+    status: 'failed',
+    notes: 'Coupon applied twice on a two-line cart.',
+    defectSeverity: 'major',
+  });
+
+  // 3 → Returned to dev as a Blocker, with how to reproduce it.
+  await statusSelect(page, 3).selectOption('returned_to_dev');
+  const returnEditor = runItem(page, third.title).locator('form.qa-item-editor');
+  await returnEditor.locator('label', { hasText: 'Severity' }).locator('select').selectOption('blocker');
+  await returnEditor.getByPlaceholder('What went wrong').fill('No confirmation email for card orders.');
+  await returnEditor.locator('label', { hasText: 'Reproduction steps' }).locator('textarea').fill('1. Pay with the saved card\n2. Wait five minutes\n3. Inbox is empty');
+  await returnEditor.getByRole('button', { name: 'Mark Returned to dev' }).click();
+  await absent(returnEditor, 'the item 3 details editor');
+  await expectText(runItem(page, third.title).locator(STATUS_PILL), 'Returned to dev', 'item 3 returned');
+  await expectText(runItem(page, third.title).locator('.qa-run-item__facts .qa-severity'), 'Blocker', 'item 3 severity');
+  assert.deepEqual(onlyCall(patchesTo(item3.id), 'item 3 update').body, {
+    expectedRowVersion: 1,
+    status: 'returned_to_dev',
+    notes: 'No confirmation email for card orders.',
+    defectSeverity: 'blocker',
+    reproductionSteps: '1. Pay with the saved card\n2. Wait five minutes\n3. Inbox is empty',
+  });
+  await expectText(page.locator('.qa-summary__facts'), '2 open defects', 'the open defect count');
+  await expectText(page.locator('.qa-summary__facts'), '1 blocker', 'the blocker count');
+
+  // Approved is refused, with the reason, before anything is sent.
+  await expectText(page.locator('.qa-run-card__foot-text'), '2 items are not passed yet.', 'the readiness line');
+  await page.getByRole('button', { name: 'Sign off', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: 'Sign off this run' });
+  await visible(dialog, 'the sign-off dialog');
+  const approved = dialog.locator('label.qa-verdict').filter({ hasText: 'Approved' });
+  assert.equal(await approved.locator('input[type="radio"]').isDisabled(), true, 'Approved must be refused');
+  await expectText(approved.locator('.qa-verdict__hint'), '2 items are not passed yet.', 'why Approved is refused');
+  await dialog.locator('label.qa-verdict').filter({ hasText: 'Rejected' }).locator('input').check();
+  const summary = 'Card orders get no confirmation email; returned as a blocker.';
+  await dialog.getByPlaceholder('What was tested, and anything the team should know').fill(summary);
+  await dialog.getByRole('button', { name: 'Sign off', exact: true }).click();
+  await absent(dialog, 'the sign-off dialog');
+  const signoffs = backend.callsTo('POST', /\/signoff$/);
+  assert.deepEqual(onlyCall(signoffs, 'sign-off').body, { verdict: 'REJECTED', summary });
+
+  // Signed off: the banner says so, and nothing on the run can be changed.
+  const banner = page.locator('.qa-signoff-banner');
+  await expectText(banner, 'Signed off', 'the signed-off banner');
+  await expectText(banner.locator('.qa-signoff-banner__title'), 'Rejected', 'the verdict');
+  await expectText(banner, summary, 'the sign-off summary');
+  await expectText(banner, 'Signed-off runs are read-only.', 'the read-only note');
+  await absent(page.locator('label.qa-status-select'), 'item status controls');
+  await absent(page.getByRole('button', { name: /^(Add notes|Edit notes)$/ }), 'item notes controls');
+  await absent(page.getByRole('button', { name: 'Sign off', exact: true }), 'the Sign off button');
+  assert.equal(await page.getByRole('button', { name: 'Run Playwright' }).isDisabled(), true, 'Run Playwright is disabled once signed off');
+
+  // Export: PDF opens the print page, Markdown is copied, JSON is downloaded.
+  const reportPath = `/projects/${PROJECT_ID}/qa/report/${run.id}`;
+  await page.getByRole('button', { name: 'Export report' }).click();
+  const menu = page.getByRole('menu', { name: 'Export report' });
+  const pdf = menu.getByRole('menuitem', { name: /Download PDF/ });
+  assert.equal(await pdf.getAttribute('href'), `${reportPath}?print=1`);
+  assert.equal(await pdf.getAttribute('target'), '_blank');
+
+  await menu.getByRole('menuitem', { name: /Copy PR Markdown/ }).click();
+  await expectText(page.locator('button.qa-export__trigger'), 'Copied', 'the Copied confirmation');
+  const markdownCall = onlyCall(backend.callsTo('GET', new RegExp(`^${reportPath.replace('/qa/report/', '/qa-runs/')}/report$`)), 'Markdown report request');
+  assert.equal(markdownCall.query.get('format'), 'md');
+  assert.equal(markdownCall.accept, 'text/markdown');
+  const clipboard = await page.evaluate(() => navigator.clipboard.readText());
+  assert.equal(clipboard.replace(/\r\n/g, '\n'), backend.reportMarkdown(run.id));
+
+  await page.getByRole('button', { name: /Export report|Copied/ }).click();
+  const [download] = await Promise.all([
+    page.waitForEvent('download'),
+    page.getByRole('menu', { name: 'Export report' }).getByRole('menuitem', { name: /Download JSON/ }).click(),
+  ]);
+  assert.equal(download.suggestedFilename(), 'QA-Report-storefront-web-main-a1b2c3d.json');
+  const saved = JSON.parse(await readFile(await download.path(), 'utf8')) as QaReport;
+  assert.equal(saved.schemaVersion, 'qa-report/v1');
+  assert.equal(saved.frozen, true);
+  assert.equal(saved.summary.verdict, 'REJECTED');
+  assert.deepEqual(saved.defects.map((defect) => [defect.title, defect.severity]), [
+    [third.title, 'blocker'],
+    [second.title, 'major'],
+  ]);
+  const jsonCalls = backend.callsTo('GET', /\/report$/).filter((call) => call.query.get('format') === 'json');
+  assert.equal(jsonCalls.length, 1, 'one JSON report request from Download JSON');
+
+  // The new tab's URL is rewritten (?print=1 dropped) as soon as it prints, so
+  // read what it was opened on from the navigation request itself.
+  const navigations: URL[] = [];
+  context.on('request', (request) => {
+    if (request.isNavigationRequest()) navigations.push(new URL(request.url()));
+  });
+  await page.getByRole('button', { name: 'Export report' }).click();
+  const [popup] = await Promise.all([
+    page.waitForEvent('popup'),
+    page.getByRole('menu', { name: 'Export report' }).getByRole('menuitem', { name: /Download PDF/ }).click(),
+  ]);
+  await visible(popup.getByRole('heading', { name: 'QA Report', level: 1 }), 'the printable report');
+  const opened = navigations.filter((url) => url.pathname === reportPath);
+  assert.deepEqual(opened.map((url) => url.search), ['?print=1'], 'Download PDF opens the print page once, with ?print=1');
+  await eventually('the print dialog to be requested once', async () =>
+    (await popup.evaluate(() => (window as unknown as { __qaPrintCalls: number }).__qaPrintCalls)) === 1,
+  );
+  // ?print=1 is dropped once used, so a refresh does not print again.
+  await eventually('?print=1 to be dropped', () => new URL(popup.url()).search === '');
+  await popup.close();
+}
+
+/** (c) A developer fixes what QA returned and asks for a re-test. */
+async function developerRequestsRetest({ page, backend, baseUrl }: JourneyContext) {
+  const [first, second, third] = RELEASE_CHECKLIST.items;
+  const run = backend.runs[0];
+  const [item1, item2, item3, item4] = run.items;
+
+  await openProjectTab(page, baseUrl, 'Overview');
+  await expectRoleBadge(page, 'member');
+  const card = page.locator('section.qa-returned');
+  await expectText(card.locator('.qa-returned__count'), '2', 'two returned items');
+  const row = card.locator('li.qa-returned__row').filter({ hasText: third.title });
+  await expectText(row.locator('.qa-returned__head .qa-severity'), 'Blocker', 'the returned severity');
+  await expectText(row, '1. Pay with the saved card', 'the reproduction steps');
+  await expectText(row.locator('.qa-returned__meta'), 'main @ a1b2c3d', 'the commit it was returned on');
+  await expectText(row.locator('.qa-returned__meta'), `Returned by @${PEOPLE.qa.login}`, 'who returned it');
+
+  await row.getByRole('button', { name: 'Mark fixed & request re-test' }).click();
+  await row.getByLabel('Note to QA (optional)').fill('Mailer queue was paused on main; resumed and added an alert.');
+  await row.getByRole('button', { name: 'Request re-test' }).click();
+  await expectText(card.locator('.qa-returned__count'), '1', 'one returned item left');
+  await absent(card.locator('li.qa-returned__row').filter({ hasText: third.title }), 'the fixed item on the card');
+  await visible(card.locator('li.qa-returned__row').filter({ hasText: second.title }), 'the item still returned');
+  const retest = onlyCall(backend.callsTo('POST', new RegExp(`/items/${item3.id}/request-retest$`)), 're-test request');
+  assert.deepEqual(retest.body, { note: 'Mailer queue was paused on main; resumed and added an alert.' });
+  assert.equal(item3.status, 'pending', 'a re-test sends the item back to pending');
+  assert.equal(item2.status, 'returned_to_dev', 'the other returned item is untouched');
+
+  await page.getByRole('tablist', { name: 'Project sections' }).getByRole('tab', { name: 'QA Studio' }).click();
+  await visible(runItem(page, first.title), 'the run in QA Studio');
+  await neverShown(backend, page.getByRole('button', { name: /Run Playwright/ }), 'Run Playwright for a Developer');
+  await neverShown(backend, page.getByRole('button', { name: 'Sign off', exact: true }), 'Sign off for a Developer');
+
+  // The QA-owned item is read-only; developer and everyone items are editable.
+  await expectText(runItem(page, first.title), 'Read-only for your role', 'the QA item read-only note');
+  assert.equal(await runItem(page, first.title).locator('label.qa-status-select').count(), 0, 'no status control on a QA item');
+  await expectText(runItem(page, third.title).locator(STATUS_PILL), 'Pending', 'the re-tested item back in Pending');
+  await expectText(runItem(page, third.title).locator('.qa-fix-note'), `Marked fixed by @${PEOPLE.member.login}`, 'the fix note in the studio');
+  await visible(runItem(page, second.title).getByRole('button', { name: 'Mark fixed & request re-test' }), 're-test on the still-returned item');
+  const developerSelect = statusSelect(page, 4);
+  assert.equal(await developerSelect.isEnabled(), true, 'the developer item is editable');
+  // Returning to dev is QA's call: the control does not even offer it to a Developer.
+  assert.equal(await developerSelect.locator('option[value="returned_to_dev"]').count(), 0, 'a Developer is not offered Returned to dev');
+  await developerSelect.selectOption('passed');
+  await expectText(runItem(page, DEVELOPER_ITEM.title).locator(STATUS_PILL), 'Passed', 'the developer item passed');
+  const patch = onlyCall(backend.callsTo('PATCH', new RegExp(`/items/${item4.id}$`)), 'developer item update');
+  assert.deepEqual(patch.body, { expectedRowVersion: 1, status: 'passed' });
+  assert.equal(item1.status, 'passed', 'the QA item is untouched');
+}
+
+/** (d) A QA Team member sees their badge, cannot create a workspace or manage checklists. */
+async function qaTeamCannotCreate({ page, backend, baseUrl }: JourneyContext) {
+  await page.goto(`${baseUrl}/teams`, { waitUntil: 'domcontentloaded' });
+  await expectRoleBadge(page, 'qa');
+  const picker = page.getByLabel('Active workspace');
+  await visible(picker, 'the workspace picker');
+  assert.equal(await picker.locator('option', { hasText: '+ Create workspace' }).count(), 0, 'QA Team cannot create a workspace');
+  assert.equal(await page.getByTestId('create-workspace-button').count(), 0, 'no create-workspace button');
+
+  // Checklists are readable, not writable, for QA Team.
+  await page.getByRole('tablist', { name: 'Team sections' }).getByRole('tab', { name: /QA checklists/ }).click();
+  const row = page.locator('button.qa-list-row').filter({ hasText: RELEASE_CHECKLIST.name });
+  await visible(row, 'the team checklist');
+  await neverShown(backend, page.getByRole('button', { name: 'New checklist' }), 'New checklist for QA Team');
+  await row.click();
+  await expectText(page.locator('article.qa-detail .qa-detail__title'), RELEASE_CHECKLIST.name, 'the checklist detail');
+  for (const action of ['Edit checklist', 'Share', 'Archive']) {
+    await neverShown(backend, page.getByRole('button', { name: action, exact: true }), `${action} for QA Team`);
+  }
+}
+
+/** (e) The capabilities response lacks qaChecklists: every QA surface is gone. */
+async function capabilityAbsentHidesQa({ page, backend, baseUrl }: JourneyContext) {
+  await openProjectTab(page, baseUrl, 'Overview');
+  const tabs = page.getByRole('tablist', { name: 'Project sections' });
+  await visible(tabs.getByRole('tab', { name: 'Settings' }), 'the rest of the tab strip');
+  // Positive control: the Overview only asks for previews once it has read a
+  // capabilities response (previewDeployments), so the flags are applied.
+  await eventually('the capability-gated previews request', () => backend.callsTo('GET', /^\/projects\/project-1\/previews$/).length > 0);
+  for (const hidden of ['Checklists', 'QA Studio']) {
+    await neverShown(backend, tabs.getByRole('tab', { name: hidden, exact: true }), `the ${hidden} tab`);
+  }
+  // A returned item exists on the server, but without the capability the card is not drawn.
+  await neverShown(backend, page.getByRole('heading', { name: /Returned by QA/ }), 'the Returned by QA card');
+
+  const teamsLoadedAt = Date.now();
+  await page.goto(`${baseUrl}/teams`, { waitUntil: 'domcontentloaded' });
+  const sections = page.getByRole('tablist', { name: 'Team sections' });
+  await visible(sections.getByRole('tab', { name: /Members/ }), 'the team sections');
+  await neverShown(backend, sections.getByRole('tab', { name: /QA checklists/ }), 'the Teams QA checklists entry', teamsLoadedAt);
+  await visible(page.getByText('Members, activity, and the repositories this team owns.'), 'the lede without QA checklists');
+
+  // Nothing QA was even asked for: the tabs are hidden because the flag is
+  // missing, not because a QA request failed.
+  assert.deepEqual(backend.calls.filter((call) => /qa-/.test(call.path)).map((call) => call.path), []);
+}
+
+/* A run on main that QA already worked through: 1 passed, 2 and 3 returned. */
+function seedReturnedRun(backend: QaMockBackend) {
+  const checklist = backend.seedChecklist({ ...RELEASE_CHECKLIST, items: [...RELEASE_CHECKLIST.items, DEVELOPER_ITEM] }, [PROJECT_ID]);
+  const run = backend.seedRun(checklist, { id: PEOPLE.qa.id, login: PEOPLE.qa.login });
+  const byQa = { verifiedBy: { id: PEOPLE.qa.id, login: PEOPLE.qa.login } };
+  backend.seedItem(run, 0, { ...byQa, status: 'passed', verifiedAt: ago(50 * MINUTE), updatedAt: Date.now() - 50 * MINUTE });
+  backend.seedItem(run, 1, {
+    ...byQa,
+    status: 'returned_to_dev',
+    defectSeverity: 'major',
+    notes: 'Coupon applied twice on a two-line cart.',
+    reproductionSteps: '1. Add two mugs\n2. Apply SPRING10',
+    verifiedAt: ago(40 * MINUTE),
+    updatedAt: Date.now() - 40 * MINUTE,
+  });
+  backend.seedItem(run, 2, {
+    ...byQa,
+    status: 'returned_to_dev',
+    defectSeverity: 'blocker',
+    notes: 'No confirmation email for card orders.',
+    reproductionSteps: '1. Pay with the saved card\n2. Wait five minutes\n3. Inbox is empty',
+    verifiedAt: ago(30 * MINUTE),
+    updatedAt: Date.now() - 30 * MINUTE,
+  });
+}
+
+const JOURNEYS: Journey[] = [
+  {
+    id: 'a',
+    title: 'Team lead: create a 3-item checklist, share it, see it on the project',
+    backend: () => new QaMockBackend('lead'),
+    run: leadCreatesAndSharesChecklist,
+  },
+  {
+    id: 'b',
+    title: 'QA Team: run, validate, return to dev, sign off Rejected, export',
+    permissions: ['clipboard-read', 'clipboard-write'],
+    backend: () => {
+      const backend = new QaMockBackend('qa');
+      backend.seedChecklist(RELEASE_CHECKLIST, [PROJECT_ID]);
+      return backend;
+    },
+    run: qaVerifiesAndSignsOff,
+  },
+  {
+    id: 'c',
+    title: 'Developer: Returned by QA card, request re-test, persona-scoped studio',
+    backend: () => {
+      const backend = new QaMockBackend('member');
+      seedReturnedRun(backend);
+      return backend;
+    },
+    run: developerRequestsRetest,
+  },
+  {
+    id: 'd',
+    title: 'QA Team: role badge, no workspace creation, read-only checklists',
+    backend: () => {
+      const backend = new QaMockBackend('qa');
+      backend.seedChecklist(RELEASE_CHECKLIST, [PROJECT_ID]);
+      return backend;
+    },
+    run: qaTeamCannotCreate,
+  },
+  {
+    id: 'e',
+    title: 'Capabilities without qaChecklists: no Checklists / QA Studio / Teams entry',
+    backend: () => {
+      // A lead, so nothing is hidden by role: only the missing field can hide it.
+      const backend = new QaMockBackend('lead', 'absent');
+      seedReturnedRun(backend);
+      return backend;
+    },
+    run: capabilityAbsentHidesQa,
+  },
+];
+
+/* ── Runner ──────────────────────────────────────────────────────────────── */
+
+const PREVIEW_HTML = '<!doctype html><title>Storefront</title><h1>Checkout</h1>';
+
+/**
+ * A failed step, with what was on screen and what the mock refused. With
+ * E2E_QA_ARTIFACTS=<dir> a full-page screenshot is saved there too.
+ */
+async function withFailureContext(error: unknown, page: Page, backend: QaMockBackend, id: string): Promise<Error> {
+  const lines = [error instanceof Error ? error.message : String(error)];
+  // Where in the journey it stopped: the helper and the journey step that called it.
+  const frames = (error instanceof Error ? (error.stack ?? '') : '')
+    .split('\n')
+    .filter((line) => line.includes('qa-journeys'))
+    .slice(0, 3);
+  for (const frame of frames) lines.push(`at: ${frame.trim().replace(/^at /, '')}`);
+  if (error instanceof Error && error.cause instanceof Error) lines.push(`cause: ${error.cause.message.split('\n')[0]}`);
+  const screen = await page
+    .locator('body')
+    .innerText({ timeout: 2_000 })
+    .catch(() => '(page unavailable)');
+  lines.push(`url: ${page.url()}`, `visible text:\n${screen.slice(0, 1500)}`);
+  if (backend.refusals.length > 0) lines.push(`mock refusals:\n${backend.refusals.join('\n')}`);
+  const dir = process.env.E2E_QA_ARTIFACTS;
+  if (dir) {
+    const file = `${dir}/qa-${id}-failure.png`;
+    await page.screenshot({ path: file, fullPage: true }).catch(() => undefined);
+    lines.push(`screenshot: ${file}`);
+  }
+  return new Error(lines.join('\n'));
+}
+
+async function runJourney(browser: Browser, baseUrl: string, journey: Journey) {
+  const backend = journey.backend();
+  const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+  const problems: string[] = [];
+  try {
+    if (journey.permissions) await context.grantPermissions(journey.permissions, { origin: baseUrl });
+    // Context-wide, so the print page opened by Download PDF is mocked too.
+    await context.route('**/api/v1/**', (route) => backend.handle(route));
+    await context.route(`${PREVIEW_ORIGIN}/**`, (route) => text(route, 200, PREVIEW_HTML, 'text/html'));
+    context.on('page', (page) => {
+      page.on('pageerror', (error) => problems.push(`page error: ${error.message}`));
+      page.on('console', (message) => {
+        if (message.type() === 'error') problems.push(`console error: ${message.text()}`);
+      });
+    });
+    const page = await context.newPage();
+    try {
+      await journey.run({ page, context, backend, baseUrl });
+    } catch (error) {
+      throw await withFailureContext(error, page, backend, journey.id);
+    }
+  } finally {
+    await context.close();
+  }
+  problems.push(...backend.refusals.map((refusal) => `unexpected API reply: ${refusal}`));
+  if (problems.length > 0) throw new Error(problems.join('\n'));
+}
+
+/** Runs the QA journeys (all, or the comma-separated ids in `only`). Returns how many passed; throws if any failed. */
+export async function runQaJourneys(browser: Browser, baseUrl: string, only?: string): Promise<number> {
+  const wanted = only ? new Set(only.split(',').map((id) => id.trim())) : null;
+  const selected = JOURNEYS.filter((journey) => !wanted || wanted.has(journey.id));
+  assert.ok(selected.length > 0, `E2E_QA_ONLY=${only ?? ''} matches no journey (have ${JOURNEYS.map((j) => j.id).join(', ')})`);
+  const failures: string[] = [];
+  for (const journey of selected) {
+    const started = Date.now();
+    try {
+      await runJourney(browser, baseUrl, journey);
+      console.log(`PASS qa:${journey.id} ${journey.title} (${Date.now() - started}ms)`);
+    } catch (error) {
+      const detail = error instanceof Error ? `${error.message}${error.cause instanceof Error ? `\n  cause: ${error.cause.message}` : ''}` : String(error);
+      console.error(`FAIL qa:${journey.id} ${journey.title}\n  ${detail.replace(/\n/g, '\n  ')}`);
+      failures.push(journey.id);
+    }
+  }
+  if (failures.length > 0) {
+    throw new Error(`QA journeys failed: ${failures.join(', ')} (${selected.length - failures.length}/${selected.length} passed)`);
+  }
+  return selected.length;
+}

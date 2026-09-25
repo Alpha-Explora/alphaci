@@ -8,6 +8,7 @@ import { QaStudioPanel } from "../../../../../src/features/checklists/studio/vie
 import { AUTOMATION_PANEL_COLLAPSED_KEY } from "../../../../../src/features/checklists/studio/views/automation-panel";
 import { QaReportDocument } from "../../../../../src/features/checklists/report/views/qa-report-document";
 import type { QaReport } from "../../../../../src/features/checklists/model/qa-report-types";
+import { formatReportDate } from "../../../../../src/features/checklists/model/qa-report-rules";
 import type { QaRun } from "../../../../../src/features/checklists/model/qa-run-types";
 import type { AppRole } from "../../../../../src/shared/api/contracts";
 import { ApiError } from "../../../../../src/shared/api/request";
@@ -509,7 +510,11 @@ describe("QA report — automated results", () => {
     expect(rows[0].textContent).toContain("Failed");
     expect(rows[0].textContent).toContain("18 / 20");
     expect(rows[0].textContent).toContain("2 failed");
-    expect(rows[0].textContent).toMatch(/2026-09-25 \d\d:57/);
+    // The cell renders in the viewer's own zone, so derive the expectation from
+    // the same rule rather than hard-coding a date: 06:57Z is still 09-24 at
+    // UTC-7 and further west, and lands on :27 in half-hour zones (UTC+5:30).
+    // The rule itself is pinned to explicit zones in qa-report-rules.test.ts.
+    expect(rows[0].textContent).toContain(formatReportDate(verifyFailure().reportedAt));
     expect(rows[1].textContent).toContain("Quality");
     expect(rows[1].textContent).toContain("45 / 50");
     const failures = [...section(container).querySelectorAll(".qa-report-auto__failures")];

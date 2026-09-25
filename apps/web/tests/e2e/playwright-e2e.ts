@@ -1,7 +1,10 @@
 import { spawn } from 'node:child_process';
 import process from 'node:process';
-import type { Page, Route } from 'playwright';
+import type { Page } from 'playwright';
 import { chromium, firefox, webkit } from 'playwright';
+
+import { runQaJourneys } from './qa-journeys';
+import { expectVisibleText, json, text } from './support';
 
 type BrowserName = 'chromium' | 'firefox' | 'webkit';
 
@@ -54,22 +57,6 @@ function launchBrowser(name: BrowserName) {
     default:
       return chromium.launch({ headless: true });
   }
-}
-
-function json(route: Route, body: unknown) {
-  return route.fulfill({
-    status: 200,
-    contentType: 'application/json',
-    body: JSON.stringify(body),
-  });
-}
-
-function text(route: Route, status: number, body: string) {
-  return route.fulfill({
-    status,
-    contentType: 'text/plain',
-    body,
-  });
 }
 
 const sessionUser = {
@@ -504,23 +491,6 @@ async function installDashboardAuditApi(page: Page) {
   });
 }
 
-async function expectVisibleText(page: Page, textValue: string) {
-  try {
-    await page.getByText(textValue, { exact: false }).first().waitFor({
-      state: 'visible',
-      timeout: 15_000,
-    });
-  } catch (error) {
-    const visibleText = await page.locator('body').evaluate((element) =>
-      element instanceof HTMLElement ? element.innerText.slice(0, 2000) : '',
-    );
-    throw new Error(
-      `Expected visible text not found: ${textValue}\nVisible text snapshot:\n${visibleText}`,
-      { cause: error },
-    );
-  }
-}
-
 async function runDashboardAudit(page: Page, baseUrl: string) {
   const consoleMessages: string[] = [];
   const failedResponses: string[] = [];
@@ -630,6 +600,7 @@ async function main() {
   const baseUrl = process.env.E2E_BASE_URL || `http://127.0.0.1:${port}`;
   const browserName = resolveBrowser(process.env.E2E_BROWSER || 'chromium');
   const dashboardAudit = process.env.E2E_DASHBOARD_AUDIT === '1';
+  const qaJourneys = process.env.E2E_QA_JOURNEYS === '1';
   const isExternalTarget = Boolean(process.env.E2E_BASE_URL);
   const waitTimeoutMs = isExternalTarget ? 120_000 : 45_000;
 
@@ -648,6 +619,14 @@ async function main() {
 
     const browser = await launchBrowser(browserName);
     try {
+      if (qaJourneys) {
+        // Each journey opens its own browser context, so it gets its own
+        // mocked backend, storage and permissions.
+        const passed = await runQaJourneys(browser, baseUrl, process.env.E2E_QA_ONLY);
+        console.log(`Playwright QA journeys passed on ${browserName} (${passed} scenarios)`);
+        return;
+      }
+
       const page = await browser.newPage();
       if (dashboardAudit) {
         await runDashboardAudit(page, baseUrl);
