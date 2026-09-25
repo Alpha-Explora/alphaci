@@ -94,7 +94,7 @@ export function PipelineRunsTab({
     return (
       <WorkspaceEmpty
         title="No runs yet"
-        message="Push a commit, or open a pull request, and the run will appear here."
+        message="Push a commit to dev and the run will appear here."
         action={
           runsView.actionsUrl ? (
             <a
@@ -121,8 +121,8 @@ export function PipelineRunsTab({
             value={runsView.selectedBranch}
             onChange={(event) => runsView.selectBranch(event.target.value)}
           >
-            {/* EVERY branch. visibleSections is the FILTERED list, and using it
-                here collapses the picker to the branch already selected. */}
+            {/* EVERY pipeline branch. visibleSections is the FILTERED list, and
+                using it here collapses the picker to the branch selected. */}
             {runsView.sections.map((section) => (
               <option key={section.branch} value={section.branch}>
                 {section.branch}
@@ -185,13 +185,7 @@ export function PipelineRunsTab({
   );
 }
 
-/**
- * One branch's history, under a heading that names the branch.
- *
- * A branch outside the declared flow is marked rather than hidden: a repository
- * connected with its own conventions still has real runs, and silently dropping
- * them would make the tab lie about what executed.
- */
+/** One branch's history, under a heading that names the branch. */
 function BranchSection({
   projectId,
   section,
@@ -203,9 +197,6 @@ function BranchSection({
     <section className="ws-runsection">
       <div className="ws-runsection__head">
         <h3 className="ws-runsection__branch">{section.branch}</h3>
-        {!section.isPipelineBranch && (
-          <span className="ws-runsection__foreign">outside the flow</span>
-        )}
         <span className="ws-runsection__count">
           {section.commits.length === 1
             ? "1 commit"

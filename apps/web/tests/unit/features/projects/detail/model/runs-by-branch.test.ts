@@ -29,20 +29,17 @@ describe("groupRunsByPipelineBranch", () => {
     expect(sections.map((s) => s.branch)).toEqual(["dev", "uat", "main"]);
   });
 
-  it("puts a branch outside the flow after the declared ones and marks it", () => {
+  it("leaves out runs on branches outside the flow", () => {
+    // Every pull request added its merge ref and its head branch to the
+    // picker, which buried the three tiers the tab exists to navigate.
     const sections = groupRunsByPipelineBranch([
-      run("feature/spike", "2026-09-10T12:00:00Z"),
+      run("7/merge", "2026-09-10T13:00:00Z"),
+      run("fix/sonar-quality-fixes", "2026-09-10T12:00:00Z"),
       run("dev", "2026-09-10T08:00:00Z"),
     ]);
 
-    expect(sections.map((s) => s.branch)).toEqual([
-      "dev",
-      "uat",
-      "main",
-      "feature/spike",
-    ]);
-    expect(sections.at(-1)!.isPipelineBranch).toBe(false);
-    expect(sections[0]!.isPipelineBranch).toBe(true);
+    expect(sections.map((s) => s.branch)).toEqual([...PIPELINE_BRANCHES]);
+    expect(sections[0]!.commits).toHaveLength(1);
   });
 
   it("never invents an empty section for an undeclared branch", () => {
@@ -79,18 +76,6 @@ describe("groupRunsByPipelineBranch", () => {
       "newest",
       "middle",
       "older",
-    ]);
-  });
-
-  it("orders two undeclared branches by their most recent activity", () => {
-    const sections = groupRunsByPipelineBranch([
-      run("chore/old", "2026-09-01T10:00:00Z"),
-      run("feature/new", "2026-09-10T10:00:00Z"),
-    ]);
-
-    expect(sections.slice(3).map((s) => s.branch)).toEqual([
-      "feature/new",
-      "chore/old",
     ]);
   });
 

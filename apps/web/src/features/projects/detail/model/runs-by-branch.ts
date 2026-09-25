@@ -11,6 +11,14 @@
  * silently vanishes cannot say that. This is the one behaviour that separates
  * the view from a `groupBy` — absence is rendered, not skipped.
  *
+ * ONLY the declared branches appear. Runs on anything else — a pull request's
+ * merge ref (`7/merge`), the feature branch behind it, a leftover — are left
+ * out. Every pull request added two entries of its own, one for the merge ref
+ * our report recorded and one for the head branch GitHub labelled its
+ * unreported runs with, so the picker grew by two rows per PR and buried the
+ * three tiers it exists to navigate. Those runs are still on GitHub and in the
+ * cross-project /runs view; this tab is about what reached dev, uat and main.
+ *
  * Structural input rather than the wire type, following `run-diagnosis.ts`: the
  * rule needs a branch and a timestamp, so it should not be coupled to whatever
  * else `WorkflowRunSummary` happens to carry, and the generic hands the caller
@@ -21,7 +29,6 @@ import type { RunGroup } from "@/shared/api/contracts";
 import {
   PIPELINE_BRANCHES,
   isPipelineBranch,
-  pipelineBranchRank,
 } from "@/shared/api/pipeline-branches";
 
 import { groupRunsByCommit, type CommitRunGroup } from "./runs-by-commit";
@@ -54,29 +61,10 @@ export interface BranchRunSection<T extends BranchRun> {
    * workflow and listing them flat repeated every commit three times.
    */
   commits: CommitRunGroup<T>[];
-  /** False for a branch outside the declared flow, so the view can mark it. */
-  isPipelineBranch: boolean;
 }
 
 /**
- * Milliseconds for sorting, tolerant of a timestamp GitHub did not send.
- *
- * An unparseable date sorts oldest rather than throwing. Losing the position of
- * one row is a smaller failure than a run list that will not render.
- */
-function createdAtMs(run: BranchRun): number {
-  const parsed = Date.parse(run.createdAt);
-  return Number.isNaN(parsed) ? 0 : parsed;
-}
-
-/**
- * Group runs by branch, in promotion-flow order, keeping every declared branch.
- *
- * Unknown branches come after the flow — a repository connected with its own
- * conventions still shows its runs, but never displaces dev/uat/main — and are
- * ordered between themselves by recency. They are only included when they
- * actually have runs; inventing empty sections for branches the product does
- * not provision would be noise, where an empty `uat` is a fact.
+ * Group runs by declared branch: always exactly dev, uat, main, in that order.
  */
 export function groupRunsByPipelineBranch<T extends BranchRun>(
   runs: readonly T[],
@@ -92,7 +80,14 @@ export function groupRunsByPipelineBranch<T extends BranchRun>(
 
   const byBranch = new Map<string, T[]>();
   for (const run of runs) {
+    /*
+     * Filtered AFTER the report has corrected the branch, never on GitHub's
+     * label. A chained stage of a pull-request pipeline arrives labelled
+     * `main`; filtering on that would keep it and file a PR's run under main.
+     */
     const branch = reportedBranch(run, identities);
+    if (!isPipelineBranch(branch)) continue;
+
     const bucket = byBranch.get(branch);
     if (bucket) {
       bucket.push(run);
@@ -101,31 +96,17 @@ export function groupRunsByPipelineBranch<T extends BranchRun>(
     }
   }
 
-  const sections = [...byBranch.entries()].map(([branch, branchRuns]) => ({
+  // Mapped from the declared list, which is already in flow order, so a branch
+  // that recorded nothing still gets its section and nothing needs sorting.
+  return PIPELINE_BRANCHES.map((branch) => ({
     branch,
     // The branch is passed so the report join matches on branch AND sha: a
     // promoted commit exists on several tiers, each with its own report.
-    commits: groupRunsByCommit(branchRuns, reports, branch, identities),
-    isPipelineBranch: isPipelineBranch(branch),
+    commits: groupRunsByCommit(
+      byBranch.get(branch) ?? [],
+      reports,
+      branch,
+      identities,
+    ),
   }));
-
-  // Declared branches that recorded nothing. Added after the map so a branch
-  // with runs is never duplicated by its own placeholder.
-  for (const branch of PIPELINE_BRANCHES) {
-    if (!byBranch.has(branch)) {
-      sections.push({ branch, commits: [], isPipelineBranch: true });
-    }
-  }
-
-  return sections.sort((left, right) => {
-    const leftOrder = pipelineBranchRank(left.branch);
-    const rightOrder = pipelineBranchRank(right.branch);
-    if (leftOrder !== rightOrder) return leftOrder - rightOrder;
-
-    // Two unknown branches: newest activity first.
-    const leftLatest = left.commits[0]?.latest;
-    const rightLatest = right.commits[0]?.latest;
-    if (!leftLatest || !rightLatest) return 0;
-    return createdAtMs(rightLatest) - createdAtMs(leftLatest);
-  });
 }

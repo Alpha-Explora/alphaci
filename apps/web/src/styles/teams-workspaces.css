@@ -1086,17 +1086,6 @@
   font-variant-numeric: tabular-nums;
 }
 
-/* A branch the product does not provision. Marked, never hidden. */
-.ws-runsection__foreign {
-  font-size: 0.7rem;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--text-secondary);
-  border: 1px solid var(--border-subtle);
-  border-radius: 0.4rem;
-  padding: 0.05rem 0.35rem;
-}
-
 .ws-runsection__empty {
   margin: 0;
   font-size: 0.8rem;
