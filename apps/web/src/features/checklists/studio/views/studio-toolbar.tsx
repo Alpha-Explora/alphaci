@@ -1,10 +1,11 @@
 "use client";
 
-import type { FormEvent, ReactNode } from "react";
+import type { FormEvent, ReactNode, Ref } from "react";
 
 import {
   DEVICE_PRESETS,
   devicePresetDetail,
+  orientationLabel,
   type DevicePresetId,
 } from "../../model/qa-studio-rules";
 import { commitLabel, commitSourceLabel } from "../../model/qa-run-rules";
@@ -13,10 +14,13 @@ import type { StudioViewportViewModel } from "../view-models/use-studio-viewport
 import {
   ArrowRightIcon,
   BranchIcon,
+  CollapseIcon,
   DesktopIcon,
+  ExpandIcon,
   ExternalIcon,
   MobileIcon,
   ReloadIcon,
+  RotateIcon,
   TabletIcon,
   WarningIcon,
 } from "./studio-icons";
@@ -27,7 +31,22 @@ const DEVICE_ICONS: Record<DevicePresetId, () => ReactNode> = {
   mobile: MobileIcon,
 };
 
+/**
+ * The environment under test. Only ever the QA branch: with one deployment it
+ * is a fixed chip, with two targets on the branch it is a picker between them.
+ */
 function EnvironmentPicker({ vm }: Readonly<{ vm: StudioViewportViewModel }>) {
+  if (vm.environments.length === 1) {
+    return (
+      <div className="qa-toolbar__env">
+        <span className="qa-toolbar__label">Environment</span>
+        <span className="qa-toolbar__env-chip">
+          <BranchIcon />
+          {vm.environments[0].label}
+        </span>
+      </div>
+    );
+  }
   return (
     <label className="qa-toolbar__env">
       <span className="qa-toolbar__label">Environment</span>
@@ -39,7 +58,6 @@ function EnvironmentPicker({ vm }: Readonly<{ vm: StudioViewportViewModel }>) {
         {vm.environments.map((env) => (
           <option key={env.key} value={env.key}>
             {env.label}
-            {env.preview.isProduction ? " · production" : ""}
           </option>
         ))}
       </select>
@@ -65,11 +83,29 @@ function DeviceSwitch({ vm }: Readonly<{ vm: StudioViewportViewModel }>) {
           >
             <Icon />
             <span>{preset.label}</span>
-            {preset.width ? <span className="qa-device-switch__px">{preset.width}</span> : null}
+            <span className="qa-device-switch__px">{preset.width}</span>
           </button>
         );
       })}
     </div>
+  );
+}
+
+/** Portrait ⇄ landscape, for the devices that turn. The caption says which it is now. */
+function RotateButton({ vm }: Readonly<{ vm: StudioViewportViewModel }>) {
+  const next = vm.orientation === "portrait" ? "landscape" : "portrait";
+  return (
+    <button
+      type="button"
+      className="qa-rotate"
+      onClick={vm.rotate}
+      disabled={!vm.canRotate}
+      title={vm.canRotate ? `Rotate to ${next}` : `${vm.device.label} does not rotate`}
+    >
+      <RotateIcon />
+      <span>Rotate</span>
+      <span className="qa-rotate__state" aria-hidden="true">{orientationLabel(vm.dimensions.orientation)}</span>
+    </button>
   );
 }
 
@@ -105,7 +141,10 @@ function RouteField({ vm }: Readonly<{ vm: StudioViewportViewModel }>) {
   );
 }
 
-function FrameActions({ vm }: Readonly<{ vm: StudioViewportViewModel }>) {
+function FrameActions({
+  vm,
+  fullScreenRef,
+}: Readonly<{ vm: StudioViewportViewModel; fullScreenRef?: Ref<HTMLButtonElement> }>) {
   return (
     <div className="qa-toolbar__actions">
       <button
@@ -130,6 +169,17 @@ function FrameActions({ vm }: Readonly<{ vm: StudioViewportViewModel }>) {
           <ExternalIcon />
         </a>
       ) : null}
+      <button
+        ref={fullScreenRef}
+        type="button"
+        className="qa-icon-button qa-icon-button--full-screen"
+        onClick={vm.toggleFullScreen}
+        aria-pressed={vm.isFullScreen}
+        aria-label="Full screen"
+        title={vm.isFullScreen ? "Exit full screen (Esc)" : "Full screen"}
+      >
+        {vm.isFullScreen ? <CollapseIcon /> : <ExpandIcon />}
+      </button>
     </div>
   );
 }
@@ -166,15 +216,19 @@ export function CommitChip({
 export function StudioToolbar({
   vm,
   commit,
+  fullScreenRef,
 }: Readonly<{
   vm: StudioViewportViewModel;
   commit: { commitSha: string | null; commitSource: QaCommitSource | null } | null;
+  /** The Full screen toggle, so focus can return to it when the drawer's Dock button disappears. */
+  fullScreenRef?: Ref<HTMLButtonElement>;
 }>) {
   return (
     <div className="qa-toolbar">
       <div className="qa-toolbar__row">
         <EnvironmentPicker vm={vm} />
         <DeviceSwitch vm={vm} />
+        <RotateButton vm={vm} />
         {commit && vm.environment ? (
           <CommitChip
             branch={vm.environment.branch}
@@ -186,7 +240,7 @@ export function StudioToolbar({
       {/* The address bar: where in the environment, and the browser actions for it. */}
       <div className="qa-toolbar__row qa-toolbar__row--address">
         <RouteField vm={vm} />
-        <FrameActions vm={vm} />
+        <FrameActions vm={vm} fullScreenRef={fullScreenRef} />
       </div>
       {vm.pathError ? (
         <p className="qa-form-error qa-toolbar__error" id="qa-route-error" role="alert">

@@ -220,3 +220,67 @@ export function InfoIcon() {
     </Glyph>
   );
 }
+
+/** A device turning a quarter: rotate portrait ⇄ landscape. */
+export function RotateIcon() {
+  return (
+    <Glyph>
+      <rect x="2" y="6" width="8" height="8" rx="1.2" />
+      <path d="M8 2.25h2.5a3.25 3.25 0 0 1 3.25 3.25V8" />
+      <path d="M12 6.25 13.75 8l1.75-1.75" />
+    </Glyph>
+  );
+}
+
+export function ExpandIcon() {
+  return (
+    <Glyph>
+      <path d="M2.25 6V2.25H6M10 2.25h3.75V6M13.75 10v3.75H10M6 13.75H2.25V10" />
+    </Glyph>
+  );
+}
+
+export function CollapseIcon() {
+  return (
+    <Glyph>
+      <path d="M6 2.25V6H2.25M13.75 6H10V2.25M10 13.75V10h3.75M2.25 10H6v3.75" />
+    </Glyph>
+  );
+}
+
+/** Move to the other side. */
+export function SwapIcon() {
+  return (
+    <Glyph>
+      <path d="M2.5 5.5h11M11 3l2.5 2.5L11 8" />
+      <path d="M13.5 10.5h-11M5 8l-2.5 2.5L5 13" />
+    </Glyph>
+  );
+}
+
+/** Dock back beside the page: a panel on the right of a window. */
+export function DockIcon() {
+  return (
+    <Glyph>
+      <rect x="1.75" y="2.5" width="12.5" height="11" rx="1.2" />
+      <path d="M9.75 2.5v11" />
+    </Glyph>
+  );
+}
+
+export function MinimizeIcon() {
+  return (
+    <Glyph>
+      <path d="M3.5 12.25h9" />
+    </Glyph>
+  );
+}
+
+export function ChecklistIcon() {
+  return (
+    <Glyph>
+      <path d="m2.25 4.25 1.25 1.25 2.25-2.5M2.25 10.25l1.25 1.25 2.25-2.5" />
+      <path d="M8 4.5h5.75M8 10.5h5.75" />
+    </Glyph>
+  );
+}

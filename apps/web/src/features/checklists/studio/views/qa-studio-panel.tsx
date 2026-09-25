@@ -2,9 +2,15 @@
 
 import "./qa-studio.css";
 
+import { useId, type ReactNode, type Ref } from "react";
+
 import type { AppRole } from "@/shared/api/contracts";
 
 import { itemCountLabel } from "../../model/checklist-rules";
+import { passedLabel } from "../../model/qa-run-rules";
+import type { QaRun } from "../../model/qa-run-types";
+import { automationSignal, launcherLabel, NO_QA_ENVIRONMENT } from "../../model/qa-studio-rules";
+import { useFloatingChecklistFocus } from "../view-models/use-floating-checklist-focus";
 import { useQaRunViewModel, type QaRunViewModel } from "../view-models/use-qa-run-view-model";
 import {
   useStudioChecklistsViewModel,
@@ -16,6 +22,7 @@ import {
 } from "../view-models/use-studio-viewport-view-model";
 import { PreviewPane } from "./preview-pane";
 import { RunPanel } from "./run-panel";
+import { ChecklistIcon, DockIcon, MinimizeIcon, SwapIcon } from "./studio-icons";
 import { StudioToolbar } from "./studio-toolbar";
 
 function StudioNotice({
@@ -112,7 +119,7 @@ function RunColumn({
           appRole={appRole}
         />
       ) : (
-        <p className="qa-run-card__wait">Choose an environment to see its run.</p>
+        <p className="qa-run-card__wait">{NO_QA_ENVIRONMENT.runText}</p>
       )}
     </div>
   );
@@ -130,23 +137,174 @@ function PreviewColumn({ vm }: Readonly<{ vm: StudioViewportViewModel }>) {
     );
   }
   if (vm.environments.length === 0) {
+    // Never another branch instead: QA runs are only accepted on the QA branch.
     return (
       <StudioNotice
-        title="No hosted environment to test"
-        text={
-          vm.providerError ??
-          "Once this project has a frontend deployment, its branches can be opened and tested here."
-        }
+        title={vm.providerError ? "Deployments could not be read" : NO_QA_ENVIRONMENT.title}
+        text={vm.providerError ?? NO_QA_ENVIRONMENT.text}
       />
     );
   }
   return <PreviewPane vm={vm} />;
 }
 
+/** The floating drawer's header: what it is, how far the run is, and where it goes. */
+function DrawerHeader({
+  vm,
+  run,
+  drawerId,
+  headingId,
+  headingRef,
+}: Readonly<{
+  vm: StudioViewportViewModel;
+  run: QaRun | null;
+  drawerId: string;
+  headingId: string;
+  headingRef: Ref<HTMLHeadingElement>;
+}>) {
+  const other = vm.floatingSide === "right" ? "left" : "right";
+  return (
+    <div className="qa-drawer__head">
+      <div className="qa-drawer__heading">
+        <ChecklistIcon />
+        <h2 className="qa-drawer__title" id={headingId} ref={headingRef} tabIndex={-1}>
+          QA checklist
+        </h2>
+        {run ? <span className="qa-drawer__progress">{passedLabel(run)}</span> : null}
+      </div>
+      <div className="qa-drawer__actions">
+        <button
+          type="button"
+          className="qa-drawer__button"
+          onClick={vm.snapChecklist}
+          aria-label={`Move to the ${other} side`}
+          title={`Move to the ${other} side`}
+        >
+          <SwapIcon />
+        </button>
+        <button
+          type="button"
+          className="qa-drawer__button"
+          onClick={vm.exitFullScreen}
+          aria-label="Dock beside the page"
+          title="Dock beside the page (exit full screen)"
+        >
+          <DockIcon />
+        </button>
+        <button
+          type="button"
+          className="qa-drawer__button"
+          onClick={vm.minimizeChecklist}
+          aria-label="Minimize checklist"
+          aria-expanded="true"
+          aria-controls={drawerId}
+          title="Minimize checklist"
+        >
+          <MinimizeIcon />
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/** The pill that brings a minimized drawer back, with the run's progress and CI state. */
+function ChecklistLauncher({
+  vm,
+  run,
+  drawerId,
+  launcherRef,
+}: Readonly<{
+  vm: StudioViewportViewModel;
+  run: QaRun | null;
+  drawerId: string;
+  launcherRef: Ref<HTMLButtonElement>;
+}>) {
+  const signal = automationSignal(run);
+  return (
+    <button
+      ref={launcherRef}
+      type="button"
+      className="qa-launcher"
+      onClick={vm.toggleChecklist}
+      aria-expanded={vm.isChecklistOpen}
+      aria-controls={drawerId}
+    >
+      <ChecklistIcon />
+      <span className="qa-launcher__text">{launcherLabel(run)}</span>
+      <span className="qa-launcher__dot" data-tone={signal.tone} title={signal.label} aria-hidden="true" />
+      <span className="sr-only">{signal.label}</span>
+    </button>
+  );
+}
+
+/** "docked" beside the page, or the full-screen drawer "open" / "minimized". */
+function checklistMode(vm: StudioViewportViewModel): "docked" | "open" | "minimized" {
+  if (!vm.isFullScreen) return "docked";
+  return vm.isChecklistOpen ? "open" : "minimized";
+}
+
+/** What the toolbar's commit chip and the drawer/launcher show, once the run lookup has answered. */
+function runSnapshot(run: QaRunViewModel): {
+  commit: { commitSha: string | null; commitSource: QaRunViewModel["commitSource"] } | null;
+  current: QaRun | null;
+} {
+  if (run.status !== "ready") return { commit: null, current: null };
+  return { commit: { commitSha: run.commitSha, commitSource: run.commitSource }, current: run.run };
+}
+
+/**
+ * The run column's one container. Docked it is a plain column; in full screen
+ * CSS floats it as a drawer and it gains a region role and a header. The
+ * column inside (`children`) keeps its place either way, so it never remounts.
+ */
+function RunDock({
+  vm,
+  run,
+  drawerId,
+  headingId,
+  headingRef,
+  children,
+}: Readonly<{
+  vm: StudioViewportViewModel;
+  run: QaRun | null;
+  drawerId: string;
+  headingId: string;
+  headingRef: Ref<HTMLHeadingElement>;
+  children: ReactNode;
+}>) {
+  const floating = vm.isFullScreen;
+  return (
+    <div
+      className="qa-studio__run"
+      id={drawerId}
+      role={floating ? "region" : undefined}
+      aria-labelledby={floating ? headingId : undefined}
+    >
+      {floating ? (
+        <DrawerHeader vm={vm} run={run} drawerId={drawerId} headingId={headingId} headingRef={headingRef} />
+      ) : null}
+      {children}
+    </div>
+  );
+}
+
+/** Loading reserves the frame's height; a message sizes to itself. */
+function previewFramed(vm: StudioViewportViewModel): "true" | "false" {
+  return vm.status === "loading" || vm.canFrame ? "true" : "false";
+}
+
 /**
  * QA Studio: the deployed page on the left, the checklist being verified on
  * the right, side by side so a tester never leaves the page to record what
  * they saw. Every right comes from the server; this view only arranges it.
+ *
+ * Full screen re-lays out the SAME tree with CSS (`data-full-screen`): the
+ * studio covers the viewport and the run column becomes a floating drawer.
+ * The run column is mounted exactly once — never a second copy for the
+ * drawer — because it owns item drafts, the sign-off dialog, the export timer
+ * and automation polling. Minimizing only hides it. Nothing is portalled: the
+ * theme tokens are scoped to the dashboard shell, and the sign-off dialog
+ * needs the viewport, not a drawer, as its containing block.
  */
 export function QaStudioPanel({
   projectId,
@@ -161,7 +319,14 @@ export function QaStudioPanel({
     branch: viewport.environment?.branch ?? null,
     checklistId: checklists.selected?.id ?? null,
   });
-  const commit = run.status === "ready" ? { commitSha: run.commitSha, commitSource: run.commitSource } : null;
+  const focus = useFloatingChecklistFocus({
+    isFullScreen: viewport.isFullScreen,
+    isChecklistOpen: viewport.isChecklistOpen,
+  });
+  const drawerId = useId();
+  const headingId = useId();
+  const snapshot = runSnapshot(run);
+  const mode = checklistMode(viewport);
 
   return (
     <div
@@ -169,16 +334,24 @@ export function QaStudioPanel({
       id="project-detail-panel-qa"
       aria-labelledby="project-detail-tab-qa"
       className="qa-studio"
+      data-full-screen={String(viewport.isFullScreen)}
+      data-checklist={mode}
+      data-side={viewport.floatingSide}
     >
-      {viewport.environments.length > 0 ? <StudioToolbar vm={viewport} commit={commit} /> : null}
+      {viewport.environments.length > 0 ? (
+        <StudioToolbar vm={viewport} commit={snapshot.commit} fullScreenRef={focus.toggleRef} />
+      ) : null}
       <div className="qa-studio__panes">
-        <div
-          className="qa-studio__preview"
-          data-framed={viewport.status === "loading" || viewport.canFrame ? "true" : "false"}
-        >
+        <div className="qa-studio__preview" data-framed={previewFramed(viewport)}>
           <PreviewColumn vm={viewport} />
         </div>
-        <div className="qa-studio__run">
+        <RunDock
+          vm={viewport}
+          run={snapshot.current}
+          drawerId={drawerId}
+          headingId={headingId}
+          headingRef={focus.drawerRef}
+        >
           <RunColumn
             projectId={projectId}
             appRole={appRole}
@@ -186,8 +359,11 @@ export function QaStudioPanel({
             viewport={viewport}
             run={run}
           />
-        </div>
+        </RunDock>
       </div>
+      {mode === "minimized" ? (
+        <ChecklistLauncher vm={viewport} run={snapshot.current} drawerId={drawerId} launcherRef={focus.launcherRef} />
+      ) : null}
     </div>
   );
 }

@@ -81,8 +81,8 @@ function setup(run: QaRun | null) {
     providerError: null,
     branches: [
       {
-        branch: "main",
-        isProduction: true,
+        branch: "uat",
+        isProduction: false,
         deploymentId: "d1",
         targetId: "web",
         targetName: "storefront-web",

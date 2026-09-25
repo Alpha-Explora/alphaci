@@ -3,73 +3,108 @@
 import { useState, type CSSProperties } from "react";
 
 import {
-  devicePresetDetail,
-  fitScale,
+  addressLabel,
+  chromeSize,
+  dimensionsLabel,
+  fitDeviceScale,
+  frameChrome,
+  orientationLabel,
   scaleLabel,
-  type DevicePreset,
 } from "../../model/qa-studio-rules";
 import { usePaneSize } from "../view-models/use-pane-size";
 import type { StudioViewportViewModel } from "../view-models/use-studio-viewport-view-model";
 import { ExternalIcon } from "./studio-icons";
 
+/** The CSS custom properties one device is drawn from. */
+function deviceStyle(vm: StudioViewportViewModel, stage: { width: number; height: number }) {
+  const { width, height, orientation } = vm.dimensions;
+  const chrome = frameChrome(vm.device.frame, orientation);
+  const outer = chromeSize(chrome);
+  const scale = fitDeviceScale(width, height, stage.width, stage.height, outer.width, outer.height);
+  const style = {
+    "--qa-screen-w": width,
+    "--qa-screen-h": height,
+    "--qa-scale": scale,
+    "--qa-chrome-top": `${chrome.top}px`,
+    "--qa-chrome-right": `${chrome.right}px`,
+    "--qa-chrome-bottom": `${chrome.bottom}px`,
+    "--qa-chrome-left": `${chrome.left}px`,
+  } as CSSProperties;
+  return { style, scale };
+}
+
+function captionText(vm: StudioViewportViewModel): string {
+  const size = `${vm.device.label} · ${dimensionsLabel(vm.dimensions)}`;
+  return vm.device.rotatable ? `${size} · ${orientationLabel(vm.dimensions.orientation)}` : size;
+}
+
 /**
- * The live page at the chosen device width.
+ * The live page, drawn at the device's true viewport inside its hardware.
  *
- * A device wider than the pane is drawn smaller rather than cropped: the page
- * still lays out at the device's real width, and the frame is scaled to fit —
- * the same approach as the Overview thumbnail — with the scale printed so a
- * tester knows 62% is not how it ships. The sandbox is decided by the ViewModel
- * from the shared framing rule; the frame is interactive, because this is where
- * the testing happens.
+ * ONE DOM for every device, orientation and for full screen: the chrome parts
+ * (browser bar, bezel sensor, home bar, side buttons) are always rendered and
+ * CSS shows the ones the frame has. Switching device or rotating changes only
+ * `data-*` attributes and custom properties, so React never re-creates the
+ * iframe and the site under test keeps its scroll, form input and login.
+ *
+ * The page lays out at the device's real size; only the screen is scaled to
+ * fit the stage (by both axes), with the scale printed so a tester knows 48%
+ * is not how it ships. The chrome is not scaled, so it stays legible, and it
+ * sits outside the screen so it never covers a site's fixed header.
  */
 function DeviceFrame({
+  vm,
   url,
-  frameKey,
   sandbox,
-  host,
-  device,
-}: Readonly<{
-  url: string;
-  frameKey: string;
-  sandbox: string;
-  host: string | null;
-  device: DevicePreset;
-}>) {
-  const { ref: paneRef, width: paneWidth, height: paneHeight } = usePaneSize<HTMLDivElement>();
+}: Readonly<{ vm: StudioViewportViewModel; url: string; sandbox: string }>) {
+  const { ref: stageRef, width, height } = usePaneSize<HTMLDivElement>();
   const [loadedKey, setLoadedKey] = useState<string | null>(null);
-  const scale = fitScale(device.width, paneWidth);
+  const { style, scale } = deviceStyle(vm, { width, height });
   const label = scaleLabel(scale);
-  const style = {
-    "--qa-device-width": device.width === null ? "100%" : `${device.width}px`,
-    "--qa-scale": scale,
-    // The page lays out at the device's height too: the pane's, un-scaled.
-    "--qa-device-height": paneHeight > 0 ? `${paneHeight / scale}px` : "100%",
-  } as CSSProperties;
+  const frameKey = vm.frameKey;
 
   return (
     <>
       <div className="qa-preview__caption">
-        <span>
-          {device.label} · {devicePresetDetail(device)}
-        </span>
+        <span className="qa-preview__device">{captionText(vm)}</span>
         {label ? <span className="qa-preview__scale">{label}</span> : null}
       </div>
-      <div className="qa-stage" data-device={device.id} ref={paneRef}>
-        <div className="qa-device" style={style}>
-          {loadedKey === frameKey ? null : (
-            <p className="qa-device__loading" role="status">
-              Loading preview…
-            </p>
-          )}
-          <iframe
-            key={frameKey}
-            className="qa-device__frame"
-            onLoad={() => setLoadedKey(frameKey)}
-            referrerPolicy="no-referrer"
-            sandbox={sandbox}
-            src={url}
-            title={`Preview of ${host ?? url}`}
-          />
+      <div className="qa-stage" data-frame={vm.device.frame} ref={stageRef}>
+        <div
+          className="qa-device"
+          data-frame={vm.device.frame}
+          data-orientation={vm.dimensions.orientation}
+          style={style}
+        >
+          <div className="qa-device__chrome qa-device__bar" aria-hidden="true">
+            <span className="qa-device__dots">
+              <span />
+              <span />
+              <span />
+            </span>
+            <span className="qa-device__address">{addressLabel(url)}</span>
+            <span className="qa-device__size">{dimensionsLabel(vm.dimensions)}</span>
+          </div>
+          <span className="qa-device__chrome qa-device__sensor" aria-hidden="true" />
+          <span className="qa-device__chrome qa-device__home" aria-hidden="true" />
+          <span className="qa-device__chrome qa-device__buttons qa-device__buttons--start" aria-hidden="true" />
+          <span className="qa-device__chrome qa-device__buttons qa-device__buttons--end" aria-hidden="true" />
+          <div className="qa-device__screen">
+            {loadedKey === frameKey ? null : (
+              <p className="qa-device__loading" role="status">
+                Loading preview…
+              </p>
+            )}
+            <iframe
+              key={frameKey}
+              className="qa-device__frame"
+              onLoad={() => setLoadedKey(frameKey)}
+              referrerPolicy="no-referrer"
+              sandbox={sandbox}
+              src={url}
+              title={`Preview of ${vm.host ?? url}`}
+            />
+          </div>
         </div>
       </div>
     </>
@@ -107,15 +142,7 @@ function PaneContent({ vm }: Readonly<{ vm: StudioViewportViewModel }>) {
       </div>
     );
   }
-  return (
-    <DeviceFrame
-      url={vm.pageUrl}
-      frameKey={vm.frameKey}
-      sandbox={vm.sandbox}
-      host={vm.host}
-      device={vm.device}
-    />
-  );
+  return <DeviceFrame vm={vm} url={vm.pageUrl} sandbox={vm.sandbox} />;
 }
 
 export function PreviewPane({ vm }: Readonly<{ vm: StudioViewportViewModel }>) {

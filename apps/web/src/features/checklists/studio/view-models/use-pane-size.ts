@@ -1,28 +1,31 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 
 /**
- * The content box of an element, kept current as it resizes. The device
- * preview needs it to fit a 768px tablet into a 500px pane.
+ * The content box of an element (padding excluded), kept current as it
+ * resizes. The device preview needs it to fit a 1440 × 900 desktop into a
+ * 700px pane, and to refit when the studio goes full screen.
+ *
+ * The ref is a callback ref held in state, so the observer follows the element
+ * if it is ever replaced rather than watching a detached node forever.
  *
  * jsdom has no ResizeObserver; the size then stays 0 × 0 and every scale rule
  * treats an unmeasured pane as "draw at 100%".
  */
 export function usePaneSize<T extends HTMLElement>() {
-  const ref = useRef<T>(null);
+  const [element, setElement] = useState<T | null>(null);
   const [size, setSize] = useState({ width: 0, height: 0 });
 
   useEffect(() => {
-    const box = ref.current;
-    if (!box || typeof ResizeObserver === "undefined") return;
+    if (!element || typeof ResizeObserver === "undefined") return;
     const observer = new ResizeObserver(([entry]) => {
       if (!entry) return;
       setSize({ width: entry.contentRect.width, height: entry.contentRect.height });
     });
-    observer.observe(box);
+    observer.observe(element);
     return () => observer.disconnect();
-  }, []);
+  }, [element]);
 
-  return { ref, ...size };
+  return { ref: setElement, ...size };
 }

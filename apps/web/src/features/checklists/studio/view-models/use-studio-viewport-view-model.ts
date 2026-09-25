@@ -14,25 +14,37 @@ import { useBranchPreviewsViewModel, useDashboardOrigin } from "@/features/proje
 import {
   devicePreset,
   previewPageUrl,
+  resolveDeviceDimensions,
   resolveEnvironment,
   sanitizePreviewPath,
   studioEnvironments,
+  type DeviceDimensions,
+  type DeviceOrientation,
   type DevicePreset,
   type DevicePresetId,
   type StudioEnvironment,
 } from "../../model/qa-studio-rules";
+import { useStudioFullScreen, type StudioFullScreenState } from "./use-studio-full-screen";
 
-export interface StudioViewportViewModel {
+export interface StudioViewportViewModel extends StudioFullScreenState {
   /** The previews request: loading until the environments are known. */
   status: "loading" | "ready" | "error";
   error: string | null;
   /** Set when a host could not be reached, so an empty list is not read as "nothing deployed". */
   providerError: string | null;
+  /** Only the QA branch's page deployments: QA runs are accepted nowhere else. */
   environments: StudioEnvironment[];
   environment: StudioEnvironment | null;
   selectEnvironment: (key: string) => void;
   device: DevicePreset;
   setDevice: (id: DevicePresetId) => void;
+  /** The chosen orientation; kept across devices, applied only to rotatable ones. */
+  orientation: DeviceOrientation;
+  /** The viewport the page lays out at, orientation applied. */
+  dimensions: DeviceDimensions;
+  canRotate: boolean;
+  /** Portrait ⇄ landscape. Does nothing on a device that cannot rotate. */
+  rotate: () => void;
   pathDraft: string;
   setPathDraft: (value: string) => void;
   pathError: string | null;
@@ -52,7 +64,11 @@ export interface StudioViewportViewModel {
   canFrame: boolean;
   /** Why the page is not framed, when it is not. */
   unavailableReason: string | null;
-  /** Changes whenever the frame must re-mount: a reload, a new route, a new environment. */
+  /**
+   * Changes whenever the frame must re-mount: a reload, a new route, a new
+   * environment. Never the device, orientation or full screen: those only
+   * restyle the frame, so the page under test keeps its state.
+   */
   frameKey: string;
   reload: () => void;
   retry: () => void;
@@ -92,9 +108,15 @@ function frameState(
   };
 }
 
+function frameKeyOf(environment: StudioEnvironment | null, pageUrl: string | null, nonce: number): string {
+  return `${environment?.key ?? "none"}|${pageUrl ?? ""}|${String(nonce)}`;
+}
+
 /**
  * ViewModel for the studio's left pane and toolbar: which environment is
- * under test, at what device width, on which route.
+ * under test (only ever the QA branch), on which device and orientation, on
+ * which route — and whether the studio is full screen with its checklist
+ * floating over the page.
  *
  * The previews come from the same ViewModel the Overview's deployment cards
  * use, so the studio sees exactly the environments and embeddability verdicts
@@ -108,6 +130,8 @@ export function useStudioViewportViewModel(options: {
   const origin = useDashboardOrigin();
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
   const [deviceId, setDeviceId] = useState<DevicePresetId>("desktop");
+  const [orientation, setOrientation] = useState<DeviceOrientation>("portrait");
+  const fullScreen = useStudioFullScreen();
   const [path, setPath] = useState("/");
   const [pathDraft, setPathDraft] = useState("/");
   const [pathError, setPathError] = useState<string | null>(null);
@@ -117,6 +141,7 @@ export function useStudioViewportViewModel(options: {
   const environment = resolveEnvironment(environments, selectedKey);
   const preview = environment?.preview ?? null;
   const frame = frameState(preview, path, origin);
+  const device = devicePreset(deviceId);
 
   function selectEnvironment(key: string) {
     // A route on one environment means nothing on another: start at its root.
@@ -152,15 +177,22 @@ export function useStudioViewportViewModel(options: {
     environments,
     environment,
     selectEnvironment,
-    device: devicePreset(deviceId),
+    device,
     setDevice: setDeviceId,
+    orientation,
+    dimensions: resolveDeviceDimensions(device, orientation),
+    canRotate: device.rotatable,
+    rotate: () => {
+      if (device.rotatable) setOrientation((value) => (value === "portrait" ? "landscape" : "portrait"));
+    },
     pathDraft,
     setPathDraft: updatePathDraft,
     pathError,
     submitPath,
     ...frame,
-    frameKey: `${environment?.key ?? "none"}|${frame.pageUrl ?? ""}|${String(nonce)}`,
+    frameKey: frameKeyOf(environment, frame.pageUrl, nonce),
     reload: () => setNonce((value) => value + 1),
     retry: previews.reload,
+    ...fullScreen,
   };
 }

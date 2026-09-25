@@ -1,19 +1,33 @@
 import {
+  addressLabel,
+  automationSignal,
+  chromeSize,
   defaultEnvironmentKey,
+  DEVICE_PRESETS,
   devicePreset,
   devicePresetDetail,
-  fitScale,
+  dimensionsLabel,
+  fitDeviceScale,
+  frameChrome,
+  launcherLabel,
+  MIN_DEVICE_SCALE,
+  NO_QA_ENVIRONMENT,
+  orientationLabel,
   previewPageUrl,
+  QA_BRANCH,
+  resolveDeviceDimensions,
   resolveEnvironment,
   sanitizePreviewPath,
   scaleLabel,
   studioEnvironments,
 } from "../../../../../src/features/checklists/model/qa-studio-rules";
 import type { ProjectBranchPreview } from "../../../../../src/shared/api/contracts";
+import { automation, qualitySuccess, verifyFailure } from "../qa-automation-fixtures";
+import { qaRun, runItem } from "../qa-run-fixtures";
 
 function preview(overrides: Partial<ProjectBranchPreview> = {}): ProjectBranchPreview {
   return {
-    branch: "main",
+    branch: "uat",
     isProduction: false,
     deploymentId: "d1",
     targetId: "web",
@@ -33,56 +47,150 @@ function preview(overrides: Partial<ProjectBranchPreview> = {}): ProjectBranchPr
   };
 }
 
-describe("studioEnvironments", () => {
-  it("keeps page environments (or ones with no surface) and drops log-only backends", () => {
+describe("studioEnvironments (QA branch only)", () => {
+  it("mirrors the backend's QA branch", () => {
+    expect(QA_BRANCH).toBe("uat");
+  });
+
+  it("offers only the uat page deployments — never main, production or another branch", () => {
     const envs = studioEnvironments({
       branches: [
         preview({ branch: "main", isProduction: true, surface: "page" }),
         preview({ branch: "uat" }),
-        preview({ branch: "main", targetId: "api", surface: "logs" }),
+        preview({ branch: "dev", targetId: "web" }),
+        preview({ branch: "feature/x" }),
+        preview({ branch: "uat", targetId: "api", surface: "logs" }),
       ],
     });
-    expect(envs.map((env) => env.key)).toEqual(["web:main", "web:uat"]);
-    expect(envs.map((env) => env.label)).toEqual(["main", "uat"]);
+    expect(envs.map((env) => env.key)).toEqual(["web:uat"]);
+    expect(envs.map((env) => env.label)).toEqual(["uat"]);
     expect(studioEnvironments(null)).toEqual([]);
   });
 
-  it("tells two targets on one branch apart by name", () => {
+  it("is empty when uat is not deployed, even though main is", () => {
+    const envs = studioEnvironments({ branches: [preview({ branch: "main", isProduction: true })] });
+    expect(envs).toEqual([]);
+    expect(defaultEnvironmentKey(envs)).toBeNull();
+    expect(resolveEnvironment(envs, "web:main")).toBeNull();
+  });
+
+  it("tells two targets deploying uat apart by name", () => {
     const envs = studioEnvironments({
       branches: [preview(), preview({ targetId: "admin", targetName: "admin-web" })],
     });
-    expect(envs.map((env) => env.label)).toEqual(["main · storefront-web", "main · admin-web"]);
+    expect(envs.map((env) => env.label)).toEqual(["uat · storefront-web", "uat · admin-web"]);
   });
 
-  it("defaults to production, then main, then the first, and falls back when a choice vanishes", () => {
+  it("defaults to the first uat deployment and falls back to it when a choice vanishes", () => {
     const envs = studioEnvironments({
-      branches: [preview({ branch: "feature" }), preview({ branch: "main" }), preview({ branch: "prod", isProduction: true })],
+      branches: [preview(), preview({ targetId: "admin", targetName: "admin-web" })],
     });
-    expect(defaultEnvironmentKey(envs)).toBe("web:prod");
-    expect(defaultEnvironmentKey(envs.slice(0, 2))).toBe("web:main");
-    expect(defaultEnvironmentKey(envs.slice(0, 1))).toBe("web:feature");
-    expect(defaultEnvironmentKey([])).toBeNull();
-    expect(resolveEnvironment(envs, "web:feature")?.branch).toBe("feature");
-    expect(resolveEnvironment(envs, "gone")?.branch).toBe("prod");
+    expect(defaultEnvironmentKey(envs)).toBe("web:uat");
+    expect(resolveEnvironment(envs, "admin:uat")?.key).toBe("admin:uat");
+    expect(resolveEnvironment(envs, "web:main")?.key).toBe("web:uat");
+  });
+
+  it("explains the missing QA environment without naming another branch to test", () => {
+    expect(NO_QA_ENVIRONMENT.title).toBe("No uat deployment yet");
+    expect(NO_QA_ENVIRONMENT.text).toMatch(/^QA Studio tests the uat environment/);
   });
 });
 
-describe("devices and scale", () => {
-  it("defines Desktop (fills), Tablet 768 and Mobile 375", () => {
-    expect(devicePreset("desktop").width).toBeNull();
-    expect(devicePreset("tablet").width).toBe(768);
-    expect(devicePreset("mobile").width).toBe(375);
-    expect(devicePresetDetail(devicePreset("tablet"))).toBe("768px wide");
-    expect(devicePresetDetail(devicePreset("desktop"))).toBe("Fills the pane");
+describe("devices", () => {
+  it("defines true viewports: Desktop 1440 × 900 (browser), Tablet 768 × 1024 and Mobile 375 × 812", () => {
+    expect(DEVICE_PRESETS.map((p) => [p.id, p.width, p.height, p.frame, p.rotatable])).toEqual([
+      ["desktop", 1440, 900, "browser", false],
+      ["tablet", 768, 1024, "tablet", true],
+      ["mobile", 375, 812, "phone", true],
+    ]);
+    expect(devicePresetDetail(devicePreset("tablet"))).toBe("768 × 1024");
+    expect(dimensionsLabel({ width: 1440, height: 900 })).toBe("1440 × 900");
   });
 
-  it("scales a device down to fit the pane, never up", () => {
-    expect(fitScale(768, 500)).toBeCloseTo(0.651, 3);
-    expect(fitScale(375, 500)).toBe(1);
-    expect(fitScale(null, 500)).toBe(1);
-    expect(fitScale(768, 0)).toBe(1);
-    expect(scaleLabel(0.651)).toBe("Scaled to 65%");
+  it("swaps a rotatable device's sides in landscape and keeps Desktop as it is", () => {
+    expect(resolveDeviceDimensions(devicePreset("tablet"), "portrait")).toEqual({ width: 768, height: 1024, orientation: "portrait" });
+    expect(resolveDeviceDimensions(devicePreset("tablet"), "landscape")).toEqual({ width: 1024, height: 768, orientation: "landscape" });
+    expect(resolveDeviceDimensions(devicePreset("mobile"), "landscape")).toEqual({ width: 812, height: 375, orientation: "landscape" });
+    // Desktop cannot rotate: asking for portrait still gives the 1440 × 900 landscape viewport.
+    expect(resolveDeviceDimensions(devicePreset("desktop"), "portrait")).toEqual({ width: 1440, height: 900, orientation: "landscape" });
+    expect(orientationLabel("landscape")).toBe("Landscape");
+  });
+
+  it("draws the chrome outside the screen: a browser bar on top, a symmetric tablet bezel, a phone chassis that turns", () => {
+    expect(frameChrome("browser", "landscape")).toMatchObject({ top: 40, right: 0, bottom: 0, left: 0 });
+    expect(frameChrome("tablet", "portrait")).toEqual(frameChrome("tablet", "landscape"));
+    const portrait = frameChrome("phone", "portrait");
+    const landscape = frameChrome("phone", "landscape");
+    // A quarter turn: the island's top bezel becomes the left, the chin the right.
+    expect([landscape.left, landscape.right, landscape.top, landscape.bottom]).toEqual([
+      portrait.top,
+      portrait.bottom,
+      portrait.left,
+      portrait.right,
+    ]);
+    expect(chromeSize(portrait)).toEqual({ width: 12 + 12 + 6, height: 44 + 28 });
+    expect(chromeSize(landscape)).toEqual({ width: 44 + 28, height: 12 + 12 + 6 });
+  });
+});
+
+describe("fitDeviceScale (both axes, never above 1)", () => {
+  it("is limited by width in a narrow split pane", () => {
+    // 1440 × 900 + 40px bar into a 734 × 700 stage: width wins (734/1440).
+    expect(fitDeviceScale(1440, 900, 734, 700, 0, 40)).toBeCloseTo(734 / 1440, 6);
+  });
+
+  it("is limited by height on a short, wide stage", () => {
+    // Full screen 1414 × 760: width allows 0.98, height (760 - 40) / 900 = 0.8.
+    expect(fitDeviceScale(1440, 900, 1414, 760, 0, 40)).toBeCloseTo(0.8, 6);
+  });
+
+  it("subtracts the chrome on both axes", () => {
+    // Phone portrait: (400 - 30) / 375 vs (600 - 72) / 812.
+    expect(fitDeviceScale(375, 812, 400, 600, 30, 72)).toBeCloseTo(528 / 812, 6);
+  });
+
+  it("never draws a device larger than life", () => {
+    expect(fitDeviceScale(375, 812, 2000, 2000, 30, 72)).toBe(1);
+  });
+
+  it("is 1 before the stage is measured and never collapses to zero", () => {
+    expect(fitDeviceScale(1440, 900, 0, 0, 0, 40)).toBe(1);
+    expect(fitDeviceScale(0, 900, 500, 500, 0, 40)).toBe(1);
+    expect(fitDeviceScale(1440, 900, 20, 20, 0, 40)).toBe(MIN_DEVICE_SCALE);
+  });
+
+  it("labels a scaled-down device and says nothing at 100%", () => {
+    expect(scaleLabel(0.509)).toBe("Scaled to 51%");
     expect(scaleLabel(1)).toBeNull();
+  });
+});
+
+describe("floating checklist launcher", () => {
+  it("says how far the run is, or just the name before one exists", () => {
+    const run = qaRun({ items: [runItem(0, { status: "passed" }), runItem(1), runItem(2, { status: "passed" })] });
+    expect(launcherLabel(run)).toBe("QA checklist · 2/3 passed");
+    expect(launcherLabel(null)).toBe("QA checklist");
+  });
+
+  it("gives one automation dot: running wins, then a failure, then a pass", () => {
+    expect(automationSignal(qaRun({ automation: automation() })).tone).toBe("failed");
+    expect(
+      automationSignal(qaRun({ automation: automation({ verify: verifyFailure({ status: "running" }) }) })).tone,
+    ).toBe("running");
+    expect(
+      automationSignal(qaRun({ automation: automation({ verify: null, quality: qualitySuccess() }) })),
+    ).toEqual({ tone: "passed", label: "Automated tests passed" });
+    expect(automationSignal(qaRun({ automation: undefined })).tone).toBe("none");
+    expect(automationSignal(null)).toEqual({ tone: "none", label: "No automated results" });
+    expect(
+      automationSignal(qaRun({ automation: automation({ verify: verifyFailure({ status: "cancelled" }), quality: null }) })).tone,
+    ).toBe("none");
+  });
+
+  it("puts the host and path in the browser frame's address pill", () => {
+    expect(addressLabel("https://shop.example.com/")).toBe("shop.example.com");
+    expect(addressLabel("https://shop.example.com/checkout?step=2")).toBe("shop.example.com/checkout?step=2");
+    expect(addressLabel("not a url")).toBe("not a url");
   });
 });
 

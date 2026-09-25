@@ -104,7 +104,12 @@ const ROLE_BADGES: Record<AppRole, string> = {
 const WORKSPACE = { id: 'ws-checkout', name: 'Checkout squad' };
 const PROJECT_ID = 'project-1';
 const MAIN_SHA = 'a1b2c3d4e5f60718293a4b5c6d7e8f9012345678';
-const PREVIEW_ORIGIN = 'https://storefront-web.vercel.app';
+/* uat, the QA branch, is deployed at its own commit from its own URL; main is
+ * deployed too, and QA Studio must never offer it. */
+const UAT_SHA = '9f8e7d6c5b4a39281706f5e4d3c2b1a098765432';
+const PREVIEW_ORIGIN = 'https://storefront-web-git-uat.vercel.app';
+const MAIN_PREVIEW_ORIGIN = 'https://storefront-web.vercel.app';
+const QA_BRANCH = 'uat';
 const VERIFY_RUN_URL = 'https://github.com/tone/storefront-web/actions/runs/11873450921';
 const QUALITY_RUN_URL = 'https://github.com/tone/storefront-web/actions/runs/11873450377';
 
@@ -440,7 +445,7 @@ class QaMockBackend {
   }
 
   seedRun(checklist: QaChecklist, createdBy: QaActor): RunRow {
-    const run = this.createRunRow(checklist, 'main', createdBy);
+    const run = this.createRunRow(checklist, QA_BRANCH, UAT_SHA, createdBy);
     this.runs.push(run);
     return run;
   }
@@ -644,6 +649,31 @@ class QaMockBackend {
           provider: 'vercel',
           status: 'ready',
           commitSha: MAIN_SHA,
+          commitMessage: 'release: storefront 2.4',
+          pullRequestNumber: null,
+          createdBy: PEOPLE.lead.login,
+          previewUrl: MAIN_PREVIEW_ORIGIN,
+          deploymentUrl: null,
+          inspectorUrl: null,
+          createdAt: ago(6 * 60 * MINUTE),
+          readyAt: ago(6 * 60 * MINUTE - MINUTE),
+          embeddable: true,
+          embedBlockedReason: null,
+          slot: 'frontend',
+          surface: 'page',
+          providerLabel: 'Vercel',
+          logsAvailable: false,
+          logWindow: null,
+        },
+        {
+          branch: QA_BRANCH,
+          isProduction: false,
+          deploymentId: 'dpl-uat',
+          targetId: 'target-web',
+          targetName: 'storefront-web',
+          provider: 'vercel',
+          status: 'ready',
+          commitSha: UAT_SHA,
           commitMessage: 'fix(cart): apply coupons per line',
           pullRequestNumber: null,
           createdBy: PEOPLE.member.login,
@@ -740,7 +770,7 @@ class QaMockBackend {
 
   /* ── Runs (qa-runs.service.ts) ── */
 
-  private createRunRow(checklist: QaChecklist, branch: string, createdBy: QaActor): RunRow {
+  private createRunRow(checklist: QaChecklist, branch: string, commitSha: string, createdBy: QaActor): RunRow {
     const id = this.nextId('run');
     const now = new Date().toISOString();
     return {
@@ -749,7 +779,7 @@ class QaMockBackend {
       checklistName: checklist.name,
       checklistVersion: checklist.version,
       branch,
-      commitSha: MAIN_SHA,
+      commitSha,
       status: 'open',
       createdBy,
       createdAt: now,
@@ -782,15 +812,16 @@ class QaMockBackend {
     if (run.status === 'signed_off') throw nestError(409, 'This run is signed off. Reopen it to make changes.');
   }
 
+  /** The backend accepts QA runs on the QA branch only: any other branch is a 400 the UI must never cause. */
   private requireHostedBranch(branch: string) {
-    if (branch !== 'uat' && branch !== 'main') {
-      throw nestError(400, 'QA verification runs are only supported on hosted branches (uat, main).');
+    if (branch !== QA_BRANCH) {
+      throw nestError(400, `QA verification runs are only supported on ${QA_BRANCH}.`);
     }
   }
 
-  /** Commit resolution: the storefront's main is deployed at MAIN_SHA; nothing else resolves. */
+  /** Commit resolution: the storefront's uat is deployed at UAT_SHA. */
   private resolveCommit(branch: string): { commitSha: string; commitSource: 'deployment' } | null {
-    return branch === 'main' ? { commitSha: MAIN_SHA, commitSource: 'deployment' } : null;
+    return branch === QA_BRANCH ? { commitSha: UAT_SHA, commitSource: 'deployment' } : null;
   }
 
   private currentRun(query: URLSearchParams): QaCurrentRunResponse {
@@ -819,7 +850,7 @@ class QaMockBackend {
       (entry) => entry.checklistId === checklist.id && entry.branch === branch && entry.commitSha === resolved.commitSha,
     );
     if (existing) return { status: 200, body: this.assembleRun(existing) };
-    const run = this.createRunRow(checklist, branch, this.actor);
+    const run = this.createRunRow(checklist, branch, resolved.commitSha, this.actor);
     this.runs.push(run);
     return { status: 201, body: this.assembleRun(run) };
   }
@@ -1242,14 +1273,21 @@ async function qaVerifiesAndSignsOff({ page, context, backend, baseUrl }: Journe
   await openProjectTab(page, baseUrl, 'QA Studio');
   await expectRoleBadge(page, 'qa');
   await expectText(page.locator('.qa-run-card__title'), checklist.name, 'the checklist under test');
-  await expectText(page.getByLabel('Commit under test'), 'main @ a1b2c3d', 'the commit chip');
+  await expectText(page.getByLabel('Commit under test'), 'uat @ 9f8e7d6', 'the commit chip');
 
-  await page.getByRole('button', { name: 'Start QA run on main @ a1b2c3d' }).click();
+  // uat only: main is deployed (and production), but it is not offered anywhere.
+  await expectText(page.locator('.qa-toolbar__env-chip'), 'uat', 'the fixed uat environment');
+  assert.equal(await page.locator('.qa-toolbar select').count(), 0, 'no environment picker: uat is the only QA environment');
+  assert.equal(await page.locator('.qa-device__frame').getAttribute('src'), `${PREVIEW_ORIGIN}/`, 'the frame shows the uat deployment');
+  const lookedUp = backend.callsTo('GET', /\/qa-runs\/current$/).map((call) => call.query.get('branch'));
+  assert.ok(lookedUp.length > 0 && lookedUp.every((branch) => branch === QA_BRANCH), `run lookups only ever ask for uat (got ${lookedUp.join(', ')})`);
+
+  await page.getByRole('button', { name: 'Start QA run on uat @ 9f8e7d6' }).click();
   await visible(runItem(page, first.title), 'the run items');
   const start = onlyCall(backend.callsTo('POST', /^\/projects\/project-1\/qa-runs$/), 'run start');
   assert.equal(start.status, 201);
   // Only the checklist and branch: the server, never the page, picks the commit.
-  assert.deepEqual(start.body, { checklistId: checklist.id, branch: 'main' });
+  assert.deepEqual(start.body, { checklistId: checklist.id, branch: QA_BRANCH });
   const run = backend.runs[0];
   const [item1, item2, item3] = run.items;
   const patchesTo = (itemId: string) => backend.callsTo('PATCH', new RegExp(`/qa-runs/${run.id}/items/${itemId}$`));
@@ -1265,17 +1303,60 @@ async function qaVerifiesAndSignsOff({ page, context, backend, baseUrl }: Journe
   }
   await visible(page.getByRole('button', { name: 'Run Playwright' }), 'Run Playwright for QA');
 
-  // 1 → Passed, saved as soon as it is picked.
-  await statusSelect(page, 1).selectOption('passed');
+  // ── Full screen: the page fills the viewport, the checklist floats over it. ──
+  // Mark the frame, so "the site was never reloaded" is a fact, not a hope.
+  await page.locator('.qa-device__frame').evaluate((frame) => {
+    (frame as unknown as { __qaMark: string }).__qaMark = 'original';
+  });
+  const studio = page.locator('.qa-studio');
+  await page.getByRole('button', { name: 'Full screen' }).click();
+  await eventually('the studio to go full screen', async () => (await studio.getAttribute('data-full-screen')) === 'true');
+  const studioBox = await studio.boundingBox();
+  assert.deepEqual(studioBox, { x: 0, y: 0, width: 1440, height: 900 }, 'full screen covers the whole viewport');
+  const launcher = page.locator('button.qa-launcher');
+  await expectText(launcher, 'QA checklist · 0/3 passed', 'the launcher progress');
+  await absent(page.getByRole('region', { name: 'QA checklist' }), 'the drawer before it is opened');
+
+  await launcher.click();
+  const drawer = page.getByRole('region', { name: 'QA checklist' });
+  await visible(drawer, 'the floating checklist drawer');
+  const drawerBox = await drawer.boundingBox();
+  assert.ok(drawerBox && drawerBox.x + drawerBox.width <= 1440 - 15 && drawerBox.y + drawerBox.height <= 900 - 15, 'the drawer floats in the bottom-right corner');
+  assert.equal(await page.locator('.qa-run-card').count(), 1, 'one run column, moved, never a second copy');
+
+  // 1 → Passed, saved as soon as it is picked — from the floating drawer.
+  await drawer.locator('label.qa-status-select').filter({ hasText: 'Status of item 1' }).locator('select').selectOption('passed');
   await expectText(runItem(page, first.title).locator(STATUS_PILL), 'Passed', 'item 1 passed');
   assert.deepEqual(onlyCall(patchesTo(item1.id), 'item 1 update').body, { expectedRowVersion: 1, status: 'passed' });
   // Automated evidence never rewrites what the tester recorded.
   assert.equal(backend.runs[0].items[0].status, 'passed');
 
-  // 2 → Failed needs a severity first: the UI refuses to send it without one.
+  // 2 → Failed opens a details draft. Minimizing only hides the drawer: the draft survives.
   await statusSelect(page, 2).selectOption('failed');
   const editor = runItem(page, second.title).locator('form.qa-item-editor');
   await visible(editor, 'the item 2 details editor');
+  await editor.getByPlaceholder('What went wrong').fill('Coupon applied twice on a two-line cart.');
+  await drawer.getByRole('button', { name: 'Minimize checklist' }).click();
+  await absent(drawer, 'the minimized drawer');
+  await expectText(launcher, 'QA checklist · 1/3 passed', 'the launcher after item 1 passed');
+  await launcher.click();
+  await visible(editor, 'the item 2 draft after re-opening');
+  assert.equal(await editor.getByPlaceholder('What went wrong').inputValue(), 'Coupon applied twice on a two-line cart.', 'the draft survived minimize');
+  await expectText(runItem(page, first.title).locator(STATUS_PILL), 'Passed', 'item 1 still passed after re-opening');
+  assert.equal(patchesTo(item2.id).length, 0, 'nothing was sent for item 2 by minimizing');
+
+  // Leave full screen from the drawer: docked beside the page again, same frame.
+  await drawer.getByRole('button', { name: 'Dock beside the page' }).click();
+  await eventually('the studio to dock', async () => (await studio.getAttribute('data-full-screen')) === 'false');
+  assert.equal(await page.evaluate(() => document.body.style.overflow), '', 'the page scrolls again');
+  assert.equal(
+    await page.locator('.qa-device__frame').evaluate((frame) => (frame as unknown as { __qaMark?: string }).__qaMark ?? null),
+    'original',
+    'the preview iframe was never remounted',
+  );
+
+  // 2 → Failed needs a severity first: the UI refuses to send it without one.
+  await visible(editor, 'the item 2 details editor, docked');
   await editor.getByRole('button', { name: 'Mark Failed' }).click();
   await expectText(editor.getByRole('alert'), 'Choose a severity before marking this item Failed.', 'the severity validation');
   assert.equal(patchesTo(item2.id).length, 0, 'Failed without a severity must not be sent');
@@ -1360,7 +1441,7 @@ async function qaVerifiesAndSignsOff({ page, context, backend, baseUrl }: Journe
     page.waitForEvent('download'),
     page.getByRole('menu', { name: 'Export report' }).getByRole('menuitem', { name: /Download JSON/ }).click(),
   ]);
-  assert.equal(download.suggestedFilename(), 'QA-Report-storefront-web-main-a1b2c3d.json');
+  assert.equal(download.suggestedFilename(), 'QA-Report-storefront-web-uat-9f8e7d6.json');
   const saved = JSON.parse(await readFile(await download.path(), 'utf8')) as QaReport;
   assert.equal(saved.schemaVersion, 'qa-report/v1');
   assert.equal(saved.frozen, true);
@@ -1396,7 +1477,7 @@ async function qaVerifiesAndSignsOff({ page, context, backend, baseUrl }: Journe
 
 /** (c) A developer fixes what QA returned and asks for a re-test. */
 async function developerRequestsRetest({ page, backend, baseUrl }: JourneyContext) {
-  const [first, second, third] = RELEASE_CHECKLIST.items;
+  const [, second, third] = RELEASE_CHECKLIST.items;
   const run = backend.runs[0];
   const [item1, item2, item3, item4] = run.items;
 
@@ -1407,40 +1488,33 @@ async function developerRequestsRetest({ page, backend, baseUrl }: JourneyContex
   const row = card.locator('li.qa-returned__row').filter({ hasText: third.title });
   await expectText(row.locator('.qa-returned__head .qa-severity'), 'Blocker', 'the returned severity');
   await expectText(row, '1. Pay with the saved card', 'the reproduction steps');
-  await expectText(row.locator('.qa-returned__meta'), 'main @ a1b2c3d', 'the commit it was returned on');
+  await expectText(row.locator('.qa-returned__meta'), 'uat @ 9f8e7d6', 'the commit it was returned on');
   await expectText(row.locator('.qa-returned__meta'), `Returned by @${PEOPLE.qa.login}`, 'who returned it');
 
   await row.getByRole('button', { name: 'Mark fixed & request re-test' }).click();
-  await row.getByLabel('Note to QA (optional)').fill('Mailer queue was paused on main; resumed and added an alert.');
+  await row.getByLabel('Note to QA (optional)').fill('Mailer queue was paused on uat; resumed and added an alert.');
   await row.getByRole('button', { name: 'Request re-test' }).click();
   await expectText(card.locator('.qa-returned__count'), '1', 'one returned item left');
   await absent(card.locator('li.qa-returned__row').filter({ hasText: third.title }), 'the fixed item on the card');
   await visible(card.locator('li.qa-returned__row').filter({ hasText: second.title }), 'the item still returned');
   const retest = onlyCall(backend.callsTo('POST', new RegExp(`/items/${item3.id}/request-retest$`)), 're-test request');
-  assert.deepEqual(retest.body, { note: 'Mailer queue was paused on main; resumed and added an alert.' });
+  assert.deepEqual(retest.body, { note: 'Mailer queue was paused on uat; resumed and added an alert.' });
   assert.equal(item3.status, 'pending', 'a re-test sends the item back to pending');
   assert.equal(item2.status, 'returned_to_dev', 'the other returned item is untouched');
 
-  await page.getByRole('tablist', { name: 'Project sections' }).getByRole('tab', { name: 'QA Studio' }).click();
-  await visible(runItem(page, first.title), 'the run in QA Studio');
-  await neverShown(backend, page.getByRole('button', { name: /Run Playwright/ }), 'Run Playwright for a Developer');
-  await neverShown(backend, page.getByRole('button', { name: 'Sign off', exact: true }), 'Sign off for a Developer');
+  // QA Studio is for QA Team, Team leads and Admins: a Developer reads the
+  // shared checklists and fixes what QA returns, from the card above.
+  const tabs = page.getByRole('tablist', { name: 'Project sections' });
+  await visible(tabs.getByRole('tab', { name: 'Checklists', exact: true }), 'the Checklists tab for a Developer');
+  await neverShown(backend, tabs.getByRole('tab', { name: 'QA Studio', exact: true }), 'the QA Studio tab for a Developer');
 
-  // The QA-owned item is read-only; developer and everyone items are editable.
-  await expectText(runItem(page, first.title), 'Read-only for your role', 'the QA item read-only note');
-  assert.equal(await runItem(page, first.title).locator('label.qa-status-select').count(), 0, 'no status control on a QA item');
-  await expectText(runItem(page, third.title).locator(STATUS_PILL), 'Pending', 'the re-tested item back in Pending');
-  await expectText(runItem(page, third.title).locator('.qa-fix-note'), `Marked fixed by @${PEOPLE.member.login}`, 'the fix note in the studio');
-  await visible(runItem(page, second.title).getByRole('button', { name: 'Mark fixed & request re-test' }), 're-test on the still-returned item');
-  const developerSelect = statusSelect(page, 4);
-  assert.equal(await developerSelect.isEnabled(), true, 'the developer item is editable');
-  // Returning to dev is QA's call: the control does not even offer it to a Developer.
-  assert.equal(await developerSelect.locator('option[value="returned_to_dev"]').count(), 0, 'a Developer is not offered Returned to dev');
-  await developerSelect.selectOption('passed');
-  await expectText(runItem(page, DEVELOPER_ITEM.title).locator(STATUS_PILL), 'Passed', 'the developer item passed');
-  const patch = onlyCall(backend.callsTo('PATCH', new RegExp(`/items/${item4.id}$`)), 'developer item update');
-  assert.deepEqual(patch.body, { expectedRowVersion: 1, status: 'passed' });
+  // A deep link to #qa cannot reveal it either: it lands on Overview.
+  await page.goto(`${baseUrl}/projects/${PROJECT_ID}#qa`, { waitUntil: 'domcontentloaded' });
+  await visible(tabs.getByRole('tab', { name: 'Overview', selected: true }), 'Overview for a #qa deep link');
+  await neverShown(backend, page.locator('.qa-studio'), 'QA Studio for a Developer');
+  assert.equal(backend.callsTo('GET', /\/qa-runs\/current$/).length, 0, 'the studio never looked up a run for a Developer');
   assert.equal(item1.status, 'passed', 'the QA item is untouched');
+  assert.equal(item4.status, 'pending', 'the developer item is untouched');
 }
 
 /** (d) A QA Team member sees their badge, cannot create a workspace or manage checklists. */
@@ -1525,7 +1599,7 @@ const JOURNEYS: Journey[] = [
   },
   {
     id: 'b',
-    title: 'QA Team: run, validate, return to dev, sign off Rejected, export',
+    title: 'QA Team: uat only, full screen + floating checklist, validate, return to dev, sign off Rejected, export',
     permissions: ['clipboard-read', 'clipboard-write'],
     backend: () => {
       const backend = new QaMockBackend('qa');
@@ -1536,7 +1610,7 @@ const JOURNEYS: Journey[] = [
   },
   {
     id: 'c',
-    title: 'Developer: Returned by QA card, request re-test, persona-scoped studio',
+    title: 'Developer: Returned by QA card, request re-test, no QA Studio tab',
     backend: () => {
       const backend = new QaMockBackend('member');
       seedReturnedRun(backend);
@@ -1607,7 +1681,9 @@ async function runJourney(browser: Browser, baseUrl: string, journey: Journey) {
     if (journey.permissions) await context.grantPermissions(journey.permissions, { origin: baseUrl });
     // Context-wide, so the print page opened by Download PDF is mocked too.
     await context.route('**/api/v1/**', (route) => backend.handle(route));
-    await context.route(`${PREVIEW_ORIGIN}/**`, (route) => text(route, 200, PREVIEW_HTML, 'text/html'));
+    for (const origin of [PREVIEW_ORIGIN, MAIN_PREVIEW_ORIGIN]) {
+      await context.route(`${origin}/**`, (route) => text(route, 200, PREVIEW_HTML, 'text/html'));
+    }
     context.on('page', (page) => {
       page.on('pageerror', (error) => problems.push(`page error: ${error.message}`));
       page.on('console', (message) => {
