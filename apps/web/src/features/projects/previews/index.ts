@@ -14,6 +14,9 @@ export type { BranchPreviewsViewProps } from "./views/branch-previews-view";
 export { ProductionDeploymentView } from "./views/production-deployment-view";
 export type { ProductionDeploymentViewProps } from "./views/production-deployment-view";
 
+/* A frame's sandbox depends on the dashboard origin; the QA Studio frame waits for it too. */
+export { useDashboardOrigin } from "./view-models/use-dashboard-origin";
+
 export {
   useBranchPreviewsViewModel,
   type BranchPreviewsViewModel,

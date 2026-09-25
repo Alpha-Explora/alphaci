@@ -1,0 +1,117 @@
+/* ── QA run status, severity and verdict pills ───────────────────────────────
+   Same recipe as the persona badge (tinted border + light fill), built only
+   from semantic tokens so the light theme re-tints without a second block:
+   success = passed / approved, danger = failed / blocked / rejected,
+   warning = returned / conditional, brand = in progress, neutral = pending.
+   ------------------------------------------------------------------------- */
+
+.qa-pill {
+  --qa-tone: var(--text-muted);
+  --qa-tone-fill: transparent;
+  --qa-tone-edge: var(--border-strong);
+
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.16rem 0.55rem 0.16rem 0.45rem;
+  border: 1px solid var(--qa-tone-edge);
+  border-radius: var(--radius-pill);
+  background: var(--qa-tone-fill);
+  color: var(--qa-tone);
+  font-size: 0.7rem;
+  font-weight: 650;
+  line-height: 1.35;
+  white-space: nowrap;
+}
+
+.qa-pill__dot {
+  width: 0.42rem;
+  height: 0.42rem;
+  border-radius: 50%;
+  background: currentcolor;
+}
+
+.qa-pill--neutral {
+  --qa-tone: var(--text-secondary);
+}
+
+.qa-pill--brand {
+  --qa-tone: var(--brand);
+  --qa-tone-fill: var(--brand-light);
+  --qa-tone-edge: var(--border-brand);
+}
+
+.qa-pill--success {
+  --qa-tone: var(--success);
+  --qa-tone-fill: var(--accent-emerald-light);
+  --qa-tone-edge: var(--success);
+}
+
+.qa-pill--danger {
+  --qa-tone: var(--danger);
+  --qa-tone-fill: var(--accent-rose-light);
+  --qa-tone-edge: var(--accent-rose-glow);
+}
+
+.qa-pill--warning {
+  --qa-tone: var(--warning);
+  --qa-tone-fill: var(--accent-amber-light);
+  --qa-tone-edge: var(--border-amber);
+}
+
+/* The dot of an item still to do pulses once a tester has picked it up. */
+.qa-pill--brand .qa-pill__dot {
+  animation: qa-pill-pulse 1.8s ease-in-out infinite;
+}
+
+@keyframes qa-pill-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.35;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .qa-pill--brand .qa-pill__dot {
+    animation: none;
+  }
+}
+
+/* Severity: square-cornered, uppercase — a label on a defect, not a state. */
+.qa-severity {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  padding: 0.1rem 0.45rem;
+  border-radius: 0.3rem;
+  border: 1px solid var(--border-strong);
+  color: var(--text-secondary);
+  font-size: 0.62rem;
+  font-weight: 750;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.qa-severity--blocker {
+  border-color: var(--danger);
+  background: var(--danger);
+  color: var(--bg-base);
+}
+
+.qa-severity--major {
+  border-color: var(--accent-rose-glow);
+  background: var(--accent-rose-light);
+  color: var(--danger);
+}
+
+.qa-severity--minor {
+  border-color: var(--border-amber);
+  background: var(--accent-amber-light);
+  color: var(--warning);
+}

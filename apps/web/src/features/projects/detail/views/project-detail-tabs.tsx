@@ -21,6 +21,7 @@ import { SettingsTab } from "./settings-tab";
 import { CodeTabPanel } from "./code-tab-panel";
 import { PullsTabPanel } from "./pulls-tab-panel";
 import { ChecklistsTabPanel } from "./checklists-tab-panel";
+import { QaStudioTabPanel } from "./qa-studio-tab-panel";
 
 export { WorkflowStageList } from "./workflow-stage-list";
 
@@ -66,6 +67,7 @@ const TAB_PANELS: Record<
   workflow: WorkflowTab,
   hosting: HostingTab,
   environment: EnvironmentTab,
+  qa: QaStudioTabPanel,
   audit: AuditTab,
   settings: SettingsTab,
 };

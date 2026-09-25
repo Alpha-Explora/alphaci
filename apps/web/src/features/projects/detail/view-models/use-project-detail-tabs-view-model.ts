@@ -42,6 +42,10 @@ export interface ProjectDetailTabsViewModel {
   setTab: (tab: ProjectDetailTab) => void;
   /** The tabs this viewer gets, in strip order. */
   visibleTabs: ProjectDetailTab[];
+  /** The viewer's app role, for the QA surfaces. Rights still come from the server. */
+  appRole: AppRole | undefined;
+  /** The QA checklists capability: gates QA Studio and the "Returned by QA" card. */
+  qaChecklistsEnabled: boolean;
   /**
    * The target whose logs Hosting should open with, set when the Overview's
    * card asks for its full logs. Cleared by choosing a tab by hand.
@@ -263,6 +267,8 @@ export function useProjectDetailTabsViewModel(options: {
     tab,
     setTab,
     visibleTabs,
+    appRole,
+    qaChecklistsEnabled: caps.qaChecklistsEnabled,
     logFocus,
     openTargetLogs,
     status: overviewQuery.status,

@@ -4,6 +4,8 @@
 
 ### Added
 
+- Added QA Studio: a project tab in the Delivery group that frames a deployed branch (Desktop / Tablet 768 / Mobile 375, same-host route field, reload, open in new tab) beside a verification run of a shared checklist against the commit the server resolves. Testers record each item's status, notes, severity and reproduction steps (severity required for Failed and Returned to dev), sign runs off as Approved / Conditional / Rejected with the eligibility reasons shown, and leads can reopen a signed-off run. Every right comes from the server (`item.canUpdate`, run `permissions`); stale writes (409) offer "Reload run". The project Overview gains a "Returned by QA" card where Developers, Team leads and Admins mark an item fixed and request a re-test. Both are gated by `qaChecklistsEnabled`.
+
 - Added shared QA checklists: team leads write ordered checklists at team (workspace) scope in a new Teams → QA checklists section, edit items (who runs it, how it is verified, test identifier), share them to the team's projects, and archive them; QA Team and Developers get the same screens read-only. Projects gain a Checklists tab in the Work group. Both are gated by the `projects.qa-checklists` capability (`qaChecklistsEnabled`).
 
 - Added the real Enterprise client-composition settings surface, gated by the backend-owned capability/configuration projection and backed by the package-owned artifact symbol `EnterpriseClientCompositionSettingsView`.

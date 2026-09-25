@@ -35,7 +35,7 @@ const DOMAIN_OWNERS = [
   {
     id: 'checklists',
     backendContext: 'projects',
-    owns: 'team QA checklists, their items and sharing, and the project Checklists tab',
+    owns: 'team QA checklists, their items and sharing, the project Checklists tab, QA Studio verification runs and the Overview "Returned by QA" card',
   },
   {
     id: 'groups',

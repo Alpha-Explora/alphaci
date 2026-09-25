@@ -4,7 +4,9 @@
  * rather than the whole domain:
  *   - `@/features/checklists/manage`  — the team-level list and editor
  *   - `@/features/checklists/project` — the project's Checklists tab
- *   - `@/features/checklists/items`   — read-only item rendering */
+ *   - `@/features/checklists/items`   — read-only item rendering
+ *   - `@/features/checklists/studio`  — the project's QA Studio tab
+ *   - `@/features/checklists/returned` — the Overview's "Returned by QA" card */
 export type {
   ChecklistShareTarget,
   ChecklistTargetPersona,
@@ -20,3 +22,10 @@ export {
   targetPersonaLabel,
   verificationTypeLabel,
 } from "./model/checklist-rules";
+
+export type {
+  QaRun,
+  QaRunItem,
+  QaRunItemStatus,
+  QaReturnedItem,
+} from "./model/qa-run-types";
