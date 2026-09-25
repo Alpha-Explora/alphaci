@@ -457,7 +457,7 @@
 
 .ws-link {
   font-size: 0.85rem;
-  color: var(--accent-primary);
+  color: var(--accent-primary, var(--brand));
   text-decoration: none;
 }
 
@@ -482,8 +482,8 @@
 .ws-select {
   padding: 0.35rem 0.6rem;
   border-radius: 0.5rem;
-  border: 1px solid var(--border-subtle);
-  background: var(--surface-raised);
+  border: 1px solid var(--border-strong);
+  background: var(--surface-raised, var(--bg-soft));
   color: var(--text-primary);
   font-size: 0.85rem;
 }
@@ -607,7 +607,6 @@
   max-height: 26rem;
 }
 
-.ws-runs,
 .ws-prs {
   list-style: none;
   margin: 0;
@@ -616,40 +615,12 @@
   gap: 0.6rem;
 }
 
-.ws-run,
 .ws-pr {
   border: 1px solid var(--border-subtle);
   border-radius: 0.75rem;
   overflow: hidden;
 }
 
-/* One commit, one card.
- *
- * A commit's row carries its stages, its promotion note and its diagnosis, so
- * consecutive commits ran together into one wall of text separated by a hairline
- * — the reader could not see where one execution ended and the next began. The
- * card gets its own surface and a header rule so the boundary is structural
- * rather than something to be inferred from the content. */
-.ws-run {
-  background: var(--bg-surface);
-}
-
-.ws-run + .ws-run {
-  margin-top: 0.15rem;
-}
-
-.ws-run > .ws-run__head {
-  border-bottom: 1px solid var(--border-subtle);
-}
-
-/* The commit's own identity leads the header and is not allowed to wrap away
-   from the status beside it. */
-.ws-run__head .ws-commit__sha {
-  font-weight: 600;
-  color: var(--text-primary);
-}
-
-.ws-run__head,
 .ws-pr__head {
   display: flex;
   flex-wrap: wrap;
@@ -664,18 +635,15 @@
   cursor: pointer;
 }
 
-.ws-run__head:hover,
 .ws-pr__head:hover {
   background: var(--surface-hover);
 }
 
-.ws-run__caret,
 .ws-pr__caret {
   color: var(--text-secondary);
   width: 0.9rem;
 }
 
-.ws-run__title,
 .ws-pr__title {
   flex: 1;
   min-width: 12rem;
@@ -683,75 +651,15 @@
   overflow-wrap: anywhere;
 }
 
-.ws-run__meta,
 .ws-pr__meta {
   font-size: 0.75rem;
   color: var(--text-secondary);
 }
 
-.ws-run__body,
 .ws-pr__body {
   padding: 0 0.9rem 0.9rem;
   display: grid;
   gap: 0.75rem;
-}
-
-.ws-run__links {
-  display: flex;
-  gap: 1rem;
-}
-
-.ws-jobs {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: grid;
-  gap: 0.5rem;
-}
-
-.ws-job {
-  border: 1px solid var(--border-subtle);
-  border-radius: 0.6rem;
-  padding: 0.6rem 0.75rem;
-  display: grid;
-  gap: 0.5rem;
-}
-
-.ws-job__head {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-  flex-wrap: wrap;
-}
-
-.ws-job__name {
-  flex: 1;
-  min-width: 8rem;
-  font-size: 0.85rem;
-}
-
-.ws-job__logbtn {
-  font-size: 0.75rem;
-}
-
-.ws-steps {
-  list-style: none;
-  margin: 0;
-  padding: 0 0 0 0.5rem;
-  display: grid;
-  gap: 0.3rem;
-  border-left: 2px solid var(--border-subtle);
-}
-
-.ws-step {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.ws-step__name {
-  font-size: 0.8rem;
-  color: var(--text-secondary);
 }
 
 .ws-filters {
@@ -1092,229 +1000,6 @@
   color: var(--text-secondary);
 }
 
-/* One commit's identity inside a run row. */
-.ws-commit__sha {
-  font-family: var(--font-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
-  font-size: 0.75rem;
-  color: var(--text-secondary);
-  background: var(--bg-surface);
-  border-radius: 0.3rem;
-  padding: 0.05rem 0.3rem;
-}
-
-/* The pipeline stages of one commit, as graded by our own reports.
- *
- * A rail of stages beside one panel, rather than a row of stages each opening
- * its own roster downward. Four independent disclosures meant four clicks to
- * read one pipeline, and every expansion pushed the stages under it down the
- * page; the stage names are the navigation, so they hold a column that does
- * not move while the detail changes beside them. */
-.ws-board {
-  display: grid;
-  /* The rail takes its width from the longest stage name and then stops, so
-     the panel keeps the room. */
-  grid-template-columns: minmax(8rem, max-content) 1fr;
-  gap: 0.75rem;
-  padding: 0 0.75rem 0.7rem;
-  align-items: start;
-}
-
-.ws-board__rail {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: grid;
-  gap: 0.15rem;
-}
-
-.ws-board__stage {
-  display: grid;
-  gap: 0.15rem;
-  width: 100%;
-  padding: 0.35rem 0.5rem;
-  border: 0;
-  border-left: 2px solid transparent;
-  border-radius: 0.4rem;
-  background: none;
-  color: inherit;
-  font: inherit;
-  text-align: left;
-  cursor: pointer;
-}
-
-.ws-board__stage:hover {
-  background: var(--surface-hover);
-}
-
-.ws-board__stage:focus-visible {
-  outline: 2px solid var(--focus-ring, currentColor);
-  outline-offset: -2px;
-}
-
-/* The selected stage is marked by the rule and the surface, never by colour
-   alone — the pill beside it is already carrying the status colour. */
-.ws-board__stage--current {
-  background: var(--surface-hover);
-  border-left-color: var(--text-primary);
-}
-
-.ws-board__stage-head {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  flex-wrap: wrap;
-}
-
-.ws-board__stage-count {
-  font-size: 0.7rem;
-  color: var(--text-secondary);
-}
-
-.ws-board__panel {
-  min-width: 0;
-  font-size: 0.7rem;
-}
-
-.ws-board__panel:focus-visible {
-  outline: 2px solid var(--focus-ring, currentColor);
-  outline-offset: 2px;
-  border-radius: 0.4rem;
-}
-
-.ws-board__empty {
-  margin: 0;
-  color: var(--text-secondary);
-}
-
-/* Narrow screens have no room for two columns; the rail becomes a header. */
-@media (max-width: 40rem) {
-  .ws-board {
-    grid-template-columns: 1fr;
-  }
-
-  .ws-board__rail {
-    grid-auto-flow: column;
-    grid-auto-columns: minmax(0, 1fr);
-    overflow-x: auto;
-  }
-
-  .ws-board__stage {
-    border-left: 0;
-    border-bottom: 2px solid transparent;
-    border-radius: 0.4rem 0.4rem 0 0;
-  }
-
-  .ws-board__stage--current {
-    border-left: 0;
-    border-bottom-color: var(--text-primary);
-  }
-}
-
-.ws-stages__head {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-}
-
-/* Which tools ran inside a stage.
- *
- * The count now rides on the rail button and the roster fills the panel, so
- * the per-stage disclosure these rules dressed is gone. What remains is the
- * roster itself. */
-.ws-checks__list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: grid;
-  gap: 0.15rem;
-  /* Marks, names and outcomes line up down the list rather than drifting with
-     the length of the name beside them. */
-  grid-template-columns: auto 1fr auto;
-}
-
-.ws-checks__row {
-  display: grid;
-  grid-column: 1 / -1;
-  grid-template-columns: subgrid;
-  gap: 0.4rem;
-  align-items: baseline;
-}
-
-/* Colour is never the only signal — every row carries a mark as well. */
-.ws-checks__row--passed .ws-checks__mark {
-  color: var(--success, #2a6e48);
-}
-
-.ws-checks__row--failed .ws-checks__mark {
-  color: var(--danger, #a83a32);
-}
-
-.ws-checks__row--running .ws-checks__mark {
-  color: var(--info, #2d5f8b);
-}
-
-.ws-checks__row--skipped .ws-checks__mark {
-  color: var(--text-muted, #6b7484);
-}
-
-.ws-checks__name {
-  color: var(--text-primary);
-}
-
-.ws-checks__outcome {
-  color: var(--text-secondary);
-  font-variant-numeric: tabular-nums;
-}
-
-.ws-stages__status {
-  font-size: 0.7rem;
-  color: var(--text-secondary);
-}
-
-/* Why a stage did not pass.
- *
- * Shown without expanding the row: this is the sentence someone opened the tab
- * to read, and hiding it behind a caret leaves the tab saying that something is
- * wrong without saying what. A severity stripe carries the weight, so the
- * message does not need a card of its own inside an already-bordered row. */
-.ws-diagnosis {
-  display: grid;
-  gap: 0.5rem;
-  padding: 0 0.75rem 0.7rem;
-}
-
-.ws-diagnosis__item {
-  border-left: 3px solid var(--border-subtle);
-  padding-left: 0.6rem;
-}
-
-.ws-diagnosis__item--error {
-  border-left-color: var(--danger);
-}
-
-.ws-diagnosis__item--warning {
-  border-left-color: var(--warning);
-}
-
-.ws-diagnosis__title {
-  margin: 0;
-  font-size: 0.8rem;
-  font-weight: 600;
-}
-
-.ws-diagnosis__detail {
-  margin: 0.15rem 0 0;
-  font-size: 0.78rem;
-  color: var(--text-secondary);
-}
-
-.ws-diagnosis__hint {
-  margin: 0.15rem 0 0;
-  font-size: 0.75rem;
-  color: var(--text-secondary);
-  font-style: italic;
-}
-
 /* Branch picker in the Pipeline runs toolbar. */
 .ws-branchpick {
   display: inline-flex;
@@ -1327,54 +1012,6 @@
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: var(--text-secondary);
-}
-
-/* The individual errors behind a failure: file, line, and what is wrong.
- *
- * A list rather than a log dump. Each row is one thing to go and fix, which is
- * the difference between reading a diagnosis and reading output. */
-.ws-diagnosis__items {
-  list-style: none;
-  margin: 0.4rem 0 0;
-  padding: 0;
-  display: grid;
-  gap: 0.25rem;
-}
-
-.ws-diagnosis__item-row {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 0.4rem;
-  font-size: 0.75rem;
-}
-
-.ws-diagnosis__item-label {
-  font-family: var(--font-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
-  color: var(--text-primary);
-}
-
-.ws-diagnosis__item-sub {
-  color: var(--text-secondary);
-  min-width: 0;
-  overflow-wrap: anywhere;
-}
-
-/* The failing job's error output, inside the diagnosis.
- *
- * Sits in the card rather than behind a link, because the card exists to
- * answer "why did this fail" and a link answers "somewhere else". */
-.ws-diagnosis__log {
-  margin-top: 0.5rem;
-  display: grid;
-  gap: 0.35rem;
-}
-
-.ws-diagnosis__logmeta {
-  margin: 0;
-  font-size: 0.72rem;
-  color: var(--text-secondary);
-  font-family: var(--font-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
 }
 
 /* Log lines, rendered individually so the failure can be marked.
@@ -1390,11 +1027,6 @@
 .ws-console__line--error {
   color: var(--danger);
   font-weight: 600;
-}
-
-.ws-diagnosis__more {
-  justify-self: start;
-  font-size: 0.72rem;
 }
 
 /* ── A job log, read as the tools that wrote it ─────────────────────────────
@@ -1568,32 +1200,3 @@
   color: var(--danger);
 }
 
-/*
- * Whether a commit opened its promotion pull request.
- *
- * Quiet by default: a promotion that happened is good news and does not need
- * to shout, while one that did not is the case worth noticing — so the blocked
- * variant carries the danger rail and the rest stay muted. A promotion that
- * simply did not run is neither, and reads as a note.
- */
-.ws-promotion {
-  margin: 0.4rem 0 0;
-  padding: 0.35rem 0 0.35rem 0.6rem;
-  font-size: 0.78rem;
-  line-height: 1.5;
-  color: var(--text-secondary);
-  border-left: 2px solid var(--border-soft);
-}
-
-.ws-promotion--opened {
-  border-left-color: var(--success);
-}
-
-.ws-promotion--blocked {
-  border-left-color: var(--danger);
-  color: var(--text-primary);
-}
-
-.ws-promotion--quiet {
-  font-style: italic;
-}

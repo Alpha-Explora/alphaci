@@ -17,11 +17,7 @@
  * the runs of a commit are one object.
  */
 
-import type {
-  RunGroup,
-  RunOverallStatus,
-  StageReport,
-} from "@/shared/api/contracts";
+import type { RunGroup, RunOverallStatus } from "@/shared/api/contracts";
 
 import {
   indexReportedIdentities,
@@ -136,70 +132,28 @@ export function groupRunsByCommit<T extends CommitRun>(
     );
 }
 
-/**
- * The stages of a commit worth saying something about.
- *
- * A stage still pending or running has nothing to report yet. Everything that
- * failed belongs in front of the reader — and so does a stage that PASSED
- * while carrying warnings.
- *
- * "A stage that passed needs no words" was true until the gates became
- * per-branch. On dev they are advisory: a stage finds three committed secrets,
- * a forbidden licence and twelve formatter diagnostics, and still concludes
- * `success` because none of them block on the working branch. Filtering on
- * status alone meant the project page showed nothing at all for that commit —
- * on the one branch where there was still time to act, and for a developer
- * whose next step is a promotion those findings will fail.
- *
- * So the test is no longer "did it fail" but "is there something to say".
- *
- * This deliberately does NOT require a failed stage to carry a message.
- * Requiring one hid the most important case in the product: a genuine
- * `failure` whose explanation was never captured rendered as silence, so the
- * view showed a red pill and said nothing at all. Silence is the one thing it
- * must not do — the view says "no detail captured" instead, which is at least
- * true and points somewhere.
- */
-export function commitStageProblems(report: RunGroup | null): StageReport[] {
-  if (!report) return [];
-
-  return report.stages.filter((stage) => {
-    if (stage.status === "pending" || stage.status === "running") {
-      return false;
-    }
-
-    if (stage.status !== "success") {
-      return true;
-    }
-
-    // Passed, but not silently: a warning here is a block one branch later.
-    // `info` does not qualify — a note that the SBOM listed 51 components is
-    // not something to put in front of someone reading a green pipeline.
-    return stage.friendlyMessages.some(
-      (message) =>
-        message.severity === "warning" || message.severity === "error",
-    );
-  });
-}
-
 /** How a commit's headline reads: the word, and the tone to paint it. */
 export interface CommitHeadline {
   label: string;
-  tone: "success" | "failure" | "running" | "neutral";
+  tone: "success" | "failure" | "running" | "neutral" | "warning";
   /** True when this came from our grading rather than a single GitHub run. */
   fromReport: boolean;
 }
 
-const OVERALL_TONE: Record<
-  RunOverallStatus,
-  "success" | "failure" | "running" | "neutral"
-> = {
+const OVERALL_TONE: Record<RunOverallStatus, CommitHeadline["tone"]> = {
   success: "success",
   failure: "failure",
   running: "running",
   cancelled: "neutral",
   partial: "neutral",
 };
+
+function concludedAsFailed(run: { status: string; conclusion: string | null }): boolean {
+  return (
+    run.status === "completed" &&
+    (run.conclusion === "failure" || run.conclusion === "timed_out")
+  );
+}
 
 /**
  * The headline status for a commit.
@@ -211,82 +165,54 @@ const OVERALL_TONE: Record<
  * contradicts the detail beneath it is worse than no headline, and it errs
  * green, which is the dangerous direction.
  *
+ * One exception, and it only ever moves the headline AWAY from green: a report
+ * of success whose stage run GitHub later finished as failed. The promotion
+ * job runs after the package stage reports, so when it fails the report stays
+ * `success` forever while nothing was promoted. That reads "attention" rather
+ * than "failure", because every stage did pass.
+ *
  * Without a report there is nothing to contradict, so the run's own conclusion
  * is the honest answer.
  */
 export function commitHeadline<
   T extends CommitRun & { status: string; conclusion: string | null },
 >(commit: CommitRunGroup<T>): CommitHeadline {
-  if (commit.report) {
-    return {
-      label: commit.report.overallStatus,
-      tone: OVERALL_TONE[commit.report.overallStatus],
-      fromReport: true,
-    };
-  }
+  return commit.report
+    ? reportHeadline(commit.report, commit.runs)
+    : runHeadline(commit.latest);
+}
 
-  const { status, conclusion } = commit.latest;
+function reportHeadline(
+  report: RunGroup,
+  runs: readonly (CommitRun & { status: string; conclusion: string | null })[],
+): CommitHeadline {
+  const lateFailure =
+    report.overallStatus === "success" &&
+    report.stages.some(
+      (stage) =>
+        stage.status === "success" &&
+        runs.some((run) => run.id === stage.runId && concludedAsFailed(run)),
+    );
+  if (lateFailure) {
+    return { label: "attention", tone: "warning", fromReport: true };
+  }
+  return {
+    label: report.overallStatus,
+    tone: OVERALL_TONE[report.overallStatus],
+    fromReport: true,
+  };
+}
+
+function runHeadline(run: { status: string; conclusion: string | null }): CommitHeadline {
+  const { status, conclusion } = run;
   const label = status === "completed" ? (conclusion ?? "completed") : status;
-  const tone: CommitHeadline["tone"] =
-    status !== "completed"
-      ? status === "queued" || status === "waiting"
-        ? "neutral"
-        : "running"
-      : conclusion === "success"
-        ? "success"
-        : conclusion === "failure" || conclusion === "timed_out"
-          ? "failure"
-          : "neutral";
-
-  return { label, tone, fromReport: false };
-}
-
-/**
- * A stage status as one of the workspace's four pill tones.
- *
- * The runs feature has its own `stageStatusColors`, which returns inline colours
- * for the pipeline diagram. This is a different visual language — the workspace
- * tabs use `.ws-pill--*` classes — so mapping again here is not the duplication
- * it looks like; sharing one of them would force the other's idiom.
- *
- * `stalled` reads as a failure because that is what it is: the stage never
- * started and the pipeline will not continue on its own. `blocked` stays
- * neutral, because it is a consequence of an earlier failure rather than a
- * second thing to go and fix.
- */
-export function stagePillTone(
-  status: StageReport["status"],
-): "success" | "failure" | "running" | "neutral" {
-  switch (status) {
-    case "success":
-      return "success";
-    case "failure":
-    case "stalled":
-      return "failure";
-    case "running":
-      return "running";
-    default:
-      return "neutral";
+  let tone: CommitHeadline["tone"] = "neutral";
+  if (status !== "completed") {
+    tone = status === "queued" || status === "waiting" ? "neutral" : "running";
+  } else if (conclusion === "success") {
+    tone = "success";
+  } else if (concludedAsFailed(run)) {
+    tone = "failure";
   }
-}
-
-/**
- * The stage a commit's detail panel opens on: what the reader came to find out.
- *
- * A failure leads, because that is the question being asked of a red pipeline.
- * Otherwise the first stage that actually ran something, so the panel opens on
- * a roster rather than the empty space a `blocked` stage has to show — blocked
- * is a consequence of an earlier failure, and opening there would put the
- * effect in front of the cause.
- *
- * `stalled` counts as a failure for the same reason `stagePillTone` paints it
- * as one: the stage never started and the pipeline will not continue on its
- * own.
- */
-export function openingStage(stages: readonly StageReport[]): string {
-  const failed = stages.find(
-    (stage) => stage.status === "failure" || stage.status === "stalled",
-  );
-  const ran = stages.find((stage) => (stage.checks ?? []).length > 0);
-  return (failed ?? ran ?? stages[0])?.stage ?? "";
+  return { label, tone, fromReport: false };
 }

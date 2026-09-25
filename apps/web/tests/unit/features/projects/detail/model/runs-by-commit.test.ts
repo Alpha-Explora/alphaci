@@ -1,9 +1,6 @@
 import {
   commitHeadline,
-  commitStageProblems,
   groupRunsByCommit,
-  openingStage,
-  stagePillTone,
 } from "@/features/projects/detail/model/runs-by-commit";
 import type { RunGroup, StageReport } from "@/shared/api/contracts";
 
@@ -107,51 +104,6 @@ describe("groupRunsByCommit", () => {
   });
 });
 
-describe("commitStageProblems", () => {
-  it("returns nothing when there is no report to read", () => {
-    expect(commitStageProblems(null)).toEqual([]);
-  });
-
-  it("keeps every stage that did not pass, message or not", () => {
-    // A passing stage needs no words; the pill already said it. A blocked one
-    // does, even carrying no message of its own — it is part of the story of
-    // why the pipeline stopped.
-    const problems = commitStageProblems(
-      report("abc", [
-        stage("access", "success"),
-        stage("quality", "stalled", [
-          {
-            severity: "error",
-            title: "Stage never started",
-            detail: "d",
-            hint: "h",
-          },
-        ]),
-        stage("package", "blocked", []),
-      ]),
-    );
-
-    expect(problems.map((s) => s.stage)).toEqual(["quality", "package"]);
-  });
-});
-
-describe("stagePillTone", () => {
-  it("treats a stalled stage as a failure, because it is one", () => {
-    expect(stagePillTone("stalled")).toBe("failure");
-    expect(stagePillTone("failure")).toBe("failure");
-  });
-
-  it("leaves blocked neutral, as a consequence rather than a second fault", () => {
-    expect(stagePillTone("blocked")).toBe("neutral");
-    expect(stagePillTone("pending")).toBe("neutral");
-  });
-
-  it("maps the plainly good and in-flight states", () => {
-    expect(stagePillTone("success")).toBe("success");
-    expect(stagePillTone("running")).toBe("running");
-  });
-});
-
 describe("commitHeadline", () => {
   const ghRun = (conclusion: string | null, status = "completed") => ({
     headSha: "abc",
@@ -202,31 +154,6 @@ describe("commitHeadline", () => {
     );
 
     expect(commitHeadline(commit!).tone).toBe("neutral");
-  });
-});
-
-describe("commitStageProblems — silence is the bug", () => {
-  it("keeps a failed stage that captured no explanation", () => {
-    // Requiring a message hid exactly the case the tab exists for: a red pill
-    // with nothing said. The view can then name the gap instead of showing
-    // nothing at all.
-    const problems = commitStageProblems(
-      report("abc", [stage("quality", "failure", [])]),
-    );
-
-    expect(problems.map((s) => s.stage)).toEqual(["quality"]);
-  });
-
-  it("stays quiet about stages that have not run yet", () => {
-    const problems = commitStageProblems(
-      report("abc", [
-        stage("access", "success"),
-        stage("quality", "running"),
-        stage("package", "pending"),
-      ]),
-    );
-
-    expect(problems).toEqual([]);
   });
 });
 
@@ -297,141 +224,3 @@ describe("groupRunsByCommit — the report must match the branch, not just the s
   });
 });
 
-/*
- * A passing stage is not automatically a silent one.
- *
- * On dev the quality gates are advisory: a stage can find three committed
- * secrets, a forbidden licence and a dozen formatter diagnostics and still
- * conclude `success`, because none of them block on the working branch.
- * Filtering on status alone showed nothing at all for that commit — on the one
- * branch where there was still time to act, and to the developer whose next
- * step is a promotion those findings will fail.
- */
-describe("commitStageProblems — a stage that passed with warnings", () => {
-  const warning = {
-    severity: "warning" as const,
-    title: "3 committed secret(s)",
-    detail: "Not blocking on this branch.",
-    hint: "Rotate them.",
-  };
-
-  it("surfaces a successful stage that carries a warning", () => {
-    const problems = commitStageProblems(
-      report("sha-1", [
-        stage("access", "success"),
-        stage("quality", "success", [warning]),
-      ]),
-    );
-
-    expect(problems.map((s) => s.stage)).toEqual(["quality"]);
-  });
-
-  it("still says nothing about a genuinely clean stage", () => {
-    const problems = commitStageProblems(
-      report("sha-1", [
-        stage("access", "success"),
-        stage("quality", "success"),
-      ]),
-    );
-
-    expect(problems).toEqual([]);
-  });
-
-  /*
-   * `info` does not qualify. "The SBOM listed 51 components" is true and
-   * useless in front of someone reading a green pipeline, and a panel that
-   * opens for every run is one people stop reading.
-   */
-  it("ignores an informational note on a passing stage", () => {
-    const problems = commitStageProblems(
-      report("sha-1", [
-        stage("quality", "success", [
-          {
-            severity: "info",
-            title: "SonarCloud findings",
-            detail: "51 components",
-            hint: "",
-          },
-        ]),
-      ]),
-    );
-
-    expect(problems).toEqual([]);
-  });
-
-  it("leaves pending and running stages alone", () => {
-    const problems = commitStageProblems(
-      report("sha-1", [
-        stage("quality", "pending", [warning]),
-        stage("package", "running", [warning]),
-      ]),
-    );
-
-    expect(problems).toEqual([]);
-  });
-
-  it("still shows a failure whose explanation was never captured", () => {
-    // Unchanged: silence is the one thing this must not do.
-    const problems = commitStageProblems(
-      report("sha-1", [stage("quality", "failure")]),
-    );
-
-    expect(problems.map((s) => s.stage)).toEqual(["quality"]);
-  });
-});
-
-describe("openingStage", () => {
-  const ran = (
-    name: StageReport["stage"],
-    status: StageReport["status"],
-    conclusions: string[],
-  ): StageReport => ({
-    ...stage(name, status),
-    checks: conclusions.map((conclusion, index) => ({
-      name: `check-${String(index)}`,
-      conclusion,
-    })),
-  });
-
-  it("opens on the failed stage, because that is the question being asked", () => {
-    expect(
-      openingStage([
-        ran("access", "success", ["success"]),
-        ran("quality", "failure", ["failure"]),
-        stage("package", "blocked"),
-      ]),
-    ).toBe("quality");
-  });
-
-  it("treats a stalled stage as the failure it is", () => {
-    expect(
-      openingStage([
-        ran("access", "success", ["success"]),
-        stage("quality", "stalled"),
-      ]),
-    ).toBe("quality");
-  });
-
-  /*
-   * A blocked stage has no checks, so opening on it shows an empty panel —
-   * the effect in front of the cause.
-   */
-  it("skips stages that ran nothing when the pipeline is green", () => {
-    expect(
-      openingStage([
-        stage("access", "blocked"),
-        ran("quality", "success", ["success"]),
-      ]),
-    ).toBe("quality");
-  });
-
-  it("falls back to the first stage when none ran anything", () => {
-    expect(
-      openingStage([stage("access", "blocked"), stage("quality", "blocked")]),
-    ).toBe("access");
-  });
-
-  it("returns an empty selection for a report with no stages", () => {
-    expect(openingStage([])).toBe("");
-  });
-});

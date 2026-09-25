@@ -27,6 +27,7 @@ export {
   checkTone,
   summarizeChecks,
   checkSummaryLabel,
+  relativeTime,
 } from "./model/runs-presentation";
 export type { CheckSummary, CheckTone } from "./model/runs-presentation";
 
