@@ -124,7 +124,7 @@ export function WorkflowBuilder({ guest = false, session, onboardingCompleted }:
     activeTab, statusMessage, isCreatingProject, isDiscoveringExistingRepo, isSettingUpExistingRepo,
     createResult, existingRepoDiscovery, existingRepoResult, setupMode, setSetupMode,
     existingRepoFullName, setExistingRepoFullName, existingRepoBaseBranch, setExistingRepoBaseBranch,
-    workspaces, selectedCreateWorkspaceId, setSelectedCreateWorkspaceId,
+    workspaces, selectedCreateWorkspaceId, setSelectedCreateWorkspaceId, targetProjectLabel,
     handleTabKeyDown, handleStudioTabChange, openIndividualSetup,
     handleCreateProject, handleDiscoverExistingRepo, handleSetupExistingRepo, handleGenerateWorkflow,
     catalog, projectCatalog, projects, createForm, deploymentProvisioning,
@@ -190,6 +190,7 @@ export function WorkflowBuilder({ guest = false, session, onboardingCompleted }:
               workspaces={workspaces}
               selectedWorkspaceId={selectedCreateWorkspaceId}
               onChangeWorkspace={setSelectedCreateWorkspaceId}
+              targetProjectLabel={targetProjectLabel}
               projectCatalog={projectCatalog}
               onViewProject={openIndividualSetup}
               reducedMotion={reducedMotion}

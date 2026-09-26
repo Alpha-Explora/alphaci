@@ -63,6 +63,8 @@ interface WorkflowSetupTabProps {
   workspaces?: WorkspaceSummary[] | null;
   selectedWorkspaceId?: string | null;
   onChangeWorkspace?: (workspaceId: string | null) => void;
+  /** "Team / Project" when a ?project= link files the repository in a Project. */
+  targetProjectLabel?: string | null;
   deploymentOwnershipMode: EnvOwnershipMode;
   deploymentProvisioning: DeploymentProvisioningFormState;
   envProvisioningEnabled: boolean;
@@ -125,6 +127,7 @@ export function WorkflowSetupTab({
   workspaces,
   selectedWorkspaceId,
   onChangeWorkspace,
+  targetProjectLabel,
   deploymentProvisioning,
   envProvisioningEnabled,
   existingRepoBaseBranch,
@@ -274,6 +277,7 @@ export function WorkflowSetupTab({
           onChangeWorkspace={onChangeWorkspace}
           selectedWorkspaceId={selectedWorkspaceId}
           workspaces={workspaces}
+          targetProjectLabel={targetProjectLabel}
         />
         <CatalogLoadingNotice loading={projectCatalog.loadingProjectOptions} />
         <RepositoryCreationProgress

@@ -24,6 +24,12 @@ export {
   verificationTypeLabel,
 } from "./model/checklist-rules";
 
+export { qaStudioHref } from "./model/qa-report-rules";
+export { roleCanStartRun } from "./model/qa-run-rules";
+/* Team-level checklist reads and share edits, for features that show a
+ * team's checklists in their own context (the Teams project explorer). */
+export { checklistsRepository } from "./data/checklists-repository";
+
 export type {
   QaRun,
   QaRunItem,

@@ -25,6 +25,8 @@ import { useWorkflowCatalog } from "./use-workflow-catalog";
 import { useWorkflowHistory } from "./use-workflow-history";
 import { useOnboardingTour } from "./use-onboarding-tour";
 import { useCurrentProjectsTour } from "./use-current-projects-tour";
+import { useCreateTarget } from "./use-create-target";
+import { preselectedWorkspaceId, scopeCreatePayload } from "../model/create-target-rules";
 import {
   formatApiError,
   WORKFLOW_TABS,
@@ -84,6 +86,15 @@ export function useWorkflowStudioViewModel(options: {
   const [selectedCreateWorkspaceId, setSelectedCreateWorkspaceId] =
     useState<string | null>(null);
 
+  const createTarget = useCreateTarget({
+    guest,
+    workspaces,
+    selectedWorkspaceId: selectedCreateWorkspaceId,
+    selectWorkspace: setSelectedCreateWorkspaceId,
+    openSetup: () => setActiveTab("setup"),
+  });
+  const linkedGroupId = createTarget.initialGroupId;
+
   const catalog = useWorkflowCatalog();
   const projectCatalog = useProjectOptionsCatalog();
   const history = useWorkflowHistory(setStatusMessage);
@@ -116,11 +127,12 @@ export function useWorkflowStudioViewModel(options: {
       .then((response) => {
         if (!active) return;
         setWorkspaces(response.items);
-        // Preselect only when there is nothing to choose. With several teams
-        // the pick is the caller's, so the field stays empty and the create
-        // button waits for it.
+        // Preselect the team a ?group= link named (when the caller is in
+        // it), else only when there is nothing to choose. With several teams
+        // and no link the pick is the caller's, so the field stays empty and
+        // the create button waits for it.
         setSelectedCreateWorkspaceId((current) =>
-          current ?? (response.items.length === 1 ? response.items[0].id : null),
+          preselectedWorkspaceId(current, linkedGroupId, response.items),
         );
       })
       .catch(() => {
@@ -133,7 +145,7 @@ export function useWorkflowStudioViewModel(options: {
     return () => {
       active = false;
     };
-  }, [guest]);
+  }, [guest, linkedGroupId]);
 
   function handleTabKeyDown(
     event: React.KeyboardEvent<HTMLButtonElement>,
@@ -202,10 +214,13 @@ export function useWorkflowStudioViewModel(options: {
       // (choose-team) uses the caller's selection, which the effect preselects
       // when they belong to exactly one team.
       const workspaceId = selectedGroupId ?? selectedCreateWorkspaceId ?? undefined;
-      const requestPayload = {
-        ...payloadResult.payload,
-        ...(workspaceId ? { workspaceId } : {}),
-      };
+      // A ?project= link files the repository (both, for a pair) in that team
+      // Project — only while creating in that Project's own team.
+      const requestPayload = scopeCreatePayload(
+        payloadResult.payload,
+        workspaceId,
+        createTarget.deliveryProjectIdFor(workspaceId),
+      );
       const response = await createProject(requestPayload);
 
       const outputFileName =
@@ -385,6 +400,7 @@ export function useWorkflowStudioViewModel(options: {
     workspaces,
     selectedCreateWorkspaceId,
     setSelectedCreateWorkspaceId,
+    targetProjectLabel: createTarget.label,
     handleTabKeyDown,
     handleStudioTabChange,
     openIndividualSetup,

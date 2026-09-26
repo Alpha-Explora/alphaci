@@ -21,7 +21,7 @@ function ListHead({ vm }: Readonly<{ vm: WorkspaceChecklistsViewModel }>) {
   return (
     <div className="group-section-head">
       <h3 className="group-section-title">
-        QA checklists
+        Checklist templates
         {vm.status === "ready" ? (
           <span className="group-section-count">{vm.checklists.length}</span>
         ) : null}
