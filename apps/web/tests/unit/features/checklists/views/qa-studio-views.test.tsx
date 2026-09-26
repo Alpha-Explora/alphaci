@@ -5,13 +5,13 @@ import { checklistsRepository } from "../../../../../src/features/checklists/dat
 import { qaRunsRepository } from "../../../../../src/features/checklists/data/qa-runs-repository";
 import { projectsRepository } from "../../../../../src/features/projects/data/projects-repository";
 import { QaStudioPanel } from "../../../../../src/features/checklists/studio/views/qa-studio-panel";
-import { ReturnedByQaCard } from "../../../../../src/features/checklists/returned/views/returned-by-qa-card";
 import { ProjectDetailTopTabs } from "../../../../../src/features/projects/detail/views/project-detail-top-tabs";
 import { projectDetailTabGroups } from "../../../../../src/features/projects/detail/views/project-detail-tab-config";
 import { visibleProjectDetailTabs } from "../../../../../src/features/projects/detail/model/project-detail-tab-rules";
 import type { QaRun } from "../../../../../src/features/checklists/model/qa-run-types";
 import type { AppRole, ProjectBranchPreview } from "../../../../../src/shared/api/contracts";
 import { checklist } from "../checklist-fixtures";
+import { automation } from "../qa-automation-fixtures";
 import { runAs, runItem } from "../qa-run-fixtures";
 
 jest.mock("../../../../../src/features/checklists/data/checklists-repository", () => ({
@@ -26,6 +26,8 @@ jest.mock("../../../../../src/features/checklists/data/qa-runs-repository", () =
     signoff: jest.fn(),
     reopen: jest.fn(),
     returnedItems: jest.fn(),
+    promotion: jest.fn().mockResolvedValue({}),
+    mergePromotion: jest.fn(),
   },
 }));
 jest.mock("../../../../../src/features/projects/data/projects-repository", () => ({
@@ -38,8 +40,8 @@ const projects = projectsRepository as jest.Mocked<typeof projectsRepository>;
 
 function preview(overrides: Partial<ProjectBranchPreview> = {}): ProjectBranchPreview {
   return {
-    branch: "main",
-    isProduction: true,
+    branch: "uat",
+    isProduction: false,
     deploymentId: "d1",
     targetId: "web",
     targetName: "storefront-web",
@@ -142,9 +144,9 @@ describe("QaStudioPanel", () => {
       "allow-scripts allow-forms allow-popups allow-same-origin",
     );
     expect(frame?.getAttribute("referrerpolicy")).toBe("no-referrer");
-    expect(container.textContent).toContain("main @ abc1234");
+    expect(container.textContent).toContain("uat @ abc1234");
     expect(container.textContent).toContain("deployed");
-    expect(runs.current).toHaveBeenCalledWith("project-1", { branch: "main", checklistId: "cl-1" });
+    expect(runs.current).toHaveBeenCalledWith("project-1", { branch: "uat", checklistId: "cl-1" });
   });
 
   it.each<AppRole>(["member", "qa", "lead"])(
@@ -238,10 +240,10 @@ describe("QaStudioPanel", () => {
     setup({ run: null });
     runs.create.mockResolvedValue(runAs("qa", { items: ITEMS }));
     const container = await studio("qa");
-    const start = buttonNamed(container, "Start QA run on main @ abc1234");
+    const start = buttonNamed(container, "Start QA run on uat @ abc1234");
     expect(start).toBeDefined();
     await act(async () => start!.click());
-    expect(runs.create).toHaveBeenCalledWith("project-1", { checklistId: "cl-1", branch: "main" });
+    expect(runs.create).toHaveBeenCalledWith("project-1", { checklistId: "cl-1", branch: "uat" });
     expect(container.textContent).toContain("Checkout works");
   });
 
@@ -316,84 +318,6 @@ describe("QaStudioPanel", () => {
   });
 });
 
-describe("ReturnedByQaCard", () => {
-  const returned = {
-    runId: "run-1",
-    branch: "main",
-    commitSha: "abc1234def",
-    checklistName: "Release smoke test",
-    item: runItem(2, {
-      title: "Rejects expired sessions",
-      status: "returned_to_dev",
-      defectSeverity: "blocker",
-      notes: "Still returns 201",
-      reproductionSteps: "Call it with an expired cookie",
-      verifiedBy: { id: "u-qa", login: "ana" },
-    }),
-  };
-
-  it("renders nothing when nothing was returned", async () => {
-    runs.returnedItems.mockResolvedValue({ items: [] });
-    const container = await render(<ReturnedByQaCard projectId="p1" enabled appRole="member" />);
-    expect(container.textContent).toBe("");
-  });
-
-  // A second return round: an earlier round was marked fixed, QA re-tested and
-  // returned it again. The developer must be able to ask for a re-test again.
-  it("still offers a re-test on an item QA returned again after an earlier fix", async () => {
-    const reReturned = {
-      ...returned,
-      item: {
-        ...returned.item,
-        fixRequest: {
-          requestedAt: "2026-09-25T01:00:00.000Z",
-          requestedBy: { id: "u-dev", login: "miguel" },
-          note: "first fix",
-        },
-      },
-    };
-    runs.returnedItems.mockResolvedValue({ items: [reReturned] });
-    const container = await render(<ReturnedByQaCard projectId="p1" enabled appRole="member" />);
-    expect(buttonNamed(container, "Mark fixed")).toBeDefined();
-  });
-
-  it("renders nothing and fetches nothing while the capability is off", async () => {
-    const container = await render(<ReturnedByQaCard projectId="p1" enabled={false} appRole="member" />);
-    expect(container.textContent).toBe("");
-    expect(runs.returnedItems).not.toHaveBeenCalled();
-  });
-
-  it("lists what QA found and lets a Developer ask for a re-test, then refreshes", async () => {
-    runs.returnedItems.mockResolvedValue({ items: [returned] });
-    runs.requestRetest.mockResolvedValue(runAs("member"));
-    const container = await render(<ReturnedByQaCard projectId="p1" enabled appRole="member" />);
-    expect(container.textContent).toContain("Returned by QA");
-    expect(container.textContent).toContain("main @ abc1234");
-    expect(container.textContent).toContain("Release smoke test");
-    expect(container.textContent).toContain("Blocker");
-    expect(container.textContent).toContain("Call it with an expired cookie");
-    expect(container.textContent).toContain("Returned by @ana");
-
-    await act(async () => buttonNamed(container, "Mark fixed")!.click());
-    const note = container.querySelector("textarea")!;
-    const setter = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, "value")!.set!;
-    await act(async () => {
-      setter.call(note, "Fixed in #218");
-      note.dispatchEvent(new Event("input", { bubbles: true }));
-    });
-    await act(async () => buttonNamed(container, "Request re-test")!.click());
-    expect(runs.requestRetest).toHaveBeenCalledWith("p1", "run-1", "ri-2", "Fixed in #218");
-    expect(runs.returnedItems).toHaveBeenCalledTimes(2);
-  });
-
-  it("does not offer QA Team the re-test they would be asking of themselves", async () => {
-    runs.returnedItems.mockResolvedValue({ items: [returned] });
-    const container = await render(<ReturnedByQaCard projectId="p1" enabled appRole="qa" />);
-    expect(container.textContent).toContain("Rejects expired sessions");
-    expect(buttonNamed(container, "Mark fixed")).toBeUndefined();
-  });
-});
-
 describe("QA Studio tab", () => {
   it("appears in Delivery only when the capability is on", async () => {
     const on = await render(
@@ -419,5 +343,166 @@ describe("QA Studio tab", () => {
     );
     expect(off.querySelector("#project-detail-tab-qa")).toBeNull();
     expect(off.querySelector("#project-detail-tab-hosting")).not.toBeNull();
+  });
+});
+
+describe("QA Studio — uat only", () => {
+  it("offers only the uat deployment when main (production) and uat are both deployed", async () => {
+    setup({
+      run: runAs("qa", { items: ITEMS }),
+      previews: [preview({ branch: "main", isProduction: true, previewUrl: "https://main.example.com" }), preview()],
+    });
+    const container = await studio("qa");
+    expect(container.querySelector(".qa-toolbar__env-chip")?.textContent).toBe("uat");
+    // No picker: there is nothing else to pick.
+    expect(container.querySelector(".qa-toolbar select")).toBeNull();
+    expect(container.querySelector("iframe")?.getAttribute("src")).toBe("https://shop.example.com/");
+    expect(runs.current).toHaveBeenCalledTimes(1);
+    expect(runs.current).toHaveBeenCalledWith("project-1", { branch: "uat", checklistId: "cl-1" });
+  });
+
+  it("shows the no-uat state instead of falling back to main, and asks for no run", async () => {
+    setup({ run: null, previews: [preview({ branch: "main", isProduction: true })] });
+    const container = await studio("qa");
+    expect(container.querySelector("iframe")).toBeNull();
+    expect(container.querySelector(".qa-toolbar")).toBeNull();
+    expect(container.textContent).toContain("No uat deployment yet");
+    expect(container.textContent).toContain("QA Studio tests the uat environment");
+    expect(container.textContent).toContain("QA runs are recorded against uat.");
+    expect(runs.current).not.toHaveBeenCalled();
+  });
+});
+
+function radioNamed(container: HTMLElement, name: string): HTMLButtonElement {
+  const radio = [...container.querySelectorAll<HTMLButtonElement>('[role="radio"]')].find((node) =>
+    node.textContent?.includes(name),
+  );
+  if (!radio) throw new Error(`no ${name} radio`);
+  return radio;
+}
+
+function fullScreenButton(container: HTMLElement): HTMLButtonElement {
+  return container.querySelector<HTMLButtonElement>('button[aria-label="Full screen"]')!;
+}
+
+async function click(element: Element | null | undefined) {
+  if (!element) throw new Error("nothing to click");
+  await act(async () => {
+    (element as HTMLElement).click();
+  });
+}
+
+describe("QA Studio — device viewports and full screen", () => {
+  it("never remounts the iframe when switching device, rotating or entering and leaving full screen", async () => {
+    setup({ run: runAs("qa", { items: ITEMS }) });
+    const container = await studio("qa");
+    const frame = container.querySelector("iframe");
+    const device = container.querySelector(".qa-device");
+    expect(frame).not.toBeNull();
+    expect(device?.getAttribute("data-frame")).toBe("browser");
+
+    await click(radioNamed(container, "Tablet"));
+    expect(device?.getAttribute("data-frame")).toBe("tablet");
+    expect(device?.getAttribute("data-orientation")).toBe("portrait");
+    await click(buttonNamed(container, "Rotate"));
+    expect(device?.getAttribute("data-orientation")).toBe("landscape");
+    await click(radioNamed(container, "Mobile"));
+    expect(device?.getAttribute("data-frame")).toBe("phone");
+    await click(buttonNamed(container, "Rotate"));
+    expect(device?.getAttribute("data-orientation")).toBe("portrait");
+    await click(fullScreenButton(container));
+    expect(container.querySelector(".qa-studio")?.getAttribute("data-full-screen")).toBe("true");
+    await click(fullScreenButton(container));
+    expect(container.querySelector(".qa-studio")?.getAttribute("data-full-screen")).toBe("false");
+    await click(radioNamed(container, "Desktop"));
+
+    // The same element instances throughout: the site under test was never reloaded.
+    expect(container.querySelector("iframe")).toBe(frame);
+    expect(container.querySelector(".qa-device")).toBe(device);
+    expect(container.querySelectorAll("iframe")).toHaveLength(1);
+  });
+
+  it("draws the true viewport: 1440 × 900 on Desktop, swapped sides in landscape", async () => {
+    setup({ run: runAs("qa", { items: ITEMS }) });
+    const container = await studio("qa");
+    const device = container.querySelector<HTMLElement>(".qa-device")!;
+    expect(device.style.getPropertyValue("--qa-screen-w")).toBe("1440");
+    expect(device.style.getPropertyValue("--qa-screen-h")).toBe("900");
+    expect(container.querySelector(".qa-device__size")?.textContent).toBe("1440 × 900");
+    expect(container.querySelector(".qa-device__address")?.textContent).toBe("shop.example.com");
+    expect(buttonNamed(container, "Rotate")?.disabled).toBe(true);
+    await click(radioNamed(container, "Tablet"));
+    await click(buttonNamed(container, "Rotate"));
+    expect(device.style.getPropertyValue("--qa-screen-w")).toBe("1024");
+    expect(device.style.getPropertyValue("--qa-screen-h")).toBe("768");
+    expect(container.querySelector(".qa-preview__device")?.textContent).toBe("Tablet · 1024 × 768 · Landscape");
+  });
+
+  it("mounts the run column once, floats it in full screen, and keeps it mounted when minimized", async () => {
+    setup({ run: runAs("qa", { items: ITEMS }) });
+    const container = await studio("qa");
+    const studioRoot = container.querySelector(".qa-studio")!;
+    const column = container.querySelector(".qa-studio__run");
+    const card = container.querySelector(".qa-run-card");
+    expect(studioRoot.getAttribute("data-checklist")).toBe("docked");
+    expect(container.querySelector(".qa-launcher")).toBeNull();
+
+    await click(fullScreenButton(container));
+    expect(document.body.style.overflow).toBe("hidden");
+    expect(studioRoot.getAttribute("data-checklist")).toBe("minimized");
+    const launcher = container.querySelector<HTMLButtonElement>(".qa-launcher")!;
+    expect(launcher.textContent).toContain("QA checklist · 0/3 passed");
+    expect(launcher.getAttribute("aria-expanded")).toBe("false");
+    expect(launcher.getAttribute("aria-controls")).toBe(column?.id);
+
+    await click(launcher);
+    expect(studioRoot.getAttribute("data-checklist")).toBe("open");
+    expect(column?.getAttribute("role")).toBe("region");
+    const heading = container.querySelector(".qa-drawer__title");
+    expect(heading?.textContent).toBe("QA checklist");
+    expect(document.activeElement).toBe(heading);
+
+    await click(container.querySelector('button[aria-label="Move to the left side"]'));
+    expect(studioRoot.getAttribute("data-side")).toBe("left");
+
+    // Change an item, then minimize: the same column and card stay mounted.
+    await click(container.querySelector('button[aria-label="Minimize checklist"]'));
+    expect(studioRoot.getAttribute("data-checklist")).toBe("minimized");
+    expect(document.activeElement).toBe(container.querySelector(".qa-launcher"));
+    expect(container.querySelector(".qa-studio__run")).toBe(column);
+    expect(container.querySelector(".qa-run-card")).toBe(card);
+    expect(container.querySelectorAll(".qa-run-card")).toHaveLength(1);
+    expect(container.querySelectorAll(".qa-run__head")).toHaveLength(1);
+
+    // Dock: back beside the page, the same column again.
+    await click(container.querySelector(".qa-launcher"));
+    await click(container.querySelector('button[aria-label="Dock beside the page"]'));
+    expect(studioRoot.getAttribute("data-full-screen")).toBe("false");
+    expect(container.querySelector(".qa-studio__run")).toBe(column);
+    expect(container.querySelector(".qa-run-card")).toBe(card);
+    expect(document.body.style.overflow).toBe("");
+    expect(document.activeElement).toBe(fullScreenButton(container));
+  });
+
+  it("opens Sign off from the floating drawer and keeps full screen while its Escape closes it", async () => {
+    setup({ run: runAs("qa", { items: ITEMS }) });
+    const container = await studio("qa");
+    await click(fullScreenButton(container));
+    await click(container.querySelector(".qa-launcher"));
+    await click(buttonNamed(container, "Sign off"));
+    expect(document.querySelectorAll('[role="dialog"]')).toHaveLength(1);
+    await act(async () => {
+      document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true }));
+    });
+    expect(container.querySelector(".qa-studio")?.getAttribute("data-full-screen")).toBe("true");
+  });
+
+  it("says when CI is failing on the launcher's dot", async () => {
+    setup({ run: runAs("qa", { items: ITEMS, automation: automation() }) });
+    const container = await studio("qa");
+    await click(fullScreenButton(container));
+    const dot = container.querySelector(".qa-launcher__dot");
+    expect(dot?.getAttribute("data-tone")).toBe("failed");
+    expect(container.querySelector(".qa-launcher")?.textContent).toContain("Automated tests failed");
   });
 });

@@ -37,10 +37,16 @@ import type {
 } from '../../src/features/checklists/model/qa-automation-types';
 import type { QaReport } from '../../src/features/checklists/model/qa-report-types';
 import type {
+  QaPromotionChecklistWire,
+  QaPromotionMergeWire,
+  QaPromotionStatusWire,
+} from '../../src/features/checklists/model/qa-promotion-types';
+import type {
   QaActor,
   QaCurrentRunResponse,
   QaDefectSeverity,
   QaFixRequest,
+  QaMyItemsResponse,
   QaReturnedItem,
   QaReturnedItemsResponse,
   QaRun,
@@ -114,7 +120,18 @@ const ROLE_BADGES: Record<AppRole, string> = {
 const WORKSPACE = { id: 'ws-checkout', name: 'Checkout squad' };
 const PROJECT_ID = 'project-1';
 const MAIN_SHA = 'a1b2c3d4e5f60718293a4b5c6d7e8f9012345678';
-const PREVIEW_ORIGIN = 'https://storefront-web.vercel.app';
+/* uat, the QA branch, is deployed at its own commit from its own URL; main is
+ * deployed too, and QA Studio must never offer it. */
+const UAT_SHA = '9f8e7d6c5b4a39281706f5e4d3c2b1a098765432';
+const PREVIEW_ORIGIN = 'https://storefront-web-git-uat.vercel.app';
+const MAIN_PREVIEW_ORIGIN = 'https://storefront-web.vercel.app';
+const QA_BRANCH = 'uat';
+/* The promotion PR the generated pipeline opened (uat → main), and the merge
+ * commit GitHub makes when it is merged. */
+const PROMOTION_PR = { number: 42, url: 'https://github.com/tone/storefront-web/pull/42' };
+const MERGE_SHA = '5a5b5c5d5e5f60718293a4b5c6d7e8f901234567';
+/** GitHub's own refusal text for a protected main: the UI must show it verbatim. */
+const GITHUB_REFUSAL = 'At least 1 approving review is required by reviewers with write access.';
 const VERIFY_RUN_URL = 'https://github.com/tone/storefront-web/actions/runs/11873450921';
 const QUALITY_RUN_URL = 'https://github.com/tone/storefront-web/actions/runs/11873450377';
 
@@ -278,6 +295,8 @@ const canSignOff = canCreateRun;
 const canDispatchAutomation = canCreateRun;
 const canRequestRetest = (role: AppRole) => role === 'member' || role === 'lead' || role === 'admin';
 const canReopenRun = (role: AppRole) => role === 'lead' || role === 'admin';
+/* Merge to main: Team leads and Admins only. */
+const canMergePromotion = (role: AppRole) => role === 'lead' || role === 'admin';
 /* QaAccessService.canManage: global project creators (admin, lead). */
 const canManageChecklists = (role: AppRole) => role === 'admin' || role === 'lead';
 
@@ -437,6 +456,10 @@ class QaMockBackend {
   moveConflictArmed = false;
   /** 4xx replies a journey provoked on purpose (not refusals). */
   readonly expectedErrors: string[] = [];
+  /** How GitHub answers the merge: merge it, or refuse with its own text (200, merged:false). */
+  mergeMode: 'merge' | 'refuse' = 'merge';
+  /** The open uat → main promotion PR; null once merged. */
+  promotionPr: { number: number; url: string } | null = PROMOTION_PR;
   private seq = 0;
   private readonly routes: Array<[string, RegExp, Handler]>;
 
@@ -496,7 +519,7 @@ class QaMockBackend {
   }
 
   seedRun(checklist: QaChecklist, createdBy: QaActor): RunRow {
-    const run = this.createRunRow(checklist, 'main', createdBy);
+    const run = this.createRunRow(checklist, QA_BRANCH, UAT_SHA, createdBy);
     this.runs.push(run);
     return run;
   }
@@ -601,6 +624,10 @@ class QaMockBackend {
       ['GET', /^\/github\/installations\/accounts$/, () => ({ body: { accounts: [] } })],
       ['GET', /^\/github\/installations\/repos$/, () => ({ body: { repos: [] } })],
       ['GET', /^\/provider-connections$/, () => ({ body: [] })],
+      ['GET', new RegExp(`^/projects/${P}/qa-my-items$`), () => ({ body: this.myItems() })],
+      // Promotion
+      ['GET', new RegExp(`^/projects/${P}/qa/promotion$`), (m) => ({ body: this.promotion(m[1]) })],
+      ['POST', new RegExp(`^/projects/${P}/qa/promotion/merge$`), (m) => ({ body: this.mergePromotion(m[1]) })],
     ];
   }
 
@@ -718,6 +745,31 @@ class QaMockBackend {
           provider: 'vercel',
           status: 'ready',
           commitSha: MAIN_SHA,
+          commitMessage: 'release: storefront 2.4',
+          pullRequestNumber: null,
+          createdBy: PEOPLE.lead.login,
+          previewUrl: MAIN_PREVIEW_ORIGIN,
+          deploymentUrl: null,
+          inspectorUrl: null,
+          createdAt: ago(6 * 60 * MINUTE),
+          readyAt: ago(6 * 60 * MINUTE - MINUTE),
+          embeddable: true,
+          embedBlockedReason: null,
+          slot: 'frontend',
+          surface: 'page',
+          providerLabel: 'Vercel',
+          logsAvailable: false,
+          logWindow: null,
+        },
+        {
+          branch: QA_BRANCH,
+          isProduction: false,
+          deploymentId: 'dpl-uat',
+          targetId: 'target-web',
+          targetName: 'storefront-web',
+          provider: 'vercel',
+          status: 'ready',
+          commitSha: UAT_SHA,
           commitMessage: 'fix(cart): apply coupons per line',
           pullRequestNumber: null,
           createdBy: PEOPLE.member.login,
@@ -939,7 +991,7 @@ class QaMockBackend {
 
   /* ── Runs (qa-runs.service.ts) ── */
 
-  private createRunRow(checklist: QaChecklist, branch: string, createdBy: QaActor): RunRow {
+  private createRunRow(checklist: QaChecklist, branch: string, commitSha: string, createdBy: QaActor): RunRow {
     const id = this.nextId('run');
     const now = new Date().toISOString();
     return {
@@ -948,7 +1000,7 @@ class QaMockBackend {
       checklistName: checklist.name,
       checklistVersion: checklist.version,
       branch,
-      commitSha: MAIN_SHA,
+      commitSha,
       status: 'open',
       createdBy,
       createdAt: now,
@@ -981,15 +1033,16 @@ class QaMockBackend {
     if (run.status === 'signed_off') throw nestError(409, 'This run is signed off. Reopen it to make changes.');
   }
 
+  /** The backend accepts QA runs on the QA branch only: any other branch is a 400 the UI must never cause. */
   private requireHostedBranch(branch: string) {
-    if (branch !== 'uat' && branch !== 'main') {
-      throw nestError(400, 'QA verification runs are only supported on hosted branches (uat, main).');
+    if (branch !== QA_BRANCH) {
+      throw nestError(400, `QA verification runs are only supported on ${QA_BRANCH}.`);
     }
   }
 
-  /** Commit resolution: the storefront's main is deployed at MAIN_SHA; nothing else resolves. */
+  /** Commit resolution: the storefront's uat is deployed at UAT_SHA. */
   private resolveCommit(branch: string): { commitSha: string; commitSource: 'deployment' } | null {
-    return branch === 'main' ? { commitSha: MAIN_SHA, commitSource: 'deployment' } : null;
+    return branch === QA_BRANCH ? { commitSha: UAT_SHA, commitSource: 'deployment' } : null;
   }
 
   private currentRun(query: URLSearchParams): QaCurrentRunResponse {
@@ -1018,7 +1071,7 @@ class QaMockBackend {
       (entry) => entry.checklistId === checklist.id && entry.branch === branch && entry.commitSha === resolved.commitSha,
     );
     if (existing) return { status: 200, body: this.assembleRun(existing) };
-    const run = this.createRunRow(checklist, branch, this.actor);
+    const run = this.createRunRow(checklist, branch, resolved.commitSha, this.actor);
     this.runs.push(run);
     return { status: 201, body: this.assembleRun(run) };
   }
@@ -1129,6 +1182,88 @@ class QaMockBackend {
         checklistName: run.checklistName,
         item: this.toRunItem(run, item),
       }));
+  }
+
+  /** qa-my-items: what QA returned, plus the developer items of the open uat runs on uat's current head. */
+  private myItems(): QaMyItemsResponse {
+    const developerItems = this.runs
+      .filter((run) => run.status === 'open' && run.branch === QA_BRANCH && run.commitSha === UAT_SHA)
+      .flatMap((run) => run.items.filter((item) => item.targetPersona === 'developer').map((item) => ({ run, item })))
+      .sort((a, b) => a.item.position - b.item.position)
+      .map(({ run, item }) => ({
+        runId: run.id,
+        branch: run.branch,
+        commitSha: run.commitSha,
+        checklistName: run.checklistName,
+        item: this.toRunItem(run, item),
+      }));
+    return { returned: this.returnedItems(), developerItems };
+  }
+
+  /* ── Promotion (qa-promotion rules: every non-archived shared checklist APPROVED on uat's current head) ── */
+
+  private promotionChecklists(projectId: string): QaPromotionChecklistWire[] {
+    return this.checklists
+      .filter((entry) => entry.archivedAt === null && entry.sharedProjectIds.includes(projectId))
+      .map((checklist) => {
+        const run = this.runs.find((entry) => entry.checklistId === checklist.id && entry.branch === QA_BRANCH && entry.commitSha === UAT_SHA);
+        const verdict = run?.status === 'signed_off' ? (run.signoff?.verdict ?? null) : null;
+        return {
+          id: checklist.id,
+          name: checklist.name,
+          runId: run?.id ?? null,
+          verdict,
+          runStatus: run?.status ?? null,
+          approvedForHead: verdict === 'APPROVED',
+        };
+      });
+  }
+
+  private promotionReasons(checklists: QaPromotionChecklistWire[]): string[] {
+    if (checklists.length === 0) return ['No QA checklist is shared with this project.'];
+    const head = `${QA_BRANCH} @ ${UAT_SHA.slice(0, 7)}`;
+    return checklists
+      .filter((entry) => entry.approvedForHead !== true)
+      .map((entry) => {
+        if (!entry.runId) return `${String(entry.name)} has no QA run on ${head}.`;
+        if (entry.runStatus !== 'signed_off') return `${String(entry.name)} is not signed off on ${head}.`;
+        return `${String(entry.name)} is signed off ${String(entry.verdict)}, not APPROVED, on ${head}.`;
+      });
+  }
+
+  promotion(projectId: string): QaPromotionStatusWire {
+    this.requireProject(projectId);
+    const checklists = this.promotionChecklists(projectId);
+    const reasons = this.promotionReasons(checklists);
+    return {
+      qaBranch: QA_BRANCH,
+      targetBranch: 'main',
+      headSha: UAT_SHA,
+      checklists,
+      eligible: reasons.length === 0,
+      reasons,
+      pullRequest: this.promotionPr ? { ...this.promotionPr, headSha: UAT_SHA } : null,
+      canMerge: canMergePromotion(this.role),
+    };
+  }
+
+  private mergePromotion(projectId: string): QaPromotionMergeWire {
+    if (!canMergePromotion(this.role)) throw nestError(403, 'Only a team lead or admin may merge to main.');
+    const status = this.promotion(projectId);
+    if (!status.eligible) {
+      throw new HttpError(409, {
+        code: 'QA_PROMOTION_BLOCKED',
+        message: 'QA has not approved every shared checklist on the current uat commit.',
+        reasons: status.reasons,
+      });
+    }
+    const pullRequest = this.promotionPr ?? PROMOTION_PR;
+    if (this.mergeMode === 'refuse') {
+      // GitHub refused: 200 with merged:false and its own words.
+      return { merged: false, sha: null, message: GITHUB_REFUSAL, pullRequest };
+    }
+    this.promotionPr = null;
+    return { merged: true, sha: MERGE_SHA, message: 'Pull Request successfully merged', pullRequest };
   }
 
   /* ── Assembly (row → contract) ── */
@@ -1441,14 +1576,28 @@ async function qaVerifiesAndSignsOff({ page, context, backend, baseUrl }: Journe
   await openProjectTab(page, baseUrl, 'QA Studio');
   await expectRoleBadge(page, 'qa');
   await expectText(page.locator('.qa-run-card__title'), checklist.name, 'the checklist under test');
-  await expectText(page.getByLabel('Commit under test'), 'main @ a1b2c3d', 'the commit chip');
+  await expectText(page.getByLabel('Commit under test'), 'uat @ 9f8e7d6', 'the commit chip');
 
-  await page.getByRole('button', { name: 'Start QA run on main @ a1b2c3d' }).click();
+  // uat only: main is deployed (and production), but it is not offered anywhere.
+  await expectText(page.locator('.qa-toolbar__env-chip'), 'uat', 'the fixed uat environment');
+  assert.equal(await page.locator('.qa-toolbar select').count(), 0, 'no environment picker: uat is the only QA environment');
+  assert.equal(await page.locator('.qa-device__frame').getAttribute('src'), `${PREVIEW_ORIGIN}/`, 'the frame shows the uat deployment');
+  // Production readiness: QA Team reads it, only leads merge.
+  const promo = page.getByRole('region', { name: 'Production readiness' });
+  await expectText(promo.locator('.qa-promo__title'), 'Not ready for production', 'the promotion card for QA');
+  await expectText(promo, checklist.name, 'the checklist row on the promotion card');
+  await expectText(promo, 'Not verified on this commit yet', 'the unverified checklist state');
+  await expectText(promo, 'Team leads merge uat into main once every checklist is approved.', 'who merges, for QA');
+  await neverShown(backend, page.getByRole('button', { name: 'Merge to main' }), 'Merge to main for QA Team');
+  const lookedUp = backend.callsTo('GET', /\/qa-runs\/current$/).map((call) => call.query.get('branch'));
+  assert.ok(lookedUp.length > 0 && lookedUp.every((branch) => branch === QA_BRANCH), `run lookups only ever ask for uat (got ${lookedUp.join(', ')})`);
+
+  await page.getByRole('button', { name: 'Start QA run on uat @ 9f8e7d6' }).click();
   await visible(runItem(page, first.title), 'the run items');
   const start = onlyCall(backend.callsTo('POST', /^\/projects\/project-1\/qa-runs$/), 'run start');
   assert.equal(start.status, 201);
   // Only the checklist and branch: the server, never the page, picks the commit.
-  assert.deepEqual(start.body, { checklistId: checklist.id, branch: 'main' });
+  assert.deepEqual(start.body, { checklistId: checklist.id, branch: QA_BRANCH });
   const run = backend.runs[0];
   const [item1, item2, item3] = run.items;
   const patchesTo = (itemId: string) => backend.callsTo('PATCH', new RegExp(`/qa-runs/${run.id}/items/${itemId}$`));
@@ -1464,17 +1613,60 @@ async function qaVerifiesAndSignsOff({ page, context, backend, baseUrl }: Journe
   }
   await visible(page.getByRole('button', { name: 'Run Playwright' }), 'Run Playwright for QA');
 
-  // 1 → Passed, saved as soon as it is picked.
-  await statusSelect(page, 1).selectOption('passed');
+  // ── Full screen: the page fills the viewport, the checklist floats over it. ──
+  // Mark the frame, so "the site was never reloaded" is a fact, not a hope.
+  await page.locator('.qa-device__frame').evaluate((frame) => {
+    (frame as unknown as { __qaMark: string }).__qaMark = 'original';
+  });
+  const studio = page.locator('.qa-studio');
+  await page.getByRole('button', { name: 'Full screen' }).click();
+  await eventually('the studio to go full screen', async () => (await studio.getAttribute('data-full-screen')) === 'true');
+  const studioBox = await studio.boundingBox();
+  assert.deepEqual(studioBox, { x: 0, y: 0, width: 1440, height: 900 }, 'full screen covers the whole viewport');
+  const launcher = page.locator('button.qa-launcher');
+  await expectText(launcher, 'QA checklist · 0/3 passed', 'the launcher progress');
+  await absent(page.getByRole('region', { name: 'QA checklist' }), 'the drawer before it is opened');
+
+  await launcher.click();
+  const drawer = page.getByRole('region', { name: 'QA checklist' });
+  await visible(drawer, 'the floating checklist drawer');
+  const drawerBox = await drawer.boundingBox();
+  assert.ok(drawerBox && drawerBox.x + drawerBox.width <= 1440 - 15 && drawerBox.y + drawerBox.height <= 900 - 15, 'the drawer floats in the bottom-right corner');
+  assert.equal(await page.locator('.qa-run-card').count(), 1, 'one run column, moved, never a second copy');
+
+  // 1 → Passed, saved as soon as it is picked — from the floating drawer.
+  await drawer.locator('label.qa-status-select').filter({ hasText: 'Status of item 1' }).locator('select').selectOption('passed');
   await expectText(runItem(page, first.title).locator(STATUS_PILL), 'Passed', 'item 1 passed');
   assert.deepEqual(onlyCall(patchesTo(item1.id), 'item 1 update').body, { expectedRowVersion: 1, status: 'passed' });
   // Automated evidence never rewrites what the tester recorded.
   assert.equal(backend.runs[0].items[0].status, 'passed');
 
-  // 2 → Failed needs a severity first: the UI refuses to send it without one.
+  // 2 → Failed opens a details draft. Minimizing only hides the drawer: the draft survives.
   await statusSelect(page, 2).selectOption('failed');
   const editor = runItem(page, second.title).locator('form.qa-item-editor');
   await visible(editor, 'the item 2 details editor');
+  await editor.getByPlaceholder('What went wrong').fill('Coupon applied twice on a two-line cart.');
+  await drawer.getByRole('button', { name: 'Minimize checklist' }).click();
+  await absent(drawer, 'the minimized drawer');
+  await expectText(launcher, 'QA checklist · 1/3 passed', 'the launcher after item 1 passed');
+  await launcher.click();
+  await visible(editor, 'the item 2 draft after re-opening');
+  assert.equal(await editor.getByPlaceholder('What went wrong').inputValue(), 'Coupon applied twice on a two-line cart.', 'the draft survived minimize');
+  await expectText(runItem(page, first.title).locator(STATUS_PILL), 'Passed', 'item 1 still passed after re-opening');
+  assert.equal(patchesTo(item2.id).length, 0, 'nothing was sent for item 2 by minimizing');
+
+  // Leave full screen from the drawer: docked beside the page again, same frame.
+  await drawer.getByRole('button', { name: 'Dock beside the page' }).click();
+  await eventually('the studio to dock', async () => (await studio.getAttribute('data-full-screen')) === 'false');
+  assert.equal(await page.evaluate(() => document.body.style.overflow), '', 'the page scrolls again');
+  assert.equal(
+    await page.locator('.qa-device__frame').evaluate((frame) => (frame as unknown as { __qaMark?: string }).__qaMark ?? null),
+    'original',
+    'the preview iframe was never remounted',
+  );
+
+  // 2 → Failed needs a severity first: the UI refuses to send it without one.
+  await visible(editor, 'the item 2 details editor, docked');
   await editor.getByRole('button', { name: 'Mark Failed' }).click();
   await expectText(editor.getByRole('alert'), 'Choose a severity before marking this item Failed.', 'the severity validation');
   assert.equal(patchesTo(item2.id).length, 0, 'Failed without a severity must not be sent');
@@ -1559,7 +1751,7 @@ async function qaVerifiesAndSignsOff({ page, context, backend, baseUrl }: Journe
     page.waitForEvent('download'),
     page.getByRole('menu', { name: 'Export report' }).getByRole('menuitem', { name: /Download JSON/ }).click(),
   ]);
-  assert.equal(download.suggestedFilename(), 'QA-Report-storefront-web-main-a1b2c3d.json');
+  assert.equal(download.suggestedFilename(), 'QA-Report-storefront-web-uat-9f8e7d6.json');
   const saved = JSON.parse(await readFile(await download.path(), 'utf8')) as QaReport;
   assert.equal(saved.schemaVersion, 'qa-report/v1');
   assert.equal(saved.frozen, true);
@@ -1595,51 +1787,61 @@ async function qaVerifiesAndSignsOff({ page, context, backend, baseUrl }: Journe
 
 /** (c) A developer fixes what QA returned and asks for a re-test. */
 async function developerRequestsRetest({ page, backend, baseUrl }: JourneyContext) {
-  const [first, second, third] = RELEASE_CHECKLIST.items;
+  const [, second, third] = RELEASE_CHECKLIST.items;
   const run = backend.runs[0];
   const [item1, item2, item3, item4] = run.items;
 
   await openProjectTab(page, baseUrl, 'Overview');
   await expectRoleBadge(page, 'member');
   const card = page.locator('section.qa-returned');
+  await expectText(card.locator('#qa-mine-title'), 'My QA items', 'the My QA items card');
   await expectText(card.locator('.qa-returned__count'), '2', 'two returned items');
   const row = card.locator('li.qa-returned__row').filter({ hasText: third.title });
   await expectText(row.locator('.qa-returned__head .qa-severity'), 'Blocker', 'the returned severity');
   await expectText(row, '1. Pay with the saved card', 'the reproduction steps');
-  await expectText(row.locator('.qa-returned__meta'), 'main @ a1b2c3d', 'the commit it was returned on');
+  await expectText(row.locator('.qa-returned__meta'), 'uat @ 9f8e7d6', 'the commit it was returned on');
   await expectText(row.locator('.qa-returned__meta'), `Returned by @${PEOPLE.qa.login}`, 'who returned it');
 
   await row.getByRole('button', { name: 'Mark fixed & request re-test' }).click();
-  await row.getByLabel('Note to QA (optional)').fill('Mailer queue was paused on main; resumed and added an alert.');
+  await row.getByLabel('Note to QA (optional)').fill('Mailer queue was paused on uat; resumed and added an alert.');
   await row.getByRole('button', { name: 'Request re-test' }).click();
   await expectText(card.locator('.qa-returned__count'), '1', 'one returned item left');
   await absent(card.locator('li.qa-returned__row').filter({ hasText: third.title }), 'the fixed item on the card');
   await visible(card.locator('li.qa-returned__row').filter({ hasText: second.title }), 'the item still returned');
   const retest = onlyCall(backend.callsTo('POST', new RegExp(`/items/${item3.id}/request-retest$`)), 're-test request');
-  assert.deepEqual(retest.body, { note: 'Mailer queue was paused on main; resumed and added an alert.' });
+  assert.deepEqual(retest.body, { note: 'Mailer queue was paused on uat; resumed and added an alert.' });
   assert.equal(item3.status, 'pending', 'a re-test sends the item back to pending');
   assert.equal(item2.status, 'returned_to_dev', 'the other returned item is untouched');
 
-  await page.getByRole('tablist', { name: 'Project sections' }).getByRole('tab', { name: 'QA Studio' }).click();
-  await visible(runItem(page, first.title), 'the run in QA Studio');
-  await neverShown(backend, page.getByRole('button', { name: /Run Playwright/ }), 'Run Playwright for a Developer');
-  await neverShown(backend, page.getByRole('button', { name: 'Sign off', exact: true }), 'Sign off for a Developer');
+  // Section 2: the developer item of the current uat run, recorded from the Overview
+  // with the studio's own rules, and never "Returned to dev".
+  const checks = card.getByRole('region', { name: 'Your checks on uat @ 9f8e7d6' });
+  await visible(checks, 'the "Your checks on uat @ 9f8e7d6" section');
+  const devRow = checks.locator('li.qa-mine__row').filter({ hasText: DEVELOPER_ITEM.title });
+  await expectText(devRow, DEVELOPER_ITEM.testIdentifier ?? '', 'the developer item test identifier');
+  const devSelect = devRow.getByLabel(`Status of ${DEVELOPER_ITEM.title}`);
+  const offered = await devSelect.locator('option').evaluateAll((options) => options.map((option) => (option as HTMLOptionElement).value));
+  assert.deepEqual(offered, ['pending', 'in_progress', 'passed', 'failed', 'blocked'], 'a developer is never offered Returned to dev');
+  await devSelect.selectOption('passed');
+  await expectText(devRow.locator('.qa-mine__head .qa-pill'), 'Passed', 'the developer item passed');
+  await expectText(devRow, `Passed by @${PEOPLE.member.login}`, 'who passed it');
+  const devPatch = onlyCall(backend.callsTo('PATCH', new RegExp(`/qa-runs/${run.id}/items/${item4.id}$`)), 'developer item update');
+  assert.deepEqual(devPatch.body, { expectedRowVersion: 1, status: 'passed' });
+  assert.equal(item4.status, 'passed', 'the server recorded the developer item');
 
-  // The QA-owned item is read-only; developer and everyone items are editable.
-  await expectText(runItem(page, first.title), 'Read-only for your role', 'the QA item read-only note');
-  assert.equal(await runItem(page, first.title).locator('label.qa-status-select').count(), 0, 'no status control on a QA item');
-  await expectText(runItem(page, third.title).locator(STATUS_PILL), 'Pending', 'the re-tested item back in Pending');
-  await expectText(runItem(page, third.title).locator('.qa-fix-note'), `Marked fixed by @${PEOPLE.member.login}`, 'the fix note in the studio');
-  await visible(runItem(page, second.title).getByRole('button', { name: 'Mark fixed & request re-test' }), 're-test on the still-returned item');
-  const developerSelect = statusSelect(page, 4);
-  assert.equal(await developerSelect.isEnabled(), true, 'the developer item is editable');
-  // Returning to dev is QA's call: the control does not even offer it to a Developer.
-  assert.equal(await developerSelect.locator('option[value="returned_to_dev"]').count(), 0, 'a Developer is not offered Returned to dev');
-  await developerSelect.selectOption('passed');
-  await expectText(runItem(page, DEVELOPER_ITEM.title).locator(STATUS_PILL), 'Passed', 'the developer item passed');
-  const patch = onlyCall(backend.callsTo('PATCH', new RegExp(`/items/${item4.id}$`)), 'developer item update');
-  assert.deepEqual(patch.body, { expectedRowVersion: 1, status: 'passed' });
+  // QA Studio is for QA Team, Team leads and Admins: a Developer reads the
+  // shared checklists and fixes what QA returns, from the card above.
+  const tabs = page.getByRole('tablist', { name: 'Project sections' });
+  await visible(tabs.getByRole('tab', { name: 'Checklists', exact: true }), 'the Checklists tab for a Developer');
+  await neverShown(backend, tabs.getByRole('tab', { name: 'QA Studio', exact: true }), 'the QA Studio tab for a Developer');
+
+  // A deep link to #qa cannot reveal it either: it lands on Overview.
+  await page.goto(`${baseUrl}/projects/${PROJECT_ID}#qa`, { waitUntil: 'domcontentloaded' });
+  await visible(tabs.getByRole('tab', { name: 'Overview', selected: true }), 'Overview for a #qa deep link');
+  await neverShown(backend, page.locator('.qa-studio'), 'QA Studio for a Developer');
+  assert.equal(backend.callsTo('GET', /\/qa-runs\/current$/).length, 0, 'the studio never looked up a run for a Developer');
   assert.equal(item1.status, 'passed', 'the QA item is untouched');
+  assert.equal(item4.status, 'passed', 'nothing but the developer changed the developer item');
 }
 
 /** (d) A QA Team member sees their badge, cannot create a workspace or manage checklists. */
@@ -1689,7 +1891,7 @@ async function capabilityAbsentHidesQa({ page, backend, baseUrl }: JourneyContex
   assert.deepEqual(backend.calls.filter((call) => /qa-/.test(call.path)).map((call) => call.path), []);
 }
 
-/** (f) Team lead: the project explorer — list, open, attach, move (409 then real), archive, create links. */
+/** (h) Team lead: the project explorer — list, open, attach, move (409 then real), archive, create links. */
 async function leadOrganisesProjects({ page, backend, baseUrl }: JourneyContext) {
   await page.goto(`${baseUrl}/teams`, { waitUntil: 'domcontentloaded' });
   await expectRoleBadge(page, 'lead');
@@ -1800,6 +2002,119 @@ async function leadOrganisesProjects({ page, backend, baseUrl }: JourneyContext)
   assert.ok(backend.callsTo('GET', new RegExp(`^/delivery-projects/${LOYALTY_FOLDER}$`)).length > 0, 'the wizard Project lookup');
 }
 
+/** The lead's route to the promotion card, with its parts. */
+function promotionCard(page: Page) {
+  const card = page.getByRole('region', { name: 'Production readiness' });
+  return { card, title: card.locator('.qa-promo__title'), merge: page.locator('button.qa-promo__merge') };
+}
+
+/** (f) Team lead: not ready (reasons) -> sign off Approved on the current head -> ready -> Merge to main from the drawer -> merged. */
+async function leadMergesToMain({ page, backend, baseUrl }: JourneyContext) {
+  const checklist = backend.checklists[0];
+  await openProjectTab(page, baseUrl, 'QA Studio');
+  await expectRoleBadge(page, 'lead');
+  const { card, title, merge } = promotionCard(page);
+  await expectText(title, 'Not ready for production', 'the not-ready title');
+  // Folded by default (the item list needs the height); unfold to read why.
+  const toggle = card.locator('button.qa-promo__toggle');
+  assert.equal(await toggle.getAttribute('aria-expanded'), 'false', 'the card starts folded');
+  await toggle.click();
+  await visible(card.locator('.qa-promo__reasons'), 'the unfolded reasons');
+  await expectText(card.locator('.qa-promo__route'), 'uat @ 9f8e7d6 → main', 'the promotion route');
+  await expectText(card.locator('.qa-promo__reasons'), `${checklist.name} is not signed off on uat @ 9f8e7d6.`, 'the server reason');
+  await expectText(card.locator('.qa-promo__row'), 'Run in progress — not signed off yet', 'the checklist row state');
+  assert.equal(await merge.isDisabled(), true, 'Merge to main is disabled while not eligible');
+  const whyId = await merge.getAttribute('aria-describedby');
+  assert.ok(whyId, 'the disabled button is described by its reason');
+  await expectText(page.locator(`[id="${whyId}"]`), 'Merging opens once every shared checklist is signed off Approved on uat @ 9f8e7d6.', 'why it is disabled');
+  const readsBefore = backend.callsTo('GET', /\/qa\/promotion$/).length;
+
+  // Sign off Approved on the current head, from the same studio.
+  await page.getByRole('button', { name: 'Sign off', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: 'Sign off this run' });
+  await visible(dialog, 'the sign-off dialog');
+  assert.equal(await dialog.locator('label.qa-verdict').filter({ hasText: 'Approved' }).locator('input').isChecked(), true, 'Approved is the default');
+  await dialog.getByRole('button', { name: 'Sign off', exact: true }).click();
+  await absent(dialog, 'the sign-off dialog');
+  assert.deepEqual(onlyCall(backend.callsTo('POST', /\/signoff$/), 'sign-off').body, { verdict: 'APPROVED' });
+
+  // The card re-reads readiness on its own.
+  await expectText(title, 'Ready for production', 'the ready title after sign-off');
+  assert.ok(backend.callsTo('GET', /\/qa\/promotion$/).length > readsBefore, 'readiness was re-read after the sign-off');
+  await expectText(card.locator('.qa-promo__row'), 'Approved for this commit', 'the approved tick');
+  await absent(card.locator('.qa-promo__reasons'), 'the blocking reasons');
+  assert.equal(await merge.isDisabled(), false, 'Merge to main is enabled once eligible');
+  await expectText(card.locator('a.qa-promo__pr'), 'Promotion PR #42', 'the promotion PR link');
+  assert.equal(await card.locator('a.qa-promo__pr').getAttribute('href'), PROMOTION_PR.url);
+  assert.equal(await card.locator('a.qa-promo__pr').getAttribute('target'), '_blank');
+
+  // Full screen: the SAME card rides in the floating drawer.
+  await page.getByRole('button', { name: 'Full screen' }).click();
+  await page.locator('button.qa-launcher').click();
+  const drawer = page.getByRole('region', { name: 'QA checklist' });
+  await visible(drawer, 'the floating drawer');
+  await visible(drawer.getByRole('region', { name: 'Production readiness' }), 'the promotion card inside the drawer');
+  assert.equal(await page.locator('.qa-promo').count(), 1, 'one promotion card, moved, never a second copy');
+  assert.equal(await page.locator('.qa-run-card').count(), 1, 'one run column');
+
+  // Merge to main, confirmed, from the drawer.
+  await drawer.getByRole('button', { name: 'Merge to main' }).click();
+  const confirm = page.getByRole('dialog', { name: 'Merge uat into main?' });
+  await visible(confirm, 'the merge confirmation');
+  await expectText(confirm, 'Merge tone/storefront-web uat @ 9f8e7d6 into main through pull request #42, with your GitHub account.', 'the confirmation sentence');
+  const confirmBox = await confirm.boundingBox();
+  assert.ok(confirmBox && confirmBox.width > 300, 'the confirmation is laid out against the viewport, not clipped by the drawer');
+  assert.equal(backend.callsTo('POST', /\/qa\/promotion\/merge$/).length, 0, 'nothing merged before confirming');
+  await confirm.getByRole('button', { name: 'Merge to main' }).click();
+  await absent(confirm, 'the merge confirmation');
+  const mergeCall = onlyCall(backend.callsTo('POST', /\/qa\/promotion\/merge$/), 'merge request');
+  assert.deepEqual(mergeCall.body, {}, 'the merge sends no body: the server picks the commit and the PR');
+  const outcome = drawer.locator('.qa-promo-outcome');
+  await expectText(outcome, 'Merged into main', 'the merged outcome');
+  await expectText(outcome, `main updated · merge commit ${MERGE_SHA.slice(0, 7)}`, 'the merge commit');
+  assert.equal(await merge.isDisabled(), true, 'the merged head is not offered again');
+  await expectText(card.locator('.qa-promo__foot'), 'No promotion pull request is open yet.', 'the PR is gone after the merge');
+}
+
+/** (g) Team lead: GitHub refuses the merge (required review), its words shown verbatim. */
+async function leadMergeRefused({ page, backend, baseUrl }: JourneyContext) {
+  await openProjectTab(page, baseUrl, 'QA Studio');
+  const { card, title, merge } = promotionCard(page);
+  await expectText(title, 'Ready for production', 'the ready title');
+  await merge.click();
+  const confirm = page.getByRole('dialog', { name: 'Merge uat into main?' });
+  await confirm.getByRole('button', { name: 'Merge to main' }).click();
+  await absent(confirm, 'the merge confirmation');
+  const outcome = card.locator('.qa-promo-outcome');
+  await expectText(outcome.locator('.qa-promo-outcome__title'), 'GitHub refused the merge', 'the refusal title');
+  assert.equal(await textOf(outcome.locator('blockquote')), GITHUB_REFUSAL, "GitHub's refusal, verbatim");
+  await expectText(outcome, 'A reviewer must approve the pull request on GitHub', 'the unblock hint');
+  assert.equal(await outcome.getByRole('link', { name: /Open pull request #42 on GitHub/ }).getAttribute('href'), PROMOTION_PR.url);
+  onlyCall(backend.callsTo('POST', /\/qa\/promotion\/merge$/), 'merge request');
+  assert.equal(await merge.isDisabled(), false, 'still mergeable once GitHub allows it');
+}
+
+/* A shared checklist whose run on uat's current head has every item passed; signed off Approved when `approved`. */
+function seedPassedRun(backend: QaMockBackend, approved: boolean) {
+  const checklist = backend.seedChecklist(RELEASE_CHECKLIST, [PROJECT_ID]);
+  const run = backend.seedRun(checklist, { id: PEOPLE.qa.id, login: PEOPLE.qa.login });
+  for (const item of run.items) {
+    backend.seedItem(run, item.position, { status: 'passed', verifiedBy: { id: PEOPLE.qa.id, login: PEOPLE.qa.login }, verifiedAt: ago(20 * MINUTE) });
+  }
+  if (approved) {
+    run.status = 'signed_off';
+    run.signoff = {
+      id: 'signoff-seeded',
+      verdict: 'APPROVED',
+      summary: null,
+      conditions: null,
+      signedBy: { id: PEOPLE.qa.id, login: PEOPLE.qa.login },
+      signedAt: ago(10 * MINUTE),
+    };
+    run.frozen = backend.assembleRun(run);
+  }
+}
+
 /* A run on main that QA already worked through: 1 passed, 2 and 3 returned. */
 function seedReturnedRun(backend: QaMockBackend) {
   const checklist = backend.seedChecklist({ ...RELEASE_CHECKLIST, items: [...RELEASE_CHECKLIST.items, DEVELOPER_ITEM] }, [PROJECT_ID]);
@@ -1835,7 +2150,7 @@ const JOURNEYS: Journey[] = [
   },
   {
     id: 'b',
-    title: 'QA Team: run, validate, return to dev, sign off Rejected, export',
+    title: 'QA Team: uat only, full screen + floating checklist, validate, return to dev, sign off Rejected, export',
     permissions: ['clipboard-read', 'clipboard-write'],
     backend: () => {
       const backend = new QaMockBackend('qa');
@@ -1846,7 +2161,7 @@ const JOURNEYS: Journey[] = [
   },
   {
     id: 'c',
-    title: 'Developer: Returned by QA card, request re-test, persona-scoped studio',
+    title: 'Developer: My QA items (request re-test, record a developer item), no QA Studio tab',
     backend: () => {
       const backend = new QaMockBackend('member');
       seedReturnedRun(backend);
@@ -1865,6 +2180,27 @@ const JOURNEYS: Journey[] = [
     run: qaTeamCannotCreate,
   },
   {
+    id: 'f',
+    title: 'Team lead: not ready (reasons) -> sign off Approved -> ready -> Merge to main from the drawer -> merged',
+    backend: () => {
+      const backend = new QaMockBackend('lead');
+      seedPassedRun(backend, false);
+      return backend;
+    },
+    run: leadMergesToMain,
+  },
+  {
+    id: 'g',
+    title: 'Team lead: GitHub refuses the merge, its refusal shown verbatim',
+    backend: () => {
+      const backend = new QaMockBackend('lead');
+      seedPassedRun(backend, true);
+      backend.mergeMode = 'refuse';
+      return backend;
+    },
+    run: leadMergeRefused,
+  },
+  {
     id: 'e',
     title: 'Capabilities without qaChecklists: no Checklists / QA Studio / Teams entry',
     backend: () => {
@@ -1876,7 +2212,7 @@ const JOURNEYS: Journey[] = [
     run: capabilityAbsentHidesQa,
   },
   {
-    id: 'f',
+    id: 'h',
     title: 'Team lead: project explorer — list, open, attach/detach, move (409 + real), archive, create-in-Project link',
     backend: () => {
       const backend = new QaMockBackend('lead');
@@ -1928,7 +2264,9 @@ async function runJourney(browser: Browser, baseUrl: string, journey: Journey) {
     if (journey.permissions) await context.grantPermissions(journey.permissions, { origin: baseUrl });
     // Context-wide, so the print page opened by Download PDF is mocked too.
     await context.route('**/api/v1/**', (route) => backend.handle(route));
-    await context.route(`${PREVIEW_ORIGIN}/**`, (route) => text(route, 200, PREVIEW_HTML, 'text/html'));
+    for (const origin of [PREVIEW_ORIGIN, MAIN_PREVIEW_ORIGIN]) {
+      await context.route(`${origin}/**`, (route) => text(route, 200, PREVIEW_HTML, 'text/html'));
+    }
     context.on('page', (page) => {
       page.on('pageerror', (error) => problems.push(`page error: ${error.message}`));
       page.on('console', (message) => {

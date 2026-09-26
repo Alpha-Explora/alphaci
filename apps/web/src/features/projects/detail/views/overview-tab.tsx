@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 
-import { ReturnedByQaCard } from "@/features/checklists/returned";
+import { MyQaItemsCard } from "@/features/checklists/returned";
 import { ProductionDeploymentPanel } from "@/features/projects/previews";
 import { formatDate } from "@/features/workflows";
 import type {
@@ -43,7 +43,7 @@ export function OverviewTab({
         onOpenFullLogs={vm.openTargetLogs}
         project={project}
       />
-      <ReturnedByQaCard
+      <MyQaItemsCard
         appRole={vm.appRole}
         enabled={vm.qaChecklistsEnabled && Boolean(vm.appRole)}
         projectId={project.id}

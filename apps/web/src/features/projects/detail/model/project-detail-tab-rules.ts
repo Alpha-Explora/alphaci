@@ -39,25 +39,39 @@ export const PROJECT_DETAIL_TABS: ReadonlyArray<ProjectDetailTab> = [
   "settings",
 ];
 
-/** The tabs that exist only with the QA checklists capability. */
-const QA_TABS: ReadonlySet<ProjectDetailTab> = new Set(["checklists", "qa"]);
+/**
+ * The roles QA Studio is for: the people who verify a build and sign it off.
+ * Developers read the shared checklists and fix what QA returns (Overview's
+ * "Returned by QA" card); they do not test in the studio.
+ */
+const QA_STUDIO_ROLES: ReadonlySet<AppRole> = new Set<AppRole>(["qa", "lead", "admin"]);
+
+function tabVisible(
+  tab: ProjectDetailTab,
+  checklistsVisible: boolean,
+  appRole: AppRole | null | undefined,
+): boolean {
+  if (tab === "checklists") return checklistsVisible;
+  if (tab === "qa") return checklistsVisible && appRole != null && QA_STUDIO_ROLES.has(appRole);
+  return true;
+}
 
 /**
  * The tabs this viewer gets, in strip order.
  *
  * Checklists and QA Studio are capability-gated: they exist only when the
  * backend reports `qaChecklistsEnabled`, and only for a session with a known
- * app role — every role can read checklists and runs (what each role may
- * change is decided per item by the server), but a session the backend has
- * not assigned a role to has nothing to read them as. Every other tab is
- * unconditional, exactly as before this rule existed.
+ * app role. Checklists is for every role (what each role may change is decided
+ * per item by the server); QA Studio is only for QA Team, Team leads and
+ * Admins. Every other tab is unconditional, exactly as before this rule
+ * existed.
  */
 export function visibleProjectDetailTabs(
   appRole: AppRole | null | undefined,
   flags: Readonly<{ qaChecklistsEnabled: boolean }>,
 ): ProjectDetailTab[] {
-  const qaVisible = flags.qaChecklistsEnabled && Boolean(appRole);
-  return PROJECT_DETAIL_TABS.filter((tab) => qaVisible || !QA_TABS.has(tab));
+  const checklistsVisible = flags.qaChecklistsEnabled && Boolean(appRole);
+  return PROJECT_DETAIL_TABS.filter((tab) => tabVisible(tab, checklistsVisible, appRole));
 }
 
 /**

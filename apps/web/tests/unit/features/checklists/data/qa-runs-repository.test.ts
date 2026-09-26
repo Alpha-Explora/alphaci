@@ -88,4 +88,34 @@ describe("qaRunsRepository", () => {
     });
     expect(mockRequest).not.toHaveBeenCalled();
   });
+
+  it("reads My QA items from qa-my-items, encoded", async () => {
+    await qaRunsRepository.myItems("p/1");
+    expect(lastCall()).toEqual(["/projects/p%2F1/qa-my-items", undefined]);
+  });
+
+  it("reads the promotion status with a plain GET", async () => {
+    await qaRunsRepository.promotion("p/1");
+    expect(lastCall()).toEqual(["/projects/p%2F1/qa/promotion", undefined]);
+  });
+
+  it("merges with an empty POST: the server resolves the commit and the PR, never the page", async () => {
+    await qaRunsRepository.mergePromotion("p1");
+    expect(lastCall()).toEqual(["/projects/p1/qa/promotion/merge", { method: "POST" }]);
+  });
+
+  it("passes a merge refusal through untouched and lets errors propagate", async () => {
+    mockRequest.mockResolvedValueOnce({ merged: false, sha: null, message: "At least 1 approving review is required" });
+    await expect(qaRunsRepository.mergePromotion("p1")).resolves.toEqual({
+      merged: false,
+      sha: null,
+      message: "At least 1 approving review is required",
+    });
+    const blocked = Object.assign(new Error("Request failed with status 409"), {
+      status: 409,
+      details: { code: "QA_UAT_MOVED" },
+    });
+    mockRequest.mockRejectedValueOnce(blocked);
+    await expect(qaRunsRepository.mergePromotion("p1")).rejects.toBe(blocked);
+  });
 });

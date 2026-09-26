@@ -1,7 +1,8 @@
-/* The developer-feedback slice: items QA returned, and "Mark fixed & request
- * re-test". The Overview card is the drop-in; the form and its ViewModel are
- * shared with the studio so a developer says "fixed" the same way in both. */
-export { ReturnedByQaCard } from "./views/returned-by-qa-card";
+/* The developer slice: the Overview's "My QA items" card — items QA returned
+ * ("Mark fixed & request re-test") and the current uat run's developer items.
+ * The card is the drop-in; the re-test form and its ViewModel are shared with
+ * the studio so a developer says "fixed" the same way in both. */
+export { MyQaItemsCard } from "./views/my-qa-items-card";
 export { RetestForm } from "./views/retest-form";
 export {
   useRequestRetestViewModel,

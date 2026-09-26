@@ -259,6 +259,74 @@
   color: var(--warning);
 }
 
+/* The environment is fixed to the QA branch: a chip, not a picker. */
+.qa-toolbar__env-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-height: 2rem;
+  padding: 0.25rem 0.65rem;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-pill);
+  background: var(--bg-soft);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.78rem;
+  color: var(--text-primary);
+  white-space: nowrap;
+}
+
+.qa-toolbar__env-chip > .qa-glyph {
+  color: var(--brand);
+}
+
+/* Rotate: a sibling of the device switch, at the same height. */
+.qa-rotate {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 2.5rem;
+  padding: 0.3rem 0.7rem;
+  border: 1px solid var(--border-strong);
+  border-radius: 0.6rem;
+  background: var(--bg-soft);
+  color: var(--text-secondary);
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    color 0.16s ease,
+    border-color 0.16s ease;
+}
+
+.qa-rotate:hover:not(:disabled) {
+  border-color: var(--border-brand);
+  color: var(--text-primary);
+}
+
+.qa-rotate:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.qa-rotate__state {
+  padding-left: 0.4rem;
+  border-left: 1px solid var(--border-strong);
+  font-size: 0.7rem;
+  font-weight: 500;
+  color: var(--text-muted);
+}
+
+.qa-icon-button[aria-pressed="true"] {
+  border-color: var(--border-brand);
+  background: var(--brand-light);
+  color: var(--brand);
+}
+
+.qa-preview__device {
+  font-variant-numeric: tabular-nums;
+}
+
 /* ── Panes ───────────────────────────────────────────────────────────────── */
 .qa-studio__panes {
   display: grid;
@@ -281,13 +349,30 @@
   height: auto;
 }
 
+/* The run column: the promotion card, then the run card, sharing the pane's
+   height. The promotion card starts folded to its head and is capped when
+   unfolded, so the run card and its item list always keep the rest. */
 .qa-studio__run {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
   min-width: 0;
+  max-height: var(--qa-pane-height);
+}
+
+.qa-studio__run > .qa-promo {
+  flex-shrink: 0;
+  max-height: calc(var(--qa-pane-height) * 0.34);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
 }
 
 .qa-studio__run > .qa-run-card {
   display: flex;
+  flex: 0 1 auto;
   flex-direction: column;
+  min-height: 0;
   max-height: var(--qa-pane-height);
 }
 
@@ -338,65 +423,298 @@
   font-variant-numeric: tabular-nums;
 }
 
-/* The stage the device sits on: a faint dot grid, so a narrow device reads as
-   an object placed on a surface rather than a page with a missing margin. */
+/* The stage the device sits on: a faint dot grid, so the device reads as an
+   object placed on a surface. The padding is the device's breathing room; the
+   fit rule measures the content box, so it is never counted as screen. */
 .qa-stage {
   position: relative;
-  display: flex;
-  justify-content: center;
+  display: grid;
+  place-items: start center;
   flex: 1 1 auto;
   min-height: 0;
+  padding: 1rem;
   overflow: hidden;
   background-color: var(--bg-soft);
   background-image: radial-gradient(var(--border-strong) 1px, transparent 1px);
   background-size: 18px 18px;
 }
 
-.qa-stage[data-device="tablet"],
-.qa-stage[data-device="mobile"] {
-  padding: 1rem;
-}
-
-.qa-stage[data-device="desktop"] {
-  background-image: none;
-}
-
-/* Lays out at the device's real width, then shrinks to fit the pane. */
+/* ── Device ───────────────────────────────────────────────────────────────
+   One DOM for every device: .qa-device[data-frame][data-orientation] holds the
+   chrome parts and the screen. The box is the screen at its drawn size plus
+   the chrome insets (padding); only the iframe is scaled, so the chrome stays
+   legible and never overlaps the screen. Custom properties come from the
+   model: --qa-screen-w/h (the true viewport), --qa-scale, --qa-chrome-*. */
 .qa-device {
   position: relative;
-  flex-shrink: 0;
-  width: var(--qa-device-width, 100%);
-  height: var(--qa-device-height, 100%);
-  transform: scale(var(--qa-scale, 1));
-  transform-origin: top center;
-  background: var(--bg-base);
+  box-sizing: content-box;
+  width: calc(var(--qa-screen-w) * var(--qa-scale, 1) * 1px);
+  height: calc(var(--qa-screen-h) * var(--qa-scale, 1) * 1px);
+  padding: var(--qa-chrome-top) var(--qa-chrome-right) var(--qa-chrome-bottom) var(--qa-chrome-left);
 }
 
-.qa-stage[data-device="tablet"] .qa-device,
-.qa-stage[data-device="mobile"] .qa-device {
-  border: 1px solid var(--border-strong);
-  border-radius: 1rem;
-  overflow: hidden;
-  box-shadow: var(--shadow-elevated);
-}
-
-.qa-device__frame {
-  display: block;
+.qa-device__screen {
+  position: relative;
   width: 100%;
   height: 100%;
+  overflow: hidden;
+  background: var(--device-screen);
+}
+
+/* The page lays out at the device's real size and is drawn at --qa-scale. */
+.qa-device__frame {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: block;
+  width: calc(var(--qa-screen-w) * 1px);
+  height: calc(var(--qa-screen-h) * 1px);
   border: 0;
-  background: var(--bg-base);
+  background: var(--device-screen);
+  transform: scale(var(--qa-scale, 1));
+  transform-origin: 0 0;
 }
 
 .qa-device__loading {
   position: absolute;
   inset: 0;
+  z-index: 1;
   display: grid;
   place-items: center;
   margin: 0;
+  background: var(--layer-1);
   font-size: 0.8rem;
   color: var(--text-muted);
   pointer-events: none;
+}
+
+/* Every chrome part exists in every frame; each frame shows its own. */
+.qa-device__chrome {
+  display: none;
+  position: absolute;
+}
+
+/* Browser: a window with a top bar — traffic lights, the address, the size. */
+.qa-device[data-frame="browser"] {
+  border-radius: 10px;
+  background: var(--layer-2);
+  box-shadow:
+    0 0 0 1px var(--border-tile),
+    var(--shadow-elevated);
+}
+
+.qa-device[data-frame="browser"] .qa-device__screen {
+  border-radius: 0 0 10px 10px;
+}
+
+.qa-device[data-frame="browser"] .qa-device__bar {
+  top: 0;
+  right: 0;
+  left: 0;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.75rem;
+  height: var(--qa-chrome-top);
+  padding: 0 0.8rem;
+  border-bottom: 1px solid var(--border-layer);
+}
+
+.qa-device__dots {
+  display: inline-flex;
+  gap: 0.4rem;
+}
+
+.qa-device__dots > span {
+  width: 0.62rem;
+  height: 0.62rem;
+  border-radius: 50%;
+  background: var(--border-tile);
+}
+
+.qa-device__dots > span:nth-child(1) {
+  background: var(--danger);
+}
+
+.qa-device__dots > span:nth-child(2) {
+  background: var(--warning);
+}
+
+.qa-device__dots > span:nth-child(3) {
+  background: var(--success);
+}
+
+.qa-device__address {
+  justify-self: center;
+  min-width: 0;
+  max-width: min(30rem, 100%);
+  padding: 0.22rem 0.9rem;
+  overflow: hidden;
+  border: 1px solid var(--border-layer);
+  border-radius: var(--radius-pill);
+  background: var(--bg-soft);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.72rem;
+  color: var(--text-secondary);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.qa-device__size {
+  justify-self: end;
+  padding: 0.12rem 0.45rem;
+  border: 1px solid var(--border-layer);
+  border-radius: 0.35rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.68rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+/* Tablet and phone: a dark chassis, whichever theme — hardware is dark. */
+.qa-device[data-frame="tablet"],
+.qa-device[data-frame="phone"] {
+  background: var(--device-chassis);
+  box-shadow:
+    0 0 0 1px var(--device-chassis-rim),
+    inset 0 0 0 3px var(--device-bezel),
+    var(--shadow-elevated);
+}
+
+.qa-device[data-frame="tablet"] {
+  border-radius: 30px;
+}
+
+.qa-device[data-frame="tablet"] .qa-device__screen {
+  border-radius: 8px;
+}
+
+/* Front camera, centred in the top bezel. */
+.qa-device[data-frame="tablet"] .qa-device__sensor {
+  display: block;
+  top: calc(var(--qa-chrome-top) / 2 - 4px);
+  left: calc(50% - 4px);
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--device-lens);
+  box-shadow: 0 0 0 2px var(--device-sensor);
+}
+
+/* Home bar, centred in the bottom bezel. */
+.qa-device[data-frame="tablet"] .qa-device__home {
+  display: block;
+  bottom: calc(var(--qa-chrome-bottom) / 2 - 2px);
+  left: calc(50% - 36px);
+  width: 72px;
+  height: 4px;
+  border-radius: var(--radius-pill);
+  background: var(--device-home);
+}
+
+.qa-device[data-frame="phone"] {
+  border-radius: 42px;
+}
+
+.qa-device[data-frame="phone"] .qa-device__screen {
+  border-radius: 16px;
+}
+
+/* The dynamic island lives in the top bezel, above the screen, never on it. */
+.qa-device[data-frame="phone"] .qa-device__sensor {
+  display: block;
+  top: 12px;
+  left: calc(50% - 46px);
+  width: 92px;
+  height: 22px;
+  border-radius: var(--radius-pill);
+  background:
+    radial-gradient(circle at calc(100% - 13px) 50%, var(--device-lens) 0 3.5px, transparent 4.5px),
+    var(--device-sensor);
+}
+
+.qa-device[data-frame="phone"] .qa-device__home {
+  display: block;
+  bottom: 11px;
+  left: calc(50% - 55px);
+  width: 110px;
+  height: 5px;
+  border-radius: var(--radius-pill);
+  background: var(--device-home);
+}
+
+/* Side buttons, past the chassis edge: action + volume on one side, power on the other. */
+.qa-device[data-frame="phone"] .qa-device__buttons {
+  display: block;
+}
+
+.qa-device[data-frame="phone"] .qa-device__buttons--start {
+  top: 96px;
+  left: -3px;
+  width: 3px;
+  height: 150px;
+  border-radius: 2px 0 0 2px;
+  background: linear-gradient(
+    var(--device-button) 0 26px,
+    transparent 26px 42px,
+    var(--device-button) 42px 94px,
+    transparent 94px 104px,
+    var(--device-button) 104px 150px
+  );
+}
+
+.qa-device[data-frame="phone"] .qa-device__buttons--end {
+  top: 140px;
+  right: -3px;
+  width: 3px;
+  height: 84px;
+  border-radius: 0 2px 2px 0;
+  background: var(--device-button);
+}
+
+/* Landscape: the same chassis turned a quarter — island left, chin right,
+   the buttons along the bottom and top edges. */
+.qa-device[data-frame="phone"][data-orientation="landscape"] .qa-device__sensor {
+  top: calc(50% - 46px);
+  left: 12px;
+  width: 22px;
+  height: 92px;
+  background:
+    radial-gradient(circle at 50% 13px, var(--device-lens) 0 3.5px, transparent 4.5px),
+    var(--device-sensor);
+}
+
+.qa-device[data-frame="phone"][data-orientation="landscape"] .qa-device__home {
+  inset: calc(50% - 55px) 11px auto auto;
+  width: 5px;
+  height: 110px;
+}
+
+.qa-device[data-frame="phone"][data-orientation="landscape"] .qa-device__buttons--start {
+  top: auto;
+  bottom: -3px;
+  left: 96px;
+  width: 150px;
+  height: 3px;
+  border-radius: 0 0 2px 2px;
+  background: linear-gradient(
+    to right,
+    var(--device-button) 0 26px,
+    transparent 26px 42px,
+    var(--device-button) 42px 94px,
+    transparent 94px 104px,
+    var(--device-button) 104px 150px
+  );
+}
+
+.qa-device[data-frame="phone"][data-orientation="landscape"] .qa-device__buttons--end {
+  top: -3px;
+  right: auto;
+  left: 140px;
+  width: 84px;
+  height: 3px;
+  border-radius: 2px 2px 0 0;
 }
 
 .qa-stage--empty {
@@ -1146,6 +1464,291 @@
   margin-top: -0.4rem;
 }
 
+/* ── Full screen ─────────────────────────────────────────────────────────────
+   The same tree, re-laid out: the studio covers the viewport (above the
+   header at 110 and the rail at 100, below dialogs at 400) and the run column
+   becomes a floating drawer. Nothing up the tree may carry a transform,
+   filter or backdrop-filter, or `position: fixed` would stop meaning "the
+   viewport" — and nothing here adds one. */
+.qa-studio[data-full-screen="true"] {
+  position: fixed;
+  inset: 0;
+  z-index: 120;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 0.75rem;
+  padding: 0.75rem;
+  background: var(--bg-base);
+  overscroll-behavior: contain;
+}
+
+.qa-studio[data-full-screen="true"] .qa-studio__panes {
+  grid-template-columns: minmax(0, 1fr);
+  align-items: stretch;
+  min-height: 0;
+}
+
+.qa-studio[data-full-screen="true"] .qa-studio__preview,
+.qa-studio[data-full-screen="true"] .qa-studio__preview[data-framed="false"] {
+  height: 100%;
+  min-height: 0;
+}
+
+.qa-studio[data-full-screen="true"] .qa-stage {
+  place-items: center;
+  padding: 1.25rem;
+}
+
+/* The floating drawer: ONE run column, moved. A solid surface — no
+   backdrop-filter and no transform, either of which would make it the
+   containing block for the Sign-off dialog's fixed backdrop and trap the
+   dialog inside it. Overflow stays visible so the Export menu is never
+   clipped; only the item list scrolls. */
+.qa-studio[data-full-screen="true"] .qa-studio__run {
+  position: fixed;
+  right: 1rem;
+  bottom: 1rem;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  width: min(28rem, 92vw);
+  max-height: calc(100dvh - 6.5rem);
+  border: 1px solid var(--border-tile);
+  border-radius: 1rem;
+  background: var(--layer-1);
+  box-shadow: var(--shadow-hard);
+  animation: qa-drawer-in 160ms ease-out;
+}
+
+.qa-studio[data-full-screen="true"][data-side="left"] .qa-studio__run {
+  right: auto;
+  left: 1rem;
+}
+
+/* Minimized: hidden, still mounted — drafts, dialogs and polling carry on. */
+.qa-studio[data-checklist="minimized"] .qa-studio__run {
+  display: none;
+}
+
+.qa-studio[data-full-screen="true"] .qa-studio__run > .qa-run-card {
+  flex: 1 1 auto;
+  gap: 0.7rem;
+  min-height: 0;
+  max-height: none;
+  padding: 0.75rem 1rem 0.9rem;
+  border: 0;
+  border-radius: 0 0 1rem 1rem;
+  background: transparent;
+  box-shadow: none;
+}
+
+.qa-studio[data-full-screen="true"] .qa-run-card__head {
+  padding-bottom: 0.65rem;
+}
+
+.qa-studio[data-full-screen="true"] .qa-studio__run > .qa-panel-state,
+.qa-studio[data-full-screen="true"] .qa-studio__run > .qa-skeleton-card {
+  margin: 0.85rem 1rem 1rem;
+}
+
+@keyframes qa-drawer-in {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+.qa-drawer__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.55rem 0.55rem 0.55rem 0.95rem;
+  border-bottom: 1px solid var(--border);
+  border-radius: 1rem 1rem 0 0;
+  background: var(--layer-2);
+}
+
+.qa-drawer__heading {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+  color: var(--brand);
+}
+
+.qa-studio .qa-drawer__title {
+  margin: 0;
+  font-size: 0.86rem;
+  font-weight: 700;
+  letter-spacing: 0;
+  color: var(--text-primary);
+  white-space: nowrap;
+}
+
+.qa-drawer__title:focus {
+  outline: none;
+}
+
+.qa-drawer__title:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 3px;
+  border-radius: 0.25rem;
+}
+
+.qa-drawer__progress {
+  padding: 0.1rem 0.5rem;
+  border: 1px solid var(--border-layer);
+  border-radius: var(--radius-pill);
+  background: var(--bg-soft);
+  font-size: 0.72rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.qa-drawer__actions {
+  display: flex;
+  flex-shrink: 0;
+  gap: 0.2rem;
+}
+
+.qa-drawer__button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border: 1px solid transparent;
+  border-radius: 0.5rem;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition:
+    color 0.16s ease,
+    background-color 0.16s ease,
+    border-color 0.16s ease;
+}
+
+.qa-drawer__button:hover {
+  border-color: var(--border-tile);
+  background: var(--layer-2-hover);
+  color: var(--text-primary);
+}
+
+.qa-drawer__button:focus-visible,
+.qa-launcher:focus-visible,
+.qa-rotate:focus-visible,
+.qa-icon-button:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
+/* The launcher: brings a minimized drawer back from the same corner. */
+.qa-launcher {
+  position: fixed;
+  right: 1rem;
+  bottom: 1rem;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  min-height: 2.75rem;
+  padding: 0.5rem 0.95rem 0.5rem 0.85rem;
+  border: 1px solid var(--border-tile);
+  border-radius: var(--radius-pill);
+  background: var(--layer-1);
+  color: var(--text-primary);
+  box-shadow: var(--shadow-card);
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 650;
+  cursor: pointer;
+  animation: qa-drawer-in 160ms ease-out;
+  transition:
+    border-color 0.16s ease,
+    background-color 0.16s ease;
+}
+
+.qa-studio[data-side="left"] .qa-launcher {
+  right: auto;
+  left: 1rem;
+}
+
+.qa-launcher:hover {
+  border-color: var(--border-brand);
+  background: var(--layer-1-hover);
+}
+
+.qa-launcher > .qa-glyph {
+  color: var(--brand);
+}
+
+.qa-launcher__text {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.qa-launcher__dot {
+  width: 0.55rem;
+  height: 0.55rem;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--text-muted);
+  box-shadow: 0 0 0 3px var(--bg-soft);
+}
+
+.qa-launcher__dot[data-tone="passed"] {
+  background: var(--success);
+}
+
+.qa-launcher__dot[data-tone="failed"] {
+  background: var(--danger);
+}
+
+.qa-launcher__dot[data-tone="running"] {
+  background: var(--brand);
+  animation: qa-dot-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes qa-dot-pulse {
+  50% {
+    opacity: 0.35;
+  }
+}
+
+/* Wide full screen: the two toolbar rows sit side by side, so the drawer's
+   top edge (6.5rem down) clears the toolbar. */
+@media (min-width: 1200px) {
+  .qa-studio[data-full-screen="true"] .qa-toolbar {
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    column-gap: 0.9rem;
+  }
+
+  .qa-studio[data-full-screen="true"] .qa-toolbar__row--address {
+    padding-top: 0;
+    padding-left: 0.9rem;
+    border-top: 0;
+    border-left: 1px solid var(--border);
+  }
+
+  .qa-studio[data-full-screen="true"] .qa-toolbar__error {
+    grid-column: 1 / -1;
+  }
+}
+
+/* Narrower full screen: the toolbar wraps to two rows, so the drawer starts lower. */
+@media (max-width: 1199px) {
+  .qa-studio[data-full-screen="true"] .qa-studio__run {
+    max-height: calc(100dvh - 10.5rem);
+  }
+}
+
 /* ── Narrow screens ──────────────────────────────────────────────────────── */
 @media (max-width: 1100px) {
   .qa-studio__panes {
@@ -1156,8 +1759,14 @@
     height: 32rem;
   }
 
-  .qa-studio__run > .qa-run-card {
+  .qa-studio__run,
+  .qa-studio__run > .qa-run-card,
+  .qa-studio__run > .qa-promo {
     max-height: none;
+  }
+
+  .qa-studio__run > .qa-promo {
+    overflow-y: visible;
   }
 
   .qa-run > .qa-run__items {
@@ -1187,14 +1796,38 @@
     display: none;
   }
 
+  /* Rotate shares the device row; the switch takes what is left. */
   .qa-device-switch {
-    flex: 1 1 100%;
+    flex: 1 1 auto;
   }
 
   .qa-device-switch__option {
     flex: 1 1 0;
     justify-content: center;
     padding-inline: 0.4rem;
+  }
+
+  .qa-rotate__state,
+  .qa-device__size {
+    display: none;
+  }
+
+  .qa-stage {
+    padding: 0.75rem;
+  }
+
+  .qa-studio[data-full-screen="true"] {
+    padding: 0.5rem;
+  }
+
+  .qa-studio[data-full-screen="true"] .qa-studio__run {
+    right: 4vw;
+    bottom: 0.75rem;
+    max-height: 62dvh;
+  }
+
+  .qa-studio[data-full-screen="true"][data-side="left"] .qa-studio__run {
+    left: 4vw;
   }
 
   /* The environment picker already names where; the path gets the width. */
@@ -1242,7 +1875,16 @@
   .qa-device-switch__option,
   .qa-icon-button,
   .qa-run-item,
-  .qa-verdict {
+  .qa-verdict,
+  .qa-rotate,
+  .qa-drawer__button,
+  .qa-launcher {
     transition: none;
+  }
+
+  .qa-studio[data-full-screen="true"] .qa-studio__run,
+  .qa-launcher,
+  .qa-launcher__dot[data-tone="running"] {
+    animation: none;
   }
 }

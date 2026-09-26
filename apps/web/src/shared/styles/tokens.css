@@ -171,6 +171,20 @@
   --print-danger-tint: #fdecec;
   --print-brand: #0550ae;
   --print-brand-tint: #e8f0fb;
+
+  /* ── Device hardware (QA Studio frames) ─────────────────────── */
+  /* Theme-independent on purpose, like paper: a phone or tablet is a dark
+     object in either theme. Only the chassis is drawn in these; the browser
+     frame follows the theme, as a real browser's chrome does. */
+  --device-chassis: #0c0c10;
+  --device-chassis-rim: #3a3a46;
+  --device-bezel: #050507;
+  --device-sensor: #000;
+  --device-lens: #1b2536;
+  --device-button: #26262f;
+  --device-home: rgba(255, 255, 255, 0.5);
+  /* A browser's default canvas: what shows through a page with no background. */
+  --device-screen: #fff;
 }
 
 [data-theme="light"] {
