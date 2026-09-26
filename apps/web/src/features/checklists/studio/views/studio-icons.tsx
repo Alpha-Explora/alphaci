@@ -284,3 +284,15 @@ export function ChecklistIcon() {
     </Glyph>
   );
 }
+
+/** A git merge: two lines of history joining. "Merge to main". */
+export function MergeIcon() {
+  return (
+    <Glyph>
+      <circle cx="4.5" cy="3.5" r="1.5" />
+      <circle cx="4.5" cy="12.5" r="1.5" />
+      <circle cx="11.5" cy="9" r="1.5" />
+      <path d="M4.5 5v6M4.5 5c0 2.4 2.3 4 5.5 4" />
+    </Glyph>
+  );
+}

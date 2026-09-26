@@ -349,13 +349,30 @@
   height: auto;
 }
 
+/* The run column: the promotion card, then the run card, sharing the pane's
+   height. The promotion card starts folded to its head and is capped when
+   unfolded, so the run card and its item list always keep the rest. */
 .qa-studio__run {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
   min-width: 0;
+  max-height: var(--qa-pane-height);
+}
+
+.qa-studio__run > .qa-promo {
+  flex-shrink: 0;
+  max-height: calc(var(--qa-pane-height) * 0.34);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
 }
 
 .qa-studio__run > .qa-run-card {
   display: flex;
+  flex: 0 1 auto;
   flex-direction: column;
+  min-height: 0;
   max-height: var(--qa-pane-height);
 }
 
@@ -1493,6 +1510,7 @@
   z-index: 3;
   display: flex;
   flex-direction: column;
+  gap: 0;
   width: min(28rem, 92vw);
   max-height: calc(100dvh - 6.5rem);
   border: 1px solid var(--border-tile);
@@ -1741,8 +1759,14 @@
     height: 32rem;
   }
 
-  .qa-studio__run > .qa-run-card {
+  .qa-studio__run,
+  .qa-studio__run > .qa-run-card,
+  .qa-studio__run > .qa-promo {
     max-height: none;
+  }
+
+  .qa-studio__run > .qa-promo {
+    overflow-y: visible;
   }
 
   .qa-run > .qa-run__items {

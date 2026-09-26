@@ -11,6 +11,7 @@ import type {
 } from "../model/qa-run-types";
 import type { QaReport } from "../model/qa-report-types";
 import type { QaAutomationDispatchWire } from "../model/qa-automation-types";
+import type { QaPromotionMergeWire, QaPromotionStatusWire } from "../model/qa-promotion-types";
 
 /* The only place in the checklists domain that talks to the QA run endpoints.
  *
@@ -132,5 +133,28 @@ export const qaRunsRepository = {
     return request<QaReturnedItemsResponse>(
       `/projects/${id(projectId)}/qa-returned-items`,
     );
+  },
+
+  /**
+   * The Overview's "My QA items": what QA returned, plus the current uat
+   * run's developer items. Untyped on purpose — read it through
+   * `normalizeMyQaItems`.
+   */
+  myItems(projectId: string): Promise<unknown> {
+    return request<unknown>(`/projects/${id(projectId)}/qa-my-items`);
+  },
+
+  /** Whether uat's current head is QA-approved for main. Read through `normalizePromotionStatus`. */
+  promotion(projectId: string): Promise<QaPromotionStatusWire> {
+    return request<QaPromotionStatusWire>(`/projects/${id(projectId)}/qa/promotion`);
+  },
+
+  /**
+   * Merge uat into main (Team lead / Admin). No body: the server re-checks
+   * the gate, resolves uat's head and the promotion PR itself, so a stale
+   * page can never merge a commit QA did not approve.
+   */
+  mergePromotion(projectId: string): Promise<QaPromotionMergeWire> {
+    return request<QaPromotionMergeWire>(`/projects/${id(projectId)}/qa/promotion/merge`, post());
   },
 };

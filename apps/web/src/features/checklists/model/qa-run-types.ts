@@ -149,6 +149,21 @@ export interface QaReturnedItemsResponse {
   items: QaReturnedItem[];
 }
 
+/**
+ * An item the current uat run assigns to developers, where the viewer can see
+ * and — when `item.canUpdate` says so — record its result.
+ */
+export type QaDeveloperItem = QaReturnedItem;
+
+/**
+ * GET /projects/:id/qa-my-items. Read it only through `normalizeMyQaItems`:
+ * an older backend may send neither list, or not have the route at all.
+ */
+export interface QaMyItemsResponse {
+  returned: QaReturnedItem[];
+  developerItems: QaDeveloperItem[];
+}
+
 export interface CreateQaRunInput {
   checklistId: string;
   branch: string;

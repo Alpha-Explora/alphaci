@@ -31,6 +31,8 @@ jest.mock("../../../../../src/features/checklists/data/qa-runs-repository", () =
     reopen: jest.fn(),
     returnedItems: jest.fn(),
     dispatchAutomation: jest.fn(),
+    // The studio's promotion card reads this; these tests are not about it.
+    promotion: jest.fn().mockResolvedValue({}),
   },
 }));
 jest.mock("../../../../../src/features/projects/data/projects-repository", () => ({

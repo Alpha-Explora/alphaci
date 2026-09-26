@@ -6,7 +6,7 @@ import { useQaRunViewModel } from "../../../../../src/features/checklists/studio
 import { useQaItemEditorViewModel } from "../../../../../src/features/checklists/studio/view-models/use-qa-item-editor-view-model";
 import { useQaSignoffViewModel } from "../../../../../src/features/checklists/studio/view-models/use-qa-signoff-view-model";
 import { useQaReopenViewModel } from "../../../../../src/features/checklists/studio/view-models/use-qa-reopen-view-model";
-import { useReturnedItemsViewModel } from "../../../../../src/features/checklists/returned/view-models/use-returned-items-view-model";
+import { useMyQaItemsViewModel } from "../../../../../src/features/checklists/returned/view-models/use-my-qa-items-view-model";
 import { useRequestRetestViewModel } from "../../../../../src/features/checklists/returned/view-models/use-request-retest-view-model";
 import { apiError } from "../checklist-fixtures";
 import { qaRun, runAs, runItem } from "../qa-run-fixtures";
@@ -22,6 +22,7 @@ jest.mock("../../../../../src/features/checklists/data/qa-runs-repository", () =
     signoff: jest.fn(),
     reopen: jest.fn(),
     returnedItems: jest.fn(),
+    myItems: jest.fn(),
   },
 }));
 
@@ -261,19 +262,58 @@ describe("useQaReopenViewModel", () => {
 });
 
 describe("returned items and re-test", () => {
-  it("loads the items QA returned on the project", async () => {
-    repo.returnedItems.mockResolvedValue({
-      items: [{ runId: "run-1", branch: "main", commitSha: "abc", checklistName: "Smoke", item: runItem(0) }],
+  it("loads the items QA returned and the developer items in one read", async () => {
+    repo.myItems.mockResolvedValue({
+      returned: [{ runId: "run-1", branch: "uat", commitSha: "abc", checklistName: "Smoke", item: runItem(0, { status: "returned_to_dev" }) }],
+      developerItems: [{ runId: "run-1", branch: "uat", commitSha: "abc", checklistName: "Smoke", item: runItem(1) }],
     });
-    const vm = renderHook(() => useReturnedItemsViewModel({ projectId: "p1", enabled: true }));
+    const vm = renderHook(() => useMyQaItemsViewModel({ projectId: "p1", enabled: true }));
     expect(vm().status).toBe("loading");
     await flush();
     expect(vm().status).toBe("ready");
-    expect(vm().items).toHaveLength(1);
+    expect(vm().data.returned).toHaveLength(1);
+    expect(vm().data.developerItems).toHaveLength(1);
+    expect(repo.returnedItems).not.toHaveBeenCalled();
+  });
+
+  it("falls back to qa-returned-items when the backend has no qa-my-items route", async () => {
+    repo.myItems.mockRejectedValue(apiError(404));
+    repo.returnedItems.mockResolvedValue({
+      items: [{ runId: "run-1", branch: "uat", commitSha: "abc", checklistName: "Smoke", item: runItem(0) }],
+    });
+    const vm = renderHook(() => useMyQaItemsViewModel({ projectId: "p1", enabled: true }));
+    await flush();
+    await flush();
+    expect(vm().status).toBe("ready");
+    expect(vm().data.returned).toHaveLength(1);
+    expect(vm().data.developerItems).toEqual([]);
+  });
+
+  it("shows an error, not an empty card, when the read fails for another reason", async () => {
+    repo.myItems.mockRejectedValue(apiError(500));
+    const vm = renderHook(() => useMyQaItemsViewModel({ projectId: "p1", enabled: true }));
+    await flush();
+    expect(vm().status).toBe("error");
+    expect(vm().error).toBe("Your QA items could not be loaded. Try again in a moment.");
+    expect(repo.returnedItems).not.toHaveBeenCalled();
+  });
+
+  it("folds a write's run into the lists without a reload", async () => {
+    repo.myItems.mockResolvedValue({
+      returned: [],
+      developerItems: [{ runId: "run-1", branch: "uat", commitSha: "abc", checklistName: "Smoke", item: runItem(1, { canUpdate: true }) }],
+    });
+    const vm = renderHook(() => useMyQaItemsViewModel({ projectId: "p1", enabled: true }));
+    await flush();
+    act(() => vm().applyRun(qaRun({ items: [runItem(1, { status: "passed", rowVersion: 2 })] })));
+    expect(vm().data.developerItems[0].item.status).toBe("passed");
+    expect(vm().data.developerItems[0].item.rowVersion).toBe(2);
+    expect(repo.myItems).toHaveBeenCalledTimes(1);
   });
 
   it("does not load while the capability is off", () => {
-    renderHook(() => useReturnedItemsViewModel({ projectId: "p1", enabled: false }));
+    renderHook(() => useMyQaItemsViewModel({ projectId: "p1", enabled: false }));
+    expect(repo.myItems).not.toHaveBeenCalled();
     expect(repo.returnedItems).not.toHaveBeenCalled();
   });
 

@@ -19,5 +19,5 @@ export function QaStudioTabPanel({
   vm: ProjectDetailTabsViewModel;
   dangerZone?: ReactNode;
 }>) {
-  return <QaStudioPanel projectId={project.id} appRole={vm.appRole} />;
+  return <QaStudioPanel projectId={project.id} appRole={vm.appRole} projectName={project.repoFullName} />;
 }

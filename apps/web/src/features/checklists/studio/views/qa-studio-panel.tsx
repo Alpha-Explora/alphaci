@@ -11,6 +11,7 @@ import { passedLabel } from "../../model/qa-run-rules";
 import type { QaRun } from "../../model/qa-run-types";
 import { automationSignal, launcherLabel, NO_QA_ENVIRONMENT } from "../../model/qa-studio-rules";
 import { useFloatingChecklistFocus } from "../view-models/use-floating-checklist-focus";
+import { useQaPromotionViewModel } from "../view-models/use-qa-promotion-view-model";
 import { useQaRunViewModel, type QaRunViewModel } from "../view-models/use-qa-run-view-model";
 import {
   useStudioChecklistsViewModel,
@@ -21,6 +22,7 @@ import {
   type StudioViewportViewModel,
 } from "../view-models/use-studio-viewport-view-model";
 import { PreviewPane } from "./preview-pane";
+import { PromotionCard } from "./promotion-card";
 import { RunPanel } from "./run-panel";
 import { ChecklistIcon, DockIcon, MinimizeIcon, SwapIcon } from "./studio-icons";
 import { StudioToolbar } from "./studio-toolbar";
@@ -253,9 +255,21 @@ function runSnapshot(run: QaRunViewModel): {
 }
 
 /**
+ * What the promotion card watches: the selected run's id, status and sign-off,
+ * once the run lookup has answered. Signing off or reopening changes it, and
+ * the card re-reads whether uat is ready for main.
+ */
+function promotionWatch(run: QaRunViewModel): string | null {
+  if (run.status !== "ready" && run.status !== "starting") return null;
+  const current = run.run;
+  return [current?.id, current?.status, current?.signoff?.id].map((part) => part ?? "").join("|");
+}
+
+/**
  * The run column's one container. Docked it is a plain column; in full screen
  * CSS floats it as a drawer and it gains a region role and a header. The
- * column inside (`children`) keeps its place either way, so it never remounts.
+ * promotion card and the column inside (`children`) keep their places either
+ * way, so neither ever remounts.
  */
 function RunDock({
   vm,
@@ -263,6 +277,7 @@ function RunDock({
   drawerId,
   headingId,
   headingRef,
+  promotion,
   children,
 }: Readonly<{
   vm: StudioViewportViewModel;
@@ -270,6 +285,7 @@ function RunDock({
   drawerId: string;
   headingId: string;
   headingRef: Ref<HTMLHeadingElement>;
+  promotion: ReactNode;
   children: ReactNode;
 }>) {
   const floating = vm.isFullScreen;
@@ -283,6 +299,7 @@ function RunDock({
       {floating ? (
         <DrawerHeader vm={vm} run={run} drawerId={drawerId} headingId={headingId} headingRef={headingRef} />
       ) : null}
+      {promotion}
       {children}
     </div>
   );
@@ -309,7 +326,13 @@ function previewFramed(vm: StudioViewportViewModel): "true" | "false" {
 export function QaStudioPanel({
   projectId,
   appRole,
-}: Readonly<{ projectId: string; appRole: AppRole | null | undefined }>) {
+  projectName,
+}: Readonly<{
+  projectId: string;
+  appRole: AppRole | null | undefined;
+  /** How the merge confirmation names the project, e.g. "tone/storefront-web". */
+  projectName?: string;
+}>) {
   const enabled = Boolean(projectId);
   const viewport = useStudioViewportViewModel({ projectId, enabled });
   const checklists = useStudioChecklistsViewModel({ projectId, enabled });
@@ -318,6 +341,12 @@ export function QaStudioPanel({
     enabled,
     branch: viewport.environment?.branch ?? null,
     checklistId: checklists.selected?.id ?? null,
+  });
+  const promotion = useQaPromotionViewModel({
+    projectId,
+    enabled,
+    appRole,
+    watch: promotionWatch(run),
   });
   const focus = useFloatingChecklistFocus({
     isFullScreen: viewport.isFullScreen,
@@ -351,6 +380,7 @@ export function QaStudioPanel({
           drawerId={drawerId}
           headingId={headingId}
           headingRef={focus.drawerRef}
+          promotion={<PromotionCard vm={promotion} projectName={projectName ?? projectId} />}
         >
           <RunColumn
             projectId={projectId}

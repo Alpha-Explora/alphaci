@@ -5,7 +5,6 @@ import { checklistsRepository } from "../../../../../src/features/checklists/dat
 import { qaRunsRepository } from "../../../../../src/features/checklists/data/qa-runs-repository";
 import { projectsRepository } from "../../../../../src/features/projects/data/projects-repository";
 import { QaStudioPanel } from "../../../../../src/features/checklists/studio/views/qa-studio-panel";
-import { ReturnedByQaCard } from "../../../../../src/features/checklists/returned/views/returned-by-qa-card";
 import { ProjectDetailTopTabs } from "../../../../../src/features/projects/detail/views/project-detail-top-tabs";
 import { projectDetailTabGroups } from "../../../../../src/features/projects/detail/views/project-detail-tab-config";
 import { visibleProjectDetailTabs } from "../../../../../src/features/projects/detail/model/project-detail-tab-rules";
@@ -27,6 +26,8 @@ jest.mock("../../../../../src/features/checklists/data/qa-runs-repository", () =
     signoff: jest.fn(),
     reopen: jest.fn(),
     returnedItems: jest.fn(),
+    promotion: jest.fn().mockResolvedValue({}),
+    mergePromotion: jest.fn(),
   },
 }));
 jest.mock("../../../../../src/features/projects/data/projects-repository", () => ({
@@ -314,84 +315,6 @@ describe("QaStudioPanel", () => {
     setup({ run: runAs("qa", { items: ITEMS, status: "signed_off", signoff }) });
     const qa = await studio("qa");
     expect(buttonNamed(qa, "Reopen run")).toBeUndefined();
-  });
-});
-
-describe("ReturnedByQaCard", () => {
-  const returned = {
-    runId: "run-1",
-    branch: "uat",
-    commitSha: "abc1234def",
-    checklistName: "Release smoke test",
-    item: runItem(2, {
-      title: "Rejects expired sessions",
-      status: "returned_to_dev",
-      defectSeverity: "blocker",
-      notes: "Still returns 201",
-      reproductionSteps: "Call it with an expired cookie",
-      verifiedBy: { id: "u-qa", login: "ana" },
-    }),
-  };
-
-  it("renders nothing when nothing was returned", async () => {
-    runs.returnedItems.mockResolvedValue({ items: [] });
-    const container = await render(<ReturnedByQaCard projectId="p1" enabled appRole="member" />);
-    expect(container.textContent).toBe("");
-  });
-
-  // A second return round: an earlier round was marked fixed, QA re-tested and
-  // returned it again. The developer must be able to ask for a re-test again.
-  it("still offers a re-test on an item QA returned again after an earlier fix", async () => {
-    const reReturned = {
-      ...returned,
-      item: {
-        ...returned.item,
-        fixRequest: {
-          requestedAt: "2026-09-25T01:00:00.000Z",
-          requestedBy: { id: "u-dev", login: "miguel" },
-          note: "first fix",
-        },
-      },
-    };
-    runs.returnedItems.mockResolvedValue({ items: [reReturned] });
-    const container = await render(<ReturnedByQaCard projectId="p1" enabled appRole="member" />);
-    expect(buttonNamed(container, "Mark fixed")).toBeDefined();
-  });
-
-  it("renders nothing and fetches nothing while the capability is off", async () => {
-    const container = await render(<ReturnedByQaCard projectId="p1" enabled={false} appRole="member" />);
-    expect(container.textContent).toBe("");
-    expect(runs.returnedItems).not.toHaveBeenCalled();
-  });
-
-  it("lists what QA found and lets a Developer ask for a re-test, then refreshes", async () => {
-    runs.returnedItems.mockResolvedValue({ items: [returned] });
-    runs.requestRetest.mockResolvedValue(runAs("member"));
-    const container = await render(<ReturnedByQaCard projectId="p1" enabled appRole="member" />);
-    expect(container.textContent).toContain("Returned by QA");
-    expect(container.textContent).toContain("uat @ abc1234");
-    expect(container.textContent).toContain("Release smoke test");
-    expect(container.textContent).toContain("Blocker");
-    expect(container.textContent).toContain("Call it with an expired cookie");
-    expect(container.textContent).toContain("Returned by @ana");
-
-    await act(async () => buttonNamed(container, "Mark fixed")!.click());
-    const note = container.querySelector("textarea")!;
-    const setter = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, "value")!.set!;
-    await act(async () => {
-      setter.call(note, "Fixed in #218");
-      note.dispatchEvent(new Event("input", { bubbles: true }));
-    });
-    await act(async () => buttonNamed(container, "Request re-test")!.click());
-    expect(runs.requestRetest).toHaveBeenCalledWith("p1", "run-1", "ri-2", "Fixed in #218");
-    expect(runs.returnedItems).toHaveBeenCalledTimes(2);
-  });
-
-  it("does not offer QA Team the re-test they would be asking of themselves", async () => {
-    runs.returnedItems.mockResolvedValue({ items: [returned] });
-    const container = await render(<ReturnedByQaCard projectId="p1" enabled appRole="qa" />);
-    expect(container.textContent).toContain("Rejects expired sessions");
-    expect(buttonNamed(container, "Mark fixed")).toBeUndefined();
   });
 });
 

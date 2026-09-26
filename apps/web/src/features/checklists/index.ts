@@ -6,7 +6,7 @@
  *   - `@/features/checklists/project` — the project's Checklists tab
  *   - `@/features/checklists/items`   — read-only item rendering
  *   - `@/features/checklists/studio`  — the project's QA Studio tab
- *   - `@/features/checklists/returned` — the Overview's "Returned by QA" card
+ *   - `@/features/checklists/returned` — the Overview's "My QA items" card
  *   - `@/features/checklists/report`  — the printable QA report page */
 export type {
   ChecklistShareTarget,
