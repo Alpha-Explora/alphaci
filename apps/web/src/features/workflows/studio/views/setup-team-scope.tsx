@@ -112,18 +112,34 @@ function TeamScopeMessage({
   return <SoleOrDefaultTeamCopy soleWorkspace={soleWorkspace} />;
 }
 
+/** The team Project a ?project= link files the new repository in. */
+function TargetProjectLine({ label }: Readonly<{ label: string }>) {
+  return (
+    <div className="repo-creation-scope" role="status" data-testid="setup-target-project">
+      <span className="repo-creation-scope__dot" aria-hidden="true" />
+      <span>
+        <strong>Project: {label}</strong> The new repository joins this
+        Project. For a frontend and backend pair, both do.
+      </span>
+    </div>
+  );
+}
+
 export function SetupTeamScope({
   creationScope,
   isExistingMode,
   onChangeWorkspace,
   selectedWorkspaceId,
   workspaces,
+  targetProjectLabel,
 }: Readonly<{
   creationScope: "choose-team" | "in-team";
   isExistingMode: boolean;
   onChangeWorkspace?: (workspaceId: string | null) => void;
   selectedWorkspaceId?: string | null;
   workspaces?: WorkspaceSummary[] | null;
+  /** "Team / Project" from a ?project= link, or null. */
+  targetProjectLabel?: string | null;
 }>) {
   if (isExistingMode) {
     return null;
@@ -137,6 +153,7 @@ export function SetupTeamScope({
   const soleWorkspace = soleWorkspaceOf(team.mustChooseTeam, workspaces);
 
   return (
+    <>
     <div className="repo-creation-scope" role="status">
       <span className="repo-creation-scope__dot" aria-hidden="true" />
       <TeamScopeMessage
@@ -149,5 +166,7 @@ export function SetupTeamScope({
         workspaces={workspaces}
       />
     </div>
+    {targetProjectLabel ? <TargetProjectLine label={targetProjectLabel} /> : null}
+    </>
   );
 }

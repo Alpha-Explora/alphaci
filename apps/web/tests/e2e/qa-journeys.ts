@@ -13,7 +13,13 @@ import type {
   ProvisionedProject,
   WorkflowFileMetadata,
 } from '../../src/shared/api/contracts';
-import type { GroupSummary } from '../../src/features/groups/data/hierarchy-contracts';
+import type { DeliveryProject, GroupSummary } from '../../src/features/groups/data/hierarchy-contracts';
+import type {
+  ChecklistProjectsPatch,
+  MoveRepositoryResponseWire,
+  ProjectFoldersResponseWire,
+  RepoRole,
+} from '../../src/features/teams/project-folders/model/project-folder-types';
 import type { NotificationsResponse } from '../../src/features/notifications/model/notifications-types';
 import type { WorkspacesMeResponse } from '../../src/features/workspace/selection/model/workspace-types';
 import type {
@@ -63,7 +69,11 @@ import { json, text } from './support';
  *     application/qa-runs/qa-automation-matching.ts (how an item gets its
  *     automated result), qa-report.mapper.ts (the report JSON) and
  *     application/qa-checklists/qa-checklists.service.ts (who manages
- *     checklists, what sharing accepts).
+ *     checklists, what sharing accepts), and the project-folder endpoints
+ *     (GET /groups/:id/project-folders, 404 for a non-member; POST
+ *     /groups/:id/projects; POST /repositories/:id/move, 404 target missing
+ *     or in another team, 400 archived, 409 moved concurrently; PATCH
+ *     /qa-checklists/:id/projects add/remove).
  * So a UI change that starts sending something the real server would refuse
  * fails here as a 4xx instead of passing against a permissive fake.
  *
@@ -142,6 +152,45 @@ const PROJECTS: TeamProject[] = [
   projectOptions: {},
   workspaceId: WORKSPACE.id,
 }));
+
+/* Team Projects (hierarchy delivery projects). Ids are UUIDs because the
+ * create-project wizard only honours a UUID ?project=. */
+const STOREFRONT_FOLDER = '6f1d2c3b-4a5e-4f60-8a7b-9c0d1e2f3a41';
+const LOYALTY_FOLDER = '6f1d2c3b-4a5e-4f60-8a7b-9c0d1e2f3a42';
+const SYSTEM_ID = '6f1d2c3b-4a5e-4f60-8a7b-9c0d1e2f3a40';
+
+interface FolderRepoRow {
+  id: string;
+  name: string;
+  repoFullName: string;
+  projectId: string | null;
+  role: RepoRole;
+  archived: boolean;
+}
+
+interface FolderRow {
+  id: string;
+  name: string;
+  createdAt: string;
+  archived: boolean;
+  repositories: FolderRepoRow[];
+}
+
+function seedFolders(): FolderRow[] {
+  return [
+    { id: LOYALTY_FOLDER, name: 'loyalty', createdAt: ago(20 * 24 * 60 * MINUTE), archived: false, repositories: [] },
+    {
+      id: STOREFRONT_FOLDER,
+      name: 'storefront',
+      createdAt: ago(30 * 24 * 60 * MINUTE),
+      archived: false,
+      repositories: [
+        { id: 'repo-web', name: 'storefront-web', repoFullName: 'tone/storefront-web', projectId: PROJECT_ID, role: 'frontend', archived: false },
+        { id: 'repo-api', name: 'orders-api', repoFullName: 'tone/orders-api', projectId: 'project-2', role: 'backend', archived: false },
+      ],
+    },
+  ];
+}
 
 /* The checklist journey (a) writes, as the lead types it. Journeys (b) and (c)
  * start from this same checklist already saved and shared. */
@@ -368,6 +417,8 @@ interface ApiRequest {
 interface ApiReply {
   status?: number;
   body: unknown;
+  /** A 4xx the journey armed on purpose; recorded, not treated as a refusal. */
+  expected?: boolean;
   /** Set for a non-JSON reply (the Markdown report). */
   contentType?: string;
 }
@@ -381,6 +432,11 @@ class QaMockBackend {
   readonly checklists: QaChecklist[] = [];
   readonly runs: RunRow[] = [];
   automation: Required<QaRunAutomationWire> = defaultAutomation();
+  readonly folders: FolderRow[] = seedFolders();
+  /** When set, the next move answers 409 as if someone else moved it first. */
+  moveConflictArmed = false;
+  /** 4xx replies a journey provoked on purpose (not refusals). */
+  readonly expectedErrors: string[] = [];
   private seq = 0;
   private readonly routes: Array<[string, RegExp, Handler]>;
 
@@ -477,7 +533,9 @@ class QaMockBackend {
       at: Date.now(),
     });
     if (status >= 400) {
-      this.refusals.push(`${status} ${apiRequest.method} ${path}${url.search} ${JSON.stringify(reply.body)}`);
+      const line = `${status} ${apiRequest.method} ${path}${url.search} ${JSON.stringify(reply.body)}`;
+      if (reply.expected) this.expectedErrors.push(line);
+      else this.refusals.push(line);
     }
     if (reply.contentType) return text(route, status, String(reply.body), reply.contentType);
     return json(route, reply.body, status);
@@ -527,6 +585,22 @@ class QaMockBackend {
       ['GET', new RegExp(`^/projects/${P}/qa-runs/${P}/report$`), (m, req) => this.report(m[2], req.query.get('format'))],
       ['POST', new RegExp(`^/projects/${P}/qa-runs/${P}/automation/dispatch$`), (m) => ({ status: 202, body: this.dispatchAutomation(m[2]) })],
       ['GET', new RegExp(`^/projects/${P}/qa-returned-items$`), () => ({ body: { items: this.returnedItems() } satisfies QaReturnedItemsResponse })],
+      // Project folders (the Teams project explorer)
+      ['GET', new RegExp(`^/groups/${P}/project-folders$`), (m) => ({ body: this.projectFolders(m[1]) })],
+      ['POST', new RegExp(`^/groups/${P}/projects$`), (m, req) => ({ status: 201, body: this.createFolder(m[1], req.body) })],
+      ['POST', new RegExp(`^/repositories/${P}/move$`), (m, req) => this.moveRepository(m[1], req.body)],
+      ['GET', new RegExp(`^/delivery-projects/${P}$`), (m) => ({ body: this.deliveryProject(this.requireFolder(m[1])) })],
+      ['POST', new RegExp(`^/delivery-projects/${P}/archive$`), (m) => ({ body: this.archiveFolder(m[1]) })],
+      ['PATCH', new RegExp(`^/qa-checklists/${P}/projects$`), (m, req) => ({ body: this.patchChecklistShares(m[1], req.body) })],
+      // The Create Project wizard (/workflows): read-only fixtures
+      ['GET', /^\/catalog\/categories$/, () => ({ body: { categories: [] } })],
+      ['GET', /^\/catalog\/templates$/, () => ({ body: { templates: [] } })],
+      ['GET', /^\/workflows\/history$/, () => ({ body: { items: [] } })],
+      ['GET', /^\/usage\/me$/, () => ({ body: { enabled: false, items: [] } })],
+      ['GET', /^\/github\/app\/install-url$/, () => ({ body: { installUrl: 'https://github.com/apps/alphaci/installations/new', appSlug: 'alphaci' } })],
+      ['GET', /^\/github\/installations\/accounts$/, () => ({ body: { accounts: [] } })],
+      ['GET', /^\/github\/installations\/repos$/, () => ({ body: { repos: [] } })],
+      ['GET', /^\/provider-connections$/, () => ({ body: [] })],
     ];
   }
 
@@ -662,6 +736,131 @@ class QaMockBackend {
         },
       ],
     };
+  }
+
+  /* ── Project folders ── */
+
+  private isLead(): boolean {
+    return this.role === 'lead' || this.role === 'admin';
+  }
+
+  private requireFolder(folderId: string): FolderRow {
+    const folder = this.folders.find((entry) => entry.id === folderId);
+    if (!folder) throw nestError(404, 'Delivery project not found');
+    return folder;
+  }
+
+  private deliveryProject(folder: FolderRow): DeliveryProject {
+    return {
+      id: folder.id,
+      systemId: SYSTEM_ID,
+      groupId: WORKSPACE.id,
+      name: folder.name,
+      description: null,
+      status: folder.archived ? 'archived' : 'active',
+      repositoryCount: folder.repositories.filter((repo) => !repo.archived).length,
+      createdAt: folder.createdAt,
+      updatedAt: folder.createdAt,
+    };
+  }
+
+  private projectFolders(groupId: string): ProjectFoldersResponseWire {
+    // A non-member (or a missing team) gets 404, exactly like the backend.
+    if (groupId !== WORKSPACE.id) throw nestError(404, 'Group not found');
+    const live = this.folders
+      .filter((folder) => !folder.archived)
+      .sort((a, b) => a.name.toLowerCase().localeCompare(b.name.toLowerCase()));
+    const filed = new Set(live.flatMap((folder) => folder.repositories.map((repo) => repo.projectId)));
+    return {
+      groupId,
+      canManage: this.isLead(),
+      folders: live.map((folder) => ({
+        deliveryProjectId: folder.id,
+        systemId: SYSTEM_ID,
+        name: folder.name,
+        createdAt: folder.createdAt,
+        repositories: folder.repositories
+          .filter((repo) => !repo.archived)
+          .map((repo) => ({
+            repositoryId: repo.id,
+            name: repo.name,
+            repoFullName: repo.repoFullName,
+            status: 'active',
+            project: repo.projectId ? { id: repo.projectId, role: repo.role, status: 'provisioned', repoShape: 'multi-repo' } : null,
+          })),
+      })),
+      unfiled: PROJECTS.filter((project) => !filed.has(project.id)).map((project) => ({
+        id: project.id,
+        name: project.serviceName,
+        repoFullName: project.repoFullName,
+        role: 'app' as const,
+        status: 'provisioned',
+        repoShape: 'standalone',
+      })),
+    };
+  }
+
+  private createFolder(groupId: string, body: Record<string, unknown>): DeliveryProject {
+    if (groupId !== WORKSPACE.id) throw nestError(404, 'Group not found');
+    if (!this.isLead()) throw nestError(403, 'Only a team lead can create projects');
+    const name = typeof body.name === 'string' ? body.name.trim() : '';
+    if (!name || name.length > 200) throw nestError(400, 'name must be between 1 and 200 characters');
+    const folder: FolderRow = { id: this.nextId('folder'), name, createdAt: new Date().toISOString(), archived: false, repositories: [] };
+    this.folders.push(folder);
+    return this.deliveryProject(folder);
+  }
+
+  private moveRepository(repositoryId: string, body: Record<string, unknown>): ApiReply {
+    if (!this.isLead()) throw nestError(403, 'Only a team lead can move repositories');
+    const source = this.folders.find((folder) => folder.repositories.some((repo) => repo.id === repositoryId));
+    const repo = source?.repositories.find((entry) => entry.id === repositoryId);
+    if (!source || !repo) throw nestError(404, 'Repository not found');
+    const target = this.requireFolder(String(body.deliveryProjectId ?? ''));
+    if (repo.archived || target.archived) throw nestError(400, 'Archived repositories and projects cannot be moved');
+    if (this.moveConflictArmed) {
+      this.moveConflictArmed = false;
+      // Someone else got there first: the repository now sits in the target.
+      source.repositories.splice(source.repositories.indexOf(repo), 1);
+      target.repositories.push(repo);
+      return { status: 409, body: { statusCode: 409, message: 'Repository was moved concurrently', error: 'Conflict' }, expected: true };
+    }
+    if (source === target) {
+      return { body: { repository: { id: repo.id }, moved: false, sourceDeliveryProjectId: source.id, sourceDeliveryProjectEmpty: false } };
+    }
+    source.repositories.splice(source.repositories.indexOf(repo), 1);
+    target.repositories.push(repo);
+    const reply: MoveRepositoryResponseWire = {
+      repository: { id: repo.id, deliveryProjectId: target.id },
+      moved: true,
+      sourceDeliveryProjectId: source.id,
+      sourceDeliveryProjectEmpty: source.repositories.filter((entry) => !entry.archived).length === 0,
+    };
+    return { body: reply };
+  }
+
+  private archiveFolder(folderId: string): DeliveryProject {
+    if (!this.isLead()) throw nestError(403, 'Only a team lead can archive projects');
+    const folder = this.requireFolder(folderId);
+    folder.archived = true;
+    return this.deliveryProject(folder);
+  }
+
+  private patchChecklistShares(checklistId: string, body: Record<string, unknown>): QaChecklist {
+    const checklist = this.requireChecklist(checklistId);
+    this.assertManage();
+    if (checklist.archivedAt) throw nestError(409, 'Checklist is archived');
+    const patch = body as ChecklistProjectsPatch;
+    const add = [...new Set(patch.add ?? [])];
+    const remove = new Set(patch.remove ?? []);
+    const rejected = [...add, ...remove].filter((id) => !PROJECTS.some((p) => p.id === id && p.workspaceId === checklist.workspaceId));
+    if (rejected.length > 0) {
+      throw nestError(400, `These project ids are not in this checklist's workspace: ${rejected.join(', ')}`);
+    }
+    // Only the named ids change; every other share stays exactly as it was.
+    const next = checklist.sharedProjectIds.filter((id) => !remove.has(id));
+    for (const id of add) if (!next.includes(id)) next.push(id);
+    checklist.sharedProjectIds = next;
+    return checklist;
   }
 
   /* ── Checklists (qa-checklists.service.ts) ── */
@@ -1166,7 +1365,7 @@ async function leadCreatesAndSharesChecklist({ page, backend, baseUrl }: Journey
     (await page.getByLabel('Active workspace').locator('option', { hasText: '+ Create workspace' }).count()) === 1,
   );
 
-  await page.getByRole('tablist', { name: 'Team sections' }).getByRole('tab', { name: /QA checklists/ }).click();
+  await page.getByRole('tablist', { name: 'Team sections' }).getByRole('tab', { name: /Checklist templates/ }).click();
   await visible(page.getByText('No QA checklists yet'), 'the empty checklist list');
   await page.getByRole('button', { name: 'Create the first checklist' }).click();
 
@@ -1453,7 +1652,7 @@ async function qaTeamCannotCreate({ page, backend, baseUrl }: JourneyContext) {
   assert.equal(await page.getByTestId('create-workspace-button').count(), 0, 'no create-workspace button');
 
   // Checklists are readable, not writable, for QA Team.
-  await page.getByRole('tablist', { name: 'Team sections' }).getByRole('tab', { name: /QA checklists/ }).click();
+  await page.getByRole('tablist', { name: 'Team sections' }).getByRole('tab', { name: /Checklist templates/ }).click();
   const row = page.locator('button.qa-list-row').filter({ hasText: RELEASE_CHECKLIST.name });
   await visible(row, 'the team checklist');
   await neverShown(backend, page.getByRole('button', { name: 'New checklist' }), 'New checklist for QA Team');
@@ -1482,12 +1681,123 @@ async function capabilityAbsentHidesQa({ page, backend, baseUrl }: JourneyContex
   await page.goto(`${baseUrl}/teams`, { waitUntil: 'domcontentloaded' });
   const sections = page.getByRole('tablist', { name: 'Team sections' });
   await visible(sections.getByRole('tab', { name: /Members/ }), 'the team sections');
-  await neverShown(backend, sections.getByRole('tab', { name: /QA checklists/ }), 'the Teams QA checklists entry', teamsLoadedAt);
-  await visible(page.getByText('Members, activity, and the repositories this team owns.'), 'the lede without QA checklists');
+  await neverShown(backend, sections.getByRole('tab', { name: /Checklist templates/ }), 'the Teams checklist templates entry', teamsLoadedAt);
+  await visible(page.getByText('Members, activity, and the Projects and repositories this team owns.'), 'the lede without checklist templates');
 
   // Nothing QA was even asked for: the tabs are hidden because the flag is
   // missing, not because a QA request failed.
   assert.deepEqual(backend.calls.filter((call) => /qa-/.test(call.path)).map((call) => call.path), []);
+}
+
+/** (f) Team lead: the project explorer — list, open, attach, move (409 then real), archive, create links. */
+async function leadOrganisesProjects({ page, backend, baseUrl }: JourneyContext) {
+  await page.goto(`${baseUrl}/teams`, { waitUntil: 'domcontentloaded' });
+  await expectRoleBadge(page, 'lead');
+  const sections = page.getByRole('tablist', { name: 'Team sections' });
+  const projectsTab = sections.getByRole('tab', { name: /Projects/ });
+  await expectText(projectsTab, /Projects\s*2/, 'the Projects rail entry with its count');
+  await visible(sections.getByRole('tab', { name: /Checklist templates/ }), 'the Checklist templates rail entry');
+  assert.equal(await sections.getByRole('tab', { name: /Repositories/ }).count(), 0, 'the flat Repositories entry is gone');
+  await projectsTab.click();
+
+  // The list, in the server's order (by name).
+  const cards = page.locator('li.pf-card');
+  await eventually('two Project cards', async () => (await cards.count()) === 2);
+  assert.deepEqual(await page.locator('.pf-card__name').allTextContents(), ['loyalty', 'storefront']);
+  const storefront = cards.filter({ has: page.locator('.pf-card__name', { hasText: /^storefront$/ }) });
+  const chips = storefront.locator('a.pf-chip');
+  assert.deepEqual(await chips.allTextContents(), ['Frontendstorefront-web', 'Backendorders-api']);
+  assert.deepEqual(
+    [await chips.nth(0).getAttribute('href'), await chips.nth(1).getAttribute('href')],
+    [`/projects/${PROJECT_ID}`, '/projects/project-2'],
+  );
+  await expectText(storefront.locator('.pf-card__meta'), '2 repositories', 'the storefront repository count');
+  await expectText(storefront.locator('.pf-card__meta'), '1 checklist', 'the storefront checklist count');
+  const loyalty = cards.filter({ has: page.locator('.pf-card__name', { hasText: /^loyalty$/ }) });
+  await expectText(loyalty, 'No repositories yet.', 'the empty loyalty Project');
+  assert.equal(await page.locator('.pf-unfiled').count(), 0, 'every repository is filed');
+
+  // New Project.
+  await page.getByRole('button', { name: 'New Project' }).click();
+  const newDialog = page.getByRole('dialog', { name: 'New Project' });
+  await newDialog.getByPlaceholder('checkout').fill('payments');
+  await newDialog.getByRole('button', { name: 'Create Project' }).click();
+  await absent(newDialog, 'the New Project dialog');
+  const create = onlyCall(backend.callsTo('POST', /^\/groups\/ws-checkout\/projects$/), 'Project create');
+  assert.deepEqual(create.body, { name: 'payments' });
+  await eventually('the new Project in the list', async () => (await cards.count()) === 3);
+  await expectText(projectsTab, /Projects\s*3/, 'the rail count after creating');
+
+  // Open storefront.
+  await storefront.locator('button.pf-card__open').click();
+  await expectText(page.locator('.pf-detail__title'), 'storefront', 'the Project detail title');
+  assert.equal(await page.getByRole('link', { name: 'Verify in QA Studio' }).getAttribute('href'), `/projects/${PROJECT_ID}#qa`);
+  assert.equal(
+    await page.getByRole('link', { name: 'Create repository in this Project' }).first().getAttribute('href'),
+    `/workflows?tab=setup&group=${WORKSPACE.id}&project=${STOREFRONT_FOLDER}`,
+  );
+
+  // Checklists: the release checklist covers one of two repositories; attach another with PATCH.
+  const rows = page.locator('li.pf-checklist');
+  await expectText(rows.filter({ hasText: RELEASE_CHECKLIST.name }), 'Some repositories', 'the partial checklist');
+  await page.locator('.pf-attach select').selectOption({ label: 'Accessibility pass' });
+  await page.getByRole('button', { name: 'Attach to this Project' }).click();
+  await expectText(rows.filter({ hasText: 'Accessibility pass' }), 'All repositories', 'the attached checklist');
+  const attach = onlyCall(backend.callsTo('PATCH', /^\/qa-checklists\/[^/]+\/projects$/), 'checklist attach');
+  assert.deepEqual(attach.body, { add: [PROJECT_ID, 'project-2'] });
+  await page.getByRole('button', { name: `Detach ${RELEASE_CHECKLIST.name} from this Project` }).click();
+  await absent(rows.filter({ hasText: RELEASE_CHECKLIST.name }), 'the detached checklist');
+  const detach = backend.callsTo('PATCH', /^\/qa-checklists\/[^/]+\/projects$/)[1];
+  assert.deepEqual(detach.body, { remove: [PROJECT_ID, 'project-2'] });
+  assert.equal(backend.callsTo('PUT', /\/projects$/).length, 0, 'never the PUT full replace from a Project');
+
+  // Move: someone else moves orders-api first (409), then a real move.
+  backend.moveConflictArmed = true;
+  const foldersReads = () => backend.callsTo('GET', /^\/groups\/ws-checkout\/project-folders$/).length;
+  const readsBefore = foldersReads();
+  await page.getByRole('button', { name: 'Move orders-api to another Project' }).click();
+  const moveDialog = page.getByRole('dialog', { name: 'Move orders-api' });
+  await moveDialog.getByRole('radio', { name: /loyalty/ }).check();
+  await moveDialog.getByRole('button', { name: 'Move repository' }).click();
+  await expectText(moveDialog.getByRole('alert'), 'This repository was moved by someone else. Refresh and try again.', 'the conflict message');
+  await eventually('the explorer to refetch after the conflict', () => foldersReads() > readsBefore);
+  assert.equal(backend.expectedErrors.length, 1, 'exactly the armed 409');
+  await moveDialog.getByRole('button', { name: 'Cancel' }).click();
+  await absent(moveDialog, 'the move dialog');
+  await eventually('orders-api to have left storefront', async () =>
+    (await page.getByRole('button', { name: 'Move orders-api to another Project' }).count()) === 0,
+  );
+
+  await page.getByRole('button', { name: 'Move storefront-web to another Project' }).click();
+  const secondMove = page.getByRole('dialog', { name: 'Move storefront-web' });
+  await secondMove.getByRole('radio', { name: /loyalty/ }).check();
+  await secondMove.getByRole('button', { name: 'Move repository' }).click();
+  await absent(secondMove, 'the second move dialog');
+  const move = backend.callsTo('POST', /^\/repositories\/repo-web\/move$/);
+  assert.equal(move.length, 1);
+  assert.deepEqual(move[0].body, { deliveryProjectId: LOYALTY_FOLDER });
+  const notice = page.locator('.pf-notice');
+  await expectText(notice, 'Moved storefront-web to loyalty. storefront has no repositories now.', 'the emptied-Project notice');
+
+  // Archive the emptied Project: it leaves the list.
+  await notice.getByRole('button', { name: 'Archive storefront' }).click();
+  await expectText(notice, 'Archived storefront.', 'the archive confirmation');
+  onlyCall(backend.callsTo('POST', new RegExp(`^/delivery-projects/${STOREFRONT_FOLDER}/archive$`)), 'Project archive');
+  await eventually('storefront to leave the list', async () =>
+    (await page.locator('.pf-card__name').allTextContents()).join(',') === 'loyalty,payments',
+  );
+  await expectText(loyalty.locator('.pf-card__meta'), '2 repositories', 'loyalty now holds both repositories');
+
+  // Create repository in loyalty: the wizard opens pre-scoped to the team and Project.
+  await loyalty.locator('button.pf-card__open').click();
+  await page.getByRole('link', { name: 'Create repository in this Project' }).first().click();
+  await eventually('the wizard URL to carry ?group= and ?project=', () => {
+    const url = new URL(page.url());
+    return url.pathname === '/workflows' && url.searchParams.get('group') === WORKSPACE.id && url.searchParams.get('project') === LOYALTY_FOLDER;
+  });
+  await expectText(page.getByTestId('setup-target-project'), `Project: ${WORKSPACE.name} / loyalty`, 'the wizard Project line');
+  // Dev StrictMode runs the lookup effect twice; what matters is that it was resolved at all.
+  assert.ok(backend.callsTo('GET', new RegExp(`^/delivery-projects/${LOYALTY_FOLDER}$`)).length > 0, 'the wizard Project lookup');
 }
 
 /* A run on main that QA already worked through: 1 passed, 2 and 3 returned. */
@@ -1565,6 +1875,17 @@ const JOURNEYS: Journey[] = [
     },
     run: capabilityAbsentHidesQa,
   },
+  {
+    id: 'f',
+    title: 'Team lead: project explorer — list, open, attach/detach, move (409 + real), archive, create-in-Project link',
+    backend: () => {
+      const backend = new QaMockBackend('lead');
+      backend.seedChecklist(RELEASE_CHECKLIST, [PROJECT_ID]);
+      backend.seedChecklist({ name: 'Accessibility pass', description: null, items: [DEVELOPER_ITEM] }, []);
+      return backend;
+    },
+    run: leadOrganisesProjects,
+  },
 ];
 
 /* ── Runner ──────────────────────────────────────────────────────────────── */
@@ -1622,6 +1943,13 @@ async function runJourney(browser: Browser, baseUrl: string, journey: Journey) {
     }
   } finally {
     await context.close();
+  }
+  // The browser logs every 4xx as a console error; one per reply the journey
+  // provoked on purpose is expected, anything beyond that still fails.
+  for (const expected of backend.expectedErrors) {
+    const status = expected.split(' ')[0];
+    const index = problems.findIndex((line) => line.includes(`status of ${status}`));
+    if (index >= 0) problems.splice(index, 1);
   }
   problems.push(...backend.refusals.map((refusal) => `unexpected API reply: ${refusal}`));
   if (problems.length > 0) throw new Error(problems.join('\n'));

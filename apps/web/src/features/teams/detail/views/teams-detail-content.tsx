@@ -14,6 +14,7 @@ import {
 
 import { QA_CHECKLISTS_SECTION } from "@/features/checklists";
 import { WorkspaceChecklistsSection } from "@/features/checklists/manage";
+import { ProjectExplorerHost } from "@/features/teams/project-folders";
 
 import { memberCountLabel, type TeamsDeepLink } from "../../model/teams-rules";
 import type { ProvisionedProject, Team } from "../../model/teams-types";
@@ -72,8 +73,8 @@ function TeamsHeaderLede({ qaChecklistsEnabled }: Readonly<{ qaChecklistsEnabled
       }}
     >
       {qaChecklistsEnabled
-        ? "Members, activity, the repositories this team owns, and its QA checklists."
-        : "Members, activity, and the repositories this team owns."}{" "}
+        ? "Members, activity, the Projects and repositories this team owns, and its checklist templates."
+        : "Members, activity, and the Projects and repositories this team owns."}{" "}
       Switch or create a team from the picker in the header.
     </p>
   );
@@ -155,25 +156,36 @@ export function TeamsDetailContent({
           />
         ) : vm.team ? (
           <div className="glass-panel team-detail-surface">
-            <GroupWorkspacePanel
-              group={vm.team}
-              projects={vm.projects}
-              onDeleted={vm.reload}
-              onMembershipChanged={vm.refreshTeam}
-              // Creating a repository belongs to the Projects surface, which
-              // owns the setup form. Linking straight there — pre-scoped to
-              // this team — replaces an intermediate screen whose only content
-              // was a button pointing at the same place.
-              createHref={`/workflows?tab=setup&group=${encodeURIComponent(vm.team.id)}`}
-              renderCreateProject={() => null}
-              qaChecklists={qaChecklistsSection(
-                vm.qaChecklistsEnabled,
-                vm.team,
-                vm.projects,
-                deepLink,
-              )}
-              initialSection={deepLinkSection(deepLink)}
-            />
+            <ProjectExplorerHost
+              groupId={vm.team.id}
+              groupName={vm.team.name}
+              qaChecklistsEnabled={vm.qaChecklistsEnabled}
+            >
+              {(explorer) =>
+                vm.team ? (
+                  <GroupWorkspacePanel
+                    group={vm.team}
+                    projects={vm.projects}
+                    onDeleted={vm.reload}
+                    onMembershipChanged={vm.refreshTeam}
+                    // Creating a repository belongs to the Projects surface, which
+                    // owns the setup form. Linking straight there — pre-scoped to
+                    // this team — replaces an intermediate screen whose only content
+                    // was a button pointing at the same place.
+                    createHref={`/workflows?tab=setup&group=${encodeURIComponent(vm.team.id)}`}
+                    renderCreateProject={() => null}
+                    qaChecklists={qaChecklistsSection(
+                      vm.qaChecklistsEnabled,
+                      vm.team,
+                      vm.projects,
+                      deepLink,
+                    )}
+                    projectExplorer={explorer}
+                    initialSection={deepLinkSection(deepLink)}
+                  />
+                ) : null
+              }
+            </ProjectExplorerHost>
           </div>
         ) : (
           <TeamsEmptyState
