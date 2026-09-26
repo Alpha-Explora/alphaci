@@ -77,4 +77,19 @@ export const checklistsRepository = {
       ...jsonBody({ projectIds }),
     });
   },
+
+  /**
+   * Add or remove individual project shares. Unlike `share` (a full replace),
+   * this never touches a project it does not name, so a view scoped to a few
+   * projects (a team Project's repositories) cannot un-share the rest.
+   */
+  updateShares(
+    checklistId: string,
+    change: { add?: string[]; remove?: string[] },
+  ): Promise<QaChecklist> {
+    return request<QaChecklist>(`/qa-checklists/${id(checklistId)}/projects`, {
+      method: "PATCH",
+      ...jsonBody(change),
+    });
+  },
 };

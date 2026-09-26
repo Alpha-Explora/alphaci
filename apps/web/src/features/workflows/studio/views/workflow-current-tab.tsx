@@ -14,6 +14,9 @@ import { WorkflowStageList } from "@/features/projects/detail";
 import { DeploymentProvisioningSummary } from "./setup-result-panel";
 import { FlowExplainer } from "@/features/guide/overview";
 import { GroupWorkspacePanel } from "@/features/teams/detail";
+import { ProjectExplorerHost } from "@/features/teams/project-folders";
+import { useCapabilities } from "@/features/capabilities/current";
+import { WorkspaceChecklistsSection } from "@/features/checklists/manage";
 
 interface WorkflowCurrentTabProps {
   latestResult: CreateProjectResult | null;
@@ -375,6 +378,7 @@ function SelectedGroupPane({
   renderGroupCreate: (groupId: string, onComplete: () => void) => React.ReactNode;
   onDeleted: (groupId: string) => void;
 }>) {
+  const { qaChecklistsEnabled } = useCapabilities();
   if (!selectedEntry) return null;
   return (
     <div className="project-detail-column">
@@ -397,14 +401,38 @@ function SelectedGroupPane({
             </span>
           </span>
         </div>
-        <GroupWorkspacePanel
-          group={selectedEntry.group}
-          projects={selectedEntry.projects}
-          renderCreateProject={(onComplete) =>
-            renderGroupCreate(selectedEntry.group.id, onComplete)
-          }
-          onDeleted={onDeleted}
-        />
+        {/* The same explorer and checklist templates as the Teams page, gated
+            by the same capability, so the two surfaces never disagree. */}
+        <ProjectExplorerHost
+          groupId={selectedEntry.group.id}
+          groupName={selectedEntry.group.name}
+          qaChecklistsEnabled={qaChecklistsEnabled}
+        >
+          {(explorer) => (
+            <GroupWorkspacePanel
+              group={selectedEntry.group}
+              projects={selectedEntry.projects}
+              renderCreateProject={(onComplete) =>
+                renderGroupCreate(selectedEntry.group.id, onComplete)
+              }
+              onDeleted={onDeleted}
+              projectExplorer={explorer}
+              qaChecklists={
+                qaChecklistsEnabled ? (
+                  <WorkspaceChecklistsSection
+                    key={selectedEntry.group.id}
+                    workspaceId={selectedEntry.group.id}
+                    projects={selectedEntry.projects.map((project) => ({
+                      id: project.id,
+                      name: project.repoFullName,
+                      detail: project.serviceName,
+                    }))}
+                  />
+                ) : null
+              }
+            />
+          )}
+        </ProjectExplorerHost>
       </motion.article>
     </div>
   );

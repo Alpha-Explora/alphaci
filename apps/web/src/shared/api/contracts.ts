@@ -887,6 +887,12 @@ export interface CreateProjectRequest {
   deploymentProvisioning?: DeploymentProvisioningRequest;
   /** Group/workspace to create this project inside (from ?group=<id>). */
   workspaceId?: string;
+  /**
+   * Team Project (hierarchy delivery project) the new repository joins, from
+   * ?project=<id>. Must belong to `workspaceId`; for multi-repo and
+   * microservices shapes every created repository lands in it.
+   */
+  deliveryProjectId?: string;
 }
 
 export interface CreateProjectResponse {

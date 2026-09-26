@@ -72,6 +72,12 @@ interface GroupWorkspacePanelProps {
    * checklists domain and its capability flag.
    */
   qaChecklists?: ReactNode;
+  /**
+   * The team's project explorer (Projects and their repositories), built by
+   * the caller. Replaces the flat Repositories section: the rail entry becomes
+   * "Projects" with the explorer's count, and the explorer draws its own head.
+   */
+  projectExplorer?: { count: number | null; panel: ReactNode };
   /** Open on this section instead of Overview (deep links). */
   initialSection?: "qa-checklists";
 }
@@ -707,16 +713,25 @@ function Settings({
   );
 }
 
+function projectsTabItem(
+  projects: ProvisionedProject[],
+  projectExplorer: GroupWorkspacePanelProps["projectExplorer"],
+): SideTabItem<Exclude<GroupSection, "create">> {
+  if (!projectExplorer) return { id: "projects", label: "Repositories", badge: projects.length };
+  return { id: "projects", label: "Projects", badge: projectExplorer.count ?? undefined };
+}
+
 function teamSectionGroups(
   group: GroupSummary,
   projects: ProvisionedProject[],
   canManage: boolean,
   hasQaChecklists: boolean,
+  projectExplorer: GroupWorkspacePanelProps["projectExplorer"],
 ): SideTabGroup<Exclude<GroupSection, "create">>[] {
   const workItems: Array<SideTabItem<Exclude<GroupSection, "create">>> = [
-    { id: "projects", label: "Repositories", badge: projects.length },
+    projectsTabItem(projects, projectExplorer),
   ];
-  if (hasQaChecklists) workItems.push({ id: "qa-checklists", label: "QA checklists" });
+  if (hasQaChecklists) workItems.push({ id: "qa-checklists", label: "Checklist templates" });
   const groups: SideTabGroup<Exclude<GroupSection, "create">>[] = [
     { heading: "Team", items: [{ id: "overview", label: "Overview" }] },
     {
@@ -871,10 +886,24 @@ const SECTION_TITLES: Record<Exclude<GroupSection, "create">, string> = {
   overview: "Overview",
   members: "Members",
   projects: "Repositories",
-  "qa-checklists": "QA checklists",
+  "qa-checklists": "Checklist templates",
   activity: "Activity & audit",
   settings: "Settings",
 };
+
+/**
+ * Sections that draw their own head row, because their action depends on a
+ * permission only they load: the checklist templates and the project explorer.
+ */
+function selfHeadedSection(
+  current: Exclude<GroupSection, "create">,
+  qaChecklists: ReactNode,
+  explorer: ReactNode,
+): ReactNode {
+  if (current === "qa-checklists") return qaChecklists;
+  if (current === "projects" && explorer) return explorer;
+  return null;
+}
 
 /**
  * The section to draw. QA checklists falls back to Overview while the section
@@ -885,7 +914,7 @@ function visibleSection(section: GroupSection, hasQaChecklists: boolean): GroupS
   return section === "qa-checklists" && !hasQaChecklists ? "overview" : section;
 }
 
-export function GroupWorkspacePanel({ group, projects, renderCreateProject, createHref, onDeleted, onMembershipChanged, qaChecklists, initialSection }: Readonly<GroupWorkspacePanelProps>) {
+export function GroupWorkspacePanel({ group, projects, renderCreateProject, createHref, onDeleted, onMembershipChanged, qaChecklists, projectExplorer, initialSection }: Readonly<GroupWorkspacePanelProps>) {
   const [addMemberOpen, setAddMemberOpen] = useState(false);
   const { session } = useAuthSession();
   const [selectedSection, setSection] = useState<GroupSection>(initialSection ?? "overview");
@@ -909,7 +938,7 @@ export function GroupWorkspacePanel({ group, projects, renderCreateProject, crea
   return (
     <div className="group-workspace">
       <SideTabs
-        groups={teamSectionGroups(group, projects, canManage, hasQaChecklists)}
+        groups={teamSectionGroups(group, projects, canManage, hasQaChecklists, projectExplorer)}
         value={current}
         onChange={setSection}
         label="Team sections"
@@ -923,11 +952,7 @@ export function GroupWorkspacePanel({ group, projects, renderCreateProject, crea
         aria-labelledby={`group-tab-${current}`}
         tabIndex={0}
       >
-        {current === "qa-checklists" ? (
-          // The section draws its own head row: its action depends on a
-          // permission only it loads.
-          qaChecklists
-        ) : (
+        {selfHeadedSection(current, qaChecklists, projectExplorer?.panel) ?? (
           <>
             <div className="group-section-head">
               <h3 className="group-section-title">

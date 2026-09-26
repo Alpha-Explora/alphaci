@@ -33,8 +33,8 @@ Feature domains are UI ownership boundaries. They consume backend bounded contex
 | `projects` | `projects` | project detail, environments, hosting, drift, previews, and workflow settings | 97 |
 | `runs` | `pipelines` | CI run history presentation | 22 |
 | `settings` | `identity-access` | account, workspace, and notification settings | 20 |
-| `teams` | `identity-access` | team listing over hierarchy groups | 10 |
-| `workflows` | `projects` | project creation and workflow studio | 48 |
+| `teams` | `identity-access` | team listing over hierarchy groups | 24 |
+| `workflows` | `projects` | project creation and workflow studio | 50 |
 | `workspace` | `identity-access` | application shell, navigation, and workspace switching | 10 |
 
 Cross-feature imports go through a domain or action `index.ts`. `src/shared/` may not import a feature.
