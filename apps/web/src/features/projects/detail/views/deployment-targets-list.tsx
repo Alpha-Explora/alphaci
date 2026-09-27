@@ -396,6 +396,7 @@ function DeploymentTargetActions({
       <ReinstallSecretsAction
         target={target}
         appRole={appRole}
+        managementEnabled={managementEnabled}
         actions={vm.targetActions[target.id]}
         reinstalling={vm.reinstallingTargetId === target.id}
         onReinstall={() => void vm.reinstallSecrets(target)}
@@ -433,16 +434,20 @@ function DeploymentTargetActions({
 function ReinstallSecretsAction({
   target,
   appRole,
+  managementEnabled,
   actions,
   reinstalling,
   onReinstall,
 }: Readonly<{
   target: DeploymentTarget;
   appRole?: AppRole;
+  managementEnabled: boolean;
   actions: DeploymentTargetActionsResponse | undefined;
   reinstalling: boolean;
   onReinstall: () => void;
 }>) {
+  // The server refuses it while target management is off, like Sync and Detach.
+  if (!managementEnabled) return null;
   if (!canReinstallDeploymentSecrets(appRole)) return null;
   if (!actions?.actions.reinstallDeploymentSecrets.enabled) return null;
   return (

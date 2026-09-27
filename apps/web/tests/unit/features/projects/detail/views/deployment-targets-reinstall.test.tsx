@@ -87,12 +87,12 @@ describe("Hosting target reinstall deployment secrets", () => {
     container.remove();
   });
 
-  async function render(appRole?: AppRole) {
+  async function render(appRole?: AppRole, managementEnabled = true) {
     act(() => {
       root.render(
         <DeploymentTargetsList
           appRole={appRole}
-          managementEnabled
+          managementEnabled={managementEnabled}
           onDetached={jest.fn()}
           onTargetChanged={jest.fn()}
           projectId="proj-1"
@@ -137,6 +137,11 @@ describe("Hosting target reinstall deployment secrets", () => {
     expect(container.textContent).toContain(
       "Rewrites this target's GitHub Actions secrets, including the Vercel test bypass secret.",
     );
+  });
+
+  it("hides the button for a lead while target management is off", async () => {
+    await render("lead", false);
+    expect(reinstallButton()).toBeUndefined();
   });
 
   it("shows the button for an admin once the descriptor is enabled", async () => {
