@@ -8,9 +8,11 @@ import {
 } from "@/features/projects/deployment-logs";
 import { providerDisplayName, providerPublicUrl } from "../model/provider-urls";
 import {
+  canReinstallDeploymentSecrets,
   detachButtonLabel,
   hostingProviderLabel,
   logsToggleLabel,
+  reinstallSecretsLabel,
   saveMetadataLabel,
   targetSyncLabel,
 } from "../model/project-detail-tab-rules";
@@ -20,8 +22,10 @@ import type {
   EnvEnvironment,
   UpdateDeploymentTargetRequest,
 } from "@/features/projects";
+import type { AppRole, DeploymentTargetActionsResponse } from "@/shared/api/contracts";
 
 export function DeploymentTargetsList({
+  appRole,
   logFocus = null,
   managementEnabled,
   onDetached,
@@ -29,6 +33,7 @@ export function DeploymentTargetsList({
   projectId,
   targets,
 }: Readonly<{
+  appRole?: AppRole;
   /** Open this target's logs on mount: the Overview card asked for them. */
   logFocus?: DeploymentLogFocus | null;
   managementEnabled: boolean;
@@ -39,6 +44,8 @@ export function DeploymentTargetsList({
 }>) {
   const vm = useDeploymentTargetsViewModel({
     projectId,
+    targets,
+    appRole,
     onDetached,
     onTargetChanged,
   });
@@ -63,13 +70,14 @@ export function DeploymentTargetsList({
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "0.85rem" }}>
-      <TargetMessage message={vm.message} />
+      <TargetMessage message={vm.message} signInHref={vm.signInHref} />
       <div className="env-metadata-list" data-tour="deployment-targets">
         {targets.map((target) => (
           <DeploymentTargetCard
             key={target.id}
             target={target}
             projectId={projectId}
+            appRole={appRole}
             managementEnabled={managementEnabled}
             vm={vm}
             isDetachConfirm={detachConfirmTargetId === target.id}
@@ -114,9 +122,24 @@ export function DeploymentTargetsList({
   );
 }
 
-function TargetMessage({ message }: Readonly<{ message: string | null }>) {
+function TargetMessage({
+  message,
+  signInHref,
+}: Readonly<{ message: string | null; signInHref: string | null }>) {
   if (!message) return null;
-  return <p className="env-empty-state">{message}</p>;
+  return (
+    <p className="env-empty-state">
+      {message}
+      {signInHref ? (
+        <>
+          {" "}
+          <a className="inline-link" href={signInHref}>
+            Sign in again
+          </a>
+        </>
+      ) : null}
+    </p>
+  );
 }
 
 function openEdit(
@@ -186,6 +209,7 @@ async function requestDetach(
 function DeploymentTargetCard({
   target,
   projectId,
+  appRole,
   managementEnabled,
   vm,
   isDetachConfirm,
@@ -199,6 +223,7 @@ function DeploymentTargetCard({
 }: Readonly<{
   target: DeploymentTarget;
   projectId: string;
+  appRole?: AppRole;
   managementEnabled: boolean;
   vm: ReturnType<typeof useDeploymentTargetsViewModel>;
   isDetachConfirm: boolean;
@@ -219,6 +244,7 @@ function DeploymentTargetCard({
         <DeploymentTargetMeta target={target} />
         <DeploymentTargetActions
           target={target}
+          appRole={appRole}
           managementEnabled={managementEnabled}
           vm={vm}
           isDetachConfirm={isDetachConfirm}
@@ -317,6 +343,7 @@ function TargetPublicUrl({ href }: Readonly<{ href: string | null }>) {
 
 function DeploymentTargetActions({
   target,
+  appRole,
   managementEnabled,
   vm,
   isDetachConfirm,
@@ -328,6 +355,7 @@ function DeploymentTargetActions({
   onDetach,
 }: Readonly<{
   target: DeploymentTarget;
+  appRole?: AppRole;
   managementEnabled: boolean;
   vm: ReturnType<typeof useDeploymentTargetsViewModel>;
   isDetachConfirm: boolean;
@@ -365,6 +393,14 @@ function DeploymentTargetActions({
           {logsToggleLabel(isLogsOpen)}
         </button>
       </div>
+      <ReinstallSecretsAction
+        target={target}
+        appRole={appRole}
+        managementEnabled={managementEnabled}
+        actions={vm.targetActions[target.id]}
+        reinstalling={vm.reinstallingTargetId === target.id}
+        onReinstall={() => void vm.reinstallSecrets(target)}
+      />
       <div className="target-actions-destructive">
         <DetachConfirmCheckbox
           checked={deleteProviderResourceChecked}
@@ -384,6 +420,61 @@ function DeploymentTargetActions({
           )}
         </button>
       </div>
+    </div>
+  );
+}
+
+/**
+ * Only a team lead/admin ever sees this, and only once the server's own
+ * per-target descriptor says it is offered (e.g. not for a provider that has
+ * no CI secrets to reinstall). Disabled-with-a-reason is not rendered here —
+ * per the product call, an unavailable reinstall stays invisible rather than
+ * adding noise to an already dense actions row.
+ */
+function ReinstallSecretsAction({
+  target,
+  appRole,
+  managementEnabled,
+  actions,
+  reinstalling,
+  onReinstall,
+}: Readonly<{
+  target: DeploymentTarget;
+  appRole?: AppRole;
+  managementEnabled: boolean;
+  actions: DeploymentTargetActionsResponse | undefined;
+  reinstalling: boolean;
+  onReinstall: () => void;
+}>) {
+  // The server refuses it while target management is off, like Sync and Detach.
+  if (!managementEnabled) return null;
+  if (!canReinstallDeploymentSecrets(appRole)) return null;
+  if (!actions?.actions.reinstallDeploymentSecrets.enabled) return null;
+  return (
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        gap: "0.3rem",
+        alignItems: "flex-start",
+      }}
+    >
+      <button
+        className="ghost-button target-action-btn"
+        type="button"
+        disabled={reinstalling}
+        onClick={onReinstall}
+        aria-describedby={`reinstall-secrets-hint-${target.id}`}
+      >
+        {reinstallSecretsLabel(reinstalling)}
+      </button>
+      <small
+        id={`reinstall-secrets-hint-${target.id}`}
+        style={{ color: "var(--text-muted)", maxWidth: "26rem" }}
+      >
+        Rewrites this target&apos;s GitHub Actions secrets, including the
+        Vercel test bypass secret.
+      </small>
     </div>
   );
 }

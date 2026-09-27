@@ -4,6 +4,7 @@ import {
   createWorkflowUpdatePullRequest as requestWorkflowUpdatePullRequest,
   detachDeploymentTarget as requestDetachDeploymentTarget,
   disconnectProject,
+  getDeploymentTargetActions,
   getProjectAuditEvents,
   getProjectCiRuns,
   getProjectDeployments,
@@ -13,6 +14,7 @@ import {
   getProjectPreviews,
   getWorkflowSettings,
   previewWorkflowSettings as requestPreviewWorkflowSettings,
+  reinstallDeploymentSecrets as requestReinstallDeploymentSecrets,
   removeProjectDomain,
   repairProjectDriftFinding,
   runProjectDriftDetection,
@@ -24,6 +26,7 @@ import {
 
 import type {
   DeploymentTarget,
+  DeploymentTargetActionsResponse,
   DeploymentTargetSyncResponse,
   DetachDeploymentTargetResponse,
   DisconnectProjectResponse,
@@ -33,6 +36,7 @@ import type {
   ProjectDriftRepairAction,
   ProjectDriftResponse,
   ProjectSyncSnapshotResponse,
+  ReinstallDeploymentSecretsResponse,
   UpdateDeploymentTargetRequest,
   WorkflowSettings,
   WorkflowSettingsPreviewResponse,
@@ -190,5 +194,21 @@ export const projectsRepository = {
     return requestDetachDeploymentTarget(projectId, targetId, {
       deleteProviderResource,
     });
+  },
+
+  /** Which management actions a target currently offers, and why not otherwise. */
+  targetActions(
+    projectId: string,
+    targetId: string,
+  ): Promise<DeploymentTargetActionsResponse> {
+    return getDeploymentTargetActions(projectId, targetId);
+  },
+
+  /** Rewrites a target's GitHub Actions secrets from the provider's current state. */
+  reinstallDeploymentSecrets(
+    projectId: string,
+    targetId: string,
+  ): Promise<ReinstallDeploymentSecretsResponse> {
+    return requestReinstallDeploymentSecrets(projectId, targetId);
   },
 };
