@@ -364,6 +364,18 @@ export interface DeploymentTargetActionsResponse {
   };
 }
 
+/**
+ * A completed secrets reinstall: the target's GitHub Actions secrets (and,
+ * where applicable, repository variables) were rewritten from the provider's
+ * current state. The record values are secret/variable NAMES the server
+ * wrote — never the underlying secret values.
+ */
+export interface ReinstallDeploymentSecretsResponse {
+  reinstalled: true;
+  githubSecrets: Record<string, string>;
+  githubVariables?: Record<string, string>;
+}
+
 export interface EnvVarMetadata {
   id: string;
   projectId: string;

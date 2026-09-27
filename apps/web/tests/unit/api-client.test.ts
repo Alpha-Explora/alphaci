@@ -24,6 +24,7 @@ import {
   deleteProjectEnvMetadata,
   detachDeploymentTarget,
   getDeploymentTargetActions,
+  reinstallDeploymentSecrets,
   getProjectDeployments,
   getProjectDrift,
   getProjectCiRun,
@@ -940,6 +941,33 @@ describe("API client project setup helpers", () => {
     expect(fetchMock).toHaveBeenCalledWith(
       "http://localhost:4000/api/v1/projects/project-1/deployment-targets/target-1/actions",
       expect.objectContaining({ credentials: "include" }),
+    );
+  });
+
+  it("reinstalls a deployment target's GitHub Actions secrets", async () => {
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        reinstalled: true,
+        githubSecrets: { renderDeployHook: "RENDER_DEPLOY_HOOK_URL" },
+        githubVariables: { vercelTestBypass: "VERCEL_TEST_BYPASS_TOKEN" },
+      }),
+    });
+
+    await expect(
+      reinstallDeploymentSecrets("project-1", "target-1"),
+    ).resolves.toMatchObject({
+      reinstalled: true,
+      githubSecrets: { renderDeployHook: "RENDER_DEPLOY_HOOK_URL" },
+    });
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      "http://localhost:4000/api/v1/projects/project-1/deployment-targets/target-1/reinstall-secrets",
+      expect.objectContaining({
+        credentials: "include",
+        method: "POST",
+      }),
     );
   });
 

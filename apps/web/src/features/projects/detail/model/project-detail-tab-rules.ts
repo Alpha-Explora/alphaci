@@ -7,6 +7,7 @@ import type {
   ProjectDriftRepairAction,
   ProjectOverviewResponse,
   ProvisionedProject,
+  ReinstallDeploymentSecretsResponse,
   WorkflowFileMetadata,
   WorkflowSettings,
 } from "@/shared/api/contracts";
@@ -528,4 +529,129 @@ export function applyTargetDetached(
 ): ProjectOverviewResponse | null {
   if (!current || current.project.id !== projectId) return current;
   return removeDeploymentTarget(current, targetId);
+}
+
+/* ── Reinstall deployment secrets ────────────────────────────────────────── */
+
+/**
+ * Team leads and Admins reinstall a target's secrets; every other role
+ * (including QA Team) only ever sees Sync/Detach. Mirrors the merge-only
+ * role rule QA Studio uses, kept local so this model does not reach across
+ * the checklists feature for one predicate.
+ */
+const DEPLOYMENT_SECRETS_ROLES: ReadonlySet<AppRole> = new Set<AppRole>(["lead", "admin"]);
+
+export function canReinstallDeploymentSecrets(
+  appRole: AppRole | null | undefined,
+): boolean {
+  return appRole != null && DEPLOYMENT_SECRETS_ROLES.has(appRole);
+}
+
+export function reinstallSecretsLabel(reinstalling: boolean): string {
+  if (reinstalling) return "Reinstalling…";
+  return "Reinstall deployment secrets";
+}
+
+/** Every string value in a loosely-typed record, in insertion order. */
+function stringValues(
+  record: Record<string, unknown> | null | undefined,
+): string[] {
+  if (!record) return [];
+  return Object.values(record).filter(
+    (value): value is string => typeof value === "string" && value.trim().length > 0,
+  );
+}
+
+/**
+ * The secret and variable names the server (re)wrote, read defensively: a
+ * response missing either field still renders a calm confirmation instead of
+ * throwing.
+ */
+export function reinstallSecretsSuccessMessage(
+  response: Partial<
+    Pick<ReinstallDeploymentSecretsResponse, "githubSecrets" | "githubVariables">
+  >,
+): string {
+  const names = [
+    ...stringValues(response.githubSecrets),
+    ...stringValues(response.githubVariables),
+  ];
+  if (!names.length) return "Deployment secrets reinstalled.";
+  return `Deployment secrets reinstalled: ${names.join(", ")}.`;
+}
+
+export interface ReinstallSecretsFailure {
+  message: string;
+  /** Set only for a 401: where the "Sign in again" link should point. */
+  signInHref: string | null;
+}
+
+function reinstallErrorStatus(cause: unknown): number | null {
+  const status = (cause as { status?: unknown } | null | undefined)?.status;
+  return typeof status === "number" ? status : null;
+}
+
+function reinstallErrorDetails(cause: unknown): unknown {
+  return (cause as { details?: unknown } | null | undefined)?.details;
+}
+
+/** The raw `message` a JSON error body carries — a string, a validator array, or absent. */
+function messageFromDetails(details: unknown): unknown {
+  if (typeof details === "string") return details;
+  if (typeof details !== "object" || details === null || !("message" in details)) {
+    return null;
+  }
+  return (details as { message?: unknown }).message;
+}
+
+function normalizeMessageText(message: unknown): string | null {
+  if (typeof message === "string") return message.trim() || null;
+  if (!Array.isArray(message)) return null;
+  const joined = message
+    .filter((part): part is string => typeof part === "string")
+    .join(" ")
+    .trim();
+  return joined || null;
+}
+
+function reinstallErrorServerMessage(cause: unknown): string | null {
+  return normalizeMessageText(messageFromDetails(reinstallErrorDetails(cause)));
+}
+
+/** Where "Sign in again" goes: login, then back to this project. */
+export function reinstallSecretsSignInHref(projectId: string): string {
+  return `/login?next=/projects/${encodeURIComponent(projectId)}`;
+}
+
+/**
+ * What to show for a failed reinstall. 401 means the stored GitHub token is
+ * gone or stale (the server's own message says as much) — surfaced with a
+ * sign-in link rather than the raw server text. 403 is the role gate itself
+ * somehow being wrong (stale UI). Anything else, including 400, shows the
+ * server's own reason (e.g. "vercel has no CI secrets to reinstall...").
+ */
+export function reinstallSecretsFailure(
+  cause: unknown,
+  projectId: string,
+): ReinstallSecretsFailure {
+  const status = reinstallErrorStatus(cause);
+  if (status === 401) {
+    return {
+      message:
+        "GitHub needs you to sign in again before ALPHACI can reinstall this target's secrets.",
+      signInHref: reinstallSecretsSignInHref(projectId),
+    };
+  }
+  if (status === 403) {
+    return {
+      message: "Only team leads and admins can reinstall deployment secrets.",
+      signInHref: null,
+    };
+  }
+  return {
+    message:
+      reinstallErrorServerMessage(cause) ??
+      "Unable to reinstall deployment secrets. Try again in a moment.",
+    signInHref: null,
+  };
 }

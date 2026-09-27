@@ -23,6 +23,7 @@ import type {
   ProjectOverviewResponse,
   ProjectSyncSnapshotResponse,
   ProvisionedProjectsResponse,
+  ReinstallDeploymentSecretsResponse,
   SetupProjectRequest,
   SetupProjectResponse,
   UpdateDeploymentTargetRequest,
@@ -269,6 +270,23 @@ export async function getDeploymentTargetActions(
 ): Promise<DeploymentTargetActionsResponse> {
   return request<DeploymentTargetActionsResponse>(
     `/projects/${encodeURIComponent(projectId)}/deployment-targets/${encodeURIComponent(targetId)}/actions`,
+  );
+}
+
+/**
+ * Rewrites this target's GitHub Actions secrets (and, where applicable,
+ * variables) from the provider's current state. No body. Only offered when
+ * `getDeploymentTargetActions` reports `reinstallDeploymentSecrets.enabled`.
+ */
+export async function reinstallDeploymentSecrets(
+  projectId: string,
+  targetId: string,
+): Promise<ReinstallDeploymentSecretsResponse> {
+  return request<ReinstallDeploymentSecretsResponse>(
+    `/projects/${encodeURIComponent(projectId)}/deployment-targets/${encodeURIComponent(targetId)}/reinstall-secrets`,
+    {
+      method: "POST",
+    },
   );
 }
 

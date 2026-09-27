@@ -44,6 +44,7 @@ export function HostingTab({
         response={vm.deployments}
       />
       <DeploymentTargetsList
+        appRole={vm.appRole}
         logFocus={vm.logFocus}
         managementEnabled={vm.projectTargetManagementEnabled}
         onDetached={vm.handleTargetDetached}
