@@ -7,6 +7,12 @@ export type SubscriptionPlan = "free" | "pro";
 export type SubscriptionStatus = "inactive" | "active" | "canceled";
 export type EnvProvider = "render" | "vercel";
 /**
+ * Providers a deployment target can name. On-prem hosts are attached to
+ * environments, not chosen in the create-project studio, so they extend the
+ * provisioning providers here only.
+ */
+export type DeploymentTargetProvider = EnvProvider | "onprem-compose";
+/**
  * Render's own environment naming on a deployment target. NOT the env-var lane
  * — that is EnvLane. The two used to be one type, which made a Render service
  * name and an environment-variable scope move together.
@@ -228,9 +234,11 @@ export interface CreateProviderConnectionRequest {
 export interface DeploymentTarget {
   id: string;
   projectId: string;
+  /** Project environment this target deploys; null on the legacy branch path. */
+  environmentId?: string | null;
   slot: EnvTargetSlot;
   ownershipMode: EnvOwnershipMode;
-  provider: EnvProvider;
+  provider: DeploymentTargetProvider;
   providerConnectionId: string | null;
   providerProjectId: string;
   providerProjectName: string;

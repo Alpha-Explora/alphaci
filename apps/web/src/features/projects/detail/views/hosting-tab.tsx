@@ -7,6 +7,7 @@ import { providerDisplayName } from "../model/provider-urls";
 import type { ProjectDetailTabsViewModel } from "../view-models/use-project-detail-tabs-view-model";
 import { DeploymentHistoryList } from "./deployment-history-list";
 import { DeploymentTargetsList } from "./deployment-targets-list";
+import { EnvironmentOperationsPanel } from "./environment-operations-panel";
 import { ProjectEnvPanel } from "./project-env-panel";
 
 export function HostingTab({
@@ -25,6 +26,10 @@ export function HostingTab({
         gap: "1rem",
       }}
     >
+      <EnvironmentOperationsPanel
+        projectId={project.id}
+        targets={vm.deploymentTargets}
+      />
       <HostingProvisionPrompt
         envEnabled={vm.envProvisioningEnabled}
         hasTargets={vm.deploymentTargets.length > 0}

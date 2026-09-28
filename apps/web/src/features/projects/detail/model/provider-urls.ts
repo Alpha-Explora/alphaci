@@ -68,5 +68,7 @@ export function providerPublicUrl(target: DeploymentTarget): string | null {
 export function providerDisplayName(
   provider: DeploymentTarget["provider"],
 ): string {
-  return provider === "vercel" ? "Vercel" : "Render";
+  if (provider === "vercel") return "Vercel";
+  if (provider === "onprem-compose") return "On-prem host";
+  return "Render";
 }
