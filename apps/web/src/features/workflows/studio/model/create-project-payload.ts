@@ -1,4 +1,8 @@
 import type { CreateProjectRequest, MvpProjectOptionKey } from "@/shared/api/contracts";
+import {
+  environmentsProblem,
+  type EnvironmentDraft,
+} from "./project-environments-rules";
 import { toSlug } from "./workflow-studio-rules";
 
 export type CreateProjectPayloadResult =
@@ -30,6 +34,8 @@ export interface CreateProjectPayloadInput {
   ownerType?: "personal" | "organization";
   installationId?: number;
   deploymentProvisioning?: CreateProjectRequest["deploymentProvisioning"];
+  /** Set only when the user chose to define environments. */
+  environments?: readonly EnvironmentDraft[];
 }
 
 function sanitizeRepoNameInput(value: string): string {
@@ -176,6 +182,12 @@ function standalonePayload(input: CreateProjectPayloadInput): CreateProjectPaylo
   if (!input.workflowRecipeId) {
     return { ok: false, message: "Choose a workflow recipe." };
   }
+  const environmentsInvalid = input.environments
+    ? environmentsProblem(input.environments)
+    : null;
+  if (environmentsInvalid) {
+    return { ok: false, message: environmentsInvalid };
+  }
   const normalizedRepoName = normalizeRepoName(input.repoName);
   const coverage = Number(input.coverageThreshold);
   const outputFileName = input.outputFileName.trim() || "ci.yml";
@@ -187,7 +199,19 @@ function standalonePayload(input: CreateProjectPayloadInput): CreateProjectPaylo
       workflowRecipeId: input.workflowRecipeId,
       serviceName: toSlug(input.serviceName || normalizedRepoName),
       servicePath: input.servicePath.trim() || ".",
+      ...(input.environments
+        ? { environments: input.environments.map(trimmedEnvironment) }
+        : {}),
     },
+  };
+}
+
+function trimmedEnvironment(environment: EnvironmentDraft): EnvironmentDraft {
+  return {
+    slug: environment.slug.trim(),
+    displayName: environment.displayName.trim(),
+    sourceBranch: environment.sourceBranch.trim(),
+    role: environment.role,
   };
 }
 

@@ -7,6 +7,10 @@ import {
   buildCreateProjectPayload,
   sanitizeRepoNameInput,
 } from "../model/create-project-payload";
+import {
+  ENVIRONMENT_TEMPLATE,
+  type EnvironmentDraft,
+} from "../model/project-environments-rules";
 import { effectiveDualServiceName } from "../model/setup-tab-rules";
 import { toSlug } from "../model/workflow-studio-rules";
 
@@ -31,6 +35,11 @@ export function useCreateProjectForm() {
   const [coverageThreshold, setCoverageThreshold] = useState("80");
   const [outputFileName, setOutputFileName] = useState("ci.yml");
   const [serviceNameTouched, setServiceNameTouched] = useState(false);
+  // Opt-in: without it the project keeps the fixed dev, uat, main path.
+  const [environmentsEnabled, setEnvironmentsEnabled] = useState(false);
+  const [environments, setEnvironments] = useState<EnvironmentDraft[]>([
+    ...ENVIRONMENT_TEMPLATE,
+  ]);
 
   // Microservices dual-slot state
   const [backendProjectTypeId, setBackendProjectTypeId] = useState("nestjs");
@@ -102,6 +111,7 @@ export function useCreateProjectForm() {
       frontendWorkflowRecipeId,
       frontendServiceName: effectiveFrontendServiceName,
       frontendServicePath,
+      ...(environmentsEnabled ? { environments } : {}),
       ...input,
     });
   }
@@ -113,6 +123,8 @@ export function useCreateProjectForm() {
     backendWorkflowRecipeId,
     buildPayload,
     coverageThreshold,
+    environments,
+    environmentsEnabled,
     frontendProjectTypeId,
     frontendServiceName: effectiveFrontendServiceName,
     frontendServicePath,
@@ -127,6 +139,8 @@ export function useCreateProjectForm() {
     setBackendServicePath,
     setBackendWorkflowRecipeId,
     setCoverageThreshold,
+    setEnvironments,
+    setEnvironmentsEnabled,
     setFrontendProjectTypeId,
     setFrontendServiceName,
     setFrontendServicePath,

@@ -10,6 +10,7 @@ import type { CreateProjectFormState } from "../view-models/use-create-project-f
 import type { DeploymentProvisioningFormState } from "../view-models/use-deployment-provisioning-form";
 import type { ProjectOptionsCatalogState } from "../view-models/use-project-options-catalog";
 import { DeploymentProvisioningSetup } from "./deployment-provisioning-setup";
+import { SetupWizardEnvironments } from "./setup-wizard-environments";
 import type { WizardStepProps } from "./setup-wizard-props";
 
 function applyDeploymentDefaults(
@@ -143,6 +144,9 @@ export function SetupWizardDelivery({
 }: Readonly<WizardStepProps>) {
   return (
     <>
+      {projectCatalog.isMicroservicesShape || projectCatalog.isMultiRepoShape ? null : (
+        <SetupWizardEnvironments form={form} />
+      )}
       <DeliveryProvisioningPanel
         deploymentOwnershipMode={deploymentOwnershipMode}
         deploymentProvisioning={deploymentProvisioning}

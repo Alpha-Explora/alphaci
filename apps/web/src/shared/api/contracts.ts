@@ -752,6 +752,16 @@ export interface SetupProjectRequest extends GenerateWorkflowRequest {
   deploymentProvisioning?: DeploymentProvisioningRequest;
   /** Group/workspace to create this project inside (from ?group=<id>). */
   workspaceId?: string;
+  /**
+   * The project's ordered environments (single-repository projects only).
+   * Omit it to create the project on the fixed dev, uat, main branch path.
+   */
+  environments?: Array<{
+    slug: string;
+    displayName: string;
+    sourceBranch: string;
+    role: "production" | "non_production";
+  }>;
 }
 
 export interface GenerateWorkflowResponse {
