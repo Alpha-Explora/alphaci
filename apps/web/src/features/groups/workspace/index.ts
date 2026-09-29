@@ -21,6 +21,7 @@ export { SideTabs, type SideTabGroup, type SideTabItem } from "./views/side-tabs
 export {
   Avatar,
   Breadcrumb,
+  Dialog,
   FormDialog,
   GroupSubNav,
   LoadingRows,

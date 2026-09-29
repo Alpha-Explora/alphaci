@@ -8,6 +8,10 @@ import type { ReactNode } from "react";
 import { createRepositoryHref, moveTargets } from "../model/project-folder-rules";
 import { useCreateProjectFolderViewModel } from "../view-models/use-create-project-folder-view-model";
 import {
+  useDeleteProjectViewModel,
+  type DeleteProjectViewModel,
+} from "../view-models/use-delete-project-view-model";
+import {
   useMoveRepositoryViewModel,
   type MoveRepositoryViewModel,
 } from "../view-models/use-move-repository-view-model";
@@ -15,7 +19,7 @@ import {
   useProjectFoldersViewModel,
   type ProjectFoldersViewModel,
 } from "../view-models/use-project-folders-view-model";
-import { MoveRepositoryDialog, NewProjectDialog } from "./project-folder-dialogs";
+import { DeleteProjectDialog, MoveRepositoryDialog, NewProjectDialog } from "./project-folder-dialogs";
 import { ProjectFolderDetail } from "./project-folder-detail";
 import { CloseIcon, PlusIcon } from "./project-folder-icons";
 import { ProjectFolderList } from "./project-folder-list";
@@ -43,6 +47,23 @@ function ListHead({
           </button>
         ) : null}
       </div>
+    </div>
+  );
+}
+
+function DeleteNoticeBanner({ del }: Readonly<{ del: DeleteProjectViewModel }>) {
+  if (!del.notice) return null;
+  return (
+    <div className="pf-notice" role="status">
+      <p className="pf-notice__text">{del.notice}</p>
+      <button
+        type="button"
+        className="pf-notice__close"
+        aria-label="Dismiss"
+        onClick={del.dismissNotice}
+      >
+        <CloseIcon />
+      </button>
     </div>
   );
 }
@@ -90,14 +111,21 @@ function MoveNoticeBanner({
  */
 export function ProjectExplorer({ vm }: Readonly<{ vm: ProjectFoldersViewModel }>) {
   const move = useMoveRepositoryViewModel({ onChanged: vm.reload });
+  const del = useDeleteProjectViewModel({ onDeleted: vm.closeFolder, onChanged: vm.reload });
   const create = useCreateProjectFolderViewModel({ groupId: vm.groupId, onCreated: vm.reload });
   const folder = vm.selected;
 
   return (
     <div className="pf-section">
       <MoveNoticeBanner move={move} canManage={vm.canManage} />
+      <DeleteNoticeBanner del={del} />
       {folder ? (
-        <ProjectFolderDetail vm={vm} folder={folder} onMove={(repo) => move.openFor(repo, folder)} />
+        <ProjectFolderDetail
+          vm={vm}
+          folder={folder}
+          onMove={(repo) => move.openFor(repo, folder)}
+          onDelete={() => del.openFor(folder)}
+        />
       ) : (
         <>
           <ListHead vm={vm} onCreate={create.openDialog} />
@@ -114,6 +142,7 @@ export function ProjectExplorer({ vm }: Readonly<{ vm: ProjectFoldersViewModel }
         vm={move}
         targets={move.source ? moveTargets(vm.folders, move.source.deliveryProjectId) : []}
       />
+      <DeleteProjectDialog vm={del} />
     </div>
   );
 }

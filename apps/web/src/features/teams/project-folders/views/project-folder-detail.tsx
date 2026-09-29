@@ -292,15 +292,38 @@ function FolderChecklistsSection({
   );
 }
 
+function ProjectFolderDangerZone({
+  folder,
+  onDelete,
+}: Readonly<{ folder: ProjectFolder; onDelete: () => void }>) {
+  return (
+    <section className="pf-detail__block pf-danger" aria-labelledby="pf-danger-title">
+      <h4 className="pf-subhead" id="pf-danger-title">
+        Danger zone
+      </h4>
+      <div className="pf-danger__row">
+        <p className="pf-note">
+          Delete {folder.name} and every repository inside it. This cannot be undone.
+        </p>
+        <button type="button" className="pf-delete-submit" onClick={onDelete}>
+          Delete Project
+        </button>
+      </div>
+    </section>
+  );
+}
+
 /** One Project: its repositories, what verifies it, and its checklists. */
 export function ProjectFolderDetail({
   vm,
   folder,
   onMove,
+  onDelete,
 }: Readonly<{
   vm: ProjectFoldersViewModel;
   folder: ProjectFolder;
   onMove: (repository: FolderRepository) => void;
+  onDelete: () => void;
 }>) {
   const canMove = vm.canManage && vm.folders.length > 1;
   return (
@@ -342,6 +365,8 @@ export function ProjectFolderDetail({
       </section>
 
       <FolderChecklistsSection vm={vm} folder={folder} />
+
+      {vm.canManage ? <ProjectFolderDangerZone folder={folder} onDelete={onDelete} /> : null}
     </div>
   );
 }

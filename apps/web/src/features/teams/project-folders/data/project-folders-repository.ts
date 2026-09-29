@@ -5,12 +5,15 @@ import { request } from "@/shared/api/request";
 import {
   normaliseChecklist,
   normaliseChecklists,
+  normaliseDeleteOutcome,
   normaliseMoveOutcome,
   normaliseProjectFolders,
 } from "../model/project-folder-rules";
 import type {
   ChecklistProjectsPatch,
   CreateProjectFolderRequest,
+  DeleteProjectFolderRequest,
+  DeleteProjectOutcome,
   FolderChecklist,
   MoveOutcome,
   MoveRepositoryRequest,
@@ -49,6 +52,18 @@ export const projectFoldersRepository = {
   /** Hide an emptied Project (reuses the existing delivery-project archive). */
   async archive(deliveryProjectId: string): Promise<void> {
     await archiveDeliveryProject(deliveryProjectId);
+  },
+
+  /** Deletes a Project and every repository inside it. Irreversible. Lead/admin only. */
+  async deleteProject(
+    deliveryProjectId: string,
+    input: DeleteProjectFolderRequest,
+  ): Promise<DeleteProjectOutcome> {
+    const raw = await request<unknown>(`/delivery-projects/${enc(deliveryProjectId)}`, {
+      method: "DELETE",
+      body: JSON.stringify(input),
+    });
+    return normaliseDeleteOutcome(raw, deliveryProjectId);
   },
 
   /** The team's live checklists, for the per-Project count and attach list. */

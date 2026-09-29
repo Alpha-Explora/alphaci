@@ -655,6 +655,120 @@ a.pf-chip:focus-visible {
   white-space: nowrap;
 }
 
+/* ── Danger zone ───────────────────────────────────────────────────────── */
+.pf-danger {
+  padding-top: 0.9rem;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.pf-danger__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.75rem 1rem;
+}
+
+.pf-danger .pf-note {
+  flex: 1 1 18rem;
+}
+
+.pf-delete-submit {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.1rem;
+  padding: 0.4rem 0.85rem;
+  border: 1px solid var(--border-danger);
+  border-radius: 0.55rem;
+  background: var(--danger-light);
+  color: var(--danger);
+  font-size: 0.8rem;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.pf-delete-submit:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--danger) 20%, transparent);
+  border-color: color-mix(in srgb, var(--danger) 60%, transparent);
+}
+
+.pf-delete-submit:focus-visible {
+  outline: 2px solid var(--danger);
+  outline-offset: 2px;
+}
+
+.pf-delete-submit:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.pf-delete-repos {
+  list-style: none;
+  margin: 0 0 0.85rem;
+  padding: 0;
+  display: grid;
+  gap: 0.35rem;
+  max-height: 12rem;
+  overflow-y: auto;
+}
+
+.pf-delete-repos__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  padding: 0.4rem 0.6rem;
+  border: 1px solid var(--border-subtle);
+  border-radius: 0.5rem;
+  font-size: 0.8rem;
+}
+
+.pf-delete-repos__name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-primary);
+}
+
+.pf-delete-repos__link {
+  flex-shrink: 0;
+  font-size: 0.72rem;
+  color: var(--accent-teal);
+}
+
+.pf-delete-repos__link--none {
+  color: var(--text-muted);
+}
+
+.pf-delete-optins {
+  display: grid;
+  gap: 0.5rem;
+  margin: 0 0 0.85rem;
+  padding: 0;
+  border: 0;
+}
+
+.pf-delete-optin {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.pf-delete-optin input {
+  margin-top: 0.15rem;
+  flex-shrink: 0;
+}
+
 @media (max-width: 640px) {
   .pf-head-actions {
     width: 100%;
@@ -678,13 +792,23 @@ a.pf-chip:focus-visible {
   .pf-detail__actions > * {
     justify-content: center;
   }
+
+  .pf-danger__row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .pf-danger__row .pf-delete-submit {
+    width: 100%;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .pf-card,
   .pf-chip,
   .pf-card__chevron,
-  .pf-target {
+  .pf-target,
+  .pf-delete-submit {
     transition: none;
   }
 

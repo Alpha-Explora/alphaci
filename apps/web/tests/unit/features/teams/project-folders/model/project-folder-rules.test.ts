@@ -6,17 +6,24 @@ import {
   checklistPatchErrorMessage,
   createErrorMessage,
   createRepositoryHref,
+  deleteConfirmMatches,
+  deleteErrorMessage,
+  deleteNoticeText,
+  deletePartialFailure,
   detachPatch,
   findFolder,
   folderChecklists,
   folderProjectIds,
   isConflict,
+  isDeleteConflict,
   loadErrorMessage,
   moveErrorMessage,
   moveTargets,
   MOVE_CONFLICT_MESSAGE,
+  DELETE_NAME_MISMATCH_MESSAGE,
   normaliseChecklist,
   normaliseChecklists,
+  normaliseDeleteOutcome,
   normaliseMoveOutcome,
   normaliseProjectFolders,
   projectDashboardHref,
@@ -248,5 +255,98 @@ describe("validation and errors", () => {
     expect(createErrorMessage(null)).toMatch(/could not be created/);
     expect(checklistPatchErrorMessage(apiError(409))).toMatch(/archived/);
     expect(checklistPatchErrorMessage(apiError(500))).toMatch(/could not be updated/);
+  });
+});
+
+describe("delete Project", () => {
+  it("requires an exact name match to submit", () => {
+    expect(deleteConfirmMatches("testfinals", "testfinals")).toBe(true);
+    expect(deleteConfirmMatches("Testfinals", "testfinals")).toBe(false);
+    expect(deleteConfirmMatches("testfinals ", "testfinals")).toBe(false);
+    expect(deleteConfirmMatches("", "testfinals")).toBe(false);
+  });
+
+  it("reads the 200 outcome defensively, falling back to the requested id", () => {
+    expect(
+      normaliseDeleteOutcome(
+        {
+          deliveryProjectId: "dp-1",
+          name: "testfinals",
+          deletedRepositories: [
+            { repositoryId: "repo-fe", name: "testfinals-fe", projectId: "proj-fe", githubRepoDeleted: true },
+            { repositoryId: "repo-be", name: "testfinals-be", projectId: null, githubRepoDeleted: false },
+          ],
+        },
+        "dp-1",
+      ),
+    ).toEqual({
+      deliveryProjectId: "dp-1",
+      name: "testfinals",
+      deletedRepositories: [
+        { repositoryId: "repo-fe", name: "testfinals-fe", projectId: "proj-fe", githubRepoDeleted: true },
+        { repositoryId: "repo-be", name: "testfinals-be", projectId: null, githubRepoDeleted: false },
+      ],
+    });
+    expect(normaliseDeleteOutcome(null, "dp-9")).toEqual({
+      deliveryProjectId: "dp-9",
+      name: "",
+      deletedRepositories: [],
+    });
+    expect(normaliseDeleteOutcome({ deletedRepositories: [{ name: "no id" }, {}] }, "dp-9").deletedRepositories).toEqual(
+      [],
+    );
+  });
+
+  it("builds the explorer's status notice", () => {
+    expect(
+      deleteNoticeText({ deliveryProjectId: "dp-1", name: "testfinals", deletedRepositories: [{ repositoryId: "r-1", name: "x", projectId: null, githubRepoDeleted: false }] }),
+    ).toBe("Deleted testfinals and 1 repository.");
+    expect(deleteNoticeText({ deliveryProjectId: "dp-1", name: "wallet", deletedRepositories: [] })).toBe(
+      "Deleted wallet and 0 repositories.",
+    );
+  });
+
+  it("maps every non-409 delete failure, including the named 400 mismatch code", () => {
+    expect(deleteErrorMessage(apiError(400, { code: "DELIVERY_PROJECT_NAME_MISMATCH" }))).toBe(
+      DELETE_NAME_MISMATCH_MESSAGE,
+    );
+    expect(deleteErrorMessage(apiError(400, { code: "SOMETHING_ELSE" }))).toMatch(/could not be deleted/);
+    expect(deleteErrorMessage(apiError(403))).toMatch(/Team lead or admin/);
+    expect(deleteErrorMessage(apiError(404))).toMatch(/no longer exists/);
+    expect(deleteErrorMessage(apiError(429))).toMatch(/Too many requests/);
+    expect(deleteErrorMessage(new Error("offline"))).toMatch(/could not be deleted/);
+    expect(isDeleteConflict(apiError(409))).toBe(true);
+    expect(isDeleteConflict(apiError(400))).toBe(false);
+  });
+
+  it("reads the 409 partial-failure body, keeping what was actually deleted", () => {
+    const failure = deletePartialFailure(
+      apiError(409, {
+        code: "PROVIDER_DELETE_FAILED",
+        message: "testfinals-be could not be removed from Render. Try again.",
+        deletedRepositories: [
+          { repositoryId: "repo-fe", name: "testfinals-fe", projectId: "proj-fe", githubRepoDeleted: true },
+        ],
+        failedRepository: { repositoryId: "repo-be", name: "testfinals-be" },
+      }),
+    );
+    expect(failure).toEqual({
+      code: "PROVIDER_DELETE_FAILED",
+      message: "testfinals-be could not be removed from Render. Try again.",
+      deletedRepositories: [
+        { repositoryId: "repo-fe", name: "testfinals-fe", projectId: "proj-fe", githubRepoDeleted: true },
+      ],
+      failedRepository: { repositoryId: "repo-be", name: "testfinals-be" },
+    });
+  });
+
+  it("falls back to a generic message and empty lists when the 409 body is malformed", () => {
+    expect(deletePartialFailure(apiError(409))).toEqual({
+      code: "",
+      message: "Some repositories could not be deleted. Try again in a moment.",
+      deletedRepositories: [],
+      failedRepository: null,
+    });
+    expect(deletePartialFailure(apiError(409, { failedRepository: { name: "no id" } })).failedRepository).toBeNull();
   });
 });
