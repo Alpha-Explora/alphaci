@@ -6,6 +6,9 @@
 
 import type {
   ChecklistAttachment,
+  DeletedRepository,
+  DeleteProjectFailure,
+  DeleteProjectOutcome,
   FolderChecklist,
   FolderProject,
   FolderRepository,
@@ -153,6 +156,28 @@ export function normaliseMoveOutcome(value: unknown): MoveOutcome {
     moved: raw.moved !== false,
     sourceDeliveryProjectId: readOptionalString(raw.sourceDeliveryProjectId),
     sourceDeliveryProjectEmpty: raw.sourceDeliveryProjectEmpty === true,
+  };
+}
+
+function readDeletedRepository(value: unknown): DeletedRepository | null {
+  const raw = asRecord(value);
+  const repositoryId = readOptionalString(raw?.repositoryId);
+  if (!raw || !repositoryId) return null;
+  return {
+    repositoryId,
+    name: readOptionalString(raw.name) ?? "Unnamed repository",
+    projectId: readOptionalString(raw.projectId),
+    githubRepoDeleted: raw.githubRepoDeleted === true,
+  };
+}
+
+/** The 200 body of DELETE /delivery-projects/:id. */
+export function normaliseDeleteOutcome(value: unknown, requestedId: string): DeleteProjectOutcome {
+  const raw = asRecord(value) ?? {};
+  return {
+    deliveryProjectId: readOptionalString(raw.deliveryProjectId) ?? requestedId,
+    name: readOptionalString(raw.name) ?? "",
+    deletedRepositories: asArray(raw.deletedRepositories).map(readDeletedRepository).filter(isPresent),
   };
 }
 
@@ -305,6 +330,16 @@ function errorStatus(cause: unknown): number | null {
   return typeof raw?.status === "number" ? raw.status : null;
 }
 
+/** The parsed JSON error body ApiError carries in `details`, or `{}`. */
+function errorDetails(cause: unknown): Json {
+  const raw = asRecord(cause);
+  return asRecord(raw?.details) ?? {};
+}
+
+function errorCode(cause: unknown): string | null {
+  return readOptionalString(errorDetails(cause).code);
+}
+
 const LOAD_MESSAGES: Record<number, string> = {
   401: "Your session expired. Please sign in again.",
   403: "You do not have access to this team's Projects.",
@@ -352,4 +387,60 @@ const CHECKLIST_MESSAGES: Record<number, string> = {
 
 export function checklistPatchErrorMessage(cause: unknown): string {
   return CHECKLIST_MESSAGES[errorStatus(cause) ?? 0] ?? "The checklist could not be updated. Try again in a moment.";
+}
+
+/* ── Delete Project ─────────────────────────────────────────────────────── */
+
+export const DELETE_NAME_MISMATCH_MESSAGE = "That name doesn't match. Type it exactly to confirm.";
+
+const DELETE_MESSAGES: Record<number, string> = {
+  403: "Only a Team lead or admin can delete this Project.",
+  404: "This Project no longer exists. Refresh and try again.",
+  429: "Too many requests. Try again in a moment.",
+};
+
+/** Display-string mapping for every non-409 delete failure. */
+export function deleteErrorMessage(cause: unknown): string {
+  const status = errorStatus(cause);
+  if (status === 400 && errorCode(cause) === "DELIVERY_PROJECT_NAME_MISMATCH") {
+    return DELETE_NAME_MISMATCH_MESSAGE;
+  }
+  return DELETE_MESSAGES[status ?? 0] ?? "The Project could not be deleted. Try again in a moment.";
+}
+
+export function isDeleteConflict(cause: unknown): boolean {
+  return errorStatus(cause) === 409;
+}
+
+function readFailedRepository(value: unknown): { repositoryId: string; name: string } | null {
+  const raw = asRecord(value);
+  const repositoryId = readOptionalString(raw?.repositoryId);
+  if (!raw || !repositoryId) return null;
+  return { repositoryId, name: readOptionalString(raw.name) ?? "that repository" };
+}
+
+const DELETE_PARTIAL_FALLBACK = "Some repositories could not be deleted. Try again in a moment.";
+
+/**
+ * The 409 body: one repository failed (a provider call, most likely), so the
+ * Project is kept with whatever it managed to delete before that.
+ */
+export function deletePartialFailure(cause: unknown): DeleteProjectFailure {
+  const details = errorDetails(cause);
+  return {
+    code: readOptionalString(details.code) ?? "",
+    message: readOptionalString(details.message) ?? DELETE_PARTIAL_FALLBACK,
+    deletedRepositories: asArray(details.deletedRepositories).map(readDeletedRepository).filter(isPresent),
+    failedRepository: readFailedRepository(details.failedRepository),
+  };
+}
+
+/** Submit is disabled until this matches the Project's name exactly. */
+export function deleteConfirmMatches(input: string, name: string): boolean {
+  return input === name;
+}
+
+/** The explorer's status notice once the delete lands. */
+export function deleteNoticeText(outcome: DeleteProjectOutcome): string {
+  return `Deleted ${outcome.name} and ${repositoryCountLabel(outcome.deletedRepositories.length)}.`;
 }

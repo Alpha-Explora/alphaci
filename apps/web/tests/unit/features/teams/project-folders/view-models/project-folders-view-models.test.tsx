@@ -5,6 +5,7 @@ import { projectFoldersRepository } from "../../../../../../src/features/teams/p
 import { MOVE_CONFLICT_MESSAGE } from "../../../../../../src/features/teams/project-folders/model/project-folder-rules";
 import { useProjectFoldersViewModel } from "../../../../../../src/features/teams/project-folders/view-models/use-project-folders-view-model";
 import { useMoveRepositoryViewModel } from "../../../../../../src/features/teams/project-folders/view-models/use-move-repository-view-model";
+import { useDeleteProjectViewModel } from "../../../../../../src/features/teams/project-folders/view-models/use-delete-project-view-model";
 import { useFolderChecklistsViewModel } from "../../../../../../src/features/teams/project-folders/view-models/use-folder-checklists-view-model";
 import { useCreateProjectFolderViewModel } from "../../../../../../src/features/teams/project-folders/view-models/use-create-project-folder-view-model";
 import { apiError, folderChecklist, foldersSnapshot, GROUP_ID } from "../folder-fixtures";
@@ -17,6 +18,7 @@ jest.mock("../../../../../../src/features/teams/project-folders/data/project-fol
     archive: jest.fn(),
     listChecklists: jest.fn(),
     updateChecklistShares: jest.fn(),
+    deleteProject: jest.fn(),
   },
 }));
 
@@ -219,6 +221,141 @@ describe("useMoveRepositoryViewModel", () => {
     expect(onChanged).not.toHaveBeenCalled();
     act(() => vm().close());
     expect(vm().repository).toBeNull();
+  });
+});
+
+describe("useDeleteProjectViewModel", () => {
+  const folder = foldersSnapshot().folders[0]; // testfinals: repo-fe + repo-be, both linked
+
+  it("requires an exact name match before it will call the server", async () => {
+    const onDeleted = jest.fn();
+    const onChanged = jest.fn();
+    const vm = renderHook(() => useDeleteProjectViewModel({ onDeleted, onChanged }));
+    act(() => vm().openFor(folder));
+    expect(vm().folder?.name).toBe("testfinals");
+    expect(vm().canSubmit).toBe(false);
+
+    act(() => vm().setConfirmName("testfinal"));
+    expect(vm().canSubmit).toBe(false);
+    await act(async () => vm().submit());
+    expect(repo.deleteProject).not.toHaveBeenCalled();
+
+    act(() => vm().setConfirmName("testfinals"));
+    expect(vm().canSubmit).toBe(true);
+  });
+
+  it("deletes, closes, refetches and reports the notice", async () => {
+    repo.deleteProject.mockResolvedValue({
+      deliveryProjectId: "dp-1",
+      name: "testfinals",
+      deletedRepositories: [
+        { repositoryId: "repo-fe", name: "testfinals-fe", projectId: "proj-fe", githubRepoDeleted: false },
+        { repositoryId: "repo-be", name: "testfinals-be", projectId: "proj-be", githubRepoDeleted: false },
+      ],
+    });
+    const onDeleted = jest.fn();
+    const onChanged = jest.fn();
+    const vm = renderHook(() => useDeleteProjectViewModel({ onDeleted, onChanged }));
+    act(() => vm().openFor(folder));
+    act(() => vm().setConfirmName("testfinals"));
+    act(() => vm().setDeleteGithubRepos(true));
+    await act(async () => vm().submit());
+
+    expect(repo.deleteProject).toHaveBeenCalledWith("dp-1", {
+      confirmName: "testfinals",
+      deleteGithubRepos: true,
+      deleteProviderResources: false,
+      deleteSonarProjects: false,
+    });
+    expect(vm().folder).toBeNull();
+    expect(vm().status).toBe("idle");
+    expect(vm().notice).toBe("Deleted testfinals and 2 repositories.");
+    expect(onDeleted).toHaveBeenCalledTimes(1);
+    expect(onChanged).toHaveBeenCalledTimes(1);
+
+    act(() => vm().dismissNotice());
+    expect(vm().notice).toBeNull();
+  });
+
+  it("keeps the dialog open on a 409 partial failure, showing the server message, and refetches", async () => {
+    repo.deleteProject.mockRejectedValue(
+      apiError(409, {
+        code: "PROVIDER_DELETE_FAILED",
+        message: "testfinals-be could not be removed from Render. Try again.",
+        deletedRepositories: [
+          { repositoryId: "repo-fe", name: "testfinals-fe", projectId: "proj-fe", githubRepoDeleted: true },
+        ],
+        failedRepository: { repositoryId: "repo-be", name: "testfinals-be" },
+      }),
+    );
+    const onDeleted = jest.fn();
+    const onChanged = jest.fn();
+    const vm = renderHook(() => useDeleteProjectViewModel({ onDeleted, onChanged }));
+    act(() => vm().openFor(folder));
+    act(() => vm().setConfirmName("testfinals"));
+    await act(async () => vm().submit());
+
+    expect(vm().status).toBe("error");
+    expect(vm().error).toBe("testfinals-be could not be removed from Render. Try again.");
+    expect(vm().folder).not.toBeNull();
+    expect(onDeleted).not.toHaveBeenCalled();
+    expect(onChanged).toHaveBeenCalledTimes(1);
+  });
+
+  it("maps other failures to a display string without refetching, and Escape/Cancel still works", async () => {
+    repo.deleteProject.mockRejectedValue(apiError(403));
+    const onDeleted = jest.fn();
+    const onChanged = jest.fn();
+    const vm = renderHook(() => useDeleteProjectViewModel({ onDeleted, onChanged }));
+    act(() => vm().openFor(folder));
+    act(() => vm().setConfirmName("testfinals"));
+    await act(async () => vm().submit());
+
+    expect(vm().error).toMatch(/Team lead or admin/);
+    expect(onChanged).not.toHaveBeenCalled();
+    expect(vm().folder).not.toBeNull();
+
+    act(() => vm().close());
+    expect(vm().folder).toBeNull();
+  });
+
+  it("guards a stale response behind a request counter", async () => {
+    let resolveFirst!: (value: unknown) => void;
+    let resolveSecond!: (value: unknown) => void;
+    repo.deleteProject
+      .mockImplementationOnce(() => new Promise((resolve) => (resolveFirst = resolve)))
+      .mockImplementationOnce(() => new Promise((resolve) => (resolveSecond = resolve)));
+    const onDeleted = jest.fn();
+    const onChanged = jest.fn();
+    const vm = renderHook(() => useDeleteProjectViewModel({ onDeleted, onChanged }));
+    act(() => vm().openFor(folder));
+    act(() => vm().setConfirmName("testfinals"));
+
+    // Two submits fired before either resolves — a stale `active` flag alone
+    // would let whichever resolves last win, in either order.
+    act(() => {
+      void vm().submit();
+      void vm().submit();
+    });
+    expect(repo.deleteProject).toHaveBeenCalledTimes(2);
+
+    await act(async () => {
+      resolveSecond({ deliveryProjectId: "dp-1", name: "testfinals", deletedRepositories: [] });
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    expect(onDeleted).toHaveBeenCalledTimes(1);
+    expect(vm().folder).toBeNull();
+    expect(vm().notice).toBe("Deleted testfinals and 0 repositories.");
+
+    await act(async () => {
+      resolveFirst({ deliveryProjectId: "dp-1", name: "STALE", deletedRepositories: [] });
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    // The stale first response must not fire a second notice or re-open anything.
+    expect(onDeleted).toHaveBeenCalledTimes(1);
+    expect(vm().notice).toBe("Deleted testfinals and 0 repositories.");
   });
 });
 

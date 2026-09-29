@@ -66,6 +66,6 @@ export function folderChecklist(overrides: Partial<FolderChecklist> = {}): Folde
   };
 }
 
-export function apiError(status: number): ApiError {
-  return new ApiError(`HTTP ${status}`, status);
+export function apiError(status: number, details?: unknown): ApiError {
+  return new ApiError(`HTTP ${status}`, status, details);
 }

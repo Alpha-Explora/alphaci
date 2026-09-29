@@ -58,6 +58,8 @@
   --success: #10b981; /* Emerald Green — completed / passing   */
   --warning: #f59e0b; /* Amber — partial / needs review        */
   --danger: #ef4444; /* Rose Red — failed / danger            */
+  --danger-light: rgba(239, 68, 68, 0.12);
+  --border-danger: rgba(239, 68, 68, 0.3);
 
   /* ── Secondary accent: tech purple ─────────────────────────── */
   /* Secondary chart accent + secondary actions, plan badges, highlights */
@@ -222,6 +224,8 @@
   --success: #059669;
   --warning: #d97706;
   --danger: #dc2626;
+  --danger-light: rgba(220, 38, 38, 0.08);
+  --border-danger: rgba(220, 38, 38, 0.25);
 
   --accent-violet: #7c3aed;
   --accent-violet-light: rgba(124, 58, 237, 0.08);

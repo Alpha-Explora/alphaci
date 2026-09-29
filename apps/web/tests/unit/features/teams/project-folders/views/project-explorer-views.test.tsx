@@ -13,6 +13,7 @@ jest.mock("../../../../../../src/features/teams/project-folders/data/project-fol
     archive: jest.fn(),
     listChecklists: jest.fn(),
     updateChecklistShares: jest.fn(),
+    deleteProject: jest.fn(),
   },
 }));
 
@@ -171,5 +172,49 @@ describe("ProjectExplorer", () => {
     expect(container.querySelector(".pf-empty-folder")?.textContent).toContain("No repositories in this Project yet.");
     expect(container.textContent).toContain("Add a repository first.");
     expect(button(container, "Move")).toBeUndefined();
+  });
+
+  it("deletes a Project from the danger zone and returns to the list with a notice", async () => {
+    repo.list.mockResolvedValue(foldersSnapshot());
+    repo.listChecklists.mockResolvedValue([]);
+    repo.deleteProject.mockResolvedValue({
+      deliveryProjectId: "dp-1",
+      name: "testfinals",
+      deletedRepositories: [
+        { repositoryId: "repo-fe", name: "testfinals-fe", projectId: "proj-fe", githubRepoDeleted: false },
+        { repositoryId: "repo-be", name: "testfinals-be", projectId: "proj-be", githubRepoDeleted: false },
+      ],
+    });
+    const container = await renderExplorer();
+    await act(async () => button(container, "testfinals")!.click());
+
+    await act(async () => button(container, "Delete Project")!.click());
+    const dialog = container.querySelector('[role="dialog"]')!;
+    expect(dialog.textContent).toContain("Delete testfinals?");
+    expect(dialog.textContent).toContain("Also delete the GitHub repositories");
+
+    const submit = [...dialog.querySelectorAll("button")].find((el) => el.textContent === "Delete Project")!;
+    expect(submit.hasAttribute("disabled")).toBe(true);
+
+    const input = dialog.querySelector<HTMLInputElement>(".hier-input")!;
+    const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")!.set!;
+    await act(async () => {
+      setter.call(input, "testfinals");
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+    expect(submit.hasAttribute("disabled")).toBe(false);
+
+    await act(async () => submit.click());
+    await settle();
+
+    expect(repo.deleteProject).toHaveBeenCalledWith("dp-1", {
+      confirmName: "testfinals",
+      deleteGithubRepos: false,
+      deleteProviderResources: false,
+      deleteSonarProjects: false,
+    });
+    expect(container.querySelector('[role="dialog"]')).toBeNull();
+    expect(container.querySelectorAll("li.pf-card")).toHaveLength(2);
+    expect(container.textContent).toContain("Deleted testfinals and 2 repositories.");
   });
 });

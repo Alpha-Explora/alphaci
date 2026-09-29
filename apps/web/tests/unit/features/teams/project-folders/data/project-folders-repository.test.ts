@@ -45,6 +45,27 @@ describe("projectFoldersRepository", () => {
     expect(mockedRequest).toHaveBeenCalledWith("/delivery-projects/dp-1/archive", { method: "POST" });
   });
 
+  it("deletes with DELETE /delivery-projects/:id and reads the outcome", async () => {
+    mockedRequest.mockResolvedValue({
+      deliveryProjectId: "dp-1",
+      name: "testfinals",
+      deletedRepositories: [{ repositoryId: "repo-fe", name: "testfinals-fe", projectId: "proj-fe", githubRepoDeleted: true }],
+    });
+    const outcome = await projectFoldersRepository.deleteProject("dp-1", {
+      confirmName: "testfinals",
+      deleteGithubRepos: true,
+    });
+    expect(mockedRequest).toHaveBeenCalledWith("/delivery-projects/dp-1", {
+      method: "DELETE",
+      body: JSON.stringify({ confirmName: "testfinals", deleteGithubRepos: true }),
+    });
+    expect(outcome).toEqual({
+      deliveryProjectId: "dp-1",
+      name: "testfinals",
+      deletedRepositories: [{ repositoryId: "repo-fe", name: "testfinals-fe", projectId: "proj-fe", githubRepoDeleted: true }],
+    });
+  });
+
   it("lists the team's live checklists", async () => {
     mockedRequest.mockResolvedValue({ items: [{ id: "cl-1", name: "Smoke", items: [{}], archivedAt: null, sharedProjectIds: ["p"] }], canManage: true });
     const checklists = await projectFoldersRepository.listChecklists(GROUP_ID);

@@ -77,6 +77,36 @@ export interface ChecklistProjectsPatch {
   remove?: string[];
 }
 
+/** DELETE /delivery-projects/:deliveryProjectId */
+export interface DeleteProjectFolderRequest {
+  confirmName: string;
+  deleteGithubRepos?: boolean;
+  deleteProviderResources?: boolean;
+  deleteSonarProjects?: boolean;
+}
+
+export interface DeletedRepositoryWire {
+  repositoryId: string;
+  name: string;
+  projectId: string | null;
+  githubRepoDeleted: boolean;
+}
+
+/** 200 body. */
+export interface DeleteProjectFolderResponseWire {
+  deliveryProjectId: string;
+  name: string;
+  deletedRepositories: DeletedRepositoryWire[];
+}
+
+/** 409 body: a repository failed, so the Project is kept with the rest. */
+export interface DeleteProjectFolderConflictWire {
+  code: string;
+  message: string;
+  deletedRepositories: DeletedRepositoryWire[];
+  failedRepository: { repositoryId: string; name: string };
+}
+
 /* ── What the views read (normalised) ───────────────────────────────────── */
 
 export interface FolderProject {
@@ -136,6 +166,28 @@ export interface MoveOutcome {
   moved: boolean;
   sourceDeliveryProjectId: string | null;
   sourceDeliveryProjectEmpty: boolean;
+}
+
+export interface DeletedRepository {
+  repositoryId: string;
+  name: string;
+  projectId: string | null;
+  githubRepoDeleted: boolean;
+}
+
+/** The 200 outcome of deleting a Project. */
+export interface DeleteProjectOutcome {
+  deliveryProjectId: string;
+  name: string;
+  deletedRepositories: DeletedRepository[];
+}
+
+/** The 409 outcome: the Project survives with whatever it managed to delete. */
+export interface DeleteProjectFailure {
+  code: string;
+  message: string;
+  deletedRepositories: DeletedRepository[];
+  failedRepository: { repositoryId: string; name: string } | null;
 }
 
 export type ProjectFoldersStatus = "loading" | "ready" | "error";
