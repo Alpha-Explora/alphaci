@@ -207,13 +207,13 @@ describe("switchHref", () => {
 });
 
 describe("manageProjectHref", () => {
-  it("links the Teams page opened on the Project", () => {
-    expect(manageProjectHref(folder())).toBe("/teams?workspace=ws-1&section=projects&project=dp-1");
+  it("links the Projects page opened on the Project, with its team", () => {
+    expect(manageProjectHref(folder())).toBe("/workflows?group=ws-1&project=dp-1");
   });
 
   it("encodes the ids", () => {
     expect(manageProjectHref(folder({ groupId: "ws 1", deliveryProjectId: "dp&2" }))).toBe(
-      "/teams?workspace=ws+1&section=projects&project=dp%262",
+      "/workflows?group=ws+1&project=dp%262",
     );
   });
 
@@ -229,7 +229,7 @@ describe("repoSwitchPresentation", () => {
     const shown = repoSwitchPresentation(folder(), "proj-fe");
     expect(shown.projectName).toBe("shop");
     expect(shown.options.map((option) => option.current)).toEqual([true, false]);
-    expect(shown.manageHref).toBe("/teams?workspace=ws-1&section=projects&project=dp-1");
+    expect(shown.manageHref).toBe("/workflows?group=ws-1&project=dp-1");
   });
 
   it("leaves the page as it was for one repository, no folder, or a nameless Project", () => {

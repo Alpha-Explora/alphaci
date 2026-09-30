@@ -2,7 +2,10 @@ import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 
 import { projectFoldersRepository } from "../../../../../../src/features/teams/project-folders/data/project-folders-repository";
-import { ProjectExplorerHost } from "../../../../../../src/features/teams/project-folders/views/project-explorer";
+import {
+  ProjectExplorerHost,
+  type ProjectExplorerActions,
+} from "../../../../../../src/features/teams/project-folders/views/project-explorer";
 import { normaliseProjectFolders } from "../../../../../../src/features/teams/project-folders/model/project-folder-rules";
 import { apiError, folderChecklist, foldersSnapshot, foldersWire, GROUP_ID } from "../folder-fixtures";
 
@@ -58,6 +61,7 @@ async function waitFor(check: () => void, timeoutMs = 2000) {
 }
 
 let lastCount: number | null | undefined;
+let lastActions: ProjectExplorerActions | undefined;
 
 async function renderExplorer(
   qaChecklistsEnabled = true,
@@ -76,6 +80,7 @@ async function renderExplorer(
       >
         {(explorer) => {
           lastCount = explorer.count;
+          lastActions = explorer.actions;
           return explorer.panel;
         }}
       </ProjectExplorerHost>,
@@ -99,7 +104,7 @@ function link(container: HTMLElement, name: string): HTMLAnchorElement | undefin
 }
 
 describe("ProjectExplorer", () => {
-  it("lists Projects with role chips, checklist counts and the unfiled group", async () => {
+  it("lists Project cards with repository and checklist counts, then the unfiled group", async () => {
     repo.list.mockResolvedValue(foldersSnapshot());
     repo.listChecklists.mockResolvedValue([folderChecklist()]);
     const container = await renderExplorer();
@@ -109,20 +114,33 @@ describe("ProjectExplorer", () => {
     expect(cards[0].textContent).toContain("testfinals");
     expect(cards[0].textContent).toContain("2 repositories");
     expect(cards[0].textContent).toContain("1 checklist");
-    const chips = [...cards[0].querySelectorAll("a.pf-chip")];
-    expect(chips.map((chip) => chip.textContent)).toEqual(["Frontendtestfinals-fe", "Backendtestfinals-be"]);
-    expect(chips[0].getAttribute("href")).toBe("/projects/proj-fe");
-    expect(chips[0].getAttribute("data-role")).toBe("frontend");
-    expect(cards[1].textContent).toContain("No repositories yet.");
+    // No BACKEND/FRONTEND chips on a card: the card is the Project.
+    expect(cards[0].querySelector(".pf-chip, .pf-chips")).toBeNull();
+    expect(cards[0].textContent).not.toMatch(/Frontend|Backend/);
+    expect(cards[1].textContent).toContain("0 repositories");
     expect(container.querySelector(".pf-unfiled")?.textContent).toContain("blaine");
-    expect(button(container, "New Project")).toBeDefined();
-    expect(link(container, "Create repository")?.getAttribute("href")).toBe("/workflows?tab=setup&group=ws-1");
+    // The create actions moved to the page heading; the explorer draws none.
+    expect(container.querySelector(".group-section-head")).toBeNull();
+    expect(button(container, "New Project")).toBeUndefined();
+    expect(link(container, "Create repository")).toBeUndefined();
+    expect(lastActions?.createEmptyProject).toEqual(expect.any(Function));
+    expect(lastActions?.addRepositoryHref).toBe("/workflows?tab=setup&group=ws-1");
+  });
+
+  it("opens the Empty project dialog from the heading's action", async () => {
+    repo.list.mockResolvedValue(foldersSnapshot());
+    repo.listChecklists.mockResolvedValue([]);
+    const container = await renderExplorer();
+    expect(container.querySelector('[role="dialog"]')).toBeNull();
+    await act(async () => lastActions!.createEmptyProject!());
+    expect(container.querySelector('[role="dialog"]')?.textContent).toContain("New Project");
   });
 
   it("hides lead actions and checklist counts from a Developer without the capability", async () => {
     mockSession.appRole = "member";
     repo.list.mockResolvedValue(foldersSnapshot({ canManage: false }));
     const container = await renderExplorer(false);
+    expect(lastActions).toEqual({ createEmptyProject: null, addRepositoryHref: null });
     expect(button(container, "New Project")).toBeUndefined();
     expect(link(container, "Create repository")).toBeUndefined();
     expect(container.textContent).not.toContain("checklist");

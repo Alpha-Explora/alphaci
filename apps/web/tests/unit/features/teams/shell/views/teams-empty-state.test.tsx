@@ -1,7 +1,7 @@
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 
-import { TeamsEmptyState } from "../../../../../../src/features/teams/detail/views/teams-empty-state";
+import { TeamsEmptyState } from "../../../../../../src/features/teams/shell/views/teams-empty-state";
 
 /**
  * The screen a Lead lands on with no team to their name. The action that

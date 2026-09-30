@@ -1,0 +1,16 @@
+/* ── /workflows heading: "Projects" and the team's Project count ──────────
+   The count chip is the team rail's old badge, now beside the page title. */
+
+.current-projects-title {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin: 0;
+}
+
+.current-projects-title .group-section-count {
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0;
+  color: var(--text-secondary);
+}

@@ -3,32 +3,29 @@
 import Link from "next/link";
 import { motion } from "framer-motion";
 
-import type {
-  CreateProjectResult,
-  ProvisionedProject,
-} from "@/shared/api/contracts";
+import type { ReactNode } from "react";
+
+import type { CreateProjectResult } from "@/shared/api/contracts";
 import { WorkflowStageList } from "@/features/projects/detail";
 import { DeploymentProvisioningSummary } from "./setup-result-panel";
 import { FlowExplainer } from "@/features/guide/overview";
-import { GroupWorkspacePanel } from "@/features/teams/detail";
-import { ProjectExplorerHost } from "@/features/teams/project-folders";
+import {
+  ProjectExplorerHost,
+  type ProjectExplorerSlot,
+} from "@/features/teams/project-folders";
 import { useCapabilities } from "@/features/capabilities/current";
-import { WorkspaceChecklistsSection } from "@/features/checklists/manage";
 import {
   GROUPS_LOAD_ERROR,
   useCurrentProjectsViewModel,
-  type CurrentProjectsGroup,
-  type CurrentProjectsViewModel,
 } from "../view-models/use-current-projects-view-model";
-import { GroupPicker } from "./group-picker";
-import { GuideIcon, PlusIcon } from "./studio-icons";
-
-type RenderGroupCreate = (groupId: string, onComplete: () => void) => React.ReactNode;
+import { CreateProjectActions } from "./create-project-menu";
+import "./current-projects.css";
+import { GuideIcon } from "./studio-icons";
 
 interface HeaderActionsProps {
   /** Admin/lead (or a guest, who is sent to sign up). Hides "Create project" otherwise. */
   canCreateProjects: boolean;
-  /** Opens the create view with this group preselected (null when there is none). */
+  /** Opens the create view with this team preselected (null when there is none). */
   onCreateProject?: (groupId: string | null) => void;
   /** Starts the Current Projects tour. Omitted for guests, which hides "Show guide". */
   onStartGuide?: () => void;
@@ -38,8 +35,6 @@ interface WorkflowCurrentTabProps extends Partial<HeaderActionsProps> {
   latestResult: CreateProjectResult | null;
   loadingProjects: boolean;
   onOpenSetup: () => void;
-  renderGroupCreate: RenderGroupCreate;
-  projects: ProvisionedProject[];
 }
 
 const pageVariants = {
@@ -222,84 +217,62 @@ function CurrentTabEmptyState({
   );
 }
 
-function groupDescription(group: CurrentProjectsGroup | null): string {
-  if (!group) return "Choose a group to see its projects.";
-  return group.description || "Projects owned by this group.";
-}
-
-function HeaderActions({
-  canCreateProjects,
-  onCreateProject,
-  onStartGuide,
-  selectedGroupId,
-}: Readonly<HeaderActionsProps & { selectedGroupId: string | null }>) {
-  const create = canCreateProjects ? onCreateProject : undefined;
-  if (!onStartGuide && !create) return null;
-  return (
-    <div className="current-projects-actions">
-      {onStartGuide ? (
-        <button
-          type="button"
-          className="ghost-button"
-          aria-label="Show guided tour for Current Projects"
-          onClick={onStartGuide}
-        >
-          <GuideIcon />
-          Show guide
-        </button>
-      ) : null}
-      {create ? (
-        <button
-          type="button"
-          className="primary-button"
-          data-testid="create-project-button"
-          onClick={() => create(selectedGroupId)}
-        >
-          <PlusIcon />
-          Create project
-        </button>
-      ) : null}
-    </div>
-  );
-}
+const NO_EXPLORER_ACTIONS: ProjectExplorerSlot["actions"] = {
+  createEmptyProject: null,
+  addRepositoryHref: null,
+};
 
 /**
- * The page's heading row. Left: the group dropdown (the page's one h1) with the
- * group's description under it. Right: the guide and the create action. With
- * no groups there is nothing to pick, so the heading is plain text.
+ * The page's heading row. Left: "Projects" (the page's one h1) with the
+ * team's Project count. Right: the guide, then the create actions — one
+ * primary "Create project" and the "⋯" menu (Empty project, Add repository).
+ *
+ * No team dropdown: the team is the one selected in the header, and a second
+ * picker here is how the page and the header used to disagree.
  */
-function CurrentProjectsHeading({ vm }: Readonly<{ vm: CurrentProjectsViewModel }>) {
-  const { groups, selectedGroup, status } = vm;
-  if (groups.length === 0 && status !== "error") {
-    return (
-      <div className="current-projects-heading">
-        <h1 className="workflow-page-title">Projects</h1>
-        <p>No groups yet.</p>
-      </div>
-    );
-  }
-  return (
-    <div className="current-projects-heading">
-      <GroupPicker
-        options={groups}
-        selectedId={selectedGroup?.id ?? null}
-        label={selectedGroup?.name ?? "Choose a group"}
-        error={status === "error" ? GROUPS_LOAD_ERROR : null}
-        onSelect={vm.selectGroup}
-      />
-      <p>{groupDescription(selectedGroup)}</p>
-    </div>
-  );
-}
-
 function CurrentProjectsHeader({
-  vm,
+  count,
+  teamId,
   actions,
-}: Readonly<{ vm: CurrentProjectsViewModel; actions: HeaderActionsProps }>) {
+  explorerActions = NO_EXPLORER_ACTIONS,
+}: Readonly<{
+  count: number | null;
+  teamId: string | null;
+  actions: HeaderActionsProps;
+  explorerActions?: ProjectExplorerSlot["actions"];
+}>) {
+  const { canCreateProjects, onCreateProject, onStartGuide } = actions;
+  const create = canCreateProjects && onCreateProject ? () => onCreateProject(teamId) : null;
   return (
     <div className="project-detail-header current-projects-header">
-      <CurrentProjectsHeading vm={vm} />
-      <HeaderActions {...actions} selectedGroupId={vm.selectedGroup?.id ?? null} />
+      <div className="current-projects-heading" data-tour="projects-list">
+        <h1 className="workflow-page-title current-projects-title">
+          Projects
+          {count === null ? null : (
+            <span className="group-section-count" aria-label={`${count} ${count === 1 ? "Project" : "Projects"}`}>
+              {count}
+            </span>
+          )}
+        </h1>
+      </div>
+      <div className="current-projects-actions">
+        {onStartGuide ? (
+          <button
+            type="button"
+            className="ghost-button"
+            aria-label="Show guided tour for Current Projects"
+            onClick={onStartGuide}
+          >
+            <GuideIcon />
+            Show guide
+          </button>
+        ) : null}
+        <CreateProjectActions
+          onCreateProject={create}
+          onCreateEmptyProject={explorerActions.createEmptyProject}
+          addRepositoryHref={explorerActions.addRepositoryHref}
+        />
+      </div>
     </div>
   );
 }
@@ -316,51 +289,43 @@ function GroupsLoadError({ onRetry }: Readonly<{ onRetry: () => void }>) {
   );
 }
 
-function SelectedGroupContent({
-  group,
-  renderGroupCreate,
-  onDeleted,
+/**
+ * The header team's Projects: the heading (with the count and the create
+ * actions the explorer allows) over the Project cards. Keyed by team, so a
+ * header switch starts the explorer afresh rather than showing one team's
+ * cards under another's count.
+ */
+function TeamProjects({
+  team,
+  linkedFolderId,
+  actions,
 }: Readonly<{
-  group: CurrentProjectsGroup;
-  renderGroupCreate: RenderGroupCreate;
-  onDeleted: (groupId: string) => void;
+  team: { id: string; name: string };
+  linkedFolderId: string | null;
+  actions: HeaderActionsProps;
 }>) {
   const { qaChecklistsEnabled } = useCapabilities();
   return (
-    <motion.div key={group.id} variants={pageVariants} initial="hidden" animate="show">
-      {/* The same explorer and checklist templates as the Teams page, gated
-          by the same capability, so the two surfaces never disagree. */}
-      <ProjectExplorerHost
-        groupId={group.group.id}
-        groupName={group.group.name}
-        qaChecklistsEnabled={qaChecklistsEnabled}
-      >
-        {(explorer) => (
-          <GroupWorkspacePanel
-            group={group.group}
-            projects={group.projects}
-            renderCreateProject={(onComplete) =>
-              renderGroupCreate(group.group.id, onComplete)
-            }
-            onDeleted={onDeleted}
-            projectExplorer={explorer}
-            qaChecklists={
-              qaChecklistsEnabled ? (
-                <WorkspaceChecklistsSection
-                  key={group.group.id}
-                  workspaceId={group.group.id}
-                  projects={group.projects.map((project) => ({
-                    id: project.id,
-                    name: project.repoFullName,
-                    detail: project.serviceName,
-                  }))}
-                />
-              ) : null
-            }
+    <ProjectExplorerHost
+      groupId={team.id}
+      groupName={team.name}
+      qaChecklistsEnabled={qaChecklistsEnabled}
+      initialFolderId={linkedFolderId}
+    >
+      {(explorer): ReactNode => (
+        <>
+          <CurrentProjectsHeader
+            count={explorer.count}
+            teamId={team.id}
+            actions={actions}
+            explorerActions={explorer.actions}
           />
-        )}
-      </ProjectExplorerHost>
-    </motion.div>
+          <motion.div variants={pageVariants} initial="hidden" animate="show">
+            {explorer.panel}
+          </motion.div>
+        </>
+      )}
+    </ProjectExplorerHost>
   );
 }
 
@@ -385,28 +350,40 @@ function CurrentTabSkeleton() {
 function CurrentTabContent({
   vm,
   onOpenSetup,
-  renderGroupCreate,
+  actions,
 }: Readonly<{
-  vm: CurrentProjectsViewModel;
+  vm: ReturnType<typeof useCurrentProjectsViewModel>;
   onOpenSetup: () => void;
-  renderGroupCreate: RenderGroupCreate;
+  actions: HeaderActionsProps;
 }>) {
-  if (vm.status === "error") return <GroupsLoadError onRetry={vm.retry} />;
-  if (!vm.selectedGroup) return <CurrentTabEmptyState onOpenSetup={onOpenSetup} />;
+  if (vm.status === "error" || !vm.team) {
+    return (
+      <>
+        <CurrentProjectsHeader count={null} teamId={null} actions={actions} />
+        {vm.status === "error" ? (
+          <GroupsLoadError onRetry={vm.retry} />
+        ) : (
+          <CurrentTabEmptyState onOpenSetup={onOpenSetup} />
+        )}
+      </>
+    );
+  }
   return (
-    <SelectedGroupContent
-      group={vm.selectedGroup}
-      renderGroupCreate={renderGroupCreate}
-      onDeleted={vm.removeGroup}
+    <TeamProjects
+      key={vm.team.id}
+      team={vm.team}
+      linkedFolderId={vm.linkedFolderId}
+      actions={actions}
     />
   );
 }
 
 /**
- * Current Projects: one team at a time, straight on the page. The heading is a
- * dropdown of the caller's groups; under it sits the selected team's workspace
- * (Overview, Members, Projects, Checklist templates, Activity, Settings). The
- * per-project detail lives on the full page (/projects/[id]).
+ * Current Projects: the Project cards of the team selected in the header,
+ * straight on the page. Each card opens its Project (Manage opens the detail);
+ * the per-repository detail lives on the full page (/projects/[id]). The
+ * team's members, checklists, activity and settings are pages of their own —
+ * Teams, Checklists, Activity, and the Settings page's Team tab.
  *
  * There is no individual/personal side. A workspace IS a team and every project
  * belongs to one.
@@ -415,13 +392,12 @@ export function WorkflowCurrentTab({
   latestResult,
   loadingProjects,
   onOpenSetup,
-  renderGroupCreate,
-  projects,
   canCreateProjects = false,
   onCreateProject,
   onStartGuide,
 }: Readonly<WorkflowCurrentTabProps>) {
-  const vm = useCurrentProjectsViewModel({ projects, loadingProjects });
+  const vm = useCurrentProjectsViewModel({ loadingProjects });
+  const actions: HeaderActionsProps = { canCreateProjects, onCreateProject, onStartGuide };
 
   return (
     <motion.section
@@ -446,15 +422,7 @@ export function WorkflowCurrentTab({
            /projects/[id]) but keeps the compact button sizing that
            globals.css scopes to .project-detail-panel. */
         <div className="project-detail-panel project-detail-panel--page current-projects-page">
-          <CurrentProjectsHeader
-            vm={vm}
-            actions={{ canCreateProjects, onCreateProject, onStartGuide }}
-          />
-          <CurrentTabContent
-            vm={vm}
-            onOpenSetup={onOpenSetup}
-            renderGroupCreate={renderGroupCreate}
-          />
+          <CurrentTabContent vm={vm} onOpenSetup={onOpenSetup} actions={actions} />
         </div>
       )}
     </motion.section>

@@ -5,14 +5,24 @@ import { useEffect, useRef, useState } from "react";
 import { useWorkspaceSelection } from "@/features/workspace/selection";
 
 import { settingsRepository } from "../../data/settings-repository";
+import {
+  canSeeTeamSettingsTab,
+  settingsNavSections,
+  visibleSettingsSection,
+} from "../../model/settings-rules";
 import type {
   SettingsSection,
   WorkspacesMeResponse,
 } from "../../model/settings-types";
 
 export interface SettingsViewModel {
+  /** The section on screen (Team falls back to Account while it is hidden). */
   activeSection: SettingsSection;
   setActiveSection: (section: SettingsSection) => void;
+  /** The rail's sections, in order — Team only for its Lead/admin. */
+  sections: SettingsSection[];
+  /** The header team's name, for the Team tab's heading. */
+  teamName: string | null;
   workspaces: WorkspacesMeResponse | null;
   /**
    * The workspaces load — the only async work this surface owns. "idle" while
@@ -43,12 +53,19 @@ export interface SettingsViewModel {
 export function useSettingsViewModel(options: {
   /** From useCapabilities — the workspaces surface can be switched off. */
   workspacesEnabled: boolean;
+  /** The section a `?tab=` link asked for, read once on arrival. */
+  initialSection?: SettingsSection;
+  /** The caller's app role, for the Team tab's lead/admin gate. */
+  appRole?: string | null;
 }): SettingsViewModel {
-  const { workspacesEnabled } = options;
-  const { setWorkspaces: setWorkspaceContext } = useWorkspaceSelection();
+  const { workspacesEnabled, initialSection = "account", appRole } = options;
+  // The header owns which team is selected; the Team tab is for that team.
+  const { selectedWorkspace } = useWorkspaceSelection();
+  const canManageTeam = canSeeTeamSettingsTab(selectedWorkspace?.role, appRole);
 
-  const [activeSection, setActiveSection] =
-    useState<SettingsSection>("account");
+  const [selectedSection, setActiveSection] =
+    useState<SettingsSection>(initialSection);
+  const activeSection = visibleSettingsSection(selectedSection, canManageTeam);
   const [workspaces, setWorkspaces] = useState<WorkspacesMeResponse | null>(
     null,
   );
@@ -73,9 +90,10 @@ export function useSettingsViewModel(options: {
       .workspaces()
       .then((response) => {
         if (!active || id !== req.current) return;
+        // Not published to the header's context: the header loads its own
+        // lists (a platform admin's other teams included), and publishing this
+        // member-only list could validate away an admin's other-team selection.
         setWorkspaces(response);
-        // The header picker reads from the same context, so one fetch feeds both.
-        setWorkspaceContext(response);
         setWorkspacesError(null);
         setStatus("ready");
       })
@@ -88,7 +106,7 @@ export function useSettingsViewModel(options: {
     return () => {
       active = false;
     };
-  }, [activeSection, setWorkspaceContext, workspacesEnabled]);
+  }, [activeSection, workspacesEnabled]);
 
   async function deleteAccount(): Promise<boolean> {
     setIsDeleting(true);
@@ -112,6 +130,8 @@ export function useSettingsViewModel(options: {
       if (section === "account" && workspacesEnabled) setStatus("loading");
       setActiveSection(section);
     },
+    sections: settingsNavSections(canManageTeam),
+    teamName: selectedWorkspace?.name ?? null,
     workspaces,
     status,
     workspacesError,

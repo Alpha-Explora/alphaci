@@ -1,9 +1,10 @@
-/* The Teams project explorer: a team's Projects (hierarchy delivery
- * projects), the repositories each groups, and their checklists. Mounted by
- * the Teams page and the Workflows studio through ProjectExplorerHost. */
+/* The project explorer: a team's Projects (hierarchy delivery projects), the
+ * repositories each groups, and their checklists. Mounted by the Projects
+ * page (/workflows) through ProjectExplorerHost. */
 export {
   ProjectExplorer,
   ProjectExplorerHost,
+  type ProjectExplorerActions,
   type ProjectExplorerSlot,
 } from "./views/project-explorer";
 export {

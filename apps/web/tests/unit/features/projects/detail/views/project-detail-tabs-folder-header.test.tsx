@@ -33,7 +33,7 @@ const PROJECT = {
 const FOLDER: ProjectFolderViewModel = {
   status: "ready",
   projectName: "shop",
-  manageHref: "/teams?workspace=ws-1&section=projects&project=dp-1",
+  manageHref: "/workflows?group=ws-1&project=dp-1",
   options: [
     { key: "proj-fe", projectId: "proj-fe", role: "frontend", roleLabel: "FRONTEND", label: "shop-fe", repoFullName: "Org/shop-fe", current: true, disabled: false },
     { key: "proj-be", projectId: "proj-be", role: "backend", roleLabel: "BACKEND", label: "shop-be", repoFullName: "Org/shop-be", current: false, disabled: false },
@@ -67,7 +67,7 @@ describe("ProjectDetailTabs header", () => {
     expect(container.querySelector('[role="radiogroup"]')).not.toBeNull();
 
     const manage = [...container.querySelectorAll("a")].find((el) => el.textContent?.includes("Manage project"));
-    expect(manage?.getAttribute("href")).toBe("/teams?workspace=ws-1&section=projects&project=dp-1");
+    expect(manage?.getAttribute("href")).toBe("/workflows?group=ws-1&project=dp-1");
 
     const backend = [...container.querySelectorAll<HTMLButtonElement>('[role="radio"]')][1];
     act(() => backend.click());

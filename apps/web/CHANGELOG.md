@@ -24,6 +24,7 @@
 
 ### Changed
 
+- Restructured team navigation around the header's workspace picker, the only team selector. The Projects page (`/workflows`) lost its team dropdown and its team rail: it shows the header team's Project cards (no per-repository chips) under a plain "Projects" heading, with one primary **Create project** and a "⋯" menu holding **Empty project** and **Add repository** (WAI-ARIA menu button). The team's other sections are pages of their own: **Teams** (`/teams`) is the members page, and the sidebar gains **Checklists** (`/checklists`, with the QA checklists capability) and **Activity** (`/activity`); team settings moved to a lead/admin-only **Team** tab on `/settings`. The Overview section is gone. Platform admins see teams they are not a member of in the header picker under "Other teams (admin)". Old `/teams?section=…` links are forwarded, and "Manage project" / checklist manage links point at the new pages. The Settings page's workspace members list is read-only with a link to Teams; the frontend no longer calls the `/workspaces/:id/members` write routes.
 - Updated the local catalog fixture to `@alphaci/capability-catalog@0.2.0`, including typed capability surface data.
 - Regenerated the capability snapshot and OKF surface view from the vendored package; frontend checks now fail on surface drift.
 - Changed capability and pack documentation checks to use the versioned package contract instead of a sibling backend checkout. Package publication remains outside this local change.

@@ -523,15 +523,11 @@ async function runDashboardAudit(page: Page, baseUrl: string) {
 
   await installDashboardAuditApi(page);
   await page.goto(`${baseUrl}/workflows`, { waitUntil: 'networkidle' });
-  // No page title or tab bar any more: the heading is the group dropdown.
-  const groupPicker = page.getByRole('heading', { level: 1 }).getByRole('button', {
-    name: 'Design team',
-  });
-  await groupPicker.waitFor({ state: 'visible' });
+  // The heading is plain "Projects": the team comes from the header picker,
+  // and the page has no dropdown of its own.
+  await page.getByRole('heading', { level: 1, name: /^Projects/ }).waitFor({ state: 'visible' });
+  await page.getByLabel('Active workspace').waitFor({ state: 'visible' });
   await page.getByRole('button', { name: 'Create project' }).waitFor({ state: 'visible' });
-  await groupPicker.click();
-  await page.getByRole('combobox', { name: 'Search groups' }).waitFor({ state: 'visible' });
-  await page.getByRole('option', { name: /Design team/ }).click();
   await page.getByRole('button', { name: 'Notifications' }).click();
   await expectVisibleText(page, 'Project created');
 

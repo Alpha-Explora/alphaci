@@ -15,10 +15,10 @@ export interface TourCallbacks {
 }
 
 /**
- * The selector for the first step: the group dropdown at the top of the
- * projects view. It renders whenever the view has groups to pick from, so it
- * is the guaranteed anchor. (The name predates the dropdown, which replaced a
- * sidebar list of groups; the anchor moved with it.)
+ * The selector for the first step: the "Projects" heading at the top of the
+ * projects view. It renders whenever the view does, so it is the guaranteed
+ * anchor. (The name predates the heading, which replaced a team dropdown; the
+ * anchor moved with it.)
  */
 const PROJECTS_LIST_SELECTOR = "[data-tour='projects-list']";
 
@@ -28,9 +28,9 @@ function buildSteps(): DriveStep[] {
     {
       element: PROJECTS_LIST_SELECTOR,
       popover: {
-        title: "Pick a team",
+        title: "Your team's Projects",
         description:
-          "This dropdown chooses the team you are looking at. Open it and type to search your teams; the team's projects, members and checklists open below. Use Create project on the right to set up another repository.",
+          "These are the Projects of the team selected in the header — switch team there. Each card opens its Project; Manage opens its repositories and checklists. Create project sets up a new one, and the ⋯ beside it adds an empty Project or a single repository.",
         side: "bottom",
         align: "start",
       },

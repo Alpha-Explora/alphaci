@@ -114,7 +114,7 @@ describe("useProjectFolderViewModel", () => {
       ["FRONTEND", "shop-fe", false],
       ["BACKEND", "shop-be", true],
     ]);
-    expect(vm().manageHref).toBe("/teams?workspace=ws-1&section=projects&project=dp-1");
+    expect(vm().manageHref).toBe("/workflows?group=ws-1&project=dp-1");
   });
 
   it("keeps the single-repository page for a Project of one", async () => {

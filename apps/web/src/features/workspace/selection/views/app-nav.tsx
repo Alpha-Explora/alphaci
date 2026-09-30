@@ -13,6 +13,7 @@ import {
   navAvatarInitial,
   reducedMotionEnabled,
   sessionAppRole,
+  type SidebarMainItem,
   type WorkspaceAppRole,
 } from "../model/workspace-types";
 import { useAppNavViewModel } from "../view-models/use-app-nav-view-model";
@@ -104,6 +105,46 @@ function InboxIcon({ size = 16 }: { size?: number }) {
     >
       <polyline points="22 12 16 12 14 15 10 15 8 12 2 12" />
       <path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z" />
+    </svg>
+  );
+}
+
+function ChecklistsIcon({ size = 16 }: { size?: number }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M9 11l2 2 4-4" />
+      <path d="M9 4h6a1 1 0 0 1 1 1v1H8V5a1 1 0 0 1 1-1z" />
+      <path d="M16 5h2a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h2" />
+      <line x1="9" y1="17" x2="15" y2="17" />
+    </svg>
+  );
+}
+
+function ActivityIcon({ size = 16 }: { size?: number }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <circle cx="12" cy="12" r="9" />
+      <polyline points="12 7 12 12 15.5 14" />
     </svg>
   );
 }
@@ -277,8 +318,9 @@ export function AppNav({
   onLogout,
   isLoggingOut,
 }: Readonly<AppNavProps>) {
-  const { pathname, workspaces: workspaceVm, notifications } =
-    useAppNavViewModel({ guest });
+  const isPlatformAdmin = isPlatformAdminUser(guest, session);
+  const { pathname, workspaces: workspaceVm, notifications, mainItems } =
+    useAppNavViewModel({ guest, isPlatformAdmin });
   // Cleared on pointerleave. Clicking a nav link navigates but does NOT move
   // the mouse, so the rail stays hovered — and an expanded rail is 240px of
   // panel sitting on top of the page you just asked for. Suppressing hover
@@ -288,7 +330,6 @@ export function AppNav({
   const prefersReducedMotion = useReducedMotion();
   const reduced = reducedMotionEnabled(prefersReducedMotion);
   const avatarInitial = navAvatarInitial(session);
-  const isPlatformAdmin = isPlatformAdminUser(guest, session);
   const appRole = sessionAppRole(session);
   const loadWorkspaces = workspaceVm.loadWorkspaces;
 
@@ -311,10 +352,11 @@ export function AppNav({
           full width, so the rail keeps its own brand mark and the expanded
           rail paints over this bar rather than beside it. */}
       <AppHeader guest={guest} session={session} appRole={appRole} avatarInitial={avatarInitial}
-        workspaces={workspaceVm.workspaces} workspaceStatus={workspaceVm.status}
+        workspaces={workspaceVm.workspaces} otherTeams={workspaceVm.otherTeams}
+        workspaceStatus={workspaceVm.status}
         loadWorkspaces={loadWorkspaces}
         onLogout={onLogout} isLoggingOut={isLoggingOut} />
-      <AppSidebar pathname={pathname} guest={guest} reduced={reduced}
+      <AppSidebar pathname={pathname} guest={guest} mainItems={mainItems} reduced={reduced}
         isPlatformAdmin={isPlatformAdmin} unreadCount={notifications.unreadCount}
         hoverSuppressed={hoverSuppressed}
         onNavigate={() => setHoverSuppressed(true)}
@@ -323,9 +365,10 @@ export function AppNav({
   );
 }
 
-function AppHeader({ guest, session, appRole, avatarInitial, workspaces, workspaceStatus, loadWorkspaces, onLogout, isLoggingOut }: Readonly<{
+function AppHeader({ guest, session, appRole, avatarInitial, workspaces, otherTeams, workspaceStatus, loadWorkspaces, onLogout, isLoggingOut }: Readonly<{
   guest: boolean; session: AuthSession | null; appRole: WorkspaceAppRole; avatarInitial: string;
   workspaces: Parameters<typeof WorkspaceSwitcher>[0]["workspaces"];
+  otherTeams: NonNullable<Parameters<typeof WorkspaceSwitcher>[0]["otherTeams"]>;
   workspaceStatus: NonNullable<Parameters<typeof WorkspaceSwitcher>[0]["status"]>;
   loadWorkspaces: () => void; onLogout: () => void; isLoggingOut: boolean;
 }>) {
@@ -338,6 +381,7 @@ function AppHeader({ guest, session, appRole, avatarInitial, workspaces, workspa
         {!guest && (
           <WorkspaceSwitcher
             workspaces={workspaces}
+            otherTeams={otherTeams}
             appRole={appRole}
             status={workspaceStatus}
             onRetry={loadWorkspaces}
@@ -378,8 +422,23 @@ function HeaderAvatar({ session, avatarInitial }: Readonly<{ session: AuthSessio
   );
 }
 
-function AppSidebar({ pathname, guest, reduced, isPlatformAdmin, unreadCount, hoverSuppressed, onNavigate, onPointerLeave }: Readonly<{
-  pathname: string; guest: boolean; reduced: boolean; isPlatformAdmin: boolean; unreadCount: number;
+/** Everything but the badge, per Main entry. */
+const MAIN_ITEMS: Record<SidebarMainItem, {
+  href: string;
+  label: string;
+  icon: SidebarNavItemProps["icon"];
+  isActive: (pathname: string) => boolean;
+}> = {
+  home: { href: "/home", label: "Home", icon: DashboardIcon, isActive: (p) => p === "/home" },
+  projects: { href: "/workflows", label: "Projects", icon: WorkflowsIcon, isActive: (p) => p === "/workflows" },
+  teams: { href: "/teams", label: "Teams", icon: TeamsIcon, isActive: (p) => p === "/teams" || p.startsWith("/groups") },
+  checklists: { href: "/checklists", label: "Checklists", icon: ChecklistsIcon, isActive: (p) => p === "/checklists" },
+  activity: { href: "/activity", label: "Activity", icon: ActivityIcon, isActive: (p) => p === "/activity" },
+  inbox: { href: "/inbox", label: "Inbox", icon: InboxIcon, isActive: (p) => p === "/inbox" },
+};
+
+function AppSidebar({ pathname, guest, mainItems, reduced, isPlatformAdmin, unreadCount, hoverSuppressed, onNavigate, onPointerLeave }: Readonly<{
+  pathname: string; guest: boolean; mainItems: readonly SidebarMainItem[]; reduced: boolean; isPlatformAdmin: boolean; unreadCount: number;
   hoverSuppressed: boolean; onNavigate: () => void; onPointerLeave: () => void;
 }>) {
   return (
@@ -387,10 +446,21 @@ function AppSidebar({ pathname, guest, reduced, isPlatformAdmin, unreadCount, ho
       <div className="sidebar-edge-gradient" aria-hidden="true" />
       <nav className="sidebar-nav" aria-label="Primary">
         <SidebarSectionLabel text="Main" />
-        <SidebarNavItem href="/home" label="Home" icon={DashboardIcon} isActive={pathname === "/home"} reduced={reduced} onNavigate={onNavigate} />
-        <SidebarNavItem href="/workflows" label="Projects" icon={WorkflowsIcon} isActive={pathname === "/workflows"} reduced={reduced} onNavigate={onNavigate} />
-        {!guest && <SidebarNavItem href="/teams" label="Teams" icon={TeamsIcon} isActive={pathname === "/teams" || pathname.startsWith("/groups")} reduced={reduced} onNavigate={onNavigate} />}
-        {!guest && <SidebarNavItem href="/inbox" label="Inbox" icon={InboxIcon} isActive={pathname === "/inbox"} reduced={reduced} onNavigate={onNavigate} badgeCount={unreadCount} />}
+        {mainItems.map((id) => {
+          const item = MAIN_ITEMS[id];
+          return (
+            <SidebarNavItem
+              key={id}
+              href={item.href}
+              label={item.label}
+              icon={item.icon}
+              isActive={item.isActive(pathname)}
+              reduced={reduced}
+              onNavigate={onNavigate}
+              badgeCount={id === "inbox" ? unreadCount : 0}
+            />
+          );
+        })}
         <SidebarSectionLabel text="Account" />
         {!guest && <SidebarNavItem href="/settings" label="Settings" icon={SettingsIcon} isActive={pathname === "/settings"} reduced={reduced} onNavigate={onNavigate} />}
         {isPlatformAdmin && <SidebarNavItem href="/admin" label="Admin" icon={AdminIcon} isActive={pathname.startsWith("/admin")} reduced={reduced} onNavigate={onNavigate} />}

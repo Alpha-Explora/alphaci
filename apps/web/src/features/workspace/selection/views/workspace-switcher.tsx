@@ -5,9 +5,12 @@ import { useState } from "react";
 import { CreateGroupDialog } from "@/features/groups/create";
 import {
   APP_ROLE_BADGE_LABELS,
+  OTHER_TEAMS_HEADING,
   canCreateWorkspace,
+  selectableWorkspaces,
   workspaceSwitcherKind,
   type WorkspaceAppRole,
+  type WorkspaceSummary,
   type WorkspacesMeResponse,
 } from "../model/workspace-types";
 import type { WorkspaceSelectionStatus } from "../view-models/use-workspace-selection-view-model";
@@ -20,9 +23,7 @@ import { useWorkspaceSelection } from "./workspace-selection-context";
  */
 const CREATE = "__create__";
 
-function workspaceItems(workspaces: WorkspacesMeResponse | null) {
-  return workspaces?.items ?? [];
-}
+const NO_OTHER_TEAMS: readonly WorkspaceSummary[] = [];
 
 function findCurrentWorkspace(
   items: WorkspacesMeResponse["items"],
@@ -142,8 +143,38 @@ function applyWorkspaceSelectChange(
   setSelectedWorkspaceId(value || null);
 }
 
+/**
+ * The options. With no other teams (everyone but a platform admin) this is the
+ * flat list it always was; an admin's non-member teams follow under their own
+ * heading, with the admin's own teams grouped above them for symmetry.
+ */
+function WorkspaceOptions({
+  items,
+  otherTeams,
+}: Readonly<{ items: WorkspacesMeResponse["items"]; otherTeams: readonly WorkspaceSummary[] }>) {
+  const own = items.map((workspace) => (
+    <option key={workspace.id} value={workspace.id}>
+      {workspace.name}
+    </option>
+  ));
+  if (otherTeams.length === 0) return <>{own}</>;
+  return (
+    <>
+      {items.length > 0 ? <optgroup label="Your teams">{own}</optgroup> : null}
+      <optgroup label={OTHER_TEAMS_HEADING}>
+        {otherTeams.map((team) => (
+          <option key={team.id} value={team.id}>
+            {team.name}
+          </option>
+        ))}
+      </optgroup>
+    </>
+  );
+}
+
 function WorkspacePicker({
   items,
+  otherTeams,
   currentId,
   canCreate,
   createOpen,
@@ -152,6 +183,7 @@ function WorkspacePicker({
   onCreated,
 }: Readonly<{
   items: WorkspacesMeResponse["items"];
+  otherTeams: readonly WorkspaceSummary[];
   currentId: string;
   canCreate: boolean;
   createOpen: boolean;
@@ -177,11 +209,7 @@ function WorkspacePicker({
           }
           className="team-switcher-select"
         >
-          {items.map((workspace) => (
-            <option key={workspace.id} value={workspace.id}>
-              {workspace.name}
-            </option>
-          ))}
+          <WorkspaceOptions items={items} otherTeams={otherTeams} />
           {canCreate ? <CreateWorkspaceOptions /> : null}
         </select>
       </label>
@@ -210,12 +238,18 @@ function WorkspacePicker({
  */
 export function WorkspaceSwitcher({
   workspaces,
+  otherTeams = NO_OTHER_TEAMS,
   appRole,
   status = "ready",
   onRetry,
   onWorkspaceCreated,
 }: Readonly<{
   workspaces: WorkspacesMeResponse | null;
+  /**
+   * A platform admin's teams they are not a member of, listed under "Other
+   * teams (admin)". Omitted (empty) for everybody else, who see no change.
+   */
+  otherTeams?: readonly WorkspaceSummary[];
   appRole?: WorkspaceAppRole | null;
   /**
    * Load state, so a failed fetch can say so instead of vanishing.
@@ -233,11 +267,12 @@ export function WorkspaceSwitcher({
     useWorkspaceSelection();
   const [createOpen, setCreateOpen] = useState(false);
 
-  const items = workspaceItems(workspaces);
+  const items = workspaces?.items ?? [];
+  const selectable = selectableWorkspaces(workspaces, otherTeams);
   const canCreate = canCreateWorkspace(appRole);
-  const current = findCurrentWorkspace(items, selectedWorkspaceId, selectedWorkspace);
+  const current = findCurrentWorkspace(selectable, selectedWorkspaceId, selectedWorkspace);
   const onCreated = createdWorkspaceHandler(setSelectedWorkspaceId, onWorkspaceCreated);
-  const kind = workspaceSwitcherKind(status, workspaces, items.length, canCreate);
+  const kind = workspaceSwitcherKind(status, workspaces, selectable.length, canCreate);
 
   if (kind === "error") {
     return (
@@ -263,6 +298,7 @@ export function WorkspaceSwitcher({
   return (
     <WorkspacePicker
       items={items}
+      otherTeams={otherTeams}
       currentId={currentWorkspaceId(current)}
       canCreate={canCreate}
       createOpen={createOpen}

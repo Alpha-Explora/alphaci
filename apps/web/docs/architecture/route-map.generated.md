@@ -12,15 +12,17 @@ sources:
 
 # Frontend route map
 
-The current App Router exposes **23 pages**. Routes under `src/app/` are a routing table. Feature code lives in `src/features/`.
+The current App Router exposes **25 pages**. Routes under `src/app/` are a routing table. Feature code lives in `src/features/`.
 
 | Route | Page module | Feature composition |
 |---|---|---|
 | `/` | `src/app/page.tsx` | `@/features/public-site` |
+| `/activity` | `src/app/(platform)/activity/page.tsx` | `@/features/teams/activity` |
 | `/admin` | `src/app/(platform)/admin/page.tsx` | `@/features/admin/users` |
 | `/admin/feedback` | `src/app/(platform)/admin/feedback/page.tsx` | `@/features/admin/feedback` |
 | `/admin/users/[id]` | `src/app/(platform)/admin/users/[id]/page.tsx` | `@/features/admin/user-detail` |
 | `/auth/callback` | `src/app/(access)/auth/callback/page.tsx` | `@/features/auth/callback` |
+| `/checklists` | `src/app/(platform)/checklists/page.tsx` | `@/features/teams/checklists` |
 | `/groups/[groupId]` | `src/app/(platform)/groups/[groupId]/page.tsx` | `@/features/groups/detail` |
 | `/groups/[groupId]/activity` | `src/app/(platform)/groups/[groupId]/activity/page.tsx` | `@/features/groups/activity` |
 | `/groups/[groupId]/delivery-projects/[deliveryProjectId]` | `src/app/(platform)/groups/[groupId]/delivery-projects/[deliveryProjectId]/page.tsx` | `@/features/groups/delivery-project` |

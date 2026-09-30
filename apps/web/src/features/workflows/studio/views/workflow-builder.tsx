@@ -175,40 +175,9 @@ export function WorkflowBuilder({ guest = false, session, onboardingCompleted }:
               latestResult={createResult}
               loadingProjects={projects.loadingProjects}
               onOpenSetup={openIndividualSetup}
-              projects={projects.projects}
               canCreateProjects={canCreateRepos}
               onCreateProject={guest ? sendGuestToSignup : openCreateForGroup}
               onStartGuide={guest ? undefined : startCurrentProjectsTour}
-              renderGroupCreate={(selectedGroupId, onComplete) => (
-                <WorkflowSetupTab
-                  canCreateRepositories={canCreateRepos}
-                  form={createForm}
-                  deploymentOwnershipMode={deploymentOwnershipMode}
-                  deploymentProvisioning={deploymentProvisioning}
-                  envProvisioningEnabled={envProvisioningEnabled}
-                  github={github}
-                  existingRepoBaseBranch={existingRepoBaseBranch}
-                  existingRepoDiscovery={existingRepoDiscovery}
-                  existingRepoFullName={existingRepoFullName}
-                  existingRepoResult={existingRepoResult}
-                  isCreatingProject={isCreatingProject}
-                  isDiscoveringExistingRepo={isDiscoveringExistingRepo}
-                  isSettingUpExistingRepo={isSettingUpExistingRepo}
-                  setupMode={setupMode}
-                  onChangeExistingRepoBaseBranch={setExistingRepoBaseBranch}
-                  onChangeExistingRepoFullName={setExistingRepoFullName}
-                  onChangeSetupMode={setSetupMode}
-                  onCreateProject={guest ? sendGuestToSignup : () => void handleCreateProject(selectedGroupId, onComplete)}
-                  onDiscoverExistingRepo={actions.onDiscoverExistingRepo}
-                  onGenerateWorkflow={actions.onGenerateWorkflow}
-                  onSetupExistingRepo={actions.onSetupExistingRepo}
-                  projectCatalog={projectCatalog}
-                  creationScope="in-team"
-                  onViewProject={onComplete}
-                  reducedMotion={reducedMotion}
-                  createResult={createResult}
-                />
-              )}
             />
           ) : null}
         </div>

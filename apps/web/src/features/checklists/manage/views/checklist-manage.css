@@ -1,6 +1,6 @@
 /* ── Team QA checklists section ─────────────────────────────────────────────
-   Sits inside .group-workspace-panel beside Members and Repositories, so it
-   borrows their furniture — .group-section-head, .group-section-count,
+   The body of the Checklists page (/checklists). It borrows the team pages'
+   furniture — .group-section-head, .group-section-count,
    .group-section-action, .hier-field, .hier-state, FormDialog — and only adds
    what a checklist needs on top. Teal is the section's accent because it is
    the QA Team colour everywhere else in the app.

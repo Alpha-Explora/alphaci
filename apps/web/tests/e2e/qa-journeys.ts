@@ -13,7 +13,7 @@ import type {
   ProvisionedProject,
   WorkflowFileMetadata,
 } from '../../src/shared/api/contracts';
-import type { DeliveryProject, GroupSummary } from '../../src/features/groups/data/hierarchy-contracts';
+import type { DeliveryProject, GroupMember, GroupSummary } from '../../src/features/groups/data/hierarchy-contracts';
 import type {
   ChecklistProjectsPatch,
   MoveRepositoryResponseWire,
@@ -587,6 +587,8 @@ class QaMockBackend {
       ['GET', /^\/capabilities$/, () => ({ body: this.capabilities() })],
       ['GET', /^\/workspaces\/me$/, () => ({ body: this.workspacesMe() })],
       ['GET', /^\/groups$/, () => ({ body: [this.group()] })],
+      // The Teams page is the header team's members.
+      ['GET', new RegExp(`^/groups/${P}/members$`), (m) => ({ body: this.groupMembers(m[1]) })],
       ['GET', /^\/notifications$/, () => ({ body: { enabled: true, unreadCount: 0, items: [] } satisfies NotificationsResponse })],
       // The project page reads only enforcedOrg (to label repositories outside it "External").
       ['GET', /^\/catalog\/project-options$/, () => ({ body: this.projectOptions() })],
@@ -700,6 +702,36 @@ class QaMockBackend {
       createdAt: ago(120 * 24 * 60 * MINUTE),
       archivedAt: null,
     };
+  }
+
+  /** The team's roster: its Lead, a QA Team member and a Developer. */
+  private groupMembers(groupId: string): GroupMember[] {
+    if (groupId !== WORKSPACE.id) throw nestError(404, 'Group not found');
+    const roster: Array<[AppRole, GroupMember['role']]> = [
+      ['lead', 'admin'],
+      ['qa', 'member'],
+      ['member', 'member'],
+    ];
+    return roster.map(([appRole, role]) => {
+      const person = PEOPLE[appRole];
+      return {
+        id: `gm-${person.id}`,
+        groupId,
+        userId: person.id,
+        role,
+        memberStatus: 'active',
+        login: person.login,
+        name: person.name,
+        email: person.email,
+        avatarUrl: null,
+        invitedBy: null,
+        invitedAt: null,
+        removedAt: null,
+        removedBy: null,
+        removalReason: null,
+        createdAt: ago(100 * 24 * 60 * MINUTE),
+      };
+    });
   }
 
   private projectOptions(): ProjectOptionsResponse {
@@ -1494,6 +1526,19 @@ async function openProjectTab(page: Page, baseUrl: string, tab: string) {
   if (tab !== 'Overview') await tabs.getByRole('tab', { name: tab, exact: true }).click();
 }
 
+/** The primary sidebar's link to a page (its label is always in the DOM, hidden by opacity). */
+function sidebarLink(page: Page, label: string): Locator {
+  return page.getByRole('navigation', { name: 'Primary' }).getByRole('link', { name: label, exact: true });
+}
+
+/** Opens a page from the primary sidebar, as a person would, and waits for its URL. */
+async function openSidebarPage(page: Page, label: string, pathname: string) {
+  const link = sidebarLink(page, label);
+  await visible(link, `the sidebar's ${label} link`);
+  await link.click();
+  await eventually(`the ${pathname} page`, () => new URL(page.url()).pathname === pathname);
+}
+
 async function expectRoleBadge(page: Page, role: AppRole) {
   const badge = page.locator(`.app-header-identity .sidebar-role-badge--${role}`);
   await expectText(badge, ROLE_BADGES[role], `the header role badge for ${role}`);
@@ -1536,8 +1581,10 @@ async function leadCreatesAndSharesChecklist({ page, backend, baseUrl }: Journey
   await eventually('the workspace picker to offer "+ Create workspace" to a lead', async () =>
     (await page.getByLabel('Active workspace').locator('option', { hasText: '+ Create workspace' }).count()) === 1,
   );
-
-  await page.getByRole('tablist', { name: 'Team sections' }).getByRole('tab', { name: /Checklist templates/ }).click();
+  // /teams is the header team's members now; checklists have a page of their own.
+  await visible(page.getByRole('heading', { name: /^Members/ }), 'the Members section on /teams');
+  await visible(page.getByText('Ana QA').first(), 'the team roster on /teams');
+  await openSidebarPage(page, 'Checklists', '/checklists');
   await visible(page.getByText('No QA checklists yet'), 'the empty checklist list');
   await page.getByRole('button', { name: 'Create the first checklist' }).click();
 
@@ -1890,8 +1937,12 @@ async function qaTeamCannotCreate({ page, backend, baseUrl }: JourneyContext) {
   assert.equal(await picker.locator('option', { hasText: '+ Create workspace' }).count(), 0, 'QA Team cannot create a workspace');
   assert.equal(await page.getByTestId('create-workspace-button').count(), 0, 'no create-workspace button');
 
+  // QA Team reads the roster but cannot change it.
+  await visible(page.getByText('Tone Lead').first(), 'the team roster');
+  await neverShown(backend, page.getByRole('button', { name: 'Add member' }), 'Add member for QA Team');
+
   // Checklists are readable, not writable, for QA Team.
-  await page.getByRole('tablist', { name: 'Team sections' }).getByRole('tab', { name: /Checklist templates/ }).click();
+  await openSidebarPage(page, 'Checklists', '/checklists');
   const row = page.locator('button.qa-list-row').filter({ hasText: RELEASE_CHECKLIST.name });
   await visible(row, 'the team checklist');
   await neverShown(backend, page.getByRole('button', { name: 'New checklist' }), 'New checklist for QA Team');
@@ -1918,10 +1969,14 @@ async function capabilityAbsentHidesQa({ page, backend, baseUrl }: JourneyContex
 
   const teamsLoadedAt = Date.now();
   await page.goto(`${baseUrl}/teams`, { waitUntil: 'domcontentloaded' });
-  const sections = page.getByRole('tablist', { name: 'Team sections' });
-  await visible(sections.getByRole('tab', { name: /Members/ }), 'the team sections');
-  await neverShown(backend, sections.getByRole('tab', { name: /Checklist templates/ }), 'the Teams checklist templates entry', teamsLoadedAt);
-  await visible(page.getByText('Members, activity, and the Projects and repositories this team owns.'), 'the lede without checklist templates');
+  await visible(page.getByRole('heading', { name: /^Members/ }), 'the Members section');
+  // The sidebar keeps Activity but drops Checklists without the capability.
+  await visible(sidebarLink(page, 'Activity'), "the sidebar's Activity link");
+  await neverShown(backend, sidebarLink(page, 'Checklists'), "the sidebar's Checklists link", teamsLoadedAt);
+
+  // Typed straight in, /checklists says the feature is off instead of loading it.
+  await page.goto(`${baseUrl}/checklists`, { waitUntil: 'domcontentloaded' });
+  await visible(page.getByText('QA checklists are not switched on for this deployment.'), 'the checklists-off notice');
 
   // Nothing QA was even asked for: the tabs are hidden because the flag is
   // missing, not because a QA request failed.
@@ -1935,9 +1990,8 @@ async function capabilityAbsentHidesQa({ page, backend, baseUrl }: JourneyContex
  * the tab in use. "Manage project" goes back to the Project's detail.
  */
 async function leadSwitchesRepositories({ page, backend, baseUrl }: JourneyContext) {
-  await page.goto(`${baseUrl}/teams`, { waitUntil: 'domcontentloaded' });
+  await page.goto(`${baseUrl}/workflows`, { waitUntil: 'domcontentloaded' });
   await expectRoleBadge(page, 'lead');
-  await page.getByRole('tablist', { name: 'Team sections' }).getByRole('tab', { name: /Projects/ }).click();
   const storefront = page
     .locator('li.pf-card')
     .filter({ has: page.locator('.pf-card__name', { hasText: /^storefront$/ }) });
@@ -1976,45 +2030,76 @@ async function leadSwitchesRepositories({ page, backend, baseUrl }: JourneyConte
   );
   assert.equal(backend.callsTo('GET', /^\/projects\/project-2\/folder$/).length >= 1, true, 'the backend page read its folder');
 
-  // Manage project: the Teams page, opened on this Project's detail.
+  // Manage project: the Projects page, on this team, opened on this Project's detail.
   const manage = page.getByRole('link', { name: 'Manage project' });
   assert.equal(
     await manage.getAttribute('href'),
-    `/teams?workspace=${WORKSPACE.id}&section=projects&project=${STOREFRONT_FOLDER}`,
+    `/workflows?group=${WORKSPACE.id}&project=${STOREFRONT_FOLDER}`,
   );
   await manage.click();
   await expectText(page.locator('.pf-detail__title'), 'storefront', 'the Project detail opened by the link');
+
+  // An old link from before the split still lands on the same detail.
+  await page.goto(
+    `${baseUrl}/teams?workspace=${WORKSPACE.id}&section=projects&project=${STOREFRONT_FOLDER}`,
+    { waitUntil: 'domcontentloaded' },
+  );
+  await eventually('the old /teams link to be forwarded to /workflows', () => {
+    const url = new URL(page.url());
+    return url.pathname === '/workflows' && url.searchParams.get('project') === STOREFRONT_FOLDER;
+  });
+  await expectText(page.locator('.pf-detail__title'), 'storefront', 'the Project detail opened by the old link');
 }
 
 async function leadOrganisesProjects({ page, backend, baseUrl }: JourneyContext) {
   await page.goto(`${baseUrl}/teams`, { waitUntil: 'domcontentloaded' });
   await expectRoleBadge(page, 'lead');
-  const sections = page.getByRole('tablist', { name: 'Team sections' });
-  const projectsTab = sections.getByRole('tab', { name: /Projects/ });
-  await expectText(projectsTab, /Projects\s*2/, 'the Projects rail entry with its count');
-  await visible(sections.getByRole('tab', { name: /Checklist templates/ }), 'the Checklist templates rail entry');
-  assert.equal(await sections.getByRole('tab', { name: /Repositories/ }).count(), 0, 'the flat Repositories entry is gone');
-  await projectsTab.click();
+  // The team rail is gone: /teams is members only, and Projects is the sidebar's.
+  assert.equal(await page.getByRole('tablist', { name: 'Team sections' }).count(), 0, 'no team section rail');
+  await visible(sidebarLink(page, 'Checklists'), "the sidebar's Checklists link");
+  await openSidebarPage(page, 'Projects', '/workflows');
+
+  // One heading, the team's Project count beside it; no team dropdown.
+  const heading = page.locator('.current-projects-title');
+  await expectText(heading, /Projects\s*2/, 'the Projects heading with its count');
+  assert.equal(await page.locator("[aria-haspopup='listbox']").count(), 0, 'no team dropdown on the page');
 
   // The list, in the server's order (by name).
   const cards = page.locator('li.pf-card');
   await eventually('two Project cards', async () => (await cards.count()) === 2);
   assert.deepEqual(await page.locator('.pf-card__name').allTextContents(), ['loyalty', 'storefront']);
   const storefront = cards.filter({ has: page.locator('.pf-card__name', { hasText: /^storefront$/ }) });
-  const chips = storefront.locator('a.pf-chip');
-  assert.deepEqual(await chips.allTextContents(), ['Frontendstorefront-web', 'Backendorders-api']);
-  assert.deepEqual(
-    [await chips.nth(0).getAttribute('href'), await chips.nth(1).getAttribute('href')],
-    [`/projects/${PROJECT_ID}`, '/projects/project-2'],
-  );
+  // No per-repository BACKEND/FRONTEND chips on a card.
+  assert.equal(await cards.locator('.pf-chip').count(), 0, 'no repository chips on the cards');
   await expectText(storefront.locator('.pf-card__meta'), '2 repositories', 'the storefront repository count');
   await expectText(storefront.locator('.pf-card__meta'), '1 checklist', 'the storefront checklist count');
   const loyalty = cards.filter({ has: page.locator('.pf-card__name', { hasText: /^loyalty$/ }) });
-  await expectText(loyalty, 'No repositories yet.', 'the empty loyalty Project');
+  await expectText(loyalty, '0 repositories', 'the empty loyalty Project');
   assert.equal(await page.locator('.pf-unfiled').count(), 0, 'every repository is filed');
 
-  // New Project.
-  await page.getByRole('button', { name: 'New Project' }).click();
+  // One Create project, and the ⋯ menu for the other two ways in.
+  assert.equal(await page.getByTestId('create-project-button').count(), 1, 'one Create project');
+  assert.equal(await page.getByRole('button', { name: 'New Project' }).count(), 0, 'no separate New Project button');
+  const more = page.getByRole('button', { name: 'More ways to create' });
+  assert.equal(await more.getAttribute('aria-haspopup'), 'menu');
+  await more.click();
+  const menu = page.getByRole('menu');
+  assert.deepEqual(
+    await menu.getByRole('menuitem').locator('.create-menu-label').allTextContents(),
+    ['Empty project', 'Add repository'],
+  );
+  assert.equal(
+    await menu.getByRole('menuitem', { name: /Add repository/ }).getAttribute('href'),
+    `/workflows?tab=setup&group=${WORKSPACE.id}`,
+  );
+  // Keyboard: Escape closes it and hands focus back.
+  await page.keyboard.press('Escape');
+  await absent(page.getByRole('menu'), 'the create menu');
+  assert.equal(await more.evaluate((element) => element === document.activeElement), true, 'focus back on ⋯');
+
+  // Empty project (the New Project dialog).
+  await more.press('ArrowDown');
+  await menu.getByRole('menuitem', { name: /Empty project/ }).press('Enter');
   const newDialog = page.getByRole('dialog', { name: 'New Project' });
   await newDialog.getByPlaceholder('checkout').fill('payments');
   await newDialog.getByRole('button', { name: 'Create Project' }).click();
@@ -2022,7 +2107,7 @@ async function leadOrganisesProjects({ page, backend, baseUrl }: JourneyContext)
   const create = onlyCall(backend.callsTo('POST', /^\/groups\/ws-checkout\/projects$/), 'Project create');
   assert.deepEqual(create.body, { name: 'payments' });
   await eventually('the new Project in the list', async () => (await cards.count()) === 3);
-  await expectText(projectsTab, /Projects\s*3/, 'the rail count after creating');
+  await expectText(heading, /Projects\s*3/, 'the heading count after creating');
 
   // The card opens storefront as one product, on its frontend's page; Manage
   // (beside it, not inside it) opens the Project's detail.
@@ -2301,7 +2386,7 @@ const JOURNEYS: Journey[] = [
   },
   {
     id: 'e',
-    title: 'Capabilities without qaChecklists: no Checklists / QA Studio / Teams entry',
+    title: 'Capabilities without qaChecklists: no Checklists / QA Studio tab, no sidebar Checklists, /checklists says off',
     backend: () => {
       // A lead, so nothing is hidden by role: only the missing field can hide it.
       const backend = new QaMockBackend('lead', 'absent');

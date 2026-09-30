@@ -169,8 +169,9 @@ Use `useAuthSession().signOut` / `isSigningOut`. Do not call `logout()` and
 
 ## Routes
 
-22 routes; 14 static / 9 dynamic at build. Everything except `/`, `/login`,
-`/signup` and `/auth/callback` is a one-line re-export from a feature.
+25 routes; 15 static / 10 dynamic at build (plus `/_not-found`). Everything
+except `/`, `/login`, `/signup` and `/auth/callback` is a one-line re-export
+from a feature.
 
 ```
 /                                    /admin
@@ -179,11 +180,21 @@ Use `useAuthSession().signOut` / `isSigningOut`. Do not call `logout()` and
 /workflows                           /groups/[groupId]
 /runs                                /groups/[groupId]/activity
 /projects/[projectId]                /groups/[groupId]/members
+/projects/[projectId]/qa/report/[runId]
 /teams                               /groups/[groupId]/systems
-/settings                            /groups/[groupId]/systems/[systemId]
-/inbox                               /groups/[groupId]/repositories/[repositoryId]
-/guide                               /groups/[groupId]/delivery-projects/[deliveryProjectId]
+/checklists  /activity               /groups/[groupId]/systems/[systemId]
+/settings                            /groups/[groupId]/repositories/[repositoryId]
+/inbox                               /groups/[groupId]/delivery-projects/[deliveryProjectId]
+/guide
 ```
+
+The team pages all show the team selected in the header's workspace picker
+(the only team selector; a platform admin also sees non-member teams there
+under "Other teams (admin)"): `/workflows` its Project cards, `/teams` its
+members, `/checklists` its QA checklist templates, `/activity` its activity &
+audit feed, and `/settings?tab=team` its own settings. `/teams` forwards old
+`?section=` links to those pages (`legacyTeamsRedirect` in
+`features/teams/model/teams-rules.ts`).
 
 `/runs` is built and wired to the BE run history. (Earlier revisions of this
 file said it was blocked on the webhook receiver; it isn't.)

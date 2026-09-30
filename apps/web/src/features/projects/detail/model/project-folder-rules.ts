@@ -144,20 +144,21 @@ export function switchHref(
 }
 
 /**
- * The Teams page opened on this Project's detail (repositories, Move,
- * checklists, Delete). Null when the folder does not say which team and
- * Project it is — there is then nowhere precise to send the viewer.
+ * The Projects page opened on this Project's detail (repositories, Move,
+ * checklists, Delete), with its team selected in the header. Null when the
+ * folder does not say which team and Project it is — there is then nowhere
+ * precise to send the viewer. (It was `/teams?section=projects&project=…`;
+ * /teams still forwards such links here.)
  */
 export function manageProjectHref(
   folder: Pick<ProjectFolderSummary, "groupId" | "deliveryProjectId"> | null | undefined,
 ): string | null {
   if (!folder?.groupId || !folder.deliveryProjectId) return null;
   const params = new URLSearchParams({
-    workspace: folder.groupId,
-    section: "projects",
+    group: folder.groupId,
     project: folder.deliveryProjectId,
   });
-  return `/teams?${params.toString()}`;
+  return `/workflows?${params.toString()}`;
 }
 
 /** The page as it was before Projects: no Project title, no switch. */

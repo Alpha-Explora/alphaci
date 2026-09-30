@@ -52,6 +52,10 @@ function FolderMeta({
  * Project's detail: repositories, Move, checklists and Delete Project. A
  * Project with no linked repository has no page to open, so its card opens
  * the detail as it always did.
+ *
+ * No per-repository BACKEND/FRONTEND chips: the card is the Project, the
+ * count says how many repositories it holds, and the repositories themselves
+ * are one click away (the page's repo switch, or Manage).
  */
 function FolderCard({
   folder,
@@ -99,22 +103,6 @@ function FolderCard({
           <span className="pf-card__manage-label">Manage</span>
         </button>
       </div>
-      {folder.repositories.length > 0 ? (
-        <ul className="pf-chips" aria-label={`Repositories in ${folder.name}`}>
-          {folder.repositories.map((repo) => (
-            <li key={repo.repositoryId}>
-              <RepoChip
-                name={repo.name}
-                repoFullName={repo.repoFullName}
-                role={repo.project?.role ?? null}
-                projectId={repo.project?.id ?? null}
-              />
-            </li>
-          ))}
-        </ul>
-      ) : (
-        <p className="pf-card__empty">No repositories yet.</p>
-      )}
     </li>
   );
 }

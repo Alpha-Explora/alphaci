@@ -2,6 +2,7 @@ import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 
 import { WorkflowBuilder } from "../../src/features/workflows/studio/views/workflow-builder";
+import { WorkspaceProvider } from "../../src/features/workspace/selection/views/workspace-selection-context";
 import {
   createProject,
   createGithubRepo,
@@ -866,7 +867,10 @@ describe("WorkflowBuilder project setup", () => {
 
   /* The heading's Create project carries the group on screen into the form,
    * so the person does not pick the same team twice. */
-  it("preselects the group shown on the projects view in the create form", async () => {
+  /* The projects view has no team picker: it shows the HEADER's team, which a
+   * ?group= link seeds (WorkflowStudioView hands it to WorkspaceProvider).
+   * "Create project" then preselects that same team. */
+  it("preselects the header's team, shown on the projects view, in the create form", async () => {
     mockedGetMyWorkspaces.mockResolvedValue({
       enabled: true,
       items: [
@@ -878,15 +882,17 @@ describe("WorkflowBuilder project setup", () => {
       { id: "workspace-1", name: "Platform", description: null, status: "active" },
       { id: "workspace-2", name: "Payments", description: null, status: "active" },
     ]);
-    mockSearch = "group=workspace-2";
     await act(async () => {
       root.render(
-        <WorkflowBuilder login="tone" plan="pro" session={leadSession("admin")} />,
+        <WorkspaceProvider initialWorkspaceId="workspace-2">
+          <WorkflowBuilder login="tone" plan="pro" session={leadSession("admin")} />
+        </WorkspaceProvider>,
       );
     });
     await waitForCondition(
-      () => container.querySelector("h1")?.textContent?.includes("Payments") ?? false,
+      () => container.querySelector("h1")?.textContent?.startsWith("Projects") ?? false,
     );
+    expect(container.querySelector("[aria-haspopup='listbox']")).toBeNull();
 
     await clickCreateProjectButton();
     await waitForCondition(() => container.textContent?.includes("Next.js App") ?? false);

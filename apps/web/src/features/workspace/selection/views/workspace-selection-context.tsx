@@ -16,8 +16,21 @@ interface WorkspaceSelectionContextValue {
   selectedWorkspaceId: string | null;
   selectedWorkspace: WorkspaceSummary | null;
   workspaces: WorkspacesMeResponse | null;
+  /**
+   * A platform admin's teams they are not a member of — selectable from the
+   * header under "Other teams (admin)". Always empty for everybody else.
+   */
+  otherWorkspaces: WorkspaceSummary[];
   setSelectedWorkspaceId: (workspaceId: string | null) => void;
-  setWorkspaces: (workspaces: WorkspacesMeResponse | null) => void;
+  /**
+   * Publishes the header's lists. `otherWorkspaces` is optional: a caller that
+   * only knows the member list leaves the admin's other teams as they were,
+   * rather than dropping them (and with them a valid selection).
+   */
+  setWorkspaces: (
+    workspaces: WorkspacesMeResponse | null,
+    otherWorkspaces?: WorkspaceSummary[],
+  ) => void;
   /**
    * Re-reads the workspace list.
    *
@@ -31,11 +44,13 @@ interface WorkspaceSelectionContextValue {
 }
 
 const STORAGE_KEY = "flowci.workspaceId";
+const NO_OTHERS: WorkspaceSummary[] = [];
 
 const WorkspaceSelectionContext = createContext<WorkspaceSelectionContextValue>({
   selectedWorkspaceId: null,
   selectedWorkspace: null,
   workspaces: null,
+  otherWorkspaces: NO_OTHERS,
   setSelectedWorkspaceId: () => undefined,
   setWorkspaces: () => undefined,
   refreshWorkspaces: () => undefined,
@@ -59,6 +74,10 @@ export function WorkspaceProvider({
     return initialWorkspaceId ?? window.localStorage.getItem(STORAGE_KEY);
   });
   const [workspaces, setWorkspacesState] = useState<WorkspacesMeResponse | null>(null);
+  const [otherWorkspaces, setOtherWorkspaces] = useState<WorkspaceSummary[]>(NO_OTHERS);
+  // Mirrors otherWorkspaces for setWorkspaces, which must validate the
+  // selection against the lists it is about to publish, synchronously.
+  const othersRef = useRef<WorkspaceSummary[]>(NO_OTHERS);
   /*
    * A ref, not state: the header registers its fetch on mount, and storing it
    * in state would re-render every consumer of this context for a value none
@@ -84,18 +103,22 @@ export function WorkspaceProvider({
   }, []);
 
   const setWorkspaces = useCallback(
-    (nextWorkspaces: WorkspacesMeResponse | null) => {
+    (nextWorkspaces: WorkspacesMeResponse | null, nextOthers?: WorkspaceSummary[]) => {
+      const others = nextOthers ?? othersRef.current;
+      othersRef.current = others;
       setWorkspacesState(nextWorkspaces);
-      if (!nextWorkspaces?.items.length) {
+      setOtherWorkspaces(others);
+      const selectable = [...(nextWorkspaces?.items ?? []), ...others];
+      if (selectable.length === 0) {
         setSelectedWorkspaceId(null);
         return;
       }
 
       setSelectedWorkspaceIdState((current) => {
         const exists = current
-          ? nextWorkspaces.items.some((workspace) => workspace.id === current)
+          ? selectable.some((workspace) => workspace.id === current)
           : false;
-        const nextId = exists ? current : nextWorkspaces.items[0]?.id ?? null;
+        const nextId = exists ? current : selectable[0]?.id ?? null;
         if (nextId) {
           window.localStorage.setItem(STORAGE_KEY, nextId);
         }
@@ -105,25 +128,28 @@ export function WorkspaceProvider({
     [setSelectedWorkspaceId],
   );
 
-  const selectedWorkspace = useMemo(
-    () =>
-      workspaces?.items.find((workspace) => workspace.id === selectedWorkspaceId) ??
-      workspaces?.items[0] ??
-      null,
-    [selectedWorkspaceId, workspaces],
-  );
+  const selectedWorkspace = useMemo(() => {
+    const selectable = [...(workspaces?.items ?? []), ...otherWorkspaces];
+    return (
+      selectable.find((workspace) => workspace.id === selectedWorkspaceId) ??
+      selectable[0] ??
+      null
+    );
+  }, [otherWorkspaces, selectedWorkspaceId, workspaces]);
 
   const value = useMemo(
     () => ({
       selectedWorkspaceId: selectedWorkspace?.id ?? selectedWorkspaceId,
       selectedWorkspace,
       workspaces,
+      otherWorkspaces,
       setSelectedWorkspaceId,
       setWorkspaces,
       refreshWorkspaces,
       registerWorkspaceRefresh,
     }),
     [
+      otherWorkspaces,
       selectedWorkspace,
       selectedWorkspaceId,
       setSelectedWorkspaceId,

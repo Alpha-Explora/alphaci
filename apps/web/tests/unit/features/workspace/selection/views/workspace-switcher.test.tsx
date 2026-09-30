@@ -335,4 +335,78 @@ describe("WorkspaceSwitcher", () => {
 
     expect(window.localStorage.getItem("flowci.workspaceId")).toBe("workspace-2");
   });
+
+  /* A platform admin sees every team through /groups, but /workspaces/me only
+   * lists the ones they belong to. With the Projects page's own dropdown gone,
+   * the header is the only way to reach the rest. */
+  describe("a platform admin's other teams", () => {
+    const otherTeams = [
+      { id: "workspace-9", name: "Johns Kitchen", kind: "team" as const, role: "admin" as const },
+    ];
+
+    function renderSwitcher(node: React.ReactNode): HTMLElement {
+      const container = document.createElement("div");
+      document.body.appendChild(container);
+      root = createRoot(container);
+      act(() => {
+        root!.render(node);
+      });
+      return container;
+    }
+
+    it("lists them under 'Other teams (admin)', after the admin's own teams", () => {
+      const container = renderSwitcher(
+        <WorkspaceProvider>
+          <WorkspaceSwitcher workspaces={workspaces} otherTeams={otherTeams} appRole="admin" />
+        </WorkspaceProvider>,
+      );
+      const groups = [...container.querySelectorAll("optgroup")];
+      expect(groups.map((group) => group.label)).toEqual(["Your teams", "Other teams (admin)"]);
+      expect(groups[0].textContent).toContain("Design team");
+      expect(groups[1].querySelector("option")?.value).toBe("workspace-9");
+      expect(groups[1].textContent).toBe("Johns Kitchen");
+    });
+
+    it("selects one like any other team", () => {
+      const container = renderSwitcher(
+        <WorkspaceProvider>
+          <WorkspaceSwitcher workspaces={workspaces} otherTeams={otherTeams} appRole="admin" />
+        </WorkspaceProvider>,
+      );
+      const select = container.querySelector<HTMLSelectElement>('select[aria-label="Active workspace"]')!;
+      act(() => {
+        const descriptor = Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, "value");
+        descriptor?.set?.call(select, "workspace-9");
+        select.dispatchEvent(new Event("change", { bubbles: true }));
+      });
+      expect(window.localStorage.getItem("flowci.workspaceId")).toBe("workspace-9");
+      expect(select.value).toBe("workspace-9");
+    });
+
+    it("offers a picker to an admin who belongs to no team", () => {
+      const container = renderSwitcher(
+        <WorkspaceProvider>
+          <WorkspaceSwitcher
+            workspaces={{ enabled: true, items: [] }}
+            otherTeams={otherTeams}
+            appRole="admin"
+          />
+        </WorkspaceProvider>,
+      );
+      expect(container.querySelector("select")).not.toBeNull();
+      expect([...container.querySelectorAll("optgroup")].map((group) => group.label)).toEqual([
+        "Other teams (admin)",
+      ]);
+    });
+
+    it("leaves everyone else's picker a flat list, as before", () => {
+      const container = renderSwitcher(
+        <WorkspaceProvider>
+          <WorkspaceSwitcher workspaces={workspaces} appRole="lead" />
+        </WorkspaceProvider>,
+      );
+      expect(container.querySelector("optgroup")).toBeNull();
+      expect(container.textContent).not.toContain("Other teams");
+    });
+  });
 });

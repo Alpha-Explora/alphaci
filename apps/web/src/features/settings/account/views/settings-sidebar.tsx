@@ -20,13 +20,26 @@ import { SettingsUserAvatar } from "./settings-user-avatar";
 
 type SettingsSession = ReturnType<typeof useAuthSession>["session"];
 
-const SETTINGS_NAV_SECTIONS: SectionId[] = [
-  "account",
-  "appearance",
-  "connections",
-  "guide",
-  "danger",
-];
+function TeamIcon({ size = 14 }: Readonly<{ size?: number }>) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+      <circle cx="9" cy="7" r="4" />
+      <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+      <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+    </svg>
+  );
+}
 
 function navButtonStateClass(isActive: boolean, isDanger: boolean): string {
   if (isActive && isDanger) return "settings-nav-btn--active-danger";
@@ -37,6 +50,7 @@ function navButtonStateClass(isActive: boolean, isDanger: boolean): string {
 
 function sectionIcon(sec: SectionId): ReactNode {
   if (sec === "account") return <UserIcon size={14} />;
+  if (sec === "team") return <TeamIcon size={14} />;
   if (sec === "appearance") return <AppearanceIcon size={14} />;
   if (sec === "connections") return <GithubIcon size={14} />;
   if (sec === "guide") return <BookOpenIcon size={14} />;
@@ -70,11 +84,14 @@ function SettingsNavButton({
 export function SettingsSidebar({
   session,
   isCompactLayout,
+  sections,
   activeSection,
   onSelectSection,
 }: Readonly<{
   session: SettingsSession;
   isCompactLayout: boolean;
+  /** The rail's entries, in order (Team only for its Lead/admin). */
+  sections: readonly SectionId[];
   activeSection: SectionId;
   onSelectSection: (sec: SectionId) => void;
 }>) {
@@ -122,7 +139,7 @@ export function SettingsSidebar({
         </div>
       </div>
 
-      {SETTINGS_NAV_SECTIONS.map((sec) => (
+      {sections.map((sec) => (
         <SettingsNavButton
           key={sec}
           sec={sec}
