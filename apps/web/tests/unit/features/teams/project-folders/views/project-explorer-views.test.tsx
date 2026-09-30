@@ -1,4 +1,3 @@
-import { waitFor } from "@testing-library/react";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 
@@ -39,6 +38,22 @@ async function settle() {
   await act(async () => {
     for (let i = 0; i < 4; i += 1) await Promise.resolve();
   });
+}
+
+/** Polls until `check` stops throwing: for UI that leaves through an exit animation. */
+async function waitFor(check: () => void, timeoutMs = 2000) {
+  const deadline = Date.now() + timeoutMs;
+  for (;;) {
+    try {
+      check();
+      return;
+    } catch (error) {
+      if (Date.now() > deadline) throw error;
+      await act(async () => {
+        await new Promise((resolve) => setTimeout(resolve, 16));
+      });
+    }
+  }
 }
 
 let lastCount: number | null | undefined;
