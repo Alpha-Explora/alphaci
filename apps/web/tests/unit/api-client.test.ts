@@ -7,9 +7,6 @@ import {
   getGithubAppInstallUrl,
   getMyWorkspaces,
   getWorkspaceMembers,
-  addWorkspaceMember,
-  updateWorkspaceMemberRole,
-  removeWorkspaceMember,
   getLinkedGithubRepos,
   getMyUsage,
   getProjectAuditEvents,
@@ -677,21 +674,6 @@ describe("API client project setup helpers", () => {
       })
       .mockResolvedValueOnce({
         ok: true,
-        status: 201,
-        json: async () => ({ id: "member-2", role: "member", login: "dev" }),
-      })
-      .mockResolvedValueOnce({
-        ok: true,
-        status: 200,
-        json: async () => ({ id: "member-2", role: "delegated_lead", login: "dev" }),
-      })
-      .mockResolvedValueOnce({
-        ok: true,
-        status: 200,
-        json: async () => ({ id: "member-2", removed: true }),
-      })
-      .mockResolvedValueOnce({
-        ok: true,
         status: 200,
         json: async () => ({
           userId: "user-1",
@@ -725,21 +707,6 @@ describe("API client project setup helpers", () => {
     await expect(getWorkspaceMembers("workspace-1")).resolves.toEqual([
       { id: "member-1", role: "admin", login: "tone" },
     ]);
-    await expect(
-      addWorkspaceMember("workspace-1", {
-        loginOrEmail: "dev",
-        role: "member",
-      }),
-    ).resolves.toMatchObject({ id: "member-2", role: "member" });
-    await expect(
-      updateWorkspaceMemberRole("workspace-1", "member-2", { role: "delegated_lead" }),
-    ).resolves.toMatchObject({ id: "member-2", role: "delegated_lead" });
-    await expect(
-      removeWorkspaceMember("workspace-1", "member-2"),
-    ).resolves.toEqual({
-      id: "member-2",
-      removed: true,
-    });
     await expect(getNotificationPreferences()).resolves.toMatchObject({
       inAppEnabled: true,
     });
@@ -774,29 +741,23 @@ describe("API client project setup helpers", () => {
     );
     expect(fetchMock).toHaveBeenNthCalledWith(
       6,
-      "http://localhost:4000/api/v1/workspaces/workspace-1/members",
-      expect.objectContaining({ method: "POST" }),
-    );
-    expect(fetchMock).toHaveBeenNthCalledWith(
-      7,
-      "http://localhost:4000/api/v1/workspaces/workspace-1/members/member-2",
-      expect.objectContaining({ method: "PATCH" }),
-    );
-    expect(fetchMock).toHaveBeenNthCalledWith(
-      8,
-      "http://localhost:4000/api/v1/workspaces/workspace-1/members/member-2",
-      expect.objectContaining({ method: "DELETE" }),
-    );
-    expect(fetchMock).toHaveBeenNthCalledWith(
-      9,
       "http://localhost:4000/api/v1/notifications/preferences",
       expect.objectContaining({ credentials: "include" }),
     );
     expect(fetchMock).toHaveBeenNthCalledWith(
-      10,
+      7,
       "http://localhost:4000/api/v1/notifications/preferences",
       expect.objectContaining({ method: "PATCH" }),
     );
+    // The roster is read-only here: no member write goes to /workspaces/:id/members.
+    expect(
+      fetchMock.mock.calls.filter(
+        ([url, init]) =>
+          String(url).includes("/workspaces/workspace-1/members") &&
+          (init as RequestInit | undefined)?.method !== undefined &&
+          (init as RequestInit).method !== "GET",
+      ),
+    ).toEqual([]);
   });
 
   it("runs a local project sync snapshot", async () => {

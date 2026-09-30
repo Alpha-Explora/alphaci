@@ -2,7 +2,6 @@ import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 
 import { useCurrentProjectsViewModel } from "../../../../../../src/features/workflows/studio/view-models/use-current-projects-view-model";
-import type { ProvisionedProject } from "../../../../../../src/shared/api/contracts";
 
 let mockSearch = "";
 const mockReplace = jest.fn();
@@ -35,12 +34,6 @@ const GROUPS = [
   { id: "g-old", name: "Team Blaine", description: "Blaine's team", status: "active" },
 ];
 
-const PROJECTS = [
-  { id: "p-1", workspaceId: "g-old" },
-  { id: "p-2", workspaceId: "g-old" },
-  { id: "p-3", workspaceId: "g-new" },
-] as unknown as ProvisionedProject[];
-
 type Vm = ReturnType<typeof useCurrentProjectsViewModel>;
 let root: Root | null = null;
 
@@ -57,7 +50,7 @@ async function renderVm(loadingProjects = false): Promise<() => Vm> {
   function Probe() {
     // A probe hands the hook's value back to the test; the write IS the read.
     // eslint-disable-next-line react-hooks/globals
-    snapshot = useCurrentProjectsViewModel({ projects: PROJECTS, loadingProjects });
+    snapshot = useCurrentProjectsViewModel({ loadingProjects });
     return null;
   }
   root = createRoot(document.createElement("div"));
@@ -71,7 +64,7 @@ async function renderVm(loadingProjects = false): Promise<() => Vm> {
 }
 
 describe("useCurrentProjectsViewModel", () => {
-  it("is loading until the groups arrive, then ready with repository counts", async () => {
+  it("is loading until the teams arrive, then ready", async () => {
     let resolve: (value: unknown) => void = () => undefined;
     mockedGetGroups.mockReturnValue(new Promise((r) => (resolve = r)));
     const get = await renderVm();
@@ -81,10 +74,6 @@ describe("useCurrentProjectsViewModel", () => {
       resolve(GROUPS);
     });
     expect(get().status).toBe("ready");
-    expect(get().groups.map((g) => [g.id, g.repositoryCount])).toEqual([
-      ["g-new", 1],
-      ["g-old", 2],
-    ]);
   });
 
   it("stays loading while the projects are still loading", async () => {
@@ -93,59 +82,57 @@ describe("useCurrentProjectsViewModel", () => {
     expect(get().status).toBe("loading");
   });
 
-  it("opens on the first group with no link and no header choice", async () => {
-    mockedGetGroups.mockResolvedValue(GROUPS);
-    const get = await renderVm();
-    expect(get().selectedGroup?.id).toBe("g-new");
-  });
-
-  it("opens on the header's workspace when it is one of the groups", async () => {
+  it("shows the header's team", async () => {
     mockedGetGroups.mockResolvedValue(GROUPS);
     mockHeader.selectedWorkspaceId = "g-old";
     const get = await renderVm();
-    expect(get().selectedGroup?.id).toBe("g-old");
+    expect(get().team?.id).toBe("g-old");
   });
 
-  it("opens on a ?group= link ahead of the header", async () => {
+  it("falls back to the first team while the header has no selection it knows", async () => {
+    mockedGetGroups.mockResolvedValue(GROUPS);
+    const get = await renderVm();
+    expect(get().team?.id).toBe("g-new");
+  });
+
+  /* ?group= no longer overrides: it seeds the HEADER (WorkflowStudioView),
+   * and the page follows the header. The page never writes a selection. */
+  it("follows the header, not ?group=, and never writes either", async () => {
     mockedGetGroups.mockResolvedValue(GROUPS);
     mockHeader.selectedWorkspaceId = "g-old";
     mockSearch = "group=g-new";
     const get = await renderVm();
-    expect(get().selectedGroup?.id).toBe("g-new");
-  });
-
-  /* The settled decision: the page reads the header, never writes it. The
-   * header lists only the caller's teams; an admin's groups list is every team. */
-  it("mirrors a choice into ?group= and never into the header", async () => {
-    mockedGetGroups.mockResolvedValue(GROUPS);
-    mockSearch = "tour=2&tab=setup";
-    const get = await renderVm();
-
-    act(() => get().selectGroup("g-old"));
-
-    expect(get().selectedGroup?.id).toBe("g-old");
-    expect(mockReplace).toHaveBeenCalledWith("/workflows?tour=2&group=g-old", {
-      scroll: false,
-    });
+    expect(get().team?.id).toBe("g-old");
+    expect(mockReplace).not.toHaveBeenCalled();
     expect(mockHeader.setSelectedWorkspaceId).not.toHaveBeenCalled();
   });
 
-  it("falls back to another group when the selected one is deleted", async () => {
+  it("opens a ?project= link on the team it names", async () => {
     mockedGetGroups.mockResolvedValue(GROUPS);
+    mockHeader.selectedWorkspaceId = "g-old";
+    mockSearch = "group=g-old&project=dp-1";
     const get = await renderVm();
-    act(() => get().selectGroup("g-old"));
-
-    act(() => get().removeGroup("g-old"));
-    expect(get().groups.map((g) => g.id)).toEqual(["g-new"]);
-    expect(get().selectedGroup?.id).toBe("g-new");
+    expect(get().linkedFolderId).toBe("dp-1");
   });
 
-  it("reports an error when the groups fail to load, and retries", async () => {
+  it("does not open a Project linked for another team, or a wizard's target", async () => {
+    mockedGetGroups.mockResolvedValue(GROUPS);
+    mockHeader.selectedWorkspaceId = "g-old";
+    mockSearch = "group=g-new&project=dp-1";
+    const other = await renderVm();
+    expect(other().linkedFolderId).toBeNull();
+
+    act(() => root?.unmount());
+    mockSearch = "tab=setup&group=g-old&project=dp-1";
+    const wizard = await renderVm();
+    expect(wizard().linkedFolderId).toBeNull();
+  });
+
+  it("reports an error when the teams fail to load, and retries", async () => {
     mockedGetGroups.mockRejectedValueOnce(new Error("offline"));
     const get = await renderVm();
     expect(get().status).toBe("error");
-    expect(get().groups).toEqual([]);
-    expect(get().selectedGroup).toBeNull();
+    expect(get().team).toBeNull();
 
     mockedGetGroups.mockResolvedValueOnce(GROUPS);
     await act(async () => {

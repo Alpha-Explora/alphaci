@@ -99,14 +99,12 @@ describe("WorkspaceChecklistsSection", () => {
 });
 
 describe("ProjectChecklistsPanel", () => {
-  it("lists shared checklists and links a lead to the team", async () => {
+  it("lists shared checklists and links a lead to the team's Checklists page", async () => {
     repo.listForProject.mockResolvedValue({ items: [checklist()], canManage: true });
     const container = await render(<ProjectChecklistsPanel projectId="project-1" workspaceId="ws-1" />);
     expect(container.textContent).toContain("Release smoke test");
     const manage = container.querySelector<HTMLAnchorElement>("a.qa-project-card__manage");
-    expect(manage?.getAttribute("href")).toBe(
-      "/teams?workspace=ws-1&section=qa-checklists&checklist=cl-1",
-    );
+    expect(manage?.getAttribute("href")).toBe("/checklists?workspace=ws-1&checklist=cl-1");
   });
 
   it("gives a reader no manage link", async () => {

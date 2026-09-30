@@ -40,6 +40,7 @@ export type WorkspaceSwitcherKind =
 export function workspaceSwitcherKind(
   status: "idle" | "loading" | "ready" | "error",
   workspaces: WorkspacesMeResponse | null,
+  /** Every selectable team, an admin's other teams included. */
   itemCount: number,
   canCreate: boolean,
 ): WorkspaceSwitcherKind {
@@ -65,6 +66,59 @@ export function isPlatformAdminUser(
 ): boolean {
   if (guest) return false;
   return session?.appRole === "admin" || session?.platformRole === "super_admin";
+}
+
+/** The heading the header picker files a platform admin's non-member teams under. */
+export const OTHER_TEAMS_HEADING = "Other teams (admin)";
+
+/**
+ * The teams a platform admin can see but is not a member of.
+ *
+ * `/groups` hands an admin EVERY team; `/workspaces/me` only the ones they
+ * belong to. The difference is what the header lists under "Other teams
+ * (admin)" — without it an admin could no longer reach a team like "Johns
+ * Kitchen" once the Projects page stopped carrying its own team dropdown.
+ * Sorted by name so a long list is scannable; the role is the one the backend
+ * reports for an admin on a team they do not belong to.
+ */
+export function adminOtherTeams(
+  memberTeams: readonly Pick<WorkspaceSummary, "id">[],
+  allTeams: readonly { id: string; name: string }[],
+): WorkspaceSummary[] {
+  const memberIds = new Set(memberTeams.map((team) => team.id));
+  return allTeams
+    .filter((team) => !memberIds.has(team.id))
+    .map((team) => ({ id: team.id, name: team.name, kind: "team" as const, role: "admin" as const }))
+    .sort((a, b) => a.name.localeCompare(b.name));
+}
+
+/** Every team the header can select: the caller's own, then an admin's others. */
+export function selectableWorkspaces(
+  workspaces: WorkspacesMeResponse | null,
+  otherTeams: readonly WorkspaceSummary[],
+): WorkspaceSummary[] {
+  return [...(workspaces?.items ?? []), ...otherTeams];
+}
+
+/** The primary sidebar entries, in order. */
+export type SidebarMainItem = "home" | "projects" | "teams" | "checklists" | "activity" | "inbox";
+
+/**
+ * Which Main entries the sidebar shows. Checklists follows the same backend
+ * capability that gated the old team rail's "Checklist templates"; Activity was
+ * open to everyone who could open a team, so it only hides for guests, like
+ * Teams and Inbox.
+ */
+export function sidebarMainItems(input: {
+  guest: boolean;
+  qaChecklistsEnabled: boolean;
+}): SidebarMainItem[] {
+  const items: SidebarMainItem[] = ["home", "projects"];
+  if (input.guest) return items;
+  items.push("teams");
+  if (input.qaChecklistsEnabled) items.push("checklists");
+  items.push("activity", "inbox");
+  return items;
 }
 
 export function sessionAppRole(

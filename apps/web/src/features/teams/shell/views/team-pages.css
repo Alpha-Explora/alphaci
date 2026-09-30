@@ -1,0 +1,31 @@
+/* ── The team pages (/teams, /checklists, /activity) ─────────────────────────
+   The global buttons are hero-scale and win over .group-section-action on
+   source order (globals.css loads last). Two classes size them for a data
+   panel: the members roster's "Add member" and the activity filters.
+   Colours are tokens for both themes. */
+
+.team-detail-surface .primary-button,
+.team-detail-surface .ghost-button {
+  font-size: 0.82rem;
+  font-weight: 600;
+  min-height: 2.2rem;
+  padding: 0.45rem 0.95rem;
+  border-radius: 0.55rem;
+  gap: 0.35rem;
+  letter-spacing: 0;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.team-detail-surface .ghost-button {
+  border-color: var(--border-strong);
+}
+
+/* The chip beside the page title (member count, or the team's name). The
+   shared .workflow-page-studio-badge is painted in dark-only literals, which
+   read as a grey slab in light mode; these tokens hold in both themes. */
+.workflow-page-title-row .team-page-badge {
+  border-color: var(--border-tile);
+  background: var(--layer-2);
+  color: var(--text-secondary);
+}

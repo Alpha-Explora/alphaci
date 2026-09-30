@@ -166,10 +166,10 @@ describe("draft editing", () => {
 });
 
 describe("checklist links and errors", () => {
-  it("links a lead to the owning team, opened on the checklist", () => {
-    expect(checklistManageHref("ws 1")).toBe("/teams?workspace=ws+1&section=qa-checklists");
+  it("links a lead to the Checklists page on the owning team, opened on the checklist", () => {
+    expect(checklistManageHref("ws 1")).toBe("/checklists?workspace=ws+1");
     expect(checklistManageHref("ws-1", "cl-1")).toBe(
-      "/teams?workspace=ws-1&section=qa-checklists&checklist=cl-1",
+      "/checklists?workspace=ws-1&checklist=cl-1",
     );
   });
 

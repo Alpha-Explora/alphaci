@@ -2,25 +2,18 @@
 
 
 import {
-  ActivityFeed,
-  ActivityFilters,
-  HierarchyPageShell,
-} from "@/features/groups/workspace";
-import {
   Breadcrumb,
   GroupSubNav,
-  LoadingRows,
+  HierarchyPageShell,
   PageHeader,
   ResourceBoundary,
 } from "@/features/groups/workspace";
 
 import type { GroupSummary } from "../../model/groups-types";
 import { useGroupRouteViewModel, useGroupViewModel } from "@/features/groups";
-import { useGroupActivityViewModel } from "../view-models/use-group-activity-view-model";
+import { GroupActivitySection } from "./group-activity-section";
 
 function ActivityInner({ group }: Readonly<{ group: GroupSummary }>) {
-  const vm = useGroupActivityViewModel(group.id);
-
   return (
     <>
       <Breadcrumb
@@ -36,41 +29,7 @@ function ActivityInner({ group }: Readonly<{ group: GroupSummary }>) {
       />
       <GroupSubNav groupId={group.id} active="activity" />
 
-      <ActivityFilters value={vm.filters} onChange={vm.setFilters} />
-
-      {vm.status === "ready" ? (
-        <>
-          <ActivityFeed items={vm.items} />
-          {vm.cursor && (
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "center",
-                marginTop: "1rem",
-              }}
-            >
-              <button
-                type="button"
-                className="ghost-button"
-                onClick={() => void vm.loadMore()}
-                disabled={vm.loadingMore}
-              >
-                {vm.loadingMore ? "Loading…" : "Load more"}
-              </button>
-            </div>
-          )}
-        </>
-      ) : vm.status === "loading" ? (
-        <LoadingRows rows={4} />
-      ) : (
-        <ResourceBoundary
-          state={vm.status}
-          onRetry={vm.reload}
-          emptyTitle="No activity yet"
-          emptyMessage="Nothing matches these filters. Activity appears as members, assignments, and configuration change."
-          forbiddenMessage="The activity feed is available to group leads."
-        />
-      )}
+      <GroupActivitySection groupId={group.id} />
     </>
   );
 }

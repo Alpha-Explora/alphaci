@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { Suspense, useState } from "react";
 
 import { AppNav } from "@/features/workspace/selection";
 import { FlowBackground } from "@/shared/layout/flow-background";
@@ -10,12 +11,33 @@ import { WorkspaceProvider } from "@/features/workspace/selection";
 import { WorkflowBuilder } from "./workflow-builder";
 import { isGuest, useAuthSession, useSignOutAndRedirect } from "@/features/auth/session";
 import { studioSessionFields } from "../model/workflow-studio-rules";
+import { readProjectsDeepLink } from "../model/current-projects-rules";
 
 /* Level 0 in the skill's progressive depth: the studio's data belongs to
  * WorkflowBuilder and the hooks it owns, so this surface has no view-model and
  * no data layer of its own. Sign-out is the one action, via useAuthSession. */
 
+/**
+ * Public view for /workflows.
+ *
+ * `?group=` (a "Manage project" link, a forwarded `/teams?section=projects`
+ * link, the Create Project wizard's links) selects that team in the HEADER on
+ * arrival — the Projects view has no team picker of its own, so the header is
+ * the one place a link can point it at a team. Read with useSearchParams,
+ * whose Suspense boundary this owns so the route stays static.
+ */
 export function WorkflowStudioView() {
+  return (
+    <Suspense fallback={<PipelineLoader label="Loading Workflow Studio" />}>
+      <WorkflowStudioRoute />
+    </Suspense>
+  );
+}
+
+function WorkflowStudioRoute() {
+  const searchParams = useSearchParams();
+  // Read once on arrival: later ?group= changes belong to the wizard.
+  const [linkedTeamId] = useState(() => readProjectsDeepLink(searchParams).groupId);
   const { status, session, error, refresh } = useAuthSession();
   const { signOutAndRedirect, isSigningOut } = useSignOutAndRedirect();
   const [logoutMessage, setLogoutMessage] = useState<string | null>(null);
@@ -41,7 +63,7 @@ export function WorkflowStudioView() {
   const fields = studioSessionFields(session);
 
   return (
-    <WorkspaceProvider>
+    <WorkspaceProvider initialWorkspaceId={linkedTeamId}>
       <main className="dash-shell" suppressHydrationWarning>
         <a href="#main-content" className="skip-link">
           Skip to main content

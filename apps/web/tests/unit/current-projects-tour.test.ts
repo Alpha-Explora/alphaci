@@ -29,7 +29,7 @@ describe("getCurrentProjectsTourSteps", () => {
     expect(steps.length).toBeGreaterThan(0);
   });
 
-  it("includes a step for the group dropdown", () => {
+  it("includes a step for the Projects heading", () => {
     const steps = getCurrentProjectsTourSteps();
     const step = steps.find((s) => s.element === "[data-tour='projects-list']");
     expect(step).toBeDefined();
@@ -67,17 +67,20 @@ describe("getCurrentProjectsTourSteps", () => {
     expect(step).toBeDefined();
   });
 
-  it("first step targets the group dropdown", () => {
+  it("first step targets the Projects heading", () => {
     const steps = getCurrentProjectsTourSteps();
     expect(steps[0]?.element).toBe("[data-tour='projects-list']");
   });
 
-  /* The anchor moved from a left sidebar to a dropdown at the top of the page,
-   * so a popover placed to its right would cover the header actions. */
-  it("places the first step below the dropdown, which sits at the top", () => {
+  /* The anchor sits at the top of the page, so a popover placed to its right
+   * would cover the header actions. The page lost its team dropdown (the
+   * header picker chooses the team), so the copy must not send anyone
+   * looking for one. */
+  it("places the first step below the heading and points at the header picker", () => {
     const steps = getCurrentProjectsTourSteps();
     expect(steps[0]?.popover?.side).toBe("bottom");
-    expect(steps[0]?.popover?.description).not.toMatch(/sidebar/i);
+    expect(steps[0]?.popover?.description).not.toMatch(/sidebar|dropdown/i);
+    expect(steps[0]?.popover?.description).toMatch(/header/i);
   });
 
   it("every step has a non-empty popover title and description", () => {

@@ -691,15 +691,6 @@ export interface WorkspaceMemberSummary {
   createdAt: string;
 }
 
-export interface AddWorkspaceMemberRequest {
-  loginOrEmail: string;
-  role: WorkspaceRole;
-}
-
-export interface UpdateWorkspaceMemberRoleRequest {
-  role: WorkspaceRole;
-}
-
 export interface ProjectAuditEvent {
   id: string;
   eventCode: string;

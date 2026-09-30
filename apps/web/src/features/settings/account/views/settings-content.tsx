@@ -16,6 +16,7 @@ import { SettingsAppearanceSection } from "./settings-appearance-section";
 import { SettingsConnectionsSection } from "./settings-connections-section";
 import { SettingsDangerSection } from "./settings-danger-section";
 import { SettingsGuideSection } from "./settings-guide-section";
+import { SettingsTeamSection } from "./settings-team-section";
 import {
   settingsContentStyle,
   settingsLayoutStyle,
@@ -43,6 +44,7 @@ export function SettingsContent({
   prefersReducedMotion,
   isCompactLayout,
   onDeleted,
+  initialSection,
 }: Readonly<{
   session: ReturnType<typeof useAuthSession>["session"];
   onLogout: () => void;
@@ -51,6 +53,8 @@ export function SettingsContent({
   prefersReducedMotion: boolean | null;
   isCompactLayout: boolean;
   onDeleted: () => void;
+  /** The section a `?tab=` link asked for, read once on arrival. */
+  initialSection?: SectionId;
 }>) {
   const {
     capabilities,
@@ -58,7 +62,11 @@ export function SettingsContent({
     workspacesEnabled,
     notificationsEnabled,
   } = useCapabilities();
-  const vm = useSettingsViewModel({ workspacesEnabled });
+  const vm = useSettingsViewModel({
+    workspacesEnabled,
+    initialSection,
+    appRole: session?.appRole,
+  });
 
   const guest = isGuest(session);
   const activeSection = vm.activeSection;
@@ -104,6 +112,7 @@ export function SettingsContent({
         <SettingsSidebar
           session={session}
           isCompactLayout={isCompactLayout}
+          sections={vm.sections}
           activeSection={activeSection}
           onSelectSection={setActiveSection}
         />
@@ -127,6 +136,7 @@ export function SettingsContent({
             >
               <SettingsSectionSwitch
                 activeSection={activeSection}
+                teamName={vm.teamName}
                 session={session}
                 prefersReducedMotion={prefersReducedMotion}
                 workspacesEnabled={workspacesEnabled}
@@ -175,6 +185,7 @@ export function SettingsContent({
 function SettingsSectionSwitch(
   props: Readonly<{
     activeSection: SectionId;
+    teamName: string | null;
     session: ReturnType<typeof useAuthSession>["session"];
     prefersReducedMotion: boolean | null;
     workspacesEnabled: boolean;
@@ -223,6 +234,9 @@ function SettingsSectionSwitch(
         onMarkRead={props.onMarkRead}
       />
     );
+  }
+  if (props.activeSection === "team") {
+    return <SettingsTeamSection teamName={props.teamName} />;
   }
   if (props.activeSection === "appearance") {
     return <SettingsAppearanceSection />;

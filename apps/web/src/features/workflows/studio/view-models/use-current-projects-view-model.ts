@@ -1,45 +1,20 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 
 import { getGroups, type GroupSummary } from "@/features/groups";
-import type { ProvisionedProject } from "@/shared/api/contracts";
 import { useWorkspaceSelection } from "@/features/workspace/selection";
 
-import { parseCreateTargetParams } from "../model/create-target-rules";
-import { chooseInitialGroupId, searchWithGroup } from "../model/group-picker-rules";
+import {
+  headerTeam,
+  linkedProjectFolderId,
+  readProjectsDeepLink,
+} from "../model/current-projects-rules";
 
 export type CurrentProjectsStatus = "loading" | "ready" | "error";
 
-/** One team on the page, with the repositories it owns. */
-export interface CurrentProjectsGroup {
-  id: string;
-  name: string;
-  description: string | null;
-  repositoryCount: number;
-  projects: ProvisionedProject[];
-  group: GroupSummary;
-}
-
-export const GROUPS_LOAD_ERROR = "Could not load groups.";
-
-function toEntries(
-  groups: GroupSummary[] | null,
-  projects: ProvisionedProject[],
-): CurrentProjectsGroup[] {
-  return (groups ?? []).map((group) => {
-    const owned = projects.filter((project) => project.workspaceId === group.id);
-    return {
-      id: group.id,
-      name: group.name,
-      description: group.description,
-      repositoryCount: owned.length,
-      projects: owned,
-      group,
-    };
-  });
-}
+export const GROUPS_LOAD_ERROR = "Could not load teams.";
 
 function statusOf(
   loadingProjects: boolean,
@@ -51,30 +26,26 @@ function statusOf(
 }
 
 /**
- * ViewModel for the projects view of /workflows: the groups list, which group
- * is selected, and mirroring that choice into `?group=`.
+ * ViewModel for the projects view of /workflows: the team on the page and the
+ * Project a link asks it to open.
  *
- * The groups come from `getGroups()`, which for an admin is EVERY team. The
- * header workspace picker lists only the teams the caller is a member of, so
- * this page reads the header's selection to pick a starting group and never
- * writes back to it — syncing would point the header at a team the caller is
- * not in.
+ * The team is ALWAYS the header's selection — the page has no picker of its
+ * own to disagree with it. A `?group=` link reaches the header instead: the
+ * studio seeds WorkspaceProvider with it on arrival. The teams come from
+ * `getGroups()` (for a platform admin, every team — the header lists the ones
+ * they are not in under "Other teams (admin)"), which is what supplies the
+ * team record the explorer needs.
  */
-export function useCurrentProjectsViewModel(options: {
-  projects: ProvisionedProject[];
-  loadingProjects: boolean;
-}) {
-  const { projects, loadingProjects } = options;
+export function useCurrentProjectsViewModel(options: { loadingProjects: boolean }) {
+  const { loadingProjects } = options;
   const [groups, setGroups] = useState<GroupSummary[] | null>(null);
   const [loadFailed, setLoadFailed] = useState(false);
-  const [pickedId, setPickedId] = useState<string | null>(null);
   const [loadKey, setLoadKey] = useState(0);
 
-  const router = useRouter();
-  const pathname = usePathname();
   const searchParams = useSearchParams();
   const { selectedWorkspaceId } = useWorkspaceSelection();
-  const requestedGroupId = parseCreateTargetParams(searchParams).groupId;
+  // Read once on arrival: the link says which Project to open first.
+  const [link] = useState(() => readProjectsDeepLink(searchParams));
 
   useEffect(() => {
     let active = true;
@@ -94,28 +65,10 @@ export function useCurrentProjectsViewModel(options: {
     };
   }, [loadKey]);
 
-  const entries = useMemo(() => toEntries(groups, projects), [groups, projects]);
-  const groupIds = entries.map((entry) => entry.id);
-  const selectedId =
-    pickedId && groupIds.includes(pickedId)
-      ? pickedId
-      : chooseInitialGroupId({
-          requestedGroupId,
-          headerWorkspaceId: selectedWorkspaceId,
-          groupIds,
-        });
-  const selectedGroup = entries.find((entry) => entry.id === selectedId) ?? null;
-
-  function selectGroup(groupId: string) {
-    setPickedId(groupId);
-    const search = searchWithGroup(searchParams.toString(), groupId);
-    router.replace(`${pathname}?${search}`, { scroll: false });
-  }
-
-  function removeGroup(groupId: string) {
-    setGroups((current) => current?.filter((group) => group.id !== groupId) ?? current);
-    setPickedId((current) => (current === groupId ? null : current));
-  }
+  const team = useMemo(
+    () => headerTeam(groups ?? [], selectedWorkspaceId),
+    [groups, selectedWorkspaceId],
+  );
 
   function retry() {
     setGroups(null);
@@ -125,10 +78,10 @@ export function useCurrentProjectsViewModel(options: {
 
   return {
     status: statusOf(loadingProjects, groups, loadFailed),
-    groups: entries,
-    selectedGroup,
-    selectGroup,
-    removeGroup,
+    /** The header's team, or null when the caller is in none. */
+    team,
+    /** The Project a `?project=` link opens on this team, or null. */
+    linkedFolderId: team ? linkedProjectFolderId(link, team.id) : null,
     retry,
   };
 }

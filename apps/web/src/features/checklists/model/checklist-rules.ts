@@ -51,7 +51,10 @@ const TEST_IDENTIFIER_PLACEHOLDERS: Record<ChecklistVerificationType, string> = 
   bruno: "collections/orders/create-order.bru",
 };
 
-/** The section id the Teams page uses for this surface, in its deep links too. */
+/**
+ * The section id the old Teams rail used for this surface. Links minted with
+ * it (`/teams?section=qa-checklists`) are forwarded to /checklists.
+ */
 export const QA_CHECKLISTS_SECTION = "qa-checklists";
 
 export const CHECKLIST_NAME_MAX = 120;
@@ -285,11 +288,15 @@ export function sameProjectSet(a: ReadonlyArray<string>, b: ReadonlyArray<string
 
 /* ── Links ───────────────────────────────────────────────────────────────── */
 
-/** Where a lead manages a checklist: the owning team's page, opened on it. */
+/**
+ * Where a lead manages a checklist: the Checklists page, on the owning team,
+ * opened on it. (It was `/teams?section=qa-checklists`; /teams still forwards
+ * such links here.)
+ */
 export function checklistManageHref(workspaceId: string, checklistId?: string): string {
-  const params = new URLSearchParams({ workspace: workspaceId, section: QA_CHECKLISTS_SECTION });
+  const params = new URLSearchParams({ workspace: workspaceId });
   if (checklistId) params.set("checklist", checklistId);
-  return `/teams?${params.toString()}`;
+  return `/checklists?${params.toString()}`;
 }
 
 /* ── Errors ──────────────────────────────────────────────────────────────── */

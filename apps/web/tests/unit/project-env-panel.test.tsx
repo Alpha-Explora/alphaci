@@ -93,16 +93,15 @@ jest.mock("../../src/features/projects/detail/data/projects-api", () => ({
   ),
 }));
 
-// WorkflowCurrentTab's view-model reads ?group= and writes the chosen group
-// back with router.replace.
+// WorkflowCurrentTab's view-model reads ?group= / ?project= once on arrival.
 jest.mock("next/navigation", () => ({
   useSearchParams: () => new URLSearchParams(),
   usePathname: () => "/workflows",
   useRouter: () => ({ push: jest.fn(), replace: jest.fn() }),
 }));
 
-// Current Projects is one team at a time, picked from the user's groups —
-// resolve to "no groups" by default.
+// Current Projects shows the header's team, resolved against the caller's
+// teams — resolve to "no teams" by default.
 jest.mock("../../src/features/groups/data/hierarchy-api", () => ({
   getGroups: jest.fn().mockResolvedValue([]),
 }));
@@ -640,20 +639,12 @@ describe("Project env provisioning UI", () => {
    * "Ungrouped" bucket and a Repositories/Teams toggle for projects owned by
    * no team — both removed with personal workspaces, since every project now
    * belongs to a team and that bucket could never fill. */
-  it("lists the caller's teams and shows the selected team's repositories", async () => {
+  /* The team dropdown was removed with the navigation cleanup: the page shows
+   * the header's team, so the heading is plain "Projects" with no picker. */
+  it("shows the header team's Projects under a plain heading, with no team picker", async () => {
     mockCapabilities(true);
     mockEnvHook();
 
-    const frontendProject: ProvisionedProject = {
-      ...provisionedProject,
-      id: "project-2",
-      repoFullName: "tone/web-client",
-      serviceName: "web-client",
-      status: "provisioned",
-      workflowPath: ".github/workflows/10-alphaci-quality.yml",
-      githubCommitSha: "def456",
-      workspaceId: "workspace-1",
-    };
     (
       jest.requireMock("../../src/features/groups/data/hierarchy-api") as {
         getGroups: jest.Mock;
@@ -672,24 +663,22 @@ describe("Project env provisioning UI", () => {
         latestResult={null}
         loadingProjects={false}
         onOpenSetup={jest.fn()}
-        renderGroupCreate={() => null}
-        projects={[
-          { ...provisionedProject, workspaceId: "workspace-1" },
-          frontendProject,
-        ]}
       />,
     );
     root = rendered.root;
 
-    // Flush the groups fetch so both projects land in their team's bucket.
+    // Flush the teams fetch.
     await act(async () => {});
 
-    // No card and no rail: the team is the page heading, a dropdown.
+    // No card and no rail, and no team dropdown in the heading either.
     expect(rendered.container.querySelector(".project-workspace")).toBeNull();
     expect(rendered.container.querySelector(".project-list-rail")).toBeNull();
+    expect(rendered.container.querySelector("[role='tablist']")).toBeNull();
     const heading = rendered.container.querySelector("h1");
-    expect(heading?.textContent).toContain("Platform");
-    expect(heading?.querySelector("[aria-haspopup='listbox']")).not.toBeNull();
+    expect(heading?.textContent).toMatch(/^Projects/);
+    expect(rendered.container.querySelector("[aria-haspopup='listbox']")).toBeNull();
+    expect(rendered.container.textContent).not.toContain("Projects owned by this group.");
+    expect(rendered.container.textContent).not.toContain("Platform");
 
     // There is no ownership toggle beside it.
     expect(
@@ -698,14 +687,6 @@ describe("Project env provisioning UI", () => {
     expect(rendered.container.textContent).not.toContain(
       "individual repositories",
     );
-
-    // Both repositories count toward the team, shown in the dropdown.
-    act(() => {
-      heading?.querySelector<HTMLButtonElement>("button")?.click();
-    });
-    expect(
-      rendered.container.querySelector("[role='option']")?.textContent,
-    ).toContain("2 repositories");
   });
 
   it("loads the project overview and renders control-center tabs with empty states", async () => {
@@ -2581,7 +2562,6 @@ describe("Project env provisioning UI", () => {
         latestResult={null}
         loadingProjects={false}
         onOpenSetup={onOpenSetup}
-        projects={[]}
       />,
     );
     root = emptyRendered.root;
@@ -2609,7 +2589,6 @@ describe("Project env provisioning UI", () => {
         latestResult={null}
         loadingProjects
         onOpenSetup={jest.fn()}
-        projects={[]}
       />,
     );
     root = loadingRendered.root;

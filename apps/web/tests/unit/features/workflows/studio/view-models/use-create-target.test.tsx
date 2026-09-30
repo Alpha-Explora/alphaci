@@ -90,6 +90,16 @@ describe("useCreateTarget", () => {
     expect(second.get().target.deliveryProjectIdFor("ws-1")).toBeUndefined();
   });
 
+  it("leaves ?project= to the Projects view when the link is not for the wizard", async () => {
+    mockedParams.mockReturnValue(new URLSearchParams(`group=ws-1&project=${DP}`));
+    mockedGet.mockResolvedValue({ id: DP, name: "testfinals", groupId: "ws-1", status: "active" } as never);
+    const { get } = renderTarget("ws-1");
+    await flush();
+    expect(mockedGet).not.toHaveBeenCalled();
+    expect(get().target.label).toBeNull();
+    expect(get().target.deliveryProjectIdFor("ws-1")).toBeUndefined();
+  });
+
   it("applies a later link to the same page: opens setup and selects the team", async () => {
     mockedParams.mockReturnValue(new URLSearchParams(""));
     const { get, rerender } = renderTarget(null);

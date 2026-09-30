@@ -2,11 +2,13 @@
 
 import "./project-folders.css";
 
-import Link from "next/link";
 import type { ReactNode } from "react";
 
 import { createRepositoryHref, moveTargets } from "../model/project-folder-rules";
-import { useCreateProjectFolderViewModel } from "../view-models/use-create-project-folder-view-model";
+import {
+  useCreateProjectFolderViewModel,
+  type CreateProjectFolderViewModel,
+} from "../view-models/use-create-project-folder-view-model";
 import {
   useDeleteProjectViewModel,
   type DeleteProjectViewModel,
@@ -21,35 +23,8 @@ import {
 } from "../view-models/use-project-folders-view-model";
 import { DeleteProjectDialog, MoveRepositoryDialog, NewProjectDialog } from "./project-folder-dialogs";
 import { ProjectFolderDetail } from "./project-folder-detail";
-import { CloseIcon, PlusIcon } from "./project-folder-icons";
+import { CloseIcon } from "./project-folder-icons";
 import { ProjectFolderList } from "./project-folder-list";
-
-function ListHead({
-  vm,
-  onCreate,
-}: Readonly<{ vm: ProjectFoldersViewModel; onCreate: () => void }>) {
-  return (
-    <div className="group-section-head">
-      <h3 className="group-section-title">
-        Projects
-        {vm.count === null ? null : <span className="group-section-count">{vm.count}</span>}
-      </h3>
-      <div className="pf-head-actions">
-        {vm.canCreateRepository ? (
-          <Link className="ghost-button group-section-action" href={createRepositoryHref(vm.groupId)}>
-            Create repository
-          </Link>
-        ) : null}
-        {vm.canManage && vm.status === "ready" ? (
-          <button type="button" className="primary-button group-section-action" onClick={onCreate}>
-            <PlusIcon />
-            New Project
-          </button>
-        ) : null}
-      </div>
-    </div>
-  );
-}
 
 function DeleteNoticeBanner({ del }: Readonly<{ del: DeleteProjectViewModel }>) {
   if (!del.notice) return null;
@@ -105,14 +80,18 @@ function MoveNoticeBanner({
 /**
  * A team's Projects: the list, or one Project opened in place.
  *
- * Draws its own section head (like the checklist templates beside it) because
- * its action — New Project — depends on the server's `canManage`, which only
- * this section loads.
+ * It draws no head of its own: the Projects page's heading carries the count
+ * and the create actions (Create project, and the "⋯" menu with Empty project
+ * and Add repository), fed by ProjectExplorerHost. `create` is the Empty
+ * project dialog, owned by the host so the menu and the empty state's
+ * "Create the first Project" open the same one.
  */
-export function ProjectExplorer({ vm }: Readonly<{ vm: ProjectFoldersViewModel }>) {
+export function ProjectExplorer({
+  vm,
+  create,
+}: Readonly<{ vm: ProjectFoldersViewModel; create: CreateProjectFolderViewModel }>) {
   const move = useMoveRepositoryViewModel({ onChanged: vm.reload });
   const del = useDeleteProjectViewModel({ onDeleted: vm.closeFolder, onChanged: vm.reload });
-  const create = useCreateProjectFolderViewModel({ groupId: vm.groupId, onCreated: vm.reload });
   const folder = vm.selected;
 
   return (
@@ -127,10 +106,7 @@ export function ProjectExplorer({ vm }: Readonly<{ vm: ProjectFoldersViewModel }
           onDelete={() => del.openFor(folder)}
         />
       ) : (
-        <>
-          <ListHead vm={vm} onCreate={create.openDialog} />
-          <ProjectFolderList vm={vm} onCreate={create.openDialog} />
-        </>
+        <ProjectFolderList vm={vm} onCreate={create.openDialog} />
       )}
       {vm.status === "ready" && vm.error ? (
         <p className="error-text pf-inline-error" role="alert">
@@ -147,18 +123,30 @@ export function ProjectExplorer({ vm }: Readonly<{ vm: ProjectFoldersViewModel }
   );
 }
 
+/** The create actions the page heading offers, already filtered by role. */
+export interface ProjectExplorerActions {
+  /**
+   * Opens the Empty project dialog; null when the caller may not create one
+   * (the server's `canManage`, known once the list has loaded).
+   */
+  createEmptyProject: (() => void) | null;
+  /** The create-repository wizard for this team; null below Team lead. */
+  addRepositoryHref: string | null;
+}
+
 export interface ProjectExplorerSlot {
-  /** Projects in the team, or null while loading — the rail badge. */
+  /** Projects in the team, or null while loading — the heading's count. */
   count: number | null;
-  /** The section body to draw when the rail's Projects entry is open. */
+  /** The explorer itself: the Project cards, or one Project opened in place. */
   panel: ReactNode;
+  actions: ProjectExplorerActions;
 }
 
 /**
- * Loads a team's Projects once and hands the caller both the count (for the
- * section rail) and the explorer panel. A render prop, so the Teams page and
- * the Workflows studio mount the same explorer without either one wiring the
- * view-model by hand.
+ * Loads a team's Projects once and hands the caller the count, the create
+ * actions and the explorer panel. A render prop, so the Projects page can put
+ * the count and the actions in its own heading without wiring the view-models
+ * by hand.
  */
 export function ProjectExplorerHost({
   groupId,
@@ -170,10 +158,23 @@ export function ProjectExplorerHost({
   groupId: string;
   groupName: string;
   qaChecklistsEnabled: boolean;
-  /** Open this Project's detail on arrival (a `/teams?project=` link). */
+  /** Open this Project's detail on arrival (a `/workflows?project=` link). */
   initialFolderId?: string | null;
   children: (explorer: ProjectExplorerSlot) => ReactNode;
 }>) {
   const vm = useProjectFoldersViewModel({ groupId, groupName, qaChecklistsEnabled, initialFolderId });
-  return <>{children({ count: vm.count, panel: <ProjectExplorer vm={vm} /> })}</>;
+  const create = useCreateProjectFolderViewModel({ groupId: vm.groupId, onCreated: vm.reload });
+  const actions: ProjectExplorerActions = {
+    createEmptyProject: vm.canManage && vm.status === "ready" ? create.openDialog : null,
+    addRepositoryHref: vm.canCreateRepository ? createRepositoryHref(vm.groupId) : null,
+  };
+  return (
+    <>
+      {children({
+        count: vm.count,
+        panel: <ProjectExplorer vm={vm} create={create} />,
+        actions,
+      })}
+    </>
+  );
 }

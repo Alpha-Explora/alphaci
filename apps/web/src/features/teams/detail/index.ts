@@ -1,6 +1,6 @@
 export { TeamsDetailView } from "./views/teams-detail-view";
-export { GroupWorkspacePanel } from "./views/group-workspace-panel";
+export { TeamMembersPanel } from "./views/team-members-panel";
 export {
-  useTeamsDetailViewModel,
-  type TeamsDetailViewModel,
-} from "./view-models/use-teams-detail-view-model";
+  useTeamMembersViewModel,
+  type TeamMembersViewModel,
+} from "./view-models/use-team-members-view-model";

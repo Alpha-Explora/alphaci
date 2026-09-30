@@ -56,7 +56,11 @@ export function useCreateTarget(options: {
     if (!link.deliveryProjectId) setTarget(null);
   }
 
-  const deliveryProjectId = link.deliveryProjectId;
+  // Only a wizard link (?tab=setup) names a Project to create IN. Without it,
+  // ?project= is the Projects view opening that Project's detail, and must not
+  // quietly file the next repository created from the header's button there.
+  const deliveryProjectId =
+    searchParams.get("tab") === "setup" ? link.deliveryProjectId : null;
   useEffect(() => {
     if (!deliveryProjectId || guest) return;
     let active = true;

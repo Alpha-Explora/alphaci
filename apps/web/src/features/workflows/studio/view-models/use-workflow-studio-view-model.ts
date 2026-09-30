@@ -33,7 +33,7 @@ import {
   searchWithoutTab,
   type WorkflowView,
 } from "../model/workflow-studio-rules";
-import { createWorkspaceForGroup } from "../model/group-picker-rules";
+import { createWorkspaceForGroup } from "../model/current-projects-rules";
 import {
   buildGenerateWorkflowPayload,
   buildSetupExistingRepoPayload,

@@ -1,5 +1,6 @@
 import { deleteAccount } from "@/features/auth/session";
-import { getMyWorkspaces } from "@/features/workspace";
+import { getMyWorkspaces, getWorkspaceMembers } from "@/features/workspace";
+import type { WorkspaceMemberSummary } from "@/shared/api/contracts";
 
 import type { WorkspacesMeResponse } from "../model/settings-types";
 
@@ -8,6 +9,11 @@ import type { WorkspacesMeResponse } from "../model/settings-types";
 export const settingsRepository = {
   workspaces(): Promise<WorkspacesMeResponse> {
     return getMyWorkspaces();
+  },
+
+  /** Read-only: the roster is edited on /teams. */
+  workspaceMembers(workspaceId: string): Promise<WorkspaceMemberSummary[]> {
+    return getWorkspaceMembers(workspaceId);
   },
 
   /** Irreversible. The view gates this behind a typed confirmation. */
