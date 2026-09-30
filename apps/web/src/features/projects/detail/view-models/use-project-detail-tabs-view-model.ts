@@ -21,6 +21,7 @@ import {
   applyTargetChange,
   applyTargetCreated,
   applyTargetDetached,
+  driftRepairErrorMessage,
   isAuditQueryEnabled,
   isCiRunsQueryEnabled,
   isDeploymentsQueryEnabled,
@@ -273,12 +274,17 @@ export function useProjectDetailTabsViewModel(options: {
     findingId: string,
     action: ProjectDriftRepairAction,
   ): Promise<string> {
-    const response = await projectsRepository.repairDrift(
-      projectId,
-      findingId,
-      action,
-    );
-    return response.message;
+    try {
+      const response = await projectsRepository.repairDrift(
+        projectId,
+        findingId,
+        action,
+      );
+      return response.message;
+    } catch (error) {
+      // The view shows display text only: hand it the mapped reason.
+      throw new Error(driftRepairErrorMessage(error));
+    }
   }
 
   return {

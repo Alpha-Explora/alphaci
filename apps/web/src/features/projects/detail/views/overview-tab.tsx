@@ -286,6 +286,7 @@ function OverviewDrift({
   }
   return (
     <DriftFindingsPanel
+      appRole={vm.appRole}
       onRun={() => void vm.runDriftDetection()}
       onRepair={vm.repairDriftFinding}
       repairEnabled={vm.driftRepairEnabled}
