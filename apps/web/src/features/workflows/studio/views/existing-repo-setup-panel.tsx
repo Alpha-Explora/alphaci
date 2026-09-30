@@ -177,7 +177,7 @@ function ExistingRepoSetupFields({
       </div>
 
       <p className="helper-text" id="existing-repo-disabled-help" style={{ margin: 0, fontSize: "0.82rem" }}>
-        Scan the repository to detect its project type, then commit CI/CD workflows directly to the repository&apos;s default branch.
+        Scan the repository to detect its project type, then set up CI/CD workflows. ALPHACI works against the dev branch (or uat when there is no dev) and never touches main. Leave the base branch blank to let ALPHACI choose.
       </p>
 
       <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>

@@ -10,6 +10,7 @@ import type {
   WorkflowSettings,
   WorkflowSettingsPreviewResponse,
 } from "@/features/projects";
+import { isPullRequestRole } from "../model/pull-request-compose-rules";
 import type { ProjectDetailTabsViewModel } from "../view-models/use-project-detail-tabs-view-model";
 import { WorkflowStageList } from "./workflow-stage-list";
 import {
@@ -18,6 +19,8 @@ import {
   centralRefIsListed,
   coverageHasPreset,
   createUpdatePrLabel,
+  UPDATE_PR_ROLE_NOTE,
+  UPDATE_PR_TARGET_NOTE,
   previewDiffBadgeClass,
   previewWorkflowLabel,
 } from "../model/project-detail-tab-rules";
@@ -42,6 +45,7 @@ export function WorkflowTab({
         targets={vm.deploymentTargets}
         workflow={vm.workflow}
         workflowUpdatePrEnabled={vm.workflowUpdatePrEnabled}
+        canCreateUpdatePr={isPullRequestRole(vm.appRole)}
       />
       <WorkflowFiles files={vm.workflowFiles} />
     </div>
@@ -73,11 +77,13 @@ function WorkflowSettingsPanel({
   targets,
   workflow,
   workflowUpdatePrEnabled,
+  canCreateUpdatePr,
 }: Readonly<{
   enabled: boolean;
   targets: DeploymentTarget[];
   workflow: ProjectDetailTabsViewModel["workflow"];
   workflowUpdatePrEnabled: boolean;
+  canCreateUpdatePr: boolean;
 }>) {
   if (!enabled) return null;
   return (
@@ -100,6 +106,7 @@ function WorkflowSettingsPanel({
         preview={workflow.preview}
         workflow={workflow}
         workflowUpdatePrEnabled={workflowUpdatePrEnabled}
+        canCreateUpdatePr={canCreateUpdatePr}
       />
     </div>
   );
@@ -469,10 +476,12 @@ function WorkflowPreviewResult({
   preview,
   workflow,
   workflowUpdatePrEnabled,
+  canCreateUpdatePr,
 }: Readonly<{
   preview: WorkflowSettingsPreviewResponse | null;
   workflow: ProjectDetailTabsViewModel["workflow"];
   workflowUpdatePrEnabled: boolean;
+  canCreateUpdatePr: boolean;
 }>) {
   if (!preview) return null;
   return (
@@ -490,6 +499,7 @@ function WorkflowPreviewResult({
       <CreateUpdatePrRow
         workflow={workflow}
         enabled={workflowUpdatePrEnabled}
+        canCreate={canCreateUpdatePr}
       />
       <WorkflowError message={workflow.updatePrError} />
     </>
@@ -499,11 +509,16 @@ function WorkflowPreviewResult({
 function CreateUpdatePrRow({
   workflow,
   enabled,
+  canCreate,
 }: Readonly<{
   workflow: ProjectDetailTabsViewModel["workflow"];
   enabled: boolean;
+  canCreate: boolean;
 }>) {
   if (!enabled) return null;
+  if (!canCreate) {
+    return <p className="env-empty-state">{UPDATE_PR_ROLE_NOTE}</p>;
+  }
   return (
     <div
       style={{
@@ -526,6 +541,9 @@ function CreateUpdatePrRow({
       >
         {createUpdatePrLabel(workflow.creatingPr)}
       </button>
+      <span style={{ color: "var(--text-secondary)", fontSize: "0.78rem" }}>
+        {UPDATE_PR_TARGET_NOTE}
+      </span>
       <WorkflowPrLink url={workflow.updatePr?.pullRequestUrl ?? null} />
     </div>
   );

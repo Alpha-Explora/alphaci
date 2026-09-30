@@ -8,6 +8,7 @@ import {
   statusBannerVariant,
   type WorkflowTab,
 } from "../model/workflow-studio-rules";
+import { canCreateRepositories } from "../model/role-gate-rules";
 import { WorkflowCurrentTab } from "./workflow-current-tab";
 import { GeneratingOverlay } from "./generating-overlay";
 import { WorkflowSetupTab } from "./workflow-setup-tab";
@@ -119,6 +120,7 @@ export function WorkflowBuilder({ guest = false, session, onboardingCompleted }:
   const prefersReducedMotion = useReducedMotion();
   const reducedMotion = prefersReducedMotion === true;
   const vm = useWorkflowStudioViewModel({ guest, session, onboardingCompleted });
+  const canCreateRepos = canCreateRepositories(session?.appRole, guest);
   const sendGuestToSignup = () => router.push("/signup");
   const {
     activeTab, statusMessage, isCreatingProject, isDiscoveringExistingRepo, isSettingUpExistingRepo,
@@ -166,6 +168,7 @@ export function WorkflowBuilder({ guest = false, session, onboardingCompleted }:
         <div style={activeTab === "setup" ? undefined : { padding: "0.5rem var(--layout-gutter) 2.5rem" }}>
           {activeTab === "setup" ? (
             <WorkflowSetupTab
+              canCreateRepositories={canCreateRepos}
               form={createForm}
               deploymentOwnershipMode={deploymentOwnershipMode}
               deploymentProvisioning={deploymentProvisioning}
@@ -205,6 +208,7 @@ export function WorkflowBuilder({ guest = false, session, onboardingCompleted }:
               projects={projects.projects}
               renderGroupCreate={(selectedGroupId, onComplete) => (
                 <WorkflowSetupTab
+                  canCreateRepositories={canCreateRepos}
                   form={createForm}
                   deploymentOwnershipMode={deploymentOwnershipMode}
                   deploymentProvisioning={deploymentProvisioning}

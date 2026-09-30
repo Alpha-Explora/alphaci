@@ -11,6 +11,7 @@ import type {
   WorkflowUpdatePullRequestResponse,
 } from "@/shared/api/contracts";
 import { apiErrorReason } from "../model/api-error-reason";
+import { workspacePermissionErrorMessage } from "../model/workspace-permission-errors";
 import { useLazyProjectQuery } from "./use-lazy-project-query";
 
 export interface ProjectWorkflowSettingsViewModel {
@@ -117,7 +118,10 @@ export function useProjectWorkflowSettingsViewModel(options: {
       setUpdatePr(result);
     } catch (error) {
       setUpdatePrError(
-        apiErrorReason(error, "Unable to create workflow update PR."),
+        workspacePermissionErrorMessage(
+          error,
+          "Unable to create workflow update PR.",
+        ),
       );
     } finally {
       setCreatingPr(false);

@@ -35,6 +35,7 @@ import {
   teamChoiceState,
   wizardStepReadyFlags,
 } from "../model/setup-tab-rules";
+import { REPOSITORY_CREATE_LEAD_ONLY_NOTE } from "../model/role-gate-rules";
 import { ExistingRepoSetupPanel } from "./existing-repo-setup-panel";
 import { NewRepoWizard, RepositoryCreationProgress } from "./new-repo-wizard";
 import { SetupModeToggle } from "./setup-mode-toggle";
@@ -45,6 +46,12 @@ import { SetupTeamScope } from "./setup-team-scope";
 import { GenerateYamlLink } from "./setup-wizard-automation";
 
 interface WorkflowSetupTabProps {
+  /**
+   * Team lead or admin (or a guest, who is sent to sign up instead). The
+   * backend refuses repository creation and existing-repo onboarding for
+   * everyone else, so the controls are replaced by a note.
+   */
+  canCreateRepositories: boolean;
   createResult: CreateProjectResult | null;
   /**
    * Where the create was started from. "in-team" means a team panel already
@@ -121,6 +128,7 @@ function InlineSetupResult({
 }
 
 export function WorkflowSetupTab({
+  canCreateRepositories,
   createResult,
   deploymentOwnershipMode,
   creationScope,
@@ -252,6 +260,24 @@ export function WorkflowSetupTab({
 
   function goToPreviousWizardStep() {
     setActiveWizardStep((current) => Math.max(0, current - 1));
+  }
+
+  if (!canCreateRepositories) {
+    return (
+      <section
+        className="create-project-layout"
+        id="workflow-panel-setup"
+        role="tabpanel"
+        aria-labelledby="workflow-tab-setup"
+        tabIndex={0}
+      >
+        <div className="create-project-main">
+          <p className="env-empty-state" role="status">
+            {REPOSITORY_CREATE_LEAD_ONLY_NOTE}
+          </p>
+        </div>
+      </section>
+    );
   }
 
   return (

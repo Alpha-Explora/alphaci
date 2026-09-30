@@ -83,6 +83,22 @@ export function canManageProjectLifecycle(
   return appRole != null && PROJECT_LIFECYCLE_ROLES.has(appRole);
 }
 
+/**
+ * Team leads and Admins — the backend's `HOSTING_LEAD_ONLY` allow-list for
+ * creating, changing, syncing and detaching deployment targets and for
+ * adding, verifying and removing custom domains. Listing stays open to anyone
+ * who can see the project.
+ */
+const HOSTING_ROLES: ReadonlySet<AppRole> = new Set<AppRole>(["lead", "admin"]);
+
+export function canManageHosting(appRole: AppRole | null | undefined): boolean {
+  return appRole != null && HOSTING_ROLES.has(appRole);
+}
+
+/** Shown where a hosting mutation control would otherwise be. */
+export const HOSTING_LEAD_ONLY_NOTE =
+  "A Team lead or admin can change hosting services and custom domains.";
+
 function tabVisible(
   tab: ProjectDetailTab,
   checklistsVisible: boolean,
@@ -395,6 +411,14 @@ export function previewWorkflowLabel(previewing: boolean): string {
   if (previewing) return "Previewing...";
   return "Preview";
 }
+
+/** Shown in place of the update-PR button for roles the backend refuses (QA). */
+export const UPDATE_PR_ROLE_NOTE =
+  "A Developer, Team lead or admin can open the workflow update pull request.";
+
+/** The backend targets dev, else uat — never main. */
+export const UPDATE_PR_TARGET_NOTE =
+  "Opens a pull request into dev (or uat when there is no dev branch).";
 
 export function createUpdatePrLabel(creating: boolean): string {
   if (creating) return "Creating...";

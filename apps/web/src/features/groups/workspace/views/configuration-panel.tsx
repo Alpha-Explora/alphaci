@@ -9,6 +9,10 @@ import {
   putConfigurationVariable,
 } from "@/features/groups";
 import { ApiError } from "@/shared/api/request";
+import {
+  CONFIGURATION_LEAD_ONLY_NOTE,
+  roleGateMessage,
+} from "../../model/role-gate-rules";
 import type {
   ConfigurationItemMetadata,
   ConfigurationType,
@@ -73,9 +77,10 @@ function ConfigWriteForm({
       onWritten();
     } catch (cause) {
       setError(
-        cause instanceof ApiError && cause.status === 403
-          ? "You're not allowed to write configuration here."
-          : `The ${configurationType} could not be saved. Please try again.`,
+        roleGateMessage(cause) ??
+          (cause instanceof ApiError && cause.status === 403
+            ? "You're not allowed to write configuration here."
+            : `The ${configurationType} could not be saved. Please try again.`),
       );
     } finally {
       setSubmitting(false);
@@ -178,20 +183,29 @@ function ConfigList({
   repositoryId,
   configurationType,
   items,
+  canWrite,
   onDeleted,
 }: {
   repositoryId: string;
   configurationType: ConfigurationType;
   items: ConfigurationItemMetadata[];
+  canWrite: boolean;
   onDeleted: () => void;
 }) {
   const [busyName, setBusyName] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   async function handleDelete(name: string) {
     setBusyName(name);
+    setError(null);
     try {
       await deleteConfigurationEntry(repositoryId, configurationType, name);
       onDeleted();
+    } catch (cause) {
+      setError(
+        roleGateMessage(cause) ??
+          `The ${configurationType} could not be deleted. Please try again.`,
+      );
     } finally {
       setBusyName(null);
     }
@@ -207,6 +221,11 @@ function ConfigList({
 
   return (
     <>
+      {error ? (
+        <p className="error-text" role="alert" style={{ margin: "0.5rem 1rem" }}>
+          {error}
+        </p>
+      ) : null}
       {items.map((item) => (
         <div key={`${item.environmentScope}:${item.name}`} className="hier-row">
           <div className="hier-row-identity">
@@ -227,14 +246,16 @@ function ConfigList({
             <span className="hier-badge hier-badge--muted">
               {configurationType === "secret" ? "Secret" : "Variable"}
             </span>
-            <button
-              type="button"
-              className="hier-btn-danger"
-              disabled={busyName === item.name}
-              onClick={() => void handleDelete(item.name)}
-            >
-              Delete
-            </button>
+            {canWrite ? (
+              <button
+                type="button"
+                className="hier-btn-danger"
+                disabled={busyName === item.name}
+                onClick={() => void handleDelete(item.name)}
+              >
+                Delete
+              </button>
+            ) : null}
           </div>
         </div>
       ))}
@@ -242,7 +263,14 @@ function ConfigList({
   );
 }
 
-export function ConfigurationPanel({ repositoryId }: { repositoryId: string }) {
+export function ConfigurationPanel({
+  repositoryId,
+  canWrite,
+}: {
+  repositoryId: string;
+  /** Team lead or admin: the only roles the backend lets write configuration. */
+  canWrite: boolean;
+}) {
   const { data, state, reload } = useApiResource<RepositoryConfigurationResponse>(
     () => getRepositoryConfiguration(repositoryId),
     [repositoryId],
@@ -270,16 +298,24 @@ export function ConfigurationPanel({ repositoryId }: { repositoryId: string }) {
         available.
       </p>
 
+      {canWrite ? null : (
+        <p className="hier-subtitle" role="note" style={{ margin: 0 }}>
+          {CONFIGURATION_LEAD_ONLY_NOTE}
+        </p>
+      )}
+
       <section aria-label="Variables">
         <SectionHeader
           title="Variables"
           count={data.variables.length}
           actions={
-            <ConfigWriteForm
-              repositoryId={repositoryId}
-              configurationType="variable"
-              onWritten={reload}
-            />
+            canWrite ? (
+              <ConfigWriteForm
+                repositoryId={repositoryId}
+                configurationType="variable"
+                onWritten={reload}
+              />
+            ) : null
           }
         />
         <div className="hier-panel">
@@ -287,6 +323,7 @@ export function ConfigurationPanel({ repositoryId }: { repositoryId: string }) {
             repositoryId={repositoryId}
             configurationType="variable"
             items={data.variables}
+            canWrite={canWrite}
             onDeleted={reload}
           />
         </div>
@@ -297,11 +334,13 @@ export function ConfigurationPanel({ repositoryId }: { repositoryId: string }) {
           title="Secrets"
           count={data.secrets.length}
           actions={
-            <ConfigWriteForm
-              repositoryId={repositoryId}
-              configurationType="secret"
-              onWritten={reload}
-            />
+            canWrite ? (
+              <ConfigWriteForm
+                repositoryId={repositoryId}
+                configurationType="secret"
+                onWritten={reload}
+              />
+            ) : null
           }
         />
         <div className="hier-panel">
@@ -309,6 +348,7 @@ export function ConfigurationPanel({ repositoryId }: { repositoryId: string }) {
             repositoryId={repositoryId}
             configurationType="secret"
             items={data.secrets}
+            canWrite={canWrite}
             onDeleted={reload}
           />
         </div>

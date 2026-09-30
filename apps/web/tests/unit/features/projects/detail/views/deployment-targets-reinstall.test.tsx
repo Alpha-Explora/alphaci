@@ -211,4 +211,36 @@ describe("Hosting target reinstall deployment secrets", () => {
       "vercel has no CI secrets to reinstall for a vercel_git_connected deployment.",
     );
   });
+
+  describe("hosting mutation gate (HOSTING_LEAD_ONLY)", () => {
+    function labels(): string[] {
+      return Array.from(container.querySelectorAll("button")).map(
+        (b) => b.textContent ?? "",
+      );
+    }
+
+    it.each(["member", "qa"] as const)(
+      "hides Edit, Sync and Detach for %s but keeps logs and a note",
+      async (role) => {
+        await render(role);
+        const all = labels();
+        expect(all).not.toContain("Edit");
+        expect(all.some((l) => /sync/i.test(l))).toBe(false);
+        expect(all.some((l) => /detach/i.test(l))).toBe(false);
+        expect(container.textContent).toContain("A Team lead or admin can");
+      },
+    );
+
+    it.each(["lead", "admin"] as const)(
+      "shows Edit, Sync and Detach for %s",
+      async (role) => {
+        await render(role);
+        const all = labels();
+        expect(all).toContain("Edit");
+        expect(all.some((l) => /sync/i.test(l))).toBe(true);
+        expect(all.some((l) => /detach/i.test(l))).toBe(true);
+        expect(container.textContent).not.toContain("A Team lead or admin can");
+      },
+    );
+  });
 });

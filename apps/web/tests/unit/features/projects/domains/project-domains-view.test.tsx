@@ -59,6 +59,7 @@ describe("ProjectDomainsView", () => {
     render(
       <ProjectDomainsView
         busyDomainId={null}
+        canManage
         domains={[domain()]}
         error={null}
         isAdding={false}
@@ -79,6 +80,7 @@ describe("ProjectDomainsView", () => {
     render(
       <ProjectDomainsView
         busyDomainId={null}
+        canManage
         domains={[domain()]}
         error={null}
         isAdding={false}
@@ -97,6 +99,7 @@ describe("ProjectDomainsView", () => {
     render(
       <ProjectDomainsView
         busyDomainId={null}
+        canManage
         domains={[domain({ verified: true, misconfigured: true, verification: [] })]}
         error={null}
         isAdding={false}
@@ -116,6 +119,7 @@ describe("ProjectDomainsView", () => {
     render(
       <ProjectDomainsView
         busyDomainId={null}
+        canManage
         domains={[domain({ verified: true, misconfigured: false, verification: [] })]}
         error={null}
         isAdding={false}
@@ -134,6 +138,7 @@ describe("ProjectDomainsView", () => {
     render(
       <ProjectDomainsView
         busyDomainId={null}
+        canManage
         domains={[domain({ gitBranch: "feat/checkout" })]}
         error={null}
         isAdding={false}
@@ -154,6 +159,7 @@ describe("ProjectDomainsView", () => {
     render(
       <ProjectDomainsView
         busyDomainId={null}
+        canManage
         domains={[]}
         error={null}
         isAdding={false}
@@ -174,6 +180,7 @@ describe("ProjectDomainsView", () => {
     render(
       <ProjectDomainsView
         busyDomainId={null}
+        canManage
         domains={[domain()]}
         error={null}
         isAdding={false}
@@ -204,6 +211,7 @@ describe("ProjectDomainsView", () => {
     render(
       <ProjectDomainsView
         busyDomainId={null}
+        canManage
         domains={[]}
         error="app.example.com is already assigned to a Vercel project."
         isAdding={false}
@@ -216,5 +224,55 @@ describe("ProjectDomainsView", () => {
     );
 
     expect(container.textContent).toContain("already assigned");
+  });
+
+  it("hides the add form and row actions for a viewer who cannot manage, keeping the list", () => {
+    render(
+      <ProjectDomainsView
+        busyDomainId={null}
+        canManage={false}
+        domains={[domain()]}
+        error={null}
+        isAdding={false}
+        onAdd={noopAdd}
+        onRemove={noop}
+        onVerify={noop}
+        status="ready"
+        targets={TARGETS}
+      />,
+    );
+
+    expect(container.querySelector("form")).toBeNull();
+    const labels = Array.from(container.querySelectorAll("button")).map(
+      (b) => b.textContent,
+    );
+    expect(labels).not.toContain("Remove");
+    expect(labels).not.toContain("Check again");
+    expect(container.textContent).toContain("app.example.com");
+    expect(container.textContent).toContain("A Team lead or admin can");
+  });
+
+  it("shows the add form and row actions when the viewer can manage", () => {
+    render(
+      <ProjectDomainsView
+        busyDomainId={null}
+        canManage
+        domains={[domain()]}
+        error={null}
+        isAdding={false}
+        onAdd={noopAdd}
+        onRemove={noop}
+        onVerify={noop}
+        status="ready"
+        targets={TARGETS}
+      />,
+    );
+
+    expect(container.querySelector("form")).not.toBeNull();
+    const labels = Array.from(container.querySelectorAll("button")).map(
+      (b) => b.textContent,
+    );
+    expect(labels).toContain("Remove");
+    expect(labels).toContain("Check again");
   });
 });

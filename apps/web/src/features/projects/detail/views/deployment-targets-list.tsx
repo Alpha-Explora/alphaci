@@ -8,6 +8,8 @@ import {
 } from "@/features/projects/deployment-logs";
 import { providerDisplayName, providerPublicUrl } from "../model/provider-urls";
 import {
+  canManageHosting,
+  HOSTING_LEAD_ONLY_NOTE,
   canReinstallDeploymentSecrets,
   detachButtonLabel,
   hostingProviderLabel,
@@ -71,6 +73,11 @@ export function DeploymentTargetsList({
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "0.85rem" }}>
       <TargetMessage message={vm.message} signInHref={vm.signInHref} />
+      {targets.length > 0 && !canManageHosting(appRole) ? (
+        <p className="env-empty-state" data-testid="hosting-lead-only-note">
+          {HOSTING_LEAD_ONLY_NOTE}
+        </p>
+      ) : null}
       <div className="env-metadata-list" data-tour="deployment-targets">
         {targets.map((target) => (
           <DeploymentTargetCard
@@ -366,25 +373,30 @@ function DeploymentTargetActions({
   onDetachConfirmId: (id: string | null) => void;
   onDetach: () => void;
 }>) {
+  const canManage = canManageHosting(appRole);
   return (
     <div className="target-actions">
       <div className="target-actions-primary">
-        <button
-          className="ghost-button target-action-btn"
-          type="button"
-          disabled={!managementEnabled}
-          onClick={onOpenEdit}
-        >
-          Edit
-        </button>
-        <button
-          className="ghost-button target-action-btn"
-          type="button"
-          disabled={!managementEnabled || vm.syncingTargetId === target.id}
-          onClick={() => void vm.sync(target)}
-        >
-          {targetSyncLabel(vm.syncingTargetId === target.id)}
-        </button>
+        {canManage ? (
+          <button
+            className="ghost-button target-action-btn"
+            type="button"
+            disabled={!managementEnabled}
+            onClick={onOpenEdit}
+          >
+            Edit
+          </button>
+        ) : null}
+        {canManage ? (
+          <button
+            className="ghost-button target-action-btn"
+            type="button"
+            disabled={!managementEnabled || vm.syncingTargetId === target.id}
+            onClick={() => void vm.sync(target)}
+          >
+            {targetSyncLabel(vm.syncingTargetId === target.id)}
+          </button>
+        ) : null}
         <button
           className={`ghost-button target-action-btn${isLogsOpen ? " active" : ""}`}
           type="button"
@@ -401,6 +413,7 @@ function DeploymentTargetActions({
         reinstalling={vm.reinstallingTargetId === target.id}
         onReinstall={() => void vm.reinstallSecrets(target)}
       />
+      {canManage ? (
       <div className="target-actions-destructive">
         <DetachConfirmCheckbox
           checked={deleteProviderResourceChecked}
@@ -420,6 +433,7 @@ function DeploymentTargetActions({
           )}
         </button>
       </div>
+      ) : null}
     </div>
   );
 }

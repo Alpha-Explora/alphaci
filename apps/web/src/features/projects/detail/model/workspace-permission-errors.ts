@@ -11,6 +11,10 @@
  *     tried to list/create/update/delete an environment variable.
  *   - `PROJECT_ROLE_FORBIDDEN`  — someone other than a Team Lead or Admin
  *     tried to reinstall deployment secrets, or disconnect/delete a project.
+ *   - `HOSTING_LEAD_ONLY`       — someone other than a Team Lead or Admin
+ *     tried to change deployment targets or custom domains.
+ *   - `PR_BASE_BRANCH_MISSING`  — the workflow-settings PR needs a dev (else
+ *     uat) branch and the repository has neither.
  *
  * A code is matched case-insensitively against `details.code`, the same
  * field `qa-run-rules.ts`'s `serverCode` reads for the checklists feature.
@@ -30,6 +34,10 @@ const WORKSPACE_PERMISSION_MESSAGES: Readonly<Record<string, string>> = {
     "Pull requests into main are restricted to the QA Studio promotion flow.",
   env_vars_lead_only: "Only team leads and admins can manage environment variables.",
   project_role_forbidden: "Only team leads and admins can make this change.",
+  hosting_lead_only:
+    "Only team leads and admins can manage hosting services and custom domains.",
+  pr_base_branch_missing:
+    "This repository has no dev or uat branch to open the pull request against. Create one, then try again.",
 };
 
 function errorCode(cause: unknown): string {

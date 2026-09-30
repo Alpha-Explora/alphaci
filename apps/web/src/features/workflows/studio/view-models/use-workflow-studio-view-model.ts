@@ -26,6 +26,7 @@ import { useWorkflowHistory } from "./use-workflow-history";
 import { useOnboardingTour } from "./use-onboarding-tour";
 import { useCurrentProjectsTour } from "./use-current-projects-tour";
 import { useCreateTarget } from "./use-create-target";
+import { roleGateErrorMessage } from "../model/role-gate-rules";
 import { preselectedWorkspaceId, scopeCreatePayload } from "../model/create-target-rules";
 import {
   formatApiError,
@@ -254,7 +255,7 @@ export function useWorkflowStudioViewModel(options: {
         `Repository "${response.repoFullName}" created. Workflow committed to ${response.workflowPath}.`,
       );
     } catch (error) {
-      setStatusMessage(formatApiError(error, "Project creation failed"));
+      setStatusMessage(roleGateErrorMessage(error, "Project creation failed"));
     } finally {
       setIsCreatingProject(false);
     }
@@ -271,9 +272,12 @@ export function useWorkflowStudioViewModel(options: {
     setStatusMessage(`Scanning ${repoFullName} for a matching workflow recipe...`);
 
     try {
+      // Blank means "let the backend choose" (dev, else uat). Sending "main"
+      // as a default pinned every scan to a branch onboarding must not touch.
+      const baseBranch = existingRepoBaseBranch.trim();
       const response = await discoverExistingRepo({
         repoFullName,
-        baseBranch: existingRepoBaseBranch.trim() || "main",
+        ...(baseBranch ? { baseBranch } : {}),
       });
 
       setExistingRepoDiscovery(response);
@@ -295,7 +299,7 @@ export function useWorkflowStudioViewModel(options: {
       const detected = response.detectedProjectTypeId ?? "manual selection required";
       setStatusMessage(`Discovery complete for ${repoFullName}. Detected: ${detected}.`);
     } catch (error) {
-      setStatusMessage(formatApiError(error, "Repository discovery failed"));
+      setStatusMessage(roleGateErrorMessage(error, "Repository discovery failed"));
     } finally {
       setIsDiscoveringExistingRepo(false);
     }
@@ -342,7 +346,7 @@ export function useWorkflowStudioViewModel(options: {
         `CI/CD added to "${response.repoFullName}". Workflow committed to ${response.workflowPath}.`,
       );
     } catch (error) {
-      setStatusMessage(formatApiError(error, "Existing repository setup failed"));
+      setStatusMessage(roleGateErrorMessage(error, "Existing repository setup failed"));
     } finally {
       setIsSettingUpExistingRepo(false);
     }

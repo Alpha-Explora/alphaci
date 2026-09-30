@@ -3,10 +3,12 @@
 import { useState } from "react";
 
 import { useApiResource } from "@/features/groups";
+import { useAuthSession } from "@/features/auth/session";
 import { useCapabilities } from "@/features/capabilities/current";
 
 import { groupsRepository } from "../../data/groups-repository";
 import { isGroupManagerRole } from "../../model/groups-rules";
+import { canWriteRepositoryConfiguration } from "../../model/role-gate-rules";
 import type {
   GroupSummary,
   HierarchyRepository,
@@ -22,6 +24,8 @@ export interface RepositoryDetailViewModel {
   status: ReturnType<typeof useApiResource<HierarchyRepository>>["state"];
   reload: () => void;
   canManage: boolean;
+  /** Team lead or admin: the only roles that may write configuration. */
+  canWriteConfiguration: boolean;
   /** Members without manage rights only ever see configuration. */
   tab: RepoTab;
   setTab: (tab: RepoTab) => void;
@@ -43,6 +47,7 @@ export function useRepositoryDetailViewModel(
     [repositoryId],
   );
   const { hierarchyGithubSyncMode } = useCapabilities();
+  const { session } = useAuthSession();
   const [tab, setTab] = useState<RepoTab>("access");
 
   const canManage = isGroupManagerRole(groupResource.data?.role);
@@ -53,6 +58,7 @@ export function useRepositoryDetailViewModel(
     status: repoResource.state,
     reload: repoResource.reload,
     canManage,
+    canWriteConfiguration: canWriteRepositoryConfiguration(session?.appRole),
     tab: canManage ? tab : "configuration",
     setTab,
     githubSyncLive: hierarchyGithubSyncMode === "live",

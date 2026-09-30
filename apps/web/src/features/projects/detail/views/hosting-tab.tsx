@@ -3,6 +3,10 @@
 import { BranchPreviewsPanel } from "@/features/projects/previews";
 import { ProjectDomainsPanel } from "@/features/projects/domains";
 import type { DeploymentTarget, ProvisionedProject } from "@/features/projects";
+import {
+  canManageHosting,
+  HOSTING_LEAD_ONLY_NOTE,
+} from "../model/project-detail-tab-rules";
 import { providerDisplayName } from "../model/provider-urls";
 import type { ProjectDetailTabsViewModel } from "../view-models/use-project-detail-tabs-view-model";
 import { DeploymentHistoryList } from "./deployment-history-list";
@@ -26,6 +30,7 @@ export function HostingTab({
       }}
     >
       <HostingProvisionPrompt
+        canManage={canManageHosting(vm.appRole)}
         envEnabled={vm.envProvisioningEnabled}
         hasTargets={vm.deploymentTargets.length > 0}
         onTargetCreated={vm.handleTargetCreated}
@@ -53,6 +58,7 @@ export function HostingTab({
         targets={vm.deploymentTargets}
       />
       <HostingDomains
+        canManage={canManageHosting(vm.appRole)}
         enabled={vm.envProvisioningEnabled}
         projectId={project.id}
         targets={vm.deploymentTargets}
@@ -62,16 +68,21 @@ export function HostingTab({
 }
 
 function HostingProvisionPrompt({
+  canManage,
   envEnabled,
   hasTargets,
   onTargetCreated,
   project,
 }: Readonly<{
+  canManage: boolean;
   envEnabled: boolean;
   hasTargets: boolean;
   onTargetCreated: ProjectDetailTabsViewModel["handleTargetCreated"];
   project: ProvisionedProject;
 }>) {
+  if (!canManage && !hasTargets) {
+    return <p className="env-empty-state">{HOSTING_LEAD_ONLY_NOTE}</p>;
+  }
   if (envEnabled && project.status === "provisioned" && !hasTargets) {
     return (
       <ProjectEnvPanel
@@ -131,10 +142,12 @@ function HostingHistory({
 }
 
 function HostingDomains({
+  canManage,
   enabled,
   projectId,
   targets,
 }: Readonly<{
+  canManage: boolean;
   enabled: boolean;
   projectId: string;
   targets: DeploymentTarget[];
@@ -146,6 +159,7 @@ function HostingDomains({
         Custom domains
       </h4>
       <ProjectDomainsPanel
+        canManage={canManage}
         enabled
         projectId={projectId}
         targets={targets.map(domainTargetOption)}

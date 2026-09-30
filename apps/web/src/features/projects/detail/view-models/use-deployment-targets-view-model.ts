@@ -18,6 +18,7 @@ import {
   targetDetachMessage,
   targetSyncMessage,
 } from "../model/project-detail-tab-rules";
+import { workspacePermissionErrorMessage } from "../model/workspace-permission-errors";
 
 export interface DeploymentTargetsViewModel {
   status: ProjectStatus;
@@ -114,8 +115,10 @@ export function useDeploymentTargetsViewModel(options: {
       setMessage("Target metadata updated.");
       setStatus("ready");
       return updatedTarget;
-    } catch {
-      setMessage("Unable to update target metadata.");
+    } catch (error) {
+      setMessage(
+        workspacePermissionErrorMessage(error, "Unable to update target metadata."),
+      );
       setStatus("error");
       return null;
     } finally {
@@ -138,8 +141,10 @@ export function useDeploymentTargetsViewModel(options: {
       setMessage(targetSyncMessage(response));
       setStatus("ready");
       return response.target;
-    } catch {
-      setMessage("Unable to sync target metadata.");
+    } catch (error) {
+      setMessage(
+        workspacePermissionErrorMessage(error, "Unable to sync target metadata."),
+      );
       setStatus("error");
       return null;
     } finally {
@@ -164,8 +169,10 @@ export function useDeploymentTargetsViewModel(options: {
       setMessage(targetDetachMessage(response, target));
       setStatus("ready");
       return true;
-    } catch {
-      setMessage("Unable to detach deployment target.");
+    } catch (error) {
+      setMessage(
+        workspacePermissionErrorMessage(error, "Unable to detach deployment target."),
+      );
       setStatus("error");
       return false;
     } finally {
