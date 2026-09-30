@@ -49,7 +49,11 @@ export function ProjectEnvPanel({
     targets,
     usageItems,
     validateEnvText,
-  } = useProjectEnvProvisioning(project.id, project.status === "provisioned");
+  } = useProjectEnvProvisioning(
+    project.id,
+    project.status === "provisioned",
+    section !== "hosting",
+  );
   const [targetId, setTargetId] = useState("");
   const [targetAction, setTargetAction] = useState<
     "create" | "register_existing"

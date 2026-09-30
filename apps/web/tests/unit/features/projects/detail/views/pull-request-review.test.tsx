@@ -2,7 +2,10 @@ import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 
 import { PullRequestsTab } from "../../../../../../src/features/projects/detail/views/workspace/pull-requests-tab";
+import { CreatePullRequestView } from "../../../../../../src/features/projects/detail/views/workspace/create-pull-request-view";
+import type { AppRole } from "../../../../../../src/shared/api/contracts";
 import {
+  getProjectBranches,
   getProjectPullRequests,
   getProjectPullRequestFiles,
   getProjectPullRequestDetail,
@@ -12,6 +15,9 @@ import {
 jest.mock(
   "../../../../../../src/features/projects/detail/data/project-workspace-api",
   () => ({
+    getProjectBranches: jest.fn(),
+    compareProjectBranches: jest.fn(),
+    createProjectPullRequest: jest.fn(),
     getProjectPullRequests: jest.fn(),
     getProjectPullRequestFiles: jest.fn(),
     getProjectPullRequestDetail: jest.fn(),
@@ -19,6 +25,9 @@ jest.mock(
   }),
 );
 
+const mockedBranches = getProjectBranches as jest.MockedFunction<
+  typeof getProjectBranches
+>;
 const mockedList = getProjectPullRequests as jest.MockedFunction<
   typeof getProjectPullRequests
 >;
@@ -40,7 +49,10 @@ const pr = {
   merged: false,
   htmlUrl: "https://github.com/o/r/pull/1",
   headRef: "alphaci/workflow-update-20260910140909",
-  baseRef: "main",
+  // Not `main`: that base is Phase 1's own gate (see the
+  // "Phase 1 security gates" describe block below), and every test above it
+  // is about ordinary merge-readiness behaviour, unrelated to the gate.
+  baseRef: "dev",
   author: "LloydLim1",
   authorAvatarUrl: null,
   createdAt: "2026-09-10T14:09:00Z",
@@ -59,10 +71,16 @@ describe("PullRequestsTab review panel", () => {
   let root: Root | null = null;
   let host: HTMLDivElement;
 
-  async function render() {
+  async function render(appRole: AppRole = "member", onOpenQaStudio?: () => void) {
     await act(async () => {
       root = createRoot(host);
-      root.render(<PullRequestsTab projectId="p1" />);
+      root.render(
+        <PullRequestsTab
+          projectId="p1"
+          appRole={appRole}
+          onOpenQaStudio={onOpenQaStudio}
+        />,
+      );
     });
     // The panel loads when a row expands.
     const toggle = host.querySelector<HTMLButtonElement>(".ws-pr__head");
@@ -73,6 +91,14 @@ describe("PullRequestsTab review panel", () => {
     host = document.createElement("div");
     document.body.appendChild(host);
 
+    mockedBranches.mockResolvedValue({
+      defaultBranch: "main",
+      branches: [
+        { name: "main", protected: true, commitSha: "a" },
+        { name: "dev", protected: false, commitSha: "d" },
+        { name: "feature", protected: false, commitSha: "b" },
+      ],
+    });
     mockedList.mockResolvedValue({
       repoFullName: "o/r",
       pullsUrl: "https://github.com/o/r/pulls",
@@ -190,5 +216,208 @@ describe("PullRequestsTab review panel", () => {
     );
     expect(merge).toBeUndefined();
     expect(host.textContent).toContain("is merged");
+  });
+});
+
+/**
+ * Phase 1 security gates (PERSONA_WORKFLOW_SPEC.md §3, §5, §8.1): what each
+ * role sees for merging into `main`, and for opening a pull request at all.
+ * Shares the same fixtures and mocks as the describe block above.
+ */
+describe("PullRequestsTab, Phase 1 security gates", () => {
+  let root: Root | null = null;
+  let host: HTMLDivElement;
+
+  async function render(appRole: AppRole = "member", onOpenQaStudio?: () => void) {
+    await act(async () => {
+      root = createRoot(host);
+      root.render(
+        <PullRequestsTab
+          projectId="p1"
+          appRole={appRole}
+          onOpenQaStudio={onOpenQaStudio}
+        />,
+      );
+    });
+    const toggle = host.querySelector<HTMLButtonElement>(".ws-pr__head");
+    await act(async () => toggle?.click());
+  }
+
+  beforeEach(() => {
+    host = document.createElement("div");
+    document.body.appendChild(host);
+
+    mockedBranches.mockResolvedValue({
+      defaultBranch: "main",
+      branches: [
+        { name: "main", protected: true, commitSha: "a" },
+        { name: "dev", protected: false, commitSha: "d" },
+        { name: "feature", protected: false, commitSha: "b" },
+      ],
+    });
+    mockedList.mockResolvedValue({
+      repoFullName: "o/r",
+      pullsUrl: "https://github.com/o/r/pulls",
+      pullRequests: [pr],
+    });
+    mockedFiles.mockResolvedValue([]);
+  });
+
+  afterEach(() => {
+    act(() => root?.unmount());
+    host.remove();
+    jest.clearAllMocks();
+  });
+
+  function detailWithBase(baseRef: string) {
+    return {
+      repoFullName: "o/r",
+      pullRequest: {
+        ...pr,
+        baseRef,
+        mergeable: true,
+        mergeableState: "clean",
+        headSha: "b7460f77",
+        body: null,
+      },
+      checks: [],
+      viewerIsAuthor: false,
+    };
+  }
+
+  it("does not offer Merge into main, and explains why, for a Team Lead", async () => {
+    mockedDetail.mockResolvedValue(detailWithBase("main"));
+
+    await render("lead");
+
+    const merge = [...host.querySelectorAll("button")].find(
+      (button) => button.textContent === "Merge",
+    );
+    expect(merge).toBeUndefined();
+    expect(host.textContent).toContain(
+      "Merges into main go through QA Studio — Ready for production.",
+    );
+  });
+
+  it("lets a Team Lead follow the main-merge notice into QA Studio", async () => {
+    mockedDetail.mockResolvedValue(detailWithBase("main"));
+    const onOpenQaStudio = jest.fn();
+
+    await render("lead", onOpenQaStudio);
+
+    const link = [...host.querySelectorAll("button")].find(
+      (button) => button.textContent === "Go to QA Studio",
+    );
+    expect(link).toBeDefined();
+    await act(async () => link?.click());
+    expect(onOpenQaStudio).toHaveBeenCalled();
+  });
+
+  it("gives a Developer the same main-merge notice, with no QA Studio link", async () => {
+    // A Developer cannot open QA Studio at all, so nothing here should
+    // promise a tab that is not there.
+    mockedDetail.mockResolvedValue(detailWithBase("main"));
+    const onOpenQaStudio = jest.fn();
+
+    await render("member", onOpenQaStudio);
+
+    expect(host.textContent).toContain("Merges into main go through QA Studio");
+    const link = [...host.querySelectorAll("button")].find(
+      (button) => button.textContent === "Go to QA Studio",
+    );
+    expect(link).toBeUndefined();
+  });
+
+  it("hides the merge action entirely for QA, on any base", async () => {
+    mockedDetail.mockResolvedValue(detailWithBase("dev"));
+
+    await render("qa");
+
+    expect(host.textContent).not.toContain("Merges into main");
+    const merge = [...host.querySelectorAll("button")].find(
+      (button) => button.textContent === "Merge",
+    );
+    expect(merge).toBeUndefined();
+  });
+
+  it("still offers the ordinary Merge button for a non-main base", async () => {
+    mockedDetail.mockResolvedValue(detailWithBase("dev"));
+
+    await render("lead");
+
+    const merge = [...host.querySelectorAll("button")].find(
+      (button) => button.textContent === "Merge",
+    );
+    expect(merge).toBeDefined();
+  });
+
+  it("hides the 'New pull request' entry point for QA", async () => {
+    await render("qa");
+
+    expect(host.textContent).not.toContain("New pull request");
+  });
+
+  it("offers 'New pull request' to a Developer, and never lists main as a base", async () => {
+    await render("member");
+
+    const button = [...host.querySelectorAll("button")].find(
+      (candidate) => candidate.textContent === "New pull request",
+    );
+    expect(button).toBeDefined();
+    await act(async () => button?.click());
+
+    const baseSelect = host.querySelector<HTMLSelectElement>(".ws-select");
+    expect(baseSelect).toBeDefined();
+    const baseOptions = [...(baseSelect?.querySelectorAll("option") ?? [])].map(
+      (option) => option.value,
+    );
+    expect(baseOptions).toEqual(["dev", "feature"]);
+    expect(baseOptions).not.toContain("main");
+  });
+});
+
+/**
+ * `CreatePullRequestView` reached directly — a stale UI state, or a link
+ * typed by hand — rather than through the "New pull request" button
+ * `PullRequestsTab` already hides for QA.
+ */
+describe("CreatePullRequestView, reached directly by QA", () => {
+  beforeEach(() => {
+    // The hook behind this view is called unconditionally regardless of
+    // role (see the component's own comment), so it still needs somewhere
+    // to resolve even though QA never sees what it loads.
+    mockedBranches.mockResolvedValue({
+      defaultBranch: "main",
+      branches: [{ name: "main", protected: true, commitSha: "a" }],
+    });
+  });
+
+  afterEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it("shows a short notice instead of the compose form", async () => {
+    let root: Root | null = null;
+    const host = document.createElement("div");
+    document.body.appendChild(host);
+
+    await act(async () => {
+      root = createRoot(host);
+      root.render(
+        <CreatePullRequestView
+          projectId="p1"
+          appRole="qa"
+          onCancel={jest.fn()}
+          onCreated={jest.fn()}
+          onViewExisting={jest.fn()}
+        />,
+      );
+    });
+
+    expect(host.textContent).toContain("QA does not open pull requests.");
+    expect(host.querySelector(".ws-compose__branches")).toBeNull();
+
+    act(() => root?.unmount());
+    host.remove();
   });
 });

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
+import type { AppRole } from "@/shared/api/contracts";
 import {
   getProjectPullRequestFiles,
   getProjectPullRequests,
@@ -9,6 +10,7 @@ import {
   type PullRequestSummary,
 } from "@/features/projects";
 
+import { canOpenQaStudio } from "../../model/project-detail-tab-rules";
 import { CreatePullRequestView } from "./create-pull-request-view";
 import { DiffView } from "./diff-view";
 import {
@@ -27,6 +29,7 @@ import {
 import {
   explainMergeState,
   mergeButtonLabel,
+  workspaceMergeGate,
 } from "../../model/pull-request-merge-rules";
 
 type StateFilter = "open" | "closed" | "all";
@@ -46,7 +49,17 @@ const FILTERS: ReadonlyArray<{ id: StateFilter; label: string }> = [
  * only counts reviews and merges GitHub knows about — which is why "Open on
  * GitHub" stays available as a secondary link rather than the way forward.
  */
-export function PullRequestsTab({ projectId }: { projectId: string }) {
+export function PullRequestsTab({
+  projectId,
+  appRole,
+  onOpenQaStudio,
+}: {
+  projectId: string;
+  /** The viewer's app role, for the Phase 1 create/merge gates. */
+  appRole?: AppRole;
+  /** Opens the QA Studio tab, for the "merge into main" notice's link. */
+  onOpenQaStudio?: () => void;
+}) {
   const [filter, setFilter] = useState<StateFilter>("open");
   const [composing, setComposing] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
@@ -116,6 +129,7 @@ export function PullRequestsTab({ projectId }: { projectId: string }) {
       <div className="ws-panel">
         <CreatePullRequestView
           projectId={projectId}
+          appRole={appRole}
           onCancel={() => setComposing(false)}
           onCreated={handleCreated}
           onViewExisting={handleViewExisting}
@@ -160,17 +174,19 @@ export function PullRequestsTab({ projectId }: { projectId: string }) {
               Open on GitHub ↗
             </a>
           )}
-          <button
-            type="button"
-            className="primary-button"
-            onClick={() => {
-              setNotice(null);
-              setFocusNumber(null);
-              setComposing(true);
-            }}
-          >
-            New pull request
-          </button>
+          {appRole !== "qa" && (
+            <button
+              type="button"
+              className="primary-button"
+              onClick={() => {
+                setNotice(null);
+                setFocusNumber(null);
+                setComposing(true);
+              }}
+            >
+              New pull request
+            </button>
+          )}
         </div>
       </div>
 
@@ -202,6 +218,8 @@ export function PullRequestsTab({ projectId }: { projectId: string }) {
               pr={pr}
               focused={pr.number === focusNumber}
               onMerged={handleMerged}
+              appRole={appRole}
+              onOpenQaStudio={onOpenQaStudio}
             />
           ))}
         </ul>
@@ -215,12 +233,16 @@ function PullRequestRow({
   pr,
   focused = false,
   onMerged,
+  appRole,
+  onOpenQaStudio,
 }: {
   projectId: string;
   pr: PullRequestSummary;
   onMerged: (pullNumber: number) => void;
   /** Open expanded and scrolled into view, e.g. arriving from compose. */
   focused?: boolean;
+  appRole?: AppRole;
+  onOpenQaStudio?: () => void;
 }) {
   const [open, setOpen] = useState(focused);
   const [files, setFiles] = useState<PullRequestFile[] | null>(null);
@@ -285,7 +307,13 @@ function PullRequestRow({
 
       {open && (
         <div className="ws-pr__body">
-          <PullRequestReview projectId={projectId} pr={pr} onMerged={onMerged} />
+          <PullRequestReview
+            projectId={projectId}
+            pr={pr}
+            onMerged={onMerged}
+            appRole={appRole}
+            onOpenQaStudio={onOpenQaStudio}
+          />
           <PullRequestFiles
             files={files}
             loading={loading}
@@ -337,10 +365,14 @@ function PullRequestReview({
   projectId,
   pr,
   onMerged,
+  appRole,
+  onOpenQaStudio,
 }: Readonly<{
   projectId: string;
   pr: PullRequestSummary;
   onMerged: (pullNumber: number) => void;
+  appRole?: AppRole;
+  onOpenQaStudio?: () => void;
 }>) {
   const review = usePullRequestReviewViewModel({
     projectId,
@@ -370,7 +402,12 @@ function PullRequestReview({
       <PullRequestChecks checks={detail.checks} />
       <MergeState detail={detail} />
       <div className="ws-prreview__actions">
-        <MergeButton pr={detail.pullRequest} review={review} />
+        <MergeControl
+          pr={detail.pullRequest}
+          review={review}
+          appRole={appRole}
+          onOpenQaStudio={onOpenQaStudio}
+        />
         <a
           className="ws-link"
           href={pr.htmlUrl}
@@ -441,6 +478,51 @@ const MERGE_METHODS: ReadonlyArray<{ id: MergeMethod; label: string }> = [
   { id: "squash", label: "Squash and merge" },
   { id: "rebase", label: "Rebase and merge" },
 ];
+
+/**
+ * Whether, and what, to show in place of the merge action — the Phase 1
+ * security gate (`workspaceMergeGate`, mirroring the backend's
+ * `MAIN_MERGE_VIA_QA_STUDIO` and `PR_ROLE_FORBIDDEN` 403s).
+ *
+ * QA gets nothing here at all: it never merges through the workspace, and
+ * saying so on every open pull request would be noise, not help. Every other
+ * role merging into `main` gets the explanatory notice instead of a button
+ * that would only 403 — with a link into QA Studio for the roles that can
+ * actually open it.
+ */
+function MergeControl({
+  pr,
+  review,
+  appRole,
+  onOpenQaStudio,
+}: Readonly<{
+  pr: PullRequestDetail;
+  review: PullRequestReviewViewModel;
+  appRole?: AppRole;
+  onOpenQaStudio?: () => void;
+}>) {
+  if (pr.merged || pr.state === "closed") return null;
+
+  const gate = workspaceMergeGate(appRole, pr.baseRef);
+  if (!gate.allowed && gate.reason === "qa-role") return null;
+  if (!gate.allowed && gate.reason === "main-via-qa-studio") {
+    return (
+      <p className="ws-hint" role="status">
+        Merges into main go through QA Studio — Ready for production.
+        {canOpenQaStudio(appRole) && onOpenQaStudio ? (
+          <>
+            {" "}
+            <button type="button" className="ws-link" onClick={onOpenQaStudio}>
+              Go to QA Studio
+            </button>
+          </>
+        ) : null}
+      </p>
+    );
+  }
+
+  return <MergeButton pr={pr} review={review} />;
+}
 
 /**
  * The merge action: how to merge, and doing it.

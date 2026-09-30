@@ -1,8 +1,12 @@
 import {
+  canCreatePullRequest,
+  defaultComposeBase,
   describeComparison,
+  selectableBaseBranches,
   suggestTitle,
 } from "../../../../../../src/features/projects/detail/model/pull-request-compose-rules";
 import type { BranchComparisonResponse } from "../../../../../../src/features/projects/detail/data/project-workspace-api";
+import type { AppRole } from "../../../../../../src/shared/api/contracts";
 
 const commit = (headline: string) => ({
   sha: "abc",
@@ -119,5 +123,73 @@ describe("suggestTitle", () => {
 
   it("falls back to the branch name when it has no words left", () => {
     expect(suggestTitle("feature/--", [])).toBe("feature/--");
+  });
+});
+
+/**
+ * Phase 1 security gates: what this composer offers as a base
+ * (PERSONA_WORKFLOW_SPEC.md §5, §8.1).
+ */
+describe("selectableBaseBranches", () => {
+  it("excludes main, keeping every other branch in order", () => {
+    expect(selectableBaseBranches(["main", "dev", "uat", "feature/x"])).toEqual([
+      "dev",
+      "uat",
+      "feature/x",
+    ]);
+  });
+
+  it("is empty when main is the only branch", () => {
+    expect(selectableBaseBranches(["main"])).toEqual([]);
+  });
+});
+
+describe("defaultComposeBase", () => {
+  it("prefers dev over the repository's own default branch", () => {
+    // The bug this fixes: `getProjectBranches().defaultBranch` is `main` on
+    // this product, and the composer used to open on it directly.
+    expect(defaultComposeBase(["main", "dev", "uat"])).toBe("dev");
+  });
+
+  it("falls back to uat when dev has not been cut yet", () => {
+    expect(defaultComposeBase(["main", "uat", "feature/x"])).toBe("uat");
+  });
+
+  it("falls back to the first selectable branch when neither dev nor uat exists", () => {
+    expect(defaultComposeBase(["main", "feature/x", "feature/y"])).toBe(
+      "feature/x",
+    );
+  });
+
+  it("is empty when main is the only branch", () => {
+    expect(defaultComposeBase(["main"])).toBe("");
+  });
+});
+
+describe("canCreatePullRequest", () => {
+  const ROLES: ReadonlyArray<AppRole> = ["admin", "lead", "member"];
+
+  it("blocks every role from proposing a merge into main here", () => {
+    for (const role of ROLES) {
+      expect(canCreatePullRequest(role, "main")).toBe(false);
+    }
+  });
+
+  it("blocks QA from opening a pull request at all", () => {
+    expect(canCreatePullRequest("qa", "dev")).toBe(false);
+    expect(canCreatePullRequest("qa", "main")).toBe(false);
+  });
+
+  it("allows admin, lead and member into dev or uat", () => {
+    for (const role of ROLES) {
+      for (const base of ["dev", "uat"]) {
+        expect(canCreatePullRequest(role, base)).toBe(true);
+      }
+    }
+  });
+
+  it("denies a session with no known role, even for a non-main base", () => {
+    expect(canCreatePullRequest(undefined, "dev")).toBe(false);
+    expect(canCreatePullRequest(null, "dev")).toBe(false);
   });
 });

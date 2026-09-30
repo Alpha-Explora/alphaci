@@ -20,6 +20,7 @@ import {
   projectRepoFullName,
   routeProjectId,
 } from "../../model/projects-rules";
+import { canManageProjectLifecycle } from "../model/project-detail-tab-rules";
 import { useProjectDetailViewModel } from "../view-models/use-project-detail-view-model";
 import { ProjectDangerZone } from "./project-danger-zone";
 
@@ -267,13 +268,18 @@ export function ProjectDetailView() {
   }
   if (status === "signed-out") return null;
 
-  const dangerZone = (
+  // Danger Zone (disconnect/delete) is admin/lead only — the backend's
+  // `PROJECT_ROLE_FORBIDDEN` allow-list. Built only for a viewer who can use
+  // it: `SettingsDangerZone` renders nothing when this is undefined, so the
+  // control simply does not exist for anyone else, rather than existing and
+  // failing.
+  const dangerZone = canManageProjectLifecycle(session?.appRole) ? (
     <ProjectDangerZone
       vm={vm}
       repoFullName={repoFullName ?? undefined}
       onDelete={() => void handleDeleteProject()}
     />
-  );
+  ) : undefined;
 
   return (
     <main

@@ -9,8 +9,12 @@ import {
   type BranchComparisonResponse,
   type PullRequestSummary,
 } from "../data/project-workspace-api";
+import type { AppRole } from "@/shared/api/contracts";
 import { apiErrorReason } from "../model/api-error-reason";
+import { workspacePermissionErrorMessage } from "../model/workspace-permission-errors";
 import {
+  canCreatePullRequest,
+  defaultComposeBase,
   describeComparison,
   suggestTitle,
   type ComposeReadiness,
@@ -72,9 +76,11 @@ export interface CreatePullRequestViewModel {
  */
 export function useCreatePullRequestViewModel(options: {
   projectId: string;
+  /** The viewer's app role, for the Phase 1 create-PR gate. */
+  appRole?: AppRole;
   onCreated: (pullRequest: PullRequestSummary) => void;
 }): CreatePullRequestViewModel {
-  const { projectId, onCreated } = options;
+  const { projectId, appRole, onCreated } = options;
 
   const [status, setStatus] = useState<ComposeStatus>("loading");
   const [error, setError] = useState<string | null>(null);
@@ -101,8 +107,12 @@ export function useCreatePullRequestViewModel(options: {
   const loadBranches = useCallback(() => {
     return getProjectBranches(projectId)
       .then((result) => {
-        setBranches(result.branches.map((branch) => branch.name));
-        setBaseState(result.defaultBranch);
+        const names = result.branches.map((branch) => branch.name);
+        setBranches(names);
+        // Not `result.defaultBranch`: on this product that is `main`, the one
+        // branch this composer must never default into (see
+        // `defaultComposeBase`).
+        setBaseState(defaultComposeBase(names));
         setBranchesLoaded(true);
         setError(null);
         setStatus("choosing");
@@ -199,7 +209,8 @@ export function useCreatePullRequestViewModel(options: {
   const canSubmit =
     status === "ready" &&
     readiness?.canCreate === true &&
-    title.trim().length > 0;
+    title.trim().length > 0 &&
+    canCreatePullRequest(appRole, base);
 
   /**
    * Ask GitHub to open the pull request, and keep whatever it says.
@@ -227,7 +238,10 @@ export function useCreatePullRequestViewModel(options: {
       setStatus("ready");
     } catch (cause: unknown) {
       setSubmitMessage(
-        apiErrorReason(cause, "The pull request could not be opened."),
+        workspacePermissionErrorMessage(
+          cause,
+          "The pull request could not be opened.",
+        ),
       );
       setStatus("ready");
     }

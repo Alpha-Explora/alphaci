@@ -1,5 +1,7 @@
 "use client";
 
+import type { AppRole } from "@/shared/api/contracts";
+import { selectableBaseBranches } from "../../model/pull-request-compose-rules";
 import { DiffView } from "./diff-view";
 import { WorkspaceError, WorkspaceLoading } from "./workspace-states";
 import {
@@ -19,17 +21,23 @@ import {
  */
 export function CreatePullRequestView({
   projectId,
+  appRole,
   onCancel,
   onCreated,
   onViewExisting,
 }: Readonly<{
   projectId: string;
+  /** The viewer's app role. QA does not open pull requests. */
+  appRole?: AppRole;
   onCancel: () => void;
   onCreated: (pullRequest: PullRequestSummary) => void;
   /** Leave compose for a pull request that is already open for this pair. */
   onViewExisting: (pullNumber: number) => void;
 }>) {
-  const vm = useCreatePullRequestViewModel({ projectId, onCreated });
+  // Called unconditionally regardless of role — QA reaches this component
+  // only through a stale UI state or a direct link, and skipping the hook
+  // for that case would break the rules of hooks for one defensive path.
+  const vm = useCreatePullRequestViewModel({ projectId, appRole, onCreated });
 
   return (
     <section className="ws-compose" aria-labelledby="ws-compose-title">
@@ -42,7 +50,11 @@ export function CreatePullRequestView({
         </button>
       </div>
 
-      {vm.status === "loading" ? (
+      {appRole === "qa" ? (
+        <p className="ws-hint" role="status">
+          QA does not open pull requests.
+        </p>
+      ) : vm.status === "loading" ? (
         <WorkspaceLoading rows={3} />
       ) : (
         <>
@@ -56,6 +68,9 @@ export function CreatePullRequestView({
 
 function BranchPickers({ vm }: Readonly<{ vm: CreatePullRequestViewModel }>) {
   const busy = vm.status === "submitting";
+  // `main` is never a selectable base: Hop 3 is locked to the promotion
+  // engine and QA Studio, not this composer, for every role.
+  const baseOptions = selectableBaseBranches(vm.branches);
 
   return (
     <div className="ws-compose__branches">
@@ -67,7 +82,7 @@ function BranchPickers({ vm }: Readonly<{ vm: CreatePullRequestViewModel }>) {
           disabled={busy}
           onChange={(event) => vm.setBase(event.target.value)}
         >
-          {vm.branches.map((name) => (
+          {baseOptions.map((name) => (
             <option key={name} value={name}>
               {name}
             </option>

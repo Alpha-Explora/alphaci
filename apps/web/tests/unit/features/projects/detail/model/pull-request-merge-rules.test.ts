@@ -1,7 +1,10 @@
 import {
+  canMergeViaWorkspace,
   explainMergeState,
   mergeButtonLabel,
+  workspaceMergeGate,
 } from "../../../../../../src/features/projects/detail/model/pull-request-merge-rules";
+import type { AppRole } from "../../../../../../src/shared/api/contracts";
 
 describe("explainMergeState", () => {
   it("calls a clean pull request ready", () => {
@@ -58,5 +61,53 @@ describe("mergeButtonLabel", () => {
     expect(mergeButtonLabel("merge")).toBe("Merge");
     expect(mergeButtonLabel("squash")).toBe("Squash and merge");
     expect(mergeButtonLabel("rebase")).toBe("Rebase and merge");
+  });
+});
+
+/**
+ * Phase 1 security gates: the two 403s the backend sends for
+ * `POST .../pull-requests/:number/merge` (PERSONA_WORKFLOW_SPEC.md §5, §8.1).
+ */
+describe("workspaceMergeGate / canMergeViaWorkspace", () => {
+  const ROLES: ReadonlyArray<AppRole> = ["admin", "lead", "member"];
+
+  it("blocks every role from merging into main through the workspace", () => {
+    for (const role of ROLES) {
+      expect(workspaceMergeGate(role, "main")).toEqual({
+        allowed: false,
+        reason: "main-via-qa-studio",
+      });
+      expect(canMergeViaWorkspace(role, "main")).toBe(false);
+    }
+  });
+
+  it("blocks QA from merging anything here, even a non-main base", () => {
+    expect(workspaceMergeGate("qa", "dev")).toEqual({
+      allowed: false,
+      reason: "qa-role",
+    });
+    expect(canMergeViaWorkspace("qa", "uat")).toBe(false);
+  });
+
+  it("gives QA's block priority when the base is also main", () => {
+    // Both reasons could apply; the role reason is the more specific one, and
+    // the one the view uses to decide whether to say anything at all.
+    expect(workspaceMergeGate("qa", "main")).toEqual({
+      allowed: false,
+      reason: "qa-role",
+    });
+  });
+
+  it("allows admin, lead and member to merge into dev or uat", () => {
+    for (const role of ROLES) {
+      for (const base of ["dev", "uat"]) {
+        expect(canMergeViaWorkspace(role, base)).toBe(true);
+      }
+    }
+  });
+
+  it("denies a session with no known role, even for a non-main base", () => {
+    expect(canMergeViaWorkspace(undefined, "dev")).toBe(false);
+    expect(canMergeViaWorkspace(null, "dev")).toBe(false);
   });
 });

@@ -117,8 +117,13 @@ describe("ProjectChecklistsPanel", () => {
 });
 
 describe("project Checklists tab gating", () => {
+  // "lead", not "qa": this describes the Checklists capability flag's own
+  // effect in isolation. Environment is a separate, role-only gate
+  // (ENV_VARS_LEAD_ONLY) that a Team Lead clears regardless of the flag, so
+  // it stays out of this count; QA's narrower tab set has its own coverage
+  // in project-detail-tab-visibility.test.ts.
   async function renderTabs(qaChecklistsEnabled: boolean) {
-    const visible = visibleProjectDetailTabs("qa", { qaChecklistsEnabled });
+    const visible = visibleProjectDetailTabs("lead", { qaChecklistsEnabled });
     return render(
       <ProjectDetailTopTabs
         groups={projectDetailTabGroups(visible)}

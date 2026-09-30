@@ -11,6 +11,7 @@ import {
 } from "../data/project-workspace-api";
 
 import { apiErrorReason } from "../model/api-error-reason";
+import { workspacePermissionErrorMessage } from "../model/workspace-permission-errors";
 import type { ProjectStatus } from "../../model/projects-types";
 /*
  * Re-exported so a View can name what it renders without importing from
@@ -116,7 +117,10 @@ export function usePullRequestReviewViewModel(options: {
       if (result.merged) onMerged?.(pullNumber);
     } catch (cause: unknown) {
       setMergeMessage(
-        apiErrorReason(cause, "The merge request could not be sent."),
+        workspacePermissionErrorMessage(
+          cause,
+          "The merge request could not be sent.",
+        ),
       );
       setMergeFailed(true);
     } finally {

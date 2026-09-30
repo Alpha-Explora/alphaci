@@ -749,7 +749,10 @@ describe("Project env provisioning UI", () => {
     });
 
     const rendered = render(
-      <ProjectDetailTabs project={provisionedProject} />,
+      // admin: this test asserts every section renders, Environment
+      // included — Environment is now admin/lead only (ENV_VARS_LEAD_ONLY),
+      // so a session with no role would not see it.
+      <ProjectDetailTabs project={provisionedProject} appRole="admin" />,
     );
     root = rendered.root;
 

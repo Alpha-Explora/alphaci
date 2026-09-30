@@ -8,6 +8,11 @@
  * "you cannot merge this" when they could.
  */
 
+import type { AppRole } from "@/shared/api/contracts";
+import { PRODUCTION_BRANCH } from "@/shared/api/pipeline-branches";
+
+import { isPullRequestRole } from "./pull-request-compose-rules";
+
 export type MergeTone = "ok" | "caution" | "blocked" | "pending";
 
 export interface MergeExplanation {
@@ -72,4 +77,41 @@ export function mergeButtonLabel(method: "merge" | "squash" | "rebase"): string 
   if (method === "squash") return "Squash and merge";
   if (method === "rebase") return "Rebase and merge";
   return "Merge";
+}
+
+/* ── Phase 1 security gates: who may merge here at all ──────────────────── */
+
+/**
+ * Why the generic workspace merge button is not offered, mirroring the
+ * backend's two 403 codes for `POST .../pull-requests/:number/merge`
+ * (PERSONA_WORKFLOW_SPEC.md §5, §8.1):
+ *
+ *   - `qa-role`             — QA never merges here (`PR_ROLE_FORBIDDEN`),
+ *     regardless of the base branch. QA's sign-off happens in QA Studio.
+ *   - `main-via-qa-studio`  — every role is refused when the base is `main`
+ *     (`MAIN_MERGE_VIA_QA_STUDIO`): production release is a QA Studio
+ *     "Ready for production" action, not a workspace merge, even for a Team
+ *     Lead or Admin who is otherwise allowed to merge anything else.
+ */
+export type WorkspaceMergeGate =
+  | { allowed: true }
+  | { allowed: false; reason: "qa-role" | "main-via-qa-studio" };
+
+export function workspaceMergeGate(
+  role: AppRole | null | undefined,
+  base: string,
+): WorkspaceMergeGate {
+  if (!isPullRequestRole(role)) return { allowed: false, reason: "qa-role" };
+  if (base === PRODUCTION_BRANCH) {
+    return { allowed: false, reason: "main-via-qa-studio" };
+  }
+  return { allowed: true };
+}
+
+/** Whether the workspace's own Merge control should be offered at all. */
+export function canMergeViaWorkspace(
+  role: AppRole | null | undefined,
+  base: string,
+): boolean {
+  return workspaceMergeGate(role, base).allowed;
 }

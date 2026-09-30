@@ -40,6 +40,22 @@ async function settle() {
   });
 }
 
+/** Polls until `check` stops throwing: for UI that leaves through an exit animation. */
+async function waitFor(check: () => void, timeoutMs = 2000) {
+  const deadline = Date.now() + timeoutMs;
+  for (;;) {
+    try {
+      check();
+      return;
+    } catch (error) {
+      if (Date.now() > deadline) throw error;
+      await act(async () => {
+        await new Promise((resolve) => setTimeout(resolve, 16));
+      });
+    }
+  }
+}
+
 let lastCount: number | null | undefined;
 
 async function renderExplorer(qaChecklistsEnabled = true): Promise<HTMLElement> {
@@ -213,7 +229,9 @@ describe("ProjectExplorer", () => {
       deleteProviderResources: false,
       deleteSonarProjects: false,
     });
-    expect(container.querySelector('[role="dialog"]')).toBeNull();
+    // The dialog leaves through a framer-motion exit animation, so it stays
+    // mounted for a few frames after the delete resolves.
+    await waitFor(() => expect(container.querySelector('[role="dialog"]')).toBeNull());
     expect(container.querySelectorAll("li.pf-card")).toHaveLength(2);
     expect(container.textContent).toContain("Deleted testfinals and 2 repositories.");
   });
