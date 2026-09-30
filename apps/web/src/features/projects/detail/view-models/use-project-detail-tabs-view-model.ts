@@ -30,6 +30,7 @@ import {
   overviewCapabilityFlags,
   overviewTabData,
   resolveVisibleTab,
+  shouldHighlightMyQaItems,
   tabFromHash,
   visibleProjectDetailTabs,
   type ProjectDetailTab,
@@ -49,6 +50,12 @@ export interface ProjectDetailTabsViewModel {
   viewerLogin: string | undefined;
   /** The QA checklists capability: gates QA Studio and the "Returned by QA" card. */
   qaChecklistsEnabled: boolean;
+  /**
+   * Set once from `?focus=my-qa-items` at mount: a notification deep-link
+   * (spec §8.6) asking the Overview to scroll to and briefly highlight the
+   * "My QA items" card.
+   */
+  highlightMyQaItems: boolean;
   /**
    * The target whose logs Hosting should open with, set when the Overview's
    * card asks for its full logs. Cleared by choosing a tab by hand.
@@ -129,6 +136,9 @@ export function useProjectDetailTabsViewModel(options: {
   // set only mounts client-side, once the project overview has loaded.
   const [selectedTab, setTabState] = useState<ProjectDetailTab>(
     () => (typeof window === "undefined" ? null : tabFromHash(window.location.hash)) ?? "overview",
+  );
+  const [highlightMyQaItems] = useState<boolean>(() =>
+    typeof window === "undefined" ? false : shouldHighlightMyQaItems(window.location.search),
   );
   const [logFocus, setLogFocus] = useState<DeploymentLogFocus | null>(null);
   const [syncingProjectId, setSyncingProjectId] = useState<string | null>(null);
@@ -278,6 +288,7 @@ export function useProjectDetailTabsViewModel(options: {
     appRole,
     viewerLogin,
     qaChecklistsEnabled: caps.qaChecklistsEnabled,
+    highlightMyQaItems,
     logFocus,
     openTargetLogs,
     status: overviewQuery.status,

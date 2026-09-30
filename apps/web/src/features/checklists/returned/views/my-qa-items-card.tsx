@@ -2,6 +2,9 @@
 
 import "./returned.css";
 
+import { useEffect, useRef } from "react";
+import { useReducedMotion } from "framer-motion";
+
 import type { AppRole } from "@/shared/api/contracts";
 
 import { SeverityBadge } from "../../items";
@@ -171,22 +174,48 @@ export function MyQaItemsCard({
   projectId,
   enabled,
   appRole,
-}: Readonly<{ projectId: string; enabled: boolean; appRole: AppRole | null | undefined }>) {
+  highlightRequested = false,
+}: Readonly<{
+  projectId: string;
+  enabled: boolean;
+  appRole: AppRole | null | undefined;
+  /** A notification deep-link (spec §8.6, `?focus=my-qa-items`) asking this
+   * card to scroll into view and briefly highlight itself once it has
+   * something to show. */
+  highlightRequested?: boolean;
+}>) {
   const list = useMyQaItemsViewModel({ projectId, enabled });
   const retest = useRequestRetestViewModel({ projectId, onDone: list.reload });
   const editor = useDeveloperItemEditorViewModel({ projectId, onRun: list.applyRun });
+  const total = myItemsCount(list.data);
+  const ready = list.status === "ready" && total > 0;
+  const headingRef = useRef<HTMLHeadingElement | null>(null);
+  const highlightedOnce = useRef(false);
+  const prefersReducedMotion = useReducedMotion();
+
+  // Runs once, only after the card has real content to focus. Guarded by a
+  // ref rather than clearing `highlightRequested` so an unrelated re-render
+  // (a re-test submitted, a reload) can never replay the scroll/focus.
+  useEffect(() => {
+    if (!highlightRequested || !ready || highlightedOnce.current) return;
+    const node = headingRef.current;
+    if (!node) return;
+    highlightedOnce.current = true;
+    node.scrollIntoView({ behavior: prefersReducedMotion ? "auto" : "smooth", block: "center" });
+    node.focus({ preventScroll: true });
+  }, [highlightRequested, ready, prefersReducedMotion]);
+
   if (!enabled) return null;
   if (list.status === "error") return <LoadError message={list.error} onRetry={list.reload} />;
-  const total = myItemsCount(list.data);
-  if (list.status !== "ready" || total === 0) return null;
+  if (!ready) return null;
   return (
     <section
-      className="qa-returned qa-mine"
+      className={`qa-returned qa-mine${highlightRequested ? " qa-mine--focused" : ""}`}
       data-tone={list.data.returned.length > 0 ? "returned" : "checks"}
       aria-labelledby="qa-mine-title"
     >
       <header className="qa-returned__header">
-        <h2 className="qa-returned__heading" id="qa-mine-title">
+        <h2 ref={headingRef} tabIndex={-1} className="qa-returned__heading" id="qa-mine-title">
           My QA items
           <span className="qa-mine__count">{total}</span>
         </h2>

@@ -8,3 +8,6 @@ export { usePipelineRunsViewModel, RUNS_POLL_MS } from "./view-models/use-pipeli
 export type { PipelineRunsViewModel } from "./view-models/use-pipeline-runs-view-model";
 export { groupRunsByPipelineBranch } from "./model/runs-by-branch";
 export type { BranchRun, BranchRunSection } from "./model/runs-by-branch";
+/* The QA Studio role gate — also consulted by notifications' deep-link rules
+ * (spec §8.6) to decide between a `#qa` and `#overview` destination. */
+export { canOpenQaStudio } from "./model/project-detail-tab-rules";
