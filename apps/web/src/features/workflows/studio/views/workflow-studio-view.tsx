@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { motion, useReducedMotion } from "framer-motion";
 
 import { AppNav } from "@/features/workspace/selection";
 import { FlowBackground } from "@/shared/layout/flow-background";
@@ -11,14 +10,12 @@ import { WorkspaceProvider } from "@/features/workspace/selection";
 import { WorkflowBuilder } from "./workflow-builder";
 import { isGuest, useAuthSession, useSignOutAndRedirect } from "@/features/auth/session";
 import { studioSessionFields } from "../model/workflow-studio-rules";
-import { PROMOTION_FLOW_LABEL } from "@/shared/api/pipeline-branches";
 
 /* Level 0 in the skill's progressive depth: the studio's data belongs to
  * WorkflowBuilder and the hooks it owns, so this surface has no view-model and
  * no data layer of its own. Sign-out is the one action, via useAuthSession. */
 
 export function WorkflowStudioView() {
-  const prefersReducedMotion = useReducedMotion();
   const { status, session, error, refresh } = useAuthSession();
   const { signOutAndRedirect, isSigningOut } = useSignOutAndRedirect();
   const [logoutMessage, setLogoutMessage] = useState<string | null>(null);
@@ -63,7 +60,6 @@ export function WorkflowStudioView() {
         {logoutMessage ? <p className="error-text">{logoutMessage}</p> : null}
 
         <div id="main-content" style={{ padding: 0 }}>
-          <StudioPageHeader reduced={Boolean(prefersReducedMotion)} />
           <WorkflowBuilder
             login={fields.login}
             plan={fields.plan}
@@ -161,50 +157,5 @@ function StudioGuestBanner({ guest }: Readonly<{ guest: boolean }>) {
         </Link>
       </div>
     </div>
-  );
-}
-
-function StudioPageHeader({ reduced }: Readonly<{ reduced: boolean }>) {
-  return (
-    <motion.div
-      className="workflow-page-header workflow-page-header--compact"
-      initial={reduced ? false : { opacity: 0, y: 8 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{
-        duration: 0.28,
-        ease: [0.25, 0, 0, 1] as [number, number, number, number],
-      }}
-    >
-      <div className="workflow-page-header-left">
-        <p className="workflow-page-breadcrumb">
-          <span style={{ opacity: 0.55 }}>ALPHACI</span>
-          <span className="workflow-page-breadcrumb-sep">/</span>
-          <span>Workflows</span>
-        </p>
-        <div className="workflow-page-title-row">
-          <h1 className="workflow-page-title">
-            Create &amp; Manage Projects
-          </h1>
-          <div className="workflow-page-studio-badge">
-            <span className="workflow-studio-led" aria-hidden="true" />
-            Studio active
-          </div>
-        </div>
-      </div>
-      <div className="workflow-page-signal-strip" aria-label="Workflow operating model">
-        <div>
-          <span>Mode</span>
-          <strong>PR-safe updates</strong>
-        </div>
-        <div>
-          <span>Promotion</span>
-          <strong>{PROMOTION_FLOW_LABEL}</strong>
-        </div>
-        <div>
-          <span>Stages</span>
-          <strong>Access, Quality, Package</strong>
-        </div>
-      </div>
-    </motion.div>
   );
 }

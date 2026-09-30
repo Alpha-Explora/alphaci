@@ -162,7 +162,20 @@ async function installDashboardAuditApi(page: Page) {
         authenticated: true,
         user: sessionUser,
         subscription,
+        // An admin, so /workflows offers "Create project".
+        appRole: 'admin',
       });
+    }
+
+    if (path === '/groups') {
+      return json(route, [
+        {
+          id: 'workspace-1',
+          name: 'Design team',
+          description: 'Projects owned by the design team.',
+          status: 'active',
+        },
+      ]);
     }
 
     if (path === '/capabilities') {
@@ -510,12 +523,18 @@ async function runDashboardAudit(page: Page, baseUrl: string) {
 
   await installDashboardAuditApi(page);
   await page.goto(`${baseUrl}/workflows`, { waitUntil: 'networkidle' });
-  await expectVisibleText(page, 'Create & Manage Projects');
-  await expectVisibleText(page, 'Design team');
+  // No page title or tab bar any more: the heading is the group dropdown.
+  const groupPicker = page.getByRole('heading', { level: 1 }).getByRole('button', {
+    name: 'Design team',
+  });
+  await groupPicker.waitFor({ state: 'visible' });
+  await page.getByRole('button', { name: 'Create project' }).waitFor({ state: 'visible' });
+  await groupPicker.click();
+  await page.getByRole('combobox', { name: 'Search groups' }).waitFor({ state: 'visible' });
+  await page.getByRole('option', { name: /Design team/ }).click();
   await page.getByRole('button', { name: 'Notifications' }).click();
   await expectVisibleText(page, 'Project created');
 
-  await page.getByRole('tab', { name: 'Current Projects' }).click();
   await expectVisibleText(page, 'orders-api');
   for (const tab of [
     'Overview',

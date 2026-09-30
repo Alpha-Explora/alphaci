@@ -5,10 +5,15 @@ import type {
 } from "@/shared/api/contracts";
 import type { ApiError } from "@/shared/api/request";
 
-export type WorkflowTab = "setup" | "current";
+/** The /workflows page shows one of two views: the projects (default) or the create form. */
+export type WorkflowView = "setup" | "current";
 
-// Current Projects intentionally comes first — it is the tab users land on.
-export const WORKFLOW_TABS: WorkflowTab[] = ["current", "setup"];
+/** The query string with `tab` removed and every other param kept. */
+export function searchWithoutTab(search: string): string {
+  const params = new URLSearchParams(search);
+  params.delete("tab");
+  return params.toString();
+}
 
 export const enhancementLabels: Array<{
   key: NonNullable<SetupProjectRequest["enhancements"]>[number];

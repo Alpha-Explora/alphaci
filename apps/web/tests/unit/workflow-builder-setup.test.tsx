@@ -31,7 +31,7 @@ jest.mock("framer-motion", () => {
         () =>
         ({ children, ...props }: { children?: React.ReactNode } & Record<string, unknown>) => {
           const domProps = { ...props };
-          for (const key of ["initial", "animate", "exit", "transition", "whileHover", "whileTap", "layout", "layoutId"]) {
+          for (const key of ["initial", "animate", "exit", "transition", "whileHover", "whileTap", "whileInView", "viewport", "variants", "layout", "layoutId"]) {
             delete domProps[key];
           }
 
@@ -48,10 +48,17 @@ jest.mock("framer-motion", () => {
   };
 });
 
-// The onboarding tour hook (rendered inside WorkflowBuilder) reads useSearchParams.
+// The view-models read the query string (?tab=setup, ?group=) and write the
+// chosen group back with router.replace. `mockSearch` is the page's query.
+let mockSearch = "";
+const mockReplace = jest.fn();
 jest.mock("next/navigation", () => ({
-  useSearchParams: () => ({ get: () => null }),
-  useRouter: () => ({ push: () => undefined }),
+  useSearchParams: () => new URLSearchParams(mockSearch),
+  usePathname: () => "/workflows",
+  useRouter: () => ({
+    push: () => undefined,
+    replace: (...args: unknown[]) => mockReplace(...args),
+  }),
 }));
 
 jest.mock("../../src/features/projects/detail/data/projects-api", () => ({
@@ -96,6 +103,11 @@ jest.mock("../../src/features/workspace/selection/data/workspaces-api", () => ({
   getMyWorkspaces: jest.fn(),
 }));
 
+const mockedGetGroups = (
+  jest.requireMock("../../src/features/groups/data/hierarchy-api") as {
+    getGroups: jest.Mock;
+  }
+).getGroups;
 const mockedCreateProject = createProject as jest.MockedFunction<typeof createProject>;
 const mockedCreateGithubRepo = createGithubRepo as jest.MockedFunction<typeof createGithubRepo>;
 const mockedGenerateWorkflow = generateWorkflow as jest.MockedFunction<typeof generateWorkflow>;
@@ -305,6 +317,8 @@ describe("WorkflowBuilder project setup", () => {
   let root: Root;
 
   beforeEach(() => {
+    mockSearch = "";
+    mockedGetGroups.mockResolvedValue([]);
     mockedGetCapabilities.mockResolvedValue({
       envProvisioning: {
         enabled: true,
@@ -416,20 +430,24 @@ describe("WorkflowBuilder project setup", () => {
       );
     });
 
-    // Current Projects is the default tab now — open Create Project first,
-    // the same way a user reaches the setup form.
-    await waitForCondition(
-      () =>
-        container.querySelector<HTMLButtonElement>("#workflow-tab-setup") !==
-        null,
-    );
-    await act(async () => {
-      container
-        .querySelector<HTMLButtonElement>("#workflow-tab-setup")
-        ?.click();
-    });
+    // The projects view is the default — open the create view the way a
+    // person does, with the heading row's "Create project" button.
+    await clickCreateProjectButton();
 
     await waitForCondition(() => container.textContent?.includes("Next.js App") ?? false);
+  }
+
+  function createProjectButton(): HTMLButtonElement | null {
+    return container.querySelector<HTMLButtonElement>(
+      "[data-testid='create-project-button']",
+    );
+  }
+
+  async function clickCreateProjectButton() {
+    await waitForCondition(() => createProjectButton() !== null);
+    await act(async () => {
+      createProjectButton()?.click();
+    });
   }
 
   function findButton(startsWith: string): HTMLButtonElement | null {
@@ -716,7 +734,9 @@ describe("WorkflowBuilder project setup", () => {
         }),
       }),
     );
-    expect(container.textContent).toContain("Current Projects");
+    // Back on the projects view, with the create result banner on top.
+    expect(container.textContent).toContain("Project Created Successfully");
+    expect(createProjectButton()).not.toBeNull();
   });
 
   /*
@@ -750,7 +770,7 @@ describe("WorkflowBuilder project setup", () => {
   });
 
   it.each(["member", "qa"] as const)(
-    "replaces the create and onboard controls with a note for %s",
+    "offers %s no Create project button on the projects view",
     async (role) => {
       await act(async () => {
         root.render(
@@ -758,14 +778,22 @@ describe("WorkflowBuilder project setup", () => {
         );
       });
       await waitForCondition(
-        () =>
-          container.querySelector<HTMLButtonElement>("#workflow-tab-setup") !==
-          null,
+        () => container.textContent?.includes("No groups or projects yet.") ?? false,
       );
+      expect(createProjectButton()).toBeNull();
+      expect(container.textContent).not.toContain("Create project");
+    },
+  );
+
+  it.each(["member", "qa"] as const)(
+    "replaces the create and onboard controls with a note for %s",
+    async (role) => {
+      // No button to click for these roles, so arrive by the deep link.
+      mockSearch = "tab=setup";
       await act(async () => {
-        container
-          .querySelector<HTMLButtonElement>("#workflow-tab-setup")
-          ?.click();
+        root.render(
+          <WorkflowBuilder login="tone" plan="pro" session={leadSession(role)} />,
+        );
       });
       await waitForCondition(
         () =>
@@ -788,4 +816,85 @@ describe("WorkflowBuilder project setup", () => {
       );
     },
   );
+
+  /* About ten places link to /workflows?tab=setup, some with &group=<id>
+   * (home, the `n` shortcut, /teams, group pages). The tab bar is gone, so
+   * the link is now the only way those arrive on the create view. */
+  it("opens the create view from ?tab=setup&group= with that team preselected", async () => {
+    mockedGetMyWorkspaces.mockResolvedValue({
+      enabled: true,
+      items: [
+        { id: "workspace-1", name: "Platform", kind: "team", role: "admin" },
+        { id: "workspace-2", name: "Payments", kind: "team", role: "member" },
+      ],
+    });
+    mockSearch = "tab=setup&group=workspace-2";
+    await act(async () => {
+      root.render(
+        <WorkflowBuilder login="tone" plan="pro" session={leadSession("lead")} />,
+      );
+    });
+
+    await waitForCondition(() => container.textContent?.includes("Next.js App") ?? false);
+    expect(container.querySelector("h1")?.textContent).toBe("Create project");
+    expect(createProjectButton()).toBeNull();
+
+    await advanceToReview({ projectTypeId: "nextjs-app", repoName: "demo-next-app" });
+    expect(
+      container.querySelector<HTMLSelectElement>("[data-testid='setup-workspace-select']")
+        ?.value,
+    ).toBe("workspace-2");
+  });
+
+  it("returns to the projects view from Back to projects and drops ?tab", async () => {
+    mockSearch = "tab=setup";
+    await act(async () => {
+      root.render(
+        <WorkflowBuilder login="tone" plan="pro" session={leadSession("lead")} />,
+      );
+    });
+    await waitForCondition(() => findButton("Back to projects") !== null);
+
+    await act(async () => {
+      findButton("Back to projects")?.click();
+    });
+
+    await waitForCondition(() => createProjectButton() !== null);
+    expect(container.querySelector("#project-type-select")).toBeNull();
+    expect(mockReplace).toHaveBeenCalledWith("/workflows", { scroll: false });
+  });
+
+  /* The heading's Create project carries the group on screen into the form,
+   * so the person does not pick the same team twice. */
+  it("preselects the group shown on the projects view in the create form", async () => {
+    mockedGetMyWorkspaces.mockResolvedValue({
+      enabled: true,
+      items: [
+        { id: "workspace-1", name: "Platform", kind: "team", role: "admin" },
+        { id: "workspace-2", name: "Payments", kind: "team", role: "member" },
+      ],
+    });
+    mockedGetGroups.mockResolvedValue([
+      { id: "workspace-1", name: "Platform", description: null, status: "active" },
+      { id: "workspace-2", name: "Payments", description: null, status: "active" },
+    ]);
+    mockSearch = "group=workspace-2";
+    await act(async () => {
+      root.render(
+        <WorkflowBuilder login="tone" plan="pro" session={leadSession("admin")} />,
+      );
+    });
+    await waitForCondition(
+      () => container.querySelector("h1")?.textContent?.includes("Payments") ?? false,
+    );
+
+    await clickCreateProjectButton();
+    await waitForCondition(() => container.textContent?.includes("Next.js App") ?? false);
+    await advanceToReview({ projectTypeId: "nextjs-app", repoName: "demo-next-app" });
+
+    expect(
+      container.querySelector<HTMLSelectElement>("[data-testid='setup-workspace-select']")
+        ?.value,
+    ).toBe("workspace-2");
+  });
 });

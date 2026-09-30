@@ -267,9 +267,7 @@ export function WorkflowSetupTab({
       <section
         className="create-project-layout"
         id="workflow-panel-setup"
-        role="tabpanel"
-        aria-labelledby="workflow-tab-setup"
-        tabIndex={0}
+        aria-label="Create project"
       >
         <div className="create-project-main">
           <p className="env-empty-state" role="status">
@@ -284,15 +282,16 @@ export function WorkflowSetupTab({
     <motion.section
       className="create-project-layout"
       id="workflow-panel-setup"
-      role="tabpanel"
-      aria-labelledby="workflow-tab-setup"
-      tabIndex={0}
+      aria-label="Create project"
       initial={setupTabEnter(reducedMotion)}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] }}
     >
       <div className="create-project-main">
         <SetupTabHeader
+          // The top-level create view already has the page's "Create project"
+          // h1; a team panel has no heading of its own, so it keeps this one.
+          showTitle={creationScope === "in-team"}
           form={form}
           isExistingMode={isExistingMode}
           projectCatalog={projectCatalog}

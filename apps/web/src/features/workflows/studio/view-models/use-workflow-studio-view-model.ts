@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 import { discoverExistingRepo, generateWorkflow } from "@/features/workflows";
 import { createProject, setupProject } from "@/features/projects";
@@ -30,9 +30,10 @@ import { roleGateErrorMessage } from "../model/role-gate-rules";
 import { preselectedWorkspaceId, scopeCreatePayload } from "../model/create-target-rules";
 import {
   formatApiError,
-  WORKFLOW_TABS,
-  type WorkflowTab,
+  searchWithoutTab,
+  type WorkflowView,
 } from "../model/workflow-studio-rules";
+import { createWorkspaceForGroup } from "../model/group-picker-rules";
 import {
   buildGenerateWorkflowPayload,
   buildSetupExistingRepoPayload,
@@ -41,7 +42,7 @@ import {
 /**
  * ViewModel for the Workflow Studio surface.
  *
- * Owns the tab query state, the user-facing status banner message, the
+ * Owns which view is showing (projects or create), the user-facing status banner message, the
  * create/discover/setup/generate command handlers, and coordination between
  * the composed hooks. Views render this state and delegate events to the
  * commands here; no fetching or orchestration happens in a view.
@@ -53,11 +54,15 @@ export function useWorkflowStudioViewModel(options: {
 }) {
   const { guest, session, onboardingCompleted } = options;
 
+  const router = useRouter();
+  const pathname = usePathname();
   const searchParams = useSearchParams();
-  // Current Projects is the default landing tab; ?tab=setup deep-links to Create.
-  const requestedTab = searchParams.get("tab");
-  const initialTab: WorkflowTab = requestedTab === "setup" ? "setup" : "current";
-  const [activeTab, setActiveTab] = useState<WorkflowTab>(initialTab);
+  // The projects view is the default; ?tab=setup deep-links to the create view.
+  // Every "create a project" link in the app (home, the `n` shortcut, /teams,
+  // group pages) relies on this, with an optional &group=<id>.
+  const initialView: WorkflowView =
+    searchParams.get("tab") === "setup" ? "setup" : "current";
+  const [activeView, setActiveView] = useState<WorkflowView>(initialView);
 
   const [isCreatingProject, setIsCreatingProject] = useState(false);
   const [isDiscoveringExistingRepo, setIsDiscoveringExistingRepo] = useState(false);
@@ -92,7 +97,7 @@ export function useWorkflowStudioViewModel(options: {
     workspaces,
     selectedWorkspaceId: selectedCreateWorkspaceId,
     selectWorkspace: setSelectedCreateWorkspaceId,
-    openSetup: () => setActiveTab("setup"),
+    openSetup: () => setActiveView("setup"),
   });
   const linkedGroupId = createTarget.initialGroupId;
 
@@ -110,14 +115,14 @@ export function useWorkflowStudioViewModel(options: {
   const { startTour } = useOnboardingTour({
     session: session ?? null,
     guest,
-    isSetupTabActive: activeTab === "setup",
+    isSetupTabActive: activeView === "setup",
     onboardingCompleted,
   });
 
   const { startTour: startCurrentProjectsTour } = useCurrentProjectsTour({
     session: session ?? null,
     guest,
-    isCurrentTabActive: activeTab === "current",
+    isCurrentTabActive: activeView === "current",
     onboardingCompleted,
   });
 
@@ -148,37 +153,27 @@ export function useWorkflowStudioViewModel(options: {
     };
   }, [guest, linkedGroupId]);
 
-  function handleTabKeyDown(
-    event: React.KeyboardEvent<HTMLButtonElement>,
-    currentTab: WorkflowTab,
-  ) {
-    const currentIndex = WORKFLOW_TABS.indexOf(currentTab);
-    let nextTab: WorkflowTab | null = null;
-    if (event.key === "ArrowRight") {
-      nextTab = WORKFLOW_TABS[(currentIndex + 1) % WORKFLOW_TABS.length];
-    } else if (event.key === "ArrowLeft") {
-      nextTab =
-        WORKFLOW_TABS[(currentIndex - 1 + WORKFLOW_TABS.length) % WORKFLOW_TABS.length];
-    } else if (event.key === "Home") {
-      nextTab = WORKFLOW_TABS[0];
-    } else if (event.key === "End") {
-      nextTab = WORKFLOW_TABS.at(-1) ?? "current";
-    }
-    if (!nextTab) return;
-    event.preventDefault();
-    setActiveTab(nextTab);
-    const nextElement = document.getElementById(`workflow-tab-${nextTab}`);
-    if (nextElement instanceof HTMLButtonElement) {
-      nextElement.focus();
-    }
+  /**
+   * Back to the projects view. A ?tab=setup link is dropped from the URL on
+   * the way, so a reload lands where the person is rather than on the form.
+   */
+  function showProjects() {
+    setActiveView("current");
+    if (searchParams.get("tab") === null) return;
+    const search = searchWithoutTab(searchParams.toString());
+    router.replace(search ? `${pathname}?${search}` : pathname, { scroll: false });
   }
 
-  function handleStudioTabChange(tab: WorkflowTab) {
-    setActiveTab(tab);
+  /** The header's "Create project": the create view, with that group preselected. */
+  function openCreateForGroup(groupId: string | null) {
+    setSelectedCreateWorkspaceId((current) =>
+      createWorkspaceForGroup(groupId, workspaces, current),
+    );
+    setActiveView("setup");
   }
 
   function openIndividualSetup() {
-    setActiveTab("setup");
+    setActiveView("setup");
   }
 
   async function handleCreateProject(
@@ -249,7 +244,7 @@ export function useWorkflowStudioViewModel(options: {
       setCreateResult(result);
       projects.prependCreateResult(response, requestPayload);
       void projects.loadProjects(true);
-      setActiveTab("current");
+      showProjects();
       onComplete?.();
       setStatusMessage(
         `Repository "${response.repoFullName}" created. Workflow committed to ${response.workflowPath}.`,
@@ -341,7 +336,7 @@ export function useWorkflowStudioViewModel(options: {
       setCreateResult(null);
       projects.prependSetupResult(response, payload);
       void projects.loadProjects(true);
-      setActiveTab("current");
+      showProjects();
       setStatusMessage(
         `CI/CD added to "${response.repoFullName}". Workflow committed to ${response.workflowPath}.`,
       );
@@ -374,7 +369,7 @@ export function useWorkflowStudioViewModel(options: {
     try {
       await generateWorkflow(payloadResult.payload);
       await history.loadHistory(true);
-      setActiveTab("current");
+      showProjects();
       setStatusMessage(
         `Workflow generated for "${payloadResult.payload.serviceName}". Copy or download it from the Generated YAML History section.`,
       );
@@ -386,8 +381,7 @@ export function useWorkflowStudioViewModel(options: {
   }
 
   return {
-    activeTab,
-    setActiveTab,
+    activeView,
     statusMessage,
     isCreatingProject,
     isDiscoveringExistingRepo,
@@ -405,8 +399,8 @@ export function useWorkflowStudioViewModel(options: {
     selectedCreateWorkspaceId,
     setSelectedCreateWorkspaceId,
     targetProjectLabel: createTarget.label,
-    handleTabKeyDown,
-    handleStudioTabChange,
+    showProjects,
+    openCreateForGroup,
     openIndividualSetup,
     handleCreateProject,
     handleDiscoverExistingRepo,
