@@ -64,6 +64,15 @@ export async function getProjectOverview(projectId: string): Promise<ProjectOver
   return request<ProjectOverviewResponse>(`/projects/${encodeURIComponent(projectId)}/overview`);
 }
 
+/**
+ * The Project (hierarchy delivery project) this repository sits in, with its
+ * sibling repositories. Returned raw: the repository normalises it. A 404
+ * means the caller cannot see the project — or a backend older than the route.
+ */
+export async function getProjectFolder(projectId: string): Promise<unknown> {
+  return request<unknown>(`/projects/${encodeURIComponent(projectId)}/folder`);
+}
+
 export async function syncProjectSnapshot(projectId: string): Promise<ProjectSyncSnapshotResponse> {
   return request<ProjectSyncSnapshotResponse>(`/projects/${encodeURIComponent(projectId)}/sync`, {
     method: "POST",

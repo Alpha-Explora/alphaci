@@ -10,6 +10,7 @@ import {
   getProjectDeployments,
   getProjectDomains,
   getProjectDrift,
+  getProjectFolder,
   getProjectOverview,
   getProjectPreviews,
   getWorkflowSettings,
@@ -49,12 +50,19 @@ import type {
   ProjectPreviewsResponse,
   RemoveCustomDomainResponse,
 } from "../model/projects-types";
+import { normaliseProjectFolder } from "../detail/model/project-folder-rules";
+import type { ProjectFolderSummary } from "../detail/model/project-folder-types";
 
 /* The only place in this domain that performs I/O. View-models call these;
  * views never do. */
 export const projectsRepository = {
   overview(projectId: string): Promise<ProjectOverviewResponse> {
     return getProjectOverview(projectId);
+  },
+
+  /** The Project this repository is in, normalised; null for a malformed body. */
+  async folder(projectId: string): Promise<ProjectFolderSummary | null> {
+    return normaliseProjectFolder(await getProjectFolder(projectId));
   },
 
   /** One entry per branch, newest deployment each. */

@@ -16,7 +16,12 @@ import { QA_CHECKLISTS_SECTION } from "@/features/checklists";
 import { WorkspaceChecklistsSection } from "@/features/checklists/manage";
 import { ProjectExplorerHost } from "@/features/teams/project-folders";
 
-import { memberCountLabel, type TeamsDeepLink } from "../../model/teams-rules";
+import {
+  linkedFolderId,
+  linksToProjects,
+  memberCountLabel,
+  type TeamsDeepLink,
+} from "../../model/teams-rules";
 import type { ProvisionedProject, Team } from "../../model/teams-types";
 import { useTeamsDetailViewModel } from "../view-models/use-teams-detail-view-model";
 import { TeamsEmptyState } from "./teams-empty-state";
@@ -59,8 +64,11 @@ function qaChecklistsSection(
   );
 }
 
-function deepLinkSection(deepLink: TeamsDeepLink | undefined): "qa-checklists" | undefined {
-  return deepLink?.section === QA_CHECKLISTS_SECTION ? "qa-checklists" : undefined;
+function deepLinkSection(
+  deepLink: TeamsDeepLink | undefined,
+): "qa-checklists" | "projects" | undefined {
+  if (deepLink?.section === QA_CHECKLISTS_SECTION) return "qa-checklists";
+  return linksToProjects(deepLink) ? "projects" : undefined;
 }
 
 function TeamsHeaderLede({ qaChecklistsEnabled }: Readonly<{ qaChecklistsEnabled: boolean }>) {
@@ -160,6 +168,9 @@ export function TeamsDetailContent({
               groupId={vm.team.id}
               groupName={vm.team.name}
               qaChecklistsEnabled={vm.qaChecklistsEnabled}
+              // `?project=` (the project page's "Manage project") opens that
+              // Project's detail on arrival — on the team the link was for.
+              initialFolderId={linkedFolderId(deepLink, vm.team.id)}
             >
               {(explorer) =>
                 vm.team ? (

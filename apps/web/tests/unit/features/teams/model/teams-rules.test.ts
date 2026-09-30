@@ -1,4 +1,7 @@
 import {
+  EMPTY_TEAMS_DEEP_LINK,
+  linkedFolderId,
+  linksToProjects,
   memberCountLabel,
   parseTeamsDeepLink,
   resolveSelectedTeam,
@@ -81,7 +84,7 @@ describe("parseTeamsDeepLink", () => {
   it("reads the team, section and checklist a link asks for", () => {
     expect(
       parseTeamsDeepLink("?workspace=ws-1&section=qa-checklists&checklist=cl-1"),
-    ).toEqual({ workspaceId: "ws-1", section: "qa-checklists", checklistId: "cl-1" });
+    ).toEqual({ workspaceId: "ws-1", section: "qa-checklists", checklistId: "cl-1", projectId: null });
   });
 
   it("treats missing or empty values as absent", () => {
@@ -89,7 +92,47 @@ describe("parseTeamsDeepLink", () => {
       workspaceId: null,
       section: null,
       checklistId: null,
+      projectId: null,
     });
     expect(parseTeamsDeepLink("?workspace=").workspaceId).toBeNull();
+    expect(parseTeamsDeepLink("?project=").projectId).toBeNull();
+  });
+
+  it("reads the Project a Manage project link opens", () => {
+    expect(parseTeamsDeepLink("?workspace=ws-1&section=projects&project=dp-1")).toEqual({
+      workspaceId: "ws-1",
+      section: "projects",
+      checklistId: null,
+      projectId: "dp-1",
+    });
+  });
+});
+
+describe("linksToProjects", () => {
+  it("opens the Projects section by name or by naming a Project", () => {
+    expect(linksToProjects(parseTeamsDeepLink("?section=projects"))).toBe(true);
+    expect(linksToProjects(parseTeamsDeepLink("?project=dp-1"))).toBe(true);
+    expect(linksToProjects(parseTeamsDeepLink("?section=qa-checklists"))).toBe(false);
+    expect(linksToProjects(EMPTY_TEAMS_DEEP_LINK)).toBe(false);
+    expect(linksToProjects(undefined)).toBe(false);
+  });
+});
+
+describe("linkedFolderId", () => {
+  it("opens the Project on the team the link was made for", () => {
+    expect(linkedFolderId(parseTeamsDeepLink("?workspace=ws-1&project=dp-1"), "ws-1")).toBe("dp-1");
+  });
+
+  it("does not open it on another team", () => {
+    expect(linkedFolderId(parseTeamsDeepLink("?workspace=ws-1&project=dp-1"), "ws-2")).toBeNull();
+  });
+
+  it("applies a team-less link to the team on screen", () => {
+    expect(linkedFolderId(parseTeamsDeepLink("?project=dp-1"), "ws-2")).toBe("dp-1");
+  });
+
+  it("is null without a Project", () => {
+    expect(linkedFolderId(parseTeamsDeepLink("?workspace=ws-1"), "ws-1")).toBeNull();
+    expect(linkedFolderId(undefined, "ws-1")).toBeNull();
   });
 });

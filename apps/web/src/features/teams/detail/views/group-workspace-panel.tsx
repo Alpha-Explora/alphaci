@@ -79,7 +79,7 @@ interface GroupWorkspacePanelProps {
    */
   projectExplorer?: { count: number | null; panel: ReactNode };
   /** Open on this section instead of Overview (deep links). */
-  initialSection?: "qa-checklists";
+  initialSection?: "qa-checklists" | "projects";
 }
 
 function statusVariant(status: string): string {
