@@ -94,6 +94,52 @@ describe("useProjectFoldersViewModel", () => {
     expect(vm().selected).toBeNull();
   });
 
+  it("opens a deep-linked Project once it loads, and only on its own team", async () => {
+    repo.list.mockResolvedValue(foldersSnapshot());
+    repo.listChecklists.mockResolvedValue([]);
+    const vm = renderHook(() =>
+      useProjectFoldersViewModel({
+        groupId: GROUP_ID,
+        groupName: "Checkout",
+        qaChecklistsEnabled: false,
+        initialFolderId: "dp-1",
+      }),
+    );
+    // Nothing to open until the team's Projects arrive.
+    expect(vm().selected).toBeNull();
+    await flush();
+    expect(vm().selected?.deliveryProjectId).toBe("dp-1");
+    act(() => vm().closeFolder());
+    expect(vm().selected).toBeNull();
+  });
+
+  it("keeps an opened Project with its team: another team opens on its list", async () => {
+    repo.list.mockResolvedValue(foldersSnapshot());
+    repo.listChecklists.mockResolvedValue([]);
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    root = createRoot(container);
+    let latest: ReturnType<typeof useProjectFoldersViewModel> | null = null;
+    const capture = (value: ReturnType<typeof useProjectFoldersViewModel>) => {
+      latest = value;
+    };
+    function Probe({ groupId, onRender }: Readonly<{ groupId: string; onRender: typeof capture }>) {
+      onRender(useProjectFoldersViewModel({ groupId, groupName: "Checkout", qaChecklistsEnabled: false }));
+      return null;
+    }
+    act(() => root!.render(<Probe groupId={GROUP_ID} onRender={capture} />));
+    await flush();
+    act(() => latest!.openFolder("dp-1"));
+    expect(latest!.selected?.deliveryProjectId).toBe("dp-1");
+
+    // The other team happens to hold a Project with the same id.
+    repo.list.mockResolvedValue(foldersSnapshot({ groupId: "ws-2" }));
+    act(() => root!.render(<Probe groupId="ws-2" onRender={capture} />));
+    await flush();
+    expect(latest!.status).toBe("ready");
+    expect(latest!.selected).toBeNull();
+  });
+
   it("never asks for checklists when the capability is off", async () => {
     repo.list.mockResolvedValue(foldersSnapshot());
     mockSession.appRole = "qa";

@@ -1,10 +1,14 @@
 "use client";
 
+import Link from "next/link";
+
 import { LoadingRows } from "@/features/groups/workspace";
 
 import {
   checklistCountLabel,
   folderChecklists,
+  folderLandingProjectId,
+  projectDashboardHref,
   repositoryCountLabel,
 } from "../model/project-folder-rules";
 import type {
@@ -13,7 +17,14 @@ import type {
   UnfiledProject,
 } from "../model/project-folder-types";
 import type { ProjectFoldersViewModel } from "../view-models/use-project-folders-view-model";
-import { ChecklistIcon, ChevronIcon, FolderIcon, InboxIcon, PlusIcon } from "./project-folder-icons";
+import {
+  ChecklistIcon,
+  ChevronIcon,
+  FolderIcon,
+  InboxIcon,
+  PlusIcon,
+  SlidersIcon,
+} from "./project-folder-icons";
 import { RepoChip } from "./repo-chip";
 
 function FolderMeta({
@@ -34,6 +45,14 @@ function FolderMeta({
   );
 }
 
+/**
+ * One Project. The card itself opens the Project as one product — its
+ * frontend's page, which carries a switch to the other repositories — and
+ * "Manage" (a sibling control, never nested inside the card's link) opens the
+ * Project's detail: repositories, Move, checklists and Delete Project. A
+ * Project with no linked repository has no page to open, so its card opens
+ * the detail as it always did.
+ */
 function FolderCard({
   folder,
   checklists,
@@ -43,20 +62,43 @@ function FolderCard({
   checklists: FolderChecklist[] | null;
   onOpen: () => void;
 }>) {
+  const landingId = folderLandingProjectId(folder);
+  const face = (
+    <>
+      <span className="pf-card__icon">
+        <FolderIcon />
+      </span>
+      <span className="pf-card__text">
+        <span className="pf-card__name">{folder.name}</span>
+        <FolderMeta folder={folder} checklists={checklists} />
+      </span>
+      <span className="pf-card__chevron">
+        <ChevronIcon />
+      </span>
+    </>
+  );
   return (
     <li className="pf-card">
-      <button type="button" className="pf-card__open" onClick={onOpen}>
-        <span className="pf-card__icon">
-          <FolderIcon />
-        </span>
-        <span className="pf-card__text">
-          <span className="pf-card__name">{folder.name}</span>
-          <FolderMeta folder={folder} checklists={checklists} />
-        </span>
-        <span className="pf-card__chevron">
-          <ChevronIcon />
-        </span>
-      </button>
+      <div className="pf-card__head">
+        {landingId ? (
+          <Link className="pf-card__open" href={projectDashboardHref(landingId)}>
+            {face}
+          </Link>
+        ) : (
+          <button type="button" className="pf-card__open" onClick={onOpen}>
+            {face}
+          </button>
+        )}
+        <button
+          type="button"
+          className="pf-card__manage"
+          aria-label={`Manage ${folder.name}`}
+          onClick={onOpen}
+        >
+          <SlidersIcon />
+          <span className="pf-card__manage-label">Manage</span>
+        </button>
+      </div>
       {folder.repositories.length > 0 ? (
         <ul className="pf-chips" aria-label={`Repositories in ${folder.name}`}>
           {folder.repositories.map((repo) => (

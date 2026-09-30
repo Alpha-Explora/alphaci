@@ -61,15 +61,21 @@ export function useProjectFoldersViewModel(options: {
   groupId: string;
   groupName: string;
   qaChecklistsEnabled: boolean;
+  /** Open this Project's detail on arrival (a deep link), for this team only. */
+  initialFolderId?: string | null;
 }): ProjectFoldersViewModel {
-  const { groupId, groupName, qaChecklistsEnabled } = options;
+  const { groupId, groupName, qaChecklistsEnabled, initialFolderId } = options;
   const { session } = useAuthSession();
   const appRole = session?.appRole;
 
   const [snapshot, setSnapshot] = useState<Loaded<ProjectFoldersSnapshot> | null>(null);
   const [failure, setFailure] = useState<Loaded<string> | null>(null);
   const [checklists, setChecklists] = useState<Loaded<FolderChecklist[]> | null>(null);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  // Kept with its team, like every other result here: switching teams closes
+  // the open Project rather than reopening a same-id one elsewhere.
+  const [selection, setSelection] = useState<Loaded<string> | null>(() =>
+    initialFolderId ? { groupId, value: initialFolderId } : null,
+  );
   const [nonce, setNonce] = useState(0);
   const foldersRequest = useRef(0);
   const checklistsRequest = useRef(0);
@@ -113,6 +119,12 @@ export function useProjectFoldersViewModel(options: {
 
   const reload = useCallback(() => setNonce((n) => n + 1), []);
 
+  const openFolder = useCallback(
+    (deliveryProjectId: string) => setSelection({ groupId, value: deliveryProjectId }),
+    [groupId],
+  );
+  const closeFolder = useCallback(() => setSelection(null), []);
+
   const applyChecklist = useCallback((saved: FolderChecklist) => {
     setChecklists((loaded) => replaceChecklist(loaded, saved));
   }, []);
@@ -127,9 +139,9 @@ export function useProjectFoldersViewModel(options: {
     canVerifyInQaStudio: qaChecklistsEnabled && roleCanStartRun(appRole),
     qaChecklistsEnabled,
     checklists: qaChecklistsEnabled ? currentFor(checklists, groupId) : null,
-    selected: findFolder(view.folders, selectedId),
-    openFolder: setSelectedId,
-    closeFolder: () => setSelectedId(null),
+    selected: findFolder(view.folders, currentFor(selection, groupId)),
+    openFolder,
+    closeFolder,
     reload,
     applyChecklist,
   };

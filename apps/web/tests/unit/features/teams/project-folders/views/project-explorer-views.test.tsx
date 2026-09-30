@@ -3,7 +3,8 @@ import { createRoot, type Root } from "react-dom/client";
 
 import { projectFoldersRepository } from "../../../../../../src/features/teams/project-folders/data/project-folders-repository";
 import { ProjectExplorerHost } from "../../../../../../src/features/teams/project-folders/views/project-explorer";
-import { apiError, folderChecklist, foldersSnapshot, GROUP_ID } from "../folder-fixtures";
+import { normaliseProjectFolders } from "../../../../../../src/features/teams/project-folders/model/project-folder-rules";
+import { apiError, folderChecklist, foldersSnapshot, foldersWire, GROUP_ID } from "../folder-fixtures";
 
 jest.mock("../../../../../../src/features/teams/project-folders/data/project-folders-repository", () => ({
   projectFoldersRepository: {
@@ -58,13 +59,21 @@ async function waitFor(check: () => void, timeoutMs = 2000) {
 
 let lastCount: number | null | undefined;
 
-async function renderExplorer(qaChecklistsEnabled = true): Promise<HTMLElement> {
+async function renderExplorer(
+  qaChecklistsEnabled = true,
+  initialFolderId: string | null = null,
+): Promise<HTMLElement> {
   const container = document.createElement("div");
   document.body.appendChild(container);
   root = createRoot(container);
   await act(async () => {
     root!.render(
-      <ProjectExplorerHost groupId={GROUP_ID} groupName="Checkout squad" qaChecklistsEnabled={qaChecklistsEnabled}>
+      <ProjectExplorerHost
+        groupId={GROUP_ID}
+        groupName="Checkout squad"
+        qaChecklistsEnabled={qaChecklistsEnabled}
+        initialFolderId={initialFolderId}
+      >
         {(explorer) => {
           lastCount = explorer.count;
           return explorer.panel;
@@ -78,6 +87,11 @@ async function renderExplorer(qaChecklistsEnabled = true): Promise<HTMLElement> 
 
 function button(container: HTMLElement, name: string): HTMLButtonElement | undefined {
   return [...container.querySelectorAll("button")].find((el) => el.textContent?.includes(name));
+}
+
+/** A card's "Manage" control: the Project detail, beside the card's own link. */
+function manage(container: HTMLElement, folderName: string): HTMLButtonElement | null {
+  return container.querySelector<HTMLButtonElement>(`button.pf-card__manage[aria-label="Manage ${folderName}"]`);
 }
 
 function link(container: HTMLElement, name: string): HTMLAnchorElement | undefined {
@@ -114,7 +128,7 @@ describe("ProjectExplorer", () => {
     expect(container.textContent).not.toContain("checklist");
     expect(repo.listChecklists).not.toHaveBeenCalled();
 
-    await act(async () => button(container, "testfinals")!.click());
+    await act(async () => manage(container, "testfinals")!.click());
     expect(container.textContent).not.toContain("Verify in QA Studio");
     expect(button(container, "Move")).toBeUndefined();
     expect(container.textContent).not.toContain("Checklists");
@@ -148,7 +162,7 @@ describe("ProjectExplorer", () => {
     ]);
     repo.updateChecklistShares.mockResolvedValue(folderChecklist({ id: "cl-2", name: "Accessibility pass" }));
     const container = await renderExplorer();
-    await act(async () => button(container, "testfinals")!.click());
+    await act(async () => manage(container, "testfinals")!.click());
 
     expect(container.querySelector(".pf-detail__title")?.textContent).toBe("testfinals");
     expect(link(container, "Verify in QA Studio")?.getAttribute("href")).toBe("/projects/proj-fe#qa");
@@ -202,7 +216,7 @@ describe("ProjectExplorer", () => {
       ],
     });
     const container = await renderExplorer();
-    await act(async () => button(container, "testfinals")!.click());
+    await act(async () => manage(container, "testfinals")!.click());
 
     await act(async () => button(container, "Delete Project")!.click());
     const dialog = container.querySelector('[role="dialog"]')!;
@@ -234,5 +248,57 @@ describe("ProjectExplorer", () => {
     await waitFor(() => expect(container.querySelector('[role="dialog"]')).toBeNull());
     expect(container.querySelectorAll("li.pf-card")).toHaveLength(2);
     expect(container.textContent).toContain("Deleted testfinals and 2 repositories.");
+  });
+
+  it("opens a Project on its frontend's page, with Manage beside the card for the detail", async () => {
+    repo.list.mockResolvedValue(foldersSnapshot());
+    repo.listChecklists.mockResolvedValue([]);
+    const container = await renderExplorer();
+    const [testfinals, wallet] = [...container.querySelectorAll("li.pf-card")];
+
+    const open = testfinals.querySelector<HTMLAnchorElement>("a.pf-card__open");
+    expect(open?.getAttribute("href")).toBe("/projects/proj-fe");
+    expect(open?.textContent).toContain("testfinals");
+
+    // Manage is a sibling of the card's link, never nested inside it.
+    const manageButton = manage(container, "testfinals")!;
+    expect(manageButton.textContent).toBe("Manage");
+    expect(manageButton.closest("a")).toBeNull();
+    expect(manageButton.closest(".pf-card__head")).toBe(open?.parentElement);
+
+    // A Project with nothing linked has no page: its card opens the detail.
+    expect(wallet.querySelector("a.pf-card__open")).toBeNull();
+    expect(wallet.querySelector("button.pf-card__open")).not.toBeNull();
+    expect(manage(container, "wallet")).not.toBeNull();
+
+    await act(async () => manageButton.click());
+    expect(container.querySelector(".pf-detail__title")?.textContent).toBe("testfinals");
+  });
+
+  it("opens on the first linked repository when the frontend is not linked", async () => {
+    const wire = foldersWire();
+    const [frontend, backend] = wire.folders[0].repositories;
+    wire.folders[0].repositories = [{ ...frontend, project: null }, backend];
+    repo.list.mockResolvedValue(normaliseProjectFolders(wire, GROUP_ID));
+    repo.listChecklists.mockResolvedValue([]);
+    const container = await renderExplorer();
+    expect(container.querySelector("a.pf-card__open")?.getAttribute("href")).toBe("/projects/proj-be");
+  });
+
+  it("opens the deep-linked Project's detail on arrival", async () => {
+    repo.list.mockResolvedValue(foldersSnapshot());
+    repo.listChecklists.mockResolvedValue([]);
+    const container = await renderExplorer(true, "dp-1");
+    expect(container.querySelector(".pf-detail__title")?.textContent).toBe("testfinals");
+    await act(async () => button(container, "All Projects")!.click());
+    expect(container.querySelectorAll("li.pf-card")).toHaveLength(2);
+  });
+
+  it("shows the list when the deep-linked Project is not in this team", async () => {
+    repo.list.mockResolvedValue(foldersSnapshot());
+    repo.listChecklists.mockResolvedValue([]);
+    const container = await renderExplorer(true, "dp-elsewhere");
+    expect(container.querySelector(".pf-detail__title")).toBeNull();
+    expect(container.querySelectorAll("li.pf-card")).toHaveLength(2);
   });
 });

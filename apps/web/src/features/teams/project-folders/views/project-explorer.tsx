@@ -164,13 +164,16 @@ export function ProjectExplorerHost({
   groupId,
   groupName,
   qaChecklistsEnabled,
+  initialFolderId,
   children,
 }: Readonly<{
   groupId: string;
   groupName: string;
   qaChecklistsEnabled: boolean;
+  /** Open this Project's detail on arrival (a `/teams?project=` link). */
+  initialFolderId?: string | null;
   children: (explorer: ProjectExplorerSlot) => ReactNode;
 }>) {
-  const vm = useProjectFoldersViewModel({ groupId, groupName, qaChecklistsEnabled });
+  const vm = useProjectFoldersViewModel({ groupId, groupName, qaChecklistsEnabled, initialFolderId });
   return <>{children({ count: vm.count, panel: <ProjectExplorer vm={vm} /> })}</>;
 }

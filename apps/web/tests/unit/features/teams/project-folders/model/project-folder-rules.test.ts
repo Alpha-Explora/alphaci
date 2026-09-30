@@ -33,6 +33,7 @@ import {
   repoRoleLabel,
   repositoryCountLabel,
   verifyProjectId,
+  folderLandingProjectId,
 } from "../../../../../../src/features/teams/project-folders/model/project-folder-rules";
 import type { ProjectFolder } from "../../../../../../src/features/teams/project-folders/model/project-folder-types";
 import { apiError, folderChecklist, foldersSnapshot, foldersWire, GROUP_ID } from "../folder-fixtures";
@@ -180,6 +181,25 @@ describe("folder checklists", () => {
     expect(normaliseChecklist({ name: "no id" })).toBeNull();
     expect(normaliseChecklists("x")).toEqual([]);
     expect(normaliseChecklists([{ id: "a" }, null])).toHaveLength(1);
+  });
+});
+
+describe("folderLandingProjectId", () => {
+  it("opens the Project on its frontend", () => {
+    expect(folderLandingProjectId(pair())).toBe("proj-fe");
+    const reversed = { ...pair(), repositories: [...pair().repositories].reverse() };
+    expect(folderLandingProjectId(reversed)).toBe("proj-fe");
+  });
+
+  it("falls back to the first linked repository", () => {
+    const [frontend, backend] = pair().repositories;
+    expect(folderLandingProjectId({ ...pair(), repositories: [{ ...frontend, project: null }, backend] })).toBe("proj-be");
+  });
+
+  it("is null when nothing in the Project is linked", () => {
+    const [frontend] = pair().repositories;
+    expect(folderLandingProjectId({ ...pair(), repositories: [{ ...frontend, project: null }] })).toBeNull();
+    expect(folderLandingProjectId({ ...pair(), repositories: [] })).toBeNull();
   });
 });
 

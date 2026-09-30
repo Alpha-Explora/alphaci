@@ -20,6 +20,7 @@ import type {
   ProjectFoldersResponseWire,
   RepoRole,
 } from '../../src/features/teams/project-folders/model/project-folder-types';
+import type { ProjectFolderWire } from '../../src/features/projects/detail/model/project-folder-types';
 import type { NotificationsResponse } from '../../src/features/notifications/model/notifications-types';
 import type { WorkspacesMeResponse } from '../../src/features/workspace/selection/model/workspace-types';
 import type {
@@ -610,6 +611,8 @@ class QaMockBackend {
       ['GET', new RegExp(`^/projects/${P}/qa-returned-items$`), () => ({ body: { items: this.returnedItems() } satisfies QaReturnedItemsResponse })],
       // Project folders (the Teams project explorer)
       ['GET', new RegExp(`^/groups/${P}/project-folders$`), (m) => ({ body: this.projectFolders(m[1]) })],
+      // The project page's Project identity and repository switch.
+      ['GET', new RegExp(`^/projects/${P}/folder$`), (m) => ({ body: this.projectFolder(m[1]) })],
       ['POST', new RegExp(`^/groups/${P}/projects$`), (m, req) => ({ status: 201, body: this.createFolder(m[1], req.body) })],
       ['POST', new RegExp(`^/repositories/${P}/move$`), (m, req) => this.moveRepository(m[1], req.body)],
       ['GET', new RegExp(`^/delivery-projects/${P}$`), (m) => ({ body: this.deliveryProject(this.requireFolder(m[1])) })],
@@ -849,6 +852,40 @@ class QaMockBackend {
         status: 'provisioned',
         repoShape: 'standalone',
       })),
+    };
+  }
+
+  /** GET /projects/:id/folder — the Project a repository is in, frontend first. */
+  private projectFolder(projectId: string): ProjectFolderWire {
+    const project = PROJECTS.find((entry) => entry.id === projectId);
+    if (!project) throw nestError(404, 'Project not found');
+    const folder = this.folders.find(
+      (entry) => !entry.archived && entry.repositories.some((repo) => !repo.archived && repo.projectId === projectId),
+    );
+    if (!folder) {
+      // Unfiled: a Project of one, which the page shows exactly as before.
+      return {
+        deliveryProjectId: null,
+        groupId: WORKSPACE.id,
+        name: project.serviceName,
+        repositories: [{ projectId, name: project.serviceName, repoFullName: project.repoFullName, role: 'app', status: 'provisioned' }],
+      };
+    }
+    const order: RepoRole[] = ['frontend', 'backend', 'service', 'app'];
+    return {
+      deliveryProjectId: folder.id,
+      groupId: WORKSPACE.id,
+      name: folder.name,
+      repositories: folder.repositories
+        .filter((repo) => !repo.archived)
+        .sort((a, b) => order.indexOf(a.role) - order.indexOf(b.role))
+        .map((repo) => ({
+          projectId: repo.projectId,
+          name: repo.name,
+          repoFullName: repo.repoFullName,
+          role: repo.role,
+          status: repo.projectId ? 'provisioned' : null,
+        })),
     };
   }
 
@@ -1892,6 +1929,63 @@ async function capabilityAbsentHidesQa({ page, backend, baseUrl }: JourneyContex
 }
 
 /** (h) Team lead: the project explorer — list, open, attach, move (409 then real), archive, create links. */
+/**
+ * A multi-repository Project reads as one product: its card opens the
+ * frontend's page, titled with the Project, and a switch opens the backend on
+ * the tab in use. "Manage project" goes back to the Project's detail.
+ */
+async function leadSwitchesRepositories({ page, backend, baseUrl }: JourneyContext) {
+  await page.goto(`${baseUrl}/teams`, { waitUntil: 'domcontentloaded' });
+  await expectRoleBadge(page, 'lead');
+  await page.getByRole('tablist', { name: 'Team sections' }).getByRole('tab', { name: /Projects/ }).click();
+  const storefront = page
+    .locator('li.pf-card')
+    .filter({ has: page.locator('.pf-card__name', { hasText: /^storefront$/ }) });
+  await storefront.locator('a.pf-card__open').click();
+  await eventually('the storefront frontend page', () => new URL(page.url()).pathname === `/projects/${PROJECT_ID}`);
+
+  const header = page.locator('.project-folder-header');
+  await expectText(header.locator('h1'), 'storefront', 'the Project title');
+  await expectText(header.locator('.project-folder-header__repo'), 'tone/storefront-web', 'the frontend subtitle');
+  const repos = page.getByRole('radiogroup', { name: 'Repositories in storefront' });
+  const frontend = repos.getByRole('radio', { name: /storefront-web/ });
+  const backendOption = repos.getByRole('radio', { name: /orders-api/ });
+  assert.equal(await frontend.getAttribute('aria-checked'), 'true', 'the frontend is the page on screen');
+  assert.equal(await backendOption.getAttribute('aria-checked'), 'false');
+  await expectText(frontend, 'FRONTEND', 'the frontend role label');
+  await expectText(backendOption, 'BACKEND', 'the backend role label');
+
+  // Keyboard: arrows move focus only; Enter opens the backend on the same tab.
+  const tabs = page.getByRole('tablist', { name: 'Project sections' });
+  await tabs.getByRole('tab', { name: 'Checklists', exact: true }).click();
+  await visible(tabs.getByRole('tab', { name: 'Checklists', selected: true }), 'the Checklists tab');
+  await frontend.focus();
+  await page.keyboard.press('ArrowRight');
+  await expectText(page.locator('[role="radio"]:focus'), 'orders-api', 'focus on the backend option');
+  assert.equal(new URL(page.url()).pathname, `/projects/${PROJECT_ID}`, 'an arrow alone does not navigate');
+  await page.keyboard.press('Enter');
+  await eventually('the backend page on the Checklists tab', () => {
+    const url = new URL(page.url());
+    return url.pathname === '/projects/project-2' && url.hash === '#checklists';
+  });
+  await visible(tabs.getByRole('tab', { name: 'Checklists', selected: true }), 'the Checklists tab kept across the switch');
+  await expectText(page.locator('.project-folder-header__repo'), 'tone/orders-api', 'the backend subtitle');
+  await expectText(page.locator('.project-folder-header h1'), 'storefront', 'the Project title kept');
+  await eventually('the backend option to be current', async () =>
+    (await page.getByRole('radio', { name: /orders-api/ }).getAttribute('aria-checked')) === 'true',
+  );
+  assert.equal(backend.callsTo('GET', /^\/projects\/project-2\/folder$/).length >= 1, true, 'the backend page read its folder');
+
+  // Manage project: the Teams page, opened on this Project's detail.
+  const manage = page.getByRole('link', { name: 'Manage project' });
+  assert.equal(
+    await manage.getAttribute('href'),
+    `/teams?workspace=${WORKSPACE.id}&section=projects&project=${STOREFRONT_FOLDER}`,
+  );
+  await manage.click();
+  await expectText(page.locator('.pf-detail__title'), 'storefront', 'the Project detail opened by the link');
+}
+
 async function leadOrganisesProjects({ page, backend, baseUrl }: JourneyContext) {
   await page.goto(`${baseUrl}/teams`, { waitUntil: 'domcontentloaded' });
   await expectRoleBadge(page, 'lead');
@@ -1930,8 +2024,13 @@ async function leadOrganisesProjects({ page, backend, baseUrl }: JourneyContext)
   await eventually('the new Project in the list', async () => (await cards.count()) === 3);
   await expectText(projectsTab, /Projects\s*3/, 'the rail count after creating');
 
+  // The card opens storefront as one product, on its frontend's page; Manage
+  // (beside it, not inside it) opens the Project's detail.
+  assert.equal(await storefront.locator('a.pf-card__open').getAttribute('href'), `/projects/${PROJECT_ID}`);
+  assert.equal(await loyalty.locator('a.pf-card__open').count(), 0, 'an empty Project has no page to open');
+
   // Open storefront.
-  await storefront.locator('button.pf-card__open').click();
+  await storefront.getByRole('button', { name: 'Manage storefront' }).click();
   await expectText(page.locator('.pf-detail__title'), 'storefront', 'the Project detail title');
   assert.equal(await page.getByRole('link', { name: 'Verify in QA Studio' }).getAttribute('href'), `/projects/${PROJECT_ID}#qa`);
   assert.equal(
@@ -1991,7 +2090,7 @@ async function leadOrganisesProjects({ page, backend, baseUrl }: JourneyContext)
   await expectText(loyalty.locator('.pf-card__meta'), '2 repositories', 'loyalty now holds both repositories');
 
   // Create repository in loyalty: the wizard opens pre-scoped to the team and Project.
-  await loyalty.locator('button.pf-card__open').click();
+  await loyalty.getByRole('button', { name: 'Manage loyalty' }).click();
   await page.getByRole('link', { name: 'Create repository in this Project' }).first().click();
   await eventually('the wizard URL to carry ?group= and ?project=', () => {
     const url = new URL(page.url());
@@ -2221,6 +2320,12 @@ const JOURNEYS: Journey[] = [
       return backend;
     },
     run: leadOrganisesProjects,
+  },
+  {
+    id: 'i',
+    title: 'Team lead: a Project opens on its frontend, switches to the backend on the same tab, Manage project deep link',
+    backend: () => new QaMockBackend('lead'),
+    run: leadSwitchesRepositories,
   },
 ];
 

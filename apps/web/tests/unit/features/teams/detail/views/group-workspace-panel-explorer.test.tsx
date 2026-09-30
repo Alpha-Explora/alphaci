@@ -62,6 +62,20 @@ describe("GroupWorkspacePanel with the project explorer", () => {
     expect(container.textContent).toContain("templates body");
   });
 
+  it("opens straight on Projects for a Manage project deep link", () => {
+    const container = render(
+      <GroupWorkspacePanel
+        group={GROUP}
+        projects={[]}
+        renderCreateProject={() => null}
+        projectExplorer={{ count: 2, panel: <p>explorer body</p> }}
+        initialSection="projects"
+      />,
+    );
+    expect(tab(container, "Projects")?.getAttribute("aria-selected")).toBe("true");
+    expect(container.textContent).toContain("explorer body");
+  });
+
   it("keeps the flat Repositories section when no explorer is given", () => {
     const container = render(
       <GroupWorkspacePanel group={GROUP} projects={[]} renderCreateProject={() => null} />,

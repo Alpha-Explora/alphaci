@@ -52,16 +52,23 @@ export interface TeamsDeepLink {
   workspaceId: string | null;
   section: string | null;
   checklistId: string | null;
+  /** A Project (hierarchy delivery project) to open in the explorer. */
+  projectId: string | null;
 }
 
 export const EMPTY_TEAMS_DEEP_LINK: TeamsDeepLink = {
   workspaceId: null,
   section: null,
   checklistId: null,
+  projectId: null,
 };
 
+/** `?section=projects`: the team's Projects explorer. */
+export const TEAMS_PROJECTS_SECTION = "projects";
+
 /**
- * Read `?workspace=…&section=…&checklist=…` from a location search string.
+ * Read `?workspace=…&section=…&checklist=…&project=…` from a location search
+ * string.
  *
  * Parsed from a plain string so the page does not need useSearchParams (and
  * the Suspense boundary it demands) for a value read once on arrival.
@@ -72,5 +79,28 @@ export function parseTeamsDeepLink(search: string): TeamsDeepLink {
     workspaceId: params.get("workspace") || null,
     section: params.get("section") || null,
     checklistId: params.get("checklist") || null,
+    projectId: params.get("project") || null,
   };
+}
+
+/**
+ * Whether a link opens the Projects section: by naming it, or by naming a
+ * Project (`?project=` alone is enough — a Project only lives there).
+ */
+export function linksToProjects(deepLink: TeamsDeepLink | null | undefined): boolean {
+  return deepLink?.section === TEAMS_PROJECTS_SECTION || Boolean(deepLink?.projectId);
+}
+
+/**
+ * The Project a link opens on this team, or null. A link made for another
+ * team must not open a same-id Project here, so a named team has to match;
+ * a link that names no team applies to whichever team is on screen.
+ */
+export function linkedFolderId(
+  deepLink: TeamsDeepLink | null | undefined,
+  teamId: string,
+): string | null {
+  if (!deepLink?.projectId) return null;
+  if (deepLink.workspaceId && deepLink.workspaceId !== teamId) return null;
+  return deepLink.projectId;
 }

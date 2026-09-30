@@ -1,14 +1,19 @@
 "use client";
 
+import "./project-repo-switch.css";
+
+import Link from "next/link";
 import type { ReactNode } from "react";
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 
 import { projectStatusVariant } from "../../model/projects-rules";
 import type { ProvisionedProject } from "@/features/projects";
 import type { AppRole } from "@/shared/api/contracts";
 import type { ProjectDetailTab } from "../model/project-detail-tab-rules";
+import type { ProjectFolderViewModel } from "../view-models/use-project-folder-view-model";
 import { useProjectDetailTabsViewModel } from "../view-models/use-project-detail-tabs-view-model";
 import type { ProjectDetailTabsViewModel } from "../view-models/use-project-detail-tabs-view-model";
+import { ProjectRepoSwitch } from "./project-repo-switch";
 import { projectDetailTabGroups } from "./project-detail-tab-config";
 import { ProjectDetailTopTabs } from "./project-detail-top-tabs";
 import { OverviewTab } from "./overview-tab";
@@ -49,6 +54,12 @@ interface ProjectDetailTabsProps {
   appRole?: AppRole;
   /** The viewer's GitHub login, for the pull request presets. */
   viewerLogin?: string;
+  /**
+   * The Project this repository sits in. With two or more repositories the
+   * header names the Project and offers a switch between them; without it (or
+   * with one repository) the header is the repository, as it always was.
+   */
+  folder?: ProjectFolderViewModel;
 }
 
 interface ProjectDetailTabPanelProps {
@@ -80,6 +91,7 @@ export function ProjectDetailTabs({
   dangerZone,
   appRole,
   viewerLogin,
+  folder,
 }: Readonly<ProjectDetailTabsProps>) {
   const vm = useProjectDetailTabsViewModel({
     projectId: project.id,
@@ -94,7 +106,18 @@ export function ProjectDetailTabs({
       className="project-detail-panel project-detail-panel--page"
       aria-label="Project detail"
     >
-      <ProjectDetailHeader project={project} external={external} />
+      {folder?.projectName ? (
+        <ProjectFolderHeader
+          project={project}
+          external={external}
+          folder={folder}
+          projectName={folder.projectName}
+          tab={vm.tab}
+          visibleTabs={vm.visibleTabs}
+        />
+      ) : (
+        <ProjectDetailHeader project={project} external={external} />
+      )}
       <div className="project-sections" data-tour="project-detail-tabs">
         <ProjectDetailTopTabs
           groups={projectDetailTabGroups(vm.visibleTabs)}
@@ -134,17 +157,83 @@ function ProjectDetailHeader({
         <h1 className="workflow-page-title">{project.repoFullName}</h1>
         <p>{project.serviceName}</p>
       </div>
-      <span className="project-detail-header-badges">
-        <span
-          className={`project-status-badge ${projectStatusVariant(project.status)}`}
-        >
-          {project.status}
-        </span>
-        {external ? (
-          <span className="project-status-badge external">External</span>
-        ) : null}
-      </span>
+      <ProjectStatusBadges project={project} external={external} />
     </div>
+  );
+}
+
+function ProjectStatusBadges({
+  project,
+  external,
+}: Readonly<{ project: ProvisionedProject; external: boolean }>) {
+  return (
+    <span className="project-detail-header-badges">
+      <span
+        className={`project-status-badge ${projectStatusVariant(project.status)}`}
+      >
+        {project.status}
+      </span>
+      {external ? (
+        <span className="project-status-badge external">External</span>
+      ) : null}
+    </span>
+  );
+}
+
+/**
+ * The header of one repository of a multi-repository Project: the Project is
+ * the title, this repository the subtitle (its status badges beside it,
+ * because the status is the repository's, not the Project's), and the switch
+ * to its sibling repositories sits at the top right.
+ */
+function ProjectFolderHeader({
+  project,
+  external,
+  folder,
+  projectName,
+  tab,
+  visibleTabs,
+}: Readonly<{
+  project: ProvisionedProject;
+  external: boolean;
+  folder: ProjectFolderViewModel;
+  projectName: string;
+  tab: ProjectDetailTab;
+  visibleTabs: ReadonlyArray<ProjectDetailTab>;
+}>) {
+  const reduceMotion = useReducedMotion();
+  return (
+    <motion.div
+      className="project-detail-header project-folder-header"
+      initial={reduceMotion ? false : { opacity: 0, y: -4 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+    >
+      <div className="project-folder-header__identity">
+        <span className="project-folder-header__eyebrow">Project</span>
+        <h1 className="workflow-page-title">{projectName}</h1>
+        <p className="project-folder-header__repo">
+          <span className="project-folder-header__repo-name">{project.repoFullName}</span>
+          <ProjectStatusBadges project={project} external={external} />
+        </p>
+      </div>
+      <div className="project-folder-header__aside">
+        <ProjectRepoSwitch
+          options={folder.options}
+          projectName={projectName}
+          currentTab={tab}
+          visibleTabs={visibleTabs}
+        />
+        {folder.manageHref ? (
+          <Link className="project-folder-header__manage" href={folder.manageHref}>
+            Manage project
+            <span aria-hidden="true" className="project-folder-header__manage-arrow">
+              &rarr;
+            </span>
+          </Link>
+        ) : null}
+      </div>
+    </motion.div>
   );
 }
 

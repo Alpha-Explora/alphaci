@@ -280,6 +280,16 @@ export function verifyProjectId(folder: ProjectFolder): string | null {
   return (frontend ?? app)?.id ?? null;
 }
 
+/**
+ * The page a Project card opens: its frontend repository's project, else the
+ * first linked repository's. Null when nothing in the Project has a page yet,
+ * and the card then opens the Project's detail instead.
+ */
+export function folderLandingProjectId(folder: ProjectFolder): string | null {
+  const linked = folder.repositories.map((repo) => repo.project).filter(isPresent);
+  return (linked.find((project) => project.role === "frontend") ?? linked[0])?.id ?? null;
+}
+
 /** Every Project of the team except the one the repository is in. */
 export function moveTargets(
   folders: ReadonlyArray<ProjectFolder>,

@@ -22,6 +22,10 @@ import {
 } from "../../model/projects-rules";
 import { canManageProjectLifecycle } from "../model/project-detail-tab-rules";
 import { useProjectDetailViewModel } from "../view-models/use-project-detail-view-model";
+import {
+  useProjectFolderViewModel,
+  type ProjectFolderViewModel,
+} from "../view-models/use-project-folder-view-model";
 import { ProjectDangerZone } from "./project-danger-zone";
 
 function ProjectSessionError({
@@ -146,6 +150,7 @@ function ProjectDetailBody({
   dangerZone,
   appRole,
   viewerLogin,
+  folder,
   onRetry,
 }: Readonly<{
   guest: boolean;
@@ -160,6 +165,7 @@ function ProjectDetailBody({
   dangerZone: ReactNode;
   appRole: AppRole | undefined;
   viewerLogin: string | undefined;
+  folder: ProjectFolderViewModel;
   onRetry: () => void;
 }>) {
   const logoutNotice = logoutMessage ? (
@@ -202,6 +208,7 @@ function ProjectDetailBody({
             dangerZone={dangerZone}
             appRole={appRole}
             viewerLogin={viewerLogin}
+            folder={folder}
           />
         ) : null}
       </div>
@@ -226,6 +233,10 @@ export function ProjectDetailView() {
 
   const guest = isGuest(session);
   const vm = useProjectDetailViewModel({
+    projectId,
+    enabled: isSignedInMember(status, guest),
+  });
+  const folder = useProjectFolderViewModel({
     projectId,
     enabled: isSignedInMember(status, guest),
   });
@@ -314,6 +325,7 @@ export function ProjectDetailView() {
             dangerZone={dangerZone}
             appRole={session?.appRole}
             viewerLogin={session?.user.login}
+            folder={folder}
             onRetry={() => void loadOverview()}
           />
         </div>
