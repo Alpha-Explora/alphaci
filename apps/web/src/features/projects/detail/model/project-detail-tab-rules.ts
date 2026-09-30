@@ -4,6 +4,7 @@ import type {
   DeploymentTargetSyncResponse,
   DetachDeploymentTargetResponse,
   EnvVarMetadata,
+  ProjectDriftFinding,
   ProjectDriftRepairAction,
   ProjectOverviewResponse,
   ProvisionedProject,
@@ -11,6 +12,9 @@ import type {
   WorkflowFileMetadata,
   WorkflowSettings,
 } from "@/shared/api/contracts";
+
+import { ApiError } from "@/shared/api/request";
+import { apiErrorReason } from "./api-error-reason";
 
 export type ProjectDetailTab =
   | "overview"
@@ -466,6 +470,53 @@ function detachProviderErrorMessage(
   return `Target detached from ALPHACI, but the ${target.provider} resource could not be deleted automatically (${providerDeleteError}). Delete it manually from the provider dashboard${dashboard}.`;
 }
 
+/** Live branch-protection findings the backend can repair (`branch_dev_protected` is detect-only). */
+const BRANCH_PROTECTION_REPAIRABLE_CODES: ReadonlySet<string> = new Set([
+  "branch_protection_missing",
+  "branch_force_push_allowed",
+  "branch_deletion_allowed",
+]);
+
+/** The backend allows `repair_branch_protection` for Team leads and Admins only (403 otherwise). */
+const BRANCH_PROTECTION_REPAIR_ROLES: ReadonlySet<AppRole> = new Set<AppRole>([
+  "lead",
+  "admin",
+]);
+
+/** Shown in place of the repair button, and for a 403 on repair. */
+export const DRIFT_REPAIR_LEAD_ONLY_MESSAGE =
+  "A Team lead or admin can repair this.";
+
+/**
+ * Whether this viewer may run a repair action. Allow-list for the action the
+ * backend restricts; every other action is unchanged (allowed as today).
+ */
+export function canRunDriftRepair(
+  action: ProjectDriftRepairAction,
+  appRole: AppRole | null | undefined,
+): boolean {
+  if (action !== "repair_branch_protection") return true;
+  return appRole != null && BRANCH_PROTECTION_REPAIR_ROLES.has(appRole);
+}
+
+/** A 403 on repair means the role gate; anything else shows the server's reason. */
+export function driftRepairErrorMessage(error: unknown): string {
+  if (error instanceof ApiError && error.status === 403) {
+    return DRIFT_REPAIR_LEAD_ONLY_MESSAGE;
+  }
+  return apiErrorReason(error, "Unable to run repair action.");
+}
+
+/** Header source label: "Live check", "Local snapshot", or both when mixed. */
+export function driftSourceLabel(
+  findings: ReadonlyArray<Pick<ProjectDriftFinding, "source">>,
+): string {
+  const live = findings.filter((f) => f.source === "github_live").length;
+  if (live === 0) return "Local snapshot";
+  if (live === findings.length) return "Live check";
+  return "Local snapshot + live check";
+}
+
 export function driftRepairActionForCode(
   code: string,
   workflowUpdatePrEnabled: boolean,
@@ -475,6 +526,9 @@ export function driftRepairActionForCode(
   }
   if (code === "deployment_target_metadata_missing") {
     return "detach_target";
+  }
+  if (BRANCH_PROTECTION_REPAIRABLE_CODES.has(code)) {
+    return "repair_branch_protection";
   }
   if (
     code === "workflow_files_missing" ||
@@ -495,6 +549,7 @@ function workflowPrOrPreview(
 export function driftRepairActionLabel(action: ProjectDriftRepairAction): string {
   if (action === "rotate_ci_token") return "Rotate CI token";
   if (action === "detach_target") return "Detach target";
+  if (action === "repair_branch_protection") return "Repair branch protection";
   if (action === "regenerate_workflow_preview") return "Preview workflow";
   if (action === "create_workflow_update_pr") return "Create update PR";
   return "Ignore finding";

@@ -1215,7 +1215,7 @@ export interface ProjectDriftFinding {
   id: string;
   projectId: string;
   targetId: string | null;
-  source: "local_snapshot";
+  source: "local_snapshot" | "github_live";
   severity: ProjectDriftSeverity;
   code: string;
   message: string;
@@ -1236,6 +1236,7 @@ export type ProjectDriftRepairAction =
   | "create_workflow_update_pr"
   | "rotate_ci_token"
   | "detach_target"
+  | "repair_branch_protection"
   | "mark_ignored";
 
 export interface ProjectDriftRepairResponse {

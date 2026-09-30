@@ -3,18 +3,23 @@
 import { useState } from "react";
 import { formatDate } from "@/features/workflows";
 import type {
+  AppRole,
   ProjectDriftFinding,
   ProjectDriftRepairAction,
   ProjectDriftResponse,
 } from "@/shared/api/contracts";
 import {
+  DRIFT_REPAIR_LEAD_ONLY_MESSAGE,
+  canRunDriftRepair,
   driftCheckLabel,
   driftFindingRowClass,
   driftRepairActionForCode,
   driftRepairButtonLabel,
+  driftSourceLabel,
 } from "../model/project-detail-tab-rules";
 
 export function DriftFindingsPanel({
+  appRole,
   onRun,
   onRepair,
   repairEnabled,
@@ -22,6 +27,7 @@ export function DriftFindingsPanel({
   running,
   workflowUpdatePrEnabled,
 }: Readonly<{
+  appRole?: AppRole | null;
   onRun: () => void;
   onRepair: (
     findingId: string,
@@ -55,9 +61,14 @@ export function DriftFindingsPanel({
         gap: "0.85rem",
       }}
     >
-      <DriftFindingsHeader running={running} onRun={onRun} />
+      <DriftFindingsHeader
+        sourceLabel={driftSourceLabel(response.findings)}
+        running={running}
+        onRun={onRun}
+      />
       <DriftRepairMessage message={repairMessage} />
       <DriftFindingsBody
+        appRole={appRole}
         findings={response.findings}
         pendingRepair={pendingRepair}
         repairEnabled={repairEnabled}
@@ -76,8 +87,12 @@ export function DriftFindingsPanel({
               );
               setPendingRepair(null);
             })
-            .catch(() => {
-              setRepairMessage("Unable to run repair action.");
+            .catch((error: unknown) => {
+              setRepairMessage(
+                error instanceof Error && error.message
+                  ? error.message
+                  : "Unable to run repair action.",
+              );
             })
             .finally(() => setRepairingFindingId(null));
         }}
@@ -87,9 +102,10 @@ export function DriftFindingsPanel({
 }
 
 function DriftFindingsHeader({
+  sourceLabel,
   running,
   onRun,
-}: Readonly<{ running: boolean; onRun: () => void }>) {
+}: Readonly<{ sourceLabel: string; running: boolean; onRun: () => void }>) {
   return (
     <div
       style={{
@@ -103,7 +119,7 @@ function DriftFindingsHeader({
       <div>
         <h4 style={{ margin: 0, fontSize: "0.95rem" }}>Health findings</h4>
         <p className="env-empty-state" style={{ margin: "0.25rem 0 0" }}>
-          Local snapshot
+          {sourceLabel}
         </p>
       </div>
       <button
@@ -133,6 +149,7 @@ function DriftRepairMessage({ message }: Readonly<{ message: string | null }>) {
 }
 
 function DriftFindingsBody({
+  appRole,
   findings,
   pendingRepair,
   repairEnabled,
@@ -141,6 +158,7 @@ function DriftFindingsBody({
   onAskConfirm,
   onConfirm,
 }: Readonly<{
+  appRole?: AppRole | null;
   findings: ProjectDriftFinding[];
   pendingRepair: {
     findingId: string;
@@ -161,6 +179,7 @@ function DriftFindingsBody({
       {findings.map((finding) => (
         <DriftFindingRow
           key={finding.id}
+          appRole={appRole}
           finding={finding}
           pendingRepair={pendingRepair}
           repairEnabled={repairEnabled}
@@ -175,6 +194,7 @@ function DriftFindingsBody({
 }
 
 function DriftFindingRow({
+  appRole,
   finding,
   pendingRepair,
   repairEnabled,
@@ -183,6 +203,7 @@ function DriftFindingRow({
   onAskConfirm,
   onConfirm,
 }: Readonly<{
+  appRole?: AppRole | null;
   finding: ProjectDriftFinding;
   pendingRepair: {
     findingId: string;
@@ -222,6 +243,7 @@ function DriftFindingRow({
       </span>
       <DriftRepairButton
         action={action}
+        appRole={appRole}
         confirming={isConfirming}
         findingId={finding.id}
         repairEnabled={repairEnabled}
@@ -235,6 +257,7 @@ function DriftFindingRow({
 
 function DriftRepairButton({
   action,
+  appRole,
   confirming,
   findingId,
   repairEnabled,
@@ -243,6 +266,7 @@ function DriftRepairButton({
   onConfirm,
 }: Readonly<{
   action: ProjectDriftRepairAction | null;
+  appRole?: AppRole | null;
   confirming: boolean;
   findingId: string;
   repairEnabled: boolean;
@@ -251,6 +275,13 @@ function DriftRepairButton({
   onConfirm: (findingId: string, action: ProjectDriftRepairAction) => void;
 }>) {
   if (!action) return null;
+  if (!canRunDriftRepair(action, appRole)) {
+    return (
+      <small className="env-empty-state" role="note">
+        {DRIFT_REPAIR_LEAD_ONLY_MESSAGE}
+      </small>
+    );
+  }
   if (!repairEnabled) {
     return (
       <button
