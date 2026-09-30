@@ -89,7 +89,7 @@ function tabVisible(
   appRole: AppRole | null | undefined,
 ): boolean {
   if (tab === "checklists") return checklistsVisible;
-  if (tab === "qa") return checklistsVisible && appRole != null && QA_STUDIO_ROLES.has(appRole);
+  if (tab === "qa") return checklistsVisible && canOpenQaStudio(appRole);
   if (tab === "environment") return canManageEnvVars(appRole);
   return true;
 }
@@ -122,6 +122,18 @@ export function visibleProjectDetailTabs(
 export function tabFromHash(hash: string | null | undefined): ProjectDetailTab | null {
   const id = (hash ?? "").replace(/^#/, "");
   return (PROJECT_DETAIL_TABS as ReadonlyArray<string>).includes(id) ? (id as ProjectDetailTab) : null;
+}
+
+/**
+ * A notification deep-link asks the Overview to scroll to and briefly
+ * highlight the "My QA items" card: `?focus=my-qa-items`. Read once at mount
+ * from `location.search` (mirrors `tabFromHash` above) rather than
+ * `useSearchParams`, so this VM does not force the route into dynamic
+ * rendering just to read one query flag.
+ */
+export function shouldHighlightMyQaItems(search: string | null | undefined): boolean {
+  if (!search) return false;
+  return new URLSearchParams(search).get("focus") === "my-qa-items";
 }
 
 /** The selected tab, or Overview when the selection is not (or no longer) visible. */

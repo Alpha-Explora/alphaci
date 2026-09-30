@@ -413,10 +413,23 @@
   white-space: nowrap;
 }
 
+/* Stretched-link overlay for a clickable row — same absolute-inset technique
+   as .notification-preferences-toggle's input/span pair above. Sits below
+   the row's own visual content (which needs no z-index of its own to show
+   through) and below .inbox-row-action, which opts back into the stacking
+   order so "Mark read" stays independently clickable. */
+.inbox-row-link {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+
 /* Mark-read control / read badge — reserved gutter so hover reveal never
    shifts the row, but invisible by default so the dense row stays lean.
    Shown on hover AND on keyboard focus (:focus-within), never hover-only. */
 .inbox-row-action {
+  position: relative;
+  z-index: 1;
   flex: 0 0 auto;
   min-width: 4.6rem;
   padding: 0.22rem 0.55rem;

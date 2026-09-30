@@ -47,6 +47,7 @@ export function OverviewTab({
         appRole={vm.appRole}
         enabled={vm.qaChecklistsEnabled && Boolean(vm.appRole)}
         projectId={project.id}
+        highlightRequested={vm.highlightMyQaItems}
       />
       <OverviewFacts
         project={project}

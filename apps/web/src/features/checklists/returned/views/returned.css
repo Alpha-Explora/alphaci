@@ -468,3 +468,29 @@
     width: 100%;
   }
 }
+
+/* ── Notification deep-link highlight (spec §8.6) ────────────────────────────
+   A one-shot pulse when the Overview opens with ?focus=my-qa-items, so a
+   developer who followed a "QA returned this" notification can find the card
+   without hunting. `qa-mine--focused` is a stable class for the component's
+   lifetime, so this plays once on mount (iteration-count 1) and never
+   replays on later re-renders. */
+.qa-mine--focused {
+  animation: qa-mine-focus-pulse 1.6s ease-out 1;
+}
+
+@keyframes qa-mine-focus-pulse {
+  0%,
+  40% {
+    box-shadow: 0 0 0 3px var(--accent-violet-glow);
+  }
+  100% {
+    box-shadow: 0 0 0 0 transparent;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .qa-mine--focused {
+    animation: none;
+  }
+}

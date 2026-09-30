@@ -1,6 +1,8 @@
 import {
   PROJECT_DETAIL_TABS,
+  canOpenQaStudio,
   resolveVisibleTab,
+  shouldHighlightMyQaItems,
   visibleProjectDetailTabs,
 } from "../../../../../../src/features/projects/detail/model/project-detail-tab-rules";
 
@@ -82,5 +84,47 @@ describe("visibleProjectDetailTabs", () => {
       const visible = visibleProjectDetailTabs(role, { qaChecklistsEnabled: true });
       expect(resolveVisibleTab("environment", visible)).toBe("overview");
     }
+  });
+});
+
+describe("canOpenQaStudio", () => {
+  it("allows QA Team, Team leads and Admins", () => {
+    for (const role of ["qa", "lead", "admin"] as const) {
+      expect(canOpenQaStudio(role)).toBe(true);
+    }
+  });
+
+  it("refuses a Developer", () => {
+    expect(canOpenQaStudio("member")).toBe(false);
+  });
+
+  it("refuses a session with no known role", () => {
+    expect(canOpenQaStudio(null)).toBe(false);
+    expect(canOpenQaStudio(undefined)).toBe(false);
+  });
+});
+
+describe("shouldHighlightMyQaItems", () => {
+  it("reads ?focus=my-qa-items off location.search, leading '?' and all", () => {
+    expect(shouldHighlightMyQaItems("?focus=my-qa-items")).toBe(true);
+  });
+
+  it("reads it without a leading '?' too", () => {
+    expect(shouldHighlightMyQaItems("focus=my-qa-items")).toBe(true);
+  });
+
+  it("ignores an unrelated or missing focus value", () => {
+    expect(shouldHighlightMyQaItems("?focus=something-else")).toBe(false);
+    expect(shouldHighlightMyQaItems("?other=1")).toBe(false);
+  });
+
+  it("is false for empty, null or undefined search strings", () => {
+    expect(shouldHighlightMyQaItems("")).toBe(false);
+    expect(shouldHighlightMyQaItems(null)).toBe(false);
+    expect(shouldHighlightMyQaItems(undefined)).toBe(false);
+  });
+
+  it("still finds it alongside other query params", () => {
+    expect(shouldHighlightMyQaItems("?tab=overview&focus=my-qa-items")).toBe(true);
   });
 });

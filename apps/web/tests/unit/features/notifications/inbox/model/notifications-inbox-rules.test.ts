@@ -32,6 +32,9 @@ function at(offsetDays: number, id = "n-1"): NotificationItem {
     eventCode: "run.succeeded",
     readAt: null,
     createdAt: created.toISOString(),
+    projectId: null,
+    groupId: null,
+    deliveryProjectId: null,
   };
 }
 
