@@ -7,6 +7,7 @@ import {
   domainScopeLabel,
   domainStatus,
 } from "../../model/projects-rules";
+import { HOSTING_LEAD_ONLY_NOTE as DOMAINS_LEAD_ONLY_NOTE } from "../../detail/model/project-detail-tab-rules";
 import type { CustomDomain } from "../../model/projects-types";
 
 export interface ProjectDomainsViewProps {
@@ -15,6 +16,8 @@ export interface ProjectDomainsViewProps {
   error: string | null;
   busyDomainId: string | null;
   isAdding: boolean;
+  /** Lead/admin only. Otherwise the list is read-only with a short note. */
+  canManage: boolean;
   /** Targets a hostname can be attached to. Empty disables the form. */
   targets: Array<{ id: string; label: string }>;
   onAdd: (
@@ -68,11 +71,13 @@ function VerificationRecord({
 function DomainRow({
   domain,
   busy,
+  canManage,
   onVerify,
   onRemove,
 }: Readonly<{
   domain: CustomDomain;
   busy: boolean;
+  canManage: boolean;
   onVerify: (domainId: string) => void;
   onRemove: (domainId: string) => void;
 }>) {
@@ -119,6 +124,7 @@ function DomainRow({
         <p className="project-domain__error">{domain.lastErrorSafeMessage}</p>
       ) : null}
 
+      {canManage ? (
       <footer className="project-domain__actions">
         <button
           className="ghost-button target-action-btn"
@@ -163,6 +169,7 @@ function DomainRow({
           </button>
         )}
       </footer>
+      ) : null}
     </article>
   );
 }
@@ -173,6 +180,7 @@ export function ProjectDomainsView({
   error,
   busyDomainId,
   isAdding,
+  canManage,
   targets,
   onAdd,
   onVerify,
@@ -191,7 +199,8 @@ export function ProjectDomainsView({
   return (
     <div className="project-domains">
       {error ? <p className="project-domains__error">{error}</p> : null}
-      <DomainAddForm
+      {canManage ? (
+        <DomainAddForm
         targets={targets}
         hostname={hostname}
         gitBranch={gitBranch}
@@ -201,8 +210,12 @@ export function ProjectDomainsView({
         onGitBranch={setGitBranch}
         onTargetId={setTargetId}
         onAdd={onAdd}
-      />
+        />
+      ) : (
+        <p className="env-empty-state">{DOMAINS_LEAD_ONLY_NOTE}</p>
+      )}
       <DomainList
+        canManage={canManage}
         domains={domains}
         busyDomainId={busyDomainId}
         onRemove={onRemove}
@@ -297,11 +310,13 @@ function DomainAddForm({
 }
 
 function DomainList({
+  canManage,
   domains,
   busyDomainId,
   onRemove,
   onVerify,
 }: Readonly<{
+  canManage: boolean;
   domains: CustomDomain[];
   busyDomainId: string | null;
   onRemove: (domainId: string) => void;
@@ -315,6 +330,7 @@ function DomainList({
       {domains.map((domain) => (
         <DomainRow
           busy={busyDomainId === domain.id}
+          canManage={canManage}
           domain={domain}
           key={domain.id}
           onRemove={onRemove}

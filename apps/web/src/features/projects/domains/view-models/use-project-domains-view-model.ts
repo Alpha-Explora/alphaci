@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { projectsRepository } from "../../data/projects-repository";
+import { workspacePermissionErrorMessage } from "../../detail/model/workspace-permission-errors";
 import type {
   CustomDomain,
   ProjectStatus,
@@ -155,7 +156,14 @@ export function useProjectDomainsViewModel(options: {
   };
 }
 
+/**
+ * The 403 codes map to fixed sentences; anything else keeps the provider's own
+ * message ("already assigned to another project"), which is what ApiError
+ * exposes on `message` for this endpoint family.
+ */
 function messageFor(cause: unknown, fallback: string): string {
+  const mapped = workspacePermissionErrorMessage(cause, "");
+  if (mapped) return mapped;
   const message = (cause as { message?: unknown })?.message;
   return typeof message === "string" && message.trim() ? message : fallback;
 }

@@ -399,9 +399,21 @@ describe("WorkflowBuilder project setup", () => {
     jest.clearAllMocks();
   });
 
-  async function renderBuilder() {
+  function leadSession(appRole: "admin" | "lead" | "qa" | "member") {
+    return { appRole } as unknown as NonNullable<
+      React.ComponentProps<typeof WorkflowBuilder>["session"]
+    >;
+  }
+
+  async function renderBuilder(appRole: "admin" | "lead" | "qa" | "member" = "lead") {
     await act(async () => {
-      root.render(<WorkflowBuilder login="tone" plan="pro" />);
+      root.render(
+        <WorkflowBuilder
+          login="tone"
+          plan="pro"
+          session={leadSession(appRole)}
+        />,
+      );
     });
 
     // Current Projects is the default tab now — open Create Project first,
@@ -736,4 +748,44 @@ describe("WorkflowBuilder project setup", () => {
     expect(mockedCreateGithubRepo).not.toHaveBeenCalled();
     expect(mockedCreateProject).not.toHaveBeenCalled();
   });
+
+  it.each(["member", "qa"] as const)(
+    "replaces the create and onboard controls with a note for %s",
+    async (role) => {
+      await act(async () => {
+        root.render(
+          <WorkflowBuilder login="tone" plan="pro" session={leadSession(role)} />,
+        );
+      });
+      await waitForCondition(
+        () =>
+          container.querySelector<HTMLButtonElement>("#workflow-tab-setup") !==
+          null,
+      );
+      await act(async () => {
+        container
+          .querySelector<HTMLButtonElement>("#workflow-tab-setup")
+          ?.click();
+      });
+      await waitForCondition(
+        () =>
+          container.textContent?.includes(
+            "A Team lead or admin can create repositories",
+          ) ?? false,
+      );
+      expect(container.querySelector("#project-type-select")).toBeNull();
+      expect(findButton("Existing repository")).toBeNull();
+    },
+  );
+
+  it.each(["lead", "admin"] as const)(
+    "shows the create wizard for %s",
+    async (role) => {
+      await renderBuilder(role);
+      expect(container.querySelector("#project-type-select")).not.toBeNull();
+      expect(container.textContent).not.toContain(
+        "A Team lead or admin can create repositories",
+      );
+    },
+  );
 });

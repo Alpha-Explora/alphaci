@@ -11,9 +11,12 @@ import { ProjectDomainsView } from "./project-domains-view";
 export function ProjectDomainsPanel({
   projectId,
   enabled,
+  canManage,
   targets,
 }: Readonly<{
   projectId: string;
+  /** Team lead or admin: the only roles the backend lets change domains. */
+  canManage: boolean;
   enabled: boolean;
   targets: Array<{ id: string; label: string }>;
 }>) {
@@ -31,6 +34,7 @@ export function ProjectDomainsPanel({
   return (
     <ProjectDomainsView
       busyDomainId={busyDomainId}
+      canManage={canManage}
       domains={domains}
       error={error}
       isAdding={isAdding}

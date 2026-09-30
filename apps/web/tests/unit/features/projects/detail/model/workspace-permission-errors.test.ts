@@ -31,6 +31,14 @@ describe("workspacePermissionErrorMessage", () => {
       "PROJECT_ROLE_FORBIDDEN",
       "Only team leads and admins can make this change.",
     ],
+    [
+      "HOSTING_LEAD_ONLY",
+      "Only team leads and admins can manage hosting services and custom domains.",
+    ],
+    [
+      "PR_BASE_BRANCH_MISSING",
+      "This repository has no dev or uat branch to open the pull request against. Create one, then try again.",
+    ],
   ])("maps %s to its own sentence, not the server's", (code, expected) => {
     const error = forbidden(code, "generic backend text");
     expect(workspacePermissionErrorMessage(error, FALLBACK)).toBe(expected);

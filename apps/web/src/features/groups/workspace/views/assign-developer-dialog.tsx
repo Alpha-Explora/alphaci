@@ -8,6 +8,7 @@ import type {
   GroupMember,
   RepositoryAssignment,
 } from "@/features/groups";
+import { roleGateMessage } from "../../model/role-gate-rules";
 import { FormDialog } from "./primitives";
 
 export function AssignDeveloperDialog({
@@ -67,7 +68,10 @@ export function AssignDeveloperDialog({
       reset();
       onClose();
     } catch (cause) {
-      if (cause instanceof ApiError && cause.status === 403) {
+      const gated = roleGateMessage(cause);
+      if (gated) {
+        setError(gated);
+      } else if (cause instanceof ApiError && cause.status === 403) {
         setError("You're not allowed to assign access on this repository.");
       } else if (cause instanceof ApiError && cause.status === 404) {
         setError("That user isn't an active member of this group.");

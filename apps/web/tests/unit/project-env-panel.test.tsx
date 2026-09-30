@@ -802,7 +802,7 @@ describe("Project env provisioning UI", () => {
     mockEnvHook();
     mockedProjectApi.getProjectOverview.mockRejectedValue(new Error("offline"));
 
-    const rendered = render(<ProjectDetailTabs project={provisionedProject} />);
+    const rendered = render(<ProjectDetailTabs project={provisionedProject} appRole="lead" />);
     root = rendered.root;
     await act(async () => {
       await Promise.resolve();
@@ -816,7 +816,7 @@ describe("Project env provisioning UI", () => {
 
     act(() => {
       rendered.root.render(
-        <ProjectDetailTabs project={provisionedProject} external />,
+        <ProjectDetailTabs project={provisionedProject} appRole="lead" external />,
       );
     });
 
@@ -868,7 +868,7 @@ describe("Project env provisioning UI", () => {
     });
 
     const rendered = render(
-      <ProjectDetailTabs project={provisionedProject} />,
+      <ProjectDetailTabs project={provisionedProject} appRole="lead" />,
     );
     root = rendered.root;
 
@@ -946,7 +946,7 @@ describe("Project env provisioning UI", () => {
     });
 
     const rendered = render(
-      <ProjectDetailTabs project={provisionedProject} />,
+      <ProjectDetailTabs project={provisionedProject} appRole="lead" />,
     );
     root = rendered.root;
 
@@ -1017,7 +1017,7 @@ describe("Project env provisioning UI", () => {
     });
 
     const rendered = render(
-      <ProjectDetailTabs project={provisionedProject} />,
+      <ProjectDetailTabs project={provisionedProject} appRole="lead" />,
     );
     root = rendered.root;
 
@@ -1094,7 +1094,7 @@ describe("Project env provisioning UI", () => {
     });
 
     const rendered = render(
-      <ProjectDetailTabs project={provisionedProject} />,
+      <ProjectDetailTabs project={provisionedProject} appRole="lead" />,
     );
     root = rendered.root;
 
@@ -1144,7 +1144,7 @@ describe("Project env provisioning UI", () => {
     });
 
     const rendered = render(
-      <ProjectDetailTabs project={provisionedProject} />,
+      <ProjectDetailTabs project={provisionedProject} appRole="lead" />,
     );
     root = rendered.root;
 
@@ -1198,7 +1198,7 @@ describe("Project env provisioning UI", () => {
     });
 
     const rendered = render(
-      <ProjectDetailTabs project={provisionedProject} />,
+      <ProjectDetailTabs project={provisionedProject} appRole="lead" />,
     );
     root = rendered.root;
 
@@ -1259,7 +1259,7 @@ describe("Project env provisioning UI", () => {
     });
 
     const rendered = render(
-      <ProjectDetailTabs project={provisionedProject} />,
+      <ProjectDetailTabs project={provisionedProject} appRole="lead" />,
     );
     root = rendered.root;
 
@@ -1311,7 +1311,7 @@ describe("Project env provisioning UI", () => {
     });
 
     const rendered = render(
-      <ProjectDetailTabs project={provisionedProject} />,
+      <ProjectDetailTabs project={provisionedProject} appRole="lead" />,
     );
     root = rendered.root;
 
@@ -1343,7 +1343,7 @@ describe("Project env provisioning UI", () => {
     );
 
     const rendered = render(
-      <ProjectDetailTabs project={provisionedProject} />,
+      <ProjectDetailTabs project={provisionedProject} appRole="lead" />,
     );
     root = rendered.root;
 
@@ -1432,7 +1432,7 @@ describe("Project env provisioning UI", () => {
     });
 
     const rendered = render(
-      <ProjectDetailTabs project={provisionedProject} />,
+      <ProjectDetailTabs project={provisionedProject} appRole="lead" />,
     );
     root = rendered.root;
 
@@ -1503,7 +1503,7 @@ describe("Project env provisioning UI", () => {
     });
 
     const rendered = render(
-      <ProjectDetailTabs project={provisionedProject} />,
+      <ProjectDetailTabs project={provisionedProject} appRole="lead" />,
     );
     root = rendered.root;
 
@@ -1537,7 +1537,7 @@ describe("Project env provisioning UI", () => {
     );
 
     const rendered = render(
-      <ProjectDetailTabs project={provisionedProject} />,
+      <ProjectDetailTabs project={provisionedProject} appRole="lead" />,
     );
     root = rendered.root;
 
@@ -1625,7 +1625,7 @@ describe("Project env provisioning UI", () => {
     });
 
     const rendered = render(
-      <ProjectDetailTabs project={provisionedProject} />,
+      <ProjectDetailTabs project={provisionedProject} appRole="lead" />,
     );
     root = rendered.root;
 
@@ -1733,7 +1733,7 @@ describe("Project env provisioning UI", () => {
     );
 
     const rendered = render(
-      <ProjectDetailTabs project={provisionedProject} />,
+      <ProjectDetailTabs project={provisionedProject} appRole="lead" />,
     );
     root = rendered.root;
 
@@ -1796,7 +1796,7 @@ describe("Project env provisioning UI", () => {
     );
 
     const rendered = render(
-      <ProjectDetailTabs project={provisionedProject} />,
+      <ProjectDetailTabs project={provisionedProject} appRole="lead" />,
     );
     root = rendered.root;
 
@@ -1862,7 +1862,7 @@ describe("Project env provisioning UI", () => {
     });
 
     const rendered = render(
-      <ProjectDetailTabs project={provisionedProject} />,
+      <ProjectDetailTabs project={provisionedProject} appRole="lead" />,
     );
     root = rendered.root;
 
@@ -1956,7 +1956,7 @@ describe("Project env provisioning UI", () => {
     });
 
     const rendered = render(
-      <ProjectDetailTabs project={provisionedProject} />,
+      <ProjectDetailTabs project={provisionedProject} appRole="lead" />,
     );
     root = rendered.root;
 
@@ -2044,7 +2044,7 @@ describe("Project env provisioning UI", () => {
     });
 
     const rendered = render(
-      <ProjectDetailTabs project={provisionedProject} />,
+      <ProjectDetailTabs project={provisionedProject} appRole="lead" />,
     );
     root = rendered.root;
 
@@ -2091,6 +2091,82 @@ describe("Project env provisioning UI", () => {
     );
   });
 
+
+  it.each([["qa", false], ["member", true], ["lead", true], ["admin", true]] as const)(
+    "update PR button for %s: shown=%s",
+    async (role, shown) => {
+    mockCapabilities(true, true, true, true);
+    mockEnvHook();
+    mockedProjectApi.getProjectOverview.mockResolvedValue({
+      project: {
+        ...provisionedProject,
+        createdAt: "2026-06-12T00:00:00.000Z",
+        updatedAt: "2026-06-12T00:00:00.000Z",
+      },
+      workflow: {
+        path: provisionedProject.workflowPath,
+        files: [],
+        stageCount: 0,
+        history: [],
+      },
+      deploymentTargets: { items: [], count: 0 },
+      environment: { items: [], count: 0, failedCount: 0 },
+      ciAuth: {
+        status: "active",
+        tokenPresent: true,
+        tokenPrefix: "aci_test",
+        createdAt: "2026-06-12T00:00:00.000Z",
+        updatedAt: "2026-06-12T00:00:00.000Z",
+        revokedAt: null,
+      },
+      health: { summary: "ok", checks: [] },
+      syncSnapshot: { enabled: true, mode: "local_snapshot", latest: null },
+      capabilities: {
+        envProvisioning: true,
+        workflowSettings: true,
+        syncSnapshots: true,
+        ciRunTracking: false,
+        deploymentHistory: false,
+        driftDetection: false,
+      },
+    });
+
+    const rendered = render(
+      <ProjectDetailTabs project={provisionedProject} appRole={role} />,
+    );
+    root = rendered.root;
+
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    const workflowTab = Array.from(
+      rendered.container.querySelectorAll("button"),
+    ).find((button) => button.textContent === "Workflow") as HTMLButtonElement;
+    await act(async () => {
+      workflowTab.click();
+      await Promise.resolve();
+    });
+
+    const previewButton = Array.from(
+      rendered.container.querySelectorAll("button"),
+    ).find((button) => button.textContent === "Preview") as HTMLButtonElement;
+    await act(async () => {
+      previewButton.click();
+      await Promise.resolve();
+    });
+
+    const hasButton = Array.from(rendered.container.querySelectorAll("button")).some(
+      (button) => button.textContent === "Create update PR",
+    );
+    expect(hasButton).toBe(shown);
+    expect(rendered.container.textContent?.includes("A Developer, Team lead or admin can")).toBe(!shown);
+    if (shown) {
+      expect(rendered.container.textContent).toContain("Opens a pull request into dev");
+    }
+  },
+  );
+
   it("shows clean copy when workflow update PR creation fails", async () => {
     mockCapabilities(true, true, true, true);
     mockEnvHook();
@@ -2132,7 +2208,7 @@ describe("Project env provisioning UI", () => {
     });
 
     const rendered = render(
-      <ProjectDetailTabs project={provisionedProject} />,
+      <ProjectDetailTabs project={provisionedProject} appRole="lead" />,
     );
     root = rendered.root;
 
@@ -2214,7 +2290,7 @@ describe("Project env provisioning UI", () => {
     );
 
     const rendered = render(
-      <ProjectDetailTabs project={provisionedProject} />,
+      <ProjectDetailTabs project={provisionedProject} appRole="lead" />,
     );
     root = rendered.root;
 
@@ -2290,7 +2366,7 @@ describe("Project env provisioning UI", () => {
     );
 
     const overviewErrorRendered = render(
-      <ProjectDetailTabs project={provisionedProject} />,
+      <ProjectDetailTabs project={provisionedProject} appRole="lead" />,
     );
     root = overviewErrorRendered.root;
 
@@ -2333,7 +2409,7 @@ describe("Project env provisioning UI", () => {
     );
 
     const previewErrorRendered = render(
-      <ProjectDetailTabs project={provisionedProject} />,
+      <ProjectDetailTabs project={provisionedProject} appRole="lead" />,
     );
     root = previewErrorRendered.root;
 
@@ -2387,7 +2463,7 @@ describe("Project env provisioning UI", () => {
     );
 
     const rendered = render(
-      <ProjectDetailTabs project={provisionedProject} />,
+      <ProjectDetailTabs project={provisionedProject} appRole="lead" />,
     );
     root = rendered.root;
 
@@ -2426,7 +2502,7 @@ describe("Project env provisioning UI", () => {
     );
 
     const rendered = render(
-      <ProjectDetailTabs project={provisionedProject} />,
+      <ProjectDetailTabs project={provisionedProject} appRole="lead" />,
     );
     root = rendered.root;
 

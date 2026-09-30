@@ -153,4 +153,54 @@ describe("useWorkflowStudioViewModel", () => {
     expect(get()!.statusMessage).toContain("Enter a service name");
     expect(generateWorkflow).not.toHaveBeenCalled();
   });
+
+  it("omits baseBranch on discovery when none is typed", async () => {
+    (discoverExistingRepo as jest.Mock).mockResolvedValue({
+      repoFullName: "tone/app",
+      baseBranch: "dev",
+      detectedProjectTypeId: null,
+      recommendedWorkflowRecipeId: "x",
+    });
+    const get = await renderVm();
+    act(() => get()!.setExistingRepoFullName("tone/app"));
+    await act(async () => {
+      await get()!.handleDiscoverExistingRepo();
+    });
+    expect(discoverExistingRepo).toHaveBeenCalledWith({ repoFullName: "tone/app" });
+  });
+
+  it("sends baseBranch when one is typed", async () => {
+    (discoverExistingRepo as jest.Mock).mockResolvedValue({
+      repoFullName: "tone/app",
+      baseBranch: "uat",
+      detectedProjectTypeId: null,
+      recommendedWorkflowRecipeId: "x",
+    });
+    const get = await renderVm();
+    act(() => get()!.setExistingRepoFullName("tone/app"));
+    act(() => get()!.setExistingRepoBaseBranch(" uat "));
+    await act(async () => {
+      await get()!.handleDiscoverExistingRepo();
+    });
+    expect(discoverExistingRepo).toHaveBeenCalledWith({
+      repoFullName: "tone/app",
+      baseBranch: "uat",
+    });
+  });
+
+  it("maps a role refusal on discovery to its sentence", async () => {
+    const { ApiError } = jest.requireActual("../../../../../../src/shared/api/request");
+    (discoverExistingRepo as jest.Mock).mockRejectedValue(
+      new ApiError("Request failed with status 403", 403, {
+        code: "REPO_NOT_ACCESSIBLE",
+        message: "x",
+      }),
+    );
+    const get = await renderVm();
+    act(() => get()!.setExistingRepoFullName("tone/app"));
+    await act(async () => {
+      await get()!.handleDiscoverExistingRepo();
+    });
+    expect(get()!.statusMessage).toContain("cannot access that repository");
+  });
 });
