@@ -93,8 +93,16 @@ jest.mock("../../src/features/projects/detail/data/projects-api", () => ({
   ),
 }));
 
-// The Current Projects rail now groups repositories by the user's groups —
-// resolve to "no groups" so projects land in the Ungrouped bucket.
+// WorkflowCurrentTab's view-model reads ?group= and writes the chosen group
+// back with router.replace.
+jest.mock("next/navigation", () => ({
+  useSearchParams: () => new URLSearchParams(),
+  usePathname: () => "/workflows",
+  useRouter: () => ({ push: jest.fn(), replace: jest.fn() }),
+}));
+
+// Current Projects is one team at a time, picked from the user's groups —
+// resolve to "no groups" by default.
 jest.mock("../../src/features/groups/data/hierarchy-api", () => ({
   getGroups: jest.fn().mockResolvedValue([]),
 }));
@@ -628,10 +636,10 @@ describe("Project env provisioning UI", () => {
     jest.clearAllMocks();
   });
 
-  /* The rail is teams and nothing else. It previously carried an "Ungrouped"
-   * bucket and a Repositories/Teams toggle for projects owned by no team —
-   * both removed with personal workspaces, since every project now belongs to
-   * a team and that bucket could never fill. */
+  /* The dropdown is teams and nothing else. The old rail once carried an
+   * "Ungrouped" bucket and a Repositories/Teams toggle for projects owned by
+   * no team — both removed with personal workspaces, since every project now
+   * belongs to a team and that bucket could never fill. */
   it("lists the caller's teams and shows the selected team's repositories", async () => {
     mockCapabilities(true);
     mockEnvHook();
@@ -676,12 +684,14 @@ describe("Project env provisioning UI", () => {
     // Flush the groups fetch so both projects land in their team's bucket.
     await act(async () => {});
 
-    expect(
-      rendered.container.querySelector(".project-workspace"),
-    ).not.toBeNull();
-    expect(rendered.container.querySelector(".project-list")).not.toBeNull();
+    // No card and no rail: the team is the page heading, a dropdown.
+    expect(rendered.container.querySelector(".project-workspace")).toBeNull();
+    expect(rendered.container.querySelector(".project-list-rail")).toBeNull();
+    const heading = rendered.container.querySelector("h1");
+    expect(heading?.textContent).toContain("Platform");
+    expect(heading?.querySelector("[aria-haspopup='listbox']")).not.toBeNull();
 
-    // The rail is a team list — there is no ownership toggle beside it.
+    // There is no ownership toggle beside it.
     expect(
       rendered.container.querySelector(".project-ownership-toggle"),
     ).toBeNull();
@@ -689,12 +699,13 @@ describe("Project env provisioning UI", () => {
       "individual repositories",
     );
 
-    const detailPanel = rendered.container.querySelector(
-      ".project-detail-panel",
-    );
-    expect(detailPanel).not.toBeNull();
-    expect(detailPanel?.textContent).toContain("Platform");
-    expect(detailPanel?.textContent).toContain("2 repositories");
+    // Both repositories count toward the team, shown in the dropdown.
+    act(() => {
+      heading?.querySelector<HTMLButtonElement>("button")?.click();
+    });
+    expect(
+      rendered.container.querySelector("[role='option']")?.textContent,
+    ).toContain("2 repositories");
   });
 
   it("loads the project overview and renders control-center tabs with empty states", async () => {

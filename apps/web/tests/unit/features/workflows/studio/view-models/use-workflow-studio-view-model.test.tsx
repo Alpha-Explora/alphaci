@@ -6,8 +6,11 @@ import { useWorkflowStudioViewModel } from "../../../../../../src/features/workf
 import { createProject } from "../../../../../../src/features/projects";
 import { discoverExistingRepo, generateWorkflow } from "../../../../../../src/features/workflows";
 
+const mockReplace = jest.fn();
 jest.mock("next/navigation", () => ({
   useSearchParams: jest.fn(() => new URLSearchParams()),
+  usePathname: () => "/workflows",
+  useRouter: () => ({ push: jest.fn(), replace: mockReplace }),
 }));
 
 jest.mock("../../../../../../src/features/projects", () => ({
@@ -114,17 +117,39 @@ describe("useWorkflowStudioViewModel", () => {
     return () => snapshot;
   }
 
-  it("starts on the current tab and switches via handleStudioTabChange", async () => {
+  it("starts on the projects view and opens the create view for a group", async () => {
     const get = await renderVm();
-    expect(get()!.activeTab).toBe("current");
-    act(() => get()!.handleStudioTabChange("setup"));
-    expect(get()!.activeTab).toBe("setup");
+    expect(get()!.activeView).toBe("current");
+    act(() => get()!.openCreateForGroup("workspace-1"));
+    expect(get()!.activeView).toBe("setup");
+    expect(get()!.selectedCreateWorkspaceId).toBe("workspace-1");
   });
 
-  it("deep-links to the setup tab from ?tab=setup", async () => {
+  it("deep-links to the create view from ?tab=setup", async () => {
     (useSearchParams as jest.Mock).mockReturnValue(new URLSearchParams("tab=setup"));
     const get = await renderVm();
-    expect(get()!.activeTab).toBe("setup");
+    expect(get()!.activeView).toBe("setup");
+  });
+
+  it("goes back to the projects view and strips ?tab, keeping the other params", async () => {
+    (useSearchParams as jest.Mock).mockReturnValue(
+      new URLSearchParams("tab=setup&group=workspace-2"),
+    );
+    const get = await renderVm();
+    act(() => get()!.showProjects());
+    expect(get()!.activeView).toBe("current");
+    expect(mockReplace).toHaveBeenCalledWith("/workflows?group=workspace-2", {
+      scroll: false,
+    });
+  });
+
+  it("leaves the URL alone going back when there is no ?tab", async () => {
+    (useSearchParams as jest.Mock).mockReturnValue(new URLSearchParams());
+    const get = await renderVm();
+    act(() => get()!.openCreateForGroup(null));
+    act(() => get()!.showProjects());
+    expect(get()!.activeView).toBe("current");
+    expect(mockReplace).not.toHaveBeenCalled();
   });
 
   it("surfaces a validation message when project creation payload is incomplete", async () => {

@@ -29,7 +29,7 @@ describe("getCurrentProjectsTourSteps", () => {
     expect(steps.length).toBeGreaterThan(0);
   });
 
-  it("includes a step for the projects list sidebar", () => {
+  it("includes a step for the group dropdown", () => {
     const steps = getCurrentProjectsTourSteps();
     const step = steps.find((s) => s.element === "[data-tour='projects-list']");
     expect(step).toBeDefined();
@@ -67,9 +67,17 @@ describe("getCurrentProjectsTourSteps", () => {
     expect(step).toBeDefined();
   });
 
-  it("first step targets the projects list sidebar", () => {
+  it("first step targets the group dropdown", () => {
     const steps = getCurrentProjectsTourSteps();
     expect(steps[0]?.element).toBe("[data-tour='projects-list']");
+  });
+
+  /* The anchor moved from a left sidebar to a dropdown at the top of the page,
+   * so a popover placed to its right would cover the header actions. */
+  it("places the first step below the dropdown, which sits at the top", () => {
+    const steps = getCurrentProjectsTourSteps();
+    expect(steps[0]?.popover?.side).toBe("bottom");
+    expect(steps[0]?.popover?.description).not.toMatch(/sidebar/i);
   });
 
   it("every step has a non-empty popover title and description", () => {

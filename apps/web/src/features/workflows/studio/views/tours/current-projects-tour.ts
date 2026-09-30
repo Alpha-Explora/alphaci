@@ -15,10 +15,10 @@ export interface TourCallbacks {
 }
 
 /**
- * The selector for the first step that is always present when the Current
- * Projects tab is active and at least one project exists. The projects-list
- * aside is rendered unconditionally once the tab is active, so we use it as
- * the guaranteed anchor.
+ * The selector for the first step: the group dropdown at the top of the
+ * projects view. It renders whenever the view has groups to pick from, so it
+ * is the guaranteed anchor. (The name predates the dropdown, which replaced a
+ * sidebar list of groups; the anchor moved with it.)
  */
 const PROJECTS_LIST_SELECTOR = "[data-tour='projects-list']";
 
@@ -28,10 +28,10 @@ function buildSteps(): DriveStep[] {
     {
       element: PROJECTS_LIST_SELECTOR,
       popover: {
-        title: "Your provisioned projects",
+        title: "Pick a team",
         description:
-          "This sidebar lists every GitHub repository ALPHACI has provisioned for you. Click any project to open its detail view on the right. Use the New button at the top to set up another project.",
-        side: "right",
+          "This dropdown chooses the team you are looking at. Open it and type to search your teams; the team's projects, members and checklists open below. Use Create project on the right to set up another repository.",
+        side: "bottom",
         align: "start",
       },
     },
