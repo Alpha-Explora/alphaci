@@ -22,7 +22,19 @@ import type {
 } from "@/shared/api/contracts";
 import { getMyUsage } from "../data/usage-api";
 
-export function useProjectEnvProvisioning(projectId: string, enabled = true) {
+/**
+ * @param includeEnvMetadata Skip `GET .../env-vars` when the caller will not
+ * render it — the Hosting tab reuses this hook only for its target-creation
+ * prompt (`section="hosting"`), never the variables list. Every role reaches
+ * Hosting, and the backend now restricts that read to admin/lead
+ * (`ENV_VARS_LEAD_ONLY`), so fetching it unconditionally would 403 for
+ * everyone else on a tab that never displayed the result anyway.
+ */
+export function useProjectEnvProvisioning(
+  projectId: string,
+  enabled = true,
+  includeEnvMetadata = true,
+) {
   const [targets, setTargets] = useState<DeploymentTarget[]>([]);
   const [metadata, setMetadata] = useState<EnvVarMetadata[]>([]);
   const [providerConnections, setProviderConnections] = useState<ProviderConnection[]>([]);
@@ -36,7 +48,7 @@ export function useProjectEnvProvisioning(projectId: string, enabled = true) {
     try {
       const [nextTargets, nextMetadata, nextProviderConnections] = await Promise.all([
         listDeploymentTargets(projectId),
-        listProjectEnvMetadata(projectId),
+        includeEnvMetadata ? listProjectEnvMetadata(projectId) : Promise.resolve([]),
         listProviderConnections(),
       ]);
       setTargets(nextTargets);
@@ -45,7 +57,7 @@ export function useProjectEnvProvisioning(projectId: string, enabled = true) {
     } finally {
       setLoading(false);
     }
-  }, [enabled, projectId]);
+  }, [enabled, includeEnvMetadata, projectId]);
 
   useEffect(() => {
     void load();

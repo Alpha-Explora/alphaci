@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 
 import { projectsRepository } from "../../data/projects-repository";
 import { toOverviewError } from "../../model/projects-rules";
-import { apiErrorReason } from "../model/api-error-reason";
+import { workspacePermissionErrorMessage } from "../model/workspace-permission-errors";
 import type {
   ProjectOverviewResponse,
   ProjectStatus,
@@ -141,7 +141,7 @@ export function useProjectDetailViewModel(options: {
        * two deletions GitHub had refused were reported as done.
        */
       setDeleteError(
-        apiErrorReason(
+        workspacePermissionErrorMessage(
           error,
           "The project could not be deleted. Please try again.",
         ),

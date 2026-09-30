@@ -7,6 +7,12 @@ import type {
   BranchComparisonResponse,
   ComparisonCommit,
 } from "../data/project-workspace-api";
+import type { AppRole } from "@/shared/api/contracts";
+import {
+  PRODUCTION_BRANCH,
+  QA_BRANCH,
+  WORKING_BRANCH,
+} from "@/shared/api/pipeline-branches";
 
 /**
  * Something the banner can offer to fix what it describes, so the person is
@@ -90,6 +96,66 @@ export function describeComparison(
 
 function commits(count: number): string {
   return `${String(count)} commit${count === 1 ? "" : "s"}`;
+}
+
+/* ── Phase 1 security gates: what this composer offers as a base ────────── */
+
+/**
+ * The branches this composer will let anyone pick as `base`.
+ *
+ * `main` is never one of them: Hop 3 (`uat` -> `main`) is locked to the
+ * promotion engine and QA Studio's "Ready for production" gate
+ * (PERSONA_WORKFLOW_SPEC.md §5), not this generic composer — for every role,
+ * Team Lead and Admin included.
+ */
+export function selectableBaseBranches(branches: string[]): string[] {
+  return branches.filter((branch) => branch !== PRODUCTION_BRANCH);
+}
+
+/**
+ * The base this screen opens on.
+ *
+ * Not the repository's default branch: on this product that is `main`
+ * (GitHub's own default, and the one branch this composer must not default
+ * into), which used to leave the picker parked on the one base nobody may
+ * merge into. `dev` is where Hop 1 and Hop 2 both start from, so it is
+ * preferred; `uat` covers a repository still mid-migration that has not cut
+ * `dev` yet; and the first remaining selectable branch is the last resort so
+ * the picker is never left on `main` even then.
+ */
+export function defaultComposeBase(branches: string[]): string {
+  const selectable = selectableBaseBranches(branches);
+  if (selectable.includes(WORKING_BRANCH)) return WORKING_BRANCH;
+  if (selectable.includes(QA_BRANCH)) return QA_BRANCH;
+  return selectable[0] ?? "";
+}
+
+const PULL_REQUEST_ROLES: ReadonlySet<AppRole> = new Set(["admin", "lead", "member"]);
+
+/**
+ * Who may open or merge pull requests from the workspace. An allow-list, so a
+ * role added later (or a session whose role has not loaded) gets nothing
+ * until it is named here.
+ */
+export function isPullRequestRole(role: AppRole | null | undefined): boolean {
+  return role != null && PULL_REQUEST_ROLES.has(role);
+}
+
+/**
+ * Whether opening a pull request into `base` should be offered at all,
+ * mirroring the backend's two 403 codes for `POST .../pull-requests`
+ * (PERSONA_WORKFLOW_SPEC.md §5, §8.1): `MAIN_PR_RESTRICTED` blocks every
+ * role from proposing a merge into `main` here, and `PR_ROLE_FORBIDDEN`
+ * blocks QA from opening a pull request at all — Developer is the primary
+ * role for this screen, and Team Lead may use it too.
+ */
+export function canCreatePullRequest(
+  role: AppRole | null | undefined,
+  base: string,
+): boolean {
+  if (!isPullRequestRole(role)) return false;
+  if (base === PRODUCTION_BRANCH) return false;
+  return true;
 }
 
 /**

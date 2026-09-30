@@ -44,8 +44,44 @@ export const PROJECT_DETAIL_TABS: ReadonlyArray<ProjectDetailTab> = [
  * The roles QA Studio is for: the people who verify a build and sign it off.
  * Developers read the shared checklists and fix what QA returns (Overview's
  * "Returned by QA" card); they do not test in the studio.
+ *
+ * Exported: the Pull requests tab reads it too, to decide whether the "base
+ * is main" merge notice may link into QA Studio (a Developer cannot open the
+ * tab it would point at, so it gets the notice without the link).
  */
-const QA_STUDIO_ROLES: ReadonlySet<AppRole> = new Set<AppRole>(["qa", "lead", "admin"]);
+export const QA_STUDIO_ROLES: ReadonlySet<AppRole> = new Set<AppRole>(["qa", "lead", "admin"]);
+
+export function canOpenQaStudio(appRole: AppRole | null | undefined): boolean {
+  return appRole != null && QA_STUDIO_ROLES.has(appRole);
+}
+
+/**
+ * Team leads and Admins — the backend's `ENV_VARS_LEAD_ONLY` allow-list for
+ * the environment tab and its list/create/update/delete routes
+ * (PERSONA_WORKFLOW_SPEC.md §3, §8.1).
+ */
+const ENV_VARS_ROLES: ReadonlySet<AppRole> = new Set<AppRole>(["lead", "admin"]);
+
+export function canManageEnvVars(appRole: AppRole | null | undefined): boolean {
+  return appRole != null && ENV_VARS_ROLES.has(appRole);
+}
+
+/**
+ * Team leads and Admins — the backend's `PROJECT_ROLE_FORBIDDEN` allow-list
+ * for disconnecting/deleting a project (PERSONA_WORKFLOW_SPEC.md §3, §8.1).
+ *
+ * Kept separate from `DEPLOYMENT_SECRETS_ROLES` below even though the
+ * members are identical: the two gate different UI surfaces (Danger Zone vs.
+ * the reinstall button), and the backend could diverge them later without
+ * this file needing to notice until it does.
+ */
+const PROJECT_LIFECYCLE_ROLES: ReadonlySet<AppRole> = new Set<AppRole>(["lead", "admin"]);
+
+export function canManageProjectLifecycle(
+  appRole: AppRole | null | undefined,
+): boolean {
+  return appRole != null && PROJECT_LIFECYCLE_ROLES.has(appRole);
+}
 
 function tabVisible(
   tab: ProjectDetailTab,
@@ -54,6 +90,7 @@ function tabVisible(
 ): boolean {
   if (tab === "checklists") return checklistsVisible;
   if (tab === "qa") return checklistsVisible && appRole != null && QA_STUDIO_ROLES.has(appRole);
+  if (tab === "environment") return canManageEnvVars(appRole);
   return true;
 }
 
@@ -64,8 +101,10 @@ function tabVisible(
  * backend reports `qaChecklistsEnabled`, and only for a session with a known
  * app role. Checklists is for every role (what each role may change is decided
  * per item by the server); QA Studio is only for QA Team, Team leads and
- * Admins. Every other tab is unconditional, exactly as before this rule
- * existed.
+ * Admins. Environment is role-gated on its own, independent of that
+ * capability flag: only Team leads and Admins manage environment variables
+ * (`ENV_VARS_LEAD_ONLY`), so QA and Developer never see the tab at all. Every
+ * other tab is unconditional.
  */
 export function visibleProjectDetailTabs(
   appRole: AppRole | null | undefined,
