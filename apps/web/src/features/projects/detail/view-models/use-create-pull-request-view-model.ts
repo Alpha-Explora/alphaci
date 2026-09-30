@@ -13,18 +13,31 @@ import type { AppRole } from "@/shared/api/contracts";
 import { apiErrorReason } from "../model/api-error-reason";
 import { workspacePermissionErrorMessage } from "../model/workspace-permission-errors";
 import {
+  applyPreset,
   canCreatePullRequest,
   defaultComposeBase,
+  defaultPresetId,
   describeComparison,
+  isPullRequestRole,
+  presetFor,
+  PULL_REQUEST_PRESET_IDS,
   suggestTitle,
   type ComposeReadiness,
+  type PullRequestPreset,
+  type PullRequestPresetId,
 } from "../model/pull-request-compose-rules";
 
 /*
  * Re-exported so the compose View can name what it renders without importing
  * from `data/` or `model/` — the ViewModel owns this contract.
  */
-export type { BranchComparisonResponse, ComposeReadiness, PullRequestSummary };
+export type {
+  BranchComparisonResponse,
+  ComposeReadiness,
+  PullRequestPreset,
+  PullRequestPresetId,
+  PullRequestSummary,
+};
 
 /**
  * `choosing`: branches loaded, no head picked yet.
@@ -48,6 +61,10 @@ export interface CreatePullRequestViewModel {
   branches: string[];
   base: string;
   head: string;
+  /** Selected preset; `custom` leaves both pickers free. */
+  preset: PullRequestPresetId;
+  /** Presets to offer, or empty when the viewer's role has none. */
+  presets: PullRequestPreset[];
   compare: BranchComparisonResponse | null;
   readiness: ComposeReadiness | null;
   title: string;
@@ -56,6 +73,7 @@ export interface CreatePullRequestViewModel {
   /** GitHub's refusal, or a transport failure, from the last submit. */
   submitMessage: string | null;
   canSubmit: boolean;
+  selectPreset: (id: PullRequestPresetId) => void;
   setBase: (branch: string) => void;
   setHead: (branch: string) => void;
   swapBranches: () => void;
@@ -78,9 +96,11 @@ export function useCreatePullRequestViewModel(options: {
   projectId: string;
   /** The viewer's app role, for the Phase 1 create-PR gate. */
   appRole?: AppRole;
+  /** The viewer's GitHub login, to recognise their own branches. */
+  viewerLogin?: string | null;
   onCreated: (pullRequest: PullRequestSummary) => void;
 }): CreatePullRequestViewModel {
-  const { projectId, appRole, onCreated } = options;
+  const { projectId, appRole, viewerLogin, onCreated } = options;
 
   const [status, setStatus] = useState<ComposeStatus>("loading");
   const [error, setError] = useState<string | null>(null);
@@ -88,11 +108,14 @@ export function useCreatePullRequestViewModel(options: {
   const [branches, setBranches] = useState<string[]>([]);
   const [base, setBaseState] = useState("");
   const [head, setHeadState] = useState("");
+  const [preset, setPreset] = useState<PullRequestPresetId>("custom");
   const [compare, setCompare] = useState<BranchComparisonResponse | null>(
     null,
   );
   const [title, setTitleState] = useState("");
-  const [titleEdited, setTitleEdited] = useState(false);
+  // A ref, not state: reading it must not change `runCompare`'s identity, or
+  // the branch list would be re-fetched every time the title is first typed.
+  const titleEdited = useRef(false);
   const [body, setBody] = useState("");
   const [draft, setDraft] = useState(false);
   const [submitMessage, setSubmitMessage] = useState<string | null>(null);
@@ -103,31 +126,6 @@ export function useCreatePullRequestViewModel(options: {
    * first request must not land on top of the fast second one.
    */
   const compareRequest = useRef(0);
-
-  const loadBranches = useCallback(() => {
-    return getProjectBranches(projectId)
-      .then((result) => {
-        const names = result.branches.map((branch) => branch.name);
-        setBranches(names);
-        // Not `result.defaultBranch`: on this product that is `main`, the one
-        // branch this composer must never default into (see
-        // `defaultComposeBase`).
-        setBaseState(defaultComposeBase(names));
-        setBranchesLoaded(true);
-        setError(null);
-        setStatus("choosing");
-      })
-      .catch((cause: unknown) => {
-        setError(
-          apiErrorReason(cause, "The branches could not be read from GitHub."),
-        );
-        setStatus("error");
-      });
-  }, [projectId]);
-
-  useEffect(() => {
-    void loadBranches();
-  }, [loadBranches]);
 
   /** Handlers own the loading transition; this only resolves. */
   const runCompare = useCallback(
@@ -150,7 +148,7 @@ export function useCreatePullRequestViewModel(options: {
           setStatus("ready");
           // A title the person typed is theirs; only an untouched one follows
           // the branch they picked.
-          if (!titleEdited) {
+          if (!titleEdited.current) {
             setTitleState(suggestTitle(nextHead, result.comparison.commits));
           }
         })
@@ -162,8 +160,44 @@ export function useCreatePullRequestViewModel(options: {
           setStatus("error");
         });
     },
-    [projectId, titleEdited],
+    [projectId],
   );
+
+  const loadBranches = useCallback(() => {
+    return getProjectBranches(projectId)
+      .then((result) => {
+        const names = result.branches.map((branch) => branch.name);
+        setBranches(names);
+        setBranchesLoaded(true);
+        setError(null);
+        // Not `result.defaultBranch`: on this product that is `main`, the one
+        // branch this composer must never default into (see
+        // `defaultComposeBase`). The default preset picks the base; without
+        // one that applies, `defaultComposeBase` does. Nothing here assumes
+        // `main`, or any given branch, is in the (role-filtered) list.
+        const context = { branches: names, role: appRole, login: viewerLogin };
+        const initial = defaultPresetId(context);
+        const applied = applyPreset(initial, context);
+        setPreset(initial);
+        setBaseState(applied?.base ?? defaultComposeBase(names));
+        setHeadState(applied?.head ?? "");
+        if (applied?.head) {
+          runCompare(applied.base, applied.head);
+        } else {
+          setStatus("choosing");
+        }
+      })
+      .catch((cause: unknown) => {
+        setError(
+          apiErrorReason(cause, "The branches could not be read from GitHub."),
+        );
+        setStatus("error");
+      });
+  }, [projectId, appRole, viewerLogin, runCompare]);
+
+  useEffect(() => {
+    void loadBranches();
+  }, [loadBranches]);
 
   const setBase = useCallback(
     (branch: string) => {
@@ -171,6 +205,36 @@ export function useCreatePullRequestViewModel(options: {
       runCompare(branch, head);
     },
     [head, runCompare],
+  );
+
+  const context = useMemo(
+    () => ({ branches, role: appRole, login: viewerLogin }),
+    [branches, appRole, viewerLogin],
+  );
+
+  const presets = useMemo(
+    () =>
+      isPullRequestRole(appRole)
+        ? PULL_REQUEST_PRESET_IDS.map((id) => presetFor(id, context))
+        : [],
+    [appRole, context],
+  );
+
+  /**
+   * Choose a preset. An unavailable one is ignored (the View disables it, but
+   * this does not trust that alone). `custom` keeps whatever is picked now.
+   */
+  const selectPreset = useCallback(
+    (id: PullRequestPresetId) => {
+      if (!presetFor(id, context).available) return;
+      setPreset(id);
+      const applied = applyPreset(id, context);
+      if (!applied) return;
+      setBaseState(applied.base);
+      setHeadState(applied.head);
+      runCompare(applied.base, applied.head);
+    },
+    [context, runCompare],
   );
 
   const setHead = useCallback(
@@ -182,6 +246,8 @@ export function useCreatePullRequestViewModel(options: {
   );
 
   const swapBranches = useCallback(() => {
+    // A swap is a free choice of branches, whatever preset was on.
+    setPreset("custom");
     setBaseState(head);
     setHeadState(base);
     runCompare(head, base);
@@ -189,7 +255,7 @@ export function useCreatePullRequestViewModel(options: {
 
   const setTitle = useCallback((next: string) => {
     setTitleState(next);
-    setTitleEdited(true);
+    titleEdited.current = true;
   }, []);
 
   const retry = useCallback(() => {
@@ -253,6 +319,8 @@ export function useCreatePullRequestViewModel(options: {
     branches,
     base,
     head,
+    preset,
+    presets,
     compare,
     readiness,
     title,
@@ -260,6 +328,7 @@ export function useCreatePullRequestViewModel(options: {
     draft,
     submitMessage,
     canSubmit,
+    selectPreset,
     setBase,
     setHead,
     swapBranches,

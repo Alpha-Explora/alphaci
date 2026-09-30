@@ -5,6 +5,7 @@ import { useId, useState } from "react";
 import { checkLabel, checkTone, relativeTime } from "@/features/runs";
 import type { FriendlyMessage, StageId } from "@/shared/api/contracts";
 
+import type { RunsViewMode } from "../../model/runs-view-mode";
 import {
   checkProgress,
   showsVerdictReason,
@@ -104,15 +105,17 @@ export function StageDetail({
   projectId,
   entry,
   panelId,
-}: Readonly<{ projectId: string; entry: StageEntry; panelId: string }>) {
+  viewMode = "deep",
+}: Readonly<{
+  projectId: string;
+  entry: StageEntry;
+  panelId: string;
+  /** `summary` keeps the tool log behind a "Show logs" disclosure. */
+  viewMode?: RunsViewMode;
+}>) {
   const { stage, verdict } = entry;
   const headingId = useId();
   const ran = stage.status === "failure" || stage.status === "cancelled";
-  const failureLog = useStageFailureLogViewModel({
-    projectId,
-    runId: stage.runId,
-    enabled: ran,
-  });
 
   return (
     <section
@@ -145,8 +148,50 @@ export function StageDetail({
         </p>
       )}
 
-      {ran && <FailureOutput view={failureLog} />}
+      {ran && (
+        <StageLogs projectId={projectId} runId={stage.runId} viewMode={viewMode} />
+      )}
     </section>
+  );
+}
+
+/**
+ * The failure output of a stage that ran. Deep debug shows it as it loads; the
+ * summary keeps it behind a "Show logs" disclosure and does not spend a GitHub
+ * call on a log nobody opened.
+ */
+function StageLogs({
+  projectId,
+  runId,
+  viewMode,
+}: Readonly<{ projectId: string; runId: number; viewMode: RunsViewMode }>) {
+  const logsId = useId();
+  const [logsOpen, setLogsOpen] = useState(false);
+  const shown = viewMode === "deep" || logsOpen;
+  const failureLog = useStageFailureLogViewModel({
+    projectId,
+    runId,
+    enabled: shown,
+  });
+
+  if (viewMode === "deep") return <FailureOutput view={failureLog} />;
+
+  return (
+    <>
+      <button
+        type="button"
+        className="pipe-text-button pipe-logs-toggle"
+        aria-expanded={logsOpen}
+        aria-controls={logsId}
+        onClick={() => setLogsOpen(!logsOpen)}
+      >
+        <ChevronIcon />
+        {logsOpen ? "Hide logs" : "Show logs"}
+      </button>
+      <div id={logsId} hidden={!logsOpen}>
+        {logsOpen && <FailureOutput view={failureLog} />}
+      </div>
+    </>
   );
 }
 

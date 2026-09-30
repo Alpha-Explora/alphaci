@@ -78,8 +78,16 @@ const PR = {
 let vm: CreatePullRequestViewModel | null = null;
 const onCreated = jest.fn();
 
-function Probe({ appRole = "member" }: { appRole?: AppRole } = {}) {
-  const model = useCreatePullRequestViewModel({ projectId: "p1", appRole, onCreated });
+function Probe({
+  appRole = "lead",
+  viewerLogin,
+}: { appRole?: AppRole; viewerLogin?: string } = {}) {
+  const model = useCreatePullRequestViewModel({
+    projectId: "p1",
+    appRole,
+    viewerLogin,
+    onCreated,
+  });
   useLayoutEffect(() => {
     vm = model;
   }, [model]);
@@ -357,5 +365,111 @@ describe("useCreatePullRequestViewModel, Phase 1 security gates", () => {
     expect(current().submitMessage).toBe(
       "QA does not open or merge pull requests.",
     );
+  });
+});
+
+/** Phase 3 presets (PERSONA_WORKFLOW_SPEC.md section 8.4). */
+describe("useCreatePullRequestViewModel, Phase 3 presets", () => {
+  let container: HTMLDivElement;
+  let root: Root;
+
+  beforeEach(() => {
+    vm = null;
+    jest.resetAllMocks();
+  });
+
+  afterEach(() => {
+    if (root) act(() => root.unmount());
+  });
+
+  async function renderWith(
+    names: string[],
+    props: { appRole?: AppRole; viewerLogin?: string },
+  ) {
+    mockBranches.mockResolvedValue({
+      defaultBranch: "main",
+      branches: names.map((name) => ({ name, protected: false, commitSha: "s" })),
+    });
+    container = document.createElement("div");
+    root = createRoot(container);
+    await act(async () => {
+      root.render(<Probe {...props} />);
+    });
+    await flush();
+  }
+
+  it("opens on Feature -> Dev and compares the member's own branch right away", async () => {
+    mockCompare.mockResolvedValue(comparison("feature/lloyd-nav"));
+    await renderWith(["dev", "uat", "feature/lloyd-nav"], { appRole: "member" });
+
+    expect(current().preset).toBe("feature-to-dev");
+    expect(current().base).toBe("dev");
+    expect(current().head).toBe("feature/lloyd-nav");
+    expect(mockCompare).toHaveBeenCalledWith("p1", "dev", "feature/lloyd-nav");
+  });
+
+  it("leaves the head empty when there is no own branch", async () => {
+    await renderWith(["dev", "uat", "feature/sam-x"], {
+      appRole: "lead",
+      viewerLogin: "lloyd",
+    });
+
+    expect(current().preset).toBe("feature-to-dev");
+    expect(current().head).toBe("");
+    expect(current().status).toBe("choosing");
+    expect(mockCompare).not.toHaveBeenCalled();
+  });
+
+  it("Dev -> UAT sets both branches and compares them", async () => {
+    await renderWith(["dev", "uat"], { appRole: "lead" });
+    mockCompare.mockResolvedValue(comparison("dev"));
+
+    act(() => current().selectPreset("dev-to-uat"));
+    await flush();
+
+    expect(current().preset).toBe("dev-to-uat");
+    expect(current().base).toBe("uat");
+    expect(current().head).toBe("dev");
+    expect(mockCompare).toHaveBeenCalledWith("p1", "uat", "dev");
+  });
+
+  it("Custom keeps the current pickers, and swapping drops out of a preset", async () => {
+    await renderWith(["dev", "uat"], { appRole: "lead" });
+    mockCompare.mockResolvedValue(comparison("dev"));
+    act(() => current().selectPreset("dev-to-uat"));
+    await flush();
+
+    act(() => current().selectPreset("custom"));
+    expect(current().base).toBe("uat");
+    expect(current().head).toBe("dev");
+
+    act(() => current().selectPreset("dev-to-uat"));
+    act(() => current().swapBranches());
+    expect(current().preset).toBe("custom");
+  });
+
+  it("ignores a preset that cannot apply, and never lands on main", async () => {
+    await renderWith(["main", "dev"], { appRole: "lead" });
+    expect(current().presets.find((p) => p.id === "dev-to-uat")?.available).toBe(false);
+
+    act(() => current().selectPreset("dev-to-uat"));
+    expect(current().preset).toBe("feature-to-dev");
+    expect(current().base).toBe("dev");
+  });
+
+  it("offers no preset group to QA and falls back to the plain default base", async () => {
+    await renderWith(["dev", "uat"], { appRole: "qa" });
+
+    expect(current().presets).toEqual([]);
+    expect(current().preset).toBe("custom");
+    expect(current().base).toBe("dev");
+  });
+
+  it("copes with a role-filtered list that has no dev at all", async () => {
+    await renderWith(["uat", "feature/lloyd-a"], { appRole: "lead", viewerLogin: "lloyd" });
+
+    expect(current().preset).toBe("custom");
+    expect(current().base).toBe("uat");
+    expect(current().status).toBe("choosing");
   });
 });

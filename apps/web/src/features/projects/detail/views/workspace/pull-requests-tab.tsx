@@ -52,11 +52,14 @@ const FILTERS: ReadonlyArray<{ id: StateFilter; label: string }> = [
 export function PullRequestsTab({
   projectId,
   appRole,
+  viewerLogin,
   onOpenQaStudio,
 }: {
   projectId: string;
   /** The viewer's app role, for the Phase 1 create/merge gates. */
   appRole?: AppRole;
+  /** The viewer's GitHub login, for the compose presets' "own branch". */
+  viewerLogin?: string | null;
   /** Opens the QA Studio tab, for the "merge into main" notice's link. */
   onOpenQaStudio?: () => void;
 }) {
@@ -130,6 +133,7 @@ export function PullRequestsTab({
         <CreatePullRequestView
           projectId={projectId}
           appRole={appRole}
+          viewerLogin={viewerLogin}
           onCancel={() => setComposing(false)}
           onCreated={handleCreated}
           onViewExisting={handleViewExisting}

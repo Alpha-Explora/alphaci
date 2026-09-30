@@ -8,6 +8,8 @@ import Link from "next/link";
 import { WorkspaceEmpty, WorkspaceError, WorkspaceLoading } from "./workspace-states";
 import { CommitCard } from "./pipeline-commit-card";
 import { distinctCommitTitles } from "../../model/pipeline-run-card-rules";
+import { runsViewModeFor, type RunsViewMode } from "../../model/runs-view-mode";
+import type { AppRole } from "@/shared/api/contracts";
 import type { BranchRunSection } from "../../model/runs-by-branch";
 import {
   ALL_BRANCHES,
@@ -44,10 +46,17 @@ import {
 export function PipelineRunsTab({
   projectId,
   actionsUrl,
+  appRole,
 }: {
   projectId: string;
   actionsUrl?: string | null;
+  /**
+   * Decides how much is open up front: a developer gets the deep-debug view,
+   * every other role the summary with logs behind a disclosure.
+   */
+  appRole?: AppRole;
 }) {
+  const viewMode = runsViewModeFor(appRole);
   const runsView = usePipelineRunsViewModel({ projectId, actionsUrl });
 
   if (runsView.status === "loading") return <WorkspaceLoading rows={5} />;
@@ -148,6 +157,7 @@ export function PipelineRunsTab({
           key={section.branch}
           projectId={projectId}
           section={section}
+          viewMode={viewMode}
         />
       ))}
     </div>
@@ -158,9 +168,11 @@ export function PipelineRunsTab({
 function BranchSection({
   projectId,
   section,
+  viewMode,
 }: {
   projectId: string;
   section: BranchRunSection<WorkflowRunSummary>;
+  viewMode: RunsViewMode;
 }) {
   // Computed across the section: a title is only worth showing when it tells
   // this commit apart from the others on the branch.
@@ -190,6 +202,7 @@ function BranchSection({
               branch={section.branch}
               commit={commit}
               title={titles.get(commit.commitSha) ?? null}
+              viewMode={viewMode}
             />
           ))}
         </ul>

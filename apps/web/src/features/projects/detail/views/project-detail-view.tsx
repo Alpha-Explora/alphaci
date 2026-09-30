@@ -145,6 +145,7 @@ function ProjectDetailBody({
   enforcedOrg,
   dangerZone,
   appRole,
+  viewerLogin,
   onRetry,
 }: Readonly<{
   guest: boolean;
@@ -158,6 +159,7 @@ function ProjectDetailBody({
   enforcedOrg: string | undefined;
   dangerZone: ReactNode;
   appRole: AppRole | undefined;
+  viewerLogin: string | undefined;
   onRetry: () => void;
 }>) {
   const logoutNotice = logoutMessage ? (
@@ -199,6 +201,7 @@ function ProjectDetailBody({
             external={isExternalRepo(project.repoFullName, enforcedOrg)}
             dangerZone={dangerZone}
             appRole={appRole}
+            viewerLogin={viewerLogin}
           />
         ) : null}
       </div>
@@ -310,6 +313,7 @@ export function ProjectDetailView() {
             enforcedOrg={enforcedOrg}
             dangerZone={dangerZone}
             appRole={session?.appRole}
+            viewerLogin={session?.user.login}
             onRetry={() => void loadOverview()}
           />
         </div>

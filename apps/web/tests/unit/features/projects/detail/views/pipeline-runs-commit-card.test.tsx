@@ -133,7 +133,7 @@ describe("PipelineRunsTab commit card", () => {
   async function render() {
     await act(async () => {
       root = createRoot(host);
-      root.render(<PipelineRunsTab projectId="p1" />);
+      root.render(<PipelineRunsTab projectId="p1" appRole="member" />);
     });
   }
 

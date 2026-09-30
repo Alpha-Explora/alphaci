@@ -45,6 +45,8 @@ export interface ProjectDetailTabsViewModel {
   visibleTabs: ProjectDetailTab[];
   /** The viewer's app role, for the QA surfaces. Rights still come from the server. */
   appRole: AppRole | undefined;
+  /** The viewer's GitHub login, for recognising their own branches. */
+  viewerLogin: string | undefined;
   /** The QA checklists capability: gates QA Studio and the "Returned by QA" card. */
   qaChecklistsEnabled: boolean;
   /**
@@ -120,8 +122,9 @@ export function useProjectDetailTabsViewModel(options: {
   projectId: string;
   workflowFilesFallback: WorkflowFileMetadata[] | null | undefined;
   appRole?: AppRole;
+  viewerLogin?: string;
 }): ProjectDetailTabsViewModel {
-  const { projectId, workflowFilesFallback, appRole } = options;
+  const { projectId, workflowFilesFallback, appRole, viewerLogin } = options;
   // A deep link (#qa) picks the first tab. Safe to read window here: the tab
   // set only mounts client-side, once the project overview has loaded.
   const [selectedTab, setTabState] = useState<ProjectDetailTab>(
@@ -273,6 +276,7 @@ export function useProjectDetailTabsViewModel(options: {
     setTab,
     visibleTabs,
     appRole,
+    viewerLogin,
     qaChecklistsEnabled: caps.qaChecklistsEnabled,
     logFocus,
     openTargetLogs,

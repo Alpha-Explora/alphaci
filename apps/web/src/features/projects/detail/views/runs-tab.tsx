@@ -20,7 +20,7 @@ export function RunsTab({
       aria-labelledby="project-detail-tab-runs"
       style={{ display: "grid", gap: "1.25rem" }}
     >
-      <PipelineRunsTab projectId={project.id} />
+      <PipelineRunsTab projectId={project.id} appRole={vm.appRole} />
       <ReportedResults project={project} vm={vm} />
     </div>
   );

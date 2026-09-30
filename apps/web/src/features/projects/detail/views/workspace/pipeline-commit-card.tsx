@@ -5,6 +5,7 @@ import { useId, useMemo, useState } from "react";
 import { checkLabel, relativeTime } from "@/features/runs";
 import type { RunGroup, StageId } from "@/shared/api/contracts";
 
+import type { RunsViewMode } from "../../model/runs-view-mode";
 import {
   defaultOpenStage,
   headlineChipLabel,
@@ -48,11 +49,13 @@ export function CommitCard({
   branch,
   commit,
   title,
+  viewMode = "deep",
 }: Readonly<{
   projectId: string;
   branch: string;
   commit: CommitRunGroup<WorkflowRunSummary>;
   title: string | null;
+  viewMode?: RunsViewMode;
 }>) {
   const headingId = useId();
   const panelId = useId();
@@ -110,6 +113,7 @@ export function CommitCard({
             projectId={projectId}
             entry={openEntry}
             panelId={panelId}
+            viewMode={viewMode}
           />
         )}
 
