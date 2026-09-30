@@ -21,6 +21,7 @@ export function PullsTabPanel({
       <PullRequestsTab
         projectId={project.id}
         appRole={vm.appRole}
+        viewerLogin={vm.viewerLogin}
         onOpenQaStudio={() => vm.setTab("qa")}
       />
     </div>

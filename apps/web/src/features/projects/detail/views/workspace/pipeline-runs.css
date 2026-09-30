@@ -149,6 +149,14 @@
   cursor: pointer;
 }
 
+.pipe-logs-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-height: 2.75rem;
+  padding: 0.15rem 0.45rem 0.15rem 0.2rem;
+}
+
 .pipe-text-button:hover {
   text-decoration: underline;
 }
@@ -290,12 +298,14 @@
 }
 
 .pipe-foot-toggle .pipe-glyph,
+.pipe-logs-toggle .pipe-glyph,
 .pipe-run__caret .pipe-glyph,
 .pipe-why__summary .pipe-glyph {
   transition: transform 160ms ease-out;
 }
 
 .pipe-foot-toggle[aria-expanded="false"] .pipe-glyph,
+.pipe-logs-toggle[aria-expanded="false"] .pipe-glyph,
 .pipe-run__head[aria-expanded="false"] .pipe-run__caret .pipe-glyph,
 .pipe-why:not([open]) .pipe-why__summary .pipe-glyph {
   transform: rotate(-90deg);

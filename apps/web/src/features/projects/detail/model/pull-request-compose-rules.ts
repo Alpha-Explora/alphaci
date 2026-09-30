@@ -12,6 +12,7 @@ import {
   PRODUCTION_BRANCH,
   QA_BRANCH,
   WORKING_BRANCH,
+  isPipelineBranch,
 } from "@/shared/api/pipeline-branches";
 
 /**
@@ -173,4 +174,112 @@ export function suggestTitle(head: string, commits: ComparisonCommit[]): string 
   const words = lastSegment.replace(/[-_]+/g, " ").trim();
   if (!words) return head;
   return words.charAt(0).toUpperCase() + words.slice(1);
+}
+
+/* ── Phase 3 presets (PERSONA_WORKFLOW_SPEC.md §8.4) ───────────────────── */
+
+export type PullRequestPresetId = "feature-to-dev" | "dev-to-uat" | "custom";
+
+/** In the order they are offered; the first available one is the default. */
+export const PULL_REQUEST_PRESET_IDS: readonly PullRequestPresetId[] = [
+  "feature-to-dev",
+  "dev-to-uat",
+  "custom",
+];
+
+const PRESET_LABELS: Record<PullRequestPresetId, string> = {
+  "feature-to-dev": "Feature → Dev",
+  "dev-to-uat": "Dev → UAT",
+  custom: "Custom",
+};
+
+/** What the presets need to know about the viewer and the repository. */
+export interface PresetContext {
+  branches: readonly string[];
+  role: AppRole | null | undefined;
+  /** The viewer's GitHub login, used to recognise their own branches. */
+  login?: string | null;
+}
+
+export interface PullRequestPreset {
+  id: PullRequestPresetId;
+  label: string;
+  available: boolean;
+  /** Why it is disabled; null when available. */
+  reason: string | null;
+}
+
+/**
+ * Whether a preset can be used here, and if not, why. A branch a preset
+ * names must exist in the (role-filtered) list; nothing is assumed present.
+ */
+export function presetFor(
+  id: PullRequestPresetId,
+  context: PresetContext,
+): PullRequestPreset {
+  const has = (name: string) => context.branches.includes(name);
+  const label = PRESET_LABELS[id];
+  let reason: string | null = null;
+
+  if (!isPullRequestRole(context.role)) {
+    reason = "Your role does not open pull requests.";
+  } else if (id === "feature-to-dev" && !has(WORKING_BRANCH)) {
+    reason = `There is no ${WORKING_BRANCH} branch to merge into.`;
+  } else if (id === "dev-to-uat") {
+    if (!has(WORKING_BRANCH)) reason = `There is no ${WORKING_BRANCH} branch to merge from.`;
+    else if (!has(QA_BRANCH)) reason = `There is no ${QA_BRANCH} branch to merge into.`;
+  }
+
+  return { id, label, available: reason === null, reason };
+}
+
+/** The first preset that can be used, or `custom` when none of the others can. */
+export function defaultPresetId(context: PresetContext): PullRequestPresetId {
+  return (
+    PULL_REQUEST_PRESET_IDS.find((id) => presetFor(id, context).available) ??
+    "custom"
+  );
+}
+
+/**
+ * The viewer's own branches, in list order.
+ *
+ * Pipeline branches are never "own". A branch counts when it is named
+ * `feature/<login>-...` (case-insensitive). For a `member` the backend already
+ * narrows the list to dev, uat and their own branches (authored ones included),
+ * so any other branch in it is theirs; for every other role only the naming
+ * convention is trusted, because their list is not scoped to them.
+ */
+export function ownBranches(context: PresetContext): string[] {
+  const login = context.login?.trim().toLowerCase() ?? "";
+  const serverScoped = context.role === "member";
+  return context.branches.filter((name) => {
+    if (isPipelineBranch(name)) return false;
+    if (serverScoped) return true;
+    return login !== "" && name.toLowerCase().startsWith(`feature/${login}-`);
+  });
+}
+
+/**
+ * The most recent own branch. The branch list carries no timestamps, so this
+ * is the last own branch in the order the backend returned them.
+ */
+export function mostRecentOwnBranch(context: PresetContext): string {
+  return ownBranches(context).at(-1) ?? "";
+}
+
+/**
+ * The base and head a preset selects. `custom` returns null: it leaves the two
+ * pickers as they are. An unavailable preset also returns null.
+ */
+export function applyPreset(
+  id: PullRequestPresetId,
+  context: PresetContext,
+): { base: string; head: string } | null {
+  if (!presetFor(id, context).available) return null;
+  if (id === "feature-to-dev") {
+    return { base: WORKING_BRANCH, head: mostRecentOwnBranch(context) };
+  }
+  if (id === "dev-to-uat") return { base: QA_BRANCH, head: WORKING_BRANCH };
+  return null;
 }

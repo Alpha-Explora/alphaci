@@ -1,5 +1,10 @@
 import {
+  applyPreset,
   canCreatePullRequest,
+  defaultPresetId,
+  mostRecentOwnBranch,
+  ownBranches,
+  presetFor,
   defaultComposeBase,
   describeComparison,
   selectableBaseBranches,
@@ -191,5 +196,74 @@ describe("canCreatePullRequest", () => {
   it("denies a session with no known role, even for a non-main base", () => {
     expect(canCreatePullRequest(undefined, "dev")).toBe(false);
     expect(canCreatePullRequest(null, "dev")).toBe(false);
+  });
+});
+
+describe("Phase 3 pull request presets", () => {
+  const branches = ["dev", "uat", "feature/lloyd-login", "feature/lloyd-nav", "feature/sam-x"];
+  const lead = { branches, role: "lead" as AppRole, login: "Lloyd" };
+
+  it("Feature -> Dev bases on dev and heads on the most recent own branch", () => {
+    expect(applyPreset("feature-to-dev", lead)).toEqual({
+      base: "dev",
+      head: "feature/lloyd-nav",
+    });
+  });
+
+  it("Feature -> Dev leaves the head empty when there is no own branch", () => {
+    expect(applyPreset("feature-to-dev", { ...lead, login: "nobody" })).toEqual({
+      base: "dev",
+      head: "",
+    });
+  });
+
+  it("Dev -> UAT is dev into uat", () => {
+    expect(applyPreset("dev-to-uat", lead)).toEqual({ base: "uat", head: "dev" });
+  });
+
+  it("Custom applies nothing so the pickers stay free", () => {
+    expect(applyPreset("custom", lead)).toBeNull();
+  });
+
+  it("never applies a preset whose base is main", () => {
+    for (const id of ["feature-to-dev", "dev-to-uat", "custom"] as const) {
+      expect(applyPreset(id, lead)?.base).not.toBe("main");
+    }
+  });
+
+  it("disables a preset whose branch is missing, with a reason", () => {
+    const noUat = { ...lead, branches: ["dev", "feature/lloyd-x"] };
+    expect(presetFor("dev-to-uat", noUat)).toMatchObject({ available: false });
+    expect(presetFor("dev-to-uat", noUat).reason).toContain("uat");
+    expect(applyPreset("dev-to-uat", noUat)).toBeNull();
+
+    const noDev = { ...lead, branches: ["uat"] };
+    expect(presetFor("feature-to-dev", noDev).available).toBe(false);
+    expect(presetFor("dev-to-uat", noDev).reason).toContain("dev");
+    expect(presetFor("custom", noDev).available).toBe(true);
+  });
+
+  it("offers nothing to a role that may not open pull requests", () => {
+    for (const role of ["qa", undefined, null, "root" as AppRole]) {
+      const context = { ...lead, role };
+      expect(presetFor("feature-to-dev", context).available).toBe(false);
+      expect(defaultPresetId(context)).toBe("custom");
+    }
+  });
+
+  it("defaults to Feature -> Dev, then the next available, then Custom", () => {
+    expect(defaultPresetId(lead)).toBe("feature-to-dev");
+    expect(defaultPresetId({ ...lead, branches: ["uat"] })).toBe("custom");
+    expect(defaultPresetId({ ...lead, branches: [] })).toBe("custom");
+  });
+
+  it("recognises own branches by the feature/<login>- convention for non-members", () => {
+    expect(ownBranches(lead)).toEqual(["feature/lloyd-login", "feature/lloyd-nav"]);
+    expect(mostRecentOwnBranch({ ...lead, login: undefined })).toBe("");
+  });
+
+  it("trusts the server-scoped list for a member, minus the pipeline branches", () => {
+    const member = { branches: ["dev", "uat", "fix/typo"], role: "member" as AppRole };
+    expect(ownBranches(member)).toEqual(["fix/typo"]);
   });
 });

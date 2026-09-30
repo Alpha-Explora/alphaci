@@ -86,7 +86,7 @@ describe("PipelineRunsTab branch picker", () => {
   it("lists every declared branch, not just the selected one", async () => {
     await act(async () => {
       root = createRoot(host);
-      root.render(<PipelineRunsTab projectId="p1" />);
+      root.render(<PipelineRunsTab projectId="p1" appRole="member" />);
     });
 
     const options = [...host.querySelectorAll("option")].map(
@@ -101,7 +101,7 @@ describe("PipelineRunsTab branch picker", () => {
   it("marks the branches that recorded nothing", async () => {
     await act(async () => {
       root = createRoot(host);
-      root.render(<PipelineRunsTab projectId="p1" />);
+      root.render(<PipelineRunsTab projectId="p1" appRole="member" />);
     });
 
     const labels = [...host.querySelectorAll("option")].map(
@@ -203,7 +203,7 @@ describe("PipelineRunsTab failure output", () => {
   it("shows the real error output, not a note telling you to go read it", async () => {
     await act(async () => {
       root = createRoot(host);
-      root.render(<PipelineRunsTab projectId="p1" />);
+      root.render(<PipelineRunsTab projectId="p1" appRole="member" />);
     });
 
     const text = host.textContent ?? "";
@@ -215,7 +215,7 @@ describe("PipelineRunsTab failure output", () => {
   it("names the job and step the output came from", async () => {
     await act(async () => {
       root = createRoot(host);
-      root.render(<PipelineRunsTab projectId="p1" />);
+      root.render(<PipelineRunsTab projectId="p1" appRole="member" />);
     });
 
     expect(host.textContent).toContain("SonarCloud .NET Analysis");
@@ -247,7 +247,7 @@ describe("PipelineRunsTab failure output", () => {
 
     await act(async () => {
       root = createRoot(host);
-      root.render(<PipelineRunsTab projectId="p1" />);
+      root.render(<PipelineRunsTab projectId="p1" appRole="member" />);
     });
 
     expect(mockedFailureLog).not.toHaveBeenCalled();
@@ -341,7 +341,7 @@ describe("PipelineRunsTab log excerpt", () => {
   it("shows the error without anyone expanding anything", async () => {
     await act(async () => {
       root = createRoot(host);
-      root.render(<PipelineRunsTab projectId="p1" />);
+      root.render(<PipelineRunsTab projectId="p1" appRole="member" />);
     });
 
     const shown = host.querySelector("pre")?.textContent ?? "";
@@ -354,7 +354,7 @@ describe("PipelineRunsTab log excerpt", () => {
   it("keeps the provisioning noise out of the way until asked", async () => {
     await act(async () => {
       root = createRoot(host);
-      root.render(<PipelineRunsTab projectId="p1" />);
+      root.render(<PipelineRunsTab projectId="p1" appRole="member" />);
     });
 
     const shown = host.querySelector("pre")?.textContent ?? "";
@@ -365,7 +365,7 @@ describe("PipelineRunsTab log excerpt", () => {
   it("marks the error line so it is findable at a glance", async () => {
     await act(async () => {
       root = createRoot(host);
-      root.render(<PipelineRunsTab projectId="p1" />);
+      root.render(<PipelineRunsTab projectId="p1" appRole="member" />);
     });
 
     const errorLine = host.querySelector(".ws-console__line--error");

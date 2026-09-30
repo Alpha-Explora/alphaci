@@ -10,6 +10,7 @@ import {
   type RepoContentListing,
 } from "@/features/projects";
 
+import { browseRefFor } from "../../model/browse-ref";
 import { WorkspaceEmpty, WorkspaceError, WorkspaceLoading } from "./workspace-states";
 
 /**
@@ -56,6 +57,17 @@ export function CodeTab({ projectId }: { projectId: string }) {
         // Display only — this must not move `chosenRef`, or the fetch effect
         // fires a second time for a listing it already has.
         setResolvedRef((current) => current ?? data.defaultBranch);
+        // The list is role-filtered and may not contain the default branch
+        // (`main`). Only then is a ref asked for explicitly; otherwise the
+        // server's own default stands and a cold open stays one request.
+        const fallback = browseRefFor(
+          data.branches.map((branch) => branch.name),
+          data.defaultBranch,
+        );
+        if (fallback !== data.defaultBranch) {
+          setResolvedRef(fallback);
+          setChosenRef((current) => current ?? fallback);
+        }
       })
       .catch(() => {
         // Non-fatal: the file listing below resolves its own ref server-side,

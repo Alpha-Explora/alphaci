@@ -47,6 +47,8 @@ interface ProjectDetailTabsProps {
   dangerZone?: ReactNode;
   /** The viewer's app role. Decides, with the capability flag, whether Checklists shows. */
   appRole?: AppRole;
+  /** The viewer's GitHub login, for the pull request presets. */
+  viewerLogin?: string;
 }
 
 interface ProjectDetailTabPanelProps {
@@ -77,11 +79,13 @@ export function ProjectDetailTabs({
   external = false,
   dangerZone,
   appRole,
+  viewerLogin,
 }: Readonly<ProjectDetailTabsProps>) {
   const vm = useProjectDetailTabsViewModel({
     projectId: project.id,
     workflowFilesFallback: project.workflowFiles,
     appRole,
+    viewerLogin,
   });
   const TabPanel = TAB_PANELS[vm.tab];
 
