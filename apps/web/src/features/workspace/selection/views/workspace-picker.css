@@ -94,7 +94,7 @@
   }
 }
 
-/* About eight teams, then it scrolls; the action stays in view below it. */
+/* About eight teams, then it scrolls; the heading row stays in view above it. */
 /* minmax(0, 1fr): an `auto` track would size to the longest name's
    max-content, pushing every row (and its check mark) past the panel edge
    instead of letting the name truncate. */
@@ -107,16 +107,13 @@
   overscroll-behavior: contain;
 }
 
-.team-switcher-group {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: 0.1rem;
-}
-
-.team-switcher-group + .team-switcher-group {
-  margin-top: 0.3rem;
-  padding-top: 0.3rem;
-  border-top: 1px solid var(--border-tile);
+/* "Your teams" and, at its right end, the compact Create team button. */
+.team-switcher-heading-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding-right: 0.15rem;
 }
 
 .team-switcher-group-label {
@@ -129,8 +126,37 @@
   user-select: none;
 }
 
-.team-switcher-option,
-.team-switcher-action {
+.team-switcher-add {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 1.6rem;
+  height: 1.6rem;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition:
+    background-color 0.14s ease,
+    border-color 0.14s ease,
+    color 0.14s ease;
+}
+
+.team-switcher-add:hover {
+  border-color: var(--border-tile);
+  background: var(--layer-2);
+  color: var(--brand);
+}
+
+.team-switcher-add:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 1px;
+}
+
+.team-switcher-option {
   display: flex;
   align-items: center;
   gap: 0.6rem;
@@ -153,16 +179,13 @@
 }
 
 .team-switcher-option.is-active,
-.team-switcher-option:hover,
-.team-switcher-action.is-active,
-.team-switcher-action:hover {
+.team-switcher-option:hover {
   border-color: var(--border-tile);
   background: var(--layer-2);
   color: var(--text-primary);
 }
 
-.team-switcher-option:focus-visible,
-.team-switcher-action:focus-visible {
+.team-switcher-option:focus-visible {
   outline: 2px solid var(--brand);
   outline-offset: -2px;
 }
@@ -191,35 +214,6 @@
   color: var(--brand);
 }
 
-.team-switcher-divider {
-  height: 1px;
-  margin: 0.35rem 0.25rem;
-  background: var(--border-tile);
-}
-
-.team-switcher-action {
-  font-weight: 700;
-}
-
-.team-switcher-action-icon {
-  display: inline-flex;
-  flex-shrink: 0;
-  align-items: center;
-  justify-content: center;
-  width: 1.5rem;
-  height: 1.5rem;
-  border: 1px solid var(--border-tile);
-  border-radius: 6px;
-  background: var(--layer-1-hover);
-  color: var(--text-muted);
-  transition: color 0.14s ease;
-}
-
-.team-switcher-action.is-active .team-switcher-action-icon,
-.team-switcher-action:hover .team-switcher-action-icon {
-  color: var(--brand);
-}
-
 @media (prefers-reduced-motion: reduce) {
   .team-switcher-panel {
     animation: none;
@@ -228,8 +222,7 @@
   .team-switcher-trigger,
   .team-switcher-chevron,
   .team-switcher-option,
-  .team-switcher-action,
-  .team-switcher-action-icon {
+  .team-switcher-add {
     transition: none;
   }
 }

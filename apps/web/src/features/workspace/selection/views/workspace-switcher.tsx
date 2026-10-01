@@ -171,8 +171,8 @@ export function WorkspaceSwitcher({
 }: Readonly<{
   workspaces: WorkspacesMeResponse | null;
   /**
-   * A platform admin's teams they are not a member of, listed under "Other
-   * teams (admin)". Omitted (empty) for everybody else, who see no change.
+   * A platform admin's teams they are not a member of, merged into the
+   * picker's one team list. Omitted (empty) for everybody else.
    */
   otherTeams?: readonly WorkspaceSummary[];
   appRole?: WorkspaceAppRole | null;

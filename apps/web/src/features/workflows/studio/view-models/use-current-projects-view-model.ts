@@ -34,7 +34,7 @@ function statusOf(
  * own to disagree with it. A `?group=` link reaches the header instead: the
  * studio seeds WorkspaceProvider with it on arrival. The teams come from
  * `getGroups()` (for a platform admin, every team — the header lists the ones
- * they are not in under "Other teams (admin)"), which is what supplies the
+ * they are not in, merged into the header picker), which is what supplies the
  * team record the explorer needs.
  */
 export function useCurrentProjectsViewModel(options: { loadingProjects: boolean }) {

@@ -68,15 +68,12 @@ export function isPlatformAdminUser(
   return session?.appRole === "admin" || session?.platformRole === "super_admin";
 }
 
-/** The heading the header picker files a platform admin's non-member teams under. */
-export const OTHER_TEAMS_HEADING = "Other teams (admin)";
-
 /**
  * The teams a platform admin can see but is not a member of.
  *
  * `/groups` hands an admin EVERY team; `/workspaces/me` only the ones they
- * belong to. The difference is what the header lists under "Other teams
- * (admin)" — without it an admin could no longer reach a team like "Johns
+ * belong to. The difference is what the header adds to the picker
+ * — without it an admin could no longer reach a team like "Johns
  * Kitchen" once the Projects page stopped carrying its own team dropdown.
  * Sorted by name so a long list is scannable; the role is the one the backend
  * reports for an admin on a team they do not belong to.
