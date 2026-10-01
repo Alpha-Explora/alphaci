@@ -5,7 +5,6 @@ import "./team-pages.css";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState, type ReactNode } from "react";
-import { motion, useReducedMotion } from "framer-motion";
 
 import { FlowBackground } from "@/shared/layout/flow-background";
 import { PipelineLoader } from "@/shared/layout/pipeline-loader";
@@ -25,8 +24,6 @@ import {
 } from "../view-models/use-selected-team-view-model";
 import { TeamsEmptyState } from "./teams-empty-state";
 
-const EASE_OUT: [number, number, number, number] = [0.25, 0, 0, 1];
-
 /** What a team page gets to draw with, once its team has resolved. */
 export interface TeamPageContext {
   team: Team;
@@ -35,14 +32,15 @@ export interface TeamPageContext {
   deepLink: TeamsDeepLink;
 }
 
-/** The page's heading, derived from the team on screen (null until it loads). */
+/**
+ * The page's one h1, for screen readers and the document outline. It is not
+ * drawn: each page opens straight onto its content card, whose own heading
+ * (Members, Checklist templates, Activity & audit) is what a sighted user
+ * reads, and the team's name is already in the header's picker.
+ */
 export interface TeamPageHeading {
-  /** The breadcrumb's last segment, e.g. "Teams". */
-  crumb: string;
+  /** e.g. "Members · Checkout squad"; `team` is null until it loads. */
   title: (team: Team | null) => string;
-  /** The small LED chip beside the title, or null for none. */
-  badge?: (team: Team) => string | null;
-  lede: (team: Team | null, vm: SelectedTeamViewModel) => ReactNode;
 }
 
 export interface TeamPageShellProps {
@@ -59,7 +57,11 @@ export interface TeamPageShellProps {
 
 /**
  * The chrome every team page shares: session guards, the header's team, the
- * page heading, and the loading / error / no-team states.
+ * page's (visually hidden) h1, and the loading / error / no-team states.
+ *
+ * There is no hero card above the content any more: its breadcrumb, title,
+ * team chip and lede repeated what the header picker and the content card
+ * already say, and pushed the page's actual content below the fold on a phone.
  *
  * The deep link (`?workspace=…`, plus whatever the page reads) comes from
  * useSearchParams, whose Suspense boundary this owns so the routes stay
@@ -87,7 +89,6 @@ function TeamPageRoute({
   const search = useSearchParams();
   const { status, session, error: sessionError, refresh, signOut, isSigningOut } =
     useAuthSession();
-  const prefersReducedMotion = useReducedMotion();
   // Read once on arrival: the link says what to open first, not what stays open.
   const [deepLink] = useState(() => parseTeamsDeepLink(search?.toString() ?? ""));
   const [redirectTo] = useState(() => redirect?.(deepLink) ?? null);
@@ -152,60 +153,11 @@ function TeamPageRoute({
         loadProjects={loadProjects}
         onLogout={() => void handleLogout()}
         isLoggingOut={isSigningOut}
-        prefersReducedMotion={prefersReducedMotion}
         enabled={status === "signed-in"}
       >
         {children}
       </TeamPageContent>
     </WorkspaceProvider>
-  );
-}
-
-function TeamPageHeader({
-  heading,
-  team,
-  vm,
-  prefersReducedMotion,
-}: Readonly<{
-  heading: TeamPageHeading;
-  team: Team | null;
-  vm: SelectedTeamViewModel;
-  prefersReducedMotion: boolean | null;
-}>) {
-  const badge = team && heading.badge ? heading.badge(team) : null;
-  return (
-    <motion.div
-      className="workflow-page-header workflow-page-header--compact"
-      initial={prefersReducedMotion ? false : { opacity: 0, y: 8 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.28, ease: EASE_OUT }}
-    >
-      <div className="workflow-page-header-left">
-        <p className="workflow-page-breadcrumb">
-          <span style={{ opacity: 0.55 }}>ALPHACI</span>
-          <span className="workflow-page-breadcrumb-sep">/</span>
-          <span>{heading.crumb}</span>
-        </p>
-        <div className="workflow-page-title-row">
-          <h1 className="workflow-page-title">{heading.title(team)}</h1>
-          {badge ? (
-            <div className="workflow-page-studio-badge team-page-badge">
-              <span className="workflow-studio-led" aria-hidden="true" />
-              {badge}
-            </div>
-          ) : null}
-        </div>
-        <p
-          style={{
-            margin: "0.4rem 0 0",
-            color: "var(--text-secondary)",
-            fontSize: "0.86rem",
-          }}
-        >
-          {heading.lede(team, vm)}
-        </p>
-      </div>
-    </motion.div>
   );
 }
 
@@ -216,7 +168,6 @@ function TeamPageContent({
   loadProjects,
   onLogout,
   isLoggingOut,
-  prefersReducedMotion,
   enabled,
   children,
 }: Readonly<{
@@ -226,7 +177,6 @@ function TeamPageContent({
   loadProjects?: boolean;
   onLogout: () => void;
   isLoggingOut: boolean;
-  prefersReducedMotion: boolean | null;
   enabled: boolean;
   children: (context: TeamPageContext) => ReactNode;
 }>) {
@@ -273,12 +223,9 @@ function TeamPageContent({
       />
 
       <div id="main-content" className="dash-page-content">
-        <TeamPageHeader
-          heading={heading}
-          team={vm.team}
-          vm={vm}
-          prefersReducedMotion={prefersReducedMotion}
-        />
+        <h1 className="sr-only" data-testid="team-page-title">
+          {heading.title(vm.team)}
+        </h1>
 
         {vm.error ? (
           <p className="error-text" style={{ marginTop: 0 }}>

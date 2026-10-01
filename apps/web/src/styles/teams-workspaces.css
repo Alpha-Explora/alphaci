@@ -233,67 +233,8 @@
   min-height: 0;
 }
 
-.team-switcher-field {
-  display: flex;
-  min-width: 0;
-}
-
-/* A native <select> keeps the OS popup — which is the point: it is reachable by
-   keyboard, screen readers and touch for free, and no custom listbox matches
-   that without a lot of code. What IS ours is the closed state, so it reads as
-   a workspace control rather than a form field: the default arrow is removed
-   and redrawn as a chevron with room reserved for it. */
-.team-switcher-field {
-  position: relative;
-  display: flex;
-  align-items: center;
-  min-width: 0;
-}
-
-.team-switcher-field::after {
-  content: "";
-  position: absolute;
-  right: 0.7rem;
-  width: 0.45rem;
-  height: 0.45rem;
-  border-right: 2px solid var(--text-muted);
-  border-bottom: 2px solid var(--text-muted);
-  transform: translateY(-25%) rotate(45deg);
-  pointer-events: none;
-}
-
-.team-switcher-select {
-  min-width: 11rem;
-  max-width: 16rem;
-  padding: 0.4rem 2rem 0.4rem 0.7rem;
-  border: 1px solid var(--border);
-  border-radius: 0.55rem;
-  background: var(--bg-elevated);
-  color: var(--text-primary);
-  font-size: 0.86rem;
-  font-weight: 700;
-  letter-spacing: -0.01em;
-  cursor: pointer;
-  appearance: none;
-  -webkit-appearance: none;
-  text-overflow: ellipsis;
-}
-
-.team-switcher-select:hover {
-  border-color: var(--border-brand);
-}
-
-.team-switcher-select:focus-visible {
-  outline: 2px solid var(--brand);
-  outline-offset: 2px;
-}
-
-/* The popup itself is OS-drawn; these are the only properties that reliably
-   carry into it, and without them a dark app opens a white list. */
-.team-switcher-select option {
-  background: var(--bg-panel);
-  color: var(--text-primary);
-}
+/* The picker itself (trigger + popover listbox) lives with its view:
+   features/workspace/selection/views/workspace-picker.css. */
 
 /* Workspace switcher row — sits directly beneath the username, own line,
    never overlapping. Name and role each get a bounded, ellipsized width so

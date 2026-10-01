@@ -2,15 +2,11 @@
 
 import { TeamPageShell, type TeamPageHeading } from "@/features/teams/shell";
 
-import { legacyTeamsRedirect, memberCountLabel } from "../../model/teams-rules";
+import { legacyTeamsRedirect } from "../../model/teams-rules";
 import { TeamMembersPanel } from "./team-members-panel";
 
 const HEADING: TeamPageHeading = {
-  crumb: "Teams",
-  title: (team) => team?.name ?? "Teams",
-  badge: (team) => memberCountLabel(team.memberCount),
-  lede: () =>
-    "The people in this team. Switch or create a team from the picker in the header.",
+  title: (team) => (team ? `Members · ${team.name}` : "Teams"),
 };
 
 /**

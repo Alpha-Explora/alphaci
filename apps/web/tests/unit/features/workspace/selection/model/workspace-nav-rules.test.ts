@@ -1,5 +1,6 @@
 import {
   OTHER_TEAMS_HEADING,
+  canOpenTeamActivity,
   adminOtherTeams,
   selectableWorkspaces,
   sidebarMainItems,
@@ -64,30 +65,77 @@ describe("selectableWorkspaces", () => {
 
 describe("sidebarMainItems", () => {
   it("adds Checklists (capability on) and Activity after Teams", () => {
-    expect(sidebarMainItems({ guest: false, qaChecklistsEnabled: true })).toEqual([
-      "home",
-      "projects",
-      "teams",
-      "checklists",
-      "activity",
-      "inbox",
-    ]);
+    expect(
+      sidebarMainItems({ guest: false, qaChecklistsEnabled: true, canOpenActivity: true }),
+    ).toEqual(["home", "projects", "teams", "checklists", "activity", "inbox"]);
   });
 
   it("hides Checklists while the QA checklists capability is off", () => {
-    expect(sidebarMainItems({ guest: false, qaChecklistsEnabled: false })).toEqual([
-      "home",
-      "projects",
-      "teams",
-      "activity",
-      "inbox",
-    ]);
+    expect(
+      sidebarMainItems({ guest: false, qaChecklistsEnabled: false, canOpenActivity: true }),
+    ).toEqual(["home", "projects", "teams", "activity", "inbox"]);
+  });
+
+  /* A QA Team member used to get the link, then "You don't have access". */
+  it("hides Activity from someone who cannot open it", () => {
+    expect(
+      sidebarMainItems({ guest: false, qaChecklistsEnabled: true, canOpenActivity: false }),
+    ).toEqual(["home", "projects", "teams", "checklists", "inbox"]);
   });
 
   it("shows a guest only Home and Projects", () => {
-    expect(sidebarMainItems({ guest: true, qaChecklistsEnabled: true })).toEqual([
-      "home",
-      "projects",
-    ]);
+    expect(
+      sidebarMainItems({ guest: true, qaChecklistsEnabled: true, canOpenActivity: true }),
+    ).toEqual(["home", "projects"]);
+  });
+});
+
+/* Mirrors GET /groups/:id/activity: assertGroupManagerOrPlatformAdmin with
+ * ['admin', 'delegated_lead'] — a platform admin, or the team's Lead or
+ * Delegated lead. */
+describe("canOpenTeamActivity", () => {
+  /* The backend derives the team role from the global app role, so a Team lead
+   * on any team they belong to gets in, whatever their stored team role. */
+  it("opens it to a Team lead on a team they belong to, whatever the stored team role", () => {
+    for (const teamRole of ["admin", "delegated_lead", "member", "viewer"] as const) {
+      expect(canOpenTeamActivity({ guest: false, appRole: "lead", teamRole })).toBe(true);
+    }
+  });
+
+  it("shuts it to QA and Developers, even with a stored lead-tier team role", () => {
+    for (const appRole of ["qa", "member"] as const) {
+      for (const teamRole of ["admin", "delegated_lead", "member", "viewer"] as const) {
+        expect(canOpenTeamActivity({ guest: false, appRole, teamRole })).toBe(false);
+      }
+    }
+  });
+
+  it("opens it to a platform admin on any team, even before the team list loads", () => {
+    expect(canOpenTeamActivity({ guest: false, appRole: "admin", teamRole: null })).toBe(true);
+    expect(
+      canOpenTeamActivity({ guest: false, appRole: "member", platformRole: "super_admin", teamRole: "member" }),
+    ).toBe(true);
+    expect(canOpenTeamActivity({ guest: false, appRole: "qa", platformRole: "admin" })).toBe(true);
+  });
+
+  it("says no until the team resolves, to anyone else", () => {
+    expect(canOpenTeamActivity({ guest: false, appRole: "lead", teamRole: null })).toBe(false);
+    expect(canOpenTeamActivity({ guest: false, appRole: "qa" })).toBe(false);
+  });
+
+  /* An allow-list: an unknown platform role or team role opens nothing. */
+  it("ignores roles it does not know", () => {
+    expect(canOpenTeamActivity({ guest: false, appRole: "qa", platformRole: "auditor" })).toBe(false);
+    expect(
+      canOpenTeamActivity({
+        guest: false,
+        appRole: "qa",
+        teamRole: "owner" as unknown as "member",
+      }),
+    ).toBe(false);
+  });
+
+  it("never opens it to a guest", () => {
+    expect(canOpenTeamActivity({ guest: true, appRole: "admin", teamRole: "admin" })).toBe(false);
   });
 });

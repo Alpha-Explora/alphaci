@@ -457,6 +457,8 @@ class QaMockBackend {
   moveConflictArmed = false;
   /** 4xx replies a journey provoked on purpose (not refusals). */
   readonly expectedErrors: string[] = [];
+  /** Set by a journey that types /activity on purpose as someone who may not read it. */
+  activityForbiddenArmed = false;
   /** How GitHub answers the merge: merge it, or refuse with its own text (200, merged:false). */
   mergeMode: 'merge' | 'refuse' = 'merge';
   /** The open uat → main promotion PR; null once merged. */
@@ -589,6 +591,7 @@ class QaMockBackend {
       ['GET', /^\/groups$/, () => ({ body: [this.group()] })],
       // The Teams page is the header team's members.
       ['GET', new RegExp(`^/groups/${P}/members$`), (m) => ({ body: this.groupMembers(m[1]) })],
+      ['GET', new RegExp(`^/groups/${P}/activity$`), (m) => this.groupActivity(m[1])],
       ['GET', /^\/notifications$/, () => ({ body: { enabled: true, unreadCount: 0, items: [] } satisfies NotificationsResponse })],
       // The project page reads only enforcedOrg (to label repositories outside it "External").
       ['GET', /^\/catalog\/project-options$/, () => ({ body: this.projectOptions() })],
@@ -829,6 +832,19 @@ class QaMockBackend {
 
   private isLead(): boolean {
     return this.role === 'lead' || this.role === 'admin';
+  }
+
+  /**
+   * GET /groups/:id/activity — GroupActivityService.listActivity calls
+   * assertGroupManagerOrPlatformAdmin(['admin', 'delegated_lead']): a platform
+   * admin, or the team's Lead (group role admin here). Everyone else is a 403.
+   */
+  private groupActivity(groupId: string): ApiReply {
+    if (groupId !== WORKSPACE.id) throw nestError(404, 'Group not found');
+    if (!this.isLead()) {
+      return { status: 403, body: { statusCode: 403, message: 'Insufficient group role', error: 'Forbidden' }, expected: this.activityForbiddenArmed };
+    }
+    return { body: { items: [], nextCursor: null } };
   }
 
   private requireFolder(folderId: string): FolderRow {
@@ -1531,6 +1547,23 @@ function sidebarLink(page: Page, label: string): Locator {
   return page.getByRole('navigation', { name: 'Primary' }).getByRole('link', { name: label, exact: true });
 }
 
+/**
+ * Opens the header's team picker (a button + listbox popover), reports whether
+ * it offers "Create workspace", and closes it again with Escape.
+ */
+async function pickerOffersCreate(page: Page): Promise<boolean> {
+  const trigger = page.getByRole('button', { name: /^Active workspace:/ });
+  await visible(trigger, 'the workspace picker');
+  await trigger.click();
+  const listbox = page.getByRole('listbox', { name: 'Active workspace' });
+  await visible(listbox, 'the open workspace picker');
+  await visible(listbox.getByRole('option', { name: WORKSPACE.name, selected: true }), 'the current team, marked selected');
+  const offers = (await page.getByRole('button', { name: 'Create workspace', exact: true }).count()) === 1;
+  await page.keyboard.press('Escape');
+  await absent(listbox, 'the open workspace picker');
+  return offers;
+}
+
 /** Opens a page from the primary sidebar, as a person would, and waits for its URL. */
 async function openSidebarPage(page: Page, label: string, pathname: string) {
   const link = sidebarLink(page, label);
@@ -1578,9 +1611,7 @@ async function leadCreatesAndSharesChecklist({ page, backend, baseUrl }: Journey
   await page.goto(`${baseUrl}/teams`, { waitUntil: 'domcontentloaded' });
   await expectRoleBadge(page, 'lead');
   // The contrast for journey (d): a lead's workspace picker offers creation.
-  await eventually('the workspace picker to offer "+ Create workspace" to a lead', async () =>
-    (await page.getByLabel('Active workspace').locator('option', { hasText: '+ Create workspace' }).count()) === 1,
-  );
+  assert.equal(await pickerOffersCreate(page), true, 'the workspace picker offers "Create workspace" to a lead');
   // /teams is the header team's members now; checklists have a page of their own.
   await visible(page.getByRole('heading', { name: /^Members/ }), 'the Members section on /teams');
   await visible(page.getByText('Ana QA').first(), 'the team roster on /teams');
@@ -1932,9 +1963,7 @@ async function developerRequestsRetest({ page, backend, baseUrl }: JourneyContex
 async function qaTeamCannotCreate({ page, backend, baseUrl }: JourneyContext) {
   await page.goto(`${baseUrl}/teams`, { waitUntil: 'domcontentloaded' });
   await expectRoleBadge(page, 'qa');
-  const picker = page.getByLabel('Active workspace');
-  await visible(picker, 'the workspace picker');
-  assert.equal(await picker.locator('option', { hasText: '+ Create workspace' }).count(), 0, 'QA Team cannot create a workspace');
+  assert.equal(await pickerOffersCreate(page), false, 'QA Team cannot create a workspace');
   assert.equal(await page.getByTestId('create-workspace-button').count(), 0, 'no create-workspace button');
 
   // QA Team reads the roster but cannot change it.
@@ -1951,6 +1980,14 @@ async function qaTeamCannotCreate({ page, backend, baseUrl }: JourneyContext) {
   for (const action of ['Edit checklist', 'Share', 'Archive']) {
     await neverShown(backend, page.getByRole('button', { name: action, exact: true }), `${action} for QA Team`);
   }
+
+  // Activity & audit is for the team's leads (the server answers 403), so the
+  // sidebar does not offer it; typed in, the page says so instead of failing.
+  await neverShown(backend, sidebarLink(page, 'Activity'), "the sidebar's Activity link for QA Team");
+  assert.equal(backend.callsTo('GET', /\/activity$/).length, 0, 'nothing asked for the activity feed');
+  backend.activityForbiddenArmed = true;
+  await page.goto(`${baseUrl}/activity`, { waitUntil: 'domcontentloaded' });
+  await visible(page.getByText('The activity feed is available to group leads.'), 'the activity access message');
 }
 
 /** (e) The capabilities response lacks qaChecklists: every QA surface is gone. */
@@ -1973,6 +2010,11 @@ async function capabilityAbsentHidesQa({ page, backend, baseUrl }: JourneyContex
   // The sidebar keeps Activity but drops Checklists without the capability.
   await visible(sidebarLink(page, 'Activity'), "the sidebar's Activity link");
   await neverShown(backend, sidebarLink(page, 'Checklists'), "the sidebar's Checklists link", teamsLoadedAt);
+  // A lead's Activity opens on its card, with no hero above it.
+  await openSidebarPage(page, 'Activity', '/activity');
+  await visible(page.getByRole('heading', { level: 2, name: 'Activity & audit' }), 'the Activity & audit card');
+  await visible(page.getByText('No activity yet'), 'the empty activity feed');
+  assert.equal(await page.locator('.workflow-page-header').count(), 0, 'no hero container on /activity');
 
   // Typed straight in, /checklists says the feature is off instead of loading it.
   await page.goto(`${baseUrl}/checklists`, { waitUntil: 'domcontentloaded' });
@@ -2062,7 +2104,8 @@ async function leadOrganisesProjects({ page, backend, baseUrl }: JourneyContext)
   // One heading, the team's Project count beside it; no team dropdown.
   const heading = page.locator('.current-projects-title');
   await expectText(heading, /Projects\s*2/, 'the Projects heading with its count');
-  assert.equal(await page.locator("[aria-haspopup='listbox']").count(), 0, 'no team dropdown on the page');
+  // (The header's own team picker is a listbox button too; the page has none.)
+  assert.equal(await page.locator("#main-content [aria-haspopup='listbox']").count(), 0, 'no team dropdown on the page');
 
   // The list, in the server's order (by name).
   const cards = page.locator('li.pf-card');

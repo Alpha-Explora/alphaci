@@ -5,7 +5,6 @@ import { useState } from "react";
 import { CreateGroupDialog } from "@/features/groups/create";
 import {
   APP_ROLE_BADGE_LABELS,
-  OTHER_TEAMS_HEADING,
   canCreateWorkspace,
   selectableWorkspaces,
   workspaceSwitcherKind,
@@ -14,14 +13,8 @@ import {
   type WorkspacesMeResponse,
 } from "../model/workspace-types";
 import type { WorkspaceSelectionStatus } from "../view-models/use-workspace-selection-view-model";
+import { WorkspacePicker } from "./workspace-picker";
 import { useWorkspaceSelection } from "./workspace-selection-context";
-
-/**
- * Sentinel option value. A <select> can only carry values, so "create" rides in
- * as one and is intercepted on change — the alternative was a second control
- * beside the dropdown, which is the thing this replaced.
- */
-const CREATE = "__create__";
 
 const NO_OTHER_TEAMS: readonly WorkspaceSummary[] = [];
 
@@ -31,10 +24,6 @@ function findCurrentWorkspace(
   selectedWorkspace: WorkspacesMeResponse["items"][number] | null,
 ) {
   return items.find((workspace) => workspace.id === selectedWorkspaceId) ?? selectedWorkspace ?? items[0] ?? null;
-}
-
-function currentWorkspaceId(current: WorkspacesMeResponse["items"][number] | null) {
-  return current?.id ?? "";
 }
 
 function SwitcherRetryNotice({
@@ -119,63 +108,11 @@ function EmptyWorkspaceCreate({
   );
 }
 
-function CreateWorkspaceOptions() {
-  return (
-    <>
-      <option disabled>──────────</option>
-      <option value={CREATE}>+ Create workspace</option>
-    </>
-  );
-}
-
-function applyWorkspaceSelectChange(
-  value: string,
-  currentId: string,
-  select: HTMLSelectElement,
-  setCreateOpen: (open: boolean) => void,
-  setSelectedWorkspaceId: (id: string | null) => void,
-) {
-  if (value === CREATE) {
-    select.value = currentId;
-    setCreateOpen(true);
-    return;
-  }
-  setSelectedWorkspaceId(value || null);
-}
-
-/**
- * The options. With no other teams (everyone but a platform admin) this is the
- * flat list it always was; an admin's non-member teams follow under their own
- * heading, with the admin's own teams grouped above them for symmetry.
- */
-function WorkspaceOptions({
+/** The picker, and the create dialog its "Create workspace" action opens. */
+function PickerWithCreate({
   items,
   otherTeams,
-}: Readonly<{ items: WorkspacesMeResponse["items"]; otherTeams: readonly WorkspaceSummary[] }>) {
-  const own = items.map((workspace) => (
-    <option key={workspace.id} value={workspace.id}>
-      {workspace.name}
-    </option>
-  ));
-  if (otherTeams.length === 0) return <>{own}</>;
-  return (
-    <>
-      {items.length > 0 ? <optgroup label="Your teams">{own}</optgroup> : null}
-      <optgroup label={OTHER_TEAMS_HEADING}>
-        {otherTeams.map((team) => (
-          <option key={team.id} value={team.id}>
-            {team.name}
-          </option>
-        ))}
-      </optgroup>
-    </>
-  );
-}
-
-function WorkspacePicker({
-  items,
-  otherTeams,
-  currentId,
+  current,
   canCreate,
   createOpen,
   setCreateOpen,
@@ -184,7 +121,7 @@ function WorkspacePicker({
 }: Readonly<{
   items: WorkspacesMeResponse["items"];
   otherTeams: readonly WorkspaceSummary[];
-  currentId: string;
+  current: WorkspaceSummary | null;
   canCreate: boolean;
   createOpen: boolean;
   setCreateOpen: (open: boolean) => void;
@@ -192,27 +129,15 @@ function WorkspacePicker({
   onCreated: (group: { id: string }) => void;
 }>) {
   return (
-    <div className="team-switcher">
-      <label className="team-switcher-field">
-        <span className="sr-only">Active workspace</span>
-        <select
-          aria-label="Active workspace"
-          value={currentId}
-          onChange={(event) =>
-            applyWorkspaceSelectChange(
-              event.target.value,
-              currentId,
-              event.target,
-              setCreateOpen,
-              setSelectedWorkspaceId,
-            )
-          }
-          className="team-switcher-select"
-        >
-          <WorkspaceOptions items={items} otherTeams={otherTeams} />
-          {canCreate ? <CreateWorkspaceOptions /> : null}
-        </select>
-      </label>
+    <>
+      <WorkspacePicker
+        items={items}
+        otherTeams={otherTeams}
+        current={current}
+        canCreate={canCreate}
+        onSelect={setSelectedWorkspaceId}
+        onCreate={() => setCreateOpen(true)}
+      />
       {canCreate ? (
         <CreateGroupDialog
           open={createOpen}
@@ -220,7 +145,7 @@ function WorkspacePicker({
           onCreated={onCreated}
         />
       ) : null}
-    </div>
+    </>
   );
 }
 
@@ -231,7 +156,7 @@ function WorkspacePicker({
  * rest of the app is scoped to, which is why it lives up here rather than
  * behind the rail's hover.
  *
- * It renders as a <select> even with ONE entry. Falling back to plain text
+ * It renders as a picker even with ONE entry. Falling back to plain text
  * meant someone with a single workspace learned the app had no switcher and
  * never looked again after gaining a second — a control that only appears once
  * you already have the problem is one nobody discovers.
@@ -296,10 +221,10 @@ export function WorkspaceSwitcher({
     );
   }
   return (
-    <WorkspacePicker
+    <PickerWithCreate
       items={items}
       otherTeams={otherTeams}
-      currentId={currentWorkspaceId(current)}
+      current={current}
       canCreate={canCreate}
       createOpen={createOpen}
       setCreateOpen={setCreateOpen}

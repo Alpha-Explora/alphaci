@@ -194,7 +194,13 @@ under "Other teams (admin)"): `/workflows` its Project cards, `/teams` its
 members, `/checklists` its QA checklist templates, `/activity` its activity &
 audit feed, and `/settings?tab=team` its own settings. `/teams` forwards old
 `?section=` links to those pages (`legacyTeamsRedirect` in
-`features/teams/model/teams-rules.ts`).
+`features/teams/model/teams-rules.ts`). The team pages open straight onto
+their content card (no hero header; the page's h1 is visually hidden). The
+sidebar offers Activity only to whoever the backend lets read the feed — a
+Team lead (global app role `lead`) who belongs to the selected team, or an
+admin / platform admin. The stored per-team role does not decide; the backend
+derives the team role from the app role (`canOpenTeamActivity` in
+`features/workspace/selection/model/workspace-types.ts`).
 
 `/runs` is built and wired to the BE run history. (Earlier revisions of this
 file said it was blocked on the webhook receiver; it isn't.)

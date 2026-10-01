@@ -320,7 +320,12 @@ export function AppNav({
 }: Readonly<AppNavProps>) {
   const isPlatformAdmin = isPlatformAdminUser(guest, session);
   const { pathname, workspaces: workspaceVm, notifications, mainItems } =
-    useAppNavViewModel({ guest, isPlatformAdmin });
+    useAppNavViewModel({
+      guest,
+      isPlatformAdmin,
+      appRole: session?.appRole ?? null,
+      platformRole: session?.platformRole ?? null,
+    });
   // Cleared on pointerleave. Clicking a nav link navigates but does NOT move
   // the mouse, so the rail stays hovered — and an expanded rail is 240px of
   // panel sitting on top of the page you just asked for. Suppressing hover

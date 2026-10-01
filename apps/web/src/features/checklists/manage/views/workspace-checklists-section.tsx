@@ -20,12 +20,12 @@ import { ChecklistList } from "./checklist-list";
 function ListHead({ vm }: Readonly<{ vm: WorkspaceChecklistsViewModel }>) {
   return (
     <div className="group-section-head">
-      <h3 className="group-section-title">
+      <h2 className="group-section-title">
         Checklist templates
         {vm.status === "ready" ? (
           <span className="group-section-count">{vm.checklists.length}</span>
         ) : null}
-      </h3>
+      </h2>
       {vm.canManage && vm.checklists.length > 0 ? (
         <button
           type="button"
