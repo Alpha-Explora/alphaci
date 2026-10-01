@@ -20,12 +20,3 @@
 .team-detail-surface .ghost-button {
   border-color: var(--border-strong);
 }
-
-/* The chip beside the page title (member count, or the team's name). The
-   shared .workflow-page-studio-badge is painted in dark-only literals, which
-   read as a grey slab in light mode; these tokens hold in both themes. */
-.workflow-page-title-row .team-page-badge {
-  border-color: var(--border-tile);
-  background: var(--layer-2);
-  color: var(--text-secondary);
-}

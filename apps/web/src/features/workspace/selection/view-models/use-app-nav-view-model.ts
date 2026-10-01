@@ -5,7 +5,13 @@ import { usePathname } from "next/navigation";
 import { useCapabilities } from "@/features/capabilities/current";
 import { useNotificationsSummaryViewModel } from "@/features/notifications/summary";
 
-import { sidebarMainItems, type SidebarMainItem } from "../model/workspace-types";
+import {
+  canOpenTeamActivity,
+  sidebarMainItems,
+  type SidebarMainItem,
+  type WorkspaceAppRole,
+} from "../model/workspace-types";
+import { useWorkspaceSelection } from "../views/workspace-selection-context";
 import { useWorkspaceSelectionViewModel } from "./use-workspace-selection-view-model";
 
 export interface AppNavViewModel {
@@ -23,6 +29,9 @@ export function useAppNavViewModel(options: {
   guest: boolean;
   /** The same signal that shows Admin: adds "Other teams (admin)" to the picker. */
   isPlatformAdmin?: boolean;
+  /** The session's global role and platform role: who may open /activity. */
+  appRole?: WorkspaceAppRole | null;
+  platformRole?: string | null;
 }): AppNavViewModel {
   const pathname = usePathname();
   const workspaces = useWorkspaceSelectionViewModel({
@@ -31,6 +40,15 @@ export function useAppNavViewModel(options: {
   });
   const notifications = useNotificationsSummaryViewModel({ guest: options.guest });
   const { qaChecklistsEnabled } = useCapabilities();
+  // The header team's role decides Activity: the feed is per team, and the
+  // backend opens it to that team's Lead and Delegated leads only.
+  const { selectedWorkspace } = useWorkspaceSelection();
+  const canOpenActivity = canOpenTeamActivity({
+    guest: options.guest,
+    appRole: options.appRole,
+    platformRole: options.platformRole,
+    teamRole: selectedWorkspace?.role ?? null,
+  });
 
   return {
     pathname,
@@ -38,6 +56,6 @@ export function useAppNavViewModel(options: {
     error: workspaces.error,
     workspaces,
     notifications,
-    mainItems: sidebarMainItems({ guest: options.guest, qaChecklistsEnabled }),
+    mainItems: sidebarMainItems({ guest: options.guest, qaChecklistsEnabled, canOpenActivity }),
   };
 }

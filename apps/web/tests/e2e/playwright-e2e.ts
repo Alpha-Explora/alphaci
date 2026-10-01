@@ -526,7 +526,7 @@ async function runDashboardAudit(page: Page, baseUrl: string) {
   // The heading is plain "Projects": the team comes from the header picker,
   // and the page has no dropdown of its own.
   await page.getByRole('heading', { level: 1, name: /^Projects/ }).waitFor({ state: 'visible' });
-  await page.getByLabel('Active workspace').waitFor({ state: 'visible' });
+  await page.getByRole('button', { name: /^Active workspace:/ }).waitFor({ state: 'visible' });
   await page.getByRole('button', { name: 'Create project' }).waitFor({ state: 'visible' });
   await page.getByRole('button', { name: 'Notifications' }).click();
   await expectVisibleText(page, 'Project created');

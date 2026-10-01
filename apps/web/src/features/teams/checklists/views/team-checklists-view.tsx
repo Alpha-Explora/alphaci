@@ -7,11 +7,7 @@ import { TeamPageShell, type TeamPageHeading } from "@/features/teams/shell";
 import { linkedItemId } from "../../model/teams-rules";
 
 const HEADING: TeamPageHeading = {
-  crumb: "Checklists",
-  title: () => "Checklists",
-  badge: (team) => team.name,
-  lede: () =>
-    "The QA checklist templates of the team selected in the header. Share one with a project to verify it in QA Studio.",
+  title: (team) => (team ? `Checklists · ${team.name}` : "Checklists"),
 };
 
 /**

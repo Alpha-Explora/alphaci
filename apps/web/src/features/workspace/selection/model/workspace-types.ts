@@ -103,21 +103,58 @@ export function selectableWorkspaces(
 /** The primary sidebar entries, in order. */
 export type SidebarMainItem = "home" | "projects" | "teams" | "checklists" | "activity" | "inbox";
 
+
+/**
+ * The platform roles the backend treats as a platform admin
+ * (HierarchyAccessService.isPlatformAdmin): any platform_admins row, whatever
+ * its role. Kept as an explicit list for the same reason as above.
+ */
+const PLATFORM_ADMIN_ROLES: ReadonlySet<string> = new Set(["admin", "super_admin"]);
+
+/**
+ * Whether the caller can open /activity for the team selected in the header.
+ * The backend lets a platform admin (a platform_admins row, or the global
+ * `admin` app role) read any team's feed, and otherwise only the team's Lead
+ * or Delegated lead. Everyone else gets a 403, so the sidebar should not offer
+ * them the page. Before the team list resolves (`teamRole` null) only the
+ * admin case can say yes.
+ */
+export function canOpenTeamActivity(input: {
+  guest: boolean;
+  appRole?: WorkspaceAppRole | null;
+  platformRole?: string | null;
+  teamRole?: WorkspaceRole | null;
+}): boolean {
+  if (input.guest) return false;
+  if (input.appRole === "admin") return true;
+  if (input.platformRole && PLATFORM_ADMIN_ROLES.has(input.platformRole)) return true;
+  // The backend derives the team role from the global app role (lead/admin ->
+  // team admin) for active members, so the stored per-team role must not
+  // decide: a stored delegated_lead whose app role is member is refused, and a
+  // lead whose stored role is member is allowed. teamRole only proves the user
+  // belongs to the selected team.
+  return input.appRole === "lead" && Boolean(input.teamRole);
+}
+
 /**
  * Which Main entries the sidebar shows. Checklists follows the same backend
- * capability that gated the old team rail's "Checklist templates"; Activity was
- * open to everyone who could open a team, so it only hides for guests, like
- * Teams and Inbox.
+ * capability that gated the old team rail's "Checklist templates"; Activity
+ * follows canOpenTeamActivity, so a QA Team member or Developer is not sent to
+ * a page that can only tell them they have no access. Teams and Inbox only
+ * hide for guests.
  */
 export function sidebarMainItems(input: {
   guest: boolean;
   qaChecklistsEnabled: boolean;
+  /** canOpenTeamActivity for the header team. */
+  canOpenActivity: boolean;
 }): SidebarMainItem[] {
   const items: SidebarMainItem[] = ["home", "projects"];
   if (input.guest) return items;
   items.push("teams");
   if (input.qaChecklistsEnabled) items.push("checklists");
-  items.push("activity", "inbox");
+  if (input.canOpenActivity) items.push("activity");
+  items.push("inbox");
   return items;
 }
 
