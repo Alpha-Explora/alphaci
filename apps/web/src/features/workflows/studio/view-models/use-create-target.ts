@@ -8,6 +8,7 @@ import type { WorkspaceSummary } from "@/shared/api/contracts";
 
 import {
   effectiveDeliveryProjectId,
+  joinedProjectName,
   parseCreateTargetParams,
   readTargetProject,
   targetProjectLabel,
@@ -19,6 +20,8 @@ export interface CreateTarget {
   initialGroupId: string | null;
   /** "Team / Project" for the wizard, or null when no Project applies. */
   label: string | null;
+  /** The Project's own name while the repository joins one, else null. */
+  joinedProjectName: string | null;
   /** The Project id to send for a repository created in `workspaceId`. */
   deliveryProjectIdFor: (workspaceId: string | null | undefined) => string | undefined;
 }
@@ -81,6 +84,7 @@ export function useCreateTarget(options: {
   return {
     initialGroupId,
     label: targetProjectLabel(target, selectedWorkspaceId, workspaces),
+    joinedProjectName: joinedProjectName(target, selectedWorkspaceId),
     deliveryProjectIdFor: (workspaceId) => effectiveDeliveryProjectId(target, workspaceId),
   };
 }

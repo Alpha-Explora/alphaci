@@ -72,6 +72,8 @@ interface WorkflowSetupTabProps {
   onChangeWorkspace?: (workspaceId: string | null) => void;
   /** "Team / Project" when a ?project= link files the repository in a Project. */
   targetProjectLabel?: string | null;
+  /** That Project's own name: the wizard shows "Adding to Project: <name>" and asks for none. */
+  joinedProjectName?: string | null;
   deploymentOwnershipMode: EnvOwnershipMode;
   deploymentProvisioning: DeploymentProvisioningFormState;
   envProvisioningEnabled: boolean;
@@ -96,6 +98,9 @@ interface WorkflowSetupTabProps {
   projectCatalog: ProjectOptionsCatalogState;
   reducedMotion: boolean;
 }
+
+/** The Repository step in WIZARD_STEPS. */
+const REPOSITORY_STEP_INDEX = 1;
 
 function setupTabEnter(reducedMotion: boolean) {
   if (reducedMotion) {
@@ -136,6 +141,7 @@ export function WorkflowSetupTab({
   selectedWorkspaceId,
   onChangeWorkspace,
   targetProjectLabel,
+  joinedProjectName = null,
   deploymentProvisioning,
   envProvisioningEnabled,
   existingRepoBaseBranch,
@@ -197,6 +203,8 @@ export function WorkflowSetupTab({
     loadingProjectOptions: projectCatalog.loadingProjectOptions,
     existingRepoFullName,
     hasSelectedProjectType,
+    projectName: form.projectName,
+    projectNameServerError: form.projectNameError,
   });
   const enforcedOrgLinkedRepos = filterEnforcedOrgRepos(
     github.linkedRepos,
@@ -227,6 +235,8 @@ export function WorkflowSetupTab({
       hasSelectedProjectType,
     }),
     repository: isRepositoryStepReady({
+      projectName: joinedProjectName === null ? form.projectName : null,
+      projectNameServerError: form.projectNameError,
       repoName: form.repoName,
       isMicroservicesShape: projectCatalog.isMicroservicesShape,
       isMultiRepoShape: projectCatalog.isMultiRepoShape,
@@ -241,6 +251,17 @@ export function WorkflowSetupTab({
     teamChoiceMissing: team.teamChoiceMissing,
     priorStepsReady: wizardStepReady.slice(0, 4).every(Boolean),
   });
+
+  // A "name taken" refusal takes the user back to the Repository step, where
+  // the field shows it. Applied while rendering (state derived from a changing
+  // input), not in an effect.
+  const [seenProjectNameError, setSeenProjectNameError] = useState<string | null>(null);
+  if (form.projectNameError !== seenProjectNameError) {
+    setSeenProjectNameError(form.projectNameError);
+    if (form.projectNameError && !isExistingMode) {
+      setActiveWizardStep(REPOSITORY_STEP_INDEX);
+    }
+  }
 
   function goToWizardStep(step: number) {
     if (!canSelectWizardStep(step, furthestWizardStep, wizardStepReady)) {
@@ -333,9 +354,12 @@ export function WorkflowSetupTab({
           noLinkedRepos={noLinkedRepos}
           onChangeExistingRepoBaseBranch={onChangeExistingRepoBaseBranch}
           onChangeExistingRepoFullName={onChangeExistingRepoFullName}
+          onChangeProjectName={form.setProjectName}
           onDiscoverExistingRepo={onDiscoverExistingRepo}
           onRetryLinkedRepos={github.loadLinkedRepos}
           onSetupExistingRepo={onSetupExistingRepo}
+          projectName={form.projectName}
+          projectNameError={form.projectNameError}
         />
         <NewRepoWizard
           activeWizardStep={activeWizardStep}
@@ -347,6 +371,7 @@ export function WorkflowSetupTab({
           github={github}
           isCreatingProject={isCreatingProject}
           isExistingMode={isExistingMode}
+          joinedProjectName={joinedProjectName}
           onBack={goToPreviousWizardStep}
           onCreateProject={onCreateProject}
           onNext={goToNextWizardStep}

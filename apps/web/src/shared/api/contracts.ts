@@ -747,6 +747,8 @@ export interface SetupProjectRequest extends GenerateWorkflowRequest {
   deploymentProvisioning?: DeploymentProvisioningRequest;
   /** Group/workspace to create this project inside (from ?group=<id>). */
   workspaceId?: string;
+  /** Names the Project (folder) created for the repository: trimmed, 1..80 chars. */
+  projectName?: string;
 }
 
 export interface GenerateWorkflowResponse {
@@ -896,6 +898,12 @@ export interface CreateProjectRequest {
    * microservices shapes every created repository lands in it.
    */
   deliveryProjectId?: string;
+  /**
+   * Names the Project (folder) created for the repository: trimmed, 1..80
+   * chars. Not sent with `deliveryProjectId`; a duplicate in the team is a 409
+   * PROJECT_NAME_TAKEN.
+   */
+  projectName?: string;
 }
 
 export interface CreateProjectResponse {

@@ -21,6 +21,7 @@ import {
   getMyWorkspaces,
 } from "../support/api-client";
 import type { ProjectOptionsResponse } from "../../src/shared/api/contracts";
+import { ApiError } from "../../src/shared/api/request";
 
 jest.mock("framer-motion", () => {
   const React = jest.requireActual("react");
@@ -64,6 +65,7 @@ jest.mock("next/navigation", () => ({
 
 jest.mock("../../src/features/projects/detail/data/projects-api", () => ({
   createProject: jest.fn(),
+  setupProject: jest.fn(),
   getProjects: jest.fn(),
 }));
 jest.mock("../../src/features/workflows/studio/data/existing-repos-api", () => ({
@@ -95,6 +97,7 @@ jest.mock("../../src/features/projects/detail/data/usage-api", () => ({
 }));
 jest.mock("../../src/features/groups/data/hierarchy-api", () => ({
   getGroups: jest.fn().mockResolvedValue([]),
+  getDeliveryProject: jest.fn(),
 }));
 
 // Every project belongs to a team, so the Setup tab has to name one. Default to
@@ -109,6 +112,16 @@ const mockedGetGroups = (
     getGroups: jest.Mock;
   }
 ).getGroups;
+const mockedGetDeliveryProject = (
+  jest.requireMock("../../src/features/groups/data/hierarchy-api") as {
+    getDeliveryProject: jest.Mock;
+  }
+).getDeliveryProject;
+const mockedSetupProject = (
+  jest.requireMock("../../src/features/projects/detail/data/projects-api") as {
+    setupProject: jest.Mock;
+  }
+).setupProject;
 const mockedCreateProject = createProject as jest.MockedFunction<typeof createProject>;
 const mockedCreateGithubRepo = createGithubRepo as jest.MockedFunction<typeof createGithubRepo>;
 const mockedGenerateWorkflow = generateWorkflow as jest.MockedFunction<typeof generateWorkflow>;
@@ -476,7 +489,7 @@ describe("WorkflowBuilder project setup", () => {
    */
   async function advanceToStep(
     stopAt: number,
-    values: { projectTypeId?: string; repoName?: string } = {},
+    values: { projectTypeId?: string; repoName?: string; projectName?: string | null } = {},
   ) {
     if (values.projectTypeId) {
       const select =
@@ -486,6 +499,12 @@ describe("WorkflowBuilder project setup", () => {
     if (stopAt === 0) return;
     await clickContinue();
 
+    // The Project name is required; a link into an existing Project shows a
+    // read-only line instead, so there is no input to fill then.
+    const projectNameInput = container.querySelector<HTMLInputElement>("#project-name");
+    if (projectNameInput && values.projectName !== null) {
+      changeValue(projectNameInput, values.projectName ?? "Checkout platform");
+    }
     if (values.repoName) {
       const input = container.querySelector<HTMLInputElement>("#repo-name");
       if (input) changeValue(input, values.repoName);
@@ -496,7 +515,7 @@ describe("WorkflowBuilder project setup", () => {
   }
 
   async function advanceToReview(
-    values: { projectTypeId?: string; repoName?: string } = {},
+    values: { projectTypeId?: string; repoName?: string; projectName?: string | null } = {},
   ) {
     await advanceToStep(4, values);
     await waitForCondition(
@@ -533,6 +552,7 @@ describe("WorkflowBuilder project setup", () => {
         workflowRecipeId: "frontend-standard-ci",
         serviceName: "demo-next-app",
         outputFileName: "ci.yml",
+        projectName: "Checkout platform",
       }),
     );
     expect(mockedCreateGithubRepo).not.toHaveBeenCalled();
@@ -902,5 +922,234 @@ describe("WorkflowBuilder project setup", () => {
       container.querySelector<HTMLSelectElement>("[data-testid='setup-workspace-select']")
         ?.value,
     ).toBe("workspace-2");
+  });
+
+  describe("Project name", () => {
+    async function openRepositoryStep() {
+      await renderBuilder();
+      const select = container.querySelector<HTMLSelectElement>("#project-type-select");
+      if (select) changeValue(select, "nextjs-app");
+      await clickContinue();
+    }
+
+    async function clickCreate() {
+      await act(async () => {
+        container.querySelector<HTMLButtonElement>("[data-testid='setup-project-button']")?.click();
+        await Promise.resolve();
+      });
+    }
+
+    // The suite's framer-motion mock hands out a new component per render, so
+    // the step remounts on every state change: always re-query, never hold a node.
+    function projectNameInput(): HTMLInputElement {
+      return container.querySelector<HTMLInputElement>("#project-name")!;
+    }
+
+    function repoNameInput(): HTMLInputElement {
+      return container.querySelector<HTMLInputElement>("#repo-name")!;
+    }
+
+    function reviewValue(label: string): string | null | undefined {
+      const rows = Array.from(container.querySelectorAll(".repo-wizard-review__grid > div"));
+      const row = rows.find((candidate) => candidate.querySelector("dt")?.textContent === label);
+      return row?.querySelector("dd")?.textContent;
+    }
+
+    it("asks for it first on the Repository step, independent of the repository name", async () => {
+      await openRepositoryStep();
+
+      expect(projectNameInput()).not.toBeNull();
+      expect(projectNameInput().required).toBe(true);
+      expect(container.textContent).toContain(
+        "The name your team sees on Teams → Projects. It can differ from the repository names.",
+      );
+      // Above the repository name in the document.
+      expect(
+        projectNameInput().compareDocumentPosition(repoNameInput()) &
+          Node.DOCUMENT_POSITION_FOLLOWING,
+      ).toBeTruthy();
+
+      // Typing a repository name neither fills nor unblocks the Project name.
+      changeValue(repoNameInput(), "demo-next-app");
+      expect(projectNameInput().value).toBe("");
+      expect(findButton("Continue")).toBeDisabled();
+
+      changeValue(projectNameInput(), "Checkout platform");
+      expect(findButton("Continue")).not.toBeDisabled();
+      // ...and editing the repository name later never overwrites it.
+      changeValue(repoNameInput(), "other-repo");
+      expect(projectNameInput().value).toBe("Checkout platform");
+    });
+
+    it("keeps Continue disabled for a blank or over-long name and says why", async () => {
+      await openRepositoryStep();
+      changeValue(repoNameInput(), "demo-next-app");
+
+      changeValue(projectNameInput(), "   ");
+      expect(findButton("Continue")).toBeDisabled();
+
+      changeValue(projectNameInput(), "x".repeat(81));
+      expect(findButton("Continue")).toBeDisabled();
+      expect(
+        container.querySelector("[data-testid='setup-project-name-error']")?.textContent,
+      ).toContain("80 characters or fewer");
+      expect(projectNameInput().getAttribute("aria-invalid")).toBe("true");
+
+      changeValue(projectNameInput(), "x".repeat(80));
+      expect(findButton("Continue")).not.toBeDisabled();
+    });
+
+    it("shows it on Review and sends it trimmed", async () => {
+      await renderBuilder();
+      await advanceToReview({
+        projectTypeId: "nextjs-app",
+        repoName: "demo-next-app",
+        projectName: "  Checkout platform  ",
+      });
+
+      expect(reviewValue("Project")).toBe("Checkout platform");
+
+      await clickCreate();
+      expect(mockedCreateProject).toHaveBeenCalledTimes(1);
+      const sent = mockedCreateProject.mock.calls[0][0];
+      expect(sent.projectName).toBe("Checkout platform");
+      expect(sent).not.toHaveProperty("deliveryProjectId");
+    });
+
+    it("maps a 409 PROJECT_NAME_TAKEN to the field and returns to the Repository step", async () => {
+      mockedCreateProject.mockRejectedValueOnce(
+        new ApiError("Request failed with status 409", 409, {
+          statusCode: 409,
+          code: "PROJECT_NAME_TAKEN",
+          message: "A project named Checkout platform already exists.",
+        }),
+      );
+      await renderBuilder();
+      await advanceToReview({ projectTypeId: "nextjs-app", repoName: "demo-next-app" });
+      await clickCreate();
+
+      await waitForCondition(() => container.querySelector("#project-name") !== null);
+      const error = container.querySelector("[data-testid='setup-project-name-error']");
+      expect(error?.textContent).toBe(
+        "A Project with this name already exists in this team. Choose another name.",
+      );
+      expect(container.querySelector("#project-name")?.getAttribute("aria-invalid")).toBe("true");
+      // Back on the Repository step, and it cannot be continued with the same name.
+      expect(container.querySelector("#repo-name")).not.toBeNull();
+      expect(container.querySelector("[data-testid='setup-project-button']")).toBeNull();
+      expect(findButton("Continue")).toBeDisabled();
+
+      // Another name clears the refusal and unblocks the step.
+      changeValue(projectNameInput(), "Checkout platform 2");
+      expect(container.querySelector("[data-testid='setup-project-name-error']")).toBeNull();
+      expect(findButton("Continue")).not.toBeDisabled();
+    });
+
+    describe("on the Existing repository path", () => {
+      async function openExistingMode() {
+        await renderBuilder();
+        await act(async () => {
+          findButton("Existing repository")?.click();
+        });
+        await waitForCondition(() => container.querySelector("#existing-repo-select") !== null);
+      }
+
+      it("asks for the name, blocks Set up CI/CD until it is valid, and sends it", async () => {
+        mockedSetupProject.mockResolvedValue({
+          id: "project-9",
+          repoFullName: "tone/example-app",
+          repoUrl: "https://github.com/tone/example-app",
+          workflowPath: ".github/workflows/ci.yml",
+        });
+        await openExistingMode();
+        expect(projectNameInput()).not.toBeNull();
+
+        changeValue(
+          container.querySelector<HTMLSelectElement>("#existing-repo-select")!,
+          "tone/example-app",
+        );
+        expect(findButton("Set up CI/CD")).toBeDisabled();
+
+        changeValue(projectNameInput(), "  Loyalty app ");
+        expect(findButton("Set up CI/CD")).not.toBeDisabled();
+
+        await act(async () => {
+          findButton("Set up CI/CD")?.click();
+          await Promise.resolve();
+        });
+        expect(mockedSetupProject).toHaveBeenCalledWith(
+          expect.objectContaining({ repoFullName: "tone/example-app", projectName: "Loyalty app" }),
+        );
+      });
+
+      it("shows a name already taken on the field", async () => {
+        mockedSetupProject.mockRejectedValueOnce(
+          new ApiError("Request failed with status 409", 409, { code: "PROJECT_NAME_TAKEN" }),
+        );
+        await openExistingMode();
+        changeValue(
+          container.querySelector<HTMLSelectElement>("#existing-repo-select")!,
+          "tone/example-app",
+        );
+        changeValue(projectNameInput(), "Loyalty app");
+        await act(async () => {
+          findButton("Set up CI/CD")?.click();
+          await Promise.resolve();
+        });
+        await waitForCondition(
+          () => container.querySelector("[data-testid='setup-project-name-error']") !== null,
+        );
+        expect(container.querySelector("[data-testid='setup-project-name-error']")?.textContent).toBe(
+          "A Project with this name already exists in this team. Choose another name.",
+        );
+      });
+    });
+
+    describe("when the repository joins an existing Project", () => {
+      const DP = "3f2b8c1e-5a4d-4e6f-9b7a-1c2d3e4f5a6b";
+
+      async function openLinkedWizard() {
+        mockSearch = `tab=setup&group=workspace-1&project=${DP}`;
+        mockedGetDeliveryProject.mockResolvedValue({
+          id: DP,
+          name: "loyalty",
+          groupId: "workspace-1",
+          status: "active",
+        });
+        await act(async () => {
+          root.render(<WorkflowBuilder login="tone" plan="pro" session={leadSession("lead")} />);
+        });
+        await waitForCondition(() => container.textContent?.includes("Next.js App") ?? false);
+        const select = container.querySelector<HTMLSelectElement>("#project-type-select");
+        if (select) changeValue(select, "nextjs-app");
+        await waitForCondition(
+          () => container.querySelector("[data-testid='setup-target-project']") !== null,
+        );
+      }
+
+      it("replaces the field with a read-only line and sends no projectName", async () => {
+        await openLinkedWizard();
+        await clickContinue();
+
+        expect(container.querySelector("#project-name")).toBeNull();
+        expect(
+          container.querySelector("[data-testid='setup-adding-to-project']")?.textContent,
+        ).toBe("Adding to Project: loyalty");
+
+        // Only the repository name stands between the user and Continue.
+        changeValue(repoNameInput(), "demo-next-app");
+        expect(findButton("Continue")).not.toBeDisabled();
+        for (let step = 1; step < 4; step += 1) await clickContinue();
+        await waitForCondition(
+          () => container.querySelector("[data-testid='setup-project-button']") !== null,
+        );
+        expect(reviewValue("Project")).toBe("loyalty");
+
+        await clickCreate();
+        const sent = mockedCreateProject.mock.calls[0][0];
+        expect(sent.deliveryProjectId).toBe(DP);
+        expect(sent).not.toHaveProperty("projectName");
+      });
+    });
   });
 });

@@ -107,6 +107,7 @@ export function WorkflowBuilder({ guest = false, session, onboardingCompleted }:
     createResult, existingRepoDiscovery, existingRepoResult, setupMode, setSetupMode,
     existingRepoFullName, setExistingRepoFullName, existingRepoBaseBranch, setExistingRepoBaseBranch,
     workspaces, selectedCreateWorkspaceId, setSelectedCreateWorkspaceId, targetProjectLabel,
+    joinedProjectName,
     showProjects, openCreateForGroup, openIndividualSetup,
     handleCreateProject, handleDiscoverExistingRepo, handleSetupExistingRepo, handleGenerateWorkflow,
     catalog, projectCatalog, projects, createForm, deploymentProvisioning,
@@ -163,6 +164,7 @@ export function WorkflowBuilder({ guest = false, session, onboardingCompleted }:
                 selectedWorkspaceId={selectedCreateWorkspaceId}
                 onChangeWorkspace={setSelectedCreateWorkspaceId}
                 targetProjectLabel={targetProjectLabel}
+                joinedProjectName={joinedProjectName}
                 projectCatalog={projectCatalog}
                 onViewProject={openIndividualSetup}
                 reducedMotion={reducedMotion}

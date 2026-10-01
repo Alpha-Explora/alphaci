@@ -12,6 +12,8 @@ export interface WizardStepProps {
   form: CreateProjectFormState;
   github: GithubInstallationsState;
   isCreatingProject: boolean;
+  /** The Project the repository joins (read-only line, no name asked), or null. */
+  joinedProjectName: string | null;
   onCreateProject: () => void;
   projectCatalog: ProjectOptionsCatalogState;
   projectQuota: UsageLimitItem | null;

@@ -11,6 +11,8 @@ import { effectiveDualServiceName } from "../model/setup-tab-rules";
 import { toSlug } from "../model/workflow-studio-rules";
 
 interface BuildPayloadInput {
+  /** null when the repository joins an existing Project (no name is sent). */
+  projectName: string | null;
   isMicroservicesShape: boolean;
   isMultiRepoShape: boolean;
   repoShapeId: string;
@@ -23,6 +25,10 @@ interface BuildPayloadInput {
 }
 
 export function useCreateProjectForm() {
+  // Typed as-is: never derived from the repository or service names, and
+  // never rewritten. Trimming happens when the payload is built.
+  const [projectName, setProjectNameState] = useState("");
+  const [projectNameError, setProjectNameError] = useState<string | null>(null);
   const [repoName, setRepoNameState] = useState("");
   const [visibility, setVisibility] = useState<CreateProjectRequest["visibility"]>("private");
   const [serviceName, setServiceNameState] = useState("");
@@ -56,6 +62,12 @@ export function useCreateProjectForm() {
     },
     [serviceNameTouched],
   );
+
+  const setProjectName = useCallback((value: string) => {
+    setProjectNameState(value);
+    // A "name taken" refusal is about the old text; typing makes it stale.
+    setProjectNameError(null);
+  }, []);
 
   const setServiceName = useCallback((value: string) => {
     setServiceNameTouched(true);
@@ -119,6 +131,8 @@ export function useCreateProjectForm() {
     frontendWorkflowRecipeId,
     nodeVersion,
     outputFileName,
+    projectName,
+    projectNameError,
     repoName,
     serviceName,
     servicePath,
@@ -133,6 +147,8 @@ export function useCreateProjectForm() {
     setFrontendWorkflowRecipeId,
     setNodeVersion,
     setOutputFileName,
+    setProjectName,
+    setProjectNameError,
     setRepoName,
     setServiceName,
     setServicePath,

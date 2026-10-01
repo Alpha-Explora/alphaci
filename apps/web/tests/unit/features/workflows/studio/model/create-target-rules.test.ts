@@ -1,5 +1,6 @@
 import {
   effectiveDeliveryProjectId,
+  joinedProjectName,
   parseCreateTargetParams,
   preselectedWorkspaceId,
   readTargetProject,
@@ -47,6 +48,12 @@ describe("the target Project", () => {
     expect(effectiveDeliveryProjectId(TARGET, "ws-2")).toBeUndefined();
     expect(effectiveDeliveryProjectId(TARGET, null)).toBeUndefined();
     expect(effectiveDeliveryProjectId(null, "ws-1")).toBeUndefined();
+  });
+
+  it("names the joined Project only while its own team is selected", () => {
+    expect(joinedProjectName(TARGET, "ws-1")).toBe("testfinals");
+    expect(joinedProjectName(TARGET, "ws-2")).toBeNull();
+    expect(joinedProjectName(null, "ws-1")).toBeNull();
   });
 
   it("reads as Team / Project in the wizard", () => {

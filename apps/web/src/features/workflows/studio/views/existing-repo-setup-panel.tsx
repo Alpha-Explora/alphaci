@@ -8,6 +8,7 @@ import type {
   LinkedGitHubRepo,
 } from "@/shared/api/contracts";
 import { labelAccentStyle } from "./setup-tab-shared";
+import { ProjectNameField } from "./setup-project-name-field";
 
 function linkedRepoSelectPlaceholder(loading: boolean): string {
   if (loading) {
@@ -123,9 +124,12 @@ function ExistingRepoSetupFields({
   noLinkedRepos,
   onChangeExistingRepoBaseBranch,
   onChangeExistingRepoFullName,
+  onChangeProjectName,
   onDiscoverExistingRepo,
   onRetryLinkedRepos,
   onSetupExistingRepo,
+  projectName,
+  projectNameError,
 }: Readonly<ExistingRepoSetupPanelProps>) {
   return (
     <motion.div
@@ -139,6 +143,14 @@ function ExistingRepoSetupFields({
       {noLinkedRepos ? (
         <LinkedReposEmptyState onRetry={() => void onRetryLinkedRepos()} />
       ) : null}
+
+      {/* This path never joins an existing Project, so the name is always asked for. */}
+      <ProjectNameField
+        joinedProjectName={null}
+        value={projectName}
+        onChange={onChangeProjectName}
+        serverError={projectNameError}
+      />
 
       <div className="form-pair-row" style={{ gap: "1rem" }}>
         <div>
@@ -222,9 +234,12 @@ export interface ExistingRepoSetupPanelProps {
   noLinkedRepos: boolean;
   onChangeExistingRepoBaseBranch: (value: string) => void;
   onChangeExistingRepoFullName: (value: string) => void;
+  onChangeProjectName: (value: string) => void;
   onDiscoverExistingRepo: () => void;
   onRetryLinkedRepos: () => void;
   onSetupExistingRepo: () => void;
+  projectName: string;
+  projectNameError: string | null;
 }
 
 export function ExistingRepoSetupPanel(props: Readonly<ExistingRepoSetupPanelProps>) {
