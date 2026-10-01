@@ -1,20 +1,16 @@
-import { checklistsRepository } from "@/features/checklists";
+import { requirementsRepository } from "@/features/checklists";
 import { archiveDeliveryProject } from "@/features/groups";
 import { request } from "@/shared/api/request";
 
 import {
-  normaliseChecklist,
-  normaliseChecklists,
   normaliseDeleteOutcome,
   normaliseMoveOutcome,
   normaliseProjectFolders,
 } from "../model/project-folder-rules";
 import type {
-  ChecklistProjectsPatch,
   CreateProjectFolderRequest,
   DeleteProjectFolderRequest,
   DeleteProjectOutcome,
-  FolderChecklist,
   MoveOutcome,
   MoveRepositoryRequest,
   ProjectFoldersSnapshot,
@@ -66,18 +62,8 @@ export const projectFoldersRepository = {
     return normaliseDeleteOutcome(raw, deliveryProjectId);
   },
 
-  /** The team's live checklists, for the per-Project count and attach list. */
-  async listChecklists(groupId: string): Promise<FolderChecklist[]> {
-    const response = await checklistsRepository.listForWorkspace(groupId);
-    return normaliseChecklists((response as { items?: unknown } | null)?.items);
-  },
-
-  /** PATCH, never the PUT full replace: a Project must not un-share the rest. */
-  async updateChecklistShares(
-    checklistId: string,
-    change: ChecklistProjectsPatch,
-  ): Promise<FolderChecklist | null> {
-    const saved = await checklistsRepository.updateShares(checklistId, change);
-    return normaliseChecklist(saved);
+  /** How many live requirements each of the team's Projects has, for the Project cards. */
+  requirementCounts(groupId: string): Promise<Record<string, number>> {
+    return requirementsRepository.countsByProject(groupId);
   },
 };

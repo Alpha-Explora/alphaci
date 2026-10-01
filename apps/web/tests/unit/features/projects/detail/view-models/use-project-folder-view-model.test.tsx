@@ -117,6 +117,17 @@ describe("useProjectFolderViewModel", () => {
     expect(vm().manageHref).toBe("/workflows?group=ws-1&project=dp-1");
   });
 
+  it("names the Project for QA whatever its size, and nothing without a folder", async () => {
+    folderMock.mockResolvedValue(shop({ repositories: shop().repositories.slice(0, 1) }));
+    await render("proj-fe");
+    await waitFor(() => expect(vm().status).toBe("ready"));
+    expect(vm().projectName).toBeNull();
+    expect(vm().project).toEqual({ deliveryProjectId: "dp-1", name: "shop", href: "/workflows?group=ws-1&project=dp-1" });
+
+    await render("proj-none", false);
+    expect(vm().project).toEqual({ deliveryProjectId: null, name: null, href: null });
+  });
+
   it("keeps the single-repository page for a Project of one", async () => {
     folderMock.mockResolvedValue(shop({ repositories: shop().repositories.slice(0, 1) }));
     await render("proj-fe");

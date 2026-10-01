@@ -1,7 +1,6 @@
 import { ApiError } from "../../../../../src/shared/api/request";
 import { normaliseProjectFolders } from "../../../../../src/features/teams/project-folders/model/project-folder-rules";
 import type {
-  FolderChecklist,
   ProjectFoldersResponseWire,
   ProjectFoldersSnapshot,
 } from "../../../../../src/features/teams/project-folders/model/project-folder-types";
@@ -53,17 +52,6 @@ export function foldersWire(overrides: Partial<ProjectFoldersResponseWire> = {})
 
 export function foldersSnapshot(overrides: Partial<ProjectFoldersResponseWire> = {}): ProjectFoldersSnapshot {
   return normaliseProjectFolders(foldersWire(overrides), GROUP_ID);
-}
-
-export function folderChecklist(overrides: Partial<FolderChecklist> = {}): FolderChecklist {
-  return {
-    id: "cl-1",
-    name: "Release smoke test",
-    itemCount: 3,
-    archived: false,
-    sharedProjectIds: ["proj-fe", "proj-be"],
-    ...overrides,
-  };
 }
 
 export function apiError(status: number, details?: unknown): ApiError {

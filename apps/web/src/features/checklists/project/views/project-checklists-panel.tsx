@@ -9,6 +9,7 @@ import { LoadingRows } from "@/features/groups/workspace";
 
 import { ChecklistItemList } from "../../items";
 import type { QaChecklist } from "../../model/checklist-types";
+import { REPOSITORY_SCOPE, type QaScope } from "../../model/qa-scope";
 import {
   automatedItemCount,
   checklistManageHref,
@@ -56,7 +57,8 @@ function ChecklistCard({
 function PanelState({
   vm,
   workspaceHref,
-}: Readonly<{ vm: ProjectChecklistsViewModel; workspaceHref: string | null }>) {
+  inProject,
+}: Readonly<{ vm: ProjectChecklistsViewModel; workspaceHref: string | null; inProject: boolean }>) {
   if (vm.status === "loading") return <LoadingRows rows={2} />;
   if (vm.status === "error") {
     return (
@@ -66,6 +68,14 @@ function PanelState({
         <button type="button" className="ghost-button qa-project-card__manage" onClick={vm.reload}>
           Try again
         </button>
+      </div>
+    );
+  }
+  if (inProject) {
+    return (
+      <div className="hier-state">
+        <h3 className="hier-state-title">No requirements yet</h3>
+        <p className="hier-state-text">When the Product owner adds Features or System requirements to the Project, they appear here.</p>
       </div>
     );
   }
@@ -87,6 +97,27 @@ function PanelState({
 }
 
 /**
+ * For a repository filed under a Project: its requirements live on the
+ * Project now, edited there by the Product owner; this tab only lists them.
+ */
+function ProjectPointer({ scope }: Readonly<{ scope: QaScope }>) {
+  if (scope.kind !== "project") return null;
+  return (
+    <div className="qa-project-pointer">
+      <p>
+        Requirements belong to the Project <strong>{scope.projectName}</strong> and apply to every repository in it.
+        Product owners write them, Developers move their Progress and the QA Team verifies them there.
+      </p>
+      {scope.projectHref ? (
+        <Link className="primary-button qa-project-card__manage" href={scope.projectHref}>
+          Open the Project&apos;s requirements
+        </Link>
+      ) : null}
+    </div>
+  );
+}
+
+/**
  * The project's Checklists tab: every checklist shared to this project, with
  * its items in order. Read-only for everyone — checklists are written at the
  * team — so leads get a way to the team page instead of an editor here.
@@ -94,11 +125,15 @@ function PanelState({
 export function ProjectChecklistsPanel({
   projectId,
   workspaceId,
+  qaScope = REPOSITORY_SCOPE,
 }: Readonly<{
   projectId: string;
   /** The owning team. Null for a project outside any team: no manage link then. */
   workspaceId: string | null;
+  /** A repository in a Project points at the Project's requirements instead of team templates. */
+  qaScope?: QaScope;
 }>) {
+  const inProject = qaScope.kind === "project";
   const vm = useProjectChecklistsViewModel({ projectId, enabled: Boolean(projectId) });
   const reduced = useReducedMotion();
   const workspaceHref = workspaceId ? checklistManageHref(workspaceId) : null;
@@ -112,9 +147,11 @@ export function ProjectChecklistsPanel({
       className="qa-project-panel"
     >
       <p className="qa-project-panel__lede">
-        QA checklists your team shared to this project. Each item says who runs
-        it and how it is verified.
+        {inProject
+          ? "The requirements of this repository's Project, read-only here."
+          : "QA checklists your team shared to this project. Each item says who runs it and how it is verified."}
       </p>
+      <ProjectPointer scope={qaScope} />
       {ready ? (
         <div className="qa-project-panel__cards">
           {vm.checklists.map((checklist, index) => (
@@ -127,7 +164,7 @@ export function ProjectChecklistsPanel({
               <ChecklistCard
                 checklist={checklist}
                 manageHref={
-                  vm.canManage && workspaceId
+                  vm.canManage && workspaceId && !inProject
                     ? checklistManageHref(workspaceId, checklist.id)
                     : null
                 }
@@ -136,7 +173,7 @@ export function ProjectChecklistsPanel({
           ))}
         </div>
       ) : (
-        <PanelState vm={vm} workspaceHref={workspaceHref} />
+        <PanelState vm={vm} workspaceHref={workspaceHref} inProject={inProject} />
       )}
     </div>
   );

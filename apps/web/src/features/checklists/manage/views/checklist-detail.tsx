@@ -1,11 +1,16 @@
 "use client";
 
+import Link from "next/link";
+
 import { ChecklistItemList } from "../../items";
 import type { ChecklistShareTarget, QaChecklist } from "../../model/checklist-types";
 import {
   automatedItemCount,
+  backendHasProjectRequirements,
+  checklistOwningProjectId,
   isArchived,
   itemCountLabel,
+  projectRequirementsHref,
   updatedLabel,
 } from "../../model/checklist-rules";
 import { useArchiveChecklistViewModel } from "../view-models/use-archive-checklist-view-model";
@@ -67,6 +72,62 @@ function SharedWith({
 }
 
 /**
+ * A checklist that moved to a Project: edited there (the team page would be
+ * refused with REQUIREMENT_MOVED_TO_PROJECT), so this page only points at it.
+ */
+function MovedToProject({ href }: Readonly<{ href: string }>) {
+  return (
+    <div className="qa-detail__moved">
+      <p>
+        This checklist is now a System requirement of a Project. It applies to every repository in that Project and
+        is edited there.
+      </p>
+      <Link className="ghost-button group-section-action" href={href}>
+        Open the Project
+      </Link>
+    </div>
+  );
+}
+
+function DetailItems({ checklist, editable }: Readonly<{ checklist: QaChecklist; editable: boolean }>) {
+  return (
+    <section className="qa-detail__items" aria-label="Checklist items">
+      <h5 className="qa-subhead">Items</h5>
+      <ChecklistItemList
+        items={checklist.items}
+        emptyMessage={
+          editable
+            ? "No items yet. Edit the checklist to add the checks people should run."
+            : "This checklist has no items yet."
+        }
+      />
+    </section>
+  );
+}
+
+function DetailTitles({
+  checklist,
+  archived,
+  now,
+}: Readonly<{ checklist: QaChecklist; archived: boolean; now: number }>) {
+  const automated = automatedItemCount(checklist.items);
+  return (
+    <div className="qa-detail__titles">
+      <h4 className="qa-detail__title">
+        {checklist.name}
+        {archived ? <span className="hier-badge hier-badge--muted">Archived</span> : null}
+      </h4>
+      <p className="qa-detail__meta">
+        <span>{itemCountLabel(checklist.items.length)}</span>
+        {automated > 0 ? <span>{automated} automated</span> : null}
+        <span>Version {checklist.version}</span>
+        <span>{updatedLabel(checklist.updatedAt, now)}</span>
+      </p>
+    </div>
+  );
+}
+
+/**
  * One checklist, read-only. Leads get Edit / Share / Archive beside the title;
  * everyone else sees exactly the same page minus those three buttons.
  */
@@ -75,6 +136,7 @@ export function ChecklistDetail({
   projects,
   canManage,
   now,
+  workspaceId,
   onEdit,
   onShared,
   onArchived,
@@ -83,6 +145,7 @@ export function ChecklistDetail({
   projects: ReadonlyArray<ChecklistShareTarget>;
   canManage: boolean;
   now: number;
+  workspaceId: string;
   onEdit: () => void;
   onShared: (checklist: QaChecklist) => void;
   onArchived: (checklist: QaChecklist) => void;
@@ -90,32 +153,25 @@ export function ChecklistDetail({
   const share = useShareChecklistViewModel({ checklist, onShared });
   const archive = useArchiveChecklistViewModel({ checklist, onArchived });
   const archived = isArchived(checklist);
-  const editable = canManage && !archived;
-  const automated = automatedItemCount(checklist.items);
+  const owningProjectId = checklistOwningProjectId(checklist);
+  const editable = canManage && !archived && !owningProjectId;
+  // Sharing to repositories no longer decides anything once requirements belong to Projects.
+  const shareable = editable && !backendHasProjectRequirements(checklist);
 
   return (
     <article className="qa-detail">
       <header className="qa-detail__head">
-        <div className="qa-detail__titles">
-          <h4 className="qa-detail__title">
-            {checklist.name}
-            {archived ? <span className="hier-badge hier-badge--muted">Archived</span> : null}
-          </h4>
-          <p className="qa-detail__meta">
-            <span>{itemCountLabel(checklist.items.length)}</span>
-            {automated > 0 ? <span>{automated} automated</span> : null}
-            <span>Version {checklist.version}</span>
-            <span>{updatedLabel(checklist.updatedAt, now)}</span>
-          </p>
-        </div>
+        <DetailTitles checklist={checklist} archived={archived} now={now} />
         {editable ? (
           <div className="qa-detail__actions">
             <button type="button" className="primary-button group-section-action" onClick={onEdit}>
               Edit checklist
             </button>
-            <button type="button" className="ghost-button group-section-action" onClick={share.openDialog}>
-              Share
-            </button>
+            {shareable ? (
+              <button type="button" className="ghost-button group-section-action" onClick={share.openDialog}>
+                Share
+              </button>
+            ) : null}
             <button type="button" className="hier-btn-danger" onClick={archive.openDialog}>
               Archive
             </button>
@@ -127,28 +183,17 @@ export function ChecklistDetail({
         <p className="qa-detail__desc">{checklist.description}</p>
       ) : null}
 
-      <SharedWith
-        checklist={checklist}
-        projects={projects}
-        canShare={editable}
-        onShare={share.openDialog}
-      />
+      {owningProjectId ? (
+        <MovedToProject href={projectRequirementsHref(workspaceId, owningProjectId)} />
+      ) : (
+        <SharedWith checklist={checklist} projects={projects} canShare={shareable} onShare={share.openDialog} />
+      )}
 
-      <section className="qa-detail__items" aria-label="Checklist items">
-        <h5 className="qa-subhead">Items</h5>
-        <ChecklistItemList
-          items={checklist.items}
-          emptyMessage={
-            editable
-              ? "No items yet. Edit the checklist to add the checks people should run."
-              : "This checklist has no items yet."
-          }
-        />
-      </section>
+      <DetailItems checklist={checklist} editable={editable} />
 
       {editable ? (
         <>
-          <ShareChecklistDialog checklist={checklist} projects={projects} vm={share} />
+          {shareable ? <ShareChecklistDialog checklist={checklist} projects={projects} vm={share} /> : null}
           <ArchiveChecklistDialog checklist={checklist} vm={archive} />
         </>
       ) : null}

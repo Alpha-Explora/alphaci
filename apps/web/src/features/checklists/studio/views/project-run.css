@@ -1,0 +1,198 @@
+/* ── Project QA run ────────────────────────────────────────────────────────
+   The run panel reuses QA Studio's run classes (qa-run-item, qa-summary,
+   qa-signoff-banner…) so a Project run reads exactly like a repository run.
+   What is new here: the repository heads strip, the stale and
+   "requirements changed" notices, the per-requirement groups and the
+   acceptance criteria block. Tokens only.
+   ------------------------------------------------------------------------- */
+
+.pqa-run {
+  display: grid;
+  gap: 0.9rem;
+}
+
+.pqa-run__body {
+  display: grid;
+  gap: 0.9rem;
+}
+
+.pqa-note {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--text-muted);
+}
+
+/* Every repository's uat head, one chip per repository. */
+.pqa-heads {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.pqa-head {
+  display: grid;
+  gap: 0.1rem;
+  min-width: 0;
+  padding: 0.45rem 0.65rem;
+  border: 1px solid var(--border);
+  border-radius: 0.6rem;
+  background: var(--bg-frost);
+}
+
+.pqa-head[data-changed="true"] {
+  border-color: var(--border-amber);
+  background: var(--accent-amber-light);
+}
+
+.pqa-head__name {
+  font-size: 0.8rem;
+  font-weight: 650;
+  color: var(--text-primary);
+  overflow-wrap: anywhere;
+}
+
+.pqa-head__sha {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.72rem;
+  color: var(--text-secondary);
+}
+
+.pqa-head__change {
+  font-size: 0.74rem;
+  font-weight: 600;
+  color: var(--warning);
+}
+
+/* Notices: stale (needs action) and requirements changed (informational). */
+.pqa-alert {
+  display: grid;
+  gap: 0.4rem;
+  padding: 0.8rem 0.95rem;
+  border: 1px solid var(--border);
+  border-left-width: 3px;
+  border-radius: 0.7rem;
+  background: var(--layer-2);
+}
+
+.pqa-alert--warning {
+  border-color: var(--border-amber);
+  border-left-color: var(--warning);
+  background: var(--accent-amber-light);
+}
+
+.pqa-alert--info {
+  border-left-color: var(--brand);
+}
+
+.pqa-alert__title {
+  margin: 0;
+  font-size: 0.86rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.pqa-alert__text {
+  margin: 0;
+  font-size: 0.8rem;
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+
+.pqa-alert__list {
+  margin: 0;
+  padding-left: 1.1rem;
+  font-size: 0.8rem;
+  line-height: 1.5;
+  color: var(--text-primary);
+}
+
+.pqa-alert .primary-button {
+  justify-self: start;
+}
+
+/* One requirement's items. */
+.pqa-group {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.pqa-group .pqa-group__title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0.2rem 0 0;
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.pqa-kind {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.1rem 0.5rem;
+  border: 1px solid var(--border-brand);
+  border-radius: var(--radius-pill);
+  background: var(--brand-light);
+  color: var(--brand);
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.pqa-kind[data-kind="system"] {
+  border-color: var(--border-teal);
+  background: var(--accent-teal-light);
+  color: var(--accent-teal);
+}
+
+.pqa-criteria {
+  display: grid;
+  gap: 0.15rem;
+  padding: 0.5rem 0.65rem;
+  border-radius: 0.5rem;
+  background: var(--bg-soft);
+}
+
+.pqa-criteria__label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.pqa-criteria p {
+  margin: 0;
+  font-size: 0.8rem;
+  line-height: 1.5;
+  color: var(--text-secondary);
+  white-space: pre-line;
+}
+
+.pqa-progress-unknown {
+  font-size: 0.74rem;
+  color: var(--text-muted);
+}
+
+.pqa-pass-hint {
+  margin: 0;
+  font-size: 0.76rem;
+  color: var(--text-muted);
+}
+
+/* QA Studio's legacy run column, once the server gates by Project. */
+.qa-run-card__history {
+  margin: 0;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--border-amber);
+  border-radius: 0.6rem;
+  background: var(--accent-amber-light);
+  font-size: 0.78rem;
+  line-height: 1.5;
+  color: var(--text-secondary);
+}

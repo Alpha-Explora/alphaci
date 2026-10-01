@@ -44,6 +44,15 @@ export interface QaChecklist {
   updatedAt: string;
   items: QaChecklistItem[];
   sharedProjectIds: string[];
+  /**
+   * Newer backends only. A checklist with a `deliveryProjectId` is a System
+   * requirement of that Project: it is edited from the Project, and the team
+   * page shows it read-only (writes are refused with
+   * REQUIREMENT_MOVED_TO_PROJECT). Read it through `checklistOwningProjectId`.
+   */
+  kind?: unknown;
+  deliveryProjectId?: unknown;
+  legacyChecklistId?: unknown;
 }
 
 export interface QaChecklistListResponse {

@@ -1,20 +1,13 @@
 import {
-  attachPatch,
-  attachableChecklists,
-  checklistAttachment,
-  checklistCountLabel,
-  checklistPatchErrorMessage,
   createErrorMessage,
   createRepositoryHref,
   deleteConfirmMatches,
   deleteErrorMessage,
   deleteNoticeText,
   deletePartialFailure,
-  detachPatch,
   emptyProjectsCopy,
   emptyRepositoriesCopy,
   findFolder,
-  folderChecklists,
   folderProjectIds,
   isConflict,
   isDeleteConflict,
@@ -23,8 +16,6 @@ import {
   moveTargets,
   MOVE_CONFLICT_MESSAGE,
   DELETE_NAME_MISMATCH_MESSAGE,
-  normaliseChecklist,
-  normaliseChecklists,
   normaliseDeleteOutcome,
   normaliseMoveOutcome,
   normaliseProjectFolders,
@@ -38,7 +29,7 @@ import {
   folderLandingProjectId,
 } from "../../../../../../src/features/teams/project-folders/model/project-folder-rules";
 import type { ProjectFolder } from "../../../../../../src/features/teams/project-folders/model/project-folder-types";
-import { apiError, folderChecklist, foldersSnapshot, foldersWire, GROUP_ID } from "../folder-fixtures";
+import { apiError, foldersSnapshot, foldersWire, GROUP_ID } from "../folder-fixtures";
 
 function pair(): ProjectFolder {
   return foldersSnapshot().folders[0];
@@ -139,59 +130,17 @@ describe("roles and labels", () => {
   it("pluralises counts and shortens repository names", () => {
     expect(repositoryCountLabel(1)).toBe("1 repository");
     expect(repositoryCountLabel(0)).toBe("0 repositories");
-    expect(checklistCountLabel(1)).toBe("1 checklist");
-    expect(checklistCountLabel(2)).toBe("2 checklists");
     expect(repoDisplayName({ name: "x", repoFullName: "Org/testfinals-fe" })).toBe("testfinals-fe");
     expect(repoDisplayName({ name: "local", repoFullName: null })).toBe("local");
   });
 });
 
-describe("folder checklists", () => {
+describe("folder repositories", () => {
   it("collects linked project ids once, skipping unlinked repositories", () => {
     const folder = pair();
     folder.repositories.push({ ...folder.repositories[0], repositoryId: "dup" });
     folder.repositories.push({ repositoryId: "r-x", name: "x", repoFullName: null, status: "active", project: null });
     expect(folderProjectIds(folder)).toEqual(["proj-fe", "proj-be"]);
-  });
-
-  it("counts only live checklists that share at least one repository project", () => {
-    const folder = pair();
-    const checklists = [
-      folderChecklist({ id: "all" }),
-      folderChecklist({ id: "some", sharedProjectIds: ["proj-be", "elsewhere"] }),
-      folderChecklist({ id: "other", sharedProjectIds: ["elsewhere"] }),
-      folderChecklist({ id: "archived", archived: true }),
-    ];
-    expect(folderChecklists(folder, checklists).map((c) => c.id)).toEqual(["all", "some"]);
-    expect(folderChecklists(foldersSnapshot().folders[1], checklists)).toEqual([]);
-  });
-
-  it("classifies attachment and offers only what is not fully attached", () => {
-    const folder = pair();
-    const all = folderChecklist({ id: "all" });
-    const some = folderChecklist({ id: "some", sharedProjectIds: ["proj-fe"] });
-    const none = folderChecklist({ id: "none", sharedProjectIds: [] });
-    expect(checklistAttachment(folder, all)).toBe("attached");
-    expect(checklistAttachment(folder, some)).toBe("partial");
-    expect(checklistAttachment(folder, none)).toBe("none");
-    expect(checklistAttachment(foldersSnapshot().folders[1], all)).toBe("none");
-    expect(
-      attachableChecklists(folder, [all, some, none, folderChecklist({ id: "gone", archived: true, sharedProjectIds: [] })]).map((c) => c.id),
-    ).toEqual(["some", "none"]);
-  });
-
-  it("builds PATCH bodies with exactly this Project's repository projects", () => {
-    expect(attachPatch(pair())).toEqual({ add: ["proj-fe", "proj-be"] });
-    expect(detachPatch(pair())).toEqual({ remove: ["proj-fe", "proj-be"] });
-  });
-
-  it("normalises team checklists defensively", () => {
-    expect(
-      normaliseChecklist({ id: "c", name: "", items: [{}, {}], archivedAt: "2026-01-01", sharedProjectIds: ["a", 3] }),
-    ).toEqual({ id: "c", name: "Untitled checklist", itemCount: 2, archived: true, sharedProjectIds: ["a"] });
-    expect(normaliseChecklist({ name: "no id" })).toBeNull();
-    expect(normaliseChecklists("x")).toEqual([]);
-    expect(normaliseChecklists([{ id: "a" }, null])).toHaveLength(1);
   });
 });
 
@@ -281,15 +230,13 @@ describe("validation and errors", () => {
     expect(isConflict(apiError(400))).toBe(false);
   });
 
-  it("maps create and checklist failures", () => {
+  it("maps create failures", () => {
     expect(createErrorMessage(apiError(403))).toBe("Product owners create Projects.");
     expect(createErrorMessage(apiError(403, { code: "PROJECT_CREATE_FORBIDDEN" }))).toBe(
       "Product owners create Projects.",
     );
     expect(createErrorMessage(apiError(409))).toMatch(/already exists/);
     expect(createErrorMessage(null)).toMatch(/could not be created/);
-    expect(checklistPatchErrorMessage(apiError(409))).toMatch(/archived/);
-    expect(checklistPatchErrorMessage(apiError(500))).toMatch(/could not be updated/);
   });
 });
 

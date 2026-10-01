@@ -9,3 +9,12 @@ export {
   type RequestRetestViewModel,
   type RetestTarget,
 } from "./view-models/use-request-retest-view-model";
+/* Project requirements: a Developer moves each item's Progress (To do, In
+ * progress, Done) with one control, shared by the Project's requirements and
+ * the project-wide "My QA items" list. */
+export { ProjectMyItemsCard } from "./views/project-my-items-card";
+export { ProgressControl } from "./views/progress-control";
+export {
+  useItemProgressViewModel,
+  type ItemProgressViewModel,
+} from "./view-models/use-item-progress-view-model";

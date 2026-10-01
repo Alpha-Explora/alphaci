@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { useAuthSession } from "@/features/auth/session";
+import type { AppRole } from "@/shared/api/contracts";
 import { roleCanStartRun } from "@/features/checklists";
 import {
   canCreateRepositoryWithoutProject,
@@ -13,7 +14,6 @@ import {
 import { projectFoldersRepository } from "../data/project-folders-repository";
 import { findFolder, loadErrorMessage } from "../model/project-folder-rules";
 import type {
-  FolderChecklist,
   ProjectFolder,
   ProjectFoldersSnapshot,
   ProjectFoldersStatus,
@@ -46,17 +46,20 @@ export interface ProjectFoldersViewModel {
   canCreateUnfiledRepository: boolean;
   /** QA Team, Team lead or Admin, with the checklists capability on. */
   canVerifyInQaStudio: boolean;
-  /** Checklist UI exists only with the qaChecklists capability. */
+  /** Requirements and QA UI exist only with the qaChecklists capability. */
   qaChecklistsEnabled: boolean;
-  /** Team checklists; null while loading or when the capability is off. */
-  checklists: FolderChecklist[] | null;
+  /**
+   * Live requirements per Project (by delivery project id); null while
+   * loading, when the capability is off, or when the server cannot say.
+   */
+  requirementCounts: Record<string, number> | null;
+  /** The viewer's app role, for the Project QA workspace. */
+  appRole: AppRole | null;
   /** The Project open in the detail screen, or null for the list. */
   selected: ProjectFolder | null;
   openFolder: (deliveryProjectId: string) => void;
   closeFolder: () => void;
   reload: () => void;
-  /** Merge a checklist the server just saved (after attach/detach). */
-  applyChecklist: (checklist: FolderChecklist) => void;
 }
 
 interface Loaded<T> {
@@ -84,7 +87,7 @@ export function useProjectFoldersViewModel(options: {
 
   const [snapshot, setSnapshot] = useState<Loaded<ProjectFoldersSnapshot> | null>(null);
   const [failure, setFailure] = useState<Loaded<string> | null>(null);
-  const [checklists, setChecklists] = useState<Loaded<FolderChecklist[]> | null>(null);
+  const [counts, setCounts] = useState<Loaded<Record<string, number> | null> | null>(null);
   // Kept with its team, like every other result here: switching teams closes
   // the open Project rather than reopening a same-id one elsewhere.
   const [selection, setSelection] = useState<Loaded<string> | null>(() =>
@@ -92,7 +95,7 @@ export function useProjectFoldersViewModel(options: {
   );
   const [nonce, setNonce] = useState(0);
   const foldersRequest = useRef(0);
-  const checklistsRequest = useRef(0);
+  const countsRequest = useRef(0);
 
   useEffect(() => {
     if (!groupId) return;
@@ -113,17 +116,17 @@ export function useProjectFoldersViewModel(options: {
 
   useEffect(() => {
     if (!groupId || !qaChecklistsEnabled) return;
-    checklistsRequest.current += 1;
-    const id = checklistsRequest.current;
+    countsRequest.current += 1;
+    const id = countsRequest.current;
     projectFoldersRepository
-      .listChecklists(groupId)
+      .requirementCounts(groupId)
       .then((value) => {
-        if (id === checklistsRequest.current) setChecklists({ groupId, value });
+        if (id === countsRequest.current) setCounts({ groupId, value });
       })
       .catch(() => {
-        // Counts and attach lists are extras on a usable page: without them
-        // the explorer still shows every Project and repository.
-        if (id === checklistsRequest.current) setChecklists({ groupId, value: [] });
+        // Counts are an extra on a usable page (and an older backend has no
+        // overview): without them the cards simply show no count.
+        if (id === countsRequest.current) setCounts({ groupId, value: null });
       });
   }, [groupId, qaChecklistsEnabled, nonce]);
 
@@ -139,10 +142,6 @@ export function useProjectFoldersViewModel(options: {
   );
   const closeFolder = useCallback(() => setSelection(null), []);
 
-  const applyChecklist = useCallback((saved: FolderChecklist) => {
-    setChecklists((loaded) => replaceChecklist(loaded, saved));
-  }, []);
-
   return {
     groupId,
     groupName,
@@ -154,12 +153,12 @@ export function useProjectFoldersViewModel(options: {
     canCreateUnfiledRepository: canCreateRepositoryWithoutProject(appRole),
     canVerifyInQaStudio: qaChecklistsEnabled && roleCanStartRun(appRole),
     qaChecklistsEnabled,
-    checklists: qaChecklistsEnabled ? currentFor(checklists, groupId) : null,
+    requirementCounts: qaChecklistsEnabled ? currentFor(counts, groupId) : null,
+    appRole: appRole ?? null,
     selected: findFolder(view.folders, currentFor(selection, groupId)),
     openFolder,
     closeFolder,
     reload,
-    applyChecklist,
   };
 }
 
@@ -177,17 +176,6 @@ function snapshotFields(current: ProjectFoldersSnapshot | null) {
     unfiled: current.unfiled,
     count: current.folders.length,
     canManage: current.canManage,
-  };
-}
-
-function replaceChecklist(
-  loaded: Loaded<FolderChecklist[]> | null,
-  saved: FolderChecklist,
-): Loaded<FolderChecklist[]> | null {
-  if (!loaded) return loaded;
-  return {
-    ...loaded,
-    value: loaded.value.map((entry) => (entry.id === saved.id ? saved : entry)),
   };
 }
 

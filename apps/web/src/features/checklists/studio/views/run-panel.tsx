@@ -57,8 +57,17 @@ function StartRun({
   vm,
   branch,
   appRole,
-}: Readonly<{ vm: QaRunViewModel; branch: string; appRole: AppRole | null | undefined }>) {
+  blockedReason,
+}: Readonly<{
+  vm: QaRunViewModel;
+  branch: string;
+  appRole: AppRole | null | undefined;
+  blockedReason: string | null;
+}>) {
   const starting = vm.status === "starting";
+  if (blockedReason) {
+    return <PanelState title="No new repository runs" text={blockedReason} />;
+  }
   if (!vm.commitSha) {
     return (
       <PanelState
@@ -137,7 +146,7 @@ function RunBody({
   return (
     <div className="qa-run">
       <RunHeader run={run} exporter={exporter} />
-      <SignoffBanner run={run} reopen={reopen} />
+      <SignoffBanner run={run} subject={commitLabel(run.branch, run.commitSha)} reopen={reopen} />
       <RunSummary run={run} />
       <AutomationPanel vm={automation} run={run} />
       <ol className="qa-run__items">
@@ -155,7 +164,9 @@ function RunBody({
         ))}
       </ol>
       {open ? <SignoffFooter vm={signoff} /> : null}
-      {signoff.canSignOff ? <SignoffDialog vm={signoff} run={run} /> : null}
+      {signoff.canSignOff ? (
+        <SignoffDialog vm={signoff} description={`${run.checklistName} on ${commitLabel(run.branch, run.commitSha)}`} />
+      ) : null}
     </div>
   );
 }
@@ -166,11 +177,17 @@ export function RunPanel({
   vm,
   branch,
   appRole,
+  startBlockedReason = null,
 }: Readonly<{
   projectId: string;
   vm: QaRunViewModel;
   branch: string;
   appRole: AppRole | null | undefined;
+  /**
+   * Why no new repository run can start here (it is history: QA verifies
+   * the Project). Null keeps the Start button.
+   */
+  startBlockedReason?: string | null;
 }>) {
   if (vm.status === "idle" || vm.status === "loading") return <RunSkeleton />;
   if (vm.status === "error") {
@@ -182,7 +199,7 @@ export function RunPanel({
       </PanelState>
     );
   }
-  if (!vm.run) return <StartRun vm={vm} branch={branch} appRole={appRole} />;
+  if (!vm.run) return <StartRun vm={vm} branch={branch} appRole={appRole} blockedReason={startBlockedReason} />;
   // Keyed by run: a reopened or newly started run gets fresh drafts and dialogs.
   return <RunBody key={vm.run.id} projectId={projectId} vm={vm} run={vm.run} appRole={appRole} />;
 }

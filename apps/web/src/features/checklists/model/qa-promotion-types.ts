@@ -8,6 +8,7 @@
  * crashing the studio. The server alone decides eligibility and who may
  * merge; the client only explains it. */
 
+import type { HeadStatus } from "./project-run-types";
 import type { QaRunStatus, QaVerdict } from "./qa-run-types";
 
 export interface QaPromotionChecklistWire {
@@ -34,6 +35,12 @@ export interface QaPromotionStatusWire {
   reasons?: unknown;
   pullRequest?: unknown;
   canMerge?: unknown;
+  /* Newer backends: the Project-level gate (design section 3.2). */
+  scope?: unknown;
+  deliveryProject?: unknown;
+  run?: unknown;
+  repositories?: unknown;
+  requirementsChanged?: unknown;
 }
 
 export interface QaPromotionMergeWire {
@@ -62,6 +69,22 @@ export interface QaPromotionPullRequest {
   headSha: string | null;
 }
 
+/**
+ * `project`: the repository is filed under a Project and the Project's latest
+ * signed-off run decides. `unfiled`: it is not, so it is blocked
+ * (QA_PROJECT_REQUIRED). Null: an older backend still gating per checklist.
+ */
+export type QaPromotionScope = "project" | "unfiled";
+
+/** The Project's latest signed-off QA run, as the gate weighs it. */
+export interface QaPromotionRun {
+  id: string;
+  verdict: QaVerdict | null;
+  signedAt: string | null;
+  /** A repository moved or joined the Project since: it no longer counts. */
+  stale: boolean;
+}
+
 export interface QaPromotionStatus {
   qaBranch: string;
   targetBranch: string;
@@ -76,6 +99,13 @@ export interface QaPromotionStatus {
   pullRequest: QaPromotionPullRequest | null;
   /** Server-decided for this viewer. Absent means no. */
   canMerge: boolean;
+  scope: QaPromotionScope | null;
+  deliveryProject: { id: string; name: string } | null;
+  run: QaPromotionRun | null;
+  /** Every repository of the Project: its uat head now, against the run's. */
+  repositories: HeadStatus[];
+  /** Informational only: requirements were edited since the sign-off. */
+  requirementsChanged: boolean;
 }
 
 export interface QaPromotionMergeResult {
@@ -92,6 +122,7 @@ export type QaPromotionMergeErrorKind =
   | "blocked"
   | "moved"
   | "reauth"
+  | "project_required"
   | "forbidden"
   | "not_found"
   | "failed";

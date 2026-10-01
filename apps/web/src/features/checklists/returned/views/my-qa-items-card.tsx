@@ -11,6 +11,7 @@ import { SeverityBadge } from "../../items";
 import { groupByCommit, myItemKey, myItemsCount } from "../../model/qa-my-items-rules";
 import { agoLabel, commitLabel, roleCanRequestRetest } from "../../model/qa-run-rules";
 import type { QaDeveloperItem, QaReturnedItem } from "../../model/qa-run-types";
+import { REPOSITORY_SCOPE, type QaScope } from "../../model/qa-scope";
 import {
   useDeveloperItemEditorViewModel,
   type DeveloperItemEditorViewModel,
@@ -21,6 +22,7 @@ import {
   type RequestRetestViewModel,
 } from "../view-models/use-request-retest-view-model";
 import { DeveloperItemRow } from "./developer-item-row";
+import { ProjectMyItemsCard } from "./project-my-items-card";
 import { RetestForm } from "./retest-form";
 
 function Detail({ label, text }: Readonly<{ label: string; text: string | null }>) {
@@ -164,18 +166,7 @@ function LoadError({ message, onRetry }: Readonly<{ message: string | null; onRe
   );
 }
 
-/**
- * The Overview's "My QA items" card: what QA returned on this project (with
- * "Mark fixed & request re-test"), and the current uat run's developer items
- * with the same status control QA Studio uses. It appears only while there is
- * something in either list; the server decides who may change each item.
- */
-export function MyQaItemsCard({
-  projectId,
-  enabled,
-  appRole,
-  highlightRequested = false,
-}: Readonly<{
+type MyQaItemsCardProps = Readonly<{
   projectId: string;
   enabled: boolean;
   appRole: AppRole | null | undefined;
@@ -183,7 +174,48 @@ export function MyQaItemsCard({
    * card to scroll into view and briefly highlight itself once it has
    * something to show. */
   highlightRequested?: boolean;
-}>) {
+  /**
+   * Where this repository's QA happens. Filed under a Project, the card is
+   * the Project-wide list; otherwise (or on a server without it) the
+   * per-repository card below.
+   */
+  qaScope?: QaScope;
+}>;
+
+/**
+ * The Overview's "My QA items" card. For a repository filed under a Project
+ * it lists the whole Project's items (QA verifies the Project, so the work is
+ * shared); for any other repository it is the per-repository card.
+ */
+export function MyQaItemsCard({ qaScope = REPOSITORY_SCOPE, ...props }: MyQaItemsCardProps) {
+  if (qaScope.kind === "pending") return null;
+  if (qaScope.kind === "project") {
+    return (
+      <ProjectMyItemsCard
+        deliveryProjectId={qaScope.deliveryProjectId}
+        enabled={props.enabled}
+        appRole={props.appRole}
+        highlightRequested={props.highlightRequested}
+        hideWhenEmpty
+        fallback={<RepositoryMyQaItemsCard {...props} />}
+      />
+    );
+  }
+  return <RepositoryMyQaItemsCard {...props} />;
+}
+
+/**
+ * The per-repository "My QA items" card: what QA returned on this project (with
+ * "Mark fixed & request re-test"), and the current uat run's developer items
+ * with the same status control QA Studio uses. It appears only while there is
+ * something in either list; the server decides who may change each item.
+ */
+function RepositoryMyQaItemsCard({
+  projectId,
+  enabled,
+  appRole,
+  highlightRequested = false,
+}: Omit<MyQaItemsCardProps, "qaScope">) {
   const list = useMyQaItemsViewModel({ projectId, enabled });
   const retest = useRequestRetestViewModel({ projectId, onDone: list.reload });
   const editor = useDeveloperItemEditorViewModel({ projectId, onRun: list.applyRun });

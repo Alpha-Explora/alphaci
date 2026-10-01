@@ -7,7 +7,8 @@
  *   - `@/features/checklists/items`   — read-only item rendering
  *   - `@/features/checklists/studio`  — the project's QA Studio tab
  *   - `@/features/checklists/returned` — the Overview's "My QA items" card
- *   - `@/features/checklists/report`  — the printable QA report page */
+ *   - `@/features/checklists/report`  — the printable QA report page
+ *   - `@/features/checklists/requirements` — a Project's requirements and QA workspace */
 export type {
   ChecklistShareTarget,
   ChecklistTargetPersona,
@@ -25,6 +26,11 @@ export {
 } from "./model/checklist-rules";
 
 export { qaStudioHref } from "./model/qa-report-rules";
+/* Where a repository's QA happens (its Project, or the repository itself). */
+export { qaScopeFromFolder, REPOSITORY_SCOPE, type QaScope } from "./model/qa-scope";
+/* Project requirement counts for the team's Project cards. */
+export { requirementCountLabel } from "./model/requirement-rules";
+export { requirementsRepository } from "./data/requirements-repository";
 export { roleCanStartRun } from "./model/qa-run-rules";
 /* Team-level checklist reads and share edits, for features that show a
  * team's checklists in their own context (the Teams project explorer). */

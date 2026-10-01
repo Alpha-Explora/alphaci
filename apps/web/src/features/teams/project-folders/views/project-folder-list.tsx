@@ -2,22 +2,17 @@
 
 import Link from "next/link";
 
+import { requirementCountLabel } from "@/features/checklists";
 import { LoadingRows } from "@/features/groups/workspace";
 
 import {
-  checklistCountLabel,
   createRepositoryHref,
   emptyProjectsCopy,
-  folderChecklists,
   folderLandingProjectId,
   projectDashboardHref,
   repositoryCountLabel,
 } from "../model/project-folder-rules";
-import type {
-  FolderChecklist,
-  ProjectFolder,
-  UnfiledProject,
-} from "../model/project-folder-types";
+import type { ProjectFolder, UnfiledProject } from "../model/project-folder-types";
 import type { ProjectFoldersViewModel } from "../view-models/use-project-folders-view-model";
 import {
   ChecklistIcon,
@@ -31,16 +26,16 @@ import { RepoChip } from "./repo-chip";
 
 function FolderMeta({
   folder,
-  checklists,
-}: Readonly<{ folder: ProjectFolder; checklists: FolderChecklist[] | null }>) {
-  const count = checklists ? folderChecklists(folder, checklists).length : null;
+  requirementCounts,
+}: Readonly<{ folder: ProjectFolder; requirementCounts: Record<string, number> | null }>) {
+  const count = requirementCounts ? (requirementCounts[folder.deliveryProjectId] ?? 0) : null;
   return (
     <span className="pf-card__meta">
       <span>{repositoryCountLabel(folder.repositories.length)}</span>
       {count === null ? null : (
         <span className={`pf-card__checklists${count === 0 ? " pf-card__checklists--none" : ""}`}>
           <ChecklistIcon />
-          {checklistCountLabel(count)}
+          {requirementCountLabel(count)}
         </span>
       )}
     </span>
@@ -51,7 +46,7 @@ function FolderMeta({
  * One Project. The card itself opens the Project as one product — its
  * frontend's page, which carries a switch to the other repositories — and
  * "Manage" (a sibling control, never nested inside the card's link) opens the
- * Project's detail: repositories, Move, checklists and Delete Project. A
+ * Project's detail: repositories, Move, requirements and QA, and Delete Project. A
  * Project with no linked repository has no page to open, so its card opens
  * the detail as it always did. A Developer (or admin) also gets "Add
  * repository" beside Manage: the create wizard, filed in this Project.
@@ -62,12 +57,12 @@ function FolderMeta({
  */
 function FolderCard({
   folder,
-  checklists,
+  requirementCounts,
   addRepositoryHref,
   onOpen,
 }: Readonly<{
   folder: ProjectFolder;
-  checklists: FolderChecklist[] | null;
+  requirementCounts: Record<string, number> | null;
   /** The wizard filed in this Project; null when the caller may not add one. */
   addRepositoryHref: string | null;
   onOpen: () => void;
@@ -80,7 +75,7 @@ function FolderCard({
       </span>
       <span className="pf-card__text">
         <span className="pf-card__name">{folder.name}</span>
-        <FolderMeta folder={folder} checklists={checklists} />
+        <FolderMeta folder={folder} requirementCounts={requirementCounts} />
       </span>
       <span className="pf-card__chevron">
         <ChevronIcon />
@@ -212,7 +207,7 @@ export function ProjectFolderList({
             <FolderCard
               key={folder.deliveryProjectId}
               folder={folder}
-              checklists={vm.checklists}
+              requirementCounts={vm.requirementCounts}
               addRepositoryHref={
                 vm.canCreateRepository ? createRepositoryHref(vm.groupId, folder.deliveryProjectId) : null
               }

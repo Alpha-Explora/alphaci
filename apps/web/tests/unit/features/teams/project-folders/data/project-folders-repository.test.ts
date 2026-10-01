@@ -1,5 +1,4 @@
 import { request } from "../../../../../../src/shared/api/request";
-import { checklistsRepository } from "../../../../../../src/features/checklists/data/checklists-repository";
 import { projectFoldersRepository } from "../../../../../../src/features/teams/project-folders/data/project-folders-repository";
 import { foldersWire, GROUP_ID } from "../folder-fixtures";
 
@@ -66,21 +65,17 @@ describe("projectFoldersRepository", () => {
     });
   });
 
-  it("lists the team's live checklists", async () => {
-    mockedRequest.mockResolvedValue({ items: [{ id: "cl-1", name: "Smoke", items: [{}], archivedAt: null, sharedProjectIds: ["p"] }], canManage: true });
-    const checklists = await projectFoldersRepository.listChecklists(GROUP_ID);
-    expect(mockedRequest).toHaveBeenCalledWith("/workspaces/ws-1/qa-checklists?includeArchived=false");
-    expect(checklists).toEqual([{ id: "cl-1", name: "Smoke", itemCount: 1, archived: false, sharedProjectIds: ["p"] }]);
-  });
-
-  it("edits shares with PATCH, never the PUT full replace", async () => {
-    mockedRequest.mockResolvedValue({ id: "cl-1", name: "Smoke", items: [], archivedAt: null, sharedProjectIds: [] });
-    const share = jest.spyOn(checklistsRepository, "share");
-    await projectFoldersRepository.updateChecklistShares("cl-1", { remove: ["proj-fe"] });
-    expect(mockedRequest).toHaveBeenCalledWith("/qa-checklists/cl-1/projects", {
-      method: "PATCH",
-      body: JSON.stringify({ remove: ["proj-fe"] }),
+  it("reads each Project's live requirement count from the team overview", async () => {
+    mockedRequest.mockResolvedValue({
+      groups: [
+        { deliveryProject: { id: "dp-1", name: "storefront" }, requirements: [{ id: "r1" }, { id: "r2", archivedAt: "2026-10-01" }] },
+        { deliveryProject: { id: "dp-2", name: "loyalty" }, requirements: [] },
+      ],
+      unassigned: [],
+      permissions: { canManage: true },
     });
-    expect(share).not.toHaveBeenCalled();
+    const counts = await projectFoldersRepository.requirementCounts(GROUP_ID);
+    expect(mockedRequest).toHaveBeenCalledWith("/workspaces/ws-1/qa-requirements/overview");
+    expect(counts).toEqual({ "dp-1": 1, "dp-2": 0 });
   });
 });

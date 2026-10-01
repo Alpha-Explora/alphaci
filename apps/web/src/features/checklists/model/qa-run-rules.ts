@@ -20,6 +20,7 @@ import type {
   QaSignoffInput,
   UpdateQaRunItemInput,
 } from "./qa-run-types";
+import { isStaleCode, qaCodeMessage } from "./qa-error-messages";
 
 /* ── Labels ─────────────────────────────────────────────────────────────── */
 
@@ -159,6 +160,27 @@ export function roleCanRequestRetest(role: AppRole | null | undefined): boolean 
   return role === "member" || role === "lead" || role === "admin";
 }
 
+/**
+ * A repository run the server marks `legacy` is read-only history: QA now
+ * verifies the whole Project. Every permission is dropped here so no screen
+ * offers a write the server refuses with QA_RUN_LEGACY_READONLY. A run
+ * without the flag (an older backend) is returned unchanged.
+ */
+export function lockLegacyRun(run: QaRun): QaRun {
+  if (run.legacy !== true) return run;
+  return {
+    ...run,
+    permissions: {
+      canUpdateItems: false,
+      canReturnToDev: false,
+      canRequestRetest: false,
+      canSignOff: false,
+      canReopen: false,
+    },
+    items: run.items.map((item) => ({ ...item, canUpdate: false })),
+  };
+}
+
 /** Whether this viewer may change this item at all, on this run. */
 export function canEditItem(
   item: Pick<QaRunItem, "canUpdate">,
@@ -285,6 +307,11 @@ export function previousResultLabel(item: Pick<QaRunItem, "previous">): string |
 
 /* ── Signoff ─────────────────────────────────────────────────────────────── */
 
+/** What sign-off weighs: each item's status, on a repository run or a Project run. */
+export interface SignoffItems {
+  items: ReadonlyArray<Pick<QaRunItem, "status">>;
+}
+
 export interface VerdictEligibility {
   verdict: QaVerdict;
   allowed: boolean;
@@ -318,7 +345,7 @@ function conditionalReason(items: ReadonlyArray<Pick<QaRunItem, "status">>): str
  * checked on submit); Rejected is always open.
  */
 export function signoffEligibility(
-  run: Pick<QaRun, "items">,
+  run: SignoffItems,
 ): VerdictEligibility[] {
   const reasons: Record<QaVerdict, string | null> = {
     APPROVED: approvedReason(run.items),
@@ -333,12 +360,12 @@ export function signoffEligibility(
 }
 
 /** The first verdict the run can take, preferring Approved. */
-export function defaultVerdict(run: Pick<QaRun, "items">): QaVerdict {
+export function defaultVerdict(run: SignoffItems): QaVerdict {
   return signoffEligibility(run).find((entry) => entry.allowed)?.verdict ?? "REJECTED";
 }
 
 export function signoffError(
-  run: Pick<QaRun, "items">,
+  run: SignoffItems,
   verdict: QaVerdict,
   conditions: string,
 ): string | null {
@@ -417,6 +444,9 @@ function fallbackFor(status: number | null, fallback: string): string {
  * required…); a stale rowVersion is flagged so the view can offer a reload.
  */
 export function qaActionError(cause: unknown, fallback: string): QaActionError {
+  // A code with a product sentence (a legacy run, Passed before Done…) wins.
+  const coded = qaCodeMessage(cause);
+  if (coded) return { message: coded, stale: isStaleCode(cause) };
   const status = errorStatus(cause);
   const stale = isStaleRunConflict(cause);
   const message = serverMessage(cause);

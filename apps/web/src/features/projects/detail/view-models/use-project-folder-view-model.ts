@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 
 import { projectsRepository } from "../../data/projects-repository";
-import { repoSwitchPresentation } from "../model/project-folder-rules";
+import { manageProjectHref, repoSwitchPresentation } from "../model/project-folder-rules";
 import type {
   ProjectFolderStatus,
   ProjectFolderSummary,
@@ -12,6 +12,12 @@ import type {
 
 export interface ProjectFolderViewModel extends RepoSwitchPresentation {
   status: ProjectFolderStatus;
+  /**
+   * The Project this repository is filed under, whatever its size (the
+   * presentation above only names Projects of two or more repositories).
+   * Null fields: no Project, or the folder could not be read.
+   */
+  project: { deliveryProjectId: string | null; name: string | null; href: string | null };
 }
 
 interface Loaded {
@@ -24,6 +30,15 @@ function statusOf(active: boolean, current: Loaded | null): ProjectFolderStatus 
   if (!active) return "idle";
   if (!current) return "loading";
   return current.folder ? "ready" : "unavailable";
+}
+
+/** The Project fields the QA screens need, whatever the Project's size. */
+function projectOf(folder: ProjectFolderSummary | null): ProjectFolderViewModel["project"] {
+  return {
+    deliveryProjectId: folder?.deliveryProjectId ?? null,
+    name: folder?.name || null,
+    href: manageProjectHref(folder),
+  };
 }
 
 /**
@@ -65,5 +80,6 @@ export function useProjectFolderViewModel(options: {
   return {
     status: statusOf(active, current),
     ...repoSwitchPresentation(current?.folder, projectId),
+    project: projectOf(current?.folder ?? null),
   };
 }

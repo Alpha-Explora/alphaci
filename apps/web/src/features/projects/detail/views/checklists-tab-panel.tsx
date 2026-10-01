@@ -2,6 +2,7 @@
 
 import type { ReactNode } from "react";
 
+import type { QaScope } from "@/features/checklists";
 import { ProjectChecklistsPanel } from "@/features/checklists/project";
 import type { ProvisionedProject } from "@/features/projects";
 
@@ -11,15 +12,18 @@ import type { ProvisionedProject } from "@/features/projects";
  */
 export function ChecklistsTabPanel({
   project,
+  qaScope,
 }: Readonly<{
   project: ProvisionedProject;
   vm?: unknown;
   dangerZone?: ReactNode;
+  qaScope?: QaScope;
 }>) {
   return (
     <ProjectChecklistsPanel
       projectId={project.id}
       workspaceId={project.workspaceId ?? null}
+      qaScope={qaScope}
     />
   );
 }

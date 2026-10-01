@@ -34,6 +34,7 @@ const FOLDER: ProjectFolderViewModel = {
   status: "ready",
   projectName: "shop",
   manageHref: "/workflows?group=ws-1&project=dp-1",
+  project: { deliveryProjectId: "dp-1", name: "shop", href: "/workflows?group=ws-1&project=dp-1" },
   options: [
     { key: "proj-fe", projectId: "proj-fe", role: "frontend", roleLabel: "FRONTEND", label: "shop-fe", repoFullName: "Org/shop-fe", current: true, disabled: false },
     { key: "proj-be", projectId: "proj-be", role: "backend", roleLabel: "BACKEND", label: "shop-be", repoFullName: "Org/shop-be", current: false, disabled: false },

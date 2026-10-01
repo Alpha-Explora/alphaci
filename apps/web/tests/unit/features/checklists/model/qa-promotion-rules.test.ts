@@ -38,6 +38,11 @@ describe("normalizePromotionStatus", () => {
       reasons: ["Accessibility pass has no QA run on uat @ 9f8e7d6."],
       pullRequest: { number: 42, url: "https://github.com/tone/storefront-web/pull/42", headSha: HEAD_SHA },
       canMerge: true,
+      scope: null,
+      deliveryProject: null,
+      run: null,
+      repositories: [],
+      requirementsChanged: false,
     });
   });
 
@@ -51,6 +56,11 @@ describe("normalizePromotionStatus", () => {
       reasons: [],
       pullRequest: null,
       canMerge: false,
+      scope: null,
+      deliveryProject: null,
+      run: null,
+      repositories: [],
+      requirementsChanged: false,
     });
   });
 

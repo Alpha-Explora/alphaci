@@ -16,23 +16,22 @@ export interface QaReopenViewModel {
 
 const REOPEN_ERROR = "The run could not be reopened. Try again in a moment.";
 
-/** ViewModel for reopening a signed-off run, so its items can change again. */
-export function useQaReopenViewModel(options: {
-  projectId: string;
-  run: QaRun;
-  onRun: (run: QaRun) => void;
+/** Reopening any signed-off run (repository or Project), so its items can change again. */
+export function useReopenRunViewModel(options: {
+  /** Server-decided, and only for a run that is signed off. */
+  canReopen: boolean;
+  send: () => Promise<void>;
 }): QaReopenViewModel {
-  const { projectId, run, onRun } = options;
+  const { canReopen, send } = options;
   const [reopening, setReopening] = useState(false);
   const [error, setError] = useState<QaActionError | null>(null);
-  const canReopen = run.permissions.canReopen && isSignedOff(run);
 
   async function reopen() {
     if (!canReopen || reopening) return;
     setReopening(true);
     setError(null);
     try {
-      onRun(await qaRunsRepository.reopen(projectId, run.id));
+      await send();
     } catch (cause) {
       setError(qaActionError(cause, REOPEN_ERROR));
     } finally {
@@ -41,4 +40,17 @@ export function useQaReopenViewModel(options: {
   }
 
   return { status: reopening ? "reopening" : "idle", canReopen, error, reopen };
+}
+
+/** ViewModel for reopening a signed-off repository run. */
+export function useQaReopenViewModel(options: {
+  projectId: string;
+  run: QaRun;
+  onRun: (run: QaRun) => void;
+}): QaReopenViewModel {
+  const { projectId, run, onRun } = options;
+  return useReopenRunViewModel({
+    canReopen: run.permissions.canReopen && isSignedOff(run),
+    send: async () => onRun(await qaRunsRepository.reopen(projectId, run.id)),
+  });
 }

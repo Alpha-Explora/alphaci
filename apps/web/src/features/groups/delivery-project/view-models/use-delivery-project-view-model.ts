@@ -4,6 +4,8 @@ import { useState } from "react";
 
 import { useApiResource } from "@/features/groups";
 import { useAuthSession } from "@/features/auth/session";
+import { useCapabilities } from "@/features/capabilities/current";
+import type { AppRole } from "@/shared/api/contracts";
 
 import { groupsRepository } from "../../data/groups-repository";
 import { canCreateRepositoryInProject } from "../../model/creation-role-rules";
@@ -27,6 +29,10 @@ export interface DeliveryProjectViewModel {
   reloadRepositories: () => void;
   /** Whether the caller may create a repository here (Developer, admin). */
   canCreateRepository: boolean;
+  /** The caller's app role, for the Project's requirements and QA. */
+  appRole: AppRole | null;
+  /** Requirements and QA exist only with the qaChecklists capability. */
+  qaEnabled: boolean;
   dialogOpen: boolean;
   setDialogOpen: (open: boolean) => void;
   prependRepository: (repository: HierarchyRepository) => void;
@@ -45,6 +51,7 @@ export function useDeliveryProjectViewModel(
 ): DeliveryProjectViewModel {
   const [dialogOpen, setDialogOpen] = useState(false);
   const { session } = useAuthSession();
+  const { qaChecklistsEnabled } = useCapabilities();
 
   const groupResource = useApiResource<GroupSummary>(
     () => groupsRepository.group(groupId),
@@ -69,6 +76,8 @@ export function useDeliveryProjectViewModel(
     repositoriesStatus: reposResource.state,
     reloadRepositories: reposResource.reload,
     canCreateRepository: canCreateRepositoryInProject(session?.appRole),
+    appRole: session?.appRole ?? null,
+    qaEnabled: qaChecklistsEnabled && Boolean(session?.appRole),
     dialogOpen,
     setDialogOpen,
     prependRepository: (repository) =>

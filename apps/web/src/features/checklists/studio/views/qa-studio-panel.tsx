@@ -7,21 +7,24 @@ import { useId, type ReactNode, type Ref } from "react";
 import type { AppRole } from "@/shared/api/contracts";
 
 import { itemCountLabel } from "../../model/checklist-rules";
+import { QA_ERROR_MESSAGES } from "../../model/qa-error-messages";
+import { UNFILED_REASON } from "../../model/qa-promotion-rules";
 import { passedLabel } from "../../model/qa-run-rules";
 import type { QaRun } from "../../model/qa-run-types";
+import { REPOSITORY_SCOPE, type QaScope } from "../../model/qa-scope";
 import { automationSignal, launcherLabel, NO_QA_ENVIRONMENT } from "../../model/qa-studio-rules";
 import { useFloatingChecklistFocus } from "../view-models/use-floating-checklist-focus";
-import { useQaPromotionViewModel } from "../view-models/use-qa-promotion-view-model";
-import { useQaRunViewModel, type QaRunViewModel } from "../view-models/use-qa-run-view-model";
-import {
-  useStudioChecklistsViewModel,
-  type StudioChecklistsViewModel,
-} from "../view-models/use-studio-checklists-view-model";
+import type { ProjectRunViewModel } from "../view-models/use-project-run-view-model";
+import type { QaPromotionViewModel } from "../view-models/use-qa-promotion-view-model";
+import { useStudioRunsViewModel } from "../view-models/use-studio-runs-view-model";
+import type { QaRunViewModel } from "../view-models/use-qa-run-view-model";
+import type { StudioChecklistsViewModel } from "../view-models/use-studio-checklists-view-model";
 import {
   useStudioViewportViewModel,
   type StudioViewportViewModel,
 } from "../view-models/use-studio-viewport-view-model";
 import { PreviewPane } from "./preview-pane";
+import { ProjectRunPanel } from "./project-run-panel";
 import { PromotionCard } from "./promotion-card";
 import { RunPanel } from "./run-panel";
 import { ChecklistIcon, DockIcon, MinimizeIcon, SwapIcon } from "./studio-icons";
@@ -77,6 +80,18 @@ function ChecklistPicker({ vm }: Readonly<{ vm: StudioChecklistsViewModel }>) {
   );
 }
 
+/**
+ * Why no new repository run can start, once the server gates by Project: the
+ * repository's runs are history (QA verifies its Project), or it is not in a
+ * Project at all. Null on an older backend, which still runs per repository.
+ */
+function legacyStartBlock(promotion: QaPromotionViewModel): string | null {
+  const scope = promotion.data?.scope ?? null;
+  if (scope === "unfiled") return UNFILED_REASON;
+  if (scope === "project") return QA_ERROR_MESSAGES.QA_RUN_LEGACY_READONLY;
+  return null;
+}
+
 /** The right pane: pick a checklist, then the run for it on the branch under test. */
 function RunColumn({
   projectId,
@@ -84,12 +99,14 @@ function RunColumn({
   checklists,
   viewport,
   run,
+  startBlockedReason,
 }: Readonly<{
   projectId: string;
   appRole: AppRole | null | undefined;
   checklists: StudioChecklistsViewModel;
   viewport: StudioViewportViewModel;
   run: QaRunViewModel;
+  startBlockedReason: string | null;
 }>) {
   if (checklists.status === "loading") return <RunSkeletonCard />;
   if (checklists.status === "error") {
@@ -106,12 +123,16 @@ function RunColumn({
     return (
       <StudioNotice
         title="No checklist to verify"
-        text="When a team lead shares a QA checklist to this project, it can be verified here against each deployed branch."
+        text={
+          startBlockedReason ??
+          "When a team lead shares a QA checklist to this project, it can be verified here against each deployed branch."
+        }
       />
     );
   }
   return (
     <div className="qa-run-card">
+      {startBlockedReason ? <p className="qa-run-card__history">{startBlockedReason}</p> : null}
       <ChecklistPicker vm={checklists} />
       {viewport.environment ? (
         <RunPanel
@@ -119,6 +140,7 @@ function RunColumn({
           vm={run}
           branch={viewport.environment.branch}
           appRole={appRole}
+          startBlockedReason={startBlockedReason}
         />
       ) : (
         <p className="qa-run-card__wait">{NO_QA_ENVIRONMENT.runText}</p>
@@ -151,6 +173,9 @@ function PreviewColumn({ vm }: Readonly<{ vm: StudioViewportViewModel }>) {
 }
 
 /** The floating drawer's header: what it is, how far the run is, and where it goes. */
+/** What the drawer and its launcher read of a run: a repository run, or a Project run. */
+type DrawerRun = Pick<QaRun, "summary"> & Partial<Pick<QaRun, "automation">>;
+
 function DrawerHeader({
   vm,
   run,
@@ -159,7 +184,7 @@ function DrawerHeader({
   headingRef,
 }: Readonly<{
   vm: StudioViewportViewModel;
-  run: QaRun | null;
+  run: DrawerRun | null;
   drawerId: string;
   headingId: string;
   headingRef: Ref<HTMLHeadingElement>;
@@ -217,11 +242,11 @@ function ChecklistLauncher({
   launcherRef,
 }: Readonly<{
   vm: StudioViewportViewModel;
-  run: QaRun | null;
+  run: DrawerRun | null;
   drawerId: string;
   launcherRef: Ref<HTMLButtonElement>;
 }>) {
-  const signal = automationSignal(run);
+  const signal = automationSignal(run ? { automation: run.automation } : null);
   return (
     <button
       ref={launcherRef}
@@ -245,24 +270,19 @@ function checklistMode(vm: StudioViewportViewModel): "docked" | "open" | "minimi
   return vm.isChecklistOpen ? "open" : "minimized";
 }
 
+type CommitChip = { commitSha: string | null; commitSource: QaRunViewModel["commitSource"] } | null;
+
 /** What the toolbar's commit chip and the drawer/launcher show, once the run lookup has answered. */
-function runSnapshot(run: QaRunViewModel): {
-  commit: { commitSha: string | null; commitSource: QaRunViewModel["commitSource"] } | null;
-  current: QaRun | null;
-} {
+function runSnapshot(run: QaRunViewModel): { commit: CommitChip; current: QaRun | null } {
   if (run.status !== "ready") return { commit: null, current: null };
   return { commit: { commitSha: run.commitSha, commitSource: run.commitSource }, current: run.run };
 }
 
-/**
- * What the promotion card watches: the selected run's id, status and sign-off,
- * once the run lookup has answered. Signing off or reopening changes it, and
- * the card re-reads whether uat is ready for main.
- */
-function promotionWatch(run: QaRunViewModel): string | null {
-  if (run.status !== "ready" && run.status !== "starting") return null;
-  const current = run.run;
-  return [current?.id, current?.status, current?.signoff?.id].map((part) => part ?? "").join("|");
+/** The same, for a Project run: this repository's uat head, and the Project run. */
+function projectSnapshot(run: ProjectRunViewModel, projectId: string): { commit: CommitChip; current: DrawerRun | null } {
+  if (run.status !== "ready") return { commit: null, current: null };
+  const head = run.heads.find((entry) => entry.projectId === projectId) ?? null;
+  return { commit: head ? { commitSha: head.currentSha, commitSource: null } : null, current: run.run };
 }
 
 /**
@@ -281,7 +301,7 @@ function RunDock({
   children,
 }: Readonly<{
   vm: StudioViewportViewModel;
-  run: QaRun | null;
+  run: DrawerRun | null;
   drawerId: string;
   headingId: string;
   headingRef: Ref<HTMLHeadingElement>;
@@ -302,6 +322,58 @@ function RunDock({
       {promotion}
       {children}
     </div>
+  );
+}
+
+/**
+ * The run column's content: nothing yet while the repository's Project is
+ * read, the Project's QA run for a repository filed under a Project, else the
+ * per-repository checklist run (history once the server gates by Project).
+ */
+function StudioColumn({
+  qaScope,
+  projectMode,
+  projectRun,
+  projectId,
+  appRole,
+  checklists,
+  viewport,
+  run,
+  promotion,
+}: Readonly<{
+  qaScope: QaScope;
+  projectMode: boolean;
+  projectRun: ProjectRunViewModel;
+  projectId: string;
+  appRole: AppRole | null | undefined;
+  checklists: StudioChecklistsViewModel;
+  viewport: StudioViewportViewModel;
+  run: QaRunViewModel;
+  promotion: QaPromotionViewModel;
+}>) {
+  if (qaScope.kind === "pending") return <RunSkeletonCard />;
+  if (projectMode && qaScope.kind === "project") {
+    return (
+      <div className="qa-run-card">
+        <div className="qa-run-card__head">
+          <div className="qa-run-card__picker">
+            <span className="qa-toolbar__label">Project QA run</span>
+            <h3 className="qa-run-card__title">{qaScope.projectName}</h3>
+          </div>
+        </div>
+        <ProjectRunPanel deliveryProjectId={qaScope.deliveryProjectId} vm={projectRun} appRole={appRole} />
+      </div>
+    );
+  }
+  return (
+    <RunColumn
+      projectId={projectId}
+      appRole={appRole}
+      checklists={checklists}
+      viewport={viewport}
+      run={run}
+      startBlockedReason={legacyStartBlock(promotion)}
+    />
   );
 }
 
@@ -327,34 +399,29 @@ export function QaStudioPanel({
   projectId,
   appRole,
   projectName,
+  qaScope = REPOSITORY_SCOPE,
 }: Readonly<{
   projectId: string;
   appRole: AppRole | null | undefined;
   /** How the merge confirmation names the project, e.g. "tone/storefront-web". */
   projectName?: string;
+  /**
+   * Where this repository's QA happens. Filed under a Project, the run column
+   * is the Project's QA run; otherwise (or on a server without Project runs)
+   * it is the per-repository checklist run, as before.
+   */
+  qaScope?: QaScope;
 }>) {
-  const enabled = Boolean(projectId);
-  const viewport = useStudioViewportViewModel({ projectId, enabled });
-  const checklists = useStudioChecklistsViewModel({ projectId, enabled });
-  const run = useQaRunViewModel({
-    projectId,
-    enabled,
-    branch: viewport.environment?.branch ?? null,
-    checklistId: checklists.selected?.id ?? null,
-  });
-  const promotion = useQaPromotionViewModel({
-    projectId,
-    enabled,
-    appRole,
-    watch: promotionWatch(run),
-  });
+  const viewport = useStudioViewportViewModel({ projectId, enabled: Boolean(projectId) });
+  const runs = useStudioRunsViewModel({ projectId, appRole, qaScope, branch: viewport.environment?.branch ?? null });
+  const { projectMode, projectRun, checklists, run, promotion } = runs;
   const focus = useFloatingChecklistFocus({
     isFullScreen: viewport.isFullScreen,
     isChecklistOpen: viewport.isChecklistOpen,
   });
   const drawerId = useId();
   const headingId = useId();
-  const snapshot = runSnapshot(run);
+  const snapshot = projectMode ? projectSnapshot(projectRun, projectId) : runSnapshot(run);
   const mode = checklistMode(viewport);
 
   return (
@@ -382,12 +449,16 @@ export function QaStudioPanel({
           headingRef={focus.drawerRef}
           promotion={<PromotionCard vm={promotion} projectName={projectName ?? projectId} />}
         >
-          <RunColumn
+          <StudioColumn
+            qaScope={qaScope}
+            projectMode={projectMode}
+            projectRun={projectRun}
             projectId={projectId}
             appRole={appRole}
             checklists={checklists}
             viewport={viewport}
             run={run}
+            promotion={promotion}
           />
         </RunDock>
       </div>

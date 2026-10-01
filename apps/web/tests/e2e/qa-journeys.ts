@@ -15,7 +15,6 @@ import type {
 } from '../../src/shared/api/contracts';
 import type { DeliveryProject, GroupMember, GroupSummary } from '../../src/features/groups/data/hierarchy-contracts';
 import type {
-  ChecklistProjectsPatch,
   MoveRepositoryResponseWire,
   ProjectFoldersResponseWire,
   RepoRole,
@@ -56,6 +55,14 @@ import type {
   QaSignoff,
   QaVerdict,
 } from '../../src/features/checklists/model/qa-run-types';
+import type {
+  ProjectRequirementsResponseWire,
+  RequirementItemWire,
+  RequirementKind,
+  RequirementProgress,
+  RequirementWire,
+} from '../../src/features/checklists/model/requirement-types';
+import type { HeadStatusWire } from '../../src/features/checklists/model/project-run-types';
 import { json, text } from './support';
 
 /* QA journeys — the QA checklist feature driven end to end, one persona at a
@@ -445,6 +452,90 @@ interface ApiReply {
 
 type Handler = (match: RegExpExecArray, request: ApiRequest) => ApiReply;
 
+/** PATCH /qa-checklists/:id/projects (legacy sharing; the UI no longer sends it). */
+interface ChecklistProjectsPatch {
+  add?: string[];
+  remove?: string[];
+}
+
+interface RequirementItemRow {
+  id: string;
+  position: number;
+  title: string;
+  acceptanceCriteria: string | null;
+  verificationType: ChecklistVerificationType;
+  testIdentifier: string | null;
+  progress: RequirementProgress;
+  progressBy: QaActor | null;
+  progressAt: string | null;
+  rowVersion: number;
+}
+
+interface RequirementRow {
+  id: string;
+  kind: RequirementKind;
+  deliveryProjectId: string;
+  name: string;
+  description: string | null;
+  version: number;
+  archivedAt: string | null;
+  createdAt: string;
+  items: RequirementItemRow[];
+}
+
+interface ProjectRunItemRow {
+  id: string;
+  position: number;
+  sourceItemId: string;
+  requirementId: string;
+  requirementName: string;
+  requirementKind: RequirementKind;
+  title: string;
+  description: string | null;
+  acceptanceCriteria: string | null;
+  targetPersona: ChecklistTargetPersona;
+  verificationType: ChecklistVerificationType;
+  testIdentifier: string | null;
+  status: QaRunItemStatus;
+  notes: string | null;
+  defectSeverity: QaDefectSeverity | null;
+  reproductionSteps: string | null;
+  fixRequest: QaFixRequest | null;
+  verifiedBy: QaActor | null;
+  verifiedAt: string | null;
+  rowVersion: number;
+}
+
+interface ProjectRunRow {
+  id: string;
+  deliveryProjectId: string;
+  status: 'open' | 'signed_off';
+  createdBy: QaActor;
+  createdAt: string;
+  /** The uat head of each repository when the run started. */
+  heads: Array<{ projectId: string; repoFullName: string; sha: string }>;
+  items: ProjectRunItemRow[];
+  signoff: QaSignoff | null;
+}
+
+/** GET /delivery-projects/:dpId/qa-runs/:runId, as the backend (3147e15) sends it. */
+interface ProjectQaRunWire {
+  id: string;
+  scope: 'project';
+  deliveryProjectId: string;
+  deliveryProjectName: string;
+  status: 'open' | 'signed_off';
+  createdBy: QaActor;
+  createdAt: string;
+  signoff: QaSignoff | null;
+  repositories: HeadStatusWire[];
+  stale: boolean;
+  requirementsChanged: boolean;
+  items: Array<ProjectRunItemRow & { runId: string; progress: RequirementProgress | null; canUpdate: boolean }>;
+  permissions: { canSetVerification: boolean; canSignOff: boolean; canReopen: boolean; canDispatch: boolean };
+}
+
+
 class QaMockBackend {
   readonly calls: RecordedCall[] = [];
   /** Every reply of 400 or more: each fails the journey (the UI must never send what the server refuses). */
@@ -463,12 +554,18 @@ class QaMockBackend {
   mergeMode: 'merge' | 'refuse' = 'merge';
   /** The open uat → main promotion PR; null once merged. */
   promotionPr: { number: number; url: string } | null = PROMOTION_PR;
+  /** Project requirements (Product owners write them per Project). */
+  readonly requirements: RequirementRow[] = [];
+  /** Project-scope QA runs: one run covers every repository's uat head. */
+  readonly projectRuns: ProjectRunRow[] = [];
   private seq = 0;
   private readonly routes: Array<[string, RegExp, Handler]>;
 
   constructor(
     readonly role: AppRole,
     private readonly qaCapability: 'enabled' | 'absent' = 'enabled',
+    /** 'absent': a backend from before Project requirements — every new route 404s. */
+    private readonly projectQa: 'enabled' | 'absent' = 'absent',
   ) {
     this.routes = this.buildRoutes();
   }
@@ -532,6 +629,352 @@ class QaMockBackend {
     const item = run.items.find((entry) => entry.position === position);
     assert.ok(item, `run ${run.id} has no item at position ${position}`);
     Object.assign(item, { rowVersion: item.rowVersion + 1 }, patch);
+  }
+
+  /* ── Project requirements and Project QA runs ──
+   *
+   * Ported from the backend (alphaci-golden-copy-be 3147e15,
+   * src/modules/projects: qa-requirements.service.ts, qa-project-runs.service.ts,
+   * qa-run-access.rules.ts): who may manage, move Progress and verify; Passed
+   * only on a Done item (QA_PROGRESS_NOT_DONE); severity for Failed and
+   * Returned to dev; Returned to dev puts the source item back In progress;
+   * row-version conflicts. With `projectQa: 'absent'` every route answers 404
+   * like an older backend, and the UI must fall back to the repository
+   * screens. */
+
+  seedRequirement(
+    deliveryProjectId: string,
+    input: { kind: RequirementKind; name: string; items: Array<{ title: string; acceptanceCriteria?: string; progress?: RequirementProgress }> },
+  ): RequirementRow {
+    const row: RequirementRow = {
+      id: this.nextId('req'),
+      kind: input.kind,
+      deliveryProjectId,
+      name: input.name,
+      description: null,
+      version: 1,
+      archivedAt: null,
+      createdAt: ago((10 - this.requirements.length) * 60 * MINUTE),
+      items: input.items.map((item, position) => this.requirementItemRow(item, position)),
+    };
+    this.requirements.push(row);
+    return row;
+  }
+
+  private requirementItemRow(
+    item: { title: string; acceptanceCriteria?: string | null; verificationType?: ChecklistVerificationType; testIdentifier?: string | null; progress?: RequirementProgress },
+    position: number,
+  ): RequirementItemRow {
+    return {
+      id: this.nextId('req-item'),
+      position,
+      title: item.title,
+      acceptanceCriteria: item.acceptanceCriteria ?? null,
+      verificationType: item.verificationType ?? 'manual',
+      testIdentifier: item.testIdentifier ?? null,
+      progress: item.progress ?? 'todo',
+      progressBy: null,
+      progressAt: null,
+      rowVersion: 1,
+    };
+  }
+
+  private absent(): ApiReply {
+    return { status: 404, body: { statusCode: 404, message: 'Cannot GET', error: 'Not Found' }, expected: true };
+  }
+
+  private coded(status: number, code: string, message: string): HttpError {
+    return new HttpError(status, { statusCode: status, code, message, error: REASONS[status] });
+  }
+
+  private requireRequirement(id: string): RequirementRow {
+    const row = this.requirements.find((entry) => entry.id === id);
+    if (!row) throw nestError(404, 'Requirement not found');
+    return row;
+  }
+
+  private canManageRequirements(): boolean {
+    return this.role === 'lead' || this.role === 'admin';
+  }
+
+  private canMoveProgress(): boolean {
+    return this.role === 'member' || this.role === 'lead' || this.role === 'admin';
+  }
+
+  private canVerify(): boolean {
+    return this.role === 'qa' || this.role === 'lead' || this.role === 'admin';
+  }
+
+  private requirementItemWire(row: RequirementItemRow): RequirementItemWire {
+    return { ...row, canSetProgress: this.canMoveProgress() };
+  }
+
+  private requirementWire(row: RequirementRow): RequirementWire {
+    const items = [...row.items].sort((a, b) => a.position - b.position).map((item) => this.requirementItemWire(item));
+    const counts = { todo: 0, in_progress: 0, done: 0 };
+    for (const item of items) counts[item.progress] += 1;
+    return {
+      id: row.id,
+      kind: row.kind,
+      deliveryProjectId: row.deliveryProjectId,
+      workspaceId: WORKSPACE.id,
+      name: row.name,
+      description: row.description,
+      version: row.version,
+      archivedAt: row.archivedAt,
+      createdBy: PEOPLE.lead.id,
+      createdAt: row.createdAt,
+      updatedAt: row.createdAt,
+      legacyChecklistId: null,
+      items,
+      progressCounts: counts,
+    };
+  }
+
+  private liveRequirements(deliveryProjectId: string): RequirementRow[] {
+    return this.requirements
+      .filter((row) => row.deliveryProjectId === deliveryProjectId && row.archivedAt === null)
+      .sort((a, b) => (a.kind === b.kind ? a.createdAt.localeCompare(b.createdAt) : a.kind === 'functional' ? -1 : 1));
+  }
+
+  private projectRequirements(deliveryProjectId: string): ApiReply {
+    if (this.projectQa === 'absent') return this.absent();
+    const folder = this.requireFolder(deliveryProjectId);
+    const body: ProjectRequirementsResponseWire = {
+      deliveryProject: { id: folder.id, name: folder.name, groupId: WORKSPACE.id },
+      requirements: this.liveRequirements(folder.id).map((row) => this.requirementWire(row)),
+      permissions: { canManage: this.canManageRequirements(), canSetProgress: this.canMoveProgress() },
+    };
+    return { body };
+  }
+
+  private createRequirement(deliveryProjectId: string, body: Record<string, unknown>): ApiReply {
+    if (this.projectQa === 'absent') return this.absent();
+    this.requireFolder(deliveryProjectId);
+    if (!this.canManageRequirements()) throw this.coded(403, 'REQUIREMENT_MANAGE_FORBIDDEN', 'Only leads and admins manage requirements');
+    const kind = body.kind === 'functional' || body.kind === 'system' ? body.kind : null;
+    if (!kind) throw this.coded(400, 'REQUIREMENT_KIND_INVALID', 'kind must be functional or system');
+    const name = String(body.name ?? '').trim();
+    if (this.liveRequirements(deliveryProjectId).some((row) => row.kind === kind && row.name.toLowerCase() === name.toLowerCase())) {
+      throw this.coded(409, 'REQUIREMENT_NAME_TAKEN', 'A requirement with that name exists');
+    }
+    const items = Array.isArray(body.items) ? (body.items as Array<{ title: string; acceptanceCriteria?: string }>) : [];
+    const row = this.seedRequirement(deliveryProjectId, { kind, name, items });
+    row.description = typeof body.description === 'string' ? body.description : null;
+    row.createdAt = new Date().toISOString();
+    return { status: 201, body: this.requirementWire(row) };
+  }
+
+  private addRequirementItem(requirementId: string, body: Record<string, unknown>): ApiReply {
+    if (this.projectQa === 'absent') return this.absent();
+    const row = this.requireRequirement(requirementId);
+    if (!this.canManageRequirements()) throw this.coded(403, 'REQUIREMENT_MANAGE_FORBIDDEN', 'Only leads and admins manage requirements');
+    const item = this.requirementItemRow(body as { title: string }, row.items.length);
+    row.items.push(item);
+    return { status: 201, body: this.requirementItemWire(item) };
+  }
+
+  private setProgress(requirementId: string, itemId: string, body: Record<string, unknown>): ApiReply {
+    if (this.projectQa === 'absent') return this.absent();
+    const item = this.requireRequirement(requirementId).items.find((entry) => entry.id === itemId);
+    if (!item) throw nestError(404, 'Requirement item not found');
+    if (!this.canMoveProgress()) throw this.coded(403, 'PROGRESS_FORBIDDEN', 'QA cannot set Progress');
+    if (body.expectedRowVersion !== item.rowVersion) throw this.coded(409, 'REQUIREMENT_ITEM_STALE', 'The item changed');
+    const progress = body.progress as RequirementProgress;
+    Object.assign(item, { progress, progressBy: this.actor, progressAt: new Date().toISOString(), rowVersion: item.rowVersion + 1 });
+    return { body: { item: this.requirementItemWire(item), readyForQaNotified: progress === 'done' } };
+  }
+
+  private requirementsOverview(): ApiReply {
+    if (this.projectQa === 'absent') return this.absent();
+    return {
+      body: {
+        groups: this.folders
+          .filter((folder) => !folder.archived)
+          .map((folder) => ({
+            deliveryProject: { id: folder.id, name: folder.name },
+            requirements: this.liveRequirements(folder.id).map((row) => ({ id: row.id, kind: row.kind, name: row.name, archivedAt: null })),
+          })),
+        unassigned: [],
+        permissions: { canManage: this.canManageRequirements() },
+      },
+    };
+  }
+
+  private folderHeads(folder: FolderRow): Array<{ projectId: string; repoFullName: string; sha: string }> {
+    return folder.repositories
+      .filter((repo) => !repo.archived && repo.projectId)
+      .map((repo) => ({ projectId: repo.projectId as string, repoFullName: repo.repoFullName ?? repo.name, sha: UAT_SHA }));
+  }
+
+  private projectRunWire(run: ProjectRunRow): ProjectQaRunWire {
+    const folder = this.requireFolder(run.deliveryProjectId);
+    const now = this.folderHeads(folder);
+    const repositories: HeadStatusWire[] = now.map((head) => {
+      const captured = run.heads.find((entry) => entry.projectId === head.projectId) ?? null;
+      return {
+        projectId: head.projectId,
+        repoFullName: head.repoFullName,
+        runSha: captured?.sha ?? null,
+        currentSha: head.sha,
+        moved: captured?.sha !== head.sha,
+      };
+    });
+    const items = run.items.map((item) => {
+      const source = this.requirements.flatMap((row) => row.items).find((entry) => entry.id === item.sourceItemId) ?? null;
+      return { ...item, runId: run.id, progress: source?.progress ?? null, canUpdate: this.canVerify() };
+    });
+    return {
+      id: run.id,
+      scope: 'project',
+      deliveryProjectId: run.deliveryProjectId,
+      deliveryProjectName: folder.name,
+      status: run.status,
+      createdBy: run.createdBy,
+      createdAt: run.createdAt,
+      signoff: run.signoff,
+      repositories,
+      stale: repositories.some((head) => head.moved),
+      requirementsChanged: false,
+      items,
+      permissions: {
+        canSetVerification: this.canVerify(),
+        canSignOff: this.canVerify(),
+        canReopen: this.canManageRequirements(),
+        canDispatch: this.canVerify(),
+      },
+    };
+  }
+
+  private requireProjectRun(runId: string): ProjectRunRow {
+    const run = this.projectRuns.find((entry) => entry.id === runId);
+    if (!run) throw nestError(404, 'QA run not found');
+    return run;
+  }
+
+  private currentProjectRun(deliveryProjectId: string): ApiReply {
+    if (this.projectQa === 'absent') return this.absent();
+    const folder = this.requireFolder(deliveryProjectId);
+    const run = this.projectRuns.filter((entry) => entry.deliveryProjectId === folder.id).at(-1) ?? null;
+    const heads = this.folderHeads(folder).map((head) => ({ projectId: head.projectId, repoFullName: head.repoFullName, runSha: run ? head.sha : null, currentSha: head.sha, moved: false }));
+    return { body: { run: run ? this.projectRunWire(run) : null, heads, stale: false } };
+  }
+
+  private startProjectRun(deliveryProjectId: string, body: Record<string, unknown>): ApiReply {
+    if (this.projectQa === 'absent') return this.absent();
+    const folder = this.requireFolder(deliveryProjectId);
+    assert.deepEqual(body, {}, 'a Project run is started with no body: the server reads the heads');
+    if (!this.canVerify()) throw nestError(403, 'Insufficient role');
+    const requirements = this.liveRequirements(folder.id);
+    if (requirements.length === 0) throw this.coded(409, 'QA_NO_REQUIREMENTS', 'This Project has no requirements');
+    let position = 0;
+    const run: ProjectRunRow = {
+      id: this.nextId('prun'),
+      deliveryProjectId: folder.id,
+      status: 'open',
+      createdBy: this.actor,
+      createdAt: new Date().toISOString(),
+      heads: this.folderHeads(folder),
+      signoff: null,
+      items: requirements.flatMap((row) =>
+        [...row.items].sort((a, b) => a.position - b.position).map((item) => ({
+          id: this.nextId('prun-item'),
+          position: position++,
+          sourceItemId: item.id,
+          requirementId: row.id,
+          requirementName: row.name,
+          requirementKind: row.kind,
+          title: item.title,
+          description: null,
+          acceptanceCriteria: item.acceptanceCriteria,
+          targetPersona: 'all' as const,
+          verificationType: item.verificationType,
+          testIdentifier: item.testIdentifier,
+          status: 'pending' as QaRunItemStatus,
+          notes: null,
+          defectSeverity: null,
+          reproductionSteps: null,
+          fixRequest: null,
+          verifiedBy: null,
+          verifiedAt: null,
+          rowVersion: 1,
+        })),
+      ),
+    };
+    this.projectRuns.push(run);
+    return { status: 201, body: { created: true, run: this.projectRunWire(run) } };
+  }
+
+  private setVerification(runId: string, itemId: string, body: Record<string, unknown>): ApiReply {
+    if (this.projectQa === 'absent') return this.absent();
+    const run = this.requireProjectRun(runId);
+    const item = run.items.find((entry) => entry.id === itemId);
+    if (!item) throw nestError(404, 'QA run item not found');
+    if (!this.canVerify()) throw this.coded(403, 'VERIFICATION_FORBIDDEN', 'Developers cannot set Verification');
+    const status = body.status as QaRunItemStatus;
+    if (status === 'in_progress') throw this.coded(400, 'QA_VERIFICATION_STATUS_INVALID', 'in_progress is not a Verification');
+    if (body.expectedRowVersion !== item.rowVersion) throw this.coded(409, 'QA_ITEM_STALE', 'This item has changed; reload and try again.');
+    const source = this.requirements.flatMap((row) => row.items).find((entry) => entry.id === item.sourceItemId) ?? null;
+    if (status === 'passed' && source?.progress !== 'done') {
+      throw this.coded(409, 'QA_PROGRESS_NOT_DONE', 'A developer marks this Done before QA can pass it.');
+    }
+    const severity = 'defectSeverity' in body ? (body.defectSeverity as QaDefectSeverity | null) : item.defectSeverity;
+    if ((status === 'failed' || status === 'returned_to_dev') && !severity) {
+      throw nestError(400, 'A defect severity is required for failed or returned items');
+    }
+    Object.assign(item, {
+      status,
+      notes: 'notes' in body ? (body.notes as string | null) : item.notes,
+      defectSeverity: severity,
+      reproductionSteps: 'reproductionSteps' in body ? (body.reproductionSteps as string | null) : item.reproductionSteps,
+      verifiedBy: this.actor,
+      verifiedAt: new Date().toISOString(),
+      rowVersion: item.rowVersion + 1,
+    });
+    if (status === 'returned_to_dev' && source) Object.assign(source, { progress: 'in_progress', rowVersion: source.rowVersion + 1 });
+    return { body: this.projectRunWire(run) };
+  }
+
+  private signoffProjectRun(runId: string, body: Record<string, unknown>): ApiReply {
+    if (this.projectQa === 'absent') return this.absent();
+    const run = this.requireProjectRun(runId);
+    const verdict = body.verdict as QaVerdict;
+    if (verdict === 'APPROVED' && run.items.some((item) => item.status !== 'passed')) {
+      throw nestError(409, 'Every item must be passed before the run can be approved');
+    }
+    run.status = 'signed_off';
+    run.signoff = {
+      id: this.nextId('signoff'),
+      verdict,
+      summary: typeof body.summary === 'string' ? body.summary : null,
+      conditions: typeof body.conditions === 'string' ? body.conditions : null,
+      signedBy: this.actor,
+      signedAt: new Date().toISOString(),
+    };
+    return { body: this.projectRunWire(run) };
+  }
+
+  private projectMyItems(deliveryProjectId: string): ApiReply {
+    if (this.projectQa === 'absent') return this.absent();
+    const folder = this.requireFolder(deliveryProjectId);
+    const run = this.projectRuns.filter((entry) => entry.deliveryProjectId === folder.id && entry.status === 'open').at(-1) ?? null;
+    const buckets: Record<'returned' | 'inProgress' | 'todo' | 'readyForQa', unknown[]> = { returned: [], inProgress: [], todo: [], readyForQa: [] };
+    for (const row of this.liveRequirements(folder.id)) {
+      for (const item of row.items) {
+        const runItem = run?.items.find((entry) => entry.sourceItemId === item.id) ?? null;
+        const entry = {
+          requirement: { id: row.id, name: row.name, kind: row.kind },
+          item: this.requirementItemWire(item),
+          runId: runItem && run ? run.id : null,
+          runItem: runItem && run ? { ...runItem, runId: run.id, progress: item.progress, canUpdate: this.canVerify() } : null,
+        };
+        if (runItem?.status === 'returned_to_dev') buckets.returned.push(entry);
+        else if (item.progress === 'in_progress') buckets.inProgress.push(entry);
+        else if (item.progress === 'todo') buckets.todo.push(entry);
+        else if (runItem?.status === 'pending' || !runItem) buckets.readyForQa.push(entry);
+      }
+    }
+    return { body: buckets };
   }
 
   /* ── Routing ── */
@@ -598,6 +1041,17 @@ class QaMockBackend {
       ['GET', /^\/projects$/, (_m, req) => ({ body: { items: this.projectsFor(req.query.get('workspaceId')) } })],
       ['GET', new RegExp(`^/projects/${P}/overview$`), (m) => ({ body: this.overview(m[1]) })],
       ['GET', new RegExp(`^/projects/${P}/previews$`), (m) => ({ body: this.previews(m[1]) })],
+      // Project requirements and Project QA runs (404 on an older backend)
+      ['GET', new RegExp(`^/delivery-projects/${P}/requirements$`), (m) => this.projectRequirements(m[1])],
+      ['POST', new RegExp(`^/delivery-projects/${P}/requirements$`), (m, req) => this.createRequirement(m[1], req.body)],
+      ['POST', new RegExp(`^/requirements/${P}/items$`), (m, req) => this.addRequirementItem(m[1], req.body)],
+      ['PATCH', new RegExp(`^/requirements/${P}/items/${P}/progress$`), (m, req) => this.setProgress(m[1], m[2], req.body)],
+      ['GET', new RegExp(`^/workspaces/${P}/qa-requirements/overview$`), () => this.requirementsOverview()],
+      ['GET', new RegExp(`^/delivery-projects/${P}/qa/my-items$`), (m) => this.projectMyItems(m[1])],
+      ['GET', new RegExp(`^/delivery-projects/${P}/qa-runs/current$`), (m) => this.currentProjectRun(m[1])],
+      ['POST', new RegExp(`^/delivery-projects/${P}/qa-runs$`), (m, req) => this.startProjectRun(m[1], req.body)],
+      ['PATCH', new RegExp(`^/delivery-projects/${P}/qa-runs/${P}/items/${P}$`), (m, req) => this.setVerification(m[2], m[3], req.body)],
+      ['POST', new RegExp(`^/delivery-projects/${P}/qa-runs/${P}/signoff$`), (m, req) => this.signoffProjectRun(m[2], req.body)],
       // Checklists
       ['GET', new RegExp(`^/workspaces/${P}/qa-checklists$`), (m, req) => ({ body: this.listWorkspaceChecklists(m[1], req.query) })],
       ['POST', new RegExp(`^/workspaces/${P}/qa-checklists$`), (m, req) => ({ status: 201, body: this.createChecklist(m[1], req.body) })],
@@ -1642,73 +2096,149 @@ interface Journey {
   run: (ctx: JourneyContext) => Promise<void>;
 }
 
-/** (a) Team lead writes a checklist, shares it, and it lands on the project. */
-async function leadCreatesAndSharesChecklist({ page, backend, baseUrl }: JourneyContext) {
+/** Opens a Project's detail from the Projects page, as anyone would: its card's Manage. */
+async function openProjectDetail(page: Page, baseUrl: string, name: string) {
+  await page.goto(`${baseUrl}/workflows`, { waitUntil: 'domcontentloaded' });
+  const card = page.locator('li.pf-card').filter({ has: page.locator('.pf-card__name', { hasText: new RegExp(`^${name}$`) }) });
+  await visible(card, `the ${name} Project card`);
+  await card.getByRole('button', { name: `Manage ${name}` }).click();
+  await expectText(page.locator('.pf-detail__title'), name, `the ${name} detail`);
+  await visible(page.getByRole('tablist', { name: 'Project QA' }), 'the Project QA tabs');
+}
+
+const FEATURE = {
+  name: 'Checkout with saved cards',
+  stories: ['As a shopper, I can save a card', 'As a shopper, I can pay with a saved card'],
+};
+
+/**
+ * (a) Product owner: the team checklist page points to the Projects; on a
+ * Project they write a Feature with its first User stories, then add one more
+ * story with acceptance criteria. The repository's Checklists tab points back
+ * to the Project.
+ */
+async function leadWritesProjectRequirements({ page, backend, baseUrl }: JourneyContext) {
   await page.goto(`${baseUrl}/teams`, { waitUntil: 'domcontentloaded' });
   await expectRoleBadge(page, 'lead');
   // The contrast for journey (d): a lead's workspace picker offers creation.
   assert.equal(await pickerOffersCreate(page), true, 'the workspace picker offers "Create team" to a lead');
   // /teams is the header team's members now; checklists have a page of their own.
   await visible(page.getByRole('heading', { name: /^Members/ }), 'the Members section on /teams');
-  await visible(page.getByText('Ana QA').first(), 'the team roster on /teams');
   await openSidebarPage(page, 'Checklists', '/checklists');
   await visible(page.getByText('No QA checklists yet'), 'the empty checklist list');
-  await page.getByRole('button', { name: 'Create the first checklist' }).click();
-
-  await page.getByPlaceholder('Release smoke test').fill(RELEASE_CHECKLIST.name);
-  await page.getByPlaceholder('When to run it and what it protects (optional)').fill(RELEASE_CHECKLIST.description);
-  for (const [index, item] of RELEASE_CHECKLIST.items.entries()) {
-    const n = index + 1;
-    await page.getByRole('button', { name: 'Add item' }).click();
-    await page.getByLabel(`Item ${n} title`).fill(item.title);
-    await page.getByLabel(`Who runs item ${n}`).selectOption(item.targetPersona);
-    await page.getByLabel(`How item ${n} is verified`).selectOption(item.verificationType);
-    if (item.testIdentifier) await page.getByLabel(`Test identifier for item ${n}`).fill(item.testIdentifier);
-    if (item.description) await page.getByLabel(`Item ${n} notes`).fill(item.description);
-  }
-  await page.getByRole('button', { name: 'Create checklist' }).click();
-
-  // The detail screen of what was just saved.
-  const detail = page.locator('article.qa-detail');
-  await expectText(detail.locator('.qa-detail__title'), RELEASE_CHECKLIST.name, 'the saved checklist title');
-  await expectText(detail.locator('.qa-detail__meta'), '3 items', 'the item count');
-  await expectText(detail.locator('.qa-detail__meta'), '1 automated', 'the automated count');
-  await expectText(detail.locator('.qa-detail__meta'), 'Version 1', 'the version');
-  await expectText(detail.locator('.qa-detail__shared'), 'No projects yet.', 'the unshared note');
-
-  const create = onlyCall(backend.callsTo('POST', /^\/workspaces\/ws-checkout\/qa-checklists$/), 'checklist create');
-  assert.equal(create.status, 201);
-  assert.deepEqual(create.body, {
-    name: RELEASE_CHECKLIST.name,
-    description: RELEASE_CHECKLIST.description,
-    items: RELEASE_CHECKLIST.items,
+  assert.equal(await page.getByRole('button', { name: 'Create the first checklist' }).count(), 0, 'no team checklist create');
+  await page.getByRole('link', { name: 'Open Projects' }).click();
+  await eventually('the Projects page for this team', () => {
+    const url = new URL(page.url());
+    return url.pathname === '/workflows' && url.searchParams.get('group') === WORKSPACE.id;
   });
 
-  await detail.getByRole('button', { name: 'Share', exact: true }).click();
-  const dialog = page.getByRole('dialog', { name: `Share “${RELEASE_CHECKLIST.name}”` });
-  await visible(dialog, 'the share dialog');
-  await dialog.getByRole('checkbox', { name: /tone\/storefront-web/ }).check();
-  await expectText(dialog.locator('.qa-share__legend'), '1 of 2 projects', 'the share selection summary');
-  await dialog.getByRole('button', { name: 'Save sharing' }).click();
-  await absent(dialog, 'the share dialog');
-  await expectText(detail.locator('.qa-detail__chips'), 'tone/storefront-web', 'the shared project chip');
-  const created = backend.checklists[0];
-  const share = onlyCall(backend.callsTo('PUT', new RegExp(`^/qa-checklists/${created.id}/projects$`)), 'share request');
-  assert.deepEqual(share.body, { projectIds: [PROJECT_ID] });
+  await openProjectDetail(page, baseUrl, 'storefront');
+  const tablist = page.getByRole('tablist', { name: 'Project QA' });
+  await visible(tablist.getByRole('tab', { name: 'Requirements', selected: true }), 'Requirements first for a Product owner');
+  const features = page.locator('section.rq-section[data-kind="functional"]');
+  await expectText(features, 'Functional Requirements (Features)', 'the Features section');
+  await features.getByRole('button', { name: 'Add the first Feature' }).click();
+  const dialog = page.getByRole('dialog', { name: 'New Feature' });
+  await dialog.getByPlaceholder('Checkout with saved cards').fill(FEATURE.name);
+  await dialog.getByLabel('User stories (optional, one per line)').fill(FEATURE.stories.join('\n'));
+  await dialog.getByRole('button', { name: 'Create feature' }).click();
+  await absent(dialog, 'the New Feature dialog');
+  const create = onlyCall(backend.callsTo('POST', new RegExp(`^/delivery-projects/${STOREFRONT_FOLDER}/requirements$`)), 'requirement create');
+  assert.equal(create.status, 201);
+  assert.deepEqual(create.body, { kind: 'functional', name: FEATURE.name, items: FEATURE.stories.map((title) => ({ title })) });
+  const card = features.locator('article.rq-card').filter({ hasText: FEATURE.name });
+  await expectText(card.locator('.rq-meter__label'), '0 of 2 done', 'the new Feature progress');
 
-  await page.getByRole('button', { name: 'All checklists' }).click();
-  const row = page.locator('button.qa-list-row').filter({ hasText: RELEASE_CHECKLIST.name });
-  await expectText(row, 'Shared to 1 project', 'the list row sharing summary');
+  await card.getByRole('button', { name: 'Add user story' }).click();
+  await card.getByLabel('User story', { exact: true }).fill('As a shopper, I can remove a saved card');
+  await card.getByLabel('Acceptance criteria (optional)').fill('Given a saved card\nWhen I remove it\nThen it is gone');
+  await card.locator('form.rq-item-form').getByRole('button', { name: 'Add user story' }).click();
+  await expectText(card.locator('.rq-meter__label'), '0 of 3 done', 'three stories now');
+  const add = onlyCall(backend.callsTo('POST', /^\/requirements\/[^/]+\/items$/), 'story create');
+  assert.deepEqual(add.body, {
+    title: 'As a shopper, I can remove a saved card',
+    acceptanceCriteria: 'Given a saved card\nWhen I remove it\nThen it is gone',
+    verificationType: 'manual',
+    testIdentifier: null,
+  });
+  assert.equal(backend.callsTo('PUT', /^\/qa-checklists\//).length, 0, 'never the legacy delete-and-reinsert');
 
   await openProjectTab(page, baseUrl, 'Checklists');
-  const card = page.locator('section.qa-project-card').filter({ has: page.getByRole('heading', { name: RELEASE_CHECKLIST.name }) });
-  await visible(card, 'the shared checklist on the project Checklists tab');
-  await expectText(card.locator('.qa-project-card__meta'), '3 items', 'the project card item count');
-  for (const item of RELEASE_CHECKLIST.items) {
-    await visible(card.locator('.qa-item__title', { hasText: item.title }), `the item "${item.title}"`);
-  }
-  await expectText(card.locator('code.qa-item__test'), RELEASE_CHECKLIST.items[0].testIdentifier ?? '', 'the Playwright test identifier');
-  await visible(card.getByRole('link', { name: 'Manage in team' }), 'the lead-only Manage in team link');
+  await visible(page.getByText('Requirements belong to the Project'), "the Checklists tab's pointer to the Project");
+  assert.equal(await page.getByRole('link', { name: 'Open team checklists' }).count(), 0, 'no team checklist link');
+}
+
+/** (k) Developer: reads the Project's requirements, can only move Progress; Done reaches QA's queue. */
+async function developerMovesProgress({ page, backend, baseUrl }: JourneyContext) {
+  await openProjectDetail(page, baseUrl, 'storefront');
+  await expectRoleBadge(page, 'member');
+  const features = page.locator('section.rq-section[data-kind="functional"]');
+  await expectText(features, FEATURE.name, 'the seeded Feature');
+  await neverShown(backend, page.getByRole('button', { name: 'New Feature' }), 'New Feature for a Developer');
+  assert.equal(await page.getByRole('button', { name: 'Add user story' }).count(), 0, 'no Add user story for a Developer');
+  assert.equal(await page.locator('button[aria-label^="Move "]').count(), 0, 'no reorder for a Developer');
+
+  const group = page.getByRole('group', { name: `Progress of ${FEATURE.stories[0]}` });
+  await group.getByRole('radio', { name: 'Done' }).check();
+  await visible(page.getByText('QA has been told this is ready.'), 'the ready-for-QA confirmation');
+  const progress = onlyCall(backend.callsTo('PATCH', /^\/requirements\/[^/]+\/items\/[^/]+\/progress$/), 'Progress write');
+  assert.deepEqual(progress.body, { progress: 'done', expectedRowVersion: 1 });
+
+  await page.getByRole('tab', { name: 'My QA items' }).click();
+  const ready = page.locator('section[data-bucket="readyForQa"]');
+  await expectText(ready, FEATURE.stories[0], 'the story in QA’s queue');
+  await expectText(page.locator('section[data-bucket="inProgress"]'), FEATURE.stories[1], 'the story still in progress');
+}
+
+/**
+ * (l) QA Team: one run for the whole Project. Passed is not offered until a
+ * Developer marked the story Done; return the other with a severity; sign off
+ * Rejected.
+ */
+async function qaVerifiesProject({ page, backend, baseUrl }: JourneyContext) {
+  await openProjectDetail(page, baseUrl, 'storefront');
+  await expectRoleBadge(page, 'qa');
+  await visible(page.getByRole('tab', { name: 'QA run', selected: true }), 'the QA run first for the QA Team');
+  await page.getByRole('button', { name: 'Start Project QA run' }).click();
+  const start = onlyCall(backend.callsTo('POST', new RegExp(`^/delivery-projects/${STOREFRONT_FOLDER}/qa-runs$`)), 'Project run start');
+  assert.deepEqual(start.body, {}, 'no body: the server reads every repository head');
+  const selects = page.locator('.pqa-run label.qa-status-select select');
+  await eventually('two run items', async () => (await selects.count()) === 2);
+
+  const enabledOptions = async (index: number) =>
+    selects.nth(index).locator('option:not([disabled])').evaluateAll((options) => options.map((option) => (option as HTMLOptionElement).value));
+  assert.ok((await enabledOptions(0)).includes('passed'), 'Passed for the Done story');
+  assert.ok(!(await enabledOptions(1)).includes('passed'), 'no Passed before Done');
+  await visible(page.getByText('A Developer marks this Done before QA can pass it.'), 'why Passed is missing');
+
+  await selects.nth(0).selectOption('passed');
+  await eventually('the Passed write', () => backend.callsTo('PATCH', /^\/delivery-projects\/[^/]+\/qa-runs\/[^/]+\/items\/[^/]+$/).length === 1);
+  const passed = backend.callsTo('PATCH', /^\/delivery-projects\/[^/]+\/qa-runs\/[^/]+\/items\/[^/]+$/)[0];
+  assert.deepEqual(passed.body, { status: 'passed', expectedRowVersion: 1 });
+
+  await selects.nth(1).selectOption('returned_to_dev');
+  const editor = page.locator('.pqa-run form.qa-item-editor');
+  await editor.getByLabel(/Severity/).selectOption('major');
+  await editor.getByLabel('Notes').fill('The saved card is not offered at checkout.');
+  await editor.getByRole('button', { name: 'Mark Returned to dev' }).click();
+  await absent(editor, 'the item editor');
+  const returned = backend.callsTo('PATCH', /^\/delivery-projects\/[^/]+\/qa-runs\/[^/]+\/items\/[^/]+$/)[1];
+  assert.deepEqual(returned.body, {
+    status: 'returned_to_dev',
+    expectedRowVersion: 1,
+    notes: 'The saved card is not offered at checkout.',
+    defectSeverity: 'major',
+  });
+
+  await page.getByRole('button', { name: 'Sign off', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: 'Sign off this run' });
+  await dialog.getByRole('radio', { name: /Rejected/ }).check();
+  await dialog.getByRole('button', { name: 'Sign off', exact: true }).click();
+  await absent(dialog, 'the sign-off dialog');
+  const signoff = onlyCall(backend.callsTo('POST', /^\/delivery-projects\/[^/]+\/qa-runs\/[^/]+\/signoff$/), 'Project sign-off');
+  assert.deepEqual(signoff.body, { verdict: 'REJECTED' });
+  await visible(page.locator('.qa-signoff-banner'), 'the signed-off banner');
 }
 
 /** (b) QA verifies the checklist on main, returns a defect, rejects, exports. */
@@ -2151,7 +2681,7 @@ async function leadOrganisesProjects({ page, backend, baseUrl }: JourneyContext)
   // No per-repository BACKEND/FRONTEND chips on a card.
   assert.equal(await cards.locator('.pf-chip').count(), 0, 'no repository chips on the cards');
   await expectText(storefront.locator('.pf-card__meta'), '2 repositories', 'the storefront repository count');
-  await expectText(storefront.locator('.pf-card__meta'), '1 checklist', 'the storefront checklist count');
+  await expectText(storefront.locator('.pf-card__meta'), '1 requirement', 'the storefront requirement count');
   const loyalty = cards.filter({ has: page.locator('.pf-card__name', { hasText: /^loyalty$/ }) });
   await expectText(loyalty, '0 repositories', 'the empty loyalty Project');
   assert.equal(await page.locator('.pf-unfiled').count(), 0, 'every repository is filed');
@@ -2183,19 +2713,11 @@ async function leadOrganisesProjects({ page, backend, baseUrl }: JourneyContext)
   assert.equal(await page.getByRole('link', { name: 'Verify in QA Studio' }).getAttribute('href'), `/projects/${PROJECT_ID}#qa`);
   assert.equal(await page.getByRole('link', { name: 'Add repository' }).count(), 0, 'no Add repository for a Product owner');
 
-  // Checklists: the release checklist covers one of two repositories; attach another with PATCH.
-  const rows = page.locator('li.pf-checklist');
-  await expectText(rows.filter({ hasText: RELEASE_CHECKLIST.name }), 'Some repositories', 'the partial checklist');
-  await page.locator('.pf-attach select').selectOption({ label: 'Accessibility pass' });
-  await page.getByRole('button', { name: 'Attach to this Project' }).click();
-  await expectText(rows.filter({ hasText: 'Accessibility pass' }), 'All repositories', 'the attached checklist');
-  const attach = onlyCall(backend.callsTo('PATCH', /^\/qa-checklists\/[^/]+\/projects$/), 'checklist attach');
-  assert.deepEqual(attach.body, { add: [PROJECT_ID, 'project-2'] });
-  await page.getByRole('button', { name: `Detach ${RELEASE_CHECKLIST.name} from this Project` }).click();
-  await absent(rows.filter({ hasText: RELEASE_CHECKLIST.name }), 'the detached checklist');
-  const detach = backend.callsTo('PATCH', /^\/qa-checklists\/[^/]+\/projects$/)[1];
-  assert.deepEqual(detach.body, { remove: [PROJECT_ID, 'project-2'] });
-  assert.equal(backend.callsTo('PUT', /\/projects$/).length, 0, 'never the PUT full replace from a Project');
+  // Requirements and QA belong to the Project now: no per-repository checklist attach.
+  await visible(page.getByRole('tablist', { name: 'Project QA' }), 'the Project QA workspace');
+  await expectText(page.locator('section.rq-section[data-kind="system"]'), RELEASE_CHECKLIST.name, 'the System requirement');
+  assert.equal(await page.locator('.pf-attach').count(), 0, 'no checklist attach');
+  assert.equal(backend.callsTo('PATCH', /^\/qa-checklists\/[^/]+\/projects$/).length, 0, 'never a repository share');
 
   // Move: someone else moves orders-api first (409), then a real move.
   backend.moveConflictArmed = true;
@@ -2441,9 +2963,37 @@ function seedReturnedRun(backend: QaMockBackend) {
 const JOURNEYS: Journey[] = [
   {
     id: 'a',
-    title: 'Team lead: create a 3-item checklist, share it, see it on the project',
-    backend: () => new QaMockBackend('lead'),
-    run: leadCreatesAndSharesChecklist,
+    title: 'Product owner: team checklists point to Projects; write a Feature with User stories on a Project',
+    backend: () => new QaMockBackend('lead', 'enabled', 'enabled'),
+    run: leadWritesProjectRequirements,
+  },
+  {
+    id: 'k',
+    title: 'Developer: Project requirements read-only except Progress; Done reaches Ready for QA',
+    backend: () => {
+      const backend = new QaMockBackend('member', 'enabled', 'enabled');
+      backend.seedRequirement(STOREFRONT_FOLDER, {
+        kind: 'functional',
+        name: FEATURE.name,
+        items: [{ title: FEATURE.stories[0] }, { title: FEATURE.stories[1], progress: 'in_progress' }],
+      });
+      return backend;
+    },
+    run: developerMovesProgress,
+  },
+  {
+    id: 'l',
+    title: 'QA Team: one Project run; Passed only after Done; return with severity; sign off Rejected',
+    backend: () => {
+      const backend = new QaMockBackend('qa', 'enabled', 'enabled');
+      backend.seedRequirement(STOREFRONT_FOLDER, {
+        kind: 'functional',
+        name: FEATURE.name,
+        items: [{ title: FEATURE.stories[0], progress: 'done' }, { title: FEATURE.stories[1] }],
+      });
+      return backend;
+    },
+    run: qaVerifiesProject,
   },
   {
     id: 'b',
@@ -2510,11 +3060,10 @@ const JOURNEYS: Journey[] = [
   },
   {
     id: 'h',
-    title: 'Team lead: project explorer — Create project dialog, list, open, attach/detach, move (409 + real), archive, no repository create',
+    title: 'Team lead: project explorer — Create project dialog, list, open, requirements and QA, move (409 + real), archive, no repository create',
     backend: () => {
-      const backend = new QaMockBackend('lead');
-      backend.seedChecklist(RELEASE_CHECKLIST, [PROJECT_ID]);
-      backend.seedChecklist({ name: 'Accessibility pass', description: null, items: [DEVELOPER_ITEM] }, []);
+      const backend = new QaMockBackend('lead', 'enabled', 'enabled');
+      backend.seedRequirement(STOREFRONT_FOLDER, { kind: 'system', name: RELEASE_CHECKLIST.name, items: RELEASE_CHECKLIST.items });
       return backend;
     },
     run: leadOrganisesProjects,
