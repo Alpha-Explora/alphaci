@@ -134,22 +134,35 @@ export function canOpenTeamActivity(input: {
 }
 
 /**
- * Which Main entries the sidebar shows. Checklists follows the same backend
- * capability that gated the old team rail's "Checklist templates"; Activity
- * follows canOpenTeamActivity, so a QA Team member or Developer is not sent to
- * a page that can only tell them they have no access. Teams and Inbox only
- * hide for guests.
+ * Whether the sidebar lists the team Checklists page. Off: requirements are
+ * written on each Project now, so the page only holds earlier checklists. The
+ * /checklists route still works, and Project requirements, QA runs and Merge
+ * to main are unaffected. Set to true to bring the entry back (it still needs
+ * the QA checklists capability).
+ */
+export const SIDEBAR_SHOWS_CHECKLISTS = false;
+
+/**
+ * Which Main entries the sidebar shows. Checklists, when
+ * SIDEBAR_SHOWS_CHECKLISTS is on, follows the same backend capability that
+ * gated the old team rail's "Checklist templates"; Activity follows
+ * canOpenTeamActivity, so a QA Team member or Developer is not sent to a page
+ * that can only tell them they have no access. Teams and Inbox only hide for
+ * guests.
  */
 export function sidebarMainItems(input: {
   guest: boolean;
   qaChecklistsEnabled: boolean;
   /** canOpenTeamActivity for the header team. */
   canOpenActivity: boolean;
+  /** Defaults to SIDEBAR_SHOWS_CHECKLISTS. */
+  showChecklists?: boolean;
 }): SidebarMainItem[] {
   const items: SidebarMainItem[] = ["home", "projects"];
   if (input.guest) return items;
   items.push("teams");
-  if (input.qaChecklistsEnabled) items.push("checklists");
+  const showChecklists = input.showChecklists ?? SIDEBAR_SHOWS_CHECKLISTS;
+  if (showChecklists && input.qaChecklistsEnabled) items.push("checklists");
   if (input.canOpenActivity) items.push("activity");
   items.push("inbox");
   return items;

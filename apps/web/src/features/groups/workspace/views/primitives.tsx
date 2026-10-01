@@ -267,7 +267,16 @@ export function Dialog({
   const restoreFocusRef = useRef<HTMLElement | null>(null);
   const titleId = useId();
   const descId = useId();
+  /* The latest onClose for Escape. Callers often pass a new function every
+   * render; if the effect below depended on it, each re-render (a keystroke)
+   * would re-run it and pull focus back to the first field. */
+  const onCloseRef = useRef(onClose);
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  });
 
+  /* Focus the first field on open and restore focus on close: once per
+   * opening, never on a re-render while open. */
   useEffect(() => {
     if (!open) return;
     restoreFocusRef.current = document.activeElement as HTMLElement | null;
@@ -281,7 +290,7 @@ export function Dialog({
     function onKey(event: KeyboardEvent) {
       if (event.key === "Escape") {
         event.stopPropagation();
-        onClose();
+        onCloseRef.current();
       }
     }
     document.addEventListener("keydown", onKey);
@@ -290,7 +299,7 @@ export function Dialog({
       document.removeEventListener("keydown", onKey);
       restoreFocusRef.current?.focus?.();
     };
-  }, [open, onClose]);
+  }, [open]);
 
   return (
     <AnimatePresence>
