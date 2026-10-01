@@ -1,38 +1,35 @@
-import { OTHER_TEAMS_HEADING, type WorkspaceSummary } from "./workspace-types";
+import type { WorkspaceSummary } from "./workspace-types";
 
-/** The heading over an admin's own teams, when their other teams follow. */
+/** The one heading over the picker's list of teams. */
 export const OWN_TEAMS_HEADING = "Your teams";
 
-/** One run of options in the header picker, with its heading (or none). */
+/** One run of options in the header picker, with its heading. */
 export interface SwitcherOptionGroup {
-  key: "own" | "other";
-  /** null draws the options as a flat list with no heading. */
-  label: string | null;
+  key: "own";
+  label: string;
   options: readonly WorkspaceSummary[];
 }
 
 /**
- * The picker's groups. With no other teams (everyone but a platform admin) it
- * is one flat list, as it always was. An admin's non-member teams follow under
- * "Other teams (admin)", with the admin's own teams headed "Your teams" above
- * them for symmetry — or on their own when the admin belongs to no team.
+ * The picker's groups: ONE list under "Your teams" holding every team the
+ * user can open, their own and (for a platform admin) the others, merged and
+ * sorted by name. Empty when there is nothing to list.
  */
 export function switcherOptionGroups(
   own: readonly WorkspaceSummary[],
   other: readonly WorkspaceSummary[],
 ): SwitcherOptionGroup[] {
-  if (other.length === 0) {
-    return own.length > 0 ? [{ key: "own", label: null, options: own }] : [];
-  }
-  const groups: SwitcherOptionGroup[] = [];
-  if (own.length > 0) groups.push({ key: "own", label: OWN_TEAMS_HEADING, options: own });
-  groups.push({ key: "other", label: OTHER_TEAMS_HEADING, options: other });
-  return groups;
+  const options = [...own, ...other].sort(
+    (a, b) =>
+      a.name.localeCompare(b.name, undefined, { sensitivity: "base", numeric: true }) ||
+      a.id.localeCompare(b.id),
+  );
+  return options.length > 0 ? [{ key: "own", label: OWN_TEAMS_HEADING, options }] : [];
 }
 
 /**
- * The options in keyboard order. Group headings are not in it, so the arrow
- * keys never stop on one.
+ * The options in keyboard order. The heading is not in it, so the arrow keys
+ * never stop on it.
  */
 export function flattenSwitcherOptions(
   groups: readonly SwitcherOptionGroup[],
@@ -54,9 +51,8 @@ export function openingSwitcherIndex(
 }
 
 /**
- * Where a key moves the active stop, among `count` stops (every option, then
- * the "Create workspace" action when it is offered), or null when the key does
- * not move it. Arrows wrap; Home and End jump to the ends.
+ * Where a key moves the active stop, among `count` teams, or null when the
+ * key does not move it. Arrows wrap; Home and End jump to the ends.
  */
 export function nextSwitcherIndex(key: string, index: number, count: number): number | null {
   if (count <= 0) return null;
@@ -72,6 +68,22 @@ export function nextSwitcherIndex(key: string, index: number, count: number): nu
     default:
       return null;
   }
+}
+
+/** What Tab does inside the open panel: hop to the "+" button, back to the list, or leave. */
+export type PanelTabAction = "to-create" | "to-list" | "close";
+
+/**
+ * Tab goes list -> "+" button (when offered) -> out of the panel, which closes
+ * it; Shift+Tab from the "+" button goes back to the list.
+ */
+export function panelTabAction(
+  shiftKey: boolean,
+  onCreateButton: boolean,
+  canCreate: boolean,
+): PanelTabAction {
+  if (onCreateButton) return shiftKey ? "to-list" : "close";
+  return !shiftKey && canCreate ? "to-create" : "close";
 }
 
 /**

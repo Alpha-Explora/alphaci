@@ -18,7 +18,7 @@ interface WorkspaceSelectionContextValue {
   workspaces: WorkspacesMeResponse | null;
   /**
    * A platform admin's teams they are not a member of — selectable from the
-   * header under "Other teams (admin)". Always empty for everybody else.
+   * header picker, merged with their own. Always empty for everybody else.
    */
   otherWorkspaces: WorkspaceSummary[];
   setSelectedWorkspaceId: (workspaceId: string | null) => void;

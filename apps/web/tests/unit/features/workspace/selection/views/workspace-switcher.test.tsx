@@ -58,9 +58,13 @@ function options(container: HTMLElement): HTMLElement[] {
 }
 
 function createAction(container: HTMLElement): HTMLButtonElement | undefined {
-  return [...container.querySelectorAll<HTMLButtonElement>("button")].find(
-    (button) => button.textContent === "Create workspace",
+  return (
+    container.querySelector<HTMLButtonElement>('button[aria-label="Create team"]') ?? undefined
   );
+}
+
+function headingText(container: HTMLElement): string | undefined {
+  return container.querySelector(".team-switcher-group-label")?.textContent ?? undefined;
 }
 
 describe("WorkspaceSwitcher", () => {
@@ -89,16 +93,24 @@ describe("WorkspaceSwitcher", () => {
     expect(listbox(container)).toBeNull();
   });
 
-  it("offers create-workspace to a lead, as an action after the list", () => {
+  it("offers a compact Create team button at the end of the heading row to a lead", () => {
     const container = renderSwitcher(<WorkspaceSwitcher workspaces={workspaces} appRole="lead" />);
     click(trigger(container)!);
 
     const action = createAction(container);
     expect(action).toBeDefined();
-    // A button beside the listbox, not a fake option inside it.
+    expect(action!.getAttribute("title")).toBe("Create team");
+    // Icon only: no visible text, a name for assistive tech.
+    expect(action!.textContent).toBe("");
+    // A button in the heading row beside the listbox, not a fake option inside it.
     expect(listbox(container)!.contains(action!)).toBe(false);
+    const row = container.querySelector(".team-switcher-heading-row")!;
+    expect(row.firstElementChild?.textContent).toBe("Your teams");
+    expect(row.lastElementChild).toBe(action);
     expect(options(container).map((option) => option.textContent)).toEqual(["Design team", "Team workspace"]);
-    expect(container.querySelector('[role="separator"]')).not.toBeNull();
+    // The old divider and "Create workspace" row are gone.
+    expect(container.querySelector('[role="separator"]')).toBeNull();
+    expect(container.textContent).not.toContain("Create workspace");
   });
 
   it("opens the create dialog from the action and closes the panel", () => {
@@ -116,6 +128,8 @@ describe("WorkspaceSwitcher", () => {
 
     expect(createAction(container)).toBeUndefined();
     expect(container.querySelector('[role="separator"]')).toBeNull();
+    // Still the one heading over the list.
+    expect(headingText(container)).toBe("Your teams");
   });
 
   it("renders nothing when workspaces are disabled", () => {
@@ -316,29 +330,65 @@ describe("WorkspaceSwitcher", () => {
       expect(window.localStorage.getItem("flowci.workspaceId")).toBe("workspace-2");
     });
 
-    it("reaches the create action after the last team, and wraps", () => {
+    it("keeps the arrows, Home and End over the teams only, wrapping", () => {
       const container = renderSwitcher(<WorkspaceSwitcher workspaces={workspaces} appRole="lead" />);
       key(trigger(container)!, "ArrowDown");
       key(document.activeElement!, "End");
-      expect(document.activeElement).toBe(createAction(container));
+      expect(document.activeElement).toBe(options(container)[1]);
 
       key(document.activeElement!, "ArrowDown");
       expect(document.activeElement).toBe(options(container)[0]);
       key(document.activeElement!, "ArrowUp");
-      expect(document.activeElement).toBe(createAction(container));
+      expect(document.activeElement).toBe(options(container)[1]);
       key(document.activeElement!, "Home");
       expect(document.activeElement).toBe(options(container)[0]);
     });
 
-    it("opens the create dialog with Enter on the action", () => {
-      const container = renderSwitcher(<WorkspaceSwitcher workspaces={workspaces} appRole="admin" />);
-      key(trigger(container)!, "ArrowUp");
-      key(document.activeElement!, "ArrowDown");
+    it("moves from the list to the + button with Tab, and back with Shift+Tab", () => {
+      const container = renderSwitcher(<WorkspaceSwitcher workspaces={workspaces} appRole="lead" />);
+      key(trigger(container)!, "ArrowDown");
+      key(document.activeElement!, "Tab");
       expect(document.activeElement).toBe(createAction(container));
-      key(document.activeElement!, "Enter");
+      expect(listbox(container)).not.toBeNull();
 
+      key(document.activeElement!, "Tab", { shiftKey: true });
+      expect(document.activeElement).toBe(options(container)[0]);
+    });
+
+    it.each(["Enter", " "])("opens the create dialog with %p on the + button", (name) => {
+      const container = renderSwitcher(<WorkspaceSwitcher workspaces={workspaces} appRole="admin" />);
+      key(trigger(container)!, "ArrowDown");
+      key(document.activeElement!, "Tab");
+      const plus = createAction(container)!;
+      expect(document.activeElement).toBe(plus);
+
+      // A native button turns Enter/Space into a click; the panel must not
+      // swallow it by picking a team instead.
+      key(plus, name);
+      click(plus);
+      expect(window.localStorage.getItem("flowci.workspaceId")).not.toBe("workspace-2");
       expect(listbox(container)).toBeNull();
       expect(container.querySelector('[role="dialog"]')).not.toBeNull();
+    });
+
+    it("closes with Escape from the + button and hands focus back to the trigger", () => {
+      const container = renderSwitcher(<WorkspaceSwitcher workspaces={workspaces} appRole="lead" />);
+      key(trigger(container)!, "ArrowDown");
+      key(document.activeElement!, "Tab");
+      key(document.activeElement!, "Escape");
+
+      expect(listbox(container)).toBeNull();
+      expect(document.activeElement).toBe(trigger(container));
+    });
+
+    it("closes with Tab from the + button", () => {
+      const container = renderSwitcher(<WorkspaceSwitcher workspaces={workspaces} appRole="lead" />);
+      key(trigger(container)!, "ArrowDown");
+      key(document.activeElement!, "Tab");
+      key(document.activeElement!, "Tab");
+
+      expect(listbox(container)).toBeNull();
+      expect(document.activeElement).toBe(trigger(container));
     });
 
     it("closes with Escape and hands focus back to the trigger", () => {
@@ -388,34 +438,36 @@ describe("WorkspaceSwitcher", () => {
       { id: "workspace-9", name: "Johns Kitchen", kind: "team" as const, role: "admin" as const },
     ];
 
-    function groups(container: HTMLElement) {
-      return [...container.querySelectorAll<HTMLElement>('[role="group"]')].map((group) => ({
-        label: document.getElementById(group.getAttribute("aria-labelledby") ?? "")?.textContent,
-        options: [...group.querySelectorAll('[role="option"]')].map((option) => option.textContent),
-      }));
+    function teamNames(container: HTMLElement) {
+      return options(container).map((option) => option.textContent);
     }
 
-    it("lists them under 'Other teams (admin)', after the admin's own teams", () => {
+    it("merges them into ONE list under 'Your teams', sorted by name", () => {
       const container = renderSwitcher(
         <WorkspaceSwitcher workspaces={workspaces} otherTeams={otherTeams} appRole="admin" />,
       );
       click(trigger(container)!);
 
-      expect(groups(container)).toEqual([
-        { label: "Your teams", options: ["Design team", "Team workspace"] },
-        { label: "Other teams (admin)", options: ["Johns Kitchen"] },
-      ]);
+      expect(headingText(container)).toBe("Your teams");
+      expect(container.querySelectorAll(".team-switcher-group-label")).toHaveLength(1);
+      expect(container.querySelector('[role="group"]')).toBeNull();
+      expect(container.textContent).not.toContain("Other teams");
+      expect(teamNames(container)).toEqual(["Design team", "Johns Kitchen", "Team workspace"]);
       expect(createAction(container)).toBeDefined();
     });
 
-    it("skips the group headings with the arrow keys and selects one like any other team", () => {
+    it("selects one like any other team and keeps the check on the current team", () => {
       const container = renderSwitcher(
         <WorkspaceSwitcher workspaces={workspaces} otherTeams={otherTeams} appRole="admin" />,
       );
       key(trigger(container)!, "ArrowDown");
       key(document.activeElement!, "ArrowDown");
-      key(document.activeElement!, "ArrowDown");
       expect(document.activeElement?.textContent).toBe("Johns Kitchen");
+      expect(options(container).map((option) => option.getAttribute("aria-selected"))).toEqual([
+        "true",
+        "false",
+        "false",
+      ]);
 
       key(document.activeElement!, "Enter");
       expect(window.localStorage.getItem("flowci.workspaceId")).toBe("workspace-9");
@@ -428,15 +480,8 @@ describe("WorkspaceSwitcher", () => {
       );
       click(trigger(container)!);
 
-      expect(groups(container).map((group) => group.label)).toEqual(["Other teams (admin)"]);
-    });
-
-    it("leaves everyone else's picker a flat list, as before", () => {
-      const container = renderSwitcher(<WorkspaceSwitcher workspaces={workspaces} appRole="lead" />);
-      click(trigger(container)!);
-
-      expect(container.querySelector('[role="group"]')).toBeNull();
-      expect(container.textContent).not.toContain("Other teams");
+      expect(teamNames(container)).toEqual(["Johns Kitchen"]);
+      expect(headingText(container)).toBe("Your teams");
     });
   });
 });

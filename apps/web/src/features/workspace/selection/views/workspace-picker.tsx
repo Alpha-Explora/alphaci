@@ -15,9 +15,10 @@ import {
   flattenSwitcherOptions,
   nextSwitcherIndex,
   openingSwitcherIndex,
+  panelTabAction,
+  OWN_TEAMS_HEADING,
   switcherOptionGroups,
   switcherPanelShift,
-  type SwitcherOptionGroup,
 } from "../model/workspace-switcher-rules";
 import type { WorkspaceSummary } from "../model/workspace-types";
 
@@ -28,7 +29,7 @@ export interface WorkspacePickerProps {
   otherTeams: readonly WorkspaceSummary[];
   /** The team on screen, or null before one resolves. */
   current: WorkspaceSummary | null;
-  /** Offer "Create workspace" after the list (Team leads and Admins). */
+  /** Offer the "Create team" button in the heading row (Team leads and Admins). */
   canCreate: boolean;
   onSelect: (workspaceId: string) => void;
   onCreate: () => void;
@@ -91,17 +92,19 @@ function PlusIcon() {
 }
 
 /**
- * The header's team picker: a button that opens a listbox of teams, and a
- * "Create workspace" action under it for the people who may create one.
+ * The header's team picker: a button that opens a listbox of teams under one
+ * "Your teams" heading, with a compact "+" (Create team) button at the right
+ * end of that heading for the people who may create one.
  *
  * It replaced a native <select>, whose create entry had to ride in as a fake
  * option behind a disabled "──────" divider option — it read as a broken list.
  *
  * Keyboard (WAI-ARIA listbox popup): Enter, Space or ArrowDown on the button
  * open the panel on the current team, ArrowUp on the last one; arrows move
- * between the teams and then the action, wrapping (group headings are never a
- * stop); Home/End jump; Enter or Space picks; Escape closes and hands focus
- * back to the button; Tab or a press outside closes it.
+ * between the teams, wrapping (the heading is never a stop); Home/End jump;
+ * Enter or Space picks; Tab from the list moves to the "+" button (Enter or
+ * Space activates it), and Tab from there closes the panel; Escape closes
+ * and hands focus back to the button; a press outside closes it.
  */
 export function WorkspacePicker({
   items,
@@ -116,6 +119,7 @@ export function WorkspacePicker({
   const rootRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
+  const createRef = useRef<HTMLButtonElement>(null);
   const stopRefs = useRef<Array<HTMLElement | null>>([]);
   const baseId = useId();
   const listboxId = `${baseId}-listbox`;
@@ -124,8 +128,6 @@ export function WorkspacePicker({
 
   const groups = switcherOptionGroups(items, otherTeams);
   const options = flattenSwitcherOptions(groups);
-  // Every keyboard stop: the options, then the action when it is offered.
-  const stopCount = options.length + (canCreate ? 1 : 0);
   const currentId = current?.id ?? null;
   const currentName = current?.name ?? "Choose a team";
 
@@ -207,31 +209,45 @@ export function WorkspacePicker({
     }
   }
 
+  function onTab(event: KeyboardEvent<HTMLDivElement>, onCreateButton: boolean) {
+    const action = panelTabAction(event.shiftKey, onCreateButton, canCreate);
+    if (action === "close") {
+      // Not prevented: with focus back on the button, Tab moves on from it.
+      close(true);
+      return;
+    }
+    event.preventDefault();
+    const target = action === "to-create" ? createRef.current : stopRefs.current[Math.max(activeIndex, 0)];
+    target?.focus();
+  }
+
   function onPanelKeyDown(event: KeyboardEvent<HTMLDivElement>) {
+    const onCreateButton = event.target === createRef.current;
     if (event.key === "Escape") {
       event.preventDefault();
       close(true);
       return;
     }
     if (event.key === "Tab") {
-      // Not prevented: with focus back on the button, Tab moves on from it.
-      close(true);
+      onTab(event, onCreateButton);
       return;
     }
     if (event.key === "Enter" || event.key === " ") {
-      event.preventDefault();
-      if (activeIndex >= 0 && activeIndex < options.length) choose(options[activeIndex]);
-      else if (canCreate && activeIndex === options.length) create();
+      // On the "+" button these are its own native click.
+      if (!onCreateButton) {
+        event.preventDefault();
+        if (activeIndex >= 0 && activeIndex < options.length) choose(options[activeIndex]);
+      }
       return;
     }
-    const next = nextSwitcherIndex(event.key, activeIndex, stopCount);
+    const next = nextSwitcherIndex(event.key, activeIndex, options.length);
     if (next !== null) {
       event.preventDefault();
       setActiveIndex(next);
     }
   }
 
-  // Own and other teams never overlap, so an id names one stop.
+  // Teams never repeat across the merged list, so an id names one stop.
   const optionIndexById = new Map(options.map((option, index) => [option.id, index]));
   function renderOption(option: WorkspaceSummary) {
     const index = optionIndexById.get(option.id) ?? -1;
@@ -257,21 +273,6 @@ export function WorkspacePicker({
       </div>
     );
   }
-
-  function renderGroup(group: SwitcherOptionGroup) {
-    if (!group.label) return group.options.map(renderOption);
-    const labelId = `${baseId}-group-${group.key}`;
-    return (
-      <div key={group.key} role="group" aria-labelledby={labelId} className="team-switcher-group">
-        <div id={labelId} role="presentation" className="team-switcher-group-label">
-          {group.label}
-        </div>
-        {group.options.map(renderOption)}
-      </div>
-    );
-  }
-
-  const actionIndex = options.length;
 
   return (
     <div className="team-switcher team-switcher--picker" ref={rootRef}>
@@ -303,35 +304,32 @@ export function WorkspacePicker({
           data-testid="workspace-switcher-panel"
           onKeyDown={onPanelKeyDown}
         >
+          <div className="team-switcher-heading-row">
+            <div className="team-switcher-group-label">
+              {OWN_TEAMS_HEADING}
+            </div>
+            {canCreate ? (
+              <button
+                ref={createRef}
+                type="button"
+                className="team-switcher-add"
+                aria-label="Create team"
+                title="Create team"
+                data-testid="workspace-switcher-create"
+                onClick={create}
+              >
+                <PlusIcon />
+              </button>
+            ) : null}
+          </div>
           <div
             id={listboxId}
             role="listbox"
             aria-label="Active workspace"
             className="team-switcher-listbox"
           >
-            {groups.map(renderGroup)}
+            {options.map(renderOption)}
           </div>
-          {canCreate ? (
-            <>
-              <div className="team-switcher-divider" role="separator" />
-              <button
-                ref={(element) => {
-                  stopRefs.current[actionIndex] = element;
-                }}
-                type="button"
-                tabIndex={-1}
-                className={`team-switcher-action${activeIndex === actionIndex ? " is-active" : ""}`}
-                data-testid="workspace-switcher-create"
-                onPointerEnter={() => setActiveIndex(actionIndex)}
-                onClick={create}
-              >
-                <span className="team-switcher-action-icon">
-                  <PlusIcon />
-                </span>
-                Create workspace
-              </button>
-            </>
-          ) : null}
         </div>
       ) : null}
     </div>
