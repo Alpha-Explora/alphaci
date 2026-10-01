@@ -7,7 +7,12 @@ export {
    * that guards systems, delivery projects and repositories: Lead and Admin
    * yes, Developer no. */
   isGlobalCreatorRole,
+  /* Who may create a Project (an empty one, from Create project): Product
+   * owner (lead) or admin. A Developer adds repositories to one instead. */
+  canCreateProjectFolder,
 } from "@/features/groups";
+/* "Create project" from Home: the Projects page, New Project dialog open. */
+export { newProjectHref } from "@/features/workflows";
 
 import type {
   ConnectorTone,

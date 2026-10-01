@@ -33,6 +33,11 @@ export interface ProjectsDeepLink {
    * `?group=` and `?project=` as where to create — not what to open.
    */
   opensSetup: boolean;
+  /**
+   * `?new=project`: open the New Project dialog on arrival (Home's and the
+   * group page's "Create project" for a Product owner or admin).
+   */
+  opensNewProject: boolean;
 }
 
 export function readProjectsDeepLink(params: {
@@ -42,7 +47,31 @@ export function readProjectsDeepLink(params: {
     groupId: safeId(params.get("group")),
     projectId: safeId(params.get("project")),
     opensSetup: params.get("tab") === "setup",
+    opensNewProject: params.get("new") === "project",
   };
+}
+
+/** The Projects page link that opens the New Project dialog, on a team when one is named. */
+export function newProjectHref(groupId?: string | null): string {
+  const params = new URLSearchParams();
+  if (groupId) params.set("group", groupId);
+  params.set("new", "project");
+  return `/workflows?${params.toString()}`;
+}
+
+/**
+ * Which team a `?new=project` arrival opens the New Project dialog on, as
+ * the page's team resolves: `undefined` while waiting for the first team,
+ * then that team's id, then null for good once the page moves to another
+ * team — so coming back to it later does not reopen the dialog.
+ */
+export function nextNewProjectTeam(
+  current: string | null | undefined,
+  teamId: string | null,
+): string | null | undefined {
+  if (current === null || !teamId) return current;
+  if (current === undefined) return teamId;
+  return current === teamId ? current : null;
 }
 
 /**
@@ -71,16 +100,4 @@ export function nextMenuIndex(key: string, current: number, count: number): numb
   if (key === "Home") return 0;
   if (key === "End") return count - 1;
   return null;
-}
-
-/** The team the create view preselects for a group, kept only when the caller can create in it. */
-export function createWorkspaceForGroup(
-  groupId: string | null,
-  workspaces: readonly { id: string }[] | null,
-  current: string | null,
-): string | null {
-  if (!groupId) return current;
-  // Unknown list: take the group; the workspace load keeps an existing choice.
-  if (workspaces === null) return groupId;
-  return workspaces.some((workspace) => workspace.id === groupId) ? groupId : current;
 }

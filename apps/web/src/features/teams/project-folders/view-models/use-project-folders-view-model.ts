@@ -4,7 +4,11 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import { useAuthSession } from "@/features/auth/session";
 import { roleCanStartRun } from "@/features/checklists";
-import { isGlobalCreatorRole } from "@/features/groups";
+import {
+  canCreateRepositoryWithoutProject,
+  resolveCanCreateProject,
+  resolveCanCreateRepository,
+} from "@/features/groups";
 
 import { projectFoldersRepository } from "../data/project-folders-repository";
 import { findFolder, loadErrorMessage } from "../model/project-folder-rules";
@@ -26,10 +30,20 @@ export interface ProjectFoldersViewModel {
   unfiled: UnfiledProject[];
   /** Projects in the team, or null until the first load resolves. */
   count: number | null;
-  /** Server-decided: New Project, Move and checklist attach/detach. */
+  /** Server-decided: Move, Delete and checklist attach/detach. */
   canManage: boolean;
-  /** App role lead/admin: may start the create-repository wizard. */
+  /**
+   * Product owner (app role lead) or admin: may create an empty Project (the
+   * server's `canCreateProject`, else the app-role rule).
+   */
+  canCreateProject: boolean;
+  /**
+   * Developer or admin: may add a repository to a Project (the server's
+   * `canCreateRepository`, else the app-role rule). Never a lead or QA.
+   */
   canCreateRepository: boolean;
+  /** Admin only: may start the wizard with no Project chosen. */
+  canCreateUnfiledRepository: boolean;
   /** QA Team, Team lead or Admin, with the checklists capability on. */
   canVerifyInQaStudio: boolean;
   /** Checklist UI exists only with the qaChecklists capability. */
@@ -135,7 +149,9 @@ export function useProjectFoldersViewModel(options: {
     status: statusOf(current, error),
     error,
     ...view,
-    canCreateRepository: isGlobalCreatorRole(appRole),
+    canCreateProject: resolveCanCreateProject(current?.canCreateProject, appRole),
+    canCreateRepository: resolveCanCreateRepository(current?.canCreateRepository, appRole),
+    canCreateUnfiledRepository: canCreateRepositoryWithoutProject(appRole),
     canVerifyInQaStudio: qaChecklistsEnabled && roleCanStartRun(appRole),
     qaChecklistsEnabled,
     checklists: qaChecklistsEnabled ? currentFor(checklists, groupId) : null,

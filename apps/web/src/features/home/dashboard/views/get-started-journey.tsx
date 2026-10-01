@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { motion } from "framer-motion";
 
+import { newProjectHref } from "../../model/home-rules";
 import type { ProvisionedProject, RunGroup } from "../../model/home-types";
 import { EASE_OUT, sectionVariants } from "./motion";
 
@@ -57,7 +58,7 @@ export function GetStartedJourney({
       title: "Create a project",
       desc: "Name a service and pick what its pipeline should check.",
       done: hasProjects,
-      href: "/workflows?tab=setup",
+      href: newProjectHref(),
       cta: "Create a project",
     },
     {
@@ -132,7 +133,7 @@ export function GetStartedJourney({
       <div className="getstarted-resources">
         <span className="ops-block-label">Resources</span>
         <div className="getstarted-resource-links">
-          <Link href="/workflows?tab=setup">Create a project</Link>
+          <Link href={newProjectHref()}>Create a project</Link>
           <Link href="/runs">View runs</Link>
           <Link href="/guide">Read the guide</Link>
         </div>

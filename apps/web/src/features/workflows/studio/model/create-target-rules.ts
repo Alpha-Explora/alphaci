@@ -1,6 +1,8 @@
 /* Where a new repository goes: the team (?group=) and the team Project
  * (?project=) a link into the Create Project wizard asked for. Pure. */
 
+import { PROJECT_REQUIRED_MESSAGE } from "@/features/groups";
+
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /** Shape-only id checks; membership is decided against real data later. */
@@ -88,6 +90,67 @@ export function readTargetProject(value: unknown, requestedId: string): Resolved
   const groupId = text(raw.groupId);
   if (!groupId || raw.status === "archived") return null;
   return { id: text(raw.id) || requestedId, name: text(raw.name) || "Project", groupId };
+}
+
+/* ── A Developer's chosen Project ───────────────────────────────────────── */
+
+/* The select's prompt and its empty state, through this model so the
+ * studio's views never reach into another domain for copy. */
+export { NO_PROJECT_YET_MESSAGE, PROJECT_REQUIRED_MESSAGE } from "@/features/groups";
+
+export const RENDER_VARIABLES_MISSING_MESSAGE =
+  "Add at least one Render environment variable before creating the repository.";
+
+/**
+ * Why Create cannot be sent yet, or null when it can: Render provisioning
+ * without a variable, or a Developer's repository with no Project (the
+ * backend's 400 PROJECT_REQUIRED, caught before the round trip).
+ */
+export function createRepositoryBlocker(input: {
+  renderVariablesMissing: boolean;
+  requiresProject: boolean;
+  deliveryProjectId: string | undefined;
+}): string | null {
+  if (input.renderVariablesMissing) return RENDER_VARIABLES_MISSING_MESSAGE;
+  if (input.requiresProject && !input.deliveryProjectId) return PROJECT_REQUIRED_MESSAGE;
+  return null;
+}
+
+/** One entry of the wizard's Project select. */
+export interface ProjectChoiceOption {
+  id: string;
+  name: string;
+}
+
+/** The team's Projects as select options, in the order the server sent them. */
+export function projectChoiceOptions(
+  folders: ReadonlyArray<{ deliveryProjectId: string; name: string }>,
+): ProjectChoiceOption[] {
+  return folders.map((folder) => ({ id: folder.deliveryProjectId, name: folder.name }));
+}
+
+/** A picked option as a target in the team it was picked in; null clears the choice. */
+export function chosenTargetProject(
+  option: ProjectChoiceOption | null | undefined,
+  workspaceId: string | null | undefined,
+): ResolvedTargetProject | null {
+  if (!option || !workspaceId) return null;
+  return { id: option.id, name: option.name, groupId: workspaceId };
+}
+
+/**
+ * The Project the repository goes into: a `?project=` link's when it belongs
+ * to the team being created in, else the one picked in the wizard for that
+ * same team, else none.
+ */
+export function applicableTargetProject(
+  linked: ResolvedTargetProject | null,
+  chosen: ResolvedTargetProject | null,
+  workspaceId: string | null | undefined,
+): ResolvedTargetProject | null {
+  if (effectiveDeliveryProjectId(linked, workspaceId)) return linked;
+  if (effectiveDeliveryProjectId(chosen, workspaceId)) return chosen;
+  return null;
 }
 
 /** The create payload, owned by the team (and Project) it is created in. */

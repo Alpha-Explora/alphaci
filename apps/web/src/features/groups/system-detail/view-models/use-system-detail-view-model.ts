@@ -3,8 +3,10 @@
 import { useState } from "react";
 
 import { useApiResource } from "@/features/groups";
+import { useAuthSession } from "@/features/auth/session";
 
 import { groupsRepository } from "../../data/groups-repository";
+import { canCreateProjectFolder } from "../../model/creation-role-rules";
 import { isGroupManagerRole } from "../../model/groups-rules";
 import type {
   DeliveryProject,
@@ -24,7 +26,10 @@ export interface SystemDetailViewModel {
     typeof useApiResource<DeliveryProject[]>
   >["state"];
   reloadDeliveryProjects: () => void;
-  /** Whether the caller may create a delivery project here. */
+  /**
+   * Whether the caller may create a delivery project (a Project) here: a
+   * manager of the group who is also a Product owner or admin.
+   */
   canManage: boolean;
   dialogOpen: boolean;
   setDialogOpen: (open: boolean) => void;
@@ -43,6 +48,7 @@ export function useSystemDetailViewModel(
   systemId: string,
 ): SystemDetailViewModel {
   const [dialogOpen, setDialogOpen] = useState(false);
+  const { session } = useAuthSession();
 
   const groupResource = useApiResource<GroupSummary>(
     () => groupsRepository.group(groupId),
@@ -66,7 +72,8 @@ export function useSystemDetailViewModel(
     deliveryProjects: projectsResource.data ?? [],
     deliveryProjectsStatus: projectsResource.state,
     reloadDeliveryProjects: projectsResource.reload,
-    canManage: isGroupManagerRole(groupResource.data?.role),
+    canManage:
+      isGroupManagerRole(groupResource.data?.role) && canCreateProjectFolder(session?.appRole),
     dialogOpen,
     setDialogOpen,
     prependDeliveryProject: (project) =>

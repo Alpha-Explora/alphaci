@@ -20,13 +20,10 @@ import { useGroupProjectsViewModel } from "../view-models/use-group-projects-vie
 function ProjectsInner({ group }: Readonly<{ group: GroupSummary }>) {
   const vm = useGroupProjectsViewModel(group.id);
 
-  // "Create project" opens the full Create Project form, pre-scoped to this
-  // group so the provisioned project is owned by it.
+  // "Create project" opens the New Project dialog on this group's Projects
+  // page: a Product owner creates the Project, a Developer fills it.
   const createButton = vm.canManage ? (
-    <Link
-      className="primary-button"
-      href={`/workflows?tab=setup&group=${group.id}`}
-    >
+    <Link className="primary-button" href={vm.createProjectHref}>
       Create project
     </Link>
   ) : undefined;
@@ -42,7 +39,7 @@ function ProjectsInner({ group }: Readonly<{ group: GroupSummary }>) {
       />
       <PageHeader
         title="Projects"
-        subtitle="Projects owned by this group. Creating a project provisions its GitHub repository."
+        subtitle="Projects owned by this group. A Product owner creates a Project; Developers add its repositories."
         actions={createButton}
       />
       <GroupSubNav groupId={group.id} active="systems" />
@@ -84,7 +81,7 @@ function ProjectsInner({ group }: Readonly<{ group: GroupSummary }>) {
           emptyTitle="No projects yet"
           emptyMessage={
             vm.canManage
-              ? "Create a project to provision its GitHub repository."
+              ? "Create a Project, then Developers add its repositories."
               : "You don't have access to any projects in this group yet."
           }
           emptyAction={createButton}

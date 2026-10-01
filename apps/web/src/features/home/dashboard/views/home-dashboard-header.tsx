@@ -63,10 +63,13 @@ function HomeHeaderIdentity({
 function HomeHeaderActions({
   guest,
   canCreateProjects,
+  createProjectHref,
   onRefresh,
 }: Readonly<{
   guest: boolean;
   canCreateProjects: boolean;
+  /** The Projects page with the New Project dialog open, on the header's team. */
+  createProjectHref: string;
   onRefresh: () => void;
 }>) {
   if (guest) {
@@ -94,7 +97,7 @@ function HomeHeaderActions({
       {canCreateProjects ? (
         <Link
           className="primary-button home-header-btn"
-          href="/workflows?tab=setup"
+          href={createProjectHref}
         >
           Create project
         </Link>
@@ -107,6 +110,7 @@ export function HomeDashboardHeader({
   guest,
   session,
   canCreateProjects,
+  createProjectHref,
   prefersReducedMotion,
   error,
   logoutMessage,
@@ -115,6 +119,7 @@ export function HomeDashboardHeader({
   guest: boolean;
   session: DashboardSession;
   canCreateProjects: boolean;
+  createProjectHref: string;
   prefersReducedMotion: boolean | null;
   error: string | null;
   logoutMessage: string | null;
@@ -136,6 +141,7 @@ export function HomeDashboardHeader({
         <HomeHeaderActions
           guest={guest}
           canCreateProjects={canCreateProjects}
+          createProjectHref={createProjectHref}
           onRefresh={onRefresh}
         />
       </div>

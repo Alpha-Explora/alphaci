@@ -26,7 +26,7 @@ Feature domains are UI ownership boundaries. They consume backend bounded contex
 | `auth` | `identity-access` | sign-in, callback, and session presentation | 18 |
 | `capabilities` | `identity-access` | compatibility capability consumption from /api/v1/capabilities | 6 |
 | `checklists` | `projects` | team QA checklists, their items and sharing, the project Checklists tab, QA Studio verification runs and the Overview "Returned by QA" card | 79 |
-| `groups` | `identity-access` | hierarchy groups, systems, repositories, members, activity, and delivery projects | 52 |
+| `groups` | `identity-access` | hierarchy groups, systems, repositories, members, activity, and delivery projects | 53 |
 | `guide` | `platform-ops` | in-product guide | 3 |
 | `home` | `platform-ops` | authenticated home dashboard | 18 |
 | `notifications` | `platform-ops` | inbox and notification preferences | 16 |
@@ -34,7 +34,7 @@ Feature domains are UI ownership boundaries. They consume backend bounded contex
 | `runs` | `pipelines` | CI run history presentation | 22 |
 | `settings` | `identity-access` | account, workspace, and notification settings | 22 |
 | `teams` | `identity-access` | team listing over hierarchy groups | 35 |
-| `workflows` | `projects` | project creation and workflow studio | 56 |
+| `workflows` | `projects` | project creation and workflow studio | 58 |
 | `workspace` | `identity-access` | application shell, navigation, and workspace switching | 12 |
 
 Cross-feature imports go through a domain or action `index.ts`. `src/shared/` may not import a feature.

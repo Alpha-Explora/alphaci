@@ -117,12 +117,13 @@ describe("useWorkflowStudioViewModel", () => {
     return () => snapshot;
   }
 
-  it("starts on the projects view and opens the create view for a group", async () => {
+  it("starts on the projects view and opens the create view", async () => {
     const get = await renderVm();
     expect(get()!.activeView).toBe("current");
-    act(() => get()!.openCreateForGroup("workspace-1"));
+    act(() => get()!.openIndividualSetup());
     expect(get()!.activeView).toBe("setup");
-    expect(get()!.selectedCreateWorkspaceId).toBe("workspace-1");
+    // No Developer here (no session), so there is no Project to choose.
+    expect(get()!.projectChoice).toBeNull();
   });
 
   it("deep-links to the create view from ?tab=setup", async () => {
@@ -146,7 +147,7 @@ describe("useWorkflowStudioViewModel", () => {
   it("leaves the URL alone going back when there is no ?tab", async () => {
     (useSearchParams as jest.Mock).mockReturnValue(new URLSearchParams());
     const get = await renderVm();
-    act(() => get()!.openCreateForGroup(null));
+    act(() => get()!.openIndividualSetup());
     act(() => get()!.showProjects());
     expect(get()!.activeView).toBe("current");
     expect(mockReplace).not.toHaveBeenCalled();

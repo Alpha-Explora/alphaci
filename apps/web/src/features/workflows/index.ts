@@ -9,6 +9,9 @@ export * from "./studio/data/env-provisioning-api";
 export * from "./studio/data/existing-repos-api";
 export * from "./studio/data/github-api";
 export * from "./studio/data/workflows-api";
+/* The Projects page with the New Project dialog open (a Product owner's or
+ * admin's "Create project" from anywhere else in the app). */
+export { newProjectHref } from "./studio/model/current-projects-rules";
 export {
   cleanUserMessage,
   formatApiError,

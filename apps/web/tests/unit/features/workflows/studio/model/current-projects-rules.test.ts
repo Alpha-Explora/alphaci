@@ -1,8 +1,9 @@
 import {
-  createWorkspaceForGroup,
   headerTeam,
   linkedProjectFolderId,
+  newProjectHref,
   nextMenuIndex,
+  nextNewProjectTeam,
   readProjectsDeepLink,
 } from "../../../../../../src/features/workflows/studio/model/current-projects-rules";
 import { searchWithoutTab } from "../../../../../../src/features/workflows/studio/model/workflow-studio-rules";
@@ -38,6 +39,7 @@ describe("readProjectsDeepLink", () => {
       groupId: "g-1",
       projectId: "dp-1",
       opensSetup: false,
+      opensNewProject: false,
     });
     expect(link("tab=setup&group=g-1&project=dp-1").opensSetup).toBe(true);
   });
@@ -47,11 +49,13 @@ describe("readProjectsDeepLink", () => {
       groupId: null,
       projectId: null,
       opensSetup: false,
+      opensNewProject: false,
     });
     expect(link("group=&project=%20%20")).toEqual({
       groupId: null,
       projectId: null,
       opensSetup: false,
+      opensNewProject: false,
     });
   });
 });
@@ -111,24 +115,33 @@ describe("searchWithoutTab", () => {
   });
 });
 
-describe("createWorkspaceForGroup", () => {
-  const workspaces = [{ id: "g-1" }, { id: "g-2" }];
-
-  it("takes the group when the caller can create in it", () => {
-    expect(createWorkspaceForGroup("g-2", workspaces, "g-1")).toBe("g-2");
+describe("newProjectHref", () => {
+  it("links the Projects page with the New Project dialog open", () => {
+    expect(newProjectHref()).toBe("/workflows?new=project");
+    expect(newProjectHref(null)).toBe("/workflows?new=project");
+    expect(newProjectHref("g-1")).toBe("/workflows?group=g-1&new=project");
   });
 
-  /* An admin can view every team but creates only in their own. */
-  it("keeps the current choice for a group the caller is not a member of", () => {
-    expect(createWorkspaceForGroup("g-3", workspaces, "g-1")).toBe("g-1");
-    expect(createWorkspaceForGroup("g-3", workspaces, null)).toBeNull();
+  it("is what readProjectsDeepLink reads back", () => {
+    const link = readProjectsDeepLink(new URLSearchParams("group=g-1&new=project"));
+    expect(link).toMatchObject({ groupId: "g-1", opensNewProject: true, opensSetup: false });
+    expect(readProjectsDeepLink(new URLSearchParams("new=other")).opensNewProject).toBe(false);
+  });
+});
+
+describe("nextNewProjectTeam", () => {
+  it("binds to the first team the page shows", () => {
+    expect(nextNewProjectTeam(undefined, null)).toBeUndefined();
+    expect(nextNewProjectTeam(undefined, "g-1")).toBe("g-1");
+    expect(nextNewProjectTeam("g-1", "g-1")).toBe("g-1");
   });
 
-  it("takes the group while the caller's teams are still unknown", () => {
-    expect(createWorkspaceForGroup("g-3", null, null)).toBe("g-3");
+  it("is spent once the page moves to another team, and stays spent", () => {
+    expect(nextNewProjectTeam("g-1", "g-2")).toBeNull();
+    expect(nextNewProjectTeam(null, "g-1")).toBeNull();
   });
 
-  it("keeps the current choice when no group is shown", () => {
-    expect(createWorkspaceForGroup(null, workspaces, "g-1")).toBe("g-1");
+  it("waits while there is no team on screen", () => {
+    expect(nextNewProjectTeam("g-1", null)).toBe("g-1");
   });
 });

@@ -16,6 +16,7 @@ import type {
 import { getMyWorkspaces } from "@/features/workspace";
 
 import { useCapabilities } from "@/features/capabilities/current";
+import { repositoryRequiresProject } from "@/features/groups";
 import { useCreateProjectForm } from "./use-create-project-form";
 import { useDeploymentProvisioningForm } from "./use-deployment-provisioning-form";
 import { useGithubInstallations } from "./use-github-installations";
@@ -26,14 +27,18 @@ import { useWorkflowHistory } from "./use-workflow-history";
 import { useOnboardingTour } from "./use-onboarding-tour";
 import { useCurrentProjectsTour } from "./use-current-projects-tour";
 import { useCreateTarget } from "./use-create-target";
+import { useTeamProjectOptions } from "./use-team-project-options";
 import { roleGateErrorMessage } from "../model/role-gate-rules";
-import { preselectedWorkspaceId, scopeCreatePayload } from "../model/create-target-rules";
+import {
+  createRepositoryBlocker,
+  preselectedWorkspaceId,
+  scopeCreatePayload,
+} from "../model/create-target-rules";
 import {
   formatApiError,
   searchWithoutTab,
   type WorkflowView,
 } from "../model/workflow-studio-rules";
-import { createWorkspaceForGroup } from "../model/current-projects-rules";
 import {
   PROJECT_NAME_TAKEN_MESSAGE,
   isProjectNameTakenError,
@@ -107,6 +112,15 @@ export function useWorkflowStudioViewModel(options: {
   });
   const linkedGroupId = createTarget.initialGroupId;
 
+  // A Developer files every repository in a Project: without a `?project=`
+  // link the wizard asks which, from the team's own Projects.
+  const requiresProject = !guest && repositoryRequiresProject(session?.appRole);
+  const asksForProject = requiresProject && createTarget.linkedProjectName === null;
+  const teamProjects = useTeamProjectOptions({
+    groupId: selectedCreateWorkspaceId,
+    enabled: asksForProject && activeView === "setup",
+  });
+
   const catalog = useWorkflowCatalog();
   const projectCatalog = useProjectOptionsCatalog();
   const history = useWorkflowHistory(setStatusMessage);
@@ -170,14 +184,6 @@ export function useWorkflowStudioViewModel(options: {
     router.replace(search ? `${pathname}?${search}` : pathname, { scroll: false });
   }
 
-  /** The header's "Create project": the create view, with that group preselected. */
-  function openCreateForGroup(groupId: string | null) {
-    setSelectedCreateWorkspaceId((current) =>
-      createWorkspaceForGroup(groupId, workspaces, current),
-    );
-    setActiveView("setup");
-  }
-
   function openIndividualSetup() {
     setActiveView("setup");
   }
@@ -186,13 +192,6 @@ export function useWorkflowStudioViewModel(options: {
     selectedGroupId?: string,
     onComplete?: () => void,
   ) {
-    if (deploymentProvisioning.renderVariablesMissing) {
-      setStatusMessage(
-        "Add at least one Render environment variable before creating the repository.",
-      );
-      return;
-    }
-
     // Group context (in-team) fixes the owner; the top-level Create tab
     // (choose-team) uses the caller's selection, which the effect preselects
     // when they belong to exactly one team.
@@ -201,6 +200,15 @@ export function useWorkflowStudioViewModel(options: {
     // Project — only while creating in that Project's own team. The Project
     // then keeps its own name, so no projectName is asked for or sent.
     const deliveryProjectId = createTarget.deliveryProjectIdFor(workspaceId);
+    const blocker = createRepositoryBlocker({
+      renderVariablesMissing: deploymentProvisioning.renderVariablesMissing,
+      requiresProject,
+      deliveryProjectId,
+    });
+    if (blocker) {
+      setStatusMessage(blocker);
+      return;
+    }
 
     const payloadResult = createForm.buildPayload({
       projectName: projectNameForRequest(createForm.projectName, deliveryProjectId),
@@ -431,8 +439,21 @@ export function useWorkflowStudioViewModel(options: {
     setSelectedCreateWorkspaceId,
     targetProjectLabel: createTarget.label,
     joinedProjectName: createTarget.joinedProjectName,
+    /**
+     * A Developer's Project select (no `?project=` link to fill it), or null
+     * when the caller need not choose: an admin, or a linked Project.
+     */
+    projectChoice: asksForProject
+      ? {
+          status: teamProjects.status,
+          options: teamProjects.options,
+          selectedId: createTarget.chosenProjectId ?? "",
+          onSelect: (id: string) =>
+            createTarget.chooseProject(teamProjects.options.find((option) => option.id === id) ?? null),
+          onRetry: teamProjects.retry,
+        }
+      : null,
     showProjects,
-    openCreateForGroup,
     openIndividualSetup,
     handleCreateProject,
     handleDiscoverExistingRepo,

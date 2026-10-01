@@ -66,6 +66,7 @@ let lastActions: ProjectExplorerActions | undefined;
 async function renderExplorer(
   qaChecklistsEnabled = true,
   initialFolderId: string | null = null,
+  openNewProjectOnArrival = false,
 ): Promise<HTMLElement> {
   const container = document.createElement("div");
   document.body.appendChild(container);
@@ -77,6 +78,7 @@ async function renderExplorer(
         groupName="Checkout squad"
         qaChecklistsEnabled={qaChecklistsEnabled}
         initialFolderId={initialFolderId}
+        openNewProjectOnArrival={openNewProjectOnArrival}
       >
         {(explorer) => {
           lastCount = explorer.count;
@@ -103,6 +105,11 @@ function link(container: HTMLElement, name: string): HTMLAnchorElement | undefin
   return [...container.querySelectorAll("a")].find((el) => el.textContent?.includes(name));
 }
 
+/** A card's "Add repository": the wizard filed in that Project, beside Manage. */
+function addToCard(container: HTMLElement, folderName: string): HTMLAnchorElement | null {
+  return container.querySelector<HTMLAnchorElement>(`a.pf-card__add[aria-label="Add repository to ${folderName}"]`);
+}
+
 describe("ProjectExplorer", () => {
   it("lists Project cards with repository and checklist counts, then the unfiled group", async () => {
     repo.list.mockResolvedValue(foldersSnapshot());
@@ -123,8 +130,11 @@ describe("ProjectExplorer", () => {
     expect(container.querySelector(".group-section-head")).toBeNull();
     expect(button(container, "New Project")).toBeUndefined();
     expect(link(container, "Create repository")).toBeUndefined();
+    // A Product owner creates Projects and never adds repositories.
     expect(lastActions?.createEmptyProject).toEqual(expect.any(Function));
-    expect(lastActions?.addRepositoryHref).toBe("/workflows?tab=setup&group=ws-1");
+    expect(lastActions?.addRepositoryHref).toBeNull();
+    expect(container.querySelector("a.pf-card__add")).toBeNull();
+    expect(link(container, "Add repository")).toBeUndefined();
   });
 
   it("opens the Empty project dialog from the heading's action", async () => {
@@ -142,7 +152,6 @@ describe("ProjectExplorer", () => {
     const container = await renderExplorer(false);
     expect(lastActions).toEqual({ createEmptyProject: null, addRepositoryHref: null });
     expect(button(container, "New Project")).toBeUndefined();
-    expect(link(container, "Create repository")).toBeUndefined();
     expect(container.textContent).not.toContain("checklist");
     expect(repo.listChecklists).not.toHaveBeenCalled();
 
@@ -150,6 +159,93 @@ describe("ProjectExplorer", () => {
     expect(container.textContent).not.toContain("Verify in QA Studio");
     expect(button(container, "Move")).toBeUndefined();
     expect(container.textContent).not.toContain("Checklists");
+    expect(container.textContent).not.toContain("Danger zone");
+  });
+
+  it("gives a Developer Add repository on each card and in the detail, filed in that Project", async () => {
+    mockSession.appRole = "member";
+    repo.list.mockResolvedValue(foldersSnapshot({ canManage: false }));
+    const container = await renderExplorer(false);
+
+    const add = addToCard(container, "testfinals")!;
+    expect(add.getAttribute("href")).toBe("/workflows?tab=setup&group=ws-1&project=dp-1");
+    expect(add.textContent).toBe("Add repository");
+    // A sibling of the card's link and of Manage, never nested inside the link.
+    expect(add.closest("a.pf-card__open")).toBeNull();
+    expect(add.parentElement).toBe(manage(container, "testfinals")!.parentElement);
+    expect(addToCard(container, "wallet")?.getAttribute("href")).toBe(
+      "/workflows?tab=setup&group=ws-1&project=dp-2",
+    );
+
+    await act(async () => manage(container, "testfinals")!.click());
+    expect(container.querySelector(".pf-detail__actions a")?.textContent).toBe("Add repository");
+    expect(container.querySelector<HTMLAnchorElement>(".pf-detail__actions a")?.getAttribute("href")).toBe(
+      "/workflows?tab=setup&group=ws-1&project=dp-1",
+    );
+
+    await act(async () => button(container, "All Projects")!.click());
+    await act(async () => manage(container, "wallet")!.click());
+    expect(container.querySelector(".pf-empty-folder")?.textContent).toContain("Add the first one");
+    expect(link(container, "Add repository")?.getAttribute("href")).toBe("/workflows?tab=setup&group=ws-1&project=dp-2");
+  });
+
+  it("follows the server's canCreateRepository over the app role", async () => {
+    mockSession.appRole = "member";
+    repo.list.mockResolvedValue(foldersSnapshot({ canManage: false, canCreateRepository: false }));
+    const container = await renderExplorer(false);
+    expect(container.querySelector("a.pf-card__add")).toBeNull();
+  });
+
+  it("gives an admin both: Create project, the unfiled Add repository, and per-Project Add repository", async () => {
+    mockSession.appRole = "admin";
+    repo.list.mockResolvedValue(foldersSnapshot());
+    repo.listChecklists.mockResolvedValue([]);
+    const container = await renderExplorer();
+    expect(lastActions?.createEmptyProject).toEqual(expect.any(Function));
+    expect(lastActions?.addRepositoryHref).toBe("/workflows?tab=setup&group=ws-1");
+    expect(addToCard(container, "testfinals")).not.toBeNull();
+  });
+
+  it("gives QA Team neither Create project nor Add repository", async () => {
+    mockSession.appRole = "qa";
+    repo.list.mockResolvedValue(foldersSnapshot({ canManage: false }));
+    repo.listChecklists.mockResolvedValue([]);
+    const container = await renderExplorer();
+    expect(lastActions).toEqual({ createEmptyProject: null, addRepositoryHref: null });
+    expect(container.querySelector("a.pf-card__add")).toBeNull();
+    await act(async () => manage(container, "wallet")!.click());
+    expect(link(container, "Add repository")).toBeUndefined();
+    expect(container.querySelector(".pf-empty-folder")?.textContent).toContain("Developers add them.");
+  });
+
+  it.each([
+    ["lead", "Create the first Project for this team.", true],
+    ["member", "Your Product owner hasn't created a Project yet.", false],
+    ["qa", null, false],
+  ] as const)("words the empty list for %s", async (role, line, offersCreate) => {
+    mockSession.appRole = role;
+    repo.list.mockResolvedValue(foldersSnapshot({ folders: [], unfiled: [], canManage: role === "lead" }));
+    repo.listChecklists.mockResolvedValue([]);
+    const container = await renderExplorer();
+    const text = container.querySelector(".hier-state-text")?.textContent ?? "";
+    expect(text).toContain("A Project groups the repositories that ship together");
+    if (line) expect(text).toContain(line);
+    else expect(text).not.toMatch(/Create the first|Product owner/);
+    expect(button(container, "Create the first Project") !== undefined).toBe(offersCreate);
+  });
+
+  it("opens the New Project dialog on arrival for a Product owner, never for a Developer", async () => {
+    repo.list.mockResolvedValue(foldersSnapshot());
+    repo.listChecklists.mockResolvedValue([]);
+    let container = await renderExplorer(true, null, true);
+    expect(container.querySelector('[role="dialog"]')?.textContent).toContain("New Project");
+    act(() => root?.unmount());
+    root = null;
+    document.body.innerHTML = "";
+
+    mockSession.appRole = "member";
+    container = await renderExplorer(true, null, true);
+    expect(container.querySelector('[role="dialog"]')).toBeNull();
   });
 
   it("shows loading, then the error state with a retry", async () => {
@@ -184,9 +280,8 @@ describe("ProjectExplorer", () => {
 
     expect(container.querySelector(".pf-detail__title")?.textContent).toBe("testfinals");
     expect(link(container, "Verify in QA Studio")?.getAttribute("href")).toBe("/projects/proj-fe#qa");
-    expect(link(container, "Create repository in this Project")?.getAttribute("href")).toBe(
-      "/workflows?tab=setup&group=ws-1&project=dp-1",
-    );
+    // A Product owner fills nothing: Developers add the repositories.
+    expect(link(container, "Add repository")).toBeUndefined();
     expect(container.querySelector(".pf-checklists")?.textContent).toContain("Release smoke test");
     expect(container.querySelector(".pf-checklists")?.textContent).toContain("All repositories");
 

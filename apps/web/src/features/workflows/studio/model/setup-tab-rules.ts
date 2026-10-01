@@ -128,11 +128,16 @@ export function isRepositoryStepReady(input: {
   /** null while the repository joins an existing Project: nothing to name. */
   projectName: string | null;
   projectNameServerError?: string | null;
+  /** A Developer has not picked the Project the repository belongs to yet. */
+  projectChoiceMissing?: boolean;
   repoName: string;
   isMicroservicesShape: boolean;
   isMultiRepoShape: boolean;
   serviceName: string;
 }): boolean {
+  if (input.projectChoiceMissing) {
+    return false;
+  }
   if (!isProjectNameStepReady(input.projectName, input.projectNameServerError ?? null)) {
     return false;
   }
@@ -143,6 +148,16 @@ export function isRepositoryStepReady(input: {
     return true;
   }
   return Boolean(input.serviceName.trim());
+}
+
+/** A Developer's Project select is showing and nothing is picked yet. */
+export function isProjectChoiceMissing(choice: { selectedId: string } | null): boolean {
+  return choice !== null && !choice.selectedId;
+}
+
+/** "Existing repository" is on screen only when chosen and allowed for the caller. */
+export function isExistingSetupMode(setupMode: "new" | "existing", allowed: boolean): boolean {
+  return allowed && setupMode === "existing";
 }
 
 export function isAutomationStepReady(outputFileName: string, nodeVersion: string): boolean {

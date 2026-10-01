@@ -10,6 +10,7 @@ import {
   attachableChecklists,
   checklistAttachment,
   createRepositoryHref,
+  emptyRepositoriesCopy,
   folderChecklists,
   folderProjectIds,
   repositoryCountLabel,
@@ -28,6 +29,10 @@ import type { ProjectFoldersViewModel } from "../view-models/use-project-folders
 import { BackIcon, ChecklistIcon, PlusIcon, StudioIcon } from "./project-folder-icons";
 import { RepoChip } from "./repo-chip";
 
+/**
+ * Verify in QA Studio (QA Team, Product owner, admin) and Add repository
+ * (Developer, admin): a Product owner creates the Project, a Developer fills it.
+ */
 function DetailActions({
   vm,
   folder,
@@ -48,7 +53,7 @@ function DetailActions({
           href={createRepositoryHref(vm.groupId, folder.deliveryProjectId)}
         >
           <PlusIcon />
-          Create repository in this Project
+          Add repository
         </Link>
       ) : null}
     </div>
@@ -100,17 +105,14 @@ function EmptyRepositories({
 }: Readonly<{ vm: ProjectFoldersViewModel; folder: ProjectFolder }>) {
   return (
     <div className="pf-empty-folder">
-      <p>
-        No repositories in this Project yet.
-        {vm.canCreateRepository ? " Create the first one and it lands here." : ""}
-      </p>
+      <p>{emptyRepositoriesCopy(vm.canCreateRepository)}</p>
       {vm.canCreateRepository ? (
         <Link
           className="primary-button"
           href={createRepositoryHref(vm.groupId, folder.deliveryProjectId)}
         >
           <PlusIcon />
-          Create repository in this Project
+          Add repository
         </Link>
       ) : null}
     </div>
