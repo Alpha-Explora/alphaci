@@ -1,4 +1,5 @@
 import type { EnvTargetSlot, UsageLimitItem } from "@/shared/api/contracts";
+import { isProjectNameStepReady } from "./project-name-rules";
 import { toSlug } from "./workflow-studio-rules";
 
 export function projectKindToSlot(kind?: "frontend" | "backend"): EnvTargetSlot {
@@ -89,6 +90,8 @@ export function isExistingDiscoverDisabled(input: {
 }
 
 export function isExistingSetupDisabled(input: {
+  projectName: string;
+  projectNameServerError?: string | null;
   isDiscoveringExistingRepo: boolean;
   isSettingUpExistingRepo: boolean;
   loadingProjectOptions: boolean;
@@ -96,6 +99,9 @@ export function isExistingSetupDisabled(input: {
   hasSelectedProjectType: boolean;
 }): boolean {
   if (isExistingDiscoverDisabled(input)) {
+    return true;
+  }
+  if (!isProjectNameStepReady(input.projectName, input.projectNameServerError ?? null)) {
     return true;
   }
   return !input.hasSelectedProjectType;
@@ -119,11 +125,17 @@ export function isBlueprintReady(input: {
 }
 
 export function isRepositoryStepReady(input: {
+  /** null while the repository joins an existing Project: nothing to name. */
+  projectName: string | null;
+  projectNameServerError?: string | null;
   repoName: string;
   isMicroservicesShape: boolean;
   isMultiRepoShape: boolean;
   serviceName: string;
 }): boolean {
+  if (!isProjectNameStepReady(input.projectName, input.projectNameServerError ?? null)) {
+    return false;
+  }
   if (!input.repoName.trim()) {
     return false;
   }

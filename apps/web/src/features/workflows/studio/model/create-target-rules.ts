@@ -68,6 +68,15 @@ export function targetProjectLabel(
   return `${team?.name ?? "Team"} / ${target.name}`;
 }
 
+/** The name of the Project the repository joins, or null when it joins none. */
+export function joinedProjectName(
+  target: ResolvedTargetProject | null,
+  workspaceId: string | null | undefined,
+): string | null {
+  if (!effectiveDeliveryProjectId(target, workspaceId) || !target) return null;
+  return target.name;
+}
+
 function text(value: unknown): string {
   return typeof value === "string" ? value.trim() : "";
 }

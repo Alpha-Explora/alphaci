@@ -35,6 +35,12 @@ import {
 } from "../model/workflow-studio-rules";
 import { createWorkspaceForGroup } from "../model/current-projects-rules";
 import {
+  PROJECT_NAME_TAKEN_MESSAGE,
+  isProjectNameTakenError,
+  projectNameForRequest,
+  validateProjectName,
+} from "../model/project-name-rules";
+import {
   buildGenerateWorkflowPayload,
   buildSetupExistingRepoPayload,
 } from "../model/studio-command-payloads";
@@ -187,7 +193,17 @@ export function useWorkflowStudioViewModel(options: {
       return;
     }
 
+    // Group context (in-team) fixes the owner; the top-level Create tab
+    // (choose-team) uses the caller's selection, which the effect preselects
+    // when they belong to exactly one team.
+    const workspaceId = selectedGroupId ?? selectedCreateWorkspaceId ?? undefined;
+    // A ?project= link files the repository (both, for a pair) in that team
+    // Project — only while creating in that Project's own team. The Project
+    // then keeps its own name, so no projectName is asked for or sent.
+    const deliveryProjectId = createTarget.deliveryProjectIdFor(workspaceId);
+
     const payloadResult = createForm.buildPayload({
+      projectName: projectNameForRequest(createForm.projectName, deliveryProjectId),
       isMicroservicesShape: projectCatalog.isMicroservicesShape,
       isMultiRepoShape: projectCatalog.isMultiRepoShape,
       repoShapeId: projectCatalog.selectedRepoShapeId,
@@ -203,19 +219,14 @@ export function useWorkflowStudioViewModel(options: {
     }
 
     setIsCreatingProject(true);
+    createForm.setProjectNameError(null);
     setStatusMessage("Creating GitHub repository, branches, and committing workflow...");
 
     try {
-      // Group context (in-team) fixes the owner; the top-level Create tab
-      // (choose-team) uses the caller's selection, which the effect preselects
-      // when they belong to exactly one team.
-      const workspaceId = selectedGroupId ?? selectedCreateWorkspaceId ?? undefined;
-      // A ?project= link files the repository (both, for a pair) in that team
-      // Project — only while creating in that Project's own team.
       const requestPayload = scopeCreatePayload(
         payloadResult.payload,
         workspaceId,
-        createTarget.deliveryProjectIdFor(workspaceId),
+        deliveryProjectId,
       );
       const response = await createProject(requestPayload);
 
@@ -250,7 +261,14 @@ export function useWorkflowStudioViewModel(options: {
         `Repository "${response.repoFullName}" created. Workflow committed to ${response.workflowPath}.`,
       );
     } catch (error) {
-      setStatusMessage(roleGateErrorMessage(error, "Project creation failed"));
+      if (isProjectNameTakenError(error)) {
+        // Refused before any repository was created: the wizard shows this on
+        // the Project name field and returns to the Repository step.
+        createForm.setProjectNameError(PROJECT_NAME_TAKEN_MESSAGE);
+        setStatusMessage(PROJECT_NAME_TAKEN_MESSAGE);
+      } else {
+        setStatusMessage(roleGateErrorMessage(error, "Project creation failed"));
+      }
     } finally {
       setIsCreatingProject(false);
     }
@@ -311,7 +329,14 @@ export function useWorkflowStudioViewModel(options: {
       return;
     }
 
+    const projectName = validateProjectName(createForm.projectName);
+    if (!projectName.ok) {
+      setStatusMessage(projectName.message);
+      return;
+    }
+
     const payload = buildSetupExistingRepoPayload({
+      projectName: projectName.name,
       repoFullName,
       selectedProjectTypeId: projectCatalog.selectedProjectTypeId,
       selectedWorkflowRecipeId: projectCatalog.selectedWorkflowRecipeId,
@@ -327,6 +352,7 @@ export function useWorkflowStudioViewModel(options: {
     });
 
     setIsSettingUpExistingRepo(true);
+    createForm.setProjectNameError(null);
     setStatusMessage(`Committing CI/CD workflow to ${repoFullName}...`);
 
     try {
@@ -341,7 +367,12 @@ export function useWorkflowStudioViewModel(options: {
         `CI/CD added to "${response.repoFullName}". Workflow committed to ${response.workflowPath}.`,
       );
     } catch (error) {
-      setStatusMessage(roleGateErrorMessage(error, "Existing repository setup failed"));
+      if (isProjectNameTakenError(error)) {
+        createForm.setProjectNameError(PROJECT_NAME_TAKEN_MESSAGE);
+        setStatusMessage(PROJECT_NAME_TAKEN_MESSAGE);
+      } else {
+        setStatusMessage(roleGateErrorMessage(error, "Existing repository setup failed"));
+      }
     } finally {
       setIsSettingUpExistingRepo(false);
     }
@@ -399,6 +430,7 @@ export function useWorkflowStudioViewModel(options: {
     selectedCreateWorkspaceId,
     setSelectedCreateWorkspaceId,
     targetProjectLabel: createTarget.label,
+    joinedProjectName: createTarget.joinedProjectName,
     showProjects,
     openCreateForGroup,
     openIndividualSetup,

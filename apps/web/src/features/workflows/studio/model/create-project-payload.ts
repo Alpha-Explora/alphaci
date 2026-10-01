@@ -1,4 +1,5 @@
 import type { CreateProjectRequest, MvpProjectOptionKey } from "@/shared/api/contracts";
+import { validateProjectName } from "./project-name-rules";
 import { toSlug } from "./workflow-studio-rules";
 
 export type CreateProjectPayloadResult =
@@ -6,6 +7,11 @@ export type CreateProjectPayloadResult =
   | { ok: false; message: string };
 
 export interface CreateProjectPayloadInput {
+  /**
+   * The Project name to send, or null when the repository joins an existing
+   * Project (a deliveryProjectId is sent instead and the name is not asked for).
+   */
+  projectName: string | null;
   repoName: string;
   visibility: CreateProjectRequest["visibility"];
   serviceName: string;
@@ -51,6 +57,19 @@ function invalidRepoName(repoName: string): CreateProjectPayloadResult | null {
     return { ok: false, message: "Repository name is required." };
   }
   return null;
+}
+
+function invalidProjectName(projectName: string | null): CreateProjectPayloadResult | null {
+  if (projectName === null) {
+    return null;
+  }
+  const check = validateProjectName(projectName);
+  return check.ok ? null : { ok: false, message: check.message };
+}
+
+function projectNameField(projectName: string | null): Pick<CreateProjectRequest, "projectName"> {
+  const check = projectName === null ? null : validateProjectName(projectName);
+  return check?.ok ? { projectName: check.name } : {};
 }
 
 function invalidShape(repoShapeId: string): CreateProjectPayloadResult | null {
@@ -116,6 +135,7 @@ function sharedFields(
   outputFileName: string,
 ): Omit<CreateProjectRequest, "projectTypeId" | "workflowRecipeId" | "serviceName" | "servicePath"> {
   return {
+    ...projectNameField(input.projectName),
     repoName: normalizedRepoName,
     visibility: input.visibility,
     ...ownerFields(input.ownerType, input.installationId),
@@ -195,6 +215,7 @@ export function buildCreateProjectPayload(
   input: CreateProjectPayloadInput,
 ): CreateProjectPayloadResult {
   const invalid =
+    invalidProjectName(input.projectName) ??
     invalidRepoName(input.repoName) ??
     invalidShape(input.repoShapeId) ??
     invalidCoverage(input.coverageThreshold) ??

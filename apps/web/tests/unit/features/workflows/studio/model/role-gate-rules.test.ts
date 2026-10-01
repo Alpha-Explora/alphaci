@@ -85,6 +85,7 @@ describe("roleGateErrorMessage", () => {
 describe("existing-repo setup payload", () => {
   it("never carries a baseBranch, so the backend picks dev or uat", () => {
     const payload = buildSetupExistingRepoPayload({
+      projectName: "Checkout",
       repoFullName: "tone/app",
       selectedProjectTypeId: "node",
       selectedWorkflowRecipeId: undefined,
@@ -97,5 +98,6 @@ describe("existing-repo setup payload", () => {
       deploymentProvisioning: undefined,
     } as Parameters<typeof buildSetupExistingRepoPayload>[0]);
     expect(payload).not.toHaveProperty("baseBranch");
+    expect(payload.projectName).toBe("Checkout");
   });
 });
