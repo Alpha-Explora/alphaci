@@ -3,7 +3,11 @@
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 
-import { AppNav } from "@/features/workspace/selection";
+import {
+  AppNav,
+  canOpenTeamActivity,
+  useWorkspaceSelection,
+} from "@/features/workspace/selection";
 import { FlowBackground } from "@/shared/layout/flow-background";
 import { WelcomeModal } from "./welcome-modal";
 import type { useAuthSession } from "@/features/auth/session";
@@ -57,11 +61,20 @@ export function HomeDashboardContent({
 }>) {
   const router = useRouter();
   const vm = useHomeDashboardViewModel({ enabled });
+  const { selectedWorkspace } = useWorkspaceSelection();
 
   const guest = isGuest(session);
   /* Creating a project is a Lead/Admin action, matching the server gate. A
    * Developer is not shown a button that would only ever come back 403. */
   const canCreateProjects = isGlobalCreatorRole(session?.appRole);
+  /* The Activity page is a Team lead / admin surface (same rule as the
+   * sidebar); anyone else gets no link and no teaser. */
+  const canOpenActivity = canOpenTeamActivity({
+    guest,
+    appRole: session?.appRole,
+    platformRole: session?.platformRole,
+    teamRole: selectedWorkspace?.role ?? null,
+  });
   const error = sessionError;
   const welcomeDismissed = vm.welcomeDismissed;
   const handleWelcomeDismiss = vm.dismissWelcome;
@@ -71,7 +84,7 @@ export function HomeDashboardContent({
   const projects = vm.projects.data;
   const projectsLoading = vm.projects.status === "loading";
   const projectsError = vm.projects.error;
-  const recentRuns = vm.runs.data;
+  const recentRuns = vm.teamRuns;
   const runsLoading = vm.runs.status === "loading";
   const currentGroup = vm.workspace.data.group;
   const portfolio = vm.workspace.data.portfolio;
@@ -161,6 +174,7 @@ export function HomeDashboardContent({
           workflowHistoryCount={history.length}
           loading={overviewBusy}
           reduced={prefersReducedMotion}
+          canOpenActivity={canOpenActivity}
         />
       </div>
     </main>

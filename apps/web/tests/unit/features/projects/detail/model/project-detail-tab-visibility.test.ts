@@ -1,8 +1,10 @@
 import {
   PROJECT_DETAIL_TABS,
+  canManageProjectAccess,
   canOpenQaStudio,
   resolveVisibleTab,
   shouldHighlightMyQaItems,
+  showOverviewProductionReadiness,
   visibleProjectDetailTabs,
 } from "../../../../../../src/features/projects/detail/model/project-detail-tab-rules";
 
@@ -126,5 +128,30 @@ describe("shouldHighlightMyQaItems", () => {
 
   it("still finds it alongside other query params", () => {
     expect(shouldHighlightMyQaItems("?tab=overview&focus=my-qa-items")).toBe(true);
+  });
+});
+
+describe("canManageProjectAccess", () => {
+  it("allows only Team leads and Admins", () => {
+    expect(canManageProjectAccess("lead")).toBe(true);
+    expect(canManageProjectAccess("admin")).toBe(true);
+    expect(canManageProjectAccess("qa")).toBe(false);
+    expect(canManageProjectAccess("member")).toBe(false);
+    expect(canManageProjectAccess(undefined)).toBe(false);
+    expect(canManageProjectAccess(null)).toBe(false);
+  });
+});
+
+describe("showOverviewProductionReadiness", () => {
+  it("is for Developers, with the QA capability on", () => {
+    expect(showOverviewProductionReadiness("member", true)).toBe(true);
+    expect(showOverviewProductionReadiness("member", false)).toBe(false);
+  });
+
+  it("leaves Leads, Admins and QA Team to QA Studio", () => {
+    for (const role of ["lead", "admin", "qa"] as const) {
+      expect(showOverviewProductionReadiness(role, true)).toBe(false);
+    }
+    expect(showOverviewProductionReadiness(undefined, true)).toBe(false);
   });
 });

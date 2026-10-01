@@ -9,7 +9,6 @@ import {
   computeRunStats,
   failedDeliveryProjects,
   isEmptyWorkspace,
-  isGroupManagerRole,
   projectBadgeLabel,
   projectTone,
   shortRepoName,
@@ -189,25 +188,21 @@ function QualityCard({
   );
 }
 
-function activityEmptyCopy(group: GroupSummary | null): string {
-  if (group && !isGroupManagerRole(group.role)) {
-    return "Team activity is available to group leads.";
-  }
-  return "No recent activity in this workspace.";
-}
-
 function ActivityRail({
   group,
   activity,
+  canOpenActivity,
 }: Readonly<{
   group: GroupSummary | null;
   activity: GroupActivityItem[];
+  /** canOpenTeamActivity for the header team; nobody else is offered the link. */
+  canOpenActivity: boolean;
 }>) {
   return (
     <section className="side-rail-block side-rail-block--divided side-rail-block--grow" aria-labelledby="recent-activity-title">
       <div className="side-rail-head">
         <p className="dashboard-section-kicker" id="recent-activity-title">ACTIVITY</p>
-        {group ? <Link href={`/groups/${group.id}/activity`} className="dashboard-inline-link">Open <span aria-hidden="true">→</span></Link> : null}
+        {group && canOpenActivity ? <Link href={`/groups/${group.id}/activity`} className="dashboard-inline-link">Open <span aria-hidden="true">→</span></Link> : null}
       </div>
       <div className="side-rail-scroll">
         {activity.length ? (
@@ -220,7 +215,7 @@ function ActivityRail({
             ))}
           </div>
         ) : (
-          <p className="dashboard-empty">{activityEmptyCopy(group)}</p>
+          <p className="dashboard-empty">No recent activity in this workspace.</p>
         )}
       </div>
     </section>
@@ -239,6 +234,7 @@ function WorkspacePopulatedOverview({
   reduced,
   runStats,
   attentionItems,
+  canOpenActivity,
 }: Readonly<{
   group: GroupSummary | null;
   projects: ProvisionedProject[];
@@ -251,6 +247,7 @@ function WorkspacePopulatedOverview({
   reduced: boolean | null;
   runStats: RunStats;
   attentionItems: WorkspaceAttentionItem[];
+  canOpenActivity: boolean;
 }>) {
   return (
     <>
@@ -283,7 +280,7 @@ function WorkspacePopulatedOverview({
         >
           <TeamProjectsList group={group} projects={projects} loading={loading} />
           <QualityCard runStats={runStats} loading={loading} />
-          <ActivityRail group={group} activity={activity} />
+          <ActivityRail group={group} activity={activity} canOpenActivity={canOpenActivity} />
         </motion.aside>
       </div>
 
@@ -302,6 +299,7 @@ export function DashboardWorkspaceOverview({
   workflowHistoryCount,
   loading,
   reduced,
+  canOpenActivity,
 }: Readonly<{
   group: GroupSummary | null;
   portfolio: DeliveryPortfolioNode[];
@@ -312,6 +310,7 @@ export function DashboardWorkspaceOverview({
   workflowHistoryCount: number;
   loading: boolean;
   reduced: boolean | null;
+  canOpenActivity: boolean;
 }>) {
   const { deliveryProjectCount, repositoryCount } =
     workspacePortfolioCounts(portfolio);
@@ -325,7 +324,6 @@ export function DashboardWorkspaceOverview({
   const empty = isEmptyWorkspace({
     loading,
     projectCount: projects.length,
-    runCount: runs.length,
     deliveryProjectCount,
   });
   const runStats = computeRunStats(runs);
@@ -358,6 +356,7 @@ export function DashboardWorkspaceOverview({
         reduced={reduced}
         runStats={runStats}
         attentionItems={attentionItems}
+        canOpenActivity={canOpenActivity}
       />
     </div>
   );

@@ -30,6 +30,7 @@ export {
   groupDisplayName,
   isGlobalCreatorRole,
   isGroupManagerRole,
+  memberRoleLabel,
   projectStatusVariant,
   repoShortName,
   shouldShowAssignmentReconcile,

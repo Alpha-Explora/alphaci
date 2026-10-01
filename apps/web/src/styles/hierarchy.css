@@ -65,23 +65,3 @@
   }
 }
 
-/* The role control in a member row: sized to the badge it replaced, so the
-   roster still reads as a list rather than a form. */
-.hier-role-picker {
-  display: inline-flex;
-}
-
-.hier-role-select {
-  padding: 0.25rem 0.5rem;
-  border-radius: 999px;
-  border: 1px solid var(--border-subtle);
-  background: var(--surface-raised);
-  color: var(--text-secondary);
-  font-size: 0.72rem;
-  cursor: pointer;
-}
-
-.hier-role-select:disabled {
-  opacity: 0.55;
-  cursor: not-allowed;
-}

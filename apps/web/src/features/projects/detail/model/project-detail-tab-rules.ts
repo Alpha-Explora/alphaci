@@ -71,6 +71,28 @@ export function canManageEnvVars(appRole: AppRole | null | undefined): boolean {
 }
 
 /**
+ * Team leads and Admins (the session folds platform admins into `admin`):
+ * who is offered the repository's developer-access page from the Overview.
+ */
+const PROJECT_ACCESS_ROLES: ReadonlySet<AppRole> = new Set<AppRole>(["lead", "admin"]);
+
+export function canManageProjectAccess(appRole: AppRole | null | undefined): boolean {
+  return appRole != null && PROJECT_ACCESS_ROLES.has(appRole);
+}
+
+/**
+ * Developers get the read-only "Ready for production" card on the Overview:
+ * they cannot open QA Studio, where Leads and QA Team see it. Needs the QA
+ * capability, like the card itself.
+ */
+export function showOverviewProductionReadiness(
+  appRole: AppRole | null | undefined,
+  qaChecklistsEnabled: boolean,
+): boolean {
+  return qaChecklistsEnabled && appRole === "member";
+}
+
+/**
  * Team leads and Admins — the backend's `PROJECT_ROLE_FORBIDDEN` allow-list
  * for disconnecting/deleting a project (PERSONA_WORKFLOW_SPEC.md §3, §8.1).
  *

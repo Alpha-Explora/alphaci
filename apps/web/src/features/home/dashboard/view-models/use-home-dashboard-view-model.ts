@@ -5,7 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useWorkspaceSelection } from "@/features/workspace/selection";
 
 import { homeRepository } from "../../data/home-repository";
-import { computeRunStats } from "../../model/home-rules";
+import { computeRunStats, runsForTeam } from "../../model/home-rules";
 import type {
   DeliveryPortfolioNode,
   GroupActivityItem,
@@ -30,7 +30,12 @@ export interface HomeDashboardViewModel {
   history: Section<WorkflowHistoryItem[]>;
   projects: Section<ProvisionedProject[]>;
   runs: Section<RunGroup[]>;
-  /** Derived from runs; recomputed only when the run list changes. */
+  /**
+   * The runs to show for the header team: `runs.data` unless the team has no
+   * projects, in which case any run that arrived belongs to another team.
+   */
+  teamRuns: RunGroup[];
+  /** Derived from teamRuns; recomputed only when the run list changes. */
   runStats: RunStats;
   workspace: Section<{
     group: GroupSummary | null;
@@ -124,7 +129,7 @@ export function useHomeDashboardViewModel(options: {
 
     const rId = id("runs");
     homeRepository
-      .recentRuns()
+      .recentRuns(selectedWorkspaceId)
       .then((list) => {
         if (fresh("runs", rId)) setRuns({ data: list, status: "ready", error: null });
       })
@@ -155,7 +160,11 @@ export function useHomeDashboardViewModel(options: {
     };
   }, [enabled, selectedWorkspaceId, nonce]);
 
-  const runStats = useMemo(() => computeRunStats(runs.data), [runs.data]);
+  const teamRuns = useMemo(
+    () => runsForTeam(runs.data, projects.data, projects.status === "ready"),
+    [runs.data, projects.data, projects.status],
+  );
+  const runStats = useMemo(() => computeRunStats(teamRuns), [teamRuns]);
   const reload = useCallback(() => setNonce((n) => n + 1), []);
 
   const dismissWelcome = useCallback(() => {
@@ -169,6 +178,7 @@ export function useHomeDashboardViewModel(options: {
     history,
     projects,
     runs,
+    teamRuns,
     runStats,
     workspace,
     reload,
