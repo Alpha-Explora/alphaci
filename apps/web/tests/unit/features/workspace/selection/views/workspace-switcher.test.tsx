@@ -151,7 +151,10 @@ describe("WorkspaceSwitcher", () => {
       '[data-testid="create-workspace-button"]',
     );
     expect(button).not.toBeNull();
-    expect(button?.textContent).toContain("Create workspace");
+    expect(button?.textContent).toContain("Create team");
+    // The picker's compact trigger, not the oversized primary button.
+    expect(button?.classList.contains("team-switcher-trigger")).toBe(true);
+    expect(button?.classList.contains("primary-button")).toBe(false);
     // No empty picker alongside it.
     expect(trigger(container)).toBeNull();
   });

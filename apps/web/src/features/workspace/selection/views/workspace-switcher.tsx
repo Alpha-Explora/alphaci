@@ -13,7 +13,7 @@ import {
   type WorkspacesMeResponse,
 } from "../model/workspace-types";
 import type { WorkspaceSelectionStatus } from "../view-models/use-workspace-selection-view-model";
-import { WorkspacePicker } from "./workspace-picker";
+import { PlusIcon, WorkspacePicker } from "./workspace-picker";
 import { useWorkspaceSelection } from "./workspace-selection-context";
 
 const NO_OTHER_TEAMS: readonly WorkspaceSummary[] = [];
@@ -91,13 +91,16 @@ function EmptyWorkspaceCreate({
 }>) {
   return (
     <div className="team-switcher">
+      {/* The picker's footprint, so the header does not grow when there is
+          no team yet; dashed and brand-tinted to read as an action. */}
       <button
         type="button"
-        className="primary-button team-switcher-create"
+        className="team-switcher-trigger team-switcher-create"
         data-testid="create-workspace-button"
         onClick={() => setCreateOpen(true)}
       >
-        + Create workspace
+        <PlusIcon />
+        <span className="team-switcher-trigger-label">Create team</span>
       </button>
       <CreateGroupDialog
         open={createOpen}
@@ -108,7 +111,7 @@ function EmptyWorkspaceCreate({
   );
 }
 
-/** The picker, and the create dialog its "Create workspace" action opens. */
+/** The picker, and the create dialog its "Create team" action opens. */
 function PickerWithCreate({
   items,
   otherTeams,

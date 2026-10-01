@@ -60,16 +60,13 @@ function HomeHeaderIdentity({
   );
 }
 
+/* Refresh only: creating a Project lives on the Projects page (and in the
+ * get-started journey), so the header does not repeat it. */
 function HomeHeaderActions({
   guest,
-  canCreateProjects,
-  createProjectHref,
   onRefresh,
 }: Readonly<{
   guest: boolean;
-  canCreateProjects: boolean;
-  /** The Projects page with the New Project dialog open, on the header's team. */
-  createProjectHref: string;
   onRefresh: () => void;
 }>) {
   if (guest) {
@@ -94,14 +91,6 @@ function HomeHeaderActions({
       >
         Refresh
       </button>
-      {canCreateProjects ? (
-        <Link
-          className="primary-button home-header-btn"
-          href={createProjectHref}
-        >
-          Create project
-        </Link>
-      ) : null}
     </div>
   );
 }
@@ -109,8 +98,6 @@ function HomeHeaderActions({
 export function HomeDashboardHeader({
   guest,
   session,
-  canCreateProjects,
-  createProjectHref,
   prefersReducedMotion,
   error,
   logoutMessage,
@@ -118,8 +105,6 @@ export function HomeDashboardHeader({
 }: Readonly<{
   guest: boolean;
   session: DashboardSession;
-  canCreateProjects: boolean;
-  createProjectHref: string;
   prefersReducedMotion: boolean | null;
   error: string | null;
   logoutMessage: string | null;
@@ -140,8 +125,6 @@ export function HomeDashboardHeader({
         <HomeHeaderIdentity guest={guest} session={session} />
         <HomeHeaderActions
           guest={guest}
-          canCreateProjects={canCreateProjects}
-          createProjectHref={createProjectHref}
           onRefresh={onRefresh}
         />
       </div>
