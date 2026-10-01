@@ -2,36 +2,21 @@
 
 import { useMemo, useState } from "react";
 
-import { removeGroupMember, updateGroupMemberRole } from "@/features/groups";
-import {
-  GROUP_ROLE_LABELS,
-  type GroupMember,
-  type GroupRole,
-} from "@/features/groups";
-import { MemberStatusBadge, RoleBadge } from "./badges";
+import { removeGroupMember, type GroupMember } from "@/features/groups";
+import { MemberRoleBadge, MemberStatusBadge } from "./badges";
 import { Avatar, SectionHeader } from "./primitives";
 
 /**
- * Member roster. Roles are DISPLAY-ONLY here — role assignment
- * (Admin / Lead / Member) is centralized in the Admin Console, so a group Lead
- * cannot change roles from this tab. Membership actions (add, remove) render
+ * Member roster. Roles are DISPLAY-ONLY here — they come from the global app
+ * role (lead/admin -> Lead, qa -> QA Team, member -> Developer), which is
+ * assigned in the Admin Console, so nobody changes a role from this tab.
+ * Membership actions (add, remove) render
  * for managers when `canManage` is true; the backend independently enforces
  * the same rules.
  *
  * There is no invitation lifecycle: a lead adds someone and they are a member
  * immediately.
  */
-/**
- * Roles a manager may assign from this table.
- *
- * 'viewer' is deliberately absent: nothing in this product distinguishes a
- * viewer from a member yet, so offering it would create a state with no
- * meaning. 'admin' (Lead) IS offered — the backend allows it for an existing
- * Admin and rejects it for a delegated lead, which is the rule this table
- * relies on rather than duplicating.
- */
-const ASSIGNABLE_ROLES: GroupRole[] = ["admin", "delegated_lead", "member"];
-
 export function MemberTable({
   groupId,
   members,
@@ -91,30 +76,6 @@ export function MemberTable({
     }
   }
 
-  async function handleRoleChange(member: GroupMember, role: GroupRole) {
-    if (role === member.role) return;
-    setBusyId(member.id);
-    setError(null);
-    try {
-      const updated = await updateGroupMemberRole(groupId, member.id, { role });
-      onMembersChange((current) =>
-        current.map((item) => (item.id === member.id ? updated : item)),
-      );
-    } catch (cause) {
-      // The backend refuses some transitions a manager can still select — a
-      // delegated lead cannot mint an Admin, and the last Lead cannot be
-      // demoted. Surface its reason rather than a generic failure.
-      const detail = (cause as { details?: { message?: string | string[] } })
-        ?.details;
-      const message = Array.isArray(detail?.message)
-        ? detail?.message.join(", ")
-        : detail?.message;
-      setError(message ?? "That role could not be changed.");
-    } finally {
-      setBusyId(null);
-    }
-  }
-
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
       <section aria-label="Members">
@@ -128,7 +89,7 @@ export function MemberTable({
         <div className="hier-panel">
           {activeMembers.map((member) => <MemberRow key={member.id} member={member} leadCount={leadCount}
             canManage={canManage} currentUserId={currentUserId} busyId={busyId}
-            onRoleChange={handleRoleChange} onRemove={handleRemove} />)}
+            onRemove={handleRemove} />)}
         </div>
       </section>
 
@@ -141,9 +102,9 @@ export function MemberTable({
   );
 }
 
-function MemberRow({ member, leadCount, canManage, currentUserId, busyId, onRoleChange, onRemove }: Readonly<{
+function MemberRow({ member, leadCount, canManage, currentUserId, busyId, onRemove }: Readonly<{
   member: GroupMember; leadCount: number; canManage: boolean; currentUserId: string; busyId: string | null;
-  onRoleChange: (member: GroupMember, role: GroupRole) => Promise<void>; onRemove: (member: GroupMember) => Promise<void>;
+  onRemove: (member: GroupMember) => Promise<void>;
 }>) {
   const isLastLead = member.role === "admin" && leadCount <= 1;
   const removed = member.memberStatus === "removed";
@@ -152,19 +113,11 @@ function MemberRow({ member, leadCount, canManage, currentUserId, busyId, onRole
       <div className="hier-row-identity"><Avatar login={member.login} name={member.name} avatarUrl={member.avatarUrl} /><div className="hier-row-name"><strong>{member.name || member.login}</strong><span>@{member.login}{member.email ? ` · ${member.email}` : ""}</span></div></div>
       <div className="hier-row-actions">
         <MemberStatusBadge status={member.memberStatus} />
-        <MemberRoleControl member={member} canEdit={canManage && !removed} busy={busyId === member.id} isLastLead={isLastLead} onRoleChange={onRoleChange} />
+        <MemberRoleBadge member={member} />
         {canManage && !removed && <RemoveMemberButton member={member} busy={busyId === member.id} isLastLead={isLastLead} isSelf={member.userId === currentUserId} onRemove={onRemove} />}
       </div>
     </div>
   );
-}
-
-function MemberRoleControl({ member, canEdit, busy, isLastLead, onRoleChange }: Readonly<{
-  member: GroupMember; canEdit: boolean; busy: boolean; isLastLead: boolean;
-  onRoleChange: (member: GroupMember, role: GroupRole) => Promise<void>;
-}>) {
-  if (!canEdit) return <RoleBadge role={member.role} />;
-  return <label className="hier-role-picker"><span className="sr-only">Role for {member.name || member.login}</span><select className="hier-role-select" value={member.role} disabled={busy || isLastLead} title={isLastLead ? "A team must keep at least one Lead" : undefined} onChange={(event) => void onRoleChange(member, event.target.value as GroupRole)}>{ASSIGNABLE_ROLES.map((role) => <option key={role} value={role}>{GROUP_ROLE_LABELS[role]}</option>)}</select></label>;
 }
 
 function RemoveMemberButton({ member, busy, isLastLead, isSelf, onRemove }: Readonly<{

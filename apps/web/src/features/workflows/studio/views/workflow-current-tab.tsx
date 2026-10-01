@@ -144,7 +144,8 @@ function LatestResultBanner({
 
 function CurrentTabEmptyState({
   onOpenSetup,
-}: Readonly<{ onOpenSetup: () => void }>) {
+  canCreateProjects,
+}: Readonly<{ onOpenSetup: () => void; canCreateProjects: boolean }>) {
   return (
     <div
       className="glass-panel"
@@ -177,9 +178,10 @@ function CurrentTabEmptyState({
             maxWidth: "32rem",
           }}
         >
-          Create a workspace from the picker in the header — a workspace is
-          a team — then create a repository inside it. ALPHACI
-          provisions the repository and commits a workflow that runs
+          {canCreateProjects
+            ? "Create a workspace from the picker in the header — a workspace is a team — then create a repository inside it. "
+            : "Projects are created by Team leads. Once one is added to your team it appears here. "}
+          ALPHACI provisions the repository and commits a workflow that runs
           through the gated stages below on every change. Open the{" "}
           <Link href="/guide" className="inline-link">
             guide
@@ -199,20 +201,22 @@ function CurrentTabEmptyState({
       >
         <FlowExplainer variant="compact" />
       </div>
-      <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>
-        <button
-          className="ghost-button"
-          type="button"
-          onClick={onOpenSetup}
-          style={{
-            padding: "0.6rem 1.4rem",
-            fontSize: "0.88rem",
-            minHeight: "2.5rem",
-          }}
-        >
-          Create a project
-        </button>
-      </div>
+      {canCreateProjects ? (
+        <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>
+          <button
+            className="ghost-button"
+            type="button"
+            onClick={onOpenSetup}
+            style={{
+              padding: "0.6rem 1.4rem",
+              fontSize: "0.88rem",
+              minHeight: "2.5rem",
+            }}
+          >
+            Create a project
+          </button>
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -363,7 +367,10 @@ function CurrentTabContent({
         {vm.status === "error" ? (
           <GroupsLoadError onRetry={vm.retry} />
         ) : (
-          <CurrentTabEmptyState onOpenSetup={onOpenSetup} />
+          <CurrentTabEmptyState
+            onOpenSetup={onOpenSetup}
+            canCreateProjects={actions.canCreateProjects}
+          />
         )}
       </>
     );

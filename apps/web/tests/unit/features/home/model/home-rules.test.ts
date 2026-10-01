@@ -1,8 +1,10 @@
 import {
   computeRunStats,
   connectorTone,
+  isEmptyWorkspace,
   projectBadgeLabel,
   projectTone,
+  runsForTeam,
   shortRepoName,
   timeAgo,
 } from "../../../../../src/features/home/model/home-rules";
@@ -162,5 +164,40 @@ describe("computeRunStats", () => {
   it("keeps every outcome for the sparkline, beyond the sample window", () => {
     const runs = [...Array(12)].map(() => run("success"));
     expect(computeRunStats(runs).outcomes).toHaveLength(12);
+  });
+});
+
+describe("isEmptyWorkspace", () => {
+  const base = { loading: false, projectCount: 0, deliveryProjectCount: 0 };
+
+  it("is empty for a team with no projects, whatever runs arrived", () => {
+    expect(isEmptyWorkspace(base)).toBe(true);
+  });
+
+  it("is not empty while loading, or with a project or delivery project", () => {
+    expect(isEmptyWorkspace({ ...base, loading: true })).toBe(false);
+    expect(isEmptyWorkspace({ ...base, projectCount: 1 })).toBe(false);
+    expect(isEmptyWorkspace({ ...base, deliveryProjectCount: 2 })).toBe(false);
+  });
+});
+
+describe("runsForTeam", () => {
+  const runs = [run("failure"), run("success")];
+  const project = { id: "p1" } as never;
+
+  it("drops other teams' runs when the team has no projects", () => {
+    expect(runsForTeam(runs, [], true)).toEqual([]);
+  });
+
+  it("keeps the runs when the team has projects", () => {
+    expect(runsForTeam(runs, [project], true)).toBe(runs);
+  });
+
+  it("keeps the runs while projects have not loaded", () => {
+    expect(runsForTeam(runs, [], false)).toBe(runs);
+  });
+
+  it("does not count other teams' runs in the stats of an empty team", () => {
+    expect(computeRunStats(runsForTeam(runs, [], true)).failureStreak).toBe(0);
   });
 });

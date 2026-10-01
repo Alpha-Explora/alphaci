@@ -33,7 +33,6 @@ import type {
   TransferGroupRequest,
   UpdateDeliveryProjectRequest,
   UpdateGroupRequest,
-  UpdateMemberRoleRequest,
   UpdateRepositoryRequest,
   UpdateSystemRequest,
   ConfigurationType,
@@ -126,17 +125,6 @@ export function addGroupMember(
     body: JSON.stringify(payload),
   });
 }
-export function updateGroupMemberRole(
-  groupId: string,
-  memberId: string,
-  payload: UpdateMemberRoleRequest,
-): Promise<GroupMember> {
-  return request<GroupMember>(
-    `/groups/${enc(groupId)}/members/${enc(memberId)}`,
-    { method: "PATCH", body: JSON.stringify(payload) },
-  );
-}
-
 export function removeGroupMember(
   groupId: string,
   memberId: string,

@@ -3,6 +3,7 @@
 import Link from "next/link";
 
 import { MyQaItemsCard } from "@/features/checklists/returned";
+import { ProductionReadinessCard } from "@/features/checklists/studio";
 import { ProductionDeploymentPanel } from "@/features/projects/previews";
 import { formatDate } from "@/features/workflows";
 import type {
@@ -13,9 +14,11 @@ import type {
 import type { ProjectDetailTabsViewModel } from "../view-models/use-project-detail-tabs-view-model";
 import { DriftFindingsPanel } from "./drift-findings-panel";
 import {
+  canManageProjectAccess,
   ciAuthLabel,
   healthCheckRowClass,
   selectedChecksLabel,
+  showOverviewProductionReadiness,
   snapshotFindingLabel,
   stagesLabel,
   syncNowLabel,
@@ -49,12 +52,21 @@ export function OverviewTab({
         projectId={project.id}
         highlightRequested={vm.highlightMyQaItems}
       />
+      {showOverviewProductionReadiness(vm.appRole, vm.qaChecklistsEnabled) ? (
+        <ProductionReadinessCard
+          enabled
+          projectId={project.id}
+          projectName={project.serviceName}
+        />
+      ) : null}
       <OverviewFacts
         project={project}
         overview={vm.overview}
         files={vm.workflowFiles}
       />
-      <DeveloperAccessRow project={project} overview={vm.overview} />
+      {canManageProjectAccess(vm.appRole) ? (
+        <DeveloperAccessRow project={project} overview={vm.overview} />
+      ) : null}
       <SnapshotRow
         snapshot={vm.syncSnapshot}
         syncAvailable={vm.syncAvailable}

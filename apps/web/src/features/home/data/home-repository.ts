@@ -51,8 +51,9 @@ export const homeRepository = {
     return res.items;
   },
 
-  async recentRuns(): Promise<RunGroup[]> {
-    const res = await getRuns();
+  /** Runs of the projects the caller can see in the selected team. */
+  async recentRuns(workspaceId: string | null): Promise<RunGroup[]> {
+    const res = await getRuns(undefined, { workspaceId });
     return res.runs;
   },
 

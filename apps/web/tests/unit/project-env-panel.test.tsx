@@ -2562,6 +2562,7 @@ describe("Project env provisioning UI", () => {
         latestResult={null}
         loadingProjects={false}
         onOpenSetup={onOpenSetup}
+        canCreateProjects
       />,
     );
     root = emptyRendered.root;

@@ -2,9 +2,11 @@
 
 import {
   GROUP_ROLE_LABELS,
+  memberRoleLabel,
   type AssignmentStatus,
   type DeliveryProjectStatus,
   type GithubSyncState,
+  type GroupMember,
   type GroupMemberStatus,
   type GroupRole,
   type GroupStatus,
@@ -47,6 +49,16 @@ export function RoleBadge({ role }: { role: GroupRole }) {
           ? "muted"
           : "muted";
   return <Badge tone={tone} label={GROUP_ROLE_LABELS[role]} dot={false} />;
+}
+
+/** Read-only role for a roster row: derived from the global app role. */
+export function MemberRoleBadge({
+  member,
+}: {
+  member: Pick<GroupMember, "role" | "appRole">;
+}) {
+  const label = memberRoleLabel(member);
+  return <Badge tone={label === "Lead" ? "brand" : "muted"} label={label} dot={false} />;
 }
 
 /* ── Assignment access status (plan §2.2: pending|active|revoked|failed) ──── */

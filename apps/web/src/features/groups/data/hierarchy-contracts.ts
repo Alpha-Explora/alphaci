@@ -59,6 +59,30 @@ export const GROUP_ROLE_LABELS: Record<GroupRole, string> = {
   viewer: "Viewer",
 };
 
+/**
+ * The role a team roster shows for a member. Roles come from the global app
+ * role, not from anything chosen on the roster, so this derives the label the
+ * way the backend derives the team role: lead/admin -> Lead, qa -> QA Team,
+ * member -> Developer. A row that carries no app role falls back to its stored
+ * team-role label.
+ */
+export function memberRoleLabel(member: {
+  role: GroupRole;
+  appRole?: AppRole | null;
+}): string {
+  switch (member.appRole) {
+    case "admin":
+    case "lead":
+      return "Lead";
+    case "qa":
+      return "QA Team";
+    case "member":
+      return "Developer";
+    default:
+      return GROUP_ROLE_LABELS[member.role];
+  }
+}
+
 /** Ranks (plan §2.1) — used only for sorting/derived UI, never sent on the wire. */
 export const GROUP_ROLE_RANK: Record<GroupRole, number> = {
   admin: 4,
@@ -190,6 +214,8 @@ export interface GroupMember {
   name: string;
   email: string | null;
   avatarUrl: string | null;
+  /** The member's global app role, when the backend reports it. */
+  appRole?: AppRole | null;
   invitedBy: string | null;
   invitedAt: string | null;
   removedAt: string | null;
@@ -202,10 +228,6 @@ export interface AddGroupMemberRequest {
   userId: string;
   /** Defaults to 'member'. 'admin' is not grantable — ownership moves via transfer. */
   role?: GrantableRole;
-}
-
-export interface UpdateMemberRoleRequest {
-  role: GroupRole;
 }
 
 /* ── Systems & Delivery Projects (plan §2.5) ───────────────────────────────── */
