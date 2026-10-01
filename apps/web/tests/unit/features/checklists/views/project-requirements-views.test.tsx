@@ -133,7 +133,13 @@ describe("ProjectRequirementsPanel", () => {
     loadRequirements("lead");
     const container = await render(<ProjectRequirementsPanel deliveryProjectId="dp-1" appRole="lead" />);
     await act(async () => buttonNamed(container, "New Feature")!.click());
+    // The dialog focuses its first field on a 0 ms timer; let that land first,
+    // as it does before anyone types, or it can steal focus from the new row.
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
     const dialog = document.querySelector<HTMLElement>('[role="dialog"]')!;
+    expect(document.activeElement?.getAttribute("placeholder")).toBe("Checkout with saved cards");
     expect(dialog.textContent).toContain("User stories (optional)");
     expect(dialog.textContent).not.toContain("one per line");
     expect(dialog.textContent).toContain("Create feature");
