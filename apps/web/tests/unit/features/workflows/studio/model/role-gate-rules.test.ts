@@ -1,6 +1,7 @@
 import {
   canCreateRepositories,
   roleGateErrorMessage,
+  studioCreateGates,
 } from "../../../../../../src/features/workflows/studio/model/role-gate-rules";
 import { buildSetupExistingRepoPayload } from "../../../../../../src/features/workflows/studio/model/studio-command-payloads";
 import { ApiError } from "../../../../../../src/shared/api/request";
@@ -19,8 +20,8 @@ function apiError(status: number, code?: string, message = "Server text"): ApiEr
 describe("canCreateRepositories", () => {
   it.each([
     ["admin", false, true],
-    ["lead", false, true],
-    ["member", false, false],
+    ["member", false, true],
+    ["lead", false, false],
     ["qa", false, false],
     [undefined, false, false],
     [null, false, false],
@@ -30,9 +31,24 @@ describe("canCreateRepositories", () => {
   });
 });
 
+describe("studioCreateGates", () => {
+  it.each([
+    ["lead", false, { canCreateRepositories: false, canCreateProjects: true, existingRepoAllowed: true }],
+    ["member", false, { canCreateRepositories: true, canCreateProjects: false, existingRepoAllowed: false }],
+    ["admin", false, { canCreateRepositories: true, canCreateProjects: true, existingRepoAllowed: true }],
+    ["qa", false, { canCreateRepositories: false, canCreateProjects: false, existingRepoAllowed: true }],
+    [undefined, true, { canCreateRepositories: true, canCreateProjects: false, existingRepoAllowed: true }],
+  ] as const)("role %s guest %s", (role, guest, expected) => {
+    expect(studioCreateGates(role, guest)).toEqual(expected);
+  });
+});
+
 describe("roleGateErrorMessage", () => {
   it.each([
-    [403, "PROJECT_ROLE_FORBIDDEN", "Only team leads and admins can create or onboard repositories."],
+    [403, "PROJECT_ROLE_FORBIDDEN", "Your role cannot create or onboard repositories."],
+    [403, "REPOSITORY_CREATE_FORBIDDEN", "Developers create repositories inside a Project."],
+    [400, "PROJECT_REQUIRED", "Choose the Project this repository belongs to."],
+    [403, "PROJECT_CREATE_FORBIDDEN", "Product owners create Projects."],
     [
       403,
       "REPO_NOT_ACCESSIBLE",

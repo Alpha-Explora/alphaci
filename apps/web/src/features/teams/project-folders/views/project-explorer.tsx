@@ -81,10 +81,10 @@ function MoveNoticeBanner({
  * A team's Projects: the list, or one Project opened in place.
  *
  * It draws no head of its own: the Projects page's heading carries the count
- * and the create actions (Create project, and the "⋯" menu with Empty project
- * and Add repository), fed by ProjectExplorerHost. `create` is the Empty
- * project dialog, owned by the host so the menu and the empty state's
- * "Create the first Project" open the same one.
+ * and the create actions (Create project for a Product owner or admin, and an
+ * admin's "⋯" Add repository), fed by ProjectExplorerHost. `create` is the
+ * New Project dialog, owned by the host so the heading's Create project and
+ * the empty state's "Create the first Project" open the same one.
  */
 export function ProjectExplorer({
   vm,
@@ -126,11 +126,14 @@ export function ProjectExplorer({
 /** The create actions the page heading offers, already filtered by role. */
 export interface ProjectExplorerActions {
   /**
-   * Opens the Empty project dialog; null when the caller may not create one
-   * (the server's `canManage`, known once the list has loaded).
+   * Opens the New Project dialog (an empty Project: name and description);
+   * null unless the caller is a Product owner or admin.
    */
   createEmptyProject: (() => void) | null;
-  /** The create-repository wizard for this team; null below Team lead. */
+  /**
+   * The create-repository wizard for this team with no Project chosen; admin
+   * only. A Developer adds repositories from a Project's card or detail.
+   */
   addRepositoryHref: string | null;
 }
 
@@ -153,6 +156,7 @@ export function ProjectExplorerHost({
   groupName,
   qaChecklistsEnabled,
   initialFolderId,
+  openNewProjectOnArrival = false,
   children,
 }: Readonly<{
   groupId: string;
@@ -160,13 +164,20 @@ export function ProjectExplorerHost({
   qaChecklistsEnabled: boolean;
   /** Open this Project's detail on arrival (a `/workflows?project=` link). */
   initialFolderId?: string | null;
+  /** Open the New Project dialog on arrival (a `/workflows?new=project` link). */
+  openNewProjectOnArrival?: boolean;
   children: (explorer: ProjectExplorerSlot) => ReactNode;
 }>) {
   const vm = useProjectFoldersViewModel({ groupId, groupName, qaChecklistsEnabled, initialFolderId });
-  const create = useCreateProjectFolderViewModel({ groupId: vm.groupId, onCreated: vm.reload });
+  const create = useCreateProjectFolderViewModel({
+    groupId: vm.groupId,
+    onCreated: vm.reload,
+    openOnArrival: openNewProjectOnArrival,
+    canCreate: vm.canCreateProject,
+  });
   const actions: ProjectExplorerActions = {
-    createEmptyProject: vm.canManage && vm.status === "ready" ? create.openDialog : null,
-    addRepositoryHref: vm.canCreateRepository ? createRepositoryHref(vm.groupId) : null,
+    createEmptyProject: vm.canCreateProject ? create.openDialog : null,
+    addRepositoryHref: vm.canCreateUnfiledRepository ? createRepositoryHref(vm.groupId) : null,
   };
   return (
     <>

@@ -737,8 +737,41 @@ class QaMockBackend {
     });
   }
 
+  /** One single-app Next.js type, enough to walk the wizard to its Repository step. */
   private projectOptions(): ProjectOptionsResponse {
-    return { repoShapes: [], projectTypes: [], recipes: [], nodeVersions: [], enforcedOrg: 'tone' };
+    const options = { lint: true, unit: true, build: true, coverage: true, security: true, docker: false };
+    return {
+      repoShapes: [{ id: 'single-app', label: 'Single App', enabled: true, description: 'One repository contains one app or service.' }],
+      projectTypes: [
+        {
+          id: 'nextjs-app',
+          label: 'Next.js App',
+          kind: 'frontend',
+          runtime: 'node',
+          language: 'typescript',
+          framework: 'nextjs',
+          starterPath: 'starter-templates/nextjs-app',
+          repoShapes: ['single-app'],
+          defaultRecipe: 'frontend-standard-ci',
+          allowedRecipes: ['frontend-standard-ci'],
+          defaultOptions: options,
+        },
+      ],
+      recipes: [
+        {
+          id: 'frontend-standard-ci',
+          label: 'Frontend Standard CI',
+          description: 'Validate and build frontend apps.',
+          supportedProjectTypes: ['nextjs-app'],
+          templateByProjectType: { 'nextjs-app': 'fe-nextjs' },
+          mandatoryJobs: ['validate-access'],
+          supportedOptions: options,
+          optionJobs: { lint: 'lint', unit: 'unit-tests', build: 'build', coverage: 'unit-tests', security: 'security' },
+        },
+      ],
+      nodeVersions: [{ value: '24', label: 'Node.js 24' }],
+      enforcedOrg: 'tone',
+    } as unknown as ProjectOptionsResponse;
   }
 
   private projectsFor(workspaceId: string | null): ProvisionedProject[] {
@@ -877,6 +910,9 @@ class QaMockBackend {
     return {
       groupId,
       canManage: this.isLead(),
+      // BE #145: Product owners (lead) create Projects; Developers (member) add repositories; admin both.
+      canCreateProject: this.role === 'lead' || this.role === 'admin',
+      canCreateRepository: this.role === 'member' || this.role === 'admin',
       folders: live.map((folder) => ({
         deliveryProjectId: folder.id,
         systemId: SYSTEM_ID,
@@ -2120,29 +2156,13 @@ async function leadOrganisesProjects({ page, backend, baseUrl }: JourneyContext)
   await expectText(loyalty, '0 repositories', 'the empty loyalty Project');
   assert.equal(await page.locator('.pf-unfiled').count(), 0, 'every repository is filed');
 
-  // One Create project, and the ⋯ menu for the other two ways in.
+  // A Product owner's one create action: Create project, the New Project
+  // dialog (name + description). No ⋯ menu: Developers add the repositories.
   assert.equal(await page.getByTestId('create-project-button').count(), 1, 'one Create project');
   assert.equal(await page.getByRole('button', { name: 'New Project' }).count(), 0, 'no separate New Project button');
-  const more = page.getByRole('button', { name: 'More ways to create' });
-  assert.equal(await more.getAttribute('aria-haspopup'), 'menu');
-  await more.click();
-  const menu = page.getByRole('menu');
-  assert.deepEqual(
-    await menu.getByRole('menuitem').locator('.create-menu-label').allTextContents(),
-    ['Empty project', 'Add repository'],
-  );
-  assert.equal(
-    await menu.getByRole('menuitem', { name: /Add repository/ }).getAttribute('href'),
-    `/workflows?tab=setup&group=${WORKSPACE.id}`,
-  );
-  // Keyboard: Escape closes it and hands focus back.
-  await page.keyboard.press('Escape');
-  await absent(page.getByRole('menu'), 'the create menu');
-  assert.equal(await more.evaluate((element) => element === document.activeElement), true, 'focus back on ⋯');
-
-  // Empty project (the New Project dialog).
-  await more.press('ArrowDown');
-  await menu.getByRole('menuitem', { name: /Empty project/ }).press('Enter');
+  assert.equal(await page.getByRole('button', { name: 'More ways to create' }).count(), 0, 'no ⋯ menu for a Product owner');
+  assert.equal(await page.locator('a.pf-card__add').count(), 0, 'no Add repository on the cards');
+  await page.getByTestId('create-project-button').click();
   const newDialog = page.getByRole('dialog', { name: 'New Project' });
   await newDialog.getByPlaceholder('checkout').fill('payments');
   await newDialog.getByRole('button', { name: 'Create Project' }).click();
@@ -2161,10 +2181,7 @@ async function leadOrganisesProjects({ page, backend, baseUrl }: JourneyContext)
   await storefront.getByRole('button', { name: 'Manage storefront' }).click();
   await expectText(page.locator('.pf-detail__title'), 'storefront', 'the Project detail title');
   assert.equal(await page.getByRole('link', { name: 'Verify in QA Studio' }).getAttribute('href'), `/projects/${PROJECT_ID}#qa`);
-  assert.equal(
-    await page.getByRole('link', { name: 'Create repository in this Project' }).first().getAttribute('href'),
-    `/workflows?tab=setup&group=${WORKSPACE.id}&project=${STOREFRONT_FOLDER}`,
-  );
+  assert.equal(await page.getByRole('link', { name: 'Add repository' }).count(), 0, 'no Add repository for a Product owner');
 
   // Checklists: the release checklist covers one of two repositories; attach another with PATCH.
   const rows = page.locator('li.pf-checklist');
@@ -2217,9 +2234,42 @@ async function leadOrganisesProjects({ page, backend, baseUrl }: JourneyContext)
   );
   await expectText(loyalty.locator('.pf-card__meta'), '2 repositories', 'loyalty now holds both repositories');
 
-  // Create repository in loyalty: the wizard opens pre-scoped to the team and Project.
+  // loyalty's detail offers a Product owner no Add repository either.
   await loyalty.getByRole('button', { name: 'Manage loyalty' }).click();
-  await page.getByRole('link', { name: 'Create repository in this Project' }).first().click();
+  await expectText(page.locator('.pf-detail__title'), 'loyalty', 'the loyalty detail');
+  assert.equal(await page.getByRole('link', { name: 'Add repository' }).count(), 0, 'no Add repository in the detail');
+
+  // Typed in, the wizard says who creates repositories instead of offering it.
+  await page.goto(`${baseUrl}/workflows?tab=setup&group=${WORKSPACE.id}`, { waitUntil: 'domcontentloaded' });
+  await visible(page.getByText('Developers create repositories inside a Project.'), 'the Product owner note in the wizard');
+  assert.equal(await page.locator('#project-type-select').count(), 0, 'no wizard for a Product owner');
+  assert.equal(backend.callsTo('POST', /^\/projects$/).length, 0, 'nothing was created');
+}
+
+/**
+ * (j) Developer: no Create project; Add repository on a Project's card and in
+ * its detail opens the wizard filed in that Project; a bare wizard link asks
+ * which of the team's Projects the repository belongs to.
+ */
+async function developerAddsRepositoryToProject({ page, backend, baseUrl }: JourneyContext) {
+  await page.goto(`${baseUrl}/workflows`, { waitUntil: 'domcontentloaded' });
+  await expectRoleBadge(page, 'member');
+  const cards = page.locator('li.pf-card');
+  await eventually('two Project cards', async () => (await cards.count()) === 2);
+  await neverShown(backend, page.getByTestId('create-project-button'), 'Create project for a Developer');
+  assert.equal(await page.getByRole('button', { name: 'More ways to create' }).count(), 0, 'no ⋯ menu for a Developer');
+
+  // Add repository rides beside Manage on every card, filed in that Project.
+  const storefront = cards.filter({ has: page.locator('.pf-card__name', { hasText: /^storefront$/ }) });
+  const add = storefront.getByRole('link', { name: 'Add repository to storefront' });
+  assert.equal(await add.getAttribute('href'), `/workflows?tab=setup&group=${WORKSPACE.id}&project=${STOREFRONT_FOLDER}`);
+  assert.equal(await storefront.locator('a.pf-card__open a').count(), 0, 'never nested inside the card link');
+
+  // ...and in the Project's detail.
+  const loyalty = cards.filter({ has: page.locator('.pf-card__name', { hasText: /^loyalty$/ }) });
+  await loyalty.getByRole('button', { name: 'Manage loyalty' }).click();
+  await expectText(page.locator('.pf-detail__title'), 'loyalty', 'the loyalty detail');
+  await page.locator('.pf-detail__actions').getByRole('link', { name: 'Add repository' }).click();
   await eventually('the wizard URL to carry ?group= and ?project=', () => {
     const url = new URL(page.url());
     return url.pathname === '/workflows' && url.searchParams.get('group') === WORKSPACE.id && url.searchParams.get('project') === LOYALTY_FOLDER;
@@ -2227,6 +2277,26 @@ async function leadOrganisesProjects({ page, backend, baseUrl }: JourneyContext)
   await expectText(page.getByTestId('setup-target-project'), `Project: ${WORKSPACE.name} / loyalty`, 'the wizard Project line');
   // Dev StrictMode runs the lookup effect twice; what matters is that it was resolved at all.
   assert.ok(backend.callsTo('GET', new RegExp(`^/delivery-projects/${LOYALTY_FOLDER}$`)).length > 0, 'the wizard Project lookup');
+
+  // A bare wizard link: the Repository step asks for the Project, from the team's own.
+  await page.goto(`${baseUrl}/workflows?tab=setup&group=${WORKSPACE.id}`, { waitUntil: 'domcontentloaded' });
+  await page.locator('#project-type-select').selectOption('nextjs-app');
+  await page.getByRole('button', { name: /^Continue/ }).click();
+  const choice = page.getByTestId('setup-project-choice');
+  await visible(choice, 'the Project select');
+  await visible(page.getByText('Choose the Project this repository belongs to.'), 'the Project prompt');
+  assert.equal(await page.locator('#project-name').count(), 0, 'no free Project name for a Developer');
+  assert.equal(await page.getByRole('button', { name: 'Existing repository' }).count(), 0, 'no existing-repository onboarding for a Developer');
+  await eventually('the team Projects in the select', async () =>
+    (await choice.locator('option').allTextContents()).join(',') === 'Select a Project…,loyalty,storefront',
+  );
+  await page.locator('#repo-name').fill('loyalty-web');
+  await page.locator('#service-name').fill('loyalty-web');
+  const next = page.getByRole('button', { name: /^Continue/ });
+  assert.equal(await next.isDisabled(), true, 'Continue waits for the Project');
+  await choice.selectOption({ label: 'loyalty' });
+  assert.equal(await next.isDisabled(), false, 'Continue once the Project is chosen');
+  assert.equal(backend.callsTo('POST', /^\/projects$/).length, 0, 'nothing was created');
 }
 
 /** The lead's route to the promotion card, with its parts. */
@@ -2440,7 +2510,7 @@ const JOURNEYS: Journey[] = [
   },
   {
     id: 'h',
-    title: 'Team lead: project explorer — list, open, attach/detach, move (409 + real), archive, create-in-Project link',
+    title: 'Team lead: project explorer — Create project dialog, list, open, attach/detach, move (409 + real), archive, no repository create',
     backend: () => {
       const backend = new QaMockBackend('lead');
       backend.seedChecklist(RELEASE_CHECKLIST, [PROJECT_ID]);
@@ -2448,6 +2518,12 @@ const JOURNEYS: Journey[] = [
       return backend;
     },
     run: leadOrganisesProjects,
+  },
+  {
+    id: 'j',
+    title: 'Developer: no Create project; Add repository on a card and in the detail; the wizard asks for the Project',
+    backend: () => new QaMockBackend('member'),
+    run: developerAddsRepositoryToProject,
   },
   {
     id: 'i',

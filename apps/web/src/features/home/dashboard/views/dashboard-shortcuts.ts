@@ -1,3 +1,5 @@
+import { newProjectHref } from "../../model/home-rules";
+
 export function isEditableShortcutTarget(target: EventTarget | null): boolean {
   return (
     target instanceof HTMLInputElement ||
@@ -8,7 +10,9 @@ export function isEditableShortcutTarget(target: EventTarget | null): boolean {
 }
 
 export function dashboardShortcutHref(key: string): string | null {
-  if (key === "n") return "/workflows?tab=setup";
+  // The Projects page opens the New Project dialog only for a Product owner
+  // or admin; anyone else simply lands on their team's Projects.
+  if (key === "n") return newProjectHref();
   if (key === "w") return "/workflows?tab=current";
   if (key === "r") return "/runs";
   return null;

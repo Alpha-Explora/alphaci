@@ -82,7 +82,10 @@ describe("useProjectFoldersViewModel", () => {
     expect(vm().count).toBe(2);
     expect(vm().unfiled).toHaveLength(1);
     expect(vm().canManage).toBe(true);
-    expect(vm().canCreateRepository).toBe(true);
+    // A Product owner creates Projects; Developers fill them.
+    expect(vm().canCreateProject).toBe(true);
+    expect(vm().canCreateRepository).toBe(false);
+    expect(vm().canCreateUnfiledRepository).toBe(false);
     expect(vm().canVerifyInQaStudio).toBe(true);
     expect(vm().checklists).toEqual([folderChecklist()]);
     expect(repo.list).toHaveBeenCalledWith(GROUP_ID);
@@ -151,6 +154,36 @@ describe("useProjectFoldersViewModel", () => {
     expect(vm().checklists).toBeNull();
     expect(vm().canVerifyInQaStudio).toBe(false);
     expect(vm().canCreateRepository).toBe(false);
+  });
+
+  it.each([
+    ["lead", { canCreateProject: true, canCreateRepository: false, canCreateUnfiledRepository: false }],
+    ["member", { canCreateProject: false, canCreateRepository: true, canCreateUnfiledRepository: false }],
+    ["admin", { canCreateProject: true, canCreateRepository: true, canCreateUnfiledRepository: true }],
+    ["qa", { canCreateProject: false, canCreateRepository: false, canCreateUnfiledRepository: false }],
+    [undefined, { canCreateProject: false, canCreateRepository: false, canCreateUnfiledRepository: false }],
+  ])("derives what %s may create from the app role when the server sends no flags", async (role, expected) => {
+    repo.list.mockResolvedValue(foldersSnapshot());
+    mockSession.appRole = role;
+    const vm = renderHook(() =>
+      useProjectFoldersViewModel({ groupId: GROUP_ID, groupName: "C", qaChecklistsEnabled: false }),
+    );
+    // Before the list arrives, too: the header's Create project needs no round trip.
+    expect(vm()).toMatchObject(expected);
+    await flush();
+    expect(vm()).toMatchObject(expected);
+  });
+
+  it("follows the server's canCreateProject / canCreateRepository once they arrive", async () => {
+    repo.list.mockResolvedValue(foldersSnapshot({ canCreateProject: false, canCreateRepository: true }));
+    mockSession.appRole = "lead";
+    const vm = renderHook(() =>
+      useProjectFoldersViewModel({ groupId: GROUP_ID, groupName: "C", qaChecklistsEnabled: false }),
+    );
+    expect(vm().canCreateProject).toBe(true);
+    await flush();
+    expect(vm().canCreateProject).toBe(false);
+    expect(vm().canCreateRepository).toBe(true);
   });
 
   it("gives QA Team QA Studio but not a Developer", async () => {
@@ -456,6 +489,36 @@ describe("useCreateProjectFolderViewModel", () => {
     expect(repo.create).toHaveBeenCalledWith(GROUP_ID, { name: "checkout", description: "Pay flows" });
     expect(vm().open).toBe(false);
     expect(onCreated).toHaveBeenCalledWith("checkout");
+  });
+
+  it("opens on arrival when a deep link asked, once the caller may create", () => {
+    const allowed = { value: false };
+    const vm = renderHook(() =>
+      useCreateProjectFolderViewModel({
+        groupId: GROUP_ID,
+        onCreated: jest.fn(),
+        openOnArrival: true,
+        canCreate: allowed.value,
+      }),
+    );
+    // The session is still loading: nothing opens yet.
+    expect(vm().open).toBe(false);
+    allowed.value = true;
+    act(() => vm().setName("a")); // any re-render, as the session arriving would cause
+    expect(vm().open).toBe(true);
+    // Once: closing it does not bring it back.
+    act(() => vm().closeDialog());
+    act(() => vm().setName("b"));
+    expect(vm().open).toBe(false);
+  });
+
+  it("maps PROJECT_CREATE_FORBIDDEN to its sentence", async () => {
+    repo.create.mockRejectedValue(apiError(403, { code: "PROJECT_CREATE_FORBIDDEN", message: "x" }));
+    const vm = renderHook(() => useCreateProjectFolderViewModel({ groupId: GROUP_ID, onCreated: jest.fn() }));
+    act(() => vm().openDialog());
+    act(() => vm().setName("checkout"));
+    await act(async () => vm().submit());
+    expect(vm().error).toBe("Product owners create Projects.");
   });
 
   it("omits an empty description and surfaces a server refusal", async () => {

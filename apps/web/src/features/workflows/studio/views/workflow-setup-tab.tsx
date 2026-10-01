@@ -28,14 +28,17 @@ import {
   isExistingDiscoverDisabled,
   isExistingSetupDisabled,
   isFinalCreateDisabled,
+  isExistingSetupMode,
   isGenerateDisabled,
+  isProjectChoiceMissing,
   isProjectQuotaReached,
   isRepositoryStepReady,
   nextWizardStep,
   teamChoiceState,
   wizardStepReadyFlags,
 } from "../model/setup-tab-rules";
-import { REPOSITORY_CREATE_LEAD_ONLY_NOTE } from "../model/role-gate-rules";
+import { REPOSITORY_CREATE_ROLE_NOTE } from "../model/role-gate-rules";
+import type { ProjectChoice } from "./setup-wizard-props";
 import { ExistingRepoSetupPanel } from "./existing-repo-setup-panel";
 import { NewRepoWizard, RepositoryCreationProgress } from "./new-repo-wizard";
 import { SetupModeToggle } from "./setup-mode-toggle";
@@ -47,9 +50,9 @@ import { GenerateYamlLink } from "./setup-wizard-automation";
 
 interface WorkflowSetupTabProps {
   /**
-   * Team lead or admin (or a guest, who is sent to sign up instead). The
-   * backend refuses repository creation and existing-repo onboarding for
-   * everyone else, so the controls are replaced by a note.
+   * Developer or admin (or a guest, who is sent to sign up instead). The
+   * backend refuses repository creation and existing-repo onboarding for a
+   * Product owner and QA Team, so the controls are replaced by a note.
    */
   canCreateRepositories: boolean;
   createResult: CreateProjectResult | null;
@@ -74,6 +77,14 @@ interface WorkflowSetupTabProps {
   targetProjectLabel?: string | null;
   /** That Project's own name: the wizard shows "Adding to Project: <name>" and asks for none. */
   joinedProjectName?: string | null;
+  /** A Developer's Project select (see WizardStepProps), or null. */
+  projectChoice: ProjectChoice | null;
+  /**
+   * Whether "Existing repository" is offered. Onboarding an existing
+   * repository names a NEW Project, which a Developer may not create, so a
+   * Developer only gets the new-repository path (filed in a Project).
+   */
+  existingRepoAllowed: boolean;
   deploymentOwnershipMode: EnvOwnershipMode;
   deploymentProvisioning: DeploymentProvisioningFormState;
   envProvisioningEnabled: boolean;
@@ -142,6 +153,8 @@ export function WorkflowSetupTab({
   onChangeWorkspace,
   targetProjectLabel,
   joinedProjectName = null,
+  projectChoice,
+  existingRepoAllowed,
   deploymentProvisioning,
   envProvisioningEnabled,
   existingRepoBaseBranch,
@@ -168,7 +181,7 @@ export function WorkflowSetupTab({
   const usageItems = useProjectUsage();
   const [activeWizardStep, setActiveWizardStep] = useState(0);
   const [furthestWizardStep, setFurthestWizardStep] = useState(0);
-  const isExistingMode = setupMode === "existing";
+  const isExistingMode = isExistingSetupMode(setupMode, existingRepoAllowed);
   const projectQuota = findProjectQuota(usageItems);
   const projectQuotaReached = isProjectQuotaReached(projectQuota);
   const hasSelectedProjectType = Boolean(projectCatalog.selectedProjectType);
@@ -237,6 +250,7 @@ export function WorkflowSetupTab({
     repository: isRepositoryStepReady({
       projectName: joinedProjectName === null ? form.projectName : null,
       projectNameServerError: form.projectNameError,
+      projectChoiceMissing: isProjectChoiceMissing(projectChoice),
       repoName: form.repoName,
       isMicroservicesShape: projectCatalog.isMicroservicesShape,
       isMultiRepoShape: projectCatalog.isMultiRepoShape,
@@ -292,7 +306,7 @@ export function WorkflowSetupTab({
       >
         <div className="create-project-main">
           <p className="env-empty-state" role="status">
-            {REPOSITORY_CREATE_LEAD_ONLY_NOTE}
+            {REPOSITORY_CREATE_ROLE_NOTE}
           </p>
         </div>
       </section>
@@ -337,6 +351,7 @@ export function WorkflowSetupTab({
             Flip EXISTING_REPO_MODE_ENABLED to true to restore the segmented
             control; all handlers and the existing-mode panel remain wired. */}
         <SetupModeToggle
+          allowed={existingRepoAllowed}
           setupMode={setupMode}
           onChangeSetupMode={onChangeSetupMode}
         />
@@ -372,6 +387,7 @@ export function WorkflowSetupTab({
           isCreatingProject={isCreatingProject}
           isExistingMode={isExistingMode}
           joinedProjectName={joinedProjectName}
+          projectChoice={projectChoice}
           onBack={goToPreviousWizardStep}
           onCreateProject={onCreateProject}
           onNext={goToNextWizardStep}

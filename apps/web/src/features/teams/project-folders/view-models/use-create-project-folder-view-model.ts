@@ -25,9 +25,22 @@ export interface CreateProjectFolderViewModel {
 export function useCreateProjectFolderViewModel(options: {
   groupId: string;
   onCreated: (name: string) => void;
+  /** A deep link asked for the dialog (read once, on mount). */
+  openOnArrival?: boolean;
+  /**
+   * Whether the caller may create a Project. The session can still be loading
+   * on arrival, so the asked-for dialog opens the moment this turns true.
+   */
+  canCreate?: boolean;
 }): CreateProjectFolderViewModel {
-  const { groupId, onCreated } = options;
+  const { groupId, onCreated, openOnArrival = false, canCreate = true } = options;
   const [open, setOpen] = useState(false);
+  const [arrivalPending, setArrivalPending] = useState(openOnArrival);
+  // Applied while rendering (state derived from a changing input), once.
+  if (arrivalPending && canCreate) {
+    setArrivalPending(false);
+    setOpen(true);
+  }
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [status, setStatus] = useState<CreateProjectFolderStatus>("idle");

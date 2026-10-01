@@ -9,6 +9,7 @@ import { useWorkspaceSelection } from "@/features/workspace/selection";
 import {
   headerTeam,
   linkedProjectFolderId,
+  nextNewProjectTeam,
   readProjectsDeepLink,
 } from "../model/current-projects-rules";
 
@@ -70,6 +71,14 @@ export function useCurrentProjectsViewModel(options: { loadingProjects: boolean 
     [groups, selectedWorkspaceId],
   );
 
+  // `?new=project` opens the New Project dialog once, on the first team the
+  // page shows. Derived while rendering (state from a changing input).
+  const [newProjectTeam, setNewProjectTeam] = useState<string | null | undefined>(() =>
+    link.opensNewProject ? undefined : null,
+  );
+  const nextTeam = nextNewProjectTeam(newProjectTeam, team?.id ?? null);
+  if (nextTeam !== newProjectTeam) setNewProjectTeam(nextTeam);
+
   function retry() {
     setGroups(null);
     setLoadFailed(false);
@@ -82,6 +91,8 @@ export function useCurrentProjectsViewModel(options: { loadingProjects: boolean 
     team,
     /** The Project a `?project=` link opens on this team, or null. */
     linkedFolderId: team ? linkedProjectFolderId(link, team.id) : null,
+    /** Open the New Project dialog on arrival (a `?new=project` link), on this team. */
+    opensNewProject: team !== null && nextTeam === team.id,
     retry,
   };
 }

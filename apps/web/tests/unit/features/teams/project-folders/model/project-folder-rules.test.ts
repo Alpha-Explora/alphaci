@@ -11,6 +11,8 @@ import {
   deleteNoticeText,
   deletePartialFailure,
   detachPatch,
+  emptyProjectsCopy,
+  emptyRepositoriesCopy,
   findFolder,
   folderChecklists,
   folderProjectIds,
@@ -65,6 +67,8 @@ describe("normaliseProjectFolders", () => {
       expect(normaliseProjectFolders(body, "ws-9")).toEqual({
         groupId: "ws-9",
         canManage: false,
+        canCreateProject: null,
+        canCreateRepository: null,
         folders: [],
         unfiled: [],
       });
@@ -74,6 +78,13 @@ describe("normaliseProjectFolders", () => {
   it("never hands out lead actions unless canManage is exactly true", () => {
     expect(normaliseProjectFolders({ canManage: "true" }, GROUP_ID).canManage).toBe(false);
     expect(normaliseProjectFolders({ canManage: 1 }, GROUP_ID).canManage).toBe(false);
+  });
+
+  it("keeps the creation flags only when they are exact booleans", () => {
+    const sent = normaliseProjectFolders({ canCreateProject: false, canCreateRepository: true }, GROUP_ID);
+    expect(sent).toMatchObject({ canCreateProject: false, canCreateRepository: true });
+    const malformed = normaliseProjectFolders({ canCreateProject: "true", canCreateRepository: 1 }, GROUP_ID);
+    expect(malformed).toMatchObject({ canCreateProject: null, canCreateRepository: null });
   });
 
   it("fills defaults for missing fields and drops rows without ids", () => {
@@ -271,10 +282,37 @@ describe("validation and errors", () => {
   });
 
   it("maps create and checklist failures", () => {
-    expect(createErrorMessage(apiError(403))).toMatch(/Team lead/);
+    expect(createErrorMessage(apiError(403))).toBe("Product owners create Projects.");
+    expect(createErrorMessage(apiError(403, { code: "PROJECT_CREATE_FORBIDDEN" }))).toBe(
+      "Product owners create Projects.",
+    );
+    expect(createErrorMessage(apiError(409))).toMatch(/already exists/);
     expect(createErrorMessage(null)).toMatch(/could not be created/);
     expect(checklistPatchErrorMessage(apiError(409))).toMatch(/archived/);
     expect(checklistPatchErrorMessage(apiError(500))).toMatch(/could not be updated/);
+  });
+});
+
+describe("role copy", () => {
+  it("asks a Product owner or admin to create the first Project", () => {
+    expect(emptyProjectsCopy({ canCreateProject: true, canCreateRepository: true })).toBe(
+      "Create the first Project for this team.",
+    );
+    expect(emptyProjectsCopy({ canCreateProject: true, canCreateRepository: false })).toBe(
+      "Create the first Project for this team.",
+    );
+  });
+
+  it("tells a Developer who creates Projects, and QA Team nothing", () => {
+    expect(emptyProjectsCopy({ canCreateProject: false, canCreateRepository: true })).toBe(
+      "Your Product owner hasn't created a Project yet.",
+    );
+    expect(emptyProjectsCopy({ canCreateProject: false, canCreateRepository: false })).toBeNull();
+  });
+
+  it("says who fills an empty Project", () => {
+    expect(emptyRepositoriesCopy(true)).toMatch(/Add the first one/);
+    expect(emptyRepositoriesCopy(false)).toBe("No repositories in this Project yet. Developers add them.");
   });
 });
 

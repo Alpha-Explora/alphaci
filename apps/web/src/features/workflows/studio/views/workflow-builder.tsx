@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 
 import { useWorkflowStudioViewModel } from "../view-models/use-workflow-studio-view-model";
 import { statusBannerVariant } from "../model/workflow-studio-rules";
-import { canCreateRepositories } from "../model/role-gate-rules";
+import { studioCreateGates } from "../model/role-gate-rules";
 import { WorkflowCurrentTab } from "./workflow-current-tab";
 import { GeneratingOverlay } from "./generating-overlay";
 import { WorkflowSetupTab } from "./workflow-setup-tab";
@@ -100,15 +100,15 @@ export function WorkflowBuilder({ guest = false, session, onboardingCompleted }:
   const prefersReducedMotion = useReducedMotion();
   const reducedMotion = prefersReducedMotion === true;
   const vm = useWorkflowStudioViewModel({ guest, session, onboardingCompleted });
-  const canCreateRepos = canCreateRepositories(session?.appRole, guest);
+  const gates = studioCreateGates(session?.appRole, guest);
   const sendGuestToSignup = () => router.push("/signup");
   const {
     activeView, statusMessage, isCreatingProject, isDiscoveringExistingRepo, isSettingUpExistingRepo,
     createResult, existingRepoDiscovery, existingRepoResult, setupMode, setSetupMode,
     existingRepoFullName, setExistingRepoFullName, existingRepoBaseBranch, setExistingRepoBaseBranch,
     workspaces, selectedCreateWorkspaceId, setSelectedCreateWorkspaceId, targetProjectLabel,
-    joinedProjectName,
-    showProjects, openCreateForGroup, openIndividualSetup,
+    joinedProjectName, projectChoice,
+    showProjects, openIndividualSetup,
     handleCreateProject, handleDiscoverExistingRepo, handleSetupExistingRepo, handleGenerateWorkflow,
     catalog, projectCatalog, projects, createForm, deploymentProvisioning,
     deploymentOwnershipMode, envProvisioningEnabled, github, startTour, startCurrentProjectsTour,
@@ -138,7 +138,7 @@ export function WorkflowBuilder({ guest = false, session, onboardingCompleted }:
             <div className="project-detail-panel project-detail-panel--page setup-view">
               <SetupViewHeader guest={guest} onBack={showProjects} onStartTour={startTour} />
               <WorkflowSetupTab
-                canCreateRepositories={canCreateRepos}
+                canCreateRepositories={gates.canCreateRepositories}
                 form={createForm}
                 deploymentOwnershipMode={deploymentOwnershipMode}
                 deploymentProvisioning={deploymentProvisioning}
@@ -165,6 +165,8 @@ export function WorkflowBuilder({ guest = false, session, onboardingCompleted }:
                 onChangeWorkspace={setSelectedCreateWorkspaceId}
                 targetProjectLabel={targetProjectLabel}
                 joinedProjectName={joinedProjectName}
+                projectChoice={projectChoice}
+                existingRepoAllowed={gates.existingRepoAllowed}
                 projectCatalog={projectCatalog}
                 onViewProject={openIndividualSetup}
                 reducedMotion={reducedMotion}
@@ -177,8 +179,9 @@ export function WorkflowBuilder({ guest = false, session, onboardingCompleted }:
               latestResult={createResult}
               loadingProjects={projects.loadingProjects}
               onOpenSetup={openIndividualSetup}
-              canCreateProjects={canCreateRepos}
-              onCreateProject={guest ? sendGuestToSignup : openCreateForGroup}
+              canCreateProjects={gates.canCreateProjects}
+              guest={guest}
+              onGuestCreate={guest ? sendGuestToSignup : undefined}
               onStartGuide={guest ? undefined : startCurrentProjectsTour}
             />
           ) : null}

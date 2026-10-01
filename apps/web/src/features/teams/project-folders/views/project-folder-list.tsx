@@ -6,6 +6,8 @@ import { LoadingRows } from "@/features/groups/workspace";
 
 import {
   checklistCountLabel,
+  createRepositoryHref,
+  emptyProjectsCopy,
   folderChecklists,
   folderLandingProjectId,
   projectDashboardHref,
@@ -51,7 +53,8 @@ function FolderMeta({
  * "Manage" (a sibling control, never nested inside the card's link) opens the
  * Project's detail: repositories, Move, checklists and Delete Project. A
  * Project with no linked repository has no page to open, so its card opens
- * the detail as it always did.
+ * the detail as it always did. A Developer (or admin) also gets "Add
+ * repository" beside Manage: the create wizard, filed in this Project.
  *
  * No per-repository BACKEND/FRONTEND chips: the card is the Project, the
  * count says how many repositories it holds, and the repositories themselves
@@ -60,10 +63,13 @@ function FolderMeta({
 function FolderCard({
   folder,
   checklists,
+  addRepositoryHref,
   onOpen,
 }: Readonly<{
   folder: ProjectFolder;
   checklists: FolderChecklist[] | null;
+  /** The wizard filed in this Project; null when the caller may not add one. */
+  addRepositoryHref: string | null;
   onOpen: () => void;
 }>) {
   const landingId = folderLandingProjectId(folder);
@@ -102,6 +108,16 @@ function FolderCard({
           <SlidersIcon />
           <span className="pf-card__manage-label">Manage</span>
         </button>
+        {addRepositoryHref ? (
+          <Link
+            className="pf-card__manage pf-card__add"
+            href={addRepositoryHref}
+            aria-label={`Add repository to ${folder.name}`}
+          >
+            <PlusIcon />
+            <span className="pf-card__manage-label">Add repository</span>
+          </Link>
+        ) : null}
       </div>
     </li>
   );
@@ -151,9 +167,10 @@ export function ExplorerError({
 }
 
 function EmptyExplorer({
-  canManage,
+  vm,
   onCreate,
-}: Readonly<{ canManage: boolean; onCreate: () => void }>) {
+}: Readonly<{ vm: ProjectFoldersViewModel; onCreate: () => void }>) {
+  const lead = emptyProjectsCopy(vm);
   return (
     <div className="hier-state">
       <span className="hier-state-icon" aria-hidden="true">
@@ -163,9 +180,9 @@ function EmptyExplorer({
       <p className="hier-state-text">
         A Project groups the repositories that ship together, such as a
         frontend and its backend.
-        {canManage ? "" : " A Team lead creates them."}
+        {lead ? ` ${lead}` : ""}
       </p>
-      {canManage ? (
+      {vm.canCreateProject ? (
         <button type="button" className="primary-button" onClick={onCreate}>
           <PlusIcon />
           Create the first Project
@@ -185,7 +202,7 @@ export function ProjectFolderList({
     return <ExplorerError message={vm.error ?? ""} onRetry={vm.reload} />;
   }
   if (vm.folders.length === 0 && vm.unfiled.length === 0) {
-    return <EmptyExplorer canManage={vm.canManage} onCreate={onCreate} />;
+    return <EmptyExplorer vm={vm} onCreate={onCreate} />;
   }
   return (
     <div className="pf-list-screen">
@@ -196,6 +213,9 @@ export function ProjectFolderList({
               key={folder.deliveryProjectId}
               folder={folder}
               checklists={vm.checklists}
+              addRepositoryHref={
+                vm.canCreateRepository ? createRepositoryHref(vm.groupId, folder.deliveryProjectId) : null
+              }
               onOpen={() => vm.openFolder(folder.deliveryProjectId)}
             />
           ))}

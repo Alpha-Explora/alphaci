@@ -2,6 +2,7 @@
 
 import { motion } from "framer-motion";
 
+import { newProjectHref } from "../../model/home-rules";
 import { sectionVariants } from "./motion";
 
 export function QuickActionCreateIcon() {
@@ -65,7 +66,7 @@ export function QuickActionRunIcon() {
 const quickActions = [
   {
     cmd: "new-project",
-    href: "/workflows?tab=setup",
+    href: newProjectHref(),
     display: "Create Project",
     description: "Connect a repo and generate a pipeline",
     shortcut: "N",

@@ -6,7 +6,7 @@ import { useApiResource } from "@/features/groups";
 import { useAuthSession } from "@/features/auth/session";
 
 import { groupsRepository } from "../../data/groups-repository";
-import { isGlobalCreatorRole } from "../../model/groups-rules";
+import { canCreateRepositoryInProject } from "../../model/creation-role-rules";
 import type {
   DeliveryProject,
   GroupSummary,
@@ -25,8 +25,8 @@ export interface DeliveryProjectViewModel {
     typeof useApiResource<HierarchyRepository[]>
   >["state"];
   reloadRepositories: () => void;
-  /** Whether the caller may create a repository here. */
-  canManage: boolean;
+  /** Whether the caller may create a repository here (Developer, admin). */
+  canCreateRepository: boolean;
   dialogOpen: boolean;
   setDialogOpen: (open: boolean) => void;
   prependRepository: (repository: HierarchyRepository) => void;
@@ -35,8 +35,9 @@ export interface DeliveryProjectViewModel {
 /**
  * ViewModel for one delivery project.
  *
- * `canManage` follows the GLOBAL role (Lead/Admin), mirroring the backend gate —
- * not the per-group membership tier.
+ * `canCreateRepository` follows the GLOBAL role (Developer / admin), mirroring
+ * the backend gate — not the per-group membership tier. A Product owner
+ * creates the Project; Developers fill it with repositories.
  */
 export function useDeliveryProjectViewModel(
   groupId: string,
@@ -67,7 +68,7 @@ export function useDeliveryProjectViewModel(
     repositories: reposResource.data ?? [],
     repositoriesStatus: reposResource.state,
     reloadRepositories: reposResource.reload,
-    canManage: isGlobalCreatorRole(session?.appRole),
+    canCreateRepository: canCreateRepositoryInProject(session?.appRole),
     dialogOpen,
     setDialogOpen,
     prependRepository: (repository) =>

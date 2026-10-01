@@ -6,6 +6,7 @@ import type { CreateProjectFormState } from "../view-models/use-create-project-f
 import type { GithubInstallationsState } from "../view-models/use-github-installations";
 import type { ProjectOptionsCatalogState } from "../view-models/use-project-options-catalog";
 import { labelAccentStyle } from "./setup-tab-shared";
+import { ProjectChoiceField } from "./setup-project-choice-field";
 import { ProjectNameField } from "./setup-project-name-field";
 import type { WizardStepProps } from "./setup-wizard-props";
 
@@ -80,16 +81,21 @@ export function SetupWizardRepository({
   form,
   github,
   joinedProjectName,
+  projectChoice,
   projectCatalog,
 }: Readonly<WizardStepProps>) {
   return (
     <>
-      <ProjectNameField
-        joinedProjectName={joinedProjectName}
-        value={form.projectName}
-        onChange={form.setProjectName}
-        serverError={form.projectNameError}
-      />
+      {projectChoice ? (
+        <ProjectChoiceField choice={projectChoice} />
+      ) : (
+        <ProjectNameField
+          joinedProjectName={joinedProjectName}
+          value={form.projectName}
+          onChange={form.setProjectName}
+          serverError={form.projectNameError}
+        />
+      )}
 
       <RepositoryOwnerFields github={github} />
 

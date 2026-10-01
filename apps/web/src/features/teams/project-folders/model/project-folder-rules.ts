@@ -19,6 +19,12 @@ import type {
   UnfiledProject,
 } from "./project-folder-types";
 
+import {
+  NO_PROJECT_YET_MESSAGE,
+  PROJECT_CREATE_FORBIDDEN_MESSAGE,
+  creationRefusalMessage,
+} from "@/features/groups";
+
 type Json = Record<string, unknown>;
 
 /* ── Primitive readers ──────────────────────────────────────────────────── */
@@ -35,6 +41,11 @@ function asArray(value: unknown): unknown[] {
 
 function readString(value: unknown, fallback = ""): string {
   return typeof value === "string" ? value : fallback;
+}
+
+/** An exact boolean, or null when the field is missing or anything else. */
+function readFlag(value: unknown): boolean | null {
+  return typeof value === "boolean" ? value : null;
 }
 
 /** A non-empty string, or null. */
@@ -115,7 +126,9 @@ function readUnfiled(value: unknown): UnfiledProject | null {
  *
  * Folders keep the server's order (by name, case-insensitive). `canManage` is
  * only true when the server says exactly `true` — a missing flag must never
- * hand out lead actions.
+ * hand out lead actions. `canCreateProject` and `canCreateRepository` stay
+ * null when the server sends no boolean, so the caller falls back to the
+ * app-role allow-list.
  */
 export function normaliseProjectFolders(
   value: unknown,
@@ -125,6 +138,8 @@ export function normaliseProjectFolders(
   return {
     groupId: readOptionalString(raw.groupId) ?? requestedGroupId,
     canManage: raw.canManage === true,
+    canCreateProject: readFlag(raw.canCreateProject),
+    canCreateRepository: readFlag(raw.canCreateRepository),
     folders: asArray(raw.folders).map(readFolder).filter(isPresent),
     unfiled: asArray(raw.unfiled).map(readUnfiled).filter(isPresent),
   };
@@ -319,6 +334,32 @@ export function createRepositoryHref(groupId: string, deliveryProjectId?: string
   return `/workflows?${params.toString()}`;
 }
 
+/* ── Role copy ──────────────────────────────────────────────────────────── */
+
+export const EMPTY_PROJECTS_CREATOR_LINE = "Create the first Project for this team.";
+export const EMPTY_PROJECTS_DEVELOPER_LINE = NO_PROJECT_YET_MESSAGE;
+
+/**
+ * The role line under "No Projects yet": a Product owner (or admin) is asked
+ * to create one, a Developer is told who does, and anyone else (QA Team) gets
+ * no line at all.
+ */
+export function emptyProjectsCopy(caller: {
+  canCreateProject: boolean;
+  canCreateRepository: boolean;
+}): string | null {
+  if (caller.canCreateProject) return EMPTY_PROJECTS_CREATOR_LINE;
+  if (caller.canCreateRepository) return EMPTY_PROJECTS_DEVELOPER_LINE;
+  return null;
+}
+
+/** Under an empty Project's repository list, by what the caller may do. */
+export function emptyRepositoriesCopy(canCreateRepository: boolean): string {
+  return canCreateRepository
+    ? "No repositories in this Project yet. Add the first one and it lands here."
+    : "No repositories in this Project yet. Developers add them.";
+}
+
 /* ── Validation ─────────────────────────────────────────────────────────── */
 
 export const PROJECT_NAME_MAX = 200;
@@ -381,12 +422,16 @@ export function isConflict(cause: unknown): boolean {
 
 const CREATE_MESSAGES: Record<number, string> = {
   400: "That name cannot be used. Check it and try again.",
-  403: "Only a Team lead can create Projects.",
+  403: PROJECT_CREATE_FORBIDDEN_MESSAGE,
   409: "A Project with that name already exists in this team.",
 };
 
 export function createErrorMessage(cause: unknown): string {
-  return CREATE_MESSAGES[errorStatus(cause) ?? 0] ?? "The Project could not be created. Try again in a moment.";
+  return (
+    creationRefusalMessage(cause) ??
+    CREATE_MESSAGES[errorStatus(cause) ?? 0] ??
+    "The Project could not be created. Try again in a moment."
+  );
 }
 
 const CHECKLIST_MESSAGES: Record<number, string> = {

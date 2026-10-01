@@ -49,6 +49,10 @@ export interface UnfiledProjectWire {
 export interface ProjectFoldersResponseWire {
   groupId: string;
   canManage: boolean;
+  /** Product owner or admin: may create an empty Project. Newer backends only. */
+  canCreateProject?: boolean;
+  /** Developer or admin: may create a repository inside a Project. Newer backends only. */
+  canCreateRepository?: boolean;
   folders: ProjectFolderWire[];
   unfiled: UnfiledProjectWire[];
 }
@@ -146,6 +150,16 @@ export interface ProjectFoldersSnapshot {
   groupId: string;
   /** Server-decided: Team lead, delegated lead or platform admin. */
   canManage: boolean;
+  /**
+   * The server's "may create an empty Project" (Product owner or admin), or
+   * null when an older backend sends no flag.
+   */
+  canCreateProject: boolean | null;
+  /**
+   * The server's "may create a repository inside a Project" (Developer or
+   * admin), or null when an older backend sends no flag.
+   */
+  canCreateRepository: boolean | null;
   folders: ProjectFolder[];
   unfiled: UnfiledProject[];
 }

@@ -18,11 +18,11 @@ interface MenuItem {
 }
 
 export interface CreateProjectActionsProps {
-  /** The provisioning wizard (lead/admin, or a guest sent to sign up); null hides it. */
+  /** The primary Create project (the New Project dialog, or a guest's signup); null hides it. */
   onCreateProject: (() => void) | null;
   /** The Empty project dialog; null when the caller may not create one. */
   onCreateEmptyProject: (() => void) | null;
-  /** The create-repository wizard for this team; null below Team lead. */
+  /** The create-repository wizard for this team with no Project chosen (admin); null otherwise. */
   addRepositoryHref: string | null;
 }
 
@@ -51,10 +51,12 @@ function menuItems({
 }
 
 /**
- * The Projects page's create actions: ONE primary "Create project" (the
- * provisioning wizard) and, beside it, a "⋯" menu with the other two ways in —
- * an Empty project, or a single repository. They used to be three buttons in
- * two rows (the page heading, and the Projects section head below it).
+ * The Projects page's create actions: ONE primary "Create project" (the New
+ * Project dialog, for a Product owner or admin) and, beside it, a "⋯" menu
+ * with whatever else the caller's role allows — today an admin's single
+ * repository with no Project. The menu still takes an Empty project item for
+ * callers whose primary action is something else; the Projects page passes
+ * none, since its primary already is the empty Project.
  *
  * The menu follows the WAI-ARIA menu-button pattern: the trigger says it has a
  * popup and whether it is open; Enter, Space or ArrowDown open it on the first

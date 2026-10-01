@@ -1,5 +1,9 @@
 import {
+  applicableTargetProject,
+  chosenTargetProject,
+  createRepositoryBlocker,
   effectiveDeliveryProjectId,
+  projectChoiceOptions,
   joinedProjectName,
   parseCreateTargetParams,
   preselectedWorkspaceId,
@@ -29,6 +33,38 @@ describe("parseCreateTargetParams", () => {
       deliveryProjectId: null,
     });
     expect(parseCreateTargetParams(new URLSearchParams(""))).toEqual({ groupId: null, deliveryProjectId: null });
+  });
+});
+
+describe("a Developer's Project choice", () => {
+  it("lists the team's Projects as options, in the server's order", () => {
+    expect(
+      projectChoiceOptions([
+        { deliveryProjectId: "dp-2", name: "wallet" },
+        { deliveryProjectId: "dp-1", name: "testfinals" },
+      ]),
+    ).toEqual([
+      { id: "dp-2", name: "wallet" },
+      { id: "dp-1", name: "testfinals" },
+    ]);
+  });
+
+  it("files a pick in the team it was picked in", () => {
+    expect(chosenTargetProject({ id: "dp-1", name: "testfinals" }, "ws-1")).toEqual({
+      id: "dp-1",
+      name: "testfinals",
+      groupId: "ws-1",
+    });
+    expect(chosenTargetProject(null, "ws-1")).toBeNull();
+    expect(chosenTargetProject({ id: "dp-1", name: "x" }, null)).toBeNull();
+  });
+
+  it("blocks Create until the Project is chosen, and on missing Render variables", () => {
+    const base = { renderVariablesMissing: false, requiresProject: true, deliveryProjectId: undefined };
+    expect(createRepositoryBlocker(base)).toBe("Choose the Project this repository belongs to.");
+    expect(createRepositoryBlocker({ ...base, deliveryProjectId: "dp-1" })).toBeNull();
+    expect(createRepositoryBlocker({ ...base, requiresProject: false })).toBeNull();
+    expect(createRepositoryBlocker({ ...base, renderVariablesMissing: true })).toMatch(/Render environment variable/);
   });
 });
 
@@ -68,6 +104,15 @@ describe("the target Project", () => {
     expect(readTargetProject({ id: DP, groupId: "ws-1", status: "archived" }, DP)).toBeNull();
     expect(readTargetProject({ id: DP }, DP)).toBeNull();
     expect(readTargetProject(null, DP)).toBeNull();
+  });
+
+  it("prefers the linked Project, then the one picked, for the team being created in", () => {
+    const picked = { id: "dp-pick", name: "wallet", groupId: "ws-2" };
+    expect(applicableTargetProject(TARGET, picked, "ws-1")).toBe(TARGET);
+    expect(applicableTargetProject(TARGET, picked, "ws-2")).toBe(picked);
+    expect(applicableTargetProject(null, picked, "ws-2")).toBe(picked);
+    expect(applicableTargetProject(TARGET, picked, "ws-3")).toBeNull();
+    expect(applicableTargetProject(null, null, "ws-1")).toBeNull();
   });
 
   it("scopes the create payload", () => {

@@ -30,7 +30,7 @@ function buildSteps(): DriveStep[] {
       popover: {
         title: "Your team's Projects",
         description:
-          "These are the Projects of the team selected in the header — switch team there. Each card opens its Project; Manage opens its repositories and checklists. Create project sets up a new one, and the ⋯ beside it adds an empty Project or a single repository.",
+          "These are the Projects of the team selected in the header — switch team there. Each card opens its Project; Manage opens its repositories and checklists. A Product owner's Create project starts a new, empty Project; a Developer's Add repository, on a card or in Manage, puts a repository in one.",
         side: "bottom",
         align: "start",
       },

@@ -25,13 +25,16 @@ function ModeToggleButton({
 }
 
 export function SetupModeToggle({
+  allowed = true,
   onChangeSetupMode,
   setupMode,
 }: Readonly<{
+  /** False for a caller who may only create a new repository (a Developer). */
+  allowed?: boolean;
   onChangeSetupMode: (value: "new" | "existing") => void;
   setupMode: "new" | "existing";
 }>) {
-  if (!EXISTING_REPO_MODE_ENABLED) {
+  if (!EXISTING_REPO_MODE_ENABLED || !allowed) {
     return null;
   }
 

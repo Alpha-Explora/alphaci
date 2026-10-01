@@ -23,18 +23,23 @@ import "./current-projects.css";
 import { GuideIcon } from "./studio-icons";
 
 interface HeaderActionsProps {
-  /** Admin/lead (or a guest, who is sent to sign up). Hides "Create project" otherwise. */
-  canCreateProjects: boolean;
-  /** Opens the create view with this team preselected (null when there is none). */
-  onCreateProject?: (groupId: string | null) => void;
+  /**
+   * A guest's "Create project", which sends them to sign up. Everyone else's
+   * comes from the explorer: the New Project dialog for a Product owner or
+   * admin, nothing for a Developer or QA Team.
+   */
+  onGuestCreate?: () => void;
   /** Starts the Current Projects tour. Omitted for guests, which hides "Show guide". */
   onStartGuide?: () => void;
 }
 
-interface WorkflowCurrentTabProps extends Partial<HeaderActionsProps> {
+interface WorkflowCurrentTabProps extends HeaderActionsProps {
   latestResult: CreateProjectResult | null;
   loadingProjects: boolean;
   onOpenSetup: () => void;
+  /** Product owner or admin: the no-team state asks for a team, then a Project. */
+  canCreateProjects?: boolean;
+  guest?: boolean;
 }
 
 const pageVariants = {
@@ -142,10 +147,19 @@ function LatestResultBanner({
   );
 }
 
+/** The no-team line, by role: who creates the first Project. */
+function noTeamLine(canCreateProjects: boolean, guest: boolean): string {
+  if (guest) return "Projects live inside a team. Sign up to create one. ";
+  return canCreateProjects
+    ? "Create a workspace from the picker in the header — a workspace is a team — then create its first Project. "
+    : "Projects are created by Product owners. Once one is added to your team it appears here. ";
+}
+
 function CurrentTabEmptyState({
   onOpenSetup,
   canCreateProjects,
-}: Readonly<{ onOpenSetup: () => void; canCreateProjects: boolean }>) {
+  guest,
+}: Readonly<{ onOpenSetup: () => void; canCreateProjects: boolean; guest: boolean }>) {
   return (
     <div
       className="glass-panel"
@@ -178,9 +192,7 @@ function CurrentTabEmptyState({
             maxWidth: "32rem",
           }}
         >
-          {canCreateProjects
-            ? "Create a workspace from the picker in the header — a workspace is a team — then create a repository inside it. "
-            : "Projects are created by Team leads. Once one is added to your team it appears here. "}
+          {noTeamLine(canCreateProjects, guest)}
           ALPHACI provisions the repository and commits a workflow that runs
           through the gated stages below on every change. Open the{" "}
           <Link href="/guide" className="inline-link">
@@ -201,7 +213,7 @@ function CurrentTabEmptyState({
       >
         <FlowExplainer variant="compact" />
       </div>
-      {canCreateProjects ? (
+      {guest ? (
         <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>
           <button
             className="ghost-button"
@@ -228,25 +240,25 @@ const NO_EXPLORER_ACTIONS: ProjectExplorerSlot["actions"] = {
 
 /**
  * The page's heading row. Left: "Projects" (the page's one h1) with the
- * team's Project count. Right: the guide, then the create actions — one
- * primary "Create project" and the "⋯" menu (Empty project, Add repository).
+ * team's Project count. Right: the guide, then the create actions — the
+ * primary "Create project" (the New Project dialog: Product owner, admin)
+ * and, for an admin, the "⋯" menu's Add repository with no Project chosen.
+ * A Developer adds repositories from a Project's card or detail instead.
  *
  * No team dropdown: the team is the one selected in the header, and a second
  * picker here is how the page and the header used to disagree.
  */
 function CurrentProjectsHeader({
   count,
-  teamId,
   actions,
   explorerActions = NO_EXPLORER_ACTIONS,
 }: Readonly<{
   count: number | null;
-  teamId: string | null;
   actions: HeaderActionsProps;
   explorerActions?: ProjectExplorerSlot["actions"];
 }>) {
-  const { canCreateProjects, onCreateProject, onStartGuide } = actions;
-  const create = canCreateProjects && onCreateProject ? () => onCreateProject(teamId) : null;
+  const { onGuestCreate, onStartGuide } = actions;
+  const create = onGuestCreate ?? explorerActions.createEmptyProject;
   return (
     <div className="project-detail-header current-projects-header">
       <div className="current-projects-heading" data-tour="projects-list">
@@ -273,7 +285,7 @@ function CurrentProjectsHeader({
         ) : null}
         <CreateProjectActions
           onCreateProject={create}
-          onCreateEmptyProject={explorerActions.createEmptyProject}
+          onCreateEmptyProject={null}
           addRepositoryHref={explorerActions.addRepositoryHref}
         />
       </div>
@@ -302,10 +314,12 @@ function GroupsLoadError({ onRetry }: Readonly<{ onRetry: () => void }>) {
 function TeamProjects({
   team,
   linkedFolderId,
+  opensNewProject,
   actions,
 }: Readonly<{
   team: { id: string; name: string };
   linkedFolderId: string | null;
+  opensNewProject: boolean;
   actions: HeaderActionsProps;
 }>) {
   const { qaChecklistsEnabled } = useCapabilities();
@@ -315,12 +329,12 @@ function TeamProjects({
       groupName={team.name}
       qaChecklistsEnabled={qaChecklistsEnabled}
       initialFolderId={linkedFolderId}
+      openNewProjectOnArrival={opensNewProject}
     >
       {(explorer): ReactNode => (
         <>
           <CurrentProjectsHeader
             count={explorer.count}
-            teamId={team.id}
             actions={actions}
             explorerActions={explorer.actions}
           />
@@ -355,21 +369,26 @@ function CurrentTabContent({
   vm,
   onOpenSetup,
   actions,
+  canCreateProjects,
+  guest,
 }: Readonly<{
   vm: ReturnType<typeof useCurrentProjectsViewModel>;
   onOpenSetup: () => void;
   actions: HeaderActionsProps;
+  canCreateProjects: boolean;
+  guest: boolean;
 }>) {
   if (vm.status === "error" || !vm.team) {
     return (
       <>
-        <CurrentProjectsHeader count={null} teamId={null} actions={actions} />
+        <CurrentProjectsHeader count={null} actions={actions} />
         {vm.status === "error" ? (
           <GroupsLoadError onRetry={vm.retry} />
         ) : (
           <CurrentTabEmptyState
             onOpenSetup={onOpenSetup}
-            canCreateProjects={actions.canCreateProjects}
+            canCreateProjects={canCreateProjects}
+            guest={guest}
           />
         )}
       </>
@@ -380,6 +399,7 @@ function CurrentTabContent({
       key={vm.team.id}
       team={vm.team}
       linkedFolderId={vm.linkedFolderId}
+      opensNewProject={vm.opensNewProject}
       actions={actions}
     />
   );
@@ -400,11 +420,12 @@ export function WorkflowCurrentTab({
   loadingProjects,
   onOpenSetup,
   canCreateProjects = false,
-  onCreateProject,
+  guest = false,
+  onGuestCreate,
   onStartGuide,
 }: Readonly<WorkflowCurrentTabProps>) {
   const vm = useCurrentProjectsViewModel({ loadingProjects });
-  const actions: HeaderActionsProps = { canCreateProjects, onCreateProject, onStartGuide };
+  const actions: HeaderActionsProps = { onGuestCreate, onStartGuide };
 
   return (
     <motion.section
@@ -429,7 +450,13 @@ export function WorkflowCurrentTab({
            /projects/[id]) but keeps the compact button sizing that
            globals.css scopes to .project-detail-panel. */
         <div className="project-detail-panel project-detail-panel--page current-projects-page">
-          <CurrentTabContent vm={vm} onOpenSetup={onOpenSetup} actions={actions} />
+          <CurrentTabContent
+            vm={vm}
+            onOpenSetup={onOpenSetup}
+            actions={actions}
+            canCreateProjects={canCreateProjects}
+            guest={guest}
+          />
         </div>
       )}
     </motion.section>

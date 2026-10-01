@@ -11,6 +11,9 @@ export {
   useProjectFoldersViewModel,
   type ProjectFoldersViewModel,
 } from "./view-models/use-project-folders-view-model";
+/* The team's Projects, read once: the Create Project wizard lists them for a
+ * Developer to choose where a repository goes. View-models only. */
+export { projectFoldersRepository } from "./data/project-folders-repository";
 export type {
   ProjectFolder,
   ProjectFoldersSnapshot,

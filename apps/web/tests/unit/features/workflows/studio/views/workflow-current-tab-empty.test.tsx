@@ -34,7 +34,7 @@ afterEach(() => {
   document.body.innerHTML = "";
 });
 
-function render(canCreateProjects: boolean): HTMLElement {
+function render(canCreateProjects: boolean, guest = false): HTMLElement {
   const container = document.createElement("div");
   document.body.appendChild(container);
   root = createRoot(container);
@@ -45,7 +45,8 @@ function render(canCreateProjects: boolean): HTMLElement {
         loadingProjects={false}
         onOpenSetup={jest.fn()}
         canCreateProjects={canCreateProjects}
-        onCreateProject={jest.fn()}
+        guest={guest}
+        onGuestCreate={guest ? jest.fn() : undefined}
       />,
     ),
   );
@@ -57,13 +58,25 @@ function hasButton(container: HTMLElement, label: string): boolean {
 }
 
 describe("Projects empty state", () => {
-  it("offers Create a project to a Lead or Admin", () => {
-    expect(hasButton(render(true), "Create a project")).toBe(true);
+  /* With no team there is nowhere to put a Project yet: a Product owner or
+   * admin is told to make a team first, and nobody gets the wizard. */
+  it("asks a Product owner or admin for a team, then its first Project", () => {
+    const container = render(true);
+    expect(container.textContent).toContain("then create its first Project.");
+    expect(hasButton(container, "Create a project")).toBe(false);
+    expect(container.querySelector("[data-testid='create-project-button']")).toBeNull();
   });
 
-  it("does not offer Create a project to a Developer or QA", () => {
+  it("tells a Developer or QA that Product owners create Projects", () => {
     const container = render(false);
     expect(hasButton(container, "Create a project")).toBe(false);
     expect(container.textContent).toContain("No groups or projects yet.");
+    expect(container.textContent).toContain("Projects are created by Product owners.");
+  });
+
+  it("keeps the signup nudge for a guest", () => {
+    const container = render(false, true);
+    expect(hasButton(container, "Create a project")).toBe(true);
+    expect(container.querySelector("[data-testid='create-project-button']")).not.toBeNull();
   });
 });

@@ -114,7 +114,7 @@ function DeliveryProjectDetail({
   }
 
   const project = vm.project;
-  const createButton = vm.canManage ? (
+  const createButton = vm.canCreateRepository ? (
     <button
       type="button"
       className="primary-button"
@@ -149,12 +149,12 @@ function DeliveryProjectDetail({
         groupId={groupId}
         status={vm.repositoriesStatus}
         repositories={vm.repositories}
-        canManage={vm.canManage}
+        canManage={vm.canCreateRepository}
         createButton={createButton}
         onRetry={vm.reloadRepositories}
       />
 
-      {vm.canManage ? (
+      {vm.canCreateRepository ? (
         <CreateRepositoryDialog
           open={vm.dialogOpen}
           deliveryProjectId={project.id}

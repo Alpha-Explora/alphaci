@@ -2,32 +2,58 @@
  * Who may create repositories or onboard existing ones, and what to say when
  * the backend refuses.
  *
- * Mirrors the backend allow-lists (admin/lead only for `POST /github/repos`,
- * `POST /existing-repos/discover` and `/setup-pr`). Allow-lists, so a role
- * added later — or a session that has not loaded — gets nothing until it is
- * named. A guest is let through so the signup nudge still works.
+ * Developers create repositories, inside a Project; admins too (a Project
+ * optional). Product owners create the Projects instead, and QA Team neither.
+ * Allow-lists, so a role added later — or a session that has not loaded —
+ * gets nothing until it is named. A guest is let through so the signup nudge
+ * still works.
  */
 
-import { isGlobalCreatorRole } from "@/features/groups";
+import {
+  REPOSITORY_CREATE_FORBIDDEN_MESSAGE,
+  canCreateProjectFolder,
+  canCreateRepositoryInProject,
+  creationRefusalMessage,
+  repositoryRequiresProject,
+} from "@/features/groups";
 import type { AppRole } from "@/shared/api/contracts";
 import { ApiError } from "@/shared/api/request";
 
 import { formatApiError } from "./workflow-studio-rules";
 
+/** What the studio offers the caller, by app role (a guest is sent to sign up). */
+export interface StudioCreateGates {
+  /** The create wizard: Developer, admin, or a guest. */
+  canCreateRepositories: boolean;
+  /** Create project (an empty Project): Product owner or admin, never a guest. */
+  canCreateProjects: boolean;
+  /**
+   * "Existing repository": onboarding names a NEW Project, which a Developer
+   * may not create, so only callers free of the Project requirement get it.
+   */
+  existingRepoAllowed: boolean;
+}
+
+export function studioCreateGates(appRole: AppRole | null | undefined, guest: boolean): StudioCreateGates {
+  return {
+    canCreateRepositories: canCreateRepositories(appRole, guest),
+    canCreateProjects: !guest && canCreateProjectFolder(appRole),
+    existingRepoAllowed: guest || !repositoryRequiresProject(appRole),
+  };
+}
+
 export function canCreateRepositories(
   appRole: AppRole | null | undefined,
   guest = false,
 ): boolean {
-  return guest || isGlobalCreatorRole(appRole);
+  return guest || canCreateRepositoryInProject(appRole);
 }
 
-/** Shown in place of the create / onboard controls. */
-export const REPOSITORY_CREATE_LEAD_ONLY_NOTE =
-  "A Team lead or admin can create repositories and onboard existing ones.";
+/** Shown in place of the create / onboard controls (Product owner, QA Team). */
+export const REPOSITORY_CREATE_ROLE_NOTE = REPOSITORY_CREATE_FORBIDDEN_MESSAGE;
 
 const ROLE_GATE_MESSAGES: Readonly<Record<string, string>> = {
-  project_role_forbidden:
-    "Only team leads and admins can create or onboard repositories.",
+  project_role_forbidden: "Your role cannot create or onboard repositories.",
   repo_not_accessible:
     "ALPHACI cannot access that repository with your GitHub account. Check the name and your access, then try again.",
   main_pr_restricted:
@@ -57,7 +83,7 @@ function errorCode(error: unknown): string {
  * unrecognised failure still shows the server's own reason.
  */
 export function roleGateErrorMessage(error: unknown, fallback: string): string {
-  const known = ROLE_GATE_MESSAGES[errorCode(error)];
+  const known = creationRefusalMessage(error) ?? ROLE_GATE_MESSAGES[errorCode(error)];
   if (known) return known;
   if (error instanceof ApiError) {
     if (error.status === 401) return SIGN_IN_AGAIN;
