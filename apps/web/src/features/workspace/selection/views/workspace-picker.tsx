@@ -72,7 +72,7 @@ function CheckIcon() {
   );
 }
 
-function PlusIcon() {
+export function PlusIcon() {
   return (
     <svg
       width="14"

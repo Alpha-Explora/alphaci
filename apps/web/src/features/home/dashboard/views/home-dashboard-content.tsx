@@ -16,9 +16,7 @@ import { isGuest } from "@/features/auth/session";
 import {
   dashboardOverviewBusy,
   dashboardWelcomeName,
-  canCreateProjectFolder,
   firstDashboardError,
-  newProjectHref,
   shouldShowWelcomeModal,
 } from "../../model/home-rules";
 import { useHomeDashboardViewModel } from "../view-models/use-home-dashboard-view-model";
@@ -65,11 +63,6 @@ export function HomeDashboardContent({
   const { selectedWorkspace } = useWorkspaceSelection();
 
   const guest = isGuest(session);
-  /* Creating a Project is a Product owner / admin action, matching the server
-   * gate (PROJECT_CREATE_FORBIDDEN). A Developer is not shown a button that
-   * would only ever come back 403: they add repositories inside a Project. */
-  const canCreateProjects = canCreateProjectFolder(session?.appRole);
-  const createProjectHref = newProjectHref(selectedWorkspace?.id ?? null);
   /* The Activity page is a Team lead / admin surface (same rule as the
    * sidebar); anyone else gets no link and no teaser. */
   const canOpenActivity = canOpenTeamActivity({
@@ -160,8 +153,6 @@ export function HomeDashboardContent({
         <HomeDashboardHeader
           guest={guest}
           session={session}
-          canCreateProjects={canCreateProjects}
-          createProjectHref={createProjectHref}
           prefersReducedMotion={prefersReducedMotion}
           error={error}
           logoutMessage={logoutMessage}

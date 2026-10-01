@@ -41,6 +41,20 @@
   outline-offset: 2px;
 }
 
+/* No team yet: the trigger's size and shape, dashed and brand-tinted, so the
+   one action reads as "add" rather than as an empty picker. */
+.team-switcher-create {
+  min-width: 0;
+  border-style: dashed;
+  border-color: var(--border-brand);
+  background: transparent;
+  color: var(--brand);
+}
+
+.team-switcher-create:hover {
+  background: var(--bg-elevated);
+}
+
 .team-switcher-trigger-label {
   flex: 1;
   min-width: 0;
