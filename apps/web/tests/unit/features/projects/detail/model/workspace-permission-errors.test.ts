@@ -20,6 +20,10 @@ describe("workspacePermissionErrorMessage", () => {
     ],
     ["PR_ROLE_FORBIDDEN", "QA does not open or merge pull requests."],
     [
+      "PR_ROUTE_RESTRICTED",
+      "Developers open pull requests from a feature branch into dev, and from dev into uat.",
+    ],
+    [
       "MAIN_PR_RESTRICTED",
       "Pull requests into main are restricted to the QA Studio promotion flow.",
     ],

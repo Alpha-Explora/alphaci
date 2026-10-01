@@ -11,7 +11,10 @@
 import type { AppRole } from "@/shared/api/contracts";
 import { PRODUCTION_BRANCH } from "@/shared/api/pipeline-branches";
 
-import { isPullRequestRole } from "./pull-request-compose-rules";
+import {
+  isPullRequestRole,
+  isPullRequestRouteAllowed,
+} from "./pull-request-compose-rules";
 
 export type MergeTone = "ok" | "caution" | "blocked" | "pending";
 
@@ -92,18 +95,24 @@ export function mergeButtonLabel(method: "merge" | "squash" | "rebase"): string 
  *     (`MAIN_MERGE_VIA_QA_STUDIO`): production release is a QA Studio
  *     "Ready for production" action, not a workspace merge, even for a Team
  *     Lead or Admin who is otherwise allowed to merge anything else.
+ *   - `route-restricted`    — a Developer merges feature -> dev and dev -> uat
+ *     only (`PR_ROUTE_RESTRICTED`); any other route is a Team Lead's call.
  */
 export type WorkspaceMergeGate =
   | { allowed: true }
-  | { allowed: false; reason: "qa-role" | "main-via-qa-studio" };
+  | { allowed: false; reason: "qa-role" | "main-via-qa-studio" | "route-restricted" };
 
 export function workspaceMergeGate(
   role: AppRole | null | undefined,
   base: string,
+  head: string,
 ): WorkspaceMergeGate {
   if (!isPullRequestRole(role)) return { allowed: false, reason: "qa-role" };
   if (base === PRODUCTION_BRANCH) {
     return { allowed: false, reason: "main-via-qa-studio" };
+  }
+  if (!isPullRequestRouteAllowed(role, head, base)) {
+    return { allowed: false, reason: "route-restricted" };
   }
   return { allowed: true };
 }
@@ -112,6 +121,7 @@ export function workspaceMergeGate(
 export function canMergeViaWorkspace(
   role: AppRole | null | undefined,
   base: string,
+  head: string,
 ): boolean {
-  return workspaceMergeGate(role, base).allowed;
+  return workspaceMergeGate(role, base, head).allowed;
 }

@@ -7,6 +7,8 @@
  *   - `PR_ROLE_FORBIDDEN`        — QA tried to open or merge a pull request.
  *   - `MAIN_PR_RESTRICTED`       — a pull request into `main` was proposed
  *     outside the promotion engine.
+ *   - `PR_ROUTE_RESTRICTED`     — a Developer proposed or merged a route other
+ *     than feature -> dev or dev -> uat.
  *   - `ENV_VARS_LEAD_ONLY`       — someone other than a Team Lead or Admin
  *     tried to list/create/update/delete an environment variable.
  *   - `PROJECT_ROLE_FORBIDDEN`  — someone other than a Team Lead or Admin
@@ -32,6 +34,8 @@ const WORKSPACE_PERMISSION_MESSAGES: Readonly<Record<string, string>> = {
   pr_role_forbidden: "QA does not open or merge pull requests.",
   main_pr_restricted:
     "Pull requests into main are restricted to the QA Studio promotion flow.",
+  pr_route_restricted:
+    "Developers open pull requests from a feature branch into dev, and from dev into uat.",
   env_vars_lead_only: "Only team leads and admins can manage environment variables.",
   project_role_forbidden: "Only team leads and admins can make this change.",
   hosting_lead_only:
