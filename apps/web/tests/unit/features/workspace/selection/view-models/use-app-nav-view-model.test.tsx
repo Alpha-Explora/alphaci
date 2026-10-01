@@ -81,7 +81,8 @@ describe("useAppNavViewModel Activity entry", () => {
   it("hides Activity from a QA Team member of the team", async () => {
     const items = await mainItemsFor("member", { appRole: "qa" });
     expect(items).not.toContain("activity");
-    expect(items).toEqual(["home", "projects", "teams", "checklists", "inbox"]);
+    // No Checklists either: the team page left the sidebar (SIDEBAR_SHOWS_CHECKLISTS).
+    expect(items).toEqual(["home", "projects", "teams", "inbox"]);
   });
 
   it("hides Activity from a Developer", async () => {

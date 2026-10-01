@@ -2062,6 +2062,15 @@ async function openSidebarPage(page: Page, label: string, pathname: string) {
   await eventually(`the ${pathname} page`, () => new URL(page.url()).pathname === pathname);
 }
 
+/* The team Checklists page left the sidebar (SIDEBAR_SHOWS_CHECKLISTS); its
+ * route still works, so the journeys open it by URL. */
+async function openChecklistsPage(page: Page, baseUrl: string) {
+  await visible(sidebarLink(page, 'Projects'), 'the sidebar');
+  assert.equal(await sidebarLink(page, 'Checklists').count(), 0, 'no Checklists entry in the sidebar');
+  await page.goto(`${baseUrl}/checklists`, { waitUntil: 'domcontentloaded' });
+  await eventually('the /checklists page', () => new URL(page.url()).pathname === '/checklists');
+}
+
 async function expectRoleBadge(page: Page, role: AppRole) {
   const badge = page.locator(`.app-header-identity .sidebar-role-badge--${role}`);
   await expectText(badge, ROLE_BADGES[role], `the header role badge for ${role}`);
@@ -2124,7 +2133,7 @@ async function leadWritesProjectRequirements({ page, backend, baseUrl }: Journey
   assert.equal(await pickerOffersCreate(page), true, 'the workspace picker offers "Create team" to a lead');
   // /teams is the header team's members now; checklists have a page of their own.
   await visible(page.getByRole('heading', { name: /^Members/ }), 'the Members section on /teams');
-  await openSidebarPage(page, 'Checklists', '/checklists');
+  await openChecklistsPage(page, baseUrl);
   await visible(page.getByText('No QA checklists yet'), 'the empty checklist list');
   assert.equal(await page.getByRole('button', { name: 'Create the first checklist' }).count(), 0, 'no team checklist create');
   await page.getByRole('link', { name: 'Open Projects' }).click();
@@ -2540,7 +2549,7 @@ async function qaTeamCannotCreate({ page, backend, baseUrl }: JourneyContext) {
   await neverShown(backend, page.getByRole('button', { name: 'Add member' }), 'Add member for QA Team');
 
   // Checklists are readable, not writable, for QA Team.
-  await openSidebarPage(page, 'Checklists', '/checklists');
+  await openChecklistsPage(page, baseUrl);
   const row = page.locator('button.qa-list-row').filter({ hasText: RELEASE_CHECKLIST.name });
   await visible(row, 'the team checklist');
   await neverShown(backend, page.getByRole('button', { name: 'New checklist' }), 'New checklist for QA Team');
@@ -2667,7 +2676,9 @@ async function leadOrganisesProjects({ page, backend, baseUrl }: JourneyContext)
   await expectRoleBadge(page, 'lead');
   // The team rail is gone: /teams is members only, and Projects is the sidebar's.
   assert.equal(await page.getByRole('tablist', { name: 'Team sections' }).count(), 0, 'no team section rail');
-  await visible(sidebarLink(page, 'Checklists'), "the sidebar's Checklists link");
+  // The team Checklists page left the sidebar (SIDEBAR_SHOWS_CHECKLISTS).
+  await visible(sidebarLink(page, 'Projects'), "the sidebar's Projects link");
+  assert.equal(await sidebarLink(page, 'Checklists').count(), 0, 'no Checklists entry in the sidebar');
   await openSidebarPage(page, 'Projects', '/workflows');
 
   // One heading, the team's Project count beside it; no team dropdown.

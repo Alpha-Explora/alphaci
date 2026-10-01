@@ -2,6 +2,7 @@ import {
   canOpenTeamActivity,
   adminOtherTeams,
   selectableWorkspaces,
+  SIDEBAR_SHOWS_CHECKLISTS,
   sidebarMainItems,
   workspaceSwitcherKind,
 } from "../../../../../../src/features/workspace/selection/model/workspace-types";
@@ -59,15 +60,23 @@ describe("selectableWorkspaces", () => {
 });
 
 describe("sidebarMainItems", () => {
-  it("adds Checklists (capability on) and Activity after Teams", () => {
+  /* Requirements live on each Project now; the team Checklists page left the sidebar. */
+  it("leaves Checklists out of the sidebar by default, even with the capability on", () => {
+    expect(SIDEBAR_SHOWS_CHECKLISTS).toBe(false);
     expect(
       sidebarMainItems({ guest: false, qaChecklistsEnabled: true, canOpenActivity: true }),
+    ).toEqual(["home", "projects", "teams", "activity", "inbox"]);
+  });
+
+  it("adds Checklists (when shown and the capability is on) and Activity after Teams", () => {
+    expect(
+      sidebarMainItems({ guest: false, qaChecklistsEnabled: true, canOpenActivity: true, showChecklists: true }),
     ).toEqual(["home", "projects", "teams", "checklists", "activity", "inbox"]);
   });
 
-  it("hides Checklists while the QA checklists capability is off", () => {
+  it("keeps Checklists hidden while the QA checklists capability is off", () => {
     expect(
-      sidebarMainItems({ guest: false, qaChecklistsEnabled: false, canOpenActivity: true }),
+      sidebarMainItems({ guest: false, qaChecklistsEnabled: false, canOpenActivity: true, showChecklists: true }),
     ).toEqual(["home", "projects", "teams", "activity", "inbox"]);
   });
 
@@ -75,7 +84,7 @@ describe("sidebarMainItems", () => {
   it("hides Activity from someone who cannot open it", () => {
     expect(
       sidebarMainItems({ guest: false, qaChecklistsEnabled: true, canOpenActivity: false }),
-    ).toEqual(["home", "projects", "teams", "checklists", "inbox"]);
+    ).toEqual(["home", "projects", "teams", "inbox"]);
   });
 
   it("shows a guest only Home and Projects", () => {
