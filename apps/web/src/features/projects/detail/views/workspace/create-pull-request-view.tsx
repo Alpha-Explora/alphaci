@@ -3,7 +3,10 @@
 import { useId } from "react";
 
 import type { AppRole } from "@/shared/api/contracts";
-import { selectableBaseBranches } from "../../model/pull-request-compose-rules";
+import {
+  selectableBaseBranches,
+  selectableHeadBranches,
+} from "../../model/pull-request-compose-rules";
 import { DiffView } from "./diff-view";
 import { WorkspaceError, WorkspaceLoading } from "./workspace-states";
 import {
@@ -69,7 +72,7 @@ export function CreatePullRequestView({
       ) : (
         <>
           <PresetPicker vm={vm} />
-          <BranchPickers vm={vm} />
+          <BranchPickers vm={vm} appRole={appRole} />
           <ComposeBody vm={vm} onViewExisting={onViewExisting} />
         </>
       )}
@@ -125,7 +128,10 @@ function PresetPicker({ vm }: Readonly<{ vm: CreatePullRequestViewModel }>) {
   );
 }
 
-function BranchPickers({ vm }: Readonly<{ vm: CreatePullRequestViewModel }>) {
+function BranchPickers({
+  vm,
+  appRole,
+}: Readonly<{ vm: CreatePullRequestViewModel; appRole?: AppRole }>) {
   const busy = vm.status === "submitting";
   // A preset fixes the base; Feature → Dev leaves the head to the person, and
   // Dev → UAT fixes both. Only Custom (or no presets at all, e.g. QA) is free.
@@ -134,7 +140,9 @@ function BranchPickers({ vm }: Readonly<{ vm: CreatePullRequestViewModel }>) {
   const headLocked = presetOn && vm.preset === "dev-to-uat";
   // `main` is never a selectable base: Hop 3 is locked to the promotion
   // engine and QA Studio, not this composer, for every role.
-  const baseOptions = selectableBaseBranches(vm.branches);
+  const baseOptions = selectableBaseBranches(vm.branches, appRole);
+  // A Developer only picks a feature branch (into dev) or dev (into uat).
+  const headOptions = selectableHeadBranches(vm.branches, appRole, vm.base);
 
   return (
     <div className="ws-compose__branches">
@@ -158,7 +166,7 @@ function BranchPickers({ vm }: Readonly<{ vm: CreatePullRequestViewModel }>) {
         type="button"
         className="ws-compose__swap"
         onClick={vm.swapBranches}
-        disabled={busy || !vm.head || presetOn}
+        disabled={busy || !vm.head || presetOn || appRole === "member"}
         aria-label="Swap the two branches"
         title="Swap the two branches"
       >
@@ -176,13 +184,11 @@ function BranchPickers({ vm }: Readonly<{ vm: CreatePullRequestViewModel }>) {
           <option value="" disabled>
             Choose a branch…
           </option>
-          {vm.branches
-            .filter((name) => name !== vm.base)
-            .map((name) => (
-              <option key={name} value={name}>
-                {name}
-              </option>
-            ))}
+          {headOptions.map((name) => (
+            <option key={name} value={name}>
+              {name}
+            </option>
+          ))}
         </select>
       </label>
     </div>

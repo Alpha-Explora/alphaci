@@ -179,7 +179,7 @@ export function useCreatePullRequestViewModel(options: {
         const initial = defaultPresetId(context);
         const applied = applyPreset(initial, context);
         setPreset(initial);
-        setBaseState(applied?.base ?? defaultComposeBase(names));
+        setBaseState(applied?.base ?? defaultComposeBase(names, appRole));
         setHeadState(applied?.head ?? "");
         if (applied?.head) {
           runCompare(applied.base, applied.head);
@@ -215,7 +215,10 @@ export function useCreatePullRequestViewModel(options: {
   const presets = useMemo(
     () =>
       isPullRequestRole(appRole)
-        ? PULL_REQUEST_PRESET_IDS.map((id) => presetFor(id, context))
+        ? PULL_REQUEST_PRESET_IDS
+            // Custom could produce feature -> uat, so a Developer never sees it.
+            .filter((id) => !(appRole === "member" && id === "custom"))
+            .map((id) => presetFor(id, context))
         : [],
     [appRole, context],
   );
@@ -276,7 +279,7 @@ export function useCreatePullRequestViewModel(options: {
     status === "ready" &&
     readiness?.canCreate === true &&
     title.trim().length > 0 &&
-    canCreatePullRequest(appRole, base);
+    canCreatePullRequest(appRole, base, head);
 
   /**
    * Ask GitHub to open the pull request, and keep whatever it says.

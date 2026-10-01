@@ -507,25 +507,31 @@ function MergeControl({
 }>) {
   if (pr.merged || pr.state === "closed") return null;
 
-  const gate = workspaceMergeGate(appRole, pr.baseRef);
-  if (!gate.allowed && gate.reason === "qa-role") return null;
-  if (!gate.allowed && gate.reason === "main-via-qa-studio") {
+  const gate = workspaceMergeGate(appRole, pr.baseRef, pr.headRef);
+  if (gate.allowed) return <MergeButton pr={pr} review={review} />;
+  if (gate.reason === "qa-role") return null;
+  if (gate.reason === "route-restricted") {
     return (
       <p className="ws-hint" role="status">
-        Merges into main go through QA Studio — Ready for production.
-        {canOpenQaStudio(appRole) && onOpenQaStudio ? (
-          <>
-            {" "}
-            <button type="button" className="ws-link" onClick={onOpenQaStudio}>
-              Go to QA Studio
-            </button>
-          </>
-        ) : null}
+        Developers merge feature → dev and dev → uat pull requests. Ask a Team
+        lead to merge this one.
       </p>
     );
   }
 
-  return <MergeButton pr={pr} review={review} />;
+  return (
+    <p className="ws-hint" role="status">
+      Merges into main go through QA Studio — Ready for production.
+      {canOpenQaStudio(appRole) && onOpenQaStudio ? (
+        <>
+          {" "}
+          <button type="button" className="ws-link" onClick={onOpenQaStudio}>
+            Go to QA Studio
+          </button>
+        </>
+      ) : null}
+    </p>
+  );
 }
 
 /**

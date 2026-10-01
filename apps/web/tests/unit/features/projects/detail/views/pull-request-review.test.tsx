@@ -269,12 +269,13 @@ describe("PullRequestsTab, Phase 1 security gates", () => {
     jest.clearAllMocks();
   });
 
-  function detailWithBase(baseRef: string) {
+  function detailWithBase(baseRef: string, headRef: string = pr.headRef) {
     return {
       repoFullName: "o/r",
       pullRequest: {
         ...pr,
         baseRef,
+        headRef,
         mergeable: true,
         mergeableState: "clean",
         headSha: "b7460f77",
@@ -328,6 +329,42 @@ describe("PullRequestsTab, Phase 1 security gates", () => {
     expect(link).toBeUndefined();
   });
 
+  it("hides Merge for a Developer on feature -> uat, with the route note", async () => {
+    mockedDetail.mockResolvedValue(detailWithBase("uat", "feature/x"));
+
+    await render("member");
+
+    const merge = [...host.querySelectorAll("button")].find(
+      (button) => button.textContent === "Merge",
+    );
+    expect(merge).toBeUndefined();
+    expect(host.textContent).toContain(
+      "Developers merge feature → dev and dev → uat pull requests. Ask a Team lead to merge this one.",
+    );
+  });
+
+  it("still offers Merge to a Developer on dev -> uat", async () => {
+    mockedDetail.mockResolvedValue(detailWithBase("uat", "dev"));
+
+    await render("member");
+
+    const merge = [...host.querySelectorAll("button")].find(
+      (button) => button.textContent === "Merge",
+    );
+    expect(merge).toBeDefined();
+  });
+
+  it("still offers Merge to a Team Lead on feature -> uat", async () => {
+    mockedDetail.mockResolvedValue(detailWithBase("uat", "feature/x"));
+
+    await render("lead");
+
+    const merge = [...host.querySelectorAll("button")].find(
+      (button) => button.textContent === "Merge",
+    );
+    expect(merge).toBeDefined();
+  });
+
   it("hides the merge action entirely for QA, on any base", async () => {
     mockedDetail.mockResolvedValue(detailWithBase("dev"));
 
@@ -371,7 +408,11 @@ describe("PullRequestsTab, Phase 1 security gates", () => {
     const baseOptions = [...(baseSelect?.querySelectorAll("option") ?? [])].map(
       (option) => option.value,
     );
-    expect(baseOptions).toEqual(["dev", "feature"]);
+    // A Developer only opens into dev or uat; "feature" is not a base.
+    expect(baseOptions).toEqual(["dev"]);
+    // Custom could produce feature -> uat, so a Developer is not offered it.
+    expect(host.textContent).toContain("Feature → Dev");
+    expect(host.textContent).not.toContain("Custom");
     expect(baseOptions).not.toContain("main");
   });
 });

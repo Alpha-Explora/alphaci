@@ -1,5 +1,6 @@
 import {
   applyPreset,
+  DEVELOPER_ROUTE_MESSAGE,
   canCreatePullRequest,
   defaultPresetId,
   mostRecentOwnBranch,
@@ -8,6 +9,7 @@ import {
   defaultComposeBase,
   describeComparison,
   selectableBaseBranches,
+  selectableHeadBranches,
   suggestTitle,
 } from "../../../../../../src/features/projects/detail/model/pull-request-compose-rules";
 import type { BranchComparisonResponse } from "../../../../../../src/features/projects/detail/data/project-workspace-api";
@@ -171,31 +173,65 @@ describe("defaultComposeBase", () => {
   });
 });
 
-describe("canCreatePullRequest", () => {
-  const ROLES: ReadonlyArray<AppRole> = ["admin", "lead", "member"];
+describe("canCreatePullRequest (role x route)", () => {
+  // [head, base, member, leadOrAdmin]
+  const ROUTES: ReadonlyArray<readonly [string, string, boolean, boolean]> = [
+    ["feature/x", "dev", true, true],
+    ["feature/x", "uat", false, true],
+    ["dev", "uat", true, true],
+    ["uat", "dev", false, true],
+    ["feature/x", "main", false, false],
+    ["dev", "main", false, false],
+    ["uat", "main", false, false],
+  ];
 
-  it("blocks every role from proposing a merge into main here", () => {
-    for (const role of ROLES) {
-      expect(canCreatePullRequest(role, "main")).toBe(false);
-    }
+  it.each(ROUTES)("%s -> %s", (head, base, member, privileged) => {
+    expect(canCreatePullRequest("member", base, head)).toBe(member);
+    expect(canCreatePullRequest("lead", base, head)).toBe(privileged);
+    expect(canCreatePullRequest("admin", base, head)).toBe(privileged);
+    expect(canCreatePullRequest("qa", base, head)).toBe(false);
   });
 
-  it("blocks QA from opening a pull request at all", () => {
-    expect(canCreatePullRequest("qa", "dev")).toBe(false);
-    expect(canCreatePullRequest("qa", "main")).toBe(false);
-  });
-
-  it("allows admin, lead and member into dev or uat", () => {
-    for (const role of ROLES) {
-      for (const base of ["dev", "uat"]) {
-        expect(canCreatePullRequest(role, base)).toBe(true);
-      }
-    }
+  it("refuses a Developer with no head chosen or head equal to base", () => {
+    expect(canCreatePullRequest("member", "dev", "")).toBe(false);
+    expect(canCreatePullRequest("member", "dev", "dev")).toBe(false);
   });
 
   it("denies a session with no known role, even for a non-main base", () => {
-    expect(canCreatePullRequest(undefined, "dev")).toBe(false);
-    expect(canCreatePullRequest(null, "dev")).toBe(false);
+    expect(canCreatePullRequest(undefined, "dev", "feature/x")).toBe(false);
+    expect(canCreatePullRequest(null, "dev", "feature/x")).toBe(false);
+  });
+});
+
+describe("Developer branch pickers", () => {
+  const branches = ["main", "dev", "uat", "feature/a", "fix/b"];
+
+  it("limits a Developer's bases to dev and uat, never main", () => {
+    expect(selectableBaseBranches(branches, "member")).toEqual(["dev", "uat"]);
+    expect(selectableBaseBranches(branches, "lead")).toEqual([
+      "dev",
+      "uat",
+      "feature/a",
+      "fix/b",
+    ]);
+  });
+
+  it("offers a Developer only non-pipeline heads into dev, and dev into uat", () => {
+    expect(selectableHeadBranches(branches, "member", "dev")).toEqual([
+      "feature/a",
+      "fix/b",
+    ]);
+    expect(selectableHeadBranches(branches, "member", "uat")).toEqual(["dev"]);
+    expect(selectableHeadBranches(branches, "member", "main")).toEqual([]);
+  });
+
+  it("leaves leads and admins every head but the base", () => {
+    expect(selectableHeadBranches(branches, "lead", "uat")).toEqual([
+      "main",
+      "dev",
+      "feature/a",
+      "fix/b",
+    ]);
   });
 });
 
@@ -265,5 +301,34 @@ describe("Phase 3 pull request presets", () => {
   it("trusts the server-scoped list for a member, minus the pipeline branches", () => {
     const member = { branches: ["dev", "uat", "fix/typo"], role: "member" as AppRole };
     expect(ownBranches(member)).toEqual(["fix/typo"]);
+  });
+});
+
+describe("Developer presets", () => {
+  const member = {
+    branches: ["dev", "uat", "fix/typo"],
+    role: "member" as AppRole,
+  };
+
+  it("offers Feature -> Dev and Dev -> UAT, and disables Custom with the route sentence", () => {
+    expect(presetFor("feature-to-dev", member).available).toBe(true);
+    expect(presetFor("dev-to-uat", member).available).toBe(true);
+    expect(presetFor("custom", member)).toMatchObject({
+      available: false,
+      reason: DEVELOPER_ROUTE_MESSAGE,
+    });
+    expect(applyPreset("custom", member)).toBeNull();
+  });
+
+  it("defaults to Feature -> Dev with a non-pipeline head", () => {
+    expect(defaultPresetId(member)).toBe("feature-to-dev");
+    expect(applyPreset("feature-to-dev", member)).toEqual({
+      base: "dev",
+      head: "fix/typo",
+    });
+  });
+
+  it("keeps Custom available for a lead", () => {
+    expect(presetFor("custom", { ...member, role: "lead" }).available).toBe(true);
   });
 });

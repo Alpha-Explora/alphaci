@@ -109,8 +109,36 @@ function commits(count: number): string {
  * (PERSONA_WORKFLOW_SPEC.md §5), not this generic composer — for every role,
  * Team Lead and Admin included.
  */
-export function selectableBaseBranches(branches: string[]): string[] {
-  return branches.filter((branch) => branch !== PRODUCTION_BRANCH);
+export function selectableBaseBranches(
+  branches: string[],
+  role?: AppRole | null,
+): string[] {
+  const selectable = branches.filter((branch) => branch !== PRODUCTION_BRANCH);
+  // A Developer only ever opens into dev (from a feature) or uat (from dev).
+  if (role === "member") {
+    return selectable.filter(
+      (branch) => branch === WORKING_BRANCH || branch === QA_BRANCH,
+    );
+  }
+  return selectable;
+}
+
+/**
+ * The branches a viewer may pick as `head` for a given `base`. A Developer
+ * proposes a feature branch into dev, or dev into uat, and nothing else; every
+ * other role may pick any branch but the base itself.
+ */
+export function selectableHeadBranches(
+  branches: readonly string[],
+  role: AppRole | null | undefined,
+  base: string,
+): string[] {
+  if (role !== "member") return branches.filter((name) => name !== base);
+  if (base === WORKING_BRANCH) {
+    return branches.filter((name) => !isPipelineBranch(name));
+  }
+  if (base === QA_BRANCH) return branches.filter((name) => name === WORKING_BRANCH);
+  return [];
 }
 
 /**
@@ -124,8 +152,11 @@ export function selectableBaseBranches(branches: string[]): string[] {
  * `dev` yet; and the first remaining selectable branch is the last resort so
  * the picker is never left on `main` even then.
  */
-export function defaultComposeBase(branches: string[]): string {
-  const selectable = selectableBaseBranches(branches);
+export function defaultComposeBase(
+  branches: string[],
+  role?: AppRole | null,
+): string {
+  const selectable = selectableBaseBranches(branches, role);
   if (selectable.includes(WORKING_BRANCH)) return WORKING_BRANCH;
   if (selectable.includes(QA_BRANCH)) return QA_BRANCH;
   return selectable[0] ?? "";
@@ -143,20 +174,40 @@ export function isPullRequestRole(role: AppRole | null | undefined): boolean {
 }
 
 /**
- * Whether opening a pull request into `base` should be offered at all,
- * mirroring the backend's two 403 codes for `POST .../pull-requests`
- * (PERSONA_WORKFLOW_SPEC.md §5, §8.1): `MAIN_PR_RESTRICTED` blocks every
- * role from proposing a merge into `main` here, and `PR_ROLE_FORBIDDEN`
- * blocks QA from opening a pull request at all — Developer is the primary
- * role for this screen, and Team Lead may use it too.
+ * The route rule, mirroring the backend's `PR_ROUTE_RESTRICTED` (and
+ * `MAIN_PR_RESTRICTED` for `main`):
+ *
+ *   - lead, admin: any head into any base except `main`.
+ *   - member (Developer): a non-pipeline (feature) branch into `dev`, or `dev`
+ *     into `uat`. Never a feature into `uat`, never into `main`.
+ *   - qa and anything unknown: nothing.
  */
-export function canCreatePullRequest(
+export function isPullRequestRouteAllowed(
   role: AppRole | null | undefined,
+  head: string,
   base: string,
 ): boolean {
   if (!isPullRequestRole(role)) return false;
   if (base === PRODUCTION_BRANCH) return false;
-  return true;
+  if (role !== "member") return true;
+  if (head === "" || head === base) return false;
+  if (base === WORKING_BRANCH) return !isPipelineBranch(head);
+  return base === QA_BRANCH && head === WORKING_BRANCH;
+}
+
+/**
+ * Whether opening a pull request from `head` into `base` should be offered,
+ * mirroring the backend's 403 codes for `POST .../pull-requests`
+ * (PERSONA_WORKFLOW_SPEC.md §5, §8.1): `MAIN_PR_RESTRICTED` for `main`,
+ * `PR_ROLE_FORBIDDEN` for QA, and `PR_ROUTE_RESTRICTED` for a Developer's
+ * disallowed route.
+ */
+export function canCreatePullRequest(
+  role: AppRole | null | undefined,
+  base: string,
+  head: string,
+): boolean {
+  return isPullRequestRouteAllowed(role, head, base);
 }
 
 /**
@@ -186,6 +237,10 @@ export const PULL_REQUEST_PRESET_IDS: readonly PullRequestPresetId[] = [
   "dev-to-uat",
   "custom",
 ];
+
+/** Shared with the backend's `PR_ROUTE_RESTRICTED` sentence. */
+export const DEVELOPER_ROUTE_MESSAGE =
+  "Developers open pull requests from a feature branch into dev, and from dev into uat.";
 
 const PRESET_LABELS: Record<PullRequestPresetId, string> = {
   "feature-to-dev": "Feature → Dev",
@@ -223,6 +278,8 @@ export function presetFor(
 
   if (!isPullRequestRole(context.role)) {
     reason = "Your role does not open pull requests.";
+  } else if (id === "custom" && context.role === "member") {
+    reason = DEVELOPER_ROUTE_MESSAGE;
   } else if (id === "feature-to-dev" && !has(WORKING_BRANCH)) {
     reason = `There is no ${WORKING_BRANCH} branch to merge into.`;
   } else if (id === "dev-to-uat") {
