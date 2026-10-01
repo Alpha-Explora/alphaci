@@ -146,7 +146,22 @@ describe("useRequirementDialogViewModel", () => {
     expect(vm.current().validationError).toBe("Give the Feature a name.");
     expect(repo.create).not.toHaveBeenCalled();
 
-    act(() => vm.current().updateDraft({ name: "Wallet", stories: "Save a card\nPay with it" }));
+    // The rows the dialog builds: type, add a row, type, add a blank one.
+    act(() => vm.current().updateDraft({ name: "Wallet" }));
+    act(() => vm.current().editStory(0, "Save a card"));
+    act(() => vm.current().addStory(0));
+    act(() => vm.current().editStory(1, "Pay with it"));
+    act(() => vm.current().addStory());
+    expect(vm.current().draft.stories).toEqual(["Save a card", "Pay with it", ""]);
+    // A multi-line paste is split into rows, and the input does not take it.
+    let handled = false;
+    act(() => {
+      handled = vm.current().pasteStories(2, "Remove a card\nRename a card");
+    });
+    expect(handled).toBe(true);
+    act(() => vm.current().removeStory(3));
+    expect(vm.current().draft.stories).toEqual(["Save a card", "Pay with it", "Remove a card"]);
+    act(() => vm.current().removeStory(2));
     await act(async () => vm.current().submit());
     expect(repo.create).toHaveBeenCalledWith("dp-1", {
       kind: "functional",

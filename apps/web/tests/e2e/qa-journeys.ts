@@ -2141,7 +2141,10 @@ async function leadWritesProjectRequirements({ page, backend, baseUrl }: Journey
   await features.getByRole('button', { name: 'Add the first Feature' }).click();
   const dialog = page.getByRole('dialog', { name: 'New Feature' });
   await dialog.getByPlaceholder('Checkout with saved cards').fill(FEATURE.name);
-  await dialog.getByLabel('User stories (optional, one per line)').fill(FEATURE.stories.join('\n'));
+  // One input per story: type, Enter for the next row, type.
+  await dialog.getByLabel('User story 1').fill(FEATURE.stories[0]);
+  await dialog.getByLabel('User story 1').press('Enter');
+  await dialog.getByLabel('User story 2').fill(FEATURE.stories[1]);
   await dialog.getByRole('button', { name: 'Create feature' }).click();
   await absent(dialog, 'the New Feature dialog');
   const create = onlyCall(backend.callsTo('POST', new RegExp(`^/delivery-projects/${STOREFRONT_FOLDER}/requirements$`)), 'requirement create');

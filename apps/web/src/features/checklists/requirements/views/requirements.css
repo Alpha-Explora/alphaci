@@ -517,6 +517,89 @@
   color: var(--text-muted);
 }
 
+/* ── First stories / items: a numbered list, one input per row ─────────────
+   The dialog renders outside the section, so it carries the section's tone. */
+.rq-story-rows {
+  --rq-tone: var(--brand);
+  --rq-tone-fill: var(--brand-light);
+  --rq-tone-edge: var(--border-brand);
+
+  min-width: 0;
+  margin-inline: 0;
+  padding: 0;
+  border: 0;
+}
+
+.rq-story-rows[data-kind="system"] {
+  --rq-tone: var(--accent-teal);
+  --rq-tone-fill: var(--accent-teal-light);
+  --rq-tone-edge: var(--border-teal);
+}
+
+.rq-story-rows > legend {
+  margin-bottom: 0.35rem;
+  padding: 0;
+}
+
+.rq-story-rows__list {
+  display: grid;
+  gap: 0.4rem;
+  margin: 0 0 0.5rem;
+  padding: 0;
+  list-style: none;
+}
+
+.rq-story-row {
+  display: grid;
+  grid-template-columns: 1.6rem minmax(0, 1fr) 2rem;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.rq-story-row__number {
+  display: inline-grid;
+  place-items: center;
+  width: 1.6rem;
+  height: 1.6rem;
+  border-radius: 50%;
+  background: var(--rq-tone-fill);
+  color: var(--rq-tone);
+  font-size: 0.72rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.rq-story-row__input {
+  width: 100%;
+}
+
+.rq-story-row__remove {
+  display: inline-grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  border: 1px solid transparent;
+  border-radius: 0.5rem;
+  background: none;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.rq-story-row__remove:hover:not(:disabled) {
+  border-color: var(--border);
+  color: var(--danger);
+}
+
+.rq-story-row__remove:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 1px;
+}
+
+.rq-story-row__remove:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .rq-tab,
   .rq-item,

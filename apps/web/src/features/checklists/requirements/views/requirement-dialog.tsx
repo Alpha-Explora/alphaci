@@ -1,5 +1,7 @@
 "use client";
 
+import { useEffect, useRef, type ClipboardEvent, type KeyboardEvent } from "react";
+
 import { FormDialog } from "@/features/groups/workspace";
 
 import { kindCopy, REQUIREMENT_NAME_MAX } from "../../model/requirement-rules";
@@ -8,17 +10,18 @@ import type {
   RequirementDialogMode,
   RequirementDialogViewModel,
 } from "../view-models/use-requirement-dialog-view-model";
+import { PlusIcon, RemoveIcon } from "./requirement-icons";
 
-const PLACEHOLDERS: Record<RequirementKind, { name: string; description: string; items: string }> = {
+const PLACEHOLDERS: Record<RequirementKind, { name: string; description: string; items: readonly string[] }> = {
   functional: {
     name: "Checkout with saved cards",
     description: "Why this matters, and for whom",
-    items: "As a shopper, I can save a card\nAs a shopper, I can pay with a saved card",
+    items: ["As a shopper, I can save a card", "As a shopper, I can pay with a saved card"],
   },
   system: {
     name: "Security baseline",
     description: "What this requirement protects",
-    items: "Secrets are never logged\nEvery endpoint requires a session",
+    items: ["Secrets are never logged", "Every endpoint requires a session"],
   },
 };
 
@@ -38,25 +41,97 @@ function dialogCopy(mode: RequirementDialogMode) {
   };
 }
 
+/**
+ * The first stories (or items) as a list, one input per row. Enter adds the
+ * next row, Backspace on an empty row removes it, and pasting several lines
+ * adds one row per line.
+ */
 function FirstItemsField({
   vm,
   kind,
-  label,
   saving,
-}: Readonly<{ vm: RequirementDialogViewModel; kind: RequirementKind; label: string; saving: boolean }>) {
+}: Readonly<{ vm: RequirementDialogViewModel; kind: RequirementKind; saving: boolean }>) {
+  const copy = kindCopy(kind);
+  const rows = vm.draft.stories;
+  const inputs = useRef<Array<HTMLInputElement | null>>([]);
+  /* Which row to focus once the next render has it (after add or remove). */
+  const pendingFocus = useRef<number | null>(null);
+
+  useEffect(() => {
+    const at = pendingFocus.current;
+    if (at === null) return;
+    pendingFocus.current = null;
+    inputs.current[at]?.focus();
+  });
+
+  function addAfter(index: number) {
+    pendingFocus.current = index + 1;
+    vm.addStory(index);
+  }
+
+  function remove(index: number) {
+    pendingFocus.current = Math.max(0, Math.min(index, rows.length - 2));
+    vm.removeStory(index);
+  }
+
+  function onKeyDown(event: KeyboardEvent<HTMLInputElement>, index: number) {
+    if (event.key === "Enter") {
+      // The dialog is a form: Enter here means "next row", not "create".
+      event.preventDefault();
+      addAfter(index);
+    } else if (event.key === "Backspace" && rows[index] === "" && rows.length > 1) {
+      event.preventDefault();
+      pendingFocus.current = Math.max(0, index - 1);
+      vm.removeStory(index);
+    }
+  }
+
+  function onPaste(event: ClipboardEvent<HTMLInputElement>, index: number) {
+    if (vm.pasteStories(index, event.clipboardData.getData("text"))) event.preventDefault();
+  }
+
   return (
-    <label className="hier-field">
-      <span className="hier-field-label">{label} (optional, one per line)</span>
-      <textarea
-        className="hier-textarea"
-        rows={4}
-        value={vm.draft.stories}
-        disabled={saving}
-        placeholder={PLACEHOLDERS[kind].items}
-        onChange={(event) => vm.updateDraft({ stories: event.target.value })}
-      />
-      <span className="rq-field-hint">Acceptance criteria can be added to each one afterwards.</span>
-    </label>
+    <fieldset className="hier-field rq-story-rows" data-kind={kind} disabled={saving}>
+      <legend className="hier-field-label">{copy.items} (optional)</legend>
+      <ol className="rq-story-rows__list">
+        {rows.map((row, index) => (
+          // Rows are plain strings; the index is their identity while the dialog is open.
+          <li className="rq-story-row" key={index}>
+            <span className="rq-story-row__number" aria-hidden="true">
+              {index + 1}
+            </span>
+            <input
+              ref={(element) => {
+                inputs.current[index] = element;
+              }}
+              className="hier-input rq-story-row__input"
+              aria-label={`${copy.item} ${index + 1}`}
+              value={row}
+              placeholder={PLACEHOLDERS[kind].items[index] ?? ""}
+              onChange={(event) => vm.editStory(index, event.target.value)}
+              onKeyDown={(event) => onKeyDown(event, index)}
+              onPaste={(event) => onPaste(event, index)}
+            />
+            <button
+              type="button"
+              className="rq-story-row__remove"
+              aria-label={`Remove ${copy.item.toLowerCase()} ${index + 1}`}
+              disabled={rows.length === 1 && row === ""}
+              onClick={() => remove(index)}
+            >
+              <RemoveIcon />
+            </button>
+          </li>
+        ))}
+      </ol>
+      <button type="button" className="rq-add" onClick={() => addAfter(rows.length - 1)}>
+        <PlusIcon /> {copy.addItem}
+      </button>
+      <span className="rq-field-hint">
+        Enter adds the next one; pasting a list adds a row per line. Acceptance criteria can be added to each
+        one afterwards.
+      </span>
+    </fieldset>
   );
 }
 
@@ -98,7 +173,7 @@ export function RequirementDialog({ vm }: Readonly<{ vm: RequirementDialogViewMo
           onChange={(event) => vm.updateDraft({ description: event.target.value })}
         />
       </label>
-      {view.creating ? <FirstItemsField vm={vm} kind={view.kind} label={view.copy.items} saving={saving} /> : null}
+      {view.creating ? <FirstItemsField vm={vm} kind={view.kind} saving={saving} /> : null}
       {vm.validationError ? (
         <p className="rq-form-error" role="alert">
           {vm.validationError}
