@@ -22,7 +22,7 @@ export async function getWorkspaces(): Promise<WorkspacesMeResponse> {
 
 /**
  * Every team the caller can see, as id + name. For a platform admin that is
- * all of them — the header subtracts their own teams to get "Other teams".
+ * all of them — the header subtracts their own teams to get the admin's other teams.
  */
 export async function getVisibleTeams(): Promise<Array<{ id: string; name: string }>> {
   const groups = await getGroups();

@@ -27,7 +27,7 @@ export interface AppNavViewModel {
 /** Route state and shell data for the navigation view. */
 export function useAppNavViewModel(options: {
   guest: boolean;
-  /** The same signal that shows Admin: adds "Other teams (admin)" to the picker. */
+  /** The same signal that shows Admin: adds the other teams to the picker. */
   isPlatformAdmin?: boolean;
   /** The session's global role and platform role: who may open /activity. */
   appRole?: WorkspaceAppRole | null;

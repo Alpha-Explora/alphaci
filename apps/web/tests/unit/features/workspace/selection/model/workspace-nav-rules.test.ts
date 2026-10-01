@@ -1,5 +1,4 @@
 import {
-  OTHER_TEAMS_HEADING,
   canOpenTeamActivity,
   adminOtherTeams,
   selectableWorkspaces,
@@ -56,10 +55,6 @@ describe("selectableWorkspaces", () => {
     const count = selectableWorkspaces(workspaces, others).length;
     expect(workspaceSwitcherKind("ready", workspaces, count, true)).toBe("picker");
     expect(workspaceSwitcherKind("ready", workspaces, 0, false)).toBe("no-team");
-  });
-
-  it("files them under the admin heading", () => {
-    expect(OTHER_TEAMS_HEADING).toBe("Other teams (admin)");
   });
 });
 

@@ -189,8 +189,9 @@ from a feature.
 ```
 
 The team pages all show the team selected in the header's workspace picker
-(the only team selector; a platform admin also sees non-member teams there
-under "Other teams (admin)"): `/workflows` its Project cards, `/teams` its
+(the only team selector; one list under "Your teams", sorted by name, where a
+platform admin's non-member teams are merged in; a "+" Create team button sits
+at the right end of that heading for Team leads and Admins): `/workflows` its Project cards, `/teams` its
 members, `/checklists` its QA checklist templates, `/activity` its activity &
 audit feed, and `/settings?tab=team` its own settings. `/teams` forwards old
 `?section=` links to those pages (`legacyTeamsRedirect` in

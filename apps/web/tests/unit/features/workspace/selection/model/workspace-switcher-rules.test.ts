@@ -3,6 +3,7 @@ import {
   flattenSwitcherOptions,
   nextSwitcherIndex,
   openingSwitcherIndex,
+  panelTabAction,
   switcherOptionGroups,
   switcherPanelShift,
 } from "../../../../../../src/features/workspace/selection/model/workspace-switcher-rules";
@@ -13,18 +14,42 @@ const MINE = [team("t-1", "Team Blaine"), team("t-2", "Platform")];
 const OTHERS = [team("t-5", "Johns Kitchen"), team("t-9", "Zeta")];
 
 describe("switcherOptionGroups", () => {
-  it("is one flat, unheaded list when there are no other teams", () => {
-    expect(switcherOptionGroups(MINE, [])).toEqual([{ key: "own", label: null, options: MINE }]);
+  it("is one list under 'Your teams' when there are no other teams", () => {
+    expect(switcherOptionGroups(MINE, [])).toEqual([
+      { key: "own", label: OWN_TEAMS_HEADING, options: [MINE[1], MINE[0]] },
+    ]);
   });
 
-  it("heads an admin's own teams, then their other teams", () => {
+  it("merges an admin's other teams into the same single list, sorted by name", () => {
     const groups = switcherOptionGroups(MINE, OTHERS);
-    expect(groups.map((group) => group.label)).toEqual([OWN_TEAMS_HEADING, "Other teams (admin)"]);
-    expect(groups[1].options).toBe(OTHERS);
+    expect(groups).toHaveLength(1);
+    expect(groups[0].label).toBe("Your teams");
+    expect(groups[0].options.map((option) => option.name)).toEqual([
+      "Johns Kitchen",
+      "Platform",
+      "Team Blaine",
+      "Zeta",
+    ]);
   });
 
-  it("drops the empty own group for an admin in no team", () => {
-    expect(switcherOptionGroups([], OTHERS).map((group) => group.key)).toEqual(["other"]);
+  it("sorts case-insensitively and breaks name ties by id", () => {
+    const names = switcherOptionGroups(
+      [team("b", "alpha"), team("a", "Alpha"), team("c", "beta")],
+      [],
+    )[0].options.map((option) => option.id);
+    expect(names).toEqual(["a", "b", "c"]);
+  });
+
+  it("lists an admin in no team just the other teams, still under 'Your teams'", () => {
+    const groups = switcherOptionGroups([], OTHERS);
+    expect(groups.map((group) => group.label)).toEqual([OWN_TEAMS_HEADING]);
+    expect(groups[0].options).toEqual(OTHERS);
+  });
+
+  it("does not mutate its inputs", () => {
+    const own = [...MINE];
+    switcherOptionGroups(own, OTHERS);
+    expect(own).toEqual(MINE);
   });
 
   it("is empty with nothing to list", () => {
@@ -33,12 +58,12 @@ describe("switcherOptionGroups", () => {
 });
 
 describe("flattenSwitcherOptions", () => {
-  /* Group headings are not options, so the arrow keys never land on one. */
-  it("is every option in display order, headings left out", () => {
+  /* The heading is not an option, so the arrow keys never land on it. */
+  it("is every option in display (name) order", () => {
     expect(flattenSwitcherOptions(switcherOptionGroups(MINE, OTHERS)).map((option) => option.id)).toEqual([
-      "t-1",
-      "t-2",
       "t-5",
+      "t-2",
+      "t-1",
       "t-9",
     ]);
   });
@@ -48,7 +73,7 @@ describe("openingSwitcherIndex", () => {
   const options = flattenSwitcherOptions(switcherOptionGroups(MINE, OTHERS));
 
   it("opens on the current team", () => {
-    expect(openingSwitcherIndex(options, "t-5")).toBe(2);
+    expect(openingSwitcherIndex(options, "t-1")).toBe(2);
   });
 
   it("opens on the first team when the current one is not listed", () => {
@@ -79,6 +104,22 @@ describe("nextSwitcherIndex", () => {
     expect(nextSwitcherIndex("a", 1, 3)).toBeNull();
     expect(nextSwitcherIndex("Enter", 1, 3)).toBeNull();
     expect(nextSwitcherIndex("ArrowDown", 0, 0)).toBeNull();
+  });
+});
+
+describe("panelTabAction", () => {
+  it("hops from the list to the + button, then leaves", () => {
+    expect(panelTabAction(false, false, true)).toBe("to-create");
+    expect(panelTabAction(false, true, true)).toBe("close");
+  });
+
+  it("goes back from the + button to the list with Shift+Tab", () => {
+    expect(panelTabAction(true, true, true)).toBe("to-list");
+  });
+
+  it("just leaves when there is no + button, or Shift+Tab from the list", () => {
+    expect(panelTabAction(false, false, false)).toBe("close");
+    expect(panelTabAction(true, false, true)).toBe("close");
   });
 });
 
