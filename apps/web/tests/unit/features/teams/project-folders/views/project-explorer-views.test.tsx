@@ -7,7 +7,7 @@ import {
   type ProjectExplorerActions,
 } from "../../../../../../src/features/teams/project-folders/views/project-explorer";
 import { normaliseProjectFolders } from "../../../../../../src/features/teams/project-folders/model/project-folder-rules";
-import { apiError, folderChecklist, foldersSnapshot, foldersWire, GROUP_ID } from "../folder-fixtures";
+import { apiError, foldersSnapshot, foldersWire, GROUP_ID } from "../folder-fixtures";
 
 jest.mock("../../../../../../src/features/teams/project-folders/data/project-folders-repository", () => ({
   projectFoldersRepository: {
@@ -15,10 +15,17 @@ jest.mock("../../../../../../src/features/teams/project-folders/data/project-fol
     create: jest.fn(),
     moveRepository: jest.fn(),
     archive: jest.fn(),
-    listChecklists: jest.fn(),
-    updateChecklistShares: jest.fn(),
+    requirementCounts: jest.fn(),
     deleteProject: jest.fn(),
   },
+}));
+
+/* The Project QA workspace owns its own view-models (tested in the checklists
+ * domain); here it only has to be mounted with the right Project and role. */
+jest.mock("../../../../../../src/features/checklists/requirements", () => ({
+  ProjectQaWorkspace: ({ deliveryProjectId, appRole }: { deliveryProjectId: string; appRole: string | null }) => (
+    <div data-testid="qa-workspace" data-project={deliveryProjectId} data-role={appRole ?? ""} />
+  ),
 }));
 
 const mockSession = { appRole: "lead" as string };
@@ -111,20 +118,21 @@ function addToCard(container: HTMLElement, folderName: string): HTMLAnchorElemen
 }
 
 describe("ProjectExplorer", () => {
-  it("lists Project cards with repository and checklist counts, then the unfiled group", async () => {
+  it("lists Project cards with repository and requirement counts, then the unfiled group", async () => {
     repo.list.mockResolvedValue(foldersSnapshot());
-    repo.listChecklists.mockResolvedValue([folderChecklist()]);
+    repo.requirementCounts.mockResolvedValue({ "dp-1": 1 });
     const container = await renderExplorer();
     expect(lastCount).toBe(2);
     const cards = container.querySelectorAll("li.pf-card");
     expect(cards).toHaveLength(2);
     expect(cards[0].textContent).toContain("testfinals");
     expect(cards[0].textContent).toContain("2 repositories");
-    expect(cards[0].textContent).toContain("1 checklist");
+    expect(cards[0].textContent).toContain("1 requirement");
     // No BACKEND/FRONTEND chips on a card: the card is the Project.
     expect(cards[0].querySelector(".pf-chip, .pf-chips")).toBeNull();
     expect(cards[0].textContent).not.toMatch(/Frontend|Backend/);
     expect(cards[1].textContent).toContain("0 repositories");
+    expect(cards[1].textContent).toContain("No requirements");
     expect(container.querySelector(".pf-unfiled")?.textContent).toContain("blaine");
     // The create actions moved to the page heading; the explorer draws none.
     expect(container.querySelector(".group-section-head")).toBeNull();
@@ -139,26 +147,26 @@ describe("ProjectExplorer", () => {
 
   it("opens the Empty project dialog from the heading's action", async () => {
     repo.list.mockResolvedValue(foldersSnapshot());
-    repo.listChecklists.mockResolvedValue([]);
+    repo.requirementCounts.mockResolvedValue({});
     const container = await renderExplorer();
     expect(container.querySelector('[role="dialog"]')).toBeNull();
     await act(async () => lastActions!.createEmptyProject!());
     expect(container.querySelector('[role="dialog"]')?.textContent).toContain("New Project");
   });
 
-  it("hides lead actions and checklist counts from a Developer without the capability", async () => {
+  it("hides lead actions, requirement counts and QA from a Developer without the capability", async () => {
     mockSession.appRole = "member";
     repo.list.mockResolvedValue(foldersSnapshot({ canManage: false }));
     const container = await renderExplorer(false);
     expect(lastActions).toEqual({ createEmptyProject: null, addRepositoryHref: null });
     expect(button(container, "New Project")).toBeUndefined();
-    expect(container.textContent).not.toContain("checklist");
-    expect(repo.listChecklists).not.toHaveBeenCalled();
+    expect(container.textContent).not.toContain("requirement");
+    expect(repo.requirementCounts).not.toHaveBeenCalled();
 
     await act(async () => manage(container, "testfinals")!.click());
     expect(container.textContent).not.toContain("Verify in QA Studio");
     expect(button(container, "Move")).toBeUndefined();
-    expect(container.textContent).not.toContain("Checklists");
+    expect(container.querySelector('[data-testid="qa-workspace"]')).toBeNull();
     expect(container.textContent).not.toContain("Danger zone");
   });
 
@@ -199,7 +207,7 @@ describe("ProjectExplorer", () => {
   it("gives an admin both: Create project, the unfiled Add repository, and per-Project Add repository", async () => {
     mockSession.appRole = "admin";
     repo.list.mockResolvedValue(foldersSnapshot());
-    repo.listChecklists.mockResolvedValue([]);
+    repo.requirementCounts.mockResolvedValue({});
     const container = await renderExplorer();
     expect(lastActions?.createEmptyProject).toEqual(expect.any(Function));
     expect(lastActions?.addRepositoryHref).toBe("/workflows?tab=setup&group=ws-1");
@@ -209,7 +217,7 @@ describe("ProjectExplorer", () => {
   it("gives QA Team neither Create project nor Add repository", async () => {
     mockSession.appRole = "qa";
     repo.list.mockResolvedValue(foldersSnapshot({ canManage: false }));
-    repo.listChecklists.mockResolvedValue([]);
+    repo.requirementCounts.mockResolvedValue({});
     const container = await renderExplorer();
     expect(lastActions).toEqual({ createEmptyProject: null, addRepositoryHref: null });
     expect(container.querySelector("a.pf-card__add")).toBeNull();
@@ -225,7 +233,7 @@ describe("ProjectExplorer", () => {
   ] as const)("words the empty list for %s", async (role, line, offersCreate) => {
     mockSession.appRole = role;
     repo.list.mockResolvedValue(foldersSnapshot({ folders: [], unfiled: [], canManage: role === "lead" }));
-    repo.listChecklists.mockResolvedValue([]);
+    repo.requirementCounts.mockResolvedValue({});
     const container = await renderExplorer();
     const text = container.querySelector(".hier-state-text")?.textContent ?? "";
     expect(text).toContain("A Project groups the repositories that ship together");
@@ -236,7 +244,7 @@ describe("ProjectExplorer", () => {
 
   it("opens the New Project dialog on arrival for a Product owner, never for a Developer", async () => {
     repo.list.mockResolvedValue(foldersSnapshot());
-    repo.listChecklists.mockResolvedValue([]);
+    repo.requirementCounts.mockResolvedValue({});
     let container = await renderExplorer(true, null, true);
     expect(container.querySelector('[role="dialog"]')?.textContent).toContain("New Project");
     act(() => root?.unmount());
@@ -250,7 +258,7 @@ describe("ProjectExplorer", () => {
 
   it("shows loading, then the error state with a retry", async () => {
     repo.list.mockRejectedValueOnce(apiError(404)).mockResolvedValueOnce(foldersSnapshot());
-    repo.listChecklists.mockResolvedValue([]);
+    repo.requirementCounts.mockResolvedValue({});
     const container = await renderExplorer();
     expect(container.textContent).toContain("Projects did not load");
     expect(container.textContent).toContain("This team's Projects are not available.");
@@ -261,20 +269,16 @@ describe("ProjectExplorer", () => {
 
   it("shows an empty state that lets a lead create the first Project", async () => {
     repo.list.mockResolvedValue(foldersSnapshot({ folders: [], unfiled: [] }));
-    repo.listChecklists.mockResolvedValue([]);
+    repo.requirementCounts.mockResolvedValue({});
     const container = await renderExplorer();
     expect(container.textContent).toContain("No Projects yet");
     await act(async () => button(container, "Create the first Project")!.click());
     expect(container.querySelector('[role="dialog"]')?.textContent).toContain("New Project");
   });
 
-  it("opens a Project: QA Studio, create-in-Project, move and checklists", async () => {
+  it("opens a Project: QA Studio, create-in-Project, move, and its requirements and QA", async () => {
     repo.list.mockResolvedValue(foldersSnapshot());
-    repo.listChecklists.mockResolvedValue([
-      folderChecklist(),
-      folderChecklist({ id: "cl-2", name: "Accessibility pass", sharedProjectIds: [] }),
-    ]);
-    repo.updateChecklistShares.mockResolvedValue(folderChecklist({ id: "cl-2", name: "Accessibility pass" }));
+    repo.requirementCounts.mockResolvedValue({ "dp-1": 2 });
     const container = await renderExplorer();
     await act(async () => manage(container, "testfinals")!.click());
 
@@ -282,18 +286,12 @@ describe("ProjectExplorer", () => {
     expect(link(container, "Verify in QA Studio")?.getAttribute("href")).toBe("/projects/proj-fe#qa");
     // A Product owner fills nothing: Developers add the repositories.
     expect(link(container, "Add repository")).toBeUndefined();
-    expect(container.querySelector(".pf-checklists")?.textContent).toContain("Release smoke test");
-    expect(container.querySelector(".pf-checklists")?.textContent).toContain("All repositories");
-
-    const select = container.querySelector<HTMLSelectElement>(".pf-attach select")!;
-    await act(async () => {
-      select.value = "cl-2";
-      select.dispatchEvent(new Event("change", { bubbles: true }));
-    });
-    await act(async () => button(container, "Attach to this Project")!.click());
-    await settle();
-    expect(repo.updateChecklistShares).toHaveBeenCalledWith("cl-2", { add: ["proj-fe", "proj-be"] });
-    expect(container.querySelector(".pf-checklists")?.textContent).toContain("Accessibility pass");
+    // The Project's requirements and QA run, for this Project and this role.
+    const workspace = container.querySelector('[data-testid="qa-workspace"]');
+    expect(workspace?.getAttribute("data-project")).toBe("dp-1");
+    expect(workspace?.getAttribute("data-role")).toBe("lead");
+    expect(container.textContent).toContain("Requirements and QA");
+    expect(container.querySelector(".pf-attach")).toBeNull();
 
     const moves = [...container.querySelectorAll("button")].filter((el) => el.textContent === "Move");
     expect(moves).toHaveLength(2);
@@ -309,17 +307,18 @@ describe("ProjectExplorer", () => {
 
   it("offers create-in-Project on an empty Project", async () => {
     repo.list.mockResolvedValue(foldersSnapshot());
-    repo.listChecklists.mockResolvedValue([]);
+    repo.requirementCounts.mockResolvedValue({});
     const container = await renderExplorer();
     await act(async () => button(container, "wallet")!.click());
     expect(container.querySelector(".pf-empty-folder")?.textContent).toContain("No repositories in this Project yet.");
-    expect(container.textContent).toContain("Add a repository first.");
+    // Requirements belong to the Project, so they can be written before any repository exists.
+    expect(container.querySelector('[data-testid="qa-workspace"]')?.getAttribute("data-project")).toBe("dp-2");
     expect(button(container, "Move")).toBeUndefined();
   });
 
   it("deletes a Project from the danger zone and returns to the list with a notice", async () => {
     repo.list.mockResolvedValue(foldersSnapshot());
-    repo.listChecklists.mockResolvedValue([]);
+    repo.requirementCounts.mockResolvedValue({});
     repo.deleteProject.mockResolvedValue({
       deliveryProjectId: "dp-1",
       name: "testfinals",
@@ -365,7 +364,7 @@ describe("ProjectExplorer", () => {
 
   it("opens a Project on its frontend's page, with Manage beside the card for the detail", async () => {
     repo.list.mockResolvedValue(foldersSnapshot());
-    repo.listChecklists.mockResolvedValue([]);
+    repo.requirementCounts.mockResolvedValue({});
     const container = await renderExplorer();
     const [testfinals, wallet] = [...container.querySelectorAll("li.pf-card")];
 
@@ -393,14 +392,14 @@ describe("ProjectExplorer", () => {
     const [frontend, backend] = wire.folders[0].repositories;
     wire.folders[0].repositories = [{ ...frontend, project: null }, backend];
     repo.list.mockResolvedValue(normaliseProjectFolders(wire, GROUP_ID));
-    repo.listChecklists.mockResolvedValue([]);
+    repo.requirementCounts.mockResolvedValue({});
     const container = await renderExplorer();
     expect(container.querySelector("a.pf-card__open")?.getAttribute("href")).toBe("/projects/proj-be");
   });
 
   it("opens the deep-linked Project's detail on arrival", async () => {
     repo.list.mockResolvedValue(foldersSnapshot());
-    repo.listChecklists.mockResolvedValue([]);
+    repo.requirementCounts.mockResolvedValue({});
     const container = await renderExplorer(true, "dp-1");
     expect(container.querySelector(".pf-detail__title")?.textContent).toBe("testfinals");
     await act(async () => button(container, "All Projects")!.click());
@@ -409,7 +408,7 @@ describe("ProjectExplorer", () => {
 
   it("shows the list when the deep-linked Project is not in this team", async () => {
     repo.list.mockResolvedValue(foldersSnapshot());
-    repo.listChecklists.mockResolvedValue([]);
+    repo.requirementCounts.mockResolvedValue({});
     const container = await renderExplorer(true, "dp-elsewhere");
     expect(container.querySelector(".pf-detail__title")).toBeNull();
     expect(container.querySelectorAll("li.pf-card")).toHaveLength(2);

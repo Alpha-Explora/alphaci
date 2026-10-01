@@ -20,6 +20,8 @@ import {
   SectionHeader,
 } from "@/features/groups/workspace";
 
+import { ProjectQaWorkspace } from "@/features/checklists/requirements";
+
 import { useDeliveryProjectViewModel } from "../view-models/use-delivery-project-view-model";
 import { groupDisplayName } from "../../model/groups-rules";
 
@@ -153,6 +155,13 @@ function DeliveryProjectDetail({
         createButton={createButton}
         onRetry={vm.reloadRepositories}
       />
+
+      {vm.qaEnabled ? (
+        <>
+          <SectionHeader title="Requirements and QA" />
+          <ProjectQaWorkspace deliveryProjectId={project.id} projectName={project.name} appRole={vm.appRole} />
+        </>
+      ) : null}
 
       {vm.canCreateRepository ? (
         <CreateRepositoryDialog

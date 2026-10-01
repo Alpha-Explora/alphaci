@@ -91,3 +91,26 @@
   align-items: center;
 }
 
+
+.qa-project-pointer {
+  display: grid;
+  justify-items: start;
+  gap: 0.6rem;
+  padding: 0.85rem 1rem;
+  border: 1px solid var(--border-brand);
+  border-left: 3px solid var(--brand);
+  border-radius: 0.8rem;
+  background: var(--brand-light);
+}
+
+.qa-project-pointer p {
+  margin: 0;
+  max-width: 68ch;
+  font-size: 0.84rem;
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+
+.qa-project-pointer strong {
+  color: var(--text-primary);
+}

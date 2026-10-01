@@ -46,6 +46,10 @@ async function render(node: React.ReactNode): Promise<HTMLElement> {
   return container;
 }
 
+function linkNamed(container: HTMLElement, name: string): HTMLAnchorElement | undefined {
+  return [...container.querySelectorAll("a")].find((link) => link.textContent?.includes(name));
+}
+
 function buttonNamed(container: HTMLElement, name: string): HTMLButtonElement | undefined {
   return [...container.querySelectorAll("button")].find((button) =>
     button.textContent?.includes(name),
@@ -53,13 +57,14 @@ function buttonNamed(container: HTMLElement, name: string): HTMLButtonElement | 
 }
 
 describe("WorkspaceChecklistsSection", () => {
-  it("gives a lead New checklist, and Edit / Share / Archive on a checklist", async () => {
+  it("points a lead to the Projects for new requirements, and keeps Edit / Share / Archive on an older checklist", async () => {
     repo.listForWorkspace.mockResolvedValue({ items: [checklist()], canManage: true });
     const container = await render(
       <WorkspaceChecklistsSection workspaceId="ws-1" projects={PROJECTS} />,
     );
     expect(container.textContent).toContain("Release smoke test");
-    expect(buttonNamed(container, "New checklist")).toBeDefined();
+    expect(buttonNamed(container, "New checklist")).toBeUndefined();
+    expect(linkNamed(container, "Add requirements in a Project")?.getAttribute("href")).toBe("/workflows?group=ws-1");
 
     await act(async () => buttonNamed(container, "Release smoke test")!.click());
     expect(buttonNamed(container, "Edit checklist")).toBeDefined();
@@ -89,12 +94,42 @@ describe("WorkspaceChecklistsSection", () => {
     expect(buttonNamed(container, "New checklist")).toBeUndefined();
   });
 
-  it("tells a reader who writes checklists when there are none", async () => {
+  it("tells a reader that requirements now belong to Projects when there are none", async () => {
     repo.listForWorkspace.mockResolvedValue({ items: [], canManage: false });
     const container = await render(<WorkspaceChecklistsSection workspaceId="ws-1" projects={PROJECTS} />);
     expect(container.textContent).toContain("No QA checklists yet");
-    expect(container.textContent).toContain("team lead");
+    expect(container.textContent).toContain("Your Product owner writes them on each Project.");
+    expect(linkNamed(container, "Open Projects")).toBeUndefined();
+  });
+
+  it("offers a lead the Projects page instead of creating a checklist when there are none", async () => {
+    repo.listForWorkspace.mockResolvedValue({ items: [], canManage: true });
+    const container = await render(<WorkspaceChecklistsSection workspaceId="ws-1" projects={PROJECTS} />);
     expect(buttonNamed(container, "Create the first checklist")).toBeUndefined();
+    expect(linkNamed(container, "Open Projects")?.getAttribute("href")).toBe("/workflows?group=ws-1");
+  });
+
+  it("shows a checklist that moved to a Project read-only, with a way to the Project", async () => {
+    const moved = { ...checklist(), kind: "system", deliveryProjectId: "dp-1", legacyChecklistId: null };
+    repo.listForWorkspace.mockResolvedValue({ items: [moved], canManage: true });
+    const container = await render(
+      <WorkspaceChecklistsSection workspaceId="ws-1" projects={PROJECTS} initialChecklistId="cl-1" />,
+    );
+    expect(container.textContent).toContain("now a System requirement of a Project");
+    expect(buttonNamed(container, "Edit checklist")).toBeUndefined();
+    expect(buttonNamed(container, "Share")).toBeUndefined();
+    expect(buttonNamed(container, "Archive")).toBeUndefined();
+    expect(linkNamed(container, "Open the Project")?.getAttribute("href")).toBe("/workflows?group=ws-1&project=dp-1");
+  });
+
+  it("drops repository sharing once the backend describes Project requirements", async () => {
+    const unassigned = { ...checklist(), kind: "system", deliveryProjectId: null };
+    repo.listForWorkspace.mockResolvedValue({ items: [unassigned], canManage: true });
+    const container = await render(
+      <WorkspaceChecklistsSection workspaceId="ws-1" projects={PROJECTS} initialChecklistId="cl-1" />,
+    );
+    expect(buttonNamed(container, "Edit checklist")).toBeDefined();
+    expect(buttonNamed(container, "Share")).toBeUndefined();
   });
 });
 
@@ -105,6 +140,35 @@ describe("ProjectChecklistsPanel", () => {
     expect(container.textContent).toContain("Release smoke test");
     const manage = container.querySelector<HTMLAnchorElement>("a.qa-project-card__manage");
     expect(manage?.getAttribute("href")).toBe("/checklists?workspace=ws-1&checklist=cl-1");
+  });
+
+  it("points a repository in a Project at the Project's requirements, without a team manage link", async () => {
+    repo.listForProject.mockResolvedValue({ items: [checklist()], canManage: true });
+    const container = await render(
+      <ProjectChecklistsPanel
+        projectId="project-1"
+        workspaceId="ws-1"
+        qaScope={{ kind: "project", deliveryProjectId: "dp-1", projectName: "storefront", projectHref: "/workflows?group=ws-1&project=dp-1" }}
+      />,
+    );
+    expect(container.textContent).toContain("Requirements belong to the Project storefront");
+    expect(linkNamed(container, "Open the Project's requirements")?.getAttribute("href")).toBe(
+      "/workflows?group=ws-1&project=dp-1",
+    );
+    expect(linkNamed(container, "Manage in team")).toBeUndefined();
+  });
+
+  it("tells a repository in a Project with no requirements who writes them", async () => {
+    repo.listForProject.mockResolvedValue({ items: [], canManage: true });
+    const container = await render(
+      <ProjectChecklistsPanel
+        projectId="project-1"
+        workspaceId="ws-1"
+        qaScope={{ kind: "project", deliveryProjectId: "dp-1", projectName: "storefront", projectHref: null }}
+      />,
+    );
+    expect(container.textContent).toContain("No requirements yet");
+    expect(linkNamed(container, "Open team checklists")).toBeUndefined();
   });
 
   it("gives a reader no manage link", async () => {

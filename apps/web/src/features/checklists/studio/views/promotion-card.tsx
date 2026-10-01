@@ -7,12 +7,14 @@ import { useId } from "react";
 import { FormDialog } from "@/features/groups/workspace";
 
 import { VerdictPill } from "../../items";
+import { headChangeMessage, headLabel, REQUIREMENTS_CHANGED_NOTE } from "../../model/project-run-rules";
 import {
   approvedCountLabel,
   blockingReasons,
   mergeConfirmText,
   promotionChecklistState,
   promotionRoute,
+  promotionRunState,
   promotionTitle,
 } from "../../model/qa-promotion-rules";
 import type { QaPromotionChecklist, QaPromotionStatus } from "../../model/qa-promotion-types";
@@ -43,6 +45,49 @@ function ChecklistRow({ entry }: Readonly<{ entry: QaPromotionChecklist }>) {
   );
 }
 
+/**
+ * The Project-level gate: the Project's latest signed-off run, then each
+ * repository's uat head against what that run verified.
+ */
+function ProjectGate({ data }: Readonly<{ data: QaPromotionStatus }>) {
+  const state = promotionRunState(data);
+  return (
+    <>
+      <ul className="qa-promo__rows" aria-label="Project QA run">
+        <li className="qa-promo__row" data-tone={state.tone}>
+          <span className="qa-promo__tick" aria-hidden="true">
+            {state.approved ? <CheckIcon /> : <span className="qa-promo__dot" />}
+          </span>
+          <span className="qa-promo__row-text">
+            <span className="qa-promo__name">{data.deliveryProject?.name ?? "Project"} QA run</span>
+            <span className="qa-promo__state">{state.label}</span>
+          </span>
+          {data.run?.verdict ? <VerdictPill verdict={data.run.verdict} /> : null}
+        </li>
+        {data.repositories.map((head) => {
+          const change = data.run ? headChangeMessage(head) : null;
+          return (
+            <li key={head.projectId} className="qa-promo__row" data-tone={change ? "warning" : "neutral"}>
+              <span className="qa-promo__tick" aria-hidden="true">
+                <span className="qa-promo__dot" />
+              </span>
+              <span className="qa-promo__row-text">
+                <span className="qa-promo__name">{headLabel(head.repoFullName, head.currentSha)}</span>
+                <span className="qa-promo__state">{change ?? "Covered by the run"}</span>
+              </span>
+            </li>
+          );
+        })}
+      </ul>
+      {data.requirementsChanged ? (
+        <p className="qa-promo__muted">
+          Requirements changed since sign-off. {REQUIREMENTS_CHANGED_NOTE}
+        </p>
+      ) : null}
+    </>
+  );
+}
+
 function Blocking({ data, id }: Readonly<{ data: QaPromotionStatus; id: string }>) {
   const reasons = blockingReasons(data);
   if (reasons.length === 0) return null;
@@ -69,7 +114,9 @@ function CardFoot({ vm, data }: Readonly<{ vm: QaPromotionViewModel; data: QaPro
       )}
       {vm.canMerge ? null : (
         <span className="qa-promo__muted">
-          Team leads merge {data.qaBranch} into {data.targetBranch} once every checklist is approved.
+          {data.scope
+            ? `Product owners merge ${data.qaBranch} into ${data.targetBranch} once the Project's QA run is approved.`
+            : `Team leads merge ${data.qaBranch} into ${data.targetBranch} once every checklist is approved.`}
         </span>
       )}
     </div>
@@ -187,7 +234,9 @@ function CardBody({
 }: Readonly<{ vm: QaPromotionViewModel; data: QaPromotionStatus; bodyId: string; reasonsId: string; collapsed: boolean }>) {
   return (
     <div id={bodyId} className="qa-promo__body" hidden={collapsed}>
-      {data.checklists.length > 0 ? (
+      {data.scope === "project" ? <ProjectGate data={data} /> : null}
+      {/* The deprecated per-checklist list: only an older backend's gate. */}
+      {!data.scope && data.checklists.length > 0 ? (
         <ul className="qa-promo__rows" aria-label="Shared checklists on this commit">
           {data.checklists.map((entry) => (
             <ChecklistRow key={entry.id} entry={entry} />

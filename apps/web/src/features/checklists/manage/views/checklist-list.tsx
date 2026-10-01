@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { motion, useReducedMotion } from "framer-motion";
 
 import { LoadingRows } from "@/features/groups/workspace";
@@ -7,12 +8,13 @@ import { LoadingRows } from "@/features/groups/workspace";
 import type { ChecklistsStatus, QaChecklist } from "../../model/checklist-types";
 import {
   automatedItemCount,
+  checklistOwningProjectId,
   isArchived,
   itemCountLabel,
   sharedCountLabel,
   updatedLabel,
 } from "../../model/checklist-rules";
-import { ChecklistGlyph, ChevronRightIcon, PlusIcon } from "./checklist-icons";
+import { ChecklistGlyph, ChevronRightIcon } from "./checklist-icons";
 
 const EASE_OUT: [number, number, number, number] = [0.25, 0, 0, 1];
 
@@ -23,14 +25,15 @@ function ListState({
   canManage,
   showArchived,
   onRetry,
-  onCreate,
+  projectsHref,
 }: Readonly<{
   status: ChecklistsStatus;
   error: string | null;
   canManage: boolean;
   showArchived: boolean;
   onRetry: () => void;
-  onCreate: () => void;
+  /** Where requirements are written now: the team's Projects. */
+  projectsHref: string;
 }>) {
   if (status === "loading") return <LoadingRows rows={3} />;
   if (status === "error") {
@@ -57,14 +60,13 @@ function ListState({
       </h4>
       <p className="hier-state-text">
         {canManage
-          ? "Write the checks a change has to pass before it ships — once — then share the checklist to the projects that need it."
-          : "Your team lead has not written any QA checklists for this team yet. Shared ones appear here and on each project's Checklists tab."}
+          ? "Requirements now belong to Projects. Open a Project to add Features and System requirements; they apply to every repository in it."
+          : "Requirements now belong to Projects. Your Product owner writes them on each Project."}
       </p>
       {canManage ? (
-        <button type="button" className="primary-button group-section-action" onClick={onCreate}>
-          <PlusIcon />
-          Create the first checklist
-        </button>
+        <Link className="primary-button group-section-action" href={projectsHref}>
+          Open Projects
+        </Link>
       ) : null}
     </div>
   );
@@ -99,11 +101,15 @@ function ChecklistRow({
           {automated > 0 ? (
             <span className="qa-meta-pill qa-meta-pill--auto">{automated} automated</span>
           ) : null}
-          <span
-            className={`qa-meta-pill${checklist.sharedProjectIds.length === 0 ? " qa-meta-pill--quiet" : ""}`}
-          >
-            {sharedCountLabel(checklist.sharedProjectIds.length)}
-          </span>
+          {checklistOwningProjectId(checklist) ? (
+            <span className="qa-meta-pill">System requirement of a Project</span>
+          ) : (
+            <span
+              className={`qa-meta-pill${checklist.sharedProjectIds.length === 0 ? " qa-meta-pill--quiet" : ""}`}
+            >
+              {sharedCountLabel(checklist.sharedProjectIds.length)}
+            </span>
+          )}
         </span>
       </span>
       <span className="qa-list-row__aside">
@@ -130,7 +136,7 @@ export function ChecklistList({
   onShowArchivedChange,
   onOpen,
   onRetry,
-  onCreate,
+  projectsHref,
 }: Readonly<{
   status: ChecklistsStatus;
   error: string | null;
@@ -141,7 +147,7 @@ export function ChecklistList({
   onShowArchivedChange: (value: boolean) => void;
   onOpen: (checklistId: string) => void;
   onRetry: () => void;
-  onCreate: () => void;
+  projectsHref: string;
 }>) {
   const reduced = useReducedMotion();
   const hasRows = status === "ready" && checklists.length > 0;
@@ -149,9 +155,9 @@ export function ChecklistList({
     <div className="qa-list">
       <div className="qa-list__toolbar">
         <p className="group-section-lede qa-list__lede">
-          Reusable acceptance checks for this team. Leads write them once and share
-          them to projects; developers and QA work through them on each
-          project&apos;s Checklists tab.
+          This team&apos;s earlier QA checklists. Each is now a System requirement of the
+          Project its repositories belong to, edited there; new requirements are written
+          on a Project.
         </p>
         <label className="qa-toggle">
           <input
@@ -187,7 +193,7 @@ export function ChecklistList({
           canManage={canManage}
           showArchived={showArchived}
           onRetry={onRetry}
-          onCreate={onCreate}
+          projectsHref={projectsHref}
         />
       )}
     </div>

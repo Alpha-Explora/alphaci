@@ -1,0 +1,188 @@
+import { act } from "react";
+import { createRoot, type Root } from "react-dom/client";
+
+import { checklistsRepository } from "../../../../../src/features/checklists/data/checklists-repository";
+import { qaRunsRepository } from "../../../../../src/features/checklists/data/qa-runs-repository";
+import { projectsRepository } from "../../../../../src/features/projects/data/projects-repository";
+import { projectQaRunsRepository } from "../../../../../src/features/checklists/data/project-qa-runs-repository";
+import { normalizeProjectRunCurrent } from "../../../../../src/features/checklists/model/project-run-rules";
+import type { QaScope } from "../../../../../src/features/checklists/model/qa-scope";
+import { QaStudioPanel } from "../../../../../src/features/checklists/studio/views/qa-studio-panel";
+import type { QaRun } from "../../../../../src/features/checklists/model/qa-run-types";
+import type { AppRole, ProjectBranchPreview } from "../../../../../src/shared/api/contracts";
+import { checklist } from "../checklist-fixtures";
+import { apiErrorWith, promotionWire } from "../qa-promotion-fixtures";
+
+jest.mock("../../../../../src/features/checklists/data/checklists-repository", () => ({
+  checklistsRepository: { listForProject: jest.fn() },
+}));
+jest.mock("../../../../../src/features/checklists/data/qa-runs-repository", () => ({
+  qaRunsRepository: {
+    current: jest.fn(),
+    create: jest.fn(),
+    updateItem: jest.fn(),
+    requestRetest: jest.fn(),
+    signoff: jest.fn(),
+    reopen: jest.fn(),
+    promotion: jest.fn(),
+    mergePromotion: jest.fn(),
+  },
+}));
+jest.mock("../../../../../src/features/checklists/data/project-qa-runs-repository", () => ({
+  projectQaRunsRepository: { current: jest.fn(), start: jest.fn(), setVerification: jest.fn(), signoff: jest.fn(), reopen: jest.fn() },
+}));
+jest.mock("../../../../../src/features/projects/data/projects-repository", () => ({
+  projectsRepository: { previews: jest.fn() },
+}));
+
+const checklists = checklistsRepository as jest.Mocked<typeof checklistsRepository>;
+const runs = qaRunsRepository as jest.Mocked<typeof qaRunsRepository>;
+const projects = projectsRepository as jest.Mocked<typeof projectsRepository>;
+const projectRuns = projectQaRunsRepository as jest.Mocked<typeof projectQaRunsRepository>;
+
+const PREVIEW: ProjectBranchPreview = {
+  branch: "uat",
+  isProduction: false,
+  deploymentId: "d1",
+  targetId: "web",
+  targetName: "storefront-web",
+  provider: "vercel",
+  status: "ready",
+  commitSha: "9f8e7d6",
+  commitMessage: null,
+  pullRequestNumber: null,
+  previewUrl: "https://shop.example.com",
+  inspectorUrl: null,
+  createdAt: null,
+  readyAt: null,
+  embeddable: true,
+  embedBlockedReason: null,
+  surface: "page",
+};
+
+function setup(promotion: unknown, run: QaRun | null = null) {
+  projects.previews.mockResolvedValue({ enabled: true, liveProvidersEnabled: true, providerError: null, branches: [PREVIEW] });
+  checklists.listForProject.mockResolvedValue({ items: [checklist()], canManage: false });
+  runs.current.mockResolvedValue({ commitSha: "9f8e7d6c5b4a", commitSource: "deployment", run });
+  runs.promotion.mockResolvedValue(promotion as never);
+}
+
+let root: Root | null = null;
+
+afterEach(() => {
+  if (root) act(() => root?.unmount());
+  root = null;
+  document.body.innerHTML = "";
+  window.localStorage.clear();
+  jest.clearAllMocks();
+});
+
+async function settle() {
+  for (let i = 0; i < 5; i += 1) {
+    await act(async () => {
+      await Promise.resolve();
+    });
+  }
+}
+
+async function studio(role: AppRole, qaScope?: QaScope): Promise<HTMLElement> {
+  const container = document.createElement("div");
+  document.body.appendChild(container);
+  root = createRoot(container);
+  await act(async () => {
+    root!.render(<QaStudioPanel projectId="project-1" appRole={role} projectName="tone/storefront-web" qaScope={qaScope} />);
+  });
+  await settle();
+  return container;
+}
+
+function card(container: HTMLElement): HTMLElement {
+  const found = container.querySelector<HTMLElement>('section[aria-label="Production readiness"]');
+  if (!found) throw new Error("no promotion card");
+  return found;
+}
+
+async function click(element: Element | null | undefined) {
+  if (!element) throw new Error("nothing to click");
+  await act(async () => {
+    (element as HTMLElement).click();
+  });
+  await settle();
+}
+
+import { headWire, projectRunWire, SHA_BE, SHA_BE_NEW } from "../requirement-fixtures";
+
+const PROJECT_SCOPE: QaScope = { kind: "project", deliveryProjectId: "dp-1", projectName: "storefront", projectHref: null };
+
+function projectGate(overrides: Record<string, unknown> = {}) {
+  return promotionWire({
+    scope: "project",
+    deliveryProject: { id: "dp-1", name: "storefront" },
+    run: { id: "prun-1", verdict: "APPROVED", signedAt: "2026-10-01T10:00:00Z", stale: true },
+    repositories: [
+      headWire(),
+      headWire({ projectId: "proj-be", repoFullName: "tone/orders-api", runSha: SHA_BE, currentSha: SHA_BE_NEW, moved: true }),
+    ],
+    reasons: ['Project run is stale: "orders-api" moved from e4f5a6b to ffffeee'],
+    eligible: false,
+    ...overrides,
+  });
+}
+
+describe("QA Studio — Project-level QA", () => {
+  it("verifies a repository filed under a Project on the Project's run, never a repository run", async () => {
+    setup(projectGate());
+    projectRuns.current.mockResolvedValue(normalizeProjectRunCurrent({ run: projectRunWire() }));
+    const container = await studio("qa", PROJECT_SCOPE);
+    expect(container.textContent).toContain("Project QA run");
+    expect(container.textContent).toContain("storefront");
+    expect(container.querySelectorAll(".pqa-group")).toHaveLength(2);
+    expect(runs.current).not.toHaveBeenCalled();
+    expect(checklists.listForProject).not.toHaveBeenCalled();
+  });
+
+  it("shows the Project gate: the run, each repository's head and what blocks the merge", async () => {
+    setup(projectGate());
+    projectRuns.current.mockResolvedValue(normalizeProjectRunCurrent({ run: projectRunWire() }));
+    const container = await studio("lead", PROJECT_SCOPE);
+    const section = card(container);
+    await click(section.querySelector("button.qa-promo__toggle"));
+    expect(section.textContent).toContain("storefront QA run");
+    expect(section.textContent).toContain("Project run is stale: uat moved since sign-off");
+    expect(section.textContent).toContain("orders-api moved since this run (e4f5a6b → ffffeee)");
+    expect(section.textContent).toContain('Project run is stale: "orders-api" moved');
+    expect(section.textContent).not.toContain("Release smoke test");
+    expect(container.querySelector(".qa-promo__why")?.textContent).toMatch(/every repository's current uat head/);
+  });
+
+  it("falls back to the repository run when the server has no Project runs", async () => {
+    setup(promotionWire());
+    projectRuns.current.mockRejectedValue(apiErrorWith(404));
+    const container = await studio("qa", PROJECT_SCOPE);
+    expect(runs.current).toHaveBeenCalled();
+    expect(container.textContent).toContain("Release smoke test");
+  });
+
+  it("blocks an unfiled repository and keeps its old runs as history", async () => {
+    setup(projectGate({ scope: "unfiled", deliveryProject: null, run: null, repositories: [], reasons: [] }));
+    const container = await studio("lead");
+    expect(container.textContent).toContain("This repository is not filed under a Project");
+    expect(container.textContent).toContain("Not filed under a Project");
+    expect(container.textContent).not.toContain("Start QA run on uat");
+    expect(container.textContent).toContain("No new repository runs");
+  });
+
+  it("asks for a run on the moved heads when uat moved since the latest Project run", async () => {
+    setup(projectGate());
+    projectRuns.current.mockResolvedValue(
+      normalizeProjectRunCurrent({
+        run: null,
+        stale: true,
+        heads: [headWire({ projectId: "proj-be", repoFullName: "tone/orders-api", runSha: SHA_BE, currentSha: SHA_BE_NEW, moved: true })],
+      }),
+    );
+    const container = await studio("qa", PROJECT_SCOPE);
+    expect(container.textContent).toContain("uat moved since the latest Project run");
+    expect(container.textContent).toContain("Start Project QA run");
+  });
+});

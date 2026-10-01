@@ -6,7 +6,6 @@ import { VerdictPill } from "../../items";
 import {
   agoLabel,
   blockersLabel,
-  commitLabel,
   itemStatusLabel,
   openDefectsLabel,
   passedLabel,
@@ -21,14 +20,14 @@ import { SealIcon } from "./studio-icons";
 
 /* ── Summary ─────────────────────────────────────────────────────────────── */
 
-function segmentsLabel(run: QaRun): string {
+function segmentsLabel(run: Pick<QaRun, "summary">): string {
   return statusSegments(run)
     .map((segment) => `${segment.count} ${itemStatusLabel(segment.status).toLowerCase()}`)
     .join(", ");
 }
 
 /** Passed out of total, the run's mix as one bar, and what is still open. */
-export function RunSummary({ run }: Readonly<{ run: QaRun }>) {
+export function RunSummary({ run }: Readonly<{ run: Pick<QaRun, "summary"> }>) {
   const segments = statusSegments(run);
   const { openDefects, blockers } = run.summary;
   return (
@@ -67,8 +66,14 @@ export function RunSummary({ run }: Readonly<{ run: QaRun }>) {
 
 export function SignoffBanner({
   run,
+  subject,
   reopen,
-}: Readonly<{ run: QaRun; reopen: QaReopenViewModel }>) {
+}: Readonly<{
+  run: Pick<QaRun, "status" | "signoff">;
+  /** What was signed off: "uat @ 9f8e7d6", or the Project's repositories. */
+  subject: string;
+  reopen: QaReopenViewModel;
+}>) {
   const signoff = run.signoff;
   if (run.status !== "signed_off" || !signoff) return null;
   const ago = agoLabel(signoff.signedAt);
@@ -83,7 +88,7 @@ export function SignoffBanner({
         </p>
         <p className="qa-signoff-banner__meta">
           by <strong>@{signoff.signedBy.login}</strong>
-          {ago ? ` · ${ago}` : ""} · {commitLabel(run.branch, run.commitSha)}
+          {ago ? ` · ${ago}` : ""} · {subject}
         </p>
         {signoff.summary ? <p className="qa-signoff-banner__text">{signoff.summary}</p> : null}
         {signoff.conditions ? (
@@ -171,7 +176,10 @@ function VerdictOptions({ vm }: Readonly<{ vm: QaSignoffViewModel }>) {
   );
 }
 
-export function SignoffDialog({ vm, run }: Readonly<{ vm: QaSignoffViewModel; run: QaRun }>) {
+export function SignoffDialog({
+  vm,
+  description,
+}: Readonly<{ vm: QaSignoffViewModel; /** What is being signed off, e.g. "Release smoke test on uat @ 9f8e7d6". */ description: string }>) {
   const busy = vm.status === "submitting";
   const allowed = vm.eligibility.some((entry) => entry.verdict === vm.verdict && entry.allowed);
   return (
@@ -179,7 +187,7 @@ export function SignoffDialog({ vm, run }: Readonly<{ vm: QaSignoffViewModel; ru
       open={vm.status !== "closed"}
       onClose={vm.closeDialog}
       title="Sign off this run"
-      description={`${run.checklistName} on ${commitLabel(run.branch, run.commitSha)}. Signing off locks the run.`}
+      description={`${description}. Signing off locks the run.`}
       submitLabel="Sign off"
       submitting={busy}
       canSubmit={allowed}

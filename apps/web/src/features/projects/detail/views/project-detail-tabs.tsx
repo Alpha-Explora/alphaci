@@ -6,6 +6,8 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 
+import { qaScopeFromFolder, type QaScope } from "@/features/checklists";
+
 import { projectStatusVariant } from "../../model/projects-rules";
 import type { ProvisionedProject } from "@/features/projects";
 import type { AppRole } from "@/shared/api/contracts";
@@ -66,6 +68,8 @@ interface ProjectDetailTabPanelProps {
   project: ProvisionedProject;
   vm: ProjectDetailTabsViewModel;
   dangerZone?: ReactNode;
+  /** Where this repository's QA happens: its Project, or the repository itself. */
+  qaScope: QaScope;
 }
 
 const TAB_PANELS: Record<
@@ -100,6 +104,7 @@ export function ProjectDetailTabs({
     viewerLogin,
   });
   const TabPanel = TAB_PANELS[vm.tab];
+  const qaScope = qaScopeFromFolder(folder?.status ?? "idle", folder?.project ?? null);
 
   return (
     <section
@@ -135,7 +140,7 @@ export function ProjectDetailTabs({
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.18 }}
           >
-            <TabPanel project={project} vm={vm} dangerZone={dangerZone} />
+            <TabPanel project={project} vm={vm} dangerZone={dangerZone} qaScope={qaScope} />
           </motion.div>
         </div>
       </div>

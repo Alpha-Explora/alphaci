@@ -75,12 +75,6 @@ export interface MoveRepositoryResponseWire {
   sourceDeliveryProjectEmpty: boolean;
 }
 
-/** PATCH /qa-checklists/:id/projects — only touches the ids it names. */
-export interface ChecklistProjectsPatch {
-  add?: string[];
-  remove?: string[];
-}
-
 /** DELETE /delivery-projects/:deliveryProjectId */
 export interface DeleteProjectFolderRequest {
   confirmName: string;
@@ -163,18 +157,6 @@ export interface ProjectFoldersSnapshot {
   folders: ProjectFolder[];
   unfiled: UnfiledProject[];
 }
-
-/** Only what the explorer needs from a team checklist. */
-export interface FolderChecklist {
-  id: string;
-  name: string;
-  itemCount: number;
-  archived: boolean;
-  sharedProjectIds: string[];
-}
-
-/** How a checklist relates to one Project's repositories. */
-export type ChecklistAttachment = "attached" | "partial" | "none";
 
 export interface MoveOutcome {
   moved: boolean;

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 
+import type { QaScope } from "@/features/checklists";
 import { MyQaItemsCard } from "@/features/checklists/returned";
 import { ProductionReadinessCard } from "@/features/checklists/studio";
 import { ProductionDeploymentPanel } from "@/features/projects/previews";
@@ -28,10 +29,12 @@ import {
 export function OverviewTab({
   project,
   vm,
+  qaScope,
 }: Readonly<{
   project: ProvisionedProject;
   vm: ProjectDetailTabsViewModel;
   dangerZone?: React.ReactNode;
+  qaScope?: QaScope;
 }>) {
   return (
     <div
@@ -51,6 +54,7 @@ export function OverviewTab({
         enabled={vm.qaChecklistsEnabled && Boolean(vm.appRole)}
         projectId={project.id}
         highlightRequested={vm.highlightMyQaItems}
+        qaScope={qaScope}
       />
       {showOverviewProductionReadiness(vm.appRole, vm.qaChecklistsEnabled) ? (
         <ProductionReadinessCard

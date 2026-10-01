@@ -6,9 +6,8 @@ import { MOVE_CONFLICT_MESSAGE } from "../../../../../../src/features/teams/proj
 import { useProjectFoldersViewModel } from "../../../../../../src/features/teams/project-folders/view-models/use-project-folders-view-model";
 import { useMoveRepositoryViewModel } from "../../../../../../src/features/teams/project-folders/view-models/use-move-repository-view-model";
 import { useDeleteProjectViewModel } from "../../../../../../src/features/teams/project-folders/view-models/use-delete-project-view-model";
-import { useFolderChecklistsViewModel } from "../../../../../../src/features/teams/project-folders/view-models/use-folder-checklists-view-model";
 import { useCreateProjectFolderViewModel } from "../../../../../../src/features/teams/project-folders/view-models/use-create-project-folder-view-model";
-import { apiError, folderChecklist, foldersSnapshot, GROUP_ID } from "../folder-fixtures";
+import { apiError, foldersSnapshot, GROUP_ID } from "../folder-fixtures";
 
 jest.mock("../../../../../../src/features/teams/project-folders/data/project-folders-repository", () => ({
   projectFoldersRepository: {
@@ -16,8 +15,7 @@ jest.mock("../../../../../../src/features/teams/project-folders/data/project-fol
     create: jest.fn(),
     moveRepository: jest.fn(),
     archive: jest.fn(),
-    listChecklists: jest.fn(),
-    updateChecklistShares: jest.fn(),
+    requirementCounts: jest.fn(),
     deleteProject: jest.fn(),
   },
 }));
@@ -69,9 +67,9 @@ async function flush() {
 }
 
 describe("useProjectFoldersViewModel", () => {
-  it("loads the team's Projects and checklists", async () => {
+  it("loads the team's Projects and their requirement counts", async () => {
     repo.list.mockResolvedValue(foldersSnapshot());
-    repo.listChecklists.mockResolvedValue([folderChecklist()]);
+    repo.requirementCounts.mockResolvedValue({ "dp-1": 2 });
     const vm = renderHook(() =>
       useProjectFoldersViewModel({ groupId: GROUP_ID, groupName: "Checkout", qaChecklistsEnabled: true }),
     );
@@ -87,9 +85,10 @@ describe("useProjectFoldersViewModel", () => {
     expect(vm().canCreateRepository).toBe(false);
     expect(vm().canCreateUnfiledRepository).toBe(false);
     expect(vm().canVerifyInQaStudio).toBe(true);
-    expect(vm().checklists).toEqual([folderChecklist()]);
+    expect(vm().requirementCounts).toEqual({ "dp-1": 2 });
+    expect(vm().appRole).toBe("lead");
     expect(repo.list).toHaveBeenCalledWith(GROUP_ID);
-    expect(repo.listChecklists).toHaveBeenCalledWith(GROUP_ID);
+    expect(repo.requirementCounts).toHaveBeenCalledWith(GROUP_ID);
 
     act(() => vm().openFolder("dp-1"));
     expect(vm().selected?.name).toBe("testfinals");
@@ -99,7 +98,7 @@ describe("useProjectFoldersViewModel", () => {
 
   it("opens a deep-linked Project once it loads, and only on its own team", async () => {
     repo.list.mockResolvedValue(foldersSnapshot());
-    repo.listChecklists.mockResolvedValue([]);
+    repo.requirementCounts.mockResolvedValue({});
     const vm = renderHook(() =>
       useProjectFoldersViewModel({
         groupId: GROUP_ID,
@@ -118,7 +117,7 @@ describe("useProjectFoldersViewModel", () => {
 
   it("keeps an opened Project with its team: another team opens on its list", async () => {
     repo.list.mockResolvedValue(foldersSnapshot());
-    repo.listChecklists.mockResolvedValue([]);
+    repo.requirementCounts.mockResolvedValue({});
     const container = document.createElement("div");
     document.body.appendChild(container);
     root = createRoot(container);
@@ -143,15 +142,15 @@ describe("useProjectFoldersViewModel", () => {
     expect(latest!.selected).toBeNull();
   });
 
-  it("never asks for checklists when the capability is off", async () => {
+  it("never asks for requirement counts when the capability is off", async () => {
     repo.list.mockResolvedValue(foldersSnapshot());
     mockSession.appRole = "qa";
     const vm = renderHook(() =>
       useProjectFoldersViewModel({ groupId: GROUP_ID, groupName: "Checkout", qaChecklistsEnabled: false }),
     );
     await flush();
-    expect(repo.listChecklists).not.toHaveBeenCalled();
-    expect(vm().checklists).toBeNull();
+    expect(repo.requirementCounts).not.toHaveBeenCalled();
+    expect(vm().requirementCounts).toBeNull();
     expect(vm().canVerifyInQaStudio).toBe(false);
     expect(vm().canCreateRepository).toBe(false);
   });
@@ -188,7 +187,7 @@ describe("useProjectFoldersViewModel", () => {
 
   it("gives QA Team QA Studio but not a Developer", async () => {
     repo.list.mockResolvedValue(foldersSnapshot());
-    repo.listChecklists.mockResolvedValue([]);
+    repo.requirementCounts.mockResolvedValue({});
     mockSession.appRole = "qa";
     let vm = renderHook(() =>
       useProjectFoldersViewModel({ groupId: GROUP_ID, groupName: "C", qaChecklistsEnabled: true }),
@@ -218,27 +217,15 @@ describe("useProjectFoldersViewModel", () => {
     expect(vm().error).toBeNull();
   });
 
-  it("keeps the Projects usable when only the checklist read fails", async () => {
+  it("keeps the Projects usable when the requirement counts cannot be read (an older backend)", async () => {
     repo.list.mockResolvedValue(foldersSnapshot());
-    repo.listChecklists.mockRejectedValue(apiError(500));
+    repo.requirementCounts.mockRejectedValue(apiError(404));
     const vm = renderHook(() =>
       useProjectFoldersViewModel({ groupId: GROUP_ID, groupName: "C", qaChecklistsEnabled: true }),
     );
     await flush();
     expect(vm().status).toBe("ready");
-    expect(vm().checklists).toEqual([]);
-  });
-
-  it("merges a saved checklist in place", async () => {
-    repo.list.mockResolvedValue(foldersSnapshot());
-    repo.listChecklists.mockResolvedValue([folderChecklist(), folderChecklist({ id: "cl-2" })]);
-    const vm = renderHook(() =>
-      useProjectFoldersViewModel({ groupId: GROUP_ID, groupName: "C", qaChecklistsEnabled: true }),
-    );
-    await flush();
-    act(() => vm().applyChecklist(folderChecklist({ sharedProjectIds: [] })));
-    expect(vm().checklists?.[0].sharedProjectIds).toEqual([]);
-    expect(vm().checklists?.[1].id).toBe("cl-2");
+    expect(vm().requirementCounts).toBeNull();
   });
 });
 
@@ -435,39 +422,6 @@ describe("useDeleteProjectViewModel", () => {
     // The stale first response must not fire a second notice or re-open anything.
     expect(onDeleted).toHaveBeenCalledTimes(1);
     expect(vm().notice).toBe("Deleted testfinals and 0 repositories.");
-  });
-});
-
-describe("useFolderChecklistsViewModel", () => {
-  const folder = foldersSnapshot().folders[0];
-
-  it("attaches with PATCH add of every folder project", async () => {
-    const saved = folderChecklist();
-    repo.updateChecklistShares.mockResolvedValue(saved);
-    const onSaved = jest.fn();
-    const vm = renderHook(() => useFolderChecklistsViewModel({ folder, onSaved }));
-    await act(async () => vm().attach(folderChecklist({ sharedProjectIds: ["elsewhere"] })));
-    expect(repo.updateChecklistShares).toHaveBeenCalledWith("cl-1", { add: ["proj-fe", "proj-be"] });
-    expect(onSaved).toHaveBeenCalledWith(saved);
-    expect(vm().status).toBe("idle");
-  });
-
-  it("detaches with PATCH remove of exactly the folder projects", async () => {
-    repo.updateChecklistShares.mockResolvedValue(folderChecklist({ sharedProjectIds: ["elsewhere"] }));
-    const vm = renderHook(() => useFolderChecklistsViewModel({ folder, onSaved: jest.fn() }));
-    await act(async () => vm().detach(folderChecklist()));
-    expect(repo.updateChecklistShares).toHaveBeenCalledWith("cl-1", { remove: ["proj-fe", "proj-be"] });
-  });
-
-  it("reports a failed attach as a display string", async () => {
-    repo.updateChecklistShares.mockRejectedValue(apiError(403));
-    const onSaved = jest.fn();
-    const vm = renderHook(() => useFolderChecklistsViewModel({ folder, onSaved }));
-    await act(async () => vm().attach(folderChecklist()));
-    expect(vm().status).toBe("error");
-    expect(vm().error).toMatch(/Team lead/);
-    expect(vm().pendingId).toBeNull();
-    expect(onSaved).not.toHaveBeenCalled();
   });
 });
 

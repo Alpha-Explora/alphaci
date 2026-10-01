@@ -5,11 +5,9 @@
  * instead of crashing the Teams page. */
 
 import type {
-  ChecklistAttachment,
   DeletedRepository,
   DeleteProjectFailure,
   DeleteProjectOutcome,
-  FolderChecklist,
   FolderProject,
   FolderRepository,
   MoveOutcome,
@@ -145,26 +143,6 @@ export function normaliseProjectFolders(
   };
 }
 
-/** A team checklist, reduced to what the explorer shows. */
-export function normaliseChecklist(value: unknown): FolderChecklist | null {
-  const raw = asRecord(value);
-  const id = readOptionalString(raw?.id);
-  if (!raw || !id) return null;
-  return {
-    id,
-    name: readOptionalString(raw.name) ?? "Untitled checklist",
-    itemCount: asArray(raw.items).length,
-    archived: readOptionalString(raw.archivedAt) !== null,
-    sharedProjectIds: asArray(raw.sharedProjectIds).filter(
-      (entry): entry is string => typeof entry === "string",
-    ),
-  };
-}
-
-export function normaliseChecklists(value: unknown): FolderChecklist[] {
-  return asArray(value).map(normaliseChecklist).filter(isPresent);
-}
-
 export function normaliseMoveOutcome(value: unknown): MoveOutcome {
   const raw = asRecord(value) ?? {};
   return {
@@ -217,10 +195,6 @@ export function repositoryCountLabel(count: number): string {
   return plural(count, "repository", "repositories");
 }
 
-export function checklistCountLabel(count: number): string {
-  return plural(count, "checklist");
-}
-
 /** The short repository name: "Org/testfinals-fe" -> "testfinals-fe". */
 export function repoDisplayName(repo: { name: string; repoFullName: string | null }): string {
   if (!repo.repoFullName) return repo.name;
@@ -236,52 +210,6 @@ export function folderProjectIds(folder: ProjectFolder): string[] {
     if (repo.project && !ids.includes(repo.project.id)) ids.push(repo.project.id);
   }
   return ids;
-}
-
-/**
- * A Project's checklists: the live (non-archived) ones shared to at least one
- * of its repositories' projects.
- */
-export function folderChecklists(
-  folder: ProjectFolder,
-  checklists: ReadonlyArray<FolderChecklist>,
-): FolderChecklist[] {
-  const ids = new Set(folderProjectIds(folder));
-  if (ids.size === 0) return [];
-  return checklists.filter(
-    (checklist) => !checklist.archived && checklist.sharedProjectIds.some((id) => ids.has(id)),
-  );
-}
-
-/** Whether a checklist covers every, some, or none of a Project's repositories. */
-export function checklistAttachment(
-  folder: ProjectFolder,
-  checklist: FolderChecklist,
-): ChecklistAttachment {
-  const ids = folderProjectIds(folder);
-  const shared = ids.filter((id) => checklist.sharedProjectIds.includes(id)).length;
-  if (ids.length > 0 && shared === ids.length) return "attached";
-  return shared > 0 ? "partial" : "none";
-}
-
-/** Live team checklists not yet covering every repository of this Project. */
-export function attachableChecklists(
-  folder: ProjectFolder,
-  checklists: ReadonlyArray<FolderChecklist>,
-): FolderChecklist[] {
-  return checklists.filter(
-    (checklist) => !checklist.archived && checklistAttachment(folder, checklist) !== "attached",
-  );
-}
-
-/** "Attach to this Project": add every repository project of the folder. */
-export function attachPatch(folder: ProjectFolder): { add: string[] } {
-  return { add: folderProjectIds(folder) };
-}
-
-/** "Detach": remove every repository project of the folder, and nothing else. */
-export function detachPatch(folder: ProjectFolder): { remove: string[] } {
-  return { remove: folderProjectIds(folder) };
 }
 
 /**
@@ -432,16 +360,6 @@ export function createErrorMessage(cause: unknown): string {
     CREATE_MESSAGES[errorStatus(cause) ?? 0] ??
     "The Project could not be created. Try again in a moment."
   );
-}
-
-const CHECKLIST_MESSAGES: Record<number, string> = {
-  403: "Only a Team lead can change which checklists a Project uses.",
-  404: "That checklist no longer exists. Refresh and try again.",
-  409: "That checklist is archived and can no longer be attached.",
-};
-
-export function checklistPatchErrorMessage(cause: unknown): string {
-  return CHECKLIST_MESSAGES[errorStatus(cause) ?? 0] ?? "The checklist could not be updated. Try again in a moment.";
 }
 
 /* ── Delete Project ─────────────────────────────────────────────────────── */

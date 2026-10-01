@@ -11,15 +11,19 @@
 import type { AppRole } from "@/shared/api/contracts";
 import { QA_BRANCH } from "@/shared/api/pipeline-branches";
 
+import { normalizeHeads } from "./project-run-rules";
+import { QA_ERROR_MESSAGES } from "./qa-error-messages";
 import type {
   QaPromotionChecklist,
   QaPromotionMergeError,
   QaPromotionMergeErrorKind,
   QaPromotionMergeResult,
   QaPromotionPullRequest,
+  QaPromotionRun,
+  QaPromotionScope,
   QaPromotionStatus,
 } from "./qa-promotion-types";
-import { QA_VERDICTS, shortSha, type QaTone } from "./qa-run-rules";
+import { QA_VERDICTS, shortSha, verdictLabel, type QaTone } from "./qa-run-rules";
 import type { QaRunStatus } from "./qa-run-types";
 import {
   errorCode,
@@ -40,6 +44,7 @@ import {
 export const PROMOTION_TARGET_BRANCH = "main";
 
 const RUN_STATUSES: ReadonlyArray<QaRunStatus> = ["open", "signed_off"];
+const SCOPES: ReadonlyArray<QaPromotionScope> = ["project", "unfiled"];
 
 /* ── Reading the status ──────────────────────────────────────────────────── */
 
@@ -64,13 +69,40 @@ function pullRequestFrom(value: unknown): QaPromotionPullRequest | null {
   return { number, url, headSha: text(raw?.headSha) };
 }
 
+function deliveryProjectFrom(value: unknown): QaPromotionStatus["deliveryProject"] {
+  const raw = record(value);
+  const id = text(raw?.id);
+  return id ? { id, name: text(raw?.name) ?? "Project" } : null;
+}
+
+function promotionRunFrom(value: unknown): QaPromotionRun | null {
+  const raw = record(value);
+  const id = text(raw?.id);
+  if (!id) return null;
+  return { id, verdict: oneOf(raw?.verdict, QA_VERDICTS), signedAt: text(raw?.signedAt), stale: raw?.stale === true };
+}
+
+/** The Project-level gate fields (design 3.2). All absent on an older backend. */
+function projectGateFrom(raw: Loose) {
+  return {
+    scope: oneOf(raw.scope, SCOPES),
+    deliveryProject: deliveryProjectFrom(raw.deliveryProject),
+    run: promotionRunFrom(raw.run),
+    repositories: normalizeHeads(raw.repositories),
+    requirementsChanged: raw.requirementsChanged === true,
+  };
+}
+
 /**
  * Any input to a status the card can render. Absent lists are empty, absent
- * flags are false, and a PR without a number and an https URL is no PR.
+ * flags are false, and a PR without a number and an https URL is no PR. The
+ * deprecated `checklists` list is kept: it is the only gate an older backend
+ * describes.
  */
 export function normalizePromotionStatus(value: unknown): QaPromotionStatus {
   const raw = record(value) ?? {};
   return {
+    ...projectGateFrom(raw),
     qaBranch: text(raw.qaBranch) ?? QA_BRANCH,
     targetBranch: text(raw.targetBranch) ?? PROMOTION_TARGET_BRANCH,
     headSha: text(raw.headSha),
@@ -117,8 +149,26 @@ export function promotionRoute(
   return `${from} → ${status.targetBranch}`;
 }
 
+/** Where the Project's latest signed-off run stands, in a few words. */
+export function promotionRunState(
+  status: Pick<QaPromotionStatus, "run">,
+): PromotionChecklistState {
+  const run = status.run;
+  if (!run?.verdict) return { tone: "neutral", label: "No signed-off Project QA run yet", approved: false };
+  if (run.stale) return { tone: "warning", label: "Project run is stale: uat moved since sign-off", approved: false };
+  if (run.verdict === "APPROVED") return { tone: "success", label: "Project run approved for the current heads", approved: true };
+  if (run.verdict === "CONDITIONAL") {
+    return { tone: "warning", label: `Conditional — ${PROMOTION_TARGET_BRANCH} needs Approved`, approved: false };
+  }
+  return { tone: "danger", label: `Latest sign-off is ${verdictLabel(run.verdict)}`, approved: false };
+}
+
 /** "1 of 2 checklists approved", or that nothing is shared. */
-export function approvedCountLabel(status: Pick<QaPromotionStatus, "checklists">): string {
+export function approvedCountLabel(
+  status: Pick<QaPromotionStatus, "checklists"> & Partial<Pick<QaPromotionStatus, "scope" | "run">>,
+): string {
+  if (status.scope === "unfiled") return "Not filed under a Project";
+  if (status.scope === "project") return promotionRunState({ run: status.run ?? null }).label;
   const total = status.checklists.length;
   if (total === 0) return "No checklist shared";
   const approved = status.checklists.filter((entry) => entry.approvedForHead).length;
@@ -149,11 +199,18 @@ export function promotionChecklistState(entry: QaPromotionChecklist): PromotionC
  * What stops the merge, in the server's words. When a server says "not
  * eligible" without saying why, the card still gives the rule.
  */
+export const UNFILED_REASON = QA_ERROR_MESSAGES.QA_PROJECT_REQUIRED;
+
 export function blockingReasons(
-  status: Pick<QaPromotionStatus, "eligible" | "reasons" | "checklists" | "qaBranch">,
+  status: Pick<QaPromotionStatus, "eligible" | "reasons" | "checklists" | "qaBranch"> &
+    Partial<Pick<QaPromotionStatus, "scope">>,
 ): string[] {
   if (status.eligible) return [];
   if (status.reasons.length > 0) return status.reasons;
+  if (status.scope === "unfiled") return [UNFILED_REASON];
+  if (status.scope === "project") {
+    return [`The Project's latest signed-off QA run must be Approved on every repository's current ${status.qaBranch} head.`];
+  }
   if (status.checklists.length === 0) return ["No QA checklist is shared with this project yet."];
   return [`Every shared checklist must be signed off Approved on ${status.qaBranch}'s current commit.`];
 }
@@ -178,10 +235,15 @@ export function canOfferMerge(
  * the uat commit this viewer just merged: merging it again has nothing to do.
  */
 export function mergeDisabledReason(
-  status: Pick<QaPromotionStatus, "eligible" | "headSha" | "qaBranch" | "targetBranch">,
+  status: Pick<QaPromotionStatus, "eligible" | "headSha" | "qaBranch" | "targetBranch"> &
+    Partial<Pick<QaPromotionStatus, "scope">>,
   mergedHead: string | null,
 ): string | null {
+  if (status.scope === "unfiled") return UNFILED_REASON;
   if (!status.headSha) return `${status.qaBranch}'s current commit could not be resolved.`;
+  if (!status.eligible && status.scope === "project") {
+    return `Merging opens once the Project's latest QA run is signed off Approved on every repository's current ${status.qaBranch} head.`;
+  }
   if (!status.eligible) {
     return `Merging opens once every shared checklist is signed off Approved on ${status.qaBranch} @ ${shortSha(status.headSha)}.`;
   }
@@ -217,6 +279,7 @@ const CODE_KINDS: Record<string, QaPromotionMergeErrorKind> = {
   QA_PROMOTION_BLOCKED: "blocked",
   QA_UAT_MOVED: "moved",
   GITHUB_REAUTH: "reauth",
+  QA_PROJECT_REQUIRED: "project_required",
 };
 
 const STATUS_KINDS: Record<number, QaPromotionMergeErrorKind> = {
@@ -237,6 +300,8 @@ function copyFor(kind: QaPromotionMergeErrorKind, cause: unknown): string {
   switch (kind) {
     case "blocked":
       return server ?? `QA has not approved every shared checklist on ${QA_BRANCH}'s current commit.`;
+    case "project_required":
+      return UNFILED_REASON;
     case "moved":
       return `${QA_BRANCH} moved after QA signed off, so the commit QA approved is no longer ${QA_BRANCH}'s head. The status is refreshed: QA must verify the new commit before it can be merged.`;
     case "reauth":
@@ -256,6 +321,7 @@ const ERROR_TITLES: Record<QaPromotionMergeErrorKind, string> = {
   blocked: "Not merged — QA approval is incomplete",
   moved: `Not merged — ${QA_BRANCH} moved since sign-off`,
   reauth: "Sign in again to merge",
+  project_required: "Not merged — this repository is not in a Project",
   forbidden: "Not merged",
   not_found: "Not merged",
   failed: "Not merged",
@@ -283,5 +349,5 @@ export function mergeErrorClosesDialog(error: Pick<QaPromotionMergeError, "kind"
 
 /** Outcomes after which the status is stale and must be read again. */
 export function mergeErrorRefreshesStatus(error: Pick<QaPromotionMergeError, "kind">): boolean {
-  return error.kind === "blocked" || error.kind === "moved";
+  return error.kind === "blocked" || error.kind === "moved" || error.kind === "project_required";
 }

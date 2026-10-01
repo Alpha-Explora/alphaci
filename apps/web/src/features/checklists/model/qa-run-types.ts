@@ -124,6 +124,12 @@ export interface QaRun extends QaRunListItem {
    * older backends. Read it only through `normalizeRunAutomation`.
    */
   automation?: QaRunAutomationWire | null;
+  /**
+   * True on a repository-scope run once Project QA runs exist: read-only
+   * history (writes are refused with QA_RUN_LEGACY_READONLY). Absent from
+   * older backends. Read it through `lockLegacyRun`.
+   */
+  legacy?: boolean;
 }
 
 export interface QaRunListResponse {
