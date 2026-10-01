@@ -44,6 +44,14 @@ export function PlusIcon() {
   );
 }
 
+export function RemoveIcon() {
+  return (
+    <Glyph size={12}>
+      <path d="M4 4l8 8M12 4l-8 8" />
+    </Glyph>
+  );
+}
+
 /** A Feature: a spark, something the product does. */
 export function FeatureIcon() {
   return (

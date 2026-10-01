@@ -4,8 +4,12 @@ import { useState } from "react";
 
 import { requirementsRepository } from "../../data/requirements-repository";
 import {
+  addStoryRow,
   blankRequirementDraft,
   createRequirementPayload,
+  editStoryRow,
+  pasteIntoStoryRows,
+  removeStoryRow,
   requirementDraftError,
   requirementDraftFrom,
   requirementError,
@@ -25,6 +29,13 @@ export interface RequirementDialogViewModel {
   mode: RequirementDialogMode | null;
   draft: RequirementDraft;
   updateDraft: (patch: Partial<RequirementDraft>) => void;
+  /* The first stories (or items), one row each. */
+  editStory: (index: number, value: string) => void;
+  /** A blank row after `afterIndex` (the end by default). */
+  addStory: (afterIndex?: number) => void;
+  removeStory: (index: number) => void;
+  /** True when a multi-line paste was split into rows (the input should not take it). */
+  pasteStories: (index: number, pasted: string) => boolean;
   /** Why the draft cannot be sent. Shown once Save was tried. */
   validationError: string | null;
   error: RequirementError | null;
@@ -47,7 +58,7 @@ function kindOf(mode: RequirementDialogMode): RequirementKind {
 /**
  * ViewModel for the requirement dialog (Product owner, admin): create a
  * Feature or a System requirement — optionally with its first stories, one
- * per line — rename or re-describe one, or archive it. An edit carries the
+ * row each — rename or re-describe one, or archive it. An edit carries the
  * version read, so two Product owners editing at once get a 409 instead of
  * silently overwriting each other.
  */
@@ -129,6 +140,17 @@ export function useRequirementDialogViewModel(options: {
     await write(() => requirementsRepository.archive(target.id), ARCHIVE_ERROR);
   }
 
+  function setStories(next: (rows: string[]) => string[]) {
+    setDraft((current) => ({ ...current, stories: next(current.stories) }));
+  }
+
+  function pasteStories(index: number, pasted: string): boolean {
+    const rows = pasteIntoStoryRows(draft.stories, index, pasted);
+    if (!rows) return false;
+    setDraft((current) => ({ ...current, stories: rows }));
+    return true;
+  }
+
   function status(): RequirementDialogStatus {
     if (archiving) return busy ? "archiving" : "confirm-archive";
     if (!mode) return "closed";
@@ -140,6 +162,10 @@ export function useRequirementDialogViewModel(options: {
     mode: archiving ? { kind: "edit", requirement: archiving } : mode,
     draft,
     updateDraft: (patch) => setDraft((current) => ({ ...current, ...patch })),
+    editStory: (index, value) => setStories((rows) => editStoryRow(rows, index, value)),
+    addStory: (afterIndex) => setStories((rows) => addStoryRow(rows, afterIndex)),
+    removeStory: (index) => setStories((rows) => removeStoryRow(rows, index)),
+    pasteStories,
     validationError: attempted && mode ? requirementDraftError(draft, kindOf(mode)) : null,
     error,
     openCreate,

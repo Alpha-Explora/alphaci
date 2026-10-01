@@ -165,11 +165,14 @@ export interface SetProgressInput {
 
 /* ── Drafts ─────────────────────────────────────────────────────────────── */
 
-/** The requirement dialog. `stories` (one per line) is only used on create. */
+/**
+ * The requirement dialog. `stories` is the list of first stories or items,
+ * one row each (blank rows are skipped on send); only used on create.
+ */
 export interface RequirementDraft {
   name: string;
   description: string;
-  stories: string;
+  stories: string[];
 }
 
 /** One story or item being written. Strings so the inputs stay controlled. */

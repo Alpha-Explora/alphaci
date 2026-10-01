@@ -129,13 +129,47 @@ describe("ProjectRequirementsPanel", () => {
     expect(buttonNamed(container, "New Feature")).toBeUndefined();
   });
 
-  it("opens the New Feature dialog with a stories field", async () => {
+  it("opens the New Feature dialog with a list of user stories, one input each", async () => {
     loadRequirements("lead");
     const container = await render(<ProjectRequirementsPanel deliveryProjectId="dp-1" appRole="lead" />);
     await act(async () => buttonNamed(container, "New Feature")!.click());
-    const dialog = document.querySelector('[role="dialog"]')!;
-    expect(dialog.textContent).toContain("User stories (optional, one per line)");
+    const dialog = document.querySelector<HTMLElement>('[role="dialog"]')!;
+    expect(dialog.textContent).toContain("User stories (optional)");
+    expect(dialog.textContent).not.toContain("one per line");
     expect(dialog.textContent).toContain("Create feature");
+    expect(dialog.querySelector("textarea[placeholder^='As a shopper']")).toBeNull();
+
+    const rows = () => Array.from(dialog.querySelectorAll<HTMLInputElement>(".rq-story-row input"));
+    expect(rows().map((input) => input.getAttribute("aria-label"))).toEqual(["User story 1"]);
+
+    // Type the first story, then Enter: a second row, and the dialog is not submitted.
+    const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")!.set!;
+    await act(async () => {
+      setter.call(rows()[0], "Save a card");
+      rows()[0].dispatchEvent(new Event("input", { bubbles: true }));
+    });
+    await act(async () => {
+      rows()[0].dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true, cancelable: true }));
+    });
+    expect(rows().map((input) => input.value)).toEqual(["Save a card", ""]);
+    expect(document.activeElement).toBe(rows()[1]);
+    expect(requirements.create).not.toHaveBeenCalled();
+
+    // "Add user story" adds a row; the remove button takes it away again.
+    await act(async () => buttonNamed(dialog, "Add user story")!.click());
+    expect(rows()).toHaveLength(3);
+    await act(async () => dialog.querySelector<HTMLButtonElement>('[aria-label="Remove user story 3"]')!.click());
+    expect(rows()).toHaveLength(2);
+  });
+
+  it("calls them items in the New system requirement dialog", async () => {
+    loadRequirements("lead");
+    const container = await render(<ProjectRequirementsPanel deliveryProjectId="dp-1" appRole="lead" />);
+    await act(async () => buttonNamed(container, "New system requirement")!.click());
+    const dialog = document.querySelector<HTMLElement>('[role="dialog"]')!;
+    expect(dialog.textContent).toContain("Items (optional)");
+    expect(dialog.querySelector('[aria-label="Item 1"]')).not.toBeNull();
+    expect(buttonNamed(dialog, "Add item")).toBeDefined();
   });
 
   it("explains an empty Project by role", async () => {

@@ -424,20 +424,60 @@ function trimmedOrNull(value: string): string | null {
 }
 
 export function blankRequirementDraft(): RequirementDraft {
-  return { name: "", description: "", stories: "" };
+  return { name: "", description: "", stories: [""] };
 }
 
 export function requirementDraftFrom(requirement: Requirement): RequirementDraft {
-  return { name: requirement.name, description: requirement.description ?? "", stories: "" };
+  return { name: requirement.name, description: requirement.description ?? "", stories: [""] };
 }
 
-/** The stories typed one per line, as items. Blank lines are skipped. */
-export function storiesFromText(value: string): RequirementItemInput[] {
-  return value
-    .split(/\r?\n/)
-    .map((line) => line.trim())
+/* ── Story rows ─────────────────────────────────────────────────────────────
+ * The dialog lists its first stories (or items) one input each. The list is
+ * never empty, so there is always a row to type into. */
+
+/** The rows that say something, trimmed, as items. Blank rows are skipped. */
+export function storiesFromRows(rows: ReadonlyArray<string>): RequirementItemInput[] {
+  return rows
+    .map((row) => row.trim())
     .filter(Boolean)
     .map((title) => ({ title }));
+}
+
+/** Row `index` set to `value`. */
+export function editStoryRow(rows: ReadonlyArray<string>, index: number, value: string): string[] {
+  return rows.map((row, at) => (at === index ? value : row));
+}
+
+/** A blank row inserted after `afterIndex` (the end by default). */
+export function addStoryRow(rows: ReadonlyArray<string>, afterIndex = rows.length - 1): string[] {
+  const at = Math.min(Math.max(afterIndex + 1, 0), rows.length);
+  return [...rows.slice(0, at), "", ...rows.slice(at)];
+}
+
+/** Row `index` removed; the last row left is cleared instead of removed. */
+export function removeStoryRow(rows: ReadonlyArray<string>, index: number): string[] {
+  const rest = rows.filter((_, at) => at !== index);
+  return rest.length > 0 ? rest : [""];
+}
+
+/**
+ * A pasted block of several lines becomes one row per line: it fills row
+ * `index` when that row is blank, else lands right after it. Blank lines are
+ * dropped. Null for a single line, which the input takes as typed text.
+ */
+export function pasteIntoStoryRows(
+  rows: ReadonlyArray<string>,
+  index: number,
+  pasted: string,
+): string[] | null {
+  const lines = pasted
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+  if (lines.length < 2) return null;
+  const replace = (rows[index] ?? "").trim() === "";
+  const at = replace ? index : index + 1;
+  return [...rows.slice(0, at), ...lines, ...rows.slice(index + 1)];
 }
 
 /** Why the draft cannot be sent yet, or null. */
@@ -446,8 +486,8 @@ export function requirementDraftError(draft: RequirementDraft, kind: Requirement
   const singular = kindCopy(kind).singular;
   if (!name) return `Give the ${singular} a name.`;
   if (name.length > REQUIREMENT_NAME_MAX) return `Keep the name under ${REQUIREMENT_NAME_MAX} characters.`;
-  const long = storiesFromText(draft.stories).find((story) => story.title.length > REQUIREMENT_ITEM_TITLE_MAX);
-  if (long) return `Keep each line under ${REQUIREMENT_ITEM_TITLE_MAX} characters.`;
+  const long = storiesFromRows(draft.stories).find((story) => story.title.length > REQUIREMENT_ITEM_TITLE_MAX);
+  if (long) return `Keep each ${kindCopy(kind).item.toLowerCase()} under ${REQUIREMENT_ITEM_TITLE_MAX} characters.`;
   return null;
 }
 
@@ -455,7 +495,7 @@ export function createRequirementPayload(kind: RequirementKind, draft: Requireme
   const body: CreateRequirementInput = { kind, name: draft.name.trim() };
   const description = trimmedOrNull(draft.description);
   if (description) body.description = description;
-  const items = storiesFromText(draft.stories);
+  const items = storiesFromRows(draft.stories);
   if (items.length > 0) body.items = items;
   return body;
 }

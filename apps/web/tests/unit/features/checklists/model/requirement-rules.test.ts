@@ -30,7 +30,11 @@ import {
   requirementsOfKind,
   resolveFlag,
   resolveRequirementPermissions,
-  storiesFromText,
+  addStoryRow,
+  editStoryRow,
+  pasteIntoStoryRows,
+  removeStoryRow,
+  storiesFromRows,
   updateItemPayload,
   updateRequirementPayload,
   upsertRequirement,
@@ -236,20 +240,29 @@ describe("arranging", () => {
 });
 
 describe("requirement drafts", () => {
-  it("validates the name and each story line", () => {
+  it("validates the name and each story row", () => {
     expect(requirementDraftError(blankRequirementDraft(), "functional")).toBe("Give the Feature a name.");
     expect(requirementDraftError({ ...blankRequirementDraft(), name: "x".repeat(201) }, "system")).toMatch(/under 200/);
-    expect(requirementDraftError({ name: "Pay", description: "", stories: "x".repeat(301) }, "functional")).toMatch(/each line/);
-    expect(requirementDraftError({ name: "Pay", description: "", stories: "One\n\nTwo" }, "functional")).toBeNull();
+    expect(requirementDraftError({ name: "Pay", description: "", stories: ["x".repeat(301)] }, "functional")).toBe(
+      "Keep each user story under 300 characters.",
+    );
+    expect(requirementDraftError({ name: "Sec", description: "", stories: ["x".repeat(301)] }, "system")).toBe(
+      "Keep each item under 300 characters.",
+    );
+    expect(requirementDraftError({ name: "Pay", description: "", stories: ["One", "", "Two"] }, "functional")).toBeNull();
   });
 
-  it("turns lines into stories and builds the create body", () => {
-    expect(storiesFromText(" One \r\n\n Two ")).toEqual([{ title: "One" }, { title: "Two" }]);
-    expect(createRequirementPayload("functional", { name: " Pay ", description: " ", stories: "" })).toEqual({
+  it("starts with one blank row to type into", () => {
+    expect(blankRequirementDraft().stories).toEqual([""]);
+  });
+
+  it("turns rows into stories and builds the create body", () => {
+    expect(storiesFromRows([" One ", "", "  ", " Two "])).toEqual([{ title: "One" }, { title: "Two" }]);
+    expect(createRequirementPayload("functional", { name: " Pay ", description: " ", stories: [""] })).toEqual({
       kind: "functional",
       name: "Pay",
     });
-    expect(createRequirementPayload("system", { name: "Sec", description: " Why ", stories: "A\nB" })).toEqual({
+    expect(createRequirementPayload("system", { name: "Sec", description: " Why ", stories: ["A", "B"] })).toEqual({
       kind: "system",
       name: "Sec",
       description: "Why",
@@ -324,5 +337,33 @@ describe("requirementError", () => {
     expect(requirementError(apiErrorWith(404), "fallback").message).toMatch(/no longer exists/);
     expect(requirementError(apiErrorWith(500, { message: "boom" }), "fallback").message).toBe("fallback");
     expect(requirementError(new Error("network"), "fallback")).toEqual({ message: "fallback", stale: false });
+  });
+});
+
+describe("story rows", () => {
+  it("edits one row", () => {
+    expect(editStoryRow(["a", "b"], 1, "B")).toEqual(["a", "B"]);
+  });
+
+  it("adds a blank row after a row, or at the end", () => {
+    expect(addStoryRow(["a", "b"], 0)).toEqual(["a", "", "b"]);
+    expect(addStoryRow(["a", "b"])).toEqual(["a", "b", ""]);
+  });
+
+  it("removes a row but never the last one", () => {
+    expect(removeStoryRow(["a", "b", "c"], 1)).toEqual(["a", "c"]);
+    expect(removeStoryRow(["only"], 0)).toEqual([""]);
+  });
+
+  it("splits a multi-line paste into rows", () => {
+    // Into a blank row: the pasted lines take its place.
+    expect(pasteIntoStoryRows(["a", "", "c"], 1, "One\r\n\n Two \n")).toEqual(["a", "One", "Two", "c"]);
+    // Into a filled row: they land right after it.
+    expect(pasteIntoStoryRows(["a", "c"], 0, "One\nTwo")).toEqual(["a", "One", "Two", "c"]);
+  });
+
+  it("leaves a single-line paste to the input", () => {
+    expect(pasteIntoStoryRows([""], 0, "Just one")).toBeNull();
+    expect(pasteIntoStoryRows([""], 0, "Just one\n\n")).toBeNull();
   });
 });
