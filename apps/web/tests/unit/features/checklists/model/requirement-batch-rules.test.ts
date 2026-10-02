@@ -6,16 +6,27 @@ import {
   batchSubmitLabel,
   blankCard,
   canAddCard,
+  cardErrorField,
   cardErrors,
   cardHeading,
+  cardPosition,
+  cardReference,
   cardsToSend,
+  cardStoryCount,
+  cardTabLabel,
   firstCards,
+  firstInvalidCardKey,
   isBlankCard,
   nextCardKey,
   removeCard,
   REQUIREMENT_BATCH_MAX,
   requirementBatchError,
+  resolveSelectedKey,
+  selectedAfterRemove,
   sentCardKeys,
+  storyCountLabel,
+  tabIndexForKey,
+  untitledLabel,
   updateCard,
 } from "../../../../../src/features/checklists/model/requirement-batch-rules";
 import type { RequirementCardDraft } from "../../../../../src/features/checklists/model/requirement-types";
@@ -140,18 +151,93 @@ describe("copy", () => {
     );
   });
 
-  it("names the add tile, the cards and the limit", () => {
-    expect(addCardLabel("functional")).toBe("Add another Feature");
-    expect(addCardLabel("system")).toBe("Add another System requirement");
+  it("names the add button, an unnamed card and the limit", () => {
+    expect(addCardLabel("functional")).toBe("Add feature");
+    expect(addCardLabel("system")).toBe("Add requirement");
     expect(cardHeading("functional", 2)).toBe("Feature 2");
     expect(batchLimitNote("functional")).toBe("Up to 20 features at a time.");
+  });
+});
+
+describe("the side list", () => {
+  it("labels an entry with the name as typed, else an untitled placeholder", () => {
+    expect(cardTabLabel("functional", { name: "  Checkout   with  cards " })).toEqual({ text: "Checkout with cards", untitled: false });
+    expect(cardTabLabel("functional", { name: "   " })).toEqual({ text: "Untitled feature", untitled: true });
+    expect(cardTabLabel("system", { name: "" })).toEqual({ text: "Untitled requirement", untitled: true });
+    expect(untitledLabel("functional")).toBe("Untitled feature");
+  });
+
+  it("counts the stories that will be sent, in the kind's words", () => {
+    expect(cardStoryCount({ stories: ["", " Pay ", "  ", "Refund"] })).toBe(2);
+    expect(cardStoryCount({ stories: [""] })).toBe(0);
+    expect(storyCountLabel("functional", 0)).toBe("No stories");
+    expect(storyCountLabel("functional", 1)).toBe("1 story");
+    expect(storyCountLabel("functional", 3)).toBe("3 stories");
+    expect(storyCountLabel("system", 1)).toBe("1 item");
+    expect(storyCountLabel("system", 4)).toBe("4 items");
+  });
+
+  it("says where the open card sits", () => {
+    expect(cardPosition("functional", 1, 5)).toBe("Feature 2 of 5");
+    expect(cardPosition("system", 0, 1)).toBe("System requirement 1 of 1");
+  });
+
+  it("keeps a selection a card still has, else falls back to the first", () => {
+    const cards = [card("card-1"), card("card-2")];
+    expect(resolveSelectedKey(cards, "card-2")).toBe("card-2");
+    expect(resolveSelectedKey(cards, "card-9")).toBe("card-1");
+    expect(resolveSelectedKey(cards, null)).toBe("card-1");
+  });
+
+  it("selects the next entry when the open one is removed, else the previous", () => {
+    const cards = [card("card-1"), card("card-2"), card("card-3")];
+    expect(selectedAfterRemove(cards, "card-2", "card-2")).toBe("card-3");
+    expect(selectedAfterRemove(cards, "card-3", "card-3")).toBe("card-2");
+    expect(selectedAfterRemove(cards, "card-1", "card-1")).toBe("card-2");
+    // Removing another entry keeps the selection where it is.
+    expect(selectedAfterRemove(cards, "card-1", "card-3")).toBe("card-1");
+    // The only card is never removed, so it stays open.
+    expect(selectedAfterRemove([card("card-1")], "card-1", "card-1")).toBe("card-1");
+  });
+
+  it("moves along the list with the arrow keys, Home and End, wrapping round", () => {
+    expect(tabIndexForKey("ArrowDown", 0, 3)).toBe(1);
+    expect(tabIndexForKey("ArrowDown", 2, 3)).toBe(0);
+    expect(tabIndexForKey("ArrowUp", 0, 3)).toBe(2);
+    expect(tabIndexForKey("ArrowRight", 1, 3)).toBe(2);
+    expect(tabIndexForKey("ArrowLeft", 1, 3)).toBe(0);
+    expect(tabIndexForKey("Home", 2, 3)).toBe(0);
+    expect(tabIndexForKey("End", 0, 3)).toBe(2);
+    expect(tabIndexForKey("Enter", 0, 3)).toBeNull();
+    expect(tabIndexForKey("ArrowDown", 0, 0)).toBeNull();
+  });
+
+  it("finds the first card with an error, in list order", () => {
+    const cards = [card("card-1"), card("card-2"), card("card-3")];
+    expect(firstInvalidCardKey(cards, { "card-3": "x", "card-2": "y" })).toBe("card-2");
+    expect(firstInvalidCardKey(cards, {})).toBeNull();
+  });
+
+  it("points a card's error at its Name, or at the story that is too long", () => {
+    expect(cardErrorField({ name: "", stories: ["Pay"] })).toEqual({ field: "name" });
+    expect(cardErrorField({ name: "x".repeat(201), stories: [""] })).toEqual({ field: "name" });
+    expect(cardErrorField({ name: "Fine", stories: ["ok", "", "y".repeat(301)] })).toEqual({ field: "story", row: 2 });
+    // A name taken elsewhere: nothing else is wrong, so the name.
+    expect(cardErrorField({ name: "Wallet", stories: ["Pay"] })).toEqual({ field: "name" });
+  });
+
+  it("names a card in a sentence by its name, else by its place", () => {
+    const cards = [card("card-1", { name: " Checkout " }), card("card-2")];
+    expect(cardReference("functional", cards, "card-1")).toBe('"Checkout"');
+    expect(cardReference("functional", cards, "card-2")).toBe("Feature 2");
+    expect(cardReference("system", cards, "card-2")).toBe("System requirement 2");
   });
 });
 
 describe("requirementBatchError", () => {
   const cards = [card("card-1", { name: "Wallet" }), card("card-2"), card("card-3", { name: "Checkout" })];
 
-  it("puts a taken name on the card the server's index names, numbered as on screen", () => {
+  it("puts a taken name on the card the server's index names, and names it by its name", () => {
     // index 1 is the second card SENT: card-3, the third on screen (card-2 is blank).
     const failure = requirementBatchError(
       apiErrorWith(409, { code: "REQUIREMENT_NAME_TAKEN", index: 1 }),
@@ -160,7 +246,7 @@ describe("requirementBatchError", () => {
       "fallback",
     );
     expect(failure).toEqual({
-      message: "Nothing was created. Fix Feature 3, then try again.",
+      message: 'Nothing was created. Fix "Checkout", then try again.',
       stale: false,
       cardKey: "card-3",
       cardMessage: "This Project already has a requirement with that name. Pick another name.",

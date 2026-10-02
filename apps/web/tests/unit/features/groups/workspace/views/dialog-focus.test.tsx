@@ -42,6 +42,19 @@ describe("Dialog focus", () => {
     expect(document.activeElement).toBe(field("First"));
   });
 
+  it("prefers a field marked data-autofocus over the first one in the DOM", async () => {
+    await act(async () =>
+      root.render(
+        <Dialog open onClose={() => undefined} title="New">
+          <button type="button">A tab before the field</button>
+          <input aria-label="Name" data-autofocus />
+        </Dialog>,
+      ),
+    );
+    await flushTimers();
+    expect(document.activeElement).toBe(field("Name"));
+  });
+
   /* Callers pass a new onClose every render; a re-render (a keystroke) used to
    * re-run the open effect and pull focus back to the first field. */
   it("keeps focus where the user put it when it re-renders with a new onClose", async () => {
