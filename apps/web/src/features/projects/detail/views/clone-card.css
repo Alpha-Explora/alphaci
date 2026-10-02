@@ -1,0 +1,123 @@
+/* ── Repository Overview: Clone ─────────────────────────────────────────────
+   GitHub's Clone box: a segmented HTTPS / SSH / GitHub CLI switch, a
+   read-only monospace field with a copy button, and a one-line hint.
+   Tokens only, so both themes hold.
+   ------------------------------------------------------------------------- */
+
+.clone-card {
+  display: grid;
+  gap: 0.75rem;
+  padding: 1.1rem 1.25rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  background: var(--bg-elevated);
+}
+
+/* Two classes: `.tab-content-panel h2`-style rules must not restyle it. */
+.clone-card .clone-card__title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.clone-card__tabs {
+  display: inline-flex;
+  justify-self: start;
+  max-width: 100%;
+  overflow-x: auto;
+  padding: 0.2rem;
+  border: 1px solid var(--border);
+  border-radius: 0.6rem;
+}
+
+.clone-card__tab {
+  padding: 0.35rem 0.85rem;
+  border: 0;
+  border-radius: 0.45rem;
+  background: transparent;
+  color: var(--text-secondary);
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.clone-card__tab[aria-selected="true"] {
+  background: var(--bg-surface, var(--layer-2));
+  color: var(--text-primary);
+}
+
+.clone-card__tab:focus-visible,
+.clone-card__copy:focus-visible,
+.clone-card__input:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
+.clone-card__panel {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.clone-card__field {
+  display: flex;
+  gap: 0.5rem;
+  align-items: stretch;
+  max-width: 44rem;
+}
+
+.clone-card__input {
+  flex: 1;
+  min-width: 0;
+  padding: 0.55rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  background: var(--bg-input, transparent);
+  color: var(--text-primary);
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 0.82rem;
+  text-overflow: ellipsis;
+}
+
+.clone-card__copy {
+  display: inline-grid;
+  place-items: center;
+  width: 2.4rem;
+  flex-shrink: 0;
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.clone-card__copy:hover {
+  border-color: var(--border-brand);
+  color: var(--text-primary);
+}
+
+.clone-card__copy[data-copied="true"] {
+  border-color: var(--border-brand);
+  color: var(--brand);
+}
+
+.clone-card__hint {
+  margin: 0;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+/* Announces "Copied" to screen readers only. */
+.clone-card__status {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}

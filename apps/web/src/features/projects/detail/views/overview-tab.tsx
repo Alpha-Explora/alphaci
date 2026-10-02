@@ -7,10 +7,12 @@ import { ProductionDeploymentPanel } from "@/features/projects/previews";
 import type { ProvisionedProject } from "@/features/projects";
 import type { ProjectDetailTabsViewModel } from "../view-models/use-project-detail-tabs-view-model";
 import { showOverviewProductionReadiness } from "../model/project-detail-tab-rules";
+import { CloneCard } from "./clone-card";
 
 /**
  * The repository Overview, the same for every role: what is live (branch
- * previews), how many QA items wait on whom (a summary; the full list is one
+ * previews), how to clone it (HTTPS / SSH / GitHub CLI, since users never
+ * open GitHub), how many QA items wait on whom (a summary; the full list is one
  * click away), the read-only production readiness card for Developers, and
  * why provisioning failed when it did. Configuration facts, health checks and
  * drift used to live here; they were noise on the first screen.
@@ -40,6 +42,7 @@ export function OverviewTab({
         onOpenFullLogs={vm.visibleTabs.includes("hosting") ? vm.openTargetLogs : undefined}
         project={project}
       />
+      <CloneCard repoFullName={project.repoFullName} repoUrl={project.repoUrl} />
       <MyQaItemsSummary
         enabled={vm.qaChecklistsEnabled && Boolean(vm.appRole)}
         projectId={project.id}
