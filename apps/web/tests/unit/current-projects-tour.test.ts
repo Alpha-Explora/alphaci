@@ -61,10 +61,11 @@ describe("getCurrentProjectsTourSteps", () => {
     expect(step).toBeDefined();
   });
 
-  it("includes a step for the sync health checks", () => {
+  /* The health checks left the repository Overview (2026-10-02), and with
+   * them the only [data-tour='sync-health'] anchor. */
+  it("has no step for the removed health checks", () => {
     const steps = getCurrentProjectsTourSteps();
-    const step = steps.find((s) => s.element === "[data-tour='sync-health']");
-    expect(step).toBeDefined();
+    expect(steps.find((s) => s.element === "[data-tour='sync-health']")).toBeUndefined();
   });
 
   it("first step targets the Projects heading", () => {

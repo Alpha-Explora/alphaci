@@ -4,17 +4,11 @@ import type {
   DeploymentTargetSyncResponse,
   DetachDeploymentTargetResponse,
   EnvVarMetadata,
-  ProjectDriftFinding,
-  ProjectDriftRepairAction,
   ProjectOverviewResponse,
-  ProvisionedProject,
   ReinstallDeploymentSecretsResponse,
   WorkflowFileMetadata,
   WorkflowSettings,
 } from "@/shared/api/contracts";
-
-import { ApiError } from "@/shared/api/request";
-import { apiErrorReason } from "./api-error-reason";
 
 export type ProjectDetailTab =
   | "overview"
@@ -46,8 +40,8 @@ export const PROJECT_DETAIL_TABS: ReadonlyArray<ProjectDetailTab> = [
 
 /**
  * The roles QA Studio is for: the people who verify a build and sign it off.
- * Developers read the shared checklists and fix what QA returns (Overview's
- * "Returned by QA" card); they do not test in the studio.
+ * Developers read the shared checklists and fix what QA returns (the "My QA
+ * items" list the Overview summarises); they do not test in the studio.
  *
  * Exported: the Pull requests tab reads it too, to decide whether the "base
  * is main" merge notice may link into QA Studio (a Developer cannot open the
@@ -60,24 +54,15 @@ export function canOpenQaStudio(appRole: AppRole | null | undefined): boolean {
 }
 
 /**
- * Team leads and Admins — the backend's `ENV_VARS_LEAD_ONLY` allow-list for
- * the environment tab and its list/create/update/delete routes
- * (PERSONA_WORKFLOW_SPEC.md §3, §8.1).
+ * Developers and Admins — the backend's environment-variable allow-list
+ * (refusal code `ENV_VARS_LEAD_ONLY`, a legacy name) for the Environment tab
+ * and its list/create/update/delete routes. Product owners (`lead`) and QA
+ * Team are refused.
  */
-const ENV_VARS_ROLES: ReadonlySet<AppRole> = new Set<AppRole>(["lead", "admin"]);
+const ENV_VARS_ROLES: ReadonlySet<AppRole> = new Set<AppRole>(["member", "admin"]);
 
 export function canManageEnvVars(appRole: AppRole | null | undefined): boolean {
   return appRole != null && ENV_VARS_ROLES.has(appRole);
-}
-
-/**
- * Team leads and Admins (the session folds platform admins into `admin`):
- * who is offered the repository's developer-access page from the Overview.
- */
-const PROJECT_ACCESS_ROLES: ReadonlySet<AppRole> = new Set<AppRole>(["lead", "admin"]);
-
-export function canManageProjectAccess(appRole: AppRole | null | undefined): boolean {
-  return appRole != null && PROJECT_ACCESS_ROLES.has(appRole);
 }
 
 /**
@@ -96,10 +81,8 @@ export function showOverviewProductionReadiness(
  * Team leads and Admins — the backend's `PROJECT_ROLE_FORBIDDEN` allow-list
  * for disconnecting/deleting a project (PERSONA_WORKFLOW_SPEC.md §3, §8.1).
  *
- * Kept separate from `DEPLOYMENT_SECRETS_ROLES` below even though the
- * members are identical: the two gate different UI surfaces (Danger Zone vs.
- * the reinstall button), and the backend could diverge them later without
- * this file needing to notice until it does.
+ * Reinstalling deployment secrets used to share this list; it follows the
+ * hosting rule now (`canReinstallDeploymentSecrets` below).
  */
 const PROJECT_LIFECYCLE_ROLES: ReadonlySet<AppRole> = new Set<AppRole>(["lead", "admin"]);
 
@@ -110,12 +93,13 @@ export function canManageProjectLifecycle(
 }
 
 /**
- * Team leads and Admins — the backend's `HOSTING_LEAD_ONLY` allow-list for
- * creating, changing, syncing and detaching deployment targets and for
- * adding, verifying and removing custom domains. Listing stays open to anyone
- * who can see the project.
+ * Developers and Admins — the backend's hosting allow-list (refusal code
+ * `HOSTING_LEAD_ONLY`, a legacy name) for creating, changing, syncing and
+ * detaching deployment targets and for adding, verifying and removing custom
+ * domains. Product owners (`lead`) and QA Team are refused. Listing stays open
+ * to anyone who can see the project.
  */
-const HOSTING_ROLES: ReadonlySet<AppRole> = new Set<AppRole>(["lead", "admin"]);
+const HOSTING_ROLES: ReadonlySet<AppRole> = new Set<AppRole>(["member", "admin"]);
 
 export function canManageHosting(appRole: AppRole | null | undefined): boolean {
   return appRole != null && HOSTING_ROLES.has(appRole);
@@ -123,37 +107,72 @@ export function canManageHosting(appRole: AppRole | null | undefined): boolean {
 
 /** Shown where a hosting mutation control would otherwise be. */
 export const HOSTING_LEAD_ONLY_NOTE =
-  "A Team lead or admin can change hosting services and custom domains.";
+  "Developers and admins can change hosting services and custom domains.";
 
-function tabVisible(
-  tab: ProjectDetailTab,
-  checklistsVisible: boolean,
-  appRole: AppRole | null | undefined,
-): boolean {
-  if (tab === "checklists") return checklistsVisible;
-  if (tab === "qa") return checklistsVisible && canOpenQaStudio(appRole);
-  if (tab === "environment") return canManageEnvVars(appRole);
-  return true;
+/** Every tab except the ones a role is never offered. */
+function allTabsExcept(
+  ...hidden: ReadonlyArray<ProjectDetailTab>
+): ReadonlySet<ProjectDetailTab> {
+  return new Set(PROJECT_DETAIL_TABS.filter((tab) => !hidden.includes(tab)));
 }
 
 /**
- * The tabs this viewer gets, in strip order.
+ * The tabs each role may be offered, before the capability flags below.
+ * An allow-list: a role added later gets only the unknown-role list until it
+ * is named here.
  *
- * Checklists and QA Studio are capability-gated: they exist only when the
- * backend reports `qaChecklistsEnabled`, and only for a session with a known
- * app role. Checklists is for every role (what each role may change is decided
- * per item by the server); QA Studio is only for QA Team, Team leads and
- * Admins. Environment is role-gated on its own, independent of that
- * capability flag: only Team leads and Admins manage environment variables
- * (`ENV_VARS_LEAD_ONLY`), so QA and Developer never see the tab at all. Every
- * other tab is unconditional.
+ *   - Product owner (`lead`): what they own — the Overview, the Project's
+ *     requirements (Checklists), QA Studio, the Audit trail and Settings. No
+ *     code, pipeline, hosting or environment surfaces.
+ *   - Developer (`member`): everything except QA Studio, Environment included
+ *     (they change hosting and variables now).
+ *   - QA Team (`qa`): everything except Environment (read-only on hosting).
+ *   - Admin: everything.
+ */
+const ROLE_TABS: Readonly<Record<AppRole, ReadonlySet<ProjectDetailTab>>> = {
+  lead: new Set<ProjectDetailTab>(["overview", "checklists", "qa", "audit", "settings"]),
+  member: allTabsExcept("qa"),
+  qa: allTabsExcept("environment"),
+  admin: allTabsExcept(),
+};
+
+/**
+ * No known role (a session still resolving, or an older backend): the tabs
+ * every signed-in viewer had before roles, never a role-gated one.
+ */
+const UNKNOWN_ROLE_TABS: ReadonlySet<ProjectDetailTab> = allTabsExcept(
+  "checklists",
+  "qa",
+  "environment",
+);
+
+/** The role's allow-list. */
+export function projectDetailTabsForRole(
+  appRole: AppRole | null | undefined,
+): ReadonlySet<ProjectDetailTab> {
+  if (appRole == null) return UNKNOWN_ROLE_TABS;
+  return ROLE_TABS[appRole] ?? UNKNOWN_ROLE_TABS;
+}
+
+/** Checklists and QA Studio exist only with the QA checklists capability. */
+const QA_CAPABILITY_TABS: ReadonlySet<ProjectDetailTab> = new Set<ProjectDetailTab>([
+  "checklists",
+  "qa",
+]);
+
+/**
+ * The tabs this viewer gets, in strip order: the role's allow-list
+ * (`projectDetailTabsForRole`), minus Checklists and QA Studio while the
+ * backend does not report `qaChecklistsEnabled`.
  */
 export function visibleProjectDetailTabs(
   appRole: AppRole | null | undefined,
   flags: Readonly<{ qaChecklistsEnabled: boolean }>,
 ): ProjectDetailTab[] {
-  const checklistsVisible = flags.qaChecklistsEnabled && Boolean(appRole);
-  return PROJECT_DETAIL_TABS.filter((tab) => tabVisible(tab, checklistsVisible, appRole));
+  const allowed = projectDetailTabsForRole(appRole);
+  return PROJECT_DETAIL_TABS.filter(
+    (tab) => allowed.has(tab) && (flags.qaChecklistsEnabled || !QA_CAPABILITY_TABS.has(tab)),
+  );
 }
 
 /**
@@ -205,18 +224,6 @@ export const WORKFLOW_CHECK_OPTIONS: Array<{
   { key: "security", label: "Security" },
 ];
 
-export function selectedChecksLabel(project: ProvisionedProject): string {
-  const options = project.projectOptions ?? {};
-  const enabled = Object.entries(options)
-    .filter(isEnabledProjectOption)
-    .map(([key]) => key);
-  return enabled.length ? enabled.join(", ") : "None";
-}
-
-function isEnabledProjectOption(entry: [string, unknown]): boolean {
-  return entry[1] === true;
-}
-
 export function projectQueryStatus(
   hasData: boolean,
   error: string | null,
@@ -242,16 +249,12 @@ export function overviewCapabilityFlags(
   workflowSettings: boolean | undefined;
   ciRunTracking: boolean | undefined;
   deploymentHistory: boolean | undefined;
-  driftDetection: boolean | undefined;
-  syncSnapshots: boolean | undefined;
 } {
   const caps = overview?.capabilities;
   return {
     workflowSettings: caps?.workflowSettings,
     ciRunTracking: caps?.ciRunTracking,
     deploymentHistory: caps?.deploymentHistory,
-    driftDetection: caps?.driftDetection,
-    syncSnapshots: caps?.syncSnapshots,
   };
 }
 
@@ -262,47 +265,13 @@ export function overviewTabData(
   workflowFiles: WorkflowFileMetadata[];
   deploymentTargets: DeploymentTarget[];
   envMetadata: EnvVarMetadata[];
-  syncSnapshot: ProjectOverviewResponse["syncSnapshot"] | null;
-  snapshotEnabled: boolean;
 } {
   const files = overview?.workflow.files ?? workflowFilesFallback;
   return {
     workflowFiles: files ?? [],
     deploymentTargets: overview?.deploymentTargets.items ?? [],
     envMetadata: overview?.environment.items ?? [],
-    syncSnapshot: overview?.syncSnapshot ?? null,
-    snapshotEnabled: overviewSnapshotEnabled(overview),
   };
-}
-
-function overviewSnapshotEnabled(
-  overview: ProjectOverviewResponse | null | undefined,
-): boolean {
-  return overview?.syncSnapshot?.enabled === true;
-}
-
-export function isSyncAvailable(input: {
-  projectSyncSnapshotsEnabled: boolean;
-  overviewSyncSnapshots: boolean | undefined;
-  snapshotEnabled: boolean | undefined;
-}): boolean {
-  return (
-    input.projectSyncSnapshotsEnabled &&
-    input.overviewSyncSnapshots === true &&
-    input.snapshotEnabled === true
-  );
-}
-
-export function isDriftQueryEnabled(input: {
-  tab: ProjectDetailTab;
-  driftDetectionEnabled: boolean;
-  overviewDriftDetection: boolean | undefined;
-}): boolean {
-  return (
-    input.tab === "overview" &&
-    input.driftDetectionEnabled &&
-    input.overviewDriftDetection === true
-  );
 }
 
 export function isCiRunsQueryEnabled(input: {
@@ -341,26 +310,8 @@ export function isWorkflowSettingsQueryEnabled(input: {
   );
 }
 
-export function isAuditQueryEnabled(tab: ProjectDetailTab): boolean {
-  return tab === "audit";
-}
-
 export function snapshotFindingLabel(count: number): string {
   return `${count} finding${count === 1 ? "" : "s"}`;
-}
-
-export function stagesLabel(count: number): string {
-  if (!count) return "Not configured";
-  return `${count} gated workflow stages`;
-}
-
-export function ciAuthLabel(status: string | undefined): string {
-  return status ?? "Not loaded";
-}
-
-export function targetsCountLabel(count: number | undefined): string {
-  if (count === undefined) return "Not loaded";
-  return String(count);
 }
 
 export function hostingProviderLabel(provider: string): string {
@@ -383,16 +334,6 @@ export function deploymentRowClass(status: string): string {
   return "provisioned";
 }
 
-export function healthCheckRowClass(status: string): string {
-  if (status === "error") return "failed";
-  return "provisioned";
-}
-
-export function driftFindingRowClass(severity: string): string {
-  if (severity === "error") return "failed";
-  return "provisioned";
-}
-
 export function previewDiffBadgeClass(status: string): string {
   if (status === "changed") return "dash-badge-violet";
   return "branch-chip";
@@ -405,11 +346,6 @@ export function coverageHasPreset(threshold: number): boolean {
 
 export function centralRefIsListed(tags: string[], ref: string): boolean {
   return tags.includes(ref);
-}
-
-export function syncNowLabel(syncing: boolean): string {
-  if (syncing) return "Syncing…";
-  return "Sync now";
 }
 
 export function targetSyncLabel(syncing: boolean): string {
@@ -449,21 +385,6 @@ export const UPDATE_PR_TARGET_NOTE =
 export function createUpdatePrLabel(creating: boolean): string {
   if (creating) return "Creating...";
   return "Create update PR";
-}
-
-export function driftCheckLabel(running: boolean): string {
-  if (running) return "Checking...";
-  return "Run drift check";
-}
-
-export function driftRepairButtonLabel(input: {
-  repairing: boolean;
-  confirming: boolean;
-  action: ProjectDriftRepairAction;
-}): string {
-  if (input.repairing) return "Repairing...";
-  if (input.confirming) return "Confirm repair";
-  return driftRepairActionLabel(input.action);
 }
 
 export function targetSyncMessage(response: DeploymentTargetSyncResponse): string {
@@ -514,91 +435,6 @@ function detachProviderErrorMessage(
 ): string {
   const dashboard = target.dashboardUrl ? ` (${target.dashboardUrl})` : "";
   return `Target detached from ALPHACI, but the ${target.provider} resource could not be deleted automatically (${providerDeleteError}). Delete it manually from the provider dashboard${dashboard}.`;
-}
-
-/** Live branch-protection findings the backend can repair (`branch_dev_protected` is detect-only). */
-const BRANCH_PROTECTION_REPAIRABLE_CODES: ReadonlySet<string> = new Set([
-  "branch_protection_missing",
-  "branch_force_push_allowed",
-  "branch_deletion_allowed",
-]);
-
-/** The backend allows `repair_branch_protection` for Team leads and Admins only (403 otherwise). */
-const BRANCH_PROTECTION_REPAIR_ROLES: ReadonlySet<AppRole> = new Set<AppRole>([
-  "lead",
-  "admin",
-]);
-
-/** Shown in place of the repair button, and for a 403 on repair. */
-export const DRIFT_REPAIR_LEAD_ONLY_MESSAGE =
-  "A Team lead or admin can repair this.";
-
-/**
- * Whether this viewer may run a repair action. Allow-list for the action the
- * backend restricts; every other action is unchanged (allowed as today).
- */
-export function canRunDriftRepair(
-  action: ProjectDriftRepairAction,
-  appRole: AppRole | null | undefined,
-): boolean {
-  if (action !== "repair_branch_protection") return true;
-  return appRole != null && BRANCH_PROTECTION_REPAIR_ROLES.has(appRole);
-}
-
-/** A 403 on repair means the role gate; anything else shows the server's reason. */
-export function driftRepairErrorMessage(error: unknown): string {
-  if (error instanceof ApiError && error.status === 403) {
-    return DRIFT_REPAIR_LEAD_ONLY_MESSAGE;
-  }
-  return apiErrorReason(error, "Unable to run repair action.");
-}
-
-/** Header source label: "Live check", "Local snapshot", or both when mixed. */
-export function driftSourceLabel(
-  findings: ReadonlyArray<Pick<ProjectDriftFinding, "source">>,
-): string {
-  const live = findings.filter((f) => f.source === "github_live").length;
-  if (live === 0) return "Local snapshot";
-  if (live === findings.length) return "Live check";
-  return "Local snapshot + live check";
-}
-
-export function driftRepairActionForCode(
-  code: string,
-  workflowUpdatePrEnabled: boolean,
-): ProjectDriftRepairAction | null {
-  if (code === "ci_token_missing" || code === "ci_token_revoked") {
-    return "rotate_ci_token";
-  }
-  if (code === "deployment_target_metadata_missing") {
-    return "detach_target";
-  }
-  if (BRANCH_PROTECTION_REPAIRABLE_CODES.has(code)) {
-    return "repair_branch_protection";
-  }
-  if (
-    code === "workflow_files_missing" ||
-    code === "central_workflow_ref_outdated"
-  ) {
-    return workflowPrOrPreview(workflowUpdatePrEnabled);
-  }
-  return null;
-}
-
-function workflowPrOrPreview(
-  workflowUpdatePrEnabled: boolean,
-): ProjectDriftRepairAction {
-  if (workflowUpdatePrEnabled) return "create_workflow_update_pr";
-  return "regenerate_workflow_preview";
-}
-
-export function driftRepairActionLabel(action: ProjectDriftRepairAction): string {
-  if (action === "rotate_ci_token") return "Rotate CI token";
-  if (action === "detach_target") return "Detach target";
-  if (action === "repair_branch_protection") return "Repair branch protection";
-  if (action === "regenerate_workflow_preview") return "Preview workflow";
-  if (action === "create_workflow_update_pr") return "Create update PR";
-  return "Ignore finding";
 }
 
 export function replaceDeploymentTarget(
@@ -686,17 +522,14 @@ export function applyTargetDetached(
 /* ── Reinstall deployment secrets ────────────────────────────────────────── */
 
 /**
- * Team leads and Admins reinstall a target's secrets; every other role
- * (including QA Team) only ever sees Sync/Detach. Mirrors the merge-only
- * role rule QA Studio uses, kept local so this model does not reach across
- * the checklists feature for one predicate.
+ * Reinstalling a target's secrets follows the hosting rule (Developers and
+ * Admins, `canManageHosting`), as the backend does; Product owners and QA
+ * Team never see the button.
  */
-const DEPLOYMENT_SECRETS_ROLES: ReadonlySet<AppRole> = new Set<AppRole>(["lead", "admin"]);
-
 export function canReinstallDeploymentSecrets(
   appRole: AppRole | null | undefined,
 ): boolean {
-  return appRole != null && DEPLOYMENT_SECRETS_ROLES.has(appRole);
+  return canManageHosting(appRole);
 }
 
 export function reinstallSecretsLabel(reinstalling: boolean): string {
@@ -796,7 +629,7 @@ export function reinstallSecretsFailure(
   }
   if (status === 403) {
     return {
-      message: "Only team leads and admins can reinstall deployment secrets.",
+      message: "Only Developers and admins can reinstall deployment secrets.",
       signInHref: null,
     };
   }

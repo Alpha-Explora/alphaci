@@ -17,6 +17,7 @@ import {
   type DeveloperItemEditorViewModel,
 } from "../view-models/use-developer-item-editor-view-model";
 import { useMyQaItemsViewModel } from "../view-models/use-my-qa-items-view-model";
+import { useProjectMyItemsViewModel } from "../view-models/use-project-my-items-view-model";
 import {
   useRequestRetestViewModel,
   type RequestRetestViewModel,
@@ -180,6 +181,12 @@ type MyQaItemsCardProps = Readonly<{
    * per-repository card below.
    */
   qaScope?: QaScope;
+  /**
+   * For a repository in a Project: the Project page carries the Project-wide
+   * list, so draw nothing here unless the server has no such list (an older
+   * backend), in which case the per-repository card stands in for it.
+   */
+  projectListElsewhere?: boolean;
 }>;
 
 /**
@@ -187,8 +194,15 @@ type MyQaItemsCardProps = Readonly<{
  * it lists the whole Project's items (QA verifies the Project, so the work is
  * shared); for any other repository it is the per-repository card.
  */
-export function MyQaItemsCard({ qaScope = REPOSITORY_SCOPE, ...props }: MyQaItemsCardProps) {
+export function MyQaItemsCard({
+  qaScope = REPOSITORY_SCOPE,
+  projectListElsewhere = false,
+  ...props
+}: MyQaItemsCardProps) {
   if (qaScope.kind === "pending") return null;
+  if (qaScope.kind === "project" && projectListElsewhere) {
+    return <RepositoryCardWithoutProjectList deliveryProjectId={qaScope.deliveryProjectId} {...props} />;
+  }
   if (qaScope.kind === "project") {
     return (
       <ProjectMyItemsCard
@@ -204,6 +218,16 @@ export function MyQaItemsCard({ qaScope = REPOSITORY_SCOPE, ...props }: MyQaItem
   return <RepositoryMyQaItemsCard {...props} />;
 }
 
+/** The per-repository card, only while the server has no Project-wide list. */
+function RepositoryCardWithoutProjectList({
+  deliveryProjectId,
+  ...props
+}: Omit<MyQaItemsCardProps, "qaScope" | "projectListElsewhere"> & Readonly<{ deliveryProjectId: string }>) {
+  const project = useProjectMyItemsViewModel({ deliveryProjectId, enabled: props.enabled });
+  if (project.status !== "unavailable") return null;
+  return <RepositoryMyQaItemsCard {...props} />;
+}
+
 /**
  * The per-repository "My QA items" card: what QA returned on this project (with
  * "Mark fixed & request re-test"), and the current uat run's developer items
@@ -215,7 +239,7 @@ function RepositoryMyQaItemsCard({
   enabled,
   appRole,
   highlightRequested = false,
-}: Omit<MyQaItemsCardProps, "qaScope">) {
+}: Omit<MyQaItemsCardProps, "qaScope" | "projectListElsewhere">) {
   const list = useMyQaItemsViewModel({ projectId, enabled });
   const retest = useRequestRetestViewModel({ projectId, onDone: list.reload });
   const editor = useDeveloperItemEditorViewModel({ projectId, onRun: list.applyRun });

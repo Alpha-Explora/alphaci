@@ -20,6 +20,7 @@ import type {
   ProjectDriftRepairAction,
   ProjectDriftRepairResponse,
   ProjectAuditEventsResponse,
+  ProjectAuditPageRequest,
   ProjectOverviewResponse,
   ProjectSyncSnapshotResponse,
   ProvisionedProjectsResponse,
@@ -227,9 +228,14 @@ export async function repairProjectDriftFinding(
 
 export async function getProjectAuditEvents(
   projectId: string,
+  page: ProjectAuditPageRequest = {},
 ): Promise<ProjectAuditEventsResponse> {
+  const params = new URLSearchParams();
+  if (page.limit !== undefined) params.set("limit", String(page.limit));
+  if (page.before) params.set("before", page.before);
+  const query = params.toString();
   return request<ProjectAuditEventsResponse>(
-    `/projects/${encodeURIComponent(projectId)}/audit`,
+    `/projects/${encodeURIComponent(projectId)}/audit${query ? `?${query}` : ""}`,
   );
 }
 

@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { motion } from "framer-motion";
 
+import { SIDEBAR_SHOWS_ACTIVITY } from "@/features/workspace/selection";
+
 import {
   RUN_STAGE_LABELS,
   buildWorkspaceAttentionItems,
@@ -235,6 +237,7 @@ function WorkspacePopulatedOverview({
   runStats,
   attentionItems,
   canOpenActivity,
+  showActivity,
 }: Readonly<{
   group: GroupSummary | null;
   projects: ProvisionedProject[];
@@ -248,6 +251,7 @@ function WorkspacePopulatedOverview({
   runStats: RunStats;
   attentionItems: WorkspaceAttentionItem[];
   canOpenActivity: boolean;
+  showActivity: boolean;
 }>) {
   return (
     <>
@@ -280,7 +284,9 @@ function WorkspacePopulatedOverview({
         >
           <TeamProjectsList group={group} projects={projects} loading={loading} />
           <QualityCard runStats={runStats} loading={loading} />
-          <ActivityRail group={group} activity={activity} canOpenActivity={canOpenActivity} />
+          {showActivity ? (
+            <ActivityRail group={group} activity={activity} canOpenActivity={canOpenActivity} />
+          ) : null}
         </motion.aside>
       </div>
 
@@ -300,6 +306,7 @@ export function DashboardWorkspaceOverview({
   loading,
   reduced,
   canOpenActivity,
+  showActivity = SIDEBAR_SHOWS_ACTIVITY,
 }: Readonly<{
   group: GroupSummary | null;
   portfolio: DeliveryPortfolioNode[];
@@ -311,6 +318,12 @@ export function DashboardWorkspaceOverview({
   loading: boolean;
   reduced: boolean | null;
   canOpenActivity: boolean;
+  /**
+   * Whether the Activity rail (and its "Open" link) shows at all. Defaults to
+   * SIDEBAR_SHOWS_ACTIVITY: the team feed is hidden for now, like its sidebar
+   * entry. Tests pass true to cover the rail itself.
+   */
+  showActivity?: boolean;
 }>) {
   const { deliveryProjectCount, repositoryCount } =
     workspacePortfolioCounts(portfolio);
@@ -357,6 +370,7 @@ export function DashboardWorkspaceOverview({
         runStats={runStats}
         attentionItems={attentionItems}
         canOpenActivity={canOpenActivity}
+        showActivity={showActivity}
       />
     </div>
   );

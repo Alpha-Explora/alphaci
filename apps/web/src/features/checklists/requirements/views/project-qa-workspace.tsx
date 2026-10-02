@@ -8,6 +8,7 @@ import type { AppRole } from "@/shared/api/contracts";
 
 import { ProjectMyItemsCard } from "../../returned";
 import { ProjectRunPanel, useProjectRunViewModel } from "../../studio";
+import { projectWorkspaceOpensMyItems } from "../../model/my-qa-items-summary-rules";
 import { canSetVerification } from "../../model/requirement-rules";
 import { ProjectRequirementsPanel } from "./project-requirements-panel";
 
@@ -21,8 +22,15 @@ const TABS: ReadonlyArray<{ id: WorkspaceTab; label: string }> = [
 
 const ARROW_STEPS: Readonly<Record<string, number>> = { ArrowRight: 1, ArrowLeft: -1 };
 
-/** The QA Team lands on the run they verify; everyone else on the requirements. */
+/**
+ * A repository Overview's "Open checklist" links here with `#my-qa-items`;
+ * otherwise the QA Team lands on the run they verify and everyone else on the
+ * requirements. Read once at mount: the workspace only renders client-side,
+ * after its Project has loaded.
+ */
 function firstTab(appRole: AppRole | null | undefined): WorkspaceTab {
+  const hash = typeof window === "undefined" ? null : window.location.hash;
+  if (projectWorkspaceOpensMyItems(hash)) return "items";
   return appRole === "qa" ? "run" : "requirements";
 }
 

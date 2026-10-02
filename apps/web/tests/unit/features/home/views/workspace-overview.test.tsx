@@ -33,6 +33,8 @@ function render(
   canOpenActivity: boolean,
   activity: GroupActivityItem[] = ACTIVITY,
   projects: ProvisionedProject[] = [PROJECT],
+  /** null: leave the prop out, so the component's default applies. */
+  showActivity: boolean | null = true,
 ): HTMLElement {
   const container = document.createElement("div");
   document.body.appendChild(container);
@@ -50,6 +52,7 @@ function render(
         loading={false}
         reduced
         canOpenActivity={canOpenActivity}
+        showActivity={showActivity ?? undefined}
       />,
     ),
   );
@@ -61,6 +64,13 @@ function activityLink(container: HTMLElement): Element | undefined {
 }
 
 describe("Home activity rail", () => {
+  /* Hidden by default (SIDEBAR_SHOWS_ACTIVITY), like its sidebar entry. */
+  it("shows no Activity rail and no Open link by default", () => {
+    const container = render(true, ACTIVITY, [PROJECT], null);
+    expect(activityLink(container)).toBeUndefined();
+    expect(container.querySelector("#recent-activity-title")).toBeNull();
+  });
+
   it("links to the activity page when the viewer may open it", () => {
     expect(activityLink(render(true))).toBeDefined();
   });

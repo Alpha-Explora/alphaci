@@ -2,6 +2,7 @@ import {
   canOpenTeamActivity,
   adminOtherTeams,
   selectableWorkspaces,
+  SIDEBAR_SHOWS_ACTIVITY,
   SIDEBAR_SHOWS_CHECKLISTS,
   sidebarMainItems,
   workspaceSwitcherKind,
@@ -60,36 +61,50 @@ describe("selectableWorkspaces", () => {
 });
 
 describe("sidebarMainItems", () => {
-  /* Requirements live on each Project now; the team Checklists page left the sidebar. */
-  it("leaves Checklists out of the sidebar by default, even with the capability on", () => {
+  /* Requirements live on each Project now; the team Checklists page left the
+   * sidebar. The team Activity feed is hidden too (not deleted). */
+  it("leaves Checklists and Activity out of the sidebar by default", () => {
     expect(SIDEBAR_SHOWS_CHECKLISTS).toBe(false);
+    expect(SIDEBAR_SHOWS_ACTIVITY).toBe(false);
     expect(
       sidebarMainItems({ guest: false, qaChecklistsEnabled: true, canOpenActivity: true }),
-    ).toEqual(["home", "projects", "teams", "activity", "inbox"]);
+    ).toEqual(["home", "projects", "teams", "inbox"]);
   });
 
-  it("adds Checklists (when shown and the capability is on) and Activity after Teams", () => {
+  it("adds Checklists (when shown and the capability is on) and Activity (when shown) after Teams", () => {
     expect(
-      sidebarMainItems({ guest: false, qaChecklistsEnabled: true, canOpenActivity: true, showChecklists: true }),
+      sidebarMainItems({
+        guest: false,
+        qaChecklistsEnabled: true,
+        canOpenActivity: true,
+        showChecklists: true,
+        showActivity: true,
+      }),
     ).toEqual(["home", "projects", "teams", "checklists", "activity", "inbox"]);
   });
 
   it("keeps Checklists hidden while the QA checklists capability is off", () => {
     expect(
-      sidebarMainItems({ guest: false, qaChecklistsEnabled: false, canOpenActivity: true, showChecklists: true }),
+      sidebarMainItems({
+        guest: false,
+        qaChecklistsEnabled: false,
+        canOpenActivity: true,
+        showChecklists: true,
+        showActivity: true,
+      }),
     ).toEqual(["home", "projects", "teams", "activity", "inbox"]);
   });
 
   /* A QA Team member used to get the link, then "You don't have access". */
-  it("hides Activity from someone who cannot open it", () => {
+  it("hides Activity from someone who cannot open it, even when shown", () => {
     expect(
-      sidebarMainItems({ guest: false, qaChecklistsEnabled: true, canOpenActivity: false }),
+      sidebarMainItems({ guest: false, qaChecklistsEnabled: true, canOpenActivity: false, showActivity: true }),
     ).toEqual(["home", "projects", "teams", "inbox"]);
   });
 
   it("shows a guest only Home and Projects", () => {
     expect(
-      sidebarMainItems({ guest: true, qaChecklistsEnabled: true, canOpenActivity: true }),
+      sidebarMainItems({ guest: true, qaChecklistsEnabled: true, canOpenActivity: true, showActivity: true }),
     ).toEqual(["home", "projects"]);
   });
 });

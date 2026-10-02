@@ -60,16 +60,6 @@ function buildSteps(): DriveStep[] {
         align: "start",
       },
     },
-    {
-      element: "[data-tour='sync-health']",
-      popover: {
-        title: "Health checks",
-        description:
-          "ALPHACI runs a set of automated checks against each project — CI token validity, workflow file presence, branch protection rules, and more. Green rows mean everything is in order. Red rows show what needs attention before your pipeline will work correctly.",
-        side: "top",
-        align: "start",
-      },
-    },
   ];
 }
 
@@ -78,7 +68,7 @@ function buildSteps(): DriveStep[] {
  * the DOM are included. The projects-list step is always retained — it is the
  * one element guaranteed to be rendered whenever this tour is launched.
  *
- * Most detail-pane anchors (tabs, deployment targets, health checks) only
+ * Most detail-pane anchors (tabs, deployment targets) only
  * appear when a project is selected; skipping absent steps prevents driver.js
  * from erroring or jumping to an off-screen position.
  */

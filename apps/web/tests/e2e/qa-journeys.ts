@@ -7,6 +7,7 @@ import type {
   AppRole,
   AuthMeResponse,
   CapabilitiesResponse,
+  ProjectAuditEventsResponse,
   ProjectOptionsResponse,
   ProjectOverviewResponse,
   ProjectPreviewsResponse,
@@ -1083,6 +1084,7 @@ class QaMockBackend {
       ['GET', /^\/projects$/, (_m, req) => ({ body: { items: this.projectsFor(req.query.get('workspaceId')) } })],
       ['GET', new RegExp(`^/projects/${P}/overview$`), (m) => ({ body: this.overview(m[1]) })],
       ['GET', new RegExp(`^/projects/${P}/previews$`), (m) => ({ body: this.previews(m[1]) })],
+      ['GET', new RegExp(`^/projects/${P}/audit$`), (m, req) => this.audit(m[1], req.query)],
       // Project requirements and Project QA runs (404 on an older backend)
       ['GET', new RegExp(`^/delivery-projects/${P}/requirements$`), (m) => this.projectRequirements(m[1])],
       ['POST', new RegExp(`^/delivery-projects/${P}/requirements$`), (m, req) => this.createRequirement(m[1], req.body)],
@@ -1294,6 +1296,56 @@ class QaMockBackend {
       capabilities: { envProvisioning: true, workflowSettings: false, syncSnapshots: false, ciRunTracking: false, deploymentHistory: false, driftDetection: false },
       hierarchyRepositoryId: null,
     };
+  }
+
+  /**
+   * GET /projects/:id/audit — newest first, `?limit` 1-100 (400 otherwise),
+   * `?before=<next>` an exclusive createdAt cursor. Two pages for project-1:
+   * the newest event is a Project-scoped requirement event by the lead, the
+   * oldest a System event.
+   */
+  private audit(projectId: string, query: URLSearchParams): ApiReply {
+    this.requireProject(projectId);
+    const limitText = query.get('limit');
+    const limit = limitText === null ? 50 : Number(limitText);
+    if (!Number.isInteger(limit) || limit < 1) throw nestError(400, 'limit must be a positive integer');
+    const before = query.get('before');
+    const all: ProjectAuditEventsResponse['items'] = [
+      {
+        id: 'audit-3',
+        eventCode: 'qa.requirement.created',
+        message: 'Added Feature Checkout.',
+        actorUserId: PEOPLE.lead.id,
+        actorLogin: PEOPLE.lead.login,
+        metadata: {},
+        createdAt: '2026-10-01T09:00:00.000000+00:00',
+        scope: 'project',
+      },
+      {
+        id: 'audit-2',
+        eventCode: 'pull_request_merged',
+        message: 'Merged pull request #12 into dev.',
+        actorUserId: PEOPLE.member.id,
+        actorLogin: PEOPLE.member.login,
+        metadata: {},
+        createdAt: '2026-09-30T09:00:00.123456+00:00',
+        scope: 'repository',
+      },
+      {
+        id: 'audit-1',
+        eventCode: 'project_created',
+        message: 'Repository created',
+        actorUserId: null,
+        actorLogin: null,
+        metadata: { backfilledFromOutbox: true },
+        createdAt: '2026-09-29T09:00:00.000000+00:00',
+        scope: 'repository',
+      },
+    ];
+    const older = before ? all.filter((item) => item.createdAt < before) : all;
+    const page = older.slice(0, Math.min(limit, 2));
+    const next = older.length > page.length ? page[page.length - 1].createdAt : null;
+    return { body: { enabled: true, items: page, next } satisfies ProjectAuditEventsResponse };
   }
 
   private previews(projectId: string): ProjectPreviewsResponse {
@@ -2573,7 +2625,19 @@ async function developerRequestsRetest({ page, backend, baseUrl }: JourneyContex
 
   await openProjectTab(page, baseUrl, 'Overview');
   await expectRoleBadge(page, 'member');
-  const card = page.locator('section.qa-returned');
+  // The Overview carries only a summary: a count per state and a way to the
+  // full list. No rows, no controls.
+  const summary = page.getByTestId('my-qa-items-summary');
+  await expectText(summary.locator('#qa-summary-title'), 'My QA items', 'the My QA items summary');
+  await expectText(summary.locator('li[data-bucket="returned"] .qa-summary__chip-count'), '2', 'two returned items in the summary');
+  await expectText(summary.locator('li[data-bucket="todo"] .qa-summary__chip-count'), '1', 'the developer item still to do');
+  assert.equal(await summary.locator('li.qa-returned__row').count(), 0, 'no per-item rows on the Overview');
+  assert.deepEqual(await summary.getByRole('button').allTextContents(), ['Open checklist'], 'one control on the summary');
+  // This server has no Project-wide list, so the list lives on the Checklists tab.
+  await summary.getByRole('button', { name: 'Open checklist' }).click();
+  const tabs = page.getByRole('tablist', { name: 'Project sections' });
+  await visible(tabs.getByRole('tab', { name: 'Checklists', selected: true }), 'the Checklists tab, opened from the summary');
+  const card = page.locator('section.qa-returned').filter({ has: page.locator('#qa-mine-title') });
   await expectText(card.locator('#qa-mine-title'), 'My QA items', 'the My QA items card');
   await expectText(card.locator('.qa-returned__count'), '2', 'two returned items');
   const row = card.locator('li.qa-returned__row').filter({ hasText: third.title });
@@ -2593,8 +2657,8 @@ async function developerRequestsRetest({ page, backend, baseUrl }: JourneyContex
   assert.equal(item3.status, 'pending', 'a re-test sends the item back to pending');
   assert.equal(item2.status, 'returned_to_dev', 'the other returned item is untouched');
 
-  // Section 2: the developer item of the current uat run, recorded from the Overview
-  // with the studio's own rules, and never "Returned to dev".
+  // Section 2: the developer item of the current uat run, recorded from the Checklists
+  // tab with the studio's own rules, and never "Returned to dev".
   const checks = card.getByRole('region', { name: 'Your checks on uat @ 9f8e7d6' });
   await visible(checks, 'the "Your checks on uat @ 9f8e7d6" section');
   const devRow = checks.locator('li.qa-mine__row').filter({ hasText: DEVELOPER_ITEM.title });
@@ -2609,14 +2673,20 @@ async function developerRequestsRetest({ page, backend, baseUrl }: JourneyContex
   assert.deepEqual(devPatch.body, { expectedRowVersion: 1, status: 'passed' });
   assert.equal(item4.status, 'passed', 'the server recorded the developer item');
 
-  // QA Studio is for QA Team, Team leads and Admins: a Developer reads the
+  // QA Studio is for QA Team, Product owners and Admins: a Developer reads the
   // shared checklists and fixes what QA returns, from the card above.
-  const tabs = page.getByRole('tablist', { name: 'Project sections' });
   await visible(tabs.getByRole('tab', { name: 'Checklists', exact: true }), 'the Checklists tab for a Developer');
+  // A Developer changes hosting and variables now: both tabs are theirs.
+  for (const name of ['Hosting', 'Environment']) {
+    await visible(tabs.getByRole('tab', { name, exact: true }), `the ${name} tab for a Developer`);
+  }
   await neverShown(backend, tabs.getByRole('tab', { name: 'QA Studio', exact: true }), 'the QA Studio tab for a Developer');
 
-  // A deep link to #qa cannot reveal it either: it lands on Overview.
+  // A deep link to #qa cannot reveal it either: it lands on Overview. (The page
+  // is on the Checklists tab now, and a hash-only goto keeps the document, so
+  // reload to open the link fresh.)
   await page.goto(`${baseUrl}/projects/${PROJECT_ID}#qa`, { waitUntil: 'domcontentloaded' });
+  await page.reload({ waitUntil: 'domcontentloaded' });
   await visible(tabs.getByRole('tab', { name: 'Overview', selected: true }), 'Overview for a #qa deep link');
   await neverShown(backend, page.locator('.qa-studio'), 'QA Studio for a Developer');
   assert.equal(backend.callsTo('GET', /\/qa-runs\/current$/).length, 0, 'the studio never looked up a run for a Developer');
@@ -2660,6 +2730,36 @@ async function capabilityAbsentHidesQa({ page, backend, baseUrl }: JourneyContex
   await openProjectTab(page, baseUrl, 'Overview');
   const tabs = page.getByRole('tablist', { name: 'Project sections' });
   await visible(tabs.getByRole('tab', { name: 'Settings' }), 'the rest of the tab strip');
+  // A Product owner's strip is Overview, Checklists, QA Studio, Audit and
+  // Settings; without the capability, Overview, Audit and Settings.
+  assert.deepEqual(await tabs.getByRole('tab').allTextContents(), ['Overview', 'Audit', 'Settings'], "a Product owner's tabs");
+  // A deep link to a tab the role does not get lands on Overview.
+  await page.goto(`${baseUrl}/projects/${PROJECT_ID}#hosting`, { waitUntil: 'domcontentloaded' });
+  await visible(tabs.getByRole('tab', { name: 'Overview', selected: true }), 'Overview for a #hosting deep link');
+
+  // Audit: newest first, in words, who and when, the Project tag, Load more.
+  await tabs.getByRole('tab', { name: 'Audit', exact: true }).click();
+  const trail = page.locator('section.audit-trail');
+  const rows = trail.locator('li.audit-trail__row');
+  await eventually('two audit rows', async () => (await rows.count()) === 2);
+  await expectText(rows.nth(0), 'Requirement added', 'the newest event, in words');
+  await expectText(rows.nth(0).locator('.audit-trail__tag'), 'Project', 'the Project tag');
+  await expectText(rows.nth(0).locator('.audit-trail__actor'), PEOPLE.lead.login, 'who did it');
+  assert.equal(await rows.nth(0).locator('time').getAttribute('datetime'), '2026-10-01T09:00:00.000000+00:00');
+  assert.ok(await rows.nth(0).locator('time').getAttribute('title'), 'the exact time on hover');
+  await expectText(rows.nth(1), 'Pull request merged', 'the second event');
+  await trail.getByRole('button', { name: 'Load more' }).click();
+  await eventually('the older page appended', async () => (await rows.count()) === 3);
+  await expectText(rows.nth(2), 'Repository created', 'the oldest event');
+  await expectText(rows.nth(2).locator('.audit-trail__actor'), 'System', 'a system event');
+  await absent(trail.getByRole('button', { name: 'Load more' }), 'Load more on the last page');
+  const auditCalls = backend.callsTo('GET', /^\/projects\/project-1\/audit$/);
+  assert.deepEqual(
+    auditCalls.map((call) => [call.query.get('limit'), call.query.get('before')]),
+    [['50', null], ['50', '2026-09-30T09:00:00.123456+00:00']],
+    'the cursor goes back unchanged',
+  );
+  await tabs.getByRole('tab', { name: 'Overview', exact: true }).click();
   // Positive control: the Overview only asks for previews once it has read a
   // capabilities response (previewDeployments), so the flags are applied.
   await eventually('the capability-gated previews request', () => backend.callsTo('GET', /^\/projects\/project-1\/previews$/).length > 0);
@@ -2672,11 +2772,13 @@ async function capabilityAbsentHidesQa({ page, backend, baseUrl }: JourneyContex
   const teamsLoadedAt = Date.now();
   await page.goto(`${baseUrl}/teams`, { waitUntil: 'domcontentloaded' });
   await visible(page.getByRole('heading', { name: /^Members/ }), 'the Members section');
-  // The sidebar keeps Activity but drops Checklists without the capability.
-  await visible(sidebarLink(page, 'Activity'), "the sidebar's Activity link");
+  // The sidebar drops Checklists without the capability, and Activity is
+  // hidden for everyone (SIDEBAR_SHOWS_ACTIVITY), even for a lead who may read it.
   await neverShown(backend, sidebarLink(page, 'Checklists'), "the sidebar's Checklists link", teamsLoadedAt);
-  // A lead's Activity opens on its card, with no hero above it.
-  await openSidebarPage(page, 'Activity', '/activity');
+  await neverShown(backend, sidebarLink(page, 'Activity'), "the sidebar's Activity link", teamsLoadedAt);
+  // The route still works: typed in, a lead's Activity opens on its card, with no hero above it.
+  await page.goto(`${baseUrl}/activity`, { waitUntil: 'domcontentloaded' });
+  await eventually('the /activity page', () => new URL(page.url()).pathname === '/activity');
   await visible(page.getByRole('heading', { level: 2, name: 'Activity & audit' }), 'the Activity & audit card');
   await visible(page.getByText('No activity yet'), 'the empty activity feed');
   assert.equal(await page.locator('.workflow-page-header').count(), 0, 'no hero container on /activity');

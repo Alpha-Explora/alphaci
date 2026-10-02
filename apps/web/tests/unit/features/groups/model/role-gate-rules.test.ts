@@ -16,8 +16,8 @@ function apiError(status: number, code?: string): ApiError {
 describe("canWriteRepositoryConfiguration", () => {
   it.each([
     ["admin", true],
-    ["lead", true],
-    ["member", false],
+    ["member", true],
+    ["lead", false],
     ["qa", false],
     [undefined, false],
     [null, false],
@@ -31,7 +31,7 @@ describe("roleGateMessage", () => {
     [
       403,
       "ENV_VARS_LEAD_ONLY",
-      "Only team leads and admins can change repository variables and secrets.",
+      "Developers and admins can change repository variables and secrets.",
     ],
     [
       400,

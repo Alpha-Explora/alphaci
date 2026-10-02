@@ -679,6 +679,21 @@ describe("ProjectQaWorkspace", () => {
     expect(qa.textContent).toContain("then sign the Project off");
   });
 
+  /* A repository Overview's "Open checklist" links to the Project with
+   * #my-qa-items: the workspace opens on that tab, whatever the role. */
+  it("opens on My QA items for a #my-qa-items deep link", async () => {
+    loadRequirements("member");
+    runs.current.mockResolvedValue(normalizeProjectRunCurrent({ run: projectRunWire() }));
+    runs.myItems.mockResolvedValue(normalizeProjectMyItems({}));
+    window.history.replaceState(null, "", "#my-qa-items");
+    try {
+      const view = await render(<ProjectQaWorkspace deliveryProjectId="dp-1" projectName="storefront" appRole="qa" />);
+      expect(view.querySelector('[role="tab"][aria-selected="true"]')?.textContent).toBe("My QA items");
+    } finally {
+      window.history.replaceState(null, "", window.location.pathname);
+    }
+  });
+
   it("brings the Requirements tab forward and opens New Feature on a new request, never on a revisit", async () => {
     loadRequirements("lead");
     runs.current.mockResolvedValue(normalizeProjectRunCurrent({ run: projectRunWire() }));

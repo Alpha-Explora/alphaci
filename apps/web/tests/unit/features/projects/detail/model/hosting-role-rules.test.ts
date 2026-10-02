@@ -1,10 +1,11 @@
 import { canManageHosting } from "../../../../../../src/features/projects/detail/model/project-detail-tab-rules";
 
+/* Developers and admins change hosting; Product owners and QA read it. */
 describe("canManageHosting", () => {
   it.each([
     ["admin", true],
-    ["lead", true],
-    ["member", false],
+    ["member", true],
+    ["lead", false],
     ["qa", false],
     [null, false],
     [undefined, false],

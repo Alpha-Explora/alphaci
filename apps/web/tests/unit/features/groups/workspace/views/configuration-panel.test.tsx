@@ -72,7 +72,7 @@ describe("ConfigurationPanel role gate", () => {
     expect(labels()).not.toContain("Delete");
     expect(container.textContent).toContain("FLAG");
     expect(container.textContent).toContain("TOKEN");
-    expect(container.textContent).toContain("A Team lead or admin can add or delete");
+    expect(container.textContent).toContain("Developers and admins can add or delete");
   });
 
   it("shows add and delete controls when the viewer can write", async () => {
@@ -80,7 +80,7 @@ describe("ConfigurationPanel role gate", () => {
     expect(labels()).toContain("Add variable");
     expect(labels()).toContain("Add secret");
     expect(labels().filter((l) => l === "Delete")).toHaveLength(2);
-    expect(container.textContent).not.toContain("A Team lead or admin can add or delete");
+    expect(container.textContent).not.toContain("Developers and admins can add or delete");
   });
 
   it("shows the mapped sentence when a delete is refused", async () => {
@@ -93,7 +93,7 @@ describe("ConfigurationPanel role gate", () => {
         .find((b) => b.textContent === "Delete")!
         .click();
     });
-    await poll(() => container.textContent?.includes("Only team leads and admins") ?? false);
+    await poll(() => container.textContent?.includes("Developers and admins can change repository") ?? false);
   });
 
   it("does not call the write endpoints for a viewer who cannot write", async () => {

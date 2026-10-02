@@ -1,56 +1,73 @@
 import {
   PROJECT_DETAIL_TABS,
-  canManageProjectAccess,
+  canManageEnvVars,
   canOpenQaStudio,
+  projectDetailTabsForRole,
   resolveVisibleTab,
   shouldHighlightMyQaItems,
   showOverviewProductionReadiness,
   visibleProjectDetailTabs,
 } from "../../../../../../src/features/projects/detail/model/project-detail-tab-rules";
+import type { AppRole } from "../../../../../../src/shared/api/contracts";
 
 describe("visibleProjectDetailTabs", () => {
-  it("gives Team leads and Admins every tab, in strip order", () => {
-    for (const role of ["admin", "lead"] as const) {
-      const tabs = visibleProjectDetailTabs(role, { qaChecklistsEnabled: true });
-      expect(tabs).toEqual(PROJECT_DETAIL_TABS);
-      expect(tabs.indexOf("checklists")).toBe(tabs.indexOf("pulls") + 1);
-      expect(tabs.indexOf("qa")).toBe(tabs.indexOf("environment") + 1);
-    }
+  it("gives Admins every tab, in strip order", () => {
+    const tabs = visibleProjectDetailTabs("admin", { qaChecklistsEnabled: true });
+    expect(tabs).toEqual(PROJECT_DETAIL_TABS);
+    expect(tabs.indexOf("checklists")).toBe(tabs.indexOf("pulls") + 1);
+    expect(tabs.indexOf("qa")).toBe(tabs.indexOf("environment") + 1);
+  });
+
+  it("gives a Product owner only Overview, Checklists, QA Studio, Audit and Settings", () => {
+    expect(visibleProjectDetailTabs("lead", { qaChecklistsEnabled: true })).toEqual([
+      "overview",
+      "checklists",
+      "qa",
+      "audit",
+      "settings",
+    ]);
+  });
+
+  it("drops a Product owner's Checklists and QA Studio while the capability is off", () => {
+    expect(visibleProjectDetailTabs("lead", { qaChecklistsEnabled: false })).toEqual([
+      "overview",
+      "audit",
+      "settings",
+    ]);
+  });
+
+  it("gives a Developer every tab except QA Studio, Environment and Hosting included", () => {
+    const tabs = visibleProjectDetailTabs("member", { qaChecklistsEnabled: true });
+    expect(tabs).toEqual(PROJECT_DETAIL_TABS.filter((tab) => tab !== "qa"));
+    expect(tabs).toContain("environment");
+    expect(tabs).toContain("hosting");
+    expect(tabs).toContain("checklists");
   });
 
   it("hides Environment from QA Team, but keeps Checklists and QA Studio", () => {
-    // Environment is gated on its own (ENV_VARS_LEAD_ONLY), independent of
-    // the checklists capability flag.
     const tabs = visibleProjectDetailTabs("qa", { qaChecklistsEnabled: true });
     expect(tabs).toEqual(PROJECT_DETAIL_TABS.filter((tab) => tab !== "environment"));
     expect(tabs).toContain("checklists");
     expect(tabs).toContain("qa");
-    expect(tabs).not.toContain("environment");
-  });
-
-  it("hides Environment and QA Studio from a Developer, but keeps Checklists", () => {
-    const tabs = visibleProjectDetailTabs("member", { qaChecklistsEnabled: true });
-    expect(tabs).toContain("checklists");
-    expect(tabs).not.toContain("qa");
-    expect(tabs).not.toContain("environment");
-    expect(tabs).toEqual(
-      PROJECT_DETAIL_TABS.filter((tab) => tab !== "qa" && tab !== "environment"),
-    );
   });
 
   it("leaves Environment exactly as the role decides when the checklists capability is off", () => {
     // Checklists and QA Studio disappear for everyone; Environment does not
-    // follow that flag — it stays visible for admin/lead and hidden for
-    // qa/member regardless of it.
-    for (const role of ["admin", "lead"] as const) {
+    // follow that flag.
+    for (const role of ["admin", "member"] as const) {
       const tabs = visibleProjectDetailTabs(role, { qaChecklistsEnabled: false });
-      expect(tabs).toEqual(
-        PROJECT_DETAIL_TABS.filter((tab) => tab !== "checklists" && tab !== "qa"),
-      );
       expect(tabs).toContain("environment");
+      expect(tabs).not.toContain("checklists");
+      expect(tabs).not.toContain("qa");
     }
-    for (const role of ["qa", "member"] as const) {
-      const tabs = visibleProjectDetailTabs(role, { qaChecklistsEnabled: false });
+    for (const role of ["qa", "lead"] as const) {
+      expect(visibleProjectDetailTabs(role, { qaChecklistsEnabled: false })).not.toContain("environment");
+    }
+  });
+
+  it("hides Checklists, QA Studio and Environment from a session with no app role", () => {
+    for (const role of [undefined, null]) {
+      const tabs = visibleProjectDetailTabs(role, { qaChecklistsEnabled: true });
       expect(tabs).toEqual(
         PROJECT_DETAIL_TABS.filter(
           (tab) => tab !== "checklists" && tab !== "qa" && tab !== "environment",
@@ -59,12 +76,20 @@ describe("visibleProjectDetailTabs", () => {
     }
   });
 
-  it("hides Checklists, QA Studio and Environment from a session with no app role", () => {
-    for (const role of [undefined, null]) {
-      const tabs = visibleProjectDetailTabs(role, { qaChecklistsEnabled: true });
-      expect(tabs).not.toContain("checklists");
-      expect(tabs).not.toContain("qa");
-      expect(tabs).not.toContain("environment");
+  it("gives an unknown role (a newer backend) no more than a session with no role", () => {
+    const tabs = visibleProjectDetailTabs("auditor" as AppRole, { qaChecklistsEnabled: true });
+    expect(tabs).toEqual(visibleProjectDetailTabs(undefined, { qaChecklistsEnabled: true }));
+  });
+
+  it("offers QA Studio exactly to the roles that may open it", () => {
+    for (const role of ["admin", "lead", "qa", "member"] as const) {
+      expect(projectDetailTabsForRole(role).has("qa")).toBe(canOpenQaStudio(role));
+    }
+  });
+
+  it("offers Environment exactly to the roles that may change variables", () => {
+    for (const role of ["admin", "lead", "qa", "member"] as const) {
+      expect(projectDetailTabsForRole(role).has("environment")).toBe(canManageEnvVars(role));
     }
   });
 
@@ -75,17 +100,25 @@ describe("visibleProjectDetailTabs", () => {
     expect(resolveVisibleTab("runs", visible)).toBe("runs");
   });
 
-  it("sends a Developer who deep-links to #qa to Overview, while Checklists stays reachable", () => {
+  it("sends a Developer who deep-links to #qa to Overview, while Checklists and Environment stay reachable", () => {
     const visible = visibleProjectDetailTabs("member", { qaChecklistsEnabled: true });
     expect(resolveVisibleTab("qa", visible)).toBe("overview");
     expect(resolveVisibleTab("checklists", visible)).toBe("checklists");
+    expect(resolveVisibleTab("environment", visible)).toBe("environment");
   });
 
-  it("sends a Developer or QA Team member who deep-links to #environment to Overview", () => {
-    for (const role of ["member", "qa"] as const) {
-      const visible = visibleProjectDetailTabs(role, { qaChecklistsEnabled: true });
-      expect(resolveVisibleTab("environment", visible)).toBe("overview");
+  it("sends a QA Team member who deep-links to #environment to Overview", () => {
+    const visible = visibleProjectDetailTabs("qa", { qaChecklistsEnabled: true });
+    expect(resolveVisibleTab("environment", visible)).toBe("overview");
+  });
+
+  it("sends a Product owner who deep-links to a hidden tab to Overview", () => {
+    const visible = visibleProjectDetailTabs("lead", { qaChecklistsEnabled: true });
+    for (const hidden of ["code", "pulls", "runs", "workflow", "hosting", "environment"] as const) {
+      expect(resolveVisibleTab(hidden, visible)).toBe("overview");
     }
+    expect(resolveVisibleTab("audit", visible)).toBe("audit");
+    expect(resolveVisibleTab("qa", visible)).toBe("qa");
   });
 });
 
@@ -128,17 +161,6 @@ describe("shouldHighlightMyQaItems", () => {
 
   it("still finds it alongside other query params", () => {
     expect(shouldHighlightMyQaItems("?tab=overview&focus=my-qa-items")).toBe(true);
-  });
-});
-
-describe("canManageProjectAccess", () => {
-  it("allows only Team leads and Admins", () => {
-    expect(canManageProjectAccess("lead")).toBe(true);
-    expect(canManageProjectAccess("admin")).toBe(true);
-    expect(canManageProjectAccess("qa")).toBe(false);
-    expect(canManageProjectAccess("member")).toBe(false);
-    expect(canManageProjectAccess(undefined)).toBe(false);
-    expect(canManageProjectAccess(null)).toBe(false);
   });
 });
 

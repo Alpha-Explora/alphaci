@@ -28,6 +28,9 @@ export {
 export { qaStudioHref } from "./model/qa-report-rules";
 /* Where a repository's QA happens (its Project, or the repository itself). */
 export { qaScopeFromFolder, REPOSITORY_SCOPE, type QaScope } from "./model/qa-scope";
+/* Whether a repository's Checklists tab carries the full "My QA items" list
+ * (no Project to send the viewer to). */
+export { checklistsTabShowsMyItems } from "./model/my-qa-items-summary-rules";
 /* Project requirement counts for the team's Project cards. */
 export { canManageRequirements, requirementCountLabel } from "./model/requirement-rules";
 export { requirementsRepository } from "./data/requirements-repository";

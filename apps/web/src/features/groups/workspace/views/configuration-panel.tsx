@@ -268,7 +268,7 @@ export function ConfigurationPanel({
   canWrite,
 }: {
   repositoryId: string;
-  /** Team lead or admin: the only roles the backend lets write configuration. */
+  /** Developer or admin: the only roles the backend lets write configuration. */
   canWrite: boolean;
 }) {
   const { data, state, reload } = useApiResource<RepositoryConfigurationResponse>(

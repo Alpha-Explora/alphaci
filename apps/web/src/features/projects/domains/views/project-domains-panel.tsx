@@ -15,7 +15,7 @@ export function ProjectDomainsPanel({
   targets,
 }: Readonly<{
   projectId: string;
-  /** Team lead or admin: the only roles the backend lets change domains. */
+  /** Developer or admin: the only roles the backend lets change domains. */
   canManage: boolean;
   enabled: boolean;
   targets: Array<{ id: string; label: string }>;

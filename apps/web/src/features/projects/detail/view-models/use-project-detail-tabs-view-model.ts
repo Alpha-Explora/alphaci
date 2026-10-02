@@ -9,11 +9,8 @@ import type { ProjectStatus } from "../../model/projects-types";
 import type {
   AppRole,
   DeploymentTarget,
-  ProjectAuditEventsResponse,
   ProjectCiRunsResponse,
   ProjectDeploymentsResponse,
-  ProjectDriftRepairAction,
-  ProjectDriftResponse,
   ProjectOverviewResponse,
   WorkflowFileMetadata,
 } from "@/shared/api/contracts";
@@ -21,12 +18,8 @@ import {
   applyTargetChange,
   applyTargetCreated,
   applyTargetDetached,
-  driftRepairErrorMessage,
-  isAuditQueryEnabled,
   isCiRunsQueryEnabled,
   isDeploymentsQueryEnabled,
-  isDriftQueryEnabled,
-  isSyncAvailable,
   isWorkflowSettingsQueryEnabled,
   overviewCapabilityFlags,
   overviewTabData,
@@ -37,6 +30,7 @@ import {
   type ProjectDetailTab,
 } from "../model/project-detail-tab-rules";
 import { useLazyProjectQuery } from "./use-lazy-project-query";
+import { useProjectAuditViewModel, type ProjectAuditViewModel } from "./use-project-audit-view-model";
 import { useProjectWorkflowSettingsViewModel } from "./use-project-workflow-settings-view-model";
 import type { ProjectWorkflowSettingsViewModel } from "./use-project-workflow-settings-view-model";
 
@@ -69,11 +63,6 @@ export interface ProjectDetailTabsViewModel {
   workflowFiles: WorkflowFileMetadata[];
   deploymentTargets: DeploymentTarget[];
   envMetadata: ProjectOverviewResponse["environment"]["items"];
-  syncSnapshot: ProjectOverviewResponse["syncSnapshot"] | null;
-  syncAvailable: boolean;
-  syncingProjectId: string | null;
-  syncMessage: string | null;
-  syncNow: () => Promise<void>;
   handleTargetChanged: (target: DeploymentTarget) => void;
   handleTargetCreated: (target: DeploymentTarget) => void;
   handleTargetDetached: (targetId: string) => void;
@@ -81,8 +70,6 @@ export interface ProjectDetailTabsViewModel {
   previewDeploymentsEnabled: boolean;
   ciRunTrackingEnabled: boolean;
   deploymentHistoryEnabled: boolean;
-  driftDetectionEnabled: boolean;
-  driftRepairEnabled: boolean;
   projectTargetManagementEnabled: boolean;
   workflowSettingsPreviewEnabled: boolean;
   workflowUpdatePrEnabled: boolean;
@@ -90,16 +77,8 @@ export interface ProjectDetailTabsViewModel {
   ciRunsError: string | null;
   deployments: ProjectDeploymentsResponse | null;
   deploymentsError: string | null;
-  drift: ProjectDriftResponse | null;
-  driftError: string | null;
-  runningDriftCheck: boolean;
-  runDriftDetection: () => Promise<void>;
-  repairDriftFinding: (
-    findingId: string,
-    action: ProjectDriftRepairAction,
-  ) => Promise<string>;
-  audit: ProjectAuditEventsResponse | null;
-  auditError: string | null;
+  /** The Audit tab's rows, read the first time the tab opens. */
+  audit: ProjectAuditViewModel;
   workflow: ProjectWorkflowSettingsViewModel;
 }
 
@@ -115,14 +94,6 @@ function loadDeployments(
   projectId: string,
 ): Promise<ProjectDeploymentsResponse> {
   return projectsRepository.deployments(projectId);
-}
-
-function loadDrift(projectId: string): Promise<ProjectDriftResponse> {
-  return projectsRepository.drift(projectId);
-}
-
-function loadAudit(projectId: string): Promise<ProjectAuditEventsResponse> {
-  return projectsRepository.audit(projectId);
 }
 
 /** ViewModel for the project detail tab set. */
@@ -142,9 +113,6 @@ export function useProjectDetailTabsViewModel(options: {
     typeof window === "undefined" ? false : shouldHighlightMyQaItems(window.location.search),
   );
   const [logFocus, setLogFocus] = useState<DeploymentLogFocus | null>(null);
-  const [syncingProjectId, setSyncingProjectId] = useState<string | null>(null);
-  const [syncMessage, setSyncMessage] = useState<string | null>(null);
-  const [runningDriftCheck, setRunningDriftCheck] = useState(false);
 
   const caps = useCapabilities();
   const visibleTabs = visibleProjectDetailTabs(appRole, {
@@ -191,29 +159,9 @@ export function useProjectDetailTabsViewModel(options: {
     load: loadDeployments,
     errorMessage: "Unable to load deployment history.",
   });
-  const driftQuery = useLazyProjectQuery<ProjectDriftResponse>({
-    projectId,
-    enabled: isDriftQueryEnabled({
-      tab,
-      driftDetectionEnabled: caps.driftDetectionEnabled,
-      overviewDriftDetection: overviewCaps.driftDetection,
-    }),
-    load: loadDrift,
-    errorMessage: "Unable to load drift findings.",
-  });
-  const auditQuery = useLazyProjectQuery<ProjectAuditEventsResponse>({
-    projectId,
-    enabled: isAuditQueryEnabled(tab),
-    load: loadAudit,
-    errorMessage: "Unable to load audit events.",
-  });
+  const audit = useProjectAuditViewModel({ projectId, enabled: tab === "audit" });
 
-  const { workflowFiles, deploymentTargets, envMetadata, syncSnapshot } = tabData;
-  const syncAvailable = isSyncAvailable({
-    projectSyncSnapshotsEnabled: caps.projectSyncSnapshotsEnabled,
-    overviewSyncSnapshots: overviewCaps.syncSnapshots,
-    snapshotEnabled: tabData.snapshotEnabled,
-  });
+  const { workflowFiles, deploymentTargets, envMetadata } = tabData;
 
   function setTab(next: ProjectDetailTab) {
     setLogFocus(null);
@@ -243,50 +191,6 @@ export function useProjectDetailTabsViewModel(options: {
     );
   }
 
-  async function syncNow() {
-    if (!syncAvailable) return;
-    setSyncingProjectId(projectId);
-    setSyncMessage(null);
-    try {
-      const result = await projectsRepository.syncSnapshot(projectId);
-      overviewQuery.replace(result.overview);
-    } catch {
-      setSyncMessage("Unable to create local snapshot right now.");
-    } finally {
-      setSyncingProjectId(null);
-    }
-  }
-
-  async function runDriftDetection() {
-    setRunningDriftCheck(true);
-    driftQuery.clearError();
-    try {
-      const response = await projectsRepository.runDrift(projectId);
-      driftQuery.replace(response);
-    } catch {
-      driftQuery.fail("Unable to run drift detection.");
-    } finally {
-      setRunningDriftCheck(false);
-    }
-  }
-
-  async function repairDriftFinding(
-    findingId: string,
-    action: ProjectDriftRepairAction,
-  ): Promise<string> {
-    try {
-      const response = await projectsRepository.repairDrift(
-        projectId,
-        findingId,
-        action,
-      );
-      return response.message;
-    } catch (error) {
-      // The view shows display text only: hand it the mapped reason.
-      throw new Error(driftRepairErrorMessage(error));
-    }
-  }
-
   return {
     tab,
     setTab,
@@ -303,11 +207,6 @@ export function useProjectDetailTabsViewModel(options: {
     workflowFiles,
     deploymentTargets,
     envMetadata,
-    syncSnapshot,
-    syncAvailable,
-    syncingProjectId,
-    syncMessage,
-    syncNow,
     handleTargetChanged,
     handleTargetCreated,
     handleTargetDetached,
@@ -315,8 +214,6 @@ export function useProjectDetailTabsViewModel(options: {
     previewDeploymentsEnabled: caps.previewDeploymentsEnabled,
     ciRunTrackingEnabled: caps.ciRunTrackingEnabled,
     deploymentHistoryEnabled: caps.deploymentHistoryEnabled,
-    driftDetectionEnabled: caps.driftDetectionEnabled,
-    driftRepairEnabled: caps.driftRepairEnabled,
     projectTargetManagementEnabled: caps.projectTargetManagementEnabled,
     workflowSettingsPreviewEnabled: caps.workflowSettingsPreviewEnabled,
     workflowUpdatePrEnabled: caps.workflowUpdatePrEnabled,
@@ -324,13 +221,7 @@ export function useProjectDetailTabsViewModel(options: {
     ciRunsError: ciRunsQuery.error,
     deployments: deploymentsQuery.data,
     deploymentsError: deploymentsQuery.error,
-    drift: driftQuery.data,
-    driftError: driftQuery.error,
-    runningDriftCheck,
-    runDriftDetection,
-    repairDriftFinding,
-    audit: auditQuery.data,
-    auditError: auditQuery.error,
+    audit,
     workflow,
   };
 }

@@ -10,8 +10,12 @@ import { readyWire } from "../../../checklists/qa-promotion-fixtures";
 jest.mock("../../../../../../src/features/checklists/data/qa-runs-repository", () => ({
   qaRunsRepository: { promotion: jest.fn(), mergePromotion: jest.fn() },
 }));
+const summaryProps: Array<Record<string, unknown>> = [];
 jest.mock("../../../../../../src/features/checklists/returned", () => ({
-  MyQaItemsCard: () => null,
+  MyQaItemsSummary: (props: Record<string, unknown>) => {
+    summaryProps.push(props);
+    return <p data-testid="summary-stub">summary</p>;
+  },
 }));
 jest.mock("../../../../../../src/features/projects/previews", () => ({
   ProductionDeploymentPanel: () => null,
@@ -28,25 +32,26 @@ const PROJECT = {
   workflowPath: ".github/workflows/ci.yml",
 } as unknown as ProvisionedProject;
 
+const setTab = jest.fn();
+
 function vmFor(appRole: AppRole, qaChecklistsEnabled = true): ProjectDetailTabsViewModel {
   return {
     appRole,
     qaChecklistsEnabled,
     previewDeploymentsEnabled: false,
     highlightMyQaItems: false,
+    visibleTabs: ["overview", "checklists"],
+    setTab,
     overview: {
       hierarchyRepositoryId: "repo-1",
-      health: { checks: [] },
+      health: { checks: [{ key: "ci", label: "CI token", status: "ok", message: "Environment metadata" }] },
       workflow: { path: ".github/workflows/ci.yml" },
       ciAuth: { status: "active" },
       deploymentTargets: { count: 0 },
+      syncSnapshot: { enabled: true, latest: null },
+      capabilities: { driftDetection: true },
     },
     workflowFiles: [],
-    syncSnapshot: null,
-    syncAvailable: false,
-    syncingProjectId: null,
-    syncMessage: null,
-    driftDetectionEnabled: false,
     openTargetLogs: jest.fn(),
   } as unknown as ProjectDetailTabsViewModel;
 }
@@ -54,6 +59,7 @@ function vmFor(appRole: AppRole, qaChecklistsEnabled = true): ProjectDetailTabsV
 let root: Root | null = null;
 
 afterEach(() => {
+  summaryProps.length = 0;
   if (root) act(() => root?.unmount());
   root = null;
   document.body.innerHTML = "";
@@ -77,25 +83,47 @@ async function render(appRole: AppRole, qaChecklistsEnabled = true): Promise<HTM
   return container;
 }
 
-function manageAccess(container: HTMLElement): Element | undefined {
-  return [...container.querySelectorAll("a")].find((a) => a.textContent === "Manage access");
-}
-
-describe("Overview Manage access", () => {
-  it("is shown to Team leads and Admins", async () => {
-    expect(manageAccess(await render("lead"))).toBeDefined();
-    act(() => root?.unmount());
-    root = null;
-    document.body.innerHTML = "";
-    expect(manageAccess(await render("admin"))).toBeDefined();
+/* The Overview is the same lean page for every role: no facts grid, access
+ * row, snapshot, health checks or drift. */
+describe("Overview contents", () => {
+  it.each(["lead", "member", "qa", "admin"] as const)("shows %s no facts, access, snapshot, health or drift", async (role) => {
+    const container = await render(role);
+    const text = container.textContent ?? "";
+    for (const gone of ["Workflow", "Checks", "CI token", "Targets", "Manage access", "Local snapshot", "Environment metadata", "Run drift check"]) {
+      expect(text).not.toContain(gone);
+    }
+    expect(container.querySelector("dl.project-detail-grid")).toBeNull();
   });
 
-  it("is hidden from QA Team and Developers", async () => {
-    expect(manageAccess(await render("qa"))).toBeUndefined();
-    act(() => root?.unmount());
-    root = null;
-    document.body.innerHTML = "";
-    expect(manageAccess(await render("member"))).toBeUndefined();
+  it("keeps the failure reason of a failed project", async () => {
+    runs.promotion.mockResolvedValue(readyWire() as never);
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    root = createRoot(container);
+    await act(async () => {
+      root!.render(
+        <OverviewTab
+          project={{ ...PROJECT, status: "failed", failureReason: "Render rejected the service." } as ProvisionedProject}
+          vm={vmFor("member")}
+        />,
+      );
+    });
+    expect(container.textContent).toContain("Render rejected the service.");
+  });
+
+  it("hands the My QA items summary the deep-link highlight and a way to the Checklists tab", async () => {
+    await render("member");
+    expect(summaryProps).toHaveLength(1);
+    const props = summaryProps[0];
+    expect(props.enabled).toBe(true);
+    expect(props.projectId).toBe("p1");
+    (props.onOpenChecklists as () => void)();
+    expect(setTab).toHaveBeenCalledWith("checklists");
+  });
+
+  it("turns the summary off without the QA capability", async () => {
+    await render("member", false);
+    expect(summaryProps[0]?.enabled).toBe(false);
   });
 });
 

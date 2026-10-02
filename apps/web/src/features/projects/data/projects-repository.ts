@@ -32,6 +32,7 @@ import type {
   DetachDeploymentTargetResponse,
   DisconnectProjectResponse,
   ProjectAuditEventsResponse,
+  ProjectAuditPageRequest,
   ProjectCiRunsResponse,
   ProjectDeploymentsResponse,
   ProjectDriftRepairAction,
@@ -171,8 +172,11 @@ export const projectsRepository = {
     return repairProjectDriftFinding(projectId, findingId, action);
   },
 
-  audit(projectId: string): Promise<ProjectAuditEventsResponse> {
-    return getProjectAuditEvents(projectId);
+  audit(
+    projectId: string,
+    page?: ProjectAuditPageRequest,
+  ): Promise<ProjectAuditEventsResponse> {
+    return getProjectAuditEvents(projectId, page);
   },
 
   syncSnapshot(projectId: string): Promise<ProjectSyncSnapshotResponse> {
