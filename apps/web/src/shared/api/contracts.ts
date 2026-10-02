@@ -705,8 +705,22 @@ export interface ProjectAuditEvent {
   actorLogin?: string | null;
   metadata?: Record<string, unknown> | null;
   createdAt: string;
-  /** 'project': recorded against the delivery Project this repository is filed under. */
-  scope?: "repository" | "project";
+  /**
+   * 'project': recorded against the delivery Project this repository is filed
+   * under. 'github': activity read from GitHub (pushes, pull requests,
+   * branches, tags), with the GitHub login in `actorLogin` or
+   * `metadata.githubLogin`.
+   */
+  scope?: "repository" | "project" | "github";
+}
+
+/**
+ * How fresh the GitHub activity in the trail is. 'stale' / 'failed': the last
+ * read of GitHub did not land, so the rows are what was saved before.
+ */
+export interface ProjectAuditGithubSync {
+  status: "ok" | "stale" | "failed";
+  syncedAt: string | null;
 }
 
 /** Newest first. `next` is the cursor for `?before=`, or null on the last page. */
@@ -714,6 +728,37 @@ export interface ProjectAuditEventsResponse {
   enabled: boolean;
   items: ProjectAuditEvent[];
   next?: string | null;
+  /** Absent on a backend that does not read GitHub activity into the trail. */
+  githubSync?: ProjectAuditGithubSync | null;
+}
+
+/** One commit on a branch, newest first, from GET /projects/:id/commits. */
+export interface ProjectCommit {
+  sha: string;
+  shortSha: string;
+  /** The full message; the first line is its title. */
+  message: string;
+  authorLogin: string | null;
+  authorName: string;
+  authoredAt: string;
+  url: string;
+  /** The pull request that brought the commit in; null for a direct push. */
+  pullRequestNumber: number | null;
+}
+
+/** `branch` is the branch these commits are on; `next` is the `?before=` cursor. */
+export interface ProjectCommitsResponse {
+  branch: string;
+  branches: string[];
+  items: ProjectCommit[];
+  next: string | null;
+}
+
+/** `?branch` (server default when absent), `?limit`, `?before=<next>`. */
+export interface ProjectCommitsPageRequest {
+  branch?: string | null;
+  limit?: number;
+  before?: string | null;
 }
 
 /** `?limit` (1-100, server default 50) and `?before=<next>` for GET /projects/:id/audit. */
