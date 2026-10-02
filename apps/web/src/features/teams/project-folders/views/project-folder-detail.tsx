@@ -6,6 +6,7 @@ import { useId } from "react";
 import { qaStudioHref } from "@/features/checklists";
 import { ProjectQaWorkspace } from "@/features/checklists/requirements";
 import { projectStatusVariant } from "@/features/groups";
+import type { AppRole } from "@/shared/api/contracts";
 
 import {
   FEATURES_REQUIRED_NOTE,
@@ -73,9 +74,10 @@ function FeatureGateBanner({
 
 function RepositoryRow({
   repo,
+  appRole,
   canMove,
   onMove,
-}: Readonly<{ repo: FolderRepository; canMove: boolean; onMove: () => void }>) {
+}: Readonly<{ repo: FolderRepository; appRole: AppRole | null; canMove: boolean; onMove: () => void }>) {
   return (
     <li className="pf-repo">
       <div className="pf-repo__main">
@@ -84,6 +86,7 @@ function RepositoryRow({
           repoFullName={repo.repoFullName}
           role={repo.project?.role ?? null}
           projectId={repo.project?.id ?? null}
+          appRole={appRole}
         />
         {repo.repoFullName ? <code className="pf-repo__full">{repo.repoFullName}</code> : null}
       </div>
@@ -224,6 +227,7 @@ export function ProjectFolderDetail({
               <RepositoryRow
                 key={repo.repositoryId}
                 repo={repo}
+                appRole={vm.appRole}
                 canMove={canMove}
                 onMove={() => onMove(repo)}
               />
