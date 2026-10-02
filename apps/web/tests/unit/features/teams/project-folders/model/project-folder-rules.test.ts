@@ -24,6 +24,7 @@ import {
   readRole,
   repoDisplayName,
   repoRoleLabel,
+  studioLinkFor,
   repositoryCountLabel,
   verifyProjectId,
   folderLandingProjectId,
@@ -198,6 +199,15 @@ describe("folder repositories", () => {
     folder.repositories.push({ ...folder.repositories[0], repositoryId: "dup" });
     folder.repositories.push({ repositoryId: "r-x", name: "x", repoFullName: null, status: "active", project: null });
     expect(folderProjectIds(folder)).toEqual(["proj-fe", "proj-be"]);
+  });
+});
+
+describe("studioLinkFor", () => {
+  it("opens each role's own studio on the repository", () => {
+    expect(studioLinkFor("qa", "proj-fe")).toEqual({ label: "Verify in QA Studio", href: "/projects/proj-fe#qa" });
+    expect(studioLinkFor("admin", "proj-fe")).toEqual({ label: "Verify in QA Studio", href: "/projects/proj-fe#qa" });
+    expect(studioLinkFor("lead", "proj-fe")).toEqual({ label: "Open PO Studio", href: "/projects/proj-fe#po" });
+    expect(studioLinkFor("member", "proj-fe")).toBeNull();
   });
 });
 

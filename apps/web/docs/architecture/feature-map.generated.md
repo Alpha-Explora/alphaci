@@ -25,12 +25,12 @@ Feature domains are UI ownership boundaries. They consume backend bounded contex
 | `admin` | `identity-access` | platform administration, user review, and feedback | 16 |
 | `auth` | `identity-access` | sign-in, callback, and session presentation | 18 |
 | `capabilities` | `identity-access` | compatibility capability consumption from /api/v1/capabilities | 6 |
-| `checklists` | `projects` | team QA checklists, their items and sharing, the project Checklists tab, QA Studio verification runs and the Overview "Returned by QA" card | 112 |
+| `checklists` | `projects` | team QA checklists, their items and sharing, the project Checklists tab, QA Studio verification runs and the Overview "Returned by QA" card | 114 |
 | `groups` | `identity-access` | hierarchy groups, systems, repositories, members, activity, and delivery projects | 53 |
 | `guide` | `platform-ops` | in-product guide | 3 |
 | `home` | `platform-ops` | authenticated home dashboard | 18 |
 | `notifications` | `platform-ops` | inbox and notification preferences | 16 |
-| `projects` | `projects` | project detail, environments, hosting, drift, previews, and workflow settings | 107 |
+| `projects` | `projects` | project detail, environments, hosting, drift, previews, and workflow settings | 108 |
 | `runs` | `pipelines` | CI run history presentation | 22 |
 | `settings` | `identity-access` | account, workspace, and notification settings | 22 |
 | `teams` | `identity-access` | team listing over hierarchy groups | 35 |

@@ -10,7 +10,7 @@ import {
   type PullRequestSummary,
 } from "@/features/projects";
 
-import { canOpenQaStudio } from "../../model/project-detail-tab-rules";
+import { canOpenPoStudio } from "../../model/project-detail-tab-rules";
 import { CreatePullRequestView } from "./create-pull-request-view";
 import { DiffView } from "./diff-view";
 import {
@@ -53,15 +53,15 @@ export function PullRequestsTab({
   projectId,
   appRole,
   viewerLogin,
-  onOpenQaStudio,
+  onOpenPoStudio,
 }: {
   projectId: string;
   /** The viewer's app role, for the Phase 1 create/merge gates. */
   appRole?: AppRole;
   /** The viewer's GitHub login, for the compose presets' "own branch". */
   viewerLogin?: string | null;
-  /** Opens the QA Studio tab, for the "merge into main" notice's link. */
-  onOpenQaStudio?: () => void;
+  /** Opens the PO Studio tab, for the "merge into main" notice's link. */
+  onOpenPoStudio?: () => void;
 }) {
   const [filter, setFilter] = useState<StateFilter>("open");
   const [composing, setComposing] = useState(false);
@@ -223,7 +223,7 @@ export function PullRequestsTab({
               focused={pr.number === focusNumber}
               onMerged={handleMerged}
               appRole={appRole}
-              onOpenQaStudio={onOpenQaStudio}
+              onOpenPoStudio={onOpenPoStudio}
             />
           ))}
         </ul>
@@ -238,7 +238,7 @@ function PullRequestRow({
   focused = false,
   onMerged,
   appRole,
-  onOpenQaStudio,
+  onOpenPoStudio,
 }: {
   projectId: string;
   pr: PullRequestSummary;
@@ -246,7 +246,7 @@ function PullRequestRow({
   /** Open expanded and scrolled into view, e.g. arriving from compose. */
   focused?: boolean;
   appRole?: AppRole;
-  onOpenQaStudio?: () => void;
+  onOpenPoStudio?: () => void;
 }) {
   const [open, setOpen] = useState(focused);
   const [files, setFiles] = useState<PullRequestFile[] | null>(null);
@@ -316,7 +316,7 @@ function PullRequestRow({
             pr={pr}
             onMerged={onMerged}
             appRole={appRole}
-            onOpenQaStudio={onOpenQaStudio}
+            onOpenPoStudio={onOpenPoStudio}
           />
           <PullRequestFiles
             files={files}
@@ -370,13 +370,13 @@ function PullRequestReview({
   pr,
   onMerged,
   appRole,
-  onOpenQaStudio,
+  onOpenPoStudio,
 }: Readonly<{
   projectId: string;
   pr: PullRequestSummary;
   onMerged: (pullNumber: number) => void;
   appRole?: AppRole;
-  onOpenQaStudio?: () => void;
+  onOpenPoStudio?: () => void;
 }>) {
   const review = usePullRequestReviewViewModel({
     projectId,
@@ -410,7 +410,7 @@ function PullRequestReview({
           pr={detail.pullRequest}
           review={review}
           appRole={appRole}
-          onOpenQaStudio={onOpenQaStudio}
+          onOpenPoStudio={onOpenPoStudio}
         />
         <a
           className="ws-link"
@@ -498,12 +498,12 @@ function MergeControl({
   pr,
   review,
   appRole,
-  onOpenQaStudio,
+  onOpenPoStudio,
 }: Readonly<{
   pr: PullRequestDetail;
   review: PullRequestReviewViewModel;
   appRole?: AppRole;
-  onOpenQaStudio?: () => void;
+  onOpenPoStudio?: () => void;
 }>) {
   if (pr.merged || pr.state === "closed") return null;
 
@@ -521,12 +521,12 @@ function MergeControl({
 
   return (
     <p className="ws-hint" role="status">
-      Merges into main go through QA Studio — Ready for production.
-      {canOpenQaStudio(appRole) && onOpenQaStudio ? (
+      Merges into main go through PO Studio — Ready for production.
+      {canOpenPoStudio(appRole) && onOpenPoStudio ? (
         <>
           {" "}
-          <button type="button" className="ws-link" onClick={onOpenQaStudio}>
-            Go to QA Studio
+          <button type="button" className="ws-link" onClick={onOpenPoStudio}>
+            Go to PO Studio
           </button>
         </>
       ) : null}

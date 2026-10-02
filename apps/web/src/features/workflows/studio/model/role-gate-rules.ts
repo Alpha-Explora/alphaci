@@ -57,7 +57,7 @@ const ROLE_GATE_MESSAGES: Readonly<Record<string, string>> = {
   repo_not_accessible:
     "ALPHACI cannot access that repository with your GitHub account. Check the name and your access, then try again.",
   main_pr_restricted:
-    "Pull requests into main are restricted to the QA Studio promotion flow.",
+    "Pull requests into main are restricted to the PO Studio promotion flow.",
   pr_base_branch_missing:
     "This repository has no dev or uat branch to open the setup pull request against. Create one, then try again.",
   installation_not_accessible:

@@ -4,12 +4,12 @@
  * like one that sends them as null. */
 
 import type { AppRole } from "@/shared/api/contracts";
-import { canOpenQaStudio } from "@/features/projects/detail";
+import { studioTabFor } from "@/features/projects/detail";
 
 import type { NotificationItem } from "./notifications-types";
 
 /** The event codes covered by §6's "Returned to Dev" loop and §5's promotion
- * flow: all land in QA Studio for a viewer who may open it, else Overview. */
+ * flow: all land in the viewer's studio (QA Studio or PO Studio), else Overview. */
 const QA_STUDIO_DEEP_LINK_EVENTS: ReadonlySet<string> = new Set([
   "qa.run.signed_off",
   "qa.item.retest_requested",
@@ -47,7 +47,7 @@ function qaStudioDeepLinkHref(
   appRole: AppRole | null | undefined,
 ): string | null {
   if (!projectId) return null;
-  return `${projectPath(projectId)}#${canOpenQaStudio(appRole) ? "qa" : "overview"}`;
+  return `${projectPath(projectId)}#${studioTabFor(appRole) ?? "overview"}`;
 }
 
 /**

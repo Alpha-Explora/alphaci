@@ -88,12 +88,13 @@ describe("notificationHref", () => {
       "qa.promotion.merged",
     ] as const;
 
-    it.each(qaStudioEvents)("sends %s to #qa for qa, lead and admin", (eventCode) => {
-      for (const role of ["qa", "lead", "admin"] as const) {
+    it.each(qaStudioEvents)("sends %s to the viewer's studio: #qa for qa and admin, #po for a lead", (eventCode) => {
+      for (const role of ["qa", "admin"] as const) {
         expect(notificationHref(item({ eventCode, projectId: "proj-1" }), role)).toBe(
           "/projects/proj-1#qa",
         );
       }
+      expect(notificationHref(item({ eventCode, projectId: "proj-1" }), "lead")).toBe("/projects/proj-1#po");
     });
 
     it.each(qaStudioEvents)("sends %s to #overview for a developer", (eventCode) => {

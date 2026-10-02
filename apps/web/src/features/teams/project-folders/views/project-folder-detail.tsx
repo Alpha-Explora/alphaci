@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { useId } from "react";
 
-import { qaStudioHref } from "@/features/checklists";
 import { ProjectQaWorkspace } from "@/features/checklists/requirements";
 import { projectStatusVariant } from "@/features/groups";
 
@@ -13,6 +12,7 @@ import {
   emptyRepositoriesCopy,
   folderFeatureGate,
   repositoryCountLabel,
+  studioLinkFor,
   verifyProjectId,
   type FolderFeatureGate,
 } from "../model/project-folder-rules";
@@ -23,7 +23,8 @@ import { BackIcon, StudioIcon } from "./project-folder-icons";
 import { RepoChip } from "./repo-chip";
 
 /**
- * Verify in QA Studio (QA Team, Product owner, admin) and Add repository
+ * The viewer's studio (Verify in QA Studio for the QA Team and admins, Open
+ * PO Studio for a Product owner) and Add repository
  * (Developer, admin): a Product owner creates the Project, a Developer fills
  * it, once the Project has its first Feature.
  */
@@ -34,13 +35,14 @@ function DetailActions({
   noteId,
 }: Readonly<{ vm: ProjectFoldersViewModel; folder: ProjectFolder; gate: FolderFeatureGate; noteId: string }>) {
   const verifyId = vm.canVerifyInQaStudio ? verifyProjectId(folder) : null;
-  if (!verifyId && gate.addRepository === "hidden") return null;
+  const studio = verifyId ? studioLinkFor(vm.appRole, verifyId) : null;
+  if (!studio && gate.addRepository === "hidden") return null;
   return (
     <div className="pf-detail__actions">
-      {verifyId ? (
-        <Link className="ghost-button" href={qaStudioHref(verifyId)}>
+      {studio ? (
+        <Link className="ghost-button" href={studio.href}>
           <StudioIcon />
-          Verify in QA Studio
+          {studio.label}
         </Link>
       ) : null}
       <AddRepositoryAction

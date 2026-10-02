@@ -23,6 +23,7 @@ import {
   useStudioViewportViewModel,
   type StudioViewportViewModel,
 } from "../view-models/use-studio-viewport-view-model";
+import { PoAcceptancePanel } from "./po-acceptance-panel";
 import { PreviewPane } from "./preview-pane";
 import { ProjectRunPanel } from "./project-run-panel";
 import { PromotionCard } from "./promotion-card";
@@ -48,6 +49,11 @@ function StudioNotice({
     </div>
   );
 }
+
+/** Which studio the shell is: the QA Team's QA Studio, or a Product owner's PO Studio. */
+export type StudioKind = "qa" | "po";
+
+const DRAWER_TITLES: Record<StudioKind, string> = { qa: "QA checklist", po: "Acceptance" };
 
 function ChecklistPicker({ vm }: Readonly<{ vm: StudioChecklistsViewModel }>) {
   const selected = vm.selected;
@@ -179,12 +185,14 @@ type DrawerRun = Pick<QaRun, "summary"> & Partial<Pick<QaRun, "automation">>;
 function DrawerHeader({
   vm,
   run,
+  title,
   drawerId,
   headingId,
   headingRef,
 }: Readonly<{
   vm: StudioViewportViewModel;
   run: DrawerRun | null;
+  title: string;
   drawerId: string;
   headingId: string;
   headingRef: Ref<HTMLHeadingElement>;
@@ -195,7 +203,7 @@ function DrawerHeader({
       <div className="qa-drawer__heading">
         <ChecklistIcon />
         <h2 className="qa-drawer__title" id={headingId} ref={headingRef} tabIndex={-1}>
-          QA checklist
+          {title}
         </h2>
         {run ? <span className="qa-drawer__progress">{passedLabel(run)}</span> : null}
       </div>
@@ -294,6 +302,7 @@ function projectSnapshot(run: ProjectRunViewModel, projectId: string): { commit:
 function RunDock({
   vm,
   run,
+  title,
   drawerId,
   headingId,
   headingRef,
@@ -302,6 +311,7 @@ function RunDock({
 }: Readonly<{
   vm: StudioViewportViewModel;
   run: DrawerRun | null;
+  title: string;
   drawerId: string;
   headingId: string;
   headingRef: Ref<HTMLHeadingElement>;
@@ -317,7 +327,7 @@ function RunDock({
       aria-labelledby={floating ? headingId : undefined}
     >
       {floating ? (
-        <DrawerHeader vm={vm} run={run} drawerId={drawerId} headingId={headingId} headingRef={headingRef} />
+        <DrawerHeader vm={vm} run={run} title={title} drawerId={drawerId} headingId={headingId} headingRef={headingRef} />
       ) : null}
       {promotion}
       {children}
@@ -327,10 +337,13 @@ function RunDock({
 
 /**
  * The run column's content: nothing yet while the repository's Project is
- * read, the Project's QA run for a repository filed under a Project, else the
- * per-repository checklist run (history once the server gates by Project).
+ * read, the Project's QA run for a repository filed under a Project (in PO
+ * Studio, the acceptance around it), else the per-repository checklist run
+ * (history once the server gates by Project) in either studio.
  */
 function StudioColumn({
+  studio,
+  onOpenQaRun,
   qaScope,
   projectMode,
   projectRun,
@@ -341,6 +354,8 @@ function StudioColumn({
   run,
   promotion,
 }: Readonly<{
+  studio: StudioKind;
+  onOpenQaRun?: () => void;
   qaScope: QaScope;
   projectMode: boolean;
   projectRun: ProjectRunViewModel;
@@ -352,6 +367,17 @@ function StudioColumn({
   promotion: QaPromotionViewModel;
 }>) {
   if (qaScope.kind === "pending") return <RunSkeletonCard />;
+  if (studio === "po" && projectMode) {
+    return (
+      <PoAcceptancePanel
+        qaScope={qaScope}
+        projectRun={projectRun}
+        promotion={promotion}
+        appRole={appRole}
+        onOpenQaRun={onOpenQaRun}
+      />
+    );
+  }
   if (projectMode && qaScope.kind === "project") {
     return (
       <div className="qa-run-card">
@@ -387,6 +413,10 @@ function previewFramed(vm: StudioViewportViewModel): "true" | "false" {
  * the right, side by side so a tester never leaves the page to record what
  * they saw. Every right comes from the server; this view only arranges it.
  *
+ * The same shell is PO Studio (`studio="po"`): the same uat preview, frames
+ * and layouts, with the Product owner's acceptance and the merge to main in
+ * the column instead of the items QA verifies.
+ *
  * Docked, `data-layout` says how the two share the width (wide preview or
  * split); CSS alone applies it, so switching never touches the tree.
  * Full screen re-lays out the SAME tree with CSS (`data-full-screen`): the
@@ -402,6 +432,8 @@ export function QaStudioPanel({
   appRole,
   projectName,
   qaScope = REPOSITORY_SCOPE,
+  studio = "qa",
+  onOpenQaRun,
 }: Readonly<{
   projectId: string;
   appRole: AppRole | null | undefined;
@@ -413,6 +445,10 @@ export function QaStudioPanel({
    * it is the per-repository checklist run, as before.
    */
   qaScope?: QaScope;
+  /** QA Studio (the default) or PO Studio. Decides the tabpanel id and the column. */
+  studio?: StudioKind;
+  /** PO Studio's way to the Project's QA run, while the release candidate is locked. */
+  onOpenQaRun?: () => void;
 }>) {
   const viewport = useStudioViewportViewModel({ projectId, enabled: Boolean(projectId) });
   const runs = useStudioRunsViewModel({ projectId, appRole, qaScope, branch: viewport.environment?.branch ?? null });
@@ -429,9 +465,10 @@ export function QaStudioPanel({
   return (
     <div
       role="tabpanel"
-      id="project-detail-panel-qa"
-      aria-labelledby="project-detail-tab-qa"
+      id={`project-detail-panel-${studio}`}
+      aria-labelledby={`project-detail-tab-${studio}`}
       className="qa-studio"
+      data-studio={studio}
       data-full-screen={String(viewport.isFullScreen)}
       data-layout={viewport.layout}
       data-checklist={mode}
@@ -447,12 +484,15 @@ export function QaStudioPanel({
         <RunDock
           vm={viewport}
           run={snapshot.current}
+          title={DRAWER_TITLES[studio]}
           drawerId={drawerId}
           headingId={headingId}
           headingRef={focus.drawerRef}
           promotion={<PromotionCard vm={promotion} projectName={projectName ?? projectId} />}
         >
           <StudioColumn
+            studio={studio}
+            onOpenQaRun={onOpenQaRun}
             qaScope={qaScope}
             projectMode={projectMode}
             projectRun={projectRun}

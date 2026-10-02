@@ -20,6 +20,7 @@ export type ProjectDetailTab =
   | "hosting"
   | "environment"
   | "qa"
+  | "po"
   | "audit"
   | "settings";
 
@@ -34,23 +35,47 @@ export const PROJECT_DETAIL_TABS: ReadonlyArray<ProjectDetailTab> = [
   "hosting",
   "environment",
   "qa",
+  "po",
   "audit",
   "settings",
 ];
 
 /**
- * The roles QA Studio is for: the people who verify a build and sign it off.
- * Developers read the shared checklists and fix what QA returns (the "My QA
- * items" list the Overview summarises); they do not test in the studio.
- *
- * Exported: the Pull requests tab reads it too, to decide whether the "base
- * is main" merge notice may link into QA Studio (a Developer cannot open the
- * tab it would point at, so it gets the notice without the link).
+ * The roles QA Studio is for: the QA Team, who verify the uat build against
+ * the Project's requirements and sign it off, and admins. Developers read the
+ * requirements and fix what QA returns (the "My QA items" list the Overview
+ * summarises); they do not test in a studio.
  */
-export const QA_STUDIO_ROLES: ReadonlySet<AppRole> = new Set<AppRole>(["qa", "lead", "admin"]);
+export const QA_STUDIO_ROLES: ReadonlySet<AppRole> = new Set<AppRole>(["qa", "admin"]);
+
+/**
+ * The roles PO Studio is for: Product owners, who accept the whole system on
+ * uat once QA signed it off and merge it to main, and admins.
+ */
+export const PO_STUDIO_ROLES: ReadonlySet<AppRole> = new Set<AppRole>(["lead", "admin"]);
 
 export function canOpenQaStudio(appRole: AppRole | null | undefined): boolean {
   return appRole != null && QA_STUDIO_ROLES.has(appRole);
+}
+
+export function canOpenPoStudio(appRole: AppRole | null | undefined): boolean {
+  return appRole != null && PO_STUDIO_ROLES.has(appRole);
+}
+
+export type StudioTab = Extract<ProjectDetailTab, "qa" | "po">;
+
+/**
+ * The studio a viewer works in: the QA Team's QA Studio, a Product owner's PO
+ * Studio; an admin has both and lands on QA Studio. Null for everyone else.
+ *
+ * Exported: notification deep links and the Pull requests tab's "merges to
+ * main go through the studio" notice point the viewer at their own studio
+ * (a Developer, who has none, gets the notice without the link).
+ */
+export function studioTabFor(appRole: AppRole | null | undefined): StudioTab | null {
+  if (canOpenQaStudio(appRole)) return "qa";
+  if (canOpenPoStudio(appRole)) return "po";
+  return null;
 }
 
 /**
@@ -67,7 +92,8 @@ export function canManageEnvVars(appRole: AppRole | null | undefined): boolean {
 
 /**
  * Developers get the read-only "Ready for production" card on the Overview:
- * they cannot open QA Studio, where Leads and QA Team see it. Needs the QA
+ * they have no studio, where Product owners (PO Studio) and the QA Team (QA
+ * Studio) see it. Needs the QA
  * capability, like the card itself.
  */
 export function showOverviewProductionReadiness(
@@ -122,16 +148,25 @@ function allTabsExcept(
  * is named here.
  *
  *   - Product owner (`lead`): what they own — the Overview, the Project's
- *     requirements (Checklists), QA Studio, the Audit trail and Settings. No
- *     code, pipeline, hosting or environment surfaces.
- *   - Developer (`member`): everything except QA Studio, Environment included
- *     (they change hosting and variables now).
- *   - QA Team (`qa`): the same five as a Product owner. QA checks the uat
- *     build and its UI in QA Studio; code, pipeline, hosting and environment
- *     surfaces are not theirs.
- *   - Admin: everything.
+ *     requirements (Checklists), PO Studio (accepting the system on uat and
+ *     merging it to main), the Audit trail and Settings. No code, pipeline,
+ *     hosting or environment surfaces.
+ *   - Developer (`member`): everything except the studios, Environment
+ *     included (they change hosting and variables now).
+ *   - QA Team (`qa`): the same five with QA Studio in place of PO Studio. QA
+ *     checks the uat build and its UI there; code, pipeline, hosting and
+ *     environment surfaces are not theirs.
+ *   - Admin: everything, both studios included.
  */
-const OWNER_AND_QA_TABS: ReadonlySet<ProjectDetailTab> = new Set<ProjectDetailTab>([
+const OWNER_TABS: ReadonlySet<ProjectDetailTab> = new Set<ProjectDetailTab>([
+  "overview",
+  "checklists",
+  "po",
+  "audit",
+  "settings",
+]);
+
+const QA_TEAM_TABS: ReadonlySet<ProjectDetailTab> = new Set<ProjectDetailTab>([
   "overview",
   "checklists",
   "qa",
@@ -140,9 +175,9 @@ const OWNER_AND_QA_TABS: ReadonlySet<ProjectDetailTab> = new Set<ProjectDetailTa
 ]);
 
 const ROLE_TABS: Readonly<Record<AppRole, ReadonlySet<ProjectDetailTab>>> = {
-  lead: OWNER_AND_QA_TABS,
-  member: allTabsExcept("qa"),
-  qa: OWNER_AND_QA_TABS,
+  lead: OWNER_TABS,
+  member: allTabsExcept("qa", "po"),
+  qa: QA_TEAM_TABS,
   admin: allTabsExcept(),
 };
 
@@ -153,6 +188,7 @@ const ROLE_TABS: Readonly<Record<AppRole, ReadonlySet<ProjectDetailTab>>> = {
 const UNKNOWN_ROLE_TABS: ReadonlySet<ProjectDetailTab> = allTabsExcept(
   "checklists",
   "qa",
+  "po",
   "environment",
 );
 
@@ -164,10 +200,11 @@ export function projectDetailTabsForRole(
   return ROLE_TABS[appRole] ?? UNKNOWN_ROLE_TABS;
 }
 
-/** Checklists and QA Studio exist only with the QA checklists capability. */
+/** Checklists and the studios exist only with the QA checklists capability. */
 const QA_CAPABILITY_TABS: ReadonlySet<ProjectDetailTab> = new Set<ProjectDetailTab>([
   "checklists",
   "qa",
+  "po",
 ]);
 
 /**
@@ -207,12 +244,22 @@ export function shouldHighlightMyQaItems(search: string | null | undefined): boo
   return new URLSearchParams(search).get("focus") === "my-qa-items";
 }
 
-/** The selected tab, or Overview when the selection is not (or no longer) visible. */
+/** Each studio's counterpart: a link to one lands a viewer without it on the other. */
+const OTHER_STUDIO: Readonly<Partial<Record<ProjectDetailTab, StudioTab>>> = { qa: "po", po: "qa" };
+
+/**
+ * The selected tab, or Overview when the selection is not (or no longer)
+ * visible. A studio the viewer lacks opens their own studio instead: links
+ * written before PO Studio (`#qa` from a notification, a report's "back to
+ * QA Studio", the Projects explorer) still bring a Product owner to theirs.
+ */
 export function resolveVisibleTab(
   tab: ProjectDetailTab,
   visible: ReadonlyArray<ProjectDetailTab>,
 ): ProjectDetailTab {
-  return visible.includes(tab) ? tab : "overview";
+  if (visible.includes(tab)) return tab;
+  const other = OTHER_STUDIO[tab];
+  return other && visible.includes(other) ? other : "overview";
 }
 
 export const COVERAGE_THRESHOLD_OPTIONS: Array<{ value: string; label: string }> =
