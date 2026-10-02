@@ -6,7 +6,7 @@ import type { CreateProjectFormState } from "../view-models/use-create-project-f
 import type { GithubInstallationsState } from "../view-models/use-github-installations";
 import type { ProjectOptionsCatalogState } from "../view-models/use-project-options-catalog";
 import { labelAccentStyle } from "./setup-tab-shared";
-import { ProjectChoiceField } from "./setup-project-choice-field";
+import { ProjectBlockerNote, ProjectChoiceField } from "./setup-project-choice-field";
 import { ProjectNameField } from "./setup-project-name-field";
 import type { WizardStepProps } from "./setup-wizard-props";
 
@@ -82,6 +82,7 @@ export function SetupWizardRepository({
   github,
   joinedProjectName,
   projectChoice,
+  projectBlocker,
   projectCatalog,
 }: Readonly<WizardStepProps>) {
   return (
@@ -96,6 +97,7 @@ export function SetupWizardRepository({
           serverError={form.projectNameError}
         />
       )}
+      <ProjectBlockerNote blocker={projectBlocker} />
 
       <RepositoryOwnerFields github={github} />
 

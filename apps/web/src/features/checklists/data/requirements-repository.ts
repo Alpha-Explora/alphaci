@@ -7,7 +7,9 @@ import {
   normalizeRequirementItem,
   requirementCountsByProject,
 } from "../model/requirement-rules";
+import { records, record } from "../model/wire-readers";
 import type {
+  CreateRequirementBatchInput,
   CreateRequirementInput,
   ProjectRequirements,
   Requirement,
@@ -42,6 +44,15 @@ function requirementOrThrow(value: unknown): Requirement {
   return requirement;
 }
 
+/** A batch reply: the created requirements in request order; none readable is an error. */
+function requirementsOrThrow(value: unknown): Requirement[] {
+  const created = records(record(value)?.requirements)
+    .map(normalizeRequirement)
+    .filter((requirement): requirement is Requirement => requirement !== null);
+  if (created.length === 0) throw new Error("The server did not return the requirements.");
+  return created;
+}
+
 function itemOrThrow(value: unknown, requirementId: string): RequirementItem {
   const item = normalizeRequirementItem(value, requirementId);
   if (!item) throw new Error("The server did not return the item.");
@@ -60,6 +71,15 @@ export const requirementsRepository = {
       send("POST", input),
     );
     return requirementOrThrow(raw);
+  },
+
+  /** Several requirements of one kind in ONE request: all are created, or none. */
+  async createBatch(deliveryProjectId: string, input: CreateRequirementBatchInput): Promise<Requirement[]> {
+    const raw = await request<unknown>(
+      `/delivery-projects/${enc(deliveryProjectId)}/requirements/batch`,
+      send("POST", input),
+    );
+    return requirementsOrThrow(raw);
   },
 
   async update(requirementId: string, input: UpdateRequirementInput): Promise<Requirement> {

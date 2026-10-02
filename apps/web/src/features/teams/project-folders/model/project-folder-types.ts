@@ -34,6 +34,8 @@ export interface ProjectFolderWire {
   systemId: string;
   name: string;
   createdAt: string;
+  /** Active Features (functional requirements). Newer backends only. */
+  featureCount?: number;
   repositories: FolderRepositoryWire[];
 }
 
@@ -128,6 +130,11 @@ export interface ProjectFolder {
   systemId: string;
   name: string;
   createdAt: string | null;
+  /**
+   * Active Features (functional requirements), or null when the server sent
+   * no count. Null never blocks anything here: the server enforces the rule.
+   */
+  featureCount: number | null;
   repositories: FolderRepository[];
 }
 

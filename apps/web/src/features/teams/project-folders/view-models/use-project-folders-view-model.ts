@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import { useAuthSession } from "@/features/auth/session";
 import type { AppRole } from "@/shared/api/contracts";
-import { roleCanStartRun } from "@/features/checklists";
+import { canManageRequirements, roleCanStartRun } from "@/features/checklists";
 import {
   canCreateRepositoryWithoutProject,
   resolveCanCreateProject,
@@ -12,7 +12,7 @@ import {
 } from "@/features/groups";
 
 import { projectFoldersRepository } from "../data/project-folders-repository";
-import { findFolder, loadErrorMessage } from "../model/project-folder-rules";
+import { findFolder, loadErrorMessage, withFeatureCounts } from "../model/project-folder-rules";
 import type {
   ProjectFolder,
   ProjectFoldersSnapshot,
@@ -55,6 +55,21 @@ export interface ProjectFoldersViewModel {
   requirementCounts: Record<string, number> | null;
   /** The viewer's app role, for the Project QA workspace. */
   appRole: AppRole | null;
+  /**
+   * Product owner or admin, with the requirements UI on: asked to add a
+   * Project's first Feature so Developers can add repositories.
+   */
+  canManageRequirements: boolean;
+  /**
+   * "Open the New Feature dialog for this Project": set by the nudge, read
+   * once by the Project's requirements panel. Cleared when a Project is
+   * opened or closed normally, so it never fires twice.
+   */
+  newFeatureRequest: NewFeatureRequest | null;
+  /** Open the Project's detail with its New Feature dialog. */
+  requestNewFeature: (deliveryProjectId: string) => void;
+  /** The live Feature count the Project's requirements panel just read. */
+  noteFeatureCount: (deliveryProjectId: string, count: number) => void;
   /** The Project open in the detail screen, or null for the list. */
   selected: ProjectFolder | null;
   openFolder: (deliveryProjectId: string) => void;
@@ -65,6 +80,12 @@ export interface ProjectFoldersViewModel {
 interface Loaded<T> {
   groupId: string;
   value: T;
+}
+
+export interface NewFeatureRequest {
+  deliveryProjectId: string;
+  /** Grows with every request, so the panel can tell a new one from one it handled. */
+  nonce: number;
 }
 
 /**
@@ -94,6 +115,10 @@ export function useProjectFoldersViewModel(options: {
     initialFolderId ? { groupId, value: initialFolderId } : null,
   );
   const [nonce, setNonce] = useState(0);
+  const [featureRequest, setFeatureRequest] = useState<Loaded<NewFeatureRequest> | null>(null);
+  // Feature counts read since the last load (a Feature just written or
+  // archived), laid over the server's until the next load replaces them.
+  const [featureCounts, setFeatureCounts] = useState<Loaded<Record<string, number>> | null>(null);
   const foldersRequest = useRef(0);
   const countsRequest = useRef(0);
 
@@ -106,6 +131,7 @@ export function useProjectFoldersViewModel(options: {
       .then((value) => {
         if (id !== foldersRequest.current) return;
         setSnapshot({ groupId, value });
+        setFeatureCounts(null);
         setFailure(null);
       })
       .catch((cause: unknown) => {
@@ -132,15 +158,40 @@ export function useProjectFoldersViewModel(options: {
 
   const current = currentFor(snapshot, groupId);
   const error = currentFor(failure, groupId);
-  const view = snapshotFields(current);
+  const view = snapshotFields(current, currentFor(featureCounts, groupId));
 
   const reload = useCallback(() => setNonce((n) => n + 1), []);
 
   const openFolder = useCallback(
-    (deliveryProjectId: string) => setSelection({ groupId, value: deliveryProjectId }),
+    (deliveryProjectId: string) => {
+      setFeatureRequest(null);
+      setSelection({ groupId, value: deliveryProjectId });
+    },
     [groupId],
   );
-  const closeFolder = useCallback(() => setSelection(null), []);
+  const closeFolder = useCallback(() => {
+    setFeatureRequest(null);
+    setSelection(null);
+  }, []);
+  const requestNewFeature = useCallback(
+    (deliveryProjectId: string) => {
+      setSelection({ groupId, value: deliveryProjectId });
+      setFeatureRequest((previous) => ({
+        groupId,
+        value: { deliveryProjectId, nonce: (previous?.value.nonce ?? 0) + 1 },
+      }));
+    },
+    [groupId],
+  );
+  const noteFeatureCount = useCallback(
+    (deliveryProjectId: string, count: number) =>
+      setFeatureCounts((previous) => {
+        const known = previous?.groupId === groupId ? previous.value : {};
+        if (known[deliveryProjectId] === count) return previous;
+        return { groupId, value: { ...known, [deliveryProjectId]: count } };
+      }),
+    [groupId],
+  );
 
   return {
     groupId,
@@ -155,6 +206,10 @@ export function useProjectFoldersViewModel(options: {
     qaChecklistsEnabled,
     requirementCounts: qaChecklistsEnabled ? currentFor(counts, groupId) : null,
     appRole: appRole ?? null,
+    canManageRequirements: qaChecklistsEnabled && canManageRequirements(appRole),
+    newFeatureRequest: currentFor(featureRequest, groupId),
+    requestNewFeature,
+    noteFeatureCount,
     selected: findFolder(view.folders, currentFor(selection, groupId)),
     openFolder,
     closeFolder,
@@ -167,12 +222,15 @@ function currentFor<T>(loaded: Loaded<T> | null, groupId: string): T | null {
   return loaded && loaded.groupId === groupId ? loaded.value : null;
 }
 
-function snapshotFields(current: ProjectFoldersSnapshot | null) {
+function snapshotFields(
+  current: ProjectFoldersSnapshot | null,
+  featureCounts: Record<string, number> | null,
+) {
   if (!current) {
     return { folders: [], unfiled: [], count: null, canManage: false };
   }
   return {
-    folders: current.folders,
+    folders: featureCounts ? withFeatureCounts(current.folders, featureCounts) : current.folders,
     unfiled: current.unfiled,
     count: current.folders.length,
     canManage: current.canManage,

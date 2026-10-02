@@ -60,6 +60,30 @@ export function resolveCanCreateRepository(serverFlag: unknown, appRole: Role): 
   return canCreateRepositoryInProject(appRole);
 }
 
+/* ── Features before repositories ───────────────────────────────────────── */
+
+/**
+ * May add a repository to a Project that has no Feature yet: admin only. A
+ * Developer waits for the Product owner to write the first Feature (the
+ * backend's 409 PROJECT_FEATURES_REQUIRED). Product owners and QA Team cannot
+ * create repositories at all, so they never reach this gate.
+ */
+const FEATURELESS_REPOSITORY_CREATORS: ReadonlyArray<AppRole> = ["admin"];
+
+/** A count of active Features from the wire, or null when it is missing or malformed. */
+export function readFeatureCount(value: unknown): number | null {
+  return typeof value === "number" && Number.isInteger(value) && value >= 0 ? value : null;
+}
+
+/**
+ * True when this caller may not add a repository to a Project with this many
+ * Features. Only an exact 0 blocks: an unknown count (an older backend) is
+ * left to the server, which enforces the rule itself.
+ */
+export function repositoryBlockedByFeatures(appRole: Role, featureCount: number | null): boolean {
+  return featureCount === 0 && !named(FEATURELESS_REPOSITORY_CREATORS, appRole);
+}
+
 /* ── Refusals (display strings) ─────────────────────────────────────────── */
 
 export const PROJECT_CREATE_FORBIDDEN_MESSAGE = "Product owners create Projects.";
@@ -68,11 +92,15 @@ export const REPOSITORY_CREATE_FORBIDDEN_MESSAGE =
 export const PROJECT_REQUIRED_MESSAGE = "Choose the Project this repository belongs to.";
 /** A Developer's team has no Project to put a repository in yet. */
 export const NO_PROJECT_YET_MESSAGE = "Your Product owner hasn't created a Project yet.";
+/** A Developer's Project has no Feature yet (409 PROJECT_FEATURES_REQUIRED). */
+export const PROJECT_FEATURES_REQUIRED_MESSAGE =
+  "Waiting for your Product owner to add the first Feature.";
 
 const CREATION_MESSAGES: Readonly<Record<string, string>> = {
   PROJECT_CREATE_FORBIDDEN: PROJECT_CREATE_FORBIDDEN_MESSAGE,
   REPOSITORY_CREATE_FORBIDDEN: REPOSITORY_CREATE_FORBIDDEN_MESSAGE,
   PROJECT_REQUIRED: PROJECT_REQUIRED_MESSAGE,
+  PROJECT_FEATURES_REQUIRED: PROJECT_FEATURES_REQUIRED_MESSAGE,
 };
 
 /** The `code` of an ApiError-shaped failure (its parsed body in `details`). */
@@ -84,7 +112,7 @@ function errorCode(cause: unknown): string {
   return typeof code === "string" ? code.toUpperCase() : "";
 }
 
-/** The sentence for one of the three creation refusals, or null for anything else. */
+/** The sentence for one of the creation refusals, or null for anything else. */
 export function creationRefusalMessage(cause: unknown): string | null {
   return CREATION_MESSAGES[errorCode(cause)] ?? null;
 }

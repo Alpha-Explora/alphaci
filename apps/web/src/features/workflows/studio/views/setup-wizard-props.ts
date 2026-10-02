@@ -8,7 +8,8 @@ import type { TeamProjectOptionsStatus } from "../view-models/use-team-project-o
 /** A Developer's "which Project does this repository belong to" select. */
 export interface ProjectChoice {
   status: TeamProjectOptionsStatus;
-  options: ReadonlyArray<{ id: string; name: string }>;
+  /** A Project with no Feature yet is listed, disabled, with "(no Features yet)". */
+  options: ReadonlyArray<{ id: string; label: string; disabled: boolean }>;
   /** The picked Project's id, or "" before one is picked. */
   selectedId: string;
   onSelect: (id: string) => void;
@@ -31,6 +32,11 @@ export interface WizardStepProps {
    * of the free Project name; null for everyone who need not choose.
    */
   projectChoice: ProjectChoice | null;
+  /**
+   * Why the repository cannot go into the chosen or linked Project yet (it
+   * has no Feature), or null. Blocks the Repository step and Create.
+   */
+  projectBlocker?: string | null;
   projectCatalog: ProjectOptionsCatalogState;
   projectQuota: UsageLimitItem | null;
   selectedProjectKind: "frontend" | "backend";

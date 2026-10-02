@@ -6,6 +6,7 @@ import { requirementsRepository } from "../../../../../src/features/checklists/d
 import { normalizeProjectMyItems, normalizeProjectRunCurrent } from "../../../../../src/features/checklists/model/project-run-rules";
 import {
   normalizeProjectRequirements,
+  normalizeRequirement,
   normalizeRequirementItem,
   REQUIREMENT_KINDS,
   SHOWN_REQUIREMENT_KINDS,
@@ -16,12 +17,13 @@ import { ProjectMyItemsCard } from "../../../../../src/features/checklists/retur
 import { useProjectRunViewModel } from "../../../../../src/features/checklists/studio/view-models/use-project-run-view-model";
 import { ProjectRunPanel } from "../../../../../src/features/checklists/studio/views/project-run-panel";
 import type { AppRole } from "../../../../../src/shared/api/contracts";
-import { headWire, itemWire, projectRequirementsWire, projectRunWire, runItemWire, SHA_BE, SHA_BE_NEW } from "../requirement-fixtures";
+import { headWire, itemWire, projectRequirementsWire, projectRunWire, requirementWire, runItemWire, SHA_BE, SHA_BE_NEW } from "../requirement-fixtures";
 
 jest.mock("../../../../../src/features/checklists/data/requirements-repository", () => ({
   requirementsRepository: {
     listForProject: jest.fn(),
     create: jest.fn(),
+    createBatch: jest.fn(),
     update: jest.fn(),
     archive: jest.fn(),
     addItem: jest.fn(),
@@ -200,6 +202,188 @@ describe("ProjectRequirementsPanel", () => {
     expect(buttonNamed(dialog, "Add item")).toBeDefined();
   });
 
+  describe("New Feature: several at once", () => {
+    const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")!.set!;
+
+    async function type(input: HTMLInputElement, value: string) {
+      await act(async () => {
+        setter.call(input, value);
+        input.dispatchEvent(new Event("input", { bubbles: true }));
+      });
+    }
+
+    async function openNewFeature(kinds?: ReadonlyArray<"functional" | "system">, opener = "New Feature") {
+      loadRequirements("lead");
+      const container = await render(<ProjectRequirementsPanel deliveryProjectId="dp-1" appRole="lead" kinds={kinds} />);
+      await act(async () => buttonNamed(container, opener)!.click());
+      await act(async () => {
+        await new Promise((resolve) => setTimeout(resolve, 0));
+      });
+      return document.querySelector<HTMLElement>('[role="dialog"]')!;
+    }
+
+    const cards = (dialog: HTMLElement) => [...dialog.querySelectorAll<HTMLFieldSetElement>("fieldset.rq-batch-card")];
+    const nameOf = (card: HTMLElement) => card.querySelector<HTMLInputElement>("input.hier-input:not(.rq-story-row__input)")!;
+    const submit = (dialog: HTMLElement) => dialog.querySelector<HTMLButtonElement>('button[type="submit"]')!;
+
+    it("is one wide, labelled dialog whose last cell adds a numbered card and focuses its Name", async () => {
+      const dialog = await openNewFeature();
+      expect(dialog.classList.contains("hier-dialog--wide")).toBe(true);
+      expect(dialog.getAttribute("aria-labelledby")).toBeTruthy();
+      expect(document.getElementById(dialog.getAttribute("aria-describedby")!)?.textContent).toMatch(/Add one or several/);
+      // Title pinned above, actions pinned below, only the body between them scrolls.
+      expect(dialog.querySelector(".hier-dialog-body .rq-batch")).not.toBeNull();
+      expect(dialog.querySelector(".hier-dialog-footer button[type='submit']")).not.toBeNull();
+      expect(cards(dialog).map((card) => card.querySelector("legend")?.textContent)).toEqual(["1Feature 1"]);
+      // The only card cannot be removed.
+      expect(dialog.querySelector('[aria-label="Remove Feature 1"]')).toBeNull();
+
+      const tile = dialog.querySelector<HTMLButtonElement>("button.rq-batch-add")!;
+      expect(tile.textContent).toContain("Add another Feature");
+      // The tile is the grid's last cell.
+      expect(tile.parentElement?.lastElementChild).toBe(tile);
+      await act(async () => tile.click());
+      expect(cards(dialog)).toHaveLength(2);
+      expect(cards(dialog)[1].querySelector("legend")?.textContent).toBe("2Feature 2");
+      expect(document.activeElement).toBe(nameOf(cards(dialog)[1]));
+      expect(tile.parentElement?.lastElementChild).toBe(tile);
+
+      // The label counts what will be created: blank cards are not counted.
+      expect(submit(dialog).textContent).toBe("Create feature");
+      await type(nameOf(cards(dialog)[0]), "Wallet");
+      await type(nameOf(cards(dialog)[1]), "Refunds");
+      expect(submit(dialog).textContent).toBe("Create 2 features");
+      await act(async () => tile.click());
+      await type(nameOf(cards(dialog)[2]), "Loyalty");
+      expect(submit(dialog).textContent).toBe("Create 3 features");
+
+      // Remove card 2: card 3 becomes Feature 2.
+      await act(async () => dialog.querySelector<HTMLButtonElement>('[aria-label="Remove Feature 2"]')!.click());
+      expect(cards(dialog).map((card) => nameOf(card).value)).toEqual(["Wallet", "Loyalty"]);
+      expect(cards(dialog)[1].querySelector("legend")?.textContent).toBe("2Feature 2");
+      expect(submit(dialog).textContent).toBe("Create 2 features");
+    });
+
+    it("adds a card on Ctrl+Enter (Cmd+Enter), while Enter in a story still adds a row", async () => {
+      const dialog = await openNewFeature();
+      const story = cards(dialog)[0].querySelector<HTMLInputElement>(".rq-story-row input")!;
+      await act(async () => {
+        story.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", ctrlKey: true, bubbles: true, cancelable: true }));
+      });
+      expect(cards(dialog)).toHaveLength(2);
+      expect(cards(dialog)[0].querySelectorAll(".rq-story-row")).toHaveLength(1);
+      await act(async () => {
+        nameOf(cards(dialog)[1]).dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", metaKey: true, bubbles: true, cancelable: true }));
+      });
+      expect(cards(dialog)).toHaveLength(3);
+      expect(document.activeElement).toBe(nameOf(cards(dialog)[2]));
+    });
+
+    it("sends ONE batch request and adds every returned Feature to the list", async () => {
+      requirements.createBatch.mockResolvedValue([
+        normalizeRequirement(requirementWire({ id: "req-a", name: "Wallet", items: [], createdAt: "2026-10-03T00:00:00Z" }))!,
+        normalizeRequirement(requirementWire({ id: "req-b", name: "Refunds", items: [], createdAt: "2026-10-04T00:00:00Z" }))!,
+      ]);
+      const dialog = await openNewFeature();
+      await type(nameOf(cards(dialog)[0]), "Wallet");
+      await act(async () => dialog.querySelector<HTMLButtonElement>("button.rq-batch-add")!.click());
+      await type(nameOf(cards(dialog)[1]), "Refunds");
+      // An empty third card is ignored, not an error.
+      await act(async () => dialog.querySelector<HTMLButtonElement>("button.rq-batch-add")!.click());
+      await act(async () => submit(dialog).click());
+      await act(async () => {
+        await Promise.resolve();
+      });
+      expect(requirements.createBatch).toHaveBeenCalledTimes(1);
+      expect(requirements.createBatch).toHaveBeenCalledWith("dp-1", {
+        kind: "functional",
+        requirements: [{ name: "Wallet" }, { name: "Refunds" }],
+      });
+      expect(requirements.create).not.toHaveBeenCalled();
+      const titles = [...document.querySelectorAll(".rq-card__title")].map((node) => node.textContent);
+      expect(titles).toEqual(expect.arrayContaining(["Wallet", "Refunds"]));
+    });
+
+    it("puts the server's error on card N, marks it invalid and brings it into focus", async () => {
+      requirements.createBatch.mockRejectedValue(
+        Object.assign(new Error("HTTP 409"), { status: 409, details: { code: "REQUIREMENT_NAME_TAKEN", index: 1 } }),
+      );
+      const dialog = await openNewFeature();
+      await type(nameOf(cards(dialog)[0]), "Wallet");
+      await act(async () => dialog.querySelector<HTMLButtonElement>("button.rq-batch-add")!.click());
+      await type(nameOf(cards(dialog)[1]), "Checkout with saved cards");
+      await act(async () => submit(dialog).click());
+      await act(async () => {
+        await Promise.resolve();
+      });
+      const second = cards(dialog)[1];
+      expect(second.getAttribute("data-invalid")).toBe("true");
+      expect(second.textContent).toContain("This Project already has a requirement with that name.");
+      expect(nameOf(second).getAttribute("aria-invalid")).toBe("true");
+      expect(document.getElementById(nameOf(second).getAttribute("aria-describedby")!)?.textContent).toMatch(/already has/);
+      expect(cards(dialog)[0].getAttribute("data-invalid")).toBeNull();
+      expect(dialog.querySelector('[role="alert"]')?.textContent).toBe("Nothing was created. Fix Feature 2, then try again.");
+      expect(document.activeElement).toBe(nameOf(second));
+    });
+
+    it("validates on the card before sending anything", async () => {
+      const dialog = await openNewFeature();
+      await act(async () => dialog.querySelector<HTMLButtonElement>("button.rq-batch-add")!.click());
+      await type(cards(dialog)[1].querySelector<HTMLInputElement>(".rq-story-row input")!, "Pay later");
+      await act(async () => submit(dialog).click());
+      // Card 1 is blank and ignored; card 2 has a story but no name.
+      expect(cards(dialog)[0].getAttribute("data-invalid")).toBeNull();
+      expect(cards(dialog)[1].textContent).toContain("Give the Feature a name.");
+      expect(document.activeElement).toBe(nameOf(cards(dialog)[1]));
+      expect(requirements.createBatch).not.toHaveBeenCalled();
+    });
+
+    it("words the System requirement dialog in its own terms (when System is shown)", async () => {
+      const dialog = await openNewFeature(REQUIREMENT_KINDS, "New system requirement");
+      expect(dialog.querySelector("button.rq-batch-add")?.textContent).toContain("Add another System requirement");
+      await type(nameOf(cards(dialog)[0]), "Security");
+      await act(async () => dialog.querySelector<HTMLButtonElement>("button.rq-batch-add")!.click());
+      await type(nameOf(cards(dialog)[1]), "Performance");
+      expect(submit(dialog).textContent).toBe("Create 2 system requirements");
+      expect(cards(dialog)[1].querySelector("legend")?.textContent).toBe("2System requirement 2");
+    });
+
+    it("keeps the single form for an edit", async () => {
+      loadRequirements("lead");
+      const container = await render(<ProjectRequirementsPanel deliveryProjectId="dp-1" appRole="lead" />);
+      const edit = container.querySelector<HTMLButtonElement>('button[aria-label^="Edit"]') ?? buttonNamed(container, "Edit");
+      await act(async () => edit!.click());
+      const dialog = document.querySelector<HTMLElement>('[role="dialog"]')!;
+      expect(dialog.classList.contains("hier-dialog--wide")).toBe(false);
+      expect(dialog.querySelector("fieldset.rq-batch-card")).toBeNull();
+      expect(dialog.querySelector('button[type="submit"]')?.textContent).toBe("Save");
+    });
+  });
+
+  it("opens New Feature when the Project asks for it, once, and reports the Feature count", async () => {
+    loadRequirements("lead");
+    const onFeatureCount = jest.fn();
+    const container = await render(
+      <ProjectRequirementsPanel deliveryProjectId="dp-1" appRole="lead" newFeatureRequest={1} onFeatureCount={onFeatureCount} />,
+    );
+    expect(document.querySelector('[role="dialog"]')?.textContent).toContain("New Feature");
+    expect(onFeatureCount).toHaveBeenLastCalledWith(1);
+    await act(async () => buttonNamed(document.body, "Cancel")!.click());
+    await act(async () => {
+      root!.render(
+        <ProjectRequirementsPanel deliveryProjectId="dp-1" appRole="lead" newFeatureRequest={1} onFeatureCount={onFeatureCount} />,
+      );
+    });
+    expect(container.querySelector(".rq-panel")).not.toBeNull();
+    expect(document.querySelector("fieldset.rq-batch-card")).toBeNull();
+  });
+
+  it("never opens New Feature for a Developer, however it is asked", async () => {
+    loadRequirements("member");
+    await render(<ProjectRequirementsPanel deliveryProjectId="dp-1" appRole="member" newFeatureRequest={1} />);
+    expect(document.querySelector('[role="dialog"]')).toBeNull();
+  });
+
   it("explains an empty Project by role", async () => {
     requirements.listForProject.mockResolvedValue(normalizeProjectRequirements({ requirements: [], permissions: permissionsFor("member") }));
     const container = await render(<ProjectRequirementsPanel deliveryProjectId="dp-1" appRole="member" />);
@@ -353,6 +537,39 @@ describe("ProjectQaWorkspace", () => {
     const qa = await render(<ProjectQaWorkspace deliveryProjectId="dp-1" projectName="storefront" appRole="qa" />);
     expect(qa.querySelector('[role="tab"][aria-selected="true"]')?.textContent).toBe("QA run");
     expect(qa.textContent).toContain("then sign the Project off");
+  });
+
+  it("brings the Requirements tab forward and opens New Feature on a new request, never on a revisit", async () => {
+    loadRequirements("lead");
+    runs.current.mockResolvedValue(normalizeProjectRunCurrent({ run: projectRunWire() }));
+    runs.myItems.mockResolvedValue(normalizeProjectMyItems({}));
+    const view = (request: number) => (
+      <ProjectQaWorkspace deliveryProjectId="dp-1" projectName="storefront" appRole="lead" newFeatureRequest={request} />
+    );
+    const container = await render(view(0));
+    const selected = () => container.querySelector('[role="tab"][aria-selected="true"]')?.textContent;
+    await act(async () => buttonNamed(container, "QA run")!.click());
+    expect(selected()).toBe("QA run");
+
+    await act(async () => root!.render(view(1)));
+    for (let i = 0; i < 4; i += 1) {
+      await act(async () => {
+        await Promise.resolve();
+      });
+    }
+    expect(selected()).toBe("Requirements");
+    expect(document.querySelector('[role="dialog"]')?.textContent).toContain("New Feature");
+    await act(async () => buttonNamed(document.body, "Cancel")!.click());
+
+    // Leaving and coming back to the tab does not reopen it.
+    await act(async () => buttonNamed(container, "QA run")!.click());
+    await act(async () => buttonNamed(container, "Requirements")!.click());
+    for (let i = 0; i < 4; i += 1) {
+      await act(async () => {
+        await Promise.resolve();
+      });
+    }
+    expect(document.querySelector("fieldset.rq-batch-card")).toBeNull();
   });
 
   it("renders nothing when disabled", async () => {

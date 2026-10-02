@@ -132,17 +132,19 @@ const mockedListFolders = (
 ).projectFoldersRepository.list;
 
 /** The team's Projects, as GET /groups/:id/project-folders normalises them. */
-function folders(names: Array<[string, string]>) {
+/** The team's Projects; a third entry is the Project's active Feature count (none: unknown). */
+function folders(names: Array<[string, string] | [string, string, number]>) {
   return {
     groupId: "workspace-1",
     canManage: false,
     canCreateProject: null,
     canCreateRepository: null,
-    folders: names.map(([deliveryProjectId, name]) => ({
+    folders: names.map(([deliveryProjectId, name, featureCount]) => ({
       deliveryProjectId,
       systemId: "sys-1",
       name,
       createdAt: null,
+      featureCount: featureCount ?? null,
       repositories: [],
     })),
     unfiled: [],
@@ -942,6 +944,26 @@ describe("WorkflowBuilder project setup", () => {
       expect(sent).not.toHaveProperty("projectName");
     });
 
+    it("lists a Project with no Feature yet disabled, saying so (Features before repositories)", async () => {
+      mockedListFolders.mockResolvedValue(folders([["dp-1", "testfinals", 2], ["dp-2", "wallet", 0]]));
+      await openDeveloperRepositoryStep();
+      const options = Array.from(choice()!.options);
+      expect(options.map((option) => option.textContent)).toEqual([
+        "Select a Project…",
+        "testfinals",
+        "wallet (no Features yet)",
+      ]);
+      expect(options.map((option) => option.disabled)).toEqual([false, false, true]);
+      expect(container.querySelector("[data-testid='setup-project-blocker']")).toBeNull();
+
+      changeValue(container.querySelector<HTMLInputElement>("#repo-name")!, "demo-next-app");
+      await act(async () => {
+        changeValue(choice()!, "dp-1");
+        await Promise.resolve();
+      });
+      expect(findButton("Continue")).not.toBeDisabled();
+    });
+
     it("says so when the Product owner has not created a Project yet", async () => {
       mockedListFolders.mockResolvedValue(folders([]));
       await renderBuilder("member");
@@ -974,6 +996,25 @@ describe("WorkflowBuilder project setup", () => {
       });
       await waitForCondition(() => (choice()?.options.length ?? 0) === 3);
     });
+  });
+
+  it("maps a PROJECT_FEATURES_REQUIRED refusal to its sentence", async () => {
+    mockedCreateProject.mockRejectedValueOnce(
+      new ApiError("Request failed with status 409", 409, {
+        code: "PROJECT_FEATURES_REQUIRED",
+        message: "x",
+        deliveryProjectId: "dp-2",
+      }),
+    );
+    await renderBuilder();
+    await advanceToReview({ projectTypeId: "nextjs-app", repoName: "demo-next-app" });
+    await act(async () => {
+      container.querySelector<HTMLButtonElement>("[data-testid='setup-project-button']")?.click();
+      await Promise.resolve();
+    });
+    await waitForCondition(
+      () => container.textContent?.includes("Waiting for your Product owner to add the first Feature.") ?? false,
+    );
   });
 
   it("maps a PROJECT_REQUIRED refusal to its sentence", async () => {
@@ -1345,6 +1386,22 @@ describe("WorkflowBuilder project setup", () => {
         const sent = mockedCreateProject.mock.calls[0][0];
         expect(sent.deliveryProjectId).toBe(DP);
         expect(sent).not.toHaveProperty("projectName");
+      });
+
+      it("blocks a Developer's link to a Project with no Feature yet, with the same sentence", async () => {
+        mockedListFolders.mockResolvedValue(folders([[DP, "loyalty", 0]]));
+        await openLinkedWizard();
+        await clickContinue();
+        await waitForCondition(
+          () => container.querySelector("[data-testid='setup-project-blocker']") !== null,
+        );
+        expect(container.querySelector("[data-testid='setup-project-blocker']")?.textContent).toBe(
+          "Waiting for your Product owner to add the first Feature.",
+        );
+        changeValue(repoNameInput(), "demo-next-app");
+        // Create can never be reached: the Repository step does not go on.
+        expect(findButton("Continue")).toBeDisabled();
+        expect(mockedCreateProject).not.toHaveBeenCalled();
       });
     });
   });

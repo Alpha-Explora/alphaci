@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 
-import { createRepository } from "@/features/groups";
+import { createRepository, creationRefusalMessage } from "@/features/groups";
 import { ApiError } from "@/shared/api/request";
 import type { HierarchyRepository } from "@/features/groups";
 import { FormDialog } from "./primitives";
@@ -45,10 +45,13 @@ export function CreateRepositoryDialog({
       reset();
       onClose();
     } catch (cause) {
+      // A coded refusal (PROJECT_FEATURES_REQUIRED is a 409 too) says why;
+      // only an uncoded 409 is the name clash.
       setError(
-        cause instanceof ApiError && cause.status === 409
-          ? "A repository with that name already exists."
-          : "The repository could not be created. Please try again.",
+        creationRefusalMessage(cause) ??
+          (cause instanceof ApiError && cause.status === 409
+            ? "A repository with that name already exists."
+            : "The repository could not be created. Please try again."),
       );
     } finally {
       setSubmitting(false);

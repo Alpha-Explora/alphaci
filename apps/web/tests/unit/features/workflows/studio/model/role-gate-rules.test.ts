@@ -48,6 +48,7 @@ describe("roleGateErrorMessage", () => {
     [403, "PROJECT_ROLE_FORBIDDEN", "Your role cannot create or onboard repositories."],
     [403, "REPOSITORY_CREATE_FORBIDDEN", "Developers create repositories inside a Project."],
     [400, "PROJECT_REQUIRED", "Choose the Project this repository belongs to."],
+    [409, "PROJECT_FEATURES_REQUIRED", "Waiting for your Product owner to add the first Feature."],
     [403, "PROJECT_CREATE_FORBIDDEN", "Product owners create Projects."],
     [
       403,

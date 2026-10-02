@@ -150,6 +150,7 @@ export interface KindCopy {
   section: string;
   lede: string;
   singular: string;
+  plural: string;
   item: string;
   items: string;
   create: string;
@@ -162,6 +163,7 @@ const KIND_COPY: Record<RequirementKind, KindCopy> = {
     section: "Functional Requirements (Features)",
     lede: "What the product must do. Each Feature is told as User stories, with the acceptance criteria QA verifies.",
     singular: "Feature",
+    plural: "Features",
     item: "User story",
     items: "User stories",
     create: "New Feature",
@@ -172,6 +174,7 @@ const KIND_COPY: Record<RequirementKind, KindCopy> = {
     section: "System requirements",
     lede: "Checks every repository in this Project must pass: security, performance, release hygiene. Earlier team checklists live here.",
     singular: "System requirement",
+    plural: "System requirements",
     item: "Item",
     items: "Items",
     create: "New system requirement",

@@ -600,10 +600,228 @@
   cursor: not-allowed;
 }
 
+/* ── New Feature: several cards at once ──────────────────────────────────
+   A landscape grid of requirement cards, two wide, with the add tile always
+   the last cell. Like the story rows, the dialog renders outside the
+   section, so the grid carries the section's tone itself. */
+.rq-batch,
+.rq-batch-add {
+  --rq-tone: var(--brand);
+  --rq-tone-fill: var(--brand-light);
+  --rq-tone-edge: var(--border-brand);
+}
+
+.rq-batch[data-kind="system"],
+.rq-batch-add[data-kind="system"] {
+  --rq-tone: var(--accent-teal);
+  --rq-tone-fill: var(--accent-teal-light);
+  --rq-tone-edge: var(--border-teal);
+}
+
+.rq-batch__fieldset {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.rq-batch {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.rq-batch__hint {
+  margin: 0;
+  line-height: 1.5;
+}
+
+.rq-batch__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.rq-batch-card {
+  position: relative;
+  display: grid;
+  align-content: start;
+  gap: 0;
+  min-width: 0;
+  margin: 0;
+  padding: 0.95rem 1rem 0.85rem;
+  border: 1px solid var(--border-layer);
+  border-top: 3px solid var(--rq-tone);
+  border-radius: 0.85rem;
+  background: var(--layer-1);
+  box-shadow: var(--shadow-soft);
+  scroll-margin-block: 1rem;
+  transition: border-color 160ms ease-out;
+}
+
+.rq-batch-card[data-invalid="true"] {
+  border-color: var(--border-danger);
+  border-top-color: var(--danger);
+}
+
+/* A floated legend sits inside the card like a heading instead of cutting
+   into its border. */
+.rq-batch-card__legend {
+  float: left;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  margin-bottom: 0.7rem;
+  padding: 0 2.4rem 0 0;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--text-primary);
+}
+
+.rq-batch-card__legend + * {
+  clear: both;
+}
+
+.rq-batch-card__number {
+  display: inline-grid;
+  place-items: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 0.45rem;
+  background: var(--rq-tone-fill);
+  color: var(--rq-tone);
+  font-size: 0.72rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.rq-batch-card__remove {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.7rem;
+  display: inline-grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  border: 1px solid transparent;
+  border-radius: 0.5rem;
+  background: none;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.rq-batch-card__remove:hover:not(:disabled) {
+  border-color: var(--border);
+  color: var(--danger);
+}
+
+.rq-batch-card__remove:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 1px;
+}
+
+.rq-batch-card__description {
+  min-height: 3.6rem;
+  resize: vertical;
+}
+
+.rq-batch-card .rq-story-rows {
+  margin-bottom: 0;
+}
+
+.rq-batch-card__error {
+  margin-top: 0.55rem;
+}
+
+/* The add tile: same height as the cards beside it (grid stretch), a
+   sensible floor when it starts a row of its own. */
+.rq-batch-add {
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 0.45rem;
+  min-height: 11rem;
+  padding: 1.25rem;
+  border: 1.5px dashed var(--rq-tone-edge);
+  border-radius: 0.85rem;
+  background: none;
+  color: var(--rq-tone);
+  font: inherit;
+  cursor: pointer;
+  transition:
+    background-color 160ms ease-out,
+    border-color 160ms ease-out;
+}
+
+.rq-batch-add:hover:not(:disabled) {
+  border-color: var(--rq-tone);
+  background: var(--rq-tone-fill);
+}
+
+.rq-batch-add:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
+.rq-batch-add:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.rq-batch-add__icon {
+  display: inline-grid;
+  place-items: center;
+  width: 2.4rem;
+  height: 2.4rem;
+  border-radius: 50%;
+  background: var(--rq-tone-fill);
+  transition: transform 160ms ease-out;
+}
+
+.rq-batch-add:hover:not(:disabled) .rq-batch-add__icon {
+  transform: scale(1.06);
+}
+
+.rq-batch-add__label {
+  font-size: 0.86rem;
+  font-weight: 700;
+}
+
+.rq-batch-add__hint {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
+.rq-batch-add__hint kbd {
+  padding: 0.05rem 0.35rem;
+  border: 1px solid var(--border);
+  border-radius: 0.3rem;
+  background: var(--bg-soft);
+  font: inherit;
+  font-size: 0.68rem;
+}
+
+@media (max-width: 760px) {
+  .rq-batch__grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .rq-batch-add {
+    min-height: 5.5rem;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .rq-tab,
   .rq-item,
-  .rq-meter__fill {
+  .rq-meter__fill,
+  .rq-batch-card,
+  .rq-batch-add,
+  .rq-batch-add__icon {
     transition: none;
+  }
+
+  .rq-batch-add:hover:not(:disabled) .rq-batch-add__icon {
+    transform: none;
   }
 }

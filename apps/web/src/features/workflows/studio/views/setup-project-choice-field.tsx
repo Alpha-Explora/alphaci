@@ -36,9 +36,22 @@ function ChoiceStatus({ choice }: Readonly<{ choice: ProjectChoice }>) {
 }
 
 /**
+ * Why the repository cannot go into the chosen (or linked) Project yet: it
+ * has no Feature. Announced, and it keeps the Repository step from going on.
+ */
+export function ProjectBlockerNote({ blocker }: Readonly<{ blocker: string | null | undefined }>) {
+  if (!blocker) return null;
+  return (
+    <p role="alert" style={EMPTY_STYLE} data-testid="setup-project-blocker">
+      {blocker}
+    </p>
+  );
+}
+
+/**
  * A Developer's Project select, in place of the free "Project name": every
  * repository a Developer creates belongs to one of the team's Projects, which
- * a Product owner created first.
+ * a Product owner created first, and which has its first Feature.
  */
 export function ProjectChoiceField({ choice }: Readonly<{ choice: ProjectChoice }>) {
   const busy = choice.status !== "ready";
@@ -63,8 +76,8 @@ export function ProjectChoiceField({ choice }: Readonly<{ choice: ProjectChoice 
           {choice.status === "loading" ? "Loading Projects…" : "Select a Project…"}
         </option>
         {choice.options.map((option) => (
-          <option key={option.id} value={option.id}>
-            {option.name}
+          <option key={option.id} value={option.id} disabled={option.disabled}>
+            {option.label}
           </option>
         ))}
       </select>

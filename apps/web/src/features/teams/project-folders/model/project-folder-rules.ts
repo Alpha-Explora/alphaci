@@ -20,8 +20,12 @@ import type {
 import {
   NO_PROJECT_YET_MESSAGE,
   PROJECT_CREATE_FORBIDDEN_MESSAGE,
+  PROJECT_FEATURES_REQUIRED_MESSAGE,
   creationRefusalMessage,
+  readFeatureCount,
+  repositoryBlockedByFeatures,
 } from "@/features/groups";
+import type { AppRole } from "@/shared/api/contracts";
 
 type Json = Record<string, unknown>;
 
@@ -99,6 +103,7 @@ function readFolder(value: unknown): ProjectFolder | null {
     systemId: readString(raw.systemId),
     name: readOptionalString(raw.name) ?? "Untitled Project",
     createdAt: readOptionalString(raw.createdAt),
+    featureCount: readFeatureCount(raw.featureCount),
     // Creation order, exactly as the server sends it.
     repositories: asArray(raw.repositories).map(readRepository).filter(isPresent),
   };
@@ -247,6 +252,55 @@ export function findFolder(
 ): ProjectFolder | null {
   if (!deliveryProjectId) return null;
   return folders.find((folder) => folder.deliveryProjectId === deliveryProjectId) ?? null;
+}
+
+/* ── Features before repositories ───────────────────────────────────────── */
+
+export const FEATURES_REQUIRED_NOTE = PROJECT_FEATURES_REQUIRED_MESSAGE;
+export const FEATURE_NUDGE_MESSAGE = "Add a Feature so Developers can add repositories.";
+
+/** How a Project offers "Add repository": a link, a disabled control with the note, or nothing. */
+export type AddRepositoryState = "enabled" | "blocked" | "hidden";
+
+export interface FolderFeatureGate {
+  addRepository: AddRepositoryState;
+  /** A Product owner (or admin) is asked to add the first Feature. */
+  featureNudge: boolean;
+}
+
+/**
+ * What a Project offers by its Feature count. A Developer may add a
+ * repository only once the Project has a Feature (admins are exempt); while
+ * it has none, the control stays on screen, disabled, with the reason. A
+ * Product owner or admin who can write requirements is nudged to add the
+ * first one. An unknown count changes nothing: the server decides.
+ */
+export function folderFeatureGate(
+  folder: Pick<ProjectFolder, "featureCount">,
+  caller: {
+    appRole: AppRole | null | undefined;
+    canCreateRepository: boolean;
+    canManageRequirements: boolean;
+  },
+): FolderFeatureGate {
+  const blocked = repositoryBlockedByFeatures(caller.appRole, folder.featureCount);
+  let addRepository: AddRepositoryState = "hidden";
+  if (caller.canCreateRepository) addRepository = blocked ? "blocked" : "enabled";
+  return {
+    addRepository,
+    featureNudge: folder.featureCount === 0 && caller.canManageRequirements,
+  };
+}
+
+/** The folders with locally known Feature counts (a Feature just written) laid over the server's. */
+export function withFeatureCounts(
+  folders: ReadonlyArray<ProjectFolder>,
+  counts: Readonly<Record<string, number>>,
+): ProjectFolder[] {
+  return folders.map((folder) => {
+    const known = counts[folder.deliveryProjectId];
+    return known === undefined || known === folder.featureCount ? folder : { ...folder, featureCount: known };
+  });
 }
 
 /* ── Links ──────────────────────────────────────────────────────────────── */

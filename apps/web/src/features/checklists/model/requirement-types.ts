@@ -143,6 +143,15 @@ export interface CreateRequirementInput {
   items?: RequirementItemInput[];
 }
 
+/** One requirement of a batch create: the single create's body, minus the kind. */
+export type BatchRequirementInput = Omit<CreateRequirementInput, "kind">;
+
+/** POST /delivery-projects/:dpId/requirements/batch — 1 to 20, all of one kind, all or nothing. */
+export interface CreateRequirementBatchInput {
+  kind: RequirementKind;
+  requirements: BatchRequirementInput[];
+}
+
 export interface UpdateRequirementInput {
   expectedVersion: number;
   name?: string;
@@ -173,6 +182,15 @@ export interface RequirementDraft {
   name: string;
   description: string;
   stories: string[];
+}
+
+/**
+ * One card of the New Feature (or New System requirement) dialog: a whole
+ * requirement with its first stories. `key` identifies the card while the
+ * dialog is open (cards are added and removed, so the index is not stable).
+ */
+export interface RequirementCardDraft extends RequirementDraft {
+  key: string;
 }
 
 /** One story or item being written. Strings so the inputs stay controlled. */
