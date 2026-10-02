@@ -2794,9 +2794,10 @@ async function capabilityAbsentHidesQa({ page, backend, baseUrl }: JourneyContex
 
 /** (h) Team lead: the project explorer — list, open, attach, move (409 then real), archive, create links. */
 /**
- * A multi-repository Project reads as one product: its card opens the
- * frontend's page, titled with the Project, and a switch opens the backend on
- * the tab in use. "Manage project" goes back to the Project's detail.
+ * A multi-repository Project reads as one product for a Team lead: its card
+ * opens the frontend's page, titled with the Project, with the sections in the
+ * title row and no switch to the backend; in the Projects explorer only the
+ * frontend's chip opens a page.
  */
 async function leadSwitchesRepositories({ page, backend, baseUrl }: JourneyContext) {
   await page.goto(`${baseUrl}/workflows`, { waitUntil: 'domcontentloaded' });
@@ -2810,43 +2811,23 @@ async function leadSwitchesRepositories({ page, backend, baseUrl }: JourneyConte
   const header = page.locator('.project-folder-header');
   await expectText(header.locator('h1'), 'storefront', 'the Project title');
   await expectText(header.locator('.project-folder-header__repo'), 'tone/storefront-web', 'the frontend subtitle');
-  const repos = page.getByRole('radiogroup', { name: 'Repositories in storefront' });
-  const frontend = repos.getByRole('radio', { name: /storefront-web/ });
-  const backendOption = repos.getByRole('radio', { name: /orders-api/ });
-  assert.equal(await frontend.getAttribute('aria-checked'), 'true', 'the frontend is the page on screen');
-  assert.equal(await backendOption.getAttribute('aria-checked'), 'false');
-  await expectText(frontend, 'FRONTEND', 'the frontend role label');
-  await expectText(backendOption, 'BACKEND', 'the backend role label');
-
-  // Keyboard: arrows move focus only; Enter opens the backend on the same tab.
-  const tabs = page.getByRole('tablist', { name: 'Project sections' });
-  await tabs.getByRole('tab', { name: 'Checklists', exact: true }).click();
-  await visible(tabs.getByRole('tab', { name: 'Checklists', selected: true }), 'the Checklists tab');
-  await frontend.focus();
-  await page.keyboard.press('ArrowRight');
-  await expectText(page.locator('[role="radio"]:focus'), 'orders-api', 'focus on the backend option');
-  assert.equal(new URL(page.url()).pathname, `/projects/${PROJECT_ID}`, 'an arrow alone does not navigate');
-  await page.keyboard.press('Enter');
-  await eventually('the backend page on the Checklists tab', () => {
-    const url = new URL(page.url());
-    return url.pathname === '/projects/project-2' && url.hash === '#checklists';
-  });
-  await visible(tabs.getByRole('tab', { name: 'Checklists', selected: true }), 'the Checklists tab kept across the switch');
-  await expectText(page.locator('.project-folder-header__repo'), 'tone/orders-api', 'the backend subtitle');
-  await expectText(page.locator('.project-folder-header h1'), 'storefront', 'the Project title kept');
-  await eventually('the backend option to be current', async () =>
-    (await page.getByRole('radio', { name: /orders-api/ }).getAttribute('aria-checked')) === 'true',
-  );
-  assert.equal(backend.callsTo('GET', /^\/projects\/project-2\/folder$/).length >= 1, true, 'the backend page read its folder');
-
-  // Manage project: the Projects page, on this team, opened on this Project's detail.
-  const manage = page.getByRole('link', { name: 'Manage project' });
+  const tabs = header.getByRole('tablist', { name: 'Project sections' });
+  await visible(tabs, 'the sections in the title row');
+  await neverShown(backend, page.getByRole('radiogroup', { name: 'Repositories in storefront' }), 'the repository switch for a Team lead');
   assert.equal(
-    await manage.getAttribute('href'),
+    await page.getByRole('link', { name: 'Manage project' }).getAttribute('href'),
     `/workflows?group=${WORKSPACE.id}&project=${STOREFRONT_FOLDER}`,
+    'Manage project opens the Project detail',
   );
-  await manage.click();
-  await expectText(page.locator('.pf-detail__title'), 'storefront', 'the Project detail opened by the link');
+
+  // The explorer's Manage view: the frontend opens, the backend is a label.
+  await page.goto(`${baseUrl}/workflows?group=${WORKSPACE.id}&project=${STOREFRONT_FOLDER}`, { waitUntil: 'domcontentloaded' });
+  await expectText(page.locator('.pf-detail__title'), 'storefront', 'the Project detail');
+  const chips = page.locator('.pf-repo .pf-chip');
+  await eventually('both repository chips', async () => (await chips.count()) === 2);
+  assert.equal(await chips.filter({ hasText: 'storefront-web' }).getAttribute('href'), `/projects/${PROJECT_ID}`, 'the frontend chip opens its page');
+  assert.equal(await page.locator('.pf-repo a.pf-chip').filter({ hasText: 'orders-api' }).count(), 0, 'the backend chip is not a link');
+  assert.equal(backend.callsTo('GET', /^\/projects\/project-2\/overview$/).length, 0, 'the backend page was never opened');
 
   // An old link from before the split still lands on the same detail.
   await page.goto(
@@ -3364,7 +3345,7 @@ const JOURNEYS: Journey[] = [
   },
   {
     id: 'i',
-    title: 'Team lead: a Project opens on its frontend, switches to the backend on the same tab, Manage project deep link',
+    title: 'Team lead: a Project opens on its frontend as one product (tabs in the title row, no switch), frontend-only chips',
     backend: () => new QaMockBackend('lead'),
     run: leadSwitchesRepositories,
   },
