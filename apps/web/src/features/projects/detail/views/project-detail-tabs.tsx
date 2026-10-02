@@ -6,7 +6,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 
-import { qaScopeFromFolder, type QaScope } from "@/features/checklists";
+import { qaScopeFromFolder, withProjectOnPage, type QaScope } from "@/features/checklists";
 
 import { projectStatusVariant } from "../../model/projects-rules";
 import type { ProvisionedProject } from "@/features/projects";
@@ -104,10 +104,12 @@ export function ProjectDetailTabs({
     viewerLogin,
   });
   const TabPanel = TAB_PANELS[vm.tab];
-  const qaScope = qaScopeFromFolder(folder?.status ?? "idle", folder?.project ?? null);
   // Five tabs fit beside the title; a Developer's ten and an admin's eleven
-  // keep the scrolling strip of their own.
+  // keep the scrolling strip of their own. Their Checklists tab carries the
+  // Project's QA, so nothing on the page links away to the Projects page.
   const productView = seesProjectAsProduct(appRole);
+  const folderScope = qaScopeFromFolder(folder?.status ?? "idle", folder?.project ?? null);
+  const qaScope = productView ? withProjectOnPage(folderScope) : folderScope;
   const tabs = (
     <ProjectDetailTopTabs
       groups={projectDetailTabGroups(vm.visibleTabs)}
@@ -184,7 +186,7 @@ function ProjectPageHeader({
       projectName={folder.projectName}
       tab={vm.tab}
       visibleTabs={vm.visibleTabs}
-      showRepoSwitch={!productView}
+      productView={productView}
       tabs={tabs}
     />
   );
@@ -243,7 +245,8 @@ function ProjectStatusBadges({
  * the title, this repository the subtitle (its status badges beside it,
  * because the status is the repository's, not the Project's), and the switch
  * to its sibling repositories sits at the top right. The QA Team and Product
- * owners get no switch (they judge the Project as one product) and their
+ * owners get no switch (they judge the Project as one product) and no
+ * "Manage project" (their Checklists tab carries the Project's QA); their
  * sections take its place.
  */
 function ProjectFolderHeader({
@@ -253,7 +256,7 @@ function ProjectFolderHeader({
   projectName,
   tab,
   visibleTabs,
-  showRepoSwitch,
+  productView,
   tabs,
 }: Readonly<{
   project: ProvisionedProject;
@@ -262,7 +265,7 @@ function ProjectFolderHeader({
   projectName: string;
   tab: ProjectDetailTab;
   visibleTabs: ReadonlyArray<ProjectDetailTab>;
-  showRepoSwitch: boolean;
+  productView: boolean;
   tabs?: ReactNode;
 }>) {
   const reduceMotion = useReducedMotion();
@@ -282,15 +285,15 @@ function ProjectFolderHeader({
         </p>
       </div>
       <div className="project-folder-header__aside">
-        {showRepoSwitch ? (
+        {productView ? null : (
           <ProjectRepoSwitch
             options={folder.options}
             projectName={projectName}
             currentTab={tab}
             visibleTabs={visibleTabs}
           />
-        ) : null}
-        {folder.manageHref ? (
+        )}
+        {folder.manageHref && !productView ? (
           <Link className="project-folder-header__manage" href={folder.manageHref}>
             Manage project
             <span aria-hidden="true" className="project-folder-header__manage-arrow">
