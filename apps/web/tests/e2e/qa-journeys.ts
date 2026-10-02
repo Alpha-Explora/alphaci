@@ -2315,8 +2315,17 @@ async function leadWritesProjectRequirements({ page, backend, baseUrl }: Journey
   });
   assert.equal(backend.callsTo('PUT', /^\/qa-checklists\//).length, 0, 'never the legacy delete-and-reinsert');
 
+  // A Product owner's Checklists tab carries the Project's QA itself: the
+  // same Requirements, no pointer out to the Projects page.
   await openProjectTab(page, baseUrl, 'Checklists');
-  await visible(page.getByText('Requirements belong to the Project'), "the Checklists tab's pointer to the Project");
+  const panel = page.locator('#project-detail-panel-checklists');
+  await visible(panel.getByRole('tab', { name: 'Requirements', selected: true }), "the Project's QA workspace in the Checklists tab");
+  await expectText(
+    panel.locator('article.rq-card').filter({ hasText: FEATURE.name }).locator('.rq-meter__label'),
+    '0 of 3 done',
+    'the same Feature, here too',
+  );
+  assert.equal(await page.getByText('Requirements belong to the Project').count(), 0, 'no pointer to the Projects page');
   assert.equal(await page.getByRole('link', { name: 'Open team checklists' }).count(), 0, 'no team checklist link');
 }
 
@@ -2796,8 +2805,9 @@ async function capabilityAbsentHidesQa({ page, backend, baseUrl }: JourneyContex
 /**
  * A multi-repository Project reads as one product for a Team lead: its card
  * opens the frontend's page, titled with the Project, with the sections in the
- * title row and no switch to the backend; in the Projects explorer only the
- * frontend's chip opens a page.
+ * title row and no switch to the backend. The Checklists tab carries the
+ * Project's QA, so there is no "Manage project" either; in the Projects
+ * explorer only the frontend's chip opens a page.
  */
 async function leadSwitchesRepositories({ page, backend, baseUrl }: JourneyContext) {
   await page.goto(`${baseUrl}/workflows`, { waitUntil: 'domcontentloaded' });
@@ -2814,11 +2824,13 @@ async function leadSwitchesRepositories({ page, backend, baseUrl }: JourneyConte
   const tabs = header.getByRole('tablist', { name: 'Project sections' });
   await visible(tabs, 'the sections in the title row');
   await neverShown(backend, page.getByRole('radiogroup', { name: 'Repositories in storefront' }), 'the repository switch for a Team lead');
-  assert.equal(
-    await page.getByRole('link', { name: 'Manage project' }).getAttribute('href'),
-    `/workflows?group=${WORKSPACE.id}&project=${STOREFRONT_FOLDER}`,
-    'Manage project opens the Project detail',
-  );
+  assert.equal(await page.getByRole('link', { name: 'Manage project' }).count(), 0, 'no Manage project for a Team lead');
+
+  // The Project's QA lives in the Checklists tab itself.
+  await tabs.getByRole('tab', { name: 'Checklists', exact: true }).click();
+  const panel = page.locator('#project-detail-panel-checklists');
+  await visible(panel.getByRole('tablist', { name: 'Project QA' }), "the Project's QA workspace in the Checklists tab");
+  await visible(panel.getByRole('tab', { name: 'Requirements', selected: true }), 'its Requirements first for a Team lead');
 
   // The explorer's Manage view: the frontend opens, the backend is a label.
   await page.goto(`${baseUrl}/workflows?group=${WORKSPACE.id}&project=${STOREFRONT_FOLDER}`, { waitUntil: 'domcontentloaded' });
@@ -3345,7 +3357,7 @@ const JOURNEYS: Journey[] = [
   },
   {
     id: 'i',
-    title: 'Team lead: a Project opens on its frontend as one product (tabs in the title row, no switch), frontend-only chips',
+    title: 'Team lead: a Project opens on its frontend as one product (tabs in the title row, no switch, no Manage project), frontend-only chips',
     backend: () => new QaMockBackend('lead'),
     run: leadSwitchesRepositories,
   },
