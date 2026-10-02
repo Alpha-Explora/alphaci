@@ -24,7 +24,7 @@ export interface RepositoryDetailViewModel {
   status: ReturnType<typeof useApiResource<HierarchyRepository>>["state"];
   reload: () => void;
   canManage: boolean;
-  /** Team lead or admin: the only roles that may write configuration. */
+  /** Developer or admin: the only roles that may write configuration. */
   canWriteConfiguration: boolean;
   /** Members without manage rights only ever see configuration. */
   tab: RepoTab;

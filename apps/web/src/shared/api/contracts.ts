@@ -691,17 +691,35 @@ export interface WorkspaceMemberSummary {
   createdAt: string;
 }
 
+/**
+ * One row of GET /projects/:id/audit. Read it only through the Audit tab's
+ * normaliser: an older backend sends no `actorLogin`, `metadata`, `scope` or
+ * `next`, and any field may be missing.
+ */
 export interface ProjectAuditEvent {
   id: string;
   eventCode: string;
   message: string;
   actorUserId: string | null;
+  /** The actor's GitHub login; null for a system event or an unknown user. */
+  actorLogin?: string | null;
+  metadata?: Record<string, unknown> | null;
   createdAt: string;
+  /** 'project': recorded against the delivery Project this repository is filed under. */
+  scope?: "repository" | "project";
 }
 
+/** Newest first. `next` is the cursor for `?before=`, or null on the last page. */
 export interface ProjectAuditEventsResponse {
   enabled: boolean;
   items: ProjectAuditEvent[];
+  next?: string | null;
+}
+
+/** `?limit` (1-100, server default 50) and `?before=<next>` for GET /projects/:id/audit. */
+export interface ProjectAuditPageRequest {
+  limit?: number;
+  before?: string | null;
 }
 
 export interface NodeVersionOption {

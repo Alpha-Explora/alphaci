@@ -100,7 +100,7 @@ async function flush() {
 /**
  * Reinstall is the one target action gated by both a server-computed
  * descriptor (`GET .../actions`) AND the viewer's role. These tests cover the
- * fetch gating (only a lead/admin ever asks) and the 401/403/400 mapping the
+ * fetch gating (only a Developer/admin ever asks) and the 401/403/400 mapping the
  * VM applies to a failed reinstall.
  */
 describe("useDeploymentTargetsViewModel — reinstall deployment secrets", () => {
@@ -125,7 +125,7 @@ describe("useDeploymentTargetsViewModel — reinstall deployment secrets", () =>
 
   it("never fetches target actions for a role that cannot reinstall", async () => {
     act(() => {
-      root.render(<Probe appRole="member" targets={[target()]} />);
+      root.render(<Probe appRole="lead" targets={[target()]} />);
     });
     await flush();
 
@@ -133,9 +133,9 @@ describe("useDeploymentTargetsViewModel — reinstall deployment secrets", () =>
     expect(current().targetActions).toEqual({});
   });
 
-  it("fetches target actions once per target for a lead, and does not refetch on rerender", async () => {
+  it("fetches target actions once per target for a Developer, and does not refetch on rerender", async () => {
     act(() => {
-      root.render(<Probe appRole="lead" targets={[target()]} />);
+      root.render(<Probe appRole="member" targets={[target()]} />);
     });
     await flush();
 
@@ -147,7 +147,7 @@ describe("useDeploymentTargetsViewModel — reinstall deployment secrets", () =>
     ).toBe(true);
 
     act(() => {
-      root.render(<Probe appRole="lead" targets={[target()]} />);
+      root.render(<Probe appRole="member" targets={[target()]} />);
     });
     await flush();
     expect(mockGetActions).toHaveBeenCalledTimes(1);
@@ -197,7 +197,7 @@ describe("useDeploymentTargetsViewModel — reinstall deployment secrets", () =>
     );
 
     act(() => {
-      root.render(<Probe appRole="lead" targets={[target()]} />);
+      root.render(<Probe appRole="member" targets={[target()]} />);
     });
     await flush();
 
@@ -219,7 +219,7 @@ describe("useDeploymentTargetsViewModel — reinstall deployment secrets", () =>
     );
 
     act(() => {
-      root.render(<Probe appRole="lead" targets={[target()]} />);
+      root.render(<Probe appRole="member" targets={[target()]} />);
     });
     await flush();
 
@@ -228,7 +228,7 @@ describe("useDeploymentTargetsViewModel — reinstall deployment secrets", () =>
     });
 
     expect(current().message).toBe(
-      "Only team leads and admins can reinstall deployment secrets.",
+      "Only Developers and admins can reinstall deployment secrets.",
     );
     expect(current().signInHref).toBeNull();
   });
@@ -245,7 +245,7 @@ describe("useDeploymentTargetsViewModel — reinstall deployment secrets", () =>
     );
 
     act(() => {
-      root.render(<Probe appRole="lead" targets={[target()]} />);
+      root.render(<Probe appRole="member" targets={[target()]} />);
     });
     await flush();
 

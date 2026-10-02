@@ -15,6 +15,20 @@ jest.mock("../../../../../../src/features/notifications/summary", () => ({
   useNotificationsSummaryViewModel: () => ({ unreadCount: 0 }),
 }));
 
+/* The Activity entry is hidden by default (SIDEBAR_SHOWS_ACTIVITY, covered in
+ * workspace-nav-rules.test.ts). These tests are about WHO would get it once it
+ * is shown, so the sidebar rule is called with the entry switched on. */
+jest.mock("../../../../../../src/features/workspace/selection/model/workspace-types", () => {
+  const actual = jest.requireActual(
+    "../../../../../../src/features/workspace/selection/model/workspace-types",
+  );
+  return {
+    ...actual,
+    sidebarMainItems: (input: Parameters<typeof actual.sidebarMainItems>[0]) =>
+      actual.sidebarMainItems({ ...input, showActivity: true }),
+  };
+});
+
 jest.mock("../../../../../../src/features/workspace/selection/data/workspace-repository", () => ({
   getWorkspaces: jest.fn(),
   getVisibleTeams: jest.fn(),

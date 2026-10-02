@@ -249,7 +249,7 @@ describe("ProjectDomainsView", () => {
     expect(labels).not.toContain("Remove");
     expect(labels).not.toContain("Check again");
     expect(container.textContent).toContain("app.example.com");
-    expect(container.textContent).toContain("A Team lead or admin can");
+    expect(container.textContent).toContain("Developers and admins can change hosting");
   });
 
   it("shows the add form and row actions when the viewer can manage", () => {

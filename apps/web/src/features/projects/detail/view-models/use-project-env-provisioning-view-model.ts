@@ -26,7 +26,7 @@ import { getMyUsage } from "../data/usage-api";
  * @param includeEnvMetadata Skip `GET .../env-vars` when the caller will not
  * render it — the Hosting tab reuses this hook only for its target-creation
  * prompt (`section="hosting"`), never the variables list. Every role reaches
- * Hosting, and the backend now restricts that read to admin/lead
+ * Hosting, and the backend restricts that read to admin/member
  * (`ENV_VARS_LEAD_ONLY`), so fetching it unconditionally would 403 for
  * everyone else on a tab that never displayed the result anyway.
  */

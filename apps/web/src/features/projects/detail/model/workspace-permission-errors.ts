@@ -9,12 +9,13 @@
  *     outside the promotion engine.
  *   - `PR_ROUTE_RESTRICTED`     — a Developer proposed or merged a route other
  *     than feature -> dev or dev -> uat.
- *   - `ENV_VARS_LEAD_ONLY`       — someone other than a Team Lead or Admin
- *     tried to list/create/update/delete an environment variable.
+ *   - `ENV_VARS_LEAD_ONLY`       — someone other than a Developer or Admin
+ *     tried to list/create/update/delete an environment variable (a legacy
+ *     code name: Product owners are refused now).
  *   - `PROJECT_ROLE_FORBIDDEN`  — someone other than a Team Lead or Admin
  *     tried to reinstall deployment secrets, or disconnect/delete a project.
- *   - `HOSTING_LEAD_ONLY`       — someone other than a Team Lead or Admin
- *     tried to change deployment targets or custom domains.
+ *   - `HOSTING_LEAD_ONLY`       — someone other than a Developer or Admin
+ *     tried to change deployment targets or custom domains (legacy name).
  *   - `PR_BASE_BRANCH_MISSING`  — the workflow-settings PR needs a dev (else
  *     uat) branch and the repository has neither.
  *
@@ -36,10 +37,10 @@ const WORKSPACE_PERMISSION_MESSAGES: Readonly<Record<string, string>> = {
     "Pull requests into main are restricted to the QA Studio promotion flow.",
   pr_route_restricted:
     "Developers open pull requests from a feature branch into dev, and from dev into uat.",
-  env_vars_lead_only: "Only team leads and admins can manage environment variables.",
+  env_vars_lead_only: "Developers and admins can change environment variables.",
   project_role_forbidden: "Only team leads and admins can make this change.",
   hosting_lead_only:
-    "Only team leads and admins can manage hosting services and custom domains.",
+    "Developers and admins can change hosting services and custom domains.",
   pr_base_branch_missing:
     "This repository has no dev or uat branch to open the pull request against. Create one, then try again.",
 };

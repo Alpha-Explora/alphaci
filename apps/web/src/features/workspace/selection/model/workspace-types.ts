@@ -143,10 +143,19 @@ export function canOpenTeamActivity(input: {
 export const SIDEBAR_SHOWS_CHECKLISTS = false;
 
 /**
+ * Whether the sidebar (and Home's Activity rail) offers the team Activity
+ * page. Off for now: the feed is hidden, not removed. /activity and
+ * /groups/:id/activity still work, and the repository Audit tab is where a
+ * team reads what happened to one repository. Set to true to bring the entry
+ * back (it still follows canOpenTeamActivity).
+ */
+export const SIDEBAR_SHOWS_ACTIVITY = false;
+
+/**
  * Which Main entries the sidebar shows. Checklists, when
  * SIDEBAR_SHOWS_CHECKLISTS is on, follows the same backend capability that
- * gated the old team rail's "Checklist templates"; Activity follows
- * canOpenTeamActivity, so a QA Team member or Developer is not sent to a page
+ * gated the old team rail's "Checklist templates"; Activity, when
+ * SIDEBAR_SHOWS_ACTIVITY is on, follows canOpenTeamActivity, so a QA Team member or Developer is not sent to a page
  * that can only tell them they have no access. Teams and Inbox only hide for
  * guests.
  */
@@ -157,13 +166,16 @@ export function sidebarMainItems(input: {
   canOpenActivity: boolean;
   /** Defaults to SIDEBAR_SHOWS_CHECKLISTS. */
   showChecklists?: boolean;
+  /** Defaults to SIDEBAR_SHOWS_ACTIVITY. */
+  showActivity?: boolean;
 }): SidebarMainItem[] {
   const items: SidebarMainItem[] = ["home", "projects"];
   if (input.guest) return items;
   items.push("teams");
   const showChecklists = input.showChecklists ?? SIDEBAR_SHOWS_CHECKLISTS;
   if (showChecklists && input.qaChecklistsEnabled) items.push("checklists");
-  if (input.canOpenActivity) items.push("activity");
+  const showActivity = input.showActivity ?? SIDEBAR_SHOWS_ACTIVITY;
+  if (showActivity && input.canOpenActivity) items.push("activity");
   items.push("inbox");
   return items;
 }

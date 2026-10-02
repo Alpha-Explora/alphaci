@@ -1,5 +1,6 @@
 import {
   canManageEnvVars,
+  canManageHosting,
   canManageProjectLifecycle,
   canOpenQaStudio,
   canReinstallDeploymentSecrets,
@@ -10,12 +11,11 @@ const NON_LEAD_ROLES: ReadonlyArray<AppRole> = ["qa", "member"];
 
 /** Phase 1 security gates: the allow-lists behind three of the four new rules. */
 describe("canManageEnvVars", () => {
-  it("allows only Team leads and Admins — the backend's ENV_VARS_LEAD_ONLY allow-list", () => {
+  it("allows only Developers and Admins — the backend's env-var allow-list (ENV_VARS_LEAD_ONLY)", () => {
     expect(canManageEnvVars("admin")).toBe(true);
-    expect(canManageEnvVars("lead")).toBe(true);
-    for (const role of NON_LEAD_ROLES) {
-      expect(canManageEnvVars(role)).toBe(false);
-    }
+    expect(canManageEnvVars("member")).toBe(true);
+    expect(canManageEnvVars("lead")).toBe(false);
+    expect(canManageEnvVars("qa")).toBe(false);
   });
 
   it("denies a session with no known role", () => {
@@ -38,12 +38,12 @@ describe("canManageProjectLifecycle", () => {
     expect(canManageProjectLifecycle(null)).toBe(false);
   });
 
-  it("shares its allow-list with the existing reinstall-secrets gate", () => {
-    // Both mirror the same backend code (PROJECT_ROLE_FORBIDDEN); this pins
-    // them to the same answer for every role so they cannot drift silently.
-    for (const role of ["admin", "lead", "qa", "member"] as const) {
-      expect(canManageProjectLifecycle(role)).toBe(canReinstallDeploymentSecrets(role));
+  it("no longer decides reinstalling deployment secrets, which follows the hosting rule", () => {
+    for (const role of ["admin", "lead", "qa", "member", null, undefined] as const) {
+      expect(canReinstallDeploymentSecrets(role)).toBe(canManageHosting(role));
     }
+    expect(canReinstallDeploymentSecrets("member")).toBe(true);
+    expect(canReinstallDeploymentSecrets("lead")).toBe(false);
   });
 });
 

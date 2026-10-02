@@ -3,6 +3,7 @@
 import "./project-checklists.css";
 
 import Link from "next/link";
+import type { ReactNode } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 
 import { LoadingRows } from "@/features/groups/workspace";
@@ -126,12 +127,15 @@ export function ProjectChecklistsPanel({
   projectId,
   workspaceId,
   qaScope = REPOSITORY_SCOPE,
+  myItems = null,
 }: Readonly<{
   projectId: string;
   /** The owning team. Null for a project outside any team: no manage link then. */
   workspaceId: string | null;
   /** A repository in a Project points at the Project's requirements instead of team templates. */
   qaScope?: QaScope;
+  /** The viewer's "My QA items" list, when this tab carries it (shown above the checklists). */
+  myItems?: ReactNode;
 }>) {
   const inProject = qaScope.kind === "project";
   const vm = useProjectChecklistsViewModel({ projectId, enabled: Boolean(projectId) });
@@ -152,6 +156,7 @@ export function ProjectChecklistsPanel({
           : "QA checklists your team shared to this project. Each item says who runs it and how it is verified."}
       </p>
       <ProjectPointer scope={qaScope} />
+      {myItems}
       {ready ? (
         <div className="qa-project-panel__cards">
           {vm.checklists.map((checklist, index) => (

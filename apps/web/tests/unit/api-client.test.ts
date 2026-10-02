@@ -635,6 +635,20 @@ describe("API client project setup helpers", () => {
     );
   });
 
+  it("pages the audit trail with ?limit and ?before, passing the cursor back unchanged", async () => {
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: async () => ({ enabled: true, items: [], next: null }),
+    });
+    const cursor = "2026-10-01T12:00:00.123456+00:00";
+    await getProjectAuditEvents("project-1", { limit: 50, before: cursor });
+    const url = new URL(String(fetchMock.mock.calls[0][0]));
+    expect(url.pathname).toBe("/api/v1/projects/project-1/audit");
+    expect(url.searchParams.get("limit")).toBe("50");
+    expect(url.searchParams.get("before")).toBe(cursor);
+  });
+
   it("loads workspace notification and audit contracts", async () => {
     fetchMock
       .mockResolvedValueOnce({

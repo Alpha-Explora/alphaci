@@ -29,7 +29,7 @@ describe("workspacePermissionErrorMessage", () => {
     ],
     [
       "ENV_VARS_LEAD_ONLY",
-      "Only team leads and admins can manage environment variables.",
+      "Developers and admins can change environment variables.",
     ],
     [
       "PROJECT_ROLE_FORBIDDEN",
@@ -37,7 +37,7 @@ describe("workspacePermissionErrorMessage", () => {
     ],
     [
       "HOSTING_LEAD_ONLY",
-      "Only team leads and admins can manage hosting services and custom domains.",
+      "Developers and admins can change hosting services and custom domains.",
     ],
     [
       "PR_BASE_BRANCH_MISSING",

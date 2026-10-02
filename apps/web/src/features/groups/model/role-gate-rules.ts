@@ -5,25 +5,26 @@
 import type { AppRole } from "@/shared/api/contracts";
 import { ApiError } from "@/shared/api/request";
 
-import { isGlobalCreatorRole } from "./groups-rules";
-
 /**
- * Writing or deleting repository variables and secrets is admin/lead only
- * (`ENV_VARS_LEAD_ONLY`). The list stays visible to anyone who can open the
- * repository. Same roles as the create gate, so it reuses that predicate.
+ * Writing or deleting repository variables and secrets is for Developers and
+ * Admins (refusal code `ENV_VARS_LEAD_ONLY`, a legacy name: Product owners
+ * and QA Team are refused). The list stays visible to anyone who can open the
+ * repository.
  */
+const CONFIGURATION_WRITE_ROLES: ReadonlySet<AppRole> = new Set<AppRole>(["member", "admin"]);
+
 export function canWriteRepositoryConfiguration(
   appRole: AppRole | null | undefined,
 ): boolean {
-  return isGlobalCreatorRole(appRole);
+  return appRole != null && CONFIGURATION_WRITE_ROLES.has(appRole);
 }
 
 export const CONFIGURATION_LEAD_ONLY_NOTE =
-  "A Team lead or admin can add or delete variables and secrets.";
+  "Developers and admins can add or delete variables and secrets.";
 
 const MESSAGES: Readonly<Record<string, string>> = {
   env_vars_lead_only:
-    "Only team leads and admins can change repository variables and secrets.",
+    "Developers and admins can change repository variables and secrets.",
   assignment_role_not_allowed:
     "Only Developers are assigned repositories; QA and leads already see every repository in the team.",
 };

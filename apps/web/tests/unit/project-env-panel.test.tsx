@@ -742,8 +742,8 @@ describe("Project env provisioning UI", () => {
 
     const rendered = render(
       // admin: this test asserts every section renders, Environment
-      // included — Environment is now admin/lead only (ENV_VARS_LEAD_ONLY),
-      // so a session with no role would not see it.
+      // included — Environment is admin/Developer only, so a session with no
+      // role would not see it.
       <ProjectDetailTabs project={provisionedProject} appRole="admin" />,
     );
     root = rendered.root;
@@ -756,9 +756,10 @@ describe("Project env provisioning UI", () => {
       "project-1",
     );
     expect(rendered.container.textContent).toContain("Overview");
-    expect(rendered.container.textContent).toContain("Local snapshot");
-    expect(rendered.container.textContent).toContain("Not synced yet");
-    expect(rendered.container.textContent).toContain("Sync now");
+    // The Overview no longer carries the snapshot, health checks or facts.
+    expect(rendered.container.textContent).not.toContain("Local snapshot");
+    expect(rendered.container.textContent).not.toContain("Sync now");
+    expect(rendered.container.textContent).not.toContain("CI token");
     expect(rendered.container.textContent).toContain("Workflow");
     expect(rendered.container.textContent).toContain("Hosting");
     expect(rendered.container.textContent).toContain("Environment");
@@ -771,7 +772,7 @@ describe("Project env provisioning UI", () => {
     expect(rendered.container.textContent).toContain("Code");
     expect(rendered.container.textContent).toContain("Pull requests");
     expect(rendered.container.textContent).toContain("Pipeline runs");
-    expect(rendered.container.textContent).toContain(
+    expect(rendered.container.textContent).not.toContain(
       "No workflow file metadata is tracked yet.",
     );
 
@@ -794,7 +795,7 @@ describe("Project env provisioning UI", () => {
     mockEnvHook();
     mockedProjectApi.getProjectOverview.mockRejectedValue(new Error("offline"));
 
-    const rendered = render(<ProjectDetailTabs project={provisionedProject} appRole="lead" />);
+    const rendered = render(<ProjectDetailTabs project={provisionedProject} appRole="admin" />);
     root = rendered.root;
     await act(async () => {
       await Promise.resolve();
@@ -808,7 +809,7 @@ describe("Project env provisioning UI", () => {
 
     act(() => {
       rendered.root.render(
-        <ProjectDetailTabs project={provisionedProject} appRole="lead" external />,
+        <ProjectDetailTabs project={provisionedProject} appRole="admin" external />,
       );
     });
 
@@ -816,340 +817,6 @@ describe("Project env provisioning UI", () => {
       rendered.container.querySelector(".project-status-badge.external")
         ?.textContent,
     ).toBe("External");
-  });
-
-  it("runs local project sync and renders the latest snapshot state", async () => {
-    mockCapabilities(true, true);
-    mockEnvHook();
-    mockedProjectApi.getProjectOverview.mockResolvedValue({
-      project: {
-        ...provisionedProject,
-        createdAt: "2026-06-12T00:00:00.000Z",
-        updatedAt: "2026-06-12T00:00:00.000Z",
-      },
-      workflow: {
-        path: provisionedProject.workflowPath,
-        files: [],
-        stageCount: 0,
-        history: [],
-      },
-      deploymentTargets: { items: [], count: 0 },
-      environment: { items: [], count: 0, failedCount: 0 },
-      ciAuth: {
-        status: "missing",
-        tokenPresent: false,
-        tokenPrefix: null,
-        createdAt: null,
-        updatedAt: null,
-        revokedAt: null,
-      },
-      health: { summary: "warning", checks: [] },
-      syncSnapshot: {
-        enabled: true,
-        mode: "local_snapshot",
-        latest: null,
-      },
-      capabilities: {
-        envProvisioning: true,
-        workflowSettings: false,
-        syncSnapshots: true,
-        ciRunTracking: false,
-        deploymentHistory: false,
-        driftDetection: false,
-      },
-    });
-
-    const rendered = render(
-      <ProjectDetailTabs project={provisionedProject} appRole="lead" />,
-    );
-    root = rendered.root;
-
-    await act(async () => {
-      await Promise.resolve();
-    });
-
-    const syncButton = Array.from(
-      rendered.container.querySelectorAll("button"),
-    ).find((button) => button.textContent === "Sync now") as HTMLButtonElement;
-
-    await act(async () => {
-      syncButton.click();
-      await Promise.resolve();
-    });
-
-    expect(mockedProjectApi.syncProjectSnapshot).toHaveBeenCalledWith(
-      "project-1",
-    );
-    expect(rendered.container.textContent).toContain("warning");
-    expect(rendered.container.textContent).toContain("1 finding");
-  });
-
-  it("renders drift findings and keeps repair actions disabled", async () => {
-    mockCapabilities(true, true, false, false, false, false, false, true);
-    mockEnvHook();
-    mockedProjectApi.getProjectOverview.mockResolvedValue({
-      ...projectOverviewWithTargets([]),
-      capabilities: {
-        envProvisioning: true,
-        workflowSettings: false,
-        syncSnapshots: true,
-        ciRunTracking: false,
-        deploymentHistory: false,
-        driftDetection: true,
-      },
-    });
-    mockedProjectApi.getProjectDrift.mockResolvedValue({
-      enabled: true,
-      mode: "local_snapshot",
-      findings: [
-        {
-          id: "finding-1",
-          projectId: "project-1",
-          targetId: null,
-          source: "local_snapshot",
-          severity: "warning",
-          code: "workflow_files_missing",
-          message: "No workflow file metadata is tracked for this project.",
-          details: {},
-          status: "active",
-          detectedAt: "2026-06-13T00:00:00.000Z",
-          resolvedAt: null,
-        },
-      ],
-    });
-    mockedProjectApi.runProjectDriftDetection.mockResolvedValue({
-      enabled: true,
-      mode: "local_snapshot",
-      findings: [
-        {
-          id: "finding-2",
-          projectId: "project-1",
-          targetId: null,
-          source: "local_snapshot",
-          severity: "error",
-          code: "ci_token_missing",
-          message: "No active CI token metadata is tracked for this project.",
-          details: {},
-          status: "active",
-          detectedAt: "2026-06-13T00:01:00.000Z",
-          resolvedAt: null,
-        },
-      ],
-    });
-
-    const rendered = render(
-      <ProjectDetailTabs project={provisionedProject} appRole="lead" />,
-    );
-    root = rendered.root;
-
-    await act(async () => {
-      await Promise.resolve();
-    });
-
-    expect(mockedProjectApi.getProjectDrift).toHaveBeenCalledWith("project-1");
-    expect(rendered.container.textContent).toContain("Health findings");
-    expect(rendered.container.textContent).toContain("workflow_files_missing");
-    expect(rendered.container.textContent).toContain("local_snapshot");
-    const repairButton = Array.from(
-      rendered.container.querySelectorAll("button"),
-    ).find(
-      (button) =>
-        button.textContent === "Repair actions coming in the next phase",
-    ) as HTMLButtonElement;
-    expect(repairButton.disabled).toBe(true);
-
-    const runButton = Array.from(
-      rendered.container.querySelectorAll("button"),
-    ).find(
-      (button) => button.textContent === "Run drift check",
-    ) as HTMLButtonElement;
-    await act(async () => {
-      runButton.click();
-      await Promise.resolve();
-    });
-
-    expect(mockedProjectApi.runProjectDriftDetection).toHaveBeenCalledWith(
-      "project-1",
-    );
-    expect(rendered.container.textContent).toContain("ci_token_missing");
-  });
-
-  it("requires confirmation before running a supported drift repair", async () => {
-    mockCapabilities(true, true, false, false, false, false, false, true, true);
-    mockEnvHook();
-    mockedProjectApi.getProjectOverview.mockResolvedValue({
-      ...projectOverviewWithTargets([]),
-      capabilities: {
-        envProvisioning: true,
-        workflowSettings: false,
-        syncSnapshots: true,
-        ciRunTracking: false,
-        deploymentHistory: false,
-        driftDetection: true,
-      },
-    });
-    mockedProjectApi.getProjectDrift.mockResolvedValue({
-      enabled: true,
-      mode: "local_snapshot",
-      findings: [
-        {
-          id: "finding-1",
-          projectId: "project-1",
-          targetId: null,
-          source: "local_snapshot",
-          severity: "error",
-          code: "ci_token_missing",
-          message: "No active CI token metadata is tracked for this project.",
-          details: {},
-          status: "active",
-          detectedAt: "2026-06-13T00:00:00.000Z",
-          resolvedAt: null,
-        },
-      ],
-    });
-
-    const rendered = render(
-      <ProjectDetailTabs project={provisionedProject} appRole="lead" />,
-    );
-    root = rendered.root;
-
-    await act(async () => {
-      await Promise.resolve();
-    });
-
-    const rotateButton = Array.from(
-      rendered.container.querySelectorAll("button"),
-    ).find(
-      (button) => button.textContent === "Rotate CI token",
-    ) as HTMLButtonElement;
-    act(() => {
-      rotateButton.click();
-    });
-
-    expect(mockedProjectApi.repairProjectDriftFinding).not.toHaveBeenCalled();
-    expect(rendered.container.textContent).toContain(
-      "Confirm repair to run this local-safe action.",
-    );
-
-    const confirmButton = Array.from(
-      rendered.container.querySelectorAll("button"),
-    ).find(
-      (button) => button.textContent === "Confirm repair",
-    ) as HTMLButtonElement;
-    await act(async () => {
-      confirmButton.click();
-      await Promise.resolve();
-    });
-
-    expect(mockedProjectApi.repairProjectDriftFinding).toHaveBeenCalledWith(
-      "project-1",
-      "finding-1",
-      "rotate_ci_token",
-    );
-    expect(rendered.container.textContent).toContain(
-      "Run drift check again to refresh findings.",
-    );
-  });
-
-  it("exposes workflow update PR repair for central workflow drift", async () => {
-    mockCapabilities(true, true, false, true, false, false, false, true, true);
-    mockEnvHook();
-    mockedProjectApi.getProjectOverview.mockResolvedValue({
-      ...projectOverviewWithTargets([]),
-      capabilities: {
-        envProvisioning: true,
-        workflowSettings: false,
-        syncSnapshots: true,
-        ciRunTracking: false,
-        deploymentHistory: false,
-        driftDetection: true,
-      },
-    });
-    mockedProjectApi.getProjectDrift.mockResolvedValue({
-      enabled: true,
-      mode: "local_snapshot",
-      findings: [
-        {
-          id: "finding-1",
-          projectId: "project-1",
-          targetId: null,
-          source: "local_snapshot",
-          severity: "warning",
-          code: "central_workflow_ref_outdated",
-          message: "Central workflow ref is outdated.",
-          details: {},
-          status: "active",
-          detectedAt: "2026-06-14T00:00:00.000Z",
-          resolvedAt: null,
-        },
-      ],
-    });
-
-    const rendered = render(
-      <ProjectDetailTabs project={provisionedProject} appRole="lead" />,
-    );
-    root = rendered.root;
-
-    await act(async () => {
-      await Promise.resolve();
-    });
-
-    expect(rendered.container.textContent).toContain(
-      "central_workflow_ref_outdated",
-    );
-    expect(rendered.container.textContent).toContain("Create update PR");
-    expect(rendered.container.textContent).not.toContain("Preview workflow");
-  });
-
-  it("does not show local repair actions for unsupported live-provider findings", async () => {
-    mockCapabilities(true, true, false, false, false, false, false, true, true);
-    mockEnvHook();
-    mockedProjectApi.getProjectOverview.mockResolvedValue({
-      ...projectOverviewWithTargets([]),
-      capabilities: {
-        envProvisioning: true,
-        workflowSettings: false,
-        syncSnapshots: true,
-        ciRunTracking: false,
-        deploymentHistory: false,
-        driftDetection: true,
-      },
-    });
-    mockedProjectApi.getProjectDrift.mockResolvedValue({
-      enabled: true,
-      mode: "local_snapshot",
-      findings: [
-        {
-          id: "finding-live",
-          projectId: "project-1",
-          targetId: "target-1",
-          source: "local_snapshot",
-          severity: "error",
-          code: "provider_env_key_missing_live",
-          message: "Provider env key needs live activation.",
-          details: {},
-          status: "active",
-          detectedAt: "2026-06-13T00:00:00.000Z",
-          resolvedAt: null,
-        },
-      ],
-    });
-
-    const rendered = render(
-      <ProjectDetailTabs project={provisionedProject} appRole="lead" />,
-    );
-    root = rendered.root;
-
-    await act(async () => {
-      await Promise.resolve();
-    });
-
-    expect(rendered.container.textContent).toContain(
-      "provider_env_key_missing_live",
-    );
-    expect(rendered.container.textContent).not.toContain("Confirm repair");
-    expect(rendered.container.textContent).not.toContain("Rotate CI token");
-    expect(mockedProjectApi.repairProjectDriftFinding).not.toHaveBeenCalled();
   });
 
   it("renders CI runs empty state from the local contract", async () => {
@@ -1190,7 +857,7 @@ describe("Project env provisioning UI", () => {
     });
 
     const rendered = render(
-      <ProjectDetailTabs project={provisionedProject} appRole="lead" />,
+      <ProjectDetailTabs project={provisionedProject} appRole="admin" />,
     );
     root = rendered.root;
 
@@ -1251,7 +918,7 @@ describe("Project env provisioning UI", () => {
     });
 
     const rendered = render(
-      <ProjectDetailTabs project={provisionedProject} appRole="lead" />,
+      <ProjectDetailTabs project={provisionedProject} appRole="admin" />,
     );
     root = rendered.root;
 
@@ -1303,7 +970,7 @@ describe("Project env provisioning UI", () => {
     });
 
     const rendered = render(
-      <ProjectDetailTabs project={provisionedProject} appRole="lead" />,
+      <ProjectDetailTabs project={provisionedProject} appRole="admin" />,
     );
     root = rendered.root;
 
@@ -1335,7 +1002,7 @@ describe("Project env provisioning UI", () => {
     );
 
     const rendered = render(
-      <ProjectDetailTabs project={provisionedProject} appRole="lead" />,
+      <ProjectDetailTabs project={provisionedProject} appRole="admin" />,
     );
     root = rendered.root;
 
@@ -1424,7 +1091,7 @@ describe("Project env provisioning UI", () => {
     });
 
     const rendered = render(
-      <ProjectDetailTabs project={provisionedProject} appRole="lead" />,
+      <ProjectDetailTabs project={provisionedProject} appRole="admin" />,
     );
     root = rendered.root;
 
@@ -1495,7 +1162,7 @@ describe("Project env provisioning UI", () => {
     });
 
     const rendered = render(
-      <ProjectDetailTabs project={provisionedProject} appRole="lead" />,
+      <ProjectDetailTabs project={provisionedProject} appRole="admin" />,
     );
     root = rendered.root;
 
@@ -1529,7 +1196,7 @@ describe("Project env provisioning UI", () => {
     );
 
     const rendered = render(
-      <ProjectDetailTabs project={provisionedProject} appRole="lead" />,
+      <ProjectDetailTabs project={provisionedProject} appRole="admin" />,
     );
     root = rendered.root;
 
@@ -1617,7 +1284,7 @@ describe("Project env provisioning UI", () => {
     });
 
     const rendered = render(
-      <ProjectDetailTabs project={provisionedProject} appRole="lead" />,
+      <ProjectDetailTabs project={provisionedProject} appRole="admin" />,
     );
     root = rendered.root;
 
@@ -1725,7 +1392,7 @@ describe("Project env provisioning UI", () => {
     );
 
     const rendered = render(
-      <ProjectDetailTabs project={provisionedProject} appRole="lead" />,
+      <ProjectDetailTabs project={provisionedProject} appRole="admin" />,
     );
     root = rendered.root;
 
@@ -1788,7 +1455,7 @@ describe("Project env provisioning UI", () => {
     );
 
     const rendered = render(
-      <ProjectDetailTabs project={provisionedProject} appRole="lead" />,
+      <ProjectDetailTabs project={provisionedProject} appRole="admin" />,
     );
     root = rendered.root;
 
@@ -1854,7 +1521,7 @@ describe("Project env provisioning UI", () => {
     });
 
     const rendered = render(
-      <ProjectDetailTabs project={provisionedProject} appRole="lead" />,
+      <ProjectDetailTabs project={provisionedProject} appRole="admin" />,
     );
     root = rendered.root;
 
@@ -1948,7 +1615,7 @@ describe("Project env provisioning UI", () => {
     });
 
     const rendered = render(
-      <ProjectDetailTabs project={provisionedProject} appRole="lead" />,
+      <ProjectDetailTabs project={provisionedProject} appRole="admin" />,
     );
     root = rendered.root;
 
@@ -2036,7 +1703,7 @@ describe("Project env provisioning UI", () => {
     });
 
     const rendered = render(
-      <ProjectDetailTabs project={provisionedProject} appRole="lead" />,
+      <ProjectDetailTabs project={provisionedProject} appRole="admin" />,
     );
     root = rendered.root;
 
@@ -2084,7 +1751,8 @@ describe("Project env provisioning UI", () => {
   });
 
 
-  it.each([["qa", false], ["member", true], ["lead", true], ["admin", true]] as const)(
+  // A Product owner (lead) has no Workflow tab at all.
+  it.each([["qa", false], ["member", true], ["admin", true]] as const)(
     "update PR button for %s: shown=%s",
     async (role, shown) => {
     mockCapabilities(true, true, true, true);
@@ -2200,7 +1868,7 @@ describe("Project env provisioning UI", () => {
     });
 
     const rendered = render(
-      <ProjectDetailTabs project={provisionedProject} appRole="lead" />,
+      <ProjectDetailTabs project={provisionedProject} appRole="admin" />,
     );
     root = rendered.root;
 
@@ -2259,9 +1927,6 @@ describe("Project env provisioning UI", () => {
       workflowSettings: true,
     };
     mockedProjectApi.getProjectOverview.mockResolvedValue(overview);
-    mockedProjectApi.getProjectDrift.mockRejectedValueOnce(
-      new Error("drift unavailable"),
-    );
     mockedProjectApi.getProjectCiRuns.mockRejectedValueOnce(
       new Error("runs unavailable"),
     );
@@ -2274,15 +1939,9 @@ describe("Project env provisioning UI", () => {
     mockedProjectApi.getWorkflowSettings.mockRejectedValueOnce(
       new Error("settings unavailable"),
     );
-    mockedProjectApi.syncProjectSnapshot.mockRejectedValueOnce(
-      new Error("sync unavailable"),
-    );
-    mockedProjectApi.runProjectDriftDetection.mockRejectedValueOnce(
-      new Error("drift run unavailable"),
-    );
 
     const rendered = render(
-      <ProjectDetailTabs project={provisionedProject} appRole="lead" />,
+      <ProjectDetailTabs project={provisionedProject} appRole="admin" />,
     );
     root = rendered.root;
 
@@ -2296,19 +1955,8 @@ describe("Project env provisioning UI", () => {
       await Promise.resolve();
     });
 
-    expect(rendered.container.textContent).toContain(
-      "Unable to load drift findings.",
-    );
-
-    await act(async () => {
-      Array.from(rendered.container.querySelectorAll("button"))
-        .find((button) => button.textContent === "Sync now")!
-        .click();
-      await Promise.resolve();
-    });
-    expect(rendered.container.textContent).toContain(
-      "Unable to create local snapshot right now.",
-    );
+    // The Overview no longer reads drift findings.
+    expect(mockedProjectApi.getProjectDrift).not.toHaveBeenCalled();
 
     await act(async () => {
       Array.from(rendered.container.querySelectorAll("button"))
@@ -2358,7 +2006,7 @@ describe("Project env provisioning UI", () => {
     );
 
     const overviewErrorRendered = render(
-      <ProjectDetailTabs project={provisionedProject} appRole="lead" />,
+      <ProjectDetailTabs project={provisionedProject} appRole="admin" />,
     );
     root = overviewErrorRendered.root;
 
@@ -2401,7 +2049,7 @@ describe("Project env provisioning UI", () => {
     );
 
     const previewErrorRendered = render(
-      <ProjectDetailTabs project={provisionedProject} appRole="lead" />,
+      <ProjectDetailTabs project={provisionedProject} appRole="admin" />,
     );
     root = previewErrorRendered.root;
 
@@ -2427,65 +2075,6 @@ describe("Project env provisioning UI", () => {
     );
   });
 
-  it("shows a clean drift repair failure message", async () => {
-    mockCapabilities(true, true, false, false, false, false, false, true, true);
-    mockEnvHook();
-    const overview = projectOverviewWithTargets([]);
-    overview.capabilities = {
-      ...overview.capabilities,
-      driftDetection: true,
-    };
-    mockedProjectApi.getProjectOverview.mockResolvedValue(overview);
-    mockedProjectApi.getProjectDrift.mockResolvedValue({
-      enabled: true,
-      mode: "local_snapshot",
-      findings: [
-        {
-          id: "finding-1",
-          code: "ci_token_missing",
-          severity: "error",
-          source: "flowci",
-          message: "CI token missing",
-          detectedAt: "2026-06-12T00:00:00.000Z",
-        },
-      ],
-    });
-    mockedProjectApi.repairProjectDriftFinding.mockRejectedValueOnce(
-      new Error("repair failed"),
-    );
-
-    const rendered = render(
-      <ProjectDetailTabs project={provisionedProject} appRole="lead" />,
-    );
-    root = rendered.root;
-
-    await act(async () => {
-      await Promise.resolve();
-    });
-    await act(async () => {
-      await Promise.resolve();
-    });
-    await act(async () => {
-      await Promise.resolve();
-    });
-
-    act(() => {
-      Array.from(rendered.container.querySelectorAll("button"))
-        .find((button) => button.textContent === "Rotate CI token")!
-        .click();
-    });
-    await act(async () => {
-      Array.from(rendered.container.querySelectorAll("button"))
-        .find((button) => button.textContent === "Confirm repair")!
-        .click();
-      await Promise.resolve();
-    });
-
-    expect(rendered.container.textContent).toContain(
-      "Unable to run repair action.",
-    );
-  });
-
   it("previews workflow settings after editing all workflow inputs", async () => {
     mockCapabilities(true, true, true, false);
     mockEnvHook();
@@ -2494,7 +2083,7 @@ describe("Project env provisioning UI", () => {
     );
 
     const rendered = render(
-      <ProjectDetailTabs project={provisionedProject} appRole="lead" />,
+      <ProjectDetailTabs project={provisionedProject} appRole="admin" />,
     );
     root = rendered.root;
 

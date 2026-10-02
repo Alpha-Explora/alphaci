@@ -66,7 +66,7 @@ function actionsResponse(enabled: boolean) {
 
 /**
  * The reinstall button is gated on two independent things: the viewer's role
- * (team lead/admin, same rule as QA Studio's merge gate) AND the server's own
+ * (Developer/admin, the hosting rule) AND the server's own
  * per-target descriptor. Neither alone is enough to show it.
  */
 describe("Hosting target reinstall deployment secrets", () => {
@@ -112,8 +112,8 @@ describe("Hosting target reinstall deployment secrets", () => {
     );
   }
 
-  it("hides the button for a member, even though the descriptor is enabled", async () => {
-    await render("member");
+  it("hides the button for a Product owner (lead), even though the descriptor is enabled", async () => {
+    await render("lead");
     expect(mockGetActions).not.toHaveBeenCalled();
     expect(reinstallButton()).toBeUndefined();
   });
@@ -123,24 +123,24 @@ describe("Hosting target reinstall deployment secrets", () => {
     expect(reinstallButton()).toBeUndefined();
   });
 
-  it("hides the button for a lead when the server disables it", async () => {
+  it("hides the button for a Developer when the server disables it", async () => {
     mockGetActions.mockResolvedValue(actionsResponse(false));
-    await render("lead");
+    await render("member");
     expect(reinstallButton()).toBeUndefined();
     // Disabled means invisible, not a noisy reason shown inline.
     expect(container.textContent).not.toMatch(/Provider activation required/);
   });
 
-  it("shows the button and helper copy for a lead once the descriptor is enabled", async () => {
-    await render("lead");
+  it("shows the button and helper copy for a Developer once the descriptor is enabled", async () => {
+    await render("member");
     expect(reinstallButton()).toBeDefined();
     expect(container.textContent).toContain(
       "Rewrites this target's GitHub Actions secrets, including the Vercel test bypass secret.",
     );
   });
 
-  it("hides the button for a lead while target management is off", async () => {
-    await render("lead", false);
+  it("hides the button for a Developer while target management is off", async () => {
+    await render("member", false);
     expect(reinstallButton()).toBeUndefined();
   });
 
@@ -154,7 +154,7 @@ describe("Hosting target reinstall deployment secrets", () => {
       reinstalled: true,
       githubSecrets: { renderDeployHook: "RENDER_DEPLOY_HOOK_URL" },
     });
-    await render("lead");
+    await render("member");
 
     await act(async () => {
       reinstallButton()!.click();
@@ -177,7 +177,7 @@ describe("Hosting target reinstall deployment secrets", () => {
         },
       }),
     );
-    await render("lead");
+    await render("member");
 
     await act(async () => {
       reinstallButton()!.click();
@@ -200,7 +200,7 @@ describe("Hosting target reinstall deployment secrets", () => {
         },
       }),
     );
-    await render("lead");
+    await render("member");
 
     await act(async () => {
       reinstallButton()!.click();
@@ -219,7 +219,7 @@ describe("Hosting target reinstall deployment secrets", () => {
       );
     }
 
-    it.each(["member", "qa"] as const)(
+    it.each(["lead", "qa"] as const)(
       "hides Edit, Sync and Detach for %s but keeps logs and a note",
       async (role) => {
         await render(role);
@@ -227,11 +227,11 @@ describe("Hosting target reinstall deployment secrets", () => {
         expect(all).not.toContain("Edit");
         expect(all.some((l) => /sync/i.test(l))).toBe(false);
         expect(all.some((l) => /detach/i.test(l))).toBe(false);
-        expect(container.textContent).toContain("A Team lead or admin can");
+        expect(container.textContent).toContain("Developers and admins can");
       },
     );
 
-    it.each(["lead", "admin"] as const)(
+    it.each(["member", "admin"] as const)(
       "shows Edit, Sync and Detach for %s",
       async (role) => {
         await render(role);
@@ -239,7 +239,7 @@ describe("Hosting target reinstall deployment secrets", () => {
         expect(all).toContain("Edit");
         expect(all.some((l) => /sync/i.test(l))).toBe(true);
         expect(all.some((l) => /detach/i.test(l))).toBe(true);
-        expect(container.textContent).not.toContain("A Team lead or admin can");
+        expect(container.textContent).not.toContain("Developers and admins can");
       },
     );
   });

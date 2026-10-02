@@ -69,7 +69,7 @@ export function useDeploymentTargetsViewModel(options: {
   >({});
   const requestedActionIds = useRef<Set<string>>(new Set());
 
-  // Only a lead/admin can ever see the reinstall button, so only they cause
+  // Only a Developer/admin can ever see the reinstall button, so only they cause
   // this extra request per target — everyone else never fetches it.
   const canManageSecrets = canReinstallDeploymentSecrets(appRole);
 
