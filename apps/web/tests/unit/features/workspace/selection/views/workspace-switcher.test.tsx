@@ -119,7 +119,13 @@ describe("WorkspaceSwitcher", () => {
     click(createAction(container)!);
 
     expect(listbox(container)).toBeNull();
-    expect(container.querySelector('[role="dialog"]')?.textContent).toContain("Create group");
+    const dialog = container.querySelector('[role="dialog"]');
+    expect(dialog?.textContent).toContain("Create workspace");
+    // Workspace name and Description only: no Business unit.
+    expect(dialog?.textContent).toContain("Workspace name");
+    expect(dialog?.textContent).toContain("Description");
+    expect(dialog?.textContent).not.toContain("Business unit");
+    expect(dialog?.textContent).not.toContain("Group name");
   });
 
   it("never offers create-workspace to a Developer with a team", () => {
