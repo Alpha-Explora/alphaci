@@ -1751,8 +1751,8 @@ describe("Project env provisioning UI", () => {
   });
 
 
-  // A Product owner (lead) has no Workflow tab at all.
-  it.each([["qa", false], ["member", true], ["admin", true]] as const)(
+  // A Product owner (lead) and QA Team have no Workflow tab at all.
+  it.each([["member", true], ["admin", true]] as const)(
     "update PR button for %s: shown=%s",
     async (role, shown) => {
     mockCapabilities(true, true, true, true);

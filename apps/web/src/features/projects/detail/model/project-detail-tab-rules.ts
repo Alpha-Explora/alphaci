@@ -126,13 +126,23 @@ function allTabsExcept(
  *     code, pipeline, hosting or environment surfaces.
  *   - Developer (`member`): everything except QA Studio, Environment included
  *     (they change hosting and variables now).
- *   - QA Team (`qa`): everything except Environment (read-only on hosting).
+ *   - QA Team (`qa`): the same five as a Product owner. QA checks the uat
+ *     build and its UI in QA Studio; code, pipeline, hosting and environment
+ *     surfaces are not theirs.
  *   - Admin: everything.
  */
+const OWNER_AND_QA_TABS: ReadonlySet<ProjectDetailTab> = new Set<ProjectDetailTab>([
+  "overview",
+  "checklists",
+  "qa",
+  "audit",
+  "settings",
+]);
+
 const ROLE_TABS: Readonly<Record<AppRole, ReadonlySet<ProjectDetailTab>>> = {
-  lead: new Set<ProjectDetailTab>(["overview", "checklists", "qa", "audit", "settings"]),
+  lead: OWNER_AND_QA_TABS,
   member: allTabsExcept("qa"),
-  qa: allTabsExcept("environment"),
+  qa: OWNER_AND_QA_TABS,
   admin: allTabsExcept(),
 };
 

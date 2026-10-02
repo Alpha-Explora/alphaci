@@ -44,11 +44,22 @@ describe("visibleProjectDetailTabs", () => {
     expect(tabs).toContain("checklists");
   });
 
-  it("hides Environment from QA Team, but keeps Checklists and QA Studio", () => {
+  /* QA checks the uat build and its UI in QA Studio: the Product owner's set. */
+  it("gives QA Team the same five tabs as a Product owner", () => {
     const tabs = visibleProjectDetailTabs("qa", { qaChecklistsEnabled: true });
-    expect(tabs).toEqual(PROJECT_DETAIL_TABS.filter((tab) => tab !== "environment"));
-    expect(tabs).toContain("checklists");
-    expect(tabs).toContain("qa");
+    expect(tabs).toEqual(["overview", "checklists", "qa", "audit", "settings"]);
+    expect(tabs).toEqual(visibleProjectDetailTabs("lead", { qaChecklistsEnabled: true }));
+    for (const hidden of ["code", "pulls", "runs", "workflow", "hosting", "environment"] as const) {
+      expect(tabs).not.toContain(hidden);
+    }
+  });
+
+  it("drops QA Team's Checklists and QA Studio while the capability is off", () => {
+    expect(visibleProjectDetailTabs("qa", { qaChecklistsEnabled: false })).toEqual([
+      "overview",
+      "audit",
+      "settings",
+    ]);
   });
 
   it("leaves Environment exactly as the role decides when the checklists capability is off", () => {
@@ -94,10 +105,18 @@ describe("visibleProjectDetailTabs", () => {
   });
 
   it("falls back to Overview when the selected tab disappears", () => {
-    const visible = visibleProjectDetailTabs("qa", { qaChecklistsEnabled: false });
+    const visible = visibleProjectDetailTabs("admin", { qaChecklistsEnabled: false });
     expect(resolveVisibleTab("checklists", visible)).toBe("overview");
     expect(resolveVisibleTab("qa", visible)).toBe("overview");
     expect(resolveVisibleTab("runs", visible)).toBe("runs");
+  });
+
+  it("sends QA Team who deep-links to a code or delivery tab to Overview", () => {
+    const visible = visibleProjectDetailTabs("qa", { qaChecklistsEnabled: true });
+    for (const tab of ["code", "pulls", "runs", "workflow", "hosting", "environment"] as const) {
+      expect(resolveVisibleTab(tab, visible)).toBe("overview");
+    }
+    expect(resolveVisibleTab("qa", visible)).toBe("qa");
   });
 
   it("sends a Developer who deep-links to #qa to Overview, while Checklists and Environment stay reachable", () => {
