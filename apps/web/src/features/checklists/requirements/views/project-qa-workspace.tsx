@@ -53,23 +53,48 @@ export function ProjectQaWorkspace({
   projectName,
   appRole,
   enabled = true,
+  newFeatureRequest = 0,
+  onFeatureCount,
 }: Readonly<{
   deliveryProjectId: string;
   projectName: string;
   appRole: AppRole | null | undefined;
   enabled?: boolean;
+  /**
+   * Grows each time someone asks to add a Feature here (the "Add a Feature"
+   * nudge): the Requirements tab comes forward and opens New Feature.
+   */
+  newFeatureRequest?: number;
+  /** The Project's live Feature count, each time the Requirements tab reads it. */
+  onFeatureCount?: (count: number) => void;
 }>) {
   const [tab, setTab] = useState<WorkspaceTab>(() => firstTab(appRole));
+  const [seenRequest, setSeenRequest] = useState(newFeatureRequest);
+  // The request the Requirements tab still has to act on; leaving the tab
+  // drops it, so coming back never reopens the dialog.
+  const [pendingRequest, setPendingRequest] = useState(newFeatureRequest);
   const baseId = useId();
   const tabRefs = useRef<Array<HTMLButtonElement | null>>([]);
+  // A new request brings the Requirements tab forward (state derived from a
+  // changing prop, applied while rendering).
+  if (newFeatureRequest !== seenRequest) {
+    setSeenRequest(newFeatureRequest);
+    setPendingRequest(newFeatureRequest);
+    if (newFeatureRequest > 0) setTab("requirements");
+  }
   if (!enabled || !deliveryProjectId) return null;
+
+  function selectTab(next: WorkspaceTab) {
+    setTab(next);
+    setPendingRequest(0);
+  }
 
   function onKeyDown(event: KeyboardEvent<HTMLButtonElement>, index: number) {
     const step = ARROW_STEPS[event.key];
     if (!step) return;
     event.preventDefault();
     const next = (index + step + TABS.length) % TABS.length;
-    setTab(TABS[next].id);
+    selectTab(TABS[next].id);
     tabRefs.current[next]?.focus();
   }
 
@@ -89,7 +114,7 @@ export function ProjectQaWorkspace({
             aria-controls={`${baseId}-panel-${entry.id}`}
             tabIndex={tab === entry.id ? 0 : -1}
             className="rq-tab"
-            onClick={() => setTab(entry.id)}
+            onClick={() => selectTab(entry.id)}
             onKeyDown={(event) => onKeyDown(event, index)}
           >
             {entry.label}
@@ -102,7 +127,14 @@ export function ProjectQaWorkspace({
         id={`${baseId}-panel-${tab}`}
         aria-labelledby={`${baseId}-tab-${tab}`}
       >
-        {tab === "requirements" ? <ProjectRequirementsPanel deliveryProjectId={deliveryProjectId} appRole={appRole} /> : null}
+        {tab === "requirements" ? (
+          <ProjectRequirementsPanel
+            deliveryProjectId={deliveryProjectId}
+            appRole={appRole}
+            newFeatureRequest={pendingRequest}
+            onFeatureCount={onFeatureCount}
+          />
+        ) : null}
         {tab === "run" ? <RunTab deliveryProjectId={deliveryProjectId} appRole={appRole} /> : null}
         {tab === "items" ? (
           <ProjectMyItemsCard deliveryProjectId={deliveryProjectId} enabled appRole={appRole} />

@@ -82,6 +82,25 @@ export function ChecklistIcon() {
   );
 }
 
+/** A padlock: "Add repository" waits for the Project's first Feature. */
+export function LockIcon() {
+  return (
+    <Svg size={14}>
+      <rect x="4" y="11" width="16" height="10" rx="2" />
+      <path d="M8 11V7a4 4 0 0 1 8 0v4" />
+    </Svg>
+  );
+}
+
+/** A sparkle-ish star: the Project's first Feature. */
+export function FeatureIcon() {
+  return (
+    <Svg size={14}>
+      <path d="M12 3l2.6 5.6 6.1.7-4.5 4.2 1.2 6L12 16.6 6.6 19.5l1.2-6-4.5-4.2 6.1-.7z" />
+    </Svg>
+  );
+}
+
 export function StudioIcon() {
   return (
     <Svg>

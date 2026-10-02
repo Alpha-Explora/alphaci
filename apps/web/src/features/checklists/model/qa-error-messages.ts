@@ -32,6 +32,10 @@ export const QA_ERROR_MESSAGES: Readonly<Record<string, string>> = {
     "Developers, Product owners and admins update Progress. The QA Team records Verification instead.",
   REQUIREMENT_MANAGE_FORBIDDEN: "Only Product owners and admins create or edit requirements.",
   REQUIREMENT_NAME_TAKEN: "This Project already has a requirement with that name. Pick another name.",
+  REQUIREMENT_BATCH_DUPLICATE_NAME:
+    "Two requirements in this dialog have the same name. Rename one, then create them again.",
+  REQUIREMENT_BATCH_INVALID:
+    "These requirements could not be created as written. Check each name and story, then try again.",
   REQUIREMENT_STALE:
     "Someone else changed this requirement since you loaded it. Reload to see their change, then try again.",
   REQUIREMENT_ITEM_STALE:

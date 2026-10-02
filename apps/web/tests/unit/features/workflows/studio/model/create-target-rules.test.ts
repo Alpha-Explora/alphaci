@@ -3,7 +3,9 @@ import {
   chosenTargetProject,
   createRepositoryBlocker,
   effectiveDeliveryProjectId,
+  projectChoiceEntries,
   projectChoiceOptions,
+  projectFeaturesBlocker,
   joinedProjectName,
   parseCreateTargetParams,
   preselectedWorkspaceId,
@@ -40,23 +42,49 @@ describe("a Developer's Project choice", () => {
   it("lists the team's Projects as options, in the server's order", () => {
     expect(
       projectChoiceOptions([
-        { deliveryProjectId: "dp-2", name: "wallet" },
-        { deliveryProjectId: "dp-1", name: "testfinals" },
+        { deliveryProjectId: "dp-2", name: "wallet", featureCount: 0 },
+        { deliveryProjectId: "dp-1", name: "testfinals", featureCount: null },
       ]),
     ).toEqual([
-      { id: "dp-2", name: "wallet" },
-      { id: "dp-1", name: "testfinals" },
+      { id: "dp-2", name: "wallet", featureCount: 0 },
+      { id: "dp-1", name: "testfinals", featureCount: null },
     ]);
   });
 
   it("files a pick in the team it was picked in", () => {
-    expect(chosenTargetProject({ id: "dp-1", name: "testfinals" }, "ws-1")).toEqual({
+    expect(chosenTargetProject({ id: "dp-1", name: "testfinals", featureCount: 1 }, "ws-1")).toEqual({
       id: "dp-1",
       name: "testfinals",
       groupId: "ws-1",
     });
     expect(chosenTargetProject(null, "ws-1")).toBeNull();
-    expect(chosenTargetProject({ id: "dp-1", name: "x" }, null)).toBeNull();
+    expect(chosenTargetProject({ id: "dp-1", name: "x", featureCount: 1 }, null)).toBeNull();
+  });
+
+  const OPTIONS = [
+    { id: "dp-1", name: "testfinals", featureCount: 2 },
+    { id: "dp-2", name: "wallet", featureCount: 0 },
+    { id: "dp-3", name: "legacy", featureCount: null },
+  ];
+
+  it("shows a Developer the Projects with no Feature yet, disabled and saying so", () => {
+    expect(projectChoiceEntries(OPTIONS, "member")).toEqual([
+      { id: "dp-1", label: "testfinals", disabled: false },
+      { id: "dp-2", label: "wallet (no Features yet)", disabled: true },
+      { id: "dp-3", label: "legacy", disabled: false },
+    ]);
+    // Admins are exempt.
+    expect(projectChoiceEntries(OPTIONS, "admin").every((entry) => !entry.disabled)).toBe(true);
+  });
+
+  it("blocks a linked or picked Project with no Feature, and leaves unknown ones to the server", () => {
+    const sentence = "Waiting for your Product owner to add the first Feature.";
+    expect(projectFeaturesBlocker("dp-2", OPTIONS, "member")).toBe(sentence);
+    expect(projectFeaturesBlocker("dp-1", OPTIONS, "member")).toBeNull();
+    expect(projectFeaturesBlocker("dp-3", OPTIONS, "member")).toBeNull();
+    expect(projectFeaturesBlocker("dp-unknown", OPTIONS, "member")).toBeNull();
+    expect(projectFeaturesBlocker(undefined, OPTIONS, "member")).toBeNull();
+    expect(projectFeaturesBlocker("dp-2", OPTIONS, "admin")).toBeNull();
   });
 
   it("blocks Create until the Project is chosen, and on missing Render variables", () => {
@@ -65,6 +93,9 @@ describe("a Developer's Project choice", () => {
     expect(createRepositoryBlocker({ ...base, deliveryProjectId: "dp-1" })).toBeNull();
     expect(createRepositoryBlocker({ ...base, requiresProject: false })).toBeNull();
     expect(createRepositoryBlocker({ ...base, renderVariablesMissing: true })).toMatch(/Render environment variable/);
+    expect(
+      createRepositoryBlocker({ ...base, deliveryProjectId: "dp-2", featuresBlocker: "Waiting for your Product owner to add the first Feature." }),
+    ).toBe("Waiting for your Product owner to add the first Feature.");
   });
 });
 

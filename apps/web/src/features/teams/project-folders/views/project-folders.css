@@ -171,6 +171,115 @@
   outline-offset: 2px;
 }
 
+/* ── Features before repositories ──────────────────────────────────────────
+   A Developer's Add repository waits for the Project's first Feature: still
+   on screen and focusable (aria-disabled), muted, with the reason under it.
+   A Product owner gets a nudge to write that Feature instead. */
+.pf-add--blocked,
+.pf-add--blocked:hover {
+  border-color: var(--border);
+  background: transparent;
+  color: var(--text-muted);
+  cursor: not-allowed;
+}
+
+.pf-add--blocked:active {
+  transform: none;
+}
+
+.primary-button.pf-add--blocked {
+  opacity: 0.55;
+  box-shadow: none;
+  filter: grayscale(0.4);
+}
+
+.pf-card__foot {
+  margin: 0;
+  padding: 0 0.85rem 0.7rem 4.1rem;
+}
+
+.pf-gate-note {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0;
+  font-size: 0.75rem;
+  line-height: 1.45;
+  color: var(--text-secondary);
+}
+
+.pf-gate-note svg {
+  flex: none;
+  color: var(--text-muted);
+}
+
+.pf-gate-note--banner,
+.pf-nudge--banner {
+  padding: 0.65rem 0.85rem;
+  border: 1px dashed var(--border-strong);
+  border-radius: 0.7rem;
+}
+
+.pf-nudge {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.4rem 0.75rem;
+}
+
+.pf-nudge--banner {
+  border-color: var(--border-brand);
+  background: var(--brand-light);
+}
+
+.pf-nudge__text {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.76rem;
+  line-height: 1.45;
+  color: var(--text-secondary);
+}
+
+.pf-nudge__text svg {
+  flex: none;
+  color: var(--brand);
+}
+
+.pf-nudge__action {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  min-height: 1.9rem;
+  padding: 0 0.7rem;
+  border: 1px solid var(--border-brand);
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--brand);
+  font: inherit;
+  font-size: 0.74rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background 0.15s ease-out,
+    border-color 0.15s ease-out;
+}
+
+.pf-nudge__action:hover {
+  border-color: var(--brand);
+  background: var(--brand-light);
+}
+
+.pf-nudge__action:active {
+  transform: scale(0.97);
+}
+
+.pf-nudge__action:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
 .pf-card__icon {
   flex-shrink: 0;
   display: inline-flex;
@@ -838,6 +947,10 @@ a.pf-chip:focus-visible {
   .pf-danger__row .pf-delete-submit {
     width: 100%;
   }
+
+  .pf-card__foot {
+    padding-left: 1rem;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -846,13 +959,15 @@ a.pf-chip:focus-visible {
   .pf-card__chevron,
   .pf-card__manage,
   .pf-target,
-  .pf-delete-submit {
+  .pf-delete-submit,
+  .pf-nudge__action {
     transition: none;
   }
 
   a.pf-chip:hover,
   .pf-card__open:hover .pf-card__chevron,
-  .pf-card__manage:active {
+  .pf-card__manage:active,
+  .pf-nudge__action:active {
     transform: none;
   }
 }

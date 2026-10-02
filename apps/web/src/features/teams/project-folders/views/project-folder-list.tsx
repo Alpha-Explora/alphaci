@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useId } from "react";
 
 import { requirementCountLabel } from "@/features/checklists";
 import { LoadingRows } from "@/features/groups/workspace";
@@ -8,12 +9,15 @@ import { LoadingRows } from "@/features/groups/workspace";
 import {
   createRepositoryHref,
   emptyProjectsCopy,
+  folderFeatureGate,
   folderLandingProjectId,
   projectDashboardHref,
   repositoryCountLabel,
+  type FolderFeatureGate,
 } from "../model/project-folder-rules";
 import type { ProjectFolder, UnfiledProject } from "../model/project-folder-types";
 import type { ProjectFoldersViewModel } from "../view-models/use-project-folders-view-model";
+import { AddRepositoryAction, FeatureNudge, FeaturesRequiredNote } from "./feature-gate";
 import {
   ChecklistIcon,
   ChevronIcon,
@@ -49,7 +53,10 @@ function FolderMeta({
  * Project's detail: repositories, Move, requirements and QA, and Delete Project. A
  * Project with no linked repository has no page to open, so its card opens
  * the detail as it always did. A Developer (or admin) also gets "Add
- * repository" beside Manage: the create wizard, filed in this Project.
+ * repository" beside Manage: the create wizard, filed in this Project. Until
+ * the Project has its first Feature, a Developer's Add repository is
+ * disabled with the reason under it, and a Product owner is nudged to add
+ * that Feature.
  *
  * No per-repository BACKEND/FRONTEND chips: the card is the Project, the
  * count says how many repositories it holds, and the repositories themselves
@@ -58,15 +65,21 @@ function FolderMeta({
 function FolderCard({
   folder,
   requirementCounts,
+  gate,
   addRepositoryHref,
   onOpen,
+  onAddFeature,
 }: Readonly<{
   folder: ProjectFolder;
   requirementCounts: Record<string, number> | null;
-  /** The wizard filed in this Project; null when the caller may not add one. */
-  addRepositoryHref: string | null;
+  /** Add repository (link, disabled, or none) and the Product owner's nudge. */
+  gate: FolderFeatureGate;
+  /** The wizard filed in this Project. */
+  addRepositoryHref: string;
   onOpen: () => void;
+  onAddFeature: () => void;
 }>) {
+  const noteId = useId();
   const landingId = folderLandingProjectId(folder);
   const face = (
     <>
@@ -103,17 +116,21 @@ function FolderCard({
           <SlidersIcon />
           <span className="pf-card__manage-label">Manage</span>
         </button>
-        {addRepositoryHref ? (
-          <Link
-            className="pf-card__manage pf-card__add"
-            href={addRepositoryHref}
-            aria-label={`Add repository to ${folder.name}`}
-          >
-            <PlusIcon />
-            <span className="pf-card__manage-label">Add repository</span>
-          </Link>
-        ) : null}
+        <AddRepositoryAction
+          state={gate.addRepository}
+          href={addRepositoryHref}
+          className="pf-card__manage pf-card__add"
+          ariaLabel={`Add repository to ${folder.name}`}
+          noteId={noteId}
+          showLabel={false}
+        />
       </div>
+      {gate.addRepository === "blocked" ? (
+        <FeaturesRequiredNote id={noteId} className="pf-gate-note pf-card__foot" />
+      ) : null}
+      {gate.featureNudge ? (
+        <FeatureNudge projectName={folder.name} onAddFeature={onAddFeature} className="pf-nudge pf-card__foot" />
+      ) : null}
     </li>
   );
 }
@@ -208,10 +225,10 @@ export function ProjectFolderList({
               key={folder.deliveryProjectId}
               folder={folder}
               requirementCounts={vm.requirementCounts}
-              addRepositoryHref={
-                vm.canCreateRepository ? createRepositoryHref(vm.groupId, folder.deliveryProjectId) : null
-              }
+              gate={folderFeatureGate(folder, vm)}
+              addRepositoryHref={createRepositoryHref(vm.groupId, folder.deliveryProjectId)}
               onOpen={() => vm.openFolder(folder.deliveryProjectId)}
+              onAddFeature={() => vm.requestNewFeature(folder.deliveryProjectId)}
             />
           ))}
         </ul>

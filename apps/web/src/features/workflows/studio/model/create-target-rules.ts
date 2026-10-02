@@ -1,7 +1,12 @@
 /* Where a new repository goes: the team (?group=) and the team Project
  * (?project=) a link into the Create Project wizard asked for. Pure. */
 
-import { PROJECT_REQUIRED_MESSAGE } from "@/features/groups";
+import {
+  PROJECT_FEATURES_REQUIRED_MESSAGE,
+  PROJECT_REQUIRED_MESSAGE,
+  repositoryBlockedByFeatures,
+} from "@/features/groups";
+import type { AppRole } from "@/shared/api/contracts";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -96,37 +101,84 @@ export function readTargetProject(value: unknown, requestedId: string): Resolved
 
 /* The select's prompt and its empty state, through this model so the
  * studio's views never reach into another domain for copy. */
-export { NO_PROJECT_YET_MESSAGE, PROJECT_REQUIRED_MESSAGE } from "@/features/groups";
+export {
+  NO_PROJECT_YET_MESSAGE,
+  PROJECT_FEATURES_REQUIRED_MESSAGE,
+  PROJECT_REQUIRED_MESSAGE,
+} from "@/features/groups";
 
 export const RENDER_VARIABLES_MISSING_MESSAGE =
   "Add at least one Render environment variable before creating the repository.";
 
 /**
  * Why Create cannot be sent yet, or null when it can: Render provisioning
- * without a variable, or a Developer's repository with no Project (the
- * backend's 400 PROJECT_REQUIRED, caught before the round trip).
+ * without a variable, a Developer's repository with no Project (the
+ * backend's 400 PROJECT_REQUIRED), or into a Project with no Feature yet
+ * (its 409 PROJECT_FEATURES_REQUIRED), caught before the round trip.
  */
 export function createRepositoryBlocker(input: {
   renderVariablesMissing: boolean;
   requiresProject: boolean;
   deliveryProjectId: string | undefined;
+  /** The target Project's features blocker (see projectFeaturesBlocker), or null. */
+  featuresBlocker?: string | null;
 }): string | null {
   if (input.renderVariablesMissing) return RENDER_VARIABLES_MISSING_MESSAGE;
   if (input.requiresProject && !input.deliveryProjectId) return PROJECT_REQUIRED_MESSAGE;
-  return null;
+  return input.featuresBlocker ?? null;
 }
 
 /** One entry of the wizard's Project select. */
 export interface ProjectChoiceOption {
   id: string;
   name: string;
+  /** Active Features, or null when the server sent no count (then the server decides). */
+  featureCount: number | null;
 }
 
 /** The team's Projects as select options, in the order the server sent them. */
 export function projectChoiceOptions(
-  folders: ReadonlyArray<{ deliveryProjectId: string; name: string }>,
+  folders: ReadonlyArray<{ deliveryProjectId: string; name: string; featureCount: number | null }>,
 ): ProjectChoiceOption[] {
-  return folders.map((folder) => ({ id: folder.deliveryProjectId, name: folder.name }));
+  return folders.map((folder) => ({
+    id: folder.deliveryProjectId,
+    name: folder.name,
+    featureCount: folder.featureCount,
+  }));
+}
+
+/** A select entry as shown to this caller: off, and saying why, while it has no Feature. */
+export interface ProjectChoiceEntry {
+  id: string;
+  label: string;
+  disabled: boolean;
+}
+
+export const NO_FEATURES_SUFFIX = "(no Features yet)";
+
+export function projectChoiceEntries(
+  options: ReadonlyArray<ProjectChoiceOption>,
+  appRole: AppRole | null | undefined,
+): ProjectChoiceEntry[] {
+  return options.map((option) => {
+    const disabled = repositoryBlockedByFeatures(appRole, option.featureCount);
+    return { id: option.id, label: disabled ? `${option.name} ${NO_FEATURES_SUFFIX}` : option.name, disabled };
+  });
+}
+
+/**
+ * The sentence that stops this caller creating in the target Project (a
+ * `?project=` link or the picked one), or null. Only an exact 0 Features
+ * blocks; a Project the team list does not know is left to the server.
+ */
+export function projectFeaturesBlocker(
+  targetId: string | undefined,
+  options: ReadonlyArray<ProjectChoiceOption>,
+  appRole: AppRole | null | undefined,
+): string | null {
+  if (!targetId) return null;
+  const featureCount = options.find((option) => option.id === targetId)?.featureCount ?? null;
+  return repositoryBlockedByFeatures(appRole, featureCount) ? PROJECT_FEATURES_REQUIRED_MESSAGE : null;
 }
 
 /** A picked option as a target in the team it was picked in; null clears the choice. */

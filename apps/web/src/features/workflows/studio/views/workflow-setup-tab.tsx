@@ -79,6 +79,8 @@ interface WorkflowSetupTabProps {
   joinedProjectName?: string | null;
   /** A Developer's Project select (see WizardStepProps), or null. */
   projectChoice: ProjectChoice | null;
+  /** Why the target Project cannot take a repository yet (no Feature), or null. */
+  projectBlocker?: string | null;
   /**
    * Whether "Existing repository" is offered. Onboarding an existing
    * repository names a NEW Project, which a Developer may not create, so a
@@ -154,6 +156,7 @@ export function WorkflowSetupTab({
   targetProjectLabel,
   joinedProjectName = null,
   projectChoice,
+  projectBlocker = null,
   existingRepoAllowed,
   deploymentProvisioning,
   envProvisioningEnabled,
@@ -250,7 +253,7 @@ export function WorkflowSetupTab({
     repository: isRepositoryStepReady({
       projectName: joinedProjectName === null ? form.projectName : null,
       projectNameServerError: form.projectNameError,
-      projectChoiceMissing: isProjectChoiceMissing(projectChoice),
+      projectChoiceMissing: isProjectChoiceMissing(projectChoice) || projectBlocker !== null,
       repoName: form.repoName,
       isMicroservicesShape: projectCatalog.isMicroservicesShape,
       isMultiRepoShape: projectCatalog.isMultiRepoShape,
@@ -388,6 +391,7 @@ export function WorkflowSetupTab({
           isExistingMode={isExistingMode}
           joinedProjectName={joinedProjectName}
           projectChoice={projectChoice}
+          projectBlocker={projectBlocker}
           onBack={goToPreviousWizardStep}
           onCreateProject={onCreateProject}
           onNext={goToNextWizardStep}

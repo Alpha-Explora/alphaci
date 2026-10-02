@@ -38,6 +38,26 @@ describe("requirementsRepository", () => {
     expect(archived.id).toBe("req-1");
   });
 
+  it("creates several requirements in ONE batch request, in request order", async () => {
+    mockedRequest.mockResolvedValue({
+      requirements: [requirementWire({ id: "req-a", name: "Wallet" }), { broken: true }, requirementWire({ id: "req-b", name: "Refunds" })],
+    });
+    const body = { kind: "functional" as const, requirements: [{ name: "Wallet" }, { name: "Refunds" }] };
+    const created = await requirementsRepository.createBatch("dp 1", body);
+    expect(mockedRequest).toHaveBeenCalledTimes(1);
+    expect(mockedRequest).toHaveBeenLastCalledWith("/delivery-projects/dp%201/requirements/batch", {
+      method: "POST",
+      body: JSON.stringify(body),
+    });
+    // A broken row is dropped rather than crashing the list.
+    expect(created.map((entry) => entry.id)).toEqual(["req-a", "req-b"]);
+
+    mockedRequest.mockResolvedValue({ requirements: [] });
+    await expect(requirementsRepository.createBatch("dp-1", body)).rejects.toThrow(/did not return the requirements/);
+    mockedRequest.mockResolvedValue(null);
+    await expect(requirementsRepository.createBatch("dp-1", body)).rejects.toThrow(/did not return the requirements/);
+  });
+
   it("refuses a reply that is not a requirement", async () => {
     mockedRequest.mockResolvedValue({});
     await expect(requirementsRepository.update("req-1", { expectedVersion: 1 })).rejects.toThrow(/did not return/);

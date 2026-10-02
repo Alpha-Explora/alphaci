@@ -23,8 +23,25 @@ jest.mock("../../../../../../src/features/teams/project-folders/data/project-fol
 /* The Project QA workspace owns its own view-models (tested in the checklists
  * domain); here it only has to be mounted with the right Project and role. */
 jest.mock("../../../../../../src/features/checklists/requirements", () => ({
-  ProjectQaWorkspace: ({ deliveryProjectId, appRole }: { deliveryProjectId: string; appRole: string | null }) => (
-    <div data-testid="qa-workspace" data-project={deliveryProjectId} data-role={appRole ?? ""} />
+  ProjectQaWorkspace: ({
+    deliveryProjectId,
+    appRole,
+    newFeatureRequest,
+    onFeatureCount,
+  }: {
+    deliveryProjectId: string;
+    appRole: string | null;
+    newFeatureRequest?: number;
+    onFeatureCount?: (count: number) => void;
+  }) => (
+    <div
+      data-testid="qa-workspace"
+      data-project={deliveryProjectId}
+      data-role={appRole ?? ""}
+      data-request={String(newFeatureRequest ?? 0)}
+    >
+      <button type="button" data-testid="feature-written" onClick={() => onFeatureCount?.(1)} />
+    </div>
   ),
 }));
 
@@ -116,6 +133,117 @@ function link(container: HTMLElement, name: string): HTMLAnchorElement | undefin
 function addToCard(container: HTMLElement, folderName: string): HTMLAnchorElement | null {
   return container.querySelector<HTMLAnchorElement>(`a.pf-card__add[aria-label="Add repository to ${folderName}"]`);
 }
+
+/** dp-1 (testfinals) has a Feature; dp-2 (wallet) has none yet. */
+function featureSnapshot(overrides: Parameters<typeof foldersWire>[0] = {}, counts: number[] = [1, 0]) {
+  const wire = foldersWire(overrides);
+  wire.folders.forEach((folder, index) => {
+    folder.featureCount = counts[index];
+  });
+  return normaliseProjectFolders(wire, GROUP_ID);
+}
+
+describe("Features before repositories", () => {
+  const NOTE = "Waiting for your Product owner to add the first Feature.";
+
+  it("disables a Developer's Add repository on a Project with no Feature, with the reason", async () => {
+    mockSession.appRole = "member";
+    repo.list.mockResolvedValue(featureSnapshot({ canManage: false }));
+    repo.requirementCounts.mockResolvedValue({});
+    const container = await renderExplorer();
+
+    // testfinals has a Feature: the link as before.
+    expect(addToCard(container, "testfinals")?.getAttribute("href")).toBe("/workflows?tab=setup&group=ws-1&project=dp-1");
+    // wallet has none: still on screen, but a disabled control, never a link.
+    expect(addToCard(container, "wallet")).toBeNull();
+    const blocked = container.querySelector<HTMLButtonElement>('button.pf-card__add[aria-label="Add repository to wallet"]')!;
+    expect(blocked.getAttribute("aria-disabled")).toBe("true");
+    expect(blocked.textContent).toBe("Add repository");
+    expect(document.getElementById(blocked.getAttribute("aria-describedby")!)?.textContent).toBe(NOTE);
+    const walletCard = blocked.closest("li.pf-card")!;
+    expect(walletCard.textContent).toContain(NOTE);
+    expect(container.querySelectorAll("li.pf-card")[0].textContent).not.toContain(NOTE);
+    // No nudge for a Developer.
+    expect(container.textContent).not.toContain("Add a Feature so Developers");
+
+    // The detail says the same, in the actions and in the empty repository list.
+    await act(async () => manage(container, "wallet")!.click());
+    const action = container.querySelector(".pf-detail__actions button")!;
+    expect(action.getAttribute("aria-disabled")).toBe("true");
+    expect(document.getElementById(action.getAttribute("aria-describedby")!)?.textContent).toBe(NOTE);
+    expect(container.querySelector(".pf-detail__actions a")).toBeNull();
+    expect(container.querySelector(".pf-empty-folder")?.textContent).toContain(NOTE);
+    expect(container.querySelector(".pf-empty-folder a")).toBeNull();
+  });
+
+  it("unblocks a Developer once the Project's first Feature exists", async () => {
+    mockSession.appRole = "member";
+    repo.list.mockResolvedValue(featureSnapshot({ canManage: false }));
+    repo.requirementCounts.mockResolvedValue({});
+    let container = await renderExplorer();
+    expect(addToCard(container, "wallet")).toBeNull();
+    act(() => root?.unmount());
+    root = null;
+    document.body.innerHTML = "";
+
+    // The Product owner wrote a Feature; the next read of the Projects says so.
+    repo.list.mockResolvedValue(featureSnapshot({ canManage: false }, [1, 1]));
+    container = await renderExplorer();
+    expect(addToCard(container, "wallet")?.getAttribute("href")).toBe("/workflows?tab=setup&group=ws-1&project=dp-2");
+    expect(container.textContent).not.toContain(NOTE);
+  });
+
+  it("never blocks on a missing count: the server decides", async () => {
+    mockSession.appRole = "member";
+    repo.list.mockResolvedValue(foldersSnapshot({ canManage: false }));
+    const container = await renderExplorer(false);
+    expect(addToCard(container, "wallet")).not.toBeNull();
+    expect(container.querySelector(".pf-add--blocked")).toBeNull();
+  });
+
+  it("nudges a Product owner to add the first Feature, opening New Feature for that Project", async () => {
+    repo.list.mockResolvedValue(featureSnapshot());
+    repo.requirementCounts.mockResolvedValue({});
+    const container = await renderExplorer();
+    const cards = container.querySelectorAll("li.pf-card");
+    expect(cards[0].textContent).not.toContain("Add a Feature so Developers can add repositories.");
+    expect(cards[1].textContent).toContain("Add a Feature so Developers can add repositories.");
+    // A Product owner adds no repositories, blocked or not.
+    expect(container.querySelector(".pf-card__add")).toBeNull();
+
+    const nudge = container.querySelector<HTMLButtonElement>('button[aria-label="Add a Feature to wallet"]')!;
+    await act(async () => nudge.click());
+    const workspace = container.querySelector('[data-testid="qa-workspace"]')!;
+    expect(workspace.getAttribute("data-project")).toBe("dp-2");
+    expect(workspace.getAttribute("data-request")).toBe("1");
+    // The detail repeats the nudge; asking again is a new request.
+    await act(async () => container.querySelector<HTMLButtonElement>(".pf-nudge--banner button")!.click());
+    expect(container.querySelector('[data-testid="qa-workspace"]')?.getAttribute("data-request")).toBe("2");
+
+    // Writing the Feature retires the nudge without a reload.
+    await act(async () => container.querySelector<HTMLButtonElement>('[data-testid="feature-written"]')!.click());
+    expect(container.querySelector(".pf-nudge")).toBeNull();
+    await act(async () => button(container, "All Projects")!.click());
+    expect(container.textContent).not.toContain("Add a Feature so Developers");
+  });
+
+  it("opens a Project normally without asking for a Feature", async () => {
+    repo.list.mockResolvedValue(featureSnapshot());
+    repo.requirementCounts.mockResolvedValue({});
+    const container = await renderExplorer();
+    await act(async () => manage(container, "wallet")!.click());
+    expect(container.querySelector('[data-testid="qa-workspace"]')?.getAttribute("data-request")).toBe("0");
+  });
+
+  it("gives an admin both the nudge and a working Add repository", async () => {
+    mockSession.appRole = "admin";
+    repo.list.mockResolvedValue(featureSnapshot());
+    repo.requirementCounts.mockResolvedValue({});
+    const container = await renderExplorer();
+    expect(addToCard(container, "wallet")?.getAttribute("href")).toBe("/workflows?tab=setup&group=ws-1&project=dp-2");
+    expect(container.querySelector('button[aria-label="Add a Feature to wallet"]')).not.toBeNull();
+  });
+});
 
 describe("ProjectExplorer", () => {
   it("lists Project cards with repository and requirement counts, then the unfiled group", async () => {

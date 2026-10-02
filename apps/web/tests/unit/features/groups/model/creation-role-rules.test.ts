@@ -3,6 +3,8 @@ import {
   canCreateRepositoryInProject,
   canCreateRepositoryWithoutProject,
   creationRefusalMessage,
+  readFeatureCount,
+  repositoryBlockedByFeatures,
   repositoryRequiresProject,
   resolveCanCreateProject,
   resolveCanCreateRepository,
@@ -73,6 +75,37 @@ describe("resolveCanCreateRepository", () => {
   });
 });
 
+describe("Features before repositories", () => {
+  it.each([
+    [0, 0],
+    [3, 3],
+    [undefined, null],
+    [null, null],
+    [-1, null],
+    [1.5, null],
+    ["2", null],
+  ])("readFeatureCount(%p) is %p", (value, expected) => {
+    expect(readFeatureCount(value)).toBe(expected);
+  });
+
+  it("blocks a Developer (and any unnamed role) from a Project with exactly 0 Features", () => {
+    expect(repositoryBlockedByFeatures("member", 0)).toBe(true);
+    expect(repositoryBlockedByFeatures("lead", 0)).toBe(true);
+    expect(repositoryBlockedByFeatures("qa", 0)).toBe(true);
+    expect(repositoryBlockedByFeatures(undefined, 0)).toBe(true);
+    expect(repositoryBlockedByFeatures("owner" as never, 0)).toBe(true);
+  });
+
+  it("exempts admins, and never blocks once a Feature exists", () => {
+    expect(repositoryBlockedByFeatures("admin", 0)).toBe(false);
+    expect(repositoryBlockedByFeatures("member", 1)).toBe(false);
+  });
+
+  it("leaves an unknown count to the server", () => {
+    expect(repositoryBlockedByFeatures("member", null)).toBe(false);
+  });
+});
+
 describe("creationRefusalMessage", () => {
   const refusal = (status: number, code: string) =>
     new ApiError(`HTTP ${status}`, status, { code, message: "server text" });
@@ -82,6 +115,7 @@ describe("creationRefusalMessage", () => {
     [403, "REPOSITORY_CREATE_FORBIDDEN", "Developers create repositories inside a Project."],
     [400, "PROJECT_REQUIRED", "Choose the Project this repository belongs to."],
     [400, "project_required", "Choose the Project this repository belongs to."],
+    [409, "PROJECT_FEATURES_REQUIRED", "Waiting for your Product owner to add the first Feature."],
   ])("maps %s %s", (status, code, expected) => {
     expect(creationRefusalMessage(refusal(status, code))).toBe(expected);
   });

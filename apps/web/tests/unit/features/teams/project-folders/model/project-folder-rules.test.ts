@@ -27,6 +27,10 @@ import {
   repositoryCountLabel,
   verifyProjectId,
   folderLandingProjectId,
+  folderFeatureGate,
+  withFeatureCounts,
+  FEATURE_NUDGE_MESSAGE,
+  FEATURES_REQUIRED_NOTE,
 } from "../../../../../../src/features/teams/project-folders/model/project-folder-rules";
 import type { ProjectFolder } from "../../../../../../src/features/teams/project-folders/model/project-folder-types";
 import { apiError, foldersSnapshot, foldersWire, GROUP_ID } from "../folder-fixtures";
@@ -34,6 +38,59 @@ import { apiError, foldersSnapshot, foldersWire, GROUP_ID } from "../folder-fixt
 function pair(): ProjectFolder {
   return foldersSnapshot().folders[0];
 }
+
+describe("Features before repositories", () => {
+  function withCount(featureCount: unknown) {
+    const wire = foldersWire();
+    (wire.folders[0] as unknown as Record<string, unknown>).featureCount = featureCount;
+    return foldersSnapshot(wire).folders[0];
+  }
+
+  it("reads featureCount, and anything but a whole count as unknown", () => {
+    expect(withCount(0).featureCount).toBe(0);
+    expect(withCount(2).featureCount).toBe(2);
+    expect(withCount(undefined).featureCount).toBeNull();
+    expect(withCount("1").featureCount).toBeNull();
+    expect(withCount(-3).featureCount).toBeNull();
+  });
+
+  const developer = { appRole: "member" as const, canCreateRepository: true, canManageRequirements: false };
+  const productOwner = { appRole: "lead" as const, canCreateRepository: false, canManageRequirements: true };
+  const admin = { appRole: "admin" as const, canCreateRepository: true, canManageRequirements: true };
+  const qa = { appRole: "qa" as const, canCreateRepository: false, canManageRequirements: false };
+
+  it("disables a Developer's Add repository (not hides it) while the Project has no Feature", () => {
+    expect(folderFeatureGate({ featureCount: 0 }, developer)).toEqual({ addRepository: "blocked", featureNudge: false });
+    expect(folderFeatureGate({ featureCount: 1 }, developer)).toEqual({ addRepository: "enabled", featureNudge: false });
+  });
+
+  it("never blocks on an unknown count: the server enforces it", () => {
+    expect(folderFeatureGate({ featureCount: null }, developer).addRepository).toBe("enabled");
+    expect(folderFeatureGate({ featureCount: null }, productOwner).featureNudge).toBe(false);
+  });
+
+  it("nudges a Product owner and an admin; an admin may still add a repository", () => {
+    expect(folderFeatureGate({ featureCount: 0 }, productOwner)).toEqual({ addRepository: "hidden", featureNudge: true });
+    expect(folderFeatureGate({ featureCount: 0 }, admin)).toEqual({ addRepository: "enabled", featureNudge: true });
+    expect(folderFeatureGate({ featureCount: 2 }, productOwner).featureNudge).toBe(false);
+  });
+
+  it("offers QA neither", () => {
+    expect(folderFeatureGate({ featureCount: 0 }, qa)).toEqual({ addRepository: "hidden", featureNudge: false });
+  });
+
+  it("lays locally known counts over the server's, keeping untouched folders as they were", () => {
+    const folders = foldersSnapshot().folders;
+    const next = withFeatureCounts(folders, { "dp-2": 1 });
+    expect(next.map((folder) => folder.featureCount)).toEqual([null, 1]);
+    expect(next[0]).toBe(folders[0]);
+  });
+
+  it("words the note and the nudge", () => {
+    expect(FEATURES_REQUIRED_NOTE).toBe("Waiting for your Product owner to add the first Feature.");
+    expect(FEATURE_NUDGE_MESSAGE).toBe("Add a Feature so Developers can add repositories.");
+  });
+});
 
 describe("normaliseProjectFolders", () => {
   it("reads the contract shape, keeping the server's order", () => {

@@ -32,6 +32,8 @@ import { roleGateErrorMessage } from "../model/role-gate-rules";
 import {
   createRepositoryBlocker,
   preselectedWorkspaceId,
+  projectChoiceEntries,
+  projectFeaturesBlocker,
   scopeCreatePayload,
 } from "../model/create-target-rules";
 import {
@@ -114,12 +116,20 @@ export function useWorkflowStudioViewModel(options: {
 
   // A Developer files every repository in a Project: without a `?project=`
   // link the wizard asks which, from the team's own Projects.
-  const requiresProject = !guest && repositoryRequiresProject(session?.appRole);
+  const appRole = session?.appRole;
+  const requiresProject = !guest && repositoryRequiresProject(appRole);
   const asksForProject = requiresProject && createTarget.linkedProjectName === null;
+  // Read for a linked Project too: its Feature count says whether a
+  // Developer may create in it yet (Features before repositories).
   const teamProjects = useTeamProjectOptions({
     groupId: selectedCreateWorkspaceId,
-    enabled: asksForProject && activeView === "setup",
+    enabled: requiresProject && activeView === "setup",
   });
+  const featuresBlocker = projectFeaturesBlocker(
+    createTarget.deliveryProjectIdFor(selectedCreateWorkspaceId),
+    teamProjects.options,
+    appRole,
+  );
 
   const catalog = useWorkflowCatalog();
   const projectCatalog = useProjectOptionsCatalog();
@@ -204,6 +214,7 @@ export function useWorkflowStudioViewModel(options: {
       renderVariablesMissing: deploymentProvisioning.renderVariablesMissing,
       requiresProject,
       deliveryProjectId,
+      featuresBlocker: projectFeaturesBlocker(deliveryProjectId, teamProjects.options, appRole),
     });
     if (blocker) {
       setStatusMessage(blocker);
@@ -443,10 +454,12 @@ export function useWorkflowStudioViewModel(options: {
      * A Developer's Project select (no `?project=` link to fill it), or null
      * when the caller need not choose: an admin, or a linked Project.
      */
+    /** Why a Developer may not create in the target Project yet (no Feature), or null. */
+    projectBlocker: featuresBlocker,
     projectChoice: asksForProject
       ? {
           status: teamProjects.status,
-          options: teamProjects.options,
+          options: projectChoiceEntries(teamProjects.options, appRole),
           selectedId: createTarget.chosenProjectId ?? "",
           onSelect: (id: string) =>
             createTarget.chooseProject(teamProjects.options.find((option) => option.id === id) ?? null),

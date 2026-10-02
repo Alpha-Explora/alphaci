@@ -765,6 +765,48 @@ class QaMockBackend {
     return { status: 201, body: this.requirementWire(row) };
   }
 
+  /**
+   * POST /delivery-projects/:dpId/requirements/batch — 1..20 of one kind in
+   * ONE request, all or nothing: a name used twice in the batch is 400
+   * REQUIREMENT_BATCH_DUPLICATE_NAME, one the Project already has is 409
+   * REQUIREMENT_NAME_TAKEN, each with the offending `index`.
+   */
+  private createRequirementBatch(deliveryProjectId: string, body: Record<string, unknown>): ApiReply {
+    if (this.projectQa === 'absent') return this.absent();
+    this.requireFolder(deliveryProjectId);
+    if (!this.canManageRequirements()) throw this.coded(403, 'REQUIREMENT_MANAGE_FORBIDDEN', 'Only leads and admins manage requirements');
+    const kind = body.kind === 'functional' || body.kind === 'system' ? body.kind : null;
+    const entries = Array.isArray(body.requirements) ? (body.requirements as Array<Record<string, unknown>>) : [];
+    const names = entries.map((entry) => String(entry?.name ?? '').trim());
+    if (!kind || entries.length < 1 || entries.length > 20 || names.some((name) => !name)) {
+      throw this.coded(400, 'REQUIREMENT_BATCH_INVALID', 'A batch is 1 to 20 named requirements of one kind');
+    }
+    const lower = names.map((name) => name.toLowerCase());
+    const duplicate = lower.findIndex((name, index) => lower.indexOf(name) !== index);
+    if (duplicate >= 0) {
+      throw new HttpError(400, { statusCode: 400, code: 'REQUIREMENT_BATCH_DUPLICATE_NAME', message: 'Two requirements share a name', index: duplicate, error: REASONS[400] });
+    }
+    const taken = lower.findIndex((name) =>
+      this.liveRequirements(deliveryProjectId).some((row) => row.kind === kind && row.name.toLowerCase() === name),
+    );
+    if (taken >= 0) {
+      throw new HttpError(409, { statusCode: 409, code: 'REQUIREMENT_NAME_TAKEN', message: 'A requirement with that name exists', index: taken, error: REASONS[409] });
+    }
+    const created = entries.map((entry, index) => {
+      const items = Array.isArray(entry.items) ? (entry.items as Array<{ title: string; acceptanceCriteria?: string }>) : [];
+      const row = this.seedRequirement(deliveryProjectId, { kind, name: names[index], items });
+      row.description = typeof entry.description === 'string' ? entry.description : null;
+      row.createdAt = new Date(Date.now() + index).toISOString();
+      return this.requirementWire(row);
+    });
+    return { status: 201, body: { requirements: created } };
+  }
+
+  /** Active Features: what GET /groups/:id/project-folders reports as `featureCount`. */
+  private featureCount(deliveryProjectId: string): number {
+    return this.liveRequirements(deliveryProjectId).filter((row) => row.kind === 'functional').length;
+  }
+
   private addRequirementItem(requirementId: string, body: Record<string, unknown>): ApiReply {
     if (this.projectQa === 'absent') return this.absent();
     const row = this.requireRequirement(requirementId);
@@ -1044,6 +1086,7 @@ class QaMockBackend {
       // Project requirements and Project QA runs (404 on an older backend)
       ['GET', new RegExp(`^/delivery-projects/${P}/requirements$`), (m) => this.projectRequirements(m[1])],
       ['POST', new RegExp(`^/delivery-projects/${P}/requirements$`), (m, req) => this.createRequirement(m[1], req.body)],
+      ['POST', new RegExp(`^/delivery-projects/${P}/requirements/batch$`), (m, req) => this.createRequirementBatch(m[1], req.body)],
       ['POST', new RegExp(`^/requirements/${P}/items$`), (m, req) => this.addRequirementItem(m[1], req.body)],
       ['PATCH', new RegExp(`^/requirements/${P}/items/${P}/progress$`), (m, req) => this.setProgress(m[1], m[2], req.body)],
       ['GET', new RegExp(`^/workspaces/${P}/qa-requirements/overview$`), () => this.requirementsOverview()],
@@ -1372,6 +1415,8 @@ class QaMockBackend {
         systemId: SYSTEM_ID,
         name: folder.name,
         createdAt: folder.createdAt,
+        // Newer backends only: a backend from before Project requirements sends no count.
+        ...(this.projectQa === 'enabled' ? { featureCount: this.featureCount(folder.id) } : {}),
         repositories: folder.repositories
           .filter((repo) => !repo.archived)
           .map((repo) => ({
@@ -2119,11 +2164,14 @@ const FEATURE = {
   name: 'Checkout with saved cards',
   stories: ['As a shopper, I can save a card', 'As a shopper, I can pay with a saved card'],
 };
+/** The second Feature journey (a) writes in the same New Feature dialog. */
+const SECOND_FEATURE = 'Refunds to the saved card';
 
 /**
- * (a) Product owner: the team checklist page points to the Projects; on a
- * Project they write a Feature with its first User stories, then add one more
- * story with acceptance criteria. The repository's Checklists tab points back
+ * (a) Product owner: the team checklist page points to the Projects; a
+ * Project with no Feature nudges them, and the nudge opens New Feature, where
+ * they write two Features at once (one with its first User stories) in ONE
+ * batch request, then add one more story with acceptance criteria. The repository's Checklists tab points back
  * to the Project.
  */
 async function leadWritesProjectRequirements({ page, backend, baseUrl }: JourneyContext) {
@@ -2142,25 +2190,50 @@ async function leadWritesProjectRequirements({ page, backend, baseUrl }: Journey
     return url.pathname === '/workflows' && url.searchParams.get('group') === WORKSPACE.id;
   });
 
-  await openProjectDetail(page, baseUrl, 'storefront');
+  // Features before repositories: a Project with no Feature nudges its
+  // Product owner, and the nudge opens New Feature on that Project.
+  await page.goto(`${baseUrl}/workflows`, { waitUntil: 'domcontentloaded' });
+  const storefrontCard = page.locator('li.pf-card').filter({ has: page.locator('.pf-card__name', { hasText: /^storefront$/ }) });
+  await expectText(storefrontCard, 'Add a Feature so Developers can add repositories.', 'the Product owner nudge');
+  assert.equal(await page.locator('.pf-card__add').count(), 0, 'no Add repository for a Product owner, blocked or not');
+  await storefrontCard.getByRole('button', { name: 'Add a Feature to storefront' }).click();
+  await expectText(page.locator('.pf-detail__title'), 'storefront', 'the storefront detail');
   const tablist = page.getByRole('tablist', { name: 'Project QA' });
   await visible(tablist.getByRole('tab', { name: 'Requirements', selected: true }), 'Requirements first for a Product owner');
   const features = page.locator('section.rq-section[data-kind="functional"]');
-  await expectText(features, 'Functional Requirements (Features)', 'the Features section');
-  await features.getByRole('button', { name: 'Add the first Feature' }).click();
   const dialog = page.getByRole('dialog', { name: 'New Feature' });
-  await dialog.getByPlaceholder('Checkout with saved cards').fill(FEATURE.name);
+  await visible(dialog, 'New Feature, opened by the nudge');
+  // Landscape: the actions stay on screen; only the body scrolls.
+  await visible(dialog.locator('.hier-dialog-footer').getByRole('button', { name: 'Create feature' }), 'the pinned Create');
+
+  // Two Features in one go: card 1 with its stories, then the add tile for card 2.
+  const first = dialog.getByRole('group', { name: 'Feature 1' });
+  await first.getByPlaceholder('Checkout with saved cards').fill(FEATURE.name);
   // One input per story: type, Enter for the next row, type.
-  await dialog.getByLabel('User story 1').fill(FEATURE.stories[0]);
-  await dialog.getByLabel('User story 1').press('Enter');
-  await dialog.getByLabel('User story 2').fill(FEATURE.stories[1]);
-  await dialog.getByRole('button', { name: 'Create feature' }).click();
+  const story = (index: number) => first.getByRole('textbox', { name: `User story ${index}`, exact: true });
+  await story(1).fill(FEATURE.stories[0]);
+  await story(1).press('Enter');
+  await story(2).fill(FEATURE.stories[1]);
+  await dialog.getByRole('button', { name: /Add another Feature/ }).click();
+  const second = dialog.getByRole('group', { name: 'Feature 2' });
+  await second.getByPlaceholder('Checkout with saved cards').fill(SECOND_FEATURE);
+  // Ctrl+Enter adds a third card; left empty, it is ignored.
+  await second.getByPlaceholder('Checkout with saved cards').press('Control+Enter');
+  await visible(dialog.getByRole('group', { name: 'Feature 3' }), 'a third card from Ctrl+Enter');
+  await dialog.getByRole('button', { name: 'Create 2 features' }).click();
   await absent(dialog, 'the New Feature dialog');
-  const create = onlyCall(backend.callsTo('POST', new RegExp(`^/delivery-projects/${STOREFRONT_FOLDER}/requirements$`)), 'requirement create');
+  assert.equal(backend.callsTo('POST', new RegExp(`^/delivery-projects/${STOREFRONT_FOLDER}/requirements$`)).length, 0, 'never one request per Feature');
+  const create = onlyCall(backend.callsTo('POST', new RegExp(`^/delivery-projects/${STOREFRONT_FOLDER}/requirements/batch$`)), 'batch create');
   assert.equal(create.status, 201);
-  assert.deepEqual(create.body, { kind: 'functional', name: FEATURE.name, items: FEATURE.stories.map((title) => ({ title })) });
+  assert.deepEqual(create.body, {
+    kind: 'functional',
+    requirements: [{ name: FEATURE.name, items: FEATURE.stories.map((title) => ({ title })) }, { name: SECOND_FEATURE }],
+  });
   const card = features.locator('article.rq-card').filter({ hasText: FEATURE.name });
   await expectText(card.locator('.rq-meter__label'), '0 of 2 done', 'the new Feature progress');
+  await visible(features.locator('article.rq-card').filter({ hasText: SECOND_FEATURE }), 'the second new Feature');
+  // The nudge goes as soon as the Project has a Feature.
+  await eventually('the nudge to leave', async () => (await page.locator('.pf-nudge').count()) === 0);
 
   await card.getByRole('button', { name: 'Add user story' }).click();
   await card.getByLabel('User story', { exact: true }).fill('As a shopper, I can remove a saved card');
@@ -2837,6 +2910,79 @@ async function developerAddsRepositoryToProject({ page, backend, baseUrl }: Jour
   assert.equal(backend.callsTo('POST', /^\/projects$/).length, 0, 'nothing was created');
 }
 
+/**
+ * (m) Developer, Features before repositories: on a Project with no Feature
+ * Add repository is there but disabled with the reason, the wizard lists the
+ * Project as "(no Features yet)" and blocks a link to it; once the Product
+ * owner writes the first Feature, the same Developer goes ahead.
+ */
+async function developerWaitsForFirstFeature({ page, backend, baseUrl }: JourneyContext) {
+  const note = 'Waiting for your Product owner to add the first Feature.';
+  await page.goto(`${baseUrl}/workflows`, { waitUntil: 'domcontentloaded' });
+  await expectRoleBadge(page, 'member');
+  const cards = page.locator('li.pf-card');
+  await eventually('two Project cards', async () => (await cards.count()) === 2);
+  const loyalty = cards.filter({ has: page.locator('.pf-card__name', { hasText: /^loyalty$/ }) });
+  const storefront = cards.filter({ has: page.locator('.pf-card__name', { hasText: /^storefront$/ }) });
+
+  // storefront has a Feature: the link as before. loyalty has none: disabled, never a link.
+  assert.equal(
+    await storefront.getByRole('link', { name: 'Add repository to storefront' }).getAttribute('href'),
+    `/workflows?tab=setup&group=${WORKSPACE.id}&project=${STOREFRONT_FOLDER}`,
+  );
+  const blocked = loyalty.getByRole('button', { name: 'Add repository to loyalty' });
+  assert.equal(await blocked.getAttribute('aria-disabled'), 'true', 'the blocked control is aria-disabled');
+  assert.equal(await loyalty.getByRole('link', { name: 'Add repository to loyalty' }).count(), 0, 'no dead link');
+  await expectText(loyalty, note, 'the reason on the card');
+  const describedBy = await blocked.getAttribute('aria-describedby');
+  await expectText(page.locator(`[id="${describedBy}"]`), note, 'the control is described by the reason');
+  // Playwright will not click an aria-disabled control; a user can, and nothing happens.
+  await blocked.dispatchEvent('click');
+  assert.equal(new URL(page.url()).searchParams.get('tab'), null, 'a blocked control goes nowhere');
+  assert.equal(await page.getByText('Add a Feature so Developers can add repositories.').count(), 0, 'no nudge for a Developer');
+
+  // The detail says the same.
+  await loyalty.getByRole('button', { name: 'Manage loyalty' }).click();
+  await expectText(page.locator('.pf-detail__title'), 'loyalty', 'the loyalty detail');
+  assert.equal(await page.locator('.pf-detail__actions').getByRole('button', { name: 'Add repository' }).getAttribute('aria-disabled'), 'true');
+  await expectText(page.locator('.pf-empty-folder'), note, 'the empty repository list');
+
+  // The wizard: a bare link lists loyalty disabled; a ?project= link to it is blocked.
+  await page.goto(`${baseUrl}/workflows?tab=setup&group=${WORKSPACE.id}`, { waitUntil: 'domcontentloaded' });
+  await page.locator('#project-type-select').selectOption('nextjs-app');
+  await page.getByRole('button', { name: /^Continue/ }).click();
+  const choice = page.getByTestId('setup-project-choice');
+  await eventually('the team Projects in the select', async () =>
+    (await choice.locator('option').allTextContents()).join(',') === 'Select a Project…,loyalty (no Features yet),storefront',
+  );
+  assert.equal(await choice.locator('option', { hasText: 'loyalty (no Features yet)' }).isDisabled(), true, 'loyalty cannot be picked');
+
+  await page.goto(`${baseUrl}/workflows?tab=setup&group=${WORKSPACE.id}&project=${LOYALTY_FOLDER}`, { waitUntil: 'domcontentloaded' });
+  await page.locator('#project-type-select').selectOption('nextjs-app');
+  await page.getByRole('button', { name: /^Continue/ }).click();
+  await expectText(page.getByTestId('setup-project-blocker'), note, 'the wizard blocker for a linked Project');
+  await page.locator('#repo-name').fill('loyalty-web');
+  await page.locator('#service-name').fill('loyalty-web');
+  assert.equal(await page.getByRole('button', { name: /^Continue/ }).isDisabled(), true, 'Create can never be reached');
+
+  // The Product owner writes loyalty's first Feature.
+  backend.seedRequirement(LOYALTY_FOLDER, { kind: 'functional', name: 'Points on every order', items: [{ title: 'As a shopper, I earn points' }] });
+
+  await page.goto(`${baseUrl}/workflows`, { waitUntil: 'domcontentloaded' });
+  const unblocked = loyalty.getByRole('link', { name: 'Add repository to loyalty' });
+  await visible(unblocked, 'Add repository on loyalty, now a link');
+  assert.equal(await loyalty.getByText(note).count(), 0, 'the reason is gone');
+  await unblocked.click();
+  await eventually('the wizard URL to carry ?project=', () => new URL(page.url()).searchParams.get('project') === LOYALTY_FOLDER);
+  await page.locator('#project-type-select').selectOption('nextjs-app');
+  await page.getByRole('button', { name: /^Continue/ }).click();
+  await page.locator('#repo-name').fill('loyalty-web');
+  await page.locator('#service-name').fill('loyalty-web');
+  assert.equal(await page.getByTestId('setup-project-blocker').count(), 0, 'no blocker once the Feature exists');
+  assert.equal(await page.getByRole('button', { name: /^Continue/ }).isDisabled(), false, 'the Developer goes ahead');
+  assert.equal(backend.callsTo('POST', /^\/projects$/).length, 0, 'nothing was created');
+}
+
 /** The lead's route to the promotion card, with its parts. */
 function promotionCard(page: Page) {
   const card = page.getByRole('region', { name: 'Production readiness' });
@@ -3089,6 +3235,16 @@ const JOURNEYS: Journey[] = [
     title: 'Developer: no Create project; Add repository on a card and in the detail; the wizard asks for the Project',
     backend: () => new QaMockBackend('member'),
     run: developerAddsRepositoryToProject,
+  },
+  {
+    id: 'm',
+    title: 'Developer: Features before repositories — Add repository disabled with the reason until the first Feature, then allowed',
+    backend: () => {
+      const backend = new QaMockBackend('member', 'enabled', 'enabled');
+      backend.seedRequirement(STOREFRONT_FOLDER, { kind: 'functional', name: FEATURE.name, items: [{ title: FEATURE.stories[0] }] });
+      return backend;
+    },
+    run: developerWaitsForFirstFeature,
   },
   {
     id: 'i',

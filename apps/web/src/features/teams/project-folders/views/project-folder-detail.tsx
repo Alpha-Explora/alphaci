@@ -1,32 +1,40 @@
 "use client";
 
 import Link from "next/link";
+import { useId } from "react";
 
 import { qaStudioHref } from "@/features/checklists";
 import { ProjectQaWorkspace } from "@/features/checklists/requirements";
 import { projectStatusVariant } from "@/features/groups";
 
 import {
+  FEATURES_REQUIRED_NOTE,
   createRepositoryHref,
   emptyRepositoriesCopy,
+  folderFeatureGate,
   repositoryCountLabel,
   verifyProjectId,
+  type FolderFeatureGate,
 } from "../model/project-folder-rules";
 import type { FolderRepository, ProjectFolder } from "../model/project-folder-types";
 import type { ProjectFoldersViewModel } from "../view-models/use-project-folders-view-model";
-import { BackIcon, PlusIcon, StudioIcon } from "./project-folder-icons";
+import { AddRepositoryAction, FeatureNudge, FeaturesRequiredNote } from "./feature-gate";
+import { BackIcon, StudioIcon } from "./project-folder-icons";
 import { RepoChip } from "./repo-chip";
 
 /**
  * Verify in QA Studio (QA Team, Product owner, admin) and Add repository
- * (Developer, admin): a Product owner creates the Project, a Developer fills it.
+ * (Developer, admin): a Product owner creates the Project, a Developer fills
+ * it, once the Project has its first Feature.
  */
 function DetailActions({
   vm,
   folder,
-}: Readonly<{ vm: ProjectFoldersViewModel; folder: ProjectFolder }>) {
+  gate,
+  noteId,
+}: Readonly<{ vm: ProjectFoldersViewModel; folder: ProjectFolder; gate: FolderFeatureGate; noteId: string }>) {
   const verifyId = vm.canVerifyInQaStudio ? verifyProjectId(folder) : null;
-  if (!verifyId && !vm.canCreateRepository) return null;
+  if (!verifyId && gate.addRepository === "hidden") return null;
   return (
     <div className="pf-detail__actions">
       {verifyId ? (
@@ -35,16 +43,31 @@ function DetailActions({
           Verify in QA Studio
         </Link>
       ) : null}
-      {vm.canCreateRepository ? (
-        <Link
-          className="primary-button"
-          href={createRepositoryHref(vm.groupId, folder.deliveryProjectId)}
-        >
-          <PlusIcon />
-          Add repository
-        </Link>
-      ) : null}
+      <AddRepositoryAction
+        state={gate.addRepository}
+        href={createRepositoryHref(vm.groupId, folder.deliveryProjectId)}
+        className="primary-button"
+        noteId={noteId}
+      />
     </div>
+  );
+}
+
+/** Under the title: why a Developer waits, or the Product owner's nudge. */
+function FeatureGateBanner({
+  vm,
+  folder,
+  gate,
+  noteId,
+}: Readonly<{ vm: ProjectFoldersViewModel; folder: ProjectFolder; gate: FolderFeatureGate; noteId: string }>) {
+  if (gate.addRepository === "blocked") return <FeaturesRequiredNote id={noteId} className="pf-gate-note pf-gate-note--banner" />;
+  if (!gate.featureNudge) return null;
+  return (
+    <FeatureNudge
+      projectName={folder.name}
+      onAddFeature={() => vm.requestNewFeature(folder.deliveryProjectId)}
+      className="pf-nudge pf-nudge--banner"
+    />
   );
 }
 
@@ -90,19 +113,19 @@ function RepositoryRow({
 function EmptyRepositories({
   vm,
   folder,
-}: Readonly<{ vm: ProjectFoldersViewModel; folder: ProjectFolder }>) {
+  gate,
+}: Readonly<{ vm: ProjectFoldersViewModel; folder: ProjectFolder; gate: FolderFeatureGate }>) {
+  const noteId = useId();
+  const blocked = gate.addRepository === "blocked";
   return (
     <div className="pf-empty-folder">
-      <p>{emptyRepositoriesCopy(vm.canCreateRepository)}</p>
-      {vm.canCreateRepository ? (
-        <Link
-          className="primary-button"
-          href={createRepositoryHref(vm.groupId, folder.deliveryProjectId)}
-        >
-          <PlusIcon />
-          Add repository
-        </Link>
-      ) : null}
+      <p id={noteId}>{blocked ? FEATURES_REQUIRED_NOTE : emptyRepositoriesCopy(vm.canCreateRepository)}</p>
+      <AddRepositoryAction
+        state={gate.addRepository}
+        href={createRepositoryHref(vm.groupId, folder.deliveryProjectId)}
+        className="primary-button"
+        noteId={noteId}
+      />
     </div>
   );
 }
@@ -125,6 +148,10 @@ function ProjectQaSection({
         deliveryProjectId={folder.deliveryProjectId}
         projectName={folder.name}
         appRole={vm.appRole}
+        newFeatureRequest={
+          vm.newFeatureRequest?.deliveryProjectId === folder.deliveryProjectId ? vm.newFeatureRequest.nonce : 0
+        }
+        onFeatureCount={(count) => vm.noteFeatureCount(folder.deliveryProjectId, count)}
       />
     </section>
   );
@@ -164,6 +191,8 @@ export function ProjectFolderDetail({
   onDelete: () => void;
 }>) {
   const canMove = vm.canManage && vm.folders.length > 1;
+  const gate = folderFeatureGate(folder, vm);
+  const noteId = useId();
   return (
     <div className="pf-detail">
       <div className="group-section-head pf-detail__head">
@@ -179,15 +208,16 @@ export function ProjectFolderDetail({
             {vm.groupName} · {repositoryCountLabel(folder.repositories.length)}
           </p>
         </div>
-        <DetailActions vm={vm} folder={folder} />
+        <DetailActions vm={vm} folder={folder} gate={gate} noteId={noteId} />
       </div>
+      <FeatureGateBanner vm={vm} folder={folder} gate={gate} noteId={noteId} />
 
       <section className="pf-detail__block" aria-labelledby="pf-repos-title">
         <h4 className="pf-subhead" id="pf-repos-title">
           Repositories
         </h4>
         {folder.repositories.length === 0 ? (
-          <EmptyRepositories vm={vm} folder={folder} />
+          <EmptyRepositories vm={vm} folder={folder} gate={gate} />
         ) : (
           <ul className="pf-repos">
             {folder.repositories.map((repo) => (

@@ -29,7 +29,7 @@ export { qaStudioHref } from "./model/qa-report-rules";
 /* Where a repository's QA happens (its Project, or the repository itself). */
 export { qaScopeFromFolder, REPOSITORY_SCOPE, type QaScope } from "./model/qa-scope";
 /* Project requirement counts for the team's Project cards. */
-export { requirementCountLabel } from "./model/requirement-rules";
+export { canManageRequirements, requirementCountLabel } from "./model/requirement-rules";
 export { requirementsRepository } from "./data/requirements-repository";
 export { roleCanStartRun } from "./model/qa-run-rules";
 /* Team-level checklist reads and share edits, for features that show a

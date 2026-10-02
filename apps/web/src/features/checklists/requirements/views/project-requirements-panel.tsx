@@ -3,6 +3,7 @@
 import "./requirements.css";
 
 import { motion, useReducedMotion } from "framer-motion";
+import { useEffect, useState } from "react";
 
 import { LoadingRows } from "@/features/groups/workspace";
 import type { AppRole } from "@/shared/api/contracts";
@@ -128,6 +129,32 @@ function KindSection({
   );
 }
 
+function shouldOpenRequested(request: number, handled: number, vm: ProjectRequirementsViewModel): boolean {
+  return request > 0 && request !== handled && vm.status === "ready" && vm.permissions.canManage;
+}
+
+/**
+ * "Add a Feature" from the Project card or detail opens New Feature once, as
+ * soon as the list (and who may write it) is known; and the live Feature
+ * count goes back up so the Project's gate and nudge follow it.
+ */
+function useFeatureRequest(
+  vm: ProjectRequirementsViewModel,
+  dialog: RequirementDialogViewModel,
+  request: number,
+  onFeatureCount: ((count: number) => void) | undefined,
+) {
+  const [handledRequest, setHandledRequest] = useState(0);
+  if (shouldOpenRequested(request, handledRequest, vm)) {
+    setHandledRequest(request);
+    dialog.openCreate("functional");
+  }
+  const featureCount = vm.status === "ready" ? vm.functional.length : null;
+  useEffect(() => {
+    if (featureCount !== null) onFeatureCount?.(featureCount);
+  }, [featureCount, onFeatureCount]);
+}
+
 /**
  * A Project's requirements, one section per shown kind: Functional
  * Requirements (Features, each with its User stories) first, then System
@@ -140,16 +167,23 @@ export function ProjectRequirementsPanel({
   appRole,
   enabled = true,
   kinds = SHOWN_REQUIREMENT_KINDS,
+  newFeatureRequest = 0,
+  onFeatureCount,
 }: Readonly<{
   deliveryProjectId: string;
   appRole: AppRole | null | undefined;
   enabled?: boolean;
   /** The sections to show, in order. Defaults to SHOWN_REQUIREMENT_KINDS. */
   kinds?: ReadonlyArray<RequirementKind>;
+  /** Non-zero and new: open New Feature once the list is ready (Product owner, admin). */
+  newFeatureRequest?: number;
+  /** Told the live Feature count whenever it is known. */
+  onFeatureCount?: (count: number) => void;
 }>) {
   const vm = useProjectRequirementsViewModel({ deliveryProjectId, enabled, appRole });
   const dialog = useRequirementDialogViewModel({ deliveryProjectId, onSaved: vm.applyRequirement });
   const progress = useItemProgressViewModel({ onSaved: vm.applyItem });
+  useFeatureRequest(vm, dialog, newFeatureRequest, onFeatureCount);
 
   if (vm.status === "loading") return <LoadingRows rows={3} />;
   if (vm.status === "error" || vm.status === "unavailable") {

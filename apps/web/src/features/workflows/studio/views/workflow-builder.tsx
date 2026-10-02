@@ -107,7 +107,7 @@ export function WorkflowBuilder({ guest = false, session, onboardingCompleted }:
     createResult, existingRepoDiscovery, existingRepoResult, setupMode, setSetupMode,
     existingRepoFullName, setExistingRepoFullName, existingRepoBaseBranch, setExistingRepoBaseBranch,
     workspaces, selectedCreateWorkspaceId, setSelectedCreateWorkspaceId, targetProjectLabel,
-    joinedProjectName, projectChoice,
+    joinedProjectName, projectChoice, projectBlocker,
     showProjects, openIndividualSetup,
     handleCreateProject, handleDiscoverExistingRepo, handleSetupExistingRepo, handleGenerateWorkflow,
     catalog, projectCatalog, projects, createForm, deploymentProvisioning,
@@ -166,6 +166,7 @@ export function WorkflowBuilder({ guest = false, session, onboardingCompleted }:
                 targetProjectLabel={targetProjectLabel}
                 joinedProjectName={joinedProjectName}
                 projectChoice={projectChoice}
+                projectBlocker={projectBlocker}
                 existingRepoAllowed={gates.existingRepoAllowed}
                 projectCatalog={projectCatalog}
                 onViewProject={openIndividualSetup}

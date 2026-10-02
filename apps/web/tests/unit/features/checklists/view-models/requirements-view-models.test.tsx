@@ -17,6 +17,7 @@ jest.mock("../../../../../src/features/checklists/data/requirements-repository",
   requirementsRepository: {
     listForProject: jest.fn(),
     create: jest.fn(),
+    createBatch: jest.fn(),
     update: jest.fn(),
     archive: jest.fn(),
     addItem: jest.fn(),
@@ -135,41 +136,118 @@ describe("useRequirementDialogViewModel", () => {
   const hook = (onSaved = jest.fn()) =>
     renderHook(() => useRequirementDialogViewModel({ deliveryProjectId: "dp-1", onSaved }), undefined);
 
-  it("validates, then creates a Feature with its first stories", async () => {
+  it("validates each card, then creates several Features in ONE batch request", async () => {
     const onSaved = jest.fn();
-    const created = requirement({ id: "req-9" });
-    repo.create.mockResolvedValue(created);
+    const wallet = requirement({ id: "req-9", name: "Wallet" });
+    const refunds = requirement({ id: "req-10", name: "Refunds" });
+    repo.createBatch.mockResolvedValue([wallet, refunds]);
     const vm = hook(onSaved);
     act(() => vm.current().openCreate("functional"));
     expect(vm.current().status).toBe("editing");
+    expect(vm.current().cards.map((card) => card.key)).toEqual(["card-1"]);
+    expect(vm.current().submitLabel).toBe("Create feature");
     await act(async () => vm.current().submit());
-    expect(vm.current().validationError).toBe("Give the Feature a name.");
-    expect(repo.create).not.toHaveBeenCalled();
+    expect(vm.current().cardErrors).toEqual({ "card-1": "Give the Feature a name." });
+    expect(vm.current().cardFocus).toEqual({ key: "card-1", attempt: 1 });
+    expect(repo.createBatch).not.toHaveBeenCalled();
 
-    // The rows the dialog builds: type, add a row, type, add a blank one.
-    act(() => vm.current().updateDraft({ name: "Wallet" }));
-    act(() => vm.current().editStory(0, "Save a card"));
-    act(() => vm.current().addStory(0));
-    act(() => vm.current().editStory(1, "Pay with it"));
-    act(() => vm.current().addStory());
-    expect(vm.current().draft.stories).toEqual(["Save a card", "Pay with it", ""]);
+    // Card 1: a name and its stories, built row by row as the dialog does.
+    act(() => vm.current().updateCard("card-1", { name: "Wallet" }));
+    act(() => vm.current().editCardStory("card-1", 0, "Save a card"));
+    act(() => vm.current().addCardStory("card-1", 0));
+    act(() => vm.current().editCardStory("card-1", 1, "Pay with it"));
+    act(() => vm.current().addCardStory("card-1"));
     // A multi-line paste is split into rows, and the input does not take it.
     let handled = false;
     act(() => {
-      handled = vm.current().pasteStories(2, "Remove a card\nRename a card");
+      handled = vm.current().pasteCardStories("card-1", 2, "Remove a card\nRename a card");
     });
     expect(handled).toBe(true);
-    act(() => vm.current().removeStory(3));
-    expect(vm.current().draft.stories).toEqual(["Save a card", "Pay with it", "Remove a card"]);
-    act(() => vm.current().removeStory(2));
-    await act(async () => vm.current().submit());
-    expect(repo.create).toHaveBeenCalledWith("dp-1", {
-      kind: "functional",
-      name: "Wallet",
-      items: [{ title: "Save a card" }, { title: "Pay with it" }],
+    act(() => vm.current().removeCardStory("card-1", 3));
+    expect(vm.current().cards[0].stories).toEqual(["Save a card", "Pay with it", "Remove a card"]);
+    act(() => vm.current().removeCardStory("card-1", 2));
+    expect(vm.current().cardErrors).toEqual({});
+
+    // Card 2 named; card 3 left blank and ignored.
+    let second: string | null = null;
+    act(() => {
+      second = vm.current().addCard();
     });
-    expect(onSaved).toHaveBeenCalledWith(created);
+    expect(second).toBe("card-2");
+    act(() => vm.current().updateCard("card-2", { name: "Refunds" }));
+    act(() => {
+      vm.current().addCard();
+    });
+    expect(vm.current().cards).toHaveLength(3);
+    expect(vm.current().submitLabel).toBe("Create 2 features");
+
+    await act(async () => vm.current().submit());
+    expect(repo.createBatch).toHaveBeenCalledTimes(1);
+    expect(repo.createBatch).toHaveBeenCalledWith("dp-1", {
+      kind: "functional",
+      requirements: [
+        { name: "Wallet", items: [{ title: "Save a card" }, { title: "Pay with it" }] },
+        { name: "Refunds" },
+      ],
+    });
+    expect(repo.create).not.toHaveBeenCalled();
+    expect(onSaved.mock.calls.map(([saved]) => saved.id)).toEqual(["req-9", "req-10"]);
     expect(vm.current().status).toBe("closed");
+  });
+
+  it("flags a name used twice in the dialog on the later card, before any request", async () => {
+    const vm = hook();
+    act(() => vm.current().openCreate("functional"));
+    act(() => vm.current().updateCard("card-1", { name: "Wallet" }));
+    act(() => {
+      vm.current().addCard();
+    });
+    act(() => vm.current().updateCard("card-2", { name: "wallet" }));
+    await act(async () => vm.current().submit());
+    expect(vm.current().cardErrors).toEqual({ "card-2": "Another Feature in this dialog already has this name." });
+    expect(vm.current().cardFocus?.key).toBe("card-2");
+    expect(repo.createBatch).not.toHaveBeenCalled();
+  });
+
+  it("puts the server's taken name on the card its index names; nothing was created", async () => {
+    const onSaved = jest.fn();
+    repo.createBatch.mockRejectedValue(apiErrorWith(409, { code: "REQUIREMENT_NAME_TAKEN", index: 1 }));
+    const vm = hook(onSaved);
+    act(() => vm.current().openCreate("functional"));
+    act(() => vm.current().updateCard("card-1", { name: "Wallet" }));
+    act(() => {
+      vm.current().addCard();
+    });
+    act(() => vm.current().updateCard("card-2", { name: "Checkout with saved cards" }));
+    await act(async () => vm.current().submit());
+    expect(vm.current().status).toBe("editing");
+    expect(onSaved).not.toHaveBeenCalled();
+    expect(vm.current().error?.message).toBe("Nothing was created. Fix Feature 2, then try again.");
+    expect(vm.current().cardErrors).toEqual({
+      "card-2": "This Project already has a requirement with that name. Pick another name.",
+    });
+    expect(vm.current().cardFocus).toEqual({ key: "card-2", attempt: 1 });
+
+    // Renaming that card retires the server's complaint.
+    act(() => vm.current().updateCard("card-2", { name: "Checkout" }));
+    expect(vm.current().cardErrors).toEqual({});
+  });
+
+  it("removes cards but keeps the last, and counts System requirements in their own words", () => {
+    const vm = hook();
+    act(() => vm.current().openCreate("system"));
+    act(() => vm.current().removeCard("card-1"));
+    expect(vm.current().cards).toHaveLength(1);
+    act(() => vm.current().updateCard("card-1", { name: "Security" }));
+    act(() => {
+      vm.current().addCard();
+    });
+    act(() => vm.current().updateCard("card-2", { name: "Performance" }));
+    expect(vm.current().submitLabel).toBe("Create 2 system requirements");
+    act(() => vm.current().removeCard("card-1"));
+    expect(vm.current().cards.map((card) => card.name)).toEqual(["Performance"]);
+    expect(vm.current().submitLabel).toBe("Create system requirement");
+    expect(vm.current().canAddCard).toBe(true);
   });
 
   it("edits with the version read, and closes without a write when nothing changed", async () => {
@@ -187,14 +265,15 @@ describe("useRequirementDialogViewModel", () => {
     expect(repo.update).toHaveBeenCalledWith("req-1", { expectedVersion: 1, name: "Renamed" });
   });
 
-  it("keeps the dialog open with the coded sentence when the server refuses", async () => {
-    repo.create.mockRejectedValue(apiErrorWith(409, { code: "REQUIREMENT_NAME_TAKEN" }));
+  it("keeps the dialog open with the coded sentence when the server refuses without an index", async () => {
+    repo.createBatch.mockRejectedValue(apiErrorWith(409, { code: "REQUIREMENT_NAME_TAKEN" }));
     const vm = hook();
     act(() => vm.current().openCreate("system"));
-    act(() => vm.current().updateDraft({ name: "Security" }));
+    act(() => vm.current().updateCard("card-1", { name: "Security" }));
     await act(async () => vm.current().submit());
     expect(vm.current().status).toBe("editing");
     expect(vm.current().error?.message).toMatch(/already has a requirement with that name/);
+    expect(vm.current().cardErrors).toEqual({});
   });
 
   it("asks before archiving, then archives", async () => {
