@@ -31,12 +31,10 @@ function EditGroupDialog({
   onClose: () => void;
   onSave: (payload: {
     name: string;
-    businessUnit?: string;
     description?: string;
   }) => Promise<string | null>;
 }>) {
   const [name, setName] = useState(group.name);
-  const [businessUnit, setBusinessUnit] = useState(group.businessUnit ?? "");
   const [description, setDescription] = useState(group.description ?? "");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -46,7 +44,6 @@ function EditGroupDialog({
     setError(null);
     const message = await onSave({
       name: name.trim(),
-      businessUnit: businessUnit.trim() || undefined,
       description: description.trim() || undefined,
     });
     setSubmitting(false);
@@ -61,7 +58,7 @@ function EditGroupDialog({
     <FormDialog
       open={open}
       onClose={onClose}
-      title="Edit group"
+      title="Edit workspace"
       submitLabel="Save changes"
       submitting={submitting}
       error={error}
@@ -70,25 +67,13 @@ function EditGroupDialog({
     >
       <div className="hier-field">
         <label className="hier-field-label" htmlFor="edit-group-name">
-          Group name
+          Workspace name
         </label>
         <input
           id="edit-group-name"
           className="hier-input"
           value={name}
           onChange={(event) => setName(event.target.value)}
-          maxLength={120}
-        />
-      </div>
-      <div className="hier-field">
-        <label className="hier-field-label" htmlFor="edit-group-bu">
-          Business unit <span className="hier-field-hint">(optional)</span>
-        </label>
-        <input
-          id="edit-group-bu"
-          className="hier-input"
-          value={businessUnit}
-          onChange={(event) => setBusinessUnit(event.target.value)}
           maxLength={120}
         />
       </div>
@@ -169,7 +154,7 @@ function GroupOverview({ groupId }: Readonly<{ groupId: string }>) {
       />
       <PageHeader
         title={group.name}
-        subtitle={group.description ?? group.businessUnit ?? undefined}
+        subtitle={group.description ?? undefined}
         actions={
           <div
             style={{

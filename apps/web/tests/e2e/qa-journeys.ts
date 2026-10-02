@@ -2039,7 +2039,7 @@ function sidebarLink(page: Page, label: string): Locator {
 
 /**
  * Opens the header's team picker (a button + listbox popover), reports whether
- * it offers the "Create team" (+) button, and closes it again with Escape.
+ * it offers the "Create workspace" (+) button, and closes it again with Escape.
  */
 async function pickerOffersCreate(page: Page): Promise<boolean> {
   const trigger = page.getByRole('button', { name: /^Active workspace:/ });
@@ -2048,7 +2048,7 @@ async function pickerOffersCreate(page: Page): Promise<boolean> {
   const listbox = page.getByRole('listbox', { name: 'Active workspace' });
   await visible(listbox, 'the open workspace picker');
   await visible(listbox.getByRole('option', { name: WORKSPACE.name, selected: true }), 'the current team, marked selected');
-  const offers = (await page.getByRole('button', { name: 'Create team', exact: true }).count()) === 1;
+  const offers = (await page.getByRole('button', { name: 'Create workspace', exact: true }).count()) === 1;
   await page.keyboard.press('Escape');
   await absent(listbox, 'the open workspace picker');
   return offers;
@@ -2130,7 +2130,7 @@ async function leadWritesProjectRequirements({ page, backend, baseUrl }: Journey
   await page.goto(`${baseUrl}/teams`, { waitUntil: 'domcontentloaded' });
   await expectRoleBadge(page, 'lead');
   // The contrast for journey (d): a lead's workspace picker offers creation.
-  assert.equal(await pickerOffersCreate(page), true, 'the workspace picker offers "Create team" to a lead');
+  assert.equal(await pickerOffersCreate(page), true, 'the workspace picker offers "Create workspace" to a lead');
   // /teams is the header team's members now; checklists have a page of their own.
   await visible(page.getByRole('heading', { name: /^Members/ }), 'the Members section on /teams');
   await openChecklistsPage(page, baseUrl);

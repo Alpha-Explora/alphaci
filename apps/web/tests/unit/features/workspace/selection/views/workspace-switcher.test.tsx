@@ -59,7 +59,7 @@ function options(container: HTMLElement): HTMLElement[] {
 
 function createAction(container: HTMLElement): HTMLButtonElement | undefined {
   return (
-    container.querySelector<HTMLButtonElement>('button[aria-label="Create team"]') ?? undefined
+    container.querySelector<HTMLButtonElement>('button[aria-label="Create workspace"]') ?? undefined
   );
 }
 
@@ -93,13 +93,13 @@ describe("WorkspaceSwitcher", () => {
     expect(listbox(container)).toBeNull();
   });
 
-  it("offers a compact Create team button at the end of the heading row to a lead", () => {
+  it("offers a compact Create workspace button at the end of the heading row to a lead", () => {
     const container = renderSwitcher(<WorkspaceSwitcher workspaces={workspaces} appRole="lead" />);
     click(trigger(container)!);
 
     const action = createAction(container);
     expect(action).toBeDefined();
-    expect(action!.getAttribute("title")).toBe("Create team");
+    expect(action!.getAttribute("title")).toBe("Create workspace");
     // Icon only: no visible text, a name for assistive tech.
     expect(action!.textContent).toBe("");
     // A button in the heading row beside the listbox, not a fake option inside it.
@@ -119,7 +119,13 @@ describe("WorkspaceSwitcher", () => {
     click(createAction(container)!);
 
     expect(listbox(container)).toBeNull();
-    expect(container.querySelector('[role="dialog"]')?.textContent).toContain("Create group");
+    const dialog = container.querySelector('[role="dialog"]');
+    expect(dialog?.textContent).toContain("Create workspace");
+    // Workspace name and Description only: no Business unit.
+    expect(dialog?.textContent).toContain("Workspace name");
+    expect(dialog?.textContent).toContain("Description");
+    expect(dialog?.textContent).not.toContain("Business unit");
+    expect(dialog?.textContent).not.toContain("Group name");
   });
 
   it("never offers create-workspace to a Developer with a team", () => {
@@ -151,7 +157,7 @@ describe("WorkspaceSwitcher", () => {
       '[data-testid="create-workspace-button"]',
     );
     expect(button).not.toBeNull();
-    expect(button?.textContent).toContain("Create team");
+    expect(button?.textContent).toContain("Create workspace");
     // The picker's compact trigger, not the oversized primary button.
     expect(button?.classList.contains("team-switcher-trigger")).toBe(true);
     expect(button?.classList.contains("primary-button")).toBe(false);

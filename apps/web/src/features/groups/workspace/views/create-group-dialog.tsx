@@ -18,21 +18,19 @@ export function CreateGroupDialog({
 }) {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
-  const [businessUnit, setBusinessUnit] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   function reset() {
     setName("");
     setDescription("");
-    setBusinessUnit("");
     setError(null);
   }
 
   async function handleSubmit() {
     const trimmed = name.trim();
     if (!trimmed) {
-      setError("A group name is required.");
+      setError("A workspace name is required.");
       return;
     }
     setSubmitting(true);
@@ -41,7 +39,6 @@ export function CreateGroupDialog({
       const group = await createGroup({
         name: trimmed,
         description: description.trim() || undefined,
-        businessUnit: businessUnit.trim() || undefined,
       });
       onCreated(group);
       reset();
@@ -49,8 +46,8 @@ export function CreateGroupDialog({
     } catch (cause) {
       setError(
         cause instanceof ApiError && cause.status === 403
-          ? "You're not allowed to create a group."
-          : "The group could not be created. Please try again.",
+          ? "You're not allowed to create a workspace."
+          : "The workspace could not be created. Please try again.",
       );
     } finally {
       setSubmitting(false);
@@ -64,9 +61,9 @@ export function CreateGroupDialog({
         reset();
         onClose();
       }}
-      title="Create group"
-      description="A group organizes your systems, delivery projects, repositories, and members."
-      submitLabel="Create group"
+      title="Create workspace"
+      description="A workspace holds your team's Projects, repositories, and members."
+      submitLabel="Create workspace"
       submitting={submitting}
       error={error}
       canSubmit={name.trim().length > 0}
@@ -74,7 +71,7 @@ export function CreateGroupDialog({
     >
       <div className="hier-field">
         <label className="hier-field-label" htmlFor="group-name">
-          Group name
+          Workspace name
         </label>
         <input
           id="group-name"
@@ -82,20 +79,6 @@ export function CreateGroupDialog({
           value={name}
           onChange={(event) => setName(event.target.value)}
           placeholder="e.g. Payments Platform"
-          maxLength={120}
-          autoComplete="off"
-        />
-      </div>
-      <div className="hier-field">
-        <label className="hier-field-label" htmlFor="group-bu">
-          Business unit <span className="hier-field-hint">(optional)</span>
-        </label>
-        <input
-          id="group-bu"
-          className="hier-input"
-          value={businessUnit}
-          onChange={(event) => setBusinessUnit(event.target.value)}
-          placeholder="e.g. Consumer Banking"
           maxLength={120}
           autoComplete="off"
         />
@@ -109,7 +92,7 @@ export function CreateGroupDialog({
           className="hier-textarea"
           value={description}
           onChange={(event) => setDescription(event.target.value)}
-          placeholder="What this group is responsible for"
+          placeholder="What this workspace is responsible for"
           maxLength={500}
         />
       </div>

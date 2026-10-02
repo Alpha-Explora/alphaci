@@ -309,7 +309,7 @@ export function Dialog({
           initial={reduced ? false : { opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={reduced ? undefined : { opacity: 0 }}
-          transition={{ duration: 0.16 }}
+          transition={{ duration: 0.12 }}
           onMouseDown={(event) => {
             if (event.target === event.currentTarget) onClose();
           }}
@@ -321,10 +321,12 @@ export function Dialog({
             aria-modal="true"
             aria-labelledby={titleId}
             aria-describedby={description ? descId : undefined}
-            initial={reduced ? false : { opacity: 0, scale: 0.96, y: 8 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={reduced ? undefined : { opacity: 0, scale: 0.96, y: 8 }}
-            transition={{ duration: 0.2, ease: EASE_OUT }}
+            /* Opacity and a short lift only, both compositor-friendly: no
+               scale, which re-rasterised the panel and its large shadow. */
+            initial={reduced ? false : { opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={reduced ? undefined : { opacity: 0, y: 6 }}
+            transition={{ duration: 0.14, ease: EASE_OUT }}
           >
             <h2 className="hier-dialog-title" id={titleId}>
               {title}

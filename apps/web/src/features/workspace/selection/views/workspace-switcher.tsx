@@ -100,7 +100,7 @@ function EmptyWorkspaceCreate({
         onClick={() => setCreateOpen(true)}
       >
         <PlusIcon />
-        <span className="team-switcher-trigger-label">Create team</span>
+        <span className="team-switcher-trigger-label">Create workspace</span>
       </button>
       <CreateGroupDialog
         open={createOpen}
@@ -111,7 +111,7 @@ function EmptyWorkspaceCreate({
   );
 }
 
-/** The picker, and the create dialog its "Create team" action opens. */
+/** The picker, and the create dialog its "Create workspace" action opens. */
 function PickerWithCreate({
   items,
   otherTeams,

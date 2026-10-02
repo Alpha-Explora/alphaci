@@ -543,12 +543,15 @@ a.hier-card:hover {
   align-items: center;
   justify-content: center;
   padding: 1.25rem;
-  background: rgba(6, 6, 10, 0.62);
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
+  /* A plain dim, no backdrop-filter: the pages behind already stack glass
+     panels with their own blur, so blurring the whole viewport again while
+     the backdrop fades in re-blurred all of it every frame and made opening
+     a dialog lag. */
+  background: rgba(6, 6, 10, 0.72);
 }
 
 .hier-dialog {
+  will-change: transform, opacity;
   width: 100%;
   max-width: 440px;
   max-height: calc(100dvh - 3rem);
