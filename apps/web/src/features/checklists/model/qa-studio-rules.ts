@@ -1,6 +1,7 @@
 /* Pure QA Studio rules: which environment can be tested, the devices and the
- * hardware frames drawn around them, the scale a device is drawn at, the route
- * field, and what the floating checklist's launcher says. No React, no fetch. */
+ * hardware frames drawn around them, the scale a device is drawn at, how the
+ * studio shares its width, the route field, and what the floating checklist's
+ * launcher says. No React, no fetch. */
 
 import type {
   ProjectBranchPreview,
@@ -224,6 +225,45 @@ export function fitDeviceScale(
 export function scaleLabel(scale: number): string | null {
   if (scale >= 1) return null;
   return `Scaled to ${Math.round(scale * 100)}%`;
+}
+
+/* ── Layout ──────────────────────────────────────────────────────────────── */
+
+/**
+ * How the docked (not full-screen) studio shares its width. "wide" gives the
+ * page most of it, because a desktop page drawn in a 60% pane is scaled to
+ * about half size; "split" halves it, for writing detailed notes or reading
+ * automation results. Full screen is the third arrangement and has its own
+ * toggle. Every layout only restyles the one studio tree: the frame and the
+ * run column are never remounted to change it.
+ */
+export type StudioLayout = "wide" | "split";
+
+export interface StudioLayoutOption {
+  id: StudioLayout;
+  label: string;
+  /** The tooltip: what the layout is for. */
+  hint: string;
+}
+
+export const STUDIO_LAYOUTS: ReadonlyArray<StudioLayoutOption> = [
+  { id: "wide", label: "Wide preview", hint: "Wide preview: the page gets most of the width" },
+  { id: "split", label: "Split", hint: "Split: page and checklist share the width, for detailed notes" },
+];
+
+export const DEFAULT_STUDIO_LAYOUT: StudioLayout = "wide";
+
+export function isStudioLayout(value: unknown): value is StudioLayout {
+  return STUDIO_LAYOUTS.some((option) => option.id === value);
+}
+
+/**
+ * A remembered layout, read back from storage. Anything that is not a layout
+ * this build knows (nothing stored, an old or hand-edited value) is the
+ * default, so a stale preference can never leave the studio unlaid-out.
+ */
+export function resolveStudioLayout(stored: string | null): StudioLayout {
+  return isStudioLayout(stored) ? stored : DEFAULT_STUDIO_LAYOUT;
 }
 
 /* ── Floating checklist launcher ─────────────────────────────────────────── */

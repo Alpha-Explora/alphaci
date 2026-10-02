@@ -25,8 +25,9 @@ import {
   type StudioEnvironment,
 } from "../../model/qa-studio-rules";
 import { useStudioFullScreen, type StudioFullScreenState } from "./use-studio-full-screen";
+import { useStudioLayout, type StudioLayoutState } from "./use-studio-layout";
 
-export interface StudioViewportViewModel extends StudioFullScreenState {
+export interface StudioViewportViewModel extends StudioFullScreenState, StudioLayoutState {
   /** The previews request: loading until the environments are known. */
   status: "loading" | "ready" | "error";
   error: string | null;
@@ -66,7 +67,7 @@ export interface StudioViewportViewModel extends StudioFullScreenState {
   unavailableReason: string | null;
   /**
    * Changes whenever the frame must re-mount: a reload, a new route, a new
-   * environment. Never the device, orientation or full screen: those only
+   * environment. Never the device, orientation, layout or full screen: those only
    * restyle the frame, so the page under test keeps its state.
    */
   frameKey: string;
@@ -115,8 +116,8 @@ function frameKeyOf(environment: StudioEnvironment | null, pageUrl: string | nul
 /**
  * ViewModel for the studio's left pane and toolbar: which environment is
  * under test (only ever the QA branch), on which device and orientation, on
- * which route — and whether the studio is full screen with its checklist
- * floating over the page.
+ * which route — and how the studio is laid out: wide preview or split when
+ * docked, or full screen with its checklist floating over the page.
  *
  * The previews come from the same ViewModel the Overview's deployment cards
  * use, so the studio sees exactly the environments and embeddability verdicts
@@ -132,6 +133,7 @@ export function useStudioViewportViewModel(options: {
   const [deviceId, setDeviceId] = useState<DevicePresetId>("desktop");
   const [orientation, setOrientation] = useState<DeviceOrientation>("portrait");
   const fullScreen = useStudioFullScreen();
+  const layout = useStudioLayout();
   const [path, setPath] = useState("/");
   const [pathDraft, setPathDraft] = useState("/");
   const [pathError, setPathError] = useState<string | null>(null);
@@ -194,5 +196,6 @@ export function useStudioViewportViewModel(options: {
     reload: () => setNonce((value) => value + 1),
     retry: previews.reload,
     ...fullScreen,
+    ...layout,
   };
 }
