@@ -28,6 +28,29 @@ export function switcherOptionGroups(
 }
 
 /**
+ * The team a page that belongs to one (a project's owning team) should put in
+ * the header, or null when there is nothing to do.
+ *
+ * It waits for the header's lists (`members` is null until they load) and
+ * only names a team the header actually lists, so a project in a team the
+ * viewer cannot open leaves the provider's own fallback in place instead of
+ * persisting an id the picker would immediately reset. `appliedFor` is the
+ * team already applied for this page: applying it once is what lets the
+ * viewer's own pick stand, and a later list refresh not undo it.
+ */
+export function pageWorkspaceToSelect(input: {
+  pageWorkspaceId: string | null | undefined;
+  appliedFor: string | null;
+  members: { items: readonly Pick<WorkspaceSummary, "id">[] } | null;
+  others: readonly Pick<WorkspaceSummary, "id">[];
+}): string | null {
+  const { pageWorkspaceId, appliedFor, members, others } = input;
+  if (!pageWorkspaceId || !members || pageWorkspaceId === appliedFor) return null;
+  const listed = [...members.items, ...others].some((team) => team.id === pageWorkspaceId);
+  return listed ? pageWorkspaceId : null;
+}
+
+/**
  * The options in keyboard order. The heading is not in it, so the arrow keys
  * never stop on it.
  */

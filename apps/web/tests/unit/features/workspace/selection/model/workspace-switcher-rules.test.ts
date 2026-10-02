@@ -3,6 +3,7 @@ import {
   flattenSwitcherOptions,
   nextSwitcherIndex,
   openingSwitcherIndex,
+  pageWorkspaceToSelect,
   panelTabAction,
   switcherOptionGroups,
   switcherPanelShift,
@@ -136,5 +137,34 @@ describe("switcherPanelShift", () => {
   it("never slides it past the left margin", () => {
     expect(switcherPanelShift(20, 420, 390, 8)).toBe(-12);
     expect(switcherPanelShift(4, 200, 390, 8)).toBe(4);
+  });
+});
+
+describe("pageWorkspaceToSelect", () => {
+  const members = { items: MINE };
+  const select = (overrides: Partial<Parameters<typeof pageWorkspaceToSelect>[0]>) =>
+    pageWorkspaceToSelect({ pageWorkspaceId: "t-2", appliedFor: null, members, others: [], ...overrides });
+
+  it("names the page's team once the header lists it", () => {
+    expect(select({})).toBe("t-2");
+    // A platform admin's other team counts: the header lists it too.
+    expect(select({ pageWorkspaceId: "t-9", others: OTHERS })).toBe("t-9");
+  });
+
+  it("waits while the team or the header's lists are unknown", () => {
+    expect(select({ pageWorkspaceId: null })).toBeNull();
+    expect(select({ pageWorkspaceId: undefined })).toBeNull();
+    expect(select({ members: null })).toBeNull();
+  });
+
+  // Applying again would undo the viewer's own pick on every list refresh.
+  it("never re-applies the team already applied", () => {
+    expect(select({ appliedFor: "t-2" })).toBeNull();
+  });
+
+  // The provider's fallback stands; an unlisted id is never written.
+  it("skips a team the header does not list", () => {
+    expect(select({ pageWorkspaceId: "t-404" })).toBeNull();
+    expect(select({ pageWorkspaceId: "t-9" })).toBeNull();
   });
 });
