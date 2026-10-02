@@ -6,10 +6,14 @@ import {
   canStartProjectRun,
   canVerifyItem,
   feedItemKey,
+  groupOffsets,
+  groupPassLabel,
   groupRunItems,
   headChangeMessage,
   headChangeMessages,
   headLabel,
+  initialExpandedGroups,
+  itemMatchesRunFilter,
   isVerificationStatus,
   normalizeHeadStatus,
   normalizeProjectMyItems,
@@ -22,9 +26,13 @@ import {
   repositoriesLabel,
   requirementsChangedLabel,
   resolveProjectRunPermissions,
+  runFilterCounts,
+  runFilterEmptyText,
+  runFilterLabel,
   runFromReply,
   summarizeRunItems,
   verificationPayload,
+  visibleRunFilters,
 } from "../../../../../src/features/checklists/model/project-run-rules";
 import type { ProjectQaRun } from "../../../../../src/features/checklists/model/project-run-types";
 import { itemDraftFrom } from "../../../../../src/features/checklists/model/qa-run-rules";
@@ -306,5 +314,42 @@ describe("as implemented by the backend (3147e15)", () => {
     const head = normalizeHeadStatus(headWire({ runSha: null, moved: false }))!;
     expect(headChangeMessage(head)).toBeNull();
     expect(headChangeMessage({ ...head, moved: true })).toBe("storefront-web joined the Project since this run");
+  });
+});
+
+describe("the run list: filters and groups", () => {
+  const items = [
+    { status: "passed" as const },
+    { status: "pending" as const },
+    { status: "pending" as const },
+    { status: "returned_to_dev" as const },
+    { status: "in_progress" as const },
+  ];
+
+  it("counts every Verification, a stray in_progress as still to verify", () => {
+    expect(runFilterCounts(items)).toEqual({ all: 5, pending: 3, failed: 0, returned_to_dev: 1, blocked: 0, passed: 1 });
+    expect(itemMatchesRunFilter({ status: "in_progress" }, "pending")).toBe(true);
+    expect(itemMatchesRunFilter({ status: "failed" }, "pending")).toBe(false);
+    expect(itemMatchesRunFilter({ status: "failed" }, "all")).toBe(true);
+  });
+
+  it("offers All, the non-empty filters, and the chosen one even once it empties", () => {
+    const counts = runFilterCounts(items);
+    expect(visibleRunFilters(counts, "all")).toEqual(["all", "pending", "returned_to_dev", "passed"]);
+    expect(visibleRunFilters(counts, "blocked")).toEqual(["all", "pending", "returned_to_dev", "blocked", "passed"]);
+    expect(runFilterLabel("pending")).toBe("To verify");
+    expect(runFilterLabel("returned_to_dev")).toBe("Returned");
+    expect(runFilterEmptyText("pending")).toBe("Nothing left to verify.");
+  });
+
+  it("numbers groups across the run and says how far each got", () => {
+    const groups = groupRunItems(run({ items: [runItemWire({ status: "passed" }), runItemWire({ id: "b", position: 1, requirementId: "req-2", requirementName: "Two" }), runItemWire({ id: "c", position: 2, requirementId: "req-2", requirementName: "Two" })] }).items);
+    expect(groupOffsets(groups)).toEqual([0, 1]);
+    expect(groups.map(groupPassLabel)).toEqual(["1 of 1 passed", "0 of 2 passed"]);
+  });
+
+  it("folds a requirement only when every item passed", () => {
+    const groups = groupRunItems(run({ items: [runItemWire({ status: "passed" }), runItemWire({ id: "b", position: 1, requirementId: "req-2", requirementName: "Two", status: "failed" })] }).items);
+    expect(initialExpandedGroups(groups)).toEqual({ "req-1": false, "req-2": true });
   });
 });

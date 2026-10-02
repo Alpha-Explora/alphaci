@@ -113,10 +113,120 @@
   justify-self: start;
 }
 
+/* What the list shows: All, or one Verification, each with its count. */
+.pqa-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.pqa-filter {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 1.85rem;
+  padding: 0 0.7rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  background: var(--layer-2);
+  color: var(--text-secondary);
+  font-size: 0.76rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.pqa-filter:hover {
+  background: var(--layer-2-hover);
+  color: var(--text-primary);
+}
+
+.pqa-filter:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
+.pqa-filter[aria-pressed="true"] {
+  border-color: var(--border-brand);
+  background: var(--brand-light);
+  color: var(--brand);
+}
+
+.pqa-filter__count {
+  min-width: 1.1rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
 /* One requirement's items. */
 .pqa-group {
   display: grid;
+  gap: 0.4rem;
+}
+
+.pqa-group__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.25rem 0.75rem;
+}
+
+.pqa-group__progress {
+  font-size: 0.74rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* The heading folds its items away; the chevron says which way. */
+.pqa-group__toggle {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
   gap: 0.5rem;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.pqa-group__toggle::before {
+  content: "";
+  width: 0.4rem;
+  height: 0.4rem;
+  border-right: 2px solid var(--text-muted);
+  border-bottom: 2px solid var(--text-muted);
+  transform: rotate(-45deg);
+  transition: transform 0.15s ease;
+}
+
+.pqa-group__toggle[aria-expanded="true"]::before {
+  transform: rotate(45deg);
+}
+
+.pqa-group__toggle:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 3px;
+  border-radius: 0.3rem;
+}
+
+/* Denser rows than a repository run's: a Project run lists every requirement. */
+.pqa-run .qa-run-item {
+  gap: 0.65rem;
+  padding: 0.6rem 0.75rem;
+}
+
+.pqa-run .qa-run-item__body {
+  gap: 0.3rem;
 }
 
 .pqa-group .pqa-group__title {
@@ -150,10 +260,10 @@
   color: var(--accent-teal);
 }
 
+/* A <details>: block, because a details element ignores grid in some
+   browsers. Open while the item needs QA, folded once it passed. */
 .pqa-criteria {
-  display: grid;
-  gap: 0.15rem;
-  padding: 0.5rem 0.65rem;
+  padding: 0.4rem 0.65rem;
   border-radius: 0.5rem;
   background: var(--bg-soft);
 }
@@ -164,14 +274,87 @@
   letter-spacing: 0.05em;
   text-transform: uppercase;
   color: var(--text-muted);
+  cursor: pointer;
+}
+
+.pqa-criteria__label:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+  border-radius: 0.25rem;
 }
 
 .pqa-criteria p {
-  margin: 0;
+  margin: 0.2rem 0 0;
   font-size: 0.8rem;
   line-height: 1.5;
   color: var(--text-secondary);
   white-space: pre-line;
+}
+
+/* Verification in one click: one button per status, the current one pressed. */
+.pqa-verify {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+}
+
+.pqa-verify__option {
+  min-height: 1.85rem;
+  padding: 0 0.65rem;
+  border: 1px solid var(--border);
+  border-radius: 0.45rem;
+  background: var(--layer-2);
+  color: var(--text-secondary);
+  font-size: 0.76rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.pqa-verify__option:hover:not(:disabled) {
+  background: var(--layer-2-hover);
+  color: var(--text-primary);
+}
+
+.pqa-verify__option:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
+.pqa-verify__option:disabled {
+  cursor: default;
+}
+
+.pqa-verify__option:disabled:not([aria-pressed="true"]) {
+  opacity: 0.55;
+}
+
+.pqa-verify__option[aria-pressed="true"] {
+  border-color: var(--border-brand);
+  background: var(--brand-light);
+  color: var(--brand);
+}
+
+.pqa-verify__option[aria-pressed="true"][data-status="passed"] {
+  border-color: var(--success);
+  background: var(--accent-emerald-light);
+  color: var(--success);
+}
+
+.pqa-verify__option[aria-pressed="true"][data-status="failed"],
+.pqa-verify__option[aria-pressed="true"][data-status="returned_to_dev"] {
+  border-color: var(--border-danger);
+  background: var(--danger-light);
+  color: var(--danger);
+}
+
+.pqa-verify__option[aria-pressed="true"][data-status="blocked"] {
+  border-color: var(--border-amber);
+  background: var(--accent-amber-light);
+  color: var(--warning);
 }
 
 .pqa-progress-unknown {
@@ -195,4 +378,12 @@
   font-size: 0.78rem;
   line-height: 1.5;
   color: var(--text-secondary);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pqa-filter,
+  .pqa-verify__option,
+  .pqa-group__toggle::before {
+    transition: none;
+  }
 }

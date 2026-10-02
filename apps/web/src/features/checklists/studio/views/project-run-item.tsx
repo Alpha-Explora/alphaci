@@ -4,7 +4,7 @@ import type { FormEvent } from "react";
 
 import { SeverityBadge, StatusPill, TonePill, VerificationBadge } from "../../items";
 import { needsTestIdentifier } from "../../model/checklist-rules";
-import { passedUnavailableReason } from "../../model/project-run-rules";
+import { passedUnavailableReason, VERIFICATION_STATUSES } from "../../model/project-run-rules";
 import type { ProjectQaRunItem, VerificationStatus } from "../../model/project-run-types";
 import {
   agoLabel,
@@ -74,34 +74,55 @@ function FixRequestNote({ item }: Readonly<{ item: ProjectQaRunItem }>) {
   );
 }
 
+/**
+ * What the item must do. Open while it still needs QA; folded once it passed,
+ * so a mostly-passed run reads as a short list. The tester's own fold or
+ * unfold stands until the item's Verification changes.
+ */
+function AcceptanceCriteria({ item }: Readonly<{ item: ProjectQaRunItem }>) {
+  if (!item.acceptanceCriteria) return null;
+  return (
+    <details className="pqa-criteria" open={item.status !== "passed"}>
+      <summary className="pqa-criteria__label">Acceptance criteria</summary>
+      <p>{item.acceptanceCriteria}</p>
+    </details>
+  );
+}
+
 /** The Developer's Progress on the item, shown to QA beside the Verification. */
 function ProgressTag({ item }: Readonly<{ item: ProjectQaRunItem }>) {
   if (!item.progress) return <span className="pqa-progress-unknown">Progress unknown</span>;
   return <TonePill tone={progressTone(item.progress)} label={`Progress: ${progressLabel(item.progress)}`} />;
 }
 
-function VerificationSelect({ item, index, editor }: Omit<ItemProps, "onReload">) {
+/**
+ * Verification in one click: a button per status this viewer may set, the
+ * current one pressed. Pending, Passed and Blocked save at once; Failed and
+ * Returned to dev open the details for their severity first. The current
+ * status stays visible (pressed, not clickable) even where this viewer could
+ * not have set it — Passed before a Developer marked the item Done.
+ */
+function VerificationButtons({ item, index, editor }: Omit<ItemProps, "onReload">) {
   const allowed = editor.allowedStatuses(item);
   const draft = editor.openItemId === item.id ? editor.draft : null;
   const value = draft?.status ?? item.status;
-  // The current value stays visible even when this viewer could not set it.
-  const options = (allowed as string[]).includes(value) ? allowed : [value, ...allowed];
+  const offered = VERIFICATION_STATUSES.filter((status) => status === value || allowed.includes(status));
   return (
-    <label className="qa-status-select">
-      <span className="sr-only">Verification of item {index + 1}</span>
-      <select
-        className="hier-select"
-        value={value}
-        disabled={editor.savingItemId !== null}
-        onChange={(event) => editor.chooseStatus(item, event.target.value as VerificationStatus)}
-      >
-        {options.map((status) => (
-          <option key={status} value={status} disabled={!(allowed as string[]).includes(status)}>
-            {itemStatusLabel(status)}
-          </option>
-        ))}
-      </select>
-    </label>
+    <div className="pqa-verify" role="group" aria-label={`Verification of item ${String(index + 1)}`}>
+      {offered.map((status: VerificationStatus) => (
+        <button
+          key={status}
+          type="button"
+          className="pqa-verify__option"
+          data-status={status}
+          aria-pressed={status === value}
+          disabled={editor.savingItemId !== null || !allowed.includes(status)}
+          onClick={() => editor.chooseStatus(item, status)}
+        >
+          {itemStatusLabel(status)}
+        </button>
+      ))}
+    </div>
   );
 }
 
@@ -219,7 +240,7 @@ function ItemControls({ item, index, editor }: Omit<ItemProps, "onReload">) {
   return (
     <>
       <div className="qa-run-item__controls">
-        <VerificationSelect item={item} index={index} editor={editor} />
+        <VerificationButtons item={item} index={index} editor={editor} />
         {editing ? null : (
           <button
             type="button"
@@ -259,12 +280,7 @@ export function ProjectRunItem(props: ItemProps) {
             <StatusPill status={item.status} />
           </span>
         </div>
-        {item.acceptanceCriteria ? (
-          <div className="pqa-criteria">
-            <span className="pqa-criteria__label">Acceptance criteria</span>
-            <p>{item.acceptanceCriteria}</p>
-          </div>
-        ) : null}
+        <AcceptanceCriteria item={item} />
         <div className="qa-run-item__tags">
           <ProgressTag item={item} />
           <VerificationBadge type={item.verificationType} />
