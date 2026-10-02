@@ -13,7 +13,12 @@ import { FormDialog } from "@/features/groups/workspace";
 import {
   addCardLabel,
   batchLimitNote,
-  cardHeading,
+  cardErrorField,
+  cardPosition,
+  cardStoryCount,
+  cardTabLabel,
+  storyCountLabel,
+  tabIndexForKey,
 } from "../../model/requirement-batch-rules";
 import { kindCopy, REQUIREMENT_NAME_MAX } from "../../model/requirement-rules";
 import type { RequirementCardDraft, RequirementKind } from "../../model/requirement-types";
@@ -36,7 +41,7 @@ const PLACEHOLDERS: Record<RequirementKind, { name: string; description: string;
   },
 };
 
-/** Ctrl+Enter (Cmd+Enter on a Mac): add another card. */
+/** Ctrl+Enter (Cmd+Enter on a Mac): add another requirement. */
 function isAddCardShortcut(event: KeyboardEvent<HTMLElement>): boolean {
   return event.key === "Enter" && (event.ctrlKey || event.metaKey);
 }
@@ -52,15 +57,24 @@ interface StoryRowsHandlers {
 }
 
 /**
- * A card's first stories (or items), one input per row. Enter adds the next
- * row, Backspace on an empty row removes it, and pasting several lines adds
- * one row per line. Ctrl+Enter is left to the dialog (another card).
+ * A requirement's first stories (or items), one input per row. Enter adds
+ * the next row, Backspace on an empty row removes it, and pasting several
+ * lines adds one row per line. Ctrl+Enter is left to the dialog (another
+ * requirement). `invalidRow` is the row the open error is about.
  */
 function StoryRowsField({
   kind,
   rows,
   handlers,
-}: Readonly<{ kind: RequirementKind; rows: string[]; handlers: StoryRowsHandlers }>) {
+  invalidRow,
+  errorId,
+}: Readonly<{
+  kind: RequirementKind;
+  rows: string[];
+  handlers: StoryRowsHandlers;
+  invalidRow: number | null;
+  errorId: string;
+}>) {
   const copy = kindCopy(kind);
   const inputs = useRef<Array<HTMLInputElement | null>>([]);
   /* Which row to focus once the next render has it (after add or remove). */
@@ -116,6 +130,8 @@ function StoryRowsField({
               }}
               className="hier-input rq-story-row__input"
               aria-label={`${copy.item} ${index + 1}`}
+              aria-invalid={invalidRow === index ? true : undefined}
+              aria-describedby={invalidRow === index ? errorId : undefined}
               value={row}
               placeholder={PLACEHOLDERS[kind].items[index] ?? ""}
               onChange={(event) => handlers.edit(index, event.target.value)}
@@ -141,7 +157,7 @@ function StoryRowsField({
   );
 }
 
-/* ── One card: a whole requirement ──────────────────────────────────────── */
+/* ── The side list: one tab per requirement ─────────────────────────────── */
 
 function storyHandlers(vm: RequirementDialogViewModel, key: string): StoryRowsHandlers {
   return {
@@ -152,40 +168,161 @@ function storyHandlers(vm: RequirementDialogViewModel, key: string): StoryRowsHa
   };
 }
 
-function RequirementCard({
-  vm,
+/** A boolean as a data attribute: present ("true") or absent, for CSS. */
+function dataFlag(on: boolean): "true" | undefined {
+  return on ? "true" : undefined;
+}
+
+function tabDomId(baseId: string, key: string): string {
+  return `${baseId}-tab-${key}`;
+}
+
+/**
+ * One entry of the side list, like a browser's vertical tab: the name as
+ * typed (or "Untitled feature"), its story count, an error marker, and a
+ * close button of its own beside the tab (never on the only entry).
+ */
+function RequirementTab({
   kind,
   card,
   position,
-  domId,
-  nameRef,
+  selected,
+  invalid,
+  tabId,
+  paneId,
+  tabRef,
+  onSelect,
+  onKeyDown,
   onRemove,
+}: Readonly<{
+  kind: RequirementKind;
+  card: RequirementCardDraft;
+  /** 1-based. */
+  position: number;
+  selected: boolean;
+  invalid: boolean;
+  tabId: string;
+  paneId: string;
+  tabRef: (element: HTMLButtonElement | null) => void;
+  onSelect: () => void;
+  onKeyDown: (event: KeyboardEvent<HTMLButtonElement>) => void;
+  onRemove: (() => void) | null;
+}>) {
+  const label = cardTabLabel(kind, card);
+  const count = cardStoryCount(card);
+  return (
+    <div
+      className="rq-rail__entry"
+      data-selected={dataFlag(selected)}
+      data-invalid={dataFlag(invalid)}
+      data-removable={dataFlag(onRemove !== null)}
+    >
+      <button
+        ref={tabRef}
+        type="button"
+        role="tab"
+        id={tabId}
+        className="rq-rail__tab"
+        aria-selected={selected}
+        aria-controls={paneId}
+        tabIndex={selected ? 0 : -1}
+        title={label.text}
+        onClick={onSelect}
+        onKeyDown={onKeyDown}
+      >
+        <span className="rq-rail__marker" aria-hidden="true">
+          {invalid ? "!" : position}
+        </span>
+        <span className="rq-rail__name" data-untitled={dataFlag(label.untitled)}>
+          {label.text}
+        </span>
+        {count > 0 ? (
+          <span className="rq-rail__count" aria-hidden="true" title={storyCountLabel(kind, count)}>
+            {count}
+          </span>
+        ) : null}
+        <span className="sr-only">
+          , {storyCountLabel(kind, count)}
+          {invalid ? ", needs a fix" : ""}
+        </span>
+      </button>
+      {onRemove ? (
+        <button
+          type="button"
+          className="rq-rail__close"
+          aria-label={`Remove ${label.text}`}
+          title={`Remove ${label.text}`}
+          tabIndex={selected ? 0 : -1}
+          onClick={onRemove}
+        >
+          <RemoveIcon />
+        </button>
+      ) : null}
+    </div>
+  );
+}
+
+/** The add button pinned at the foot of the side list (the end of the strip on narrow screens). */
+function AddRequirementButton({
+  kind,
+  canAdd,
+  onAdd,
+}: Readonly<{ kind: RequirementKind; canAdd: boolean; onAdd: () => void }>) {
+  const noteId = useId();
+  const label = addCardLabel(kind);
+  return (
+    <div className="rq-rail__foot">
+      <button
+        type="button"
+        className="rq-rail__add"
+        disabled={!canAdd}
+        title={canAdd ? `${label} (Ctrl+Enter)` : batchLimitNote(kind)}
+        aria-keyshortcuts="Control+Enter Meta+Enter"
+        aria-describedby={canAdd ? undefined : noteId}
+        onClick={onAdd}
+      >
+        <span className="rq-rail__add-icon" aria-hidden="true">
+          <PlusIcon />
+        </span>
+        <span className="rq-rail__add-label">{label}</span>
+        <span className="rq-rail__add-hint" aria-hidden="true">
+          <kbd>Ctrl</kbd>
+          <kbd>Enter</kbd>
+        </span>
+      </button>
+      {canAdd ? null : (
+        <p className="rq-rail__limit" id={noteId}>
+          {batchLimitNote(kind)}
+        </p>
+      )}
+    </div>
+  );
+}
+
+/* ── The editor pane: the selected requirement ──────────────────────────── */
+
+function RequirementPane({
+  vm,
+  kind,
+  card,
+  index,
+  errorId,
+  nameRef,
 }: Readonly<{
   vm: RequirementDialogViewModel;
   kind: RequirementKind;
   card: RequirementCardDraft;
-  /** 1-based: "Feature 2". */
-  position: number;
-  domId: string;
+  /** 0-based. */
+  index: number;
+  errorId: string;
   nameRef: (element: HTMLInputElement | null) => void;
-  onRemove: (() => void) | null;
 }>) {
-  const heading = cardHeading(kind, position);
   const error = vm.cardErrors[card.key] ?? null;
-  const errorId = `${domId}-error`;
+  const field = error ? cardErrorField(card) : null;
+  const nameInvalid = field?.field === "name";
   return (
-    <fieldset className="rq-batch-card" id={domId} data-kind={kind} data-invalid={error ? "true" : undefined}>
-      <legend className="rq-batch-card__legend">
-        <span className="rq-batch-card__number" aria-hidden="true">
-          {position}
-        </span>
-        {heading}
-      </legend>
-      {onRemove ? (
-        <button type="button" className="rq-batch-card__remove" aria-label={`Remove ${heading}`} onClick={onRemove}>
-          <RemoveIcon />
-        </button>
-      ) : null}
+    <div className="rq-pane__body" data-invalid={dataFlag(error !== null)}>
+      <p className="rq-pane__position">{cardPosition(kind, index, vm.cards.length)}</p>
       <label className="hier-field">
         <span className="hier-field-label">Name</span>
         <input
@@ -194,109 +331,121 @@ function RequirementCard({
           value={card.name}
           maxLength={REQUIREMENT_NAME_MAX + 20}
           placeholder={PLACEHOLDERS[kind].name}
-          aria-invalid={error ? true : undefined}
-          aria-describedby={error ? errorId : undefined}
+          aria-invalid={nameInvalid ? true : undefined}
+          aria-describedby={nameInvalid ? errorId : undefined}
+          data-autofocus
           onChange={(event) => vm.updateCard(card.key, { name: event.target.value })}
         />
       </label>
       <label className="hier-field">
         <span className="hier-field-label">Description (optional)</span>
         <textarea
-          className="hier-textarea rq-batch-card__description"
-          rows={2}
+          className="hier-textarea rq-pane__description"
+          rows={3}
           value={card.description}
           placeholder={PLACEHOLDERS[kind].description}
           onChange={(event) => vm.updateCard(card.key, { description: event.target.value })}
         />
       </label>
-      <StoryRowsField kind={kind} rows={card.stories} handlers={storyHandlers(vm, card.key)} />
+      <StoryRowsField
+        kind={kind}
+        rows={card.stories}
+        handlers={storyHandlers(vm, card.key)}
+        invalidRow={field?.field === "story" ? field.row : null}
+        errorId={errorId}
+      />
       {error ? (
-        <p className="rq-form-error rq-batch-card__error" id={errorId}>
+        <p className="rq-form-error rq-pane__error" id={errorId}>
           {error}
         </p>
       ) : null}
-    </fieldset>
-  );
-}
-
-/** The last grid cell: one obvious click to add another requirement. */
-function AddCardTile({
-  kind,
-  canAdd,
-  onAdd,
-}: Readonly<{ kind: RequirementKind; canAdd: boolean; onAdd: () => void }>) {
-  const noteId = useId();
-  return (
-    <button
-      type="button"
-      className="rq-batch-add"
-      data-kind={kind}
-      disabled={!canAdd}
-      aria-keyshortcuts="Control+Enter Meta+Enter"
-      aria-describedby={canAdd ? undefined : noteId}
-      onClick={onAdd}
-    >
-      <span className="rq-batch-add__icon" aria-hidden="true">
-        <PlusIcon />
-      </span>
-      <span className="rq-batch-add__label">{addCardLabel(kind)}</span>
-      {canAdd ? (
-        <span className="rq-batch-add__hint" aria-hidden="true">
-          <kbd>Ctrl</kbd> + <kbd>Enter</kbd>
-        </span>
-      ) : (
-        <span className="rq-batch-add__hint" id={noteId}>
-          {batchLimitNote(kind)}
-        </span>
-      )}
-    </button>
+      <p className="rq-field-hint rq-pane__hint">
+        In a story, Enter adds the next one and pasting a list adds a row per line. Acceptance criteria can be
+        added to each one afterwards.
+      </p>
+    </div>
   );
 }
 
 /* ── Create: several at once ────────────────────────────────────────────── */
 
-function cardDomId(baseId: string, key: string): string {
-  return `${baseId}-${key}`;
-}
+/** After the next render: focus the open requirement's Name, or the selected tab. */
+type PendingFocus = "name" | "tab" | null;
 
 /**
- * The cards, two columns wide (one on narrow screens), then the add tile.
- * Adding a card focuses its Name; a failed Create brings the card it names
- * into view and focuses its Name.
+ * Master-detail: the side list of requirements on the left (a vertical
+ * tablist, its add button pinned at the foot), the selected one's editor on
+ * the right. Each side scrolls on its own. Adding opens the new one and
+ * focuses its Name; a failed Create opens the one it names and focuses the
+ * field at fault.
  */
 function CreateRequirementsBody({
   vm,
   kind,
 }: Readonly<{ vm: RequirementDialogViewModel; kind: RequirementKind }>) {
   const baseId = useId();
-  const names = useRef(new Map<string, HTMLInputElement>());
-  const pendingFocus = useRef<string | null>(null);
-  const focusAttempt = vm.cardFocus?.attempt ?? 0;
-  const focusKey = vm.cardFocus?.key ?? null;
+  const paneId = `${baseId}-pane`;
+  const errorId = `${baseId}-error`;
+  const tabs = useRef(new Map<string, HTMLButtonElement>());
+  const nameInput = useRef<HTMLInputElement | null>(null);
+  const pane = useRef<HTMLDivElement>(null);
+  const pendingFocus = useRef<PendingFocus>(null);
+  const cardFocus = vm.cardFocus;
+  const selectedIndex = Math.max(
+    0,
+    vm.cards.findIndex((card) => card.key === vm.selectedKey),
+  );
+  const selected = vm.cards[selectedIndex];
+
+  /* A newly opened requirement starts at the top of the pane, and its tab is
+     brought into view in the list (a long list scrolls on its own). */
+  useEffect(() => {
+    if (pane.current) pane.current.scrollTop = 0;
+    tabs.current.get(vm.selectedKey)?.scrollIntoView?.({ block: "nearest", inline: "nearest" });
+  }, [vm.selectedKey]);
 
   useEffect(() => {
-    const key = pendingFocus.current;
-    if (key === null) return;
+    const what = pendingFocus.current;
+    if (what === null) return;
     pendingFocus.current = null;
-    names.current.get(key)?.focus();
+    if (what === "name") nameInput.current?.focus();
+    else tabs.current.get(vm.selectedKey)?.focus();
   });
 
   useEffect(() => {
-    if (!focusKey) return;
-    const card = document.getElementById(cardDomId(baseId, focusKey));
-    card?.scrollIntoView?.({ block: "nearest", behavior: "smooth" });
-    names.current.get(focusKey)?.focus({ preventScroll: true });
-  }, [baseId, focusKey, focusAttempt]);
+    if (!cardFocus) return;
+    const target =
+      cardFocus.field.field === "name"
+        ? nameInput.current
+        : pane.current?.querySelectorAll<HTMLInputElement>(".rq-story-row__input")[cardFocus.field.row];
+    target?.scrollIntoView?.({ block: "nearest" });
+    target?.focus({ preventScroll: true });
+  }, [cardFocus]);
 
-  function add() {
-    const key = vm.addCard();
-    if (key) pendingFocus.current = key;
+  function select(key: string) {
+    if (key === vm.selectedKey) {
+      tabs.current.get(key)?.focus();
+      return;
+    }
+    pendingFocus.current = "tab";
+    vm.selectCard(key);
   }
 
-  function remove(index: number) {
-    const neighbour = vm.cards[index - 1] ?? vm.cards[index + 1];
-    if (neighbour) pendingFocus.current = neighbour.key;
-    vm.removeCard(vm.cards[index].key);
+  function add() {
+    if (vm.addCard()) pendingFocus.current = "name";
+  }
+
+  function remove(key: string) {
+    pendingFocus.current = "tab";
+    vm.removeCard(key);
+  }
+
+  function onTabKeyDown(event: KeyboardEvent<HTMLButtonElement>, index: number) {
+    if (isAddCardShortcut(event)) return;
+    const next = tabIndexForKey(event.key, index, vm.cards.length);
+    if (next === null) return;
+    event.preventDefault();
+    select(vm.cards[next].key);
   }
 
   function onKeyDown(event: KeyboardEvent<HTMLDivElement>) {
@@ -308,27 +457,54 @@ function CreateRequirementsBody({
   const several = vm.cards.length > 1;
   return (
     <div className="rq-batch" data-kind={kind} onKeyDown={onKeyDown}>
-      <p className="rq-field-hint rq-batch__hint">
-        In a story, Enter adds the next one and pasting a list adds a row per line. Acceptance criteria can be
-        added to each one afterwards.
-      </p>
-      <div className="rq-batch__grid">
-        {vm.cards.map((card, index) => (
-          <RequirementCard
-            key={card.key}
-            vm={vm}
-            kind={kind}
-            card={card}
-            position={index + 1}
-            domId={cardDomId(baseId, card.key)}
-            nameRef={(element) => {
-              if (element) names.current.set(card.key, element);
-              else names.current.delete(card.key);
-            }}
-            onRemove={several ? () => remove(index) : null}
-          />
-        ))}
-        <AddCardTile kind={kind} canAdd={vm.canAddCard} onAdd={add} />
+      <div className="rq-rail">
+        <div
+          className="rq-rail__tabs"
+          role="tablist"
+          aria-orientation="vertical"
+          aria-label={kindCopy(kind).plural}
+        >
+          {vm.cards.map((card, index) => (
+            <RequirementTab
+              key={card.key}
+              kind={kind}
+              card={card}
+              position={index + 1}
+              selected={card.key === selected.key}
+              invalid={vm.cardErrors[card.key] !== undefined}
+              tabId={tabDomId(baseId, card.key)}
+              paneId={paneId}
+              tabRef={(element) => {
+                if (element) tabs.current.set(card.key, element);
+                else tabs.current.delete(card.key);
+              }}
+              onSelect={() => select(card.key)}
+              onKeyDown={(event) => onTabKeyDown(event, index)}
+              onRemove={several ? () => remove(card.key) : null}
+            />
+          ))}
+        </div>
+        <AddRequirementButton kind={kind} canAdd={vm.canAddCard} onAdd={add} />
+      </div>
+      <div
+        ref={pane}
+        className="rq-pane"
+        role="tabpanel"
+        id={paneId}
+        aria-labelledby={tabDomId(baseId, selected.key)}
+      >
+        <RequirementPane
+          // A new pane per requirement: its story rows start fresh, and it fades in.
+          key={selected.key}
+          vm={vm}
+          kind={kind}
+          card={selected}
+          index={selectedIndex}
+          errorId={errorId}
+          nameRef={(element) => {
+            nameInput.current = element;
+          }}
+        />
       </div>
     </div>
   );
@@ -409,9 +585,9 @@ function EditRequirementDialog({
 }
 
 /**
- * New Feature (or New System requirement): several at once, one card each,
- * sent together. Edit keeps the single-requirement form. Product owners and
- * admins only.
+ * New Feature (or New System requirement): several at once, a side list of
+ * them beside one editor, sent together. Edit keeps the single-requirement
+ * form. Product owners and admins only.
  */
 export function RequirementDialog({ vm }: Readonly<{ vm: RequirementDialogViewModel }>) {
   const mode = vm.mode;

@@ -2206,20 +2206,34 @@ async function leadWritesProjectRequirements({ page, backend, baseUrl }: Journey
   // Landscape: the actions stay on screen; only the body scrolls.
   await visible(dialog.locator('.hier-dialog-footer').getByRole('button', { name: 'Create feature' }), 'the pinned Create');
 
-  // Two Features in one go: card 1 with its stories, then the add tile for card 2.
-  const first = dialog.getByRole('group', { name: 'Feature 1' });
-  await first.getByPlaceholder('Checkout with saved cards').fill(FEATURE.name);
+  // Two Features in one go, as a side list of tabs beside one editor: the
+  // first with its stories, then "Add feature" for the second.
+  const list = dialog.getByRole('tablist', { name: 'Features' });
+  const tab = (name: string | RegExp, selected = true) => list.getByRole('tab', { name, selected });
+  const firstTab = new RegExp(`^${FEATURE.name}`);
+  await visible(tab(/^Untitled feature/), 'the first Feature, open and untitled');
+  const editor = dialog.getByRole('tabpanel');
+  const name = editor.getByPlaceholder('Checkout with saved cards');
+  await name.fill(FEATURE.name);
+  await visible(tab(firstTab), 'the tab named as the Name is typed');
   // One input per story: type, Enter for the next row, type.
-  const story = (index: number) => first.getByRole('textbox', { name: `User story ${index}`, exact: true });
+  const story = (index: number) => editor.getByRole('textbox', { name: `User story ${index}`, exact: true });
   await story(1).fill(FEATURE.stories[0]);
   await story(1).press('Enter');
   await story(2).fill(FEATURE.stories[1]);
-  await dialog.getByRole('button', { name: /Add another Feature/ }).click();
-  const second = dialog.getByRole('group', { name: 'Feature 2' });
-  await second.getByPlaceholder('Checkout with saved cards').fill(SECOND_FEATURE);
-  // Ctrl+Enter adds a third card; left empty, it is ignored.
-  await second.getByPlaceholder('Checkout with saved cards').press('Control+Enter');
-  await visible(dialog.getByRole('group', { name: 'Feature 3' }), 'a third card from Ctrl+Enter');
+  await expectText(tab(firstTab), '2 stories', 'the story count on the tab');
+  await dialog.getByRole('button', { name: 'Add feature' }).click();
+  await visible(tab(/^Untitled feature/), 'the second Feature, open');
+  await name.fill(SECOND_FEATURE);
+  await visible(tab(new RegExp(`^${SECOND_FEATURE}`)), 'the second tab, named');
+  // Ctrl+Enter adds a third; left empty, it is ignored.
+  await name.press('Control+Enter');
+  await eventually('a third Feature from Ctrl+Enter', async () => (await list.getByRole('tab').count()) === 3);
+  await visible(tab(/^Untitled feature/), 'the third Feature, open');
+  // Home goes back to the first, its stories as typed.
+  await list.getByRole('tab', { selected: true }).press('Home');
+  await visible(tab(firstTab), 'Home opens the first Feature');
+  assert.equal(await story(2).inputValue(), FEATURE.stories[1], 'the first Feature keeps its stories');
   await dialog.getByRole('button', { name: 'Create 2 features' }).click();
   await absent(dialog, 'the New Feature dialog');
   assert.equal(backend.callsTo('POST', new RegExp(`^/delivery-projects/${STOREFRONT_FOLDER}/requirements$`)).length, 0, 'never one request per Feature');

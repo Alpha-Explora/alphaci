@@ -145,10 +145,11 @@ describe("useRequirementDialogViewModel", () => {
     act(() => vm.current().openCreate("functional"));
     expect(vm.current().status).toBe("editing");
     expect(vm.current().cards.map((card) => card.key)).toEqual(["card-1"]);
+    expect(vm.current().selectedKey).toBe("card-1");
     expect(vm.current().submitLabel).toBe("Create feature");
     await act(async () => vm.current().submit());
     expect(vm.current().cardErrors).toEqual({ "card-1": "Give the Feature a name." });
-    expect(vm.current().cardFocus).toEqual({ key: "card-1", attempt: 1 });
+    expect(vm.current().cardFocus).toEqual({ key: "card-1", field: { field: "name" }, attempt: 1 });
     expect(repo.createBatch).not.toHaveBeenCalled();
 
     // Card 1: a name and its stories, built row by row as the dialog does.
@@ -174,6 +175,8 @@ describe("useRequirementDialogViewModel", () => {
       second = vm.current().addCard();
     });
     expect(second).toBe("card-2");
+    // The new one opens in the editor.
+    expect(vm.current().selectedKey).toBe("card-2");
     act(() => vm.current().updateCard("card-2", { name: "Refunds" }));
     act(() => {
       vm.current().addCard();
@@ -209,6 +212,57 @@ describe("useRequirementDialogViewModel", () => {
     expect(repo.createBatch).not.toHaveBeenCalled();
   });
 
+  it("opens the first card at fault on a failed Create and points at the field at fault", async () => {
+    const vm = hook();
+    act(() => vm.current().openCreate("functional"));
+    act(() => vm.current().updateCard("card-1", { name: "Wallet" }));
+    act(() => vm.current().editCardStory("card-1", 0, "y".repeat(301)));
+    act(() => {
+      vm.current().addCard();
+    });
+    act(() => vm.current().editCardStory("card-2", 0, "Pay later"));
+    expect(vm.current().selectedKey).toBe("card-2");
+    await act(async () => vm.current().submit());
+    // Card 1 comes first: its long story, row 0.
+    expect(vm.current().selectedKey).toBe("card-1");
+    expect(vm.current().cardFocus).toEqual({ key: "card-1", field: { field: "story", row: 0 }, attempt: 1 });
+    act(() => vm.current().editCardStory("card-1", 0, "Fine"));
+    await act(async () => vm.current().submit());
+    expect(vm.current().selectedKey).toBe("card-2");
+    expect(vm.current().cardFocus).toEqual({ key: "card-2", field: { field: "name" }, attempt: 2 });
+    expect(repo.createBatch).not.toHaveBeenCalled();
+  });
+
+  it("selects a card, and on removing the open one opens the next, else the previous", () => {
+    const vm = hook();
+    act(() => vm.current().openCreate("functional"));
+    act(() => {
+      vm.current().addCard();
+    });
+    act(() => {
+      vm.current().addCard();
+    });
+    expect(vm.current().selectedKey).toBe("card-3");
+    act(() => vm.current().selectCard("card-2"));
+    expect(vm.current().selectedKey).toBe("card-2");
+    act(() => vm.current().removeCard("card-2"));
+    expect(vm.current().cards.map((card) => card.key)).toEqual(["card-1", "card-3"]);
+    expect(vm.current().selectedKey).toBe("card-3");
+    act(() => vm.current().removeCard("card-3"));
+    expect(vm.current().selectedKey).toBe("card-1");
+    // Removing one that is not open keeps the selection.
+    act(() => {
+      vm.current().addCard();
+    });
+    act(() => vm.current().selectCard("card-1"));
+    act(() => vm.current().removeCard("card-4"));
+    expect(vm.current().selectedKey).toBe("card-1");
+    // A fresh dialog opens on its one card.
+    act(() => vm.current().close());
+    act(() => vm.current().openCreate("functional"));
+    expect(vm.current().selectedKey).toBe("card-1");
+  });
+
   it("puts the server's taken name on the card its index names; nothing was created", async () => {
     const onSaved = jest.fn();
     repo.createBatch.mockRejectedValue(apiErrorWith(409, { code: "REQUIREMENT_NAME_TAKEN", index: 1 }));
@@ -222,11 +276,12 @@ describe("useRequirementDialogViewModel", () => {
     await act(async () => vm.current().submit());
     expect(vm.current().status).toBe("editing");
     expect(onSaved).not.toHaveBeenCalled();
-    expect(vm.current().error?.message).toBe("Nothing was created. Fix Feature 2, then try again.");
+    expect(vm.current().error?.message).toBe('Nothing was created. Fix "Checkout with saved cards", then try again.');
     expect(vm.current().cardErrors).toEqual({
       "card-2": "This Project already has a requirement with that name. Pick another name.",
     });
-    expect(vm.current().cardFocus).toEqual({ key: "card-2", attempt: 1 });
+    expect(vm.current().cardFocus).toEqual({ key: "card-2", field: { field: "name" }, attempt: 1 });
+    expect(vm.current().selectedKey).toBe("card-2");
 
     // Renaming that card retires the server's complaint.
     act(() => vm.current().updateCard("card-2", { name: "Checkout" }));

@@ -8,12 +8,17 @@ import {
   batchPayload,
   batchSubmitLabel,
   canAddCard,
+  cardErrorField,
   cardErrors as cardErrorsRule,
   firstCards,
+  firstInvalidCardKey,
   nextCardKey,
   removeCard as removeCardRule,
   requirementBatchError,
+  resolveSelectedKey,
+  selectedAfterRemove,
   updateCard as updateCardRule,
+  type CardErrorField,
 } from "../../model/requirement-batch-rules";
 import {
   addStoryRow,
@@ -40,9 +45,10 @@ export type RequirementDialogMode =
   | { kind: "create"; requirementKind: RequirementKind }
   | { kind: "edit"; requirement: Requirement };
 
-/** The card a failed Create points at, and which failure it was (to scroll to it once per failure). */
+/** The card a failed Create points at, the field to focus in it, and which failure it was (to focus once per failure). */
 export interface CardFocus {
   key: string;
+  field: CardErrorField;
   attempt: number;
 }
 
@@ -54,13 +60,17 @@ export interface RequirementDialogViewModel {
   /** Edit: the one requirement's name and description. */
   draft: RequirementDraft;
   updateDraft: (patch: Partial<RequirementDraft>) => void;
-  /** Create: one card per requirement, in order. Never empty. */
+  /** Create: one card per requirement, in order (the side list). Never empty. */
   cards: RequirementCardDraft[];
+  /** Create: the card open in the editor pane (the selected entry of the side list). */
+  selectedKey: string;
+  selectCard: (key: string) => void;
   /** Why a card cannot be sent, by card key: once Create was tried, or from the server. */
   cardErrors: Readonly<Record<string, string>>;
   canAddCard: boolean;
-  /** A blank card at the end; its key (to focus its Name), or null at the limit. */
+  /** A blank card at the end, selected; its key (to focus its Name), or null at the limit. */
   addCard: () => string | null;
+  /** Removes the card; when it was the open one, its neighbour opens (the next, else the previous). */
   removeCard: (key: string) => void;
   updateCard: (key: string, patch: CardText) => void;
   /* A card's first stories (or items), one row each. */
@@ -72,7 +82,7 @@ export interface RequirementDialogViewModel {
   pasteCardStories: (key: string, index: number, pasted: string) => boolean;
   /** "Create feature", "Create 3 features"; "Save" when editing. */
   submitLabel: string;
-  /** The card to bring into view after a failed Create, or null. */
+  /** The card (now open) and field to focus after a failed Create, or null. */
   cardFocus: CardFocus | null;
   /** Edit: why the draft cannot be sent. Shown once Save was tried. */
   validationError: string | null;
@@ -124,8 +134,9 @@ function submitLabelFor(mode: RequirementDialogMode | null, cards: RequirementCa
 
 /**
  * ViewModel for the requirement dialog (Product owner, admin): create
- * several Features (or System requirements) at once — one card each, with
- * its first stories — in ONE all-or-nothing request; rename or re-describe
+ * several Features (or System requirements) at once — one entry each in a
+ * side list, the selected one open in an editor pane, with its first
+ * stories — in ONE all-or-nothing request; rename or re-describe
  * one; or archive it. An edit carries the version read, so two Product
  * owners editing at once get a 409 instead of silently overwriting each other.
  */
@@ -139,6 +150,7 @@ export function useRequirementDialogViewModel(options: {
   const [busy, setBusy] = useState(false);
   const [draft, setDraft] = useState<RequirementDraft>(blankRequirementDraft);
   const [cards, setCards] = useState<RequirementCardDraft[]>(firstCards);
+  const [selected, setSelected] = useState<string | null>(null);
   const [attempted, setAttempted] = useState(false);
   const [error, setError] = useState<RequirementError | null>(null);
   const [serverCardError, setServerCardError] = useState<ServerCardError | null>(null);
@@ -154,7 +166,9 @@ export function useRequirementDialogViewModel(options: {
   function openCreate(requirementKind: RequirementKind) {
     setArchiving(null);
     setMode({ kind: "create", requirementKind });
-    setCards(firstCards());
+    const fresh = firstCards();
+    setCards(fresh);
+    setSelected(fresh[0].key);
     reset();
   }
 
@@ -177,8 +191,10 @@ export function useRequirementDialogViewModel(options: {
     setArchiving(null);
   }
 
-  function pointAt(key: string) {
-    setCardFocus((previous) => ({ key, attempt: (previous?.attempt ?? 0) + 1 }));
+  /** Opens the card a failed Create names and asks the view to focus `field` in it. */
+  function pointAt(key: string, field: CardErrorField) {
+    setSelected(key);
+    setCardFocus((previous) => ({ key, field, attempt: (previous?.attempt ?? 0) + 1 }));
   }
 
   async function write(task: () => Promise<Requirement | null>, fallback: string) {
@@ -197,9 +213,10 @@ export function useRequirementDialogViewModel(options: {
   }
 
   async function createAll(kind: RequirementKind) {
-    const invalid = Object.keys(cardErrorsRule(cards, kind))[0];
-    if (invalid) {
-      pointAt(invalid);
+    const invalid = firstInvalidCardKey(cards, cardErrorsRule(cards, kind));
+    const invalidCard = cards.find((card) => card.key === invalid);
+    if (invalidCard) {
+      pointAt(invalidCard.key, cardErrorField(invalidCard));
       return;
     }
     const sent = cards;
@@ -215,7 +232,8 @@ export function useRequirementDialogViewModel(options: {
       setError({ message: failure.message, stale: failure.stale });
       if (failure.cardKey && failure.cardMessage) {
         setServerCardError({ key: failure.cardKey, message: failure.cardMessage });
-        pointAt(failure.cardKey);
+        // The server names a card by its name: taken, or a duplicate.
+        pointAt(failure.cardKey, { field: "name" });
       }
     } finally {
       setBusy(false);
@@ -253,7 +271,13 @@ export function useRequirementDialogViewModel(options: {
     if (!canAddCard(cards)) return null;
     const key = nextCardKey(cards);
     setCards((current) => addCardRule(current, key));
+    setSelected(key);
     return key;
+  }
+
+  function removeCard(key: string) {
+    setSelected(selectedAfterRemove(cards, selected, key));
+    setCards((current) => removeCardRule(current, key));
   }
 
   function updateCard(key: string, patch: CardText) {
@@ -282,10 +306,12 @@ export function useRequirementDialogViewModel(options: {
     draft,
     updateDraft: (patch) => setDraft((current) => ({ ...current, ...patch })),
     cards,
+    selectedKey: resolveSelectedKey(cards, selected),
+    selectCard: setSelected,
     cardErrors: visibleCardErrors(attempted, mode, cards, serverCardError),
     canAddCard: canAddCard(cards),
     addCard,
-    removeCard: (key) => setCards((current) => removeCardRule(current, key)),
+    removeCard,
     updateCard,
     editCardStory: (key, index, value) => setStories(key, (rows) => editStoryRow(rows, index, value)),
     addCardStory: (key, afterIndex) => setStories(key, (rows) => addStoryRow(rows, afterIndex)),

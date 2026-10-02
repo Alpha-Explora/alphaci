@@ -322,15 +322,18 @@ export function Dialog({
     onCloseRef.current = onClose;
   });
 
-  /* Focus the first field on open and restore focus on close: once per
-   * opening, never on a re-render while open. */
+  /* Focus the first field (or the one marked data-autofocus) on open and
+   * restore focus on close: once per opening, never on a re-render while open. */
   useEffect(() => {
     if (!open) return;
     restoreFocusRef.current = document.activeElement as HTMLElement | null;
     const timer = window.setTimeout(() => {
-      const focusable = panelRef.current?.querySelector<HTMLElement>(
-        "input, select, textarea, button",
-      );
+      // A field marked data-autofocus wins over the first one in the DOM
+      // (a side list of tabs can come before the field to type in).
+      const panel = panelRef.current;
+      const focusable =
+        panel?.querySelector<HTMLElement>("[data-autofocus]") ??
+        panel?.querySelector<HTMLElement>("input, select, textarea, button");
       focusable?.focus();
     }, 0);
 
