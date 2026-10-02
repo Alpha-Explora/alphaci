@@ -35,6 +35,14 @@ import { errorStatus, oneOf, record, records, text, type Loose } from "./wire-re
 type Role = AppRole | null | undefined;
 
 export const REQUIREMENT_KINDS: ReadonlyArray<RequirementKind> = ["functional", "system"];
+
+/**
+ * The sections a Project's Requirements tab shows, in order. System
+ * requirements are hidden for now; add "system" back to show them again.
+ * Only the section is hidden: existing System requirements still reach QA
+ * runs and My QA items, so they can still be progressed and verified.
+ */
+export const SHOWN_REQUIREMENT_KINDS: ReadonlyArray<RequirementKind> = ["functional"];
 export const PROGRESS_VALUES: ReadonlyArray<RequirementProgress> = ["todo", "in_progress", "done"];
 /** The backend's limits (CreateRequirementDto, RequirementItemDto). */
 export const REQUIREMENT_NAME_MAX = 200;

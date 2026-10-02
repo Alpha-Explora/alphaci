@@ -4,7 +4,12 @@ import { createRoot, type Root } from "react-dom/client";
 import { projectQaRunsRepository } from "../../../../../src/features/checklists/data/project-qa-runs-repository";
 import { requirementsRepository } from "../../../../../src/features/checklists/data/requirements-repository";
 import { normalizeProjectMyItems, normalizeProjectRunCurrent } from "../../../../../src/features/checklists/model/project-run-rules";
-import { normalizeProjectRequirements, normalizeRequirementItem } from "../../../../../src/features/checklists/model/requirement-rules";
+import {
+  normalizeProjectRequirements,
+  normalizeRequirementItem,
+  REQUIREMENT_KINDS,
+  SHOWN_REQUIREMENT_KINDS,
+} from "../../../../../src/features/checklists/model/requirement-rules";
 import { ProjectQaWorkspace } from "../../../../../src/features/checklists/requirements/views/project-qa-workspace";
 import { ProjectRequirementsPanel } from "../../../../../src/features/checklists/requirements/views/project-requirements-panel";
 import { ProjectMyItemsCard } from "../../../../../src/features/checklists/returned/views/project-my-items-card";
@@ -85,9 +90,24 @@ function loadRequirements(role: AppRole) {
 }
 
 describe("ProjectRequirementsPanel", () => {
-  it("gives a Product owner the Features first, with create, edit, reorder and Progress", async () => {
+  /* System requirements are hidden for now (SHOWN_REQUIREMENT_KINDS). */
+  it("shows only the Features section by default, even when a System requirement exists", async () => {
+    expect(SHOWN_REQUIREMENT_KINDS).toEqual(["functional"]);
     loadRequirements("lead");
     const container = await render(<ProjectRequirementsPanel deliveryProjectId="dp-1" appRole="lead" />);
+    const sections = [...container.querySelectorAll("section.rq-section")];
+    expect(sections.map((section) => section.getAttribute("data-kind"))).toEqual(["functional"]);
+    expect(container.textContent).not.toContain("System requirements");
+    expect(container.textContent).not.toContain("Release smoke test");
+    expect(buttonNamed(container, "New system requirement")).toBeUndefined();
+    expect(buttonNamed(container, "New Feature")).toBeDefined();
+  });
+
+  it("gives a Product owner the Features first, with create, edit, reorder and Progress", async () => {
+    loadRequirements("lead");
+    const container = await render(
+      <ProjectRequirementsPanel deliveryProjectId="dp-1" appRole="lead" kinds={REQUIREMENT_KINDS} />,
+    );
     const sections = [...container.querySelectorAll("section.rq-section")];
     expect(sections.map((section) => section.getAttribute("data-kind"))).toEqual(["functional", "system"]);
     expect(sections[0].textContent).toContain("Functional Requirements (Features)");
@@ -168,9 +188,11 @@ describe("ProjectRequirementsPanel", () => {
     expect(rows()).toHaveLength(2);
   });
 
-  it("calls them items in the New system requirement dialog", async () => {
+  it("calls them items in the New system requirement dialog (when System is shown)", async () => {
     loadRequirements("lead");
-    const container = await render(<ProjectRequirementsPanel deliveryProjectId="dp-1" appRole="lead" />);
+    const container = await render(
+      <ProjectRequirementsPanel deliveryProjectId="dp-1" appRole="lead" kinds={REQUIREMENT_KINDS} />,
+    );
     await act(async () => buttonNamed(container, "New system requirement")!.click());
     const dialog = document.querySelector<HTMLElement>('[role="dialog"]')!;
     expect(dialog.textContent).toContain("Items (optional)");

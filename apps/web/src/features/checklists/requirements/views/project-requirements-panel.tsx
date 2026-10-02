@@ -8,7 +8,12 @@ import { LoadingRows } from "@/features/groups/workspace";
 import type { AppRole } from "@/shared/api/contracts";
 
 import { useItemProgressViewModel, type ItemProgressViewModel } from "../../returned";
-import { canSetVerification, kindCopy, type RequirementPermissions } from "../../model/requirement-rules";
+import {
+  canSetVerification,
+  kindCopy,
+  SHOWN_REQUIREMENT_KINDS,
+  type RequirementPermissions,
+} from "../../model/requirement-rules";
 import type { Requirement, RequirementKind } from "../../model/requirement-types";
 import {
   useProjectRequirementsViewModel,
@@ -124,8 +129,9 @@ function KindSection({
 }
 
 /**
- * A Project's requirements, in two sections: Functional Requirements
- * (Features, each with its User stories) first, then System requirements.
+ * A Project's requirements, one section per shown kind: Functional
+ * Requirements (Features, each with its User stories) first, then System
+ * requirements when SHOWN_REQUIREMENT_KINDS includes them (hidden for now).
  * Product owners and admins write them; Developers move Progress; the QA
  * Team reads them here and verifies them on the Project QA run.
  */
@@ -133,10 +139,13 @@ export function ProjectRequirementsPanel({
   deliveryProjectId,
   appRole,
   enabled = true,
+  kinds = SHOWN_REQUIREMENT_KINDS,
 }: Readonly<{
   deliveryProjectId: string;
   appRole: AppRole | null | undefined;
   enabled?: boolean;
+  /** The sections to show, in order. Defaults to SHOWN_REQUIREMENT_KINDS. */
+  kinds?: ReadonlyArray<RequirementKind>;
 }>) {
   const vm = useProjectRequirementsViewModel({ deliveryProjectId, enabled, appRole });
   const dialog = useRequirementDialogViewModel({ deliveryProjectId, onSaved: vm.applyRequirement });
@@ -157,8 +166,16 @@ export function ProjectRequirementsPanel({
   return (
     <div className="rq-panel">
       <p className="rq-panel__role">{roleLine(vm.permissions, appRole)}</p>
-      <KindSection kind="functional" requirements={vm.functional} vm={vm} dialog={dialog} progress={progress} />
-      <KindSection kind="system" requirements={vm.system} vm={vm} dialog={dialog} progress={progress} />
+      {kinds.map((kind) => (
+        <KindSection
+          key={kind}
+          kind={kind}
+          requirements={kind === "functional" ? vm.functional : vm.system}
+          vm={vm}
+          dialog={dialog}
+          progress={progress}
+        />
+      ))}
       {vm.permissions.canManage ? (
         <>
           <RequirementDialog vm={dialog} />

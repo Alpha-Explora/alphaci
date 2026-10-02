@@ -2729,7 +2729,9 @@ async function leadOrganisesProjects({ page, backend, baseUrl }: JourneyContext)
 
   // Requirements and QA belong to the Project now: no per-repository checklist attach.
   await visible(page.getByRole('tablist', { name: 'Project QA' }), 'the Project QA workspace');
-  await expectText(page.locator('section.rq-section[data-kind="system"]'), RELEASE_CHECKLIST.name, 'the System requirement');
+  // System requirements are hidden for now (SHOWN_REQUIREMENT_KINDS): Features only.
+  await visible(page.locator('section.rq-section[data-kind="functional"]'), 'the Features section');
+  assert.equal(await page.locator('section.rq-section[data-kind="system"]').count(), 0, 'no System requirements section');
   assert.equal(await page.locator('.pf-attach').count(), 0, 'no checklist attach');
   assert.equal(backend.callsTo('PATCH', /^\/qa-checklists\/[^/]+\/projects$/).length, 0, 'never a repository share');
 
