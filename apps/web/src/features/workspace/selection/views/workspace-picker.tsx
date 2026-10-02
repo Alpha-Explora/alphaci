@@ -29,7 +29,7 @@ export interface WorkspacePickerProps {
   otherTeams: readonly WorkspaceSummary[];
   /** The team on screen, or null before one resolves. */
   current: WorkspaceSummary | null;
-  /** Offer the "Create team" button in the heading row (Team leads and Admins). */
+  /** Offer the "Create workspace" button in the heading row (Team leads and Admins). */
   canCreate: boolean;
   onSelect: (workspaceId: string) => void;
   onCreate: () => void;
@@ -93,7 +93,7 @@ export function PlusIcon() {
 
 /**
  * The header's team picker: a button that opens a listbox of teams under one
- * "Your teams" heading, with a compact "+" (Create team) button at the right
+ * "Your teams" heading, with a compact "+" (Create workspace) button at the right
  * end of that heading for the people who may create one.
  *
  * It replaced a native <select>, whose create entry had to ride in as a fake
@@ -313,8 +313,8 @@ export function WorkspacePicker({
                 ref={createRef}
                 type="button"
                 className="team-switcher-add"
-                aria-label="Create team"
-                title="Create team"
+                aria-label="Create workspace"
+                title="Create workspace"
                 data-testid="workspace-switcher-create"
                 onClick={create}
               >
