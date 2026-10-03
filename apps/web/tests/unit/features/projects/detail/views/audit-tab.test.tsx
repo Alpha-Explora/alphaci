@@ -8,7 +8,7 @@ import { AuditTab } from "../../../../../../src/features/projects/detail/views/a
 import type { ProvisionedProject } from "../../../../../../src/shared/api/contracts";
 
 jest.mock("../../../../../../src/features/projects/data/projects-repository", () => ({
-  projectsRepository: { audit: jest.fn() },
+  projectsRepository: { audit: jest.fn(), syncAudit: jest.fn() },
 }));
 
 const repo = projectsRepository as jest.Mocked<typeof projectsRepository>;
@@ -155,5 +155,151 @@ describe("Audit tab", () => {
     repo.audit.mockRejectedValue(new Error("boom"));
     const container = await render();
     await poll(() => container.textContent?.includes("Unable to load audit events.") ?? false);
+  });
+});
+
+describe("Audit tab: GitHub activity", () => {
+  const push = event({
+    id: "gh-push",
+    eventCode: "github.push",
+    message: "ana-gh pushed to dev",
+    actorLogin: null,
+    scope: "github",
+    metadata: {
+      branch: "dev",
+      size: 3,
+      forced: false,
+      githubLogin: "ana-gh",
+      commits: [
+        { sha: "a".repeat(40), message: "Add checkout\n\nbody", authorName: "Ana" },
+        { sha: "b".repeat(40), message: "Fix total", authorName: "Ana" },
+      ],
+    },
+  });
+  const merged = event({
+    id: "gh-pr",
+    eventCode: "github.pull_request.merged",
+    actorLogin: "bo",
+    scope: "github",
+    metadata: { number: 12, title: "Checkout", base: "uat", head: "dev", state: "merged" },
+  });
+
+  function rowEls(container: HTMLElement) {
+    return [...container.querySelectorAll<HTMLLIElement>("li.audit-trail__row:not(.audit-trail__row--skeleton)")];
+  }
+
+  it("words GitHub events, tags them GitHub and names the GitHub login", async () => {
+    repo.audit.mockResolvedValue({ enabled: true, items: [push, merged, event()], next: null } as never);
+    const container = await render();
+    await poll(() => rowEls(container).length === 3);
+
+    const [pushRow, prRow, appRow] = rowEls(container);
+    expect(pushRow.querySelector(".audit-trail__label")?.textContent).toContain("Pushed 3 commits to dev");
+    expect(pushRow.querySelector(".audit-trail__tag--github")?.textContent).toBe("GitHub");
+    expect(pushRow.querySelector(".audit-trail__actor")?.textContent).toBe("ana-gh");
+    // The server's sentence only repeats GitHub's, so it is not shown.
+    expect(pushRow.querySelector(".audit-trail__detail")).toBeNull();
+    expect(prRow.textContent).toContain("Merged pull request #12 into uat");
+    expect(prRow.querySelector(".audit-trail__actor")?.textContent).toBe("bo");
+    expect(appRow.querySelector(".audit-trail__tag--github")).toBeNull();
+  });
+
+  it("expands a push to its commits, with the unlisted ones counted", async () => {
+    repo.audit.mockResolvedValue({ enabled: true, items: [push], next: null } as never);
+    const container = await render();
+    await poll(() => rowEls(container).length === 1);
+
+    const toggle = container.querySelector<HTMLButtonElement>(".audit-trail__push-toggle")!;
+    expect(toggle.textContent).toBe("3 commits");
+    expect(toggle.getAttribute("aria-expanded")).toBe("false");
+    expect(container.querySelector(".audit-trail__commits")).toBeNull();
+
+    await act(async () => toggle.click());
+    expect(toggle.getAttribute("aria-expanded")).toBe("true");
+    const commits = [...container.querySelectorAll(".audit-trail__commit")].map((li) => li.textContent);
+    expect(commits).toEqual(["aaaaaaaAdd checkout", "bbbbbbbFix total", "and 1 more not listed"]);
+    expect(container.querySelector(".audit-trail__commits")?.id).toBe(toggle.getAttribute("aria-controls"));
+
+    await act(async () => toggle.click());
+    expect(container.querySelector(".audit-trail__commits")).toBeNull();
+  });
+
+  it("filters the loaded rows by source", async () => {
+    repo.audit.mockResolvedValue({
+      enabled: true,
+      items: [push, event()],
+      next: null,
+      githubSync: { status: "ok", syncedAt: null },
+    } as never);
+    const container = await render();
+    await poll(() => rowEls(container).length === 2);
+
+    const chips = [...container.querySelectorAll<HTMLButtonElement>(".audit-trail__filter")];
+    expect(chips.map((chip) => chip.textContent)).toEqual(["All", "ALPHACI", "GitHub"]);
+    expect(chips[0].getAttribute("aria-pressed")).toBe("true");
+
+    await act(async () => chips[2].click());
+    expect(rowEls(container).map((row) => row.dataset.scope)).toEqual(["github"]);
+    await act(async () => chips[1].click());
+    expect(rowEls(container).map((row) => row.dataset.scope)).toEqual(["repository"]);
+    expect(chips[1].getAttribute("aria-pressed")).toBe("true");
+    expect(repo.audit).toHaveBeenCalledTimes(1);
+  });
+
+  it("says when a filter has nothing loaded", async () => {
+    repo.audit.mockResolvedValue({ enabled: true, items: [event()], next: null, githubSync: { status: "ok", syncedAt: null } } as never);
+    const container = await render();
+    await poll(() => button(container, "GitHub") !== undefined);
+    await act(async () => button(container, "GitHub")!.click());
+    expect(container.textContent).toContain("No GitHub activity among the loaded events.");
+  });
+
+  it("has no chips or sync line on an older backend", async () => {
+    repo.audit.mockResolvedValue({ enabled: true, items: [event()], next: null } as never);
+    const container = await render();
+    await poll(() => rowEls(container).length === 1);
+    expect(container.querySelector(".audit-trail__filters")).toBeNull();
+    expect(container.querySelector(".audit-trail__sync")).toBeNull();
+  });
+
+  it("shows the sync line and syncs now, then re-reads the first page", async () => {
+    repo.audit
+      .mockResolvedValueOnce({
+        enabled: true,
+        items: [event()],
+        next: null,
+        githubSync: { status: "failed", syncedAt: null },
+      } as never)
+      .mockResolvedValueOnce({
+        enabled: true,
+        items: [push, event()],
+        next: null,
+        githubSync: { status: "ok", syncedAt: new Date().toISOString() },
+      } as never);
+    repo.syncAudit.mockResolvedValue({});
+    const container = await render();
+    await poll(() => container.querySelector(".audit-trail__sync") !== null);
+
+    const line = container.querySelector(".audit-trail__sync")!;
+    expect(line.getAttribute("data-tone")).toBe("warning");
+    expect(line.textContent).toContain("Couldn't reach GitHub just now — showing what was saved");
+
+    await act(async () => button(container, "Sync now")!.click());
+    await poll(() => rowEls(container).length === 2);
+    expect(repo.syncAudit).toHaveBeenCalledWith("p1");
+    expect(repo.audit).toHaveBeenLastCalledWith("p1", { limit: 50 });
+    const fresh = container.querySelector(".audit-trail__sync")!;
+    expect(fresh.getAttribute("data-tone")).toBe("ok");
+    expect(fresh.textContent).toContain("GitHub activity synced just now");
+  });
+
+  it("says a failed sync, and keeps the rows", async () => {
+    repo.audit.mockResolvedValue({ enabled: true, items: [event()], next: null, githubSync: { status: "ok", syncedAt: null } } as never);
+    repo.syncAudit.mockRejectedValue(new Error("boom"));
+    const container = await render();
+    await poll(() => button(container, "Sync now") !== undefined);
+    await act(async () => button(container, "Sync now")!.click());
+    await poll(() => container.textContent?.includes("Couldn't sync with GitHub. Try again in a moment.") ?? false);
+    expect(rowEls(container)).toHaveLength(1);
   });
 });

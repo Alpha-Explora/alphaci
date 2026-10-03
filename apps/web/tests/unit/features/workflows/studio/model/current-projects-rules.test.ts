@@ -5,6 +5,7 @@ import {
   nextMenuIndex,
   nextNewProjectTeam,
   readProjectsDeepLink,
+  teamProjectsHref,
 } from "../../../../../../src/features/workflows/studio/model/current-projects-rules";
 import { searchWithoutTab } from "../../../../../../src/features/workflows/studio/model/workflow-studio-rules";
 
@@ -126,6 +127,13 @@ describe("newProjectHref", () => {
     const link = readProjectsDeepLink(new URLSearchParams("group=g-1&new=project"));
     expect(link).toMatchObject({ groupId: "g-1", opensNewProject: true, opensSetup: false });
     expect(readProjectsDeepLink(new URLSearchParams("new=other")).opensNewProject).toBe(false);
+  });
+});
+
+describe("teamProjectsHref", () => {
+  it("links the Projects page on one team, as readProjectsDeepLink reads it back", () => {
+    expect(teamProjectsHref("g-1")).toBe("/workflows?group=g-1");
+    expect(readProjectsDeepLink(new URLSearchParams("group=g-1")).groupId).toBe("g-1");
   });
 });
 

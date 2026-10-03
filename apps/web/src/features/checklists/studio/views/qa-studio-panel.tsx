@@ -387,6 +387,8 @@ function previewFramed(vm: StudioViewportViewModel): "true" | "false" {
  * the right, side by side so a tester never leaves the page to record what
  * they saw. Every right comes from the server; this view only arranges it.
  *
+ * Docked, `data-layout` says how the two share the width (wide preview or
+ * split); CSS alone applies it, so switching never touches the tree.
  * Full screen re-lays out the SAME tree with CSS (`data-full-screen`): the
  * studio covers the viewport and the run column becomes a floating drawer.
  * The run column is mounted exactly once — never a second copy for the
@@ -431,6 +433,7 @@ export function QaStudioPanel({
       aria-labelledby="project-detail-tab-qa"
       className="qa-studio"
       data-full-screen={String(viewport.isFullScreen)}
+      data-layout={viewport.layout}
       data-checklist={mode}
       data-side={viewport.floatingSide}
     >

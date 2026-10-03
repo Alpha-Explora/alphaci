@@ -51,6 +51,11 @@ export function readProjectsDeepLink(params: {
   };
 }
 
+/** The Projects page on one team: the `?group=` link selects it in the header. */
+export function teamProjectsHref(groupId: string): string {
+  return `/workflows?${new URLSearchParams({ group: groupId }).toString()}`;
+}
+
 /** The Projects page link that opens the New Project dialog, on a team when one is named. */
 export function newProjectHref(groupId?: string | null): string {
   const params = new URLSearchParams();

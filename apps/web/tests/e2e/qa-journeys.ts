@@ -8,6 +8,7 @@ import type {
   AuthMeResponse,
   CapabilitiesResponse,
   ProjectAuditEventsResponse,
+  ProjectCommitsResponse,
   ProjectOptionsResponse,
   ProjectOverviewResponse,
   ProjectPreviewsResponse,
@@ -1085,6 +1086,8 @@ class QaMockBackend {
       ['GET', new RegExp(`^/projects/${P}/overview$`), (m) => ({ body: this.overview(m[1]) })],
       ['GET', new RegExp(`^/projects/${P}/previews$`), (m) => ({ body: this.previews(m[1]) })],
       ['GET', new RegExp(`^/projects/${P}/audit$`), (m, req) => this.audit(m[1], req.query)],
+      ['POST', new RegExp(`^/projects/${P}/audit/sync$`), (m) => this.syncAudit(m[1])],
+      ['GET', new RegExp(`^/projects/${P}/commits$`), (m, req) => this.commits(m[1], req.query)],
       // Project requirements and Project QA runs (404 on an older backend)
       ['GET', new RegExp(`^/delivery-projects/${P}/requirements$`), (m) => this.projectRequirements(m[1])],
       ['POST', new RegExp(`^/delivery-projects/${P}/requirements$`), (m, req) => this.createRequirement(m[1], req.body)],
@@ -1345,7 +1348,62 @@ class QaMockBackend {
     const older = before ? all.filter((item) => item.createdAt < before) : all;
     const page = older.slice(0, Math.min(limit, 2));
     const next = older.length > page.length ? page[page.length - 1].createdAt : null;
-    return { body: { enabled: true, items: page, next } satisfies ProjectAuditEventsResponse };
+    // GitHub activity: 'failed' until POST /audit/sync has run once, then 'ok'.
+    const githubSync = this.auditSyncedAt
+      ? { status: 'ok' as const, syncedAt: this.auditSyncedAt }
+      : { status: 'failed' as const, syncedAt: null };
+    return { body: { enabled: true, items: page, next, githubSync } satisfies ProjectAuditEventsResponse };
+  }
+
+  /** Set by POST /projects/:id/audit/sync; flips the trail's githubSync to 'ok'. */
+  private auditSyncedAt: string | null = null;
+
+  /** POST /projects/:id/audit/sync — forces a GitHub activity read. */
+  private syncAudit(projectId: string): ApiReply {
+    this.requireProject(projectId);
+    this.auditSyncedAt = new Date().toISOString();
+    return { body: { synced: 0 } };
+  }
+
+  /**
+   * GET /projects/:id/commits — `?branch` (default dev), `?limit` 1-100,
+   * `?before=<next>` (here, a sha). dev has a PR-merged commit and a direct push.
+   */
+  private commits(projectId: string, query: URLSearchParams): ApiReply {
+    this.requireProject(projectId);
+    const limitText = query.get('limit');
+    const limit = limitText === null ? 30 : Number(limitText);
+    if (!Number.isInteger(limit) || limit < 1 || limit > 100) throw nestError(400, 'limit must be between 1 and 100');
+    const branch = query.get('branch') ?? 'dev';
+    const all: ProjectCommitsResponse['items'] = [
+      {
+        sha: 'c0ffee1000000000000000000000000000000001',
+        shortSha: 'c0ffee1',
+        message: 'Hotfix copy on the banner',
+        authorLogin: PEOPLE.member.login,
+        authorName: 'Member',
+        authoredAt: '2026-10-01T09:00:00Z',
+        url: 'https://github.com/org/repo/commit/c0ffee1',
+        pullRequestNumber: null,
+      },
+      {
+        sha: 'c0ffee2000000000000000000000000000000002',
+        shortSha: 'c0ffee2',
+        message: 'Add checkout (#12)\n\nBody.',
+        authorLogin: PEOPLE.member.login,
+        authorName: 'Member',
+        authoredAt: '2026-09-30T09:00:00Z',
+        url: 'https://github.com/org/repo/commit/c0ffee2',
+        pullRequestNumber: 12,
+      },
+    ];
+    const before = query.get('before');
+    const start = before ? all.findIndex((item) => item.sha === before) + 1 : 0;
+    const items = all.slice(start, start + limit);
+    const next = start + items.length < all.length ? items[items.length - 1].sha : null;
+    return {
+      body: { branch, branches: ['main', 'uat', 'dev', 'feature/banner'], items, next } satisfies ProjectCommitsResponse,
+    };
   }
 
   private previews(projectId: string): ProjectPreviewsResponse {
@@ -2769,6 +2827,13 @@ async function capabilityAbsentHidesQa({ page, backend, baseUrl }: JourneyContex
     [['50', null], ['50', '2026-09-30T09:00:00.123456+00:00']],
     'the cursor goes back unchanged',
   );
+  // GitHub activity: the last read failed, so the sync line says so; Sync now
+  // asks the server to read GitHub and re-reads the first page.
+  await expectText(trail.locator('.audit-trail__sync'), "Couldn't reach GitHub just now", 'the GitHub sync line');
+  await trail.getByRole('button', { name: 'Sync now' }).click();
+  await eventually('the sync request', () => backend.callsTo('POST', /^\/projects\/project-1\/audit\/sync$/).length === 1);
+  await eventually('the first page re-read', async () => (await rows.count()) === 2);
+  await expectText(trail.locator('.audit-trail__sync'), 'GitHub activity synced', 'the sync line after a sync');
   await tabs.getByRole('tab', { name: 'Overview', exact: true }).click();
   // Positive control: the Overview only asks for previews once it has read a
   // capabilities response (previewDeployments), so the flags are applied.

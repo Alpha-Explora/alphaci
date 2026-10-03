@@ -98,6 +98,7 @@ afterEach(() => {
   if (root) act(() => root?.unmount());
   root = null;
   document.body.innerHTML = "";
+  window.localStorage.clear();
   jest.clearAllMocks();
 });
 
@@ -509,5 +510,115 @@ describe("QA Studio — device viewports and full screen", () => {
     const dot = container.querySelector(".qa-launcher__dot");
     expect(dot?.getAttribute("data-tone")).toBe("failed");
     expect(container.querySelector(".qa-launcher")?.textContent).toContain("Automated tests failed");
+  });
+});
+
+function layoutButton(container: HTMLElement, name: "Wide preview" | "Split"): HTMLButtonElement | null {
+  return container.querySelector<HTMLButtonElement>(`.qa-layout-switch button[aria-label="${name}"]`);
+}
+
+/** jsdom has no ResizeObserver: a stand-in that records what it watches and can report a new size. */
+class FakeResizeObserver {
+  static instances: FakeResizeObserver[] = [];
+  readonly observed: Element[] = [];
+  disconnected = false;
+  private readonly callback: ResizeObserverCallback;
+
+  constructor(callback: ResizeObserverCallback) {
+    this.callback = callback;
+    FakeResizeObserver.instances.push(this);
+  }
+
+  observe(element: Element) {
+    this.observed.push(element);
+  }
+
+  unobserve() {}
+
+  disconnect() {
+    this.disconnected = true;
+  }
+
+  resize(width: number, height: number) {
+    const entry = { contentRect: { width, height } } as ResizeObserverEntry;
+    this.callback([entry], this as unknown as ResizeObserver);
+  }
+}
+
+describe("QA Studio — layouts", () => {
+  afterEach(() => {
+    delete (globalThis as { ResizeObserver?: unknown }).ResizeObserver;
+    FakeResizeObserver.instances = [];
+  });
+
+  it("opens on wide preview and switches to split without remounting the frame or the run column", async () => {
+    setup({ run: runAs("qa", { items: ITEMS }) });
+    const container = await studio("qa");
+    const studioRoot = container.querySelector(".qa-studio")!;
+    const frame = container.querySelector("iframe");
+    const column = container.querySelector(".qa-studio__run");
+    const card = container.querySelector(".qa-run-card");
+    expect(frame).not.toBeNull();
+    expect(studioRoot.getAttribute("data-layout")).toBe("wide");
+    expect(container.querySelector(".qa-layout-switch legend")?.textContent).toBe("Layout");
+    expect(layoutButton(container, "Wide preview")?.getAttribute("aria-pressed")).toBe("true");
+    expect(layoutButton(container, "Split")?.getAttribute("aria-pressed")).toBe("false");
+
+    await click(layoutButton(container, "Split"));
+    expect(studioRoot.getAttribute("data-layout")).toBe("split");
+    expect(layoutButton(container, "Split")?.getAttribute("aria-pressed")).toBe("true");
+    expect(layoutButton(container, "Wide preview")?.getAttribute("aria-pressed")).toBe("false");
+    expect(window.localStorage.getItem("alphaci.qa-studio.layout")).toBe("split");
+
+    await click(layoutButton(container, "Wide preview"));
+    expect(studioRoot.getAttribute("data-layout")).toBe("wide");
+
+    // Only the attribute changed: the site under test and the run's drafts were never touched.
+    expect(container.querySelector("iframe")).toBe(frame);
+    expect(container.querySelectorAll("iframe")).toHaveLength(1);
+    expect(container.querySelector(".qa-studio__run")).toBe(column);
+    expect(container.querySelector(".qa-run-card")).toBe(card);
+  });
+
+  it("opens on the layout this viewer chose last time", async () => {
+    window.localStorage.setItem("alphaci.qa-studio.layout", "split");
+    setup({ run: runAs("qa", { items: ITEMS }) });
+    const container = await studio("qa");
+    expect(container.querySelector(".qa-studio")?.getAttribute("data-layout")).toBe("split");
+    expect(layoutButton(container, "Split")?.getAttribute("aria-pressed")).toBe("true");
+  });
+
+  it("hides the layout switch in full screen and brings it back, choice kept, when docked again", async () => {
+    setup({ run: runAs("qa", { items: ITEMS }) });
+    const container = await studio("qa");
+    await click(layoutButton(container, "Split"));
+    await click(fullScreenButton(container));
+    expect(container.querySelector(".qa-layout-switch")).toBeNull();
+    await click(fullScreenButton(container));
+    expect(container.querySelector(".qa-layout-switch")).not.toBeNull();
+    expect(container.querySelector(".qa-studio")?.getAttribute("data-layout")).toBe("split");
+  });
+
+  it("refits the device when a layout change resizes the stage, watching the same stage throughout", async () => {
+    (globalThis as { ResizeObserver?: unknown }).ResizeObserver = FakeResizeObserver;
+    setup({ run: runAs("qa", { items: ITEMS }) });
+    const container = await studio("qa");
+    const stage = container.querySelector(".qa-stage")!;
+    const device = container.querySelector<HTMLElement>(".qa-device")!;
+    const observer = FakeResizeObserver.instances.find((instance) => instance.observed.includes(stage))!;
+    expect(observer).toBeDefined();
+
+    // Wide: a 1000px stage draws the 1440px desktop at (1000 - 0) / 1440.
+    await act(async () => observer.resize(1000, 800));
+    const wideScale = Number(device.style.getPropertyValue("--qa-scale"));
+    expect(wideScale).toBeCloseTo(1000 / 1440, 5);
+
+    // Split narrows the column; CSS resizes the stage and the observer reports it.
+    await click(layoutButton(container, "Split"));
+    expect(observer.disconnected).toBe(false);
+    expect(container.querySelector(".qa-stage")).toBe(stage);
+    await act(async () => observer.resize(700, 800));
+    expect(Number(device.style.getPropertyValue("--qa-scale"))).toBeCloseTo(700 / 1440, 5);
+    expect(container.querySelector(".qa-preview__scale")?.textContent).toBe("Scaled to 49%");
   });
 });

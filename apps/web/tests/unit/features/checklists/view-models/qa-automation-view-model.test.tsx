@@ -6,7 +6,10 @@ import {
   useQaAutomationViewModel,
   type QaAutomationViewModel,
 } from "../../../../../src/features/checklists/studio/view-models/use-qa-automation-view-model";
-import { useRememberedFlag } from "../../../../../src/features/checklists/studio/view-models/use-remembered-flag";
+import {
+  useRememberedChoice,
+  useRememberedFlag,
+} from "../../../../../src/features/checklists/studio/view-models/use-remembered-flag";
 import type { QaRun } from "../../../../../src/features/checklists/model/qa-run-types";
 import type { AppRole } from "../../../../../src/shared/api/contracts";
 import { ApiError } from "../../../../../src/shared/api/request";
@@ -341,5 +344,65 @@ describe("useRememberedFlag", () => {
     expect(flag()[0]).toBe(true);
     get.mockRestore();
     set.mockRestore();
+  });
+});
+
+describe("useRememberedChoice", () => {
+  type Pick3 = "a" | "b" | "c";
+  const resolve = (stored: string | null): Pick3 => (stored === "b" || stored === "c" ? stored : "a");
+
+  function renderChoice() {
+    let latest: [Pick3, (next: Pick3) => void] | undefined;
+    const record = (value: [Pick3, (next: Pick3) => void]) => {
+      latest = value;
+    };
+    function Probe({ onRender }: { onRender: (value: [Pick3, (next: Pick3) => void]) => void }) {
+      onRender(useRememberedChoice("test.choice", resolve));
+      return null;
+    }
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    root = createRoot(container);
+    act(() => root!.render(<Probe onRender={record} />));
+    return () => latest as [Pick3, (next: Pick3) => void];
+  }
+
+  afterEach(() => window.localStorage.clear());
+
+  it("resolves what storage holds, and stores the value chosen", () => {
+    window.localStorage.setItem("test.choice", "c");
+    const choice = renderChoice();
+    expect(choice()[0]).toBe("c");
+    act(() => choice()[1]("b"));
+    expect(choice()[0]).toBe("b");
+    expect(window.localStorage.getItem("test.choice")).toBe("b");
+  });
+
+  it("hands resolve null when nothing is stored, and the fallback reaches the UI", () => {
+    expect(renderChoice()()[0]).toBe("a");
+    act(() => root?.unmount());
+    window.localStorage.setItem("test.choice", "zzz");
+    expect(renderChoice()()[0]).toBe("a");
+  });
+});
+
+describe("useRememberedFlag storage format", () => {
+  afterEach(() => window.localStorage.clear());
+
+  it("reads anything but \"1\" as off once something is stored", () => {
+    let value: boolean | undefined;
+    const record = (next: boolean) => {
+      value = next;
+    };
+    function Probe({ onRender }: { onRender: (next: boolean) => void }) {
+      onRender(useRememberedFlag("test.flag", true)[0]);
+      return null;
+    }
+    window.localStorage.setItem("test.flag", "yes");
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    root = createRoot(container);
+    act(() => root!.render(<Probe onRender={record} />));
+    expect(value).toBe(false);
   });
 });
