@@ -1,0 +1,314 @@
+/* ── Code tab: Commits ──────────────────────────────────────────────────────
+   Drawn as a branch's history: a hairline rail with one node per commit.
+   A commit a pull request brought in gets a filled brand node; a direct push
+   to dev/uat/main gets a hollow amber ring and the "Direct push" tag, so the
+   commits that skipped review stand out of the rail at a glance. Tokens only.
+   ------------------------------------------------------------------------- */
+
+.commits {
+  display: grid;
+  gap: 0.85rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.commits__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem 1rem;
+}
+
+/* Two classes: `.tab-content-panel h2`-style rules must not restyle it. */
+.commits .commits__title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--text-primary);
+}
+
+.commits__switch {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* The segmented control: one track, the picked branch raised out of it. */
+.commits__segments {
+  display: inline-flex;
+  padding: 0.2rem;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-pill);
+  background: var(--bg-soft);
+}
+
+.commits .commits__segment {
+  min-height: 1.9rem;
+  padding: 0.2rem 0.85rem;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: none;
+  color: var(--text-secondary);
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background-color 160ms ease-out,
+    color 160ms ease-out,
+    box-shadow 160ms ease-out;
+}
+
+.commits .commits__segment:hover {
+  color: var(--text-primary);
+}
+
+.commits .commits__segment[aria-pressed="true"] {
+  background: var(--layer-1);
+  color: var(--text-primary);
+  box-shadow: var(--shadow-soft);
+}
+
+.commits .commits__segment:focus-visible,
+.commits .commits__select:focus-visible,
+.commits__sha:focus-visible,
+.commits__text--link:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
+/* `base.css` stretches every select to 100%; this one sits in a row. */
+.commits .commits__select {
+  width: auto;
+  max-width: 14rem;
+  min-height: 2.3rem;
+  border-color: var(--border-subtle);
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 0.78rem;
+}
+
+.commits .commits__select[data-active="true"] {
+  border-color: var(--border-brand);
+  color: var(--text-primary);
+}
+
+.commits__list {
+  position: relative;
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* The rail: behind the nodes, first commit to last. */
+.commits__list::before {
+  content: "";
+  position: absolute;
+  top: 1rem;
+  bottom: 1rem;
+  left: 0.4rem;
+  width: 1px;
+  background: var(--border);
+}
+
+.commits__row {
+  position: relative;
+  display: grid;
+  grid-template-columns: 0.8rem minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 0.85rem;
+  padding: 0.6rem 0.4rem 0.6rem 0;
+  border-radius: 0.6rem;
+  transition: background-color 160ms ease-out;
+}
+
+.commits__row:hover {
+  background: var(--bg-soft);
+}
+
+.commits__node {
+  width: 0.8rem;
+  height: 0.8rem;
+  margin-top: 0.25rem;
+  border: 2px solid var(--border-strong);
+  border-radius: var(--radius-pill);
+  background: var(--layer-1);
+}
+
+.commits__row[data-source="pull-request"] .commits__node {
+  border-color: var(--brand);
+  background: var(--brand);
+}
+
+.commits__row[data-direct-push="true"] .commits__node {
+  border-color: var(--accent-amber);
+  background: var(--accent-amber-light);
+}
+
+.commits__body {
+  display: grid;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.commits__message {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0;
+  font-size: 0.88rem;
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--text-primary);
+}
+
+.commits__text {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.commits__text--link {
+  color: inherit;
+  text-decoration: underline;
+  text-decoration-color: var(--border-strong);
+  text-underline-offset: 0.2em;
+  transition: text-decoration-color 160ms ease-out, color 160ms ease-out;
+}
+
+.commits__text--link:hover {
+  color: var(--brand);
+  text-decoration-color: currentcolor;
+}
+
+.commits__pr {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.commits__tag {
+  display: inline-flex;
+  align-items: center;
+  height: 1.25rem;
+  padding: 0 0.45rem;
+  border: 1px solid var(--border-amber);
+  border-radius: var(--radius-pill);
+  background: var(--accent-amber-light);
+  color: var(--accent-amber);
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.commits__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  margin: 0;
+  font-size: 0.74rem;
+  color: var(--text-muted);
+}
+
+.commits__meta > * + *::before {
+  content: "·";
+  margin: 0 0.45rem;
+  color: var(--border-strong);
+}
+
+.commits__author {
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+/* The SHA chip: monospace, quiet until hovered; a click copies the full SHA. */
+.commits__sha {
+  min-width: 5.2rem;
+  min-height: 1.9rem;
+  padding: 0.15rem 0.55rem;
+  border: 1px solid var(--border-subtle);
+  border-radius: 0.45rem;
+  background: var(--layer-1);
+  color: var(--text-secondary);
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 0.74rem;
+  cursor: pointer;
+  transition:
+    border-color 160ms ease-out,
+    color 160ms ease-out,
+    transform 160ms ease-out;
+}
+
+.commits__sha:hover {
+  border-color: var(--border-brand);
+  color: var(--text-primary);
+}
+
+.commits__sha:active {
+  transform: scale(0.97);
+}
+
+.commits__sha[data-copied="true"] {
+  border-color: var(--success);
+  color: var(--success);
+}
+
+.commits__more {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+/* Two classes: the global button sizes must not make it a hero CTA. */
+.commits .commits__more-button {
+  min-height: 2.25rem;
+  padding: 0.35rem 1rem;
+  border-color: var(--border-strong);
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.commits__row--skeleton {
+  height: 3.1rem;
+  margin: 0.2rem 0;
+  background: var(--bg-soft);
+  animation: commits-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes commits-pulse {
+  0%,
+  100% {
+    opacity: 0.55;
+  }
+
+  50% {
+    opacity: 1;
+  }
+}
+
+@media (max-width: 560px) {
+  .commits__row {
+    grid-template-columns: 0.8rem minmax(0, 1fr);
+  }
+
+  .commits__sha {
+    grid-column: 2;
+    justify-self: start;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .commits__row,
+  .commits__row--skeleton,
+  .commits .commits__segment,
+  .commits__sha,
+  .commits__text--link {
+    transition: none;
+    animation: none;
+  }
+}

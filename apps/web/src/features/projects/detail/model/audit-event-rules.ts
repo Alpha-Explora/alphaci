@@ -9,10 +9,23 @@
 
 import type { ProjectAuditEventsResponse } from "@/shared/api/contracts";
 
+import { commitTitle } from "./commit-list-rules";
+
 /** Rows per request. The server defaults to 50 and caps `?limit` at 100. */
 export const AUDIT_PAGE_SIZE = 50;
 
-export type AuditScope = "repository" | "project";
+/**
+ * 'project': the delivery Project's own events. 'github': activity read from
+ * GitHub (pushes, pull requests, branches, tags) rather than done in ALPHACI.
+ */
+export type AuditScope = "repository" | "project" | "github";
+
+/** One commit a push carried, as its row lists it. */
+export interface AuditPushCommit {
+  sha: string;
+  shortSha: string;
+  title: string;
+}
 
 /** One row as the Audit tab draws it. */
 export interface AuditRow {
@@ -29,6 +42,16 @@ export interface AuditRow {
   scope: AuditScope;
   /** Recovered from the outbox after it was first dropped. */
   restored: boolean;
+  /** A `github.push` row's commits, as the server listed them; empty otherwise. */
+  commits: AuditPushCommit[];
+  /** How many more the push carried than are listed (GitHub caps the list). */
+  moreCommits: number;
+}
+
+/** How fresh the GitHub rows are; null when the backend does not read GitHub. */
+export interface AuditGithubSync {
+  status: "ok" | "stale" | "failed";
+  syncedAt: string | null;
 }
 
 export interface AuditPage {
@@ -37,6 +60,7 @@ export interface AuditPage {
   items: AuditRow[];
   /** Pass back unchanged as `?before=` for the next page; null on the last one. */
   next: string | null;
+  githubSync: AuditGithubSync | null;
 }
 
 /* ── Labels ──────────────────────────────────────────────────────────────── */
@@ -112,6 +136,8 @@ const FAMILY_LABELS: ReadonlyArray<readonly [prefix: string, label: string]> = [
   ["hierarchy.assignment.", "Developer access changed"],
   ["hierarchy.configuration.", "Repository configuration changed"],
   ["deployment_target_", "Hosting service changed"],
+  ["github.pull_request.", "Pull request activity on GitHub"],
+  ["github.", "GitHub activity"],
 ];
 
 /** "deployment_window_closed" -> "Deployment window closed". */
@@ -145,6 +171,94 @@ function auditDetail(label: string, message: string | null): string | null {
 export function auditActorLabel(actorLogin: string | null | undefined): string {
   const login = actorLogin?.trim();
   return login || "System";
+}
+
+/* ── GitHub activity ─────────────────────────────────────────────────────── */
+
+type Metadata = Readonly<Record<string, unknown>>;
+
+function metaText(value: unknown): string | null {
+  return typeof value === "string" && value.trim() ? value.trim() : null;
+}
+
+function wholeNumber(value: unknown, min: number): number | null {
+  return typeof value === "number" && Number.isInteger(value) && value >= min ? value : null;
+}
+
+/** "pull request #12", or "a pull request" when the number is missing. */
+function pullRequestRef(meta: Metadata): string {
+  const number = wholeNumber(meta.number, 1);
+  return number === null ? "a pull request" : `pull request #${number}`;
+}
+
+function withPart(base: string, joiner: string, part: string | null): string {
+  return part ? `${base}${joiner}${part}` : base;
+}
+
+/** "approved", "changes requested", "commented"; null when the state is missing. */
+function reviewState(meta: Metadata): string | null {
+  const state = metaText(meta.state);
+  return state ? state.replace(/[_-]+/g, " ").toLowerCase() : null;
+}
+
+/** The branch or tag a ref event names, without its refs/heads/ prefix. */
+function refName(meta: Metadata): string | null {
+  const ref = metaText(meta.ref) ?? metaText(meta.branch) ?? metaText(meta.tag) ?? metaText(meta.name);
+  return ref ? ref.replace(/^refs\/(heads|tags)\//, "") : null;
+}
+
+/** A push's listed commits, read defensively: a commit without a SHA is dropped. */
+export function auditPushCommits(meta: Metadata): AuditPushCommit[] {
+  const listed = Array.isArray(meta.commits) ? meta.commits : [];
+  return listed.flatMap((value): AuditPushCommit[] => {
+    const raw = typeof value === "object" && value !== null ? (value as Metadata) : {};
+    const sha = metaText(raw.sha);
+    if (!sha) return [];
+    return [{ sha, shortSha: sha.slice(0, 7), title: commitTitle(metaText(raw.message)) }];
+  });
+}
+
+/** How many commits the push carried: `size`, else the listed ones; null when unknown. */
+function pushSize(meta: Metadata): number | null {
+  const size = wholeNumber(meta.size, 0);
+  if (size !== null) return size;
+  const listed = auditPushCommits(meta).length;
+  return listed > 0 ? listed : null;
+}
+
+/** "Pushed 3 commits to dev", "Force-pushed 1 commit to uat", "Pushed to dev". */
+function pushLabel(meta: Metadata): string {
+  const verb = meta.forced === true ? "Force-pushed" : "Pushed";
+  const size = pushSize(meta);
+  const what = size ? `${verb} ${size} commit${size === 1 ? "" : "s"}` : verb;
+  return withPart(what, " to ", metaText(meta.branch));
+}
+
+function reviewLabel(meta: Metadata): string {
+  const state = reviewState(meta);
+  return withPart(`Reviewed ${pullRequestRef(meta)}`, "", state ? ` (${state})` : null);
+}
+
+const GITHUB_LABELS: Readonly<Record<string, (meta: Metadata) => string>> = {
+  "github.push": pushLabel,
+  "github.pull_request.opened": (meta) => withPart(`Opened ${pullRequestRef(meta)}`, ": ", metaText(meta.title)),
+  "github.pull_request.merged": (meta) => withPart(`Merged ${pullRequestRef(meta)}`, " into ", metaText(meta.base)),
+  "github.pull_request.closed": (meta) => `Closed ${pullRequestRef(meta)}`,
+  "github.pull_request.reopened": (meta) => `Reopened ${pullRequestRef(meta)}`,
+  "github.pull_request.reviewed": reviewLabel,
+  "github.branch.created": (meta) => withPart("Created branch", " ", refName(meta)),
+  "github.branch.deleted": (meta) => withPart("Deleted branch", " ", refName(meta)),
+  "github.tag.created": (meta) => withPart("Created tag", " ", refName(meta)),
+  "github.tag.deleted": (meta) => withPart("Deleted tag", " ", refName(meta)),
+};
+
+/**
+ * The sentence for a GitHub event, built from its metadata ("Merged pull
+ * request #12 into uat"); null for a code that is not GitHub's or not known.
+ */
+export function githubEventLabel(eventCode: string, metadata: Metadata | null | undefined): string | null {
+  const label = GITHUB_LABELS[eventCode];
+  return label ? label(metadata ?? {}) : null;
 }
 
 /* ── Time ────────────────────────────────────────────────────────────────── */
@@ -183,24 +297,59 @@ function text(value: unknown): string | null {
   return typeof value === "string" && value.trim() ? value : null;
 }
 
+const SCOPES: ReadonlyArray<AuditScope> = ["repository", "project", "github"];
+
+/** The row's scope; an older backend's unscoped `github.*` row still reads as GitHub's. */
+function scopeOf(scope: unknown, eventCode: string): AuditScope {
+  const known = SCOPES.find((entry) => entry === scope);
+  if (known) return known;
+  return eventCode.startsWith("github.") ? "github" : "repository";
+}
+
+/** What the row says: GitHub's sentence (no detail: the message repeats it), else the known label. */
+function describe(eventCode: string, message: string | null, metadata: Metadata): Pick<AuditRow, "label" | "detail"> {
+  const github = githubEventLabel(eventCode, metadata);
+  if (github) return { label: github, detail: null };
+  const label = auditEventLabel(eventCode, message);
+  return { label, detail: auditDetail(label, message) };
+}
+
+/** A push's listed commits and how many it carried beyond them. */
+function pushCommitsOf(eventCode: string, metadata: Metadata): Pick<AuditRow, "commits" | "moreCommits"> {
+  if (eventCode !== "github.push") return { commits: [], moreCommits: 0 };
+  const commits = auditPushCommits(metadata);
+  const size = wholeNumber(metadata.size, 0) ?? commits.length;
+  return { commits, moreCommits: Math.max(0, size - commits.length) };
+}
+
 function rowFrom(value: unknown): AuditRow | null {
   const raw = record(value);
   const id = text(raw?.id);
   const eventCode = text(raw?.eventCode);
   const createdAt = text(raw?.createdAt);
   if (!raw || !id || !eventCode || !createdAt) return null;
-  const message = text(raw.message);
-  const label = auditEventLabel(eventCode, message);
+  const metadata = record(raw.metadata) ?? {};
   return {
     id,
     eventCode,
-    label,
-    detail: auditDetail(label, message),
-    actor: auditActorLabel(text(raw.actorLogin)),
+    ...describe(eventCode, text(raw.message), metadata),
+    // GitHub activity names its actor in actorLogin, else metadata.githubLogin.
+    actor: auditActorLabel(text(raw.actorLogin) ?? text(metadata.githubLogin)),
     createdAt,
-    scope: raw.scope === "project" ? "project" : "repository",
-    restored: record(raw.metadata)?.backfilledFromOutbox === true,
+    scope: scopeOf(raw.scope, eventCode),
+    restored: metadata.backfilledFromOutbox === true,
+    ...pushCommitsOf(eventCode, metadata),
   };
+}
+
+const SYNC_STATUSES: ReadonlyArray<AuditGithubSync["status"]> = ["ok", "stale", "failed"];
+
+/** `githubSync`, read defensively; null when absent or unreadable (no sync line). */
+export function normalizeGithubSync(value: unknown): AuditGithubSync | null {
+  const raw = record(value);
+  const status = SYNC_STATUSES.find((entry) => entry === raw?.status);
+  if (!status) return null;
+  return { status, syncedAt: text(raw?.syncedAt) };
 }
 
 /** One page of the response, read defensively. */
@@ -211,6 +360,7 @@ export function normalizeAuditPage(value: ProjectAuditEventsResponse | unknown):
     enabled: raw?.enabled !== false,
     items: items.map(rowFrom).filter((row): row is AuditRow => row !== null),
     next: text(raw?.next),
+    githubSync: normalizeGithubSync(raw?.githubSync),
   };
 }
 
@@ -221,6 +371,7 @@ export function appendAuditPage(current: AuditPage, page: AuditPage): AuditPage 
     enabled: current.enabled && page.enabled,
     items: [...current.items, ...page.items.filter((row) => !seen.has(row.id))],
     next: page.next,
+    githubSync: page.githubSync ?? current.githubSync,
   };
 }
 
@@ -231,4 +382,67 @@ export function auditEmptyMessage(enabled: boolean): string {
 
 export function auditLoadMoreLabel(loading: boolean): string {
   return loading ? "Loading..." : "Load more";
+}
+
+/* ── GitHub sync line and the source filter ─────────────────────────────── */
+
+export interface AuditSyncLine {
+  tone: "ok" | "warning";
+  text: string;
+}
+
+/**
+ * The line above the trail: when GitHub activity was last read, or that the
+ * last read did not land and the rows are what was saved. Null without a
+ * `githubSync` (an older backend): no line at all.
+ */
+export function auditSyncLine(sync: AuditGithubSync | null, now: number): AuditSyncLine | null {
+  if (!sync) return null;
+  const ago = sync.syncedAt ? auditRelativeTime(sync.syncedAt, now) : "";
+  if (sync.status === "ok") {
+    return { tone: "ok", text: ago ? `GitHub activity synced ${ago}` : "GitHub activity synced" };
+  }
+  const last = ago ? ` (last synced ${ago})` : "";
+  return { tone: "warning", text: `Couldn't reach GitHub just now — showing what was saved${last}` };
+}
+
+export function auditSyncButtonLabel(syncing: boolean): string {
+  return syncing ? "Syncing..." : "Sync now";
+}
+
+export type AuditFilter = "all" | "alphaci" | "github";
+
+export const AUDIT_FILTERS: ReadonlyArray<{ id: AuditFilter; label: string }> = [
+  { id: "all", label: "All" },
+  { id: "alphaci", label: "ALPHACI" },
+  { id: "github", label: "GitHub" },
+];
+
+export function isGithubAuditRow(row: Pick<AuditRow, "scope">): boolean {
+  return row.scope === "github";
+}
+
+/** The rows a filter keeps, from what is loaded (the filter does not ask the server). */
+export function filterAuditRows(rows: ReadonlyArray<AuditRow>, filter: AuditFilter): AuditRow[] {
+  if (filter === "all") return [...rows];
+  const github = filter === "github";
+  return rows.filter((row) => isGithubAuditRow(row) === github);
+}
+
+/** The chips are offered once the trail can hold GitHub activity at all. */
+export function showAuditFilters(rows: ReadonlyArray<AuditRow>, sync: AuditGithubSync | null): boolean {
+  return sync !== null || rows.some(isGithubAuditRow);
+}
+
+/** What a filter with nothing to show says. */
+export function auditFilterEmptyMessage(filter: AuditFilter): string {
+  if (filter === "github") return "No GitHub activity among the loaded events.";
+  if (filter === "alphaci") return "No ALPHACI events among the loaded events.";
+  return "No activity recorded yet.";
+}
+
+/** The push row's disclosure: "3 commits" / "Hide commits". */
+export function pushCommitsToggleLabel(count: number, open: boolean): string {
+  if (open) return "Hide commits";
+  return `${count} commit${count === 1 ? "" : "s"}`;
 }
