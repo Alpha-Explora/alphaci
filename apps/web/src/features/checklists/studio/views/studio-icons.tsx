@@ -248,6 +248,26 @@ export function CollapseIcon() {
   );
 }
 
+/** Wide preview: a window whose page takes most of it, a narrow column docked right. */
+export function LayoutWideIcon() {
+  return (
+    <Glyph>
+      <rect x="1.75" y="2.5" width="12.5" height="11" rx="1.2" />
+      <path d="M10.75 2.5v11" />
+    </Glyph>
+  );
+}
+
+/** Split: a window halved. */
+export function LayoutSplitIcon() {
+  return (
+    <Glyph>
+      <rect x="1.75" y="2.5" width="12.5" height="11" rx="1.2" />
+      <path d="M8 2.5v11" />
+    </Glyph>
+  );
+}
+
 /** Move to the other side. */
 export function SwapIcon() {
   return (

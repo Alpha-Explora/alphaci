@@ -6,7 +6,9 @@ import {
   DEVICE_PRESETS,
   devicePresetDetail,
   orientationLabel,
+  STUDIO_LAYOUTS,
   type DevicePresetId,
+  type StudioLayout,
 } from "../../model/qa-studio-rules";
 import { commitLabel, commitSourceLabel } from "../../model/qa-run-rules";
 import type { QaCommitSource } from "../../model/qa-run-types";
@@ -18,6 +20,8 @@ import {
   DesktopIcon,
   ExpandIcon,
   ExternalIcon,
+  LayoutSplitIcon,
+  LayoutWideIcon,
   MobileIcon,
   ReloadIcon,
   RotateIcon,
@@ -29,6 +33,11 @@ const DEVICE_ICONS: Record<DevicePresetId, () => ReactNode> = {
   desktop: DesktopIcon,
   tablet: TabletIcon,
   mobile: MobileIcon,
+};
+
+const LAYOUT_ICONS: Record<StudioLayout, () => ReactNode> = {
+  wide: LayoutWideIcon,
+  split: LayoutSplitIcon,
 };
 
 /**
@@ -141,6 +150,39 @@ function RouteField({ vm }: Readonly<{ vm: StudioViewportViewModel }>) {
   );
 }
 
+/**
+ * Wide preview ⇄ Split, beside Full screen. Toggle buttons (aria-pressed) in a
+ * fieldset named "Layout", so each is a plain Tab stop that Enter or Space switches — no hotkey,
+ * which would fire inside notes and never inside the cross-origin frame.
+ * Rendered only while docked: full screen has no columns to share, and below
+ * 1100px, where the panes stack, CSS hides it too.
+ */
+function LayoutSwitch({ vm }: Readonly<{ vm: StudioViewportViewModel }>) {
+  if (vm.isFullScreen) return null;
+  return (
+    <fieldset className="qa-layout-switch">
+      <legend className="sr-only">Layout</legend>
+      {STUDIO_LAYOUTS.map((option) => {
+        const Icon = LAYOUT_ICONS[option.id];
+        const selected = vm.layout === option.id;
+        return (
+          <button
+            key={option.id}
+            type="button"
+            className="qa-layout-switch__option"
+            aria-pressed={selected}
+            aria-label={option.label}
+            title={option.hint}
+            onClick={() => vm.setLayout(option.id)}
+          >
+            <Icon />
+          </button>
+        );
+      })}
+    </fieldset>
+  );
+}
+
 function FrameActions({
   vm,
   fullScreenRef,
@@ -169,6 +211,7 @@ function FrameActions({
           <ExternalIcon />
         </a>
       ) : null}
+      <LayoutSwitch vm={vm} />
       <button
         ref={fullScreenRef}
         type="button"

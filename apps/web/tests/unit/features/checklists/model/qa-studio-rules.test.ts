@@ -2,6 +2,7 @@ import {
   addressLabel,
   automationSignal,
   chromeSize,
+  DEFAULT_STUDIO_LAYOUT,
   defaultEnvironmentKey,
   DEVICE_PRESETS,
   devicePreset,
@@ -9,6 +10,7 @@ import {
   dimensionsLabel,
   fitDeviceScale,
   frameChrome,
+  isStudioLayout,
   launcherLabel,
   MIN_DEVICE_SCALE,
   NO_QA_ENVIRONMENT,
@@ -17,8 +19,10 @@ import {
   QA_BRANCH,
   resolveDeviceDimensions,
   resolveEnvironment,
+  resolveStudioLayout,
   sanitizePreviewPath,
   scaleLabel,
+  STUDIO_LAYOUTS,
   studioEnvironments,
 } from "../../../../../src/features/checklists/model/qa-studio-rules";
 import type { ProjectBranchPreview } from "../../../../../src/shared/api/contracts";
@@ -162,6 +166,29 @@ describe("fitDeviceScale (both axes, never above 1)", () => {
   it("labels a scaled-down device and says nothing at 100%", () => {
     expect(scaleLabel(0.509)).toBe("Scaled to 51%");
     expect(scaleLabel(1)).toBeNull();
+  });
+});
+
+describe("studio layout", () => {
+  it("offers wide preview (the default) and split, in that order", () => {
+    expect(STUDIO_LAYOUTS.map((option) => option.id)).toEqual(["wide", "split"]);
+    expect(STUDIO_LAYOUTS.map((option) => option.label)).toEqual(["Wide preview", "Split"]);
+    expect(DEFAULT_STUDIO_LAYOUT).toBe("wide");
+  });
+
+  it("reads back a stored layout, and falls back to wide for anything else", () => {
+    expect(resolveStudioLayout("split")).toBe("split");
+    expect(resolveStudioLayout("wide")).toBe("wide");
+    expect(resolveStudioLayout(null)).toBe("wide");
+    expect(resolveStudioLayout("")).toBe("wide");
+    expect(resolveStudioLayout("full-screen")).toBe("wide");
+    expect(resolveStudioLayout("SPLIT")).toBe("wide");
+  });
+
+  it("recognises only the layouts this build knows", () => {
+    expect(isStudioLayout("split")).toBe(true);
+    expect(isStudioLayout("stacked")).toBe(false);
+    expect(isStudioLayout(undefined)).toBe(false);
   });
 });
 

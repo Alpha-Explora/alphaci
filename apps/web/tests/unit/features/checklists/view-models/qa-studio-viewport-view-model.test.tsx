@@ -3,6 +3,10 @@ import { createRoot, type Root } from "react-dom/client";
 
 import { projectsRepository } from "../../../../../src/features/projects/data/projects-repository";
 import { useStudioFullScreen } from "../../../../../src/features/checklists/studio/view-models/use-studio-full-screen";
+import {
+  STUDIO_LAYOUT_KEY,
+  useStudioLayout,
+} from "../../../../../src/features/checklists/studio/view-models/use-studio-layout";
 import { useStudioViewportViewModel } from "../../../../../src/features/checklists/studio/view-models/use-studio-viewport-view-model";
 import type { ProjectBranchPreview } from "../../../../../src/shared/api/contracts";
 
@@ -19,6 +23,7 @@ afterEach(() => {
   root = null;
   document.body.innerHTML = "";
   document.body.removeAttribute("style");
+  window.localStorage.clear();
   jest.clearAllMocks();
 });
 
@@ -218,17 +223,60 @@ describe("useStudioViewportViewModel", () => {
     expect(vm().dimensions).toEqual({ width: 375, height: 812, orientation: "portrait" });
   });
 
-  it("never changes the frame key for device, orientation or full screen — only for a new page", async () => {
+  it("never changes the frame key for device, orientation, layout or full screen — only for a new page", async () => {
     const vm = renderHook(() => useStudioViewportViewModel({ projectId: "p1", enabled: true }));
     await flush();
     const key = vm().frameKey;
     act(() => vm().setDevice("mobile"));
     act(() => vm().rotate());
+    act(() => vm().setLayout("split"));
     act(() => vm().enterFullScreen());
     act(() => vm().openChecklist());
     act(() => vm().exitFullScreen());
     expect(vm().frameKey).toBe(key);
     act(() => vm().reload());
     expect(vm().frameKey).not.toBe(key);
+  });
+});
+
+describe("useStudioLayout", () => {
+  it("starts on wide preview, switches, and remembers the choice in this browser", () => {
+    const vm = renderHook(() => useStudioLayout());
+    expect(vm().layout).toBe("wide");
+    act(() => vm().setLayout("split"));
+    expect(vm().layout).toBe("split");
+    expect(window.localStorage.getItem(STUDIO_LAYOUT_KEY)).toBe("split");
+    unmount();
+    expect(renderHook(() => useStudioLayout())().layout).toBe("split");
+  });
+
+  it("falls back to wide preview for a stored value it does not know", () => {
+    window.localStorage.setItem(STUDIO_LAYOUT_KEY, "stacked");
+    expect(renderHook(() => useStudioLayout())().layout).toBe("wide");
+  });
+
+  it("still switches when storage throws, and starts on wide preview", () => {
+    const get = jest.spyOn(Storage.prototype, "getItem").mockImplementation(() => {
+      throw new Error("blocked");
+    });
+    const set = jest.spyOn(Storage.prototype, "setItem").mockImplementation(() => {
+      throw new Error("blocked");
+    });
+    const vm = renderHook(() => useStudioLayout());
+    expect(vm().layout).toBe("wide");
+    act(() => vm().setLayout("split"));
+    expect(vm().layout).toBe("split");
+    get.mockRestore();
+    set.mockRestore();
+  });
+
+  it("rides on the viewport ViewModel, so every studio on the shell has it", async () => {
+    projects.previews.mockResolvedValue({ enabled: true, liveProvidersEnabled: true, providerError: null, branches: [] });
+    window.localStorage.setItem(STUDIO_LAYOUT_KEY, "split");
+    const vm = renderHook(() => useStudioViewportViewModel({ projectId: "p1", enabled: true }));
+    await flush();
+    expect(vm().layout).toBe("split");
+    act(() => vm().setLayout("wide"));
+    expect(vm().layout).toBe("wide");
   });
 });
