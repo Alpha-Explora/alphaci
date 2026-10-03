@@ -23,6 +23,7 @@ import {
   projectNameError,
   readRole,
   repoDisplayName,
+  repoChipOpens,
   repoRoleLabel,
   repositoryCountLabel,
   verifyProjectId,
@@ -198,6 +199,24 @@ describe("folder repositories", () => {
     folder.repositories.push({ ...folder.repositories[0], repositoryId: "dup" });
     folder.repositories.push({ repositoryId: "r-x", name: "x", repoFullName: null, status: "active", project: null });
     expect(folderProjectIds(folder)).toEqual(["proj-fe", "proj-be"]);
+  });
+});
+
+describe("repoChipOpens", () => {
+  it("opens only the frontend for the QA Team and Product owners", () => {
+    for (const role of ["qa", "lead"] as const) {
+      expect(repoChipOpens(role, "frontend")).toBe(true);
+      expect(repoChipOpens(role, "backend")).toBe(false);
+      expect(repoChipOpens(role, "service")).toBe(false);
+      expect(repoChipOpens(role, null)).toBe(false);
+    }
+  });
+
+  it("opens every repository for Developers, admins and an unknown role", () => {
+    for (const role of ["member", "admin", null, undefined] as const) {
+      expect(repoChipOpens(role, "backend")).toBe(true);
+      expect(repoChipOpens(role, null)).toBe(true);
+    }
   });
 });
 

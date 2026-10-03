@@ -433,6 +433,31 @@ describe("ProjectExplorer", () => {
     expect(container.querySelectorAll("li.pf-card")).toHaveLength(2);
   });
 
+  it("lets the QA Team and Product owners open only the frontend repository", async () => {
+    for (const role of ["lead", "qa"]) {
+      mockSession.appRole = role;
+      repo.list.mockResolvedValue(foldersSnapshot());
+      repo.requirementCounts.mockResolvedValue({});
+      const container = await renderExplorer();
+      await act(async () => manage(container, "testfinals")!.click());
+      const chips = [...container.querySelectorAll(".pf-repo .pf-chip")];
+      expect(chips.map((chip) => [chip.tagName, chip.getAttribute("href")])).toEqual([
+        ["A", "/projects/proj-fe"],
+        ["SPAN", null],
+      ]);
+    }
+  });
+
+  it("lets a Developer open every repository of a Project", async () => {
+    mockSession.appRole = "member";
+    repo.list.mockResolvedValue(foldersSnapshot());
+    repo.requirementCounts.mockResolvedValue({});
+    const container = await renderExplorer();
+    await act(async () => manage(container, "testfinals")!.click());
+    const hrefs = [...container.querySelectorAll(".pf-repo a.pf-chip")].map((chip) => chip.getAttribute("href"));
+    expect(hrefs).toEqual(["/projects/proj-fe", "/projects/proj-be"]);
+  });
+
   it("offers create-in-Project on an empty Project", async () => {
     repo.list.mockResolvedValue(foldersSnapshot());
     repo.requirementCounts.mockResolvedValue({});
