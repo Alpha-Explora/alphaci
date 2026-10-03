@@ -7,6 +7,7 @@ import {
   getDeploymentTargetActions,
   getProjectAuditEvents,
   getProjectCiRuns,
+  getProjectCommits,
   getProjectDeployments,
   getProjectDomains,
   getProjectDrift,
@@ -20,6 +21,7 @@ import {
   repairProjectDriftFinding,
   runProjectDriftDetection,
   syncDeploymentTarget as requestSyncDeploymentTarget,
+  syncProjectAuditEvents,
   syncProjectSnapshot,
   updateDeploymentTarget as requestUpdateDeploymentTarget,
   verifyProjectDomain,
@@ -34,6 +36,8 @@ import type {
   ProjectAuditEventsResponse,
   ProjectAuditPageRequest,
   ProjectCiRunsResponse,
+  ProjectCommitsPageRequest,
+  ProjectCommitsResponse,
   ProjectDeploymentsResponse,
   ProjectDriftRepairAction,
   ProjectDriftResponse,
@@ -177,6 +181,19 @@ export const projectsRepository = {
     page?: ProjectAuditPageRequest,
   ): Promise<ProjectAuditEventsResponse> {
     return getProjectAuditEvents(projectId, page);
+  },
+
+  /** Reads GitHub activity into the audit trail now; re-read the first page after. */
+  syncAudit(projectId: string): Promise<unknown> {
+    return syncProjectAuditEvents(projectId);
+  },
+
+  /** A branch's commits, newest first; no branch asks for the server's default. */
+  commits(
+    projectId: string,
+    page?: ProjectCommitsPageRequest,
+  ): Promise<ProjectCommitsResponse> {
+    return getProjectCommits(projectId, page);
   },
 
   syncSnapshot(projectId: string): Promise<ProjectSyncSnapshotResponse> {

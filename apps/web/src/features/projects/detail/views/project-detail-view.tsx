@@ -4,7 +4,8 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
 
-import { AppNav } from "@/features/workspace/selection";
+import { AppNav, WorkspaceProvider } from "@/features/workspace/selection";
+import { teamProjectsHref } from "@/features/workflows";
 import { FlowBackground } from "@/shared/layout/flow-background";
 import { PipelineLoader } from "@/shared/layout/pipeline-loader";
 import type { AppRole } from "@/shared/api/contracts";
@@ -295,41 +296,52 @@ export function ProjectDetailView() {
     />
   ) : undefined;
 
+  /*
+   * The header gets its own provider, as the team and studio pages do.
+   * Without one the switcher read the context default — no selection and a
+   * no-op setter — so it named the viewer's first team whatever the
+   * project's, and picking a team did nothing. The project's team is selected
+   * once its overview loads; picking another leaves for that team's Projects.
+   */
   return (
-    <main
-      className="dash-shell"
-      suppressHydrationWarning
-      style={{ overflowX: "hidden" }}
-    >
-      <a href="#main-content" className="skip-link">
-        Skip to main content
-      </a>
-      <FlowBackground />
-      <AppNav
-        guest={guest}
-        session={session}
-        onLogout={() => void handleLogout()}
-        isLoggingOut={isLoggingOut}
-      />
+    <WorkspaceProvider>
+      <main
+        className="dash-shell"
+        suppressHydrationWarning
+        style={{ overflowX: "hidden" }}
+      >
+        <a href="#main-content" className="skip-link">
+          Skip to main content
+        </a>
+        <FlowBackground />
+        <AppNav
+          guest={guest}
+          session={session}
+          onLogout={() => void handleLogout()}
+          isLoggingOut={isLoggingOut}
+          pageWorkspaceId={project?.workspaceId}
+          onWorkspaceSwitch={(workspaceId) => router.push(teamProjectsHref(workspaceId))}
+        />
 
-      <div id="main-content" className="dash-page-content project-page-shell">
-        <div className="project-page-body">
-          <ProjectDetailBody
-            guest={guest}
-            projectId={projectId}
-            loadingOverview={loadingOverview}
-            overviewError={overviewError}
-            logoutMessage={logoutMessage}
-            project={project}
-            enforcedOrg={enforcedOrg}
-            dangerZone={dangerZone}
-            appRole={session?.appRole}
-            viewerLogin={session?.user.login}
-            folder={folder}
-            onRetry={() => void loadOverview()}
-          />
+        <div id="main-content" className="dash-page-content project-page-shell">
+          <div className="project-page-body">
+            <ProjectDetailBody
+              guest={guest}
+              projectId={projectId}
+              loadingOverview={loadingOverview}
+              overviewError={overviewError}
+              logoutMessage={logoutMessage}
+              project={project}
+              enforcedOrg={enforcedOrg}
+              dangerZone={dangerZone}
+              appRole={session?.appRole}
+              viewerLogin={session?.user.login}
+              folder={folder}
+              onRetry={() => void loadOverview()}
+            />
+          </div>
         </div>
-      </div>
-    </main>
+      </main>
+    </WorkspaceProvider>
   );
 }

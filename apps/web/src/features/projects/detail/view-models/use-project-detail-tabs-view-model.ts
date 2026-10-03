@@ -64,6 +64,12 @@ export interface ProjectDetailTabsViewModel {
    */
   logFocus: DeploymentLogFocus | null;
   openTargetLogs: (focus: DeploymentLogFocus) => void;
+  /**
+   * The pull request the Pull requests tab should open expanded, set when a
+   * commit on the Code tab links to it. Cleared by choosing a tab by hand.
+   */
+  pullFocus: number | null;
+  openPullRequest: (pullRequestNumber: number) => void;
   status: ProjectStatus;
   error: string | null;
   overview: ProjectOverviewResponse | null;
@@ -120,7 +126,7 @@ export function useProjectDetailTabsViewModel(options: {
     typeof window === "undefined" ? false : shouldHighlightMyQaItems(window.location.search),
   );
   const [logFocus, setLogFocus] = useState<DeploymentLogFocus | null>(null);
-  const [checklistsOpensMyItems, setChecklistsOpensMyItems] = useState(false);
+  const [pullFocus, setPullFocus] = useState<number | null>(null);
 
   const caps = useCapabilities();
   const visibleTabs = visibleProjectDetailTabs(appRole, {
@@ -173,7 +179,7 @@ export function useProjectDetailTabsViewModel(options: {
 
   function setTab(next: ProjectDetailTab) {
     setLogFocus(null);
-    setChecklistsOpensMyItems(false);
+    setPullFocus(null);
     setTabState(next);
   }
 
@@ -184,8 +190,15 @@ export function useProjectDetailTabsViewModel(options: {
   }
 
   function openTargetLogs(focus: DeploymentLogFocus) {
+    setPullFocus(null);
     setLogFocus(focus);
     setTabState("hosting");
+  }
+
+  function openPullRequest(pullRequestNumber: number) {
+    setLogFocus(null);
+    setPullFocus(pullRequestNumber);
+    setTabState("pulls");
   }
 
   function handleTargetChanged(target: DeploymentTarget) {
@@ -218,6 +231,8 @@ export function useProjectDetailTabsViewModel(options: {
     checklistsOpensMyItems,
     logFocus,
     openTargetLogs,
+    pullFocus,
+    openPullRequest,
     status: overviewQuery.status,
     error: overviewQuery.error,
     overview,

@@ -290,6 +290,29 @@ describe("WorkspaceSwitcher", () => {
     expect(trigger(container)!.textContent).toContain("Team workspace");
   });
 
+  /* Opt-in for a page scoped to one team (a project): the pick is saved
+   * first, then reported so the page can leave for the picked team. */
+  it("reports a pick of a different team to onSwitch, after saving it", () => {
+    const onSwitch = jest.fn(() => {
+      expect(window.localStorage.getItem("flowci.workspaceId")).toBe("workspace-2");
+    });
+    const container = renderSwitcher(<WorkspaceSwitcher workspaces={workspaces} onSwitch={onSwitch} />);
+    click(trigger(container)!);
+    click(options(container)[1]);
+
+    expect(onSwitch).toHaveBeenCalledTimes(1);
+    expect(onSwitch).toHaveBeenCalledWith("workspace-2");
+  });
+
+  it("never reports re-picking the team already shown", () => {
+    const onSwitch = jest.fn();
+    const container = renderSwitcher(<WorkspaceSwitcher workspaces={workspaces} onSwitch={onSwitch} />);
+    click(trigger(container)!);
+    click(options(container)[0]);
+
+    expect(onSwitch).not.toHaveBeenCalled();
+  });
+
   it("marks the current team selected, and only it", () => {
     const container = renderSwitcher(<WorkspaceSwitcher workspaces={workspaces} />);
     click(trigger(container)!);

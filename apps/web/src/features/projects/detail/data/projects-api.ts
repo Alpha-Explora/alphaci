@@ -21,6 +21,8 @@ import type {
   ProjectDriftRepairResponse,
   ProjectAuditEventsResponse,
   ProjectAuditPageRequest,
+  ProjectCommitsPageRequest,
+  ProjectCommitsResponse,
   ProjectOverviewResponse,
   ProjectSyncSnapshotResponse,
   ProvisionedProjectsResponse,
@@ -236,6 +238,28 @@ export async function getProjectAuditEvents(
   const query = params.toString();
   return request<ProjectAuditEventsResponse>(
     `/projects/${encodeURIComponent(projectId)}/audit${query ? `?${query}` : ""}`,
+  );
+}
+
+/** Asks the server to read GitHub activity into the trail now. The body is not read. */
+export async function syncProjectAuditEvents(projectId: string): Promise<unknown> {
+  return request<unknown>(`/projects/${encodeURIComponent(projectId)}/audit/sync`, {
+    method: "POST",
+  });
+}
+
+/** One page of a branch's commits, newest first. No `branch`: the server's default. */
+export async function getProjectCommits(
+  projectId: string,
+  page: ProjectCommitsPageRequest = {},
+): Promise<ProjectCommitsResponse> {
+  const params = new URLSearchParams();
+  if (page.branch) params.set("branch", page.branch);
+  if (page.limit !== undefined) params.set("limit", String(page.limit));
+  if (page.before) params.set("before", page.before);
+  const query = params.toString();
+  return request<ProjectCommitsResponse>(
+    `/projects/${encodeURIComponent(projectId)}/commits${query ? `?${query}` : ""}`,
   );
 }
 

@@ -121,6 +121,7 @@ function PickerWithCreate({
   setCreateOpen,
   setSelectedWorkspaceId,
   onCreated,
+  onSwitch,
 }: Readonly<{
   items: WorkspacesMeResponse["items"];
   otherTeams: readonly WorkspaceSummary[];
@@ -130,6 +131,7 @@ function PickerWithCreate({
   setCreateOpen: (open: boolean) => void;
   setSelectedWorkspaceId: (id: string | null) => void;
   onCreated: (group: { id: string }) => void;
+  onSwitch?: (workspaceId: string) => void;
 }>) {
   return (
     <>
@@ -138,7 +140,12 @@ function PickerWithCreate({
         otherTeams={otherTeams}
         current={current}
         canCreate={canCreate}
-        onSelect={setSelectedWorkspaceId}
+        // The picker reports only a pick of a team other than `current`, so
+        // `onSwitch` never fires for re-picking the team already shown.
+        onSelect={(id) => {
+          setSelectedWorkspaceId(id);
+          onSwitch?.(id);
+        }}
         onCreate={() => setCreateOpen(true)}
       />
       {canCreate ? (
@@ -171,6 +178,7 @@ export function WorkspaceSwitcher({
   status = "ready",
   onRetry,
   onWorkspaceCreated,
+  onSwitch,
 }: Readonly<{
   workspaces: WorkspacesMeResponse | null;
   /**
@@ -190,6 +198,11 @@ export function WorkspaceSwitcher({
   onRetry?: () => void;
   /** Lets the owner of the workspace list re-fetch after a create. */
   onWorkspaceCreated?: (workspaceId: string) => void;
+  /**
+   * Called after the viewer picks a different team, once the selection is
+   * saved. Opt-in: only a page scoped to one team navigates on a pick.
+   */
+  onSwitch?: (workspaceId: string) => void;
 }>) {
   const { selectedWorkspace, selectedWorkspaceId, setSelectedWorkspaceId } =
     useWorkspaceSelection();
@@ -233,6 +246,7 @@ export function WorkspaceSwitcher({
       setCreateOpen={setCreateOpen}
       setSelectedWorkspaceId={setSelectedWorkspaceId}
       onCreated={onCreated}
+      onSwitch={onSwitch}
     />
   );
 }
