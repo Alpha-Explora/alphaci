@@ -48,10 +48,11 @@ describe("canManageProjectLifecycle", () => {
 });
 
 describe("canOpenQaStudio", () => {
-  it("matches QA Studio's own visibility rule: qa, lead and admin", () => {
-    for (const role of ["qa", "lead", "admin"] as const) {
+  it("matches QA Studio's own visibility rule: qa and admin (a Product owner has PO Studio)", () => {
+    for (const role of ["qa", "admin"] as const) {
       expect(canOpenQaStudio(role)).toBe(true);
     }
+    expect(canOpenQaStudio("lead")).toBe(false);
   });
 
   it("excludes Developer and a session with no known role", () => {

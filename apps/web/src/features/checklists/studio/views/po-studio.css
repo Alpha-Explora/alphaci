@@ -1,0 +1,43 @@
+/* ── PO Studio ─────────────────────────────────────────────────────────────
+   QA Studio's shell with the Product owner's acceptance in the column. Only
+   the acceptance status is new; the summary, the sign-off banner and the
+   promotion card are QA Studio's own. Tokens only.
+   ------------------------------------------------------------------------- */
+
+.po-accept {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.po-accept__status {
+  display: grid;
+  gap: 0.3rem;
+  padding: 0.75rem 0.9rem;
+  border: 1px solid var(--border-amber);
+  border-left-width: 3px;
+  border-radius: 0.7rem;
+  background: var(--accent-amber-light);
+}
+
+.po-accept[data-state="ready"] .po-accept__status {
+  border-color: var(--success);
+  background: var(--accent-emerald-light);
+}
+
+.po-accept__title {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.po-accept__text {
+  margin: 0;
+  font-size: 0.8rem;
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+
+.po-accept__open {
+  justify-self: start;
+}

@@ -71,14 +71,14 @@ describe("PullRequestsTab review panel", () => {
   let root: Root | null = null;
   let host: HTMLDivElement;
 
-  async function render(appRole: AppRole = "member", onOpenQaStudio?: () => void) {
+  async function render(appRole: AppRole = "member", onOpenPoStudio?: () => void) {
     await act(async () => {
       root = createRoot(host);
       root.render(
         <PullRequestsTab
           projectId="p1"
           appRole={appRole}
-          onOpenQaStudio={onOpenQaStudio}
+          onOpenPoStudio={onOpenPoStudio}
         />,
       );
     });
@@ -228,14 +228,14 @@ describe("PullRequestsTab, Phase 1 security gates", () => {
   let root: Root | null = null;
   let host: HTMLDivElement;
 
-  async function render(appRole: AppRole = "member", onOpenQaStudio?: () => void) {
+  async function render(appRole: AppRole = "member", onOpenPoStudio?: () => void) {
     await act(async () => {
       root = createRoot(host);
       root.render(
         <PullRequestsTab
           projectId="p1"
           appRole={appRole}
-          onOpenQaStudio={onOpenQaStudio}
+          onOpenPoStudio={onOpenPoStudio}
         />,
       );
     });
@@ -296,35 +296,35 @@ describe("PullRequestsTab, Phase 1 security gates", () => {
     );
     expect(merge).toBeUndefined();
     expect(host.textContent).toContain(
-      "Merges into main go through QA Studio — Ready for production.",
+      "Merges into main go through PO Studio — Ready for production.",
     );
   });
 
-  it("lets a Team Lead follow the main-merge notice into QA Studio", async () => {
+  it("lets a Team Lead follow the main-merge notice into PO Studio", async () => {
     mockedDetail.mockResolvedValue(detailWithBase("main"));
-    const onOpenQaStudio = jest.fn();
+    const onOpenPoStudio = jest.fn();
 
-    await render("lead", onOpenQaStudio);
+    await render("lead", onOpenPoStudio);
 
     const link = [...host.querySelectorAll("button")].find(
-      (button) => button.textContent === "Go to QA Studio",
+      (button) => button.textContent === "Go to PO Studio",
     );
     expect(link).toBeDefined();
     await act(async () => link?.click());
-    expect(onOpenQaStudio).toHaveBeenCalled();
+    expect(onOpenPoStudio).toHaveBeenCalled();
   });
 
-  it("gives a Developer the same main-merge notice, with no QA Studio link", async () => {
+  it("gives a Developer the same main-merge notice, with no PO Studio link", async () => {
     // A Developer cannot open QA Studio at all, so nothing here should
     // promise a tab that is not there.
     mockedDetail.mockResolvedValue(detailWithBase("main"));
-    const onOpenQaStudio = jest.fn();
+    const onOpenPoStudio = jest.fn();
 
-    await render("member", onOpenQaStudio);
+    await render("member", onOpenPoStudio);
 
-    expect(host.textContent).toContain("Merges into main go through QA Studio");
+    expect(host.textContent).toContain("Merges into main go through PO Studio");
     const link = [...host.querySelectorAll("button")].find(
-      (button) => button.textContent === "Go to QA Studio",
+      (button) => button.textContent === "Go to PO Studio",
     );
     expect(link).toBeUndefined();
   });

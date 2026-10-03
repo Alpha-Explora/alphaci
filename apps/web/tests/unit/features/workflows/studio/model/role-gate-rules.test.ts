@@ -58,7 +58,7 @@ describe("roleGateErrorMessage", () => {
     [
       403,
       "MAIN_PR_RESTRICTED",
-      "Pull requests into main are restricted to the QA Studio promotion flow.",
+      "Pull requests into main are restricted to the PO Studio promotion flow.",
     ],
     [
       409,

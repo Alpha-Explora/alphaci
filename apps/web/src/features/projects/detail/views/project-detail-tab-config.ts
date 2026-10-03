@@ -46,6 +46,7 @@ export const PROJECT_DETAIL_TAB_GROUPS: ReadonlyArray<
       { id: "hosting", label: "Hosting" },
       { id: "environment", label: "Environment" },
       { id: "qa", label: "QA Studio" },
+      { id: "po", label: "PO Studio" },
     ],
   },
   { heading: "Records", items: [{ id: "audit", label: "Audit" }] },

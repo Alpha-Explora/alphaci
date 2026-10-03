@@ -25,6 +25,7 @@ import {
   repoDisplayName,
   repoChipOpens,
   repoRoleLabel,
+  studioLinkFor,
   repositoryCountLabel,
   verifyProjectId,
   folderLandingProjectId,
@@ -217,6 +218,15 @@ describe("repoChipOpens", () => {
       expect(repoChipOpens(role, "backend")).toBe(true);
       expect(repoChipOpens(role, null)).toBe(true);
     }
+  });
+});
+
+describe("studioLinkFor", () => {
+  it("opens each role's own studio on the repository", () => {
+    expect(studioLinkFor("qa", "proj-fe")).toEqual({ label: "Verify in QA Studio", href: "/projects/proj-fe#qa" });
+    expect(studioLinkFor("admin", "proj-fe")).toEqual({ label: "Verify in QA Studio", href: "/projects/proj-fe#qa" });
+    expect(studioLinkFor("lead", "proj-fe")).toEqual({ label: "Open PO Studio", href: "/projects/proj-fe#po" });
+    expect(studioLinkFor("member", "proj-fe")).toBeNull();
   });
 });
 

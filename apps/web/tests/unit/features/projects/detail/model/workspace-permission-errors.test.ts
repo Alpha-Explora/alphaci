@@ -16,7 +16,7 @@ describe("workspacePermissionErrorMessage", () => {
   it.each([
     [
       "MAIN_MERGE_VIA_QA_STUDIO",
-      "Merges into main go through QA Studio — Ready for production.",
+      "Merges into main go through PO Studio — Ready for production.",
     ],
     ["PR_ROLE_FORBIDDEN", "QA does not open or merge pull requests."],
     [
@@ -25,7 +25,7 @@ describe("workspacePermissionErrorMessage", () => {
     ],
     [
       "MAIN_PR_RESTRICTED",
-      "Pull requests into main are restricted to the QA Studio promotion flow.",
+      "Pull requests into main are restricted to the PO Studio promotion flow.",
     ],
     [
       "ENV_VARS_LEAD_ONLY",
@@ -51,7 +51,7 @@ describe("workspacePermissionErrorMessage", () => {
   it("matches a code case-insensitively", () => {
     const error = forbidden("main_pr_restricted");
     expect(workspacePermissionErrorMessage(error, FALLBACK)).toBe(
-      "Pull requests into main are restricted to the QA Studio promotion flow.",
+      "Pull requests into main are restricted to the PO Studio promotion flow.",
     );
   });
 

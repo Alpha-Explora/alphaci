@@ -3,7 +3,7 @@
  * (PERSONA_WORKFLOW_SPEC.md §5, §8.1):
  *
  *   - `MAIN_MERGE_VIA_QA_STUDIO` — the generic workspace merge refused a PR
- *     into `main`; production release happens in QA Studio instead.
+ *     into `main`; production release happens in PO Studio instead.
  *   - `PR_ROLE_FORBIDDEN`        — QA tried to open or merge a pull request.
  *   - `MAIN_PR_RESTRICTED`       — a pull request into `main` was proposed
  *     outside the promotion engine.
@@ -31,10 +31,10 @@ import { apiErrorReason } from "./api-error-reason";
 
 const WORKSPACE_PERMISSION_MESSAGES: Readonly<Record<string, string>> = {
   main_merge_via_qa_studio:
-    "Merges into main go through QA Studio — Ready for production.",
+    "Merges into main go through PO Studio — Ready for production.",
   pr_role_forbidden: "QA does not open or merge pull requests.",
   main_pr_restricted:
-    "Pull requests into main are restricted to the QA Studio promotion flow.",
+    "Pull requests into main are restricted to the PO Studio promotion flow.",
   pr_route_restricted:
     "Developers open pull requests from a feature branch into dev, and from dev into uat.",
   env_vars_lead_only: "Developers and admins can change environment variables.",

@@ -404,14 +404,16 @@ describe("ProjectExplorer", () => {
     expect(container.querySelector('[role="dialog"]')?.textContent).toContain("New Project");
   });
 
-  it("opens a Project: QA Studio, create-in-Project, move, and its requirements and QA", async () => {
+  it("opens a Project: PO Studio, create-in-Project, move, and its requirements and QA", async () => {
     repo.list.mockResolvedValue(foldersSnapshot());
     repo.requirementCounts.mockResolvedValue({ "dp-1": 2 });
     const container = await renderExplorer();
     await act(async () => manage(container, "testfinals")!.click());
 
     expect(container.querySelector(".pf-detail__title")?.textContent).toBe("testfinals");
-    expect(link(container, "Verify in QA Studio")?.getAttribute("href")).toBe("/projects/proj-fe#qa");
+    // A Product owner accepts and merges in PO Studio, not QA Studio.
+    expect(link(container, "Open PO Studio")?.getAttribute("href")).toBe("/projects/proj-fe#po");
+    expect(container.textContent).not.toContain("Verify in QA Studio");
     // A Product owner fills nothing: Developers add the repositories.
     expect(link(container, "Add repository")).toBeUndefined();
     // The Project's requirements and QA run, for this Project and this role.

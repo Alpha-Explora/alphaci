@@ -2972,7 +2972,8 @@ async function leadOrganisesProjects({ page, backend, baseUrl }: JourneyContext)
   // Open storefront.
   await storefront.getByRole('button', { name: 'Manage storefront' }).click();
   await expectText(page.locator('.pf-detail__title'), 'storefront', 'the Project detail title');
-  assert.equal(await page.getByRole('link', { name: 'Verify in QA Studio' }).getAttribute('href'), `/projects/${PROJECT_ID}#qa`);
+  // A Team lead's way in is PO Studio, where they accept the system and merge it.
+  assert.equal(await page.getByRole('link', { name: 'Open PO Studio' }).getAttribute('href'), `/projects/${PROJECT_ID}#po`);
   assert.equal(await page.getByRole('link', { name: 'Add repository' }).count(), 0, 'no Add repository for a Product owner');
 
   // Requirements and QA belong to the Project now: no per-repository checklist attach.
@@ -3164,10 +3165,11 @@ function promotionCard(page: Page) {
   return { card, title: card.locator('.qa-promo__title'), merge: page.locator('button.qa-promo__merge') };
 }
 
-/** (f) Team lead: not ready (reasons) -> sign off Approved on the current head -> ready -> Merge to main from the drawer -> merged. */
+/** (f) Team lead, in PO Studio: not ready (reasons) -> sign off Approved on the current head -> ready -> Merge to main from the drawer -> merged. */
 async function leadMergesToMain({ page, backend, baseUrl }: JourneyContext) {
   const checklist = backend.checklists[0];
-  await openProjectTab(page, baseUrl, 'QA Studio');
+  // A Team lead accepts and merges in PO Studio (the repository run, on a server without Project runs).
+  await openProjectTab(page, baseUrl, 'PO Studio');
   await expectRoleBadge(page, 'lead');
   const { card, title, merge } = promotionCard(page);
   await expectText(title, 'Not ready for production', 'the not-ready title');
@@ -3207,7 +3209,7 @@ async function leadMergesToMain({ page, backend, baseUrl }: JourneyContext) {
   // Full screen: the SAME card rides in the floating drawer.
   await page.getByRole('button', { name: 'Full screen' }).click();
   await page.locator('button.qa-launcher').click();
-  const drawer = page.getByRole('region', { name: 'QA checklist' });
+  const drawer = page.getByRole('region', { name: 'Acceptance' });
   await visible(drawer, 'the floating drawer');
   await visible(drawer.getByRole('region', { name: 'Production readiness' }), 'the promotion card inside the drawer');
   assert.equal(await page.locator('.qa-promo').count(), 1, 'one promotion card, moved, never a second copy');
@@ -3234,7 +3236,7 @@ async function leadMergesToMain({ page, backend, baseUrl }: JourneyContext) {
 
 /** (g) Team lead: GitHub refuses the merge (required review), its words shown verbatim. */
 async function leadMergeRefused({ page, backend, baseUrl }: JourneyContext) {
-  await openProjectTab(page, baseUrl, 'QA Studio');
+  await openProjectTab(page, baseUrl, 'PO Studio');
   const { card, title, merge } = promotionCard(page);
   await expectText(title, 'Ready for production', 'the ready title');
   await merge.click();

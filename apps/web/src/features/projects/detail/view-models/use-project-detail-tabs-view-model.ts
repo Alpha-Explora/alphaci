@@ -127,6 +127,7 @@ export function useProjectDetailTabsViewModel(options: {
   );
   const [logFocus, setLogFocus] = useState<DeploymentLogFocus | null>(null);
   const [pullFocus, setPullFocus] = useState<number | null>(null);
+  const [checklistsOpensMyItems, setChecklistsOpensMyItems] = useState(false);
 
   const caps = useCapabilities();
   const visibleTabs = visibleProjectDetailTabs(appRole, {
@@ -180,11 +181,13 @@ export function useProjectDetailTabsViewModel(options: {
   function setTab(next: ProjectDetailTab) {
     setLogFocus(null);
     setPullFocus(null);
+    setChecklistsOpensMyItems(false);
     setTabState(next);
   }
 
   function openMyQaItems() {
     setLogFocus(null);
+    setPullFocus(null);
     setChecklistsOpensMyItems(true);
     setTabState("checklists");
   }

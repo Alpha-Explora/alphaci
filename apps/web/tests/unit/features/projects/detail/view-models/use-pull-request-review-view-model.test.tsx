@@ -157,7 +157,7 @@ describe("usePullRequestReviewViewModel merging", () => {
 
     expect(current().mergeFailed).toBe(true);
     expect(current().mergeMessage).toBe(
-      "Merges into main go through QA Studio — Ready for production.",
+      "Merges into main go through PO Studio — Ready for production.",
     );
   });
 });

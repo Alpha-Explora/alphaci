@@ -85,12 +85,25 @@ async function settle() {
   }
 }
 
-async function studio(role: AppRole, qaScope?: QaScope): Promise<HTMLElement> {
+async function studio(
+  role: AppRole,
+  qaScope?: QaScope,
+  po?: { onOpenQaRun?: () => void },
+): Promise<HTMLElement> {
   const container = document.createElement("div");
   document.body.appendChild(container);
   root = createRoot(container);
   await act(async () => {
-    root!.render(<QaStudioPanel projectId="project-1" appRole={role} projectName="tone/storefront-web" qaScope={qaScope} />);
+    root!.render(
+      <QaStudioPanel
+        projectId="project-1"
+        appRole={role}
+        projectName="tone/storefront-web"
+        qaScope={qaScope}
+        studio={po ? "po" : undefined}
+        onOpenQaRun={po?.onOpenQaRun}
+      />,
+    );
   });
   await settle();
   return container;
@@ -110,7 +123,7 @@ async function click(element: Element | null | undefined) {
   await settle();
 }
 
-import { headWire, projectRunWire, SHA_BE, SHA_BE_NEW } from "../requirement-fixtures";
+import { headWire, projectRunWire, runItemWire, SHA_BE, SHA_BE_NEW } from "../requirement-fixtures";
 
 const PROJECT_SCOPE: QaScope = { kind: "project", deliveryProjectId: "dp-1", projectName: "storefront", projectHref: null };
 
@@ -184,5 +197,62 @@ describe("QA Studio — Project-level QA", () => {
     const container = await studio("qa", PROJECT_SCOPE);
     expect(container.textContent).toContain("uat moved since the latest Project run");
     expect(container.textContent).toContain("Start Project QA run");
+  });
+});
+
+const SIGNED_APPROVED = {
+  status: "signed_off",
+  signoff: { id: "s1", verdict: "APPROVED", summary: null, conditions: null, signedBy: { id: "u", login: "ana-qa" }, signedAt: "2026-10-01T10:00:00Z" },
+  permissions: { canSetVerification: false, canSignOff: false, canReopen: true, canDispatch: false },
+};
+
+/* PO Studio: QA Studio's shell for a Product owner — the same uat preview,
+ * with acceptance and the merge to main in the column. */
+describe("PO Studio", () => {
+  it("stays locked while QA has not signed off, and points at the QA run", async () => {
+    setup(projectGate({ run: null, reasons: ["The Project has no signed-off QA run yet."] }));
+    projectRuns.current.mockResolvedValue(
+      normalizeProjectRunCurrent({ run: projectRunWire({ items: [runItemWire({ status: "passed" }), runItemWire({ id: "run-item-2", position: 1 })] }) }),
+    );
+    const onOpenQaRun = jest.fn();
+    const container = await studio("lead", PROJECT_SCOPE, { onOpenQaRun });
+
+    const panel = container.querySelector("[role='tabpanel']");
+    expect(panel?.id).toBe("project-detail-panel-po");
+    expect(panel?.getAttribute("aria-labelledby")).toBe("project-detail-tab-po");
+    const status = container.querySelector(".po-accept__status");
+    expect(status?.textContent).toContain("Waiting for QA sign-off");
+    expect(status?.textContent).toContain("1 of 2 items passed, 1 still with QA.");
+    // Acceptance, not verification: no item controls, no sign-off form here.
+    expect(container.querySelector(".qa-run-item")).toBeNull();
+    expect(container.querySelector(".pqa-verify, .qa-status-select")).toBeNull();
+    // The preview is the same uat deployment QA tests.
+    expect(container.querySelector(".qa-device__frame")?.getAttribute("src")).toBe("https://shop.example.com/");
+
+    const open = [...container.querySelectorAll("button")].find((button) => button.textContent === "View the QA run");
+    await click(open);
+    expect(onOpenQaRun).toHaveBeenCalledTimes(1);
+  });
+
+  it("unlocks once QA signed off Approved: who signed, Reopen, and Merge to main", async () => {
+    setup(projectGate({ eligible: true, reasons: [], run: { id: "prun-1", verdict: "APPROVED", signedAt: "2026-10-01T10:00:00Z", stale: false } }));
+    projectRuns.current.mockResolvedValue(normalizeProjectRunCurrent({ run: projectRunWire(SIGNED_APPROVED) }));
+    const container = await studio("lead", PROJECT_SCOPE, {});
+
+    expect(container.querySelector(".po-accept")?.getAttribute("data-state")).toBe("ready");
+    expect(container.querySelector(".po-accept__status")?.textContent).toContain("Ready for production");
+    expect(container.querySelector(".qa-signoff-banner")?.textContent).toContain("@ana-qa");
+    expect([...container.querySelectorAll("button")].some((button) => button.textContent === "Reopen run")).toBe(true);
+    expect([...container.querySelectorAll("button")].some((button) => button.textContent?.includes("Merge to main"))).toBe(true);
+    expect(container.textContent).not.toContain("View the QA run");
+  });
+
+  it("tells a Product owner an unfiled repository has nothing to accept", async () => {
+    setup(projectGate({ scope: "unfiled", deliveryProject: null, run: null, repositories: [], reasons: [] }));
+    projectRuns.current.mockResolvedValue(normalizeProjectRunCurrent({ run: null }));
+    const container = await studio("lead", { kind: "repository" }, {});
+    // Not filed under a Project: the legacy run column, as QA Studio shows it.
+    expect(container.textContent).toContain("This repository is not filed under a Project");
+    expect(container.querySelector(".po-accept")).toBeNull();
   });
 });

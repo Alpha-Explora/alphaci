@@ -25,7 +25,7 @@ import {
   readFeatureCount,
   repositoryBlockedByFeatures,
 } from "@/features/groups";
-import { seesProjectAsProduct } from "@/features/projects/detail";
+import { seesProjectAsProduct, studioTabFor } from "@/features/projects/detail";
 import type { AppRole } from "@/shared/api/contracts";
 
 type Json = Record<string, unknown>;
@@ -319,6 +319,24 @@ export function projectDashboardHref(projectId: string): string {
  */
 export function repoChipOpens(appRole: AppRole | null | undefined, role: RepoRole | null): boolean {
   return !seesProjectAsProduct(appRole) || role === "frontend";
+}
+
+/**
+ * The Project detail's way into the viewer's studio, on the repository it
+ * opens on: "Verify in QA Studio" for the QA Team and admins, "Open PO
+ * Studio" for a Product owner, who accepts the system there and merges it.
+ * Null for a role with no studio.
+ */
+export function studioLinkFor(
+  appRole: AppRole | null | undefined,
+  projectId: string,
+): { label: string; href: string } | null {
+  const tab = studioTabFor(appRole);
+  if (!tab) return null;
+  return {
+    label: tab === "po" ? "Open PO Studio" : "Verify in QA Studio",
+    href: `${projectDashboardHref(projectId)}#${tab}`,
+  };
 }
 
 /** The create-project wizard, pre-scoped to this team and Project. */
