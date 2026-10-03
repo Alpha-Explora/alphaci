@@ -4,8 +4,10 @@ import type { ReactNode } from "react";
 
 import { checklistsTabShowsMyItems, REPOSITORY_SCOPE, type QaScope } from "@/features/checklists";
 import { ProjectChecklistsPanel } from "@/features/checklists/project";
+import { ProjectQaWorkspace } from "@/features/checklists/requirements";
 import { MyQaItemsCard } from "@/features/checklists/returned";
 import type { ProvisionedProject } from "@/features/projects";
+import { seesProjectAsProduct } from "../model/project-detail-tab-rules";
 import type { ProjectDetailTabsViewModel } from "../view-models/use-project-detail-tabs-view-model";
 
 /**
@@ -18,6 +20,11 @@ import type { ProjectDetailTabsViewModel } from "../view-models/use-project-deta
  * summary of it, and its "Open checklist" lands on this tab. A repository in a
  * Project works from the Project's "My QA items" instead (unless the server
  * has no Project-wide list, when the per-repository card stands in here).
+ *
+ * The QA Team and Product owners judge the Project, not the repository, so
+ * for a repository in a Project their tab IS the Project's QA workspace —
+ * Requirements, QA run and My QA items — instead of a pointer to the Projects
+ * page. The wrapper keeps the tabpanel the strip's `aria-controls` names.
  */
 export function ChecklistsTabPanel({
   project,
@@ -29,6 +36,24 @@ export function ChecklistsTabPanel({
   dangerZone?: ReactNode;
   qaScope?: QaScope;
 }>) {
+  if (seesProjectAsProduct(vm.appRole) && qaScope.kind === "project") {
+    return (
+      <div
+        role="tabpanel"
+        id="project-detail-panel-checklists"
+        aria-labelledby="project-detail-tab-checklists"
+        className="qa-project-panel"
+      >
+        <ProjectQaWorkspace
+          deliveryProjectId={qaScope.deliveryProjectId}
+          projectName={qaScope.projectName}
+          appRole={vm.appRole}
+          enabled={vm.qaChecklistsEnabled}
+          opensOn={vm.checklistsOpensMyItems ? "items" : undefined}
+        />
+      </div>
+    );
+  }
   return (
     <ProjectChecklistsPanel
       projectId={project.id}

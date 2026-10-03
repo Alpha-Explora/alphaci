@@ -112,6 +112,8 @@ describe("ProjectDetailTabs header, product view", () => {
       expect(container.querySelector('.project-sections > .project-tabs')).toBeNull();
       expect(container.querySelector('[role="radiogroup"]')).toBeNull();
       expect(container.querySelector("h1")?.textContent).toBe("shop");
+      // Their Checklists tab carries the Project's QA: nothing links away.
+      expect(container.textContent).not.toContain("Manage project");
       unmount();
     }
   });

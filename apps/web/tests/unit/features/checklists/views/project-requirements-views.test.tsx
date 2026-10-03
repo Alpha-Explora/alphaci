@@ -694,6 +694,18 @@ describe("ProjectQaWorkspace", () => {
     }
   });
 
+  /* Embedded in a repository's Checklists tab, the Overview's "Open checklist"
+   * asks for My QA items directly (the page's hash names the outer tab). */
+  it("opens on the tab it is asked to open on", async () => {
+    loadRequirements("lead");
+    runs.current.mockResolvedValue(normalizeProjectRunCurrent({ run: projectRunWire() }));
+    runs.myItems.mockResolvedValue(normalizeProjectMyItems({}));
+    const view = await render(
+      <ProjectQaWorkspace deliveryProjectId="dp-1" projectName="storefront" appRole="lead" opensOn="items" />,
+    );
+    expect(view.querySelector('[role="tab"][aria-selected="true"]')?.textContent).toBe("My QA items");
+  });
+
   it("brings the Requirements tab forward and opens New Feature on a new request, never on a revisit", async () => {
     loadRequirements("lead");
     runs.current.mockResolvedValue(normalizeProjectRunCurrent({ run: projectRunWire() }));

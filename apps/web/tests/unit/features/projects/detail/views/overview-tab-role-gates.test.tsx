@@ -33,6 +33,7 @@ const PROJECT = {
 } as unknown as ProvisionedProject;
 
 const setTab = jest.fn();
+const openMyQaItems = jest.fn();
 
 function vmFor(appRole: AppRole, qaChecklistsEnabled = true): ProjectDetailTabsViewModel {
   return {
@@ -42,6 +43,7 @@ function vmFor(appRole: AppRole, qaChecklistsEnabled = true): ProjectDetailTabsV
     highlightMyQaItems: false,
     visibleTabs: ["overview", "checklists"],
     setTab,
+    openMyQaItems,
     overview: {
       hierarchyRepositoryId: "repo-1",
       health: { checks: [{ key: "ci", label: "CI token", status: "ok", message: "Environment metadata" }] },
@@ -111,14 +113,14 @@ describe("Overview contents", () => {
     expect(container.textContent).toContain("Render rejected the service.");
   });
 
-  it("hands the My QA items summary the deep-link highlight and a way to the Checklists tab", async () => {
+  it("hands the My QA items summary the deep-link highlight and a way to the Checklists tab's My QA items", async () => {
     await render("member");
     expect(summaryProps).toHaveLength(1);
     const props = summaryProps[0];
     expect(props.enabled).toBe(true);
     expect(props.projectId).toBe("p1");
     (props.onOpenChecklists as () => void)();
-    expect(setTab).toHaveBeenCalledWith("checklists");
+    expect(openMyQaItems).toHaveBeenCalledTimes(1);
   });
 
   it("turns the summary off without the QA capability", async () => {

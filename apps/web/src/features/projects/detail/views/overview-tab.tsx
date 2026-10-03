@@ -49,7 +49,7 @@ export function OverviewTab({
         projectId={project.id}
         highlightRequested={vm.highlightMyQaItems}
         qaScope={qaScope}
-        onOpenChecklists={() => vm.setTab("checklists")}
+        onOpenChecklists={vm.openMyQaItems}
       />
       {showOverviewProductionReadiness(vm.appRole, vm.qaChecklistsEnabled) ? (
         <ProductionReadinessCard

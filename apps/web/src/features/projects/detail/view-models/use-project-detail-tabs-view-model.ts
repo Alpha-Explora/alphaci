@@ -52,6 +52,13 @@ export interface ProjectDetailTabsViewModel {
    */
   highlightMyQaItems: boolean;
   /**
+   * The Overview's "Open checklist": the Checklists tab, asked to open on the
+   * viewer's "My QA items" (where it embeds the Project's QA workspace).
+   */
+  openMyQaItems: () => void;
+  /** Set by `openMyQaItems`, cleared by choosing a tab by hand. */
+  checklistsOpensMyItems: boolean;
+  /**
    * The target whose logs Hosting should open with, set when the Overview's
    * card asks for its full logs. Cleared by choosing a tab by hand.
    */
@@ -176,6 +183,12 @@ export function useProjectDetailTabsViewModel(options: {
     setTabState(next);
   }
 
+  function openMyQaItems() {
+    setLogFocus(null);
+    setChecklistsOpensMyItems(true);
+    setTabState("checklists");
+  }
+
   function openTargetLogs(focus: DeploymentLogFocus) {
     setPullFocus(null);
     setLogFocus(focus);
@@ -214,6 +227,8 @@ export function useProjectDetailTabsViewModel(options: {
     viewerLogin,
     qaChecklistsEnabled: caps.qaChecklistsEnabled,
     highlightMyQaItems,
+    openMyQaItems,
+    checklistsOpensMyItems,
     logFocus,
     openTargetLogs,
     pullFocus,
