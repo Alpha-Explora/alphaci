@@ -250,7 +250,7 @@ function RunGroup({
       <span className="pqa-kind" data-kind={group.kind}>
         {kindCopy(group.kind).singular}
       </span>
-      {group.requirementName}
+      <span className="pqa-group__name">{group.requirementName}</span>
     </>
   );
   return (
