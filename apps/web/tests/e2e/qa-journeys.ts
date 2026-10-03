@@ -2421,21 +2421,21 @@ async function qaVerifiesProject({ page, backend, baseUrl }: JourneyContext) {
   await page.getByRole('button', { name: 'Start Project QA run' }).click();
   const start = onlyCall(backend.callsTo('POST', new RegExp(`^/delivery-projects/${STOREFRONT_FOLDER}/qa-runs$`)), 'Project run start');
   assert.deepEqual(start.body, {}, 'no body: the server reads every repository head');
-  const selects = page.locator('.pqa-run label.qa-status-select select');
-  await eventually('two run items', async () => (await selects.count()) === 2);
+  const verify = page.locator('.pqa-run .pqa-verify');
+  await eventually('two run items', async () => (await verify.count()) === 2);
 
-  const enabledOptions = async (index: number) =>
-    selects.nth(index).locator('option:not([disabled])').evaluateAll((options) => options.map((option) => (option as HTMLOptionElement).value));
-  assert.ok((await enabledOptions(0)).includes('passed'), 'Passed for the Done story');
-  assert.ok(!(await enabledOptions(1)).includes('passed'), 'no Passed before Done');
+  const enabledStatuses = async (index: number) =>
+    verify.nth(index).locator('button:not([disabled])').evaluateAll((buttons) => buttons.map((button) => (button as HTMLButtonElement).dataset.status));
+  assert.ok((await enabledStatuses(0)).includes('passed'), 'Passed for the Done story');
+  assert.ok(!(await enabledStatuses(1)).includes('passed'), 'no Passed before Done');
   await visible(page.getByText('A Developer marks this Done before QA can pass it.'), 'why Passed is missing');
 
-  await selects.nth(0).selectOption('passed');
+  await verify.nth(0).locator('button[data-status="passed"]').click();
   await eventually('the Passed write', () => backend.callsTo('PATCH', /^\/delivery-projects\/[^/]+\/qa-runs\/[^/]+\/items\/[^/]+$/).length === 1);
   const passed = backend.callsTo('PATCH', /^\/delivery-projects\/[^/]+\/qa-runs\/[^/]+\/items\/[^/]+$/)[0];
   assert.deepEqual(passed.body, { status: 'passed', expectedRowVersion: 1 });
 
-  await selects.nth(1).selectOption('returned_to_dev');
+  await verify.nth(1).locator('button[data-status="returned_to_dev"]').click();
   const editor = page.locator('.pqa-run form.qa-item-editor');
   await editor.getByLabel(/Severity/).selectOption('major');
   await editor.getByLabel('Notes').fill('The saved card is not offered at checkout.');
@@ -2488,7 +2488,8 @@ async function qaVerifiesAndSignsOff({ page, context, backend, baseUrl }: Journe
   await expectText(promo, 'Not verified on this commit yet', 'the unverified checklist state');
   await expectText(promo, 'Team leads merge uat into main once every checklist is approved.', 'who merges, for QA');
   await neverShown(backend, page.getByRole('button', { name: 'Merge to main' }), 'Merge to main for QA Team');
-  const lookedUp = backend.callsTo('GET', /\/qa-runs\/current$/).map((call) => call.query.get('branch'));
+  // The repository run's lookups; a Project run's (/delivery-projects/…) take no branch.
+  const lookedUp = backend.callsTo('GET', /^\/projects\/[^/]+\/qa-runs\/current$/).map((call) => call.query.get('branch'));
   assert.ok(lookedUp.length > 0 && lookedUp.every((branch) => branch === QA_BRANCH), `run lookups only ever ask for uat (got ${lookedUp.join(', ')})`);
 
   await page.getByRole('button', { name: 'Start QA run on uat @ 9f8e7d6' }).click();
