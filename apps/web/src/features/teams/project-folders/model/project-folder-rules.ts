@@ -25,6 +25,7 @@ import {
   readFeatureCount,
   repositoryBlockedByFeatures,
 } from "@/features/groups";
+import { seesProjectAsProduct } from "@/features/projects/detail";
 import type { AppRole } from "@/shared/api/contracts";
 
 type Json = Record<string, unknown>;
@@ -307,6 +308,17 @@ export function withFeatureCounts(
 
 export function projectDashboardHref(projectId: string): string {
   return `/projects/${encodeURIComponent(projectId)}`;
+}
+
+/**
+ * Whether a repository chip opens that repository's page for this viewer.
+ * The QA Team and Product owners open a Project, which lands on its frontend
+ * (`folderLandingProjectId`), and their page has no switch to a sibling; a
+ * backend chip would strand them on a repository that is not theirs, so for
+ * them only a frontend chip is a link. Everyone else opens any repository.
+ */
+export function repoChipOpens(appRole: AppRole | null | undefined, role: RepoRole | null): boolean {
+  return !seesProjectAsProduct(appRole) || role === "frontend";
 }
 
 /** The create-project wizard, pre-scoped to this team and Project. */

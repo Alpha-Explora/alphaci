@@ -3,7 +3,7 @@ import { createRoot, type Root } from "react-dom/client";
 
 import { ProjectDetailTabs } from "../../../../../../src/features/projects/detail/views/project-detail-tabs";
 import type { ProjectFolderViewModel } from "../../../../../../src/features/projects/detail/view-models/use-project-folder-view-model";
-import type { ProvisionedProject } from "../../../../../../src/shared/api/contracts";
+import type { AppRole, ProvisionedProject } from "../../../../../../src/shared/api/contracts";
 
 const push = jest.fn();
 jest.mock("next/navigation", () => ({ useRouter: () => ({ push }) }));
@@ -43,12 +43,18 @@ const FOLDER: ProjectFolderViewModel = {
 
 let root: Root | null = null;
 
-function render(folder?: ProjectFolderViewModel): HTMLElement {
+function render(folder?: ProjectFolderViewModel, appRole?: AppRole): HTMLElement {
   const container = document.createElement("div");
   document.body.appendChild(container);
   root = createRoot(container);
-  act(() => root!.render(<ProjectDetailTabs project={PROJECT} folder={folder} />));
+  act(() => root!.render(<ProjectDetailTabs project={PROJECT} folder={folder} appRole={appRole} />));
   return container;
+}
+
+function unmount() {
+  act(() => root?.unmount());
+  root = null;
+  document.body.innerHTML = "";
 }
 
 afterEach(() => {
@@ -90,6 +96,42 @@ describe("ProjectDetailTabs header", () => {
       expect(container.textContent).not.toContain("Manage project");
       act(() => root?.unmount());
       root = null;
+    }
+  });
+});
+
+/* The QA Team and Product owners judge the Project as one product: no
+ * repository switch, and their five tabs in the title row. */
+describe("ProjectDetailTabs header, product view", () => {
+  it("puts the sections in a Project's title row and drops the switch", () => {
+    for (const appRole of ["lead", "qa"] as const) {
+      const container = render(FOLDER, appRole);
+      const header = container.querySelector(".project-folder-header");
+      expect(header?.classList.contains("project-detail-header--tabs")).toBe(true);
+      expect(header?.querySelector('[data-tour="project-detail-tabs"] [role="tablist"]')).not.toBeNull();
+      expect(container.querySelector('.project-sections > .project-tabs')).toBeNull();
+      expect(container.querySelector('[role="radiogroup"]')).toBeNull();
+      expect(container.querySelector("h1")?.textContent).toBe("shop");
+      // Their Checklists tab carries the Project's QA: nothing links away.
+      expect(container.textContent).not.toContain("Manage project");
+      unmount();
+    }
+  });
+
+  it("puts the sections beside a single repository's title too", () => {
+    const container = render(undefined, "lead");
+    const aside = container.querySelector(".project-detail-header--tabs .project-detail-header__aside");
+    expect(aside?.querySelector(".project-status-badge")?.textContent).toBe("provisioned");
+    expect(aside?.querySelector('[role="tablist"]')).not.toBeNull();
+  });
+
+  it("keeps the switch and the strip below the title for Developers and admins", () => {
+    for (const appRole of ["member", "admin"] as const) {
+      const container = render(FOLDER, appRole);
+      expect(container.querySelector(".project-detail-header--tabs")).toBeNull();
+      expect(container.querySelector('.project-sections[data-tour="project-detail-tabs"] > .project-tabs')).not.toBeNull();
+      expect(container.querySelector('[role="radiogroup"]')).not.toBeNull();
+      unmount();
     }
   });
 });

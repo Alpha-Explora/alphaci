@@ -5,6 +5,7 @@ import { useId } from "react";
 
 import { requirementCountLabel } from "@/features/checklists";
 import { LoadingRows } from "@/features/groups/workspace";
+import type { AppRole } from "@/shared/api/contracts";
 
 import {
   createRepositoryHref,
@@ -135,7 +136,10 @@ function FolderCard({
   );
 }
 
-function UnfiledGroup({ unfiled }: Readonly<{ unfiled: UnfiledProject[] }>) {
+function UnfiledGroup({
+  unfiled,
+  appRole,
+}: Readonly<{ unfiled: UnfiledProject[]; appRole: AppRole | null }>) {
   if (unfiled.length === 0) return null;
   return (
     <section className="pf-unfiled" aria-labelledby="pf-unfiled-title">
@@ -155,6 +159,7 @@ function UnfiledGroup({ unfiled }: Readonly<{ unfiled: UnfiledProject[] }>) {
               repoFullName={project.repoFullName}
               role={project.role}
               projectId={project.id}
+              appRole={appRole}
             />
           </li>
         ))}
@@ -235,7 +240,7 @@ export function ProjectFolderList({
       ) : (
         <p className="pf-note">No Projects yet. Everything below is unfiled.</p>
       )}
-      <UnfiledGroup unfiled={vm.unfiled} />
+      <UnfiledGroup unfiled={vm.unfiled} appRole={vm.appRole} />
     </div>
   );
 }

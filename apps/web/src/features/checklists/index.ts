@@ -27,7 +27,7 @@ export {
 
 export { qaStudioHref } from "./model/qa-report-rules";
 /* Where a repository's QA happens (its Project, or the repository itself). */
-export { qaScopeFromFolder, REPOSITORY_SCOPE, type QaScope } from "./model/qa-scope";
+export { qaScopeFromFolder, REPOSITORY_SCOPE, withProjectOnPage, type QaScope } from "./model/qa-scope";
 /* Whether a repository's Checklists tab carries the full "My QA items" list
  * (no Project to send the viewer to). */
 export { checklistsTabShowsMyItems } from "./model/my-qa-items-summary-rules";
