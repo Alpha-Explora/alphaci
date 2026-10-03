@@ -1606,6 +1606,38 @@
   margin: 0.85rem 1rem 1rem;
 }
 
+/* A Project run (and PO Studio's acceptance) has no single item list to
+   scroll: requirement groups, notices and the sign-off banner stack up. So
+   the whole column scrolls as one, nothing capped inside it — the promotion
+   card included, so Merge to main is never folded away in a nested scroller.
+   Docked the column already stops at the pane's height; floating, at the
+   drawer's. Overflow is never `visible` here, but nothing in this column
+   needs it: the Export menu belongs to the repository run, which keeps the
+   item-list scrolling above, and the sign-off dialog is fixed to the
+   viewport (no transform or filter up the tree). */
+.qa-studio__run[data-scroll="column"] {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+}
+
+.qa-studio__run[data-scroll="column"] > .qa-promo {
+  max-height: none;
+  overflow-y: visible;
+}
+
+.qa-studio[data-studio] .qa-studio__run[data-scroll="column"] > .qa-run-card {
+  flex: 0 0 auto;
+  max-height: none;
+}
+
+/* Floating, the drawer's header stays put while its column scrolls. */
+.qa-studio__run[data-scroll="column"] > .qa-drawer__head {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
 @keyframes qa-drawer-in {
   from {
     opacity: 0;

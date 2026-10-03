@@ -294,6 +294,15 @@ function projectSnapshot(run: ProjectRunViewModel, projectId: string): { commit:
 }
 
 /**
+ * How the run column scrolls. A repository run keeps its head, summary and
+ * Sign off in view and scrolls only its item list (`items`); its Export menu
+ * needs every ancestor's overflow visible. A Project run (and PO Studio's
+ * acceptance) is many requirement groups, notices and a sign-off banner with
+ * no single list to scroll, so the whole column scrolls as one (`column`).
+ */
+type DockScroll = "items" | "column";
+
+/**
  * The run column's one container. Docked it is a plain column; in full screen
  * CSS floats it as a drawer and it gains a region role and a header. The
  * promotion card and the column inside (`children`) keep their places either
@@ -303,6 +312,7 @@ function RunDock({
   vm,
   run,
   title,
+  scroll,
   drawerId,
   headingId,
   headingRef,
@@ -312,6 +322,7 @@ function RunDock({
   vm: StudioViewportViewModel;
   run: DrawerRun | null;
   title: string;
+  scroll: DockScroll;
   drawerId: string;
   headingId: string;
   headingRef: Ref<HTMLHeadingElement>;
@@ -322,6 +333,7 @@ function RunDock({
   return (
     <div
       className="qa-studio__run"
+      data-scroll={scroll}
       id={drawerId}
       role={floating ? "region" : undefined}
       aria-labelledby={floating ? headingId : undefined}
@@ -485,6 +497,7 @@ export function QaStudioPanel({
           vm={viewport}
           run={snapshot.current}
           title={DRAWER_TITLES[studio]}
+          scroll={projectMode ? "column" : "items"}
           drawerId={drawerId}
           headingId={headingId}
           headingRef={focus.drawerRef}

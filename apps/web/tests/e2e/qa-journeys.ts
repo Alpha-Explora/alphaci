@@ -663,6 +663,31 @@ class QaMockBackend {
     return row;
   }
 
+  /**
+   * A Project run on the Project's live requirements, as if the QA Team had
+   * started it: every item Passed, and signed off with `verdict` when given.
+   */
+  seedProjectRun(deliveryProjectId: string, options: { verdict?: QaVerdict } = {}): ProjectRunRow {
+    const reply = this.startProjectRun(deliveryProjectId, {});
+    assert.equal(reply.status, 201, 'the seeded Project run started');
+    const run = this.projectRuns.at(-1)!;
+    for (const item of run.items) {
+      Object.assign(item, { status: 'passed', verifiedBy: { id: PEOPLE.qa.id, login: PEOPLE.qa.login }, verifiedAt: ago(30 * MINUTE) });
+    }
+    if (options.verdict) {
+      run.status = 'signed_off';
+      run.signoff = {
+        id: this.nextId('signoff'),
+        verdict: options.verdict,
+        summary: 'Good job',
+        conditions: null,
+        signedBy: { id: PEOPLE.qa.id, login: PEOPLE.qa.login },
+        signedAt: ago(20 * MINUTE),
+      };
+    }
+    return run;
+  }
+
   private requirementItemRow(
     item: { title: string; acceptanceCriteria?: string | null; verificationType?: ChecklistVerificationType; testIdentifier?: string | null; progress?: RequirementProgress },
     position: number,
@@ -2387,6 +2412,105 @@ async function leadWritesProjectRequirements({ page, backend, baseUrl }: Journey
   assert.equal(await page.getByRole('link', { name: 'Open team checklists' }).count(), 0, 'no team checklist link');
 }
 
+/* Four Features of three Done stories each: a Project run as long as a real one. */
+const LONG_PROJECT_FEATURES = [
+  'Cold-chain consignment intake & constraint definition',
+  'Fleet compatibility checking & dispatch allocation',
+  'Real-time cold-chain telemetry & breach alerting',
+  'Geofenced delivery handoff & digital proof of delivery (POD)',
+];
+
+function seedLongProject(backend: QaMockBackend) {
+  for (const name of LONG_PROJECT_FEATURES) {
+    backend.seedRequirement(STOREFRONT_FOLDER, {
+      kind: 'functional',
+      name,
+      items: [1, 2, 3].map((n) => ({
+        title: `${name}: user story ${String(n)}`,
+        acceptanceCriteria: 'Given a consignment\nWhen it is registered\nThen its constraints are kept',
+        progress: 'done' as const,
+      })),
+    });
+  }
+}
+
+/** Saves a named screenshot when E2E_QA_SHOTS names a directory (for looking, not asserting). */
+async function shot(page: Page, name: string) {
+  const dir = process.env.E2E_QA_SHOTS;
+  if (!dir) return;
+  // Let entrance animations (the drawer fades in) finish, or the shot catches them half-drawn.
+  await page.evaluate(() => Promise.all(document.getAnimations().map((animation) => animation.finished)));
+  await page.screenshot({ path: `${dir}/${name}.png`, fullPage: true });
+}
+
+/**
+ * The studio's run column holds a long Project run inside the pane: it
+ * scrolls as one rather than spilling past the preview (the sign-off banner
+ * and the requirement groups used to run off its bottom).
+ */
+async function expectRunColumnContained(page: Page, description: string, options: { long: boolean }) {
+  const column = await page.evaluate(() => {
+    const run = document.querySelector('.qa-studio__run');
+    const preview = document.querySelector('.qa-studio__preview');
+    if (!run || !preview) return null;
+    return {
+      overflowY: getComputedStyle(run).overflowY,
+      overflows: run.scrollHeight > run.clientHeight + 1,
+      bottom: run.getBoundingClientRect().bottom,
+      previewBottom: preview.getBoundingClientRect().bottom,
+    };
+  });
+  assert.ok(column, `${description}: the studio column`);
+  assert.equal(column.overflowY, 'auto', `${description}: the column scrolls its overflow instead of spilling it`);
+  if (options.long) assert.ok(column.overflows, `${description}: the long run is taller than the pane, so it scrolls`);
+  assert.ok(column.bottom <= column.previewBottom + 1, `${description}: the column ends with the preview (${String(column.bottom)} vs ${String(column.previewBottom)})`);
+}
+
+/** (n) QA Team: a twelve-item Project run stays inside QA Studio's column. */
+async function qaLongProjectRunFits({ page, baseUrl }: JourneyContext) {
+  await openProjectTab(page, baseUrl, 'QA Studio');
+  await expectRoleBadge(page, 'qa');
+  await eventually('the four requirement groups', async () => (await page.locator('.qa-studio__run .pqa-group').count()) === 4);
+  await expectRunColumnContained(page, 'QA Studio', { long: true });
+  // Each heading on one row where it fits: kind, name and count side by side.
+  const head = page.locator('.pqa-group__head').first();
+  const [kind, count] = [await head.locator('.pqa-kind').boundingBox(), await head.locator('.pqa-group__progress').boundingBox()];
+  assert.ok(kind && count && Math.abs(kind.y - count.y) < 12, 'the kind and the count share the heading row');
+  await shot(page, 'n-qa-studio');
+
+  // Floating, the drawer scrolls the same way and keeps its header.
+  await page.getByRole('button', { name: 'Full screen' }).click();
+  // Full screen opens on the page, the checklist minimized to its launcher.
+  await page.locator('button.qa-launcher').click();
+  const drawer = page.getByRole('region', { name: 'QA checklist' });
+  await visible(drawer, 'the floating drawer');
+  const drawerBox = await drawer.boundingBox();
+  assert.ok(drawerBox && drawerBox.y >= 0 && drawerBox.y + drawerBox.height <= 900, 'the drawer stays inside the viewport');
+  await drawer.evaluate((node) => {
+    node.scrollTop = node.scrollHeight;
+  });
+  const headBox = await drawer.locator('.qa-drawer__head').boundingBox();
+  assert.ok(headBox && drawerBox && Math.abs(headBox.y - drawerBox.y) < 2, 'the drawer header stays at the top while its column scrolls');
+  await shot(page, 'n-qa-drawer');
+}
+
+/** (o) Team lead: PO Studio holds the promotion card and a long acceptance in one scrolling column. */
+async function leadAcceptanceFits({ page, baseUrl }: JourneyContext) {
+  await openProjectTab(page, baseUrl, 'PO Studio');
+  await expectRoleBadge(page, 'lead');
+  const status = page.locator('.po-accept__status');
+  await expectText(status, 'Ready for production', 'the unlocked acceptance');
+  await visible(page.locator('.qa-signoff-banner'), 'the sign-off banner');
+  // The acceptance does not list the items: it fits, and still never spills.
+  await expectRunColumnContained(page, 'PO Studio', { long: false });
+  // Merge to main is the promotion card's, at the top of the column: in view, never folded into a capped box.
+  const merge = page.locator('button.qa-promo__merge');
+  await visible(merge, 'Merge to main');
+  const [mergeBox, columnBox] = [await merge.boundingBox(), await page.locator('.qa-studio__run').boundingBox()];
+  assert.ok(mergeBox && columnBox && mergeBox.y >= columnBox.y && mergeBox.y + mergeBox.height <= columnBox.y + columnBox.height, 'Merge to main is inside the visible column');
+  await shot(page, 'o-po-studio');
+}
+
 /** (k) Developer: reads the Project's requirements, can only move Progress; Done reaches QA's queue. */
 async function developerMovesProgress({ page, backend, baseUrl }: JourneyContext) {
   await openProjectDetail(page, baseUrl, 'storefront');
@@ -3333,6 +3457,29 @@ const JOURNEYS: Journey[] = [
       return backend;
     },
     run: qaVerifiesProject,
+  },
+  {
+    id: 'n',
+    title: 'QA Team: a twelve-item Project run scrolls inside QA Studio and its drawer, never past the pane',
+    backend: () => {
+      const backend = new QaMockBackend('qa', 'enabled', 'enabled');
+      seedLongProject(backend);
+      backend.seedProjectRun(STOREFRONT_FOLDER, { verdict: 'APPROVED' });
+      return backend;
+    },
+    run: qaLongProjectRunFits,
+  },
+  {
+    id: 'o',
+    title: 'Team lead: PO Studio keeps Merge to main in view and scrolls a long acceptance inside the pane',
+    backend: () => {
+      const backend = new QaMockBackend('lead', 'enabled', 'enabled');
+      seedLongProject(backend);
+      backend.seedProjectRun(STOREFRONT_FOLDER, { verdict: 'APPROVED' });
+      seedPassedRun(backend, true);
+      return backend;
+    },
+    run: leadAcceptanceFits,
   },
   {
     id: 'b',
