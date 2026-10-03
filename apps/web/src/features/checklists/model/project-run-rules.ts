@@ -418,6 +418,98 @@ export function groupRunItems(items: ReadonlyArray<ProjectQaRunItem>): ProjectRu
     }));
 }
 
+/* ── The run list: filters and groups ───────────────────────────────────── */
+
+/** What the run list shows: every item, or the items in one Verification. */
+export type RunFilter = "all" | VerificationStatus;
+
+/** Filter order: what still needs QA first, Passed last. */
+export const RUN_FILTERS: ReadonlyArray<RunFilter> = [
+  "all",
+  "pending",
+  "failed",
+  "returned_to_dev",
+  "blocked",
+  "passed",
+];
+
+const RUN_FILTER_LABELS: Record<RunFilter, string> = {
+  all: "All",
+  pending: "To verify",
+  failed: "Failed",
+  returned_to_dev: "Returned",
+  blocked: "Blocked",
+  passed: "Passed",
+};
+
+export function runFilterLabel(filter: RunFilter): string {
+  return RUN_FILTER_LABELS[filter];
+}
+
+const RUN_FILTER_EMPTY: Record<RunFilter, string> = {
+  all: "This run has no items.",
+  pending: "Nothing left to verify.",
+  failed: "No item has failed.",
+  returned_to_dev: "Nothing is returned to dev.",
+  blocked: "Nothing is blocked.",
+  passed: "No item has passed yet.",
+};
+
+/** What an empty filter says instead of an empty list. */
+export function runFilterEmptyText(filter: RunFilter): string {
+  return RUN_FILTER_EMPTY[filter];
+}
+
+/** The Verification an item counts under; a stray `in_progress` reads as still to verify. */
+function filterStatus(item: Pick<ProjectQaRunItem, "status">): VerificationStatus {
+  return item.status === "in_progress" ? "pending" : item.status;
+}
+
+export function itemMatchesRunFilter(item: Pick<ProjectQaRunItem, "status">, filter: RunFilter): boolean {
+  return filter === "all" || filterStatus(item) === filter;
+}
+
+export function runFilterCounts(items: ReadonlyArray<Pick<ProjectQaRunItem, "status">>): Record<RunFilter, number> {
+  const counts = Object.fromEntries(RUN_FILTERS.map((filter) => [filter, 0])) as Record<RunFilter, number>;
+  for (const item of items) {
+    counts.all += 1;
+    counts[filterStatus(item)] += 1;
+  }
+  return counts;
+}
+
+/**
+ * The filters worth offering: All, every Verification some item is in, and
+ * the one chosen even once it empties — passing the last item still to
+ * verify leaves "To verify" chosen and empty, not a jump back to All.
+ */
+export function visibleRunFilters(counts: Record<RunFilter, number>, active: RunFilter): RunFilter[] {
+  return RUN_FILTERS.filter((filter) => filter === "all" || filter === active || counts[filter] > 0);
+}
+
+/** Where each group's numbering starts, so items count 01, 02… across the whole run. */
+export function groupOffsets(groups: ReadonlyArray<Pick<ProjectRunGroup, "items">>): number[] {
+  return groups.map((_, index) => groups.slice(0, index).reduce((sum, group) => sum + group.items.length, 0));
+}
+
+/** "2 of 3 passed": how far QA is through one requirement. */
+export function groupPassLabel(group: Pick<ProjectRunGroup, "items">): string {
+  const passed = group.items.filter((item) => item.status === "passed").length;
+  return `${String(passed)} of ${String(group.items.length)} passed`;
+}
+
+/**
+ * Which requirements open expanded: every one with something left for QA.
+ * A requirement whose items all passed starts collapsed, so the list opens on
+ * the work. Read once per run: an item passed while the list is on screen
+ * never folds its group away under the tester's pointer.
+ */
+export function initialExpandedGroups(groups: ReadonlyArray<ProjectRunGroup>): Record<string, boolean> {
+  return Object.fromEntries(
+    groups.map((group) => [group.key, group.items.length === 0 || group.items.some((item) => item.status !== "passed")]),
+  );
+}
+
 /** Replace one run item (after a write that returned no run), recounting the summary. */
 export function replaceRunItem(run: ProjectQaRun, item: ProjectQaRunItem): ProjectQaRun {
   const items = run.items.map((entry) => (entry.id === item.id ? item : entry));

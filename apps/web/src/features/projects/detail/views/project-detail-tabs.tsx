@@ -6,12 +6,12 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 
-import { qaScopeFromFolder, type QaScope } from "@/features/checklists";
+import { qaScopeFromFolder, withProjectOnPage, type QaScope } from "@/features/checklists";
 
 import { projectStatusVariant } from "../../model/projects-rules";
 import type { ProvisionedProject } from "@/features/projects";
 import type { AppRole } from "@/shared/api/contracts";
-import type { ProjectDetailTab } from "../model/project-detail-tab-rules";
+import { seesProjectAsProduct, type ProjectDetailTab } from "../model/project-detail-tab-rules";
 import type { ProjectFolderViewModel } from "../view-models/use-project-folder-view-model";
 import { useProjectDetailTabsViewModel } from "../view-models/use-project-detail-tabs-view-model";
 import type { ProjectDetailTabsViewModel } from "../view-models/use-project-detail-tabs-view-model";
@@ -106,33 +106,41 @@ export function ProjectDetailTabs({
     viewerLogin,
   });
   const TabPanel = TAB_PANELS[vm.tab];
-  const qaScope = qaScopeFromFolder(folder?.status ?? "idle", folder?.project ?? null);
+  // Five tabs fit beside the title; a Developer's ten and an admin's eleven
+  // keep the scrolling strip of their own. Their Checklists tab carries the
+  // Project's QA, so nothing on the page links away to the Projects page.
+  const productView = seesProjectAsProduct(appRole);
+  const folderScope = qaScopeFromFolder(folder?.status ?? "idle", folder?.project ?? null);
+  const qaScope = productView ? withProjectOnPage(folderScope) : folderScope;
+  const tabs = (
+    <ProjectDetailTopTabs
+      groups={projectDetailTabGroups(vm.visibleTabs)}
+      value={vm.tab}
+      onChange={vm.setTab}
+      label="Project sections"
+      idPrefix="project-detail"
+    />
+  );
+  const headerTabs = productView ? <div data-tour="project-detail-tabs">{tabs}</div> : undefined;
 
   return (
     <section
       className="project-detail-panel project-detail-panel--page"
       aria-label="Project detail"
     >
-      {folder?.projectName ? (
-        <ProjectFolderHeader
-          project={project}
-          external={external}
-          folder={folder}
-          projectName={folder.projectName}
-          tab={vm.tab}
-          visibleTabs={vm.visibleTabs}
-        />
-      ) : (
-        <ProjectDetailHeader project={project} external={external} />
-      )}
-      <div className="project-sections" data-tour="project-detail-tabs">
-        <ProjectDetailTopTabs
-          groups={projectDetailTabGroups(vm.visibleTabs)}
-          value={vm.tab}
-          onChange={vm.setTab}
-          label="Project sections"
-          idPrefix="project-detail"
-        />
+      <ProjectPageHeader
+        project={project}
+        external={external}
+        folder={folder}
+        vm={vm}
+        productView={productView}
+        tabs={headerTabs}
+      />
+      <div
+        className="project-sections"
+        data-tour={productView ? undefined : "project-detail-tabs"}
+      >
+        {productView ? null : tabs}
         <div className="project-sections__body">
           <OverviewLoadBanner status={vm.status} />
           <OverviewErrorBanner message={vm.error} />
@@ -151,20 +159,67 @@ export function ProjectDetailTabs({
 }
 
 /**
+ * The Project header for one repository of a named multi-repository Project,
+ * else the repository's own header.
+ */
+function ProjectPageHeader({
+  project,
+  external,
+  folder,
+  vm,
+  productView,
+  tabs,
+}: Readonly<{
+  project: ProvisionedProject;
+  external: boolean;
+  folder: ProjectFolderViewModel | undefined;
+  vm: ProjectDetailTabsViewModel;
+  productView: boolean;
+  tabs: ReactNode;
+}>) {
+  if (!folder?.projectName) {
+    return <ProjectDetailHeader project={project} external={external} tabs={tabs} />;
+  }
+  return (
+    <ProjectFolderHeader
+      project={project}
+      external={external}
+      folder={folder}
+      projectName={folder.projectName}
+      tab={vm.tab}
+      visibleTabs={vm.visibleTabs}
+      productView={productView}
+      tabs={tabs}
+    />
+  );
+}
+
+/**
  * The page's identity. It is the route's only heading, so it is the h1 and
- * wears the same title style as the other full pages.
+ * wears the same title style as the other full pages. With `tabs` (the QA
+ * Team's and a Product owner's page) the sections sit at its right, under the
+ * status badges.
  */
 function ProjectDetailHeader({
   project,
   external,
-}: Readonly<{ project: ProvisionedProject; external: boolean }>) {
+  tabs,
+}: Readonly<{ project: ProvisionedProject; external: boolean; tabs?: ReactNode }>) {
+  const badges = <ProjectStatusBadges project={project} external={external} />;
   return (
-    <div className="project-detail-header">
+    <div className={`project-detail-header${tabs ? " project-detail-header--tabs" : ""}`}>
       <div>
         <h1 className="workflow-page-title">{project.repoFullName}</h1>
         <p>{project.serviceName}</p>
       </div>
-      <ProjectStatusBadges project={project} external={external} />
+      {tabs ? (
+        <div className="project-detail-header__aside">
+          {badges}
+          {tabs}
+        </div>
+      ) : (
+        badges
+      )}
     </div>
   );
 }
@@ -191,7 +246,10 @@ function ProjectStatusBadges({
  * The header of one repository of a multi-repository Project: the Project is
  * the title, this repository the subtitle (its status badges beside it,
  * because the status is the repository's, not the Project's), and the switch
- * to its sibling repositories sits at the top right.
+ * to its sibling repositories sits at the top right. The QA Team and Product
+ * owners get no switch (they judge the Project as one product) and no
+ * "Manage project" (their Checklists tab carries the Project's QA); their
+ * sections take its place.
  */
 function ProjectFolderHeader({
   project,
@@ -200,6 +258,8 @@ function ProjectFolderHeader({
   projectName,
   tab,
   visibleTabs,
+  productView,
+  tabs,
 }: Readonly<{
   project: ProvisionedProject;
   external: boolean;
@@ -207,11 +267,13 @@ function ProjectFolderHeader({
   projectName: string;
   tab: ProjectDetailTab;
   visibleTabs: ReadonlyArray<ProjectDetailTab>;
+  productView: boolean;
+  tabs?: ReactNode;
 }>) {
   const reduceMotion = useReducedMotion();
   return (
     <motion.div
-      className="project-detail-header project-folder-header"
+      className={`project-detail-header project-folder-header${tabs ? " project-detail-header--tabs" : ""}`}
       initial={reduceMotion ? false : { opacity: 0, y: -4 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
@@ -225,13 +287,15 @@ function ProjectFolderHeader({
         </p>
       </div>
       <div className="project-folder-header__aside">
-        <ProjectRepoSwitch
-          options={folder.options}
-          projectName={projectName}
-          currentTab={tab}
-          visibleTabs={visibleTabs}
-        />
-        {folder.manageHref ? (
+        {productView ? null : (
+          <ProjectRepoSwitch
+            options={folder.options}
+            projectName={projectName}
+            currentTab={tab}
+            visibleTabs={visibleTabs}
+          />
+        )}
+        {folder.manageHref && !productView ? (
           <Link className="project-folder-header__manage" href={folder.manageHref}>
             Manage project
             <span aria-hidden="true" className="project-folder-header__manage-arrow">
@@ -239,6 +303,7 @@ function ProjectFolderHeader({
             </span>
           </Link>
         ) : null}
+        {tabs}
       </div>
     </motion.div>
   );

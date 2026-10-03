@@ -3,14 +3,14 @@
 import "./qa-studio.css";
 import "./project-run.css";
 
-import type { ReactNode } from "react";
+import { useId, type ReactNode } from "react";
 
 import type { AppRole } from "@/shared/api/contracts";
 
 import { kindCopy } from "../../model/requirement-rules";
 import {
   canStartProjectRun,
-  groupRunItems,
+  groupPassLabel,
   headChangeMessage,
   headChangeMessages,
   headLabel,
@@ -18,16 +18,26 @@ import {
   repositoriesLabel,
   requirementsChangedLabel,
   resolveProjectRunPermissions,
+  runFilterEmptyText,
+  runFilterLabel,
   STALE_RUN_NOTE,
 } from "../../model/project-run-rules";
 import type { HeadStatus, ProjectQaRun } from "../../model/project-run-types";
 import { agoLabel, shortSha } from "../../model/qa-run-rules";
+import {
+  useProjectRunListViewModel,
+  type ProjectRunListGroup,
+  type ProjectRunListViewModel,
+} from "../view-models/use-project-run-list-view-model";
 import type { ProjectRunViewModel } from "../view-models/use-project-run-view-model";
 import {
   useProjectReopenViewModel,
   useProjectSignoffViewModel,
 } from "../view-models/use-project-signoff-view-model";
-import { useProjectVerificationViewModel } from "../view-models/use-project-verification-view-model";
+import {
+  useProjectVerificationViewModel,
+  type ProjectVerificationViewModel,
+} from "../view-models/use-project-verification-view-model";
 import { ProjectRunItem } from "./project-run-item";
 import { RunSummary, SignoffBanner, SignoffDialog, SignoffFooter } from "./run-signoff";
 
@@ -192,15 +202,92 @@ function signedSubject(run: ProjectQaRun): string {
   return run.repositories.map((head) => headLabel(head.repoFullName, head.runSha)).join(", ");
 }
 
-/** Where each group's numbering starts, so items count 01, 02… across the whole run. */
-function groupOffsets(groups: ReadonlyArray<{ items: ReadonlyArray<unknown> }>): number[] {
-  const offsets: number[] = [];
-  let next = 0;
-  for (const group of groups) {
-    offsets.push(next);
-    next += group.items.length;
-  }
-  return offsets;
+/**
+ * What the list shows: All, or the items in one Verification, each with its
+ * count. "To verify" is the tester's inbox: items leave it as they are
+ * recorded, until it is empty.
+ */
+function RunFilters({ list }: Readonly<{ list: ProjectRunListViewModel }>) {
+  if (list.counts.all === 0) return null;
+  return (
+    <div className="pqa-filters" role="group" aria-label="Show items">
+      {list.filters.map((filter) => (
+        <button
+          key={filter}
+          type="button"
+          className="pqa-filter"
+          data-filter={filter}
+          aria-pressed={list.filter === filter}
+          onClick={() => list.setFilter(filter)}
+        >
+          {runFilterLabel(filter)}
+          <span className="pqa-filter__count">{list.counts[filter]}</span>
+        </button>
+      ))}
+    </div>
+  );
+}
+
+/**
+ * One requirement's items. Under "All" its heading folds it away (a fully
+ * passed requirement starts folded); under a filter it always shows what
+ * matched, so the heading is plain.
+ */
+function RunGroup({
+  group,
+  list,
+  editor,
+  onReload,
+}: Readonly<{
+  group: ProjectRunListGroup;
+  list: ProjectRunListViewModel;
+  editor: ProjectVerificationViewModel;
+  onReload: () => void;
+}>) {
+  const listId = useId();
+  const name = (
+    <>
+      <span className="pqa-kind" data-kind={group.kind}>
+        {kindCopy(group.kind).singular}
+      </span>
+      {group.requirementName}
+    </>
+  );
+  return (
+    <section className="pqa-group" aria-label={`${kindCopy(group.kind).singular}: ${group.requirementName}`}>
+      <div className="pqa-group__head">
+        <h4 className="pqa-group__title">
+          {list.filter === "all" ? (
+            <button
+              type="button"
+              className="pqa-group__toggle"
+              aria-expanded={group.expanded}
+              aria-controls={listId}
+              onClick={() => list.toggleGroup(group.key)}
+            >
+              {name}
+            </button>
+          ) : (
+            name
+          )}
+        </h4>
+        <span className="pqa-group__progress">{groupPassLabel(group)}</span>
+      </div>
+      {group.expanded ? (
+        <ol className="qa-run__items" id={listId}>
+          {group.shown.map((item) => (
+            <ProjectRunItem
+              key={item.id}
+              item={item}
+              index={group.offset + group.items.indexOf(item)}
+              editor={editor}
+              onReload={onReload}
+            />
+          ))}
+        </ol>
+      ) : null}
+    </section>
+  );
 }
 
 /** A run and everything that can be done to it. Mounted (and keyed) once a run exists. */
@@ -220,8 +307,7 @@ function RunBody({
   });
   const signoff = useProjectSignoffViewModel({ deliveryProjectId, run, permissions, onRun: vm.applyRun });
   const reopen = useProjectReopenViewModel({ deliveryProjectId, run, permissions, onRun: vm.applyRun });
-  const groups = groupRunItems(run.items);
-  const offsets = groupOffsets(groups);
+  const list = useProjectRunListViewModel(run);
 
   return (
     <div className="qa-run pqa-run__body">
@@ -231,27 +317,10 @@ function RunBody({
       <SignoffBanner run={run} subject={signedSubject(run)} reopen={reopen} />
       <HeadsList heads={vm.heads.length > 0 ? vm.heads : run.repositories} withRun />
       <RunSummary run={run} />
-      {groups.length === 0 ? <p className="pqa-note">This run has no items.</p> : null}
-      {groups.map((group, groupIndex) => (
-        <section key={group.key} className="pqa-group" aria-label={`${kindCopy(group.kind).singular}: ${group.requirementName}`}>
-          <h4 className="pqa-group__title">
-            <span className="pqa-kind" data-kind={group.kind}>
-              {kindCopy(group.kind).singular}
-            </span>
-            {group.requirementName}
-          </h4>
-          <ol className="qa-run__items">
-            {group.items.map((item, itemIndex) => (
-              <ProjectRunItem
-                key={item.id}
-                item={item}
-                index={offsets[groupIndex] + itemIndex}
-                editor={editor}
-                onReload={vm.reload}
-              />
-            ))}
-          </ol>
-        </section>
+      <RunFilters list={list} />
+      {list.status === "empty" ? <p className="pqa-note">{runFilterEmptyText(list.filter)}</p> : null}
+      {list.groups.map((group) => (
+        <RunGroup key={group.key} group={group} list={list} editor={editor} onReload={vm.reload} />
       ))}
       {run.status === "open" ? <SignoffFooter vm={signoff} /> : null}
       {signoff.canSignOff ? <SignoffDialog vm={signoff} description={`${run.deliveryProjectName} on ${signedSubject(run)}`} /> : null}

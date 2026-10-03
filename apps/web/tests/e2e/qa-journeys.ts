@@ -8,6 +8,7 @@ import type {
   AuthMeResponse,
   CapabilitiesResponse,
   ProjectAuditEventsResponse,
+  ProjectCommitsResponse,
   ProjectOptionsResponse,
   ProjectOverviewResponse,
   ProjectPreviewsResponse,
@@ -1085,6 +1086,8 @@ class QaMockBackend {
       ['GET', new RegExp(`^/projects/${P}/overview$`), (m) => ({ body: this.overview(m[1]) })],
       ['GET', new RegExp(`^/projects/${P}/previews$`), (m) => ({ body: this.previews(m[1]) })],
       ['GET', new RegExp(`^/projects/${P}/audit$`), (m, req) => this.audit(m[1], req.query)],
+      ['POST', new RegExp(`^/projects/${P}/audit/sync$`), (m) => this.syncAudit(m[1])],
+      ['GET', new RegExp(`^/projects/${P}/commits$`), (m, req) => this.commits(m[1], req.query)],
       // Project requirements and Project QA runs (404 on an older backend)
       ['GET', new RegExp(`^/delivery-projects/${P}/requirements$`), (m) => this.projectRequirements(m[1])],
       ['POST', new RegExp(`^/delivery-projects/${P}/requirements$`), (m, req) => this.createRequirement(m[1], req.body)],
@@ -1345,7 +1348,62 @@ class QaMockBackend {
     const older = before ? all.filter((item) => item.createdAt < before) : all;
     const page = older.slice(0, Math.min(limit, 2));
     const next = older.length > page.length ? page[page.length - 1].createdAt : null;
-    return { body: { enabled: true, items: page, next } satisfies ProjectAuditEventsResponse };
+    // GitHub activity: 'failed' until POST /audit/sync has run once, then 'ok'.
+    const githubSync = this.auditSyncedAt
+      ? { status: 'ok' as const, syncedAt: this.auditSyncedAt }
+      : { status: 'failed' as const, syncedAt: null };
+    return { body: { enabled: true, items: page, next, githubSync } satisfies ProjectAuditEventsResponse };
+  }
+
+  /** Set by POST /projects/:id/audit/sync; flips the trail's githubSync to 'ok'. */
+  private auditSyncedAt: string | null = null;
+
+  /** POST /projects/:id/audit/sync — forces a GitHub activity read. */
+  private syncAudit(projectId: string): ApiReply {
+    this.requireProject(projectId);
+    this.auditSyncedAt = new Date().toISOString();
+    return { body: { synced: 0 } };
+  }
+
+  /**
+   * GET /projects/:id/commits — `?branch` (default dev), `?limit` 1-100,
+   * `?before=<next>` (here, a sha). dev has a PR-merged commit and a direct push.
+   */
+  private commits(projectId: string, query: URLSearchParams): ApiReply {
+    this.requireProject(projectId);
+    const limitText = query.get('limit');
+    const limit = limitText === null ? 30 : Number(limitText);
+    if (!Number.isInteger(limit) || limit < 1 || limit > 100) throw nestError(400, 'limit must be between 1 and 100');
+    const branch = query.get('branch') ?? 'dev';
+    const all: ProjectCommitsResponse['items'] = [
+      {
+        sha: 'c0ffee1000000000000000000000000000000001',
+        shortSha: 'c0ffee1',
+        message: 'Hotfix copy on the banner',
+        authorLogin: PEOPLE.member.login,
+        authorName: 'Member',
+        authoredAt: '2026-10-01T09:00:00Z',
+        url: 'https://github.com/org/repo/commit/c0ffee1',
+        pullRequestNumber: null,
+      },
+      {
+        sha: 'c0ffee2000000000000000000000000000000002',
+        shortSha: 'c0ffee2',
+        message: 'Add checkout (#12)\n\nBody.',
+        authorLogin: PEOPLE.member.login,
+        authorName: 'Member',
+        authoredAt: '2026-09-30T09:00:00Z',
+        url: 'https://github.com/org/repo/commit/c0ffee2',
+        pullRequestNumber: 12,
+      },
+    ];
+    const before = query.get('before');
+    const start = before ? all.findIndex((item) => item.sha === before) + 1 : 0;
+    const items = all.slice(start, start + limit);
+    const next = start + items.length < all.length ? items[items.length - 1].sha : null;
+    return {
+      body: { branch, branches: ['main', 'uat', 'dev', 'feature/banner'], items, next } satisfies ProjectCommitsResponse,
+    };
   }
 
   private previews(projectId: string): ProjectPreviewsResponse {
@@ -2315,8 +2373,17 @@ async function leadWritesProjectRequirements({ page, backend, baseUrl }: Journey
   });
   assert.equal(backend.callsTo('PUT', /^\/qa-checklists\//).length, 0, 'never the legacy delete-and-reinsert');
 
+  // A Product owner's Checklists tab carries the Project's QA itself: the
+  // same Requirements, no pointer out to the Projects page.
   await openProjectTab(page, baseUrl, 'Checklists');
-  await visible(page.getByText('Requirements belong to the Project'), "the Checklists tab's pointer to the Project");
+  const panel = page.locator('#project-detail-panel-checklists');
+  await visible(panel.getByRole('tab', { name: 'Requirements', selected: true }), "the Project's QA workspace in the Checklists tab");
+  await expectText(
+    panel.locator('article.rq-card').filter({ hasText: FEATURE.name }).locator('.rq-meter__label'),
+    '0 of 3 done',
+    'the same Feature, here too',
+  );
+  assert.equal(await page.getByText('Requirements belong to the Project').count(), 0, 'no pointer to the Projects page');
   assert.equal(await page.getByRole('link', { name: 'Open team checklists' }).count(), 0, 'no team checklist link');
 }
 
@@ -2354,21 +2421,21 @@ async function qaVerifiesProject({ page, backend, baseUrl }: JourneyContext) {
   await page.getByRole('button', { name: 'Start Project QA run' }).click();
   const start = onlyCall(backend.callsTo('POST', new RegExp(`^/delivery-projects/${STOREFRONT_FOLDER}/qa-runs$`)), 'Project run start');
   assert.deepEqual(start.body, {}, 'no body: the server reads every repository head');
-  const selects = page.locator('.pqa-run label.qa-status-select select');
-  await eventually('two run items', async () => (await selects.count()) === 2);
+  const verify = page.locator('.pqa-run .pqa-verify');
+  await eventually('two run items', async () => (await verify.count()) === 2);
 
-  const enabledOptions = async (index: number) =>
-    selects.nth(index).locator('option:not([disabled])').evaluateAll((options) => options.map((option) => (option as HTMLOptionElement).value));
-  assert.ok((await enabledOptions(0)).includes('passed'), 'Passed for the Done story');
-  assert.ok(!(await enabledOptions(1)).includes('passed'), 'no Passed before Done');
+  const enabledStatuses = async (index: number) =>
+    verify.nth(index).locator('button:not([disabled])').evaluateAll((buttons) => buttons.map((button) => (button as HTMLButtonElement).dataset.status));
+  assert.ok((await enabledStatuses(0)).includes('passed'), 'Passed for the Done story');
+  assert.ok(!(await enabledStatuses(1)).includes('passed'), 'no Passed before Done');
   await visible(page.getByText('A Developer marks this Done before QA can pass it.'), 'why Passed is missing');
 
-  await selects.nth(0).selectOption('passed');
+  await verify.nth(0).locator('button[data-status="passed"]').click();
   await eventually('the Passed write', () => backend.callsTo('PATCH', /^\/delivery-projects\/[^/]+\/qa-runs\/[^/]+\/items\/[^/]+$/).length === 1);
   const passed = backend.callsTo('PATCH', /^\/delivery-projects\/[^/]+\/qa-runs\/[^/]+\/items\/[^/]+$/)[0];
   assert.deepEqual(passed.body, { status: 'passed', expectedRowVersion: 1 });
 
-  await selects.nth(1).selectOption('returned_to_dev');
+  await verify.nth(1).locator('button[data-status="returned_to_dev"]').click();
   const editor = page.locator('.pqa-run form.qa-item-editor');
   await editor.getByLabel(/Severity/).selectOption('major');
   await editor.getByLabel('Notes').fill('The saved card is not offered at checkout.');
@@ -2421,7 +2488,8 @@ async function qaVerifiesAndSignsOff({ page, context, backend, baseUrl }: Journe
   await expectText(promo, 'Not verified on this commit yet', 'the unverified checklist state');
   await expectText(promo, 'Team leads merge uat into main once every checklist is approved.', 'who merges, for QA');
   await neverShown(backend, page.getByRole('button', { name: 'Merge to main' }), 'Merge to main for QA Team');
-  const lookedUp = backend.callsTo('GET', /\/qa-runs\/current$/).map((call) => call.query.get('branch'));
+  // The repository run's lookups; a Project run's (/delivery-projects/…) take no branch.
+  const lookedUp = backend.callsTo('GET', /^\/projects\/[^/]+\/qa-runs\/current$/).map((call) => call.query.get('branch'));
   assert.ok(lookedUp.length > 0 && lookedUp.every((branch) => branch === QA_BRANCH), `run lookups only ever ask for uat (got ${lookedUp.join(', ')})`);
 
   await page.getByRole('button', { name: 'Start QA run on uat @ 9f8e7d6' }).click();
@@ -2759,6 +2827,13 @@ async function capabilityAbsentHidesQa({ page, backend, baseUrl }: JourneyContex
     [['50', null], ['50', '2026-09-30T09:00:00.123456+00:00']],
     'the cursor goes back unchanged',
   );
+  // GitHub activity: the last read failed, so the sync line says so; Sync now
+  // asks the server to read GitHub and re-reads the first page.
+  await expectText(trail.locator('.audit-trail__sync'), "Couldn't reach GitHub just now", 'the GitHub sync line');
+  await trail.getByRole('button', { name: 'Sync now' }).click();
+  await eventually('the sync request', () => backend.callsTo('POST', /^\/projects\/project-1\/audit\/sync$/).length === 1);
+  await eventually('the first page re-read', async () => (await rows.count()) === 2);
+  await expectText(trail.locator('.audit-trail__sync'), 'GitHub activity synced', 'the sync line after a sync');
   await tabs.getByRole('tab', { name: 'Overview', exact: true }).click();
   // Positive control: the Overview only asks for previews once it has read a
   // capabilities response (previewDeployments), so the flags are applied.
@@ -2794,9 +2869,11 @@ async function capabilityAbsentHidesQa({ page, backend, baseUrl }: JourneyContex
 
 /** (h) Team lead: the project explorer — list, open, attach, move (409 then real), archive, create links. */
 /**
- * A multi-repository Project reads as one product: its card opens the
- * frontend's page, titled with the Project, and a switch opens the backend on
- * the tab in use. "Manage project" goes back to the Project's detail.
+ * A multi-repository Project reads as one product for a Team lead: its card
+ * opens the frontend's page, titled with the Project, with the sections in the
+ * title row and no switch to the backend. The Checklists tab carries the
+ * Project's QA, so there is no "Manage project" either; in the Projects
+ * explorer only the frontend's chip opens a page.
  */
 async function leadSwitchesRepositories({ page, backend, baseUrl }: JourneyContext) {
   await page.goto(`${baseUrl}/workflows`, { waitUntil: 'domcontentloaded' });
@@ -2810,43 +2887,25 @@ async function leadSwitchesRepositories({ page, backend, baseUrl }: JourneyConte
   const header = page.locator('.project-folder-header');
   await expectText(header.locator('h1'), 'storefront', 'the Project title');
   await expectText(header.locator('.project-folder-header__repo'), 'tone/storefront-web', 'the frontend subtitle');
-  const repos = page.getByRole('radiogroup', { name: 'Repositories in storefront' });
-  const frontend = repos.getByRole('radio', { name: /storefront-web/ });
-  const backendOption = repos.getByRole('radio', { name: /orders-api/ });
-  assert.equal(await frontend.getAttribute('aria-checked'), 'true', 'the frontend is the page on screen');
-  assert.equal(await backendOption.getAttribute('aria-checked'), 'false');
-  await expectText(frontend, 'FRONTEND', 'the frontend role label');
-  await expectText(backendOption, 'BACKEND', 'the backend role label');
+  const tabs = header.getByRole('tablist', { name: 'Project sections' });
+  await visible(tabs, 'the sections in the title row');
+  await neverShown(backend, page.getByRole('radiogroup', { name: 'Repositories in storefront' }), 'the repository switch for a Team lead');
+  assert.equal(await page.getByRole('link', { name: 'Manage project' }).count(), 0, 'no Manage project for a Team lead');
 
-  // Keyboard: arrows move focus only; Enter opens the backend on the same tab.
-  const tabs = page.getByRole('tablist', { name: 'Project sections' });
+  // The Project's QA lives in the Checklists tab itself.
   await tabs.getByRole('tab', { name: 'Checklists', exact: true }).click();
-  await visible(tabs.getByRole('tab', { name: 'Checklists', selected: true }), 'the Checklists tab');
-  await frontend.focus();
-  await page.keyboard.press('ArrowRight');
-  await expectText(page.locator('[role="radio"]:focus'), 'orders-api', 'focus on the backend option');
-  assert.equal(new URL(page.url()).pathname, `/projects/${PROJECT_ID}`, 'an arrow alone does not navigate');
-  await page.keyboard.press('Enter');
-  await eventually('the backend page on the Checklists tab', () => {
-    const url = new URL(page.url());
-    return url.pathname === '/projects/project-2' && url.hash === '#checklists';
-  });
-  await visible(tabs.getByRole('tab', { name: 'Checklists', selected: true }), 'the Checklists tab kept across the switch');
-  await expectText(page.locator('.project-folder-header__repo'), 'tone/orders-api', 'the backend subtitle');
-  await expectText(page.locator('.project-folder-header h1'), 'storefront', 'the Project title kept');
-  await eventually('the backend option to be current', async () =>
-    (await page.getByRole('radio', { name: /orders-api/ }).getAttribute('aria-checked')) === 'true',
-  );
-  assert.equal(backend.callsTo('GET', /^\/projects\/project-2\/folder$/).length >= 1, true, 'the backend page read its folder');
+  const panel = page.locator('#project-detail-panel-checklists');
+  await visible(panel.getByRole('tablist', { name: 'Project QA' }), "the Project's QA workspace in the Checklists tab");
+  await visible(panel.getByRole('tab', { name: 'Requirements', selected: true }), 'its Requirements first for a Team lead');
 
-  // Manage project: the Projects page, on this team, opened on this Project's detail.
-  const manage = page.getByRole('link', { name: 'Manage project' });
-  assert.equal(
-    await manage.getAttribute('href'),
-    `/workflows?group=${WORKSPACE.id}&project=${STOREFRONT_FOLDER}`,
-  );
-  await manage.click();
-  await expectText(page.locator('.pf-detail__title'), 'storefront', 'the Project detail opened by the link');
+  // The explorer's Manage view: the frontend opens, the backend is a label.
+  await page.goto(`${baseUrl}/workflows?group=${WORKSPACE.id}&project=${STOREFRONT_FOLDER}`, { waitUntil: 'domcontentloaded' });
+  await expectText(page.locator('.pf-detail__title'), 'storefront', 'the Project detail');
+  const chips = page.locator('.pf-repo .pf-chip');
+  await eventually('both repository chips', async () => (await chips.count()) === 2);
+  assert.equal(await chips.filter({ hasText: 'storefront-web' }).getAttribute('href'), `/projects/${PROJECT_ID}`, 'the frontend chip opens its page');
+  assert.equal(await page.locator('.pf-repo a.pf-chip').filter({ hasText: 'orders-api' }).count(), 0, 'the backend chip is not a link');
+  assert.equal(backend.callsTo('GET', /^\/projects\/project-2\/overview$/).length, 0, 'the backend page was never opened');
 
   // An old link from before the split still lands on the same detail.
   await page.goto(
@@ -3366,7 +3425,7 @@ const JOURNEYS: Journey[] = [
   },
   {
     id: 'i',
-    title: 'Team lead: a Project opens on its frontend, switches to the backend on the same tab, Manage project deep link',
+    title: 'Team lead: a Project opens on its frontend as one product (tabs in the title row, no switch, no Manage project), frontend-only chips',
     backend: () => new QaMockBackend('lead'),
     run: leadSwitchesRepositories,
   },

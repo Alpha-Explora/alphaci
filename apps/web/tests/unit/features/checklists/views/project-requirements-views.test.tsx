@@ -540,12 +540,14 @@ describe("ProjectRunPanel", () => {
   it("offers Passed only on the item a Developer marked Done", async () => {
     runs.current.mockResolvedValue(normalizeProjectRunCurrent({ run: projectRunWire(), heads: [] }));
     const container = await render(<RunHarness role="qa" />);
-    const selects = [...container.querySelectorAll<HTMLSelectElement>(".qa-status-select select")];
-    expect(selects).toHaveLength(2);
-    const options = (select: HTMLSelectElement) => [...select.options].filter((option) => !option.disabled).map((option) => option.value);
-    expect(options(selects[0])).toContain("passed");
-    expect(options(selects[1])).not.toContain("passed");
-    expect(options(selects[1])).not.toContain("in_progress");
+    const controls = [...container.querySelectorAll<HTMLElement>(".pqa-verify")];
+    expect(controls).toHaveLength(2);
+    const offered = (group: HTMLElement) =>
+      [...group.querySelectorAll<HTMLButtonElement>("button")].filter((button) => !button.disabled).map((button) => button.dataset.status);
+    expect(offered(controls[0])).toContain("passed");
+    expect(offered(controls[1])).not.toContain("passed");
+    expect(offered(controls[1])).not.toContain("in_progress");
+    expect(controls[0].querySelector('[aria-pressed="true"]')?.getAttribute("data-status")).toBe("pending");
     expect(container.textContent).toContain("A Developer marks this Done before QA can pass it.");
     expect(container.textContent).toContain("Progress: Done");
     // Features first, then System requirements.
@@ -553,12 +555,59 @@ describe("ProjectRunPanel", () => {
     expect(groups).toEqual(["FeatureCheckout with saved cards", "System requirementRelease smoke test"]);
   });
 
+  it("records Passed in one click, and opens the details for Failed", async () => {
+    runs.current.mockResolvedValue(normalizeProjectRunCurrent({ run: projectRunWire(), heads: [] }));
+    runs.setVerification.mockResolvedValue(null);
+    const container = await render(<RunHarness role="qa" />);
+    const first = container.querySelector<HTMLElement>(".pqa-verify")!;
+    await act(async () => first.querySelector<HTMLButtonElement>('[data-status="passed"]')!.click());
+    expect(runs.setVerification).toHaveBeenCalledWith("dp-1", "prun-1", "run-item-1", expect.objectContaining({ status: "passed" }));
+
+    runs.setVerification.mockClear();
+    const second = container.querySelectorAll<HTMLElement>(".pqa-verify")[1];
+    await act(async () => second.querySelector<HTMLButtonElement>('[data-status="failed"]')!.click());
+    expect(runs.setVerification).not.toHaveBeenCalled();
+    expect(container.querySelector("form.qa-item-editor")?.textContent).toContain("Severity");
+    expect(second.querySelector('[aria-pressed="true"]')?.getAttribute("data-status")).toBe("failed");
+  });
+
+  it("folds a fully passed requirement and filters to what is left to verify", async () => {
+    runs.current.mockResolvedValue(
+      normalizeProjectRunCurrent({
+        run: projectRunWire({
+          items: [
+            runItemWire({ status: "passed" }),
+            runItemWire({ id: "run-item-2", position: 1, title: "Checkout works", requirementId: "req-sys", requirementName: "Release smoke test", requirementKind: "system" }),
+          ],
+        }),
+        heads: [],
+      }),
+    );
+    const container = await render(<RunHarness role="qa" />);
+    const toggles = [...container.querySelectorAll<HTMLButtonElement>(".pqa-group__toggle")];
+    expect(toggles.map((toggle) => toggle.getAttribute("aria-expanded"))).toEqual(["false", "true"]);
+    expect(container.querySelectorAll(".qa-run-item")).toHaveLength(1);
+    expect([...container.querySelectorAll(".pqa-group__progress")].map((node) => node.textContent)).toEqual(["1 of 1 passed", "0 of 1 passed"]);
+    // Passed criteria fold away; what still needs QA stays open.
+    await act(async () => toggles[0].click());
+    const criteria = [...container.querySelectorAll<HTMLDetailsElement>("details.pqa-criteria")];
+    expect(criteria.map((node) => node.open)).toEqual([false, true]);
+
+    const filters = [...container.querySelectorAll<HTMLButtonElement>(".pqa-filter")];
+    expect(filters.map((button) => button.textContent)).toEqual(["All2", "To verify1", "Passed1"]);
+    await act(async () => filters[1].click());
+    expect(filters[1].getAttribute("aria-pressed")).toBe("true");
+    expect([...container.querySelectorAll(".qa-run-item__title")].map((node) => node.textContent)).toEqual(["Checkout works"]);
+    // Under a filter the headings are plain: nothing hides what was asked for.
+    expect(container.querySelector(".pqa-group__toggle")).toBeNull();
+  });
+
   it("shows a Developer the run read-only", async () => {
     runs.current.mockResolvedValue(
       normalizeProjectRunCurrent({ run: projectRunWire({ permissions: { canSetVerification: false, canSignOff: false, canReopen: false, canDispatch: false } }) }),
     );
     const container = await render(<RunHarness role="member" />);
-    expect(container.querySelector(".qa-status-select")).toBeNull();
+    expect(container.querySelector(".pqa-verify")).toBeNull();
     expect(buttonNamed(container, "Sign off")).toBeUndefined();
   });
 
@@ -692,6 +741,18 @@ describe("ProjectQaWorkspace", () => {
     } finally {
       window.history.replaceState(null, "", window.location.pathname);
     }
+  });
+
+  /* Embedded in a repository's Checklists tab, the Overview's "Open checklist"
+   * asks for My QA items directly (the page's hash names the outer tab). */
+  it("opens on the tab it is asked to open on", async () => {
+    loadRequirements("lead");
+    runs.current.mockResolvedValue(normalizeProjectRunCurrent({ run: projectRunWire() }));
+    runs.myItems.mockResolvedValue(normalizeProjectMyItems({}));
+    const view = await render(
+      <ProjectQaWorkspace deliveryProjectId="dp-1" projectName="storefront" appRole="lead" opensOn="items" />,
+    );
+    expect(view.querySelector('[role="tab"][aria-selected="true"]')?.textContent).toBe("My QA items");
   });
 
   it("brings the Requirements tab forward and opens New Feature on a new request, never on a revisit", async () => {

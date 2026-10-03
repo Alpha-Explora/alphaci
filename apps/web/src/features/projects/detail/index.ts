@@ -11,3 +11,6 @@ export type { BranchRun, BranchRunSection } from "./model/runs-by-branch";
 /* The studio role gates — notifications' deep-link rules (spec §8.6) send a
  * viewer to their own studio (`#qa` or `#po`), else `#overview`. */
 export { canOpenQaStudio, studioTabFor } from "./model/project-detail-tab-rules";
+/* Who opens a Project as one product (QA Team, Product owner) — also read by
+ * the Projects explorer, whose repository chips open only the frontend for them. */
+export { seesProjectAsProduct } from "./model/project-detail-tab-rules";

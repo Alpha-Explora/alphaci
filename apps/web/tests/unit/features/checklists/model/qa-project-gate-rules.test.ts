@@ -13,7 +13,7 @@ import {
   UNFILED_REASON,
 } from "../../../../../src/features/checklists/model/qa-promotion-rules";
 import { lockLegacyRun, qaActionError } from "../../../../../src/features/checklists/model/qa-run-rules";
-import { qaScopeFromFolder, REPOSITORY_SCOPE } from "../../../../../src/features/checklists/model/qa-scope";
+import { qaScopeFromFolder, REPOSITORY_SCOPE, withProjectOnPage } from "../../../../../src/features/checklists/model/qa-scope";
 import { apiErrorWith, HEAD_SHA, promotionWire } from "../qa-promotion-fixtures";
 import { qaRun } from "../qa-run-fixtures";
 import { headWire, SHA_BE_NEW } from "../requirement-fixtures";
@@ -94,6 +94,13 @@ describe("where a repository's QA happens", () => {
     expect(qaScopeFromFolder("ready", { deliveryProjectId: null, name: "x", href: null })).toBe(REPOSITORY_SCOPE);
     expect(qaScopeFromFolder("unavailable", null)).toBe(REPOSITORY_SCOPE);
     expect(qaScopeFromFolder("idle", null)).toBe(REPOSITORY_SCOPE);
+  });
+
+  it("keeps a Project's QA on the page: no link away to the Projects page", () => {
+    const scope = qaScopeFromFolder("ready", { deliveryProjectId: "dp-1", name: "shop", href: "/workflows" });
+    expect(withProjectOnPage(scope)).toEqual({ ...scope, projectHref: null });
+    expect(withProjectOnPage(REPOSITORY_SCOPE)).toBe(REPOSITORY_SCOPE);
+    expect(withProjectOnPage({ kind: "pending" })).toEqual({ kind: "pending" });
   });
 });
 

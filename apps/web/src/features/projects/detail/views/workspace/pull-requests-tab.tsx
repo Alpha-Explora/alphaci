@@ -40,6 +40,15 @@ const FILTERS: ReadonlyArray<{ id: StateFilter; label: string }> = [
   { id: "all", label: "All" },
 ];
 
+/** Arriving on a pull request, the list starts on All: the one behind a commit is usually merged. */
+function startFilter(focus: number | null | undefined): StateFilter {
+  return focus == null ? "open" : "all";
+}
+
+function startFocus(focus: number | null | undefined): number | null {
+  return focus ?? null;
+}
+
 /**
  * Pull requests for this project: what is in flight, what each one changes,
  * and opening a new one between any two branches.
@@ -54,6 +63,7 @@ export function PullRequestsTab({
   appRole,
   viewerLogin,
   onOpenPoStudio,
+  initialFocusNumber,
 }: {
   projectId: string;
   /** The viewer's app role, for the Phase 1 create/merge gates. */
@@ -62,8 +72,14 @@ export function PullRequestsTab({
   viewerLogin?: string | null;
   /** Opens the PO Studio tab, for the "merge into main" notice's link. */
   onOpenPoStudio?: () => void;
+  /**
+   * Arriving from a commit on the Code tab: open this pull request expanded.
+   * The list starts on "All", since the pull request behind a commit is
+   * usually merged already.
+   */
+  initialFocusNumber?: number | null;
 }) {
-  const [filter, setFilter] = useState<StateFilter>("open");
+  const [filter, setFilter] = useState<StateFilter>(() => startFilter(initialFocusNumber));
   const [composing, setComposing] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   // Bumped to re-read the list when the filter did not change, e.g. after
@@ -72,7 +88,7 @@ export function PullRequestsTab({
   // The pull request to open expanded when the list next renders: the one
   // just created, so its merge controls are right there, or one the compose
   // screen pointed at because it already exists.
-  const [focusNumber, setFocusNumber] = useState<number | null>(null);
+  const [focusNumber, setFocusNumber] = useState<number | null>(() => startFocus(initialFocusNumber));
   const [items, setItems] = useState<PullRequestSummary[]>([]);
   const [pullsUrl, setPullsUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);

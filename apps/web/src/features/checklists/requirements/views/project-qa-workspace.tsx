@@ -12,7 +12,8 @@ import { projectWorkspaceOpensMyItems } from "../../model/my-qa-items-summary-ru
 import { canSetVerification } from "../../model/requirement-rules";
 import { ProjectRequirementsPanel } from "./project-requirements-panel";
 
-type WorkspaceTab = "requirements" | "run" | "items";
+export type ProjectQaWorkspaceTab = "requirements" | "run" | "items";
+type WorkspaceTab = ProjectQaWorkspaceTab;
 
 const TABS: ReadonlyArray<{ id: WorkspaceTab; label: string }> = [
   { id: "requirements", label: "Requirements" },
@@ -23,12 +24,14 @@ const TABS: ReadonlyArray<{ id: WorkspaceTab; label: string }> = [
 const ARROW_STEPS: Readonly<Record<string, number>> = { ArrowRight: 1, ArrowLeft: -1 };
 
 /**
- * A repository Overview's "Open checklist" links here with `#my-qa-items`;
- * otherwise the QA Team lands on the run they verify and everyone else on the
- * requirements. Read once at mount: the workspace only renders client-side,
- * after its Project has loaded.
+ * A repository Overview's "Open checklist" links here with `#my-qa-items`
+ * (or, where the workspace is embedded in that repository's page, asks for
+ * `opensOn: "items"`); otherwise the QA Team lands on the run they verify and
+ * everyone else on the requirements. Read once at mount: the workspace only
+ * renders client-side, after its Project has loaded.
  */
-function firstTab(appRole: AppRole | null | undefined): WorkspaceTab {
+function firstTab(appRole: AppRole | null | undefined, opensOn: WorkspaceTab | undefined): WorkspaceTab {
+  if (opensOn) return opensOn;
   const hash = typeof window === "undefined" ? null : window.location.hash;
   if (projectWorkspaceOpensMyItems(hash)) return "items";
   return appRole === "qa" ? "run" : "requirements";
@@ -63,6 +66,7 @@ export function ProjectQaWorkspace({
   enabled = true,
   newFeatureRequest = 0,
   onFeatureCount,
+  opensOn,
 }: Readonly<{
   deliveryProjectId: string;
   projectName: string;
@@ -75,8 +79,10 @@ export function ProjectQaWorkspace({
   newFeatureRequest?: number;
   /** The Project's live Feature count, each time the Requirements tab reads it. */
   onFeatureCount?: (count: number) => void;
+  /** The tab to open on, overriding the role default and the URL hash. Read at mount. */
+  opensOn?: WorkspaceTab;
 }>) {
-  const [tab, setTab] = useState<WorkspaceTab>(() => firstTab(appRole));
+  const [tab, setTab] = useState<WorkspaceTab>(() => firstTab(appRole, opensOn));
   const [seenRequest, setSeenRequest] = useState(newFeatureRequest);
   // The request the Requirements tab still has to act on; leaving the tab
   // drops it, so coming back never reopens the dialog.

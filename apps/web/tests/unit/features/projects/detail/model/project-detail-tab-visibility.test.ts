@@ -5,6 +5,7 @@ import {
   canOpenQaStudio,
   projectDetailTabsForRole,
   resolveVisibleTab,
+  seesProjectAsProduct,
   shouldHighlightMyQaItems,
   showOverviewProductionReadiness,
   studioTabFor,
@@ -184,6 +185,20 @@ describe("canOpenQaStudio / canOpenPoStudio / studioTabFor", () => {
   it("refuses a session with no known role", () => {
     expect(canOpenQaStudio(null)).toBe(false);
     expect(canOpenQaStudio(undefined)).toBe(false);
+  });
+});
+
+describe("seesProjectAsProduct", () => {
+  it("is the QA Team and Product owners", () => {
+    expect(seesProjectAsProduct("qa")).toBe(true);
+    expect(seesProjectAsProduct("lead")).toBe(true);
+  });
+
+  it("is not a Developer, an admin or an unknown role", () => {
+    expect(seesProjectAsProduct("member")).toBe(false);
+    expect(seesProjectAsProduct("admin")).toBe(false);
+    expect(seesProjectAsProduct(null)).toBe(false);
+    expect(seesProjectAsProduct(undefined)).toBe(false);
   });
 });
 

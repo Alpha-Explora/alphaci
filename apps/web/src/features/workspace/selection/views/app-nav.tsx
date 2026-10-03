@@ -26,6 +26,18 @@ interface AppNavProps {
   session: AuthSession | null;
   onLogout: () => void;
   isLoggingOut: boolean;
+  /**
+   * The team this page belongs to (a project's owning team). The header
+   * selects it once it is known and listed; see `useAppNavViewModel`.
+   */
+  pageWorkspaceId?: string | null;
+  /**
+   * Called after the viewer picks a DIFFERENT team in the header. A page
+   * scoped to one team (a project) passes this to leave for the picked team,
+   * since staying would leave the header naming a team the page is not in.
+   * Omitted everywhere else, where the pick only rescopes the page.
+   */
+  onWorkspaceSwitch?: (workspaceId: string) => void;
 }
 
 /* ── Icons ─────────────────────────────────────────────────────────────────── */
@@ -317,6 +329,8 @@ export function AppNav({
   session,
   onLogout,
   isLoggingOut,
+  pageWorkspaceId,
+  onWorkspaceSwitch,
 }: Readonly<AppNavProps>) {
   const isPlatformAdmin = isPlatformAdminUser(guest, session);
   const { pathname, workspaces: workspaceVm, notifications, mainItems } =
@@ -325,6 +339,7 @@ export function AppNav({
       isPlatformAdmin,
       appRole: session?.appRole ?? null,
       platformRole: session?.platformRole ?? null,
+      pageWorkspaceId,
     });
   // Cleared on pointerleave. Clicking a nav link navigates but does NOT move
   // the mouse, so the rail stays hovered — and an expanded rail is 240px of
@@ -359,7 +374,7 @@ export function AppNav({
       <AppHeader guest={guest} session={session} appRole={appRole} avatarInitial={avatarInitial}
         workspaces={workspaceVm.workspaces} otherTeams={workspaceVm.otherTeams}
         workspaceStatus={workspaceVm.status}
-        loadWorkspaces={loadWorkspaces}
+        loadWorkspaces={loadWorkspaces} onWorkspaceSwitch={onWorkspaceSwitch}
         onLogout={onLogout} isLoggingOut={isLoggingOut} />
       <AppSidebar pathname={pathname} guest={guest} mainItems={mainItems} reduced={reduced}
         isPlatformAdmin={isPlatformAdmin} unreadCount={notifications.unreadCount}
@@ -370,12 +385,13 @@ export function AppNav({
   );
 }
 
-function AppHeader({ guest, session, appRole, avatarInitial, workspaces, otherTeams, workspaceStatus, loadWorkspaces, onLogout, isLoggingOut }: Readonly<{
+function AppHeader({ guest, session, appRole, avatarInitial, workspaces, otherTeams, workspaceStatus, loadWorkspaces, onWorkspaceSwitch, onLogout, isLoggingOut }: Readonly<{
   guest: boolean; session: AuthSession | null; appRole: WorkspaceAppRole; avatarInitial: string;
   workspaces: Parameters<typeof WorkspaceSwitcher>[0]["workspaces"];
   otherTeams: NonNullable<Parameters<typeof WorkspaceSwitcher>[0]["otherTeams"]>;
   workspaceStatus: NonNullable<Parameters<typeof WorkspaceSwitcher>[0]["status"]>;
-  loadWorkspaces: () => void; onLogout: () => void; isLoggingOut: boolean;
+  loadWorkspaces: () => void; onWorkspaceSwitch?: (workspaceId: string) => void;
+  onLogout: () => void; isLoggingOut: boolean;
 }>) {
   return (
     <header className="app-header">
@@ -391,6 +407,7 @@ function AppHeader({ guest, session, appRole, avatarInitial, workspaces, otherTe
             status={workspaceStatus}
             onRetry={loadWorkspaces}
             onWorkspaceCreated={loadWorkspaces}
+            onSwitch={onWorkspaceSwitch}
           />
         )}
       </div>

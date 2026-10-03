@@ -23,6 +23,7 @@ export function PullsTabPanel({
         appRole={vm.appRole}
         viewerLogin={vm.viewerLogin}
         onOpenPoStudio={() => vm.setTab("po")}
+        initialFocusNumber={vm.pullFocus}
       />
     </div>
   );

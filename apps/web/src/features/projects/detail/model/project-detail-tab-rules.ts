@@ -79,6 +79,20 @@ export function studioTabFor(appRole: AppRole | null | undefined): StudioTab | n
 }
 
 /**
+ * The roles that judge a Project as one product rather than as repositories:
+ * the QA Team and Product owners. Their page has no FRONTEND / BACKEND switch,
+ * opens on the Project's frontend, and carries its five tabs in the title row.
+ *
+ * Named rather than derived (`!== "member"`): a role added later gets the
+ * Developer's page — more navigation, never more power — until it is listed.
+ */
+const PRODUCT_VIEW_ROLES: ReadonlySet<AppRole> = new Set<AppRole>(["qa", "lead"]);
+
+export function seesProjectAsProduct(appRole: AppRole | null | undefined): boolean {
+  return appRole != null && PRODUCT_VIEW_ROLES.has(appRole);
+}
+
+/**
  * Developers and Admins — the backend's environment-variable allow-list
  * (refusal code `ENV_VARS_LEAD_ONLY`, a legacy name) for the Environment tab
  * and its list/create/update/delete routes. Product owners (`lead`) and QA

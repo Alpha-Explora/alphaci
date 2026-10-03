@@ -52,11 +52,24 @@ export interface ProjectDetailTabsViewModel {
    */
   highlightMyQaItems: boolean;
   /**
+   * The Overview's "Open checklist": the Checklists tab, asked to open on the
+   * viewer's "My QA items" (where it embeds the Project's QA workspace).
+   */
+  openMyQaItems: () => void;
+  /** Set by `openMyQaItems`, cleared by choosing a tab by hand. */
+  checklistsOpensMyItems: boolean;
+  /**
    * The target whose logs Hosting should open with, set when the Overview's
    * card asks for its full logs. Cleared by choosing a tab by hand.
    */
   logFocus: DeploymentLogFocus | null;
   openTargetLogs: (focus: DeploymentLogFocus) => void;
+  /**
+   * The pull request the Pull requests tab should open expanded, set when a
+   * commit on the Code tab links to it. Cleared by choosing a tab by hand.
+   */
+  pullFocus: number | null;
+  openPullRequest: (pullRequestNumber: number) => void;
   status: ProjectStatus;
   error: string | null;
   overview: ProjectOverviewResponse | null;
@@ -113,6 +126,8 @@ export function useProjectDetailTabsViewModel(options: {
     typeof window === "undefined" ? false : shouldHighlightMyQaItems(window.location.search),
   );
   const [logFocus, setLogFocus] = useState<DeploymentLogFocus | null>(null);
+  const [pullFocus, setPullFocus] = useState<number | null>(null);
+  const [checklistsOpensMyItems, setChecklistsOpensMyItems] = useState(false);
 
   const caps = useCapabilities();
   const visibleTabs = visibleProjectDetailTabs(appRole, {
@@ -165,12 +180,28 @@ export function useProjectDetailTabsViewModel(options: {
 
   function setTab(next: ProjectDetailTab) {
     setLogFocus(null);
+    setPullFocus(null);
+    setChecklistsOpensMyItems(false);
     setTabState(next);
   }
 
+  function openMyQaItems() {
+    setLogFocus(null);
+    setPullFocus(null);
+    setChecklistsOpensMyItems(true);
+    setTabState("checklists");
+  }
+
   function openTargetLogs(focus: DeploymentLogFocus) {
+    setPullFocus(null);
     setLogFocus(focus);
     setTabState("hosting");
+  }
+
+  function openPullRequest(pullRequestNumber: number) {
+    setLogFocus(null);
+    setPullFocus(pullRequestNumber);
+    setTabState("pulls");
   }
 
   function handleTargetChanged(target: DeploymentTarget) {
@@ -199,8 +230,12 @@ export function useProjectDetailTabsViewModel(options: {
     viewerLogin,
     qaChecklistsEnabled: caps.qaChecklistsEnabled,
     highlightMyQaItems,
+    openMyQaItems,
+    checklistsOpensMyItems,
     logFocus,
     openTargetLogs,
+    pullFocus,
+    openPullRequest,
     status: overviewQuery.status,
     error: overviewQuery.error,
     overview,

@@ -174,9 +174,214 @@
   }
 }
 
+/* ── GitHub activity ────────────────────────────────────────────────────────
+   Rows read from GitHub wear a "GitHub" tag and a hollow brand node, so a
+   push or a review made outside ALPHACI is told apart from work done here
+   without reading the label.
+   ------------------------------------------------------------------------- */
+
+.audit-trail__row[data-scope="github"] .audit-trail__dot {
+  border-color: var(--border-brand);
+  background: var(--surface-brand);
+}
+
+.audit-trail__row[data-scope="github"]:first-child .audit-trail__dot {
+  border-color: var(--brand);
+}
+
+.audit-trail__tag--github {
+  border-color: var(--border-brand);
+  background: var(--brand-light);
+  color: var(--brand);
+}
+
+/* The sync line: one quiet row above the trail, a status dot leading it. */
+.audit-trail__sync {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.45rem 0.7rem;
+  padding: 0.5rem 0.6rem 0.5rem 0.75rem;
+  border: 1px solid var(--border-subtle);
+  border-radius: 0.7rem;
+  background: var(--bg-soft);
+}
+
+.audit-trail__sync[data-tone="warning"] {
+  border-color: var(--border-amber);
+  background: var(--accent-amber-light);
+}
+
+.audit-trail__sync-dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  flex: none;
+  border-radius: var(--radius-pill);
+  background: var(--success);
+  box-shadow: 0 0 0 3px var(--layer-1);
+  animation: audit-trail-breathe 2.8s ease-in-out infinite;
+}
+
+.audit-trail__sync[data-tone="warning"] .audit-trail__sync-dot {
+  background: var(--accent-amber);
+  animation: none;
+}
+
+.audit-trail__sync-text {
+  flex: 1 1 14rem;
+  min-width: 0;
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+/* Two classes: the global button sizes must not make it a hero CTA. */
+.audit-trail .audit-trail__sync-button {
+  min-height: 2rem;
+  padding: 0.25rem 0.85rem;
+  border-color: var(--border-strong);
+  font-size: 0.76rem;
+  font-weight: 600;
+}
+
+.audit-trail .audit-trail__sync-error {
+  flex-basis: 100%;
+  margin: 0;
+  font-size: 0.78rem;
+}
+
+@keyframes audit-trail-breathe {
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.45;
+  }
+}
+
+/* The source filter: three chips, the chosen one filled. */
+.audit-trail__filters {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.audit-trail__filter {
+  min-height: 2rem;
+  padding: 0.2rem 0.8rem;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-pill);
+  background: none;
+  color: var(--text-secondary);
+  font-size: 0.76rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background-color 160ms ease-out,
+    border-color 160ms ease-out,
+    color 160ms ease-out;
+}
+
+.audit-trail__filter:hover {
+  border-color: var(--border-strong);
+  color: var(--text-primary);
+}
+
+.audit-trail__filter[aria-pressed="true"] {
+  border-color: var(--border-brand);
+  background: var(--brand-light);
+  color: var(--text-primary);
+}
+
+.audit-trail__filter:focus-visible,
+.audit-trail__push-toggle:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
+/* A push's commits: collapsed behind a small disclosure under its meta line. */
+.audit-trail__push {
+  display: grid;
+  gap: 0.35rem;
+  margin-top: 0.15rem;
+}
+
+.audit-trail__push-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  justify-self: start;
+  padding: 0.1rem 0.2rem;
+  border: 0;
+  border-radius: 0.35rem;
+  background: none;
+  color: var(--brand);
+  font-size: 0.74rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.audit-trail__push-toggle:hover {
+  text-decoration: underline;
+}
+
+.audit-trail__push-caret {
+  width: 0.4rem;
+  height: 0.4rem;
+  border-right: 1.5px solid currentcolor;
+  border-bottom: 1.5px solid currentcolor;
+  transform: rotate(-45deg);
+  transition: transform 160ms ease-out;
+}
+
+.audit-trail__push-toggle[aria-expanded="true"] .audit-trail__push-caret {
+  transform: rotate(45deg);
+}
+
+.audit-trail__commits {
+  display: grid;
+  gap: 0.25rem;
+  margin: 0;
+  padding: 0.45rem 0.6rem;
+  border-left: 2px solid var(--border-brand);
+  border-radius: 0 0.5rem 0.5rem 0;
+  background: var(--surface-brand);
+  list-style: none;
+}
+
+.audit-trail__commit {
+  display: flex;
+  gap: 0.55rem;
+  min-width: 0;
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+}
+
+.audit-trail__sha {
+  flex: none;
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 0.74rem;
+  color: var(--text-muted);
+}
+
+.audit-trail__commit-title {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.audit-trail__commit--more {
+  color: var(--text-muted);
+  font-style: italic;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .audit-trail__row,
-  .audit-trail__row--skeleton {
+  .audit-trail__row--skeleton,
+  .audit-trail__sync-dot,
+  .audit-trail__filter,
+  .audit-trail__push-caret {
     transition: none;
     animation: none;
   }
