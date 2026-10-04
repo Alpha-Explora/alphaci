@@ -371,7 +371,6 @@ function ProjectFolderHeader({
       </div>
       {identityShown ? (
         <div className="project-folder-header__identity">
-          <span className="project-folder-header__eyebrow">Project</span>
           <h1 className="workflow-page-title">{projectName}</h1>
           <p className="project-folder-header__repo">
             <span className="project-folder-header__repo-name">{project.repoFullName}</span>

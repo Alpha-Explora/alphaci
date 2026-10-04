@@ -1,9 +1,9 @@
 /* ── Project header on Overview: Clone ──────────────────────────────────────
    GitHub's Clone box, laid out as the twin of the identity beside it: an
-   eyebrow label like "Project", one control where the title sits (the HTTPS /
-   SSH / GitHub CLI switch, the read-only monospace field and the copy button
-   joined in a single border), and a one-line hint where the repository line
-   sits. No card chrome. Tokens only, so both themes hold.
+   eyebrow label, then one control (the HTTPS / SSH / GitHub CLI switch, the
+   read-only monospace field and the copy button joined in a single border).
+   No hint line under it: the switch already names the method. No card
+   chrome. Tokens only, so both themes hold.
    ------------------------------------------------------------------------- */
 
 .clone-card {
@@ -12,8 +12,7 @@
   min-width: 0;
 }
 
-/* Two classes: `.tab-content-panel h2`-style rules must not restyle it. The
-   type matches `.project-folder-header__eyebrow`. */
+/* Two classes: `.tab-content-panel h2`-style rules must not restyle it. */
 .clone-card .clone-card__title {
   margin: 0;
   font-size: 0.66rem;
@@ -119,13 +118,6 @@
 
 .clone-card__copy[data-copied="true"] {
   color: var(--brand);
-}
-
-/* Two classes: beats `.project-detail-header p` (0,1,1), the header it sits in. */
-.clone-card .clone-card__hint {
-  margin: 0.3rem 0 0;
-  font-size: 0.74rem;
-  color: var(--text-muted);
 }
 
 /* Announces "Copied" to screen readers only. */

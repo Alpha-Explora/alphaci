@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Space_Grotesk, Plus_Jakarta_Sans, Outfit } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/shared/layout/theme-context";
+import { SIDEBAR_PIN_BOOT_SCRIPT } from "@/features/workspace/selection";
 
 const displayFont = Space_Grotesk({
   variable: "--font-display",
@@ -48,6 +49,11 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" data-theme="dark" suppressHydrationWarning>
+      <head>
+        {/* Before first paint: a pinned left rail starts open rather than
+            opening, and shoving the page aside, once React hydrates. */}
+        <script dangerouslySetInnerHTML={{ __html: SIDEBAR_PIN_BOOT_SCRIPT }} />
+      </head>
       <body
         className={`${displayFont.variable} ${bodyFont.variable} ${dashBodyFont.variable} ${dashDisplayFont.variable} antialiased`}
         suppressHydrationWarning

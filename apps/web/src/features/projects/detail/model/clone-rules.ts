@@ -6,14 +6,12 @@ export type CloneMethod = "https" | "ssh" | "cli";
 export interface CloneMethodOption {
   id: CloneMethod;
   label: string;
-  /** One line under the field, as GitHub words it. */
-  hint: string;
 }
 
 export const CLONE_METHODS: ReadonlyArray<CloneMethodOption> = [
-  { id: "https", label: "HTTPS", hint: "Clone using the web URL." },
-  { id: "ssh", label: "SSH", hint: "Use a password-protected SSH key." },
-  { id: "cli", label: "GitHub CLI", hint: "Work fast with the official CLI." },
+  { id: "https", label: "HTTPS" },
+  { id: "ssh", label: "SSH" },
+  { id: "cli", label: "GitHub CLI" },
 ];
 
 const DEFAULT_HOST = "github.com";

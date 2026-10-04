@@ -25,20 +25,20 @@ describe("CloneCard", () => {
   const tab = (label: string) =>
     [...container.querySelectorAll<HTMLButtonElement>('[role="tab"]')].find((el) => el.textContent === label)!;
 
-  it("starts on HTTPS with the web URL and GitHub's hint", () => {
+  it("starts on HTTPS with the web URL, and no hint line under it", () => {
     act(() => root.render(<CloneCard repoFullName="Alphaexplora-Sandbox/logistics2cicd-fe" />));
     expect(container.textContent).toContain("Clone");
     expect(tab("HTTPS").getAttribute("aria-selected")).toBe("true");
     expect(input().value).toBe("https://github.com/Alphaexplora-Sandbox/logistics2cicd-fe.git");
     expect(input().readOnly).toBe(true);
-    expect(container.textContent).toContain("Clone using the web URL.");
+    expect(container.textContent).not.toContain("Clone using the web URL.");
   });
 
   it("switches to SSH and GitHub CLI by click and by arrow keys", () => {
     act(() => root.render(<CloneCard repoFullName="acme/api" />));
     act(() => tab("SSH").click());
     expect(input().value).toBe("git@github.com:acme/api.git");
-    expect(container.textContent).toContain("Use a password-protected SSH key.");
+    expect(tab("SSH").getAttribute("aria-selected")).toBe("true");
 
     act(() => {
       tab("SSH").dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowRight", bubbles: true }));
