@@ -6,7 +6,7 @@ import type { ProjectFolderViewModel } from "../../../../../../src/features/proj
 import type { AppRole, ProvisionedProject } from "../../../../../../src/shared/api/contracts";
 
 const push = jest.fn();
-let mockTab = "hosting";
+let mockTab = "overview";
 jest.mock("next/navigation", () => ({ useRouter: () => ({ push }) }));
 
 jest.mock("../../../../../../src/features/projects/detail/view-models/use-project-detail-tabs-view-model", () => ({
@@ -66,7 +66,7 @@ afterEach(() => {
   if (root) act(() => root?.unmount());
   root = null;
   document.body.innerHTML = "";
-  mockTab = "hosting";
+  mockTab = "overview";
   jest.clearAllMocks();
 });
 
@@ -84,7 +84,7 @@ describe("ProjectDetailTabs header", () => {
 
     const backend = [...container.querySelectorAll<HTMLButtonElement>('[role="radio"]')][1];
     act(() => backend.click());
-    expect(push).toHaveBeenCalledWith("/projects/proj-be#hosting");
+    expect(push).toHaveBeenCalledWith("/projects/proj-be#overview");
   });
 
   it("omits Manage project when the folder cannot be named on the Teams page", () => {
@@ -97,7 +97,7 @@ describe("ProjectDetailTabs header", () => {
     for (const folder of [undefined, { status: "unavailable", projectName: null, options: [], manageHref: null } as ProjectFolderViewModel]) {
       const container = render(folder);
       expect(container.querySelector("h1")?.textContent).toBe("Org/shop-fe");
-      expect(container.querySelector(".project-detail-header p")?.textContent).toBe("shop-frontend");
+      expect(container.querySelector(".project-detail-header__identity p")?.textContent).toBe("shop-frontendprovisioned");
       expect(container.querySelector('[role="radiogroup"]')).toBeNull();
       expect(container.textContent).not.toContain("Manage project");
       act(() => root?.unmount());
@@ -124,11 +124,12 @@ describe("ProjectDetailTabs header, product view", () => {
     }
   });
 
-  it("puts the sections beside a single repository's title too", () => {
+  it("puts the sections above a single repository's title too", () => {
     const container = render(undefined, "lead");
     const aside = container.querySelector(".project-detail-header--tabs .project-detail-header__aside");
-    expect(aside?.querySelector(".project-status-badge")?.textContent).toBe("provisioned");
     expect(aside?.querySelector('[role="tablist"]')).not.toBeNull();
+    // The status is the identity's, so it goes with it off Overview.
+    expect(container.querySelector(".project-detail-header__identity .project-status-badge")?.textContent).toBe("provisioned");
   });
 
   it("keeps the switch and the strip below the title for Developers and admins", () => {
@@ -142,39 +143,53 @@ describe("ProjectDetailTabs header, product view", () => {
   });
 });
 
-/* Overview puts Clone in the header beside the title, for every role, so
- * Production Deployment is the panel's first row. */
-describe("ProjectDetailTabs header, Clone on Overview", () => {
-  it("sits beside the title with the aside above it, for every role and header", () => {
-    mockTab = "overview";
+/* Overview puts the identity and Clone side by side under the aside, for
+ * every role, so Production Deployment is the panel's first row. Every other
+ * tab shows the aside alone; the title stays the h1 for screen readers. */
+describe("ProjectDetailTabs header, Overview summary", () => {
+  it("puts the identity and Clone under the aside, for every role and header", () => {
     for (const appRole of ["qa", "lead", "member", "admin"] as const) {
       for (const folder of [FOLDER, undefined]) {
         const container = render(folder, appRole);
         const header = container.querySelector(".project-detail-header");
-        expect(header?.classList.contains("project-detail-header--clone")).toBe(true);
-        const clone = header?.querySelector(":scope > .project-detail-header__clone");
-        expect(clone?.querySelector(".clone-card__input")).not.toBeNull();
-        expect(header?.querySelector(":scope > .project-detail-header__aside, :scope > .project-folder-header__aside")).not.toBeNull();
+        expect(header?.classList.contains("project-detail-header--summary")).toBe(true);
+        expect(header?.querySelector(":scope > .project-detail-header__identity, :scope > .project-folder-header__identity")).not.toBeNull();
+        expect(header?.querySelector(":scope > .project-detail-header__clone .clone-card__input")).not.toBeNull();
+        expect(container.querySelector(".project-detail-header__sr-title")).toBeNull();
         expect(container.querySelector(".project-sections .clone-card")).toBeNull();
         unmount();
       }
     }
   });
 
-  it("keeps the product view's sections in the header beside Clone", () => {
-    mockTab = "overview";
+  it("keeps the product view's sections in the header, above the summary", () => {
     const container = render(FOLDER, "qa");
     const header = container.querySelector(".project-folder-header");
     expect(header?.classList.contains("project-detail-header--tabs")).toBe(true);
+    expect(header?.firstElementChild?.matches(".project-folder-header__aside")).toBe(true);
     expect(header?.querySelector('.project-folder-header__aside [role="tablist"]')).not.toBeNull();
   });
 
-  it("leaves the header without Clone on every other tab", () => {
-    for (const appRole of ["qa", "member"] as const) {
-      const container = render(FOLDER, appRole);
-      expect(container.querySelector(".project-detail-header--clone")).toBeNull();
-      expect(container.querySelector(".clone-card")).toBeNull();
-      unmount();
+  it("hides the identity and Clone on every other tab, keeping the aside", () => {
+    mockTab = "hosting";
+    for (const appRole of ["qa", "lead", "member", "admin"] as const) {
+      for (const folder of [FOLDER, undefined]) {
+        const container = render(folder, appRole);
+        expect(container.querySelector(".project-detail-header--summary")).toBeNull();
+        expect(container.querySelector(".project-folder-header__identity, .project-detail-header__identity")).toBeNull();
+        expect(container.querySelector(".project-status-badge")).toBeNull();
+        expect(container.querySelector(".clone-card")).toBeNull();
+        const title = container.querySelector("h1");
+        expect(title?.classList.contains("project-detail-header__sr-title")).toBe(true);
+        expect(title?.textContent).toBe(folder ? "shop" : "Org/shop-fe");
+        if (folder && (appRole === "member" || appRole === "admin")) {
+          expect(container.querySelector('.project-detail-header--bare [role="radiogroup"]')).not.toBeNull();
+        }
+        if (appRole === "qa" || appRole === "lead") {
+          expect(container.querySelector('.project-detail-header--bare [role="tablist"]')).not.toBeNull();
+        }
+        unmount();
+      }
     }
   });
 });
