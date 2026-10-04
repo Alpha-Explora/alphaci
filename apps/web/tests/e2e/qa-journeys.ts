@@ -3326,9 +3326,8 @@ async function leadMergesToMain({ page, backend, baseUrl }: JourneyContext) {
   await expectText(card.locator('.qa-promo__row'), 'Approved for this commit', 'the approved tick');
   await absent(card.locator('.qa-promo__reasons'), 'the blocking reasons');
   assert.equal(await merge.isDisabled(), false, 'Merge to main is enabled once eligible');
-  await expectText(card.locator('a.qa-promo__pr'), 'Promotion PR #42', 'the promotion PR link');
-  assert.equal(await card.locator('a.qa-promo__pr').getAttribute('href'), PROMOTION_PR.url);
-  assert.equal(await card.locator('a.qa-promo__pr').getAttribute('target'), '_blank');
+  await expectText(card.locator('.qa-promo__pr'), 'Promotion PR #42', 'the promotion PR name');
+  await absent(card.locator('a.qa-promo__pr'), 'a link out to the promotion PR');
 
   // Full screen: the SAME card rides in the floating drawer.
   await page.getByRole('button', { name: 'Full screen' }).click();
@@ -3370,8 +3369,9 @@ async function leadMergeRefused({ page, backend, baseUrl }: JourneyContext) {
   const outcome = card.locator('.qa-promo-outcome');
   await expectText(outcome.locator('.qa-promo-outcome__title'), 'GitHub refused the merge', 'the refusal title');
   assert.equal(await textOf(outcome.locator('blockquote')), GITHUB_REFUSAL, "GitHub's refusal, verbatim");
-  await expectText(outcome, 'A reviewer must approve the pull request on GitHub', 'the unblock hint');
-  assert.equal(await outcome.getByRole('link', { name: /Open pull request #42 on GitHub/ }).getAttribute('href'), PROMOTION_PR.url);
+  await expectText(outcome, 'A reviewer must approve the pull request', 'the unblock hint');
+  await expectText(outcome.locator('.qa-promo__pr'), 'Pull request #42', 'the pull request, named');
+  await absent(outcome.locator('a'), 'any link out of the refusal');
   onlyCall(backend.callsTo('POST', /\/qa\/promotion\/merge$/), 'merge request');
   assert.equal(await merge.isDisabled(), false, 'still mergeable once GitHub allows it');
 }

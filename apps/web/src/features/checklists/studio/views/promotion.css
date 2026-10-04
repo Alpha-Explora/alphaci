@@ -73,8 +73,7 @@
   color: var(--text-primary);
 }
 
-.qa-promo__toggle:focus-visible,
-.qa-promo__pr:focus-visible {
+.qa-promo__toggle:focus-visible {
   outline: 2px solid var(--brand);
   outline-offset: 2px;
 }
@@ -298,23 +297,9 @@
 }
 
 .qa-promo__pr {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  border-radius: 0.3rem;
   font-size: 0.78rem;
   font-weight: 600;
-  color: var(--brand);
-  text-decoration: none;
-}
-
-.qa-promo__pr:hover {
-  text-decoration: underline;
-}
-
-.qa-promo__pr .qa-glyph {
-  width: 0.8rem;
-  height: 0.8rem;
+  color: var(--text-secondary);
 }
 
 /* ── How the last merge ended ────────────────────────────────────────────── */

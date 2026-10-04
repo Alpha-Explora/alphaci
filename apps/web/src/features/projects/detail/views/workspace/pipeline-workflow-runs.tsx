@@ -19,7 +19,7 @@ import {
   type RunJobsViewModel,
 } from "../../view-models/use-run-jobs-view-model";
 import { JobLogView } from "./job-log-view";
-import { ChevronIcon, ExternalIcon } from "./pipeline-glyphs";
+import { ChevronIcon } from "./pipeline-glyphs";
 import { StatusChip } from "./pipeline-stage-detail";
 import {
   WorkspaceEmpty,
@@ -102,11 +102,6 @@ function RunRow({
 
       {view.open && (
         <div id={bodyId} className="pipe-run__body">
-          <a className="pipe-link" href={run.htmlUrl} target="_blank" rel="noopener noreferrer">
-            Open this run on GitHub
-            <ExternalIcon />
-            <span className="sr-only"> (opens in a new tab)</span>
-          </a>
           <RunJobs projectId={projectId} run={run} view={view} />
         </div>
       )}

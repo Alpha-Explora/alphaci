@@ -5,20 +5,14 @@ import type { ReactNode } from "react";
 import { MERGE_REFUSED_HINT, mergeErrorTitle, mergedLabel } from "../../model/qa-promotion-rules";
 import type { QaPromotionMergeError, QaPromotionMergeResult } from "../../model/qa-promotion-types";
 import type { QaPromotionViewModel } from "../view-models/use-qa-promotion-view-model";
-import { ExternalIcon } from "./studio-icons";
 
-/** A pull request on GitHub, opened in a new tab. The URL was checked to be https. */
-export function PullRequestLink({
-  pullRequest,
-  label,
-}: Readonly<{ pullRequest: { number: number; url: string }; label: string }>) {
-  return (
-    <a className="qa-promo__pr" href={pullRequest.url} target="_blank" rel="noopener noreferrer">
-      {label}
-      <ExternalIcon />
-      <span className="sr-only"> (opens GitHub in a new tab)</span>
-    </a>
-  );
+/**
+ * Which pull request this is, as text. It names the PR without sending anyone to
+ * GitHub: the Studio's readers work here, and the Pull requests tab is not one
+ * every role of this screen can open.
+ */
+export function PullRequestRef({ label }: Readonly<{ label: string }>) {
+  return <span className="qa-promo__pr">{label}</span>;
 }
 
 function OutcomeFrame({
@@ -43,7 +37,7 @@ function Merged({ result, targetBranch, onDismiss }: Readonly<{ result: QaPromot
     <OutcomeFrame tone="success" title={`Merged into ${targetBranch}`} onDismiss={onDismiss}>
       <p className="qa-promo-outcome__text">{mergedLabel(result, targetBranch)}</p>
       {result.pullRequest ? (
-        <PullRequestLink pullRequest={result.pullRequest} label={`Pull request #${result.pullRequest.number}`} />
+        <PullRequestRef label={`Pull request #${result.pullRequest.number}`} />
       ) : null}
     </OutcomeFrame>
   );
@@ -56,10 +50,7 @@ function Refused({ result, onDismiss }: Readonly<{ result: QaPromotionMergeResul
       <blockquote className="qa-promo-outcome__quote">{result.message}</blockquote>
       <p className="qa-promo-outcome__text">{MERGE_REFUSED_HINT}</p>
       {result.pullRequest ? (
-        <PullRequestLink
-          pullRequest={result.pullRequest}
-          label={`Open pull request #${result.pullRequest.number} on GitHub`}
-        />
+        <PullRequestRef label={`Pull request #${result.pullRequest.number}`} />
       ) : null}
     </OutcomeFrame>
   );

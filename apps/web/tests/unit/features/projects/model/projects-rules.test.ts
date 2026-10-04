@@ -383,32 +383,6 @@ describe("splitOverviewPreviews", () => {
   });
 });
 
-describe("pullRequestUrl", () => {
-  it("builds the pull request address", () => {
-    expect(pullRequestUrl("tone/web-app", 47)).toBe(
-      "https://github.com/tone/web-app/pull/47",
-    );
-  });
-
-  it("is null without a repository or a pull request", () => {
-    expect(pullRequestUrl(null, 47)).toBeNull();
-    expect(pullRequestUrl("tone/web-app", null)).toBeNull();
-  });
-});
-
-describe("commitUrl", () => {
-  it("points at the commit on GitHub", () => {
-    expect(commitUrl("tone/orders-api", "ea738449c1d")).toBe(
-      "https://github.com/tone/orders-api/commit/ea738449c1d",
-    );
-  });
-
-  it("is null without both the repository and the commit", () => {
-    expect(commitUrl(null, "ea73844")).toBeNull();
-    expect(commitUrl("tone/orders-api", null)).toBeNull();
-  });
-});
-
 describe("displayHost", () => {
   it("drops the scheme and path", () => {
     expect(displayHost("https://web-app.vercel.app/login")).toBe(

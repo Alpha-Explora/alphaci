@@ -40,6 +40,9 @@ export function OverviewTab({
         // "Full logs" opens the Hosting tab; a role without it (a Product
         // owner) keeps the card's own log surface only.
         onOpenFullLogs={vm.visibleTabs.includes("hosting") ? vm.openTargetLogs : undefined}
+        // A branch's "#N" opens that pull request in the Pull requests tab; a
+        // role without the tab sees the number as text.
+        onOpenPullRequest={vm.visibleTabs.includes("pulls") ? vm.openPullRequest : undefined}
         project={project}
       />
       <MyQaItemsSummary
@@ -65,10 +68,12 @@ export function OverviewTab({
 function OverviewPreviews({
   enabled,
   onOpenFullLogs,
+  onOpenPullRequest,
   project,
 }: Readonly<{
   enabled: boolean;
   onOpenFullLogs: ProjectDetailTabsViewModel["openTargetLogs"] | undefined;
+  onOpenPullRequest: ProjectDetailTabsViewModel["openPullRequest"] | undefined;
   project: ProvisionedProject;
 }>) {
   if (!enabled) return null;
@@ -76,8 +81,8 @@ function OverviewPreviews({
     <ProductionDeploymentPanel
       enabled
       onOpenFullLogs={onOpenFullLogs}
+      onOpenPullRequest={onOpenPullRequest}
       projectId={project.id}
-      repoFullName={project.repoFullName}
     />
   );
 }

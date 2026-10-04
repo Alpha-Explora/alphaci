@@ -138,38 +138,6 @@
   color: var(--text-muted);
 }
 
-.qa-auto-link {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.3rem;
-  font-size: 0.74rem;
-  font-weight: 600;
-  color: var(--text-secondary);
-  text-decoration: none;
-  white-space: nowrap;
-}
-
-.qa-auto-link .qa-glyph {
-  width: 0.8rem;
-  height: 0.8rem;
-  transition: transform 140ms ease-out;
-}
-
-.qa-auto-link:hover {
-  color: var(--brand);
-  text-decoration: underline;
-}
-
-.qa-auto-link:hover .qa-glyph {
-  transform: translate(1px, -1px);
-}
-
-.qa-auto-link:focus-visible {
-  border-radius: 0.2rem;
-  outline: 2px solid var(--brand);
-  outline-offset: 2px;
-}
-
 /* ── The panel ───────────────────────────────────────────────────────────── */
 
 /* Side by side the run pane has a fixed height and only the items scroll, so
@@ -721,8 +689,7 @@
   .qa-auto__toggle > .qa-glyph,
   .qa-auto__run,
   .qa-auto__run .qa-glyph,
-  .qa-auto-stage__toggle .qa-glyph,
-  .qa-auto-link .qa-glyph {
+  .qa-auto-stage__toggle .qa-glyph {
     transition: none;
   }
 }

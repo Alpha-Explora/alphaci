@@ -346,8 +346,9 @@ function SidebarDivider() {
  * back to opening on hover. Laid out like a nav item, its icon in the same box,
  * so it sits on the rail's midline closed and gains its label open.
  *
- * One name, pressed or not, so a screen reader hears the state rather than a
- * label that flips under the cursor; the tooltip says what a press will do.
+ * Icon only: the rail's own width says what it is. One name, pressed or not,
+ * so a screen reader hears the state rather than a label that flips under the
+ * cursor; the tooltip says what a press will do.
  */
 function SidebarPinToggle({ pinned, onToggle }: Readonly<{ pinned: boolean; onToggle: () => void }>) {
   return (
@@ -355,6 +356,7 @@ function SidebarPinToggle({ pinned, onToggle }: Readonly<{ pinned: boolean; onTo
       <button
         type="button"
         className="sidebar-nav-item app-sidebar-toggle"
+        aria-label="Keep sidebar open"
         aria-pressed={pinned}
         title={pinned ? "Collapse sidebar" : "Keep sidebar open"}
         onClick={onToggle}
@@ -362,7 +364,6 @@ function SidebarPinToggle({ pinned, onToggle }: Readonly<{ pinned: boolean; onTo
         <span className="sidebar-nav-item-icon">
           <SidebarPanelIcon pinned={pinned} />
         </span>
-        <span className="sidebar-nav-item-label">Keep open</span>
       </button>
       <SidebarDivider />
     </div>

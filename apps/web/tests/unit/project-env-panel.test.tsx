@@ -880,7 +880,7 @@ describe("Project env provisioning UI", () => {
     expect(rendered.container.textContent).toContain("No CI runs tracked yet.");
   });
 
-  it("renders failed CI run with GitHub link and hides rerun when disabled", async () => {
+  it("renders failed CI run without a GitHub link and hides rerun when disabled", async () => {
     mockCapabilities(true, true, false, false, false, true);
     mockEnvHook();
     mockedProjectApi.getProjectOverview.mockResolvedValue({
@@ -940,11 +940,10 @@ describe("Project env provisioning UI", () => {
     expect(rendered.container.textContent).toContain("abc123");
     expect(rendered.container.textContent).toContain("failure");
     expect(rendered.container.textContent).not.toContain("Rerun");
+    // The run's own page on GitHub is not offered: ALPHACI is the only UI.
     expect(
-      rendered.container.querySelector(
-        'a[href="https://github.com/tone/orders-api/actions/runs/1"]',
-      ),
-    ).not.toBeNull();
+      rendered.container.querySelector('a[href*="github.com"]'),
+    ).toBeNull();
   });
 
   it("shows a simulated-data caveat for CI runs when live sync is enabled but nothing is connected", async () => {
@@ -1745,9 +1744,14 @@ describe("Project env provisioning UI", () => {
       "project-1",
       expect.objectContaining({ nodeVersion: "22" }),
     );
-    expect(rendered.container.textContent).toContain(
+    // The update PR is named by number and opens in the Pull requests tab.
+    expect(rendered.container.textContent).toContain("Pull request #42");
+    expect(rendered.container.textContent).not.toContain(
       "https://github.com/tone/orders-api/pull/42",
     );
+    expect(
+      rendered.container.querySelector('a[href*="github.com"]'),
+    ).toBeNull();
   });
 
 

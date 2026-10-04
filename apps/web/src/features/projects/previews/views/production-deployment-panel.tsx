@@ -12,15 +12,16 @@ import { ProductionDeploymentView } from "./production-deployment-view";
 export function ProductionDeploymentPanel({
   projectId,
   enabled,
-  repoFullName,
   onOpenFullLogs,
+  onOpenPullRequest,
 }: Readonly<{
   projectId: string;
   /** False while the session is unknown, or when the capability is off. */
   enabled: boolean;
-  repoFullName?: string | null;
   /** Opens the Hosting tab's full logs for a backend card's target. */
   onOpenFullLogs?: (focus: DeploymentLogFocus) => void;
+  /** Opens a branch's pull request in the Pull requests tab, when the role has it. */
+  onOpenPullRequest?: (pullRequestNumber: number) => void;
 }>) {
   const { previews, status, error } = useBranchPreviewsViewModel({
     projectId,
@@ -31,9 +32,9 @@ export function ProductionDeploymentPanel({
     <ProductionDeploymentView
       error={error}
       onOpenFullLogs={onOpenFullLogs}
+      onOpenPullRequest={onOpenPullRequest}
       previews={previews}
       projectId={projectId}
-      repoFullName={repoFullName}
       status={status}
     />
   );

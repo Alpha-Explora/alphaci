@@ -561,12 +561,6 @@
   transform: rotate(90deg);
 }
 
-/* GitHub link hover */
-.runs-gh-link:hover {
-  text-decoration: underline;
-  color: var(--brand-strong);
-}
-
 .runs-run-card:hover {
   border-color: var(--border-tile);
   background: var(--layer-1-hover);
@@ -883,23 +877,6 @@
   font-size: 0.76rem;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.runs-workflow-github-link {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  color: var(--brand);
-  font-size: 0.74rem;
-  font-weight: 700;
-  text-decoration: none;
-  white-space: nowrap;
-}
-
-.runs-workflow-github-link:hover,
-.runs-workflow-github-link:focus-visible {
-  color: var(--brand-strong);
-  text-decoration: underline;
 }
 
 @media (max-width: 760px) {

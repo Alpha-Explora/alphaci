@@ -266,7 +266,7 @@ export function mergeConfirmText(
 
 /** Under GitHub's verbatim refusal: what usually unblocks it. */
 export const MERGE_REFUSED_HINT =
-  `A reviewer must approve the pull request on GitHub, or ${PROMOTION_TARGET_BRANCH}'s branch rules must allow this merge. Then try again.`;
+  `A reviewer must approve the pull request, or ${PROMOTION_TARGET_BRANCH}'s branch rules must allow this merge. Then try again.`;
 
 export function mergedLabel(result: Pick<QaPromotionMergeResult, "sha">, targetBranch: string): string {
   const sha = shortSha(result.sha);

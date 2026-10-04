@@ -20,7 +20,7 @@ import {
   type RunFailureLogResponse,
   type StageFailureLogViewModel,
 } from "../../view-models/use-stage-failure-log-view-model";
-import { ChevronIcon, ExternalIcon, VerdictIcon } from "./pipeline-glyphs";
+import { ChevronIcon, VerdictIcon } from "./pipeline-glyphs";
 
 /* ── The stepper ────────────────────────────────────────────────────────── */
 
@@ -196,9 +196,9 @@ function StageLogs({
 }
 
 /**
- * "4 / 5 passed ▬▬ · 1 still running · 1 failed ▾ · 9m ago · View run", then
- * the check list when asked for. Nothing for a stage that never executed and
- * reported no checks: there is nothing to count and no run to link.
+ * "4 / 5 passed ▬▬ · 1 still running · 1 failed ▾ · 9m ago", then the check
+ * list when asked for. Nothing for a stage that never executed and reported no
+ * checks: there is nothing to count.
  */
 function StageFigures({ stage }: Readonly<{ stage: StageEntry["stage"] }>) {
   const rosterId = useId();
@@ -224,31 +224,21 @@ function StageFigures({ stage }: Readonly<{ stage: StageEntry["stage"] }>) {
         ) : (
           <span className="pipe-stage__none">No per-check results reported</span>
         )}
-        <StageWhenAndWhere stage={stage} executed={executed} />
+        <StageWhen stage={stage} />
       </div>
       {progress && <CheckRoster id={rosterId} checks={stage.checks ?? []} hidden={!rosterOpen} />}
     </>
   );
 }
 
-/** When the stage last reported, and its run on GitHub when it had one. */
-function StageWhenAndWhere({
-  stage,
-  executed,
-}: Readonly<{ stage: StageEntry["stage"]; executed: boolean }>) {
+/** When the stage last reported. */
+function StageWhen({ stage }: Readonly<{ stage: StageEntry["stage"] }>) {
   return (
     <>
       {stage.updatedAt && (
         <time dateTime={stage.updatedAt} title={new Date(stage.updatedAt).toLocaleString()}>
           {relativeTime(stage.updatedAt)}
         </time>
-      )}
-      {executed && stage.githubRunUrl && (
-        <a className="pipe-link" href={stage.githubRunUrl} target="_blank" rel="noopener noreferrer">
-          View run
-          <ExternalIcon />
-          <span className="sr-only"> (opens GitHub in a new tab)</span>
-        </a>
       )}
     </>
   );
@@ -445,13 +435,6 @@ function FailureLogLines({ log }: Readonly<{ log: RunFailureLogResponse }>) {
           {log.stepName ? <span className="pipe-log__step"> › {log.stepName}</span> : null}
           {log.truncated ? <span className="pipe-log__step"> · earlier output omitted</span> : null}
         </p>
-        {log.jobUrl && (
-          <a className="pipe-link" href={log.jobUrl} target="_blank" rel="noopener noreferrer">
-            Full log
-            <ExternalIcon />
-            <span className="sr-only"> (opens GitHub in a new tab)</span>
-          </a>
-        )}
       </div>
       {hidden > 0 && (
         <button

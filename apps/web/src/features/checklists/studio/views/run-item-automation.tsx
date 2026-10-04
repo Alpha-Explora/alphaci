@@ -16,7 +16,7 @@ import {
 import type { QaAutomatedItemResult, QaRunAutomationResult } from "../../model/qa-automation-types";
 import { agoLabel } from "../../model/qa-run-rules";
 import type { QaRunItemStatus } from "../../model/qa-run-types";
-import { ExternalIcon, InfoIcon } from "./studio-icons";
+import { InfoIcon } from "./studio-icons";
 
 export interface ItemAutomationContext {
   result: QaAutomatedItemResult;
@@ -66,17 +66,6 @@ function metaLine(result: QaAutomatedItemResult): string {
     .join(" · ");
 }
 
-/** A secondary way out to GitHub — the tester's workflow stays here. */
-export function ViewRunLink({ href, label = "View run" }: Readonly<{ href: string; label?: string }>) {
-  return (
-    <a className="qa-auto-link" href={href} target="_blank" rel="noopener noreferrer">
-      {label}
-      <ExternalIcon />
-      <span className="sr-only"> (opens GitHub in a new tab)</span>
-    </a>
-  );
-}
-
 /** The expanded details: the sentence, where it came from, and the matched failure. */
 export function AutomatedDetails({
   id,
@@ -95,7 +84,6 @@ export function AutomatedDetails({
           {failure.message ? <p className="qa-auto-detail__message">{failure.message}</p> : null}
         </div>
       ) : null}
-      {result.runUrl ? <ViewRunLink href={result.runUrl} /> : null}
     </div>
   );
 }

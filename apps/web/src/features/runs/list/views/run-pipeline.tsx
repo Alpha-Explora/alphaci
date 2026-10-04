@@ -212,11 +212,7 @@ export function RunPipeline({ run, reduced }: RunPipelineProps) {
                 ? expandedStageData.friendlyMessages
                 : [fallbackStageMessage(expandedStageData)]
               ).map((msg, i) => (
-                <MessageCard
-                  key={i}
-                  message={msg}
-                  githubRunUrl={expandedStageData.githubRunUrl}
-                />
+                <MessageCard key={i} message={msg} />
               ))}
 
               {/*
