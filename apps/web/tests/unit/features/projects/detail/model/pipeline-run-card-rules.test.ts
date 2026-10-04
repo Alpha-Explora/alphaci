@@ -5,6 +5,7 @@ import {
   distinctCommitTitles,
   githubStatusChip,
   headlineChipLabel,
+  loadsFailureLog,
   runDuration,
   runEventLabel,
   showsVerdictReason,
@@ -109,7 +110,10 @@ describe("stageVerdict — a success reconciled with its checks and GitHub", () 
 
     expect(verdict.state).toBe("failed-after-report");
     expect(verdict.tone).toBe("danger");
-    expect(verdict.reason).toContain("Promote to uat was still running");
+    // Not "still running at report time": the job FAILED, after the report,
+    // and the stage detail loads its error (see loadsFailureLog).
+    expect(verdict.reason).toContain("Promote to uat failed after the stage reported success");
+    expect(verdict.reason).not.toContain("still running");
   });
 
   it("says the result is unknown, in amber, when the run is no longer listed", () => {
@@ -228,6 +232,34 @@ describe("stageEntries", () => {
     ]);
 
     expect(entry!.verdict.state).toBe("failed-after-report");
+  });
+});
+
+describe("loadsFailureLog", () => {
+  it("reads the log for a stage that failed or was cancelled", () => {
+    const stages = [stage("quality", "failure"), stage("package", "cancelled")];
+    const entries = stageEntries(stages, []);
+
+    expect(entries.map((entry) => loadsFailureLog(entry))).toEqual([true, true]);
+  });
+
+  it("reads the log for a stage whose run failed after it passed", () => {
+    // The promotion's error is in no report, only in the run's log.
+    const pkg = stage("package", "success", { runId: 7, checks: [["promote-to-uat", "in_progress"]] });
+    const [entry] = stageEntries([pkg], [{ id: 7, status: "completed", conclusion: "failure" }]);
+
+    expect(loadsFailureLog(entry!)).toBe(true);
+  });
+
+  it("asks for nothing for a clean, blocked or stalled stage", () => {
+    const stages = [
+      stage("quality", "success", { runId: 7 }),
+      stage("package", "blocked"),
+      stage("verify", "stalled"),
+    ];
+    const entries = stageEntries(stages, [{ id: 7, status: "completed", conclusion: "success" }]);
+
+    expect(entries.map((entry) => loadsFailureLog(entry))).toEqual([false, false, false]);
   });
 });
 

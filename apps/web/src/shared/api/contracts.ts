@@ -1528,6 +1528,54 @@ export interface StageReport {
    * reporting. Absent means "not known", never "no tools ran".
    */
   checks?: StageCheck[];
+  /**
+   * The figures the stage reported, as stored: test counts and failures,
+   * coverage against its threshold, lint, security, findings and the Sonar
+   * gate.
+   *
+   * `friendlyMessages` turns these into sentences, which suits a failure and
+   * hides a pass: a passing stage's whole value is its numbers ("48 / 48
+   * passed, 87% coverage"). Absent from a backend older than #150 and for a
+   * stage that stored none; every key inside is optional too.
+   */
+  results?: StageResults;
+}
+
+/** What a stage reported about its tests, coverage, lint, security and Sonar. */
+export interface StageResults {
+  tests?: {
+    passed: number;
+    failed: number;
+    total: number;
+    failures?: { name: string; message?: string }[];
+  };
+  coverage?: { pct: number; threshold: number };
+  lint?: {
+    errors: number;
+    warnings: number;
+    issues?: { rule?: string; file?: string; line?: number; message?: string }[];
+  };
+  security?: {
+    high: number;
+    critical: number;
+    items?: { package?: string; id?: string; title?: string; severity?: string }[];
+  };
+  findings?: {
+    secrets?: number;
+    forbiddenLicenses?: number;
+    sbomComponents?: number;
+    undeterminedLicenses?: number;
+    secretItems?: { rule?: string; file?: string; line?: number }[];
+    licenseItems?: { package?: string; version?: string; license?: string }[];
+  };
+  sonar?: {
+    /** `OK`, `ERROR`, or `UNKNOWN` when the analysis ran and the gate could not be read. */
+    gate?: string;
+    /** A setting stopped the analysis, rather than the code failing it. */
+    blockedBy?: string;
+    failedConditions?: { metric: string; status?: string; actual?: string; threshold?: string }[];
+    measures?: Record<string, string>;
+  };
 }
 
 /** One tool's outcome inside a stage. */

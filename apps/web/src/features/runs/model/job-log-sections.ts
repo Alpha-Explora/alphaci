@@ -25,6 +25,11 @@ const GROUP_END = "##[endgroup]";
 
 /** A step that ends like this failed, whether or not it also logged an error. */
 const EXIT_CODE = /Process completed with exit code (\d+)/;
+/* The runner's teardown (credential and orphan-process cleanup). It follows the
+   last step without a group of its own, so without this marker it was read as
+   that step's output, and a failed step ended in 30 lines of cleanup instead
+   of at its error. */
+const POST_JOB = /^Post job cleanup\.?$/;
 
 export type JobLogSeverity = "error" | "warning" | "plain";
 
@@ -168,6 +173,13 @@ export function parseJobLog(raw: string): JobLogSection[] {
 
     if (body.startsWith(GROUP_END)) {
       current.inPreamble = false;
+      continue;
+    }
+
+    if (POST_JOB.test(body.trim())) {
+      if (current.lines.length > 0) sections.push(finish(current));
+      current = draft("Post job cleanup");
+      stamp(current, at);
       continue;
     }
 

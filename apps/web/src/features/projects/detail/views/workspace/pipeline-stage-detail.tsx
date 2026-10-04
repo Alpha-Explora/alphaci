@@ -5,9 +5,17 @@ import { useId, useState } from "react";
 import { checkLabel, checkTone, relativeTime } from "@/features/runs";
 import type { FriendlyMessage, StageId } from "@/shared/api/contracts";
 
+import {
+  failureEntries,
+  logUnavailableMessage,
+  omittedFailuresLabel,
+  type FailureEntry,
+} from "../../model/failure-log-rules";
 import type { RunsViewMode } from "../../model/runs-view-mode";
+import { failedTests, stageResultFigures } from "../../model/stage-result-figures";
 import {
   checkProgress,
+  loadsFailureLog,
   showsVerdictReason,
   stageCoverage,
   stageName,
@@ -20,6 +28,8 @@ import {
   type RunFailureLogResponse,
   type StageFailureLogViewModel,
 } from "../../view-models/use-stage-failure-log-view-model";
+import { useJobLogViewModel } from "../../view-models/use-run-jobs-view-model";
+import { JobLogPanel } from "./job-log-view";
 import { ChevronIcon, VerdictIcon } from "./pipeline-glyphs";
 
 /* ── The stepper ────────────────────────────────────────────────────────── */
@@ -94,12 +104,13 @@ export function StatusChip({
 
 /**
  * The opened stage, in the same card language as QA Studio's automation
- * stages: a tone rule on the left, name and coverage, a status chip, then one
- * line of figures — and, for a stage that failed, the error itself.
+ * stages: a tone rule on the left, name and coverage, a status chip, one line
+ * of check counts, one line of the stage's own figures (tests, coverage,
+ * lint...) — and, for a stage that failed, the error itself.
  *
- * The failure output loads only for a stage that actually RAN (`failure` or
- * `cancelled`). `blocked` and `stalled` have no log, and asking for one would
- * be a wasted GitHub call.
+ * The failure output loads only for a stage with a failed run to read (see
+ * `loadsFailureLog`), which now includes a stage that passed and whose run
+ * failed afterwards: that error is in no report, only in the log.
  */
 export function StageDetail({
   projectId,
@@ -115,7 +126,6 @@ export function StageDetail({
 }>) {
   const { stage, verdict } = entry;
   const headingId = useId();
-  const ran = stage.status === "failure" || stage.status === "cancelled";
 
   return (
     <section
@@ -135,6 +145,7 @@ export function StageDetail({
       </div>
 
       <StageFigures stage={stage} />
+      <ResultFigures results={stage.results} />
 
       {showsVerdictReason(entry) && <p className="pipe-stage__reason">{verdict.reason}</p>}
 
@@ -148,7 +159,7 @@ export function StageDetail({
         </p>
       )}
 
-      {ran && (
+      {loadsFailureLog(entry) && (
         <StageLogs projectId={projectId} runId={stage.runId} viewMode={viewMode} />
       )}
     </section>
@@ -174,7 +185,7 @@ function StageLogs({
     enabled: shown,
   });
 
-  if (viewMode === "deep") return <FailureOutput view={failureLog} />;
+  if (viewMode === "deep") return <FailureOutput projectId={projectId} view={failureLog} />;
 
   return (
     <>
@@ -189,7 +200,7 @@ function StageLogs({
         {logsOpen ? "Hide logs" : "Show logs"}
       </button>
       <div id={logsId} hidden={!logsOpen}>
-        {logsOpen && <FailureOutput view={failureLog} />}
+        {logsOpen && <FailureOutput projectId={projectId} view={failureLog} />}
       </div>
     </>
   );
@@ -327,6 +338,46 @@ function CheckRoster({
 }
 
 /**
+ * The stage's own figures in one row: "Tests 48 / 48 passed · Coverage 87%
+ * (min 80%) · Lint 0 errors · 3 warnings". Shown for passes as much as for
+ * failures — a green stage's numbers are the evidence that it is green — with
+ * a failed figure toned, and the failing tests named under it.
+ */
+function ResultFigures({ results }: Readonly<{ results: StageEntry["stage"]["results"] }>) {
+  const figures = stageResultFigures(results);
+  if (figures.length === 0) return null;
+  return (
+    <>
+      <dl className="pipe-results" aria-label="Stage figures">
+        {figures.map((figure) => (
+          <div key={figure.id} className={`pipe-result pipe-result--${figure.tone}`}>
+            <dt className="pipe-result__label">{figure.label}</dt>
+            <dd className="pipe-result__value">{figure.value}</dd>
+          </div>
+        ))}
+      </dl>
+      <FailedTestList results={results} />
+    </>
+  );
+}
+
+function FailedTestList({ results }: Readonly<{ results: StageEntry["stage"]["results"] }>) {
+  const { failures, more } = failedTests(results);
+  if (failures.length === 0) return null;
+  return (
+    <ul className="pipe-results__failures" aria-label="Failing tests">
+      {failures.map((failure, index) => (
+        <li key={`${failure.name}-${String(index)}`} className="pipe-results__failure">
+          <code className="pipe-results__test">{failure.name}</code>
+          {failure.message && <span className="pipe-results__message">{failure.message}</span>}
+        </li>
+      ))}
+      {more > 0 && <li className="pipe-results__more">+{more} more failing</li>}
+    </ul>
+  );
+}
+
+/**
  * What our grading said: the title and one line, the concrete items, and the
  * generic advice folded away. The advice is the same paragraph on every commit
  * with the same failure, so leaving it open buried the one line that differed.
@@ -367,21 +418,23 @@ function Finding({
 /* ── The error output ───────────────────────────────────────────────────── */
 
 /**
- * Why there is no output, said plainly. Both cases are normal rather than
- * errors: GitHub expires logs, and a run rejected before any job started has
- * no failed job to read.
+ * The backend's plain-English reading of a failure ("The token is missing the
+ * read:org scope"), set apart from the log so it is read first. The log is the
+ * evidence; this is the sentence someone acts on.
  */
-function LogUnavailable({ reason }: Readonly<{ reason?: "no-failed-job" | "log-expired" }>) {
+export function FailureHint({ hint }: Readonly<{ hint: string }>) {
   return (
-    <p className="pipe-stage__reason">
-      {reason === "log-expired"
-        ? "GitHub has expired the log for this run, so the output is no longer available."
-        : "No job in this run reported a failure, which usually means the workflow was rejected before any job started."}
-    </p>
+    <div className="pipe-hint" role="note">
+      <p className="pipe-hint__label">What happened</p>
+      <p className="pipe-hint__text">{hint}</p>
+    </div>
   );
 }
 
-function FailureOutput({ view }: Readonly<{ view: StageFailureLogViewModel }>) {
+function FailureOutput({
+  projectId,
+  view,
+}: Readonly<{ projectId: string; view: StageFailureLogViewModel }>) {
   if (view.status === "loading") {
     return (
       <p className="pipe-stage__reason" role="status">
@@ -401,11 +454,79 @@ function FailureOutput({ view }: Readonly<{ view: StageFailureLogViewModel }>) {
     );
   }
 
-  const log = view.log;
-  if (!log) return null;
-  if (!log.available) return <LogUnavailable reason={log.reason} />;
-  if (!log.lines || log.lines.length === 0) return null;
-  return <FailureLogLines log={log} />;
+  if (!view.log) return null;
+  return <FailedJobs projectId={projectId} log={view.log} />;
+}
+
+/**
+ * Every job that failed in the run, one block each — not only the first. The
+ * promotion job and the production gate run outside the stage's own jobs, and
+ * showing one failure out of two left the second to be found somewhere else.
+ */
+function FailedJobs({ projectId, log }: Readonly<{ projectId: string; log: RunFailureLogResponse }>) {
+  const entries = failureEntries(log);
+  if (entries.length === 0) {
+    return log.available ? null : <p className="pipe-stage__reason">{logUnavailableMessage(log.reason)}</p>;
+  }
+  const omitted = omittedFailuresLabel(log);
+  return (
+    <div className="pipe-failures">
+      {entries.map((entry, index) => (
+        <FailedJob key={entry.jobId ?? `${entry.jobName}-${String(index)}`} projectId={projectId} entry={entry} />
+      ))}
+      {omitted && <p className="pipe-failures__more">{omitted}</p>}
+    </div>
+  );
+}
+
+/** One failed job: where it failed, what it means, what it printed, and the whole log on request. */
+function FailedJob({ projectId, entry }: Readonly<{ projectId: string; entry: FailureEntry }>) {
+  return (
+    <div className="pipe-log">
+      <div className="pipe-log__head">
+        <p className="pipe-log__source">
+          {entry.jobName}
+          {entry.stepName ? <span className="pipe-log__step"> › {entry.stepName}</span> : null}
+          {entry.truncated ? <span className="pipe-log__step"> · earlier output omitted</span> : null}
+        </p>
+      </div>
+      {entry.hint && <FailureHint hint={entry.hint} />}
+      {entry.reason ? (
+        <p className="pipe-stage__reason">{logUnavailableMessage(entry.reason)}</p>
+      ) : (
+        <FailureLogLines lines={entry.lines} />
+      )}
+      {/* An unreadable log stays unreadable in full; offer it only when there is one. */}
+      {entry.jobId != null && !entry.reason && <FullJobLog projectId={projectId} jobId={entry.jobId} />}
+    </div>
+  );
+}
+
+/**
+ * The job's whole log, read in the product. Loaded on the first open and never
+ * again: it is the largest response there is.
+ */
+function FullJobLog({ projectId, jobId }: Readonly<{ projectId: string; jobId: number }>) {
+  const view = useJobLogViewModel({ projectId, jobId });
+  const logId = useId();
+  return (
+    <>
+      <button
+        type="button"
+        className="pipe-text-button pipe-log__more"
+        aria-expanded={view.open}
+        aria-controls={view.open ? logId : undefined}
+        onClick={view.toggle}
+      >
+        {view.open ? "Hide full log" : "View full log"}
+      </button>
+      {view.open && (
+        <div id={logId} className="pipe-job__log">
+          <JobLogPanel view={view} />
+        </div>
+      )}
+    </>
+  );
 }
 
 /**
@@ -421,21 +542,14 @@ const VISIBLE_TAIL_LINES = 12;
  * all of it put the failure at the bottom of a scrolling box, below forty lines
  * of provisioning output.
  */
-function FailureLogLines({ log }: Readonly<{ log: RunFailureLogResponse }>) {
+function FailureLogLines({ lines }: Readonly<{ lines: readonly string[] }>) {
   const [showAll, setShowAll] = useState(false);
-  const all = log.lines ?? [];
-  const hidden = Math.max(0, all.length - VISIBLE_TAIL_LINES);
-  const shown = showAll || hidden === 0 ? all : all.slice(-VISIBLE_TAIL_LINES);
+  if (lines.length === 0) return null;
+  const hidden = Math.max(0, lines.length - VISIBLE_TAIL_LINES);
+  const shown = showAll || hidden === 0 ? lines : lines.slice(-VISIBLE_TAIL_LINES);
 
   return (
-    <div className="pipe-log">
-      <div className="pipe-log__head">
-        <p className="pipe-log__source">
-          {log.jobName}
-          {log.stepName ? <span className="pipe-log__step"> › {log.stepName}</span> : null}
-          {log.truncated ? <span className="pipe-log__step"> · earlier output omitted</span> : null}
-        </p>
-      </div>
+    <>
       {hidden > 0 && (
         <button
           type="button"
@@ -462,6 +576,6 @@ function FailureLogLines({ log }: Readonly<{ log: RunFailureLogResponse }>) {
           ))}
         </code>
       </pre>
-    </div>
+    </>
   );
 }

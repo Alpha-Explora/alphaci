@@ -199,12 +199,15 @@ function reconciledVerdict(
 ): StageVerdict | null {
   const names = running.join(", ");
   if (liveRun?.status === "completed" && isFailedConclusion(liveRun.conclusion)) {
-    const tail = running.length > 0 ? ` ${names} was still running at report time.` : "";
+    // The job that failed runs after the stage reports (the promotion, the
+    // production gate), so its error is NOT in the report: the stage detail
+    // loads the run's failure log for this state and shows it below.
+    const who = running.length > 0 ? names : "A job in this run";
     return {
       state: "failed-after-report",
       label: "Failed after passing",
       tone: "danger",
-      reason: `The stage reported success, then GitHub finished the run as failed.${tail}`,
+      reason: `${who} failed after the stage reported success. Its error is below.`,
     };
   }
   if (running.length === 0 || liveRun?.status === "completed") return null;
@@ -529,6 +532,20 @@ export function showsVerdictReason(entry: StageEntry): boolean {
     default:
       return true;
   }
+}
+
+/**
+ * Whether the opened stage loads its run's failure log.
+ *
+ * A stage that RAN and failed or was cancelled has one, and so does a stage
+ * that passed and whose run then failed: the failing job (`promote-to-uat /
+ * Create Promotion PR`) runs outside the report's needs, so the log is the only
+ * place its error is. `blocked`, `stalled` and waiting stages never ran, and
+ * asking GitHub for their log would be a wasted call.
+ */
+export function loadsFailureLog(entry: StageEntry): boolean {
+  if (entry.stage.status === "failure" || entry.stage.status === "cancelled") return true;
+  return entry.verdict.state === "failed-after-report";
 }
 
 /**

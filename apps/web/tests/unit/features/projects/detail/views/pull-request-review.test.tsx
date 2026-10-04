@@ -22,6 +22,7 @@ jest.mock(
     getProjectPullRequestFiles: jest.fn(),
     getProjectPullRequestDetail: jest.fn(),
     mergeProjectPullRequest: jest.fn(),
+    getProjectJobLog: jest.fn(),
   }),
 );
 
@@ -151,8 +152,20 @@ describe("PullRequestsTab review panel", () => {
   it("shows the checks in the system instead of linking out for them", async () => {
     await render();
 
+    // All green: one count line, folded. The list is one click away.
+    expect(host.querySelector(".ws-checks__summary")?.textContent).toBe("2 checks · 2 passed");
+    expect(host.textContent).not.toContain("SonarCloud Code Analysis");
+    const toggle = [...host.querySelectorAll("button")].find(
+      (button) => button.textContent === "Show all 2 checks",
+    );
+    await act(async () => toggle?.click());
+
     expect(host.textContent).toContain("ALPHACI Env Guard / env-guard");
     expect(host.textContent).toContain("SonarCloud Code Analysis");
+    // The old backend sends no workflow and no detail: one flat group, no
+    // disclosures, and nothing broken.
+    expect(host.querySelector(".ws-checkgroup__title")?.textContent).toContain("Other checks");
+    expect(host.querySelector(".ws-check details")).toBeNull();
   });
 
   it("no longer offers 'Review and merge on GitHub' as the way forward", async () => {
@@ -163,6 +176,17 @@ describe("PullRequestsTab review panel", () => {
     expect(host.textContent).not.toContain("Open on GitHub");
     expect(host.querySelector('a[href*="github.com"]')).toBeNull();
     expect(host.textContent).not.toContain("details ↗");
+  });
+
+  it("lays the merge state and the merge action out as one Merge block under the checks", async () => {
+    await render();
+
+    const merge = host.querySelector<HTMLElement>(".ws-merge");
+    expect(merge?.querySelector(".ws-merge__title")?.textContent).toBe("Merge");
+    expect(merge?.querySelector(".ws-mergestate")).not.toBeNull();
+    expect([...(merge?.querySelectorAll("button") ?? [])].some((button) => button.textContent === "Merge")).toBe(true);
+    const checks = host.querySelector(".ws-checks")!;
+    expect(checks.compareDocumentPosition(merge!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
   it("explains a blocked pull request rather than only reporting it", async () => {

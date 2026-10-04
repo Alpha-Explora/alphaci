@@ -13,6 +13,7 @@ import {
 import { canOpenPoStudio } from "../../model/project-detail-tab-rules";
 import { CreatePullRequestView } from "./create-pull-request-view";
 import { DiffView } from "./diff-view";
+import { PullRequestChecks } from "./pull-request-checks";
 import {
   WorkspaceEmpty,
   WorkspaceError,
@@ -20,7 +21,6 @@ import {
 } from "./workspace-states";
 import {
   usePullRequestReviewViewModel,
-  type PullRequestCheck,
   type PullRequestDetail,
   type MergeMethod,
   type PullRequestDetailResponse,
@@ -54,9 +54,9 @@ function startFocus(focus: number | null | undefined): number | null {
  * and opening a new one between any two branches.
  *
  * ALPHACI is where the team works, so proposing, reading and merging a change
- * all happen here. The pull requests are still GitHub's — branch protection
- * only counts reviews and merges GitHub knows about — which is why "Open on
- * GitHub" stays available as a secondary link rather than the way forward.
+ * all happen here. The pull requests are still stored on GitHub — branch
+ * protection only counts reviews and merges GitHub knows about — but nobody
+ * goes there to read or decide one: every check, error and merge is here.
  */
 export function PullRequestsTab({
   projectId,
@@ -363,11 +363,9 @@ function PullRequestFiles({
  * This replaced a link reading "Review and merge on GitHub", which was an
  * admission that the product tracked the pull request and then handed the
  * actual decision somewhere else. The two things the decision turns on are
- * here: what the checks say, and whether GitHub will allow the merge.
- *
- * GitHub is still linked, because a diff comment thread and a second
- * reviewer's approval live there. The difference is that it is no longer the
- * only way forward.
+ * here, in reading order: what the checks say — every failure with its own
+ * error and log — then one Merge block saying whether the merge is allowed
+ * and doing it.
  */
 function PullRequestReview({
   projectId,
@@ -407,40 +405,21 @@ function PullRequestReview({
 
   return (
     <div className="ws-prreview">
-      <PullRequestChecks checks={detail.checks} />
-      <MergeState detail={detail} />
-      <div className="ws-prreview__actions">
-        <MergeControl
-          pr={detail.pullRequest}
-          review={review}
-          appRole={appRole}
-          onOpenPoStudio={onOpenPoStudio}
-        />
-      </div>
-      <MergeOutcome review={review} />
+      <PullRequestChecks projectId={projectId} checks={detail.checks} />
+      <section className="ws-merge" aria-label="Merge">
+        <h5 className="ws-merge__title">Merge</h5>
+        <MergeState detail={detail} />
+        <div className="ws-merge__actions">
+          <MergeControl
+            pr={detail.pullRequest}
+            review={review}
+            appRole={appRole}
+            onOpenPoStudio={onOpenPoStudio}
+          />
+        </div>
+        <MergeOutcome review={review} />
+      </section>
     </div>
-  );
-}
-
-/** What GitHub's checks say, which is the first half of the decision. */
-function PullRequestChecks({
-  checks,
-}: Readonly<{ checks: PullRequestCheck[] }>) {
-  if (checks.length === 0) {
-    return <p className="ws-hint">No checks have reported for this commit.</p>;
-  }
-
-  return (
-    <ul className="ws-prchecks">
-      {checks.map((check, index) => (
-        <li key={`${check.name}-${String(index)}`} className="ws-prchecks__row">
-          <span className={`ws-pill ws-pill--${checkTone(check)}`}>
-            {check.conclusion ?? check.status}
-          </span>
-          <span className="ws-prchecks__name">{check.name}</span>
-        </li>
-      ))}
-    </ul>
   );
 }
 
@@ -591,20 +570,4 @@ function MergeOutcome({
       {review.mergeMessage}
     </p>
   );
-}
-
-/** A check's conclusion as one of the four workspace pill tones. */
-function checkTone(
-  check: PullRequestCheck,
-): "success" | "failure" | "running" | "neutral" {
-  if (check.status !== "completed") return "running";
-  if (check.conclusion === "success") return "success";
-  if (
-    check.conclusion === "failure" ||
-    check.conclusion === "timed_out" ||
-    check.conclusion === "error"
-  ) {
-    return "failure";
-  }
-  return "neutral";
 }
