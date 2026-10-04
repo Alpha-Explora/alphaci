@@ -1473,7 +1473,6 @@ html[data-theme="light"] {
 @media (max-width: 768px) {
 
   .app-sidebar:hover .sidebar-nav-item-label,
-  .app-sidebar:hover .sidebar-section-label,
   .app-sidebar:hover .sidebar-user-info,
   .app-sidebar:hover .sidebar-signout-label,
   .app-sidebar:hover .sidebar-nav-count {

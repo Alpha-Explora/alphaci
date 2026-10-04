@@ -328,18 +328,43 @@ function SidebarRoleBadge({ appRole }: Readonly<{ appRole: WorkspaceAppRole }>) 
   );
 }
 
-/* ── Section divider label ──────────────────────────────────────────────────── */
+/* ── Section divider ────────────────────────────────────────────────────────── */
 
-/**
- * Renders both forms at once and lets CSS choose: a hairline rule while the
- * rail is closed, the words once it opens. Swapping them in JS would mean the
- * rail re-flowed mid-transition.
- */
-function SidebarSectionLabel({ text }: { text: string }) {
+/** A hairline between groups, open or closed. The groups need no names. */
+function SidebarDivider() {
   return (
     <div className="sidebar-section" aria-hidden="true">
       <span className="sidebar-section-divider" />
-      <span className="sidebar-section-label">{text}</span>
+    </div>
+  );
+}
+
+/* ── Pin toggle ─────────────────────────────────────────────────────────────── */
+
+/**
+ * The rail's first row: pins it open (the page moves aside) or lets it fold
+ * back to opening on hover. Laid out like a nav item, its icon in the same box,
+ * so it sits on the rail's midline closed and gains its label open.
+ *
+ * One name, pressed or not, so a screen reader hears the state rather than a
+ * label that flips under the cursor; the tooltip says what a press will do.
+ */
+function SidebarPinToggle({ pinned, onToggle }: Readonly<{ pinned: boolean; onToggle: () => void }>) {
+  return (
+    <div className="sidebar-toggle-row">
+      <button
+        type="button"
+        className="sidebar-nav-item app-sidebar-toggle"
+        aria-pressed={pinned}
+        title={pinned ? "Collapse sidebar" : "Keep sidebar open"}
+        onClick={onToggle}
+      >
+        <span className="sidebar-nav-item-icon">
+          <SidebarPanelIcon pinned={pinned} />
+        </span>
+        <span className="sidebar-nav-item-label">Keep open</span>
+      </button>
+      <SidebarDivider />
     </div>
   );
 }
@@ -397,7 +422,6 @@ export function AppNav({
           full width, so the rail keeps its own brand mark and the expanded
           rail paints over this bar rather than beside it. */}
       <AppHeader guest={guest} session={session} appRole={appRole} avatarInitial={avatarInitial}
-        sidebarPinned={sidebarPinned} onToggleSidebar={toggleSidebarPinned}
         workspaces={workspaceVm.workspaces} otherTeams={workspaceVm.otherTeams}
         workspaceStatus={workspaceVm.status}
         loadWorkspaces={loadWorkspaces} onWorkspaceSwitch={onWorkspaceSwitch}
@@ -405,15 +429,21 @@ export function AppNav({
       <AppSidebar pathname={pathname} guest={guest} mainItems={mainItems} reduced={reduced}
         isPlatformAdmin={isPlatformAdmin} unreadCount={notifications.unreadCount}
         hoverSuppressed={hoverSuppressed}
+        pinned={sidebarPinned}
+        onTogglePinned={() => {
+          // Unpinning under the cursor would leave the rail open on hover, so
+          // the press would seem to do nothing: fold it now, as a nav click does.
+          if (sidebarPinned) setHoverSuppressed(true);
+          toggleSidebarPinned();
+        }}
         onNavigate={() => setHoverSuppressed(true)}
         onPointerLeave={() => setHoverSuppressed(false)} />
     </>
   );
 }
 
-function AppHeader({ guest, session, appRole, avatarInitial, sidebarPinned, onToggleSidebar, workspaces, otherTeams, workspaceStatus, loadWorkspaces, onWorkspaceSwitch, onLogout, isLoggingOut }: Readonly<{
+function AppHeader({ guest, session, appRole, avatarInitial, workspaces, otherTeams, workspaceStatus, loadWorkspaces, onWorkspaceSwitch, onLogout, isLoggingOut }: Readonly<{
   guest: boolean; session: AuthSession | null; appRole: WorkspaceAppRole; avatarInitial: string;
-  sidebarPinned: boolean; onToggleSidebar: () => void;
   workspaces: Parameters<typeof WorkspaceSwitcher>[0]["workspaces"];
   otherTeams: NonNullable<Parameters<typeof WorkspaceSwitcher>[0]["otherTeams"]>;
   workspaceStatus: NonNullable<Parameters<typeof WorkspaceSwitcher>[0]["status"]>;
@@ -423,19 +453,6 @@ function AppHeader({ guest, session, appRole, avatarInitial, sidebarPinned, onTo
   return (
     <header className="app-header">
       <div className="app-header-left">
-        {/* One name, pressed or not, so a screen reader hears the state rather
-            than a label that flips under the cursor; the tooltip says what a
-            press will do. */}
-        <button
-          type="button"
-          className="app-sidebar-toggle"
-          aria-pressed={sidebarPinned}
-          aria-label="Keep sidebar open"
-          title={sidebarPinned ? "Collapse sidebar" : "Keep sidebar open"}
-          onClick={onToggleSidebar}
-        >
-          <SidebarPanelIcon pinned={sidebarPinned} />
-        </button>
         <Link href="/home" className="app-header-brand" aria-label="ALPHACI — home">
           <Image src="/brand-logo.png" alt="ALPHACI" width={138} height={46} unoptimized priority className="app-header-brand-image" />
         </Link>
@@ -499,15 +516,16 @@ const MAIN_ITEMS: Record<SidebarMainItem, {
   inbox: { href: "/inbox", label: "Inbox", icon: InboxIcon, isActive: (p) => p === "/inbox" },
 };
 
-function AppSidebar({ pathname, guest, mainItems, reduced, isPlatformAdmin, unreadCount, hoverSuppressed, onNavigate, onPointerLeave }: Readonly<{
+function AppSidebar({ pathname, guest, mainItems, reduced, isPlatformAdmin, unreadCount, hoverSuppressed, pinned, onTogglePinned, onNavigate, onPointerLeave }: Readonly<{
   pathname: string; guest: boolean; mainItems: readonly SidebarMainItem[]; reduced: boolean; isPlatformAdmin: boolean; unreadCount: number;
-  hoverSuppressed: boolean; onNavigate: () => void; onPointerLeave: () => void;
+  hoverSuppressed: boolean; pinned: boolean; onTogglePinned: () => void; onNavigate: () => void; onPointerLeave: () => void;
 }>) {
+  const hasAccountItems = !guest || isPlatformAdmin;
   return (
     <aside className="app-sidebar" data-hover-suppressed={hoverSuppressed ? "true" : "false"} onPointerLeave={onPointerLeave} aria-label="Primary navigation">
       <div className="sidebar-edge-gradient" aria-hidden="true" />
+      <SidebarPinToggle pinned={pinned} onToggle={onTogglePinned} />
       <nav className="sidebar-nav" aria-label="Primary">
-        <SidebarSectionLabel text="Main" />
         {mainItems.map((id) => {
           const item = MAIN_ITEMS[id];
           return (
@@ -523,7 +541,7 @@ function AppSidebar({ pathname, guest, mainItems, reduced, isPlatformAdmin, unre
             />
           );
         })}
-        <SidebarSectionLabel text="Account" />
+        {hasAccountItems ? <SidebarDivider /> : null}
         {!guest && <SidebarNavItem href="/settings" label="Settings" icon={SettingsIcon} isActive={pathname === "/settings"} reduced={reduced} onNavigate={onNavigate} />}
         {isPlatformAdmin && <SidebarNavItem href="/admin" label="Admin" icon={AdminIcon} isActive={pathname.startsWith("/admin")} reduced={reduced} onNavigate={onNavigate} />}
       </nav>

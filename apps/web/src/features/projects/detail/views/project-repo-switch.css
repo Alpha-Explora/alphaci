@@ -251,12 +251,15 @@
  * Their five tabs sit at the right of the title instead of on a row of their
  * own. The header's divider is the only rule: the strip drops its own.
  * Two classes: beats `.project-detail-header` (0,1,0) whichever sheet loads
- * last. */
+ * last. No border of its own: the sections are a nav bar across the page,
+ * its underline the header's only rule, so the Overview summary under it
+ * reads as the panel's first row rather than a second header. */
 .project-detail-header.project-detail-header--tabs {
   align-items: flex-end;
   flex-wrap: wrap;
   row-gap: 0.75rem;
   padding-bottom: 0.6rem;
+  border-bottom: 0;
 }
 
 /* Flush with the Clone box and the cards under it, so the end fade (there for
@@ -362,13 +365,8 @@
   min-width: 0;
 }
 
-/* `--tabs` (QA Team, Product owner): the sections are a nav bar across the
- * page, its underline the header's only rule, so the Overview summary under
- * it reads as the panel's first row rather than a second header. */
-.project-detail-header.project-detail-header--tabs {
-  border-bottom: 0;
-}
-
+/* `--tabs` (QA Team, Product owner): the aside carries the nav bar's
+ * underline (the header itself has none; see above). */
 .project-detail-header--tabs > .project-detail-header__aside,
 .project-detail-header--tabs > .project-folder-header__aside {
   justify-self: stretch;
@@ -404,8 +402,7 @@
  * on one row, so the header spends one short row above the identity. */
 .project-detail-header--summary:not(.project-detail-header--tabs) > .project-folder-header__aside,
 .project-detail-header--bare:not(.project-detail-header--tabs) > .project-folder-header__aside {
-  flex-direction: row;
-  flex-wrap: wrap;
+  flex-flow: row wrap;
   align-items: center;
   justify-content: flex-end;
   column-gap: 1rem;
