@@ -1,16 +1,22 @@
-/* ── Repository Overview: Clone ─────────────────────────────────────────────
-   GitHub's Clone box: a segmented HTTPS / SSH / GitHub CLI switch, a
-   read-only monospace field with a copy button, and a one-line hint.
-   Tokens only, so both themes hold.
+/* ── Project header on Overview: Clone ──────────────────────────────────────
+   GitHub's Clone box: the title and a segmented HTTPS / SSH / GitHub CLI
+   switch on one row, a read-only monospace field with a copy button, and a
+   one-line hint. No card chrome: it sits beside the page title, three rows
+   tall like the title block. Tokens only, so both themes hold.
    ------------------------------------------------------------------------- */
 
 .clone-card {
   display: grid;
-  gap: 0.75rem;
-  padding: 1.1rem 1.25rem;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-card);
-  background: var(--bg-elevated);
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.clone-card__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem 0.75rem;
 }
 
 /* Two classes: `.tab-content-panel h2`-style rules must not restyle it. */
@@ -26,16 +32,15 @@
 
 .clone-card__tabs {
   display: inline-flex;
-  justify-self: start;
   max-width: 100%;
   overflow-x: auto;
-  padding: 0.2rem;
+  padding: 0.15rem;
   border: 1px solid var(--border);
   border-radius: 0.6rem;
 }
 
 .clone-card__tab {
-  padding: 0.35rem 0.85rem;
+  padding: 0.25rem 0.75rem;
   border: 0;
   border-radius: 0.45rem;
   background: transparent;
@@ -106,7 +111,8 @@
   color: var(--brand);
 }
 
-.clone-card__hint {
+/* Two classes: beats `.project-detail-header p` (0,1,1), the header it sits in. */
+.clone-card .clone-card__hint {
   margin: 0;
   font-size: 0.78rem;
   color: var(--text-muted);
