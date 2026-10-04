@@ -319,3 +319,52 @@
     transform: none;
   }
 }
+
+/* ── Clone beside the title (Overview, every role) ──────────────────────
+ * The aside (badges, sections or the repository switch) keeps the top
+ * right; under it the identity and the Clone box share a row, left and
+ * right, centred on each other. Last in the sheet, same specificity: it
+ * overrides the `--tabs` alignment above at every width. */
+.project-detail-header.project-detail-header--clone {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 36rem);
+  grid-template-areas:
+    "aside    aside"
+    "identity clone";
+  align-items: center;
+  gap: 0.75rem 2rem;
+}
+
+.project-detail-header--clone > .project-detail-header__identity,
+.project-detail-header--clone > .project-folder-header__identity {
+  grid-area: identity;
+  min-width: 0;
+}
+
+.project-detail-header--clone > .project-detail-header__aside,
+.project-detail-header--clone > .project-folder-header__aside {
+  grid-area: aside;
+  justify-self: end;
+}
+
+.project-detail-header__clone {
+  grid-area: clone;
+  min-width: 0;
+}
+
+/* One column, in reading order: the title, the aside, then Clone. */
+@media (max-width: 900px) {
+  .project-detail-header.project-detail-header--clone {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      "identity"
+      "aside"
+      "clone";
+  }
+
+  .project-detail-header--clone > .project-detail-header__aside,
+  .project-detail-header--clone > .project-folder-header__aside {
+    justify-self: stretch;
+    align-items: flex-start;
+  }
+}

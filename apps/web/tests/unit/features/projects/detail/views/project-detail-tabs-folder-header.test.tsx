@@ -6,11 +6,12 @@ import type { ProjectFolderViewModel } from "../../../../../../src/features/proj
 import type { AppRole, ProvisionedProject } from "../../../../../../src/shared/api/contracts";
 
 const push = jest.fn();
+let mockTab = "hosting";
 jest.mock("next/navigation", () => ({ useRouter: () => ({ push }) }));
 
 jest.mock("../../../../../../src/features/projects/detail/view-models/use-project-detail-tabs-view-model", () => ({
   useProjectDetailTabsViewModel: () => ({
-    tab: "hosting",
+    tab: mockTab,
     setTab: jest.fn(),
     visibleTabs: ["overview", "hosting", "settings"],
     status: "ready",
@@ -20,6 +21,10 @@ jest.mock("../../../../../../src/features/projects/detail/view-models/use-projec
 
 jest.mock("../../../../../../src/features/projects/detail/views/hosting-tab", () => ({
   HostingTab: () => <p>hosting panel</p>,
+}));
+
+jest.mock("../../../../../../src/features/projects/detail/views/overview-tab", () => ({
+  OverviewTab: () => <p>overview panel</p>,
 }));
 
 const PROJECT = {
@@ -61,6 +66,7 @@ afterEach(() => {
   if (root) act(() => root?.unmount());
   root = null;
   document.body.innerHTML = "";
+  mockTab = "hosting";
   jest.clearAllMocks();
 });
 
@@ -131,6 +137,43 @@ describe("ProjectDetailTabs header, product view", () => {
       expect(container.querySelector(".project-detail-header--tabs")).toBeNull();
       expect(container.querySelector('.project-sections[data-tour="project-detail-tabs"] > .project-tabs')).not.toBeNull();
       expect(container.querySelector('[role="radiogroup"]')).not.toBeNull();
+      unmount();
+    }
+  });
+});
+
+/* Overview puts Clone in the header beside the title, for every role, so
+ * Production Deployment is the panel's first row. */
+describe("ProjectDetailTabs header, Clone on Overview", () => {
+  it("sits beside the title with the aside above it, for every role and header", () => {
+    mockTab = "overview";
+    for (const appRole of ["qa", "lead", "member", "admin"] as const) {
+      for (const folder of [FOLDER, undefined]) {
+        const container = render(folder, appRole);
+        const header = container.querySelector(".project-detail-header");
+        expect(header?.classList.contains("project-detail-header--clone")).toBe(true);
+        const clone = header?.querySelector(":scope > .project-detail-header__clone");
+        expect(clone?.querySelector(".clone-card__input")).not.toBeNull();
+        expect(header?.querySelector(":scope > .project-detail-header__aside, :scope > .project-folder-header__aside")).not.toBeNull();
+        expect(container.querySelector(".project-sections .clone-card")).toBeNull();
+        unmount();
+      }
+    }
+  });
+
+  it("keeps the product view's sections in the header beside Clone", () => {
+    mockTab = "overview";
+    const container = render(FOLDER, "qa");
+    const header = container.querySelector(".project-folder-header");
+    expect(header?.classList.contains("project-detail-header--tabs")).toBe(true);
+    expect(header?.querySelector('.project-folder-header__aside [role="tablist"]')).not.toBeNull();
+  });
+
+  it("leaves the header without Clone on every other tab", () => {
+    for (const appRole of ["qa", "member"] as const) {
+      const container = render(FOLDER, appRole);
+      expect(container.querySelector(".project-detail-header--clone")).toBeNull();
+      expect(container.querySelector(".clone-card")).toBeNull();
       unmount();
     }
   });

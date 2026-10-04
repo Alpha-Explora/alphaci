@@ -43,9 +43,10 @@ function TerminalIcon() {
 }
 
 /**
- * "Clone" on the repository Overview, as GitHub offers it: HTTPS, SSH or the
- * GitHub CLI, one read-only field and a copy button. Users never open GitHub,
- * so this is where a Developer gets the address to clone from.
+ * "Clone" in the project header on Overview, as GitHub offers it: HTTPS, SSH
+ * or the GitHub CLI, one read-only field and a copy button. Users never open
+ * GitHub, so this is where a Developer gets the address to clone from. No
+ * card of its own: it sits beside the title.
  */
 export function CloneCard({
   repoFullName,
@@ -91,27 +92,29 @@ export function CloneCard({
 
   return (
     <section className="clone-card" aria-labelledby={`${baseId}-title`}>
-      <h2 className="clone-card__title" id={`${baseId}-title`}>
-        <TerminalIcon />
-        Clone
-      </h2>
-      <div className="clone-card__tabs" role="tablist" aria-label="Clone with">
-        {CLONE_METHODS.map((entry, index) => (
-          <button
-            key={entry.id}
-            id={tabId(entry.id)}
-            type="button"
-            role="tab"
-            className="clone-card__tab"
-            aria-selected={entry.id === method}
-            aria-controls={panelId}
-            tabIndex={entry.id === method ? 0 : -1}
-            onClick={() => choose(entry.id)}
-            onKeyDown={(event) => onTabKeyDown(event, index)}
-          >
-            {entry.label}
-          </button>
-        ))}
+      <div className="clone-card__head">
+        <h2 className="clone-card__title" id={`${baseId}-title`}>
+          <TerminalIcon />
+          Clone
+        </h2>
+        <div className="clone-card__tabs" role="tablist" aria-label="Clone with">
+          {CLONE_METHODS.map((entry, index) => (
+            <button
+              key={entry.id}
+              id={tabId(entry.id)}
+              type="button"
+              role="tab"
+              className="clone-card__tab"
+              aria-selected={entry.id === method}
+              aria-controls={panelId}
+              tabIndex={entry.id === method ? 0 : -1}
+              onClick={() => choose(entry.id)}
+              onKeyDown={(event) => onTabKeyDown(event, index)}
+            >
+              {entry.label}
+            </button>
+          ))}
+        </div>
       </div>
       <div id={panelId} role="tabpanel" aria-labelledby={tabId(method)} className="clone-card__panel">
         <div className="clone-card__field">

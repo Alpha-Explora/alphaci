@@ -11,10 +11,12 @@ import { qaScopeFromFolder, withProjectOnPage, type QaScope } from "@/features/c
 import { projectStatusVariant } from "../../model/projects-rules";
 import type { ProvisionedProject } from "@/features/projects";
 import type { AppRole } from "@/shared/api/contracts";
+import { cloneValue } from "../model/clone-rules";
 import { seesProjectAsProduct, type ProjectDetailTab } from "../model/project-detail-tab-rules";
 import type { ProjectFolderViewModel } from "../view-models/use-project-folder-view-model";
 import { useProjectDetailTabsViewModel } from "../view-models/use-project-detail-tabs-view-model";
 import type { ProjectDetailTabsViewModel } from "../view-models/use-project-detail-tabs-view-model";
+import { CloneCard } from "./clone-card";
 import { ProjectRepoSwitch } from "./project-repo-switch";
 import { projectDetailTabGroups } from "./project-detail-tab-config";
 import { ProjectDetailTopTabs } from "./project-detail-top-tabs";
@@ -122,6 +124,7 @@ export function ProjectDetailTabs({
     />
   );
   const headerTabs = productView ? <div data-tour="project-detail-tabs">{tabs}</div> : undefined;
+  const clone = overviewClone(vm.tab, project);
 
   return (
     <section
@@ -135,6 +138,7 @@ export function ProjectDetailTabs({
         vm={vm}
         productView={productView}
         tabs={headerTabs}
+        clone={clone}
       />
       <div
         className="project-sections"
@@ -159,6 +163,18 @@ export function ProjectDetailTabs({
 }
 
 /**
+ * Clone, on Overview only and for every role: beside the title, so Production
+ * Deployment is the panel's first row. Other tabs keep the short header, and
+ * a name that cannot be cloned gets no empty column.
+ */
+function overviewClone(tab: ProjectDetailTab, project: ProvisionedProject): ReactNode {
+  if (tab !== "overview" || !cloneValue("https", project.repoFullName, project.repoUrl)) {
+    return undefined;
+  }
+  return <CloneCard repoFullName={project.repoFullName} repoUrl={project.repoUrl} />;
+}
+
+/**
  * The Project header for one repository of a named multi-repository Project,
  * else the repository's own header.
  */
@@ -169,6 +185,7 @@ function ProjectPageHeader({
   vm,
   productView,
   tabs,
+  clone,
 }: Readonly<{
   project: ProvisionedProject;
   external: boolean;
@@ -176,9 +193,10 @@ function ProjectPageHeader({
   vm: ProjectDetailTabsViewModel;
   productView: boolean;
   tabs: ReactNode;
+  clone: ReactNode;
 }>) {
   if (!folder?.projectName) {
-    return <ProjectDetailHeader project={project} external={external} tabs={tabs} />;
+    return <ProjectDetailHeader project={project} external={external} tabs={tabs} clone={clone} />;
   }
   return (
     <ProjectFolderHeader
@@ -190,29 +208,52 @@ function ProjectPageHeader({
       visibleTabs={vm.visibleTabs}
       productView={productView}
       tabs={tabs}
+      clone={clone}
     />
   );
+}
+
+/**
+ * The header's modifiers. `--tabs`: the sections sit in it (QA Team, Product
+ * owner). `--clone`: a grid of the aside across the top right, then the
+ * identity and the Clone box side by side under it.
+ */
+function headerClassName(base: string, tabs: ReactNode, clone: ReactNode): string {
+  return [base, tabs ? "project-detail-header--tabs" : "", clone ? "project-detail-header--clone" : ""]
+    .filter(Boolean)
+    .join(" ");
+}
+
+function HeaderClone({ clone }: Readonly<{ clone: ReactNode }>) {
+  if (!clone) return null;
+  return <div className="project-detail-header__clone">{clone}</div>;
 }
 
 /**
  * The page's identity. It is the route's only heading, so it is the h1 and
  * wears the same title style as the other full pages. With `tabs` (the QA
  * Team's and a Product owner's page) the sections sit at its right, under the
- * status badges.
+ * status badges; with `clone` (Overview) the Clone box sits at its right.
  */
 function ProjectDetailHeader({
   project,
   external,
   tabs,
-}: Readonly<{ project: ProvisionedProject; external: boolean; tabs?: ReactNode }>) {
+  clone,
+}: Readonly<{
+  project: ProvisionedProject;
+  external: boolean;
+  tabs?: ReactNode;
+  clone?: ReactNode;
+}>) {
   const badges = <ProjectStatusBadges project={project} external={external} />;
   return (
-    <div className={`project-detail-header${tabs ? " project-detail-header--tabs" : ""}`}>
-      <div>
+    <div className={headerClassName("project-detail-header", tabs, clone)}>
+      <div className="project-detail-header__identity">
         <h1 className="workflow-page-title">{project.repoFullName}</h1>
         <p>{project.serviceName}</p>
       </div>
-      {tabs ? (
+      {tabs || clone ? (
         <div className="project-detail-header__aside">
           {badges}
           {tabs}
@@ -220,6 +261,7 @@ function ProjectDetailHeader({
       ) : (
         badges
       )}
+      <HeaderClone clone={clone} />
     </div>
   );
 }
@@ -249,7 +291,8 @@ function ProjectStatusBadges({
  * to its sibling repositories sits at the top right. The QA Team and Product
  * owners get no switch (they judge the Project as one product) and no
  * "Manage project" (their Checklists tab carries the Project's QA); their
- * sections take its place.
+ * sections take its place. On Overview the Clone box sits under the aside,
+ * level with the identity.
  */
 function ProjectFolderHeader({
   project,
@@ -260,6 +303,7 @@ function ProjectFolderHeader({
   visibleTabs,
   productView,
   tabs,
+  clone,
 }: Readonly<{
   project: ProvisionedProject;
   external: boolean;
@@ -269,11 +313,12 @@ function ProjectFolderHeader({
   visibleTabs: ReadonlyArray<ProjectDetailTab>;
   productView: boolean;
   tabs?: ReactNode;
+  clone?: ReactNode;
 }>) {
   const reduceMotion = useReducedMotion();
   return (
     <motion.div
-      className={`project-detail-header project-folder-header${tabs ? " project-detail-header--tabs" : ""}`}
+      className={headerClassName("project-detail-header project-folder-header", tabs, clone)}
       initial={reduceMotion ? false : { opacity: 0, y: -4 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
@@ -305,6 +350,7 @@ function ProjectFolderHeader({
         ) : null}
         {tabs}
       </div>
+      <HeaderClone clone={clone} />
     </motion.div>
   );
 }

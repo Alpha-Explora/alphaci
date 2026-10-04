@@ -7,16 +7,15 @@ import { ProductionDeploymentPanel } from "@/features/projects/previews";
 import type { ProvisionedProject } from "@/features/projects";
 import type { ProjectDetailTabsViewModel } from "../view-models/use-project-detail-tabs-view-model";
 import { showOverviewProductionReadiness } from "../model/project-detail-tab-rules";
-import { CloneCard } from "./clone-card";
 
 /**
- * The repository Overview, the same for every role: how to clone it (HTTPS /
- * SSH / GitHub CLI, since users never open GitHub; first, because the
- * deployment tables under it are long), what is live (branch previews), how
- * many QA items wait on whom (a summary; the full list is one
- * click away), the read-only production readiness card for Developers, and
- * why provisioning failed when it did. Configuration facts, health checks and
- * drift used to live here; they were noise on the first screen.
+ * The repository Overview, the same for every role: what is live (production
+ * first, then branch previews), how many QA items wait on whom (a summary;
+ * the full list is one click away), the read-only production readiness card
+ * for Developers, and why provisioning failed when it did. How to clone it
+ * sits in the page header beside the title on this tab (ProjectDetailTabs),
+ * not in a card here. Configuration facts, health checks and drift used to
+ * live here; they were noise on the first screen.
  */
 export function OverviewTab({
   project,
@@ -36,7 +35,6 @@ export function OverviewTab({
         gap: "1rem",
       }}
     >
-      <CloneCard repoFullName={project.repoFullName} repoUrl={project.repoUrl} />
       <OverviewPreviews
         enabled={vm.previewDeploymentsEnabled}
         // "Full logs" opens the Hosting tab; a role without it (a Product
@@ -63,7 +61,7 @@ export function OverviewTab({
   );
 }
 
-/** Under the clone card: what is live — production and every active branch. */
+/** The first row: what is live — production and every active branch. */
 function OverviewPreviews({
   enabled,
   onOpenFullLogs,
