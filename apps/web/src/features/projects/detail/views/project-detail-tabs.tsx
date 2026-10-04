@@ -164,8 +164,8 @@ export function ProjectDetailTabs({
 
 /**
  * Clone, on Overview only and for every role: beside the title, so Production
- * Deployment is the panel's first row. Other tabs keep the short header, and
- * a name that cannot be cloned gets no empty column.
+ * Deployment is the panel's first row. A name that cannot be cloned gets no
+ * empty column.
  */
 function overviewClone(tab: ProjectDetailTab, project: ProvisionedProject): ReactNode {
   if (tab !== "overview" || !cloneValue("https", project.repoFullName, project.repoUrl)) {
@@ -176,7 +176,9 @@ function overviewClone(tab: ProjectDetailTab, project: ProvisionedProject): Reac
 
 /**
  * The Project header for one repository of a named multi-repository Project,
- * else the repository's own header.
+ * else the repository's own header. The identity (title, repository, status)
+ * is Overview's: every other tab shows only the aside, so its own content
+ * starts at the top.
  */
 function ProjectPageHeader({
   project,
@@ -195,8 +197,17 @@ function ProjectPageHeader({
   tabs: ReactNode;
   clone: ReactNode;
 }>) {
+  const identityShown = vm.tab === "overview";
   if (!folder?.projectName) {
-    return <ProjectDetailHeader project={project} external={external} tabs={tabs} clone={clone} />;
+    return (
+      <ProjectDetailHeader
+        project={project}
+        external={external}
+        tabs={tabs}
+        clone={clone}
+        identityShown={identityShown}
+      />
+    );
   }
   return (
     <ProjectFolderHeader
@@ -209,19 +220,30 @@ function ProjectPageHeader({
       productView={productView}
       tabs={tabs}
       clone={clone}
+      identityShown={identityShown}
     />
   );
 }
 
 /**
- * The header's modifiers. `--tabs`: the sections sit in it (QA Team, Product
- * owner). `--clone`: a grid of the aside across the top right, then the
- * identity and the Clone box side by side under it.
+ * The header's modifiers. `--tabs`: the sections are its nav bar (QA Team,
+ * Product owner). `--summary`: Overview, the aside across the top and the
+ * identity and Clone side by side under it. `--bare`: another tab, the aside
+ * alone.
  */
-function headerClassName(base: string, tabs: ReactNode, clone: ReactNode): string {
-  return [base, tabs ? "project-detail-header--tabs" : "", clone ? "project-detail-header--clone" : ""]
+function headerClassName(base: string, tabs: ReactNode, identityShown: boolean): string {
+  return [
+    base,
+    tabs ? "project-detail-header--tabs" : "",
+    identityShown ? "project-detail-header--summary" : "project-detail-header--bare",
+  ]
     .filter(Boolean)
     .join(" ");
+}
+
+/** Off Overview the title is still the route's h1, for screen readers only. */
+function HiddenTitle({ title }: Readonly<{ title: string }>) {
+  return <h1 className="project-detail-header__sr-title">{title}</h1>;
 }
 
 function HeaderClone({ clone }: Readonly<{ clone: ReactNode }>) {
@@ -232,34 +254,38 @@ function HeaderClone({ clone }: Readonly<{ clone: ReactNode }>) {
 /**
  * The page's identity. It is the route's only heading, so it is the h1 and
  * wears the same title style as the other full pages. With `tabs` (the QA
- * Team's and a Product owner's page) the sections sit at its right, under the
- * status badges; with `clone` (Overview) the Clone box sits at its right.
+ * Team's and a Product owner's page) the sections are a nav bar above it; on
+ * Overview the Clone box sits at its right.
  */
 function ProjectDetailHeader({
   project,
   external,
   tabs,
   clone,
+  identityShown,
 }: Readonly<{
   project: ProvisionedProject;
   external: boolean;
   tabs?: ReactNode;
   clone?: ReactNode;
+  identityShown: boolean;
 }>) {
-  const badges = <ProjectStatusBadges project={project} external={external} />;
+  const title = project.repoFullName;
+  // Nothing to show off Overview: no empty row, just the heading.
+  if (!identityShown && !tabs) return <HiddenTitle title={title} />;
   return (
-    <div className={headerClassName("project-detail-header", tabs, clone)}>
-      <div className="project-detail-header__identity">
-        <h1 className="workflow-page-title">{project.repoFullName}</h1>
-        <p>{project.serviceName}</p>
-      </div>
-      {tabs || clone ? (
-        <div className="project-detail-header__aside">
-          {badges}
-          {tabs}
+    <div className={headerClassName("project-detail-header", tabs, identityShown)}>
+      {tabs ? <div className="project-detail-header__aside">{tabs}</div> : null}
+      {identityShown ? (
+        <div className="project-detail-header__identity">
+          <h1 className="workflow-page-title">{title}</h1>
+          <p className="project-folder-header__repo">
+            <span>{project.serviceName}</span>
+            <ProjectStatusBadges project={project} external={external} />
+          </p>
         </div>
       ) : (
-        badges
+        <HiddenTitle title={title} />
       )}
       <HeaderClone clone={clone} />
     </div>
@@ -291,8 +317,7 @@ function ProjectStatusBadges({
  * to its sibling repositories sits at the top right. The QA Team and Product
  * owners get no switch (they judge the Project as one product) and no
  * "Manage project" (their Checklists tab carries the Project's QA); their
- * sections take its place. On Overview the Clone box sits under the aside,
- * level with the identity.
+ * sections take its place. The identity and Clone show on Overview only.
  */
 function ProjectFolderHeader({
   project,
@@ -304,6 +329,7 @@ function ProjectFolderHeader({
   productView,
   tabs,
   clone,
+  identityShown,
 }: Readonly<{
   project: ProvisionedProject;
   external: boolean;
@@ -314,23 +340,16 @@ function ProjectFolderHeader({
   productView: boolean;
   tabs?: ReactNode;
   clone?: ReactNode;
+  identityShown: boolean;
 }>) {
   const reduceMotion = useReducedMotion();
   return (
     <motion.div
-      className={headerClassName("project-detail-header project-folder-header", tabs, clone)}
+      className={headerClassName("project-detail-header project-folder-header", tabs, identityShown)}
       initial={reduceMotion ? false : { opacity: 0, y: -4 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
     >
-      <div className="project-folder-header__identity">
-        <span className="project-folder-header__eyebrow">Project</span>
-        <h1 className="workflow-page-title">{projectName}</h1>
-        <p className="project-folder-header__repo">
-          <span className="project-folder-header__repo-name">{project.repoFullName}</span>
-          <ProjectStatusBadges project={project} external={external} />
-        </p>
-      </div>
       <div className="project-folder-header__aside">
         {productView ? null : (
           <ProjectRepoSwitch
@@ -350,6 +369,18 @@ function ProjectFolderHeader({
         ) : null}
         {tabs}
       </div>
+      {identityShown ? (
+        <div className="project-folder-header__identity">
+          <span className="project-folder-header__eyebrow">Project</span>
+          <h1 className="workflow-page-title">{projectName}</h1>
+          <p className="project-folder-header__repo">
+            <span className="project-folder-header__repo-name">{project.repoFullName}</span>
+            <ProjectStatusBadges project={project} external={external} />
+          </p>
+        </div>
+      ) : (
+        <HiddenTitle title={projectName} />
+      )}
       <HeaderClone clone={clone} />
     </motion.div>
   );

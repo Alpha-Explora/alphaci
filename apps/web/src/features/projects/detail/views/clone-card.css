@@ -1,55 +1,70 @@
 /* ── Project header on Overview: Clone ──────────────────────────────────────
-   GitHub's Clone box: the title and a segmented HTTPS / SSH / GitHub CLI
-   switch on one row, a read-only monospace field with a copy button, and a
-   one-line hint. No card chrome: it sits beside the page title, three rows
-   tall like the title block. Tokens only, so both themes hold.
+   GitHub's Clone box, laid out as the twin of the identity beside it: an
+   eyebrow label like "Project", one control where the title sits (the HTTPS /
+   SSH / GitHub CLI switch, the read-only monospace field and the copy button
+   joined in a single border), and a one-line hint where the repository line
+   sits. No card chrome. Tokens only, so both themes hold.
    ------------------------------------------------------------------------- */
 
 .clone-card {
   display: grid;
-  gap: 0.5rem;
+  gap: 0.15rem;
   min-width: 0;
 }
 
-.clone-card__head {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.5rem 0.75rem;
+/* Two classes: `.tab-content-panel h2`-style rules must not restyle it. The
+   type matches `.project-folder-header__eyebrow`. */
+.clone-card .clone-card__title {
+  margin: 0;
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-muted);
 }
 
-/* Two classes: `.tab-content-panel h2`-style rules must not restyle it. */
-.clone-card .clone-card__title {
+.clone-card__control {
   display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  margin: 0;
-  font-size: 1rem;
-  font-weight: 700;
-  color: var(--text-primary);
+  align-items: stretch;
+  min-width: 0;
+  height: 2.4rem;
+  margin-top: 0.3rem;
+  border: 1px solid var(--border);
+  border-radius: 0.6rem;
+  background: var(--bg-input, transparent);
+  transition: border-color 0.15s ease-out;
+}
+
+.clone-card__control:focus-within {
+  border-color: var(--border-brand);
 }
 
 .clone-card__tabs {
   display: inline-flex;
-  max-width: 100%;
-  overflow-x: auto;
-  padding: 0.15rem;
-  border: 1px solid var(--border);
-  border-radius: 0.6rem;
+  align-items: center;
+  flex-shrink: 0;
+  gap: 0.1rem;
+  padding: 0 0.25rem;
+  border-right: 1px solid var(--border);
 }
 
 .clone-card__tab {
-  padding: 0.25rem 0.75rem;
+  height: 1.8rem;
+  padding: 0 0.6rem;
   border: 0;
-  border-radius: 0.45rem;
+  border-radius: 0.4rem;
   background: transparent;
-  color: var(--text-secondary);
+  color: var(--text-muted);
   font: inherit;
-  font-size: 0.82rem;
+  font-size: 0.76rem;
   font-weight: 600;
   white-space: nowrap;
   cursor: pointer;
+  transition: color 0.15s ease-out, background-color 0.15s ease-out;
+}
+
+.clone-card__tab:hover {
+  color: var(--text-primary);
 }
 
 .clone-card__tab[aria-selected="true"] {
@@ -57,35 +72,30 @@
   color: var(--text-primary);
 }
 
+/* Inset: the control's border would clip an outline drawn outside it. */
 .clone-card__tab:focus-visible,
 .clone-card__copy:focus-visible,
 .clone-card__input:focus-visible {
   outline: 2px solid var(--brand);
-  outline-offset: 2px;
-}
-
-.clone-card__panel {
-  display: grid;
-  gap: 0.45rem;
+  outline-offset: -2px;
 }
 
 .clone-card__field {
   display: flex;
-  gap: 0.5rem;
-  align-items: stretch;
-  max-width: 44rem;
+  flex: 1;
+  min-width: 0;
 }
 
 .clone-card__input {
   flex: 1;
   min-width: 0;
-  padding: 0.55rem 0.75rem;
-  border: 1px solid var(--border);
-  border-radius: 0.5rem;
-  background: var(--bg-input, transparent);
+  padding: 0 0.75rem;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
   color: var(--text-primary);
   font-family: var(--font-mono, ui-monospace, monospace);
-  font-size: 0.82rem;
+  font-size: 0.8rem;
   text-overflow: ellipsis;
 }
 
@@ -94,27 +104,27 @@
   place-items: center;
   width: 2.4rem;
   flex-shrink: 0;
-  border: 1px solid var(--border);
-  border-radius: 0.5rem;
+  border: 0;
+  border-left: 1px solid var(--border);
+  border-radius: 0 0.6rem 0.6rem 0;
   background: transparent;
   color: var(--text-secondary);
   cursor: pointer;
+  transition: color 0.15s ease-out;
 }
 
 .clone-card__copy:hover {
-  border-color: var(--border-brand);
   color: var(--text-primary);
 }
 
 .clone-card__copy[data-copied="true"] {
-  border-color: var(--border-brand);
   color: var(--brand);
 }
 
 /* Two classes: beats `.project-detail-header p` (0,1,1), the header it sits in. */
 .clone-card .clone-card__hint {
-  margin: 0;
-  font-size: 0.78rem;
+  margin: 0.3rem 0 0;
+  font-size: 0.74rem;
   color: var(--text-muted);
 }
 
@@ -126,4 +136,34 @@
   overflow: hidden;
   clip-path: inset(50%);
   white-space: nowrap;
+}
+
+/* Narrow: the switch takes its own row above the field, still one control. */
+@media (max-width: 520px) {
+  .clone-card__control {
+    flex-direction: column;
+    height: auto;
+  }
+
+  .clone-card__tabs {
+    padding: 0.25rem;
+    border-right: 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .clone-card__field {
+    height: 2.4rem;
+  }
+
+  .clone-card__copy {
+    border-radius: 0 0 0.6rem 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .clone-card__control,
+  .clone-card__tab,
+  .clone-card__copy {
+    transition: none;
+  }
 }

@@ -32,21 +32,12 @@ function CheckIcon() {
   );
 }
 
-function TerminalIcon() {
-  return (
-    <svg aria-hidden="true" focusable="false" width="18" height="18" viewBox="0 0 16 16" fill="none"
-      stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="1.5" y="2.5" width="13" height="11" rx="1.5" />
-      <path d="m4.5 6 2 2-2 2M8.5 10.5h3" />
-    </svg>
-  );
-}
-
 /**
  * "Clone" in the project header on Overview, as GitHub offers it: HTTPS, SSH
  * or the GitHub CLI, one read-only field and a copy button. Users never open
  * GitHub, so this is where a Developer gets the address to clone from. No
- * card of its own: it sits beside the title.
+ * card of its own: it sits beside the title, its label the "Project"
+ * eyebrow's twin and the switch, field and copy button one control.
  */
 export function CloneCard({
   repoFullName,
@@ -63,6 +54,7 @@ export function CloneCard({
   const copyLabel = copied ? "Copied" : `Copy ${noun} to clipboard`;
   const tabId = (id: CloneMethod) => `${baseId}-tab-${id}`;
   const panelId = `${baseId}-panel`;
+  const hintId = `${baseId}-hint`;
 
   function choose(next: CloneMethod) {
     setMethod(next);
@@ -92,11 +84,10 @@ export function CloneCard({
 
   return (
     <section className="clone-card" aria-labelledby={`${baseId}-title`}>
-      <div className="clone-card__head">
-        <h2 className="clone-card__title" id={`${baseId}-title`}>
-          <TerminalIcon />
-          Clone
-        </h2>
+      <h2 className="clone-card__title" id={`${baseId}-title`}>
+        Clone
+      </h2>
+      <div className="clone-card__control">
         <div className="clone-card__tabs" role="tablist" aria-label="Clone with">
           {CLONE_METHODS.map((entry, index) => (
             <button
@@ -115,14 +106,13 @@ export function CloneCard({
             </button>
           ))}
         </div>
-      </div>
-      <div id={panelId} role="tabpanel" aria-labelledby={tabId(method)} className="clone-card__panel">
-        <div className="clone-card__field">
+        <div id={panelId} role="tabpanel" aria-labelledby={tabId(method)} className="clone-card__field">
           <input
             className="clone-card__input"
             readOnly
             value={value ?? ""}
             aria-label={`${option.label} clone ${noun}`}
+            aria-describedby={hintId}
             onFocus={(event) => event.currentTarget.select()}
           />
           <button
@@ -136,11 +126,13 @@ export function CloneCard({
             {copied ? <CheckIcon /> : <CopyIcon />}
           </button>
         </div>
-        <p className="clone-card__hint">{option.hint}</p>
-        <span className="clone-card__status" role="status" aria-live="polite">
-          {copied ? "Copied to clipboard" : ""}
-        </span>
       </div>
+      <p className="clone-card__hint" id={hintId}>
+        {option.hint}
+      </p>
+      <span className="clone-card__status" role="status" aria-live="polite">
+        {copied ? "Copied to clipboard" : ""}
+      </span>
     </section>
   );
 }
