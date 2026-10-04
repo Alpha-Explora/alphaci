@@ -27,7 +27,7 @@ describe("clone switch keys and wording", () => {
 describe("clone rules", () => {
   it("offers HTTPS, SSH and GitHub CLI, in GitHub's order", () => {
     expect(CLONE_METHODS.map((option) => option.label)).toEqual(["HTTPS", "SSH", "GitHub CLI"]);
-    expect(cloneMethodOption("ssh").hint).toBe("Use a password-protected SSH key.");
+    expect(cloneMethodOption("ssh").label).toBe("SSH");
   });
 
   it("builds each value for a github.com repository", () => {

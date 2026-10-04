@@ -111,9 +111,12 @@
 
   /* ── Sidebar layout ────────────────────────────────────────── */
   /* The rail expands on hover by painting OVER the page, so the layout only
-     ever reserves its collapsed width. Do not animate this. */
-  --sidebar-width: 64px;
-  --sidebar-collapsed: 64px;
+     reserves its collapsed width — unless the viewer pins it open, when
+     --sidebar-width becomes --sidebar-open (app-shell.css) and the page moves
+     aside. --sidebar-collapsed is the rail itself and never changes. */
+  --sidebar-collapsed: 52px;
+  --sidebar-open: 216px;
+  --sidebar-width: var(--sidebar-collapsed);
 
   /* ── Surface-level accent tints ───────────────────────────── */
   /* Subtle background tints for section separators and hover states */

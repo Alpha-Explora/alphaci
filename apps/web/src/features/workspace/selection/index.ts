@@ -12,6 +12,8 @@ export {
   type AppNavViewModel,
 } from "./view-models/use-app-nav-view-model";
 export { AppNav } from "./views/app-nav";
+/* The root layout runs this in <head>, so a pinned rail is open on first paint. */
+export { SIDEBAR_PIN_BOOT_SCRIPT } from "./model/sidebar-pin";
 export { WorkspaceSwitcher } from "./views/workspace-switcher";
 export type {
   WorkspaceMemberSummary,

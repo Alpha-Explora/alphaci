@@ -15,14 +15,6 @@
   min-width: 0;
 }
 
-.project-folder-header__eyebrow {
-  font-size: 0.66rem;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--text-muted);
-}
-
 /* Beats `.project-detail-header p` (0,1,1): a flex row, not a description. */
 .project-detail-header .project-folder-header__repo {
   display: flex;
@@ -267,13 +259,33 @@
   padding-bottom: 0.6rem;
 }
 
+/* Flush with the Clone box and the cards under it, so the end fade (there for
+ * a strip that scrolls) would dim the last tab. Five short tabs fit any
+ * desktop width; on a phone the strip still scrolls, just without the fade. */
 .project-detail-header--tabs .project-tabs {
   max-width: 100%;
   border-bottom: 0;
+  -webkit-mask-image: none;
+  mask-image: none;
 }
 
+/* Five tabs in the title row need no clusters: the rule between groups put
+ * uneven gaps in a short strip (Overview and Checklists close, the rest fenced
+ * off one by one). One even gap instead. */
 .project-detail-header--tabs .project-tabs__list {
+  gap: 0.2rem;
+  padding-right: 0;
   padding-bottom: 0;
+}
+
+.project-detail-header--tabs .project-tabs__group {
+  gap: 0.2rem;
+}
+
+.project-detail-header--tabs .project-tabs__group + .project-tabs__group {
+  margin-left: 0;
+  padding-left: 0;
+  border-left: 0;
 }
 
 @media (max-width: 640px) {
@@ -325,15 +337,15 @@
  * above at every width.
  *
  * `--summary` (Overview): the aside (the sections, or the repository switch)
- * spans the top; under it the identity and the Clone box share a row, left
- * and right, top-aligned so the "Project" and "Clone" eyebrows, the title and
- * the clone field, and the repository line and the hint line up row by row.
+ * spans the top; under it the identity (title over repository line) and the
+ * Clone box share a row, left and right, centred on each other: the two
+ * blocks are about the same height and have no eyebrows left to pair up.
  * Aside first in the markup, so without one the identity takes the top row
  * and no empty row is left. */
 .project-detail-header.project-detail-header--summary {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 34rem);
-  align-items: start;
+  align-items: center;
   gap: 1.1rem 2.5rem;
   padding-bottom: 1.1rem;
 }
@@ -361,6 +373,7 @@
 .project-detail-header--tabs > .project-folder-header__aside {
   justify-self: stretch;
   align-items: flex-end;
+  padding-bottom: 0.5rem;
   border-bottom: 1px solid var(--border-soft);
 }
 

@@ -17,6 +17,7 @@ import {
   type WorkspaceAppRole,
 } from "../model/workspace-types";
 import { useAppNavViewModel } from "../view-models/use-app-nav-view-model";
+import { useSidebarPin } from "../view-models/use-sidebar-pin";
 import { WorkspaceSwitcher } from "./workspace-switcher";
 
 /* ── Types ─────────────────────────────────────────────────────────────────── */
@@ -199,6 +200,27 @@ function AdminIcon({ size = 16 }: { size?: number }) {
   );
 }
 
+/** A panel with its left column; the column fills while the rail is pinned. */
+function SidebarPanelIcon({ pinned }: Readonly<{ pinned: boolean }>) {
+  return (
+    <svg
+      width={18}
+      height={18}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <rect x="3" y="4" width="18" height="16" rx="2" />
+      <line x1="9" y1="4" x2="9" y2="20" />
+      {pinned ? <rect x="3" y="4" width="6" height="16" rx="2" fill="currentColor" stroke="none" opacity="0.35" /> : null}
+    </svg>
+  );
+}
+
 function SignOutIcon({ size = 15 }: { size?: number }) {
   return (
     <svg
@@ -240,7 +262,7 @@ interface SidebarNavItemProps {
  *
  * `.app-sidebar` clips overflow, which is what turns that from truncation into
  * a reveal — without it the 200px-wide invisible labels raise a horizontal
- * scrollbar inside a 64px rail.
+ * scrollbar inside the closed rail.
  */
 function SidebarNavItem({
   href,
@@ -277,7 +299,7 @@ function SidebarNavItem({
       {badgeCount > 0 ? (
         <>
           {/* Two presentations of one number: a bare dot that survives the
-              64px rail, and the real count once the labels are readable. */}
+              closed rail, and the real count once the labels are readable. */}
           <span className="sidebar-nav-dot" aria-hidden="true" />
           <span
             className="sidebar-nav-count"
@@ -295,7 +317,7 @@ function SidebarNavItem({
    Answers "which am I?" at a glance. The label mirrors the GitHub org team
    that drives the role (`team-lead` → Team lead, `developers` → Developer), so
    what a user sees here matches what they were added to in GitHub. Hidden when
-   the rail is closed — 64px has no room for it, and the role is not urgent
+   the rail is closed — it has no room for it, and the role is not urgent
    enough to earn an icon-only affordance. */
 
 function SidebarRoleBadge({ appRole }: Readonly<{ appRole: WorkspaceAppRole }>) {
@@ -342,11 +364,14 @@ export function AppNav({
       pageWorkspaceId,
     });
   // Cleared on pointerleave. Clicking a nav link navigates but does NOT move
-  // the mouse, so the rail stays hovered — and an expanded rail is 240px of
+  // the mouse, so the rail stays hovered — and an expanded rail is a column of
   // panel sitting on top of the page you just asked for. Suppressing hover
   // until the pointer leaves makes a click read as "take me there", not "take
   // me there and stay in the way". Keyboard focus is never suppressed.
   const [hoverSuppressed, setHoverSuppressed] = useState(false);
+  // Pinned, the rail stays open and the page moves aside; unpinned, it still
+  // opens on hover. The width itself is CSS, keyed off <html>; see app-shell.css.
+  const [sidebarPinned, toggleSidebarPinned] = useSidebarPin();
   const prefersReducedMotion = useReducedMotion();
   const reduced = reducedMotionEnabled(prefersReducedMotion);
   const avatarInitial = navAvatarInitial(session);
@@ -372,6 +397,7 @@ export function AppNav({
           full width, so the rail keeps its own brand mark and the expanded
           rail paints over this bar rather than beside it. */}
       <AppHeader guest={guest} session={session} appRole={appRole} avatarInitial={avatarInitial}
+        sidebarPinned={sidebarPinned} onToggleSidebar={toggleSidebarPinned}
         workspaces={workspaceVm.workspaces} otherTeams={workspaceVm.otherTeams}
         workspaceStatus={workspaceVm.status}
         loadWorkspaces={loadWorkspaces} onWorkspaceSwitch={onWorkspaceSwitch}
@@ -385,8 +411,9 @@ export function AppNav({
   );
 }
 
-function AppHeader({ guest, session, appRole, avatarInitial, workspaces, otherTeams, workspaceStatus, loadWorkspaces, onWorkspaceSwitch, onLogout, isLoggingOut }: Readonly<{
+function AppHeader({ guest, session, appRole, avatarInitial, sidebarPinned, onToggleSidebar, workspaces, otherTeams, workspaceStatus, loadWorkspaces, onWorkspaceSwitch, onLogout, isLoggingOut }: Readonly<{
   guest: boolean; session: AuthSession | null; appRole: WorkspaceAppRole; avatarInitial: string;
+  sidebarPinned: boolean; onToggleSidebar: () => void;
   workspaces: Parameters<typeof WorkspaceSwitcher>[0]["workspaces"];
   otherTeams: NonNullable<Parameters<typeof WorkspaceSwitcher>[0]["otherTeams"]>;
   workspaceStatus: NonNullable<Parameters<typeof WorkspaceSwitcher>[0]["status"]>;
@@ -396,6 +423,19 @@ function AppHeader({ guest, session, appRole, avatarInitial, workspaces, otherTe
   return (
     <header className="app-header">
       <div className="app-header-left">
+        {/* One name, pressed or not, so a screen reader hears the state rather
+            than a label that flips under the cursor; the tooltip says what a
+            press will do. */}
+        <button
+          type="button"
+          className="app-sidebar-toggle"
+          aria-pressed={sidebarPinned}
+          aria-label="Keep sidebar open"
+          title={sidebarPinned ? "Collapse sidebar" : "Keep sidebar open"}
+          onClick={onToggleSidebar}
+        >
+          <SidebarPanelIcon pinned={sidebarPinned} />
+        </button>
         <Link href="/home" className="app-header-brand" aria-label="ALPHACI — home">
           <Image src="/brand-logo.png" alt="ALPHACI" width={138} height={46} unoptimized priority className="app-header-brand-image" />
         </Link>

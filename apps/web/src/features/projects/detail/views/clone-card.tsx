@@ -36,8 +36,8 @@ function CheckIcon() {
  * "Clone" in the project header on Overview, as GitHub offers it: HTTPS, SSH
  * or the GitHub CLI, one read-only field and a copy button. Users never open
  * GitHub, so this is where a Developer gets the address to clone from. No
- * card of its own: it sits beside the title, its label the "Project"
- * eyebrow's twin and the switch, field and copy button one control.
+ * card of its own: it sits beside the title, a small "Clone" label over the
+ * switch, field and copy button joined as one control.
  */
 export function CloneCard({
   repoFullName,
@@ -54,7 +54,6 @@ export function CloneCard({
   const copyLabel = copied ? "Copied" : `Copy ${noun} to clipboard`;
   const tabId = (id: CloneMethod) => `${baseId}-tab-${id}`;
   const panelId = `${baseId}-panel`;
-  const hintId = `${baseId}-hint`;
 
   function choose(next: CloneMethod) {
     setMethod(next);
@@ -112,7 +111,6 @@ export function CloneCard({
             readOnly
             value={value ?? ""}
             aria-label={`${option.label} clone ${noun}`}
-            aria-describedby={hintId}
             onFocus={(event) => event.currentTarget.select()}
           />
           <button
@@ -127,9 +125,6 @@ export function CloneCard({
           </button>
         </div>
       </div>
-      <p className="clone-card__hint" id={hintId}>
-        {option.hint}
-      </p>
       <span className="clone-card__status" role="status" aria-live="polite">
         {copied ? "Copied to clipboard" : ""}
       </span>
