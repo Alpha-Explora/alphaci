@@ -74,6 +74,26 @@ describe("log payload readers", () => {
     expect(normalizeStreamEvent({ logs: [], source: "live" }).kind).toBe("snapshot");
   });
 
+  it("reads the rate-limit fields of a status frame and a legacy response", () => {
+    expect(
+      normalizeStreamEvent({ kind: "status", source: "live", rateLimited: true, retryAfterMs: 42_000 }),
+    ).toEqual({ kind: "status", source: "live", rateLimited: true, retryAfterMs: 42_000 });
+    const legacy = normalizeLogsResponse({ source: "live", rateLimited: true, retryAfterMs: 5000, logs: [] });
+    expect(legacy).toMatchObject({ rateLimited: true, retryAfterMs: 5000, logs: [] });
+  });
+
+  it("ignores garbage rate-limit fields rather than guessing", () => {
+    for (const rateLimited of ["true", 1, null, false, {}]) {
+      const event = normalizeStreamEvent({ kind: "status", source: "live", rateLimited, retryAfterMs: 1000 });
+      expect(event).toEqual({ kind: "status", source: "live" });
+    }
+    for (const retryAfterMs of ["30", -1, Number.NaN, Number.POSITIVE_INFINITY, null, {}]) {
+      const event = normalizeStreamEvent({ kind: "status", source: "live", rateLimited: true, retryAfterMs });
+      expect(event).toEqual({ kind: "status", source: "live", rateLimited: true });
+    }
+    expect(normalizeLogsResponse({ logs: [] })).not.toHaveProperty("rateLimited");
+  });
+
   it("treats an unknown source as unavailable, never as live", () => {
     expect(normalizeLogsResponse({ source: "weird" }).source).toBe("unavailable");
   });

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, type ReactNode } from "react";
 
 import type { SideTabGroup } from "@/features/groups/workspace";
 
@@ -24,6 +24,13 @@ import type { SideTabGroup } from "@/features/groups/workspace";
  * tab is scrolled back into view, because selection can move by keyboard to a
  * tab that is off-screen.
  *
+ * WHY `trailing` IS A SIBLING OF THE TABLIST. A view switch (the repository
+ * switch) belongs at the end of the same row, but it is not a tab: inside
+ * role=tablist it would break the "only tabs" contract, and inside the
+ * scrolling strip it would scroll away with the tabs. So the row is a flex
+ * container: the strip scrolls (`flex: 1; min-width: 0`) and the trailing
+ * control stays put (`flex: none`).
+ *
  * Presentational only: the caller owns the selection.
  */
 export function ProjectDetailTopTabs<T extends string>({
@@ -32,6 +39,7 @@ export function ProjectDetailTopTabs<T extends string>({
   onChange,
   label,
   idPrefix,
+  trailing,
 }: Readonly<{
   groups: ReadonlyArray<SideTabGroup<T>>;
   value: T;
@@ -40,6 +48,8 @@ export function ProjectDetailTopTabs<T extends string>({
   label: string;
   /** Prefix for the generated tab/panel ids — must match the panels' own. */
   idPrefix: string;
+  /** Right-aligned at the end of the row, outside the tablist and its scroll. */
+  trailing?: ReactNode;
 }>) {
   const refs = useRef<Record<string, HTMLButtonElement | null>>({});
 
@@ -77,7 +87,7 @@ export function ProjectDetailTopTabs<T extends string>({
     refs.current[next.id]?.focus();
   }
 
-  return (
+  const strip = (
     <div className="project-tabs">
       <div
         role="tablist"
@@ -120,6 +130,13 @@ export function ProjectDetailTopTabs<T extends string>({
           </div>
         ))}
       </div>
+    </div>
+  );
+  if (!trailing) return strip;
+  return (
+    <div className="project-tabs-row">
+      {strip}
+      <div className="project-tabs-row__trailing">{trailing}</div>
     </div>
   );
 }

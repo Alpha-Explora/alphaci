@@ -94,6 +94,9 @@ export function ProjectRepoSwitch({
             data-role={option.role ?? undefined}
             data-pending={(!option.current && option.projectId === pendingId && pendingId !== null) || undefined}
             data-tooltip={option.disabled ? UNLINKED_REPO_HINT : undefined}
+            // In the tab row the name is hidden to fit beside nine tabs; the
+            // native tooltip still names the repository on hover.
+            title={option.disabled ? undefined : option.label}
             aria-checked={option.current}
             aria-disabled={option.disabled || undefined}
             aria-describedby={option.disabled ? hintId : undefined}

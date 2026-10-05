@@ -2,6 +2,12 @@
 
 import type { LogSource } from "../model/deployment-logs-types";
 import { timeZoneAbbreviation } from "../model/log-format";
+import {
+  isRateLimitReason,
+  LEGACY_RATE_LIMIT_TEXT,
+  rateLimitNotice,
+} from "../model/log-rate-limit";
+import { useSecondsLeft } from "../view-models/use-seconds-left";
 import type {
   DeploymentLogsViewModel,
   LogTailState,
@@ -83,6 +89,53 @@ export function TimeZoneLabel({ at }: Readonly<{ at: string | null }>) {
   return <span className="deploy-logs__zone">Times in {zone}</span>;
 }
 
+/**
+ * The provider asked for fewer reads. Quiet on purpose (no danger tone, no
+ * alert role): the lines above are still true and the tail resumes on its own.
+ */
+function RateLimitNotice({
+  until,
+  providerLabel,
+}: Readonly<{ until: number; providerLabel: string }>) {
+  const seconds = useSecondsLeft(until) ?? 0;
+  return (
+    <p className="deploy-logs__notice" role="status">
+      {rateLimitNotice(providerLabel, seconds)}
+    </p>
+  );
+}
+
+/**
+ * Why the lines are not (or no longer) coming. An older backend reports a 429
+ * as an outage with the provider's raw JSON as the reason; that is shown as the
+ * friendly cooldown text, with the same Retry.
+ */
+function ProviderNotices({
+  vm,
+  providerLabel,
+}: Readonly<{ vm: DeploymentLogsViewModel; providerLabel: string }>) {
+  if (vm.rateLimitedUntil !== null) {
+    return <RateLimitNotice providerLabel={providerLabel} until={vm.rateLimitedUntil} />;
+  }
+  if (vm.source !== "unavailable") return null;
+  if (isRateLimitReason(vm.reason)) {
+    return (
+      <p className="deploy-logs__notice" role="status">
+        {LEGACY_RATE_LIMIT_TEXT}{" "}
+        <button className="deploy-logs__older-button" onClick={vm.restart} type="button">
+          Retry
+        </button>
+      </p>
+    );
+  }
+  return (
+    <p className="deploy-logs__notice deploy-logs__notice--danger" role="status">
+      <strong>{providerLabel} logs are unavailable.</strong>{" "}
+      {vm.reason ?? "The provider did not answer."}
+    </p>
+  );
+}
+
 function LogNotices({
   vm,
   providerLabel,
@@ -92,12 +145,7 @@ function LogNotices({
 }>) {
   return (
     <>
-      {vm.source === "unavailable" ? (
-        <p className="deploy-logs__notice deploy-logs__notice--danger" role="status">
-          <strong>{providerLabel} logs are unavailable.</strong>{" "}
-          {vm.reason ?? "The provider did not answer."}
-        </p>
-      ) : null}
+      <ProviderNotices providerLabel={providerLabel} vm={vm} />
       {vm.source === "simulated" && vm.reason ? (
         <p className="deploy-logs__notice" role="status">
           Simulated lines from the local mock, not {providerLabel}: {vm.reason}

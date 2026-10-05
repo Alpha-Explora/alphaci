@@ -247,6 +247,34 @@
   transform: translateY(0);
 }
 
+/* In the tab row the switch matches the tabs' height (a tab is about 1.9rem):
+ * the same pill radius family, a tighter frame and option padding. */
+.project-tabs-row .repo-switch {
+  flex-wrap: nowrap;
+  gap: 0.15rem;
+  padding: 0.15rem;
+  border-radius: var(--radius-pill);
+}
+
+.project-tabs-row .repo-switch__option {
+  min-height: 1.6rem;
+  padding: 0.2rem 0.7rem;
+  font-size: 0.78rem;
+}
+
+/* Role only beside the tabs: with both repository names the switch is ~375px
+ * and pushed the last tab ("Settings") under it at 1440px. The page title
+ * already names the open repository; the name stays in the accessible name
+ * (visually hidden, not display:none) and in the hover tooltip. */
+.project-tabs-row .repo-switch__name {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
 /* ── Sections in the title row (QA Team, Product owner) ─────────────────
  * Their five tabs sit at the right of the title instead of on a row of their
  * own. The header's divider is the only rule: the strip drops its own.
@@ -310,6 +338,16 @@
 
   .repo-switch {
     justify-content: flex-start;
+  }
+
+  /* On its own line above the tabs: full width, options sharing it. */
+  .project-tabs-row .repo-switch {
+    display: flex;
+  }
+
+  .project-tabs-row .repo-switch__option {
+    flex: 1 1 0;
+    justify-content: center;
   }
 
   .repo-switch__option[data-tooltip]::after {
@@ -432,8 +470,9 @@
     align-items: flex-start;
   }
 
+  /* Manage project alone: still one short row, at the right. */
   .project-detail-header--summary:not(.project-detail-header--tabs) > .project-folder-header__aside {
     align-items: center;
-    justify-content: space-between;
+    justify-content: flex-end;
   }
 }

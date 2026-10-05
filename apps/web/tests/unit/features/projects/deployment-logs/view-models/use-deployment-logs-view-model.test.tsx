@@ -1,4 +1,4 @@
-import { act, useLayoutEffect } from "react";
+import { act, StrictMode, useLayoutEffect } from "react";
 import { createRoot, type Root } from "react-dom/client";
 
 import { getDeploymentTargetLogs } from "../../../../../../src/features/projects/deployment-logs/data/deployment-logs-api";
@@ -6,6 +6,7 @@ import type {
   LogQueryFilters,
   LogWindow,
 } from "../../../../../../src/features/projects/deployment-logs/model/deployment-logs-types";
+import { HIDDEN_PAUSE_MS } from "../../../../../../src/features/projects/deployment-logs/view-models/use-hidden-pause";
 import {
   LOG_SEARCH_DEBOUNCE_MS,
   useDeploymentLogsViewModel,
@@ -59,6 +60,14 @@ function setVisibility(next: DocumentVisibilityState) {
   visibility = next;
   act(() => {
     document.dispatchEvent(new Event("visibilitychange"));
+  });
+}
+
+/** Hidden, and left that way long enough for the live tail to be given up. */
+function hideForGood() {
+  setVisibility("hidden");
+  act(() => {
+    jest.advanceTimersByTime(HIDDEN_PAUSE_MS);
   });
 }
 
@@ -138,12 +147,13 @@ describe("useDeploymentLogsViewModel", () => {
     expect(current().reason).toBeNull();
   });
 
-  it("closes the stream while hidden and resumes from the newest line held", () => {
+  it("closes the stream once hidden for 30s and resumes from the newest line held", () => {
+    jest.useFakeTimers();
     render(LIVE);
     const first = FakeEventSource.latest();
     act(() => first.emit({ kind: "snapshot", ...page([line("a", 1), line("b", 2)]) }));
 
-    setVisibility("hidden");
+    hideForGood();
     expect(first.readyState).toBe(FakeEventSource.CLOSED);
     expect(FakeEventSource.open()).toHaveLength(0);
     expect(current().tail).toBe("paused");
@@ -161,11 +171,47 @@ describe("useDeploymentLogsViewModel", () => {
     expect(mockFetch).not.toHaveBeenCalled();
   });
 
+  it("keeps the stream through a short trip to another tab", () => {
+    jest.useFakeTimers();
+    render(LIVE);
+    const stream = FakeEventSource.latest();
+    act(() => stream.emit({ kind: "snapshot", ...page([line("a", 1)]) }));
+
+    setVisibility("hidden");
+    act(() => {
+      jest.advanceTimersByTime(HIDDEN_PAUSE_MS - 1);
+    });
+    expect(FakeEventSource.open()).toEqual([stream]);
+    expect(current().tail).toBe("live");
+
+    // Back before the clock ran out: it starts over from zero next time.
+    setVisibility("visible");
+    setVisibility("hidden");
+    act(() => {
+      jest.advanceTimersByTime(HIDDEN_PAUSE_MS - 1);
+    });
+    expect(FakeEventSource.open()).toEqual([stream]);
+    expect(FakeEventSource.instances).toHaveLength(1);
+  });
+
+  it("starts the clock when mounted into a hidden tab", () => {
+    jest.useFakeTimers();
+    visibility = "hidden";
+    render(LIVE);
+    expect(FakeEventSource.open()).toHaveLength(1);
+    act(() => {
+      jest.advanceTimersByTime(HIDDEN_PAUSE_MS);
+    });
+    expect(FakeEventSource.open()).toHaveLength(0);
+    expect(current().tail).toBe("paused");
+  });
+
   it("pages in the gap a long pause left", async () => {
+    jest.useFakeTimers();
     render(LIVE);
     const first = FakeEventSource.latest();
     act(() => first.emit({ kind: "snapshot", ...page([line("a", 1)]) }));
-    setVisibility("hidden");
+    hideForGood();
     setVisibility("visible");
 
     mockFetch.mockResolvedValueOnce(page([line("a", 1), line("b", 5)], { hasMore: true, next: { startTime: "s", endTime: "e" } }));
@@ -187,6 +233,66 @@ describe("useDeploymentLogsViewModel", () => {
       endTime: line("y", 30).timestamp,
     });
     expect(current().lines.map((l) => l.id)).toEqual(["a", "b", "y", "z"]);
+  });
+
+  it("keeps the lines through a provider rate limit and shows its cooldown", () => {
+    jest.useFakeTimers();
+    jest.setSystemTime(new Date("2026-09-24T10:00:00.000Z"));
+    render(LIVE);
+    const stream = FakeEventSource.latest();
+    act(() => stream.emit({ kind: "snapshot", ...page([line("a", 1)]) }));
+
+    act(() => stream.emit({ kind: "status", source: "live", rateLimited: true, retryAfterMs: 45_000 }));
+    expect(current().rateLimitedUntil).toBe(Date.now() + 45_000);
+    expect(current().lines.map((l) => l.id)).toEqual(["a"]);
+    expect(current().status).toBe("ready");
+    expect(current().source).toBe("live");
+    expect(current().tail).toBe("live");
+    expect(current().error).toBeNull();
+    expect(FakeEventSource.open()).toEqual([stream]);
+
+    act(() => stream.emit({ kind: "append", source: "live", logs: [line("b", 2)] }));
+    expect(current().rateLimitedUntil).toBeNull();
+    expect(current().lines.map((l) => l.id)).toEqual(["a", "b"]);
+  });
+
+  it("clears the cooldown on the snapshot that follows it", () => {
+    render(LIVE);
+    const stream = FakeEventSource.latest();
+    act(() => stream.emit({ kind: "snapshot", ...page([line("a", 1)]) }));
+    act(() => stream.emit({ kind: "status", source: "live", rateLimited: true }));
+    expect(current().rateLimitedUntil).not.toBeNull();
+    act(() => stream.emit({ kind: "snapshot", ...page([line("a", 1), line("c", 3)]) }));
+    expect(current().rateLimitedUntil).toBeNull();
+  });
+
+  it("opens one stream per instance, and closes it on unmount", () => {
+    render(LIVE);
+    // A re-render with the same query is not a reopen.
+    render(LIVE);
+    render({ ...LIVE });
+    expect(FakeEventSource.instances).toHaveLength(1);
+    expect(FakeEventSource.open()).toHaveLength(1);
+
+    act(() => current().toggleErrorsOnly());
+    expect(FakeEventSource.instances).toHaveLength(2);
+    expect(FakeEventSource.open()).toHaveLength(1);
+
+    act(() => root.unmount());
+    expect(FakeEventSource.open()).toHaveLength(0);
+    // afterEach unmounts again; give it a root that is still live.
+    root = createRoot(container);
+  });
+
+  it("leaves one open stream after a StrictMode remount", () => {
+    act(() => {
+      root.render(
+        <StrictMode>
+          <Probe window={LIVE} />
+        </StrictMode>,
+      );
+    });
+    expect(FakeEventSource.open()).toHaveLength(1);
   });
 
   it("reopens the stream with level=error for errors only", () => {

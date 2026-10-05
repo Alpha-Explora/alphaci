@@ -121,6 +121,7 @@ export function ProjectDetailTabs({
       onChange={vm.setTab}
       label="Project sections"
       idPrefix="project-detail"
+      trailing={repoSwitchFor(folder, productView, vm)}
     />
   );
   const headerTabs = productView ? <div data-tour="project-detail-tabs">{tabs}</div> : undefined;
@@ -159,6 +160,27 @@ export function ProjectDetailTabs({
         </div>
       </div>
     </section>
+  );
+}
+
+/**
+ * The repository switch, which ends the tab row: it changes which page the
+ * tabs belong to, so it sits with them rather than in the header above. Only a
+ * named multi-repository Project has one, and the product view never does.
+ */
+function repoSwitchFor(
+  folder: ProjectFolderViewModel | undefined,
+  productView: boolean,
+  vm: ProjectDetailTabsViewModel,
+): ReactNode {
+  if (!folder?.projectName || productView) return undefined;
+  return (
+    <ProjectRepoSwitch
+      options={folder.options}
+      projectName={folder.projectName}
+      currentTab={vm.tab}
+      visibleTabs={vm.visibleTabs}
+    />
   );
 }
 
@@ -215,8 +237,6 @@ function ProjectPageHeader({
       external={external}
       folder={folder}
       projectName={folder.projectName}
-      tab={vm.tab}
-      visibleTabs={vm.visibleTabs}
       productView={productView}
       tabs={tabs}
       clone={clone}
@@ -314,7 +334,7 @@ function ProjectStatusBadges({
  * The header of one repository of a multi-repository Project: the Project is
  * the title, this repository the subtitle (its status badges beside it,
  * because the status is the repository's, not the Project's), and the switch
- * to its sibling repositories sits at the top right. The QA Team and Product
+ * to its sibling repositories ends the tab row (see ProjectDetailTabs). The QA Team and Product
  * owners get no switch (they judge the Project as one product) and no
  * "Manage project" (their Checklists tab carries the Project's QA); their
  * sections take its place. The identity and Clone show on Overview only.
@@ -324,8 +344,6 @@ function ProjectFolderHeader({
   external,
   folder,
   projectName,
-  tab,
-  visibleTabs,
   productView,
   tabs,
   clone,
@@ -335,14 +353,13 @@ function ProjectFolderHeader({
   external: boolean;
   folder: ProjectFolderViewModel;
   projectName: string;
-  tab: ProjectDetailTab;
-  visibleTabs: ReadonlyArray<ProjectDetailTab>;
   productView: boolean;
   tabs?: ReactNode;
   clone?: ReactNode;
   identityShown: boolean;
 }>) {
   const reduceMotion = useReducedMotion();
+  const manage = folder.manageHref && !productView ? folder.manageHref : null;
   return (
     <motion.div
       className={headerClassName("project-detail-header project-folder-header", tabs, identityShown)}
@@ -350,25 +367,19 @@ function ProjectFolderHeader({
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
     >
-      <div className="project-folder-header__aside">
-        {productView ? null : (
-          <ProjectRepoSwitch
-            options={folder.options}
-            projectName={projectName}
-            currentTab={tab}
-            visibleTabs={visibleTabs}
-          />
-        )}
-        {folder.manageHref && !productView ? (
-          <Link className="project-folder-header__manage" href={folder.manageHref}>
-            Manage project
-            <span aria-hidden="true" className="project-folder-header__manage-arrow">
-              &rarr;
-            </span>
-          </Link>
-        ) : null}
-        {tabs}
-      </div>
+      {manage || tabs ? (
+        <div className="project-folder-header__aside">
+          {manage ? (
+            <Link className="project-folder-header__manage" href={manage}>
+              Manage project
+              <span aria-hidden="true" className="project-folder-header__manage-arrow">
+                &rarr;
+              </span>
+            </Link>
+          ) : null}
+          {tabs}
+        </div>
+      ) : null}
       {identityShown ? (
         <div className="project-folder-header__identity">
           <h1 className="workflow-page-title">{projectName}</h1>
