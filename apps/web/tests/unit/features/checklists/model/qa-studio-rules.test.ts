@@ -4,9 +4,10 @@ import {
   chromeSize,
   DEFAULT_STUDIO_LAYOUT,
   defaultEnvironmentKey,
+  customResolutionChoice,
   DEVICE_PRESETS,
+  defaultResolutionId,
   devicePreset,
-  devicePresetDetail,
   dimensionsLabel,
   fitDeviceScale,
   frameChrome,
@@ -17,13 +18,16 @@ import {
   orientationLabel,
   previewPageUrl,
   QA_BRANCH,
+  RESOLUTION_PRESETS,
+  resolutionLabel,
   resolveDeviceDimensions,
   resolveEnvironment,
+  resolveResolution,
   resolveStudioLayout,
-  sanitizePreviewPath,
   scaleLabel,
   STUDIO_LAYOUTS,
   studioEnvironments,
+  validateCustomResolution,
 } from "../../../../../src/features/checklists/model/qa-studio-rules";
 import type { ProjectBranchPreview } from "../../../../../src/shared/api/contracts";
 import { automation, qualitySuccess, verifyFailure } from "../qa-automation-fixtures";
@@ -107,7 +111,6 @@ describe("devices", () => {
       ["tablet", 768, 1024, "tablet", true],
       ["mobile", 375, 812, "phone", true],
     ]);
-    expect(devicePresetDetail(devicePreset("tablet"))).toBe("768 × 1024");
     expect(dimensionsLabel({ width: 1440, height: 900 })).toBe("1440 × 900");
   });
 
@@ -221,37 +224,153 @@ describe("floating checklist launcher", () => {
   });
 });
 
-describe("sanitizePreviewPath", () => {
+describe("previewPageUrl", () => {
   const base = "https://shop.example.com/some/path";
-
-  it("keeps same-host paths, adding the leading slash", () => {
-    expect(sanitizePreviewPath("/checkout?step=2#pay", base)).toEqual({ ok: true, path: "/checkout?step=2#pay" });
-    expect(sanitizePreviewPath("cart", base)).toEqual({ ok: true, path: "/cart" });
-    expect(sanitizePreviewPath("   ", base)).toEqual({ ok: true, path: "/" });
-    expect(sanitizePreviewPath("https://shop.example.com/orders", base)).toEqual({ ok: true, path: "/orders" });
-  });
-
-  it.each([
-    "https://evil.example.com/steal",
-    "//evil.example.com/x",
-    "javascript:alert(1)",
-    "\\\\evil.example.com",
-    "/\\evil.example.com",
-    "http://shop.example.com/downgrade",
-    "data:text/html,hi",
-  ])("refuses %s", (input) => {
-    const result = sanitizePreviewPath(input, base);
-    expect(result.ok).toBe(false);
-    if (!result.ok) expect(result.error).toMatch(/Stay on shop\.example\.com/);
-  });
-
-  it("refuses everything when the environment has no usable address", () => {
-    expect(sanitizePreviewPath("/x", "not a url").ok).toBe(false);
-  });
 
   it("appends the path to the preview's origin, dropping its own path", () => {
     expect(previewPageUrl(base, "/checkout")).toBe("https://shop.example.com/checkout");
     expect(previewPageUrl(base, "")).toBe("https://shop.example.com/");
     expect(previewPageUrl("nope", "/x")).toBeNull();
+  });
+});
+
+describe("resolution presets", () => {
+  const sizes = (id: "desktop" | "tablet" | "mobile") =>
+    RESOLUTION_PRESETS[id].map((preset) => `${preset.width}x${preset.height}`);
+
+  it("lists the agreed sizes per class, portrait for the rotatable ones", () => {
+    expect(sizes("desktop")).toEqual(["1280x720", "1366x768", "1440x900", "1536x864", "1920x1080", "2560x1440"]);
+    expect(sizes("tablet")).toEqual(["768x1024", "820x1180", "834x1194", "1024x1366"]);
+    expect(sizes("mobile")).toEqual(["360x800", "375x667", "375x812", "390x844", "393x852", "412x915", "430x932"]);
+    for (const id of ["tablet", "mobile"] as const) {
+      expect(RESOLUTION_PRESETS[id].every((preset) => preset.height > preset.width)).toBe(true);
+    }
+  });
+
+  it("names the hardware a size stands for, and labels desktop sizes bare", () => {
+    expect(resolutionLabel(RESOLUTION_PRESETS.desktop[4])).toBe("1920 × 1080");
+    expect(resolutionLabel(RESOLUTION_PRESETS.mobile[3])).toBe("390 × 844 · iPhone 14");
+    expect(resolutionLabel(RESOLUTION_PRESETS.tablet[2])).toBe('834 × 1194 · iPad Pro 11"');
+  });
+
+  it("opens every class on its device preset's own size, which is one of its presets", () => {
+    for (const preset of DEVICE_PRESETS) {
+      const id = defaultResolutionId(preset.id);
+      expect(id).toBe(`${preset.width}x${preset.height}`);
+      expect(RESOLUTION_PRESETS[preset.id].map((entry) => entry.id)).toContain(id);
+      expect(resolveResolution(preset.id, null)).toMatchObject({ choice: id, width: preset.width, height: preset.height });
+    }
+  });
+
+  it("has unique ids within a class", () => {
+    for (const presets of Object.values(RESOLUTION_PRESETS)) {
+      expect(new Set(presets.map((preset) => preset.id)).size).toBe(presets.length);
+    }
+  });
+});
+
+describe("resolveResolution", () => {
+  it("resolves a known preset id to its size", () => {
+    expect(resolveResolution("desktop", "1920x1080")).toEqual({
+      choice: "1920x1080",
+      width: 1920,
+      height: 1080,
+      preset: RESOLUTION_PRESETS.desktop[4],
+    });
+    expect(resolveResolution("mobile", "390x844")).toMatchObject({ width: 390, height: 844 });
+  });
+
+  it("resolves a typed size, normalising its spelling", () => {
+    expect(resolveResolution("desktop", "custom:1500x900")).toEqual({
+      choice: "custom:1500x900",
+      width: 1500,
+      height: 900,
+      preset: null,
+    });
+    expect(resolveResolution("desktop", "custom:01500x0900").choice).toBe("custom:1500x900");
+  });
+
+  it.each([null, "", "garbage", "1920x1081", "custom:", "custom:100x900", "custom:5000x900", "custom:1500x100", "custom:1500x2500", "custom:1500x900x1"])(
+    "falls back to the class default for %p",
+    (stored) => {
+      expect(resolveResolution("desktop", stored)).toMatchObject({ choice: "1440x900", width: 1440, height: 900 });
+    },
+  );
+
+  it("does not take another class's size", () => {
+    expect(resolveResolution("mobile", "1920x1080")).toMatchObject({ choice: "375x812" });
+    expect(resolveResolution("tablet", "375x812")).toMatchObject({ choice: "768x1024" });
+  });
+
+  it("builds a storable custom choice", () => {
+    expect(customResolutionChoice(1500, 900)).toBe("custom:1500x900");
+  });
+});
+
+describe("validateCustomResolution", () => {
+  it("accepts whole numbers within 320–3840 wide and 320–2400 tall, edges included", () => {
+    expect(validateCustomResolution("1500", "900")).toEqual({ ok: true, width: 1500, height: 900 });
+    expect(validateCustomResolution(" 320 ", "320")).toEqual({ ok: true, width: 320, height: 320 });
+    expect(validateCustomResolution("3840", "2400")).toEqual({ ok: true, width: 3840, height: 2400 });
+  });
+
+  it.each([
+    ["319", "900", /Width must be a whole number from 320 to 3840/],
+    ["3841", "900", /Width/],
+    ["", "900", /Width/],
+    ["abc", "900", /Width/],
+    ["1500.5", "900", /Width/],
+    ["-1500", "900", /Width/],
+    ["1500", "319", /Height must be a whole number from 320 to 2400/],
+    ["1500", "2401", /Height/],
+    ["1500", "", /Height/],
+  ])("refuses %p × %p", (width, height, message) => {
+    const result = validateCustomResolution(width, height);
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error).toMatch(message);
+  });
+
+  it("names the width first when both are wrong", () => {
+    const result = validateCustomResolution("10", "10");
+    expect(result.ok === false && result.error).toMatch(/Width/);
+  });
+});
+
+describe("resolveDeviceDimensions with a chosen size", () => {
+  it("uses the chosen size instead of the preset's", () => {
+    const desktop = devicePreset("desktop");
+    expect(resolveDeviceDimensions(desktop, "portrait", { width: 1920, height: 1080 })).toEqual({
+      width: 1920,
+      height: 1080,
+      orientation: "landscape",
+    });
+  });
+
+  it("swaps the chosen size in landscape for a rotatable class, and never for Desktop", () => {
+    const iphone = { width: 390, height: 844 };
+    expect(resolveDeviceDimensions(devicePreset("mobile"), "portrait", iphone)).toEqual({ width: 390, height: 844, orientation: "portrait" });
+    expect(resolveDeviceDimensions(devicePreset("mobile"), "landscape", iphone)).toEqual({ width: 844, height: 390, orientation: "landscape" });
+    expect(resolveDeviceDimensions(devicePreset("tablet"), "landscape", { width: 1024, height: 1366 })).toEqual({
+      width: 1366,
+      height: 1024,
+      orientation: "landscape",
+    });
+    expect(resolveDeviceDimensions(devicePreset("desktop"), "landscape", { width: 1920, height: 1080 })).toMatchObject({ width: 1920, height: 1080 });
+  });
+});
+
+describe("fitDeviceScale for large resolutions", () => {
+  it("scales 2560 × 1440 down to fit a docked stage and never overflows it", () => {
+    const scale = fitDeviceScale(2560, 1440, 734, 700, 0, 40);
+    expect(scale).toBeCloseTo(734 / 2560, 6);
+    expect(2560 * scale).toBeLessThanOrEqual(734);
+    expect(1440 * scale + 40).toBeLessThanOrEqual(700);
+  });
+
+  it("still fits the widest allowed size into a phone-width stage", () => {
+    const scale = fitDeviceScale(3840, 2400, 320, 600, 0, 40);
+    expect(scale).toBeGreaterThan(MIN_DEVICE_SCALE);
+    expect(3840 * scale).toBeLessThanOrEqual(320);
+    expect(fitDeviceScale(3840, 2400, 300, 600, 0, 40) * 3840).toBeLessThanOrEqual(300);
   });
 });

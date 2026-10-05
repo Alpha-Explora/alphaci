@@ -1,27 +1,33 @@
 "use client";
 
-import type { FormEvent, ReactNode, Ref } from "react";
+import { useId, useState, type KeyboardEvent, type ReactNode, type Ref } from "react";
 
 import {
+  CUSTOM_RESOLUTION_LIMITS,
+  CUSTOM_RESOLUTION_OPTION,
   DEVICE_PRESETS,
-  devicePresetDetail,
   orientationLabel,
+  RESOLUTION_PRESETS,
+  resolutionLabel,
   STUDIO_LAYOUTS,
+  validateCustomResolution,
   type DevicePresetId,
   type StudioLayout,
 } from "../../model/qa-studio-rules";
-import { commitLabel, commitSourceLabel } from "../../model/qa-run-rules";
+import { commitSourceLabel } from "../../model/qa-run-rules";
 import type { QaCommitSource } from "../../model/qa-run-types";
+import type { CopyLinkStatus } from "../view-models/use-copy-link";
 import type { StudioViewportViewModel } from "../view-models/use-studio-viewport-view-model";
 import {
-  ArrowRightIcon,
   BranchIcon,
+  CheckIcon,
   CollapseIcon,
   DesktopIcon,
   ExpandIcon,
   ExternalIcon,
   LayoutSplitIcon,
   LayoutWideIcon,
+  LinkIcon,
   MobileIcon,
   ReloadIcon,
   RotateIcon,
@@ -38,6 +44,19 @@ const DEVICE_ICONS: Record<DevicePresetId, () => ReactNode> = {
 const LAYOUT_ICONS: Record<StudioLayout, () => ReactNode> = {
   wide: LayoutWideIcon,
   split: LayoutSplitIcon,
+};
+
+/** Copy link's three states: the icon and tooltip say it, the live region announces it. */
+const COPY_LINK_ICONS: Record<CopyLinkStatus, () => ReactNode> = {
+  idle: LinkIcon,
+  copied: CheckIcon,
+  failed: WarningIcon,
+};
+
+const COPY_LINK_TITLES: Record<CopyLinkStatus, string> = {
+  idle: "Copy link to share",
+  copied: "Copied",
+  failed: "Couldn't copy",
 };
 
 /**
@@ -76,7 +95,7 @@ function EnvironmentPicker({ vm }: Readonly<{ vm: StudioViewportViewModel }>) {
 
 function DeviceSwitch({ vm }: Readonly<{ vm: StudioViewportViewModel }>) {
   return (
-    <div className="qa-device-switch" role="radiogroup" aria-label="Device width">
+    <div className="qa-device-switch" role="radiogroup" aria-label="Device class">
       {DEVICE_PRESETS.map((preset) => {
         const Icon = DEVICE_ICONS[preset.id];
         const selected = vm.device.id === preset.id;
@@ -86,16 +105,112 @@ function DeviceSwitch({ vm }: Readonly<{ vm: StudioViewportViewModel }>) {
             type="button"
             role="radio"
             aria-checked={selected}
-            title={`${preset.label} · ${devicePresetDetail(preset)}`}
+            title={preset.label}
             className={`qa-device-switch__option${selected ? " qa-device-switch__option--on" : ""}`}
             onClick={() => vm.setDevice(preset.id)}
           >
             <Icon />
             <span>{preset.label}</span>
-            <span className="qa-device-switch__px">{preset.width}</span>
           </button>
         );
       })}
+    </div>
+  );
+}
+
+/**
+ * A typed size, for a screen the presets miss. Applied on Enter or when a field
+ * loses focus, never per keystroke: "1" on the way to "1920" is not a viewport.
+ * An out-of-range size is refused with a message and the frame keeps its last
+ * valid size. Keyed by device class, so each class starts from its own size.
+ */
+function CustomResolution({ vm }: Readonly<{ vm: StudioViewportViewModel }>) {
+  const [width, setWidth] = useState(String(vm.resolution.width));
+  const [height, setHeight] = useState(String(vm.resolution.height));
+  const [error, setError] = useState<string | null>(null);
+  const errorId = useId();
+  const limits = CUSTOM_RESOLUTION_LIMITS;
+
+  function apply() {
+    const result = validateCustomResolution(width, height);
+    if (!result.ok) {
+      setError(result.error);
+      return;
+    }
+    setError(null);
+    vm.setCustomResolution(result.width, result.height);
+  }
+
+  function applyOnEnter(event: KeyboardEvent<HTMLInputElement>) {
+    if (event.key !== "Enter") return;
+    event.preventDefault();
+    apply();
+  }
+
+  const shared = {
+    className: `qa-resolution__input${error ? " qa-resolution__input--invalid" : ""}`,
+    type: "number",
+    inputMode: "numeric",
+    "aria-invalid": error ? true : undefined,
+    "aria-describedby": error ? errorId : undefined,
+    onBlur: apply,
+    onKeyDown: applyOnEnter,
+  } as const;
+
+  return (
+    <>
+      <div className="qa-resolution__custom" role="group" aria-label="Custom resolution">
+        <input
+          {...shared}
+          aria-label="Width in pixels"
+          min={limits.minWidth}
+          max={limits.maxWidth}
+          value={width}
+          onChange={(event) => setWidth(event.target.value)}
+        />
+        <span aria-hidden="true">×</span>
+        <input
+          {...shared}
+          aria-label="Height in pixels"
+          min={limits.minHeight}
+          max={limits.maxHeight}
+          value={height}
+          onChange={(event) => setHeight(event.target.value)}
+        />
+      </div>
+      {error ? (
+        <p className="qa-form-error qa-toolbar__error qa-resolution__error" id={errorId} role="alert">
+          {error}
+        </p>
+      ) : null}
+    </>
+  );
+}
+
+/**
+ * The size the selected device class is viewed at: its presets, then "Custom…".
+ * Picking one only restyles the frame (the page under test is not reloaded).
+ * Rotatable classes list portrait sizes; Rotate turns whichever is chosen.
+ */
+function ResolutionPicker({ vm }: Readonly<{ vm: StudioViewportViewModel }>) {
+  const custom = vm.resolution.preset === null;
+  return (
+    <div className="qa-resolution">
+      <select
+        className="hier-select qa-toolbar__select qa-resolution__select"
+        aria-label={`${vm.device.label} resolution`}
+        title="Resolution"
+        value={custom ? CUSTOM_RESOLUTION_OPTION : vm.resolution.choice}
+        onChange={(event) => vm.setResolution(event.target.value)}
+      >
+        {RESOLUTION_PRESETS[vm.device.id].map((preset) => (
+          <option key={preset.id} value={preset.id}>
+            {resolutionLabel(preset)}
+          </option>
+        ))}
+        <option value={CUSTOM_RESOLUTION_OPTION}>Custom…</option>
+      </select>
+      {custom ? <CustomResolution key={vm.device.id} vm={vm} /> : null}
     </div>
   );
 }
@@ -118,35 +233,18 @@ function RotateButton({ vm }: Readonly<{ vm: StudioViewportViewModel }>) {
   );
 }
 
-function RouteField({ vm }: Readonly<{ vm: StudioViewportViewModel }>) {
-  const host = vm.host;
-
-  function handleSubmit(event: FormEvent) {
-    event.preventDefault();
-    vm.submitPath();
-  }
-
+/**
+ * The one thing the commit tells a tester that the page does not: that the
+ * commit under test is the branch head, NOT what is deployed, so what they see
+ * may not be what they are signing off. A deployed commit says nothing here.
+ */
+function CommitSourceWarning({ commitSource }: Readonly<{ commitSource: QaCommitSource | null }>) {
+  if (commitSource !== "branch_head") return null;
   return (
-    <form className="qa-route" onSubmit={handleSubmit} role="search" aria-label="Route under test">
-      <label className={`qa-route__box${vm.pathError ? " qa-route__box--invalid" : ""}`}>
-        <span className="sr-only">Route on {host ?? "the environment"}</span>
-        {host ? <span className="qa-route__host">{host}</span> : null}
-        <input
-          className="qa-route__input"
-          value={vm.pathDraft}
-          disabled={!host}
-          spellCheck={false}
-          autoComplete="off"
-          placeholder="/"
-          aria-invalid={vm.pathError ? true : undefined}
-          aria-describedby={vm.pathError ? "qa-route-error" : undefined}
-          onChange={(event) => vm.setPathDraft(event.target.value)}
-        />
-      </label>
-      <button type="submit" className="qa-icon-button" disabled={!host} aria-label="Go to route" title="Go">
-        <ArrowRightIcon />
-      </button>
-    </form>
+    <span className="qa-commit-warning">
+      <WarningIcon />
+      {commitSourceLabel(commitSource)}
+    </span>
   );
 }
 
@@ -183,6 +281,34 @@ function LayoutSwitch({ vm }: Readonly<{ vm: StudioViewportViewModel }>) {
   );
 }
 
+/**
+ * Copies the environment's page URL, to share with someone who is not in the
+ * studio. The live region is always rendered (a region added together with its
+ * text is not reliably announced) and says nothing until a copy has happened.
+ */
+function CopyLinkButton({ vm }: Readonly<{ vm: StudioViewportViewModel }>) {
+  const status = vm.copyLinkStatus;
+  const Icon = COPY_LINK_ICONS[status];
+  return (
+    <>
+      <button
+        type="button"
+        className="qa-icon-button"
+        data-status={status}
+        onClick={() => void vm.copyLink()}
+        disabled={!vm.pageUrl}
+        aria-label="Copy link"
+        title={COPY_LINK_TITLES[status]}
+      >
+        <Icon />
+      </button>
+      <span className="sr-only" role="status">
+        {status === "idle" ? "" : COPY_LINK_TITLES[status]}
+      </span>
+    </>
+  );
+}
+
 function FrameActions({
   vm,
   fullScreenRef,
@@ -199,6 +325,7 @@ function FrameActions({
       >
         <ReloadIcon />
       </button>
+      <CopyLinkButton vm={vm} />
       {vm.pageUrl ? (
         <a
           className="qa-icon-button"
@@ -227,34 +354,12 @@ function FrameActions({
   );
 }
 
-/** "main @ abc1234" and whether that commit is what is deployed. */
-export function CommitChip({
-  branch,
-  commitSha,
-  commitSource,
-}: Readonly<{ branch: string; commitSha: string | null; commitSource: QaCommitSource | null }>) {
-  const source = commitSourceLabel(commitSource);
-  return (
-    <div className="qa-commit" aria-label="Commit under test">
-      <span className="qa-commit__ref">
-        <BranchIcon />
-        <code>{commitLabel(branch, commitSha)}</code>
-      </span>
-      {source ? (
-        <span className={`qa-commit__source qa-commit__source--${commitSource}`}>
-          {commitSource === "branch_head" ? <WarningIcon /> : null}
-          {source}
-        </span>
-      ) : null}
-    </div>
-  );
-}
-
 /**
- * The studio's controls: what to test (environment), at what size (device),
- * where (route), and the commit that answers there. The commit comes from the
- * run lookup, because the server — not the preview card — decides which sha a
- * run is recorded against.
+ * The studio's controls, one row: what to test (environment), at what size
+ * (device class, resolution, rotation), a warning when the commit under test is
+ * not the deployed one, and — right-aligned — the frame's actions. The commit
+ * comes from the run lookup, because the server — not the preview card —
+ * decides which sha a run is recorded against.
  */
 export function StudioToolbar({
   vm,
@@ -271,25 +376,11 @@ export function StudioToolbar({
       <div className="qa-toolbar__row">
         <EnvironmentPicker vm={vm} />
         <DeviceSwitch vm={vm} />
+        <ResolutionPicker vm={vm} />
         <RotateButton vm={vm} />
-        {commit && vm.environment ? (
-          <CommitChip
-            branch={vm.environment.branch}
-            commitSha={commit.commitSha}
-            commitSource={commit.commitSource}
-          />
-        ) : null}
-      </div>
-      {/* The address bar: where in the environment, and the browser actions for it. */}
-      <div className="qa-toolbar__row qa-toolbar__row--address">
-        <RouteField vm={vm} />
+        <CommitSourceWarning commitSource={commit?.commitSource ?? null} />
         <FrameActions vm={vm} fullScreenRef={fullScreenRef} />
       </div>
-      {vm.pathError ? (
-        <p className="qa-form-error qa-toolbar__error" id="qa-route-error" role="alert">
-          {vm.pathError}
-        </p>
-      ) : null}
     </div>
   );
 }

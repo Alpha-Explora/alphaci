@@ -71,10 +71,11 @@ export function ExternalIcon() {
   );
 }
 
-export function ArrowRightIcon() {
+export function LinkIcon() {
   return (
     <Glyph>
-      <path d="M3 8h9.5M8.75 4.25 12.5 8l-3.75 3.75" />
+      <path d="M6.75 9.25a2.5 2.5 0 0 0 3.54 0l2.5-2.5a2.5 2.5 0 0 0-3.54-3.54l-.7.7" />
+      <path d="M9.25 6.75a2.5 2.5 0 0 0-3.54 0l-2.5 2.5a2.5 2.5 0 0 0 3.54 3.54l.7-.7" />
     </Glyph>
   );
 }

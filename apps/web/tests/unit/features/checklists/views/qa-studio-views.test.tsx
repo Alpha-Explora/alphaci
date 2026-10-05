@@ -135,8 +135,43 @@ function statusSelect(container: HTMLElement, index: number): HTMLSelectElement 
   return label?.querySelector("select") ?? null;
 }
 
+function resolutionSelect(container: HTMLElement): HTMLSelectElement {
+  return container.querySelector<HTMLSelectElement>("select.qa-resolution__select")!;
+}
+
+function radio(container: HTMLElement, name: string): HTMLButtonElement {
+  return [...container.querySelectorAll<HTMLButtonElement>('.qa-device-switch [role="radio"]')].find(
+    (button) => button.textContent === name,
+  )!;
+}
+
+function customInput(container: HTMLElement, label: string): HTMLInputElement {
+  return container.querySelector<HTMLInputElement>(`.qa-resolution__custom input[aria-label="${label}"]`)!;
+}
+
+async function chooseOption(select: HTMLSelectElement, value: string) {
+  await act(async () => {
+    select.value = value;
+    select.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+}
+
+async function typeInto(input: HTMLInputElement, value: string) {
+  const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")!.set!;
+  await act(async () => {
+    setter.call(input, value);
+    input.dispatchEvent(new Event("input", { bubbles: true }));
+  });
+}
+
+async function blur(input: HTMLInputElement) {
+  await act(async () => {
+    input.dispatchEvent(new FocusEvent("focusout", { bubbles: true }));
+  });
+}
+
 describe("QaStudioPanel", () => {
-  it("frames an embeddable preview with the shared sandbox and shows the commit under test", async () => {
+  it("frames an embeddable preview with the shared sandbox, always opening the environment root", async () => {
     setup({ run: runAs("qa", { items: ITEMS }) });
     const container = await studio("qa");
     const frame = container.querySelector("iframe");
@@ -145,8 +180,6 @@ describe("QaStudioPanel", () => {
       "allow-scripts allow-forms allow-popups allow-same-origin",
     );
     expect(frame?.getAttribute("referrerpolicy")).toBe("no-referrer");
-    expect(container.textContent).toContain("uat @ abc1234");
-    expect(container.textContent).toContain("deployed");
     expect(runs.current).toHaveBeenCalledWith("project-1", { branch: "uat", checklistId: "cl-1" });
   });
 
@@ -180,20 +213,202 @@ describe("QaStudioPanel", () => {
     expect(container.textContent).toContain("not deployed — testing the branch head");
   });
 
-  it("rejects a route on another host and keeps the frame where it was", async () => {
+  it("has no address box and one toolbar row, with the frame's actions on its right in order", async () => {
     setup({ run: runAs("qa", { items: ITEMS }) });
     const container = await studio("qa");
-    const input = container.querySelector<HTMLInputElement>(".qa-route__input")!;
-    const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")!.set!;
+    expect(container.querySelector(".qa-route")).toBeNull();
+    expect(container.querySelector(".qa-toolbar__row--address")).toBeNull();
+    expect(container.querySelector('[aria-label="Go to route"]')).toBeNull();
+    expect(container.querySelector('[role="search"]')).toBeNull();
+    expect(container.querySelectorAll(".qa-toolbar__row")).toHaveLength(1);
+    expect(container.querySelector(".qa-toolbar input")).toBeNull();
+
+    const row = container.querySelector(".qa-toolbar__row")!;
+    const actions = [...row.querySelectorAll(".qa-toolbar__actions button, .qa-toolbar__actions a")].map((node) =>
+      node.getAttribute("aria-label"),
+    );
+    expect(actions).toEqual([
+      "Reload preview",
+      "Copy link",
+      "Open in new tab",
+      "Wide preview",
+      "Split",
+      "Full screen",
+    ]);
+    // The actions close the row: nothing follows them.
+    expect(row.lastElementChild).toBe(row.querySelector(".qa-toolbar__actions"));
+  });
+
+  it("drops the commit chip and says nothing about a deployed commit", async () => {
+    setup({ run: runAs("qa", { items: ITEMS }), commitSource: "deployment" });
+    const container = await studio("qa");
+    expect(container.querySelector('[aria-label="Commit under test"]')).toBeNull();
+    expect(container.querySelector(".qa-commit")).toBeNull();
+    expect(container.querySelector(".qa-commit-warning")).toBeNull();
+  });
+
+  it("keeps the warning when the commit under test is the branch head, and only then", async () => {
+    setup({ run: runAs("qa", { items: ITEMS }), commitSource: "branch_head" });
+    const container = await studio("qa");
+    const warning = container.querySelector(".qa-toolbar .qa-commit-warning");
+    expect(warning?.textContent).toBe("not deployed — testing the branch head");
+    expect(warning?.querySelector("svg")).not.toBeNull();
+    expect(container.querySelector(".qa-toolbar__row")?.contains(warning)).toBe(true);
+  });
+
+  it("offers each class's resolutions and changes the frame's size without re-mounting it", async () => {
+    setup({ run: runAs("qa", { items: ITEMS }) });
+    const container = await studio("qa");
+    const frame = container.querySelector("iframe")!;
+    const caption = () => container.querySelector(".qa-preview__device")?.textContent;
+    const screenWidth = () =>
+      container.querySelector<HTMLElement>(".qa-device")?.style.getPropertyValue("--qa-screen-w");
+
+    const desktop = resolutionSelect(container);
+    expect([...desktop.options].map((option) => option.value)).toEqual([
+      "1280x720",
+      "1366x768",
+      "1440x900",
+      "1536x864",
+      "1920x1080",
+      "2560x1440",
+      "custom",
+    ]);
+    expect(desktop.value).toBe("1440x900");
+    expect(desktop.selectedOptions[0].textContent).toBe("1440 × 900");
+    expect(caption()).toBe("Desktop · 1440 × 900");
+    expect(container.querySelector(".qa-device-switch__px")).toBeNull();
+
+    await chooseOption(desktop, "1920x1080");
+    expect(resolutionSelect(container).value).toBe("1920x1080");
+    expect(caption()).toBe("Desktop · 1920 × 1080");
+    expect(screenWidth()).toBe("1920");
+    expect(container.querySelector("iframe")).toBe(frame);
+    expect(frame.getAttribute("src")).toBe("https://shop.example.com/");
+
+    await act(async () => radio(container, "Mobile").click());
+    const mobile = resolutionSelect(container);
+    expect([...mobile.options].map((option) => option.textContent)).toEqual([
+      "360 × 800 · Android",
+      "375 × 667 · iPhone SE",
+      "375 × 812 · iPhone X/11 Pro",
+      "390 × 844 · iPhone 14",
+      "393 × 852 · iPhone 15",
+      "412 × 915 · Pixel",
+      "430 × 932 · iPhone Pro Max",
+      "Custom…",
+    ]);
+    expect(mobile.value).toBe("375x812");
+    await chooseOption(mobile, "390x844");
+    expect(caption()).toBe("Mobile · 390 × 844 · Portrait");
+    const rotate = container.querySelector<HTMLButtonElement>("button.qa-rotate")!;
+    await act(async () => rotate.click());
+    expect(caption()).toBe("Mobile · 844 × 390 · Landscape");
+    expect(container.querySelector("iframe")).toBe(frame);
+
+    await act(async () => radio(container, "Desktop").click());
+    expect(caption()).toBe("Desktop · 1920 × 1080");
+  });
+
+  it("validates a custom size, applies it on Enter or blur, and keeps the last valid size meanwhile", async () => {
+    setup({ run: runAs("qa", { items: ITEMS }) });
+    const container = await studio("qa");
+    const frame = container.querySelector("iframe")!;
+    const caption = () => container.querySelector(".qa-preview__device")?.textContent;
+    expect(container.querySelector(".qa-resolution__custom")).toBeNull();
+
+    await chooseOption(resolutionSelect(container), "custom");
+    expect(resolutionSelect(container).value).toBe("custom");
+    const [width, height] = [customInput(container, "Width in pixels"), customInput(container, "Height in pixels")];
+    expect([width.value, height.value]).toEqual(["1440", "900"]);
+    expect(caption()).toBe("Desktop · 1440 × 900");
+
+    await typeInto(width, "100");
     await act(async () => {
-      setter.call(input, "https://evil.example.com/x");
-      input.dispatchEvent(new Event("input", { bubbles: true }));
+      width.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true, cancelable: true }));
     });
+    expect(container.querySelector(".qa-resolution__error")?.textContent).toBe(
+      "Width must be a whole number from 320 to 3840.",
+    );
+    expect(width.getAttribute("aria-invalid")).toBe("true");
+    expect(caption()).toBe("Desktop · 1440 × 900");
+
+    await typeInto(width, "1500");
+    await typeInto(height, "2500");
+    await blur(height);
+    expect(container.querySelector(".qa-resolution__error")?.textContent).toBe(
+      "Height must be a whole number from 320 to 2400.",
+    );
+    expect(caption()).toBe("Desktop · 1440 × 900");
+
+    await typeInto(height, "900");
     await act(async () => {
-      input.form!.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
+      height.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true, cancelable: true }));
     });
-    expect(container.textContent).toContain("Stay on shop.example.com");
-    expect(container.querySelector("iframe")?.getAttribute("src")).toBe("https://shop.example.com/");
+    expect(container.querySelector(".qa-resolution__error")).toBeNull();
+    expect(caption()).toBe("Desktop · 1500 × 900");
+
+    await typeInto(width, "3000");
+    await blur(width);
+    expect(caption()).toBe("Desktop · 3000 × 900");
+    expect(container.querySelector("iframe")).toBe(frame);
+
+    // Back to a preset: the typed fields go away.
+    await chooseOption(resolutionSelect(container), "1280x720");
+    expect(container.querySelector(".qa-resolution__custom")).toBeNull();
+    expect(caption()).toBe("Desktop · 1280 × 720");
+  });
+
+  describe("Copy link", () => {
+    const writeText = jest.fn();
+
+    beforeEach(() => {
+      writeText.mockReset();
+      Object.defineProperty(navigator, "clipboard", { value: { writeText }, configurable: true });
+    });
+
+    afterEach(() => {
+      Reflect.deleteProperty(navigator, "clipboard");
+    });
+
+    const copyButton = (container: HTMLElement) =>
+      container.querySelector<HTMLButtonElement>('button[aria-label="Copy link"]')!;
+    const liveRegion = (container: HTMLElement) =>
+      container.querySelector(".qa-toolbar__actions [role='status']")!;
+
+    it("copies the environment's page url and says so, politely", async () => {
+      writeText.mockResolvedValue(undefined);
+      setup({ run: runAs("qa", { items: ITEMS }) });
+      const container = await studio("qa");
+      const button = copyButton(container);
+      expect(button.title).toBe("Copy link to share");
+      expect(button.disabled).toBe(false);
+      expect(liveRegion(container).textContent).toBe("");
+
+      await act(async () => button.click());
+      expect(writeText).toHaveBeenCalledWith("https://shop.example.com/");
+      expect(liveRegion(container).textContent).toBe("Copied");
+      expect(copyButton(container).title).toBe("Copied");
+      expect(copyButton(container).dataset.status).toBe("copied");
+    });
+
+    it("says when the copy was refused, rather than looking as if it worked", async () => {
+      writeText.mockRejectedValue(new Error("denied"));
+      setup({ run: runAs("qa", { items: ITEMS }) });
+      const container = await studio("qa");
+      await act(async () => copyButton(container).click());
+      expect(liveRegion(container).textContent).toBe("Couldn't copy");
+      expect(copyButton(container).dataset.status).toBe("failed");
+    });
+
+    it("is disabled when the environment has no page address", async () => {
+      setup({ run: null, previews: [preview({ previewUrl: null, embeddable: false })] });
+      const container = await studio("qa");
+      const button = copyButton(container);
+      expect(button.disabled).toBe(true);
+      await act(async () => button.click());
+      expect(writeText).not.toHaveBeenCalled();
+    });
   });
 
   it("lets QA Team update qa items but not developer items", async () => {
@@ -361,7 +576,7 @@ describe("QA Studio — uat only", () => {
     const container = await studio("qa");
     expect(container.querySelector(".qa-toolbar__env-chip")?.textContent).toBe("uat");
     // No picker: there is nothing else to pick.
-    expect(container.querySelector(".qa-toolbar select")).toBeNull();
+    expect(container.querySelector(".qa-toolbar__env select")).toBeNull();
     expect(container.querySelector("iframe")?.getAttribute("src")).toBe("https://shop.example.com/");
     expect(runs.current).toHaveBeenCalledTimes(1);
     expect(runs.current).toHaveBeenCalledWith("project-1", { branch: "uat", checklistId: "cl-1" });
