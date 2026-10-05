@@ -3,6 +3,12 @@
 import { relativeTime } from "@/features/runs";
 import type { StageReport } from "@/shared/api/contracts";
 
+import {
+  failureForJob,
+  failurePreview,
+  logUnavailableMessage,
+  type FailureEntry,
+} from "../../model/failure-log-rules";
 import { diagnoseRunWithoutJobs } from "../../model/run-diagnosis";
 import {
   githubStatusChip,
@@ -14,13 +20,13 @@ import type { WorkflowRunSummary } from "../../view-models/use-pipeline-runs-vie
 import {
   useJobLogViewModel,
   useRunJobsViewModel,
-  type JobLogViewModel,
   type RunJob,
   type RunJobsViewModel,
 } from "../../view-models/use-run-jobs-view-model";
-import { JobLogView } from "./job-log-view";
+import { useStageFailureLogViewModel } from "../../view-models/use-stage-failure-log-view-model";
+import { JobLogPanel } from "./job-log-view";
 import { ChevronIcon } from "./pipeline-glyphs";
-import { StatusChip } from "./pipeline-stage-detail";
+import { FailureHint, StatusChip } from "./pipeline-stage-detail";
 import {
   WorkspaceEmpty,
   WorkspaceError,
@@ -127,11 +133,26 @@ function RunMeta({ branch, run }: Readonly<{ branch: string; run: WorkflowRunSum
   );
 }
 
+function isFailed(conclusion: string | null): boolean {
+  return conclusion === "failure" || conclusion === "timed_out";
+}
+
+/**
+ * An expanded run's jobs. A failed run also reads its failure log ONCE, here,
+ * so every failed job row can show its error without opening its log: one
+ * call per expanded run, never one per job, and never for a green run.
+ */
 function RunJobs({
   projectId,
   run,
   view,
 }: Readonly<{ projectId: string; run: WorkflowRunSummary; view: RunJobsViewModel }>) {
+  const failureLog = useStageFailureLogViewModel({
+    projectId,
+    runId: run.id,
+    enabled: isFailed(run.conclusion),
+  });
+
   if (view.status === "loading") return <WorkspaceLoading rows={3} />;
   if (view.status === "error") {
     return (
@@ -151,13 +172,22 @@ function RunJobs({
   return (
     <ul className="pipe-jobs">
       {view.jobs.map((job) => (
-        <JobRow key={job.id} projectId={projectId} job={job} />
+        <JobRow
+          key={job.id}
+          projectId={projectId}
+          job={job}
+          failure={isFailed(job.conclusion) ? failureForJob(failureLog.log, job.id) : null}
+        />
       ))}
     </ul>
   );
 }
 
-function JobRow({ projectId, job }: Readonly<{ projectId: string; job: RunJob }>) {
+function JobRow({
+  projectId,
+  job,
+  failure,
+}: Readonly<{ projectId: string; job: RunJob; failure: FailureEntry | null }>) {
   const view = useJobLogViewModel({ projectId, jobId: job.id });
   const logId = `job-log-${String(job.id)}`;
 
@@ -176,6 +206,8 @@ function JobRow({ projectId, job }: Readonly<{ projectId: string; job: RunJob }>
           {view.open ? "Hide log" : "View log"}
         </button>
       </div>
+
+      {failure && <JobErrorPreview failure={failure} />}
 
       {job.steps.length > 0 && (
         <ol className="pipe-job__steps">
@@ -196,31 +228,42 @@ function JobRow({ projectId, job }: Readonly<{ projectId: string; job: RunJob }>
 
       {view.open && (
         <div id={logId} className="pipe-job__log">
-          <JobLog view={view} />
+          <JobLogPanel view={view} />
         </div>
       )}
     </li>
   );
 }
 
-function JobLog({ view }: Readonly<{ view: JobLogViewModel }>) {
-  if (view.status === "loading") return <WorkspaceLoading rows={4} />;
-  if (view.status === "error") {
-    return (
-      <WorkspaceError
-        message={view.error ?? "The log for this job could not be read."}
-        onRetry={view.retry}
-      />
-    );
-  }
-  if (!view.log) return null;
-  if (!view.log.available) {
-    return (
-      <WorkspaceEmpty
-        title="No log available"
-        message="GitHub keeps logs for a limited time, and this one has expired."
-      />
-    );
-  }
-  return <JobLogView content={view.log.content} truncated={view.log.truncated} />;
+/**
+ * What a failed job printed, in one to three lines, and the backend's
+ * plain-English reading of it — above the steps, so the row answers "why"
+ * before anyone opens a four-hundred-line log.
+ */
+function JobErrorPreview({ failure }: Readonly<{ failure: FailureEntry }>) {
+  return (
+    <div className="pipe-job__error">
+      {failure.reason ? (
+        <p className="pipe-stage__reason">{logUnavailableMessage(failure.reason)}</p>
+      ) : (
+        <PreviewLines lines={failurePreview(failure.lines)} />
+      )}
+      {failure.hint && <FailureHint hint={failure.hint} />}
+    </div>
+  );
+}
+
+function PreviewLines({ lines }: Readonly<{ lines: readonly string[] }>) {
+  if (lines.length === 0) return null;
+  return (
+    <pre className="pipe-job__preview">
+      <code>
+        {lines.map((line, index) => (
+          <span key={index} className="pipe-job__preview-line">
+            {line}
+          </span>
+        ))}
+      </code>
+    </pre>
+  );
 }

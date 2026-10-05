@@ -9,6 +9,33 @@ import {
   type ToolResult,
 } from "@/features/runs";
 
+import { logUnavailableMessage } from "../../model/failure-log-rules";
+import type { JobLogViewModel } from "../../view-models/use-run-jobs-view-model";
+import { WorkspaceEmpty, WorkspaceError, WorkspaceLoading } from "./workspace-states";
+
+/**
+ * One job's log behind its view-model: loading, a retry, the reason a log is
+ * not there, or the log itself. Shared by the job rows, a failed stage's
+ * "View full log" and a failed pull request check, so the three cannot say
+ * three different things about the same unreadable log.
+ */
+export function JobLogPanel({ view }: Readonly<{ view: JobLogViewModel }>) {
+  if (view.status === "loading") return <WorkspaceLoading rows={4} />;
+  if (view.status === "error") {
+    return (
+      <WorkspaceError
+        message={view.error ?? "The log for this job could not be read."}
+        onRetry={view.retry}
+      />
+    );
+  }
+  if (!view.log) return null;
+  if (!view.log.available) {
+    return <WorkspaceEmpty title="No log available" message={logUnavailableMessage(view.log.reason)} />;
+  }
+  return <JobLogView content={view.log.content} truncated={view.log.truncated} />;
+}
+
 /**
  * A job's log, read as the tools that wrote it.
  *

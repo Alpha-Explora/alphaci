@@ -188,10 +188,47 @@ describe("PipelineRunsTab commit card", () => {
     ]);
   });
 
-  it("asks for no log when no stage actually ran and failed", async () => {
+  it("reads the log only for the stage that failed after passing, never for a clean commit", async () => {
     await render();
 
-    expect(mockedFailureLog).not.toHaveBeenCalled();
+    // Package passed, then its run (14) failed: that log is read, once. The
+    // clean commit and the stalled Verify stage ask for nothing.
+    expect(mockedFailureLog).toHaveBeenCalledTimes(1);
+    expect(mockedFailureLog).toHaveBeenCalledWith("p1", 14);
+  });
+
+  it("shows the promotion job's error under a stage that failed after passing", async () => {
+    mockedFailureLog.mockResolvedValue({
+      available: true,
+      jobId: 901,
+      jobName: "promote-to-uat / Create Promotion PR",
+      lines: ["##[error]GraphQL: Your token has not been granted the required scopes (read:org)."],
+      truncated: false,
+      foundErrorMarker: true,
+      hint: "The token that opens promotion pull requests is missing the read:org scope.",
+      failures: [
+        {
+          jobId: 901,
+          jobName: "promote-to-uat / Create Promotion PR",
+          stepName: "Open the promotion PR",
+          lines: ["##[error]GraphQL: Your token has not been granted the required scopes (read:org)."],
+          truncated: false,
+          foundErrorMarker: true,
+          hint: "The token that opens promotion pull requests is missing the read:org scope.",
+        },
+      ],
+    });
+
+    await render();
+
+    const stageCard = cards()[0]!.querySelector(".pipe-stage")!;
+    expect(stageCard.textContent).toContain("failed after the stage reported success");
+    expect(stageCard.textContent).not.toContain("still running at report time");
+    expect(stageCard.querySelector(".pipe-log__source")?.textContent).toBe(
+      "promote-to-uat / Create Promotion PR › Open the promotion PR",
+    );
+    expect(stageCard.querySelector(".pipe-hint")?.textContent).toContain("missing the read:org scope");
+    expect(stageCard.textContent).toContain("required scopes (read:org)");
   });
 
   it("loads jobs only when a single run is opened, never for the list", async () => {
@@ -205,6 +242,59 @@ describe("PipelineRunsTab commit card", () => {
     await act(async () => card.querySelector<HTMLButtonElement>("[data-run-head]")!.click());
     expect(mockedJobs).toHaveBeenCalledTimes(1);
     expect(mockedJobs).toHaveBeenCalledWith("p1", 14);
+  });
+
+  it("previews each failed job's error inline, from one failure-log read per run", async () => {
+    const failure = (jobId: number, jobName: string, line: string, hint?: string) => ({
+      jobId,
+      jobName,
+      lines: ["", line, "##[error]Process completed with exit code 1."],
+      truncated: false,
+      foundErrorMarker: true,
+      ...(hint ? { hint } : {}),
+    });
+    mockedFailureLog.mockResolvedValue({
+      available: true,
+      failures: [
+        failure(901, "promote-to-uat / Create Promotion PR", "GraphQL: missing read:org", "Add the read:org scope."),
+        failure(902, "production-gate / Readiness", "##[error]Readiness check failed: 2 open issues"),
+      ],
+    });
+    const job = (id: number, name: string, conclusion: string) => ({
+      id,
+      name,
+      status: "completed",
+      conclusion,
+      startedAt: null,
+      completedAt: null,
+      htmlUrl: null,
+      steps: [{ name: "Set up job", status: "completed", conclusion: "success", number: 1, startedAt: null, completedAt: null }],
+    });
+    mockedJobs.mockResolvedValue([
+      job(900, "build", "success"),
+      job(901, "promote-to-uat / Create Promotion PR", "failure"),
+      job(902, "production-gate / Readiness", "failure"),
+    ]);
+
+    await render();
+    const before = mockedFailureLog.mock.calls.length;
+    const card = cards()[0]!;
+    await act(async () => card.querySelector<HTMLButtonElement>("[data-runs-toggle]")!.click());
+    await act(async () => card.querySelector<HTMLButtonElement>("[data-run-head]")!.click());
+
+    // One read for the expanded run, however many of its jobs failed.
+    expect(mockedFailureLog.mock.calls.length - before).toBe(1);
+    const rows = [...card.querySelectorAll<HTMLElement>(".pipe-job")];
+    expect(rows).toHaveLength(3);
+    expect(rows[0]!.querySelector(".pipe-job__error")).toBeNull();
+    // The tool's line, not the runner's "exit code 1", and above the steps.
+    expect(rows[1]!.querySelector(".pipe-job__preview")?.textContent).toBe("GraphQL: missing read:org");
+    expect(rows[1]!.querySelector(".pipe-hint")?.textContent).toContain("Add the read:org scope.");
+    expect(rows[2]!.querySelector(".pipe-job__preview")?.textContent).toBe("Readiness check failed: 2 open issues");
+    expect(rows[2]!.querySelector(".pipe-hint")).toBeNull();
+    const error = rows[1]!.querySelector(".pipe-job__error")!;
+    const steps = rows[1]!.querySelector(".pipe-job__steps")!;
+    expect(error.compareDocumentPosition(steps) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
   it("renders no link to GitHub, even with a run list and a run open", async () => {

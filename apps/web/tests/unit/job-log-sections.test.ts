@@ -61,6 +61,31 @@ describe("parseJobLog", () => {
     expect(last.text).toBe("Process completed with exit code 1.");
   });
 
+  it("ends a failed step at its error, not in the runner's post-job cleanup", () => {
+    // The tail of a real promotion job (logistics2cicd-fe run 37030220083):
+    // the cleanup follows the last step with no group of its own.
+    const tail = [
+      "2026-10-02T15:54:10.0000000Z ##[group]Run retry() {",
+      "2026-10-02T15:54:10.0000000Z retry() {",
+      "2026-10-02T15:54:10.0000000Z ##[endgroup]",
+      "2026-10-02T15:54:11.0000000Z GraphQL: Your token has not been granted the required scopes to execute this query.",
+      "2026-10-02T15:54:12.0000000Z ##[error]Process completed with exit code 1.",
+      "2026-10-02T15:54:13.0000000Z Post job cleanup.",
+      "2026-10-02T15:54:13.0000000Z [command]/usr/bin/git version",
+      "2026-10-02T15:54:14.0000000Z Cleaning up orphan processes",
+    ].join("\n");
+    const parsed = parseJobLog(tail);
+
+    expect(parsed.map((section) => section.title)).toEqual(["Run retry() {", "Post job cleanup"]);
+    const step = parsed[0];
+    expect(step.failed).toBe(true);
+    expect(step.lines.map((line) => line.text)).toEqual([
+      "GraphQL: Your token has not been granted the required scopes to execute this query.",
+      "Process completed with exit code 1.",
+    ]);
+    expect(parsed[1].failed).toBe(false);
+  });
+
   it("times each step from its own first and last line", () => {
     expect(sections[1].durationSeconds).toBe(14);
   });
