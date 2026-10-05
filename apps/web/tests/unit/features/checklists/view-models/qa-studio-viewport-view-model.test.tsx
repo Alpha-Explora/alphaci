@@ -7,6 +7,7 @@ import {
   STUDIO_LAYOUT_KEY,
   useStudioLayout,
 } from "../../../../../src/features/checklists/studio/view-models/use-studio-layout";
+import { STUDIO_RESOLUTION_KEYS } from "../../../../../src/features/checklists/studio/view-models/use-studio-resolution";
 import { useStudioViewportViewModel } from "../../../../../src/features/checklists/studio/view-models/use-studio-viewport-view-model";
 import type { ProjectBranchPreview } from "../../../../../src/shared/api/contracts";
 
@@ -236,6 +237,174 @@ describe("useStudioViewportViewModel", () => {
     expect(vm().frameKey).toBe(key);
     act(() => vm().reload());
     expect(vm().frameKey).not.toBe(key);
+  });
+
+  it("opens each class on its default size and switches resolution, rotation still applying", async () => {
+    const vm = renderHook(() => useStudioViewportViewModel({ projectId: "p1", enabled: true }));
+    await flush();
+    expect(vm().resolution).toMatchObject({ choice: "1440x900", width: 1440, height: 900 });
+
+    act(() => vm().setResolution("1920x1080"));
+    expect(vm().resolution.choice).toBe("1920x1080");
+    expect(vm().dimensions).toEqual({ width: 1920, height: 1080, orientation: "landscape" });
+
+    act(() => vm().setDevice("mobile"));
+    expect(vm().resolution.choice).toBe("375x812");
+    act(() => vm().setResolution("390x844"));
+    expect(vm().dimensions).toEqual({ width: 390, height: 844, orientation: "portrait" });
+    act(() => vm().rotate());
+    expect(vm().dimensions).toEqual({ width: 844, height: 390, orientation: "landscape" });
+
+    // Each class keeps its own size.
+    act(() => vm().setDevice("desktop"));
+    expect(vm().dimensions).toEqual({ width: 1920, height: 1080, orientation: "landscape" });
+    act(() => vm().setDevice("tablet"));
+    expect(vm().resolution.choice).toBe("768x1024");
+  });
+
+  it("does not re-mount the frame when the resolution changes", async () => {
+    const vm = renderHook(() => useStudioViewportViewModel({ projectId: "p1", enabled: true }));
+    await flush();
+    const key = vm().frameKey;
+    act(() => vm().setResolution("2560x1440"));
+    act(() => vm().setCustomResolution(1500, 900));
+    act(() => vm().setDevice("mobile"));
+    act(() => vm().setResolution("custom"));
+    expect(vm().frameKey).toBe(key);
+  });
+
+  it("starts Custom from the size in view, then takes a typed size", async () => {
+    const vm = renderHook(() => useStudioViewportViewModel({ projectId: "p1", enabled: true }));
+    await flush();
+    act(() => vm().setResolution("1920x1080"));
+    act(() => vm().setResolution("custom"));
+    expect(vm().resolution).toMatchObject({ choice: "custom:1920x1080", width: 1920, height: 1080, preset: null });
+    act(() => vm().setCustomResolution(1500, 900));
+    expect(vm().resolution).toMatchObject({ choice: "custom:1500x900", preset: null });
+    expect(vm().dimensions).toEqual({ width: 1500, height: 900, orientation: "landscape" });
+    // Back to a preset leaves Custom.
+    act(() => vm().setResolution("1366x768"));
+    expect(vm().resolution.preset).not.toBeNull();
+  });
+
+  it("falls back to the default for a size it was never offered", async () => {
+    const vm = renderHook(() => useStudioViewportViewModel({ projectId: "p1", enabled: true }));
+    await flush();
+    act(() => vm().setResolution("9999x9999"));
+    expect(vm().resolution.choice).toBe("1440x900");
+    act(() => vm().setCustomResolution(10, 10));
+    expect(vm().resolution.choice).toBe("1440x900");
+  });
+
+  it("remembers the resolution per device class in this browser", async () => {
+    const first = renderHook(() => useStudioViewportViewModel({ projectId: "p1", enabled: true }));
+    await flush();
+    act(() => first().setResolution("1920x1080"));
+    act(() => first().setDevice("mobile"));
+    act(() => first().setCustomResolution(400, 900));
+    expect(window.localStorage.getItem(STUDIO_RESOLUTION_KEYS.desktop)).toBe("1920x1080");
+    expect(window.localStorage.getItem(STUDIO_RESOLUTION_KEYS.mobile)).toBe("custom:400x900");
+    unmount();
+
+    const again = renderHook(() => useStudioViewportViewModel({ projectId: "p1", enabled: true }));
+    await flush();
+    expect(again().dimensions).toMatchObject({ width: 1920, height: 1080 });
+    act(() => again().setDevice("mobile"));
+    expect(again().resolution).toMatchObject({ choice: "custom:400x900", width: 400, height: 900 });
+  });
+
+  it("uses the default when storage holds an unknown or out-of-range value", async () => {
+    window.localStorage.setItem(STUDIO_RESOLUTION_KEYS.desktop, "1111x1111");
+    window.localStorage.setItem(STUDIO_RESOLUTION_KEYS.mobile, "custom:50x50");
+    const vm = renderHook(() => useStudioViewportViewModel({ projectId: "p1", enabled: true }));
+    await flush();
+    expect(vm().resolution.choice).toBe("1440x900");
+    act(() => vm().setDevice("mobile"));
+    expect(vm().resolution.choice).toBe("375x812");
+  });
+
+  it("opens the environment's root, with its host", async () => {
+    const vm = renderHook(() => useStudioViewportViewModel({ projectId: "p1", enabled: true }));
+    await flush();
+    expect(vm().pageUrl).toBe("https://shop.example.com/");
+    expect(vm().host).toBe("shop.example.com");
+  });
+});
+
+describe("useStudioViewportViewModel copy link", () => {
+  const writeText = jest.fn();
+
+  beforeEach(() => {
+    jest.useFakeTimers();
+    writeText.mockReset();
+    Object.defineProperty(navigator, "clipboard", { value: { writeText }, configurable: true });
+    projects.previews.mockResolvedValue({
+      enabled: true,
+      liveProvidersEnabled: true,
+      providerError: null,
+      branches: [preview()],
+    });
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
+    Reflect.deleteProperty(navigator, "clipboard");
+  });
+
+  it("writes the page url to the clipboard, says Copied, and goes back to idle after two seconds", async () => {
+    writeText.mockResolvedValue(undefined);
+    const vm = renderHook(() => useStudioViewportViewModel({ projectId: "p1", enabled: true }));
+    await flush();
+    expect(vm().copyLinkStatus).toBe("idle");
+    await act(async () => {
+      await vm().copyLink();
+    });
+    expect(writeText).toHaveBeenCalledWith("https://shop.example.com/");
+    expect(vm().copyLinkStatus).toBe("copied");
+    act(() => {
+      jest.advanceTimersByTime(1_900);
+    });
+    expect(vm().copyLinkStatus).toBe("copied");
+    act(() => {
+      jest.advanceTimersByTime(200);
+    });
+    expect(vm().copyLinkStatus).toBe("idle");
+  });
+
+  it("reports a refused copy instead of pretending, then recovers", async () => {
+    writeText.mockRejectedValue(new Error("denied"));
+    const vm = renderHook(() => useStudioViewportViewModel({ projectId: "p1", enabled: true }));
+    await flush();
+    await act(async () => {
+      await vm().copyLink();
+    });
+    expect(vm().copyLinkStatus).toBe("failed");
+    act(() => {
+      jest.advanceTimersByTime(2_000);
+    });
+    expect(vm().copyLinkStatus).toBe("idle");
+  });
+
+  it("reports a missing clipboard the same way", async () => {
+    Reflect.deleteProperty(navigator, "clipboard");
+    const vm = renderHook(() => useStudioViewportViewModel({ projectId: "p1", enabled: true }));
+    await flush();
+    await act(async () => {
+      await vm().copyLink();
+    });
+    expect(vm().copyLinkStatus).toBe("failed");
+  });
+
+  it("copies nothing when there is no page", async () => {
+    projects.previews.mockResolvedValue({ enabled: true, liveProvidersEnabled: true, providerError: null, branches: [] });
+    const vm = renderHook(() => useStudioViewportViewModel({ projectId: "p1", enabled: true }));
+    await flush();
+    expect(vm().pageUrl).toBeNull();
+    await act(async () => {
+      await vm().copyLink();
+    });
+    expect(writeText).not.toHaveBeenCalled();
+    expect(vm().copyLinkStatus).toBe("idle");
   });
 });
 

@@ -2599,11 +2599,11 @@ async function qaVerifiesAndSignsOff({ page, context, backend, baseUrl }: Journe
   await openProjectTab(page, baseUrl, 'QA Studio');
   await expectRoleBadge(page, 'qa');
   await expectText(page.locator('.qa-run-card__title'), checklist.name, 'the checklist under test');
-  await expectText(page.getByLabel('Commit under test'), 'uat @ 9f8e7d6', 'the commit chip');
+  assert.equal(await page.getByLabel('Commit under test').count(), 0, 'no commit chip in the toolbar: the run card names the commit');
 
   // uat only: main is deployed (and production), but it is not offered anywhere.
   await expectText(page.locator('.qa-toolbar__env-chip'), 'uat', 'the fixed uat environment');
-  assert.equal(await page.locator('.qa-toolbar select').count(), 0, 'no environment picker: uat is the only QA environment');
+  assert.equal(await page.locator('.qa-toolbar__env select').count(), 0, 'no environment picker: uat is the only QA environment');
   assert.equal(await page.locator('.qa-device__frame').getAttribute('src'), `${PREVIEW_ORIGIN}/`, 'the frame shows the uat deployment');
   // Production readiness: QA Team reads it, only leads merge.
   const promo = page.getByRole('region', { name: 'Production readiness' });
@@ -2642,6 +2642,12 @@ async function qaVerifiesAndSignsOff({ page, context, backend, baseUrl }: Journe
   await page.locator('.qa-device__frame').evaluate((frame) => {
     (frame as unknown as { __qaMark: string }).__qaMark = 'original';
   });
+  // A bigger viewport only restyles the frame: the marked iframe (checked again below) survives it.
+  await expectText(page.locator('.qa-preview__device'), 'Desktop · 1440 × 900', 'the default desktop size');
+  await page.locator('select.qa-resolution__select').selectOption('1920x1080');
+  await expectText(page.locator('.qa-preview__device'), 'Desktop · 1920 × 1080', 'the chosen desktop size');
+  assert.equal(await page.locator('.qa-toolbar__row--address').count(), 0, 'no second toolbar row');
+  await visible(page.getByRole('button', { name: 'Copy link' }), 'the Copy link action');
   const studio = page.locator('.qa-studio');
   await page.getByRole('button', { name: 'Full screen' }).click();
   await eventually('the studio to go full screen', async () => (await studio.getAttribute('data-full-screen')) === 'true');

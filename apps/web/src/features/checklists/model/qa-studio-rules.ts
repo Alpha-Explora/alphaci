@@ -1,7 +1,7 @@
 /* Pure QA Studio rules: which environment can be tested, the devices and the
- * hardware frames drawn around them, the scale a device is drawn at, how the
- * studio shares its width, the route field, and what the floating checklist's
- * launcher says. No React, no fetch. */
+ * hardware frames drawn around them, the resolutions a device can be viewed at,
+ * the scale a device is drawn at, how the studio shares its width, and what the
+ * floating checklist's launcher says. No React, no fetch. */
 
 import type {
   ProjectBranchPreview,
@@ -124,9 +124,138 @@ export function dimensionsLabel(size: Readonly<{ width: number; height: number }
   return `${size.width} × ${size.height}`;
 }
 
-/** "768 × 1024", the preset's own size, for the device switch's tooltip. */
-export function devicePresetDetail(preset: DevicePreset): string {
-  return dimensionsLabel(preset);
+/* ── Resolutions ─────────────────────────────────────────────────────────── */
+
+/**
+ * One size a device class can be viewed at. Rotatable classes list PORTRAIT
+ * sizes; landscape swaps them (see resolveDeviceDimensions).
+ */
+export interface ResolutionPreset {
+  /** Stable and storable: "1920x1080". */
+  id: string;
+  width: number;
+  height: number;
+  /** The hardware this size stands for ("iPhone 14"), when it stands for one. */
+  name: string | null;
+}
+
+function resolutionPreset(width: number, height: number, name: string | null = null): ResolutionPreset {
+  return { id: `${width}x${height}`, width, height, name };
+}
+
+export const RESOLUTION_PRESETS: Readonly<Record<DevicePresetId, ReadonlyArray<ResolutionPreset>>> = {
+  desktop: [
+    resolutionPreset(1280, 720),
+    resolutionPreset(1366, 768),
+    resolutionPreset(1440, 900),
+    resolutionPreset(1536, 864),
+    resolutionPreset(1920, 1080),
+    resolutionPreset(2560, 1440),
+  ],
+  tablet: [
+    resolutionPreset(768, 1024, "iPad"),
+    resolutionPreset(820, 1180, "iPad Air"),
+    resolutionPreset(834, 1194, 'iPad Pro 11"'),
+    resolutionPreset(1024, 1366, 'iPad Pro 12.9"'),
+  ],
+  mobile: [
+    resolutionPreset(360, 800, "Android"),
+    resolutionPreset(375, 667, "iPhone SE"),
+    resolutionPreset(375, 812, "iPhone X/11 Pro"),
+    resolutionPreset(390, 844, "iPhone 14"),
+    resolutionPreset(393, 852, "iPhone 15"),
+    resolutionPreset(412, 915, "Pixel"),
+    resolutionPreset(430, 932, "iPhone Pro Max"),
+  ],
+};
+
+/** The select's value for "Custom…": not a size, so it can never collide with a preset id. */
+export const CUSTOM_RESOLUTION_OPTION = "custom";
+
+/** What a typed size may be, in CSS pixels: a viewport outside this is not a real screen. */
+export const CUSTOM_RESOLUTION_LIMITS = { minWidth: 320, maxWidth: 3840, minHeight: 320, maxHeight: 2400 } as const;
+
+/** The size a class opens at: its device preset's own. */
+export function defaultResolutionId(deviceId: DevicePresetId): string {
+  const preset = devicePreset(deviceId);
+  return resolutionPreset(preset.width, preset.height).id;
+}
+
+/** A class's size, as chosen: a preset, or a typed size (`choice` is what gets remembered). */
+export interface Resolution {
+  /** A preset id, or "custom:1500x900". */
+  choice: string;
+  width: number;
+  height: number;
+  /** Null for a typed size. */
+  preset: ResolutionPreset | null;
+}
+
+const CUSTOM_CHOICE = /^custom:(\d{1,5})x(\d{1,5})$/;
+
+function inRange(value: number, min: number, max: number): boolean {
+  return value >= min && value <= max;
+}
+
+function isValidCustomSize(width: number, height: number): boolean {
+  const limits = CUSTOM_RESOLUTION_LIMITS;
+  return inRange(width, limits.minWidth, limits.maxWidth) && inRange(height, limits.minHeight, limits.maxHeight);
+}
+
+/** The storable choice for a typed size. Not validated here: resolveResolution falls back from a bad one. */
+export function customResolutionChoice(width: number, height: number): string {
+  return `custom:${width}x${height}`;
+}
+
+function parseCustomChoice(stored: string | null): Resolution | null {
+  const match = CUSTOM_CHOICE.exec(stored ?? "");
+  if (!match) return null;
+  const [width, height] = [Number(match[1]), Number(match[2])];
+  if (!isValidCustomSize(width, height)) return null;
+  return { choice: customResolutionChoice(width, height), width, height, preset: null };
+}
+
+/**
+ * A class's size from what storage (or the picker) holds. Anything this build
+ * does not know — nothing stored, a preset since dropped, a hand-edited or
+ * out-of-range custom size, a size stored for another class — is the class's
+ * default, so a stale preference can never leave the frame without a size.
+ */
+export function resolveResolution(deviceId: DevicePresetId, stored: string | null): Resolution {
+  const presets = RESOLUTION_PRESETS[deviceId];
+  const known = presets.find((preset) => preset.id === stored);
+  const custom = known ? null : parseCustomChoice(stored);
+  if (custom) return custom;
+  const preset = known ?? presets.find((entry) => entry.id === defaultResolutionId(deviceId)) ?? presets[0];
+  return { choice: preset.id, width: preset.width, height: preset.height, preset };
+}
+
+/** The option's text: "1920 × 1080", or "390 × 844 · iPhone 14". */
+export function resolutionLabel(preset: ResolutionPreset): string {
+  return preset.name ? `${dimensionsLabel(preset)} · ${preset.name}` : dimensionsLabel(preset);
+}
+
+export type CustomResolutionResult =
+  | { ok: true; width: number; height: number }
+  | { ok: false; error: string };
+
+function wholeNumber(raw: string): number | null {
+  const text = raw.trim();
+  return /^\d{1,5}$/.test(text) ? Number(text) : null;
+}
+
+/** The typed width and height, as numbers within the limits, or what to tell the tester. */
+export function validateCustomResolution(widthRaw: string, heightRaw: string): CustomResolutionResult {
+  const limits = CUSTOM_RESOLUTION_LIMITS;
+  const width = wholeNumber(widthRaw);
+  const height = wholeNumber(heightRaw);
+  if (width === null || !inRange(width, limits.minWidth, limits.maxWidth)) {
+    return { ok: false, error: `Width must be a whole number from ${limits.minWidth} to ${limits.maxWidth}.` };
+  }
+  if (height === null || !inRange(height, limits.minHeight, limits.maxHeight)) {
+    return { ok: false, error: `Height must be a whole number from ${limits.minHeight} to ${limits.maxHeight}.` };
+  }
+  return { ok: true, width, height };
 }
 
 export interface DeviceDimensions {
@@ -137,16 +266,18 @@ export interface DeviceDimensions {
 }
 
 /**
- * The viewport the page lays out at. Landscape swaps a rotatable device's
- * sides; a device that cannot rotate keeps its size whatever was asked.
+ * The viewport the page lays out at: the chosen `size` (the preset's own by
+ * default). Landscape swaps a rotatable device's sides; a device that cannot
+ * rotate keeps its size whatever was asked.
  */
 export function resolveDeviceDimensions(
   preset: DevicePreset,
   orientation: DeviceOrientation,
+  size: Readonly<{ width: number; height: number }> = preset,
 ): DeviceDimensions {
   const swap = preset.rotatable && orientation === "landscape";
-  const width = swap ? preset.height : preset.width;
-  const height = swap ? preset.width : preset.height;
+  const width = swap ? size.height : size.width;
+  const height = swap ? size.width : size.height;
   return { width, height, orientation: width > height ? "landscape" : "portrait" };
 }
 
@@ -198,8 +329,12 @@ export function chromeSize(chrome: FrameChrome): { width: number; height: number
   };
 }
 
-/** Never drawn smaller than this, however small the stage: a 0 or negative scale would vanish. */
-export const MIN_DEVICE_SCALE = 0.1;
+/**
+ * Never drawn smaller than this, however small the stage: a 0 or negative
+ * scale would vanish. Low enough that the widest allowed size (3840) still
+ * fits a 320px phone stage, so a big resolution scales down and never overflows.
+ */
+export const MIN_DEVICE_SCALE = 0.05;
 
 /**
  * The scale that fits a device's screen, plus its unscaled chrome, into the
@@ -305,13 +440,7 @@ export function automationSignal(run: Pick<QaRun, "automation"> | null): Automat
   return { tone, label: SIGNAL_LABELS[tone] };
 }
 
-/* ── Route field ─────────────────────────────────────────────────────────── */
-
-export type PathResult =
-  | { ok: true; path: string }
-  | { ok: false; error: string };
-
-const SCHEME = /^[a-z][a-z0-9+.-]*:/i;
+/* ── Address ─────────────────────────────────────────────────────────────── */
 
 function originOf(url: string, base?: string): URL | null {
   try {
@@ -319,36 +448,6 @@ function originOf(url: string, base?: string): URL | null {
   } catch {
     return null;
   }
-}
-
-function hostMismatch(host: string): PathResult {
-  return {
-    ok: false,
-    error: `Stay on ${host}. Enter a path such as /checkout — other sites cannot be tested here.`,
-  };
-}
-
-/**
- * The route field to a path on the preview's own host.
- *
- * Anything that would leave the host is refused rather than quietly
- * rewritten: another scheme, a protocol-relative `//host`, a backslash (which
- * browsers read as a slash), or a full URL to a different host. A full URL to
- * the SAME host is accepted and reduced to its path. The final check resolves
- * the path against the preview and compares origins, so no spelling of
- * "somewhere else" can get past it.
- */
-export function sanitizePreviewPath(input: string, previewUrl: string): PathResult {
-  const base = originOf(previewUrl);
-  if (!base) return { ok: false, error: "This environment has no address to test." };
-  const raw = input.trim();
-  if (!raw) return { ok: true, path: "/" };
-  if (raw.includes("\\")) return hostMismatch(base.host);
-  const absolute = SCHEME.test(raw) || raw.startsWith("//");
-  const relative = absolute || raw.startsWith("/") ? raw : `/${raw}`;
-  const resolved = originOf(relative, base.origin);
-  if (resolved?.origin !== base.origin) return hostMismatch(base.host);
-  return { ok: true, path: `${resolved.pathname}${resolved.search}${resolved.hash}` };
 }
 
 /** "shop.example.com/checkout?step=2" for the browser frame's address pill. */

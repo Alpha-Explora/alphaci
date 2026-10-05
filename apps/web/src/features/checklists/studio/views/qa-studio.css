@@ -44,12 +44,6 @@
   min-width: 0;
 }
 
-.qa-toolbar__row--address {
-  flex-wrap: nowrap;
-  padding-top: 0.55rem;
-  border-top: 1px solid var(--border);
-}
-
 .qa-toolbar__env {
   display: flex;
   align-items: center;
@@ -75,9 +69,15 @@
   font-size: 0.82rem;
 }
 
+/* The frame's actions close the row on the right; a row too narrow for them wraps
+   them onto their own line, still right-aligned. */
 .qa-toolbar__actions {
   display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
   gap: 0.35rem;
+  margin-left: auto;
 }
 
 .qa-toolbar__error {
@@ -120,11 +120,53 @@
   box-shadow: var(--shadow-soft);
 }
 
-.qa-device-switch__px {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  font-size: 0.66rem;
-  font-weight: 500;
+/* Resolution: a compact select for the class's sizes, and "Custom…"'s two number fields. */
+.qa-resolution {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  min-width: 0;
+}
+
+.qa-toolbar .qa-resolution__select {
+  max-width: 15rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.qa-resolution__custom {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
   color: var(--text-muted);
+}
+
+.qa-resolution .qa-resolution__input {
+  width: 4.6rem;
+  min-width: 0;
+  padding: 0.4rem 0.45rem;
+  border: 1px solid var(--border-strong);
+  border-radius: 0.55rem;
+  background: var(--bg-soft);
+  color: var(--text-primary);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.8rem;
+  transition: border-color 0.16s ease, box-shadow 0.16s ease;
+}
+
+.qa-resolution .qa-resolution__input:focus {
+  border-color: var(--accent-indigo);
+  box-shadow: 0 0 0 3px var(--accent-indigo-light);
+  outline: none;
+}
+
+.qa-resolution .qa-resolution__input--invalid,
+.qa-resolution .qa-resolution__input--invalid:focus {
+  border-color: var(--danger);
+}
+
+.qa-resolution__error {
+  flex-basis: 100%;
 }
 
 /* Layout switch: the device switch's segmented look, icon-only, at the
@@ -165,65 +207,6 @@
   box-shadow: var(--shadow-soft);
 }
 
-/* Route field: "host" + path in one box, like an address bar. */
-.qa-route {
-  display: flex;
-  align-items: center;
-  gap: 0.35rem;
-  flex: 1 1 16rem;
-  min-width: 0;
-}
-
-.qa-route__box {
-  display: flex;
-  align-items: center;
-  flex: 1 1 auto;
-  min-width: 0;
-  border: 1px solid var(--border-strong);
-  border-radius: 0.55rem;
-  background: var(--bg-soft);
-  transition: border-color 0.16s ease, box-shadow 0.16s ease;
-}
-
-.qa-route__box:focus-within {
-  border-color: var(--accent-indigo);
-  box-shadow: 0 0 0 3px var(--accent-indigo-light);
-}
-
-.qa-route__box--invalid,
-.qa-route__box--invalid:focus-within {
-  border-color: var(--danger);
-}
-
-.qa-route__host {
-  flex-shrink: 1;
-  min-width: 0;
-  max-width: 60%;
-  padding-left: 0.65rem;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  font-size: 0.76rem;
-  color: var(--text-muted);
-}
-
-.qa-route .qa-route__input {
-  flex: 1 1 6rem;
-  min-width: 4rem;
-  max-width: none;
-  padding: 0.42rem 0.6rem 0.42rem 0.1rem;
-  border: 0;
-  background: transparent;
-  box-shadow: none;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  font-size: 0.82rem;
-}
-
-.qa-route .qa-route__input:focus {
-  box-shadow: none;
-}
-
 .qa-icon-button {
   display: inline-flex;
   align-items: center;
@@ -253,51 +236,18 @@
   cursor: not-allowed;
 }
 
-/* Commit chip. */
-.qa-commit {
-  display: inline-flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.4rem;
-  margin-left: auto;
-  min-width: 0;
-}
-
-.qa-commit__ref {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  padding: 0.28rem 0.55rem;
-  border: 1px solid var(--border-strong);
-  border-radius: var(--radius-pill);
-  background: var(--bg-soft);
-  color: var(--text-secondary);
-}
-
-.qa-commit__ref code {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  font-size: 0.76rem;
-  color: var(--text-primary);
-}
-
-.qa-commit__source {
+/* Shown only when the commit under test is the branch head, not what is deployed. */
+.qa-commit-warning {
   display: inline-flex;
   align-items: center;
   gap: 0.3rem;
-  font-size: 0.74rem;
-  font-weight: 600;
-}
-
-.qa-commit__source--deployment {
-  color: var(--success);
-}
-
-.qa-commit__source--branch_head {
   padding: 0.22rem 0.55rem;
   border: 1px solid var(--border-amber);
   border-radius: var(--radius-pill);
   background: var(--accent-amber-light);
   color: var(--warning);
+  font-size: 0.74rem;
+  font-weight: 600;
 }
 
 /* The environment is fixed to the QA branch: a chip, not a picker. */
@@ -356,6 +306,17 @@
   font-size: 0.7rem;
   font-weight: 500;
   color: var(--text-muted);
+}
+
+/* Copy link: the icon swap is the sighted confirmation, and it is coloured too. */
+.qa-icon-button[data-status="copied"] {
+  border-color: var(--success);
+  color: var(--success);
+}
+
+.qa-icon-button[data-status="failed"] {
+  border-color: var(--border-amber);
+  color: var(--warning);
 }
 
 .qa-icon-button[aria-pressed="true"] {
@@ -1808,28 +1769,8 @@
   }
 }
 
-/* Wide full screen: the two toolbar rows sit side by side, so the drawer's
-   top edge (6.5rem down) clears the toolbar. */
-@media (min-width: 1200px) {
-  .qa-studio[data-full-screen="true"] .qa-toolbar {
-    grid-template-columns: auto minmax(0, 1fr);
-    align-items: center;
-    column-gap: 0.9rem;
-  }
-
-  .qa-studio[data-full-screen="true"] .qa-toolbar__row--address {
-    padding-top: 0;
-    padding-left: 0.9rem;
-    border-top: 0;
-    border-left: 1px solid var(--border);
-  }
-
-  .qa-studio[data-full-screen="true"] .qa-toolbar__error {
-    grid-column: 1 / -1;
-  }
-}
-
-/* Narrower full screen: the toolbar wraps to two rows, so the drawer starts lower. */
+/* Narrower full screen: the toolbar row wraps to two lines, so the drawer starts
+   lower. (Wide, it is one row and the base 6.5rem top edge clears it.) */
 @media (max-width: 1199px) {
   .qa-studio[data-full-screen="true"] .qa-studio__run {
     max-height: calc(100dvh - 10.5rem);
@@ -1864,10 +1805,6 @@
   .qa-run > .qa-run__items {
     overflow-y: visible;
   }
-
-  .qa-commit {
-    margin-left: 0;
-  }
 }
 
 @media (max-width: 560px) {
@@ -1883,9 +1820,13 @@
     flex: 1 1 auto;
   }
 
-  /* The pixel widths are in the tooltip; the labels carry the choice. */
-  .qa-device-switch__px {
-    display: none;
+  .qa-resolution {
+    flex: 1 1 100%;
+  }
+
+  .qa-toolbar .qa-resolution__select {
+    flex: 1 1 auto;
+    max-width: none;
   }
 
   /* Rotate shares the device row; the switch takes what is left. */
@@ -1920,19 +1861,6 @@
 
   .qa-studio[data-full-screen="true"][data-side="left"] .qa-studio__run {
     left: 4vw;
-  }
-
-  /* The environment picker already names where; the path gets the width. */
-  .qa-route__host {
-    display: none;
-  }
-
-  .qa-route .qa-route__input {
-    padding-left: 0.6rem;
-  }
-
-  .qa-route {
-    flex-basis: 100%;
   }
 
   .qa-run-item {
