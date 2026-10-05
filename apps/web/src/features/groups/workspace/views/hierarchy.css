@@ -1013,16 +1013,6 @@ a.hier-card:hover {
   color: var(--text-muted);
 }
 
-.hier-activity-link {
-  color: var(--accent-indigo);
-  text-decoration: none;
-  font-weight: 600;
-}
-
-.hier-activity-link:hover {
-  text-decoration: underline;
-}
-
 /* ── Coming-soon (Phase 5 communication placeholder) ──────────────────────── */
 
 .hier-comingsoon {

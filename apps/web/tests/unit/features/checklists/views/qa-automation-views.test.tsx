@@ -13,7 +13,7 @@ import type { QaRun } from "../../../../../src/features/checklists/model/qa-run-
 import type { AppRole } from "../../../../../src/shared/api/contracts";
 import { ApiError } from "../../../../../src/shared/api/request";
 import { checklist } from "../checklist-fixtures";
-import { automated, automation, qualitySuccess, RUN_URL, verifyFailure } from "../qa-automation-fixtures";
+import { automated, automation, qualitySuccess, verifyFailure } from "../qa-automation-fixtures";
 import { frozenReport } from "../qa-report-fixtures";
 import { runAs, runItem } from "../qa-run-fixtures";
 
@@ -180,7 +180,7 @@ describe("QA Studio — item Automated badge", () => {
     expect(itemRow(container, "Checkout completes with a saved card").querySelector(".qa-pill")?.textContent).toBe("Passed");
   });
 
-  it("expands a failed badge into the sentence, the matched failure and a View run link", async () => {
+  it("expands a failed badge into the sentence and the matched failure, with no link out to GitHub", async () => {
     setup(runAs("qa", { items: ITEMS, automation: automation() }));
     const container = await studio("qa");
     const row = itemRow(container, "Checkout completes with a saved card");
@@ -198,10 +198,7 @@ describe("QA Studio — item Automated badge", () => {
     expect(details?.querySelector(".qa-auto-detail__meta")?.textContent).toContain("Playwright E2E · This spec · Verify stage");
     expect(details?.querySelector(".qa-auto-detail__name")?.textContent).toBe("e2e/checkout.spec.ts › pays with a saved card");
     expect(details?.querySelector(".qa-auto-detail__message")?.textContent).toBe("Timed out 5000ms");
-    const link = details?.querySelector("a");
-    expect(link?.getAttribute("href")).toBe(RUN_URL);
-    expect(link?.getAttribute("target")).toBe("_blank");
-    expect(link?.getAttribute("rel")).toContain("noopener");
+    expect(details?.querySelector("a")).toBeNull();
 
     click(toggle);
     expect(details?.hidden).toBe(true);
@@ -223,7 +220,7 @@ describe("QA Studio — item Automated badge", () => {
     const row = itemRow(container, "Refund issues a credit note");
     click(row.querySelector(".qa-auto-toggle"));
     expect(row.querySelector(".qa-auto-detail__sentence")?.textContent).toBe("Automated: unknown — more failures than listed");
-    expect(row.querySelector(".qa-auto-detail a")?.getAttribute("href")).toBe(RUN_URL);
+    expect(row.querySelector(".qa-auto-detail a")).toBeNull();
   });
 
   it("says not run for this commit", async () => {
@@ -255,7 +252,7 @@ describe("QA Studio — item Automated badge", () => {
 });
 
 describe("QA Studio — Automated tests panel", () => {
-  it("shows each stage's verdict, counts, failures and a View run link", async () => {
+  it("shows each stage's verdict, counts and failures, with no link out to GitHub", async () => {
     setup(runAs("qa", { items: ITEMS, automation: automation() }));
     const container = await studio("qa");
     const stages = [...container.querySelectorAll<HTMLElement>(".qa-auto-stage")];
@@ -279,7 +276,7 @@ describe("QA Studio — Automated tests panel", () => {
     const failures = [...verify.querySelectorAll(".qa-auto-failure__name")].map((node) => node.textContent);
     expect(failures).toEqual(["e2e/checkout.spec.ts › pays with a saved card", "e2e/cart.spec.ts › applies a coupon per line"]);
     expect(verify.querySelector(".qa-auto-failures__note")).toBeNull();
-    expect(verify.querySelector("a")?.getAttribute("href")).toBe(RUN_URL);
+    expect(verify.querySelector("a")).toBeNull();
     expect(verify.querySelector("time")?.getAttribute("dateTime")).toBe("2026-09-25T06:57:00.000Z");
     expect(quality.querySelector(".qa-auto-stage__title")?.textContent).toBe("Quality — unit tests");
     expect(quality.querySelector(".qa-pill")?.textContent).toBe("Passed");

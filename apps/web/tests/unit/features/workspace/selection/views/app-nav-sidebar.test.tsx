@@ -73,7 +73,8 @@ describe("AppNav left rail", () => {
     expect(rail().contains(toggle())).toBe(true);
     expect(rail().querySelector("nav")?.contains(toggle())).toBe(false);
     // One accessible name; aria-pressed carries the state.
-    expect(toggle().textContent).toBe("Keep open");
+    expect(toggle().getAttribute("aria-label")).toBe("Keep sidebar open");
+    expect(toggle().textContent).toBe("");
   });
 
   it("pins and unpins the rail", () => {

@@ -212,6 +212,19 @@ describe("PipelineRunsTab failure output", () => {
     expect(text).not.toContain("Open the workflow logs");
   });
 
+  it("never sends the reader to GitHub: no stage run link, no full-log link", async () => {
+    await act(async () => {
+      root = createRoot(host);
+      root.render(<PipelineRunsTab projectId="p1" appRole="member" />);
+    });
+
+    // The fixtures carry githubRunUrl and jobUrl; the view must not render them.
+    expect(host.textContent).toContain("sonar-project.properties files are not understood");
+    expect(host.querySelector('a[href*="github.com"]')).toBeNull();
+    expect(host.textContent).not.toContain("View run");
+    expect(host.textContent).not.toContain("Full log");
+  });
+
   it("names the job and step the output came from", async () => {
     await act(async () => {
       root = createRoot(host);

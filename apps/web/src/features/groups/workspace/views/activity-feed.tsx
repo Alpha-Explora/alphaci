@@ -125,19 +125,6 @@ export function ActivityFeed({ items }: { items: GroupActivityItem[] }) {
               <span style={{ textTransform: "capitalize" }}>
                 {item.targetType.replace(/_/g, " ")}
               </span>
-              {item.githubLink && (
-                <>
-                  <span aria-hidden="true">·</span>
-                  <a
-                    className="hier-activity-link"
-                    href={item.githubLink.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    View {item.githubLink.type.replace(/_/g, " ")}
-                  </a>
-                </>
-              )}
             </div>
           </div>
         </div>

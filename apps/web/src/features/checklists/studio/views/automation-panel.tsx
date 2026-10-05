@@ -24,7 +24,6 @@ import { agoLabel, shortSha } from "../../model/qa-run-rules";
 import type { QaRun } from "../../model/qa-run-types";
 import type { QaAutomationViewModel } from "../view-models/use-qa-automation-view-model";
 import { useDisclosure, useRememberedFlag } from "../view-models/use-remembered-flag";
-import { ViewRunLink } from "./run-item-automation";
 import { ChevronDownIcon, CrossIcon, FlaskIcon, PlayIcon, WarningIcon } from "./studio-icons";
 
 /** Per viewer, per browser: whether they folded the panel away. */
@@ -114,7 +113,7 @@ function FailedToggle({ tests, disclosure }: Readonly<{ tests: QaStageTests | nu
   );
 }
 
-/** "22 / 24 passed ▬▬ · 2 failed ▾ · 3m ago · View run". */
+/** "22 / 24 passed ▬▬ · 2 failed ▾ · 3m ago". */
 function StageMeta({ result, disclosure }: Readonly<{ result: QaStageResult; disclosure: FailuresDisclosure }>) {
   const ago = agoLabel(result.reportedAt);
   return (
@@ -129,14 +128,13 @@ function StageMeta({ result, disclosure }: Readonly<{ result: QaStageResult; dis
           </time>
         </span>
       ) : null}
-      {result.runUrl ? <ViewRunLink href={result.runUrl} /> : null}
     </p>
   );
 }
 
 /**
  * One CI stage in two lines: its name and verdict; then the counts, when it
- * reported, a link to the run and its failures. The failures list folds away so the panel
+ * reported and its failures. The failures list folds away so the panel
  * never crowds out the items — each item already shows its own failure.
  */
 function StageCard({ result }: Readonly<{ result: QaStageResult }>) {

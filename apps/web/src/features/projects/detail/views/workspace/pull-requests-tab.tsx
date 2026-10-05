@@ -90,7 +90,6 @@ export function PullRequestsTab({
   // screen pointed at because it already exists.
   const [focusNumber, setFocusNumber] = useState<number | null>(() => startFocus(initialFocusNumber));
   const [items, setItems] = useState<PullRequestSummary[]>([]);
-  const [pullsUrl, setPullsUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -103,7 +102,6 @@ export function PullRequestsTab({
     return getProjectPullRequests(projectId, filter)
       .then((data) => {
         setItems(data.pullRequests);
-        setPullsUrl(data.pullsUrl);
         setError(null);
       })
       .catch(() =>
@@ -184,16 +182,6 @@ export function PullRequestsTab({
           ))}
         </div>
         <div className="ws-toolbar__end">
-          {pullsUrl && (
-            <a
-              className="ws-link"
-              href={pullsUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Open on GitHub ↗
-            </a>
-          )}
           {appRole !== "qa" && (
             <button
               type="button"
@@ -428,14 +416,6 @@ function PullRequestReview({
           appRole={appRole}
           onOpenPoStudio={onOpenPoStudio}
         />
-        <a
-          className="ws-link"
-          href={pr.htmlUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Open on GitHub ↗
-        </a>
       </div>
       <MergeOutcome review={review} />
     </div>
@@ -458,16 +438,6 @@ function PullRequestChecks({
             {check.conclusion ?? check.status}
           </span>
           <span className="ws-prchecks__name">{check.name}</span>
-          {check.detailsUrl && (
-            <a
-              className="ws-link"
-              href={check.detailsUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              details ↗
-            </a>
-          )}
         </li>
       ))}
     </ul>

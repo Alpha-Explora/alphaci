@@ -22,8 +22,8 @@ import { WorkspaceEmpty, WorkspaceError, WorkspaceLoading } from "./workspace-st
  *
  * The path and ref live in component state rather than the URL. A file you are
  * part-way through reading is a reading position, not a destination worth
- * sharing — and every file already carries an "Open on GitHub" link, which is
- * the shareable address people actually expect.
+ * sharing, and a file's address on GitHub is deliberately not offered: ALPHACI
+ * is the only place people are sent to.
  */
 export function CodeTab({ projectId }: { projectId: string }) {
   const [branches, setBranches] = useState<RepoBranch[]>([]);
@@ -328,23 +328,13 @@ function FileView({ file }: { file: NonNullable<RepoContentListing["file"]> }) {
       <div className="ws-file__head">
         <strong>{file.name}</strong>
         <span className="ws-file__meta">{formatBytes(file.size)}</span>
-        {file.htmlUrl && (
-          <a
-            className="ws-link"
-            href={file.htmlUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Open on GitHub ↗
-          </a>
-        )}
       </div>
       {file.content === null ? (
         <WorkspaceEmpty
           title="Not shown"
           message={
             file.truncated
-              ? "This file is binary or too large to display. Open it on GitHub instead."
+              ? "This file is binary or too large to preview here."
               : "This file has no readable text content."
           }
         />

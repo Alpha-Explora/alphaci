@@ -63,10 +63,6 @@
   word-break: break-all;
 }
 
-.result-repo-name:hover {
-  text-decoration: underline;
-}
-
 .result-branches {
   display: flex;
   flex-wrap: wrap;

@@ -21,7 +21,7 @@ import type { QaPromotionChecklist, QaPromotionStatus } from "../../model/qa-pro
 import { shortSha } from "../../model/qa-run-rules";
 import type { QaPromotionViewModel } from "../view-models/use-qa-promotion-view-model";
 import { useRememberedFlag } from "../view-models/use-remembered-flag";
-import { PromotionOutcome, PullRequestLink } from "./promotion-outcome";
+import { PromotionOutcome, PullRequestRef } from "./promotion-outcome";
 import { CheckIcon, ChevronDownIcon, MergeIcon } from "./studio-icons";
 
 /** Per viewer, in this browser: whether the card is folded to its one-line head. */
@@ -103,12 +103,12 @@ function Blocking({ data, id }: Readonly<{ data: QaPromotionStatus; id: string }
   );
 }
 
-/** The PR link for everyone, and who merges for those who cannot. */
+/** The PR number for everyone, and who merges for those who cannot. */
 function CardFoot({ vm, data }: Readonly<{ vm: QaPromotionViewModel; data: QaPromotionStatus }>) {
   return (
     <div className="qa-promo__foot">
       {data.pullRequest ? (
-        <PullRequestLink pullRequest={data.pullRequest} label={`Promotion PR #${data.pullRequest.number}`} />
+        <PullRequestRef label={`Promotion PR #${data.pullRequest.number}`} />
       ) : (
         <span className="qa-promo__muted">No promotion pull request is open yet.</span>
       )}

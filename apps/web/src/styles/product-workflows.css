@@ -669,19 +669,6 @@
   font-family: ui-monospace, monospace;
 }
 
-.latest-result-banner__commit-link {
-  margin-left: 0.75rem;
-  color: var(--text-muted);
-  font-family: ui-monospace, monospace;
-  font-size: 0.75rem;
-  text-decoration: none;
-}
-
-.latest-result-banner__sha {
-  color: var(--brand);
-  border-bottom: 1px dashed var(--brand);
-}
-
 .latest-result-banner__sha-plain {
   margin-left: 0.75rem;
   color: var(--text-muted);

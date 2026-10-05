@@ -5,7 +5,6 @@ import { severityColors } from "../../model/runs-presentation";
 
 interface MessageCardProps {
   message: FriendlyMessage;
-  githubRunUrl: string;
 }
 
 function InfoIcon() {
@@ -99,7 +98,7 @@ function SeverityIcon({ severity }: { severity: FriendlyMessage["severity"] }) {
   }
 }
 
-export function MessageCard({ message, githubRunUrl }: MessageCardProps) {
+export function MessageCard({ message }: MessageCardProps) {
   const colors = severityColors(message.severity);
 
   return (
@@ -221,40 +220,6 @@ export function MessageCard({ message, githubRunUrl }: MessageCardProps) {
           {message.hint}
         </p>
       )}
-
-      {/* GitHub link */}
-      <a
-        href={githubRunUrl}
-        target="_blank"
-        rel="noreferrer"
-        className="runs-gh-link"
-        style={{
-          marginTop: "0.35rem",
-          marginLeft: "1.1rem",
-          display: "inline-flex",
-          alignItems: "center",
-          gap: "0.3rem",
-          fontSize: "0.72rem",
-          color: "var(--brand)",
-          fontWeight: 600,
-          textDecoration: "none",
-          width: "fit-content",
-        }}
-      >
-        View full logs on GitHub
-        <svg
-          width="9"
-          height="9"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2.5"
-          aria-hidden="true"
-        >
-          <line x1="7" y1="17" x2="17" y2="7" />
-          <polyline points="7 7 17 7 17 17" />
-        </svg>
-      </a>
     </div>
   );
 }

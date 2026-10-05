@@ -207,6 +207,19 @@ describe("PipelineRunsTab commit card", () => {
     expect(mockedJobs).toHaveBeenCalledWith("p1", 14);
   });
 
+  it("renders no link to GitHub, even with a run list and a run open", async () => {
+    await render();
+
+    const card = cards()[0]!;
+    await act(async () => card.querySelector<HTMLButtonElement>("[data-runs-toggle]")!.click());
+    await act(async () => card.querySelector<HTMLButtonElement>("[data-run-head]")!.click());
+    // The fixture carries htmlUrl, githubRunUrl and actionsUrl; none may surface.
+    expect(card.querySelector("[data-run-head][aria-expanded='true']")).not.toBeNull();
+    expect(host.querySelector('a[href*="github.com"]')).toBeNull();
+    expect(host.textContent).not.toContain("Open this run on GitHub");
+    expect(host.textContent).not.toContain("Open Actions on GitHub");
+  });
+
   it("names each workflow run by the stage it executed", async () => {
     await render();
 

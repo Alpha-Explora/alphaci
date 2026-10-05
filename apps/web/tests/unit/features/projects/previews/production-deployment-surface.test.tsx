@@ -64,7 +64,6 @@ describe("Production Deployment card surface", () => {
           onOpenFullLogs={onOpenFullLogs}
           previews={{ enabled: true, liveProvidersEnabled: true, branches: [preview], providerError: null }}
           projectId="proj-1"
-          repoFullName="tone/alphaci-api"
           status="ready"
         />,
       );

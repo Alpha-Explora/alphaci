@@ -96,7 +96,6 @@ export interface PipelineRunsViewModel {
    * says the diagnosis is unavailable rather than pretending every stage passed.
    */
   reportsUnavailable: boolean;
-  actionsUrl: string | null;
   repoFullName: string | null;
   reload: () => void;
 }
@@ -120,9 +119,8 @@ export interface PipelineRunsViewModel {
  */
 export function usePipelineRunsViewModel(options: {
   projectId: string;
-  actionsUrl?: string | null;
 }): PipelineRunsViewModel {
-  const { projectId, actionsUrl } = options;
+  const { projectId } = options;
 
   /*
    * The remembered branch, read through useSyncExternalStore.
@@ -143,7 +141,6 @@ export function usePipelineRunsViewModel(options: {
   const [runs, setRuns] = useState<WorkflowRunSummary[]>([]);
   const [reports, setReports] = useState<RunGroup[]>([]);
   const [reportsUnavailable, setReportsUnavailable] = useState(false);
-  const [url, setUrl] = useState<string | null>(actionsUrl ?? null);
   const [repoFullName, setRepoFullName] = useState<string | null>(null);
   const [status, setStatus] = useState<ProjectStatus>("loading");
   const [error, setError] = useState<string | null>(null);
@@ -172,7 +169,6 @@ export function usePipelineRunsViewModel(options: {
     return getProjectWorkflowRuns(projectId)
       .then(async (data) => {
         setRuns(data.runs);
-        setUrl(data.actionsUrl);
         setRepoFullName(data.repoFullName);
         setError(null);
         setStatus("ready");
@@ -245,7 +241,6 @@ export function usePipelineRunsViewModel(options: {
     selectBranch,
     isEmpty: runs.length === 0,
     reportsUnavailable,
-    actionsUrl: url,
     repoFullName,
     reload,
   };

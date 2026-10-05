@@ -159,8 +159,10 @@ describe("PullRequestsTab review panel", () => {
     await render();
 
     expect(host.textContent).not.toContain("Review and merge on GitHub");
-    // GitHub stays reachable, just not as the only route.
-    expect(host.textContent).toContain("Open on GitHub");
+    // And no way out to GitHub at all: the review happens here.
+    expect(host.textContent).not.toContain("Open on GitHub");
+    expect(host.querySelector('a[href*="github.com"]')).toBeNull();
+    expect(host.textContent).not.toContain("details ↗");
   });
 
   it("explains a blocked pull request rather than only reporting it", async () => {

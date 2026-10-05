@@ -131,10 +131,10 @@ describe("QA Studio — Ready for production card", () => {
     expect(rows[1]).toContain("Accessibility pass");
     expect(rows[1]).toContain("Not verified on this commit yet");
     expect(section.textContent).toContain("Accessibility pass has no QA run on uat @ 9f8e7d6.");
-    const link = section.querySelector<HTMLAnchorElement>("a.qa-promo__pr");
-    expect(link?.getAttribute("href")).toBe("https://github.com/tone/storefront-web/pull/42");
-    expect(link?.getAttribute("target")).toBe("_blank");
-    expect(link?.getAttribute("rel")).toBe("noopener noreferrer");
+    // The promotion PR is named, never linked: ALPHACI is the only UI.
+    expect(section.querySelector("a.qa-promo__pr")).toBeNull();
+    expect(section.querySelector(".qa-promo__pr")?.textContent).toBe("Promotion PR #42");
+    expect(section.querySelector('a[href*="github.com"]')).toBeNull();
     const button = mergeButton(container)!;
     expect(button.disabled).toBe(true);
     const why = document.getElementById(button.getAttribute("aria-describedby")!);
@@ -205,8 +205,9 @@ describe("QA Studio — Ready for production card", () => {
     const outcome = container.querySelector(".qa-promo-outcome")!;
     expect(outcome.textContent).toContain("GitHub refused the merge");
     expect(outcome.querySelector("blockquote")?.textContent).toBe(refusal);
-    expect(outcome.textContent).toContain("A reviewer must approve the pull request on GitHub");
-    expect(outcome.querySelector("a")?.textContent).toContain("Open pull request #42 on GitHub");
+    expect(outcome.textContent).toContain("A reviewer must approve the pull request");
+    expect(outcome.querySelector("a")).toBeNull();
+    expect(outcome.querySelector(".qa-promo__pr")?.textContent).toBe("Pull request #42");
   });
 
   it("GITHUB_REAUTH offers a sign-in link back to this project", async () => {

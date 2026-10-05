@@ -13,12 +13,15 @@ export type ProductionDeploymentViewProps = Pick<
   BranchPreviewsViewProps,
   "previews" | "status" | "error"
 > & {
-  /** Owner/name on GitHub, for the commit link. */
-  repoFullName?: string | null;
   /** The project the previews belong to; a backend card's logs need it. */
   projectId?: string;
   /** Opens the Hosting tab's full logs for a backend card's target. */
   onOpenFullLogs?: (focus: DeploymentLogFocus) => void;
+  /**
+   * Opens a branch's pull request in the Pull requests tab. Left out for a role
+   * without that tab, whose "#N" then reads as plain text.
+   */
+  onOpenPullRequest?: (pullRequestNumber: number) => void;
 };
 
 /**
@@ -35,9 +38,9 @@ export function ProductionDeploymentView({
   previews,
   status,
   error,
-  repoFullName,
   projectId,
   onOpenFullLogs,
+  onOpenPullRequest,
 }: Readonly<ProductionDeploymentViewProps>) {
   const { production, branches } =
     status === "ready"
@@ -69,13 +72,12 @@ export function ProductionDeploymentView({
           onOpenFullLogs={onOpenFullLogs}
           preview={preview}
           projectId={projectId}
-          repoFullName={repoFullName}
         />
       ))}
       <ActiveBranchesList
         branches={branches}
         limit={ACTIVE_BRANCH_ROWS}
-        repoFullName={repoFullName}
+        onOpenPullRequest={onOpenPullRequest}
       />
     </section>
   );

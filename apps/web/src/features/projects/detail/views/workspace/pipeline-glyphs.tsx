@@ -36,14 +36,6 @@ export function ChevronIcon() {
   );
 }
 
-export function ExternalIcon() {
-  return (
-    <Glyph size={12}>
-      <path d="M6 3.5H3.5v9h9V10M9 3.5h3.5V7M12.5 3.5 7 9" />
-    </Glyph>
-  );
-}
-
 export function PromoteIcon() {
   return (
     <Glyph size={14}>

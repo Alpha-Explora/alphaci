@@ -85,23 +85,9 @@ function LatestResultBanner({
         <strong className="latest-result-banner__filename">
           {latestResult.outputFileName}
         </strong>
-        {latestResult.githubCommitUrl ? (
-          <a
-            href={latestResult.githubCommitUrl}
-            target="_blank"
-            rel="noreferrer"
-            className="latest-result-banner__commit-link"
-          >
-            commit:{" "}
-            <span className="latest-result-banner__sha">
-              {latestResult.githubCommitSha.slice(0, 10)}
-            </span>
-          </a>
-        ) : (
-          <code className="latest-result-banner__sha-plain">
-            {latestResult.githubCommitSha.slice(0, 10)}
-          </code>
-        )}
+        <code className="latest-result-banner__sha-plain">
+          {latestResult.githubCommitSha.slice(0, 10)}
+        </code>
       </p>
 
       <WorkflowStageList files={latestResult.workflowFiles} />
@@ -110,30 +96,18 @@ function LatestResultBanner({
       />
 
       <div className="latest-result-banner__actions">
-        <a
+        <Link
           className="latest-result-banner__action-btn latest-result-banner__action-btn--primary"
-          href={latestResult.repoUrl}
-          target="_blank"
-          rel="noreferrer"
+          href={`/projects/${encodeURIComponent(latestResult.id)}`}
         >
-          Open Repository
-        </a>
-        <a
+          Open Project
+        </Link>
+        <Link
           className="latest-result-banner__action-btn"
-          href={`${latestResult.repoUrl}/actions`}
-          target="_blank"
-          rel="noreferrer"
+          href={`/projects/${encodeURIComponent(latestResult.id)}#runs`}
         >
-          Open Actions
-        </a>
-        <a
-          className="latest-result-banner__action-btn"
-          href={`${latestResult.repoUrl}/blob/main/${latestResult.workflowPath}`}
-          target="_blank"
-          rel="noreferrer"
-        >
-          View Workflow File
-        </a>
+          Pipeline runs
+        </Link>
       </div>
 
       <p className="latest-result-banner__footer">

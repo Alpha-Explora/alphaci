@@ -59,14 +59,17 @@ describe("ProductionDeploymentView", () => {
     container.remove();
   });
 
-  function render(branches: ProjectBranchPreview[]) {
+  function render(
+    branches: ProjectBranchPreview[],
+    onOpenPullRequest?: (pullRequestNumber: number) => void,
+  ) {
     root = createRoot(container);
     act(() => {
       root?.render(
         <ProductionDeploymentView
           error={null}
+          onOpenPullRequest={onOpenPullRequest}
           previews={response(branches)}
-          repoFullName="tone/web-app"
           status="ready"
         />,
       );
@@ -95,12 +98,13 @@ describe("ProductionDeploymentView", () => {
     expect(text).toContain("Merge pull request #44");
   });
 
-  it("links the commit on GitHub, the build logs and the live site", () => {
+  it("links the build logs and the live site, and sends nothing to GitHub", () => {
     render([production()]);
 
-    expect(link("View commit on GitHub")?.getAttribute("href")).toBe(
-      "https://github.com/tone/web-app/commit/4b84b6b0c1d",
-    );
+    // The commit is text: ALPHACI is the only UI.
+    expect(link("View commit on GitHub")).toBeUndefined();
+    expect(link("4b84b6b")).toBeUndefined();
+    expect(container.querySelector('a[href*="github.com"]')).toBeNull();
     expect(link("Build logs")?.getAttribute("href")).toBe(
       "https://vercel.com/tone/web-app/dpl_1",
     );
@@ -183,10 +187,33 @@ describe("ProductionDeploymentView", () => {
     expect(row).toContain("Live");
     expect(row).toContain("3fjeeb0");
     expect(row).toContain("#47");
-    expect(link("#47")?.getAttribute("href")).toBe(
-      "https://github.com/tone/web-app/pull/47",
-    );
     expect(link("Visit web-app-git-feat-org.vercel.app")).toBeDefined();
+    expect(container.querySelector('a[href*="github.com"]')).toBeNull();
+    // Without the Pull requests tab (a role that lacks it) "#47" is just text.
+    expect(link("#47")).toBeUndefined();
+  });
+
+  it("opens a branch's pull request inside the app, not on GitHub", () => {
+    const onOpenPullRequest = jest.fn();
+    render(
+      [
+        production(),
+        production({
+          isProduction: false,
+          branch: "feat/org-member-directory",
+          deploymentId: "dpl_2",
+          pullRequestNumber: 47,
+        }),
+      ],
+      onOpenPullRequest,
+    );
+
+    const chip = link("#47");
+    expect(chip?.getAttribute("href")).toBe("#pulls");
+    act(() => {
+      chip?.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
+    });
+    expect(onOpenPullRequest).toHaveBeenCalledWith(47);
   });
 
   /* The production screen that prompted this: a failed deployment of a

@@ -59,16 +59,6 @@ function RepositoryHeaderActions({
       }}
     >
       <RepositoryStatusBadge status={repository.status} />
-      {repository.htmlUrl ? (
-        <a
-          className="hier-btn-sm"
-          href={repository.htmlUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Open on GitHub
-        </a>
-      ) : null}
     </div>
   );
 }

@@ -45,11 +45,9 @@ import {
  */
 export function PipelineRunsTab({
   projectId,
-  actionsUrl,
   appRole,
 }: {
   projectId: string;
-  actionsUrl?: string | null;
   /**
    * Decides how much is open up front: a developer gets the deep-debug view,
    * every other role the summary with logs behind a disclosure.
@@ -57,7 +55,7 @@ export function PipelineRunsTab({
   appRole?: AppRole;
 }) {
   const viewMode = runsViewModeFor(appRole);
-  const runsView = usePipelineRunsViewModel({ projectId, actionsUrl });
+  const runsView = usePipelineRunsViewModel({ projectId });
 
   if (runsView.status === "loading") return <WorkspaceLoading rows={5} />;
   if (runsView.status === "error")
@@ -73,18 +71,6 @@ export function PipelineRunsTab({
       <WorkspaceEmpty
         title="No runs yet"
         message="Push a commit to dev and the run will appear here."
-        action={
-          runsView.actionsUrl ? (
-            <a
-              className="ws-link"
-              href={runsView.actionsUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Open Actions on GitHub ↗
-            </a>
-          ) : undefined
-        }
       />
     );
   }
@@ -132,16 +118,6 @@ export function PipelineRunsTab({
           >
             Runs across all projects →
           </Link>
-          {runsView.actionsUrl && (
-            <a
-              className="ws-link"
-              href={runsView.actionsUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Open Actions on GitHub ↗
-            </a>
-          )}
         </span>
       </div>
 
