@@ -1894,6 +1894,52 @@
   padding: 0 0.5rem 0.4rem;
 }
 
+/* The tab row with a control at its end (the repository switch). The row
+   carries the underline: the strip inside scrolls, the control does not, so a
+   switch never scrolls out of reach with the tabs. The strip's own bottom
+   padding moves to the row, which keeps tabs and switch centred on each other. */
+.project-tabs-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding-bottom: 0.4rem;
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.project-tabs-row > .project-tabs {
+  flex: 1 1 0;
+  min-width: 0;
+  border-bottom: 0;
+}
+
+.project-tabs-row .project-tabs__list {
+  padding-bottom: 0;
+}
+
+.project-tabs-row__trailing {
+  flex: none;
+  min-width: 0;
+  max-width: 100%;
+}
+
+/* Below a phone's width the switch takes a line of its own, above the tabs, so
+   neither is squeezed: the strip keeps scrolling at the full width. */
+@media (max-width: 640px) {
+  .project-tabs-row {
+    flex-wrap: wrap;
+    row-gap: 0.5rem;
+  }
+
+  .project-tabs-row > .project-tabs {
+    flex-basis: 100%;
+  }
+
+  .project-tabs-row__trailing {
+    order: -1;
+    flex-basis: 100%;
+  }
+}
+
 .project-tabs__group {
   display: flex;
   align-items: center;

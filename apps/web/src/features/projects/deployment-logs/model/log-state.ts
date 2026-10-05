@@ -6,6 +6,7 @@ import type {
   LogSource,
 } from "./deployment-logs-types";
 import { EMPTY_LOG_BUFFER, mergeLogPage, type LogBuffer } from "./log-buffer";
+import { cooldownEnd } from "./log-rate-limit";
 
 /**
  * The logs ViewModel's state and its transitions, kept out of the hook so each
@@ -27,6 +28,12 @@ export interface LogState {
   hasMore: boolean;
   source: LogSource | null;
   reason: string | null;
+  /**
+   * When the provider's rate limit lifts (epoch ms), while it holds. The lines
+   * stay: a cooldown is not an outage, and the next append or snapshot proves
+   * it is over, so those clear it.
+   */
+  rateLimitedUntil: number | null;
   filters: LogFilterKey[] | null;
   /** Display string. Never an API object. */
   error: string | null;
@@ -42,6 +49,7 @@ export function initialLogState(key: string): LogState {
     hasMore: false,
     source: null,
     reason: null,
+    rateLimitedUntil: null,
     filters: null,
     error: null,
     older: "idle",
@@ -68,6 +76,7 @@ export function applySnapshot(
   state: LogState,
   key: string,
   page: DeploymentLogsResponse,
+  now: number = Date.now(),
 ): LogState {
   const current = stateFor(state, key);
   const merged = mergeLogPage(current.buffer, page.logs, "newer");
@@ -80,6 +89,9 @@ export function applySnapshot(
     next: seed ? page.next : current.next,
     hasMore: seed ? page.hasMore : current.hasMore,
     filters: page.filters,
+    // A legacy-mode rate-limit frame is an empty snapshot: the merge above
+    // kept every line, and only the cooldown notice changes.
+    rateLimitedUntil: page.rateLimited ? cooldownEnd(now, page.retryAfterMs) : null,
     error: null,
   };
 }
@@ -99,7 +111,13 @@ export function applyAppend(
   const buffer = state.buffer.atLive
     ? mergeLogPage(state.buffer, logs, "newer")
     : state.buffer;
-  return { ...state, ...sourceFields(source, undefined), buffer, received: true };
+  return {
+    ...state,
+    ...sourceFields(source, undefined),
+    buffer,
+    received: true,
+    rateLimitedUntil: null,
+  };
 }
 
 /** Lines that close a gap left by a pause; merged newer, cursor untouched. */
@@ -119,6 +137,20 @@ export function applyStatus(
   reason: string | undefined,
 ): LogState {
   return { ...stateFor(state, key), ...sourceFields(source, reason) };
+}
+
+/**
+ * The provider answered 429 and the backend kept the stream open. Nothing is
+ * cleared: the buffer, `received` and the source stay as they were, so the
+ * reader keeps the lines and sees only a quiet notice.
+ */
+export function applyRateLimited(
+  state: LogState,
+  key: string,
+  retryAfterMs: number | undefined,
+  now: number,
+): LogState {
+  return { ...stateFor(state, key), rateLimitedUntil: cooldownEnd(now, retryAfterMs) };
 }
 
 export function applyError(state: LogState, key: string, error: string): LogState {
