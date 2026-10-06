@@ -6,6 +6,7 @@ import { useMemo } from "react";
 import Link from "next/link";
 
 import { WorkspaceEmpty, WorkspaceError, WorkspaceLoading } from "./workspace-states";
+import { BrowserTestsCard } from "./pipeline-browser-tests-card";
 import { CommitCard } from "./pipeline-commit-card";
 import { distinctCommitTitles } from "../../model/pipeline-run-card-rules";
 import { runsViewModeFor, type RunsViewMode } from "../../model/runs-view-mode";
@@ -17,6 +18,7 @@ import {
   usePipelineRunsViewModel,
   type WorkflowRunSummary,
 } from "../../view-models/use-pipeline-runs-view-model";
+import { useBrowserTestsViewModel } from "../../view-models/use-browser-tests-view-model";
 
 /**
  * Live GitHub Actions runs for this project: branch → run → jobs → steps → log.
@@ -46,6 +48,7 @@ import {
 export function PipelineRunsTab({
   projectId,
   appRole,
+  onOpenPullRequest,
 }: {
   projectId: string;
   /**
@@ -53,9 +56,13 @@ export function PipelineRunsTab({
    * every other role the summary with logs behind a disclosure.
    */
   appRole?: AppRole;
+  /** Opens the Pull requests tab on a number; absent when that tab is not offered. */
+  onOpenPullRequest?: (pullRequestNumber: number) => void;
 }) {
   const viewMode = runsViewModeFor(appRole);
   const runsView = usePipelineRunsViewModel({ projectId });
+  // Read once when the tab opens, beside the run list rather than inside its poll.
+  const browserTests = useBrowserTestsViewModel({ projectId });
 
   if (runsView.status === "loading") return <WorkspaceLoading rows={5} />;
   if (runsView.status === "error")
@@ -121,6 +128,8 @@ export function PipelineRunsTab({
         </span>
       </div>
 
+      <BrowserTestsCard view={browserTests} onOpenPullRequest={onOpenPullRequest} />
+
       {runsView.reportsUnavailable && (
         <p className="pipe-banner pipe-banner--warning" role="status">
           Showing what GitHub executed. Our own stage grading could not be read,
@@ -134,6 +143,7 @@ export function PipelineRunsTab({
           projectId={projectId}
           section={section}
           viewMode={viewMode}
+          appRole={appRole}
         />
       ))}
     </div>
@@ -145,10 +155,12 @@ function BranchSection({
   projectId,
   section,
   viewMode,
+  appRole,
 }: {
   projectId: string;
   section: BranchRunSection<WorkflowRunSummary>;
   viewMode: RunsViewMode;
+  appRole?: AppRole;
 }) {
   // Computed across the section: a title is only worth showing when it tells
   // this commit apart from the others on the branch.
@@ -179,6 +191,7 @@ function BranchSection({
               commit={commit}
               title={titles.get(commit.commitSha) ?? null}
               viewMode={viewMode}
+              appRole={appRole}
             />
           ))}
         </ul>

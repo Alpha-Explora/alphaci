@@ -29,8 +29,10 @@ import {
   type StageFailureLogViewModel,
 } from "../../view-models/use-stage-failure-log-view-model";
 import { useJobLogViewModel } from "../../view-models/use-run-jobs-view-model";
+import type { VisualChecksViewModel } from "../../view-models/use-visual-checks-view-model";
 import { JobLogPanel } from "./job-log-view";
 import { ChevronIcon, VerdictIcon } from "./pipeline-glyphs";
+import { VisualChecksPanel, VisualChip } from "./pipeline-visual-checks";
 
 /* ── The stepper ────────────────────────────────────────────────────────── */
 
@@ -44,17 +46,23 @@ import { ChevronIcon, VerdictIcon } from "./pipeline-glyphs";
  * Each step is a disclosure button for the one detail card beneath the row —
  * not a tab. A clean commit opens nothing, and a tablist must always have a
  * selected tab; pressing the open step again closes it.
+ *
+ * `visualChip` ("Visual: 2 changed") sits under the Verify step once that
+ * stage's visual checks have been read, so a changed screenshot stays in
+ * sight after the stage is closed. It is never fetched for the stepper alone.
  */
 export function StageStepper({
   entries,
   openStage,
   panelId,
   onSelect,
+  visualChip = null,
 }: Readonly<{
   entries: readonly StageEntry[];
   openStage: StageId | null;
   panelId: string;
   onSelect: (stage: StageId) => void;
+  visualChip?: string | null;
 }>) {
   return (
     <ol className="pipe-steps" aria-label="Pipeline stages">
@@ -79,6 +87,9 @@ export function StageStepper({
               <span className="pipe-step__text">
                 <span className="pipe-step__name">{stageName(stage.stage)}</span>
                 <span className="pipe-step__state">{verdict.label}</span>
+                {stage.stage === "verify" && visualChip && (
+                  <span className="pipe-step__visual">{visualChip}</span>
+                )}
               </span>
             </button>
           </li>
@@ -111,18 +122,30 @@ export function StatusChip({
  * The failure output loads only for a stage with a failed run to read (see
  * `loadsFailureLog`), which now includes a stage that passed and whose run
  * failed afterwards: that error is in no report, only in the log.
+ *
+ * The Verify stage on uat and main also carries its visual checks (`visual`,
+ * owned by the commit card so a result read once outlives the stage being
+ * closed), below everything else: the screenshots are the longest part.
  */
 export function StageDetail({
   projectId,
   entry,
   panelId,
   viewMode = "deep",
+  branch = "",
+  visual,
+  visualChip = null,
 }: Readonly<{
   projectId: string;
   entry: StageEntry;
   panelId: string;
   /** `summary` keeps the tool log behind a "Show logs" disclosure. */
   viewMode?: RunsViewMode;
+  branch?: string;
+  /** The commit's visual checks; absent for every stage but Verify on uat/main. */
+  visual?: VisualChecksViewModel;
+  /** "Visual: 2 changed", once `visual` has been read. */
+  visualChip?: string | null;
 }>) {
   const { stage, verdict } = entry;
   const headingId = useId();
@@ -141,7 +164,10 @@ export function StageDetail({
             {stageCoverage(stage.stage)}
           </span>
         </h5>
-        <StatusChip tone={verdict.tone} label={verdict.label} />
+        <span className="pipe-stage__chips">
+          <VisualChip label={visual ? visualChip : null} />
+          <StatusChip tone={verdict.tone} label={verdict.label} />
+        </span>
       </div>
 
       <StageFigures stage={stage} />
@@ -162,6 +188,8 @@ export function StageDetail({
       {loadsFailureLog(entry) && (
         <StageLogs projectId={projectId} runId={stage.runId} viewMode={viewMode} />
       )}
+
+      {visual && <VisualChecksPanel view={visual} branch={branch} />}
     </section>
   );
 }

@@ -170,6 +170,7 @@ export function normalizeAutomatedResult(raw: unknown): QaAutomatedItemResult | 
     runId: runNumber(value.runId),
     runUrl: httpUrl(value.runUrl),
     reportedAt: isoDate(value.reportedAt),
+    inferred: value.inferred === true,
   };
 }
 
@@ -234,6 +235,25 @@ const STAGE_RUN_TONES: Record<QaStageRunStatus, QaTone> = {
 
 export function automatedStatusLabel(status: QaAutomatedStatus): string {
   return AUTOMATED_STATUS_LABELS[status] ?? "Unknown";
+}
+
+/**
+ * A pass CI did not confirm: an older pipeline reports only failures, so the
+ * backend inferred this one from the test's absence in that list. Only a pass
+ * can be unconfirmed — an inferred flag on anything else is ignored.
+ */
+export function isUnconfirmedPass(result: Pick<QaAutomatedItemResult, "status" | "inferred">): boolean {
+  return result.status === "passed" && result.inferred;
+}
+
+export const UNCONFIRMED_PASS_LABEL = "Passed (not confirmed)";
+
+export const UNCONFIRMED_PASS_HINT =
+  "Older pipeline: this test wasn't in the failure list, but its pass wasn't reported. Update the pipeline to confirm passes.";
+
+/** The badge's word: "Passed", or "Passed (not confirmed)" for an inferred pass. */
+export function automatedBadgeLabel(status: QaAutomatedStatus, inferred = false): string {
+  return isUnconfirmedPass({ status, inferred }) ? UNCONFIRMED_PASS_LABEL : automatedStatusLabel(status);
 }
 
 export function automatedStatusTone(status: QaAutomatedStatus): QaTone {
@@ -316,12 +336,14 @@ function notRunSentence(commitSha: string | null | undefined): string {
 /**
  * "Automated: failed in e2e/checkout.spec.ts", "Automated: passed (whole suite
  * green)", "Automated: verify stage failed", "Automated: not run for a1b2c3d
- * yet", "Automated: unknown — more failures than listed".
+ * yet", "Automated: unknown — more failures than listed". An inferred pass
+ * says so: "Automated: passed in e2e/home.spec.ts (not confirmed)".
  */
 export function automatedSentence(
   result: QaAutomatedItemResult,
   context: AutomatedSentenceContext = {},
 ): string {
+  if (isUnconfirmedPass(result)) return `${verdictSentence(result, "passed")} (not confirmed)`;
   if (result.status === "passed" || result.status === "failed") {
     return verdictSentence(result, result.status);
   }

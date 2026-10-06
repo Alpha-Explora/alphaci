@@ -5,11 +5,13 @@ import "./automation.css";
 import { AutomatedBadge } from "../../items";
 import {
   AUTOMATED_DIFFERS_HINT,
+  UNCONFIRMED_PASS_HINT,
   automatedDiffers,
   automatedScopeLabel,
   automatedSentence,
   automatedSourceLabel,
   automatedStatusTone,
+  isUnconfirmedPass,
   stageName,
   stageResultFor,
 } from "../../model/qa-automation-rules";
@@ -45,10 +47,14 @@ export function AutomatedToggle({
       className="qa-auto-toggle"
       aria-expanded={open}
       aria-controls={controls}
-      title={sentenceOf(context)}
+      title={
+        isUnconfirmedPass(context.result)
+          ? `${sentenceOf(context)}. ${UNCONFIRMED_PASS_HINT}`
+          : sentenceOf(context)
+      }
       onClick={onToggle}
     >
-      <AutomatedBadge status={context.result.status} />
+      <AutomatedBadge status={context.result.status} inferred={context.result.inferred} />
       <span className="sr-only">{open ? " — hide details" : " — show details"}</span>
     </button>
   );
@@ -77,6 +83,7 @@ export function AutomatedDetails({
   return (
     <div id={id} hidden={hidden} className={`qa-auto-detail qa-auto-detail--${automatedStatusTone(result.status)}`}>
       <p className="qa-auto-detail__sentence">{sentenceOf(context)}</p>
+      {isUnconfirmedPass(result) ? <p className="qa-auto-detail__meta">{UNCONFIRMED_PASS_HINT}</p> : null}
       <p className="qa-auto-detail__meta">{metaLine(result)}</p>
       {failure ? (
         <div className="qa-auto-detail__failure">

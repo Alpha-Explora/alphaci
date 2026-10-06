@@ -241,6 +241,43 @@ describe("QA Studio — item Automated badge", () => {
     expect(runs.updateItem).not.toHaveBeenCalled();
   });
 
+  it("shows an inferred pass as Passed (not confirmed), with the reason, and a confirmed pass unchanged", async () => {
+    const items = [
+      runItem(0, {
+        title: "Home renders",
+        targetPersona: "qa",
+        verificationType: "playwright",
+        automated: automated({ status: "passed", matchedSpec: "e2e/home.spec.ts", failure: null, inferred: true }),
+      }),
+      runItem(1, {
+        title: "Search works",
+        targetPersona: "qa",
+        verificationType: "playwright",
+        automated: automated({ status: "passed", matchedSpec: "e2e/search.spec.ts", failure: null }),
+      }),
+    ];
+    setup(runAs("qa", { items, automation: automation() }));
+    const container = await studio("qa");
+    const hint =
+      "Older pipeline: this test wasn't in the failure list, but its pass wasn't reported. Update the pipeline to confirm passes.";
+
+    const inferred = itemRow(container, "Home renders");
+    const badge = inferred.querySelector(".qa-auto-badge");
+    expect(badge?.textContent).toBe("AutomatedPassed (not confirmed)");
+    expect(badge?.className).toContain("qa-auto-badge--unconfirmed");
+    expect(badge?.getAttribute("title")).toBe(hint);
+    expect(inferred.querySelector(".qa-auto-toggle")?.getAttribute("title")).toBe(
+      `Automated: passed in e2e/home.spec.ts (not confirmed). ${hint}`,
+    );
+    click(inferred.querySelector(".qa-auto-toggle"));
+    expect(inferred.querySelector(".qa-auto-detail")?.textContent).toContain(hint);
+
+    const confirmed = itemRow(container, "Search works").querySelector(".qa-auto-badge");
+    expect(confirmed?.textContent).toBe("AutomatedPassed");
+    expect(confirmed?.className).not.toContain("qa-auto-badge--unconfirmed");
+    expect(confirmed?.getAttribute("title")).toBeNull();
+  });
+
   it("renders every item of a run from an older backend without a badge or an error", async () => {
     const legacy = runAs("qa", { items: [runItem(0, { title: "Checkout works" })] });
     setup(legacy);
@@ -463,6 +500,15 @@ describe("QA report — automated results", () => {
     );
     return { ...base, run: { ...base.run, items }, ...overrides };
   }
+
+  it("marks an inferred pass as not confirmed in the checklist table", async () => {
+    const base = frozenReport();
+    const items = base.run.items.map((item, index) =>
+      index === 0 ? { ...item, automated: automated({ status: "passed", failure: null, inferred: true }) } : item,
+    );
+    const container = await report({ ...base, run: { ...base.run, items } });
+    expect(container.querySelector(".qa-auto-badge")?.textContent).toBe("AutomatedPassed (not confirmed)");
+  });
 
   it("keeps Not available yet when the report has no automated results", async () => {
     const container = await report(frozenReport({ automatedResults: null }));

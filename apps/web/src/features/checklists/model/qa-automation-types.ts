@@ -74,6 +74,12 @@ export interface QaAutomatedResultWire {
   runId?: number | null;
   runUrl?: string | null;
   reportedAt?: string | null;
+  /**
+   * True when a Playwright pass was INFERRED from the spec's absence in the
+   * failure list, because an older generated pipeline did not report which
+   * tests passed. Absent for a confirmed pass and for every other verdict.
+   */
+  inferred?: boolean;
 }
 
 /** 202 from POST …/automation/dispatch. */
@@ -128,6 +134,8 @@ export interface QaAutomatedItemResult {
   runId: number | null;
   runUrl: string | null;
   reportedAt: string | null;
+  /** A pass CI did not confirm (see the wire field); false when absent. */
+  inferred: boolean;
 }
 
 export interface QaAutomationDispatch {
