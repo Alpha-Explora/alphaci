@@ -2,7 +2,12 @@
 
 import "./qa-run-pills.css";
 
-import { automatedStatusLabel, automatedStatusTone } from "../../model/qa-automation-rules";
+import {
+  UNCONFIRMED_PASS_HINT,
+  automatedBadgeLabel,
+  automatedStatusTone,
+  isUnconfirmedPass,
+} from "../../model/qa-automation-rules";
 import type { QaAutomatedStatus } from "../../model/qa-automation-types";
 import {
   itemStatusLabel,
@@ -88,13 +93,24 @@ function FlaskGlyph() {
  * What CI concluded for an item — deliberately NOT a status pill: square
  * corners, an outline instead of a fill, and a flask, so it never reads as the
  * tester's recorded status beside it. Shared by QA Studio and the report.
+ *
+ * A pass an older pipeline never confirmed (`inferred`) is softer — muted
+ * rather than green, "Passed (not confirmed)", and a tooltip saying why — so
+ * it is not mistaken for a test that was seen passing.
  */
-export function AutomatedBadge({ status }: Readonly<{ status: QaAutomatedStatus }>) {
+export function AutomatedBadge({
+  status,
+  inferred = false,
+}: Readonly<{ status: QaAutomatedStatus; inferred?: boolean }>) {
+  const unconfirmed = isUnconfirmedPass({ status, inferred });
   return (
-    <span className={`qa-auto-badge qa-auto-badge--${automatedStatusTone(status)}`}>
+    <span
+      className={`qa-auto-badge qa-auto-badge--${automatedStatusTone(status)}${unconfirmed ? " qa-auto-badge--unconfirmed" : ""}`}
+      title={unconfirmed ? UNCONFIRMED_PASS_HINT : undefined}
+    >
       <FlaskGlyph />
       <span className="qa-auto-badge__label">Automated</span>
-      <span className="qa-auto-badge__status">{automatedStatusLabel(status)}</span>
+      <span className="qa-auto-badge__status">{automatedBadgeLabel(status, inferred)}</span>
     </span>
   );
 }

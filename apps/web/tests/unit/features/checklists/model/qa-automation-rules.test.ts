@@ -1,5 +1,7 @@
 import {
   AUTOMATED_DIFFERS_HINT,
+  UNCONFIRMED_PASS_HINT,
+  automatedBadgeLabel,
   automatedDiffers,
   automatedScopeLabel,
   automatedSentence,
@@ -13,6 +15,7 @@ import {
   dispatchMovedWarning,
   failuresToggleLabel,
   hasStageResults,
+  isUnconfirmedPass,
   listedFailures,
   MAX_LISTED_FAILURES,
   noAutomationText,
@@ -54,6 +57,7 @@ function item(overrides: Partial<QaAutomatedItemResult> = {}): QaAutomatedItemRe
     runId: 1,
     runUrl: null,
     reportedAt: null,
+    inferred: false,
     ...overrides,
   };
 }
@@ -221,6 +225,7 @@ describe("normalizeAutomatedResult", () => {
       runId: 1234567890,
       runUrl: RUN_URL,
       reportedAt: "2026-09-25T06:57:00.000Z",
+      inferred: false,
     });
   });
 
@@ -239,6 +244,7 @@ describe("normalizeAutomatedResult", () => {
       runId: null,
       runUrl: null,
       reportedAt: null,
+      inferred: false,
     });
     expect(normalizeAutomatedResult({ status: "flaky", scope: "file", source: "cypress" })).toMatchObject({
       status: "unknown",
@@ -462,5 +468,34 @@ describe("verifySettledSince", () => {
       verifySettledSince(normalizeRunAutomation({ verify: verifyFailure({ status: "running", reportedAt: "2026-09-25T07:03:00.000Z" }) }), since),
     ).toBe(false);
     expect(verifySettledSince(normalizeRunAutomation(undefined), since)).toBe(false);
+  });
+});
+
+describe("an inferred (unconfirmed) Playwright pass", () => {
+  it("reads the flag only when it is exactly true", () => {
+    expect(normalizeAutomatedResult(automated({ status: "passed", failure: null, inferred: true }))?.inferred).toBe(true);
+    expect(normalizeAutomatedResult(automated({ status: "passed", failure: null }))?.inferred).toBe(false);
+    expect(
+      normalizeAutomatedResult({ ...automated({ status: "passed" }), inferred: "true" })?.inferred,
+    ).toBe(false);
+  });
+
+  it("is unconfirmed only for a pass", () => {
+    expect(isUnconfirmedPass(item({ status: "passed", inferred: true }))).toBe(true);
+    expect(isUnconfirmedPass(item({ status: "passed", inferred: false }))).toBe(false);
+    expect(isUnconfirmedPass(item({ status: "failed", inferred: true }))).toBe(false);
+  });
+
+  it("labels and explains it, leaving a confirmed pass unchanged", () => {
+    expect(automatedBadgeLabel("passed", true)).toBe("Passed (not confirmed)");
+    expect(automatedBadgeLabel("passed")).toBe("Passed");
+    expect(automatedBadgeLabel("failed", true)).toBe("Failed");
+    expect(automatedSentence(item({ status: "passed", inferred: true }))).toBe(
+      "Automated: passed in e2e/checkout.spec.ts (not confirmed)",
+    );
+    expect(automatedSentence(item({ status: "passed" }))).toBe("Automated: passed in e2e/checkout.spec.ts");
+    expect(UNCONFIRMED_PASS_HINT).toBe(
+      "Older pipeline: this test wasn't in the failure list, but its pass wasn't reported. Update the pipeline to confirm passes.",
+    );
   });
 });

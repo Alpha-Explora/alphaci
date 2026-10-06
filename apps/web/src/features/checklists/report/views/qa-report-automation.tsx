@@ -29,7 +29,7 @@ export function ItemAutomatedCell({ item }: Readonly<{ item: QaRunItem }>) {
   const scope = automatedScopeLabel(result.scope);
   return (
     <span className="qa-report-auto-cell">
-      <AutomatedBadge status={result.status} />
+      <AutomatedBadge status={result.status} inferred={result.inferred} />
       {scope ? <span className="qa-report-table__sub">{scope}</span> : null}
     </span>
   );

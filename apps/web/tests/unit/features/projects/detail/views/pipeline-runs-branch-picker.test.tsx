@@ -23,6 +23,16 @@ jest.mock(
  * made the view throw the moment it started rendering the check roster. A
  * mock that erases more of a module than the test needs breaks on the next
  * thing that module legitimately grows. */
+// Not under test here: the tab reads these once on open.
+jest.mock("../../../../../../src/features/projects/detail/data/project-browser-tests-api", () => ({
+  getProjectBrowserTests: jest.fn(() => Promise.reject(new Error("not under test"))),
+  addProjectBrowserTests: jest.fn(),
+}));
+jest.mock("../../../../../../src/features/projects/detail/data/project-visual-api", () => ({
+  getProjectVisualChecks: jest.fn(() => Promise.resolve({ branch: "uat", runId: null, canApprove: false, snapshots: [] })),
+  approveProjectVisualChecks: jest.fn(),
+}));
+
 jest.mock("../../../../../../src/features/runs", () => ({
   ...jest.requireActual("../../../../../../src/features/runs"),
   getRuns: jest.fn(),

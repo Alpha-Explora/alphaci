@@ -168,3 +168,16 @@
   --qa-tone: var(--danger);
   --qa-tone-edge: var(--danger);
 }
+
+/* A pass an older pipeline never confirmed: the success hue, quietened. */
+.qa-auto-badge--unconfirmed {
+  --qa-tone: var(--text-secondary);
+  --qa-tone-edge: var(--success);
+
+  border-style: dotted;
+  cursor: help;
+}
+
+.qa-auto-badge--unconfirmed .qa-auto-badge__status {
+  font-weight: 600;
+}

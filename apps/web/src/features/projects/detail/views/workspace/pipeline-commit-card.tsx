@@ -3,7 +3,7 @@
 import { useId, useMemo, useState } from "react";
 
 import { checkLabel, relativeTime } from "@/features/runs";
-import type { RunGroup, StageId } from "@/shared/api/contracts";
+import type { AppRole, RunGroup, StageId } from "@/shared/api/contracts";
 
 import type { RunsViewMode } from "../../model/runs-view-mode";
 import {
@@ -18,7 +18,9 @@ import {
   type PromotionReadiness,
 } from "../../model/promotion-readiness";
 import { commitHeadline, type CommitHeadline, type CommitRunGroup } from "../../model/runs-by-commit";
+import { isVisualBranch, visualChipLabel, visualRequestRunId } from "../../model/visual-check-rules";
 import type { WorkflowRunSummary } from "../../view-models/use-pipeline-runs-view-model";
+import { useVisualChecksViewModel } from "../../view-models/use-visual-checks-view-model";
 import { ChevronIcon, InfoIcon, PromoteIcon } from "./pipeline-glyphs";
 import { StageDetail, StageStepper, StatusChip } from "./pipeline-stage-detail";
 import { WorkflowRunList } from "./pipeline-workflow-runs";
@@ -43,6 +45,11 @@ const HEADLINE_TONE: Record<CommitHeadline["tone"], VerdictTone> = {
  * The GitHub runs are behind the footer toggle: a commit produces one per
  * chained workflow, and that list is detail, not headline. Expanding it loads
  * nothing; a run's jobs load only when that run is opened.
+ *
+ * On uat and main the Verify stage also holds the commit's visual checks. They
+ * are read the first time that stage is open — never for every card on the
+ * tab — and kept here, so the stepper can say "Visual: 2 changed" after the
+ * stage is closed again.
  */
 export function CommitCard({
   projectId,
@@ -50,12 +57,15 @@ export function CommitCard({
   commit,
   title,
   viewMode = "deep",
+  appRole,
 }: Readonly<{
   projectId: string;
   branch: string;
   commit: CommitRunGroup<WorkflowRunSummary>;
   title: string | null;
   viewMode?: RunsViewMode;
+  /** Decides whether visual changes can be approved from this card. */
+  appRole?: AppRole;
 }>) {
   const headingId = useId();
   const panelId = useId();
@@ -76,6 +86,17 @@ export function CommitCard({
   const [chosen, setChosen] = useState<StageId | null | undefined>(undefined);
   const openStage = chosen === undefined ? defaultOpenStage(entries) : chosen;
   const openEntry = entries.find((entry) => entry.stage.stage === openStage);
+  const verifyEntry = entries.find((entry) => entry.stage.stage === "verify");
+
+  const visual = useVisualChecksViewModel({
+    projectId,
+    branch,
+    runId: visualRequestRunId(verifyEntry?.stage.runId),
+    enabled: openStage === "verify",
+    appRole,
+  });
+  const visualChip = visualChipLabel(visual.checks);
+  const showsVisual = openEntry?.stage.stage === "verify" && isVisualBranch(branch);
 
   return (
     <li className="pipe-commit-item">
@@ -95,6 +116,7 @@ export function CommitCard({
               openStage={openStage}
               panelId={panelId}
               onSelect={(stage) => setChosen(openStage === stage ? null : stage)}
+              visualChip={visualChip}
             />
             <PromotionBanner branch={branch} report={report} runs={commit.runs} />
           </>
@@ -114,6 +136,9 @@ export function CommitCard({
             entry={openEntry}
             panelId={panelId}
             viewMode={viewMode}
+            branch={branch}
+            visual={showsVisual ? visual : undefined}
+            visualChip={visualChip}
           />
         )}
 
