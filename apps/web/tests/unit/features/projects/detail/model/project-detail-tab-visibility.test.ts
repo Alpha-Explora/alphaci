@@ -1,6 +1,7 @@
 import {
   PROJECT_DETAIL_TABS,
   canManageEnvVars,
+  checklistsTabCarriesProjectQa,
   canOpenPoStudio,
   canOpenQaStudio,
   projectDetailTabsForRole,
@@ -199,6 +200,17 @@ describe("seesProjectAsProduct", () => {
     expect(seesProjectAsProduct("admin")).toBe(false);
     expect(seesProjectAsProduct(null)).toBe(false);
     expect(seesProjectAsProduct(undefined)).toBe(false);
+  });
+});
+
+describe("checklistsTabCarriesProjectQa", () => {
+  it("is true for a repository in a Project, whatever the viewer's role", () => {
+    expect(checklistsTabCarriesProjectQa("project")).toBe(true);
+  });
+
+  it("keeps the per-repository screens for no Project or one still being read", () => {
+    expect(checklistsTabCarriesProjectQa("repository")).toBe(false);
+    expect(checklistsTabCarriesProjectQa("pending")).toBe(false);
   });
 });
 

@@ -2831,7 +2831,8 @@ async function developerRequestsRetest({ page, backend, baseUrl }: JourneyContex
   await expectText(summary.locator('li[data-bucket="todo"] .qa-summary__chip-count'), '1', 'the developer item still to do');
   assert.equal(await summary.locator('li.qa-returned__row').count(), 0, 'no per-item rows on the Overview');
   assert.deepEqual(await summary.getByRole('button').allTextContents(), ['Open checklist'], 'one control on the summary');
-  // This server has no Project-wide list, so the list lives on the Checklists tab.
+  // This server has no Project-wide list, so the Project workspace's My QA items
+  // tab (the Checklists tab, a Developer's too) shows the per-repository card.
   await summary.getByRole('button', { name: 'Open checklist' }).click();
   const tabs = page.getByRole('tablist', { name: 'Project sections' });
   await visible(tabs.getByRole('tab', { name: 'Checklists', selected: true }), 'the Checklists tab, opened from the summary');

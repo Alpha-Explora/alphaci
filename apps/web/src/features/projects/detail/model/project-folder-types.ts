@@ -64,8 +64,6 @@ export interface RepoSwitchPresentation {
   projectName: string | null;
   /** One per repository, in role order. Empty unless `projectName` is set. */
   options: RepoSwitchOption[];
-  /** The Teams page opened on this Project, or null when it cannot be named. */
-  manageHref: string | null;
 }
 
 /**

@@ -7,24 +7,24 @@ import { ProjectChecklistsPanel } from "@/features/checklists/project";
 import { ProjectQaWorkspace } from "@/features/checklists/requirements";
 import { MyQaItemsCard } from "@/features/checklists/returned";
 import type { ProvisionedProject } from "@/features/projects";
-import { seesProjectAsProduct } from "../model/project-detail-tab-rules";
+import { checklistsTabCarriesProjectQa } from "../model/project-detail-tab-rules";
 import type { ProjectDetailTabsViewModel } from "../view-models/use-project-detail-tabs-view-model";
 
 /**
  * The Checklists tab. Checklists belong to the checklists domain; this file
  * only adapts the project page's panel contract to it.
  *
- * A repository with no Project to send the viewer to also carries its full
- * "My QA items" list here (what QA returned, with "Mark fixed & request
- * re-test", and the current run's developer items): the Overview shows only a
- * summary of it, and its "Open checklist" lands on this tab. A repository in a
- * Project works from the Project's "My QA items" instead (unless the server
- * has no Project-wide list, when the per-repository card stands in here).
+ * For a repository filed under a Project this tab IS the Project's QA
+ * workspace — Requirements, QA run and My QA items — for every role (Developer,
+ * Admin, Product owner, QA Team): the Overview's "Open checklist" lands on it,
+ * on "My QA items". On a server with no Project-wide list the per-repository
+ * card stands in on that tab. The wrapper keeps the tabpanel the strip's
+ * `aria-controls` names.
  *
- * The QA Team and Product owners judge the Project, not the repository, so
- * for a repository in a Project their tab IS the Project's QA workspace —
- * Requirements, QA run and My QA items — instead of a pointer to the Projects
- * page. The wrapper keeps the tabpanel the strip's `aria-controls` names.
+ * A repository with no Project (or one the page could not read, as on an
+ * older backend) keeps the per-repository screens and carries its full "My QA
+ * items" list here (what QA returned, with "Mark fixed & request re-test", and
+ * the current run's developer items).
  */
 export function ChecklistsTabPanel({
   project,
@@ -36,7 +36,7 @@ export function ChecklistsTabPanel({
   dangerZone?: ReactNode;
   qaScope?: QaScope;
 }>) {
-  if (seesProjectAsProduct(vm.appRole) && qaScope.kind === "project") {
+  if (qaScope.kind === "project" && checklistsTabCarriesProjectQa(qaScope.kind)) {
     return (
       <div
         role="tabpanel"
@@ -50,6 +50,13 @@ export function ChecklistsTabPanel({
           appRole={vm.appRole}
           enabled={vm.qaChecklistsEnabled}
           opensOn={vm.checklistsOpensMyItems ? "items" : undefined}
+          itemsFallback={
+            <MyQaItemsCard
+              appRole={vm.appRole}
+              enabled={vm.qaChecklistsEnabled && Boolean(vm.appRole)}
+              projectId={project.id}
+            />
+          }
         />
       </div>
     );

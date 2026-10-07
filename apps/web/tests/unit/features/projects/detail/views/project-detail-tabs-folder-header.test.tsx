@@ -38,7 +38,6 @@ const PROJECT = {
 const FOLDER: ProjectFolderViewModel = {
   status: "ready",
   projectName: "shop",
-  manageHref: "/workflows?group=ws-1&project=dp-1",
   project: { deliveryProjectId: "dp-1", name: "shop", href: "/workflows?group=ws-1&project=dp-1" },
   options: [
     { key: "proj-fe", projectId: "proj-fe", role: "frontend", roleLabel: "FRONTEND", label: "shop-fe", repoFullName: "Org/shop-fe", current: true, disabled: false },
@@ -79,22 +78,24 @@ describe("ProjectDetailTabs header", () => {
     expect(repo?.querySelector(".project-status-badge")?.textContent).toBe("provisioned");
     expect(container.querySelector('[role="radiogroup"]')).not.toBeNull();
 
-    const manage = [...container.querySelectorAll("a")].find((el) => el.textContent?.includes("Manage project"));
-    expect(manage?.getAttribute("href")).toBe("/workflows?group=ws-1&project=dp-1");
+    expect(container.textContent).not.toContain("Manage project");
 
     const backend = [...container.querySelectorAll<HTMLButtonElement>('[role="radio"]')][1];
     act(() => backend.click());
     expect(push).toHaveBeenCalledWith("/projects/proj-be#overview");
   });
 
-  it("omits Manage project when the folder cannot be named on the Teams page", () => {
-    const container = render({ ...FOLDER, manageHref: null });
-    expect(container.textContent).not.toContain("Manage project");
-    expect(container.querySelector('[role="radiogroup"]')).not.toBeNull();
+  it("has no Manage project link for any role", () => {
+    for (const appRole of [undefined, "member", "admin", "lead", "qa"] as const) {
+      const container = render(FOLDER, appRole);
+      expect(container.textContent).not.toContain("Manage project");
+      expect([...container.querySelectorAll("a")].some((el) => el.getAttribute("href")?.startsWith("/workflows"))).toBe(false);
+      unmount();
+    }
   });
 
   it("renders the header exactly as before without a multi-repository Project", () => {
-    for (const folder of [undefined, { status: "unavailable", projectName: null, options: [], manageHref: null } as ProjectFolderViewModel]) {
+    for (const folder of [undefined, { status: "unavailable", projectName: null, options: [] } as unknown as ProjectFolderViewModel]) {
       const container = render(folder);
       expect(container.querySelector("h1")?.textContent).toBe("Org/shop-fe");
       expect(container.querySelector(".project-detail-header__identity p")?.textContent).toBe("shop-frontendprovisioned");
@@ -181,18 +182,14 @@ describe("ProjectDetailTabs tab row", () => {
     }
   });
 
-  it("leaves Manage project alone in the header aside, the switch gone from it", () => {
-    const container = render(FOLDER, "member");
-    const aside = container.querySelector(".project-folder-header__aside");
-    expect(aside?.querySelector('[role="radiogroup"]')).toBeNull();
-    expect(aside?.children).toHaveLength(1);
-    expect(aside?.textContent).toContain("Manage project");
-  });
-
-  it("renders no empty aside when there is no Manage project link", () => {
-    const container = render({ ...FOLDER, manageHref: null }, "member");
-    expect(container.querySelector(".project-folder-header__aside")).toBeNull();
-    expect(container.querySelector(".project-tabs-row [role=\"radiogroup\"]")).not.toBeNull();
+  it("renders no header aside for Developers and admins; the switch is in the tab row", () => {
+    for (const appRole of ["member", "admin"] as const) {
+      const container = render(FOLDER, appRole);
+      expect(container.querySelector(".project-folder-header__aside")).toBeNull();
+      expect(container.querySelector(".project-folder-header")?.querySelector('[role="radiogroup"]')).toBeNull();
+      expect(container.querySelector(".project-tabs-row [role=\"radiogroup\"]")).not.toBeNull();
+      unmount();
+    }
   });
 
   it("keeps the arrow keys and click opening a sibling, now from the tab row", () => {
