@@ -72,6 +72,7 @@ afterEach(() => {
   root = null;
   latest = null;
   jest.clearAllMocks();
+  jest.useRealTimers();
 });
 
 describe("useProjectAuditViewModel: GitHub activity", () => {
@@ -162,5 +163,92 @@ describe("useProjectAuditViewModel: GitHub activity", () => {
     expect(vm().syncError).toBe("GitHub needs you to sign in again before ALPHACI can sync this repository's GitHub activity.");
     expect(vm().syncSignInHref).toBe("/login?next=/projects/p1");
     expect(repo.audit).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("useProjectAuditViewModel: stale first import", () => {
+  const stale = { status: "stale", syncedAt: null };
+  const page = (githubSync: unknown, next: string | null = null) =>
+    ({ enabled: true, items: [event("a-1")], next, githubSync }) as never;
+
+  async function advance(ms: number) {
+    await act(async () => {
+      await jest.advanceTimersByTimeAsync(ms);
+    });
+  }
+
+  it("re-reads the first page after 5s, then stops once GitHub is ok", async () => {
+    jest.useFakeTimers();
+    repo.audit
+      .mockResolvedValueOnce(page(stale))
+      .mockResolvedValueOnce(page({ status: "ok", syncedAt: null }));
+    await render();
+    expect(vm().githubSync?.status).toBe("stale");
+    await advance(4900);
+    expect(repo.audit).toHaveBeenCalledTimes(1);
+    await advance(200);
+    expect(repo.audit).toHaveBeenCalledTimes(2);
+    expect(repo.audit).toHaveBeenLastCalledWith("p1", { limit: 50 });
+    expect(vm().githubSync?.status).toBe("ok");
+    await advance(30000);
+    expect(repo.audit).toHaveBeenCalledTimes(2);
+  });
+
+  it("re-reads at most twice while it stays stale", async () => {
+    jest.useFakeTimers();
+    repo.audit.mockResolvedValue(page(stale));
+    await render();
+    await advance(5000);
+    await advance(5000);
+    expect(repo.audit).toHaveBeenCalledTimes(3);
+    await advance(60000);
+    expect(repo.audit).toHaveBeenCalledTimes(3);
+  });
+
+  it("stops on failed", async () => {
+    jest.useFakeTimers();
+    repo.audit
+      .mockResolvedValueOnce(page(stale))
+      .mockResolvedValueOnce(page({ status: "failed", syncedAt: null }));
+    await render();
+    await advance(5000);
+    await advance(60000);
+    expect(repo.audit).toHaveBeenCalledTimes(2);
+    expect(vm().githubSync?.status).toBe("failed");
+  });
+
+  it("does not poll when the first read is already ok", async () => {
+    jest.useFakeTimers();
+    repo.audit.mockResolvedValue(page({ status: "ok", syncedAt: null }));
+    await render();
+    await advance(60000);
+    expect(repo.audit).toHaveBeenCalledTimes(1);
+  });
+
+  it("is cancelled by unmount", async () => {
+    jest.useFakeTimers();
+    repo.audit.mockResolvedValue(page(stale));
+    await render();
+    act(() => root?.unmount());
+    root = null;
+    await advance(60000);
+    expect(repo.audit).toHaveBeenCalledTimes(1);
+  });
+
+  it("leaves the rows alone once older pages were loaded", async () => {
+    jest.useFakeTimers();
+    repo.audit.mockResolvedValueOnce(page(stale, "cursor")).mockResolvedValueOnce({
+      enabled: true,
+      items: [event("a-0")],
+      next: null,
+    } as never);
+    await render();
+    await act(async () => {
+      await vm().loadMore();
+    });
+    expect(vm().rows).toHaveLength(2);
+    await advance(60000);
+    expect(repo.audit).toHaveBeenCalledTimes(2);
+    expect(vm().rows).toHaveLength(2);
   });
 });

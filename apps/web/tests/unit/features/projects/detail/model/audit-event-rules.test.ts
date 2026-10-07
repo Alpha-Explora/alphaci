@@ -299,9 +299,21 @@ describe("auditSyncLine", () => {
       tone: "warning",
       text: "Couldn't reach GitHub just now — showing what was saved",
     });
-    expect(auditSyncLine({ status: "stale", syncedAt: "2026-10-02T09:00:00Z" }, NOW)?.text).toBe(
-      "Couldn't reach GitHub just now — showing what was saved (last synced 3h ago)",
-    );
+    expect(auditSyncLine({ status: "failed", syncedAt: "2026-10-02T09:00:00Z" }, NOW)).toEqual({
+      tone: "warning",
+      text: "Couldn't reach GitHub just now — showing what was saved (last synced 3h ago)",
+    });
+  });
+
+  it("says a stale read is still running, in a neutral tone, not that GitHub failed", () => {
+    expect(auditSyncLine({ status: "stale", syncedAt: null }, NOW)).toEqual({
+      tone: "pending",
+      text: "Reading GitHub activity… showing what was saved for now",
+    });
+    expect(auditSyncLine({ status: "stale", syncedAt: "2026-10-02T09:00:00Z" }, NOW)).toEqual({
+      tone: "pending",
+      text: "Reading GitHub activity… showing what was saved for now (last synced 3h ago)",
+    });
   });
 
   it("draws no line without a sync state", () => {

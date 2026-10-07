@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { projectsRepository } from "../../data/projects-repository";
 import type { ProjectStatus } from "../../model/projects-types";
@@ -61,8 +61,14 @@ interface SyncFailure {
 const LOAD_ERROR = "Unable to load audit events.";
 const LOAD_MORE_ERROR = "Unable to load older audit events. Try again in a moment.";
 
+/** A "stale" first import is still running server-side: look again this often, this many times. */
+export const AUDIT_STALE_REFRESH_MS = 5000;
+export const AUDIT_STALE_REFRESH_MAX = 2;
+
 async function loadFirstPage(projectId: string): Promise<AuditState> {
-  const response = await projectsRepository.audit(projectId, { limit: AUDIT_PAGE_SIZE });
+  const response = await projectsRepository.audit(projectId, {
+    limit: AUDIT_PAGE_SIZE,
+  });
   return { page: normalizeAuditPage(response), readAt: Date.now() };
 }
 
@@ -74,9 +80,66 @@ function pageParts(state: AuditState | null): {
   recording: boolean;
   readAt: number;
 } {
-  if (!state) return { next: null, rows: [], githubSync: null, recording: true, readAt: 0 };
+  if (!state)
+    return {
+      next: null,
+      rows: [],
+      githubSync: null,
+      recording: true,
+      readAt: 0,
+    };
   const { page, readAt } = state;
-  return { next: page.next, rows: page.items, githubSync: page.githubSync, recording: page.enabled, readAt };
+  return {
+    next: page.next,
+    rows: page.items,
+    githubSync: page.githubSync,
+    recording: page.enabled,
+    readAt,
+  };
+}
+
+interface StaleRefreshInput {
+  projectId: string;
+  enabled: boolean;
+  stale: boolean;
+  /** Changes with every shown page, so each re-read re-arms the timer. */
+  readAt: number;
+  olderLoaded: () => boolean;
+  replace: (next: AuditState) => void;
+}
+
+/**
+ * While the first GitHub import is still running ("stale"), re-reads the first
+ * page after a pause, at most AUDIT_STALE_REFRESH_MAX times. Stops on ok/failed,
+ * once older pages were loaded (their rows are not stomped), and on unmount,
+ * tab disable or project change.
+ */
+function useStaleAuditRefresh(input: StaleRefreshInput) {
+  const { projectId, enabled, stale, readAt, olderLoaded, replace } = input;
+  const attempts = useRef({ projectId, count: 0 });
+  const latest = useRef({ olderLoaded, replace });
+  useEffect(() => {
+    latest.current = { olderLoaded, replace };
+  });
+
+  useEffect(() => {
+    if (attempts.current.projectId !== projectId) attempts.current = { projectId, count: 0 };
+    if (!enabled || !stale || attempts.current.count >= AUDIT_STALE_REFRESH_MAX) return;
+    let active = true;
+    const timer = setTimeout(() => {
+      if (latest.current.olderLoaded()) return;
+      attempts.current.count += 1;
+      loadFirstPage(projectId)
+        .then((state) => {
+          if (active) latest.current.replace(state);
+        })
+        .catch(() => undefined);
+    }, AUDIT_STALE_REFRESH_MS);
+    return () => {
+      active = false;
+      clearTimeout(timer);
+    };
+  }, [projectId, enabled, stale, readAt]);
 }
 
 function syncFailure(cause: unknown, projectId: string): SyncFailure {
@@ -112,6 +175,15 @@ export function useProjectAuditViewModel(options: {
   const [syncing, setSyncing] = useState(false);
   const [syncError, setSyncError] = useState<SyncFailure | null>(null);
   const { next, rows, githubSync, recording, readAt } = pageParts(query.data);
+  const olderLoaded = useRef(false);
+  useStaleAuditRefresh({
+    projectId,
+    enabled,
+    stale: githubSync?.status === "stale",
+    readAt,
+    olderLoaded: () => olderLoaded.current,
+    replace: query.replace,
+  });
 
   async function loadMore() {
     if (!next || loadingMore) return;
@@ -124,6 +196,7 @@ export function useProjectAuditViewModel(options: {
       });
       const page = normalizeAuditPage(response);
       const readAt = Date.now();
+      olderLoaded.current = true;
       query.setData((current) =>
         current ? { page: appendAuditPage(current.page, page), readAt } : current,
       );
@@ -141,6 +214,7 @@ export function useProjectAuditViewModel(options: {
     try {
       await projectsRepository.syncAudit(projectId);
       query.replace(await loadFirstPage(projectId));
+      olderLoaded.current = false;
       setLoadMoreError(null);
     } catch (cause) {
       setSyncError(syncFailure(cause, projectId));

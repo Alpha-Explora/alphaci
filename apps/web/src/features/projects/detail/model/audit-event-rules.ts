@@ -387,13 +387,14 @@ export function auditLoadMoreLabel(loading: boolean): string {
 /* ── GitHub sync line and the source filter ─────────────────────────────── */
 
 export interface AuditSyncLine {
-  tone: "ok" | "warning";
+  tone: "ok" | "pending" | "warning";
   text: string;
 }
 
 /**
  * The line above the trail: when GitHub activity was last read, or that the
- * last read did not land and the rows are what was saved. Null without a
+ * last read did not land and the rows are what was saved (`stale` is the
+ * import still running, not a failure). Null without a
  * `githubSync` (an older backend): no line at all.
  */
 export function auditSyncLine(sync: AuditGithubSync | null, now: number): AuditSyncLine | null {
@@ -403,6 +404,10 @@ export function auditSyncLine(sync: AuditGithubSync | null, now: number): AuditS
     return { tone: "ok", text: ago ? `GitHub activity synced ${ago}` : "GitHub activity synced" };
   }
   const last = ago ? ` (last synced ${ago})` : "";
+  if (sync.status === "stale") {
+    // Not a failure: the first import is still running and saves on its own.
+    return { tone: "pending", text: `Reading GitHub activity… showing what was saved for now${last}` };
+  }
   return { tone: "warning", text: `Couldn't reach GitHub just now — showing what was saved${last}` };
 }
 
