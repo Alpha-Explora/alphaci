@@ -41,10 +41,10 @@ export function qaScopeFromFolder(
 }
 
 /**
- * The scope for a page that carries the Project's QA itself (the QA Team's
- * and a Product owner's repository page, whose Checklists tab embeds the
- * Project's Requirements, QA run and My QA items). Nothing links away to the
- * Projects page: with no `projectHref`, "Open checklist" stays on this page.
+ * The scope for a page that carries the Project's QA itself: every role's
+ * repository page, whose Checklists tab embeds the Project's Requirements, QA
+ * run and My QA items. Nothing links away to the Projects page: with no
+ * `projectHref`, "Open checklist" stays on this page.
  */
 export function withProjectOnPage(scope: QaScope): QaScope {
   return scope.kind === "project" ? { ...scope, projectHref: null } : scope;

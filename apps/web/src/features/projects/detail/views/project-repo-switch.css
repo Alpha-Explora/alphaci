@@ -43,33 +43,6 @@
   max-width: 100%;
 }
 
-.project-folder-header__manage {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  min-height: 1.75rem;
-  padding: 0 0.15rem;
-  border-radius: 0.35rem;
-  font-size: 0.78rem;
-  font-weight: 600;
-  color: var(--text-secondary);
-  text-decoration: none;
-  transition: color 0.15s ease-out;
-}
-
-.project-folder-header__manage:hover {
-  color: var(--brand);
-}
-
-.project-folder-header__manage-arrow {
-  display: inline-block;
-  transition: transform 0.15s ease-out;
-}
-
-.project-folder-header__manage:hover .project-folder-header__manage-arrow {
-  transform: translateX(3px);
-}
-
 /* ── Segmented switch ──────────────────────────────────────────────────── */
 .repo-switch {
   display: inline-flex;
@@ -358,18 +331,12 @@
 
 @media (prefers-reduced-motion: reduce) {
   .repo-switch__option,
-  .repo-switch__option[data-tooltip]::after,
-  .project-folder-header__manage,
-  .project-folder-header__manage-arrow {
+  .repo-switch__option[data-tooltip]::after {
     transition: none;
   }
 
   .repo-switch__option[data-pending="true"] .repo-switch__role::before {
     animation: none;
-  }
-
-  .project-folder-header__manage:hover .project-folder-header__manage-arrow {
-    transform: none;
   }
 }
 
@@ -436,8 +403,8 @@
   align-self: stretch;
 }
 
-/* A Developer's and Admin's aside: the repository switch and Manage project
- * on one row, so the header spends one short row above the identity. */
+/* A Developer's and Admin's aside: the repository switch on one short row
+ * above the identity. */
 .project-detail-header--summary:not(.project-detail-header--tabs) > .project-folder-header__aside,
 .project-detail-header--bare:not(.project-detail-header--tabs) > .project-folder-header__aside {
   flex-flow: row wrap;
@@ -470,7 +437,7 @@
     align-items: flex-start;
   }
 
-  /* Manage project alone: still one short row, at the right. */
+  /* The switch alone: still one short row, at the right. */
   .project-detail-header--summary:not(.project-detail-header--tabs) > .project-folder-header__aside {
     align-items: center;
     justify-content: flex-end;

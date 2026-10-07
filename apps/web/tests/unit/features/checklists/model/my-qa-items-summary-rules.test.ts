@@ -11,7 +11,7 @@ import {
 import { myItemsCount, normalizeMyQaItems } from "../../../../../src/features/checklists/model/qa-my-items-rules";
 import type { ProjectMyItems } from "../../../../../src/features/checklists/model/project-run-types";
 import type { QaRunItemStatus } from "../../../../../src/features/checklists/model/qa-run-types";
-import { REPOSITORY_SCOPE, type QaScope } from "../../../../../src/features/checklists/model/qa-scope";
+import { REPOSITORY_SCOPE, withProjectOnPage, type QaScope } from "../../../../../src/features/checklists/model/qa-scope";
 import { runItem } from "../qa-run-fixtures";
 
 function entry(position: number, status: QaRunItemStatus) {
@@ -97,6 +97,12 @@ describe("myQaItemsDestination", () => {
     const scope: QaScope = { ...PROJECT_SCOPE, projectHref: null };
     expect(myQaItemsDestination(scope)).toEqual({ kind: "checklists-tab" });
     expect(checklistsTabShowsMyItems(scope)).toBe(true);
+  });
+
+  it("keeps a Developer's link on the repository page once the Project link is stripped", () => {
+    const onPage = withProjectOnPage(PROJECT_SCOPE);
+    expect(myQaItemsDestination(onPage)).toEqual({ kind: "checklists-tab" });
+    expect(checklistsTabShowsMyItems(onPage)).toBe(true);
   });
 
   it("shows nothing on the Checklists tab while the Project is still being read", () => {

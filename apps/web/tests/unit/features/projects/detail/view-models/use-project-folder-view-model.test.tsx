@@ -114,7 +114,6 @@ describe("useProjectFolderViewModel", () => {
       ["FRONTEND", "shop-fe", false],
       ["BACKEND", "shop-be", true],
     ]);
-    expect(vm().manageHref).toBe("/workflows?group=ws-1&project=dp-1");
   });
 
   it("names the Project for QA whatever its size, and nothing without a folder", async () => {
@@ -134,7 +133,6 @@ describe("useProjectFolderViewModel", () => {
     await waitFor(() => expect(vm().status).toBe("ready"));
     expect(vm().projectName).toBeNull();
     expect(vm().options).toEqual([]);
-    expect(vm().manageHref).toBeNull();
   });
 
   it("reads a 404 (an older backend) as unavailable and changes nothing", async () => {

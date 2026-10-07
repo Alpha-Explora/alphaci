@@ -165,7 +165,6 @@ export function manageProjectHref(
 export const SINGLE_REPO_PRESENTATION: RepoSwitchPresentation = {
   projectName: null,
   options: [],
-  manageHref: null,
 };
 
 /**
@@ -181,7 +180,6 @@ export function repoSwitchPresentation(
   return {
     projectName: folder.name,
     options: repoSwitchOptions(folder, currentProjectId),
-    manageHref: manageProjectHref(folder),
   };
 }
 

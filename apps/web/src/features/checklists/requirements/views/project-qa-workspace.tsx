@@ -2,7 +2,7 @@
 
 import "./requirements.css";
 
-import { useId, useRef, useState, type KeyboardEvent } from "react";
+import { useId, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 
 import type { AppRole } from "@/shared/api/contracts";
 
@@ -67,6 +67,7 @@ export function ProjectQaWorkspace({
   newFeatureRequest = 0,
   onFeatureCount,
   opensOn,
+  itemsFallback,
 }: Readonly<{
   deliveryProjectId: string;
   projectName: string;
@@ -81,6 +82,8 @@ export function ProjectQaWorkspace({
   onFeatureCount?: (count: number) => void;
   /** The tab to open on, overriding the role default and the URL hash. Read at mount. */
   opensOn?: WorkspaceTab;
+  /** Stands in on "My QA items" when the server has no Project-wide list (an older backend). */
+  itemsFallback?: ReactNode;
 }>) {
   const [tab, setTab] = useState<WorkspaceTab>(() => firstTab(appRole, opensOn));
   const [seenRequest, setSeenRequest] = useState(newFeatureRequest);
@@ -151,7 +154,12 @@ export function ProjectQaWorkspace({
         ) : null}
         {tab === "run" ? <RunTab deliveryProjectId={deliveryProjectId} appRole={appRole} /> : null}
         {tab === "items" ? (
-          <ProjectMyItemsCard deliveryProjectId={deliveryProjectId} enabled appRole={appRole} />
+          <ProjectMyItemsCard
+            deliveryProjectId={deliveryProjectId}
+            enabled
+            appRole={appRole}
+            fallback={itemsFallback}
+          />
         ) : null}
       </div>
     </section>

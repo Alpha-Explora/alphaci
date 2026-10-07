@@ -2,7 +2,6 @@
 
 import "./project-repo-switch.css";
 
-import Link from "next/link";
 import type { ReactNode } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 
@@ -109,11 +108,11 @@ export function ProjectDetailTabs({
   });
   const TabPanel = TAB_PANELS[vm.tab];
   // Five tabs fit beside the title; a Developer's ten and an admin's eleven
-  // keep the scrolling strip of their own. Their Checklists tab carries the
-  // Project's QA, so nothing on the page links away to the Projects page.
+  // keep the scrolling strip of their own. Every role's Checklists tab carries
+  // the Project's QA, so nothing on the page links away to the Projects page.
   const productView = seesProjectAsProduct(appRole);
   const folderScope = qaScopeFromFolder(folder?.status ?? "idle", folder?.project ?? null);
-  const qaScope = productView ? withProjectOnPage(folderScope) : folderScope;
+  const qaScope = withProjectOnPage(folderScope);
   const tabs = (
     <ProjectDetailTopTabs
       groups={projectDetailTabGroups(vm.visibleTabs)}
@@ -137,7 +136,6 @@ export function ProjectDetailTabs({
         external={external}
         folder={folder}
         vm={vm}
-        productView={productView}
         tabs={headerTabs}
         clone={clone}
       />
@@ -207,7 +205,6 @@ function ProjectPageHeader({
   external,
   folder,
   vm,
-  productView,
   tabs,
   clone,
 }: Readonly<{
@@ -215,7 +212,6 @@ function ProjectPageHeader({
   external: boolean;
   folder: ProjectFolderViewModel | undefined;
   vm: ProjectDetailTabsViewModel;
-  productView: boolean;
   tabs: ReactNode;
   clone: ReactNode;
 }>) {
@@ -235,9 +231,7 @@ function ProjectPageHeader({
     <ProjectFolderHeader
       project={project}
       external={external}
-      folder={folder}
       projectName={folder.projectName}
-      productView={productView}
       tabs={tabs}
       clone={clone}
       identityShown={identityShown}
@@ -334,32 +328,28 @@ function ProjectStatusBadges({
  * The header of one repository of a multi-repository Project: the Project is
  * the title, this repository the subtitle (its status badges beside it,
  * because the status is the repository's, not the Project's), and the switch
- * to its sibling repositories ends the tab row (see ProjectDetailTabs). The QA Team and Product
- * owners get no switch (they judge the Project as one product) and no
- * "Manage project" (their Checklists tab carries the Project's QA); their
- * sections take its place. The identity and Clone show on Overview only.
+ * to its sibling repositories ends the tab row (see ProjectDetailTabs). The QA
+ * Team and Product owners get no switch (they judge the Project as one
+ * product); their sections take its place. No role gets a "Manage project"
+ * link: the Checklists tab carries the Project's QA, and repositories are added
+ * from the Projects page. The identity and Clone show on Overview only.
  */
 function ProjectFolderHeader({
   project,
   external,
-  folder,
   projectName,
-  productView,
   tabs,
   clone,
   identityShown,
 }: Readonly<{
   project: ProvisionedProject;
   external: boolean;
-  folder: ProjectFolderViewModel;
   projectName: string;
-  productView: boolean;
   tabs?: ReactNode;
   clone?: ReactNode;
   identityShown: boolean;
 }>) {
   const reduceMotion = useReducedMotion();
-  const manage = folder.manageHref && !productView ? folder.manageHref : null;
   return (
     <motion.div
       className={headerClassName("project-detail-header project-folder-header", tabs, identityShown)}
@@ -367,19 +357,7 @@ function ProjectFolderHeader({
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
     >
-      {manage || tabs ? (
-        <div className="project-folder-header__aside">
-          {manage ? (
-            <Link className="project-folder-header__manage" href={manage}>
-              Manage project
-              <span aria-hidden="true" className="project-folder-header__manage-arrow">
-                &rarr;
-              </span>
-            </Link>
-          ) : null}
-          {tabs}
-        </div>
-      ) : null}
+      {tabs ? <div className="project-folder-header__aside">{tabs}</div> : null}
       {identityShown ? (
         <div className="project-folder-header__identity">
           <h1 className="workflow-page-title">{projectName}</h1>

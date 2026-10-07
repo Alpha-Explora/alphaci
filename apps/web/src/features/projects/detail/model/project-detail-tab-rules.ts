@@ -93,6 +93,19 @@ export function seesProjectAsProduct(appRole: AppRole | null | undefined): boole
 }
 
 /**
+ * Whether the Checklists tab IS the Project's QA workspace (Requirements, QA
+ * run, My QA items). True for every role, whenever the repository is filed
+ * under a Project: Developers and Admins work from the same workspace the QA
+ * Team and Product owners do, and nothing on the page links away to the
+ * Projects page. Any other scope (no Project, or one that could not be read,
+ * as on an older backend) keeps the per-repository screens; `pending` shows
+ * those until the Project is known, as the tab always did.
+ */
+export function checklistsTabCarriesProjectQa(qaScopeKind: "pending" | "project" | "repository"): boolean {
+  return qaScopeKind === "project";
+}
+
+/**
  * Developers and Admins — the backend's environment-variable allow-list
  * (refusal code `ENV_VARS_LEAD_ONLY`, a legacy name) for the Environment tab
  * and its list/create/update/delete routes. Product owners (`lead`) and QA

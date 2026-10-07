@@ -95,10 +95,12 @@ export type MyQaItemsDestination =
   | { kind: "project"; href: string };
 
 /**
- * Where "Open checklist" goes. A repository filed under a Project works from
- * the Project's list, when the page knows where that Project lives; anything
- * else (no Project, or a Project without a link) uses its own Checklists tab,
- * which then shows the full list.
+ * Where "Open checklist" goes. A scope that knows where its Project lives
+ * (`projectHref`) sends the viewer to the Projects page's "My QA items". The
+ * repository page strips that link (`withProjectOnPage`) for every role, since
+ * its own Checklists tab carries the Project's QA workspace: the link then
+ * opens that tab, on "My QA items". The same goes for a repository with no
+ * Project, whose tab carries the per-repository list.
  */
 export function myQaItemsDestination(scope: QaScope): MyQaItemsDestination {
   if (scope.kind === "project" && scope.projectHref) {
