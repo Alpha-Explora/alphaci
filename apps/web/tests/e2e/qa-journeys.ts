@@ -2494,7 +2494,7 @@ async function qaLongProjectRunFits({ page, baseUrl }: JourneyContext) {
   await shot(page, 'n-qa-drawer');
 }
 
-/** (o) Team lead: PO Studio holds the promotion card and a long acceptance in one scrolling column. */
+/** (o) Team lead: PO Studio holds the readiness chip, Merge to main and a long acceptance in one scrolling column. */
 async function leadAcceptanceFits({ page, baseUrl }: JourneyContext) {
   await openProjectTab(page, baseUrl, 'PO Studio');
   await expectRoleBadge(page, 'lead');
@@ -2503,8 +2503,8 @@ async function leadAcceptanceFits({ page, baseUrl }: JourneyContext) {
   await visible(page.locator('.qa-signoff-banner'), 'the sign-off banner');
   // The acceptance does not list the items: it fits, and still never spills.
   await expectRunColumnContained(page, 'PO Studio', { long: false });
-  // Merge to main is the promotion card's, at the top of the column: in view, never folded into a capped box.
-  const merge = page.locator('button.qa-promo__merge');
+  // Merge to main sits in the column's tab bar, beside the readiness chip: in view, never in a capped box.
+  const merge = page.locator('.qa-coltabs-bar button.qa-promo__merge');
   await visible(merge, 'Merge to main');
   const [mergeBox, columnBox] = [await merge.boundingBox(), await page.locator('.qa-studio__run').boundingBox()];
   assert.ok(mergeBox && columnBox && mergeBox.y >= columnBox.y && mergeBox.y + mergeBox.height <= columnBox.y + columnBox.height, 'Merge to main is inside the visible column');
@@ -2605,12 +2605,16 @@ async function qaVerifiesAndSignsOff({ page, context, backend, baseUrl }: Journe
   await expectText(page.locator('.qa-toolbar__env-chip'), 'uat', 'the fixed uat environment');
   assert.equal(await page.locator('.qa-toolbar__env select').count(), 0, 'no environment picker: uat is the only QA environment');
   assert.equal(await page.locator('.qa-device__frame').getAttribute('src'), `${PREVIEW_ORIGIN}/`, 'the frame shows the uat deployment');
-  // Production readiness: QA Team reads it, only leads merge.
-  const promo = page.getByRole('region', { name: 'Production readiness' });
-  await expectText(promo.locator('.qa-promo__title'), 'Not ready for production', 'the promotion card for QA');
-  await expectText(promo, checklist.name, 'the checklist row on the promotion card');
-  await expectText(promo, 'Not verified on this commit yet', 'the unverified checklist state');
-  await expectText(promo, 'Team leads merge uat into main once every checklist is approved.', 'who merges, for QA');
+  // Production readiness: QA Team reads it from the tab bar's chip, only leads merge.
+  const promo = promotionCard(page);
+  await chipSays(promo.chip, 'Not ready for production', 'the readiness chip for QA');
+  await promo.chip.click();
+  await visible(promo.popover, 'the readiness popover');
+  await expectText(promo.popover, checklist.name, 'the checklist row in the popover');
+  await expectText(promo.popover, 'Not verified on this commit yet', 'the unverified checklist state');
+  await expectText(promo.popover, 'Team leads merge uat into main once every checklist is approved.', 'who merges, for QA');
+  await page.keyboard.press('Escape');
+  assert.equal(await promo.chip.getAttribute('aria-expanded'), 'false', 'Escape closes the popover');
   await neverShown(backend, page.getByRole('button', { name: 'Merge to main' }), 'Merge to main for QA Team');
   // The repository run's lookups; a Project run's (/delivery-projects/…) take no branch.
   const lookedUp = backend.callsTo('GET', /^\/projects\/[^/]+\/qa-runs\/current$/).map((call) => call.query.get('branch'));
@@ -3290,10 +3294,18 @@ async function developerWaitsForFirstFeature({ page, backend, baseUrl }: Journey
   assert.equal(backend.callsTo('POST', /^\/projects$/).length, 0, 'nothing was created');
 }
 
-/** The lead's route to the promotion card, with its parts. */
+/** "Ready for production" in the run column's tab bar: the chip, its popover, and Merge to main beside it. */
 function promotionCard(page: Page) {
-  const card = page.getByRole('region', { name: 'Production readiness' });
-  return { card, title: card.locator('.qa-promo__title'), merge: page.locator('button.qa-promo__merge') };
+  return {
+    chip: page.locator('button.qa-promo-chip'),
+    popover: page.locator('.qa-promo-pop'),
+    merge: page.locator('button.qa-promo__merge'),
+  };
+}
+
+/** The chip's accessible name: the full sentence, whatever the column's width shows. */
+async function chipSays(chip: Locator, expected: string, description: string) {
+  await eventually(`${description} to say ${expected}`, async () => (await chip.count()) > 0 && (await chip.getAttribute('aria-label')) === expected);
 }
 
 /** (f) Team lead, in PO Studio: not ready (reasons) -> sign off Approved on the current head -> ready -> Merge to main from the drawer -> merged. */
@@ -3302,20 +3314,23 @@ async function leadMergesToMain({ page, backend, baseUrl }: JourneyContext) {
   // A Team lead accepts and merges in PO Studio (the repository run, on a server without Project runs).
   await openProjectTab(page, baseUrl, 'PO Studio');
   await expectRoleBadge(page, 'lead');
-  const { card, title, merge } = promotionCard(page);
-  await expectText(title, 'Not ready for production', 'the not-ready title');
-  // Folded by default (the item list needs the height); unfold to read why.
-  const toggle = card.locator('button.qa-promo__toggle');
-  assert.equal(await toggle.getAttribute('aria-expanded'), 'false', 'the card starts folded');
-  await toggle.click();
-  await visible(card.locator('.qa-promo__reasons'), 'the unfolded reasons');
-  await expectText(card.locator('.qa-promo__route'), 'uat @ 9f8e7d6 → main', 'the promotion route');
-  await expectText(card.locator('.qa-promo__reasons'), `${checklist.name} is not signed off on uat @ 9f8e7d6.`, 'the server reason');
-  await expectText(card.locator('.qa-promo__row'), 'Run in progress — not signed off yet', 'the checklist row state');
+  const { chip, popover, merge } = promotionCard(page);
+  await chipSays(chip, 'Not ready for production', 'the not-ready chip');
+  // No strip above the tabs: the chip's popover holds the details, closed at first.
+  assert.equal(await page.locator('.qa-promo').count(), 0, 'no promotion strip in the studio');
+  assert.equal(await chip.getAttribute('aria-expanded'), 'false', 'the popover starts closed');
   assert.equal(await merge.isDisabled(), true, 'Merge to main is disabled while not eligible');
   const whyId = await merge.getAttribute('aria-describedby');
   assert.ok(whyId, 'the disabled button is described by its reason');
+  // Announced with the popover closed: the reason is always in the page.
   await expectText(page.locator(`[id="${whyId}"]`), 'Merging opens once every shared checklist is signed off Approved on uat @ 9f8e7d6.', 'why it is disabled');
+  await chip.click();
+  await visible(popover.locator('.qa-promo__reasons'), 'the reasons in the popover');
+  await expectText(popover.locator('.qa-promo__route'), 'uat @ 9f8e7d6 → main', 'the promotion route');
+  await expectText(popover.locator('.qa-promo__reasons'), `${checklist.name} is not signed off on uat @ 9f8e7d6.`, 'the server reason');
+  await expectText(popover.locator('.qa-promo__row'), 'Run in progress — not signed off yet', 'the checklist row state');
+  await page.keyboard.press('Escape');
+  assert.equal(await chip.getAttribute('aria-expanded'), 'false', 'Escape closes the popover');
   const readsBefore = backend.callsTo('GET', /\/qa\/promotion$/).length;
 
   // Sign off Approved on the current head, from the same studio.
@@ -3327,22 +3342,22 @@ async function leadMergesToMain({ page, backend, baseUrl }: JourneyContext) {
   await absent(dialog, 'the sign-off dialog');
   assert.deepEqual(onlyCall(backend.callsTo('POST', /\/signoff$/), 'sign-off').body, { verdict: 'APPROVED' });
 
-  // The card re-reads readiness on its own.
-  await expectText(title, 'Ready for production', 'the ready title after sign-off');
+  // The chip re-reads readiness on its own.
+  await chipSays(chip, 'Ready for production', 'the ready chip after sign-off');
   assert.ok(backend.callsTo('GET', /\/qa\/promotion$/).length > readsBefore, 'readiness was re-read after the sign-off');
-  await expectText(card.locator('.qa-promo__row'), 'Approved for this commit', 'the approved tick');
-  await absent(card.locator('.qa-promo__reasons'), 'the blocking reasons');
+  await expectText(popover.locator('.qa-promo__row'), 'Approved for this commit', 'the approved tick');
+  await absent(popover.locator('.qa-promo__reasons'), 'the blocking reasons');
   assert.equal(await merge.isDisabled(), false, 'Merge to main is enabled once eligible');
-  await expectText(card.locator('.qa-promo__pr'), 'Promotion PR #42', 'the promotion PR name');
-  await absent(card.locator('a.qa-promo__pr'), 'a link out to the promotion PR');
+  await expectText(popover.locator('.qa-promo__pr'), 'Promotion PR #42', 'the promotion PR name');
+  await absent(popover.locator('a.qa-promo__pr'), 'a link out to the promotion PR');
 
-  // Full screen: the SAME card rides in the floating drawer.
+  // Full screen: the SAME tab bar rides in the floating drawer, under its header.
   await page.getByRole('button', { name: 'Full screen' }).click();
   await page.locator('button.qa-launcher').click();
   const drawer = page.getByRole('region', { name: 'Acceptance' });
   await visible(drawer, 'the floating drawer');
-  await visible(drawer.getByRole('region', { name: 'Production readiness' }), 'the promotion card inside the drawer');
-  assert.equal(await page.locator('.qa-promo').count(), 1, 'one promotion card, moved, never a second copy');
+  await visible(drawer.locator('.qa-coltabs-bar button.qa-promo-chip'), 'the readiness chip inside the drawer');
+  assert.equal(await page.locator('.qa-coltabs-bar').count(), 1, 'one tab bar, moved, never a second copy');
   assert.equal(await page.locator('.qa-run-card').count(), 1, 'one run column');
 
   // Merge to main, confirmed, from the drawer.
@@ -3357,23 +3372,25 @@ async function leadMergesToMain({ page, backend, baseUrl }: JourneyContext) {
   await absent(confirm, 'the merge confirmation');
   const mergeCall = onlyCall(backend.callsTo('POST', /\/qa\/promotion\/merge$/), 'merge request');
   assert.deepEqual(mergeCall.body, {}, 'the merge sends no body: the server picks the commit and the PR');
+  // The outcome shows under the tab bar, without opening the chip.
   const outcome = drawer.locator('.qa-promo-outcome');
   await expectText(outcome, 'Merged into main', 'the merged outcome');
   await expectText(outcome, `main updated · merge commit ${MERGE_SHA.slice(0, 7)}`, 'the merge commit');
+  assert.equal(await chip.getAttribute('aria-expanded'), 'false', 'the outcome needs no popover');
   assert.equal(await merge.isDisabled(), true, 'the merged head is not offered again');
-  await expectText(card.locator('.qa-promo__foot'), 'No promotion pull request is open yet.', 'the PR is gone after the merge');
+  await expectText(popover.locator('.qa-promo__foot'), 'No promotion pull request is open yet.', 'the PR is gone after the merge');
 }
 
 /** (g) Team lead: GitHub refuses the merge (required review), its words shown verbatim. */
 async function leadMergeRefused({ page, backend, baseUrl }: JourneyContext) {
   await openProjectTab(page, baseUrl, 'PO Studio');
-  const { card, title, merge } = promotionCard(page);
-  await expectText(title, 'Ready for production', 'the ready title');
+  const { chip, merge } = promotionCard(page);
+  await chipSays(chip, 'Ready for production', 'the ready chip');
   await merge.click();
   const confirm = page.getByRole('dialog', { name: 'Merge uat into main?' });
   await confirm.getByRole('button', { name: 'Merge to main' }).click();
   await absent(confirm, 'the merge confirmation');
-  const outcome = card.locator('.qa-promo-outcome');
+  const outcome = page.locator('.qa-studio__run .qa-promo-outcome');
   await expectText(outcome.locator('.qa-promo-outcome__title'), 'GitHub refused the merge', 'the refusal title');
   assert.equal(await textOf(outcome.locator('blockquote')), GITHUB_REFUSAL, "GitHub's refusal, verbatim");
   await expectText(outcome, 'A reviewer must approve the pull request', 'the unblock hint');

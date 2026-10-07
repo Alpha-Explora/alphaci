@@ -1,7 +1,8 @@
 /* ── QA Studio / PO Studio → the run column's tabs and the Playwright tab ─────
-   .qa-coltabs   Checklist | Playwright under the promotion strip: underline
-                 tabs drawn across the container, the Playwright label
-                 carrying the latest verify verdict ("· 22/24").
+   .qa-coltabs   Checklist | Playwright at the top of the column: underline
+                 tabs in the tab bar (with the readiness chip and Merge to
+                 main), the Playwright label carrying the latest verify
+                 verdict ("· 22/24").
    .qa-pw        the Playwright tab: Run Playwright, one section per
                  repository (stage cards from automation.css, then the host
                  page's checks), then the requirements with automated tests.
@@ -16,14 +17,93 @@
   flex-shrink: 0;
 }
 
+/* ── The tab bar: tabs, the readiness chip, Merge to main ─────────────────
+   One row across the top of the column. It is a size container, so the chip
+   and the Merge button answer to the column's width (docked split, wide
+   preview, or the drawer), not the window's. A size container is a
+   containing block, so nothing fixed (the merge confirmation) lives in it.
+   It sits above the panel for the chip's popover. */
+.qa-coltabs-bar {
+  position: relative;
+  z-index: 3;
+  display: flex;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+  align-items: stretch;
+  min-width: 0;
+  border-bottom: 1px solid var(--border-layer);
+  container: qa-coltabs / inline-size;
+}
+
+.qa-coltabs-bar__main {
+  position: relative;
+  display: flex;
+  flex: 1 1 auto;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+  padding-right: 0.5rem;
+}
+
+.qa-coltabs-bar__action {
+  display: flex;
+  align-items: center;
+  padding: 0.3rem 0.75rem 0.3rem 0;
+}
+
+.qa-coltabs-bar__action:empty {
+  display: none;
+}
+
+/* Narrow column (the docked 26rem column, the drawer, a phone): Merge to
+   main takes a second line of the bar, at its end, under a hairline. */
+@container qa-coltabs (max-width: 34rem) {
+  .qa-coltabs-bar__main {
+    flex-basis: 100%;
+  }
+
+  .qa-coltabs-bar__action {
+    flex-basis: 100%;
+    justify-content: flex-end;
+    padding: 0.4rem 0.75rem;
+    border-top: 1px solid var(--border);
+  }
+}
+
+/* A phone: the tabs alone on the first line (no room beside them for the
+   chip), the chip and Merge to main on the second. The main row gives up its
+   box so the three wrap as one bar; the popover then hangs from the bar. */
+@container qa-coltabs (max-width: 24rem) {
+  .qa-coltabs-bar__main {
+    display: contents;
+  }
+
+  .qa-coltabs-bar > .qa-coltabs-bar__main > .qa-coltabs {
+    flex: 1 1 100%;
+    padding-left: 0.4rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .qa-coltabs-bar .qa-promo-status {
+    margin: 0;
+    padding: 0.4rem 0.5rem 0.4rem 0.75rem;
+  }
+
+  .qa-coltabs-bar__action {
+    flex: 1 1 auto;
+    padding: 0.4rem 0.75rem 0.4rem 0;
+    border-top: 0;
+  }
+}
+
 /* ── Tabs ────────────────────────────────────────────────────────────────── */
 .qa-coltabs {
   display: flex;
   flex-shrink: 0;
+  align-self: stretch;
   gap: 0.25rem;
   min-width: 0;
-  padding: 0 0.75rem;
-  border-bottom: 1px solid var(--border-layer);
+  padding: 0 0 0 0.75rem;
 }
 
 .qa-coltab {
@@ -132,6 +212,57 @@
   align-items: center;
   justify-content: space-between;
   gap: 0.45rem 0.75rem;
+}
+
+/* Run Playwright, and "Reopen run" beside it on a signed-off run. */
+.qa-pw__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+/* The way back to a run Playwright can start on: a quiet secondary button
+   next to the disabled Run Playwright, at the same compact size. */
+.qa-pw__reopen {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  min-height: 2rem;
+  padding: 0.3rem 0.75rem;
+  border: 1px solid var(--border-strong);
+  border-radius: 0.55rem;
+  background: var(--layer-1);
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 0.76rem;
+  font-weight: 700;
+  line-height: 1.2;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    border-color 140ms ease-out,
+    background-color 140ms ease-out,
+    transform 140ms ease-out;
+}
+
+.qa-pw__reopen:hover:not(:disabled) {
+  border-color: var(--brand);
+  background: var(--bg-soft);
+}
+
+.qa-pw__reopen:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.qa-pw__reopen:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
+.qa-pw__reopen:disabled {
+  color: var(--text-muted);
+  cursor: progress;
 }
 
 .qa-pw__lede {
@@ -321,7 +452,7 @@
 
 @media (max-width: 560px) {
   .qa-coltabs {
-    padding: 0 0.4rem;
+    padding: 0 0 0 0.4rem;
   }
 
   .qa-pw {
@@ -331,7 +462,8 @@
 
 @media (prefers-reduced-motion: reduce) {
   .qa-coltab,
-  .qa-coltab::after {
+  .qa-coltab::after,
+  .qa-pw__reopen {
     transition: none;
   }
 

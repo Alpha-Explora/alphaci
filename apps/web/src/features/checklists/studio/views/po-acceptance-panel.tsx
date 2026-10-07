@@ -53,8 +53,9 @@ function QaRunAcceptance({
 
 /**
  * PO Studio's column: whether the Project's release candidate is ready for
- * production, and why not yet. The merge itself is the promotion card above
- * it (the same card QA Studio shows); this panel is the acceptance around it.
+ * production, and why not yet. The merge itself is the tab bar's readiness
+ * chip and Merge to main above it (the same ones QA Studio shows); this panel
+ * is the acceptance around it.
  * Verifying items stays with the QA run, a click away in the Checklists tab.
  */
 export function PoAcceptancePanel({

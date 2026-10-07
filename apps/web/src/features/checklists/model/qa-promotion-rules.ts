@@ -140,6 +140,34 @@ export function promotionTitle(status: Pick<QaPromotionStatus, "eligible">): str
   return status.eligible ? "Ready for production" : "Not ready for production";
 }
 
+/**
+ * The tab bar's status chip: green once the server says uat is eligible,
+ * amber while it is not, grey while the answer is loading or could not be
+ * read. `label` is the full sentence (the chip's accessible name); `short`
+ * is what a narrow column shows.
+ */
+export type PromotionChipTone = "ready" | "blocked" | "unknown";
+
+export interface PromotionChip {
+  tone: PromotionChipTone;
+  label: string;
+  short: string;
+}
+
+export function promotionChip(
+  load: "loading" | "ready" | "error",
+  status: Pick<QaPromotionStatus, "eligible"> | null,
+): PromotionChip {
+  if (status) {
+    const label = promotionTitle(status);
+    return status.eligible
+      ? { tone: "ready", label, short: "Ready" }
+      : { tone: "blocked", label, short: "Not ready" };
+  }
+  if (load === "loading") return { tone: "unknown", label: "Checking production readiness", short: "Checking" };
+  return { tone: "unknown", label: "Production readiness unknown", short: "Unknown" };
+}
+
 /** "uat @ 9f8e7d6 → main". */
 export function promotionRoute(
   status: Pick<QaPromotionStatus, "qaBranch" | "targetBranch" | "headSha">,

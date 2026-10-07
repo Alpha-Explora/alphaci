@@ -9,6 +9,7 @@ import {
   itemStatusLabel,
   openDefectsLabel,
   passedLabel,
+  REOPEN_CONFIRM,
   statusSegments,
   verdictLabel,
   verdictTone,
@@ -78,43 +79,66 @@ export function SignoffBanner({
   if (run.status !== "signed_off" || !signoff) return null;
   const ago = agoLabel(signoff.signedAt);
   return (
-    <div className={`qa-signoff-banner qa-signoff-banner--${verdictTone(signoff.verdict)}`}>
-      <span className="qa-signoff-banner__seal" aria-hidden="true">
-        <SealIcon />
-      </span>
-      <div className="qa-signoff-banner__body">
-        <p className="qa-signoff-banner__title">
-          Signed off <VerdictPill verdict={signoff.verdict} />
-        </p>
-        <p className="qa-signoff-banner__meta">
-          by <strong>@{signoff.signedBy.login}</strong>
-          {ago ? ` · ${ago}` : ""} · {subject}
-        </p>
-        {signoff.summary ? <p className="qa-signoff-banner__text">{signoff.summary}</p> : null}
-        {signoff.conditions ? (
-          <div className="qa-signoff-banner__conditions">
-            <span>Conditions</span>
-            <p>{signoff.conditions}</p>
-          </div>
-        ) : null}
-        <p className="qa-signoff-banner__note">Signed-off runs are read-only.</p>
-        {reopen.error ? (
-          <p className="qa-form-error" role="alert">
-            {reopen.error.message}
+    <>
+      <div className={`qa-signoff-banner qa-signoff-banner--${verdictTone(signoff.verdict)}`}>
+        <span className="qa-signoff-banner__seal" aria-hidden="true">
+          <SealIcon />
+        </span>
+        <div className="qa-signoff-banner__body">
+          <p className="qa-signoff-banner__title">
+            Signed off <VerdictPill verdict={signoff.verdict} />
           </p>
-        ) : null}
+          <p className="qa-signoff-banner__meta">
+            by <strong>@{signoff.signedBy.login}</strong>
+            {ago ? ` · ${ago}` : ""} · {subject}
+          </p>
+          {signoff.summary ? <p className="qa-signoff-banner__text">{signoff.summary}</p> : null}
+          {signoff.conditions ? (
+            <div className="qa-signoff-banner__conditions">
+              <span>Conditions</span>
+              <p>{signoff.conditions}</p>
+            </div>
+          ) : null}
+          <p className="qa-signoff-banner__note">Signed-off runs are read-only.</p>
+        </div>
+        <ReopenButton reopen={reopen} className="ghost-button qa-signoff-banner__reopen" />
       </div>
-      {reopen.canReopen ? (
-        <button
-          type="button"
-          className="ghost-button qa-signoff-banner__reopen"
-          disabled={reopen.status === "reopening"}
-          onClick={() => void reopen.reopen()}
-        >
-          {reopen.status === "reopening" ? "Reopening…" : "Reopen run"}
-        </button>
-      ) : null}
-    </div>
+      <ReopenDialog reopen={reopen} />
+    </>
+  );
+}
+
+/* ── Reopen ──────────────────────────────────────────────────────────────── */
+
+/** "Reopen run", for viewers the server lets reopen: opens the confirmation. */
+export function ReopenButton({ reopen, className }: Readonly<{ reopen: QaReopenViewModel; className: string }>) {
+  if (!reopen.canReopen) return null;
+  return (
+    <button type="button" className={className} disabled={reopen.status === "reopening"} onClick={reopen.ask}>
+      {reopen.status === "reopening" ? "Reopening…" : "Reopen run"}
+    </button>
+  );
+}
+
+/**
+ * The confirmation every "Reopen run" goes through: reopening removes the
+ * sign-off, so Merge to main is blocked until QA signs off again. A refusal
+ * is shown here, to retry or cancel.
+ */
+export function ReopenDialog({ reopen }: Readonly<{ reopen: QaReopenViewModel }>) {
+  return (
+    <FormDialog
+      open={reopen.confirming}
+      onClose={reopen.cancel}
+      title={REOPEN_CONFIRM.title}
+      description={REOPEN_CONFIRM.text}
+      submitLabel="Reopen run"
+      submitting={reopen.status === "reopening"}
+      error={reopen.error?.message ?? null}
+      onSubmit={() => void reopen.reopen()}
+    >
+      <p className="qa-reopen-confirm__note">{REOPEN_CONFIRM.note}</p>
+    </FormDialog>
   );
 }
 

@@ -317,8 +317,8 @@
    full-screen and narrow-screen rules below still override the grid itself.
    Wide (the default) gives the page everything the checklist does not need:
    the column stops at 26rem, a little under the floating drawer's 28rem,
-   where the promotion card's head and the automation rows still sit on one
-   line. The old fixed share (3fr/2fr) kept growing the checklist with the
+   where the tab bar (tabs and the readiness chip) and the automation rows
+   still sit on one line. The old fixed share (3fr/2fr) kept growing the checklist with the
    screen and drew a 1440px desktop at about half size. Capped at 40%, a
    narrow window is never worse off than that share was. Split halves the
    width, for writing detailed notes or reading automation results. Below
@@ -348,12 +348,12 @@
   height: auto;
 }
 
-/* The run column is ONE container sharing the pane's height: the promotion
-   strip on top (always in view: folded to its head, capped when unfolded),
-   the Checklist | Playwright tabs, then the selected tab's panel, which takes
-   the rest. Docked it is drawn as one card; the strip is a band across its
-   top and the run card inside is flattened into it. Overflow stays visible on
-   the container itself: the Export menu must never be clipped. */
+/* The run column is ONE container sharing the pane's height: the tab bar on
+   top (Checklist | Playwright, the "Ready for production" chip, Merge to
+   main), then the selected tab's panel, which takes the rest. Docked it is
+   drawn as one card and the run card inside is flattened into it. Overflow
+   stays visible on the container itself: the Export menu and the chip's
+   popover must never be clipped. */
 .qa-studio__run {
   display: flex;
   flex-direction: column;
@@ -365,27 +365,7 @@
   box-shadow: var(--shadow-soft);
 }
 
-.qa-studio__run > .qa-promo {
-  flex-shrink: 0;
-  max-height: calc(var(--qa-pane-height) * 0.34);
-  border: 0;
-  border-bottom: 1px solid var(--border-layer);
-  border-left: 3px solid var(--qa-promo-tone);
-  border-radius: 0.9rem 0.9rem 0 0;
-  background: transparent;
-  box-shadow: none;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  scrollbar-width: thin;
-}
-
-.qa-studio__run > .qa-promo-skeleton,
-.qa-studio__run > .qa-promo-error {
-  flex-shrink: 0;
-  margin: 0.6rem 0.75rem 0;
-}
-
-/* The selected tab's panel takes what the strip and the tabs leave. */
+/* The selected tab's panel takes what the tab bar leaves. */
 .qa-colpanel {
   display: flex;
   flex: 1 1 auto;
@@ -1432,6 +1412,14 @@
   white-space: pre-line;
 }
 
+/* The reopen confirmation's second line, under what reopening costs. */
+.qa-reopen-confirm__note {
+  margin: 0 0 0.85rem;
+  font-size: 0.78rem;
+  line-height: 1.5;
+  color: var(--text-muted);
+}
+
 /* ── Signoff dialog ──────────────────────────────────────────────────────── */
 .qa-verdicts {
   display: grid;
@@ -1796,12 +1784,10 @@
   }
 
   .qa-studio__run,
-  .qa-colpanel > .qa-run-card,
-  .qa-studio__run > .qa-promo {
+  .qa-colpanel > .qa-run-card {
     max-height: none;
   }
 
-  .qa-studio__run > .qa-promo,
   .qa-colpanel[data-tab="playwright"],
   .qa-studio__run[data-scroll="column"] > .qa-colpanel {
     overflow-y: visible;

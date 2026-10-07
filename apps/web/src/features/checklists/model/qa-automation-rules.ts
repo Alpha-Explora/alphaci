@@ -432,12 +432,18 @@ export function roleCanDispatch(role: AppRole | null | undefined): boolean {
   return roleCanStartRun(role);
 }
 
-/** Why the button is disabled on this run, or null when it is not. */
+/**
+ * Why the button is disabled on this run, or null when it is not. Said to
+ * everyone offered the button, including viewers who cannot reopen the run.
+ */
 export function dispatchBlockedReason(run: Pick<QaRun, "status">): string | null {
   return run.status === "signed_off"
-    ? "This run is signed off. Reopen it to run Playwright against it."
+    ? "This run is signed off, so Playwright cannot run on it until it is reopened."
     : null;
 }
+
+/** The same, beside the "Reopen run" button a viewer who may reopen is offered. */
+export const REOPEN_TO_RUN_PLAYWRIGHT = "This run is signed off. Reopen it to run Playwright.";
 
 export function dispatchConfirmation(
   dispatch: QaAutomationDispatch,

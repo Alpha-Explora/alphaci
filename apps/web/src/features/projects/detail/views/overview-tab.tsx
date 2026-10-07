@@ -53,11 +53,7 @@ export function OverviewTab({
         onOpenChecklists={vm.openMyQaItems}
       />
       {showOverviewProductionReadiness(vm.appRole, vm.qaChecklistsEnabled) ? (
-        <ProductionReadinessCard
-          enabled
-          projectId={project.id}
-          projectName={project.serviceName}
-        />
+        <ProductionReadinessCard enabled projectId={project.id} />
       ) : null}
       <ErrorText message={project.failureReason} />
     </div>
