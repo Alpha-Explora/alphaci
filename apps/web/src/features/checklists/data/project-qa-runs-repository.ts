@@ -1,5 +1,6 @@
 import { request } from "@/shared/api/request";
 
+import { normalizeProjectDispatch } from "../model/project-run-automation-rules";
 import {
   normalizeProjectMyItems,
   normalizeProjectRun,
@@ -7,6 +8,7 @@ import {
   runFromReply,
 } from "../model/project-run-rules";
 import type {
+  ProjectDispatchResult,
   ProjectMyItems,
   ProjectQaRun,
   ProjectRunCurrent,
@@ -88,6 +90,19 @@ export const projectQaRunsRepository = {
 
   async reopen(deliveryProjectId: string, runId: string): Promise<ProjectQaRun> {
     return runOrThrow(await request<unknown>(`${runPath(deliveryProjectId, runId)}/reopen`, post()));
+  },
+
+  /**
+   * "Run Playwright": starts the verify workflow on uat in every repository
+   * the run covers (or only `projectId`). The server picks the workflow and
+   * the ref; the 202 says where it started and where it could not.
+   */
+  async dispatchAutomation(deliveryProjectId: string, runId: string, projectId?: string): Promise<ProjectDispatchResult> {
+    const raw = await request<unknown>(
+      `${runPath(deliveryProjectId, runId)}/automation/dispatch`,
+      post(projectId ? { projectId } : undefined),
+    );
+    return normalizeProjectDispatch(raw);
   },
 
   /** Every Developer's items across the Project, in the four buckets. */

@@ -7,6 +7,7 @@ import { QaStudioPanel } from "@/features/checklists/studio";
 import type { ProvisionedProject } from "@/features/projects";
 
 import type { ProjectDetailTabsViewModel } from "../view-models/use-project-detail-tabs-view-model";
+import { studioChecksRenderer } from "./studio-repository-checks";
 
 /**
  * The QA Studio tab. The studio belongs to the checklists domain; this file
@@ -32,6 +33,7 @@ export function QaStudioTabPanel({
       projectName={project.repoFullName}
       qaScope={qaScope}
       toolbarSlot={studioToolbarSlot}
+      renderRepositoryChecks={studioChecksRenderer(project.id, vm)}
     />
   );
 }

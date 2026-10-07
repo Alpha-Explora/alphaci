@@ -8,22 +8,31 @@ import { createPortal } from "react-dom";
 import type { AppRole } from "@/shared/api/contracts";
 
 import { itemCountLabel } from "../../model/checklist-rules";
+import {
+  playwrightTabStatus,
+  projectPlaywrightResults,
+  repositoryPlaywrightResults,
+  type PlaywrightResults,
+} from "../../model/playwright-tab-rules";
 import { QA_ERROR_MESSAGES } from "../../model/qa-error-messages";
 import { UNFILED_REASON } from "../../model/qa-promotion-rules";
 import { passedLabel } from "../../model/qa-run-rules";
-import type { QaRun } from "../../model/qa-run-types";
+import type { QaRun, QaRunSummaryCounts } from "../../model/qa-run-types";
 import { REPOSITORY_SCOPE, type QaScope } from "../../model/qa-scope";
 import { automationSignal, launcherLabel, NO_QA_ENVIRONMENT } from "../../model/qa-studio-rules";
 import { useFloatingChecklistFocus } from "../view-models/use-floating-checklist-focus";
 import type { ProjectRunViewModel } from "../view-models/use-project-run-view-model";
 import type { QaPromotionViewModel } from "../view-models/use-qa-promotion-view-model";
-import { useStudioRunsViewModel } from "../view-models/use-studio-runs-view-model";
+import { useStudioColumnTab } from "../view-models/use-studio-column-tab";
+import { useStudioRunsViewModel, type StudioRunsViewModel } from "../view-models/use-studio-runs-view-model";
 import type { QaRunViewModel } from "../view-models/use-qa-run-view-model";
 import type { StudioChecklistsViewModel } from "../view-models/use-studio-checklists-view-model";
 import {
   useStudioViewportViewModel,
   type StudioViewportViewModel,
 } from "../view-models/use-studio-viewport-view-model";
+import { ColumnTabPanel, ColumnTabs } from "./column-tabs";
+import { PlaywrightPanel, type PlaywrightSource, type RenderRepositoryChecks } from "./playwright-panel";
 import { PoAcceptancePanel } from "./po-acceptance-panel";
 import { PreviewPane } from "./preview-pane";
 import { ProjectRunPanel } from "./project-run-panel";
@@ -179,10 +188,10 @@ function PreviewColumn({ vm }: Readonly<{ vm: StudioViewportViewModel }>) {
   return <PreviewPane vm={vm} />;
 }
 
-/** The floating drawer's header: what it is, how far the run is, and where it goes. */
 /** What the drawer and its launcher read of a run: a repository run, or a Project run. */
-type DrawerRun = Pick<QaRun, "summary"> & Partial<Pick<QaRun, "automation">>;
+type DrawerRun = { summary: QaRunSummaryCounts; automation?: unknown };
 
+/** The floating drawer's header: what it is, how far the run is, and where it goes. */
 function DrawerHeader({
   vm,
   run,
@@ -304,10 +313,11 @@ function projectSnapshot(run: ProjectRunViewModel, projectId: string): { commit:
 type DockScroll = "items" | "column";
 
 /**
- * The run column's one container. Docked it is a plain column; in full screen
- * CSS floats it as a drawer and it gains a region role and a header. The
- * promotion card and the column inside (`children`) keep their places either
- * way, so neither ever remounts.
+ * The run column's one container: the promotion strip ("Ready for production"
+ * and Merge to main) on top, then the Checklist | Playwright tabs (`children`).
+ * Docked it sits beside the preview; in full screen CSS floats it as a drawer
+ * and it gains a region role and a header. The strip and the tabs keep their
+ * places either way, so nothing in them ever remounts.
  */
 function RunDock({
   vm,
@@ -457,6 +467,57 @@ function StudioControls({
   return placement === "tab-row" && slot ? createPortal(toolbar, slot) : toolbar;
 }
 
+/** The Playwright tab's run: none yet while the repository's Project is read. */
+function playwrightSource(runs: StudioRunsViewModel, qaScope: QaScope): PlaywrightSource | null {
+  if (qaScope.kind === "pending") return null;
+  if (runs.projectMode && qaScope.kind === "project") {
+    return { kind: "project", deliveryProjectId: qaScope.deliveryProjectId, vm: runs.projectRun };
+  }
+  return { kind: "repository", vm: runs.run };
+}
+
+/** What the Playwright tab lists (and its label carries), once the run is known. */
+function playwrightResults(
+  source: PlaywrightSource | null,
+  repository: { projectId: string; repoFullName: string | null },
+): PlaywrightResults | null {
+  if (!source || source.vm.status !== "ready") return null;
+  if (source.kind === "project") return source.vm.run ? projectPlaywrightResults(source.vm.run) : null;
+  return source.vm.run ? repositoryPlaywrightResults(source.vm.run, repository) : null;
+}
+
+/**
+ * The Playwright tab's content: a skeleton while the repository's Project is
+ * read, then the run's automated results.
+ */
+function PlaywrightColumn({
+  source,
+  results,
+  appRole,
+  projectId,
+  opened,
+  renderRepositoryChecks,
+}: Readonly<{
+  source: PlaywrightSource | null;
+  results: PlaywrightResults | null;
+  appRole: AppRole | null | undefined;
+  projectId: string;
+  opened: boolean;
+  renderRepositoryChecks?: RenderRepositoryChecks;
+}>) {
+  if (!source) return <RunSkeletonCard />;
+  return (
+    <PlaywrightPanel
+      source={source}
+      results={results}
+      appRole={appRole}
+      projectId={projectId}
+      opened={opened}
+      renderRepositoryChecks={renderRepositoryChecks}
+    />
+  );
+}
+
 /** Loading reserves the frame's height; a message sizes to itself. */
 function previewFramed(vm: StudioViewportViewModel): "true" | "false" {
   return vm.status === "loading" || vm.canFrame ? "true" : "false";
@@ -497,6 +558,7 @@ export function QaStudioPanel({
   studio = "qa",
   onOpenQaRun,
   toolbarSlot,
+  renderRepositoryChecks,
 }: Readonly<{
   projectId: string;
   appRole: AppRole | null | undefined;
@@ -517,6 +579,13 @@ export function QaStudioPanel({
    * Omitted, the toolbar stays atop the studio; null, the slot is not mounted yet.
    */
   toolbarSlot?: HTMLElement | null;
+  /**
+   * The project page's own checks for one repository (its visual changes on
+   * uat, the "Add browser tests" offer), drawn under that repository in the
+   * Playwright tab once the tab is opened. They belong to the projects
+   * feature, which already renders this studio, so it hands them in.
+   */
+  renderRepositoryChecks?: RenderRepositoryChecks;
 }>) {
   const viewport = useStudioViewportViewModel({ projectId, enabled: Boolean(projectId) });
   const runs = useStudioRunsViewModel({ projectId, appRole, qaScope, branch: viewport.environment?.branch ?? null });
@@ -529,6 +598,10 @@ export function QaStudioPanel({
   const headingId = useId();
   const snapshot = projectMode ? projectSnapshot(projectRun, projectId) : runSnapshot(run);
   const mode = checklistMode(viewport);
+  const columnTab = useStudioColumnTab(studio);
+  const tabsId = useId();
+  const source = playwrightSource(runs, qaScope);
+  const results = playwrightResults(source, { projectId, repoFullName: projectName ?? null });
 
   return (
     <div
@@ -557,19 +630,37 @@ export function QaStudioPanel({
           headingRef={focus.drawerRef}
           promotion={<PromotionCard vm={promotion} projectName={projectName ?? projectId} />}
         >
-          <StudioColumn
-            studio={studio}
-            onOpenQaRun={onOpenQaRun}
-            qaScope={qaScope}
-            projectMode={projectMode}
-            projectRun={projectRun}
-            projectId={projectId}
-            appRole={appRole}
-            checklists={checklists}
-            viewport={viewport}
-            run={run}
-            promotion={promotion}
+          <ColumnTabs
+            vm={columnTab}
+            baseId={tabsId}
+            status={playwrightTabStatus(results)}
+            label={`${DRAWER_TITLES[studio]} and Playwright`}
           />
+          <ColumnTabPanel baseId={tabsId} tab="checklist" selected={columnTab.tab === "checklist"}>
+            <StudioColumn
+              studio={studio}
+              onOpenQaRun={onOpenQaRun}
+              qaScope={qaScope}
+              projectMode={projectMode}
+              projectRun={projectRun}
+              projectId={projectId}
+              appRole={appRole}
+              checklists={checklists}
+              viewport={viewport}
+              run={run}
+              promotion={promotion}
+            />
+          </ColumnTabPanel>
+          <ColumnTabPanel baseId={tabsId} tab="playwright" selected={columnTab.tab === "playwright"}>
+            <PlaywrightColumn
+              source={source}
+              results={results}
+              appRole={appRole}
+              projectId={projectId}
+              opened={columnTab.playwrightOpened}
+              renderRepositoryChecks={renderRepositoryChecks}
+            />
+          </ColumnTabPanel>
         </RunDock>
       </div>
       {mode === "minimized" ? (

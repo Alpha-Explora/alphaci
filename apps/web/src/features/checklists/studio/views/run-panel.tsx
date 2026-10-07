@@ -3,6 +3,7 @@
 import type { AppRole } from "@/shared/api/contracts";
 
 import { useRequestRetestViewModel } from "../../returned";
+import { normalizeRunAutomation } from "../../model/qa-automation-rules";
 import {
   agoLabel,
   commitLabel,
@@ -11,12 +12,10 @@ import {
 } from "../../model/qa-run-rules";
 import type { QaRun } from "../../model/qa-run-types";
 import type { QaRunViewModel } from "../view-models/use-qa-run-view-model";
-import { useQaAutomationViewModel } from "../view-models/use-qa-automation-view-model";
 import { useQaExportViewModel, type QaExportViewModel } from "../view-models/use-qa-export-view-model";
 import { useQaItemEditorViewModel } from "../view-models/use-qa-item-editor-view-model";
 import { useQaReopenViewModel } from "../view-models/use-qa-reopen-view-model";
 import { useQaSignoffViewModel } from "../view-models/use-qa-signoff-view-model";
-import { AutomationPanel } from "./automation-panel";
 import { ExportMenu, ExportStatus } from "./export-menu";
 import { RunItem } from "./run-item";
 import { RunSummary, SignoffBanner, SignoffDialog, SignoffFooter } from "./run-signoff";
@@ -127,14 +126,16 @@ function RunHeader({ run, exporter }: Readonly<{ run: QaRun; exporter: QaExportV
   );
 }
 
-/** A run and everything that can be done to it. Mounted only once a run exists. */
+/**
+ * A run and everything that can be done to it. Mounted only once a run
+ * exists. Its CI results and "Run Playwright" live in the column's Playwright
+ * tab; each automated item still shows its own result here.
+ */
 function RunBody({
   projectId,
   vm,
   run,
-  appRole,
-}: Readonly<{ projectId: string; vm: QaRunViewModel; run: QaRun; appRole: AppRole | null | undefined }>) {
-  const automation = useQaAutomationViewModel({ projectId, run, appRole, onRun: vm.applyRun });
+}: Readonly<{ projectId: string; vm: QaRunViewModel; run: QaRun }>) {
   const editor = useQaItemEditorViewModel({ projectId, run, onRun: vm.applyRun });
   const signoff = useQaSignoffViewModel({ projectId, run, onRun: vm.applyRun });
   const reopen = useQaReopenViewModel({ projectId, run, onRun: vm.applyRun });
@@ -142,13 +143,13 @@ function RunBody({
   const exporter = useQaExportViewModel({ projectId, runId: run.id });
   const items = [...run.items].sort((a, b) => a.position - b.position);
   const open = run.status === "open";
+  const automation = normalizeRunAutomation(run.automation);
 
   return (
     <div className="qa-run">
       <RunHeader run={run} exporter={exporter} />
       <SignoffBanner run={run} subject={commitLabel(run.branch, run.commitSha)} reopen={reopen} />
       <RunSummary run={run} />
-      <AutomationPanel vm={automation} run={run} />
       <ol className="qa-run__items">
         {items.map((item, index) => (
           <RunItem
@@ -158,7 +159,7 @@ function RunBody({
             run={run}
             editor={editor}
             retest={retest}
-            automation={automation.automation}
+            automation={automation}
             onReload={vm.reload}
           />
         ))}
@@ -201,5 +202,5 @@ export function RunPanel({
   }
   if (!vm.run) return <StartRun vm={vm} branch={branch} appRole={appRole} blockedReason={startBlockedReason} />;
   // Keyed by run: a reopened or newly started run gets fresh drafts and dialogs.
-  return <RunBody key={vm.run.id} projectId={projectId} vm={vm} run={vm.run} appRole={appRole} />;
+  return <RunBody key={vm.run.id} projectId={projectId} vm={vm} run={vm.run} />;
 }

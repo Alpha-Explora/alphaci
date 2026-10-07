@@ -5,7 +5,6 @@ import { checklistsRepository } from "../../../../../src/features/checklists/dat
 import { qaRunsRepository } from "../../../../../src/features/checklists/data/qa-runs-repository";
 import { projectsRepository } from "../../../../../src/features/projects/data/projects-repository";
 import { QaStudioPanel } from "../../../../../src/features/checklists/studio/views/qa-studio-panel";
-import { AUTOMATION_PANEL_COLLAPSED_KEY } from "../../../../../src/features/checklists/studio/views/automation-panel";
 import { QaReportDocument } from "../../../../../src/features/checklists/report/views/qa-report-document";
 import type { QaReport } from "../../../../../src/features/checklists/model/qa-report-types";
 import { formatReportDate } from "../../../../../src/features/checklists/model/qa-report-rules";
@@ -284,11 +283,17 @@ describe("QA Studio — item Automated badge", () => {
     const container = await studio("qa");
     expect(container.textContent).toContain("Checkout works");
     expect(container.querySelector(".qa-auto-badge")).toBeNull();
-    expect(container.querySelector(".qa-auto")).not.toBeNull();
+    // The Playwright tab says the server sends no results, and offers no dispatch.
+    const playwright = container.querySelector('[role="tabpanel"][data-tab="playwright"]');
+    expect(playwright?.textContent).toContain("This server doesn't report automated results.");
+    expect(buttonNamed(playwright!, "Run Playwright")).toBeUndefined();
   });
 });
 
-describe("QA Studio — Automated tests panel", () => {
+/** Runs from a server that reports automation, with nothing reported yet. */
+const NOTHING_YET = { verify: null, quality: null };
+
+describe("QA Studio — Playwright tab results", () => {
   it("shows each stage's verdict, counts and failures, with no link out to GitHub", async () => {
     setup(runAs("qa", { items: ITEMS, automation: automation() }));
     const container = await studio("qa");
@@ -363,42 +368,30 @@ describe("QA Studio — Automated tests panel", () => {
     expect(verify.querySelector("a")).toBeNull();
   });
 
-  it("has an empty state when the run carries no automation at all", async () => {
+  it("says the server reports no automated results when the run carries no automation at all", async () => {
     setup(runAs("qa", { items: ITEMS }));
     const container = await studio("qa");
-    expect(container.querySelector(".qa-auto__empty-title")?.textContent).toBe("No automated results for main @ abc1234 yet.");
+    expect(container.querySelector(".qa-auto__empty-title")).toBeNull();
     expect(container.querySelector(".qa-auto-stage")).toBeNull();
+    expect(container.querySelector('[data-tab="playwright"].qa-colpanel')?.textContent).toContain(
+      "This server doesn't report automated results.",
+    );
   });
 
-  it("has the same empty state when both stages are null", async () => {
-    setup(runAs("qa", { items: ITEMS, automation: { verify: null, quality: null } }));
+  it("says Playwright has not run yet when both stages are null", async () => {
+    setup(runAs("qa", { items: ITEMS, automation: NOTHING_YET }));
     const container = await studio("qa");
-    expect(container.querySelector(".qa-auto__empty-title")?.textContent).toBe("No automated results for main @ abc1234 yet.");
+    expect(container.querySelector(".qa-auto__empty-title")?.textContent).toBe("Playwright hasn't run on main yet");
+    expect(container.querySelector(".qa-auto__empty-text")?.textContent).toContain("Run Playwright to start it now.");
   });
 
-  it("collapses, keeps the stage verdicts in the header, and remembers it", async () => {
+  it("is not inside the Checklist tab any more: the run there keeps only its items' own results", async () => {
     setup(runAs("qa", { items: ITEMS, automation: automation() }));
-    let container = await studio("qa");
-    const toggle = () => container.querySelector<HTMLButtonElement>(".qa-auto__toggle")!;
-    expect(toggle().getAttribute("aria-expanded")).toBe("true");
-    click(toggle());
-    expect(toggle().getAttribute("aria-expanded")).toBe("false");
-    expect(container.querySelector<HTMLElement>(".qa-auto__body")?.hidden).toBe(true);
-    expect([...container.querySelectorAll(".qa-auto__chip")].map((chip) => chip.textContent)).toEqual([
-      "Verify: Failed",
-      "Quality: Passed",
-    ]);
-    expect(window.localStorage.getItem(AUTOMATION_PANEL_COLLAPSED_KEY)).toBe("1");
-
-    container = await studio("qa");
-    expect(toggle().getAttribute("aria-expanded")).toBe("false");
-  });
-
-  it("says No results yet in a collapsed header with nothing reported", async () => {
-    window.localStorage.setItem(AUTOMATION_PANEL_COLLAPSED_KEY, "1");
-    setup(runAs("qa", { items: ITEMS }));
     const container = await studio("qa");
-    expect(container.querySelector(".qa-auto__chip")?.textContent).toBe("No results yet");
+    const checklist = container.querySelector<HTMLElement>('[role="tabpanel"][data-tab="checklist"]')!;
+    expect(checklist.querySelector(".qa-auto-stage")).toBeNull();
+    expect(buttonNamed(checklist, "Run Playwright")).toBeUndefined();
+    expect(checklist.querySelectorAll(".qa-auto-badge").length).toBeGreaterThan(0);
   });
 });
 
@@ -409,7 +402,7 @@ describe("QA Studio — Run Playwright", () => {
     ["admin", true],
     ["member", false],
   ])("is offered to %s: %s", async (role, offered) => {
-    setup(runAs(role, { items: ITEMS }));
+    setup(runAs(role, { items: ITEMS, automation: NOTHING_YET }));
     const container = await studio(role);
     expect(Boolean(buttonNamed(container, "Run Playwright"))).toBe(offered);
   });
@@ -418,6 +411,7 @@ describe("QA Studio — Run Playwright", () => {
     setup(
       runAs("qa", {
         items: ITEMS,
+        automation: NOTHING_YET,
         status: "signed_off",
         signoff: {
           id: "so-1",
@@ -438,7 +432,7 @@ describe("QA Studio — Run Playwright", () => {
   });
 
   it("confirms in a live region and warns when the branch moved", async () => {
-    setup(runAs("qa", { items: ITEMS }));
+    setup(runAs("qa", { items: ITEMS, automation: NOTHING_YET }));
     runs.dispatchAutomation.mockResolvedValue({ workflowFile: "verify.yml", ref: "main", headSha: "9f8e7d6c5b4a", targetsRunCommit: false });
     const container = await studio("qa");
     const live = container.querySelector('.qa-auto__live[role="status"]');
@@ -454,7 +448,7 @@ describe("QA Studio — Run Playwright", () => {
   });
 
   it("shows no warning when the workflow targets the run's commit", async () => {
-    setup(runAs("qa", { items: ITEMS }));
+    setup(runAs("qa", { items: ITEMS, automation: NOTHING_YET }));
     runs.dispatchAutomation.mockResolvedValue({ ref: "main", headSha: "abc1234def5678", targetsRunCommit: true });
     const container = await studio("qa");
     await clickAsync(buttonNamed(container, "Run Playwright"));
@@ -462,7 +456,7 @@ describe("QA Studio — Run Playwright", () => {
   });
 
   it("offers Sign in again when GitHub needs re-authorising", async () => {
-    setup(runAs("qa", { items: ITEMS }));
+    setup(runAs("qa", { items: ITEMS, automation: NOTHING_YET }));
     runs.dispatchAutomation.mockRejectedValue(new ApiError("x", 409, { code: "GITHUB_REAUTH" }));
     const container = await studio("qa");
     await clickAsync(buttonNamed(container, "Run Playwright"));
@@ -474,7 +468,7 @@ describe("QA Studio — Run Playwright", () => {
   });
 
   it("explains a missing verify workflow without a sign-in link", async () => {
-    setup(runAs("qa", { items: ITEMS }));
+    setup(runAs("qa", { items: ITEMS, automation: NOTHING_YET }));
     runs.dispatchAutomation.mockRejectedValue(new ApiError("x", 409, { code: "VERIFY_WORKFLOW_MISSING" }));
     const container = await studio("qa");
     await clickAsync(buttonNamed(container, "Run Playwright"));

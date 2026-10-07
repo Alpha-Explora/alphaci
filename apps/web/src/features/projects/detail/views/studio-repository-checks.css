@@ -1,0 +1,56 @@
+/* ── QA / PO Studio → a repository's own checks in the Playwright tab ────────
+   One quiet line for uat's screenshots (with the way to review them in
+   Pipeline runs) and, only when the repository lacks them, the "Add browser
+   tests" card. Tokens only.
+   ------------------------------------------------------------------------- */
+
+.studio-checks {
+  display: grid;
+  gap: 0.45rem;
+  min-width: 0;
+}
+
+.studio-checks:empty {
+  display: none;
+}
+
+.studio-checks__visual {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.2rem 0.65rem;
+  min-width: 0;
+  margin: 0;
+  padding: 0.4rem 0.65rem;
+  border: 1px solid var(--border);
+  border-radius: 0.55rem;
+  font-size: 0.76rem;
+  color: var(--text-secondary);
+}
+
+.studio-checks__visual[data-review="true"] {
+  border-color: var(--border-amber);
+}
+
+.studio-checks__summary {
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-primary);
+}
+
+.studio-checks__note {
+  color: var(--text-muted);
+}
+
+/* The in-app link may be a button (this page's own tab): look like the link. */
+button.studio-checks__link {
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  cursor: pointer;
+}
+
+.studio-checks .studio-checks__link {
+  color: var(--brand);
+}

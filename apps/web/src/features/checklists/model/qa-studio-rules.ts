@@ -434,7 +434,7 @@ function signalTone(statuses: ReadonlyArray<string | null>): AutomationSignalTon
  * One dot for the run's CI stages: running wins (results are on the way),
  * then any failure, then a pass. Cancelled or absent stages say nothing.
  */
-export function automationSignal(run: Pick<QaRun, "automation"> | null): AutomationSignal {
+export function automationSignal(run: { automation?: unknown } | null): AutomationSignal {
   const automation = normalizeRunAutomation(run?.automation);
   const tone = signalTone([automation.verify?.status ?? null, automation.quality?.status ?? null]);
   return { tone, label: SIGNAL_LABELS[tone] };
