@@ -140,6 +140,32 @@ export function visualEmptyMessage(branch: string): string {
   return `No visual checks reported for ${branch} yet. They run with the browser tests after each deploy.`;
 }
 
+/* ── The studio's one-line summary ───────────────────────────────────────── */
+
+/**
+ * QA / PO Studio's Playwright tab: "Visual: 2 changed · 1 new" for the
+ * branch's latest screenshots, "Visual: no changes" when every one matched
+ * its reference, "Visual: not captured on uat yet" before any run reported.
+ * Reviewing and approving stay on the Pipeline runs tab's Verify stage.
+ */
+export function studioVisualSummary(response: VisualChecksResponse | null, branch: string): string {
+  if (!response || response.runId === null) return `Visual: not captured on ${branch} yet`;
+  const counts = visualCounts(response.snapshots);
+  const parts = [
+    counts.changed > 0 ? `${String(counts.changed)} changed` : null,
+    counts.added > 0 ? `${String(counts.added)} new` : null,
+  ].filter((part): part is string => part !== null);
+  if (parts.length > 0) return `Visual: ${parts.join(" · ")}`;
+  return response.snapshots.length > 0 ? "Visual: no changes" : "Visual: no screenshots captured";
+}
+
+/** Whether the summary asks for a look: something changed or is new. */
+export function visualNeedsReview(response: VisualChecksResponse | null): boolean {
+  if (!response) return false;
+  const counts = visualCounts(response.snapshots);
+  return counts.changed + counts.added > 0;
+}
+
 /* ── Approving ───────────────────────────────────────────────────────────── */
 
 /**

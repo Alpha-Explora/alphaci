@@ -1,9 +1,9 @@
 /* ── QA Studio → automated test results ──────────────────────────────────────
    Two surfaces:
 
-   .qa-auto          the run's "Automated tests" panel above the items: one
-                     card per CI stage (verify, quality), "Run Playwright",
-                     and the dispatch confirmation.
+   .qa-auto          the run column's Playwright tab parts: one card per CI
+                     stage (verify, quality), "Run Playwright" and the
+                     dispatch confirmation (arranged by playwright.css).
    .qa-auto-toggle   the item's Automated badge as a disclosure button, with
                      its details (.qa-auto-detail) and the quiet
                      disagreement hint (.qa-auto-hint).
@@ -138,112 +138,11 @@
   color: var(--text-muted);
 }
 
-/* ── The panel ───────────────────────────────────────────────────────────── */
+/* ── Run Playwright and its feedback (the Playwright tab's head) ─────────── */
 
-/* Side by side the run pane has a fixed height and only the items scroll, so
-   the panel is capped (and scrolls itself) — it can never starve the items. */
-.qa-auto {
-  flex-shrink: 0;
-  display: grid;
-  gap: 0.55rem;
-  max-height: calc(var(--qa-pane-height) * 0.42);
-  padding: 0.55rem 0.7rem 0.65rem;
-  border: 1px solid var(--border);
-  border-radius: 0.7rem;
-  background: var(--bg-frost);
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  scrollbar-width: thin;
-}
-
-.qa-auto[data-collapsed="true"] {
-  padding-bottom: 0.55rem;
-}
-
-.qa-auto__head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 0.45rem 0.75rem;
-}
-
-.qa-auto__toggle {
-  display: inline-flex;
-  flex: 1 1 12rem;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.35rem 0.5rem;
-  min-width: 0;
-  min-height: 2rem;
-  padding: 0.2rem 0.3rem 0.2rem 0.1rem;
-  border: 0;
-  border-radius: 0.45rem;
-  background: none;
-  font: inherit;
-  text-align: left;
-  color: var(--text-primary);
-  cursor: pointer;
-}
-
-.qa-auto__toggle > .qa-glyph {
-  flex-shrink: 0;
-  color: var(--text-muted);
-  transition: transform 160ms ease-out;
-}
-
-.qa-auto__toggle[aria-expanded="false"] > .qa-glyph {
-  transform: rotate(-90deg);
-}
-
-.qa-auto__toggle:hover > .qa-glyph {
-  color: var(--text-primary);
-}
-
-.qa-auto__toggle:focus-visible,
 .qa-auto__run:focus-visible {
   outline: 2px solid var(--brand);
   outline-offset: 2px;
-}
-
-.qa-auto__title {
-  font-size: 0.74rem;
-  font-weight: 750;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--text-secondary);
-}
-
-.qa-auto__chips {
-  display: inline-flex;
-  flex-wrap: wrap;
-  gap: 0.3rem 0.5rem;
-}
-
-.qa-auto__chip {
-  padding: 0.05rem 0.4rem;
-  border-left: 2px solid var(--border-strong);
-  font-size: 0.72rem;
-  font-weight: 600;
-  color: var(--text-secondary);
-}
-
-.qa-auto__chip--success {
-  border-left-color: var(--success);
-}
-
-.qa-auto__chip--danger {
-  border-left-color: var(--danger);
-}
-
-.qa-auto__chip--brand {
-  border-left-color: var(--brand);
-}
-
-.qa-auto__chip--none {
-  border-left-color: transparent;
-  font-weight: 500;
-  color: var(--text-muted);
 }
 
 /* Compact on purpose: its own class, not .primary-button — the global
@@ -363,10 +262,6 @@
   min-height: 0;
   padding: 0.3rem 0.7rem;
   font-size: 0.76rem;
-}
-
-.qa-auto__body[hidden] {
-  display: none;
 }
 
 /* ── Stage cards ─────────────────────────────────────────────────────────── */
@@ -657,14 +552,6 @@
   }
 }
 
-/* Stacked panes scroll with the page: no cap needed. */
-@media (max-width: 1100px) {
-  .qa-auto {
-    max-height: none;
-    overflow-y: visible;
-  }
-}
-
 @media (max-width: 560px) {
   .qa-run-item__states {
     justify-content: flex-start;
@@ -686,7 +573,6 @@
   }
 
   .qa-auto-toggle,
-  .qa-auto__toggle > .qa-glyph,
   .qa-auto__run,
   .qa-auto__run .qa-glyph,
   .qa-auto-stage__toggle .qa-glyph {

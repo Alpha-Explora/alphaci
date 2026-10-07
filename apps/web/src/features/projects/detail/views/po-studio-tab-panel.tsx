@@ -7,6 +7,7 @@ import { QaStudioPanel } from "@/features/checklists/studio";
 import type { ProvisionedProject } from "@/features/projects";
 
 import type { ProjectDetailTabsViewModel } from "../view-models/use-project-detail-tabs-view-model";
+import { studioChecksRenderer } from "./studio-repository-checks";
 
 /**
  * The PO Studio tab: QA Studio's shell in its Product owner mode. The studio
@@ -34,6 +35,7 @@ export function PoStudioTabPanel({
       projectName={project.repoFullName}
       qaScope={qaScope}
       toolbarSlot={studioToolbarSlot}
+      renderRepositoryChecks={studioChecksRenderer(project.id, vm)}
       studio="po"
       onOpenQaRun={() => vm.setTab("checklists")}
     />

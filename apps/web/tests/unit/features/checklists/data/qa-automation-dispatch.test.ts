@@ -1,3 +1,4 @@
+import { projectQaRunsRepository } from "../../../../../src/features/checklists/data/project-qa-runs-repository";
 import { qaRunsRepository } from "../../../../../src/features/checklists/data/qa-runs-repository";
 import { dispatchError, normalizeDispatch } from "../../../../../src/features/checklists/model/qa-automation-rules";
 import { ApiError } from "../../../../../src/shared/api/request";
@@ -60,5 +61,38 @@ describe("qaRunsRepository.dispatchAutomation", () => {
     const copy = dispatchError(failure);
     expect(copy.signIn).toBe(signIn);
     expect(copy.message).toMatch(message);
+  });
+});
+
+describe("projectQaRunsRepository.dispatchAutomation", () => {
+  it("POSTs to the Project run's dispatch endpoint with no body, and normalises the reply", async () => {
+    fetchMock.mockResolvedValueOnce(
+      reply(202, {
+        dispatched: [{ projectId: "p1", repoFullName: "tone/web", workflowFile: "verify.yml", ref: "uat", headSha: "a1b2", targetsRunCommit: true }],
+        failed: [{ projectId: "p2", repoFullName: "tone/api", code: "VERIFY_WORKFLOW_MISSING", message: "No verify workflow." }],
+      }),
+    );
+    const result = await projectQaRunsRepository.dispatchAutomation("dp/1", "run 1");
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(url).toBe("http://localhost:4000/api/v1/delivery-projects/dp%2F1/qa-runs/run%201/automation/dispatch");
+    expect(init).toMatchObject({ method: "POST", credentials: "include" });
+    expect(init.body).toBeUndefined();
+    expect(result).toEqual({
+      dispatched: [{ projectId: "p1", repoFullName: "tone/web", ref: "uat", headSha: "a1b2", targetsRunCommit: true }],
+      failed: [{ projectId: "p2", repoFullName: "tone/api", code: "VERIFY_WORKFLOW_MISSING", message: "No verify workflow." }],
+    });
+  });
+
+  it("narrows to one repository when asked", async () => {
+    fetchMock.mockResolvedValueOnce(reply(202, { dispatched: [], failed: [] }));
+    await projectQaRunsRepository.dispatchAutomation("dp1", "r1", "p1");
+    expect(JSON.parse(fetchMock.mock.calls[0][1].body)).toEqual({ projectId: "p1" });
+  });
+
+  it("maps a refused dispatch (nothing started) to the product sentence", async () => {
+    fetchMock.mockResolvedValueOnce(reply(409, { statusCode: 409, code: "GITHUB_REAUTH", message: "Sign in to GitHub again", failed: [] }));
+    const caught = await projectQaRunsRepository.dispatchAutomation("dp1", "r1").catch((error: unknown) => error);
+    expect(caught).toBeInstanceOf(ApiError);
+    expect(dispatchError(caught).signIn).toBe(true);
   });
 });

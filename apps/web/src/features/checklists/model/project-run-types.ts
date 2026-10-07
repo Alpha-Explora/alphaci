@@ -10,6 +10,7 @@
  * and 2.5. Views read only the normalised shapes below. */
 
 import type { ChecklistVerificationType } from "./checklist-types";
+import type { QaAutomatedItemResult, QaRunAutomationResult } from "./qa-automation-types";
 import type {
   QaActor,
   QaDefectSeverity,
@@ -93,6 +94,19 @@ export interface ProjectQaRunItem {
   sourceItemId: string | null;
   /** The server's per-item answer, or null when it sent none (then the run's flag decides). */
   canUpdate: boolean | null;
+  /**
+   * What CI reported for this item, matched across the run's repositories.
+   * Null for a manual item and on a server that sends no automated results.
+   * Information only: never changes `status`.
+   */
+  automated: QaAutomatedItemResult | null;
+}
+
+/** One covered repository's CI results, on the uat head the run captured. */
+export interface RepositoryAutomation {
+  projectId: string;
+  repoFullName: string;
+  automation: QaRunAutomationResult;
 }
 
 export interface ProjectQaRunPermissionFlags {
@@ -126,6 +140,40 @@ export interface ProjectQaRun {
   /** In position order: Features first, then System requirements. */
   items: ProjectQaRunItem[];
   permissions: ProjectQaRunPermissionFlags;
+  /**
+   * The first report per CI stage across the covered repositories (the
+   * server's merge). Null when the server sent no `automation` at all: a
+   * backend from before Project runs reported CI results.
+   */
+  automation: QaRunAutomationResult | null;
+  /** The same per repository; null when the server sent no breakdown. */
+  automationByRepository: RepositoryAutomation[] | null;
+}
+
+/* ── Run Playwright on a Project run ────────────────────────────────────── */
+
+/** One repository the verify workflow was started in. */
+export interface ProjectDispatched {
+  projectId: string;
+  repoFullName: string;
+  ref: string | null;
+  headSha: string | null;
+  /** False when uat moved past the head the run captured; null when not said. */
+  targetsRunCommit: boolean | null;
+}
+
+/** One repository it could not be started in, with the server's sentence. */
+export interface ProjectDispatchFailure {
+  projectId: string;
+  repoFullName: string;
+  code: string | null;
+  message: string;
+}
+
+/** 202 from POST /delivery-projects/:dpId/qa-runs/:runId/automation/dispatch. */
+export interface ProjectDispatchResult {
+  dispatched: ProjectDispatched[];
+  failed: ProjectDispatchFailure[];
 }
 
 export interface ProjectRunCurrent {

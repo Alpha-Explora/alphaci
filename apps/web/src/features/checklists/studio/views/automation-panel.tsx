@@ -9,7 +9,6 @@ import {
   automationStages,
   failuresToggleLabel,
   listedFailures,
-  noAutomationText,
   stageCoverage,
   stageName,
   stagePassShare,
@@ -18,16 +17,21 @@ import {
   stageTestsLabel,
   unlistedFailuresNote,
 } from "../../model/qa-automation-rules";
-import type { QaAutomationStage, QaStageResult, QaStageTests } from "../../model/qa-automation-types";
+import type {
+  QaAutomationStage,
+  QaRunAutomationResult,
+  QaStageResult,
+  QaStageTests,
+} from "../../model/qa-automation-types";
 import { formatReportDate } from "../../model/qa-report-rules";
 import { agoLabel, shortSha } from "../../model/qa-run-rules";
-import type { QaRun } from "../../model/qa-run-types";
-import type { QaAutomationViewModel } from "../view-models/use-qa-automation-view-model";
-import { useDisclosure, useRememberedFlag } from "../view-models/use-remembered-flag";
-import { ChevronDownIcon, CrossIcon, FlaskIcon, PlayIcon, WarningIcon } from "./studio-icons";
+import type { AutomationDispatchControls } from "../view-models/use-qa-automation-view-model";
+import { useDisclosure } from "../view-models/use-remembered-flag";
+import { ChevronDownIcon, CrossIcon, PlayIcon, WarningIcon } from "./studio-icons";
 
-/** Per viewer, per browser: whether they folded the panel away. */
-export const AUTOMATION_PANEL_COLLAPSED_KEY = "alphaci.qa-studio.automation-panel.collapsed";
+/* The building blocks of the studio column's Playwright tab: one card per CI
+ * stage, "Run Playwright" and what starting it said. The tab arranges them
+ * per repository (playwright-panel.tsx). */
 
 /* ── One stage ───────────────────────────────────────────────────────────── */
 
@@ -171,30 +175,15 @@ function StageMissing({ stage, commitSha }: Readonly<{ stage: QaAutomationStage;
   );
 }
 
-/* ── Header, feedback and body ───────────────────────────────────────────── */
+/* ── Run Playwright and its feedback ─────────────────────────────────────── */
 
-/** Collapsed, the header still says how each stage went. */
-function StageChips({ vm }: Readonly<{ vm: QaAutomationViewModel }>) {
-  if (!vm.hasResults) return <span className="qa-auto__chip qa-auto__chip--none">No results yet</span>;
-  return (
-    <span className="qa-auto__chips">
-      {automationStages(vm.automation).map(({ stage, result }) =>
-        result ? (
-          <span key={stage} className={`qa-auto__chip qa-auto__chip--${stageRunTone(result.status)}`}>
-            {stageName(stage)}: {stageRunLabel(result.status)}
-          </span>
-        ) : null,
-      )}
-    </span>
-  );
-}
-
-function runButtonLabel(vm: QaAutomationViewModel): string {
+function runButtonLabel(vm: AutomationDispatchControls): string {
   if (vm.status === "dispatching") return "Starting…";
   return vm.status === "watching" || vm.status === "dispatched" ? "Run Playwright again" : "Run Playwright";
 }
 
-function RunPlaywrightButton({ vm, reasonId }: Readonly<{ vm: QaAutomationViewModel; reasonId: string }>) {
+/** For QA Team, Team leads and Admins; disabled (with the reason) on a signed-off run. */
+export function RunPlaywrightButton({ vm, reasonId }: Readonly<{ vm: AutomationDispatchControls; reasonId: string }>) {
   if (!vm.canDispatch) return null;
   return (
     <button
@@ -210,8 +199,18 @@ function RunPlaywrightButton({ vm, reasonId }: Readonly<{ vm: QaAutomationViewMo
   );
 }
 
+/** Why the offered button is disabled; nothing when it is not. */
+export function DispatchReason({ vm, id }: Readonly<{ vm: AutomationDispatchControls; id: string }>) {
+  if (!vm.canDispatch || !vm.blockedReason) return null;
+  return (
+    <p id={id} className="qa-auto__reason">
+      {vm.blockedReason}
+    </p>
+  );
+}
+
 /** Always mounted, so the confirmation is announced when it appears. */
-function DispatchFeedback({ vm }: Readonly<{ vm: QaAutomationViewModel }>) {
+export function DispatchFeedback({ vm }: Readonly<{ vm: AutomationDispatchControls }>) {
   return (
     <>
       <div className="qa-auto__live" role="status" aria-live="polite">
@@ -248,73 +247,26 @@ function DispatchFeedback({ vm }: Readonly<{ vm: QaAutomationViewModel }>) {
   );
 }
 
-function AutomationEmpty({ vm, run }: Readonly<{ vm: QaAutomationViewModel; run: QaRun }>) {
-  return (
-    <div className="qa-auto__empty">
-      <span className="qa-auto__empty-icon" aria-hidden="true">
-        <FlaskIcon size={18} />
-      </span>
-      <div>
-        <p className="qa-auto__empty-title">{noAutomationText(run.branch, run.commitSha)}</p>
-        <p className="qa-auto__empty-text">
-          Results appear here when the verify or quality stage reports for this exact commit.
-          {vm.canDispatch && !vm.blockedReason ? " Run Playwright to start the verify stage now." : ""}
-        </p>
-      </div>
-    </div>
-  );
-}
+/* ── The stages ──────────────────────────────────────────────────────────── */
 
-function AutomationBody({ vm, run }: Readonly<{ vm: QaAutomationViewModel; run: QaRun }>) {
-  if (!vm.hasResults) return <AutomationEmpty vm={vm} run={run} />;
+/**
+ * How the verify (browser & API) and quality (unit) stages went on one
+ * commit: a card per stage that reported, a line for one that has not.
+ * Information only: sign-off stays manual.
+ */
+export function AutomationStages({
+  automation,
+  commitSha,
+}: Readonly<{ automation: QaRunAutomationResult; commitSha: string | null }>) {
   return (
     <div className="qa-auto__stages">
-      {automationStages(vm.automation).map(({ stage, result }) =>
+      {automationStages(automation).map(({ stage, result }) =>
         result ? (
           <StageCard key={stage} result={result} />
         ) : (
-          <StageMissing key={stage} stage={stage} commitSha={run.commitSha} />
+          <StageMissing key={stage} stage={stage} commitSha={commitSha} />
         ),
       )}
     </div>
-  );
-}
-
-/**
- * The run's automated tests, above its items: how the verify (browser & API)
- * and quality (unit) stages went on this exact commit, and — for QA Team, Team
- * leads and Admins — "Run Playwright". Collapsible; the choice is remembered
- * in this browser. Information only: sign-off stays manual.
- */
-export function AutomationPanel({ vm, run }: Readonly<{ vm: QaAutomationViewModel; run: QaRun }>) {
-  const [collapsed, toggle] = useRememberedFlag(AUTOMATION_PANEL_COLLAPSED_KEY, false);
-  const bodyId = useId();
-  const reasonId = useId();
-  return (
-    <section className="qa-auto" aria-label="Automated tests" data-collapsed={collapsed ? "true" : "false"}>
-      <div className="qa-auto__head">
-        <button
-          type="button"
-          className="qa-auto__toggle"
-          aria-expanded={!collapsed}
-          aria-controls={bodyId}
-          onClick={toggle}
-        >
-          <ChevronDownIcon />
-          <span className="qa-auto__title">Automated tests</span>
-          {collapsed ? <StageChips vm={vm} /> : null}
-        </button>
-        <RunPlaywrightButton vm={vm} reasonId={reasonId} />
-      </div>
-      {vm.canDispatch && vm.blockedReason ? (
-        <p id={reasonId} className="qa-auto__reason">
-          {vm.blockedReason}
-        </p>
-      ) : null}
-      <DispatchFeedback vm={vm} />
-      <div id={bodyId} className="qa-auto__body" hidden={collapsed}>
-        <AutomationBody vm={vm} run={run} />
-      </div>
-    </section>
   );
 }

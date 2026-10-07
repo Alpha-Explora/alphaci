@@ -1,12 +1,11 @@
 "use client";
 
-import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { useRef, useState } from "react";
 
 import type { AppRole } from "@/shared/api/contracts";
 
 import { qaRunsRepository } from "../../data/qa-runs-repository";
 import {
-  AUTOMATION_POLL_INTERVAL_MS,
   AUTOMATION_POLL_WINDOW_MS,
   dispatchBlockedReason,
   dispatchConfirmation,
@@ -22,6 +21,7 @@ import {
 } from "../../model/qa-automation-rules";
 import type { QaAutomationDispatch, QaRunAutomationResult } from "../../model/qa-automation-types";
 import type { QaRun } from "../../model/qa-run-types";
+import { useAutomationPoll, type PollWindow } from "./use-automation-poll";
 
 /**
  * `watching` — started, and re-reading the run every 20 s so results land
@@ -30,11 +30,12 @@ import type { QaRun } from "../../model/qa-run-types";
  */
 export type QaAutomationStatus = "idle" | "dispatching" | "watching" | "dispatched" | "failed";
 
-export interface QaAutomationViewModel {
+/**
+ * "Run Playwright" and what it said, the same for a repository run and a
+ * Project run: the Playwright tab draws either through this shape.
+ */
+export interface AutomationDispatchControls {
   status: QaAutomationStatus;
-  /** Normalised: absent or partial data reads as null stages, never a crash. */
-  automation: QaRunAutomationResult;
-  hasResults: boolean;
   /** Whether to offer "Run Playwright" at all (QA Team, Team lead, Admin). */
   canDispatch: boolean;
   /** Why the offered button is disabled, e.g. a signed-off run. */
@@ -50,78 +51,20 @@ export interface QaAutomationViewModel {
   dismiss: () => void;
 }
 
+export interface QaAutomationViewModel extends AutomationDispatchControls {
+  /** Normalised: absent or partial data reads as null stages, never a crash. */
+  automation: QaRunAutomationResult;
+  hasResults: boolean;
+}
+
 type Outcome =
   | { status: "idle" | "dispatching" }
   | { status: "dispatched"; dispatch: QaAutomationDispatch }
   | { status: "failed"; error: QaDispatchError };
 
-interface PollWindow {
-  since: number;
-  until: number;
-}
-
-function subscribeVisibility(onChange: () => void): () => void {
-  document.addEventListener("visibilitychange", onChange);
-  return () => document.removeEventListener("visibilitychange", onChange);
-}
-
-function pageVisible(): boolean {
-  return document.visibilityState !== "hidden";
-}
-
-function serverVisible(): boolean {
-  return true;
-}
-
 function publicStatus(outcome: Outcome, watching: boolean): QaAutomationStatus {
   if (outcome.status !== "dispatched") return outcome.status;
   return watching ? "watching" : "dispatched";
-}
-
-/**
- * Re-reads the run every interval while `poll` is open and the page is
- * visible. Hidden tabs pause (the window keeps closing); unmount stops.
- */
-function useRunPolling(options: {
-  projectId: string;
-  runId: string;
-  poll: PollWindow | null;
-  visible: boolean;
-  onRun: (run: QaRun) => void;
-  onStop: () => void;
-}) {
-  const { projectId, runId, poll, visible } = options;
-  const callbacks = useRef({ onRun: options.onRun, onStop: options.onStop });
-  const requestRef = useRef(0);
-
-  useEffect(() => {
-    callbacks.current = { onRun: options.onRun, onStop: options.onStop };
-  });
-
-  useEffect(() => {
-    if (!poll || !visible) return;
-    const timer = window.setInterval(() => {
-      if (Date.now() >= poll.until) {
-        callbacks.current.onStop();
-        return;
-      }
-      requestRef.current += 1;
-      const requestId = requestRef.current;
-      qaRunsRepository
-        .get(projectId, runId)
-        .then((run) => {
-          if (requestId !== requestRef.current) return;
-          callbacks.current.onRun(run);
-          if (verifySettledSince(normalizeRunAutomation(run.automation), poll.since)) callbacks.current.onStop();
-        })
-        // A missed poll is not worth a message: the next tick tries again.
-        .catch(() => undefined);
-    }, AUTOMATION_POLL_INTERVAL_MS);
-    return () => {
-      window.clearInterval(timer);
-      requestRef.current += 1;
-    };
-  }, [poll, visible, projectId, runId]);
 }
 
 /**
@@ -143,12 +86,18 @@ export function useQaAutomationViewModel(options: {
   const [outcome, setOutcome] = useState<Outcome>({ status: "idle" });
   const [poll, setPoll] = useState<PollWindow | null>(null);
   const busy = useRef(false);
-  const visible = useSyncExternalStore(subscribeVisibility, pageVisible, serverVisible);
   const automation = normalizeRunAutomation(run.automation);
   const canDispatch = roleCanDispatch(appRole);
   const blockedReason = dispatchBlockedReason(run);
 
-  useRunPolling({ projectId, runId: run.id, poll, visible, onRun, onStop: () => setPoll(null) });
+  useAutomationPoll({
+    key: `${projectId}|${run.id}`,
+    poll,
+    read: () => qaRunsRepository.get(projectId, run.id),
+    onValue: onRun,
+    settled: (value, since) => verifySettledSince(normalizeRunAutomation(value.automation), since),
+    onStop: () => setPoll(null),
+  });
 
   async function dispatch() {
     if (!canDispatch || blockedReason || busy.current) return;
