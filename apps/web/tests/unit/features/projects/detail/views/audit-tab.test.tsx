@@ -293,6 +293,21 @@ describe("Audit tab: GitHub activity", () => {
     expect(fresh.textContent).toContain("GitHub activity synced just now");
   });
 
+  it("says the first import is still running, not that GitHub failed", async () => {
+    repo.audit.mockResolvedValue({
+      enabled: true,
+      items: [event()],
+      next: null,
+      githubSync: { status: "stale", syncedAt: null },
+    } as never);
+    const container = await render();
+    await poll(() => container.querySelector(".audit-trail__sync") !== null);
+    const line = container.querySelector(".audit-trail__sync")!;
+    expect(line.getAttribute("data-tone")).toBe("pending");
+    expect(line.textContent).toContain("Reading GitHub activity… showing what was saved for now");
+    expect(line.textContent).not.toContain("Couldn't reach GitHub");
+  });
+
   it("says a failed sync, and keeps the rows", async () => {
     repo.audit.mockResolvedValue({ enabled: true, items: [event()], next: null, githubSync: { status: "ok", syncedAt: null } } as never);
     repo.syncAudit.mockRejectedValue(new Error("boom"));

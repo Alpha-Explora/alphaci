@@ -227,6 +227,10 @@
   animation: none;
 }
 
+.audit-trail__sync[data-tone="pending"] .audit-trail__sync-dot {
+  background: var(--brand);
+}
+
 .audit-trail__sync-text {
   flex: 1 1 14rem;
   min-width: 0;
