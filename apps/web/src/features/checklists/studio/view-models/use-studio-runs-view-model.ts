@@ -21,9 +21,9 @@ export interface StudioRunsViewModel {
 }
 
 /**
- * What the promotion card watches: the selected run's id, status and sign-off,
+ * What the readiness chip watches: the selected run's id, status and sign-off,
  * once the run lookup has answered. Signing off or reopening changes it, and
- * the card re-reads whether uat is ready for main.
+ * the chip re-reads whether uat is ready for main.
  */
 function repositoryWatch(run: QaRunViewModel): string | null {
   if (run.status !== "ready" && run.status !== "starting") return null;

@@ -21,19 +21,22 @@ import {
   type PlaywrightResults,
   type RepositoryRef,
 } from "../../model/playwright-tab-rules";
-import { repoShortName } from "../../model/project-run-rules";
+import { repoShortName, resolveProjectRunPermissions } from "../../model/project-run-rules";
 import type { ProjectQaRun } from "../../model/project-run-types";
-import { UNCONFIRMED_PASS_HINT } from "../../model/qa-automation-rules";
+import { REOPEN_TO_RUN_PLAYWRIGHT, UNCONFIRMED_PASS_HINT } from "../../model/qa-automation-rules";
 import { shortSha } from "../../model/qa-run-rules";
 import type { QaRun } from "../../model/qa-run-types";
 import { useProjectAutomationViewModel } from "../view-models/use-project-automation-view-model";
 import type { ProjectRunViewModel } from "../view-models/use-project-run-view-model";
+import { useProjectReopenViewModel } from "../view-models/use-project-signoff-view-model";
 import {
   useQaAutomationViewModel,
   type AutomationDispatchControls,
 } from "../view-models/use-qa-automation-view-model";
+import { useQaReopenViewModel, type QaReopenViewModel } from "../view-models/use-qa-reopen-view-model";
 import type { QaRunViewModel } from "../view-models/use-qa-run-view-model";
 import { AutomationStages, DispatchFeedback, DispatchReason, RunPlaywrightButton } from "./automation-panel";
+import { ReopenButton, ReopenDialog } from "./run-signoff";
 import { FlaskIcon } from "./studio-icons";
 
 /** Draws a repository's own checks (visual, browser tests): the host page's, not this feature's. */
@@ -141,27 +144,60 @@ function RequirementTests({ items }: Readonly<{ items: PlaywrightItemRow[] }>) {
   );
 }
 
+/**
+ * Whether to offer "Reopen run" beside Run Playwright: the button is offered
+ * but blocked because the run is signed off, and the server lets this viewer
+ * reopen it (the same permission as the sign-off banner's Reopen).
+ */
+function offersReopen(controls: AutomationDispatchControls, reopen: QaReopenViewModel): boolean {
+  return controls.canDispatch && controls.blockedReason !== null && reopen.canReopen;
+}
+
+/**
+ * Run Playwright, and — on a signed-off run, for a viewer who may reopen it —
+ * "Reopen run" beside it, through the same confirmation as the Checklist tab.
+ * The disabled button is described by why it is disabled.
+ */
+function DispatchActions({
+  controls,
+  reopen,
+}: Readonly<{ controls: AutomationDispatchControls; reopen: QaReopenViewModel }>) {
+  const reasonId = useId();
+  const withReopen = offersReopen(controls, reopen);
+  const reason = withReopen ? { ...controls, blockedReason: REOPEN_TO_RUN_PLAYWRIGHT } : controls;
+  return (
+    <>
+      <div className="qa-pw__head">
+        <p className="qa-pw__lede">Latest verify stage on the commits this run covers</p>
+        <div className="qa-pw__actions">
+          <RunPlaywrightButton vm={controls} reasonId={reasonId} />
+          {withReopen ? <ReopenButton reopen={reopen} className="qa-pw__reopen" /> : null}
+        </div>
+      </div>
+      <DispatchReason vm={reason} id={reasonId} />
+      {withReopen ? <ReopenDialog reopen={reopen} /> : null}
+    </>
+  );
+}
+
 /** The results once the run is known: Run Playwright, each repository, then the items. */
 function ResultsBody({
   results,
   controls,
+  reopen,
   checksFor,
 }: Readonly<{
   results: PlaywrightResults;
   controls: AutomationDispatchControls;
+  reopen: QaReopenViewModel;
   checksFor: (repository: PlaywrightRepository) => ReactNode;
 }>) {
-  const reasonId = useId();
   const canStart = controls.canDispatch && !controls.blockedReason;
   // An older server: nothing to show, and no dispatch route to offer either.
   if (!results.supported) return <Notice title="No automated results" text={UNSUPPORTED_TEXT} />;
   return (
     <div className="qa-pw">
-      <div className="qa-pw__head">
-        <p className="qa-pw__lede">Latest verify stage on the commits this run covers</p>
-        <RunPlaywrightButton vm={controls} reasonId={reasonId} />
-      </div>
-      <DispatchReason vm={controls} id={reasonId} />
+      <DispatchActions controls={controls} reopen={reopen} />
       <DispatchFeedback vm={controls} />
       {results.repositories.map((repository) => (
         <RepositoryResults
@@ -198,8 +234,11 @@ function ProjectResults({
     onRun: vm.applyRun,
     projectId: common.projectId,
   });
+  // The sign-off banner's permission: the server's flag, else its role rule.
+  const permissions = resolveProjectRunPermissions(run, common.appRole);
+  const reopen = useProjectReopenViewModel({ deliveryProjectId, run, permissions, onRun: vm.applyRun });
   if (!common.results) return null;
-  return <ResultsBody results={common.results} controls={controls} checksFor={common.checksFor} />;
+  return <ResultsBody results={common.results} controls={controls} reopen={reopen} checksFor={common.checksFor} />;
 }
 
 function RepositoryRunResults({ vm, run, ...common }: Readonly<CommonProps & { vm: QaRunViewModel; run: QaRun }>) {
@@ -209,8 +248,9 @@ function RepositoryRunResults({ vm, run, ...common }: Readonly<CommonProps & { v
     appRole: common.appRole,
     onRun: vm.applyRun,
   });
+  const reopen = useQaReopenViewModel({ projectId: common.projectId, run, onRun: vm.applyRun });
   if (!common.results) return null;
-  return <ResultsBody results={common.results} controls={controls} checksFor={common.checksFor} />;
+  return <ResultsBody results={common.results} controls={controls} reopen={reopen} checksFor={common.checksFor} />;
 }
 
 function sourceReady(source: PlaywrightSource): boolean {

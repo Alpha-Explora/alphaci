@@ -29,7 +29,29 @@ function TabStatus({ status }: Readonly<{ status: PlaywrightTabStatus }>) {
 }
 
 /**
- * Checklist | Playwright, under the promotion strip. Proper tabs: one tab
+ * The run column's tab bar: the tabs, then `status` (the "Ready for
+ * production" chip) at the end of their row, then `action` ("Merge to main").
+ * Narrow, the action wraps to a second line of the bar. Only the tabs are in
+ * the tablist; the rest sit beside it.
+ */
+export function ColumnBar({
+  children,
+  status,
+  action,
+}: Readonly<{ children: ReactNode; status?: ReactNode; action?: ReactNode }>) {
+  return (
+    <div className="qa-coltabs-bar">
+      <div className="qa-coltabs-bar__main">
+        {children}
+        {status}
+      </div>
+      <div className="qa-coltabs-bar__action">{action}</div>
+    </div>
+  );
+}
+
+/**
+ * Checklist | Playwright, at the top of the run column. Proper tabs: one tab
  * stop (the selected tab), Left / Right / Home / End move and select, and the
  * Playwright label carries the latest verify verdict.
  */

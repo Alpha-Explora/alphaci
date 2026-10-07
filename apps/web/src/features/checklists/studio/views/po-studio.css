@@ -1,7 +1,7 @@
 /* ── PO Studio ─────────────────────────────────────────────────────────────
    QA Studio's shell with the Product owner's acceptance in the column. Only
    the acceptance status is new; the summary, the sign-off banner and the
-   promotion card are QA Studio's own. Tokens only.
+   tab bar's readiness chip are QA Studio's own. Tokens only.
    ------------------------------------------------------------------------- */
 
 .po-accept {

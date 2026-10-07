@@ -400,7 +400,9 @@ describe("dispatch copy", () => {
 
   it("blocks a signed-off run with a reason", () => {
     expect(dispatchBlockedReason({ status: "open" })).toBeNull();
-    expect(dispatchBlockedReason({ status: "signed_off" })).toMatch(/signed off/);
+    expect(dispatchBlockedReason({ status: "signed_off" })).toBe(
+      "This run is signed off, so Playwright cannot run on it until it is reopened.",
+    );
   });
 
   it("confirms on the ref, falling back to the run's branch", () => {

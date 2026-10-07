@@ -259,6 +259,43 @@ describe("useQaReopenViewModel", () => {
     );
     expect(qa().canReopen).toBe(false);
   });
+
+  it("asks before reopening: the confirmation opens, cancels, and closes once the run is reopened", async () => {
+    const signed = runAs("lead", { status: "signed_off" });
+    repo.reopen.mockResolvedValue(qaRun());
+    const vm = renderHook(() => useQaReopenViewModel({ projectId: "p1", run: signed, onRun: jest.fn() }));
+    expect(vm().confirming).toBe(false);
+    act(() => vm().ask());
+    expect(vm().confirming).toBe(true);
+    act(() => vm().cancel());
+    expect(vm().confirming).toBe(false);
+    expect(repo.reopen).not.toHaveBeenCalled();
+    act(() => vm().ask());
+    await act(async () => vm().reopen());
+    expect(repo.reopen).toHaveBeenCalledTimes(1);
+    expect(vm().confirming).toBe(false);
+  });
+
+  it("keeps the confirmation open with the reason when the server refuses", async () => {
+    repo.reopen.mockRejectedValue(Object.assign(new Error("no"), { status: 403 }));
+    const vm = renderHook(() =>
+      useQaReopenViewModel({ projectId: "p1", run: runAs("lead", { status: "signed_off" }), onRun: jest.fn() }),
+    );
+    act(() => vm().ask());
+    await act(async () => vm().reopen());
+    expect(vm().confirming).toBe(true);
+    expect(vm().error?.message).toBe("Your role cannot make this change.");
+    act(() => vm().cancel());
+    expect(vm().error).toBeNull();
+  });
+
+  it("never asks for a viewer who cannot reopen", () => {
+    const vm = renderHook(() =>
+      useQaReopenViewModel({ projectId: "p1", run: runAs("qa", { status: "signed_off" }), onRun: jest.fn() }),
+    );
+    act(() => vm().ask());
+    expect(vm().confirming).toBe(false);
+  });
 });
 
 describe("returned items and re-test", () => {

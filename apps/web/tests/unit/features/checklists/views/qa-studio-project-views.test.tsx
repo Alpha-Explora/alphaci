@@ -109,10 +109,11 @@ async function studio(
   return container;
 }
 
-function card(container: HTMLElement): HTMLElement {
-  const found = container.querySelector<HTMLElement>('section[aria-label="Production readiness"]');
-  if (!found) throw new Error("no promotion card");
-  return found;
+/** The readiness chip's popover (hidden until the chip is pressed). */
+function readiness(container: HTMLElement): { chip: HTMLButtonElement; popover: HTMLElement } {
+  const chip = container.querySelector<HTMLButtonElement>("button.qa-promo-chip");
+  if (!chip) throw new Error("no readiness chip");
+  return { chip, popover: document.getElementById(chip.getAttribute("aria-controls")!)! };
 }
 
 async function click(element: Element | null | undefined) {
@@ -158,14 +159,17 @@ describe("QA Studio — Project-level QA", () => {
     setup(projectGate());
     projectRuns.current.mockResolvedValue(normalizeProjectRunCurrent({ run: projectRunWire() }));
     const container = await studio("lead", PROJECT_SCOPE);
-    const section = card(container);
-    await click(section.querySelector("button.qa-promo__toggle"));
+    const { chip, popover: section } = readiness(container);
+    await click(chip);
+    expect(section.hidden).toBe(false);
     expect(section.textContent).toContain("storefront QA run");
     expect(section.textContent).toContain("Project run is stale: uat moved since sign-off");
     expect(section.textContent).toContain("orders-api moved since this run (e4f5a6b → ffffeee)");
     expect(section.textContent).toContain('Project run is stale: "orders-api" moved');
     expect(section.textContent).not.toContain("Release smoke test");
-    expect(container.querySelector(".qa-promo__why")?.textContent).toMatch(/every repository's current uat head/);
+    expect(section.querySelector(".qa-promo__why")?.textContent).toMatch(/every repository's current uat head/);
+    const merge = container.querySelector<HTMLButtonElement>("button.qa-promo__merge")!;
+    expect(document.getElementById(merge.getAttribute("aria-describedby")!)?.textContent).toMatch(/every repository's current uat head/);
   });
 
   it("falls back to the repository run when the server has no Project runs", async () => {

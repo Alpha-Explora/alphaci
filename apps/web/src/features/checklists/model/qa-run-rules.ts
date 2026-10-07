@@ -143,6 +143,18 @@ export function isSignedOff(run: Pick<QaRun, "status">): boolean {
 }
 
 /**
+ * The reopen confirmation, wherever "Reopen run" is offered (the sign-off
+ * banner, beside a blocked Run Playwright): what reopening costs, before it
+ * is sent. The server removes the sign-off, and with it the approval the
+ * merge to main is gated on.
+ */
+export const REOPEN_CONFIRM = {
+  title: "Reopen this run?",
+  text: "Reopening removes this run's sign-off. Merge to main stays blocked until QA signs the run off Approved again.",
+  note: "Its items can change again and Playwright can run on it; the results already recorded stay.",
+} as const;
+
+/**
  * Starting a run is a QA Team, Team lead or Admin job. The server enforces it;
  * this only decides whether to offer the button or explain who can.
  */

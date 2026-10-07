@@ -12,14 +12,13 @@ import { PromotionCard } from "./promotion-card";
  */
 export function ProductionReadinessCard({
   projectId,
-  projectName,
   enabled,
-}: Readonly<{ projectId: string; projectName: string; enabled: boolean }>) {
+}: Readonly<{ projectId: string; enabled: boolean }>) {
   const vm = useQaPromotionViewModel({
     projectId,
     enabled,
     appRole: "member",
     watch: null,
   });
-  return <PromotionCard vm={vm} projectName={projectName} />;
+  return <PromotionCard vm={vm} />;
 }

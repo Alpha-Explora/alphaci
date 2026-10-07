@@ -31,12 +31,12 @@ import {
   useStudioViewportViewModel,
   type StudioViewportViewModel,
 } from "../view-models/use-studio-viewport-view-model";
-import { ColumnTabPanel, ColumnTabs } from "./column-tabs";
+import { ColumnBar, ColumnTabPanel, ColumnTabs } from "./column-tabs";
 import { PlaywrightPanel, type PlaywrightSource, type RenderRepositoryChecks } from "./playwright-panel";
 import { PoAcceptancePanel } from "./po-acceptance-panel";
 import { PreviewPane } from "./preview-pane";
 import { ProjectRunPanel } from "./project-run-panel";
-import { PromotionCard } from "./promotion-card";
+import { MergeToMain, PromotionBarFoot, PromotionStatusChip } from "./promotion-bar";
 import { RunPanel } from "./run-panel";
 import { ChecklistIcon, DockIcon, MinimizeIcon, SwapIcon } from "./studio-icons";
 import { StudioToolbar, type StudioToolbarPlacement } from "./studio-toolbar";
@@ -313,11 +313,12 @@ function projectSnapshot(run: ProjectRunViewModel, projectId: string): { commit:
 type DockScroll = "items" | "column";
 
 /**
- * The run column's one container: the promotion strip ("Ready for production"
- * and Merge to main) on top, then the Checklist | Playwright tabs (`children`).
- * Docked it sits beside the preview; in full screen CSS floats it as a drawer
- * and it gains a region role and a header. The strip and the tabs keep their
- * places either way, so nothing in them ever remounts.
+ * The run column's one container: the tab bar (Checklist | Playwright, the
+ * "Ready for production" chip and Merge to main), then the panels
+ * (`children`). Docked it sits beside the preview; in full screen CSS floats
+ * it as a drawer and it gains a region role and a header above the tab bar.
+ * The bar and the panels keep their places either way, so nothing in them
+ * ever remounts.
  */
 function RunDock({
   vm,
@@ -327,7 +328,6 @@ function RunDock({
   drawerId,
   headingId,
   headingRef,
-  promotion,
   children,
 }: Readonly<{
   vm: StudioViewportViewModel;
@@ -337,7 +337,6 @@ function RunDock({
   drawerId: string;
   headingId: string;
   headingRef: Ref<HTMLHeadingElement>;
-  promotion: ReactNode;
   children: ReactNode;
 }>) {
   const floating = vm.isFullScreen;
@@ -352,7 +351,6 @@ function RunDock({
       {floating ? (
         <DrawerHeader vm={vm} run={run} title={title} drawerId={drawerId} headingId={headingId} headingRef={headingRef} />
       ) : null}
-      {promotion}
       {children}
     </div>
   );
@@ -628,14 +626,16 @@ export function QaStudioPanel({
           drawerId={drawerId}
           headingId={headingId}
           headingRef={focus.drawerRef}
-          promotion={<PromotionCard vm={promotion} projectName={projectName ?? projectId} />}
         >
-          <ColumnTabs
-            vm={columnTab}
-            baseId={tabsId}
-            status={playwrightTabStatus(results)}
-            label={`${DRAWER_TITLES[studio]} and Playwright`}
-          />
+          <ColumnBar status={<PromotionStatusChip vm={promotion} />} action={<MergeToMain vm={promotion} />}>
+            <ColumnTabs
+              vm={columnTab}
+              baseId={tabsId}
+              status={playwrightTabStatus(results)}
+              label={`${DRAWER_TITLES[studio]} and Playwright`}
+            />
+          </ColumnBar>
+          <PromotionBarFoot vm={promotion} projectName={projectName ?? projectId} />
           <ColumnTabPanel baseId={tabsId} tab="checklist" selected={columnTab.tab === "checklist"}>
             <StudioColumn
               studio={studio}

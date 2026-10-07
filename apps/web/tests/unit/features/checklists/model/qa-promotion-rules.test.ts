@@ -11,6 +11,7 @@ import {
   normalizePromotionMerge,
   normalizePromotionStatus,
   promotionChecklistState,
+  promotionChip,
   promotionMergeError,
   promotionRoute,
   promotionTitle,
@@ -114,6 +115,30 @@ describe("normalizePromotionMerge", () => {
     expect(normalizePromotionMerge({ merged: "true", sha: "abc" }).merged).toBe(false);
     expect(normalizePromotionMerge({ merged: false, sha: "abc" }).sha).toBeNull();
     expect(normalizePromotionMerge({ merged: true }).message).toBe("Merged into main.");
+  });
+});
+
+describe("promotionChip", () => {
+  it("is green and \"Ready\" once the server says eligible", () => {
+    expect(promotionChip("ready", { eligible: true })).toEqual({ tone: "ready", label: "Ready for production", short: "Ready" });
+  });
+
+  it("is amber and \"Not ready\" while it is not", () => {
+    expect(promotionChip("ready", { eligible: false })).toEqual({
+      tone: "blocked",
+      label: "Not ready for production",
+      short: "Not ready",
+    });
+  });
+
+  it("is grey while loading or unreadable, and keeps the last answer during a refresh", () => {
+    expect(promotionChip("loading", null)).toEqual({ tone: "unknown", label: "Checking production readiness", short: "Checking" });
+    expect(promotionChip("error", null)).toEqual({ tone: "unknown", label: "Production readiness unknown", short: "Unknown" });
+    expect(promotionChip("loading", { eligible: true }).tone).toBe("ready");
+  });
+
+  it("never reads ready from anything but the server's exact true", () => {
+    expect(promotionChip("ready", normalizePromotionStatus({ eligible: "true" })).tone).toBe("blocked");
   });
 });
 

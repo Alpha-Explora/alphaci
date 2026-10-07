@@ -178,14 +178,18 @@ function buttonNamed(scope: ParentNode, name: string): HTMLButtonElement | undef
 }
 
 describe("Studio column — one container", () => {
-  it("stacks the merge strip, then the tablist, then the panels, in the one run column", async () => {
+  it("stacks the tab bar (tabs, readiness chip), the merge outcome's live region, then the panels", async () => {
     setup();
     const container = await studio("qa");
     const column = container.querySelector<HTMLElement>(".qa-studio__run")!;
-    const order = [...column.children].map((child) =>
-      child.matches(".qa-promo") ? "promo" : child.getAttribute("role") ?? child.className,
-    );
-    expect(order).toEqual(["promo", "tablist", "tabpanel", "tabpanel"]);
+    const order = [...column.children].map((child) => child.getAttribute("role") ?? child.className);
+    expect(order).toEqual(["qa-coltabs-bar", "status", "tabpanel", "tabpanel"]);
+    // No promotion strip: the checklist panel starts right under the bar (the live region is empty).
+    expect(column.querySelector(".qa-promo")).toBeNull();
+    expect(column.querySelector('[role="status"]')?.childElementCount).toBe(0);
+    const bar = column.querySelector(".qa-coltabs-bar")!;
+    expect(bar.querySelector('[role="tablist"]')).not.toBeNull();
+    expect(bar.querySelector(".qa-promo-chip")).not.toBeNull();
     expect(panel(container, "checklist").hidden).toBe(false);
     expect(panel(container, "playwright").hidden).toBe(true);
   });
@@ -389,8 +393,140 @@ describe("Studio column — the Playwright tab", () => {
   });
 });
 
+const SIGNOFF = {
+  id: "s1",
+  verdict: "APPROVED",
+  summary: null,
+  conditions: null,
+  signedBy: { id: "u", login: "ana-qa" },
+  signedAt: "2026-10-01T10:00:00Z",
+};
+
+/** A signed-off Project run with results; `canReopen` is the server's flag for this viewer. */
+function signedRun(canReopen: boolean) {
+  return automatedRun({
+    status: "signed_off",
+    signoff: SIGNOFF,
+    permissions: { canSetVerification: false, canSignOff: false, canReopen, canDispatch: false },
+  });
+}
+
+function dialog(): HTMLElement | null {
+  return document.querySelector<HTMLElement>('[role="dialog"]');
+}
+
+function runPlaywright(container: HTMLElement): HTMLButtonElement {
+  return buttonNamed(panel(container, "playwright"), "Run Playwright")!;
+}
+
+function reopenButton(container: HTMLElement): HTMLButtonElement | undefined {
+  return [...panel(container, "playwright").querySelectorAll<HTMLButtonElement>("button")].find(
+    (button) => button.textContent === "Reopen run",
+  );
+}
+
+describe("Studio column — Reopen beside a blocked Run Playwright", () => {
+  it("offers Reopen run beside the disabled Run Playwright of a signed-off run, for a viewer who may reopen", async () => {
+    setup(signedRun(true));
+    const container = await studio("lead");
+    const run = runPlaywright(container);
+    expect(run.disabled).toBe(true);
+    const reopen = reopenButton(container)!;
+    expect(reopen).toBeDefined();
+    expect(reopen.parentElement).toBe(run.parentElement);
+    const why = document.getElementById(run.getAttribute("aria-describedby")!);
+    expect(why?.textContent).toBe("This run is signed off. Reopen it to run Playwright.");
+  });
+
+  it("asks first, saying reopening blocks Merge to main, and cancelling sends nothing", async () => {
+    setup(signedRun(true));
+    const container = await studio("lead");
+    await click(reopenButton(container));
+    expect(dialog()?.textContent).toContain("Reopen this run?");
+    expect(dialog()?.textContent).toContain(
+      "Reopening removes this run's sign-off. Merge to main stays blocked until QA signs the run off Approved again.",
+    );
+    const cancel = [...dialog()!.querySelectorAll("button")].find((button) => button.textContent === "Cancel");
+    await click(cancel);
+    expect(projectRuns.reopen).not.toHaveBeenCalled();
+    expect(runPlaywright(container).disabled).toBe(true);
+    expect(reopenButton(container)?.disabled).toBe(false);
+  });
+
+  it("reopens the Project run on confirm; the run refreshes, Run Playwright is enabled and readiness is re-read", async () => {
+    setup(signedRun(true));
+    const reopened = normalizeProjectRunCurrent({ run: automatedRun({ permissions: { canSetVerification: true, canSignOff: true, canReopen: false, canDispatch: true } }) }).run!;
+    projectRuns.reopen.mockResolvedValue(reopened);
+    const container = await studio("lead");
+    const reads = runs.promotion.mock.calls.length;
+    await click(reopenButton(container));
+    const confirm = [...dialog()!.querySelectorAll("button")].find((button) => button.textContent === "Reopen run");
+    await click(confirm);
+    expect(projectRuns.reopen).toHaveBeenCalledWith("dp-1", "prun-1");
+    expect(runPlaywright(container).disabled).toBe(false);
+    expect(reopenButton(container)).toBeUndefined();
+    expect(panel(container, "playwright").querySelector(".qa-auto__reason")).toBeNull();
+    expect(runs.promotion.mock.calls.length).toBe(reads + 1);
+  });
+
+  it("keeps a refused reopen in the confirmation, to retry or cancel", async () => {
+    setup(signedRun(true));
+    projectRuns.reopen.mockRejectedValue(Object.assign(new Error("no"), { status: 403 }));
+    const container = await studio("lead");
+    await click(reopenButton(container));
+    await click([...dialog()!.querySelectorAll("button")].find((button) => button.textContent === "Reopen run"));
+    expect(dialog()?.querySelector('[role="alert"]')?.textContent).toBe("Your role cannot make this change.");
+    expect(runPlaywright(container).disabled).toBe(true);
+  });
+
+  it("is not offered to a QA viewer the server does not let reopen: the disabled button says why", async () => {
+    setup(signedRun(false));
+    const container = await studio("qa");
+    const run = runPlaywright(container);
+    expect(run.disabled).toBe(true);
+    expect(reopenButton(container)).toBeUndefined();
+    expect(document.getElementById(run.getAttribute("aria-describedby")!)?.textContent).toBe(
+      "This run is signed off, so Playwright cannot run on it until it is reopened.",
+    );
+  });
+
+  it("is not offered on an open run", async () => {
+    setup(automatedRun({ permissions: { canSetVerification: true, canSignOff: true, canReopen: true, canDispatch: true } }));
+    const container = await studio("lead");
+    expect(runPlaywright(container).disabled).toBe(false);
+    expect(reopenButton(container)).toBeUndefined();
+  });
+
+  it("reopens a signed-off repository run too, through its own route", async () => {
+    const signed = runAs("lead", {
+      status: "signed_off",
+      signoff: { ...SIGNOFF, verdict: "APPROVED" as const },
+      items: [runItem(0, { title: "Pays", automated: automated() })],
+      automation: automation(),
+    });
+    setup("none", signed);
+    runs.reopen.mockResolvedValue({ ...signed, status: "open", signoff: null });
+    const container = await studio("lead", { scope: { kind: "repository" } });
+    expect(runPlaywright(container).disabled).toBe(true);
+    await click(reopenButton(container));
+    await click([...dialog()!.querySelectorAll("button")].find((button) => button.textContent === "Reopen run"));
+    expect(runs.reopen).toHaveBeenCalledWith("project-1", "run-1");
+    expect(projectRuns.reopen).not.toHaveBeenCalled();
+    expect(runPlaywright(container).disabled).toBe(false);
+  });
+
+  it("the Checklist tab's Reopen run goes through the same confirmation", async () => {
+    setup(signedRun(true));
+    const container = await studio("lead");
+    const banner = panel(container, "checklist").querySelector(".qa-signoff-banner")!;
+    await click([...banner.querySelectorAll("button")].find((button) => button.textContent === "Reopen run"));
+    expect(projectRuns.reopen).not.toHaveBeenCalled();
+    expect(dialog()?.textContent).toContain("Merge to main stays blocked until QA signs the run off Approved again.");
+  });
+});
+
 describe("Studio column — full screen", () => {
-  it("floats the same container (strip, tabs, panels) as the drawer, mounted once", async () => {
+  it("floats the same container (tab bar with the chip, panels) as the drawer, mounted once", async () => {
     setup();
     const container = await studio("qa");
     await click(tab(container, "playwright"));
@@ -403,8 +539,10 @@ describe("Studio column — full screen", () => {
     expect(container.querySelectorAll(".qa-colpanel")).toHaveLength(2);
     expect(panel(container, "playwright")).toBe(playwright);
     const drawer = container.querySelector('.qa-studio__run[role="region"]')!;
-    expect(drawer.querySelector(".qa-promo")).not.toBeNull();
+    expect(drawer.querySelectorAll(".qa-coltabs-bar")).toHaveLength(1);
+    expect(drawer.querySelector(".qa-coltabs-bar .qa-promo-chip")).not.toBeNull();
     expect(drawer.querySelector('[role="tablist"]')).not.toBeNull();
+    expect(drawer.querySelector(".qa-drawer__head")?.nextElementSibling?.className).toBe("qa-coltabs-bar");
     expect(tab(container, "playwright").getAttribute("aria-selected")).toBe("true");
   });
 });
