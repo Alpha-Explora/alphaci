@@ -11,6 +11,7 @@ import type { RenderRepositoryChecks } from "../../../../../src/features/checkli
 import { QaStudioPanel } from "../../../../../src/features/checklists/studio/views/qa-studio-panel";
 import { projectsRepository } from "../../../../../src/features/projects/data/projects-repository";
 import type { AppRole, ProjectBranchPreview } from "../../../../../src/shared/api/contracts";
+import { ApiError } from "../../../../../src/shared/api/request";
 import { checklist } from "../checklist-fixtures";
 import { automated, automation, verifyFailure } from "../qa-automation-fixtures";
 import { promotionWire } from "../qa-promotion-fixtures";
@@ -341,6 +342,45 @@ describe("Studio column — the Playwright tab", () => {
     expect(panel(container, "playwright").querySelector('[role="status"]')?.textContent).toContain(
       "Playwright started on uat in storefront-web.",
     );
+  });
+
+  it("lists each refused repository under the confirmation after a partial start", async () => {
+    setup();
+    projectRuns.dispatchAutomation.mockResolvedValue({
+      dispatched: [{ projectId: "proj-fe", repoFullName: "tone/storefront-web", ref: "uat", headSha: "a1b2c3d", targetsRunCommit: true }],
+      failed: [{ projectId: "proj-be", repoFullName: "tone/logistics2cicd-fe", code: "GITHUB_FORBIDDEN", message: "Resource not accessible by integration" }],
+    });
+    const container = await studio("qa");
+    await click(buttonNamed(panel(container, "playwright"), "Run Playwright"));
+    const live = panel(container, "playwright").querySelector('[role="status"]')!;
+    expect(live.textContent).toContain("Playwright started on uat in storefront-web.");
+    expect([...live.querySelectorAll(".qa-auto__failures li")].map((li) => li.textContent)).toEqual([
+      "logistics2cicd-fe — Resource not accessible by integration",
+    ]);
+    expect(live.querySelector(".qa-auto__failures-lead")?.textContent).toBe("Not started in:");
+  });
+
+  it("alerts with the server's reason and a per-repository list when GitHub refused everywhere", async () => {
+    setup();
+    projectRuns.dispatchAutomation.mockRejectedValue(
+      new ApiError("x", 403, {
+        message: "GitHub refused to start the workflow in every repository.",
+        failed: [
+          { projectId: "proj-fe", repoFullName: "tone/logistics2cicd-fe", message: "Resource not accessible by integration" },
+          { projectId: "proj-be", repoFullName: "tone/logistics2cicd-be", message: "Resource not accessible by integration" },
+        ],
+      }),
+    );
+    const container = await studio("qa");
+    await click(buttonNamed(panel(container, "playwright"), "Run Playwright"));
+    const alert = panel(container, "playwright").querySelector('[role="alert"]')!;
+    expect(alert.querySelector("p")?.textContent).toBe("GitHub refused to start the workflow in every repository.");
+    expect([...alert.querySelectorAll("li")].map((li) => li.textContent)).toEqual([
+      "logistics2cicd-fe — Resource not accessible by integration",
+      "logistics2cicd-be — Resource not accessible by integration",
+    ]);
+    expect(alert.textContent).not.toMatch(/your role/i);
+    expect(alert.querySelector("a")).toBeNull();
   });
 
   it("hands each repository to the host's checks, only once the tab is opened", async () => {

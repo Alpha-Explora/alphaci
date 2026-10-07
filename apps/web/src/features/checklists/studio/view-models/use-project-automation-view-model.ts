@@ -7,6 +7,7 @@ import type { AppRole } from "@/shared/api/contracts";
 import { projectQaRunsRepository } from "../../data/project-qa-runs-repository";
 import {
   projectDispatchConfirmation,
+  projectDispatchFailures,
   projectDispatchWarning,
   projectVerifySettledSince,
 } from "../../model/playwright-tab-rules";
@@ -98,6 +99,7 @@ export function useProjectAutomationViewModel(options: {
     blockedReason,
     confirmation: started ? projectDispatchConfirmation(started) : null,
     warning: started ? projectDispatchWarning(started) : null,
+    failures: started ? projectDispatchFailures(started) : [],
     error: outcome.status === "failed" ? outcome.error : null,
     signInHref: qaSignInHref(projectId),
     dispatch,

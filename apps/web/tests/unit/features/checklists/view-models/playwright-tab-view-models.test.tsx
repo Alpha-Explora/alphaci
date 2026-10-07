@@ -190,6 +190,52 @@ describe("Project run — Run Playwright", () => {
     expect(repo.get).not.toHaveBeenCalled();
   });
 
+  it("lists the repositories GitHub refused beside a partial start, keeping the confirmation", async () => {
+    repo.dispatchAutomation.mockResolvedValue({
+      dispatched: BOTH_STARTED.dispatched.slice(0, 1),
+      failed: [{ projectId: "proj-x", repoFullName: "tone/logistics2cicd-fe", code: "GITHUB_FORBIDDEN", message: "Resource not accessible by integration" }],
+    });
+    const { vm } = renderVm();
+    await act(async () => vm().dispatch());
+    expect(vm().status).toBe("watching");
+    expect(vm().confirmation).toBe("Playwright started on uat in storefront-web. Results appear here when the runs report.");
+    expect(vm().failures).toEqual(["logistics2cicd-fe — Resource not accessible by integration"]);
+    expect(vm().warning).toBeNull();
+  });
+
+  it("shows the server's reason and every refused repository when nothing could start (409 with failed)", async () => {
+    repo.dispatchAutomation.mockRejectedValue(
+      new ApiError("x", 409, {
+        message: "Playwright could not be started in any repository.",
+        failed: [
+          { projectId: "proj-fe", repoFullName: "tone/logistics2cicd-fe", code: "GITHUB_FORBIDDEN", message: "Must have admin rights to Repository." },
+          { projectId: "proj-be", repoFullName: "tone/logistics2cicd-be", code: "GITHUB_FORBIDDEN", message: "Must have admin rights to Repository." },
+        ],
+      }),
+    );
+    const { vm } = renderVm();
+    await act(async () => vm().dispatch());
+    expect(vm().status).toBe("failed");
+    expect(vm().error?.message).toBe("Playwright could not be started in any repository.");
+    expect(vm().error?.failures).toEqual([
+      "logistics2cicd-fe — Must have admin rights to Repository.",
+      "logistics2cicd-be — Must have admin rights to Repository.",
+    ]);
+  });
+
+  it("shows the server's message for a 403 on a Project run, with no role wording", async () => {
+    repo.dispatchAutomation.mockRejectedValue(
+      new ApiError("x", 403, {
+        message: "GitHub refused to start the workflow in every repository.",
+        failed: [{ projectId: "proj-fe", repoFullName: "tone/logistics2cicd-fe", message: "no write access" }],
+      }),
+    );
+    const { vm } = renderVm();
+    await act(async () => vm().dispatch());
+    expect(vm().error?.message).toBe("GitHub refused to start the workflow in every repository.");
+    expect(vm().error?.failures).toEqual(["logistics2cicd-fe — no write access"]);
+  });
+
   it("asks the viewer to sign in again on GITHUB_REAUTH", async () => {
     repo.dispatchAutomation.mockRejectedValue(new ApiError("x", 409, { code: "GITHUB_REAUTH" }));
     const { vm } = renderVm();

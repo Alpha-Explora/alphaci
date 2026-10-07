@@ -5,7 +5,9 @@ import { CommitCard } from "../../../../../../src/features/projects/detail/views
 import {
   approveProjectVisualChecks,
   getProjectVisualChecks,
+  getVisualImageBlob,
 } from "../../../../../../src/features/projects/detail/data/project-visual-api";
+import { downloadBlob } from "../../../../../../src/shared/browser/download-blob";
 import type {
   VisualChecksResponse,
   VisualSnapshot,
@@ -18,6 +20,11 @@ import { ApiError, getApiBaseUrl } from "../../../../../../src/shared/api/reques
 jest.mock("../../../../../../src/features/projects/detail/data/project-visual-api", () => ({
   getProjectVisualChecks: jest.fn(),
   approveProjectVisualChecks: jest.fn(),
+  getVisualImageBlob: jest.fn(),
+}));
+
+jest.mock("../../../../../../src/shared/browser/download-blob", () => ({
+  downloadBlob: jest.fn(),
 }));
 
 jest.mock("../../../../../../src/features/projects/detail/data/project-workspace-api", () => ({
@@ -28,6 +35,8 @@ jest.mock("../../../../../../src/features/projects/detail/data/project-workspace
 
 const mockedChecks = getProjectVisualChecks as jest.MockedFunction<typeof getProjectVisualChecks>;
 const mockedApprove = approveProjectVisualChecks as jest.MockedFunction<typeof approveProjectVisualChecks>;
+const mockedBlob = getVisualImageBlob as jest.MockedFunction<typeof getVisualImageBlob>;
+const mockedSave = downloadBlob as jest.MockedFunction<typeof downloadBlob>;
 
 const VERIFY_RUN = 77;
 
@@ -147,7 +156,14 @@ async function renderCard(branch = "uat", appRole: AppRole | undefined = "member
     root = createRoot(host);
     root.render(
       <ul>
-        <CommitCard projectId="p1" branch={branch} commit={commit(branch)} title={null} appRole={appRole} />
+        <CommitCard
+          projectId="p1"
+          branch={branch}
+          commit={commit(branch)}
+          title={null}
+          appRole={appRole}
+          repoFullName="Alpha-Explora/logistics2cicd-fe"
+        />
       </ul>,
     );
   });
@@ -222,7 +238,7 @@ describe("Verify stage visual checks", () => {
     expect(host.querySelector(".pipe-passed img")).toBeNull();
     await act(async () => toggle.click());
     const rows = [...host.querySelectorAll(".pipe-passed__row")];
-    expect(rows.map((row) => row.textContent)).toEqual(["a.png", "b.png"]);
+    expect(rows.map((row) => row.querySelector(".pipe-passed__name")?.textContent)).toEqual(["a.png", "b.png"]);
     expect(rows[0]!.querySelector("img")?.getAttribute("src")).toBe(`${getApiBaseUrl()}${path("actual", "a.png")}`);
   });
 
@@ -399,5 +415,109 @@ describe("approving visual changes", () => {
     await act(async () => button("Retry", panel())!.click());
     await flush();
     expect(cardNames()).toHaveLength(3);
+  });
+});
+
+describe("downloading visual snapshots", () => {
+  function downloadNames(scope: ParentNode = host): string[] {
+    return [...scope.querySelectorAll<HTMLButtonElement>(".pipe-download")].map(
+      (node) => node.getAttribute("aria-label") ?? "",
+    );
+  }
+
+  function download(label: string): HTMLButtonElement {
+    return host.querySelector<HTMLButtonElement>(`.pipe-download[aria-label="${label}"]`)!;
+  }
+
+  it("offers one named download per image shown: reference, new and difference on a changed card", async () => {
+    await show("uat", checks([shot("home-desktop.png", "changed")]));
+    const card = host.querySelector(".pipe-shot")!;
+    expect(downloadNames(card)).toEqual([
+      "Download reference image of home-desktop.png",
+      "Download new image of home-desktop.png",
+      "Download difference image of home-desktop.png",
+    ]);
+    expect(card.querySelector(".pipe-download")?.textContent).toBe("Download");
+  });
+
+  it("offers only the new image on a new snapshot, and none for an image the snapshot lacks", async () => {
+    await show("uat", checks([shot("signup.png", "new"), shot("odd.png", "changed", { diffUrl: null })]));
+    const cards = [...host.querySelectorAll(".pipe-shot")];
+    expect(downloadNames(cards.find((card) => card.textContent?.includes("signup.png")))).toEqual([
+      "Download new image of signup.png",
+    ]);
+    expect(downloadNames(cards.find((card) => card.textContent?.includes("odd.png")))).toEqual([
+      "Download reference image of odd.png",
+      "Download new image of odd.png",
+    ]);
+  });
+
+  it("offers reference and new downloads under the comparison slider", async () => {
+    await show("uat", checks([shot("home-desktop.png", "changed")]));
+    await act(async () => button("Compare")!.click());
+    expect(downloadNames(host.querySelector(".pipe-compare")!)).toEqual([
+      "Download reference image of home-desktop.png",
+      "Download new image of home-desktop.png",
+    ]);
+  });
+
+  it("offers a download for each unchanged screenshot once the list is opened", async () => {
+    await show("uat", checks([shot("a.png", "passed"), shot("b.png", "passed")]));
+    expect(host.querySelector(".pipe-download")).toBeNull();
+    await act(async () => button("2 unchanged screenshots")!.click());
+    expect(downloadNames(host.querySelector(".pipe-passed")!)).toEqual([
+      "Download new image of a.png",
+      "Download new image of b.png",
+    ]);
+  });
+
+  it("fetches the image through the data layer and saves it under the rule's file name", async () => {
+    const blob = new Blob(["png"], { type: "image/png" });
+    mockedBlob.mockResolvedValue(blob);
+    await show("uat", checks([shot("home-desktop.png", "changed")]));
+    await act(async () => download("Download difference image of home-desktop.png").click());
+    await flush();
+    expect(mockedBlob).toHaveBeenCalledWith(`${getApiBaseUrl()}${path("diff", "home-desktop.png")}`);
+    expect(mockedSave).toHaveBeenCalledWith("logistics2cicd-fe-uat-home-desktop-diff.png", blob);
+    expect(host.querySelector(".pipe-visual [role='alert']")).toBeNull();
+  });
+
+  it("disables the button while its image is being fetched, then re-enables it", async () => {
+    let finish: (value: Blob) => void = () => undefined;
+    mockedBlob.mockReturnValue(new Promise<Blob>((done) => (finish = done)));
+    await show("uat", checks([shot("home-desktop.png", "changed")]));
+    const label = "Download reference image of home-desktop.png";
+    await act(async () => download(label).click());
+    expect(download(label).disabled).toBe(true);
+    expect(download(label).getAttribute("aria-busy")).toBe("true");
+    expect(download(label).textContent).toBe("Downloading…");
+    expect(download("Download new image of home-desktop.png").disabled).toBe(false);
+
+    await act(async () => download(label).click());
+    expect(mockedBlob).toHaveBeenCalledTimes(1);
+
+    await act(async () => finish(new Blob(["x"])));
+    await flush();
+    expect(download(label).disabled).toBe(false);
+    expect(mockedSave).toHaveBeenCalledTimes(1);
+  });
+
+  it("says which image failed to download and lets the reader try again", async () => {
+    mockedBlob.mockRejectedValueOnce(new ApiError("nope", 500));
+    await show("uat", checks([shot("home-desktop.png", "changed")]));
+    const label = "Download new image of home-desktop.png";
+    await act(async () => download(label).click());
+    await flush();
+    expect(mockedSave).not.toHaveBeenCalled();
+    expect(host.querySelector(".pipe-visual [role='alert']")?.textContent).toBe(
+      "The new image of home-desktop.png could not be downloaded. Try again.",
+    );
+    expect(download(label).disabled).toBe(false);
+
+    mockedBlob.mockResolvedValueOnce(new Blob(["png"]));
+    await act(async () => download(label).click());
+    await flush();
+    expect(mockedSave).toHaveBeenCalledWith("logistics2cicd-fe-uat-home-desktop-new.png", expect.any(Blob));
+    expect(host.querySelector(".pipe-visual [role='alert']")).toBeNull();
   });
 });

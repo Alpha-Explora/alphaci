@@ -97,6 +97,70 @@
   outline-offset: 2px;
 }
 
+/* Saving an image as a file: quiet until needed, same density as Approve. */
+.pipe-download {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 0.3rem;
+  min-height: 1.75rem;
+  padding: 0.15rem 0.55rem;
+  border: 1px solid var(--border);
+  border-radius: 0.4rem;
+  background: transparent;
+  font: inherit;
+  font-size: 0.72rem;
+  font-weight: 650;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition:
+    background-color 140ms ease-out,
+    border-color 140ms ease-out,
+    color 140ms ease-out,
+    transform 140ms ease-out;
+}
+
+.pipe-download:hover:not(:disabled) {
+  border-color: var(--border-brand);
+  background: var(--brand-light);
+  color: var(--text-primary);
+}
+
+.pipe-download:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+.pipe-download:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.pipe-download[aria-busy="true"] {
+  cursor: progress;
+}
+
+.pipe-download:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
+.pipe-compare__downloads {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-top: 0.4rem;
+}
+
+.pipe-passed__row .pipe-download {
+  margin-left: auto;
+}
+
+@media (pointer: coarse) {
+  .pipe-download {
+    min-height: 2.75rem;
+  }
+}
+
 /* ── One changed or new screenshot ──────────────────────────────────────── */
 
 .pipe-shot {
@@ -184,6 +248,14 @@
   gap: 0.25rem;
   min-width: 0;
   margin: 0;
+}
+
+.pipe-pane__caption {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  min-width: 0;
 }
 
 .pipe-pane__label {
@@ -354,7 +426,8 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .pipe-approve {
+  .pipe-approve,
+  .pipe-download {
     transition: none;
   }
 }

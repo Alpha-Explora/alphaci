@@ -36,6 +36,14 @@ export function ChevronIcon() {
   );
 }
 
+export function DownloadIcon() {
+  return (
+    <Glyph size={14}>
+      <path d="M8 2.5v7M5 6.8l3 3 3-3M3 12.5h10" />
+    </Glyph>
+  );
+}
+
 export function PromoteIcon() {
   return (
     <Glyph size={14}>

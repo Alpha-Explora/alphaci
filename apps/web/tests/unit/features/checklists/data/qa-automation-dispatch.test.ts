@@ -51,7 +51,8 @@ describe("qaRunsRepository.dispatchAutomation", () => {
     [409, { statusCode: 409, code: "GITHUB_REAUTH", message: "GitHub token expired" }, true, /sign in again/],
     [409, { statusCode: 409, code: "VERIFY_WORKFLOW_MISSING", message: "No verify workflow" }, false, /no verify workflow/],
     [409, { statusCode: 409, message: "This QA run is signed off." }, false, /This QA run is signed off\./],
-    [403, { statusCode: 403, message: "Forbidden" }, false, /role cannot start/],
+    [403, { statusCode: 403, message: "Forbidden" }, false, /^GitHub refused to start Playwright\.$/],
+    [403, { statusCode: 403, message: "Resource not accessible by integration" }, false, /^Resource not accessible by integration$/],
     [404, { statusCode: 404, message: "Not Found" }, false, /no longer exists/],
   ])("surfaces a %s as a typed ApiError the rules can read", async (status, body, signIn, message) => {
     fetchMock.mockResolvedValueOnce(reply(status, body));

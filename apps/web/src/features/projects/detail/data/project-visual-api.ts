@@ -1,4 +1,4 @@
-import { request } from "@/shared/api/request";
+import { getApiBaseUrl, request, requestBlob } from "@/shared/api/request";
 
 import type {
   VisualApproveInput,
@@ -43,4 +43,17 @@ export function approveProjectVisualChecks(projectId: string, input: VisualAppro
     method: "POST",
     body: JSON.stringify(input),
   });
+}
+
+/**
+ * One screenshot's bytes, for saving to disk. `url` is a full image URL the
+ * model resolved (API base + path); it is fetched with the session cookie
+ * exactly as the `<img>` that shows it is, so this works whether the API is
+ * same-origin or not. A URL outside the API base is refused rather than
+ * fetched with credentials.
+ */
+export function getVisualImageBlob(url: string): Promise<Blob> {
+  const base = getApiBaseUrl().replace(/\/+$/, "");
+  if (!url.startsWith(`${base}/`)) return Promise.reject(new Error("Not an API image URL."));
+  return requestBlob(url.slice(base.length));
 }

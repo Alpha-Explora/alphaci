@@ -240,6 +240,30 @@
   color: var(--warning);
 }
 
+.qa-auto__failures {
+  margin: 0;
+  font-size: 0.76rem;
+  line-height: 1.45;
+}
+
+.qa-auto__failures-lead {
+  margin: 0 0 0.2rem;
+  font-weight: 600;
+}
+
+.qa-auto__failures ul {
+  margin: 0;
+  padding-left: 1.1rem;
+  overflow-wrap: anywhere;
+}
+
+.qa-auto__live > .qa-auto__failures {
+  padding: 0.5rem 0.65rem;
+  border: 1px solid var(--border-amber);
+  border-radius: 0.5rem;
+  background: var(--accent-amber-light);
+}
+
 .qa-auto__watching {
   color: var(--text-secondary);
 }
