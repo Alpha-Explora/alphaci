@@ -64,6 +64,11 @@ export function canOpenPoStudio(appRole: AppRole | null | undefined): boolean {
 
 export type StudioTab = Extract<ProjectDetailTab, "qa" | "po">;
 
+/** QA Studio or PO Studio: the tabs whose preview controls sit in the tab row. */
+export function isStudioTab(tab: ProjectDetailTab): tab is StudioTab {
+  return tab === "qa" || tab === "po";
+}
+
 /**
  * The studio a viewer works in: the QA Team's QA Studio, a Product owner's PO
  * Studio; an admin has both and lands on QA Studio. Null for everyone else.

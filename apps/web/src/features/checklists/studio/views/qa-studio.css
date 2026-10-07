@@ -13,6 +13,10 @@
   --qa-pane-columns: minmax(0, 1fr) min(26rem, 40%);
 
   display: grid;
+  /* One column that may shrink below its content: with the implicit auto
+     track the panes' min-content (the toolbar, the device) set the studio's
+     width and pushed it past a phone's screen. */
+  grid-template-columns: minmax(0, 1fr);
   gap: 1rem;
   min-width: 0;
 }
@@ -44,14 +48,6 @@
   min-width: 0;
 }
 
-.qa-toolbar__env {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  flex: 0 1 auto;
-  min-width: 0;
-}
-
 .qa-toolbar__label {
   font-size: 0.66rem;
   font-weight: 700;
@@ -80,6 +76,49 @@
   margin-left: auto;
 }
 
+/* Full screen (and a studio with no tab row to host it): a slim bar atop the
+   studio, so Exit full screen and the rest stay in reach. */
+.qa-toolbar[data-placement="studio"] {
+  padding: 0.4rem 0.6rem;
+}
+
+/* Docked, the controls sit in the project page's tab row: no box of their
+   own, sized to the tabs (about 1.9rem), and the actions straight after the
+   size controls — the tabs, not the row's end, are on their right. */
+.qa-toolbar[data-placement="tab-row"] {
+  display: block;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.qa-toolbar[data-placement="tab-row"] .qa-toolbar__row {
+  gap: 0.4rem;
+}
+
+.qa-toolbar[data-placement="tab-row"] .qa-toolbar__actions {
+  gap: 0.3rem;
+  margin-left: 0;
+}
+
+.qa-toolbar[data-placement="tab-row"] .qa-toolbar__select {
+  padding-block: 0.28rem;
+}
+
+.qa-toolbar[data-placement="tab-row"] .qa-device-switch__option {
+  min-height: 1.65rem;
+}
+
+.qa-toolbar[data-placement="tab-row"] .qa-icon-button {
+  width: 2rem;
+  height: 2rem;
+}
+
+.qa-toolbar[data-placement="tab-row"] .qa-layout-switch__option {
+  height: 1.65rem;
+}
+
 .qa-toolbar__error {
   margin: 0;
 }
@@ -93,12 +132,14 @@
   background: var(--bg-soft);
 }
 
+/* Icon-only: the class name is the accessible name and the tooltip. */
 .qa-device-switch__option {
   display: inline-flex;
   align-items: center;
-  gap: 0.35rem;
+  justify-content: center;
+  min-width: 2rem;
   min-height: 2rem;
-  padding: 0.3rem 0.6rem;
+  padding: 0.3rem 0.5rem;
   border: 0;
   border-radius: 0.45rem;
   background: transparent;
@@ -248,64 +289,6 @@
   color: var(--warning);
   font-size: 0.74rem;
   font-weight: 600;
-}
-
-/* The environment is fixed to the QA branch: a chip, not a picker. */
-.qa-toolbar__env-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  min-height: 2rem;
-  padding: 0.25rem 0.65rem;
-  border: 1px solid var(--border-strong);
-  border-radius: var(--radius-pill);
-  background: var(--bg-soft);
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  font-size: 0.78rem;
-  color: var(--text-primary);
-  white-space: nowrap;
-}
-
-.qa-toolbar__env-chip > .qa-glyph {
-  color: var(--brand);
-}
-
-/* Rotate: a sibling of the device switch, at the same height. */
-.qa-rotate {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  min-height: 2.5rem;
-  padding: 0.3rem 0.7rem;
-  border: 1px solid var(--border-strong);
-  border-radius: 0.6rem;
-  background: var(--bg-soft);
-  color: var(--text-secondary);
-  font: inherit;
-  font-size: 0.78rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition:
-    color 0.16s ease,
-    border-color 0.16s ease;
-}
-
-.qa-rotate:hover:not(:disabled) {
-  border-color: var(--border-brand);
-  color: var(--text-primary);
-}
-
-.qa-rotate:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
-}
-
-.qa-rotate__state {
-  padding-left: 0.4rem;
-  border-left: 1px solid var(--border-strong);
-  font-size: 0.7rem;
-  font-weight: 500;
-  color: var(--text-muted);
 }
 
 /* Copy link: the icon swap is the sighted confirmation, and it is coloured too. */
@@ -1690,7 +1673,6 @@
 
 .qa-drawer__button:focus-visible,
 .qa-launcher:focus-visible,
-.qa-rotate:focus-visible,
 .qa-icon-button:focus-visible {
   outline: 2px solid var(--brand);
   outline-offset: 2px;
@@ -1812,16 +1794,15 @@
     height: 28rem;
   }
 
-  .qa-toolbar__env {
+  .qa-toolbar .qa-toolbar__env {
     flex: 1 1 100%;
+    max-width: none;
   }
 
-  .qa-toolbar__env .qa-toolbar__select {
-    flex: 1 1 auto;
-  }
-
+  /* The icon switch keeps its size; the resolution takes the rest of its
+     line, and the actions wrap under them: two lines, not three. */
   .qa-resolution {
-    flex: 1 1 100%;
+    flex: 1 1 9rem;
   }
 
   .qa-toolbar .qa-resolution__select {
@@ -1829,18 +1810,6 @@
     max-width: none;
   }
 
-  /* Rotate shares the device row; the switch takes what is left. */
-  .qa-device-switch {
-    flex: 1 1 auto;
-  }
-
-  .qa-device-switch__option {
-    flex: 1 1 0;
-    justify-content: center;
-    padding-inline: 0.4rem;
-  }
-
-  .qa-rotate__state,
   .qa-device__size {
     display: none;
   }
@@ -1896,7 +1865,6 @@
   .qa-icon-button,
   .qa-run-item,
   .qa-verdict,
-  .qa-rotate,
   .qa-drawer__button,
   .qa-launcher {
     transition: none;

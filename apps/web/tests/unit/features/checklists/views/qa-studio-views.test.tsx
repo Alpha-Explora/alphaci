@@ -141,8 +141,13 @@ function resolutionSelect(container: HTMLElement): HTMLSelectElement {
 
 function radio(container: HTMLElement, name: string): HTMLButtonElement {
   return [...container.querySelectorAll<HTMLButtonElement>('.qa-device-switch [role="radio"]')].find(
-    (button) => button.textContent === name,
+    (button) => button.getAttribute("aria-label") === name,
   )!;
+}
+
+/** Rotate is an icon: its name says where it turns ("Rotate to landscape"). */
+function rotateButton(container: HTMLElement): HTMLButtonElement | null {
+  return container.querySelector<HTMLButtonElement>('button[aria-label^="Rotate to "]');
 }
 
 function customInput(container: HTMLElement, label: string): HTMLInputElement {
@@ -574,9 +579,10 @@ describe("QA Studio — uat only", () => {
       previews: [preview({ branch: "main", isProduction: true, previewUrl: "https://main.example.com" }), preview()],
     });
     const container = await studio("qa");
-    expect(container.querySelector(".qa-toolbar__env-chip")?.textContent).toBe("uat");
-    // No picker: there is nothing else to pick.
-    expect(container.querySelector(".qa-toolbar__env select")).toBeNull();
+    // Neither a chip nor a label: the studio previews uat only, so there is nothing to name or pick.
+    expect(container.querySelector(".qa-toolbar__env")).toBeNull();
+    expect(container.querySelector(".qa-toolbar .qa-toolbar__label")).toBeNull();
+    expect(container.querySelector(".qa-toolbar")?.textContent).not.toContain("Environment");
     expect(container.querySelector("iframe")?.getAttribute("src")).toBe("https://shop.example.com/");
     expect(runs.current).toHaveBeenCalledTimes(1);
     expect(runs.current).toHaveBeenCalledWith("project-1", { branch: "uat", checklistId: "cl-1" });
@@ -595,8 +601,8 @@ describe("QA Studio — uat only", () => {
 });
 
 function radioNamed(container: HTMLElement, name: string): HTMLButtonElement {
-  const radio = [...container.querySelectorAll<HTMLButtonElement>('[role="radio"]')].find((node) =>
-    node.textContent?.includes(name),
+  const radio = [...container.querySelectorAll<HTMLButtonElement>('[role="radio"]')].find(
+    (node) => node.getAttribute("aria-label") === name,
   );
   if (!radio) throw new Error(`no ${name} radio`);
   return radio;
@@ -625,11 +631,11 @@ describe("QA Studio — device viewports and full screen", () => {
     await click(radioNamed(container, "Tablet"));
     expect(device?.getAttribute("data-frame")).toBe("tablet");
     expect(device?.getAttribute("data-orientation")).toBe("portrait");
-    await click(buttonNamed(container, "Rotate"));
+    await click(rotateButton(container));
     expect(device?.getAttribute("data-orientation")).toBe("landscape");
     await click(radioNamed(container, "Mobile"));
     expect(device?.getAttribute("data-frame")).toBe("phone");
-    await click(buttonNamed(container, "Rotate"));
+    await click(rotateButton(container));
     expect(device?.getAttribute("data-orientation")).toBe("portrait");
     await click(fullScreenButton(container));
     expect(container.querySelector(".qa-studio")?.getAttribute("data-full-screen")).toBe("true");
@@ -651,9 +657,10 @@ describe("QA Studio — device viewports and full screen", () => {
     expect(device.style.getPropertyValue("--qa-screen-h")).toBe("900");
     expect(container.querySelector(".qa-device__size")?.textContent).toBe("1440 × 900");
     expect(container.querySelector(".qa-device__address")?.textContent).toBe("shop.example.com");
-    expect(buttonNamed(container, "Rotate")?.disabled).toBe(true);
+    // Desktop does not turn, so it has no Rotate at all rather than a disabled one.
+    expect(rotateButton(container)).toBeNull();
     await click(radioNamed(container, "Tablet"));
-    await click(buttonNamed(container, "Rotate"));
+    await click(rotateButton(container));
     expect(device.style.getPropertyValue("--qa-screen-w")).toBe("1024");
     expect(device.style.getPropertyValue("--qa-screen-h")).toBe("768");
     expect(container.querySelector(".qa-preview__device")?.textContent).toBe("Tablet · 1024 × 768 · Landscape");
@@ -835,5 +842,128 @@ describe("QA Studio — layouts", () => {
     await act(async () => observer.resize(700, 800));
     expect(Number(device.style.getPropertyValue("--qa-scale"))).toBeCloseTo(700 / 1440, 5);
     expect(container.querySelector(".qa-preview__scale")?.textContent).toBe("Scaled to 49%");
+  });
+});
+
+describe("QA Studio — compact controls", () => {
+  it("draws the device classes as named icons and offers Rotate only for the ones that turn", async () => {
+    setup({ run: runAs("qa", { items: ITEMS }) });
+    const container = await studio("qa");
+    for (const name of ["Desktop", "Tablet", "Mobile"]) {
+      const option = radio(container, name);
+      expect(option.getAttribute("title")).toBe(name);
+      expect(option.textContent).toBe("");
+      expect(option.querySelector("svg")).not.toBeNull();
+    }
+    expect(rotateButton(container)).toBeNull();
+
+    await click(radio(container, "Tablet"));
+    expect(rotateButton(container)?.getAttribute("title")).toBe("Rotate to landscape");
+    await click(rotateButton(container));
+    expect(rotateButton(container)?.getAttribute("aria-label")).toBe("Rotate to portrait");
+    await click(radio(container, "Mobile"));
+    expect(rotateButton(container)).not.toBeNull();
+    await click(radio(container, "Desktop"));
+    expect(rotateButton(container)).toBeNull();
+  });
+
+  it("shows the width and height fields only while Custom… is chosen", async () => {
+    setup({ run: runAs("qa", { items: ITEMS }) });
+    const container = await studio("qa");
+    expect(container.querySelector(".qa-toolbar input")).toBeNull();
+    await chooseOption(resolutionSelect(container), "custom");
+    expect(container.querySelectorAll(".qa-toolbar input[type='number']")).toHaveLength(2);
+    await chooseOption(resolutionSelect(container), "1920x1080");
+    expect(container.querySelector(".qa-toolbar input")).toBeNull();
+  });
+
+  it("keeps a picker, unlabelled but named, only when two targets deploy uat", async () => {
+    setup({
+      run: runAs("qa", { items: ITEMS }),
+      previews: [preview(), preview({ targetId: "admin", targetName: "admin-web", previewUrl: "https://admin.example.com" })],
+    });
+    const container = await studio("qa");
+    const picker = container.querySelector<HTMLSelectElement>("select.qa-toolbar__env")!;
+    expect(picker.getAttribute("aria-label")).toBe("Environment");
+    expect([...picker.options].map((option) => option.textContent)).toEqual([
+      "uat · storefront-web",
+      "uat · admin-web",
+    ]);
+    expect(container.querySelector(".qa-toolbar .qa-toolbar__label")).toBeNull();
+    await chooseOption(picker, "admin:uat");
+    expect(container.querySelector("iframe")?.getAttribute("src")).toBe("https://admin.example.com/");
+  });
+});
+
+/** A stand-in for the project page's tab row: the element the studio portals its toolbar into. */
+function tabRowSlot(): HTMLElement {
+  const slot = document.createElement("div");
+  slot.className = "project-studio-controls";
+  document.body.appendChild(slot);
+  return slot;
+}
+
+describe("QA Studio — controls in the tab row", () => {
+  it("renders the toolbar in the tab row's slot, borderless, and none inside the studio", async () => {
+    setup({ run: runAs("qa", { items: ITEMS }) });
+    const slot = tabRowSlot();
+    const container = await render(<QaStudioPanel projectId="project-1" appRole="qa" toolbarSlot={slot} />);
+    const toolbar = slot.querySelector(".qa-toolbar");
+    expect(toolbar?.getAttribute("data-placement")).toBe("tab-row");
+    expect(toolbar?.getAttribute("aria-label")).toBe("Preview controls");
+    expect(container.querySelector(".qa-toolbar")).toBeNull();
+    expect(document.querySelectorAll(".qa-toolbar")).toHaveLength(1);
+  });
+
+  it("drives the one preview from the tab row: the same ViewModel, never a copy", async () => {
+    setup({ run: runAs("qa", { items: ITEMS }) });
+    const slot = tabRowSlot();
+    const container = await render(<QaStudioPanel projectId="project-1" appRole="qa" toolbarSlot={slot} />);
+    const device = container.querySelector(".qa-device")!;
+    const frame = container.querySelector("iframe");
+
+    await click(radio(slot, "Tablet"));
+    expect(device.getAttribute("data-frame")).toBe("tablet");
+    await click(rotateButton(slot));
+    expect(device.getAttribute("data-orientation")).toBe("landscape");
+    await chooseOption(resolutionSelect(slot), "820x1180");
+    expect(container.querySelector(".qa-preview__device")?.textContent).toBe("Tablet · 1180 × 820 · Landscape");
+    await click(slot.querySelector('button[aria-label="Split"]'));
+    expect(container.querySelector(".qa-studio")?.getAttribute("data-layout")).toBe("split");
+    expect(container.querySelector("iframe")).toBe(frame);
+  });
+
+  it("brings the controls inside the studio in full screen, and focus with them, then back", async () => {
+    setup({ run: runAs("qa", { items: ITEMS }) });
+    const slot = tabRowSlot();
+    const container = await render(<QaStudioPanel projectId="project-1" appRole="qa" toolbarSlot={slot} />);
+    const studioRoot = container.querySelector(".qa-studio")!;
+    const toggle = fullScreenButton(slot);
+    toggle.focus();
+
+    await click(toggle);
+    expect(studioRoot.getAttribute("data-full-screen")).toBe("true");
+    expect(slot.childElementCount).toBe(0);
+    const bar = studioRoot.querySelector(".qa-toolbar");
+    expect(bar?.getAttribute("data-placement")).toBe("studio");
+    expect(studioRoot.firstElementChild).toBe(bar);
+    // The pressed toggle went with the tab row; its twin in the bar has focus.
+    expect(document.activeElement).toBe(fullScreenButton(container));
+    expect(fullScreenButton(container).getAttribute("aria-pressed")).toBe("true");
+
+    // The device chosen in the tab row is still the device here: one ViewModel.
+    await click(radio(container, "Mobile"));
+    await click(fullScreenButton(container));
+    expect(studioRoot.getAttribute("data-full-screen")).toBe("false");
+    expect(container.querySelector(".qa-toolbar")).toBeNull();
+    expect(radio(slot, "Mobile").getAttribute("aria-checked")).toBe("true");
+    expect(document.activeElement).toBe(fullScreenButton(slot));
+  });
+
+  it("draws nothing while the slot is on its way, rather than a toolbar that jumps", async () => {
+    setup({ run: runAs("qa", { items: ITEMS }) });
+    await render(<QaStudioPanel projectId="project-1" appRole="qa" toolbarSlot={null} />);
+    expect(document.querySelector(".qa-toolbar")).toBeNull();
+    expect(document.querySelector("iframe")).not.toBeNull();
   });
 });

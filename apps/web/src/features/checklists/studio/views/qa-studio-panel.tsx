@@ -3,6 +3,7 @@
 import "./qa-studio.css";
 
 import { useId, type ReactNode, type Ref } from "react";
+import { createPortal } from "react-dom";
 
 import type { AppRole } from "@/shared/api/contracts";
 
@@ -29,7 +30,7 @@ import { ProjectRunPanel } from "./project-run-panel";
 import { PromotionCard } from "./promotion-card";
 import { RunPanel } from "./run-panel";
 import { ChecklistIcon, DockIcon, MinimizeIcon, SwapIcon } from "./studio-icons";
-import { StudioToolbar } from "./studio-toolbar";
+import { StudioToolbar, type StudioToolbarPlacement } from "./studio-toolbar";
 
 function StudioNotice({
   title,
@@ -415,6 +416,47 @@ function StudioColumn({
   );
 }
 
+/**
+ * Where the one toolbar is drawn. Full screen covers the tab row, so the
+ * controls come inside the studio; docked they go to the page's tab row when
+ * it offers a slot. `undefined`: no host slot at all (the studio alone), so
+ * inside the studio as well. `null`: the slot is on its way (it mounts in the
+ * same commit as this panel), so nothing for that one frame rather than a
+ * toolbar that jumps.
+ */
+function toolbarPlacement(
+  isFullScreen: boolean,
+  slot: HTMLElement | null | undefined,
+): StudioToolbarPlacement | "pending" {
+  if (isFullScreen || slot === undefined) return "studio";
+  return slot ? "tab-row" : "pending";
+}
+
+/**
+ * The studio's controls, in one of two places but always ONE toolbar over the
+ * ONE viewport ViewModel: in the tab row (portalled into the slot the project
+ * page renders there) while docked, or as a slim bar atop the studio in full
+ * screen. Switching places remounts only these controls; the frame and the run
+ * column never move.
+ */
+function StudioControls({
+  vm,
+  commit,
+  fullScreenRef,
+  slot,
+}: Readonly<{
+  vm: StudioViewportViewModel;
+  commit: CommitChip;
+  fullScreenRef: Ref<HTMLButtonElement>;
+  slot: HTMLElement | null | undefined;
+}>) {
+  if (vm.environments.length === 0) return null;
+  const placement = toolbarPlacement(vm.isFullScreen, slot);
+  if (placement === "pending") return null;
+  const toolbar = <StudioToolbar vm={vm} commit={commit} fullScreenRef={fullScreenRef} placement={placement} />;
+  return placement === "tab-row" && slot ? createPortal(toolbar, slot) : toolbar;
+}
+
 /** Loading reserves the frame's height; a message sizes to itself. */
 function previewFramed(vm: StudioViewportViewModel): "true" | "false" {
   return vm.status === "loading" || vm.canFrame ? "true" : "false";
@@ -438,6 +480,14 @@ function previewFramed(vm: StudioViewportViewModel): "true" | "false" {
  * and automation polling. Minimizing only hides it. Nothing is portalled: the
  * theme tokens are scoped to the dashboard shell, and the sign-off dialog
  * needs the viewport, not a drawer, as its containing block.
+ *
+ * The one exception is the toolbar, and only into `toolbarSlot`: an element
+ * the project page renders in its own tab row, inside the same dashboard shell
+ * (so the theme tokens apply). The controls belong beside the tabs, but their
+ * state is this studio's: the viewport ViewModel, the commit warning from the
+ * run lookup and the focus hand-off all live here, and mount and unmount with
+ * the tab. A portal keeps that single owner instead of lifting half the studio
+ * into the project page. In full screen the toolbar comes back inside.
  */
 export function QaStudioPanel({
   projectId,
@@ -446,6 +496,7 @@ export function QaStudioPanel({
   qaScope = REPOSITORY_SCOPE,
   studio = "qa",
   onOpenQaRun,
+  toolbarSlot,
 }: Readonly<{
   projectId: string;
   appRole: AppRole | null | undefined;
@@ -461,6 +512,11 @@ export function QaStudioPanel({
   studio?: StudioKind;
   /** PO Studio's way to the Project's QA run, while the release candidate is locked. */
   onOpenQaRun?: () => void;
+  /**
+   * Where the docked toolbar goes: an element in the project page's tab row.
+   * Omitted, the toolbar stays atop the studio; null, the slot is not mounted yet.
+   */
+  toolbarSlot?: HTMLElement | null;
 }>) {
   const viewport = useStudioViewportViewModel({ projectId, enabled: Boolean(projectId) });
   const runs = useStudioRunsViewModel({ projectId, appRole, qaScope, branch: viewport.environment?.branch ?? null });
@@ -486,9 +542,7 @@ export function QaStudioPanel({
       data-checklist={mode}
       data-side={viewport.floatingSide}
     >
-      {viewport.environments.length > 0 ? (
-        <StudioToolbar vm={viewport} commit={snapshot.commit} fullScreenRef={focus.toggleRef} />
-      ) : null}
+      <StudioControls vm={viewport} commit={snapshot.commit} fullScreenRef={focus.toggleRef} slot={toolbarSlot} />
       <div className="qa-studio__panes">
         <div className="qa-studio__preview" data-framed={previewFramed(viewport)}>
           <PreviewColumn vm={viewport} />

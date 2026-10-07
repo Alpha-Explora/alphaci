@@ -2,7 +2,7 @@
 
 import "./project-repo-switch.css";
 
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 
 import { qaScopeFromFolder, withProjectOnPage, type QaScope } from "@/features/checklists";
@@ -11,7 +11,7 @@ import { projectStatusVariant } from "../../model/projects-rules";
 import type { ProvisionedProject } from "@/features/projects";
 import type { AppRole } from "@/shared/api/contracts";
 import { cloneValue } from "../model/clone-rules";
-import { seesProjectAsProduct, type ProjectDetailTab } from "../model/project-detail-tab-rules";
+import { isStudioTab, seesProjectAsProduct, type ProjectDetailTab } from "../model/project-detail-tab-rules";
 import type { ProjectFolderViewModel } from "../view-models/use-project-folder-view-model";
 import { useProjectDetailTabsViewModel } from "../view-models/use-project-detail-tabs-view-model";
 import type { ProjectDetailTabsViewModel } from "../view-models/use-project-detail-tabs-view-model";
@@ -72,6 +72,8 @@ interface ProjectDetailTabPanelProps {
   dangerZone?: ReactNode;
   /** Where this repository's QA happens: its Project, or the repository itself. */
   qaScope: QaScope;
+  /** QA / PO Studio: the element in the tab row their preview controls render into. */
+  studioToolbarSlot: HTMLElement | null;
 }
 
 const TAB_PANELS: Record<
@@ -123,7 +125,13 @@ export function ProjectDetailTabs({
       trailing={repoSwitchFor(folder, productView, vm)}
     />
   );
-  const headerTabs = productView ? <div data-tour="project-detail-tabs">{tabs}</div> : undefined;
+  // QA / PO Studio's preview controls: an empty slot the studio portals its
+  // toolbar into. The QA Team and Product owners have it at the left of their
+  // tab row (their five tabs leave the room); an admin's row is full (eleven
+  // tabs and the repository switch), so the controls get the line under it.
+  const [studioSlot, setStudioSlot] = useState<HTMLDivElement | null>(null);
+  const studioControls = studioControlsSlot(vm.tab, setStudioSlot);
+  const headerTabs = productView ? <TitleRowTabs controls={studioControls} tabs={tabs} /> : undefined;
   const clone = overviewClone(vm.tab, project);
 
   return (
@@ -143,7 +151,12 @@ export function ProjectDetailTabs({
         className="project-sections"
         data-tour={productView ? undefined : "project-detail-tabs"}
       >
-        {productView ? null : tabs}
+        {productView ? null : (
+          <>
+            {tabs}
+            {studioControls}
+          </>
+        )}
         <div className="project-sections__body">
           <OverviewLoadBanner status={vm.status} />
           <OverviewErrorBanner message={vm.error} />
@@ -153,11 +166,43 @@ export function ProjectDetailTabs({
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.18 }}
           >
-            <TabPanel project={project} vm={vm} dangerZone={dangerZone} qaScope={qaScope} />
+            <TabPanel
+              project={project}
+              vm={vm}
+              dangerZone={dangerZone}
+              qaScope={qaScope}
+              studioToolbarSlot={studioSlot}
+            />
           </motion.div>
         </div>
       </div>
     </section>
+  );
+}
+
+/**
+ * Where QA Studio and PO Studio draw their preview controls: an empty element
+ * the studio portals its toolbar into (see QaStudioPanel). No other tab has one.
+ */
+function studioControlsSlot(tab: ProjectDetailTab, ref: (element: HTMLDivElement | null) => void): ReactNode {
+  if (!isStudioTab(tab)) return null;
+  return <div className="project-studio-controls" ref={ref} />;
+}
+
+/**
+ * The QA Team's and Product owners' tab row in the title row: the studio's
+ * controls (on its tabs) at the left, the tabs at the right. Controls first,
+ * so keyboard order follows the one-line row; when the two do not fit, CSS
+ * keeps the tabs on the first line and wraps the controls under them.
+ */
+function TitleRowTabs({ controls, tabs }: Readonly<{ controls: ReactNode; tabs: ReactNode }>) {
+  return (
+    <div className="project-tabs-bar">
+      {controls}
+      <div className="project-tabs-bar__tabs" data-tour="project-detail-tabs">
+        {tabs}
+      </div>
+    </div>
   );
 }
 

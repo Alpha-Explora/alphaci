@@ -292,7 +292,60 @@
   border-left: 0;
 }
 
+/* The page's one column may shrink below its content. With the implicit auto
+ * track a header's tab strip (it scrolls, but its min-content is every tab)
+ * set the column's width and pushed every tab off Overview past a phone's
+ * screen, where the panel clipped it. */
+.project-detail-panel.project-detail-panel--page {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+/* ── Studio controls in the tab row (QA Studio, PO Studio) ──────────────
+ * The studio portals its preview controls into `.project-studio-controls`.
+ * In the title row (QA Team, Product owner) they sit at the left of the five
+ * tabs, one line when both fit. When they do not, the tabs keep the first
+ * line and the controls wrap to a line of their own under them: the bar wraps
+ * in reverse, so the later item (the tabs) takes the top line. No box: the
+ * row's underline is the only rule. The slot is empty until the toolbar
+ * arrives, and in full screen, where the toolbar is inside the studio. */
+.project-tabs-bar {
+  display: flex;
+  flex-wrap: wrap-reverse;
+  align-items: center;
+  align-self: stretch;
+  gap: 0.5rem 1.25rem;
+  min-width: 0;
+}
+
+.project-tabs-bar__tabs {
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 100%;
+  margin-left: auto;
+}
+
+.project-studio-controls {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.project-studio-controls:empty {
+  display: none;
+}
+
+/* An admin's tab row is full (every tab and the repository switch): the
+ * controls take the line under it, closer than the sections' own gap. */
+.project-sections > .project-studio-controls {
+  margin-top: -0.55rem;
+}
+
 @media (max-width: 640px) {
+  /* A phone: the tabs take the full first line and scroll, as before. */
+  .project-tabs-bar__tabs {
+    flex-basis: 100%;
+    margin-left: 0;
+  }
+
   .project-folder-header__aside,
   .project-detail-header__aside {
     align-items: flex-start;
