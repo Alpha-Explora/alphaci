@@ -182,18 +182,36 @@ describe("useQaAutomationViewModel — dispatch", () => {
     const { vm } = renderVm();
     await dispatch(vm);
     expect(vm().status).toBe("failed");
-    expect(vm().error).toEqual({ message: expect.stringMatching(/sign in again/), signIn: true });
+    expect(vm().error).toEqual({ message: expect.stringMatching(/sign in again/), signIn: true, failures: [] });
     expect(vm().signInHref).toBe("/login?next=/projects/p1");
     act(() => vm().dismiss());
     expect(vm().status).toBe("idle");
     expect(vm().error).toBeNull();
   });
 
+  it("shows GitHub's own refusal for a 403 instead of blaming the role", async () => {
+    repo.dispatchAutomation.mockRejectedValue(
+      new ApiError("x", 403, { message: "Resource not accessible by personal access token" }),
+    );
+    const { vm } = renderVm();
+    await dispatch(vm);
+    expect(vm().status).toBe("failed");
+    expect(vm().error?.message).toBe("Resource not accessible by personal access token");
+    expect(vm().failures).toEqual([]);
+  });
+
+  it("falls back to a generic GitHub line when a 403 carries no message", async () => {
+    repo.dispatchAutomation.mockRejectedValue(new ApiError("x", 403, {}));
+    const { vm } = renderVm();
+    await dispatch(vm);
+    expect(vm().error?.message).toBe("GitHub refused to start Playwright.");
+  });
+
   it("explains a missing verify workflow", async () => {
     repo.dispatchAutomation.mockRejectedValue(new ApiError("x", 409, { code: "VERIFY_WORKFLOW_MISSING" }));
     const { vm } = renderVm();
     await dispatch(vm);
-    expect(vm().error).toEqual({ message: expect.stringMatching(/no verify workflow/), signIn: false });
+    expect(vm().error).toEqual({ message: expect.stringMatching(/no verify workflow/), signIn: false, failures: [] });
     expect(vm().confirmation).toBeNull();
   });
 

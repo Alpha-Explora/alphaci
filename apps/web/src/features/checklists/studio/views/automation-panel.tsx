@@ -209,6 +209,21 @@ export function DispatchReason({ vm, id }: Readonly<{ vm: AutomationDispatchCont
   );
 }
 
+/** Per-repository refusals, one "repo — reason" line each. */
+function DispatchFailureList({ lines, lead }: Readonly<{ lines: string[]; lead?: string }>) {
+  if (lines.length === 0) return null;
+  return (
+    <div className="qa-auto__failures">
+      {lead ? <p className="qa-auto__failures-lead">{lead}</p> : null}
+      <ul>
+        {lines.map((line) => (
+          <li key={line}>{line}</li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
 /** Always mounted, so the confirmation is announced when it appears. */
 export function DispatchFeedback({ vm }: Readonly<{ vm: AutomationDispatchControls }>) {
   return (
@@ -229,10 +244,12 @@ export function DispatchFeedback({ vm }: Readonly<{ vm: AutomationDispatchContro
             <span>{vm.warning}</span>
           </p>
         ) : null}
+        <DispatchFailureList lines={vm.failures} lead="Not started in:" />
       </div>
       {vm.error ? (
         <div className="qa-inline-alert qa-auto__error" role="alert">
           <p>{vm.error.message}</p>
+          <DispatchFailureList lines={vm.error.failures} />
           {vm.error.signIn ? (
             <a className="ghost-button qa-auto__signin" href={vm.signInHref}>
               Sign in again

@@ -144,6 +144,7 @@ export function PipelineRunsTab({
           section={section}
           viewMode={viewMode}
           appRole={appRole}
+          repoFullName={runsView.repoFullName}
         />
       ))}
     </div>
@@ -156,8 +157,10 @@ function BranchSection({
   section,
   viewMode,
   appRole,
+  repoFullName,
 }: {
   projectId: string;
+  repoFullName: string | null;
   section: BranchRunSection<WorkflowRunSummary>;
   viewMode: RunsViewMode;
   appRole?: AppRole;
@@ -192,6 +195,7 @@ function BranchSection({
               title={titles.get(commit.commitSha) ?? null}
               viewMode={viewMode}
               appRole={appRole}
+              repoFullName={repoFullName}
             />
           ))}
         </ul>

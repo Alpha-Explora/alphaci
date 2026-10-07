@@ -44,6 +44,8 @@ export interface AutomationDispatchControls {
   confirmation: string | null;
   /** When the workflow will test a newer commit than this run's. */
   warning: string | null;
+  /** Repositories GitHub refused while others started: "repo — reason" lines. */
+  failures: string[];
   error: QaDispatchError | null;
   signInHref: string;
   dispatch: () => Promise<void>;
@@ -125,6 +127,7 @@ export function useQaAutomationViewModel(options: {
     blockedReason,
     confirmation: started ? dispatchConfirmation(started, run) : null,
     warning: started ? dispatchMovedWarning(started, run) : null,
+    failures: [],
     error: outcome.status === "failed" ? outcome.error : null,
     signInHref: qaSignInHref(projectId),
     dispatch,

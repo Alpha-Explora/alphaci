@@ -8,6 +8,7 @@ import {
   playwrightPanelState,
   playwrightTabStatus,
   projectDispatchConfirmation,
+  projectDispatchFailures,
   projectDispatchWarning,
   projectPlaywrightResults,
   projectVerifySettledSince,
@@ -253,8 +254,9 @@ describe("Playwright tab — Run Playwright on a Project run", () => {
       "Playwright started on uat in storefront-web and orders-api. Results appear here when the runs report.",
     );
     expect(projectDispatchWarning(started)).toBe(
-      "uat moved in orders-api since this run started — those results attach to the newer commit, not this run. Start a new Project run to verify it. Not started in admin: This repository's pipeline has no verify workflow yet.",
+      "uat moved in orders-api since this run started — those results attach to the newer commit, not this run. Start a new Project run to verify it.",
     );
+    expect(projectDispatchFailures(started)).toEqual(["admin — This repository's pipeline has no verify workflow yet."]);
     expect(projectDispatchConfirmation({ dispatched: [], failed: [] })).toBeNull();
     expect(projectDispatchWarning({ dispatched: started.dispatched.slice(0, 1), failed: [] })).toBeNull();
   });

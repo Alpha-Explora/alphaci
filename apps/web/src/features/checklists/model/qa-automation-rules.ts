@@ -496,6 +496,8 @@ export interface QaDispatchError {
   message: string;
   /** True when signing in again is the fix: show a sign-in link. */
   signIn: boolean;
+  /** One "repo — reason" line per repository GitHub refused, when the server listed them. */
+  failures: string[];
 }
 
 function errorStatus(cause: unknown): number | null {
@@ -513,13 +515,55 @@ function errorCode(cause: unknown): string {
   return typeof code === "string" ? code.toUpperCase() : "";
 }
 
-function errorMessage(cause: unknown): string | null {
-  const message = errorDetails(cause)?.message;
-  if (Array.isArray(message)) return text(message.filter((part) => typeof part === "string").join(" "));
-  return text(message);
+const MAX_SERVER_MESSAGE = 240;
+/** The framework's stock reason phrases say nothing the status does not. */
+const GENERIC_HTTP_TEXT: ReadonlySet<string> = new Set([
+  "forbidden",
+  "forbidden resource",
+  "unauthorized",
+  "conflict",
+  "bad request",
+  "unprocessable entity",
+]);
+const MAX_FAILURE_LINES = 20;
+const REFUSED_FALLBACK = "GitHub refused to start Playwright.";
+
+/**
+ * A server sentence that is safe to show: one short line of plain text.
+ * Anything that looks like markup (a proxy's HTML error page) is dropped, so
+ * the caller falls back to its own copy instead of showing raw HTML.
+ */
+function plainMessage(raw: string | null): string | null {
+  if (!raw || /<\s*\/?\s*[a-z!]/i.test(raw)) return null;
+  const line = raw.replace(/\s+/g, " ").trim();
+  if (!line || GENERIC_HTTP_TEXT.has(line.toLowerCase())) return null;
+  return line.length > MAX_SERVER_MESSAGE ? `${line.slice(0, MAX_SERVER_MESSAGE - 1)}…` : line;
 }
 
-const CODE_ERRORS: Record<string, QaDispatchError> = {
+function errorMessage(cause: unknown): string | null {
+  const message = errorDetails(cause)?.message;
+  if (Array.isArray(message)) return plainMessage(text(message.filter((part) => typeof part === "string").join(" ")));
+  return plainMessage(text(message));
+}
+
+/** "logistics2cicd-fe — GitHub refused: no write access" */
+export function dispatchFailureLine(repoFullName: string | null | undefined, message: string | null | undefined): string {
+  const reason = plainMessage(text(message)) ?? REFUSED_FALLBACK;
+  const name = text(repoFullName)?.split("/").pop();
+  return name ? `${name} — ${reason}` : reason;
+}
+
+function failureLines(cause: unknown): string[] {
+  const failed = errorDetails(cause)?.failed;
+  if (!Array.isArray(failed)) return [];
+  return failed
+    .map(record)
+    .filter((entry): entry is Loose => entry !== null)
+    .slice(0, MAX_FAILURE_LINES)
+    .map((entry) => dispatchFailureLine(text(entry.repoFullName), text(entry.message)));
+}
+
+const CODE_ERRORS: Record<string, Omit<QaDispatchError, "failures">> = {
   GITHUB_REAUTH: {
     message: "GitHub needs you to sign in again before ALPHACI can start Playwright for you.",
     signIn: true,
@@ -531,22 +575,35 @@ const CODE_ERRORS: Record<string, QaDispatchError> = {
   },
 };
 
-const STATUS_ERRORS: Record<number, QaDispatchError> = {
-  401: { message: "Your session has ended. Sign in again to start Playwright.", signIn: true },
-  403: { message: "Your role cannot start Playwright on this run.", signIn: false },
-  404: { message: "This QA run no longer exists, or you no longer have access to it.", signIn: false },
+const STATUS_ERRORS: Record<number, string> = {
+  401: "Your session has ended. Sign in again to start Playwright.",
+  404: "This QA run no longer exists, or you no longer have access to it.",
 };
 
 const SIGNED_OFF_ERROR = "This run is signed off, so Playwright cannot be started on it. Reopen it first.";
 const DISPATCH_FALLBACK = "Playwright could not be started. Try again in a moment.";
 
+/** Statuses where the server's own sentence is the explanation worth showing. */
+function usesServerMessage(status: number | null): boolean {
+  return status === 400 || status === 403 || status === 409 || status === 422;
+}
+
+function dispatchMessage(status: number | null, cause: unknown): string {
+  if (status !== null && STATUS_ERRORS[status]) return STATUS_ERRORS[status];
+  if (usesServerMessage(status)) {
+    const fallback = status === 409 ? SIGNED_OFF_ERROR : status === 403 ? REFUSED_FALLBACK : DISPATCH_FALLBACK;
+    return errorMessage(cause) ?? fallback;
+  }
+  return DISPATCH_FALLBACK;
+}
+
 /** A failed dispatch as something to show, and whether to offer sign-in. */
 export function dispatchError(cause: unknown): QaDispatchError {
+  const failures = failureLines(cause);
   const known = CODE_ERRORS[errorCode(cause)];
-  if (known) return known;
+  if (known) return { ...known, failures };
   const status = errorStatus(cause);
-  if (status === 409) return { message: errorMessage(cause) ?? SIGNED_OFF_ERROR, signIn: false };
-  return (status !== null && STATUS_ERRORS[status]) || { message: DISPATCH_FALLBACK, signIn: false };
+  return { message: dispatchMessage(status, cause), signIn: status === 401, failures };
 }
 
 /**

@@ -58,8 +58,11 @@ export function CommitCard({
   title,
   viewMode = "deep",
   appRole,
+  repoFullName,
 }: Readonly<{
   projectId: string;
+  /** `owner/repo`, for the file names of downloaded screenshots. */
+  repoFullName?: string | null;
   branch: string;
   commit: CommitRunGroup<WorkflowRunSummary>;
   title: string | null;
@@ -94,6 +97,7 @@ export function CommitCard({
     runId: visualRequestRunId(verifyEntry?.stage.runId),
     enabled: openStage === "verify",
     appRole,
+    repoFullName,
   });
   const visualChip = visualChipLabel(visual.checks);
   const showsVisual = openEntry?.stage.stage === "verify" && isVisualBranch(branch);

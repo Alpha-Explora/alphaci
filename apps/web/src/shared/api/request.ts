@@ -106,6 +106,12 @@ export async function requestText(path: string, init?: RequestInit): Promise<str
   return response.text();
 }
 
+/** A binary body (an image). Same cookie and ApiError as `request`. */
+export async function requestBlob(path: string, init?: RequestInit): Promise<Blob> {
+  const response = await send(path, init);
+  return response.blob();
+}
+
 export async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await send(path, init);
 

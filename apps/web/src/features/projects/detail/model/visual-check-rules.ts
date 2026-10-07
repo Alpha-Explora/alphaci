@@ -70,6 +70,58 @@ export function withImageUrls(
   };
 }
 
+/* ── Downloading an image ────────────────────────────────────────────────── */
+
+export type VisualImageKind = "reference" | "new" | "diff";
+
+export const VISUAL_IMAGE_LABEL: Record<VisualImageKind, string> = {
+  reference: "reference",
+  new: "new",
+  diff: "diff",
+};
+
+/** The URL of one of a snapshot's three images, or null when it has none. */
+export function visualImageFor(snapshot: VisualSnapshot, kind: VisualImageKind): string | null {
+  if (kind === "reference") return snapshot.baselineUrl;
+  return kind === "new" ? snapshot.actualUrl : snapshot.diffUrl;
+}
+
+/** Identifies one image's download, for "downloading" bookkeeping. */
+export function visualDownloadKey(name: string, kind: VisualImageKind): string {
+  return `${name}|${kind}`;
+}
+
+const FILE_PART_MAX = 60;
+
+function filePart(raw: string | null | undefined): string {
+  return (raw ?? "")
+    .toLowerCase()
+    .replace(/\.(png|jpe?g|webp)$/, "")
+    .replace(/[^a-z0-9._-]+/g, "-")
+    .replace(/^[-.]+|[-.]+$/g, "")
+    .slice(0, FILE_PART_MAX);
+}
+
+/**
+ * `<repo-short>-<branch>-<snapshot-name>-<reference|new|diff>.png`, limited to
+ * [a-z0-9._-]. The snapshot's own `.png` is dropped so it is not doubled, and
+ * the repository part is left out when it is not known.
+ */
+export function visualDownloadFileName(input: {
+  repoFullName: string | null | undefined;
+  branch: string;
+  name: string;
+  kind: VisualImageKind;
+}): string {
+  const repo = filePart(input.repoFullName?.split("/").pop());
+  const parts = [repo, filePart(input.branch), filePart(input.name) || "snapshot", input.kind];
+  return `${parts.filter(Boolean).join("-")}.png`;
+}
+
+export function visualDownloadError(name: string, kind: VisualImageKind): string {
+  return `The ${VISUAL_IMAGE_LABEL[kind]} image of ${name} could not be downloaded. Try again.`;
+}
+
 /* ── Order and counts ────────────────────────────────────────────────────── */
 
 export interface VisualGroups {

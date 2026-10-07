@@ -434,21 +434,80 @@ describe("dispatch copy", () => {
 
   it("maps each dispatch error to a clear message", () => {
     const reauth = dispatchError(new ApiError("x", 409, { code: "GITHUB_REAUTH", message: "reauth" }));
-    expect(reauth).toEqual({ message: expect.stringMatching(/sign in again/), signIn: true });
+    expect(reauth).toEqual({ message: expect.stringMatching(/sign in again/), signIn: true, failures: [] });
     expect(dispatchError(new ApiError("x", 409, { error: { code: "github_reauth" } })).signIn).toBe(true);
     expect(dispatchError(new ApiError("x", 409, { code: "VERIFY_WORKFLOW_MISSING" }))).toEqual({
       message: expect.stringMatching(/no verify workflow/),
       signIn: false,
+      failures: [],
     });
     expect(dispatchError(new ApiError("x", 409, { message: "QA run is signed off." })).message).toBe("QA run is signed off.");
     expect(dispatchError(new ApiError("x", 409, { message: ["Run", "is signed off."] })).message).toBe("Run is signed off.");
     expect(dispatchError(new ApiError("x", 409, undefined)).message).toMatch(/signed off/);
-    expect(dispatchError(new ApiError("x", 403, {})).message).toMatch(/role/);
+    expect(dispatchError(new ApiError("x", 403, {})).message).toBe("GitHub refused to start Playwright.");
     expect(dispatchError(new ApiError("x", 404, {})).message).toMatch(/no longer exists/);
     expect(dispatchError(new ApiError("x", 401, {})).signIn).toBe(true);
     expect(dispatchError(new ApiError("x", 500, {})).message).toMatch(/could not be started/);
     expect(dispatchError(new Error("network")).message).toMatch(/could not be started/);
     expect(dispatchError(null).signIn).toBe(false);
+  });
+
+  it("shows the server's own reason for a 403, never an invented role message", () => {
+    const refused = dispatchError(
+      new ApiError("x", 403, { message: "Resource not accessible by personal access token" }),
+    );
+    expect(refused).toEqual({
+      message: "Resource not accessible by personal access token",
+      signIn: false,
+      failures: [],
+    });
+    expect(dispatchError(new ApiError("x", 403, {})).message).not.toMatch(/role/i);
+    expect(dispatchError(new ApiError("x", 403, { message: "   " })).message).toBe("GitHub refused to start Playwright.");
+  });
+
+  it("never shows raw HTML and keeps server sentences short", () => {
+    const html = "<html><body><h1>403 Forbidden</h1></body></html>";
+    expect(dispatchError(new ApiError("x", 403, html)).message).toBe("GitHub refused to start Playwright.");
+    expect(dispatchError(new ApiError("x", 403, { message: html })).message).toBe("GitHub refused to start Playwright.");
+    const long = dispatchError(new ApiError("x", 403, { message: `${"a ".repeat(400)}` })).message;
+    expect(long.length).toBeLessThanOrEqual(240);
+    expect(long.endsWith("…")).toBe(true);
+    expect(dispatchError(new ApiError("x", 403, { message: "no\n  write\taccess" })).message).toBe("no write access");
+  });
+
+  it("lists each repository the server says refused, with the server's reason", () => {
+    const copy = dispatchError(
+      new ApiError("x", 403, {
+        message: "GitHub refused to start the workflow in every repository.",
+        failed: [
+          { projectId: "p1", repoFullName: "tone/logistics2cicd-fe", code: "GITHUB_FORBIDDEN", message: "Resource not accessible by integration" },
+          { projectId: "p2", repoFullName: "tone/logistics2cicd-be", code: "X", message: "<b>bad</b>" },
+          { projectId: "p3", message: "No repo name" },
+          "junk",
+        ],
+      }),
+    );
+    expect(copy.message).toBe("GitHub refused to start the workflow in every repository.");
+    expect(copy.failures).toEqual([
+      "logistics2cicd-fe — Resource not accessible by integration",
+      "logistics2cicd-be — GitHub refused to start Playwright.",
+      "No repo name",
+    ]);
+  });
+
+  it("keeps the sign-in and missing-workflow copy even when failures are listed", () => {
+    const reauth = dispatchError(
+      new ApiError("x", 409, { code: "GITHUB_REAUTH", message: "token expired", failed: [{ repoFullName: "t/a", message: "expired" }] }),
+    );
+    expect(reauth.signIn).toBe(true);
+    expect(reauth.message).toMatch(/sign in again/);
+    expect(reauth.failures).toEqual(["a — expired"]);
+  });
+
+  it("keeps the 401, 404 and 5xx copy rather than the server's text", () => {
+    expect(dispatchError(new ApiError("x", 401, { message: "jwt expired" })).message).toMatch(/session has ended/);
+    expect(dispatchError(new ApiError("x", 404, { message: "Not Found" })).message).toMatch(/no longer exists/);
+    expect(dispatchError(new ApiError("x", 502, { message: "Bad gateway" })).message).toMatch(/could not be started/);
   });
 
   it("sends sign-in back to the project", () => {

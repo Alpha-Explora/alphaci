@@ -10,8 +10,12 @@ import {
   visualApproveError,
   visualChipLabel,
   visualCounts,
+  visualDownloadError,
+  visualDownloadFileName,
+  visualDownloadKey,
   visualEmptyMessage,
   visualHeader,
+  visualImageFor,
   visualImageUrl,
   visualReadOnlyNote,
   visualReadOnlyReason,
@@ -230,5 +234,62 @@ describe("approval errors", () => {
       message: "The approval could not be saved. Try again in a moment.",
     });
     expect(offersLoadLatest(null)).toBe(false);
+  });
+});
+
+describe("visual snapshot downloads", () => {
+  const base = { repoFullName: "Alpha-Explora/logistics2cicd-fe", branch: "uat" };
+
+  it("names the file <repo-short>-<branch>-<snapshot>-<kind>.png", () => {
+    expect(visualDownloadFileName({ ...base, name: "home-desktop.png", kind: "reference" })).toBe(
+      "logistics2cicd-fe-uat-home-desktop-reference.png",
+    );
+    expect(visualDownloadFileName({ ...base, name: "home-desktop.png", kind: "new" })).toBe(
+      "logistics2cicd-fe-uat-home-desktop-new.png",
+    );
+    expect(visualDownloadFileName({ ...base, name: "home-desktop.png", kind: "diff" })).toBe(
+      "logistics2cicd-fe-uat-home-desktop-diff.png",
+    );
+  });
+
+  it("limits the name to [a-z0-9._-], without doubling the extension", () => {
+    const file = visualDownloadFileName({
+      repoFullName: "Org/My Repo!",
+      branch: "Feature/Login Page",
+      name: "Checkout / Step 2 (mobile).PNG",
+      kind: "new",
+    });
+    expect(file).toBe("my-repo-feature-login-page-checkout-step-2-mobile-new.png");
+    expect(file).toMatch(/^[a-z0-9._-]+$/);
+    expect(visualDownloadFileName({ ...base, name: "../../etc/passwd", kind: "diff" })).toMatch(/^[a-z0-9._-]+$/);
+    expect(visualDownloadFileName({ ...base, name: "../../etc/passwd", kind: "diff" })).not.toContain("/");
+  });
+
+  it("leaves out an unknown repository and names an empty snapshot", () => {
+    expect(visualDownloadFileName({ repoFullName: null, branch: "main", name: "a.png", kind: "new" })).toBe(
+      "main-a-new.png",
+    );
+    expect(visualDownloadFileName({ repoFullName: "o/r", branch: "uat", name: "***", kind: "new" })).toBe(
+      "r-uat-snapshot-new.png",
+    );
+  });
+
+  it("picks each kind's image URL and keys a download by name and kind", () => {
+    const snapshot = {
+      name: "a.png",
+      status: "changed",
+      baselineUrl: "b",
+      actualUrl: "n",
+      diffUrl: null,
+      baselineApprovedBy: null,
+      baselineApprovedAt: null,
+      inheritedFrom: null,
+      approved: false,
+    } as const;
+    expect(visualImageFor(snapshot, "reference")).toBe("b");
+    expect(visualImageFor(snapshot, "new")).toBe("n");
+    expect(visualImageFor(snapshot, "diff")).toBeNull();
+    expect(visualDownloadKey("a.png", "new")).not.toBe(visualDownloadKey("a.png", "diff"));
+    expect(visualDownloadError("a.png", "diff")).toBe("The diff image of a.png could not be downloaded. Try again.");
   });
 });

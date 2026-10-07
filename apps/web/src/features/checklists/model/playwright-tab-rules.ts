@@ -11,6 +11,7 @@ import {
   automatedBadgeLabel,
   automatedStatusTone,
   hasStageResults,
+  dispatchFailureLine,
   normalizeAutomatedResult,
   normalizeRunAutomation,
   verifySettledSince,
@@ -334,7 +335,8 @@ export function projectDispatchConfirmation(result: ProjectDispatchResult): stri
 /**
  * What the tester should know besides: a repository whose uat moved past
  * the head this run captured (its results attach to the newer commit, so not
- * to this run), and each repository it could not start in. Null when none.
+ * to this run). Null when none. Repositories it could not start in are
+ * listed by `projectDispatchFailures`.
  */
 export function projectDispatchWarning(result: ProjectDispatchResult): string | null {
   const moved = result.dispatched
@@ -346,8 +348,12 @@ export function projectDispatchWarning(result: ProjectDispatchResult): string | 
       `uat moved in ${namesList(moved)} since this run started — those results attach to the newer commit, not this run. Start a new Project run to verify it.`,
     );
   }
-  for (const failure of result.failed) parts.push(`Not started in ${repoShortName(failure.repoFullName)}: ${failure.message}`);
   return parts.length > 0 ? parts.join(" ") : null;
+}
+
+/** One "repo — reason" line per repository GitHub refused, beside a partial start. */
+export function projectDispatchFailures(result: ProjectDispatchResult): string[] {
+  return result.failed.map((failure) => dispatchFailureLine(failure.repoFullName, failure.message));
 }
 
 /**
