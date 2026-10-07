@@ -6,7 +6,6 @@ import {
   CUSTOM_RESOLUTION_LIMITS,
   CUSTOM_RESOLUTION_OPTION,
   DEVICE_PRESETS,
-  orientationLabel,
   RESOLUTION_PRESETS,
   resolutionLabel,
   STUDIO_LAYOUTS,
@@ -19,7 +18,6 @@ import type { QaCommitSource } from "../../model/qa-run-types";
 import type { CopyLinkStatus } from "../view-models/use-copy-link";
 import type { StudioViewportViewModel } from "../view-models/use-studio-viewport-view-model";
 import {
-  BranchIcon,
   CheckIcon,
   CollapseIcon,
   DesktopIcon,
@@ -60,39 +58,31 @@ const COPY_LINK_TITLES: Record<CopyLinkStatus, string> = {
 };
 
 /**
- * The environment under test. Only ever the QA branch: with one deployment it
- * is a fixed chip, with two targets on the branch it is a picker between them.
+ * The environment under test is always the QA branch, so a single deployment
+ * of it needs no control at all: nothing is shown. Only when two targets
+ * deploy the branch (say, two frontends) is there a real choice, and then a
+ * compact picker between them is the one thing that names an environment.
  */
 function EnvironmentPicker({ vm }: Readonly<{ vm: StudioViewportViewModel }>) {
-  if (vm.environments.length === 1) {
-    return (
-      <div className="qa-toolbar__env">
-        <span className="qa-toolbar__label">Environment</span>
-        <span className="qa-toolbar__env-chip">
-          <BranchIcon />
-          {vm.environments[0].label}
-        </span>
-      </div>
-    );
-  }
+  if (vm.environments.length < 2) return null;
   return (
-    <label className="qa-toolbar__env">
-      <span className="qa-toolbar__label">Environment</span>
-      <select
-        className="hier-select qa-toolbar__select"
-        value={vm.environment?.key ?? ""}
-        onChange={(event) => vm.selectEnvironment(event.target.value)}
-      >
-        {vm.environments.map((env) => (
-          <option key={env.key} value={env.key}>
-            {env.label}
-          </option>
-        ))}
-      </select>
-    </label>
+    <select
+      className="hier-select qa-toolbar__select qa-toolbar__env"
+      aria-label="Environment"
+      title="Environment under test"
+      value={vm.environment?.key ?? ""}
+      onChange={(event) => vm.selectEnvironment(event.target.value)}
+    >
+      {vm.environments.map((env) => (
+        <option key={env.key} value={env.key}>
+          {env.label}
+        </option>
+      ))}
+    </select>
   );
 }
 
+/** Desktop / Tablet / Mobile as icons: the name is the accessible name and the tooltip. */
 function DeviceSwitch({ vm }: Readonly<{ vm: StudioViewportViewModel }>) {
   return (
     <div className="qa-device-switch" role="radiogroup" aria-label="Device class">
@@ -105,12 +95,12 @@ function DeviceSwitch({ vm }: Readonly<{ vm: StudioViewportViewModel }>) {
             type="button"
             role="radio"
             aria-checked={selected}
+            aria-label={preset.label}
             title={preset.label}
             className={`qa-device-switch__option${selected ? " qa-device-switch__option--on" : ""}`}
             onClick={() => vm.setDevice(preset.id)}
           >
             <Icon />
-            <span>{preset.label}</span>
           </button>
         );
       })}
@@ -215,20 +205,23 @@ function ResolutionPicker({ vm }: Readonly<{ vm: StudioViewportViewModel }>) {
   );
 }
 
-/** Portrait ⇄ landscape, for the devices that turn. The caption says which it is now. */
+/**
+ * Portrait ⇄ landscape, only for the devices that turn (Desktop has nothing to
+ * rotate, so it gets no button rather than a disabled one). An icon: the
+ * preview's caption says which orientation it is now, the name says where it goes.
+ */
 function RotateButton({ vm }: Readonly<{ vm: StudioViewportViewModel }>) {
+  if (!vm.canRotate) return null;
   const next = vm.orientation === "portrait" ? "landscape" : "portrait";
   return (
     <button
       type="button"
-      className="qa-rotate"
+      className="qa-icon-button qa-rotate"
       onClick={vm.rotate}
-      disabled={!vm.canRotate}
-      title={vm.canRotate ? `Rotate to ${next}` : `${vm.device.label} does not rotate`}
+      aria-label={`Rotate to ${next}`}
+      title={`Rotate to ${next}`}
     >
       <RotateIcon />
-      <span>Rotate</span>
-      <span className="qa-rotate__state" aria-hidden="true">{orientationLabel(vm.dimensions.orientation)}</span>
     </button>
   );
 }
@@ -355,24 +348,33 @@ function FrameActions({
 }
 
 /**
- * The studio's controls, one row: what to test (environment), at what size
- * (device class, resolution, rotation), a warning when the commit under test is
- * not the deployed one, and — right-aligned — the frame's actions. The commit
- * comes from the run lookup, because the server — not the preview card —
+ * Where the controls are drawn. `tab-row`: borderless, in the project page's
+ * tab row (docked). `studio`: a slim bar across the top of the studio itself —
+ * in full screen, where the tab row is covered, and wherever no tab row hosts it.
+ */
+export type StudioToolbarPlacement = "tab-row" | "studio";
+
+/**
+ * The studio's controls, one row: at what size (device class, resolution,
+ * rotation), which deployment when the QA branch has two, a warning when the
+ * commit under test is not the deployed one, and the frame's actions. The
+ * commit comes from the run lookup, because the server — not the preview card —
  * decides which sha a run is recorded against.
  */
 export function StudioToolbar({
   vm,
   commit,
   fullScreenRef,
+  placement = "studio",
 }: Readonly<{
   vm: StudioViewportViewModel;
   commit: { commitSha: string | null; commitSource: QaCommitSource | null } | null;
   /** The Full screen toggle, so focus can return to it when the drawer's Dock button disappears. */
   fullScreenRef?: Ref<HTMLButtonElement>;
+  placement?: StudioToolbarPlacement;
 }>) {
   return (
-    <div className="qa-toolbar">
+    <div className="qa-toolbar" data-placement={placement} role="group" aria-label="Preview controls">
       <div className="qa-toolbar__row">
         <EnvironmentPicker vm={vm} />
         <DeviceSwitch vm={vm} />

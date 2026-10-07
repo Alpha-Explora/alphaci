@@ -80,17 +80,6 @@ export function LinkIcon() {
   );
 }
 
-export function BranchIcon() {
-  return (
-    <Glyph>
-      <circle cx="4.5" cy="3.5" r="1.5" />
-      <circle cx="4.5" cy="12.5" r="1.5" />
-      <circle cx="11.5" cy="4.5" r="1.5" />
-      <path d="M4.5 5v6M11.5 6c0 2.5-2 3.25-4.5 3.5-1.4.15-2.5.6-2.5 1.5" />
-    </Glyph>
-  );
-}
-
 export function CheckIcon() {
   return (
     <Glyph>

@@ -16,11 +16,14 @@ export function QaStudioTabPanel({
   project,
   vm,
   qaScope,
+  studioToolbarSlot,
 }: Readonly<{
   project: ProvisionedProject;
   vm: ProjectDetailTabsViewModel;
   dangerZone?: ReactNode;
   qaScope?: QaScope;
+  /** The tab row's slot for the studio's preview controls (see ProjectDetailTabs). */
+  studioToolbarSlot?: HTMLElement | null;
 }>) {
   return (
     <QaStudioPanel
@@ -28,6 +31,7 @@ export function QaStudioTabPanel({
       appRole={vm.appRole}
       projectName={project.repoFullName}
       qaScope={qaScope}
+      toolbarSlot={studioToolbarSlot}
     />
   );
 }
