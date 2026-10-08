@@ -15,6 +15,7 @@
 
 # next.js
 /.next/
+/.capability-stubs/
 /out/
 .swc/
 .turbo/
