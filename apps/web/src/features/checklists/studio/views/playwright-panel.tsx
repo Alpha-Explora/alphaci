@@ -12,6 +12,7 @@ import {
   mergedNote,
   NO_RUN_TITLE,
   noRunText,
+  PROJECT_RUN_BRANCH,
   notRunText,
   playwrightPanelState,
   repositoryHasResults,
@@ -23,9 +24,18 @@ import {
 } from "../../model/playwright-tab-rules";
 import { repoShortName, resolveProjectRunPermissions } from "../../model/project-run-rules";
 import type { ProjectQaRun } from "../../model/project-run-types";
+import type { QaAutomationStage } from "../../model/qa-automation-types";
 import { REOPEN_TO_RUN_PLAYWRIGHT, UNCONFIRMED_PASS_HINT } from "../../model/qa-automation-rules";
 import { shortSha } from "../../model/qa-run-rules";
 import type { QaRun } from "../../model/qa-run-types";
+import {
+  liveRepositories,
+  NO_BROWSER_REPOSITORIES_TEXT,
+  NO_BROWSER_REPOSITORIES_TITLE,
+  visibleStages,
+  type RepositoryRoles,
+  type StudioColumnRules,
+} from "../../model/studio-role-rules";
 import { useProjectAutomationViewModel } from "../view-models/use-project-automation-view-model";
 import type { ProjectRunViewModel } from "../view-models/use-project-run-view-model";
 import { useProjectReopenViewModel } from "../view-models/use-project-signoff-view-model";
@@ -33,9 +43,11 @@ import {
   useQaAutomationViewModel,
   type AutomationDispatchControls,
 } from "../view-models/use-qa-automation-view-model";
+import { usePlaywrightLiveViewModel, type PlaywrightLiveViewModel } from "../view-models/use-playwright-live-view-model";
 import { useQaReopenViewModel, type QaReopenViewModel } from "../view-models/use-qa-reopen-view-model";
 import type { QaRunViewModel } from "../view-models/use-qa-run-view-model";
 import { AutomationStages, DispatchFeedback, DispatchReason, RunPlaywrightButton } from "./automation-panel";
+import { LiveAnnouncer, PlaywrightLiveCard } from "./playwright-live";
 import { ReopenButton, ReopenDialog } from "./run-signoff";
 import { FlaskIcon } from "./studio-icons";
 
@@ -74,11 +86,39 @@ function NotRun({ repository, canStart }: Readonly<{ repository: PlaywrightRepos
   );
 }
 
+/**
+ * The live cards for one section: one per repository it covers that has a
+ * Playwright run to show. Named only under a merged result, where the section
+ * stands for several.
+ */
+function LiveCards({ repository, live }: Readonly<{ repository: PlaywrightRepository; live: PlaywrightLiveViewModel }>) {
+  const named = repository.checks.length > 1;
+  return (
+    <>
+      {repository.checks.map((ref) => {
+        const run = live.runs[ref.projectId];
+        if (!run) return null;
+        // Keyed by run: a new run starts with its own list state (open while it goes).
+        const key = `${ref.projectId}:${String(run.runId)}:${String(run.runAttempt)}`;
+        return <PlaywrightLiveCard key={key} run={run} name={repoShortName(ref.repoFullName)} labelled={named} />;
+      })}
+    </>
+  );
+}
+
 function RepositoryResults({
   repository,
   canStart,
   checks,
-}: Readonly<{ repository: PlaywrightRepository; canStart: boolean; checks: ReactNode }>) {
+  live,
+  stages,
+}: Readonly<{
+  repository: PlaywrightRepository;
+  canStart: boolean;
+  checks: ReactNode;
+  live: PlaywrightLiveViewModel;
+  stages: ReadonlyArray<QaAutomationStage>;
+}>) {
   const headingId = useId();
   const short = shortSha(repository.commitSha);
   const note = mergedNote(repository.covers);
@@ -95,8 +135,9 @@ function RepositoryResults({
         ) : null}
       </div>
       {note ? <p className="qa-pw-repo__note">{note}</p> : null}
+      <LiveCards repository={repository} live={live} />
       {repositoryHasResults(repository) ? (
-        <AutomationStages automation={repository.automation} commitSha={repository.commitSha} />
+        <AutomationStages automation={repository.automation} commitSha={repository.commitSha} stages={stages} />
       ) : (
         <NotRun repository={repository} canStart={canStart} />
       )}
@@ -180,31 +221,67 @@ function DispatchActions({
   );
 }
 
+/** Who is looking, and whether the tab is showing: what the results and live progress follow. */
+export interface PlaywrightViewer {
+  rules: StudioColumnRules;
+  roles: RepositoryRoles;
+  /** The Playwright tab is the one showing: live progress polls only then. */
+  active: boolean;
+}
+
+/**
+ * Live progress for the frontend repositories listed, while the tab shows;
+ * a finished run re-reads the QA run so the stage cards catch up.
+ */
+function useLiveProgress(
+  results: PlaywrightResults,
+  controls: AutomationDispatchControls,
+  viewer: PlaywrightViewer,
+): PlaywrightLiveViewModel {
+  return usePlaywrightLiveViewModel({
+    repositories: liveRepositories(results.repositories, viewer.roles),
+    branch: results.repositories[0]?.branch ?? PROJECT_RUN_BRANCH,
+    enabled: viewer.active && results.supported,
+    startedAt: controls.startedAt,
+    onFinished: controls.refresh,
+  });
+}
+
 /** The results once the run is known: Run Playwright, each repository, then the items. */
 function ResultsBody({
   results,
   controls,
   reopen,
   checksFor,
+  viewer,
 }: Readonly<{
   results: PlaywrightResults;
   controls: AutomationDispatchControls;
   reopen: QaReopenViewModel;
   checksFor: (repository: PlaywrightRepository) => ReactNode;
+  viewer: PlaywrightViewer;
 }>) {
+  const live = useLiveProgress(results, controls, viewer);
   const canStart = controls.canDispatch && !controls.blockedReason;
   // An older server: nothing to show, and no dispatch route to offer either.
   if (!results.supported) return <Notice title="No automated results" text={UNSUPPORTED_TEXT} />;
+  // The QA Team on a Project without browser tests: nothing of theirs to run.
+  if (viewer.rules.browserOnly && results.repositories.length === 0) {
+    return <Notice title={NO_BROWSER_REPOSITORIES_TITLE} text={NO_BROWSER_REPOSITORIES_TEXT} />;
+  }
   return (
     <div className="qa-pw">
       <DispatchActions controls={controls} reopen={reopen} />
-      <DispatchFeedback vm={controls} />
+      <DispatchFeedback vm={controls} live={live.confirmation} />
+      <LiveAnnouncer text={live.announcement} />
       {results.repositories.map((repository) => (
         <RepositoryResults
           key={repository.key}
           repository={repository}
           canStart={canStart}
           checks={checksFor(repository)}
+          live={live}
+          stages={visibleStages(viewer.rules)}
         />
       ))}
       <RequirementTests items={results.items} />
@@ -218,6 +295,7 @@ interface CommonProps {
   /** The repository page this studio is on. */
   projectId: string;
   checksFor: (repository: PlaywrightRepository) => ReactNode;
+  viewer: PlaywrightViewer;
 }
 
 /** Keyed by run: a new run starts with no dispatch in flight. */
@@ -238,7 +316,15 @@ function ProjectResults({
   const permissions = resolveProjectRunPermissions(run, common.appRole);
   const reopen = useProjectReopenViewModel({ deliveryProjectId, run, permissions, onRun: vm.applyRun });
   if (!common.results) return null;
-  return <ResultsBody results={common.results} controls={controls} reopen={reopen} checksFor={common.checksFor} />;
+  return (
+    <ResultsBody
+      results={common.results}
+      controls={controls}
+      reopen={reopen}
+      checksFor={common.checksFor}
+      viewer={common.viewer}
+    />
+  );
 }
 
 function RepositoryRunResults({ vm, run, ...common }: Readonly<CommonProps & { vm: QaRunViewModel; run: QaRun }>) {
@@ -250,7 +336,15 @@ function RepositoryRunResults({ vm, run, ...common }: Readonly<CommonProps & { v
   });
   const reopen = useQaReopenViewModel({ projectId: common.projectId, run, onRun: vm.applyRun });
   if (!common.results) return null;
-  return <ResultsBody results={common.results} controls={controls} reopen={reopen} checksFor={common.checksFor} />;
+  return (
+    <ResultsBody
+      results={common.results}
+      controls={controls}
+      reopen={reopen}
+      checksFor={common.checksFor}
+      viewer={common.viewer}
+    />
+  );
 }
 
 function sourceReady(source: PlaywrightSource): boolean {
@@ -288,14 +382,17 @@ export function PlaywrightPanel({
   appRole,
   projectId,
   opened,
+  viewer,
   renderRepositoryChecks,
 }: Readonly<{
   source: PlaywrightSource;
+  /** Already narrowed to what this viewer sees (`scopePlaywrightResults`). */
   results: PlaywrightResults | null;
   appRole: AppRole | null | undefined;
   projectId: string;
   /** False until the tab is first shown: the host's checks read nothing before. */
   opened: boolean;
+  viewer: PlaywrightViewer;
   renderRepositoryChecks?: RenderRepositoryChecks;
 }>) {
   if (source.vm.status === "error") {
@@ -315,5 +412,5 @@ export function PlaywrightPanel({
         ))}
       </div>
     ) : null;
-  return <SourceBody source={source} common={{ results, appRole, projectId, checksFor }} />;
+  return <SourceBody source={source} common={{ results, appRole, projectId, checksFor, viewer }} />;
 }

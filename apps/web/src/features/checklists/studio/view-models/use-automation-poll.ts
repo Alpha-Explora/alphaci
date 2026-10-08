@@ -1,26 +1,14 @@
 "use client";
 
-import { useEffect, useRef, useSyncExternalStore } from "react";
+import { useEffect, useRef } from "react";
 
 import { AUTOMATION_POLL_INTERVAL_MS } from "../../model/qa-automation-rules";
+import { usePageVisible } from "./use-page-visible";
 
 /** After "Run Playwright": re-read from `since` until `until` (epoch ms). */
 export interface PollWindow {
   since: number;
   until: number;
-}
-
-function subscribeVisibility(onChange: () => void): () => void {
-  document.addEventListener("visibilitychange", onChange);
-  return () => document.removeEventListener("visibilitychange", onChange);
-}
-
-function pageVisible(): boolean {
-  return document.visibilityState !== "hidden";
-}
-
-function serverVisible(): boolean {
-  return true;
 }
 
 /**
@@ -41,7 +29,7 @@ export function useAutomationPoll<T>(options: {
   onStop: () => void;
 }): void {
   const { key, poll } = options;
-  const visible = useSyncExternalStore(subscribeVisibility, pageVisible, serverVisible);
+  const visible = usePageVisible();
   const callbacks = useRef(options);
   const requestRef = useRef(0);
 

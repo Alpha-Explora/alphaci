@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { projectsRepository } from "../../data/projects-repository";
 import { manageProjectHref, repoSwitchPresentation } from "../model/project-folder-rules";
 import type {
+  FolderRepoRole,
   ProjectFolderStatus,
   ProjectFolderSummary,
   RepoSwitchPresentation,
@@ -17,7 +18,13 @@ export interface ProjectFolderViewModel extends RepoSwitchPresentation {
    * presentation above only names Projects of two or more repositories).
    * Null fields: no Project, or the folder could not be read.
    */
-  project: { deliveryProjectId: string | null; name: string | null; href: string | null };
+  project: {
+    deliveryProjectId: string | null;
+    name: string | null;
+    href: string | null;
+    /** Each repository's role (frontend, backend, …): what QA Studio's Playwright tab filters by. */
+    repositories: Array<{ projectId: string | null; role: FolderRepoRole | null }>;
+  };
 }
 
 interface Loaded {
@@ -38,6 +45,10 @@ function projectOf(folder: ProjectFolderSummary | null): ProjectFolderViewModel[
     deliveryProjectId: folder?.deliveryProjectId ?? null,
     name: folder?.name || null,
     href: manageProjectHref(folder),
+    repositories: (folder?.repositories ?? []).map((repository) => ({
+      projectId: repository.projectId,
+      role: repository.role,
+    })),
   };
 }
 

@@ -96,6 +96,31 @@
   }
 }
 
+/* No tabs (a Team lead in PO Studio): the chip leads the bar and Merge to
+   main sits at the end of the same row, wrapping only when they cannot fit. */
+.qa-coltabs-bar[data-tabs="false"] {
+  align-items: center;
+}
+
+.qa-coltabs-bar[data-tabs="false"] .qa-coltabs-bar__main {
+  display: flex;
+  flex: 1 1 auto;
+  min-height: 2.6rem;
+  padding-left: 0.75rem;
+}
+
+.qa-coltabs-bar[data-tabs="false"] .qa-promo-status {
+  margin: 0;
+  padding: 0;
+}
+
+.qa-coltabs-bar[data-tabs="false"] .qa-coltabs-bar__action {
+  flex: 0 0 auto;
+  justify-content: flex-end;
+  padding: 0.3rem 0.75rem 0.3rem 0;
+  border-top: 0;
+}
+
 /* ── Tabs ────────────────────────────────────────────────────────────────── */
 .qa-coltabs {
   display: flex;

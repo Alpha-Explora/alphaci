@@ -121,10 +121,25 @@ describe("useProjectFolderViewModel", () => {
     await render("proj-fe");
     await waitFor(() => expect(vm().status).toBe("ready"));
     expect(vm().projectName).toBeNull();
-    expect(vm().project).toEqual({ deliveryProjectId: "dp-1", name: "shop", href: "/workflows?group=ws-1&project=dp-1" });
+    expect(vm().project).toEqual({
+      deliveryProjectId: "dp-1",
+      name: "shop",
+      href: "/workflows?group=ws-1&project=dp-1",
+      repositories: [{ projectId: "proj-fe", role: "frontend" }],
+    });
 
     await render("proj-none", false);
-    expect(vm().project).toEqual({ deliveryProjectId: null, name: null, href: null });
+    expect(vm().project).toEqual({ deliveryProjectId: null, name: null, href: null, repositories: [] });
+  });
+
+  it("hands QA each repository's role, so QA Studio can leave the backend's API tests out", async () => {
+    folderMock.mockResolvedValue(shop());
+    await render("proj-fe");
+    await waitFor(() => expect(vm().status).toBe("ready"));
+    expect(vm().project.repositories).toEqual([
+      { projectId: "proj-fe", role: "frontend" },
+      { projectId: "proj-be", role: "backend" },
+    ]);
   });
 
   it("keeps the single-repository page for a Project of one", async () => {
