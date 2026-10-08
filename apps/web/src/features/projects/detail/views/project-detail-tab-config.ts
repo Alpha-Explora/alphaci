@@ -29,6 +29,7 @@ export const PROJECT_DETAIL_TAB_GROUPS: ReadonlyArray<
     items: [
       { id: "overview", label: "Overview" },
       { id: "code", label: "Code" },
+      { id: "commits", label: "Commits" },
       { id: "pulls", label: "Pull requests" },
       { id: "checklists", label: "Checklists" },
     ],

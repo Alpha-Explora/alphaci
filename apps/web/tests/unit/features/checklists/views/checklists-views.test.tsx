@@ -198,13 +198,13 @@ describe("project Checklists tab gating", () => {
   it("shows Checklists in the Work group when the capability is on", async () => {
     const container = await renderTabs(true);
     const labels = [...container.querySelectorAll('[role="tab"]')].map((tab) => tab.textContent);
-    expect(labels.slice(0, 4)).toEqual(["Overview", "Code", "Pull requests", "Checklists"]);
+    expect(labels.slice(0, 5)).toEqual(["Overview", "Code", "Commits", "Pull requests", "Checklists"]);
   });
 
   it("hides the tab — and only that tab — when the capability is off", async () => {
     const container = await renderTabs(false);
     const labels = [...container.querySelectorAll('[role="tab"]')].map((tab) => tab.textContent);
     expect(labels).not.toContain("Checklists");
-    expect(labels).toHaveLength(9);
+    expect(labels).toHaveLength(10);
   });
 });

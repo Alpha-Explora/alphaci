@@ -1,17 +1,14 @@
 "use client";
 
 import type { ProvisionedProject } from "@/features/projects";
-import type { ProjectDetailTabsViewModel } from "../view-models/use-project-detail-tabs-view-model";
 import { CodeTab } from "./workspace/code-tab";
-import { CommitsSection } from "./workspace/commits-section";
 
-/** The repository's source at a branch, then that branch's commits. */
+/** The repository's source at a branch: files only. Its history is the Commits tab. */
 export function CodeTabPanel({
   project,
-  vm,
 }: Readonly<{
   project: ProvisionedProject;
-  vm: ProjectDetailTabsViewModel;
+  vm?: unknown;
   dangerZone?: React.ReactNode;
 }>) {
   return (
@@ -22,7 +19,6 @@ export function CodeTabPanel({
       className="ws-panel"
     >
       <CodeTab projectId={project.id} />
-      <CommitsSection projectId={project.id} onOpenPullRequest={vm.openPullRequest} />
     </div>
   );
 }

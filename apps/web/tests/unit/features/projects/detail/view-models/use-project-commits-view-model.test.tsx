@@ -80,19 +80,19 @@ afterEach(() => {
 });
 
 describe("useProjectCommitsViewModel", () => {
-  it("asks for the server's default branch first, then shows its commits and switcher", async () => {
+  it("asks for the server's default branch first, then shows its commits and the selector's options", async () => {
     repo.commits.mockResolvedValue(page("dev", [commit("a"), commit("b", null)]));
     await render();
     await poll(() => vm().status === "ready");
 
     expect(repo.commits).toHaveBeenCalledWith("p1", { branch: null, limit: 30 });
     expect(vm().branch).toBe("dev");
-    expect(vm().switcher).toEqual({ primary: ["dev", "uat", "main"], others: ["feature/x"], otherValue: "" });
+    expect(vm().branchOptions).toEqual(["dev", "uat", "main"]);
     expect(vm().rows.map((row) => row.directPush)).toEqual([false, true]);
     expect(vm().hasMore).toBe(false);
   });
 
-  it("reads as loading on a branch switch, keeps the switcher, and ignores a slow answer for the old branch", async () => {
+  it("reads as loading on a branch switch, keeps the options, and ignores a slow answer for the old branch", async () => {
     const slowDev = deferred<never>();
     repo.commits.mockResolvedValueOnce(page("dev", [commit("a")]));
     await render();
@@ -102,7 +102,7 @@ describe("useProjectCommitsViewModel", () => {
     await act(async () => vm().selectBranch("uat"));
     expect(vm().status).toBe("loading");
     expect(vm().branch).toBe("uat");
-    expect(vm().switcher.primary).toEqual(["dev", "uat", "main"]);
+    expect(vm().branchOptions).toEqual(["dev", "uat", "main"]);
 
     await act(async () => vm().selectBranch("main"));
     await poll(() => vm().status === "ready");

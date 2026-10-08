@@ -65,7 +65,7 @@ function button(container: HTMLElement, label: string): HTMLButtonElement | unde
   return [...container.querySelectorAll("button")].find((b) => b.textContent === label);
 }
 
-describe("Commits on the Code tab", () => {
+describe("Commits tab", () => {
   it("lists commits newest first: short SHA, title, author, relative time with the exact one on hover", async () => {
     repo.commits.mockResolvedValue(page("dev", [commit("a", 12, "Add checkout\n\nbody"), commit("b", null)]));
     const container = await render(jest.fn());
@@ -99,10 +99,25 @@ describe("Commits on the Code tab", () => {
     const container = await render();
     await poll(() => rows(container).length === 1);
     expect(container.querySelector(".commits__tag")).toBeNull();
-    // An other branch shows in the select, not the segments.
-    const select = container.querySelector<HTMLSelectElement>("select.commits__select")!;
-    expect(select.value).toBe("feature/x");
-    expect([...container.querySelectorAll(".commits__segment[aria-pressed='true']")]).toHaveLength(0);
+    // A branch the tab was opened on is always offered, even if not dev/uat/main.
+    expect(container.querySelector<HTMLSelectElement>("select.commits__select")!.value).toBe("feature/x");
+  });
+
+  it("labels ALPHACI's own setup commits instead of calling them direct pushes", async () => {
+    repo.commits.mockResolvedValue(
+      page("dev", [
+        { ...commit("a", null), authorLogin: "alphaci-enterprise[bot]", authorName: "alphaci-enterprise[bot]" },
+        commit("b", null),
+        commit("c", 4),
+      ]),
+    );
+    const container = await render();
+    await poll(() => rows(container).length === 3);
+    const [setup, direct, viaPr] = rows(container);
+    expect(setup.querySelector(".commits__tag")?.textContent).toBe("ALPHACI setup");
+    expect(setup.getAttribute("data-direct-push")).toBeNull();
+    expect(direct.querySelector(".commits__tag")?.textContent).toBe("Direct push");
+    expect(viaPr.querySelector(".commits__tag")).toBeNull();
   });
 
   it("links a commit's title to its pull request in the Pull requests tab", async () => {
@@ -119,35 +134,39 @@ describe("Commits on the Code tab", () => {
     expect(onOpen).toHaveBeenCalledWith(12);
   });
 
-  it("switches branch with the segmented control and with the select", async () => {
+  it("has one branch selector (dev, uat, main) that reloads the list; no second switch", async () => {
     repo.commits
       .mockResolvedValueOnce(page("dev", [commit("a", 1)]))
-      .mockResolvedValueOnce(page("main", [commit("m", null)]))
-      .mockResolvedValueOnce(page("fix/y", [commit("f", null)]));
+      .mockResolvedValueOnce(page("main", [commit("m", null)]));
     const container = await render();
     await poll(() => rows(container).length === 1);
 
-    const segments = [...container.querySelectorAll<HTMLButtonElement>(".commits__segment")];
-    expect(segments.map((b) => b.textContent)).toEqual(["dev", "uat", "main"]);
-    expect(segments.map((b) => b.getAttribute("aria-pressed"))).toEqual(["true", "false", "false"]);
-    const options = [...container.querySelectorAll("select.commits__select option")].map((o) => o.textContent);
-    expect(options).toEqual(["Other branches", "feature/x", "fix/y"]);
-
-    await act(async () => segments[2].click());
-    await poll(() => container.textContent?.includes("Commit m") ?? false);
-    expect(repo.commits).toHaveBeenLastCalledWith("p1", { branch: "main", limit: 30 });
-    expect(button(container, "main")?.getAttribute("aria-pressed")).toBe("true");
-    expect(container.querySelector(".commits__tag")?.textContent).toBe("Direct push");
-
+    expect(container.querySelectorAll("select")).toHaveLength(1);
+    expect(container.querySelectorAll(".commits__segment")).toHaveLength(0);
     const select = container.querySelector<HTMLSelectElement>("select.commits__select")!;
+    expect([...select.options].map((o) => o.textContent)).toEqual(["dev", "uat", "main"]);
+    expect(select.value).toBe("dev");
+
     await act(async () => {
-      select.value = "fix/y";
+      select.value = "main";
       select.dispatchEvent(new Event("change", { bubbles: true }));
     });
-    await poll(() => container.textContent?.includes("Commit f") ?? false);
-    expect(repo.commits).toHaveBeenLastCalledWith("p1", { branch: "fix/y", limit: 30 });
-    expect(container.querySelector<HTMLSelectElement>("select.commits__select")!.value).toBe("fix/y");
-    expect(container.querySelector(".commits__tag")).toBeNull();
+    await poll(() => container.textContent?.includes("Commit m") ?? false);
+    expect(repo.commits).toHaveBeenLastCalledWith("p1", { branch: "main", limit: 30 });
+    expect(container.querySelector<HTMLSelectElement>("select.commits__select")!.value).toBe("main");
+    expect(container.querySelector(".commits__tag")?.textContent).toBe("Direct push");
+  });
+
+  it("opens on the branch it is given", async () => {
+    repo.commits.mockResolvedValue(page("uat", [commit("u", 3)]));
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    root = createRoot(container);
+    await act(async () => {
+      root!.render(<CommitsSection projectId="p1" initialBranch="uat" />);
+    });
+    await poll(() => rows(container).length === 1);
+    expect(repo.commits).toHaveBeenCalledWith("p1", { branch: "uat", limit: 30 });
   });
 
   it("loads more with the cursor, appending older commits", async () => {

@@ -13,6 +13,7 @@ import type {
 export type ProjectDetailTab =
   | "overview"
   | "code"
+  | "commits"
   | "pulls"
   | "checklists"
   | "runs"
@@ -28,6 +29,7 @@ export type ProjectDetailTab =
 export const PROJECT_DETAIL_TABS: ReadonlyArray<ProjectDetailTab> = [
   "overview",
   "code",
+  "commits",
   "pulls",
   "checklists",
   "runs",
@@ -262,6 +264,17 @@ export function visibleProjectDetailTabs(
 export function tabFromHash(hash: string | null | undefined): ProjectDetailTab | null {
   const id = (hash ?? "").replace(/^#/, "");
   return (PROJECT_DETAIL_TABS as ReadonlyArray<string>).includes(id) ? (id as ProjectDetailTab) : null;
+}
+
+/**
+ * `/projects/:id?branch=uat#commits` opens the Commits tab on that branch.
+ * The branch only counts with the `#commits` hash; anything else is null (the
+ * server's default branch).
+ */
+export function commitsBranchFromUrl(hash: string | null | undefined, search: string | null | undefined): string | null {
+  if (tabFromHash(hash) !== "commits" || !search) return null;
+  const branch = new URLSearchParams(search).get("branch")?.trim();
+  return branch ? branch : null;
 }
 
 /**

@@ -1,4 +1,4 @@
-/* ── Code tab: Commits ──────────────────────────────────────────────────────
+/* ── Commits tab ──────────────────────────────────────────────────────
    Drawn as a branch's history: a hairline rail with one node per commit.
    A commit a pull request brought in gets a filled brand node; a direct push
    to dev/uat/main gets a hollow amber ring and the "Direct push" tag, so the
@@ -8,8 +8,6 @@
 .commits {
   display: grid;
   gap: 0.85rem;
-  padding-top: 1.25rem;
-  border-top: 1px solid var(--border-subtle);
 }
 
 .commits__head {
@@ -36,43 +34,12 @@
   gap: 0.5rem;
 }
 
-/* The segmented control: one track, the picked branch raised out of it. */
-.commits__segments {
-  display: inline-flex;
-  padding: 0.2rem;
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-pill);
-  background: var(--bg-soft);
-}
-
-.commits .commits__segment {
-  min-height: 1.9rem;
-  padding: 0.2rem 0.85rem;
-  border: 0;
-  border-radius: var(--radius-pill);
-  background: none;
-  color: var(--text-secondary);
-  font-family: var(--font-mono, ui-monospace, monospace);
-  font-size: 0.78rem;
+.commits__label {
+  font-size: 0.74rem;
   font-weight: 600;
-  cursor: pointer;
-  transition:
-    background-color 160ms ease-out,
-    color 160ms ease-out,
-    box-shadow 160ms ease-out;
+  color: var(--text-muted);
 }
 
-.commits .commits__segment:hover {
-  color: var(--text-primary);
-}
-
-.commits .commits__segment[aria-pressed="true"] {
-  background: var(--layer-1);
-  color: var(--text-primary);
-  box-shadow: var(--shadow-soft);
-}
-
-.commits .commits__segment:focus-visible,
 .commits .commits__select:focus-visible,
 .commits__sha:focus-visible,
 .commits__text--link:focus-visible {
@@ -88,11 +55,6 @@
   border-color: var(--border-subtle);
   font-family: var(--font-mono, ui-monospace, monospace);
   font-size: 0.78rem;
-}
-
-.commits .commits__select[data-active="true"] {
-  border-color: var(--border-brand);
-  color: var(--text-primary);
 }
 
 .commits__list {
@@ -205,6 +167,12 @@
   text-transform: uppercase;
 }
 
+.commits__tag--setup {
+  border-color: var(--border-subtle);
+  background: var(--bg-soft);
+  color: var(--text-muted);
+}
+
 .commits__meta {
   display: flex;
   flex-wrap: wrap;
@@ -305,7 +273,6 @@
 @media (prefers-reduced-motion: reduce) {
   .commits__row,
   .commits__row--skeleton,
-  .commits .commits__segment,
   .commits__sha,
   .commits__text--link {
     transition: none;

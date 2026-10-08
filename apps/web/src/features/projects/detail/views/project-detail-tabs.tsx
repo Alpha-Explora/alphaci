@@ -27,6 +27,7 @@ import { EnvironmentTab } from "./environment-tab";
 import { AuditTab } from "./audit-tab";
 import { SettingsTab } from "./settings-tab";
 import { CodeTabPanel } from "./code-tab-panel";
+import { CommitsTabPanel } from "./commits-tab-panel";
 import { PullsTabPanel } from "./pulls-tab-panel";
 import { ChecklistsTabPanel } from "./checklists-tab-panel";
 import { QaStudioTabPanel } from "./qa-studio-tab-panel";
@@ -82,6 +83,7 @@ const TAB_PANELS: Record<
 > = {
   overview: OverviewTab,
   code: CodeTabPanel,
+  commits: CommitsTabPanel,
   pulls: PullsTabPanel,
   checklists: ChecklistsTabPanel,
   runs: RunsTab,
