@@ -51,6 +51,10 @@ export interface AutomationDispatchControls {
   dispatch: () => Promise<void>;
   /** Dismiss a failed dispatch's message. */
   dismiss: () => void;
+  /** When the last Run Playwright started a workflow (epoch ms); null before. */
+  startedAt: number | null;
+  /** Re-read the run once (a live run just finished), so the stage cards catch up. */
+  refresh: () => void;
 }
 
 export interface QaAutomationViewModel extends AutomationDispatchControls {
@@ -61,8 +65,13 @@ export interface QaAutomationViewModel extends AutomationDispatchControls {
 
 type Outcome =
   | { status: "idle" | "dispatching" }
-  | { status: "dispatched"; dispatch: QaAutomationDispatch }
+  | { status: "dispatched"; dispatch: QaAutomationDispatch; at: number }
   | { status: "failed"; error: QaDispatchError };
+
+/** When Run Playwright last started the workflow; null before. */
+function dispatchedAt(outcome: Outcome): number | null {
+  return outcome.status === "dispatched" ? outcome.at : null;
+}
 
 function publicStatus(outcome: Outcome, watching: boolean): QaAutomationStatus {
   if (outcome.status !== "dispatched") return outcome.status;
@@ -108,7 +117,7 @@ export function useQaAutomationViewModel(options: {
     try {
       const started = normalizeDispatch(await qaRunsRepository.dispatchAutomation(projectId, run.id));
       const at = Date.now();
-      setOutcome({ status: "dispatched", dispatch: started });
+      setOutcome({ status: "dispatched", dispatch: started, at });
       setPoll({ since: at, until: at + AUTOMATION_POLL_WINDOW_MS });
     } catch (cause) {
       setOutcome({ status: "failed", error: dispatchError(cause) });
@@ -133,5 +142,10 @@ export function useQaAutomationViewModel(options: {
     dispatch,
     // Clears a failure only; a started workflow's confirmation stays.
     dismiss: () => setOutcome((current) => (current.status === "failed" ? { status: "idle" } : current)),
+    startedAt: dispatchedAt(outcome),
+    refresh: () => {
+      // A missed read is not worth a message: the stage cards stay as they were.
+      qaRunsRepository.get(projectId, run.id).then(onRun).catch(() => undefined);
+    },
   };
 }

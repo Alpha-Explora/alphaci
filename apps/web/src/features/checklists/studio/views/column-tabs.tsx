@@ -32,15 +32,17 @@ function TabStatus({ status }: Readonly<{ status: PlaywrightTabStatus }>) {
  * The run column's tab bar: the tabs, then `status` (the "Ready for
  * production" chip) at the end of their row, then `action` ("Merge to main").
  * Narrow, the action wraps to a second line of the bar. Only the tabs are in
- * the tablist; the rest sit beside it.
+ * the tablist; the rest sit beside it. Without tabs (`tabs={false}`, a Team
+ * lead's PO Studio) the chip and the action share one row.
  */
 export function ColumnBar({
   children,
   status,
   action,
-}: Readonly<{ children: ReactNode; status?: ReactNode; action?: ReactNode }>) {
+  tabs = true,
+}: Readonly<{ children?: ReactNode; status?: ReactNode; action?: ReactNode; tabs?: boolean }>) {
   return (
-    <div className="qa-coltabs-bar">
+    <div className="qa-coltabs-bar" data-tabs={tabs ? "true" : "false"}>
       <div className="qa-coltabs-bar__main">
         {children}
         {status}

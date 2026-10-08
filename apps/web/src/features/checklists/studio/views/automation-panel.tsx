@@ -23,6 +23,7 @@ import type {
   QaStageResult,
   QaStageTests,
 } from "../../model/qa-automation-types";
+import { liveWaitingConfirmation, type LiveConfirmationMode } from "../../model/playwright-live-rules";
 import { formatReportDate } from "../../model/qa-report-rules";
 import { agoLabel, shortSha } from "../../model/qa-run-rules";
 import type { AutomationDispatchControls } from "../view-models/use-qa-automation-view-model";
@@ -224,20 +225,43 @@ function DispatchFailureList({ lines, lead }: Readonly<{ lines: string[]; lead?:
   );
 }
 
+/**
+ * What the confirmation line says: as it was, or — once progress is live —
+ * a short "waiting for its first progress report" while the run has not shown
+ * up, and nothing once the live cards say it. "Checking every 20 seconds"
+ * only without live progress.
+ */
+function confirmationLine(
+  vm: AutomationDispatchControls,
+  live: LiveConfirmationMode,
+): { text: string; watching: boolean } | null {
+  if (!vm.confirmation || live === "hidden") return null;
+  if (live === "waiting") return { text: liveWaitingConfirmation(vm.confirmation), watching: true };
+  return { text: vm.confirmation, watching: vm.status === "watching" };
+}
+
+function Confirmation({ line, live }: Readonly<{ line: { text: string; watching: boolean }; live: LiveConfirmationMode }>) {
+  return (
+    <p className="qa-auto__confirm">
+      <span className="qa-auto__pulse" data-watching={line.watching ? "true" : "false"} aria-hidden="true" />
+      <span>
+        {line.text}
+        {line.watching && live === "as-is" ? <span className="qa-auto__watching"> Checking every 20 seconds.</span> : null}
+      </span>
+    </p>
+  );
+}
+
 /** Always mounted, so the confirmation is announced when it appears. */
-export function DispatchFeedback({ vm }: Readonly<{ vm: AutomationDispatchControls }>) {
+export function DispatchFeedback({
+  vm,
+  live = "as-is",
+}: Readonly<{ vm: AutomationDispatchControls; live?: LiveConfirmationMode }>) {
+  const line = confirmationLine(vm, live);
   return (
     <>
       <div className="qa-auto__live" role="status" aria-live="polite">
-        {vm.confirmation ? (
-          <p className="qa-auto__confirm">
-            <span className="qa-auto__pulse" data-watching={vm.status === "watching" ? "true" : "false"} aria-hidden="true" />
-            <span>
-              {vm.confirmation}
-              {vm.status === "watching" ? <span className="qa-auto__watching"> Checking every 20 seconds.</span> : null}
-            </span>
-          </p>
-        ) : null}
+        {line ? <Confirmation line={line} live={live} /> : null}
         {vm.warning ? (
           <p className="qa-auto__warning">
             <WarningIcon />
@@ -269,15 +293,22 @@ export function DispatchFeedback({ vm }: Readonly<{ vm: AutomationDispatchContro
 /**
  * How the verify (browser & API) and quality (unit) stages went on one
  * commit: a card per stage that reported, a line for one that has not.
- * Information only: sign-off stays manual.
+ * `stages` narrows it (the QA Team sees verify only). Information only:
+ * sign-off stays manual.
  */
 export function AutomationStages({
   automation,
   commitSha,
-}: Readonly<{ automation: QaRunAutomationResult; commitSha: string | null }>) {
+  stages,
+}: Readonly<{
+  automation: QaRunAutomationResult;
+  commitSha: string | null;
+  stages?: ReadonlyArray<QaAutomationStage>;
+}>) {
+  const shown = automationStages(automation).filter(({ stage }) => !stages || stages.includes(stage));
   return (
     <div className="qa-auto__stages">
-      {automationStages(automation).map(({ stage, result }) =>
+      {shown.map(({ stage, result }) =>
         result ? (
           <StageCard key={stage} result={result} />
         ) : (
