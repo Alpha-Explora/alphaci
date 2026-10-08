@@ -132,16 +132,24 @@ function dialogButton(name: string): HTMLButtonElement | undefined {
 describe("QA Studio — the readiness chip in the tab bar", () => {
   it("draws no promotion strip above the tabs: the chip sits in the tab bar, beside the tablist", async () => {
     setup(promotionWire());
-    const container = await studio("lead");
+    const container = await studio("admin");
     expect(container.querySelector(".qa-promo")).toBeNull();
     expect(container.querySelector('section[aria-label="Production readiness"]')).toBeNull();
     const bar = container.querySelector(".qa-coltabs-bar")!;
     expect(bar.contains(chip(container))).toBe(true);
-    expect(bar.contains(mergeButton(container))).toBe(true);
     // The tablist holds only the tabs; the chip and the button sit beside it.
     const tablist = bar.querySelector('[role="tablist"]')!;
     expect(tablist.contains(chip(container))).toBe(false);
     expect([...tablist.children].every((child) => child.getAttribute("role") === "tab")).toBe(true);
+  });
+
+  it("keeps the chip and Merge to main in a Team lead's bar, which has no tablist", async () => {
+    setup(promotionWire());
+    const container = await studio("lead");
+    const bar = container.querySelector(".qa-coltabs-bar")!;
+    expect(bar.querySelector('[role="tablist"]')).toBeNull();
+    expect(bar.contains(chip(container))).toBe(true);
+    expect(bar.contains(mergeButton(container))).toBe(true);
   });
 
   it.each<[string, unknown, string, string, string]>([

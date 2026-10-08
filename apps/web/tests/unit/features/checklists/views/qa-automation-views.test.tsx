@@ -34,6 +34,9 @@ jest.mock("../../../../../src/features/checklists/data/qa-runs-repository", () =
     promotion: jest.fn().mockResolvedValue({}),
   },
 }));
+jest.mock("../../../../../src/features/checklists/data/playwright-live-repository", () => ({
+  playwrightLiveRepository: { getPlaywrightLive: jest.fn().mockResolvedValue(null) },
+}));
 jest.mock("../../../../../src/features/projects/data/projects-repository", () => ({
   projectsRepository: { previews: jest.fn() },
 }));
@@ -294,9 +297,9 @@ describe("QA Studio — item Automated badge", () => {
 const NOTHING_YET = { verify: null, quality: null };
 
 describe("QA Studio — Playwright tab results", () => {
-  it("shows each stage's verdict, counts and failures, with no link out to GitHub", async () => {
-    setup(runAs("qa", { items: ITEMS, automation: automation() }));
-    const container = await studio("qa");
+  it("shows each stage's verdict, counts and failures (an admin sees both stages), with no link out to GitHub", async () => {
+    setup(runAs("admin", { items: ITEMS, automation: automation() }));
+    const container = await studio("admin");
     const stages = [...container.querySelectorAll<HTMLElement>(".qa-auto-stage")];
     expect(stages).toHaveLength(2);
     const [verify, quality] = stages;
@@ -336,8 +339,8 @@ describe("QA Studio — Playwright tab results", () => {
         failuresTruncated: true,
       },
     });
-    setup(runAs("qa", { items: ITEMS, automation: { verify: truncated, quality: null } }));
-    const container = await studio("qa");
+    setup(runAs("admin", { items: ITEMS, automation: { verify: truncated, quality: null } }));
+    const container = await studio("admin");
     const verify = container.querySelector(".qa-auto-stage")!;
     expect(verify.querySelector("button.qa-auto-stage__failed")?.textContent).toBe("23 failed — show 20 of 23 failures");
     expect(verify.querySelectorAll(".qa-auto-failure")).toHaveLength(20);
@@ -398,7 +401,8 @@ describe("QA Studio — Playwright tab results", () => {
 describe("QA Studio — Run Playwright", () => {
   it.each<[AppRole, boolean]>([
     ["qa", true],
-    ["lead", true],
+    // A Team lead has no Playwright tab at all (PO Studio is the acceptance only).
+    ["lead", false],
     ["admin", true],
     ["member", false],
   ])("is offered to %s: %s", async (role, offered) => {

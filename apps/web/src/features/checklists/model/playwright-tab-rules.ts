@@ -6,7 +6,15 @@
  * Results are information for the tester. Nothing here changes or recommends
  * an item's recorded status: sign-off stays manual. */
 
-import type { QaAutomatedItemResult, QaAutomatedStatus, QaRunAutomationResult, QaStageResult, QaTestFailure } from "./qa-automation-types";
+import type {
+  QaAutomatedItemResult,
+  QaAutomatedSource,
+  QaAutomatedStatus,
+  QaAutomationStage,
+  QaRunAutomationResult,
+  QaStageResult,
+  QaTestFailure,
+} from "./qa-automation-types";
 import {
   automatedBadgeLabel,
   automatedStatusTone,
@@ -72,6 +80,10 @@ export interface PlaywrightItemRow {
   /** The matched spec, else the item's own test id. */
   test: string | null;
   status: QaAutomatedStatus;
+  /** What produced the result (a browser test, a unit test, an API test); null when not said. */
+  source: QaAutomatedSource | null;
+  /** The CI stage it came from; null when not said. */
+  stage: QaAutomationStage | null;
   label: string;
   tone: QaTone;
   inferred: boolean;
@@ -112,6 +124,8 @@ export function playwrightItemRows(items: ReadonlyArray<ItemSource>): Playwright
         group: item.group,
         test: result.matchedSpec ?? item.testIdentifier,
         status: result.status,
+        source: result.source,
+        stage: result.stage,
         label: automatedBadgeLabel(result.status, result.inferred),
         tone: automatedStatusTone(result.status),
         inferred: result.status === "passed" && result.inferred,

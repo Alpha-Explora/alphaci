@@ -96,6 +96,15 @@ export function CrossIcon() {
   );
 }
 
+/** A test skipped: a short dash, quieter than a check or a cross. */
+export function SkipIcon() {
+  return (
+    <Glyph>
+      <path d="M4.75 8h6.5" />
+    </Glyph>
+  );
+}
+
 export function BlockedIcon() {
   return (
     <Glyph>

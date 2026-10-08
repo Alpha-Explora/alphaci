@@ -89,6 +89,7 @@ describe("where a repository's QA happens", () => {
       deliveryProjectId: "dp-1",
       projectName: "shop",
       projectHref: "/workflows",
+      repositoryRoles: {},
     });
     expect(qaScopeFromFolder("ready", { deliveryProjectId: "dp-1", name: null, href: null })).toMatchObject({ projectName: "this Project" });
     expect(qaScopeFromFolder("ready", { deliveryProjectId: null, name: "x", href: null })).toBe(REPOSITORY_SCOPE);

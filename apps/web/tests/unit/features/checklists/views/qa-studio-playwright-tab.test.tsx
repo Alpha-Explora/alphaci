@@ -46,6 +46,9 @@ jest.mock("../../../../../src/features/checklists/data/project-qa-runs-repositor
     dispatchAutomation: jest.fn(),
   },
 }));
+jest.mock("../../../../../src/features/checklists/data/playwright-live-repository", () => ({
+  playwrightLiveRepository: { getPlaywrightLive: jest.fn().mockResolvedValue(null) },
+}));
 jest.mock("../../../../../src/features/projects/data/projects-repository", () => ({
   projectsRepository: { previews: jest.fn() },
 }));
@@ -264,11 +267,24 @@ describe("Studio column — the Checklist tab", () => {
     expect(buttonNamed(checklistPanel, "Run Playwright")).toBeUndefined();
   });
 
-  it("is the acceptance in PO Studio", async () => {
+  it("is the acceptance in PO Studio, with tabs for an admin", async () => {
     setup();
-    const container = await studio("lead", { po: true });
+    const container = await studio("admin", { po: true });
     expect(panel(container, "checklist").textContent).toContain("Product acceptance");
     expect(container.querySelector('[role="tablist"]')?.getAttribute("aria-label")).toBe("Acceptance and Playwright");
+  });
+
+  it("is all a Team lead gets in PO Studio: no tablist, no Playwright tab, the chip and Merge to main kept", async () => {
+    setup();
+    const container = await studio("lead", { po: true });
+    expect(container.querySelector('[role="tablist"]')).toBeNull();
+    expect(container.querySelector('[role="tabpanel"][data-tab]')).toBeNull();
+    expect(container.querySelector('.qa-colpanel[data-tab="playwright"]')).toBeNull();
+    const only = container.querySelector<HTMLElement>('.qa-colpanel[data-tab="checklist"]')!;
+    expect(only.textContent).toContain("Product acceptance");
+    expect(only.hidden).toBe(false);
+    expect(container.querySelector(".qa-coltabs-bar .qa-promo-chip")).not.toBeNull();
+    expect(buttonNamed(container, "Run Playwright")).toBeUndefined();
   });
 
   it("keeps the per-repository run for a repository outside a Project", async () => {
@@ -276,17 +292,17 @@ describe("Studio column — the Checklist tab", () => {
     const container = await studio("qa", { scope: { kind: "repository" } });
     const checklistPanel = panel(container, "checklist");
     expect(checklistPanel.querySelector(".qa-run-item")).not.toBeNull();
-    // Each item keeps its own result; the stage cards moved to Playwright.
+    // Each item keeps its own result; the stage cards moved to Playwright (browser tests only, for QA).
     expect(checklistPanel.querySelector(".qa-auto-badge")).not.toBeNull();
     expect(checklistPanel.querySelector(".qa-auto-stage")).toBeNull();
-    expect(panel(container, "playwright").querySelectorAll(".qa-auto-stage")).toHaveLength(2);
+    expect(panel(container, "playwright").querySelectorAll(".qa-auto-stage")).toHaveLength(1);
   });
 });
 
 describe("Studio column — the Playwright tab", () => {
-  it("shows each repository's stages with counts, the pass bar and failures that unfold", async () => {
+  it("shows each repository's stages with counts, the pass bar and failures that unfold (an admin's full view)", async () => {
     setup();
-    const container = await studio("qa");
+    const container = await studio("admin");
     await click(tab(container, "playwright"));
     const repos = [...panel(container, "playwright").querySelectorAll<HTMLElement>(".qa-pw-repo")];
     expect(repos.map((repo) => repo.querySelector(".qa-pw-repo__name")?.textContent)).toEqual(["storefront-web", "orders-api"]);
@@ -320,13 +336,14 @@ describe("Studio column — the Playwright tab", () => {
 
   it.each<[AppRole, boolean]>([
     ["qa", true],
-    ["lead", true],
+    // A Team lead has no Playwright tab at all.
+    ["lead", false],
     ["admin", true],
     ["member", false],
   ])("offers Run Playwright to %s: %s", async (role, offered) => {
     setup();
     const container = await studio(role);
-    expect(Boolean(buttonNamed(panel(container, "playwright"), "Run Playwright"))).toBe(offered);
+    expect(Boolean(buttonNamed(container, "Run Playwright"))).toBe(offered);
   });
 
   it("runs Playwright on the Project run's endpoint and confirms in the live region", async () => {
@@ -424,9 +441,9 @@ describe("Studio column — the Playwright tab", () => {
     expect(panel(container, "playwright").textContent).toContain("No QA run yet");
   });
 
-  it("shows the same results in PO Studio, where a Product owner may run Playwright", async () => {
+  it("shows the same results in PO Studio to an admin, who may run Playwright", async () => {
     setup();
-    const container = await studio("lead", { po: true });
+    const container = await studio("admin", { po: true });
     const playwright = panel(container, "playwright");
     expect(playwright.querySelectorAll(".qa-pw-repo")).toHaveLength(2);
     expect(buttonNamed(playwright, "Run Playwright")).toBeDefined();
@@ -468,7 +485,7 @@ function reopenButton(container: HTMLElement): HTMLButtonElement | undefined {
 describe("Studio column — Reopen beside a blocked Run Playwright", () => {
   it("offers Reopen run beside the disabled Run Playwright of a signed-off run, for a viewer who may reopen", async () => {
     setup(signedRun(true));
-    const container = await studio("lead");
+    const container = await studio("admin");
     const run = runPlaywright(container);
     expect(run.disabled).toBe(true);
     const reopen = reopenButton(container)!;
@@ -480,7 +497,7 @@ describe("Studio column — Reopen beside a blocked Run Playwright", () => {
 
   it("asks first, saying reopening blocks Merge to main, and cancelling sends nothing", async () => {
     setup(signedRun(true));
-    const container = await studio("lead");
+    const container = await studio("admin");
     await click(reopenButton(container));
     expect(dialog()?.textContent).toContain("Reopen this run?");
     expect(dialog()?.textContent).toContain(
@@ -497,7 +514,7 @@ describe("Studio column — Reopen beside a blocked Run Playwright", () => {
     setup(signedRun(true));
     const reopened = normalizeProjectRunCurrent({ run: automatedRun({ permissions: { canSetVerification: true, canSignOff: true, canReopen: false, canDispatch: true } }) }).run!;
     projectRuns.reopen.mockResolvedValue(reopened);
-    const container = await studio("lead");
+    const container = await studio("admin");
     const reads = runs.promotion.mock.calls.length;
     await click(reopenButton(container));
     const confirm = [...dialog()!.querySelectorAll("button")].find((button) => button.textContent === "Reopen run");
@@ -512,7 +529,7 @@ describe("Studio column — Reopen beside a blocked Run Playwright", () => {
   it("keeps a refused reopen in the confirmation, to retry or cancel", async () => {
     setup(signedRun(true));
     projectRuns.reopen.mockRejectedValue(Object.assign(new Error("no"), { status: 403 }));
-    const container = await studio("lead");
+    const container = await studio("admin");
     await click(reopenButton(container));
     await click([...dialog()!.querySelectorAll("button")].find((button) => button.textContent === "Reopen run"));
     expect(dialog()?.querySelector('[role="alert"]')?.textContent).toBe("Your role cannot make this change.");
@@ -532,13 +549,13 @@ describe("Studio column — Reopen beside a blocked Run Playwright", () => {
 
   it("is not offered on an open run", async () => {
     setup(automatedRun({ permissions: { canSetVerification: true, canSignOff: true, canReopen: true, canDispatch: true } }));
-    const container = await studio("lead");
+    const container = await studio("admin");
     expect(runPlaywright(container).disabled).toBe(false);
     expect(reopenButton(container)).toBeUndefined();
   });
 
   it("reopens a signed-off repository run too, through its own route", async () => {
-    const signed = runAs("lead", {
+    const signed = runAs("admin", {
       status: "signed_off",
       signoff: { ...SIGNOFF, verdict: "APPROVED" as const },
       items: [runItem(0, { title: "Pays", automated: automated() })],
@@ -546,7 +563,7 @@ describe("Studio column — Reopen beside a blocked Run Playwright", () => {
     });
     setup("none", signed);
     runs.reopen.mockResolvedValue({ ...signed, status: "open", signoff: null });
-    const container = await studio("lead", { scope: { kind: "repository" } });
+    const container = await studio("admin", { scope: { kind: "repository" } });
     expect(runPlaywright(container).disabled).toBe(true);
     await click(reopenButton(container));
     await click([...dialog()!.querySelectorAll("button")].find((button) => button.textContent === "Reopen run"));
@@ -557,7 +574,7 @@ describe("Studio column — Reopen beside a blocked Run Playwright", () => {
 
   it("the Checklist tab's Reopen run goes through the same confirmation", async () => {
     setup(signedRun(true));
-    const container = await studio("lead");
+    const container = await studio("admin");
     const banner = panel(container, "checklist").querySelector(".qa-signoff-banner")!;
     await click([...banner.querySelectorAll("button")].find((button) => button.textContent === "Reopen run"));
     expect(projectRuns.reopen).not.toHaveBeenCalled();

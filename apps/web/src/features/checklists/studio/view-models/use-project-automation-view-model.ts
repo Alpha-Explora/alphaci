@@ -25,12 +25,17 @@ import type { AutomationDispatchControls, QaAutomationStatus } from "./use-qa-au
 
 type Outcome =
   | { status: "idle" | "dispatching" }
-  | { status: "dispatched"; result: ProjectDispatchResult }
+  | { status: "dispatched"; result: ProjectDispatchResult; at: number }
   | { status: "failed"; error: QaDispatchError };
 
 function publicStatus(outcome: Outcome, watching: boolean): QaAutomationStatus {
   if (outcome.status !== "dispatched") return outcome.status;
   return watching ? "watching" : "dispatched";
+}
+
+/** When Run Playwright last started the workflow somewhere; null before (or when it started nowhere). */
+function dispatchedAt(outcome: Outcome): number | null {
+  return outcome.status === "dispatched" && outcome.result.dispatched.length > 0 ? outcome.at : null;
 }
 
 /**
@@ -84,7 +89,7 @@ export function useProjectAutomationViewModel(options: {
     try {
       const result = await projectQaRunsRepository.dispatchAutomation(deliveryProjectId, run.id);
       const at = Date.now();
-      setOutcome({ status: "dispatched", result });
+      setOutcome({ status: "dispatched", result, at });
       if (result.dispatched.length > 0) setPoll({ since: at, until: at + AUTOMATION_POLL_WINDOW_MS });
     } catch (cause) {
       setOutcome({ status: "failed", error: dispatchError(cause) });
@@ -105,5 +110,10 @@ export function useProjectAutomationViewModel(options: {
     dispatch,
     // Clears a failure only; a started workflow's confirmation stays.
     dismiss: () => setOutcome((current) => (current.status === "failed" ? { status: "idle" } : current)),
+    startedAt: dispatchedAt(outcome),
+    refresh: () => {
+      // A missed read is not worth a message: the stage cards stay as they were.
+      projectQaRunsRepository.get(deliveryProjectId, run.id).then(onRun).catch(() => undefined);
+    },
   };
 }
