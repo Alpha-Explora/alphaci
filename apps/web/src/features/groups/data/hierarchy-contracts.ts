@@ -14,7 +14,12 @@
  * convention and are documented as the shared FE↔BE assumption in docs/UI_LAYOUTS.md.
  */
 
-import type { AppRole, WorkspaceRole } from "@/shared/api/contracts";
+import type {
+  AppRole,
+  DeploymentProvisioningRequest,
+  DeploymentProvisioningResult,
+  WorkspaceRole,
+} from "@/shared/api/contracts";
 
 /**
  * Create capability (systems, delivery projects, repositories) is governed by
@@ -292,10 +297,93 @@ export interface HierarchyRepository {
   updatedAt: string;
 }
 
+/**
+ * "Add repository" inside a Project (POST /delivery-projects/:id/repositories).
+ * The same setup the create wizard runs for one repository, so `projectTypeId`
+ * (a stack from GET /catalog/project-options) is required. An omitted
+ * `deploymentProvisioning` means the managed defaults: frontend stacks on
+ * Vercel, backend stacks on Render.
+ */
 export interface CreateRepositoryRequest {
   name: string;
-  /** Private only — enforced by the backend, not just defaulted (plan §2.6). */
-  visibility: "private";
+  projectTypeId: string;
+  /** The UI sends 'private'; the backend also accepts 'public', as the wizard does. */
+  visibility?: "private" | "public";
+  workflowRecipeId?: string;
+  serviceName?: string;
+  repoShape?: "standalone" | "mono" | "monorepo";
+  servicePath?: string;
+  nodeVersion?: string;
+  coverageThreshold?: number;
+  tests?: Partial<Record<string, boolean>>;
+  outputFileName?: string;
+  deploymentProvisioning?: DeploymentProvisioningRequest;
+}
+
+/** What the hosting step of "Add repository" did. `skipped` = none requested. */
+export type RepositoryHostingOutcome = "provisioned" | "partial" | "failed" | "skipped";
+
+export interface RepositoryHostingFailure {
+  slot: string;
+  provider: string;
+  reason: string;
+}
+
+/** The repository row plus how its setup went. A hosting failure does not fail the create. */
+export interface CreatedRepositoryResponse extends HierarchyRepository {
+  provisioning: {
+    projectId: string;
+    repoFullName: string;
+    repoUrl: string;
+    workflowPath: string;
+    branchesCreated: string[];
+    hosting: {
+      outcome: RepositoryHostingOutcome;
+      failures: RepositoryHostingFailure[];
+    };
+    deploymentProvisioning?: DeploymentProvisioningResult;
+  };
+}
+
+/* ── Project members (delivery-project membership + its GitHub access) ────── */
+
+/** Derived server-side from the app role: member -> developer, qa -> qa. */
+export type DeliveryProjectMemberKind = "developer" | "qa";
+
+export interface DeliveryProjectMember {
+  id: string;
+  deliveryProjectId: string;
+  userId: string;
+  memberKind: DeliveryProjectMemberKind;
+  status: "active" | "removed";
+  addedBy: string | null;
+  createdAt: string;
+  updatedAt: string;
+  login: string | null;
+  name: string | null;
+  avatarUrl: string | null;
+}
+
+/** The GitHub side of a membership change. `stub`: nothing is granted yet. */
+export interface ProjectMemberGithubAccess {
+  syncMode: "live" | "stub";
+  /** Repositories a grant (add) or a revoke (remove) was queued for. */
+  repositoriesQueued: number;
+}
+
+export interface ProjectMembersResponse {
+  items: DeliveryProjectMember[];
+}
+
+export interface ProjectMemberChangeResponse {
+  member: DeliveryProjectMember;
+  githubAccess: ProjectMemberGithubAccess;
+}
+
+export interface ProjectMembersSyncResponse {
+  items: DeliveryProjectMember[];
+  syncMode: "live";
+  repositoriesQueued: number;
 }
 
 export interface UpdateRepositoryRequest {

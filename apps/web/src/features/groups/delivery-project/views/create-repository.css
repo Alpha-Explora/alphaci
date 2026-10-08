@@ -1,0 +1,160 @@
+/* "Add repository" dialog: stack, hosting choice, Advanced, and the result
+   step. Tokens only. */
+
+.create-repo {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.create-repo__required {
+  font-weight: 500;
+  color: var(--text-muted);
+}
+
+.create-repo__hint--danger {
+  color: var(--danger);
+}
+
+.create-repo__private {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.create-repo__hosting {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.5rem;
+  min-width: 0;
+  margin: 0 0 0.95rem;
+  padding: 0;
+  border: 0;
+}
+
+.create-repo__hosting > legend {
+  padding: 0;
+  margin-bottom: 0.4rem;
+}
+
+.create-repo__choice {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid var(--border-layer);
+  border-radius: 0.65rem;
+  background: var(--bg-soft);
+  cursor: pointer;
+  transition: border-color 0.16s ease, background 0.16s ease;
+}
+
+.create-repo__choice:hover {
+  border-color: var(--border-strong);
+}
+
+.create-repo__choice:has(input:checked) {
+  border-color: var(--accent-indigo);
+  background: var(--accent-indigo-light);
+}
+
+/* The global form-control rule stretches radios to full width. */
+.create-repo__choice > input[type="radio"] {
+  flex-shrink: 0;
+  width: 1rem;
+  height: 1rem;
+  margin: 0.15rem 0 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  accent-color: var(--accent-indigo);
+}
+
+.create-repo__choice > span {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.create-repo__choice strong {
+  font-size: 0.85rem;
+  color: var(--text-primary);
+}
+
+.create-repo__advanced {
+  margin-bottom: 0.4rem;
+  border-top: 1px solid var(--border-layer);
+  padding-top: 0.7rem;
+}
+
+.create-repo__advanced > summary {
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.create-repo__advanced > summary:focus-visible {
+  outline: 2px solid var(--accent-indigo);
+  outline-offset: 2px;
+  border-radius: 0.3rem;
+}
+
+.create-repo__advanced-body {
+  padding-top: 0.8rem;
+}
+
+.create-repo__outcome {
+  padding: 0.8rem 0.95rem;
+  border-radius: 0.7rem;
+  border: 1px solid var(--border-layer);
+}
+
+.create-repo__outcome--success {
+  background: var(--accent-emerald-light);
+  border-color: var(--accent-emerald);
+}
+
+.create-repo__outcome--warning {
+  background: var(--accent-amber-light);
+  border-color: var(--border-amber);
+}
+
+.create-repo__outcome-message {
+  margin: 0;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  color: var(--text-primary);
+}
+
+.create-repo__reasons {
+  margin: 0.5rem 0 0;
+  padding-left: 1.1rem;
+  font-size: 0.8rem;
+  line-height: 1.5;
+  color: var(--text-secondary);
+  overflow-wrap: anywhere;
+}
+
+.create-repo .hier-dialog-actions {
+  flex-wrap: wrap;
+}
+
+/* The global .primary-button / .ghost-button are hero-scale; this dialog
+   sizes its own actions (three classes beat the global rule). */
+.hier-dialog:has(.create-repo) .primary-button,
+.hier-dialog:has(.create-repo) .ghost-button {
+  min-height: 2.25rem;
+  padding: 0.45rem 1rem;
+  border-radius: 0.55rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  letter-spacing: 0;
+}
+
+.hier-dialog:has(.create-repo) .ghost-button {
+  border-color: var(--border-strong);
+}
