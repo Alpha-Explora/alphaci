@@ -1392,7 +1392,8 @@ class QaMockBackend {
 
   /**
    * GET /projects/:id/commits — `?branch` (default dev), `?limit` 1-100,
-   * `?before=<next>` (here, a sha). dev has a PR-merged commit and a direct push.
+   * `?before=<next>` (here, a sha). dev has a PR-merged commit, a person's direct
+   * push and two ALPHACI setup commits (made by the GitHub App bot).
    */
   private commits(projectId: string, query: URLSearchParams): ApiReply {
     this.requireProject(projectId);
@@ -1420,6 +1421,26 @@ class QaMockBackend {
         authoredAt: '2026-09-30T09:00:00Z',
         url: 'https://github.com/org/repo/commit/c0ffee2',
         pullRequestNumber: 12,
+      },
+      {
+        sha: 'c0ffee3000000000000000000000000000000003',
+        shortSha: 'c0ffee3',
+        message: 'chore: add the ALPHACI workflow',
+        authorLogin: 'alphaci-enterprise[bot]',
+        authorName: 'alphaci-enterprise[bot]',
+        authoredAt: '2026-09-29T09:00:00Z',
+        url: 'https://github.com/org/repo/commit/c0ffee3',
+        pullRequestNumber: null,
+      },
+      {
+        sha: 'c0ffee4000000000000000000000000000000004',
+        shortSha: 'c0ffee4',
+        message: 'chore: install ALPHACI configuration',
+        authorLogin: 'alphaci-enterprise[bot]',
+        authorName: 'alphaci-enterprise[bot]',
+        authoredAt: '2026-09-29T08:55:00Z',
+        url: 'https://github.com/org/repo/commit/c0ffee4',
+        pullRequestNumber: null,
       },
     ];
     const before = query.get('before');

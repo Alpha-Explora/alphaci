@@ -23,6 +23,21 @@ describe("visibleProjectDetailTabs", () => {
     expect(tabs.indexOf("po")).toBe(tabs.indexOf("qa") + 1);
   });
 
+  it("puts Commits right after Code and before Pull requests, for exactly the roles that see Code", () => {
+    expect(PROJECT_DETAIL_TABS.indexOf("commits")).toBe(PROJECT_DETAIL_TABS.indexOf("code") + 1);
+    expect(PROJECT_DETAIL_TABS.indexOf("pulls")).toBe(PROJECT_DETAIL_TABS.indexOf("commits") + 1);
+    for (const role of ["admin", "member", "lead", "qa", null] as const) {
+      for (const qaChecklistsEnabled of [true, false]) {
+        const tabs = visibleProjectDetailTabs(role, { qaChecklistsEnabled });
+        expect(tabs.includes("commits")).toBe(tabs.includes("code"));
+        if (tabs.includes("code")) expect(tabs.indexOf("commits")).toBe(tabs.indexOf("code") + 1);
+      }
+    }
+    expect(visibleProjectDetailTabs("member", { qaChecklistsEnabled: true })).toContain("commits");
+    expect(visibleProjectDetailTabs("qa", { qaChecklistsEnabled: true })).not.toContain("commits");
+    expect(visibleProjectDetailTabs("lead", { qaChecklistsEnabled: true })).not.toContain("commits");
+  });
+
   it("gives a Product owner only Overview, Checklists, PO Studio, Audit and Settings", () => {
     expect(visibleProjectDetailTabs("lead", { qaChecklistsEnabled: true })).toEqual([
       "overview",
@@ -53,7 +68,7 @@ describe("visibleProjectDetailTabs", () => {
   it("gives QA Team the Product owner's five tabs, with QA Studio in place of PO Studio", () => {
     const tabs = visibleProjectDetailTabs("qa", { qaChecklistsEnabled: true });
     expect(tabs).toEqual(["overview", "checklists", "qa", "audit", "settings"]);
-    for (const hidden of ["code", "pulls", "runs", "workflow", "hosting", "environment"] as const) {
+    for (const hidden of ["code", "commits", "pulls", "runs", "workflow", "hosting", "environment"] as const) {
       expect(tabs).not.toContain(hidden);
     }
   });

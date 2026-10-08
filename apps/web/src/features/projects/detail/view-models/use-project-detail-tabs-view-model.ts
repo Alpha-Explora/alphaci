@@ -26,6 +26,7 @@ import {
   resolveVisibleTab,
   shouldHighlightMyQaItems,
   tabFromHash,
+  commitsBranchFromUrl,
   visibleProjectDetailTabs,
   type ProjectDetailTab,
 } from "../model/project-detail-tab-rules";
@@ -70,6 +71,13 @@ export interface ProjectDetailTabsViewModel {
    */
   pullFocus: number | null;
   openPullRequest: (pullRequestNumber: number) => void;
+  /**
+   * The branch the Commits tab opens on, set by a deep link (`#commits` with
+   * `?branch=`, or `openCommits(branch)`); null means the server's default.
+   * Cleared by choosing a tab by hand.
+   */
+  commitsBranch: string | null;
+  openCommits: (branch?: string | null) => void;
   status: ProjectStatus;
   error: string | null;
   overview: ProjectOverviewResponse | null;
@@ -127,6 +135,9 @@ export function useProjectDetailTabsViewModel(options: {
   );
   const [logFocus, setLogFocus] = useState<DeploymentLogFocus | null>(null);
   const [pullFocus, setPullFocus] = useState<number | null>(null);
+  const [commitsBranch, setCommitsBranch] = useState<string | null>(() =>
+    typeof window === "undefined" ? null : commitsBranchFromUrl(window.location.hash, window.location.search),
+  );
   const [checklistsOpensMyItems, setChecklistsOpensMyItems] = useState(false);
 
   const caps = useCapabilities();
@@ -181,6 +192,7 @@ export function useProjectDetailTabsViewModel(options: {
   function setTab(next: ProjectDetailTab) {
     setLogFocus(null);
     setPullFocus(null);
+    setCommitsBranch(null);
     setChecklistsOpensMyItems(false);
     setTabState(next);
   }
@@ -196,6 +208,13 @@ export function useProjectDetailTabsViewModel(options: {
     setPullFocus(null);
     setLogFocus(focus);
     setTabState("hosting");
+  }
+
+  function openCommits(branch?: string | null) {
+    setLogFocus(null);
+    setPullFocus(null);
+    setCommitsBranch(branch ?? null);
+    setTabState("commits");
   }
 
   function openPullRequest(pullRequestNumber: number) {
@@ -236,6 +255,8 @@ export function useProjectDetailTabsViewModel(options: {
     openTargetLogs,
     pullFocus,
     openPullRequest,
+    commitsBranch,
+    openCommits,
     status: overviewQuery.status,
     error: overviewQuery.error,
     overview,

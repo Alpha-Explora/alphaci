@@ -6,10 +6,9 @@ import { projectsRepository } from "../../data/projects-repository";
 import type { ProjectStatus } from "../../model/projects-types";
 import {
   appendCommitsPage,
-  branchSwitcher,
+  branchOptions,
   COMMITS_PAGE_SIZE,
   normalizeCommitsPage,
-  type BranchSwitcher,
   type CommitRow,
   type CommitsPage,
 } from "../model/commit-list-rules";
@@ -23,7 +22,8 @@ export interface ProjectCommitsViewModel {
   signInHref: string | null;
   /** The branch the shown commits are on (the server's default until one is picked). */
   branch: string | null;
-  switcher: BranchSwitcher;
+  /** The selector's options: dev, uat, main as the repository has them. */
+  branchOptions: string[];
   /** Newest first, every page loaded so far. */
   rows: CommitRow[];
   /** When the shown rows were read: the base for their "5m ago". */
@@ -105,8 +105,8 @@ function deriveCommits(input: {
 }
 
 /**
- * ViewModel for the Code tab's Commits list: the server's default branch on
- * first open, a picked branch afterwards, older pages on "Load more" with the
+ * ViewModel for the Commits tab: the branch the tab was opened on (else the
+ * server's default) on first open, a picked branch afterwards, older pages on "Load more" with the
  * cursor passed back unchanged.
  *
  * The effect only starts a request; results land keyed by the branch they
@@ -114,9 +114,13 @@ function deriveCommits(input: {
  * render without a synchronous reset, and a slow answer for the previous
  * branch cannot overwrite the new one (the request counter).
  */
-export function useProjectCommitsViewModel(options: { projectId: string }): ProjectCommitsViewModel {
+export function useProjectCommitsViewModel(options: {
+  projectId: string;
+  /** The branch to open on (a deep link); without one, the server's default. */
+  initialBranch?: string | null;
+}): ProjectCommitsViewModel {
   const { projectId } = options;
-  const [chosenBranch, setChosenBranch] = useState<string | null>(null);
+  const [chosenBranch, setChosenBranch] = useState<string | null>(options.initialBranch ?? null);
   const [attempt, setAttempt] = useState(0);
   const [loaded, setLoaded] = useState<LoadedState | null>(null);
   const [failed, setFailed] = useState<FailedState | null>(null);
@@ -189,8 +193,8 @@ export function useProjectCommitsViewModel(options: { projectId: string }): Proj
     signInHref: failure ? failure.signInHref : null,
     branch,
     // The last branch list read, even while another branch loads, so the
-    // switcher does not collapse under the pointer that just used it.
-    switcher: branchSwitcher(knownBranches, branch),
+    // selector does not collapse under the pointer that just used it.
+    branchOptions: branchOptions(knownBranches, branch),
     rows: page.items,
     readAt,
     hasMore: page.next !== null,

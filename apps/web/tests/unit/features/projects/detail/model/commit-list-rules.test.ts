@@ -1,11 +1,12 @@
 import {
   appendCommitsPage,
-  branchSwitcher,
+  branchOptions,
   commitAuthor,
   commitPullRequestLabel,
   commitsEmptyMessage,
   commitsLoadMoreLabel,
   commitTitle,
+  isAlphaciBot,
   isDirectPush,
   normalizeCommitsPage,
   shaCopyLabel,
@@ -95,6 +96,7 @@ describe("normalizeCommitsPage", () => {
       authoredAt: "2026-10-02T11:00:00Z",
       pullRequestNumber: 12,
       directPush: false,
+      alphaciSetup: false,
     });
     expect(page.items[1]).toMatchObject({ pullRequestNumber: null, directPush: true });
   });
@@ -150,27 +152,53 @@ describe("appendCommitsPage", () => {
   });
 });
 
-describe("branchSwitcher", () => {
-  it("puts dev, uat and main in promotion order and the rest in the select", () => {
-    expect(branchSwitcher(["main", "feature/a", "dev", "uat", "fix/b"], "dev")).toEqual({
-      primary: ["dev", "uat", "main"],
-      others: ["feature/a", "fix/b"],
-      otherValue: "",
-    });
+describe("branchOptions", () => {
+  it("offers dev, uat and main in promotion order, whichever the repository has", () => {
+    expect(branchOptions(["main", "feature/a", "dev", "uat", "fix/b"], "dev")).toEqual(["dev", "uat", "main"]);
+    expect(branchOptions(["main", "dev"], "dev")).toEqual(["dev", "main"]);
   });
 
-  it("selects an other branch when it is the one shown", () => {
-    expect(branchSwitcher(["main", "feature/a"], "feature/a")).toEqual({
-      primary: ["main"],
-      others: ["feature/a"],
-      otherValue: "feature/a",
-    });
+  it("always offers the shown branch, even a deep-linked one or without a list", () => {
+    expect(branchOptions(["main", "feature/a"], "feature/a")).toEqual(["main", "feature/a"]);
+    expect(branchOptions([], "main")).toEqual(["main"]);
+    expect(branchOptions([], null)).toEqual([]);
+  });
+});
+
+describe("ALPHACI's GitHub App", () => {
+  it.each([
+    ["alphaci-enterprise[bot]", "x", true],
+    ["AlphaCI-Enterprise[bot]", null, true],
+    [null, "alphaci-enterprise[bot]", true],
+    ["dependabot[bot]", "dependabot[bot]", false],
+    ["alphaci-dev", "Alpha CI", false],
+    ["ana", "alphaci[bot]x", false],
+    [null, null, false],
+  ])("login %p name %p -> %p", (login, name, expected) => {
+    expect(isAlphaciBot(login as string | null, name as string | null)).toBe(expected);
   });
 
-  it("always offers the shown branch, even without a list", () => {
-    expect(branchSwitcher([], "main")).toEqual({ primary: ["main"], others: [], otherValue: "" });
-    expect(branchSwitcher([], "topic")).toEqual({ primary: [], others: ["topic"], otherValue: "topic" });
-    expect(branchSwitcher([], null)).toEqual({ primary: [], others: [], otherValue: "" });
+  it("is not a direct push, whichever branch; a person's commit without a PR is", () => {
+    expect(isDirectPush("dev", null, true)).toBe(false);
+    expect(isDirectPush("dev", null, false)).toBe(true);
+  });
+
+  it("labels the setup commit, tags the person's push, links the PR commit, leaves feature branches plain", () => {
+    const rows = (branch: string, items: Record<string, unknown>[]) =>
+      normalizeCommitsPage({ branch, branches: [], items, next: null }).items;
+    const [setup, person, viaPr, dependabot] = rows("dev", [
+      commit({ sha: "1".repeat(40), authorLogin: "alphaci-enterprise[bot]", authorName: "alphaci-enterprise[bot]", pullRequestNumber: null }),
+      commit({ sha: "2".repeat(40), pullRequestNumber: null }),
+      commit({ sha: "3".repeat(40), pullRequestNumber: 9 }),
+      commit({ sha: "4".repeat(40), authorLogin: "dependabot[bot]", pullRequestNumber: null }),
+    ]);
+    expect([setup.alphaciSetup, setup.directPush]).toEqual([true, false]);
+    expect([person.alphaciSetup, person.directPush]).toEqual([false, true]);
+    expect([viaPr.alphaciSetup, viaPr.directPush, viaPr.pullRequestNumber]).toEqual([false, false, 9]);
+    // Other bots keep today's behaviour.
+    expect([dependabot.alphaciSetup, dependabot.directPush]).toEqual([false, true]);
+    const [onFeature] = rows("feature/x", [commit({ sha: "5".repeat(40), pullRequestNumber: null })]);
+    expect([onFeature.alphaciSetup, onFeature.directPush]).toEqual([false, false]);
   });
 });
 

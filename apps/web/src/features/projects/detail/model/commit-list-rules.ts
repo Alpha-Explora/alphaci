@@ -1,10 +1,11 @@
-/* Pure rules for the Code tab's Commits list: reading GET /projects/:id/commits
- * defensively, the branch switcher's shape, and how each commit is labelled.
+/* Pure rules for the Commits tab: reading GET /projects/:id/commits
+ * defensively, the branch selector's options, and how each commit is labelled.
  * No React, no fetch.
  *
  * A missing field only ever makes a row plainer: no pull request number means
- * no link (and, on dev/uat/main, the "Direct push" tag); no login falls back
- * to the author's name; a row without a SHA is dropped. */
+ * no link (and, on dev/uat/main, the "Direct push" tag unless ALPHACI's own
+ * GitHub App made the commit); no login falls back to the author's name; a
+ * row without a SHA is dropped. */
 
 import type { ProjectCommitsResponse } from "@/shared/api/contracts";
 
@@ -13,8 +14,8 @@ export const COMMITS_PAGE_SIZE = 30;
 
 /**
  * The branches every ALPHACI repository promotes through, in promotion order.
- * They get the segmented control; anything else goes in the "Other branches"
- * select. A commit on one of them without a pull request skipped review.
+ * The Commits tab's selector offers exactly these (the ones that exist). A
+ * commit on one of them without a pull request skipped review.
  */
 export const PROMOTION_BRANCHES: ReadonlyArray<string> = ["dev", "uat", "main"];
 
@@ -29,8 +30,10 @@ export interface CommitRow {
   authoredAt: string;
   /** The pull request that brought it in, opened in ALPHACI's Pull requests tab. */
   pullRequestNumber: number | null;
-  /** On dev, uat or main without a pull request: it skipped review. */
+  /** On dev, uat or main, by a person, without a pull request: it skipped review. */
   directPush: boolean;
+  /** Written by ALPHACI's GitHub App (the setup commits): not a direct push. */
+  alphaciSetup: boolean;
 }
 
 export interface CommitsPage {
@@ -40,15 +43,6 @@ export interface CommitsPage {
   items: CommitRow[];
   /** Pass back unchanged as `?before=`; null on the last page. */
   next: string | null;
-}
-
-export interface BranchSwitcher {
-  /** dev, uat, main — those that exist — in promotion order. */
-  primary: string[];
-  /** Every other branch, in the server's order. */
-  others: string[];
-  /** The shown branch when it is one of `others`; "" otherwise (the select's placeholder). */
-  otherValue: string;
 }
 
 function record(value: unknown): Record<string, unknown> | null {
@@ -84,9 +78,26 @@ export function shortShaOf(sha: string, shortSha?: string | null): string {
   return text(shortSha) ?? sha.slice(0, 7);
 }
 
-/** A commit on a promotion branch with no pull request behind it. */
-export function isDirectPush(branch: string | null, pullRequestNumber: number | null): boolean {
-  return pullRequestNumber === null && branch !== null && PROMOTION_BRANCHES.includes(branch);
+/**
+ * ALPHACI's own GitHub App: GitHub reports its commits with a `[bot]` login
+ * (`alphaci-enterprise[bot]`). The commits API sends `authorLogin` and
+ * `authorName` only, no account type, so the login (or, with none, the name)
+ * must be a `[bot]` account whose name starts with "alphaci". Other bots, such
+ * as dependabot, are not matched.
+ */
+const ALPHACI_BOT = /^alphaci[\w.-]*\[bot\]$/i;
+
+export function isAlphaciBot(login: string | null | undefined, name: string | null | undefined): boolean {
+  return ALPHACI_BOT.test(text(login) ?? text(name) ?? "");
+}
+
+/** A person's commit on a promotion branch with no pull request behind it. */
+export function isDirectPush(
+  branch: string | null,
+  pullRequestNumber: number | null,
+  alphaciSetup = false,
+): boolean {
+  return !alphaciSetup && pullRequestNumber === null && branch !== null && PROMOTION_BRANCHES.includes(branch);
 }
 
 function rowFrom(value: unknown, branch: string | null): CommitRow | null {
@@ -94,6 +105,7 @@ function rowFrom(value: unknown, branch: string | null): CommitRow | null {
   const sha = text(raw?.sha);
   if (!raw || !sha) return null;
   const pullRequestNumber = positiveInteger(raw.pullRequestNumber);
+  const alphaciSetup = isAlphaciBot(text(raw.authorLogin), text(raw.authorName));
   return {
     sha,
     shortSha: shortShaOf(sha, text(raw.shortSha)),
@@ -101,7 +113,8 @@ function rowFrom(value: unknown, branch: string | null): CommitRow | null {
     author: commitAuthor(text(raw.authorLogin), text(raw.authorName)),
     authoredAt: text(raw.authoredAt) ?? "",
     pullRequestNumber,
-    directPush: isDirectPush(branch, pullRequestNumber),
+    directPush: isDirectPush(branch, pullRequestNumber, alphaciSetup),
+    alphaciSetup: alphaciSetup && pullRequestNumber === null,
   };
 }
 
@@ -135,18 +148,18 @@ export function appendCommitsPage(current: CommitsPage, page: CommitsPage): Comm
 }
 
 /**
- * The switcher for `branches` with `current` shown. The shown branch is
- * always offered, even when an older backend sent no branch list.
+ * The selector's options: dev, uat, main — those the repository has — in
+ * promotion order. The shown branch is always offered, even when it is not one
+ * of them (a deep link) or an older backend sent no branch list.
  */
-export function branchSwitcher(branches: ReadonlyArray<string>, current: string | null): BranchSwitcher {
+export function branchOptions(branches: ReadonlyArray<string>, current: string | null): string[] {
   const all = current && !branches.includes(current) ? [...branches, current] : [...branches];
-  const others = all.filter((name) => !PROMOTION_BRANCHES.includes(name));
-  return {
-    primary: PROMOTION_BRANCHES.filter((name) => all.includes(name)),
-    others,
-    otherValue: current && others.includes(current) ? current : "",
-  };
+  const promotion = PROMOTION_BRANCHES.filter((name) => all.includes(name));
+  return current && !promotion.includes(current) ? [...promotion, current] : promotion;
 }
+
+/** The label of ALPHACI's own setup commits, in place of a Direct push tag. */
+export const ALPHACI_SETUP_LABEL = "ALPHACI setup";
 
 /** What the list says when a branch has no commits. */
 export function commitsEmptyMessage(branch: string | null): string {

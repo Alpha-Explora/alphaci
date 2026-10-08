@@ -9,6 +9,7 @@ import {
   commitPullRequestLabel,
   commitsEmptyMessage,
   commitsLoadMoreLabel,
+  ALPHACI_SETUP_LABEL,
   shaCopyLabel,
   type CommitRow,
 } from "../../model/commit-list-rules";
@@ -19,20 +20,25 @@ import {
 import { WorkspaceEmpty, WorkspaceError } from "./workspace-states";
 
 /**
- * The repository's commits on one branch, newest first. Every commit says
- * where it came from: the pull request that brought it in (opened in the Pull
- * requests tab here), or — on dev, uat and main — a "Direct push" tag when it
- * skipped review, which is the thing this list exists to make visible.
+ * The Commits tab: the repository's commits on one branch, newest first, the
+ * branch chosen with the one selector at the top. Every commit says where it
+ * came from: the pull request that brought it in (opened in the Pull requests
+ * tab here), an "ALPHACI setup" label for what ALPHACI's own GitHub App wrote,
+ * or — on dev, uat and main, when a person pushed it — a "Direct push" tag:
+ * it skipped review, which is the thing this list exists to make visible.
  */
 export function CommitsSection({
   projectId,
+  initialBranch,
   onOpenPullRequest,
 }: Readonly<{
   projectId: string;
+  /** The branch to open on (a deep link); without one, the server's default. */
+  initialBranch?: string | null;
   /** Opens the Pull requests tab on this pull request. Without it, titles are plain text. */
   onOpenPullRequest?: (pullRequestNumber: number) => void;
 }>) {
-  const vm = useProjectCommitsViewModel({ projectId });
+  const vm = useProjectCommitsViewModel({ projectId, initialBranch });
   return <CommitsList vm={vm} onOpenPullRequest={onOpenPullRequest} />;
 }
 
@@ -50,51 +56,39 @@ export function CommitsList({
         <h2 className="commits__title" id={titleId}>
           Commits
         </h2>
-        <BranchSwitch vm={vm} />
+        <BranchSelect vm={vm} />
       </div>
       <CommitsBody vm={vm} onOpenPullRequest={onOpenPullRequest} />
     </section>
   );
 }
 
-function BranchSwitch({ vm }: Readonly<{ vm: ProjectCommitsViewModel }>) {
-  const { primary, others, otherValue } = vm.switcher;
-  if (primary.length === 0 && others.length === 0) return null;
+/** The one branch selector: dev, uat, main as the repository has them. */
+function BranchSelect({ vm }: Readonly<{ vm: ProjectCommitsViewModel }>) {
+  const selectId = useId();
+  if (vm.branchOptions.length === 0) return null;
   return (
     <div className="commits__switch">
-      {primary.length > 0 ? (
-        <div className="commits__segments" role="group" aria-label="Promotion branch">
-          {primary.map((name) => (
-            <button
-              key={name}
-              type="button"
-              className="commits__segment"
-              aria-pressed={name === vm.branch}
-              onClick={() => vm.selectBranch(name)}
-            >
-              {name}
-            </button>
-          ))}
-        </div>
-      ) : null}
-      {others.length > 0 ? (
-        <select
-          className="ws-select commits__select"
-          aria-label="Other branches"
-          value={otherValue}
-          data-active={otherValue ? "true" : undefined}
-          onChange={(event) => vm.selectBranch(event.target.value)}
-        >
+      <label className="commits__label" htmlFor={selectId}>
+        Branch
+      </label>
+      <select
+        id={selectId}
+        className="ws-select commits__select"
+        value={vm.branch ?? ""}
+        onChange={(event) => vm.selectBranch(event.target.value)}
+      >
+        {vm.branch === null ? (
           <option value="" disabled>
-            Other branches
+            Choose a branch
           </option>
-          {others.map((name) => (
-            <option key={name} value={name}>
-              {name}
-            </option>
-          ))}
-        </select>
-      ) : null}
+        ) : null}
+        {vm.branchOptions.map((name) => (
+          <option key={name} value={name}>
+            {name}
+          </option>
+        ))}
+      </select>
     </div>
   );
 }
@@ -179,6 +173,11 @@ function CommitItem({
               title={`Pushed straight to ${branch ?? "this branch"}, without a pull request`}
             >
               Direct push
+            </span>
+          ) : null}
+          {row.alphaciSetup ? (
+            <span className="commits__tag commits__tag--setup" title="Written by ALPHACI's GitHub App">
+              {ALPHACI_SETUP_LABEL}
             </span>
           ) : null}
         </p>
