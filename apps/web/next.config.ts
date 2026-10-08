@@ -1,6 +1,6 @@
 import type { NextConfig } from "next";
 import { createRequire } from "node:module";
-import { dirname } from "node:path";
+import { dirname, relative, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { apiProxyRewrites } from "./src/shared/api/api-proxy-rewrites";
@@ -23,9 +23,20 @@ const profileProjection = resolveProfile(buildProfile, {
   manifests: catalogPackage.manifests,
   surfaces: readSurfaceRegistry(),
 });
+// Stubs are generated modules the bundler must compile, so they have to sit
+// where it treats them as first-party source: Turbopack neither resolves
+// anything out of .next nor transforms files inside node_modules.
 const capabilityAliases = writeCapabilityStubs(
   profileProjection,
-  `${rootDir}/.next/capability-stubs`,
+  `${rootDir}/.capability-stubs`,
+);
+// Turbopack rejects absolute Windows paths ("windows imports are not
+// implemented yet"), so it gets project-relative aliases; webpack keeps the
+// absolute ones.
+const turbopackCapabilityAliases = Object.fromEntries(
+  Object.entries(capabilityAliases as Record<string, string>).map(
+    ([barrel, file]) => [barrel, `./${relative(rootDir, file).split(sep).join("/")}`],
+  ),
 );
 
 const nextConfig: NextConfig = {
@@ -42,7 +53,7 @@ const nextConfig: NextConfig = {
   },
   turbopack: {
     root: rootDir,
-    resolveAlias: capabilityAliases,
+    resolveAlias: turbopackCapabilityAliases,
   },
   webpack(config) {
     config.resolve ??= {};
