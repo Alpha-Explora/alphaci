@@ -14,6 +14,7 @@ import type {
   CreateGroupRequest,
   AddGroupMemberRequest,
   CreateRepositoryRequest,
+  CreatedRepositoryResponse,
   CreateSystemRequest,
   DeliveryProject,
   GroupActivityQuery,
@@ -234,11 +235,12 @@ export function archiveDeliveryProject(
 
 /* ── Repositories & assignments (plan §2.6) ────────────────────────────────── */
 
+/** "Add repository": the row plus its setup outcome (hosting may have failed). */
 export function createRepository(
   deliveryProjectId: string,
   payload: CreateRepositoryRequest,
-): Promise<HierarchyRepository> {
-  return request<HierarchyRepository>(
+): Promise<CreatedRepositoryResponse> {
+  return request<CreatedRepositoryResponse>(
     `/delivery-projects/${enc(deliveryProjectId)}/repositories`,
     { method: "POST", body: JSON.stringify(payload) },
   );
