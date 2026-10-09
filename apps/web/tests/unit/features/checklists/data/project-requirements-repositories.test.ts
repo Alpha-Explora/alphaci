@@ -1,15 +1,17 @@
 import { projectQaRunsRepository } from "../../../../../src/features/checklists/data/project-qa-runs-repository";
 import { requirementsRepository } from "../../../../../src/features/checklists/data/requirements-repository";
 import { normalizeRequirementItem } from "../../../../../src/features/checklists/model/requirement-rules";
-import { request } from "../../../../../src/shared/api/request";
+import { request, requestText } from "../../../../../src/shared/api/request";
+import { projectReportWire } from "../project-report-fixtures";
 import { itemWire, projectRequirementsWire, projectRunWire, requirementWire, runItemWire } from "../requirement-fixtures";
 
 jest.mock("../../../../../src/shared/api/request", () => {
   const actual = jest.requireActual("../../../../../src/shared/api/request");
-  return { ...actual, request: jest.fn() };
+  return { ...actual, request: jest.fn(), requestText: jest.fn() };
 });
 
 const mockedRequest = request as jest.MockedFunction<typeof request>;
+const mockedRequestText = requestText as jest.MockedFunction<typeof requestText>;
 
 afterEach(() => jest.clearAllMocks());
 
@@ -120,6 +122,34 @@ describe("projectQaRunsRepository", () => {
     expect((await projectQaRunsRepository.start("dp-1")).created).toBe(false);
     mockedRequest.mockResolvedValue({ created: true });
     await expect(projectQaRunsRepository.start("dp-1")).rejects.toThrow(/did not return/);
+  });
+
+  it("reads the Project report as qa-report/v2 JSON, normalised", async () => {
+    mockedRequest.mockResolvedValue(projectReportWire());
+    const report = await projectQaRunsRepository.report("dp-1", "prun-1");
+    expect(mockedRequest).toHaveBeenCalledWith("/delivery-projects/dp-1/qa-runs/prun-1/report?format=json");
+    expect(report.schemaVersion).toBe("qa-report/v2");
+    expect(report.run.automationByRepository).toHaveLength(2);
+  });
+
+  it("hands back the report body untouched for saving", async () => {
+    const body = projectReportWire({ automatedResults: null });
+    mockedRequest.mockResolvedValue(body);
+    expect(await projectQaRunsRepository.reportBody("dp-1", "prun-1")).toBe(body);
+    expect(mockedRequest).toHaveBeenCalledWith("/delivery-projects/dp-1/qa-runs/prun-1/report?format=json");
+  });
+
+  it("refuses a report with no run to draw", async () => {
+    mockedRequest.mockResolvedValue({ schemaVersion: "qa-report/v2" });
+    await expect(projectQaRunsRepository.report("dp-1", "prun-1")).rejects.toThrow(/did not return the QA report/);
+  });
+
+  it("reads the Project report as Markdown", async () => {
+    mockedRequestText.mockResolvedValue("# QA Report");
+    expect(await projectQaRunsRepository.reportMarkdown("dp-1", "prun-1")).toBe("# QA Report");
+    expect(mockedRequestText).toHaveBeenCalledWith("/delivery-projects/dp-1/qa-runs/prun-1/report?format=md", {
+      headers: { Accept: "text/markdown" },
+    });
   });
 
   it("reads one run", async () => {

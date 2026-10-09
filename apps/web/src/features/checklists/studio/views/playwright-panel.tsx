@@ -44,9 +44,15 @@ import {
   type AutomationDispatchControls,
 } from "../view-models/use-qa-automation-view-model";
 import { usePlaywrightLiveViewModel, type PlaywrightLiveViewModel } from "../view-models/use-playwright-live-view-model";
+import {
+  useProjectQaExportViewModel,
+  useQaExportViewModel,
+  type QaExportViewModel,
+} from "../view-models/use-qa-export-view-model";
 import { useQaReopenViewModel, type QaReopenViewModel } from "../view-models/use-qa-reopen-view-model";
 import type { QaRunViewModel } from "../view-models/use-qa-run-view-model";
 import { AutomationStages, DispatchFeedback, DispatchReason, RunPlaywrightButton } from "./automation-panel";
+import { ExportMenu, ExportStatus } from "./export-menu";
 import { LiveAnnouncer, PlaywrightLiveCard } from "./playwright-live";
 import { ReopenButton, ReopenDialog } from "./run-signoff";
 import { FlaskIcon } from "./studio-icons";
@@ -202,7 +208,8 @@ function offersReopen(controls: AutomationDispatchControls, reopen: QaReopenView
 function DispatchActions({
   controls,
   reopen,
-}: Readonly<{ controls: AutomationDispatchControls; reopen: QaReopenViewModel }>) {
+  exporter,
+}: Readonly<{ controls: AutomationDispatchControls; reopen: QaReopenViewModel; exporter: QaExportViewModel }>) {
   const reasonId = useId();
   const withReopen = offersReopen(controls, reopen);
   const reason = withReopen ? { ...controls, blockedReason: REOPEN_TO_RUN_PLAYWRIGHT } : controls;
@@ -213,6 +220,7 @@ function DispatchActions({
         <div className="qa-pw__actions">
           <RunPlaywrightButton vm={controls} reasonId={reasonId} />
           {withReopen ? <ReopenButton reopen={reopen} className="qa-pw__reopen" /> : null}
+          <ExportMenu vm={exporter} />
         </div>
       </div>
       <DispatchReason vm={reason} id={reasonId} />
@@ -252,12 +260,14 @@ function ResultsBody({
   results,
   controls,
   reopen,
+  exporter,
   checksFor,
   viewer,
 }: Readonly<{
   results: PlaywrightResults;
   controls: AutomationDispatchControls;
   reopen: QaReopenViewModel;
+  exporter: QaExportViewModel;
   checksFor: (repository: PlaywrightRepository) => ReactNode;
   viewer: PlaywrightViewer;
 }>) {
@@ -271,8 +281,9 @@ function ResultsBody({
   }
   return (
     <div className="qa-pw">
-      <DispatchActions controls={controls} reopen={reopen} />
+      <DispatchActions controls={controls} reopen={reopen} exporter={exporter} />
       <DispatchFeedback vm={controls} live={live.confirmation} />
+      <ExportStatus vm={exporter} />
       <LiveAnnouncer text={live.announcement} />
       {results.repositories.map((repository) => (
         <RepositoryResults
@@ -315,12 +326,14 @@ function ProjectResults({
   // The sign-off banner's permission: the server's flag, else its role rule.
   const permissions = resolveProjectRunPermissions(run, common.appRole);
   const reopen = useProjectReopenViewModel({ deliveryProjectId, run, permissions, onRun: vm.applyRun });
+  const exporter = useProjectQaExportViewModel({ deliveryProjectId, runId: run.id });
   if (!common.results) return null;
   return (
     <ResultsBody
       results={common.results}
       controls={controls}
       reopen={reopen}
+      exporter={exporter}
       checksFor={common.checksFor}
       viewer={common.viewer}
     />
@@ -335,12 +348,14 @@ function RepositoryRunResults({ vm, run, ...common }: Readonly<CommonProps & { v
     onRun: vm.applyRun,
   });
   const reopen = useQaReopenViewModel({ projectId: common.projectId, run, onRun: vm.applyRun });
+  const exporter = useQaExportViewModel({ projectId: common.projectId, runId: run.id });
   if (!common.results) return null;
   return (
     <ResultsBody
       results={common.results}
       controls={controls}
       reopen={reopen}
+      exporter={exporter}
       checksFor={common.checksFor}
       viewer={common.viewer}
     />

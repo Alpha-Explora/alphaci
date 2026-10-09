@@ -1,5 +1,7 @@
-import { request } from "@/shared/api/request";
+import { request, requestText } from "@/shared/api/request";
 
+import { normalizeProjectReport } from "../model/project-report-rules";
+import type { QaProjectReport } from "../model/project-report-types";
 import { normalizeProjectDispatch } from "../model/project-run-automation-rules";
 import {
   normalizeProjectMyItems,
@@ -43,6 +45,12 @@ function runOrThrow(value: unknown): ProjectQaRun {
   const run = runFromReply(value);
   if (!run) throw new Error("The server did not return the QA run.");
   return run;
+}
+
+function projectReportOrThrow(raw: unknown): QaProjectReport {
+  const report = normalizeProjectReport(raw);
+  if (!report) throw new Error("The server did not return the QA report.");
+  return report;
 }
 
 export interface ProjectRunStart {
@@ -103,6 +111,26 @@ export const projectQaRunsRepository = {
       post(projectId ? { projectId } : undefined),
     );
     return normalizeProjectDispatch(raw);
+  },
+
+  /**
+   * The `qa-report/v2` JSON exactly as the server sent it, for Download JSON:
+   * a saved file must be the server's document, not the shape the page reads.
+   */
+  reportBody(deliveryProjectId: string, runId: string): Promise<unknown> {
+    return request<unknown>(`${runPath(deliveryProjectId, runId)}/report?format=json`);
+  },
+
+  /** The same report normalised for drawing. For a signed-off run it describes the frozen copy. */
+  async report(deliveryProjectId: string, runId: string): Promise<QaProjectReport> {
+    return projectReportOrThrow(await projectQaRunsRepository.reportBody(deliveryProjectId, runId));
+  },
+
+  /** The same report as GitHub-flavoured Markdown, ready to paste into a PR. */
+  reportMarkdown(deliveryProjectId: string, runId: string): Promise<string> {
+    return requestText(`${runPath(deliveryProjectId, runId)}/report?format=md`, {
+      headers: { Accept: "text/markdown" },
+    });
   },
 
   /** Every Developer's items across the Project, in the four buckets. */

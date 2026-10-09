@@ -346,6 +346,32 @@ describe("Studio column — the Playwright tab", () => {
     expect(Boolean(buttonNamed(container, "Run Playwright"))).toBe(offered);
   });
 
+  it("offers the Project run's export beside Run Playwright, with the Project print page for PDF", async () => {
+    setup();
+    const container = await studio("qa");
+    const playwright = panel(container, "playwright");
+    const trigger = playwright.querySelector<HTMLButtonElement>(".qa-export__trigger");
+    expect(trigger?.textContent).toContain("Export report");
+    await click(trigger);
+    const items = [...playwright.querySelectorAll<HTMLElement>('[role="menuitem"]')];
+    expect(items.map((item) => item.querySelector(".qa-export__item-title")?.textContent)).toEqual([
+      "Download PDF",
+      "Copy PR Markdown",
+      "Download JSON",
+    ]);
+    expect(items[0]?.getAttribute("href")).toBe("/qa/project-report/dp-1/prun-1?print=1");
+    expect(panel(container, "checklist").querySelector(".qa-export__trigger")).toBeNull();
+  });
+
+  it("exports a repository outside a Project from the repository report", async () => {
+    setup("none", runAs("qa", { items: [runItem(0, { title: "Pays", automated: automated() })], automation: automation() }));
+    const container = await studio("qa", { scope: { kind: "repository" } });
+    const playwright = panel(container, "playwright");
+    await click(playwright.querySelector(".qa-export__trigger"));
+    const pdf = playwright.querySelector<HTMLAnchorElement>('[role="menuitem"][href]');
+    expect(pdf?.getAttribute("href")).toMatch(/^\/projects\/project-1\/qa\/report\/.+\?print=1$/);
+  });
+
   it("runs Playwright on the Project run's endpoint and confirms in the live region", async () => {
     setup();
     projectRuns.dispatchAutomation.mockResolvedValue({

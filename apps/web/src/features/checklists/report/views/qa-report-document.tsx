@@ -42,7 +42,7 @@ export function ReportSection({
   );
 }
 
-function Meta({ label, children }: Readonly<{ label: string; children: ReactNode }>) {
+export function Meta({ label, children }: Readonly<{ label: string; children: ReactNode }>) {
   return (
     <div className="qa-report-meta__cell">
       <dt>{label}</dt>
@@ -53,7 +53,7 @@ function Meta({ label, children }: Readonly<{ label: string; children: ReactNode
 
 /* ── 1. Header and metadata ──────────────────────────────────────────────── */
 
-function VerdictStamp({ report }: Readonly<{ report: QaReport }>) {
+export function VerdictStamp({ report }: Readonly<{ report: Pick<QaReport, "summary"> }>) {
   const verdict = report.summary.verdict;
   return (
     <div className={`qa-report-stamp qa-report-stamp--${reportVerdictTone(verdict)}`}>
@@ -80,7 +80,7 @@ function Masthead({ report }: Readonly<{ report: QaReport }>) {
   );
 }
 
-function StateNote({ frozen }: Readonly<{ frozen: boolean }>) {
+export function StateNote({ frozen }: Readonly<{ frozen: boolean }>) {
   return (
     <p className={`qa-report-state-note qa-report-state-note--${frozen ? "frozen" : "live"}`}>
       {frozen ? <LockIcon /> : <PulseIcon />}
@@ -128,7 +128,7 @@ function MetaGrid({ report }: Readonly<{ report: QaReport }>) {
 
 /* ── 2. Executive summary ────────────────────────────────────────────────── */
 
-function CompletionBar({ report }: Readonly<{ report: QaReport }>) {
+function CompletionBar({ report }: Readonly<{ report: Pick<QaReport, "summary"> }>) {
   const { summary } = report;
   const breakdown = summaryBreakdown(summary);
   const label = breakdown.length
@@ -166,7 +166,7 @@ function SummaryFact({ label, value, tone }: Readonly<{ label: string; value: nu
   );
 }
 
-function ExecutiveSummary({ report }: Readonly<{ report: QaReport }>) {
+export function ExecutiveSummary({ report }: Readonly<{ report: Pick<QaReport, "summary"> }>) {
   const { summary } = report;
   return (
     <ReportSection id="qa-report-summary" number="01" title="Executive summary">

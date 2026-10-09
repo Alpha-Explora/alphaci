@@ -4,7 +4,13 @@ import { useEffect, useRef, useState } from "react";
 
 import { downloadBlob } from "@/shared/browser/download-blob";
 
+import { projectQaRunsRepository } from "../../data/project-qa-runs-repository";
 import { qaRunsRepository } from "../../data/qa-runs-repository";
+import {
+  normalizeProjectReport,
+  projectReportFilename,
+  projectReportPageHref,
+} from "../../model/project-report-rules";
 import { exportErrorMessage, reportFilename, reportPageHref } from "../../model/qa-report-rules";
 
 export type QaExportStatus = "idle" | "copying" | "copied" | "downloading" | "failed";
@@ -18,6 +24,18 @@ export interface QaExportViewModel {
   copyMarkdown: () => Promise<void>;
   downloadJson: () => Promise<void>;
   dismiss: () => void;
+}
+
+/**
+ * Where one kind of run gets its three exports. The menu and its status line
+ * are the same for a repository run and a Project run; only these differ.
+ */
+export interface QaExportSource {
+  /** The print page, opened in a new tab with the print dialog. */
+  pdfHref: string;
+  fetchMarkdown: () => Promise<string>;
+  /** The JSON report to save, and the file name to save it under. */
+  fetchJson: () => Promise<{ filename: string; report: unknown }>;
 }
 
 /** How long "Copied" stays before the control settles back. */
@@ -37,8 +55,7 @@ async function writeClipboard(text: string): Promise<void> {
  * server from the run — the same bytes for every role that can see it — so this
  * only fetches, copies or saves; it never assembles a report itself.
  */
-export function useQaExportViewModel(options: { projectId: string; runId: string }): QaExportViewModel {
-  const { projectId, runId } = options;
+export function useExportViewModel(source: QaExportSource): QaExportViewModel {
   const [status, setStatus] = useState<QaExportStatus>("idle");
   const [message, setMessage] = useState<string | null>(null);
   const resetTimer = useRef<number | null>(null);
@@ -77,7 +94,7 @@ export function useQaExportViewModel(options: { projectId: string; runId: string
     if (!begin("copying")) return;
     let markdown: string;
     try {
-      markdown = await qaRunsRepository.reportMarkdown(projectId, runId);
+      markdown = await source.fetchMarkdown();
     } catch (cause) {
       fail(exportErrorMessage("copy-fetch", cause));
       return;
@@ -97,9 +114,9 @@ export function useQaExportViewModel(options: { projectId: string; runId: string
   async function downloadJson() {
     if (!begin("downloading")) return;
     try {
-      const report = await qaRunsRepository.report(projectId, runId);
+      const { filename, report } = await source.fetchJson();
       const body = `${JSON.stringify(report, null, 2)}\n`;
-      downloadBlob(reportFilename(report, "json"), new Blob([body], { type: "application/json" }));
+      downloadBlob(filename, new Blob([body], { type: "application/json" }));
       busy.current = false;
       setStatus("idle");
     } catch (cause) {
@@ -110,9 +127,41 @@ export function useQaExportViewModel(options: { projectId: string; runId: string
   return {
     status,
     message,
-    pdfHref: reportPageHref(projectId, runId, { print: true }),
+    pdfHref: source.pdfHref,
     copyMarkdown,
     downloadJson,
     dismiss,
   };
+}
+
+/** A repository's QA run: `GET /projects/:id/qa-runs/:runId/report`. */
+export function useQaExportViewModel(options: { projectId: string; runId: string }): QaExportViewModel {
+  const { projectId, runId } = options;
+  return useExportViewModel({
+    pdfHref: reportPageHref(projectId, runId, { print: true }),
+    fetchMarkdown: () => qaRunsRepository.reportMarkdown(projectId, runId),
+    fetchJson: async () => {
+      const report = await qaRunsRepository.report(projectId, runId);
+      return { filename: reportFilename(report, "json"), report };
+    },
+  });
+}
+
+/** A Project's QA run: `GET /delivery-projects/:id/qa-runs/:runId/report`. */
+export function useProjectQaExportViewModel(options: {
+  deliveryProjectId: string;
+  runId: string;
+}): QaExportViewModel {
+  const { deliveryProjectId, runId } = options;
+  return useExportViewModel({
+    pdfHref: projectReportPageHref(deliveryProjectId, runId, { print: true }),
+    fetchMarkdown: () => projectQaRunsRepository.reportMarkdown(deliveryProjectId, runId),
+    fetchJson: async () => {
+      // Save the server's document untouched; read it only to name the file.
+      const body = await projectQaRunsRepository.reportBody(deliveryProjectId, runId);
+      const named = normalizeProjectReport(body);
+      if (!named) throw new Error("The server did not return the QA report.");
+      return { filename: projectReportFilename(named, "json"), report: body };
+    },
+  });
 }
