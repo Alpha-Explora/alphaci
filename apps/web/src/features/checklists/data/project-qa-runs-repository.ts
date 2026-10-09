@@ -1,5 +1,7 @@
-import { request } from "@/shared/api/request";
+import { request, requestText } from "@/shared/api/request";
 
+import { normalizeProjectReport } from "../model/project-report-rules";
+import type { QaProjectReport } from "../model/project-report-types";
 import { normalizeProjectDispatch } from "../model/project-run-automation-rules";
 import {
   normalizeProjectMyItems,
@@ -103,6 +105,21 @@ export const projectQaRunsRepository = {
       post(projectId ? { projectId } : undefined),
     );
     return normalizeProjectDispatch(raw);
+  },
+
+  /** The `qa-report/v2` JSON. For a signed-off run it describes the frozen copy. */
+  async report(deliveryProjectId: string, runId: string): Promise<QaProjectReport> {
+    const raw = await request<unknown>(`${runPath(deliveryProjectId, runId)}/report?format=json`);
+    const report = normalizeProjectReport(raw);
+    if (!report) throw new Error("The server did not return the QA report.");
+    return report;
+  },
+
+  /** The same report as GitHub-flavoured Markdown, ready to paste into a PR. */
+  reportMarkdown(deliveryProjectId: string, runId: string): Promise<string> {
+    return requestText(`${runPath(deliveryProjectId, runId)}/report?format=md`, {
+      headers: { Accept: "text/markdown" },
+    });
   },
 
   /** Every Developer's items across the Project, in the four buckets. */

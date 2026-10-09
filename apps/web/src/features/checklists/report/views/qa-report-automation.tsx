@@ -14,7 +14,12 @@ import {
   stageRunTone,
   unlistedFailuresNote,
 } from "../../model/qa-automation-rules";
-import type { QaAutomationStage, QaStageResult, QaStageTests } from "../../model/qa-automation-types";
+import type {
+  QaAutomationStage,
+  QaRunAutomationResult,
+  QaStageResult,
+  QaStageTests,
+} from "../../model/qa-automation-types";
 import { formatReportDate } from "../../model/qa-report-rules";
 import type { QaReport } from "../../model/qa-report-types";
 import { commitLabel } from "../../model/qa-run-rules";
@@ -124,13 +129,22 @@ export function AutomatedResultsBody({ report }: Readonly<{ report: QaReport }>)
       </div>
     );
   }
-  const stages = automationStages(automation);
   return (
     <div className="qa-report-auto">
       <p className="qa-report-auto__lede">
         From CI for <span className="qa-report-mono">{where}</span>. Informational — each item&apos;s status in the
         checklist is the result the tester recorded.
       </p>
+      <AutomationTable automation={automation} />
+    </div>
+  );
+}
+
+/** The stage-by-stage table for one set of CI results, then each stage's listed failures. */
+export function AutomationTable({ automation }: Readonly<{ automation: QaRunAutomationResult }>) {
+  const stages = automationStages(automation);
+  return (
+    <>
       <div className="qa-report-table-wrap">
         <table className="qa-report-table qa-report-auto__table">
           <colgroup>
@@ -155,6 +169,6 @@ export function AutomatedResultsBody({ report }: Readonly<{ report: QaReport }>)
         </table>
       </div>
       {stages.map(({ stage, result }) => (result ? <StageFailures key={stage} result={result} /> : null))}
-    </div>
+    </>
   );
 }

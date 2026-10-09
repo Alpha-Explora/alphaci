@@ -204,7 +204,13 @@ function PreviousSignoff({ entry }: Readonly<{ entry: QaReportSignoffEntry }>) {
   );
 }
 
-function CurrentSignoff({ report }: Readonly<{ report: QaReport }>) {
+/** What the sign-off block reads, so a repository report and a Project report both fit. */
+export interface SignoffSource {
+  run: { signoff: QaReport["run"]["signoff"] };
+  signoffHistory: QaReport["signoffHistory"];
+}
+
+function CurrentSignoff({ report }: Readonly<{ report: SignoffSource }>) {
   const signoff = report.run.signoff;
   if (!signoff) {
     return (
@@ -227,7 +233,7 @@ function CurrentSignoff({ report }: Readonly<{ report: QaReport }>) {
   );
 }
 
-export function SignoffRecord({ report }: Readonly<{ report: QaReport }>) {
+export function SignoffRecord({ report }: Readonly<{ report: SignoffSource }>) {
   const previous = previousSignoffs(report.signoffHistory);
   return (
     <>
