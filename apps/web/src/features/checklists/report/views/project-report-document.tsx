@@ -1,7 +1,9 @@
 "use client";
 
+import type { ReactNode } from "react";
+
 import { repositoryHeadLabel } from "../../model/project-report-rules";
-import type { QaProjectReport } from "../../model/project-report-types";
+import type { QaProjectReport, QaProjectReportRepository } from "../../model/project-report-types";
 import { actorLabel, formatReportDate, reportVerdictTone, runStatusLabel } from "../../model/qa-report-rules";
 import { ExecutiveSummary, Meta, ReportSection, StateNote, VerdictStamp } from "./qa-report-document";
 import { ProjectAutomatedResults, ProjectChecklistTable } from "./project-report-sections";
@@ -59,8 +61,37 @@ function MetaGrid({ report }: Readonly<{ report: QaProjectReport }>) {
   );
 }
 
+/**
+ * What the host draws for one repository's screenshots. The Project page owns
+ * the screenshots (their storage, their images), so the report asks it rather
+ * than reaching into it.
+ */
+export type RenderVisualEvidence = (repository: QaProjectReportRepository) => ReactNode;
+
+/** An appendix: the screenshots are the branch's latest run, so they come after the signed record. */
+function VisualEvidenceSection({
+  report,
+  render,
+}: Readonly<{ report: QaProjectReport; render: RenderVisualEvidence }>) {
+  return (
+    <ReportSection id="qa-report-visual" number="06" title="Visual evidence">
+      {report.repositories.map((repository) => (
+        <div key={repository.projectId} className="qa-report-auto">
+          <p className="qa-report-auto__lede">
+            <strong>{repository.name}</strong>
+          </p>
+          {render(repository)}
+        </div>
+      ))}
+    </ReportSection>
+  );
+}
+
 /** The fixed Project report template. Pure rendering of a server-built `qa-report/v2`. */
-export function ProjectQaReportDocument({ report }: Readonly<{ report: QaProjectReport }>) {
+export function ProjectQaReportDocument({
+  report,
+  renderVisualEvidence,
+}: Readonly<{ report: QaProjectReport; renderVisualEvidence?: RenderVisualEvidence }>) {
   return (
     <article
       className={`qa-report-sheet qa-report qa-report--${reportVerdictTone(report.summary.verdict)}`}
@@ -82,6 +113,9 @@ export function ProjectQaReportDocument({ report }: Readonly<{ report: QaProject
       <ReportSection id="qa-report-signoff" number="05" title="Sign-off">
         <SignoffRecord report={report} />
       </ReportSection>
+      {renderVisualEvidence && report.repositories.length > 0 ? (
+        <VisualEvidenceSection report={report} render={renderVisualEvidence} />
+      ) : null}
       <footer className="qa-report-footer">
         <span>
           Run <span className="qa-report-mono">{report.run.id}</span> · {report.schemaVersion}

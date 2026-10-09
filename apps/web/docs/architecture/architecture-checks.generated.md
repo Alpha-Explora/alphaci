@@ -27,9 +27,9 @@ This snapshot is generated from the current source tree. It is descriptive evide
 
 | Area | Source files |
 |---|---:|
-| Feature domains | 558 |
+| Feature domains | 568 |
 | `src/shared` | 19 |
-| `src/app` | 31 |
+| `src/app` | 32 |
 
 ## Executable gates
 

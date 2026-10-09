@@ -16,3 +16,6 @@ export {
   useProjectRunViewModel,
   type ProjectRunViewModel,
 } from "./view-models/use-project-run-view-model";
+/* "Export results" for one CI run, for the Project page's pipeline card. */
+export { CiRunReportExport } from "./views/ci-run-report-export";
+export type { CiRunReportRef } from "../model/ci-run-report-types";

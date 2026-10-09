@@ -4,8 +4,11 @@ import { useEffect, useRef, useState } from "react";
 
 import { downloadBlob } from "@/shared/browser/download-blob";
 
+import { ciRunReportRepository } from "../../data/ci-run-report-repository";
 import { projectQaRunsRepository } from "../../data/project-qa-runs-repository";
 import { qaRunsRepository } from "../../data/qa-runs-repository";
+import { ciRunReportFilename, ciRunReportPageHref } from "../../model/ci-run-report-rules";
+import type { CiRunReportRef } from "../../model/ci-run-report-types";
 import {
   normalizeProjectReport,
   projectReportFilename,
@@ -162,6 +165,18 @@ export function useProjectQaExportViewModel(options: {
       const named = normalizeProjectReport(body);
       if (!named) throw new Error("The server did not return the QA report.");
       return { filename: projectReportFilename(named, "json"), report: body };
+    },
+  });
+}
+
+/** One CI run (a repository, a branch, a commit): `GET /ci/runs/report`. */
+export function useCiRunReportExportViewModel(ref: CiRunReportRef): QaExportViewModel {
+  return useExportViewModel({
+    pdfHref: ciRunReportPageHref(ref, { print: true }),
+    fetchMarkdown: () => ciRunReportRepository.reportMarkdown(ref),
+    fetchJson: async () => {
+      const report = await ciRunReportRepository.report(ref);
+      return { filename: ciRunReportFilename(ref, "json"), report };
     },
   });
 }

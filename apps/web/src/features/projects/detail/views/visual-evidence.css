@@ -1,0 +1,91 @@
+/* Visual evidence in a printed report: screenshots beside their reference. It
+ * draws on the report's own paper (the report page sets the theme), so it
+ * inherits colour and only decides layout. */
+
+.vis-ev {
+  display: grid;
+  gap: 0.6rem;
+}
+
+.vis-ev__header {
+  margin: 0;
+  font-weight: 650;
+}
+
+.vis-ev__note {
+  margin: 0;
+  font-size: 0.82rem;
+  opacity: 0.8;
+}
+
+.vis-ev__note--error {
+  opacity: 1;
+  font-weight: 600;
+}
+
+.vis-ev__list {
+  display: grid;
+  gap: 1rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* A screenshot and its two companions stay on one page when they fit. */
+.vis-ev__snapshot {
+  break-inside: avoid;
+}
+
+.vis-ev__name {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.5rem 0.75rem;
+  margin: 0 0 0.4rem;
+}
+
+.vis-ev__status {
+  font-size: 0.78rem;
+  font-weight: 650;
+}
+
+.vis-ev__status--changed {
+  color: var(--warning, currentcolor);
+}
+
+.vis-ev__status--new {
+  color: var(--brand, currentcolor);
+}
+
+.vis-ev__images {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+  gap: 0.6rem;
+}
+
+.vis-ev__figure {
+  margin: 0;
+}
+
+.vis-ev__figure img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border: 1px solid currentcolor;
+  border-color: color-mix(in srgb, currentcolor 25%, transparent);
+  border-radius: 0.35rem;
+}
+
+.vis-ev__figure figcaption {
+  margin-top: 0.2rem;
+  font-size: 0.72rem;
+  font-weight: 650;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  opacity: 0.75;
+}
+
+.vis-ev__matched {
+  margin: 0;
+  font-size: 0.82rem;
+}

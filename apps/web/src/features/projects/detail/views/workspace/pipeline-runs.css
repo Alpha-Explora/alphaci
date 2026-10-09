@@ -230,6 +230,15 @@
   gap: 0.5rem 1rem;
 }
 
+/* The export beside the verdict: they read as one group, wrapping under the identity when narrow. */
+.pipe-commit__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
 .pipe-commit__identity {
   display: grid;
   gap: 0.25rem;

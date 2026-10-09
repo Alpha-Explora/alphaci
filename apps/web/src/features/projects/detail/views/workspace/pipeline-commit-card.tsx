@@ -2,6 +2,7 @@
 
 import { useId, useMemo, useState } from "react";
 
+import { CiRunReportExport } from "@/features/checklists/studio";
 import { checkLabel, relativeTime } from "@/features/runs";
 import type { AppRole, RunGroup, StageId } from "@/shared/api/contracts";
 
@@ -188,7 +189,18 @@ function CommitHeader({
           )}
         </p>
       </div>
-      <StatusChip tone={tone} label={label} />
+      <div className="pipe-commit__actions">
+        {commit.report ? (
+          <CiRunReportExport
+            run={{
+              repoFullName: commit.report.repoFullName,
+              branch: commit.report.branch,
+              commitSha: commit.report.commitSha,
+            }}
+          />
+        ) : null}
+        <StatusChip tone={tone} label={label} />
+      </div>
     </header>
   );
 }
