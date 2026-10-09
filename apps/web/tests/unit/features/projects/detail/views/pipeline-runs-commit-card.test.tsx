@@ -198,6 +198,32 @@ describe("PipelineRunsTab commit card", () => {
     ]);
   });
 
+  it("offers each reported commit an Export results menu beside its verdict", async () => {
+    await render();
+
+    for (const card of cards()) {
+      const trigger = card.querySelector<HTMLButtonElement>(".pipe-commit__actions .qa-export__trigger");
+      expect(trigger?.textContent).toContain("Export results");
+      expect(card.querySelector(".pipe-commit__actions .pipe-chip, .pipe-commit__actions [class*='chip']")).not.toBeNull();
+    }
+  });
+
+  it("exports the execution the card shows: its repository, branch and full commit", async () => {
+    await render();
+
+    const [failing, clean] = cards();
+    await act(async () => failing!.querySelector<HTMLButtonElement>(".qa-export__trigger")!.click());
+    const pdf = failing!.querySelector<HTMLAnchorElement>('[role="menuitem"][href]');
+    expect(pdf?.getAttribute("href")).toBe("/runs/report?repoFullName=org%2Frepo&branch=dev&commitSha=aaaaaaa1&print=1");
+    expect([...failing!.querySelectorAll(".qa-export__item-title")].map((node) => node.textContent)).toEqual([
+      "Download PDF",
+      "Copy PR Markdown",
+      "Download JSON",
+    ]);
+    // The other commit's menu is its own, and still closed.
+    expect(clean!.querySelector('[role="menu"]')).toBeNull();
+  });
+
   it("reads the log only for the stage that failed after passing, never for a clean commit", async () => {
     await render();
 

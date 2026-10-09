@@ -126,6 +126,87 @@ describe("ProjectQaReportDocument", () => {
   });
 });
 
+describe("ProjectQaReportDocument visual evidence", () => {
+  it("has no visual section unless the host provides one", async () => {
+    const view = await render(<ProjectQaReportDocument report={report()} />);
+    expect(view.querySelector("section[aria-labelledby='qa-report-visual']")).toBeNull();
+  });
+
+  it("appends one block per repository, after the sign-off, drawn by the host", async () => {
+    const view = await render(
+      <ProjectQaReportDocument
+        report={report()}
+        renderVisualEvidence={(repository) => <p data-evidence={repository.projectId}>shots of {repository.name}</p>}
+      />,
+    );
+    const sections = [...view.querySelectorAll("section")].map((node) => node.getAttribute("aria-labelledby"));
+    expect(sections.slice(-2)).toEqual(["qa-report-signoff", "qa-report-visual"]);
+    const visual = view.querySelector("section[aria-labelledby='qa-report-visual']")!;
+    expect(visual.querySelector("h2")?.textContent).toBe("Visual evidence");
+    expect([...visual.querySelectorAll("[data-evidence]")].map((node) => node.textContent)).toEqual([
+      "shots of storefront-web",
+      "shots of orders-api",
+    ]);
+  });
+
+  it("has no visual section for a report that covers no repository", async () => {
+    const view = await render(
+      <ProjectQaReportDocument report={report({ repositories: [] })} renderVisualEvidence={() => <p>x</p>} />,
+    );
+    expect(view.querySelector("section[aria-labelledby='qa-report-visual']")).toBeNull();
+  });
+});
+
+describe("ProjectQaReportView printing with screenshots", () => {
+  let print: jest.SpyInstance;
+  const settleOf: Record<string, () => void> = {};
+
+  beforeEach(() => {
+    print = jest.spyOn(window, "print").mockImplementation(() => undefined);
+    for (const key of Object.keys(settleOf)) delete settleOf[key];
+  });
+
+  afterEach(() => print.mockRestore());
+
+  function evidence(repository: { projectId: string }, { onSettled }: { onSettled: () => void }) {
+    settleOf[repository.projectId] = onSettled;
+    return <p>screenshots</p>;
+  }
+
+  it("waits for every repository's screenshots before opening the print dialog", async () => {
+    search = "print=1";
+    repo.report.mockResolvedValue(report());
+    await render(<ProjectQaReportView renderEvidence={evidence} />);
+    expect(print).not.toHaveBeenCalled();
+    await act(async () => settleOf["proj-fe"]!());
+    await act(async () => Promise.resolve());
+    expect(print).not.toHaveBeenCalled();
+    await act(async () => settleOf["proj-be"]!());
+    await act(async () => Promise.resolve());
+    await act(async () => Promise.resolve());
+    expect(print).toHaveBeenCalledTimes(1);
+  });
+
+  it("prints as soon as the report is up when no screenshots are asked for", async () => {
+    search = "print=1";
+    repo.report.mockResolvedValue(report());
+    await render(<ProjectQaReportView />);
+    await act(async () => Promise.resolve());
+    await act(async () => Promise.resolve());
+    expect(print).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not print at all unless asked to", async () => {
+    search = "";
+    repo.report.mockResolvedValue(report());
+    await render(<ProjectQaReportView renderEvidence={evidence} />);
+    await act(async () => settleOf["proj-fe"]!());
+    await act(async () => settleOf["proj-be"]!());
+    await act(async () => Promise.resolve());
+    expect(print).not.toHaveBeenCalled();
+  });
+});
+
 describe("ProjectQaReportView", () => {
   it("shows the report once it has loaded, with a print button", async () => {
     repo.report.mockResolvedValue(report());

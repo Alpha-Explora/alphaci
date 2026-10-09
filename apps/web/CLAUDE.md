@@ -169,7 +169,7 @@ Use `useAuthSession().signOut` / `isSigningOut`. Do not call `logout()` and
 
 ## Routes
 
-26 routes; 15 static / 11 dynamic at build (plus `/_not-found`). Everything
+27 routes; 16 static / 11 dynamic at build (plus `/_not-found`). Everything
 except `/`, `/login`, `/signup` and `/auth/callback` is a one-line re-export
 from a feature.
 
@@ -178,7 +178,7 @@ from a feature.
 /login  /signup  /auth/callback      /admin/feedback
 /home                                /admin/users/[id]
 /workflows                           /groups/[groupId]
-/runs                                /groups/[groupId]/activity
+/runs  /runs/report                  /groups/[groupId]/activity
 /projects/[projectId]                /groups/[groupId]/members
 /projects/[projectId]/qa/report/[runId]
 /qa/project-report/[deliveryProjectId]/[runId]
