@@ -1,0 +1,267 @@
+/* Browser test list and SonarCloud panel, shared by Pipeline runs (developers)
+ * and QA Studio's Playwright tab. Colour comes from tokens only. */
+
+.tr-cases,
+.tr-sonar {
+  display: grid;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.tr-cases__heading {
+  margin: 0;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.tr-cases__count {
+  font-weight: 500;
+  letter-spacing: normal;
+  text-transform: none;
+  color: var(--text-muted);
+}
+
+.tr-cases__list {
+  display: grid;
+  gap: 0.4rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.tr-case {
+  display: grid;
+  gap: 0.25rem;
+  padding: 0.55rem 0.7rem;
+  border: 1px solid var(--border-layer);
+  border-left-width: 3px;
+  border-radius: 0.5rem;
+  background: var(--layer-2);
+}
+
+.tr-case[data-tone="danger"] {
+  border-left-color: var(--danger);
+}
+
+.tr-case[data-tone="warning"] {
+  border-left-color: var(--warning);
+}
+
+.tr-case[data-tone="success"] {
+  border-left-color: var(--success);
+}
+
+.tr-case__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.35rem 0.6rem;
+}
+
+.tr-case__status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  white-space: nowrap;
+  color: var(--text-secondary);
+}
+
+.tr-case__dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: var(--text-muted);
+}
+
+.tr-case__status[data-tone="success"] .tr-case__dot {
+  background: var(--success);
+}
+
+.tr-case__status[data-tone="danger"] .tr-case__dot {
+  background: var(--danger);
+}
+
+.tr-case__status[data-tone="warning"] .tr-case__dot {
+  background: var(--warning);
+}
+
+.tr-case__name {
+  font-weight: 650;
+  color: var(--text-primary);
+  overflow-wrap: anywhere;
+}
+
+.tr-case__description {
+  margin: 0;
+  font-size: 0.82rem;
+  line-height: 1.45;
+  color: var(--text-secondary);
+}
+
+.tr-case__meta,
+.tr-case__where {
+  margin: 0;
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  overflow-wrap: anywhere;
+}
+
+.tr-case__notes {
+  display: grid;
+  gap: 0.15rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.8rem;
+  color: var(--text-primary);
+}
+
+.tr-case__note-label {
+  font-weight: 700;
+  color: var(--text-secondary);
+}
+
+.tr-case__toggle {
+  justify-self: start;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--brand);
+  cursor: pointer;
+}
+
+.tr-case__toggle:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
+.tr-case__detail {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.tr-case__steps {
+  display: grid;
+  gap: 0.15rem;
+  margin: 0;
+  padding-left: 1.2rem;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.tr-case__steps li[data-failed="true"] {
+  color: var(--danger);
+}
+
+.tr-case__step-failed,
+.tr-case__step-time {
+  margin-left: 0.4rem;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
+.tr-case__steps li[data-failed="true"] .tr-case__step-failed {
+  font-weight: 700;
+  color: var(--danger);
+}
+
+.tr-case__error {
+  margin: 0;
+  max-height: 22rem;
+  overflow: auto;
+  padding: 0.6rem 0.7rem;
+  border-radius: 0.4rem;
+  background: var(--layer-1);
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 0.74rem;
+  line-height: 1.45;
+  color: var(--text-primary);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.tr-sonar__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.4rem;
+}
+
+.tr-sonar__blocked {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--warning);
+}
+
+.tr-sonar__conditions {
+  display: grid;
+  gap: 0.15rem;
+  margin: 0;
+  padding-left: 1.1rem;
+  font-size: 0.82rem;
+  color: var(--danger);
+}
+
+.tr-sonar__measures {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(9.5rem, 1fr));
+  gap: 0.4rem;
+  margin: 0;
+}
+
+.tr-sonar__measure {
+  padding: 0.45rem 0.6rem;
+  border: 1px solid var(--border-layer);
+  border-radius: 0.45rem;
+  background: var(--layer-2);
+}
+
+.tr-sonar__measure dt {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+}
+
+.tr-sonar__measure dd {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.tr-sonar__issues-title {
+  margin: 0;
+  font-size: 0.78rem;
+  font-weight: 650;
+  color: var(--text-secondary);
+}
+
+.tr-sonar__issue-list {
+  display: grid;
+  gap: 0.3rem;
+  margin: 0;
+  padding-left: 1.2rem;
+}
+
+.tr-sonar__issue {
+  display: grid;
+  gap: 0.1rem;
+  font-size: 0.82rem;
+  color: var(--text-primary);
+}
+
+.tr-sonar__issue-meta {
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  overflow-wrap: anywhere;
+}

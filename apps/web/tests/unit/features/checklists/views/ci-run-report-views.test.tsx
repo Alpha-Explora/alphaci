@@ -6,6 +6,7 @@ import { normalizeCiRunReport } from "../../../../../src/features/checklists/mod
 import { CiRunReportView } from "../../../../../src/features/checklists/report";
 import { CiRunReportDocument } from "../../../../../src/features/checklists/report/views/ci-run-report-document";
 import { apiError } from "../checklist-fixtures";
+import realCases from "../../runs/test-report/real-playwright-cases.json";
 import { CI_REF, CI_SHA, ciRunReportWire } from "../ci-run-report-fixtures";
 
 jest.mock("../../../../../src/features/checklists/data/ci-run-report-repository", () => ({
@@ -115,6 +116,47 @@ describe("CiRunReportDocument", () => {
     const view = await render(<CiRunReportDocument report={report()} />);
     expect(view.querySelector("a")).toBeNull();
     expect(view.innerHTML).not.toContain("github.com");
+  });
+});
+
+describe("CiRunReportDocument details", () => {
+  function withResults(stage: string, results: Record<string, unknown>) {
+    const wire = ciRunReportWire();
+    const stages = (wire.stages as Array<Record<string, unknown>>).map((entry) =>
+      entry.stage === stage ? { ...entry, results } : entry,
+    );
+    return normalizeCiRunReport({ ...wire, stages })!;
+  }
+
+  it("prints every browser test, and the detail of each worth reading", async () => {
+    const view = await render(
+      <CiRunReportDocument report={withResults("verify", { tests: { total: 6, passed: 5, failed: 1, cases: realCases } })} />,
+    );
+    const details = section(view, "ci-report-details");
+    expect(details.textContent).toContain("Browser tests (6)");
+    expect(details.textContent).toContain("What it checks: Runs the axe accessibility checker on /");
+    expect(details.textContent).toContain("Result: 3 critical or serious and 2 minor or moderate violations");
+    expect(details.textContent).toContain("Check for critical or serious violations — failed");
+    expect(details.querySelector("pre")?.textContent).toContain("label (critical)");
+  });
+
+  it("prints what SonarCloud said", async () => {
+    const view = await render(
+      <CiRunReportDocument
+        report={withResults("quality", {
+          sonar: {
+            gate: "ERROR",
+            failedConditions: [{ metric: "new_coverage", actual: "61.2", threshold: "80" }],
+            measures: { bugs: "0" },
+            issues: [{ rule: "r1", severity: "MAJOR", message: "Fix this.", file: "src/a.ts", line: 3 }],
+          },
+        })}
+      />,
+    );
+    const details = section(view, "ci-report-details");
+    expect(details.textContent).toContain("SonarCloud · Quality gate failed");
+    expect(details.textContent).toContain("Failed: Coverage on new code 61.2% (needs 80%)");
+    expect(details.textContent).toContain("Major · src/a.ts:3 · r1");
   });
 });
 

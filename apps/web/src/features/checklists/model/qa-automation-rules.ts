@@ -13,6 +13,9 @@
  * Automated results inform the tester; they never change or recommend
  * changing an item's recorded status. Sign-off stays manual. */
 
+import { casesFromPasses, normalizeTestCases } from "@/features/runs/test-report";
+import type { TestCase } from "@/shared/api/contracts";
+
 import type { AppRole } from "@/shared/api/contracts";
 
 import type {
@@ -105,7 +108,27 @@ function normalizeTests(raw: unknown): QaStageTests | null {
     failed: count(value.failed),
     failures: normalizeFailures(value.failures),
     failuresTruncated: value.failuresTruncated === true,
+    passes: Array.isArray(value.passes) ? value.passes.filter((name): name is string => typeof name === "string") : null,
+    cases: normalizeTestCases(value.cases),
   };
+}
+
+/**
+ * The tests to list for a stage: the pipeline's own records when it sends
+ * them; otherwise, from a pipeline that reports only names, the failures
+ * (with their message) and then the passing names. Null when neither exists,
+ * so the stage keeps its plain failure list.
+ */
+export function stageTestCases(tests: QaStageTests | null): TestCase[] | null {
+  if (!tests) return null;
+  if (tests.cases && tests.cases.length > 0) return tests.cases;
+  if (!tests.passes) return null;
+  const failed: TestCase[] = tests.failures.map((failure) => ({
+    title: failure.name,
+    status: "failed",
+    error: failure.message ? { message: failure.message } : undefined,
+  }));
+  return [...failed, ...casesFromPasses(tests.passes)];
 }
 
 function normalizeStage(raw: unknown, stage: QaAutomationStage): QaStageResult | null {

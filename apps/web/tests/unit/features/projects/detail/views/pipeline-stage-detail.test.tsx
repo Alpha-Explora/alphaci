@@ -8,7 +8,8 @@ import {
   getProjectRunFailureLog,
   type RunFailureLogResponse,
 } from "../../../../../../src/features/projects/detail/data/project-workspace-api";
-import type { StageReport, StageResults } from "../../../../../../src/shared/api/contracts";
+import type { StageReport, StageResults, TestCase } from "../../../../../../src/shared/api/contracts";
+import realCases from "../../../runs/test-report/real-playwright-cases.json";
 
 jest.mock(
   "../../../../../../src/features/projects/detail/data/project-workspace-api",
@@ -248,5 +249,68 @@ describe("StageDetail figures", () => {
     await render(report("success"));
 
     expect(host.querySelector(".pipe-results")).toBeNull();
+  });
+});
+
+describe("StageDetail: browser tests and SonarCloud for developers", () => {
+  let root: Root | null = null;
+  let host: HTMLDivElement;
+
+  beforeEach(() => {
+    host = document.createElement("div");
+    document.body.appendChild(host);
+    mockedFailureLog.mockResolvedValue({ available: true, failures: [] } as never);
+  });
+
+  afterEach(() => {
+    act(() => root?.unmount());
+    host.remove();
+    jest.clearAllMocks();
+  });
+
+  async function render(stage: StageReport) {
+    await act(async () => {
+      root = createRoot(host);
+      root.render(<StageDetail projectId="p1" entry={entryFor(stage)} panelId="panel" viewMode="summary" />);
+    });
+  }
+
+  it("lists every browser test of a Verify run with what it checks and its error", async () => {
+    await render({
+      ...report("failure", { tests: { total: 6, passed: 5, failed: 1, cases: realCases as TestCase[] } }),
+      stage: "verify",
+    });
+    const list = host.querySelector(".tr-cases")!;
+    expect(list.querySelectorAll(".tr-case")).toHaveLength(6);
+    expect(list.textContent).toContain("Runs the axe accessibility checker on /");
+    expect(list.querySelector("pre")?.textContent).toContain("select-name (critical)");
+    // The plain failing-name list is replaced, not shown twice.
+    expect(host.querySelector(".pipe-results__failures")).toBeNull();
+  });
+
+  it("keeps the failing names when the run sends no per-test records", async () => {
+    await render(
+      report("failure", { tests: { total: 2, passed: 1, failed: 1, failures: [{ name: "a > b", message: "boom" }] } }),
+    );
+    expect(host.querySelector(".tr-cases")).toBeNull();
+    expect(host.querySelector(".pipe-results__failures")?.textContent).toContain("boom");
+  });
+
+  it("shows what SonarCloud said on a Quality run", async () => {
+    await render(
+      report("failure", {
+        sonar: {
+          gate: "ERROR",
+          failedConditions: [{ metric: "new_coverage", actual: "61.2", threshold: "80" }],
+          measures: { bugs: "0", code_smells: "14", coverage: "74.1" },
+          issues: [{ rule: "typescript:S1854", severity: "MAJOR", message: "Remove this useless assignment.", file: "src/a.ts", line: 3 }],
+        },
+      }),
+    );
+    const sonar = host.querySelector(".tr-sonar")!;
+    expect(sonar.textContent).toContain("Quality gate failed");
+    expect(sonar.textContent).toContain("Coverage on new code 61.2% (needs 80%)");
+    expect(sonar.textContent).toContain("Code smells14");
+    expect(sonar.textContent).toContain("Major · src/a.ts:3 · typescript:S1854");
   });
 });

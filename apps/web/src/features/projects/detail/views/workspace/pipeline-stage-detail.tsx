@@ -3,6 +3,7 @@
 import { useId, useState } from "react";
 
 import { checkLabel, checkTone, relativeTime } from "@/features/runs";
+import { normalizeTestCases, SonarPanel, TestCaseList } from "@/features/runs/test-report";
 import type { FriendlyMessage, StageId } from "@/shared/api/contracts";
 
 import {
@@ -373,20 +374,33 @@ function CheckRoster({
  */
 function ResultFigures({ results }: Readonly<{ results: StageEntry["stage"]["results"] }>) {
   const figures = stageResultFigures(results);
-  if (figures.length === 0) return null;
+  if (figures.length === 0 && !results?.tests?.cases && !results?.sonar) return null;
   return (
     <>
-      <dl className="pipe-results" aria-label="Stage figures">
-        {figures.map((figure) => (
-          <div key={figure.id} className={`pipe-result pipe-result--${figure.tone}`}>
-            <dt className="pipe-result__label">{figure.label}</dt>
-            <dd className="pipe-result__value">{figure.value}</dd>
-          </div>
-        ))}
-      </dl>
-      <FailedTestList results={results} />
+      {figures.length > 0 ? (
+        <dl className="pipe-results" aria-label="Stage figures">
+          {figures.map((figure) => (
+            <div key={figure.id} className={`pipe-result pipe-result--${figure.tone}`}>
+              <dt className="pipe-result__label">{figure.label}</dt>
+              <dd className="pipe-result__value">{figure.value}</dd>
+            </div>
+          ))}
+        </dl>
+      ) : null}
+      <TestDetail results={results} />
+      <SonarPanel sonar={results?.sonar} />
     </>
   );
+}
+
+/**
+ * Every browser test with what it checks, its steps and its error, when the
+ * pipeline reports them; otherwise the failing names, as before.
+ */
+function TestDetail({ results }: Readonly<{ results: StageEntry["stage"]["results"] }>) {
+  const cases = normalizeTestCases(results?.tests?.cases);
+  if (cases && cases.length > 0) return <TestCaseList cases={cases} total={results?.tests?.total} />;
+  return <FailedTestList results={results} />;
 }
 
 function FailedTestList({ results }: Readonly<{ results: StageEntry["stage"]["results"] }>) {

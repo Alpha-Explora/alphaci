@@ -4,6 +4,8 @@ import "./automation.css";
 
 import { useId } from "react";
 
+import { TestCaseList } from "@/features/runs/test-report";
+
 import { TonePill } from "../../items";
 import {
   automationStages,
@@ -14,6 +16,7 @@ import {
   stagePassShare,
   stageRunLabel,
   stageRunTone,
+  stageTestCases,
   stageTestsLabel,
   unlistedFailuresNote,
 } from "../../model/qa-automation-rules";
@@ -97,10 +100,13 @@ interface FailuresDisclosure {
  * list, so the stage stays one line of facts. A plain count when CI listed
  * none.
  */
-function FailedToggle({ tests, disclosure }: Readonly<{ tests: QaStageTests | null; disclosure: FailuresDisclosure }>) {
+function FailedToggle({
+  tests,
+  disclosure,
+}: Readonly<{ tests: QaStageTests | null; disclosure: FailuresDisclosure | null }>) {
   const failed = tests?.failed ?? 0;
-  const toggleLabel = failuresToggleLabel(tests, disclosure.open);
-  if (!toggleLabel) return failed > 0 ? <span className="qa-auto-stage__failed">{failed} failed</span> : null;
+  const toggleLabel = disclosure ? failuresToggleLabel(tests, disclosure.open) : null;
+  if (!toggleLabel || !disclosure) return failed > 0 ? <span className="qa-auto-stage__failed">{failed} failed</span> : null;
   const listed = listedFailures(tests).length;
   return (
     <button
@@ -119,7 +125,10 @@ function FailedToggle({ tests, disclosure }: Readonly<{ tests: QaStageTests | nu
 }
 
 /** "22 / 24 passed ▬▬ · 2 failed ▾ · 3m ago". */
-function StageMeta({ result, disclosure }: Readonly<{ result: QaStageResult; disclosure: FailuresDisclosure }>) {
+function StageMeta({
+  result,
+  disclosure,
+}: Readonly<{ result: QaStageResult; disclosure: FailuresDisclosure | null }>) {
   const ago = agoLabel(result.reportedAt);
   return (
     <p className="qa-auto-stage__meta">
@@ -147,6 +156,8 @@ function StageCard({ result }: Readonly<{ result: QaStageResult }>) {
   const failuresId = useId();
   const [open, toggle] = useDisclosure();
   const tone = stageRunTone(result.status);
+  // With per-test records, the test list replaces the folded failure list.
+  const cases = stageTestCases(result.tests);
   return (
     <article className={`qa-auto-stage qa-auto-stage--${tone}`} aria-labelledby={headingId}>
       <div className="qa-auto-stage__row">
@@ -156,8 +167,12 @@ function StageCard({ result }: Readonly<{ result: QaStageResult }>) {
         </h4>
         <TonePill tone={tone} label={stageRunLabel(result.status)} />
       </div>
-      <StageMeta result={result} disclosure={{ id: failuresId, open, onToggle: toggle }} />
-      <FailureList id={failuresId} stage={result.stage} tests={result.tests} hidden={!open} />
+      <StageMeta result={result} disclosure={cases ? null : { id: failuresId, open, onToggle: toggle }} />
+      {cases ? (
+        <TestCaseList cases={cases} total={result.tests?.total} label={`${stageName(result.stage)} tests`} />
+      ) : (
+        <FailureList id={failuresId} stage={result.stage} tests={result.tests} hidden={!open} />
+      )}
     </article>
   );
 }

@@ -14,6 +14,7 @@ import {
 } from "../../model/ci-run-report-rules";
 import type { CiRunReport, CiRunReportFailure, CiRunReportStage } from "../../model/ci-run-report-types";
 import { formatReportDate } from "../../model/qa-report-rules";
+import { PrintSonar, PrintTestCases } from "./ci-run-report-details";
 import { Meta, ReportSection } from "./qa-report-document";
 
 /* One pipeline execution as a printable sheet: what failed and how to fix it
@@ -251,7 +252,8 @@ function StageDetail({ stage }: Readonly<{ stage: CiRunReportStage }>) {
       ) : (
         <p className="qa-report-muted">No figures were reported for this stage.</p>
       )}
-      <FailedTests results={stage.results} />
+      {stage.results?.tests?.cases ? <PrintTestCases results={stage.results} /> : <FailedTests results={stage.results} />}
+      <PrintSonar sonar={stage.results?.sonar} />
       {stage.checks.length > 0 ? (
         <div className="qa-report-table-wrap">
           <table className="qa-report-table">
