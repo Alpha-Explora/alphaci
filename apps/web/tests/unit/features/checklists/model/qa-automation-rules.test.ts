@@ -23,6 +23,7 @@ import {
   normalizeDispatch,
   normalizeFailure,
   normalizeRunAutomation,
+  stageTestCases,
   qaSignInHref,
   roleCanDispatch,
   stageCoverage,
@@ -142,6 +143,9 @@ describe("normalizeRunAutomation", () => {
           { name: "e2e/cart.spec.ts › applies a coupon per line", message: "Expected ₱2,480, received ₱2,700" },
         ],
         failuresTruncated: false,
+        // Neither is in this payload: an older pipeline, so the list falls back.
+        passes: null,
+        cases: null,
       },
     });
     expect(result.quality?.status).toBe("success");
@@ -192,6 +196,8 @@ describe("normalizeRunAutomation", () => {
         { name: "b", message: "" },
       ],
       failuresTruncated: false,
+      passes: null,
+      cases: null,
     });
     expect(normalizeRunAutomation({ verify: { tests: { failures: "x" } } }).verify?.tests?.failures).toEqual([]);
   });
@@ -558,5 +564,35 @@ describe("an inferred (unconfirmed) Playwright pass", () => {
     expect(UNCONFIRMED_PASS_HINT).toBe(
       "Older pipeline: this test wasn't in the failure list, but its pass wasn't reported. Update the pipeline to confirm passes.",
     );
+  });
+});
+
+describe("stageTestCases", () => {
+  const base = { total: 3, passed: 2, failed: 1, failures: [{ name: "a > broken", message: "boom" }], failuresTruncated: false };
+
+  it("uses the pipeline's own records when it sends them", () => {
+    const cases = [{ title: "x > t", status: "passed" as const, description: "checks t" }];
+    expect(stageTestCases({ ...base, cases, passes: ["x > t"] })).toBe(cases);
+  });
+
+  it("builds the list from failures and passing names when there are no records", () => {
+    expect(stageTestCases({ ...base, cases: null, passes: ["a > fine", "b > fine"] })).toEqual([
+      { title: "a > broken", status: "failed", error: { message: "boom" } },
+      { title: "a > fine", status: "passed" },
+      { title: "b > fine", status: "passed" },
+    ]);
+  });
+
+  it("is null without either, so the stage keeps its plain failure list", () => {
+    expect(stageTestCases({ ...base, cases: null, passes: null })).toBeNull();
+    expect(stageTestCases(null)).toBeNull();
+  });
+
+  it("reads the records and the names off the wire", () => {
+    const tests = normalizeRunAutomation({
+      verify: { tests: { ...base, passes: ["a > fine", 3], cases: [{ title: "a > fine", status: "passed" }, { nope: 1 }] } },
+    }).verify?.tests;
+    expect(tests?.passes).toEqual(["a > fine"]);
+    expect(tests?.cases).toEqual([expect.objectContaining({ title: "a > fine", status: "passed" })]);
   });
 });

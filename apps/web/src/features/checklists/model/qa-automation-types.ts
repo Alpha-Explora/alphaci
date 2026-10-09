@@ -15,6 +15,8 @@
  * Automated results are information for the tester. Sign-off stays manual:
  * nothing here ever changes an item's recorded status. */
 
+import type { TestCase } from "@/shared/api/contracts";
+
 export type QaAutomationStage = "verify" | "quality";
 
 /** A CI stage run's own conclusion. */
@@ -48,6 +50,8 @@ export interface QaStageTestsWire {
   failed?: number;
   failures?: QaTestFailureWire[];
   failuresTruncated?: boolean;
+  passes?: string[];
+  cases?: unknown[];
 }
 
 export interface QaStageAutomationWire {
@@ -105,6 +109,10 @@ export interface QaStageTests {
   failed: number | null;
   failures: QaTestFailure[];
   failuresTruncated: boolean;
+  /** Names of the tests that passed; null when the pipeline does not say. */
+  passes?: string[] | null;
+  /** Every test with what it checks, its steps and its error; null when not reported. */
+  cases?: TestCase[] | null;
 }
 
 export interface QaStageResult {

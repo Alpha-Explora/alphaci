@@ -1542,12 +1542,53 @@ export interface StageReport {
 }
 
 /** What a stage reported about its tests, coverage, lint, security and Sonar. */
+/** How one browser test ended. `flaky` passed on a retry. */
+export type TestCaseStatus = "passed" | "failed" | "flaky" | "skipped";
+
+/**
+ * One browser test as the suite ran it (Playwright's JSON report, summarised
+ * by the central workflow): what it is, what it checks, what it did and how it
+ * ended. Every field but the title and status is optional.
+ */
+export interface TestCase {
+  /** " > "-joined: spec file, describe blocks, test title. */
+  title: string;
+  file?: string;
+  line?: number;
+  /** The Playwright project, normally the browser. */
+  project?: string;
+  status: TestCaseStatus;
+  durationMs?: number;
+  retries?: number;
+  /** What the test checks, in words (its `description` annotation). */
+  description?: string;
+  /** Other annotations it wrote, e.g. a result note or a screenshot awaiting approval. */
+  notes?: { type: string; text: string }[];
+  /** Top-level `test.step`s, in order. */
+  steps?: { title: string; durationMs?: number; failed?: boolean }[];
+  error?: { message: string; location?: string };
+}
+
+/** One SonarCloud issue on new code. */
+export interface SonarIssue {
+  rule: string;
+  severity?: string;
+  type?: string;
+  message: string;
+  file?: string;
+  line?: number;
+}
+
 export interface StageResults {
   tests?: {
     passed: number;
     failed: number;
     total: number;
     failures?: { name: string; message?: string }[];
+    /** Names of the tests that passed, when the pipeline reports them. */
+    passes?: string[];
+    /** Every browser test with its detail, failures first; may be a prefix of `total`. */
+    cases?: TestCase[];
   };
   coverage?: { pct: number; threshold: number };
   lint?: {
@@ -1575,6 +1616,8 @@ export interface StageResults {
     blockedBy?: string;
     failedConditions?: { metric: string; status?: string; actual?: string; threshold?: string }[];
     measures?: Record<string, string>;
+    /** The most severe issues on new code, at most 20. */
+    issues?: SonarIssue[];
   };
 }
 

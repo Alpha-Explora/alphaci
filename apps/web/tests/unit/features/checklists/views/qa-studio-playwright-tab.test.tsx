@@ -15,6 +15,7 @@ import { ApiError } from "../../../../../src/shared/api/request";
 import { checklist } from "../checklist-fixtures";
 import { automated, automation, verifyFailure } from "../qa-automation-fixtures";
 import { promotionWire } from "../qa-promotion-fixtures";
+import realCases from "../../runs/test-report/real-playwright-cases.json";
 import { runAs, runItem } from "../qa-run-fixtures";
 import { projectRunWire, runItemWire } from "../requirement-fixtures";
 
@@ -317,6 +318,53 @@ describe("Studio column — the Playwright tab", () => {
     expect(repos[1].querySelector(".qa-auto-stage__count")?.textContent).toBe("9 / 9 passed");
     expect(repos[1].querySelector(".qa-auto-stage--missing")?.textContent).toContain("Not reported");
     expect(panel(container, "playwright").querySelector("a")).toBeNull();
+  });
+
+  it("lists every browser test of a run that reports them: what it checks, what it found, its error", async () => {
+    const verify = verifyFailure({
+      tests: { total: 6, passed: 5, failed: 1, failures: [], failuresTruncated: false, cases: realCases },
+    });
+    setup(
+      automatedRun({
+        automation: automation({ verify }),
+        automationByRepository: [{ projectId: "proj-fe", repoFullName: "tone/storefront-web", automation: automation({ verify }) }],
+      }),
+    );
+    const container = await studio("qa");
+    await click(tab(container, "playwright"));
+    const repo = panel(container, "playwright").querySelector<HTMLElement>(".qa-pw-repo")!;
+    const list = repo.querySelector(".tr-cases")!;
+    expect(list.querySelector("h6")?.textContent).toBe("Verify tests · 6 tests · 1 failed");
+    expect(list.querySelectorAll(".tr-case")).toHaveLength(6);
+    expect(list.textContent).toContain("Runs the axe accessibility checker on /");
+    expect(list.textContent).toContain("Result 3 critical or serious and 2 minor or moderate violations");
+    expect(list.querySelector(".tr-case pre")?.textContent).toContain("label (critical)");
+    // The folded failure list is replaced, not shown twice.
+    expect(repo.querySelector(".qa-auto-failures")).toBeNull();
+    expect(repo.querySelector("button.qa-auto-stage__failed")).toBeNull();
+  });
+
+  it("names the passing tests too when the pipeline sends only names", async () => {
+    const verify = verifyFailure({
+      tests: {
+        total: 3,
+        passed: 2,
+        failed: 1,
+        failures: [{ name: "e2e/cart.spec.ts > applies a coupon", message: "Expected 2,480" }],
+        failuresTruncated: false,
+        passes: ["e2e/home.spec.ts > loads", "e2e/links.spec.ts > links resolve"],
+      },
+    });
+    setup(
+      automatedRun({
+        automation: automation({ verify }),
+        automationByRepository: [{ projectId: "proj-fe", repoFullName: "tone/storefront-web", automation: automation({ verify }) }],
+      }),
+    );
+    const container = await studio("qa");
+    await click(tab(container, "playwright"));
+    const names = [...panel(container, "playwright").querySelectorAll(".tr-case__name")].map((node) => node.textContent);
+    expect(names).toEqual(["applies a coupon", "loads", "links resolve"]);
   });
 
   it("lists the requirements with automated tests, failed first, an inferred pass not confirmed", async () => {
