@@ -6,7 +6,11 @@ import { downloadBlob } from "@/shared/browser/download-blob";
 
 import { projectQaRunsRepository } from "../../data/project-qa-runs-repository";
 import { qaRunsRepository } from "../../data/qa-runs-repository";
-import { projectReportFilename, projectReportPageHref } from "../../model/project-report-rules";
+import {
+  normalizeProjectReport,
+  projectReportFilename,
+  projectReportPageHref,
+} from "../../model/project-report-rules";
 import { exportErrorMessage, reportFilename, reportPageHref } from "../../model/qa-report-rules";
 
 export type QaExportStatus = "idle" | "copying" | "copied" | "downloading" | "failed";
@@ -153,8 +157,11 @@ export function useProjectQaExportViewModel(options: {
     pdfHref: projectReportPageHref(deliveryProjectId, runId, { print: true }),
     fetchMarkdown: () => projectQaRunsRepository.reportMarkdown(deliveryProjectId, runId),
     fetchJson: async () => {
-      const report = await projectQaRunsRepository.report(deliveryProjectId, runId);
-      return { filename: projectReportFilename(report, "json"), report };
+      // Save the server's document untouched; read it only to name the file.
+      const body = await projectQaRunsRepository.reportBody(deliveryProjectId, runId);
+      const named = normalizeProjectReport(body);
+      if (!named) throw new Error("The server did not return the QA report.");
+      return { filename: projectReportFilename(named, "json"), report: body };
     },
   });
 }

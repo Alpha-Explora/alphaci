@@ -47,6 +47,12 @@ function runOrThrow(value: unknown): ProjectQaRun {
   return run;
 }
 
+function projectReportOrThrow(raw: unknown): QaProjectReport {
+  const report = normalizeProjectReport(raw);
+  if (!report) throw new Error("The server did not return the QA report.");
+  return report;
+}
+
 export interface ProjectRunStart {
   /** False when a run on the same heads already existed (it is returned instead). */
   created: boolean;
@@ -107,12 +113,17 @@ export const projectQaRunsRepository = {
     return normalizeProjectDispatch(raw);
   },
 
-  /** The `qa-report/v2` JSON. For a signed-off run it describes the frozen copy. */
+  /**
+   * The `qa-report/v2` JSON exactly as the server sent it, for Download JSON:
+   * a saved file must be the server's document, not the shape the page reads.
+   */
+  reportBody(deliveryProjectId: string, runId: string): Promise<unknown> {
+    return request<unknown>(`${runPath(deliveryProjectId, runId)}/report?format=json`);
+  },
+
+  /** The same report normalised for drawing. For a signed-off run it describes the frozen copy. */
   async report(deliveryProjectId: string, runId: string): Promise<QaProjectReport> {
-    const raw = await request<unknown>(`${runPath(deliveryProjectId, runId)}/report?format=json`);
-    const report = normalizeProjectReport(raw);
-    if (!report) throw new Error("The server did not return the QA report.");
-    return report;
+    return projectReportOrThrow(await projectQaRunsRepository.reportBody(deliveryProjectId, runId));
   },
 
   /** The same report as GitHub-flavoured Markdown, ready to paste into a PR. */

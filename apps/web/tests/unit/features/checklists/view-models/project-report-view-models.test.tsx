@@ -10,7 +10,7 @@ import { apiError } from "../checklist-fixtures";
 import { projectReportWire } from "../project-report-fixtures";
 
 jest.mock("../../../../../src/features/checklists/data/project-qa-runs-repository", () => ({
-  projectQaRunsRepository: { report: jest.fn(), reportMarkdown: jest.fn() },
+  projectQaRunsRepository: { report: jest.fn(), reportBody: jest.fn(), reportMarkdown: jest.fn() },
 }));
 jest.mock("../../../../../src/shared/browser/download-blob", () => ({ downloadBlob: jest.fn() }));
 
@@ -38,6 +38,16 @@ function renderHook<T>(useHook: () => T): () => T {
   root = createRoot(container);
   act(() => root!.render(<Probe onRender={(value) => (latest = value)} />));
   return () => latest as T;
+}
+
+/** A Blob's text, through FileReader (jsdom has no Blob.text). */
+function textOf(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result));
+    reader.onerror = () => reject(reader.error);
+    reader.readAsText(blob);
+  });
 }
 
 async function flush() {
@@ -73,23 +83,35 @@ describe("useProjectQaExportViewModel", () => {
     expect(vm().status).toBe("copied");
   });
 
-  it("saves the JSON under the Project report's file name", async () => {
-    repo.report.mockResolvedValue(REPORT);
+  it("saves the server's qa-report/v2 body untouched, under the Project report's file name", async () => {
+    // Fields the page never reads must still be in the saved file.
+    const body = projectReportWire({ automatedResults: { verify: null, quality: null }, extra: "kept" });
+    repo.reportBody.mockResolvedValue(body);
     const vm = renderHook(() => useProjectQaExportViewModel({ deliveryProjectId: "dp-1", runId: "run-1" }));
     await act(async () => {
       await vm().downloadJson();
     });
-    expect(repo.report).toHaveBeenCalledWith("dp-1", "run-1");
+    expect(repo.reportBody).toHaveBeenCalledWith("dp-1", "run-1");
     expect(download).toHaveBeenCalledTimes(1);
     expect(download.mock.calls[0]?.[0]).toBe("QA-Report-storefront-prun-1.json");
     const blob = download.mock.calls[0]?.[1];
     expect(blob?.type).toBe("application/json");
-    expect(blob?.size).toBeGreaterThan(JSON.stringify(REPORT).length);
+    expect(JSON.parse(await textOf(blob!))).toEqual(body);
     expect(vm().status).toBe("idle");
   });
 
+  it("fails the download when the body is not a report it can name", async () => {
+    repo.reportBody.mockResolvedValue({ schemaVersion: "qa-report/v2" });
+    const vm = renderHook(() => useProjectQaExportViewModel({ deliveryProjectId: "dp-1", runId: "run-1" }));
+    await act(async () => {
+      await vm().downloadJson();
+    });
+    expect(download).not.toHaveBeenCalled();
+    expect(vm().status).toBe("failed");
+  });
+
   it("says the download failed when the report cannot be read", async () => {
-    repo.report.mockRejectedValue(apiError(404));
+    repo.reportBody.mockRejectedValue(apiError(404));
     const vm = renderHook(() => useProjectQaExportViewModel({ deliveryProjectId: "dp-1", runId: "run-1" }));
     await act(async () => {
       await vm().downloadJson();

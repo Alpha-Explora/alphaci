@@ -132,6 +132,13 @@ describe("projectQaRunsRepository", () => {
     expect(report.run.automationByRepository).toHaveLength(2);
   });
 
+  it("hands back the report body untouched for saving", async () => {
+    const body = projectReportWire({ automatedResults: null });
+    mockedRequest.mockResolvedValue(body);
+    expect(await projectQaRunsRepository.reportBody("dp-1", "prun-1")).toBe(body);
+    expect(mockedRequest).toHaveBeenCalledWith("/delivery-projects/dp-1/qa-runs/prun-1/report?format=json");
+  });
+
   it("refuses a report with no run to draw", async () => {
     mockedRequest.mockResolvedValue({ schemaVersion: "qa-report/v2" });
     await expect(projectQaRunsRepository.report("dp-1", "prun-1")).rejects.toThrow(/did not return the QA report/);
