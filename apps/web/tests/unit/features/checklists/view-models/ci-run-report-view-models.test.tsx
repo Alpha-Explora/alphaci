@@ -10,7 +10,7 @@ import { apiError } from "../checklist-fixtures";
 import { CI_REF, ciRunReportWire } from "../ci-run-report-fixtures";
 
 jest.mock("../../../../../src/features/checklists/data/ci-run-report-repository", () => ({
-  ciRunReportRepository: { report: jest.fn(), reportMarkdown: jest.fn() },
+  ciRunReportRepository: { report: jest.fn(), reportBody: jest.fn(), reportMarkdown: jest.fn() },
 }));
 jest.mock("../../../../../src/shared/browser/download-blob", () => ({ downloadBlob: jest.fn() }));
 
@@ -38,6 +38,16 @@ function renderHook<T>(useHook: () => T): () => T {
   root = createRoot(container);
   act(() => root!.render(<Probe onRender={(value) => (latest = value)} />));
   return () => latest as T;
+}
+
+/** A Blob's text, through FileReader (jsdom has no Blob.text). */
+function textOf(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result));
+    reader.onerror = () => reject(reader.error);
+    reader.readAsText(blob);
+  });
 }
 
 async function flush() {
@@ -73,20 +83,22 @@ describe("useCiRunReportExportViewModel", () => {
     expect(vm().status).toBe("copied");
   });
 
-  it("saves the JSON under the CI results file name", async () => {
-    repo.report.mockResolvedValue(REPORT);
+  it("saves the server's body untouched under the CI results file name", async () => {
+    const body = ciRunReportWire({ extra: "kept" });
+    repo.reportBody.mockResolvedValue(body);
     const vm = renderHook(() => useCiRunReportExportViewModel(CI_REF));
     await act(async () => {
       await vm().downloadJson();
     });
-    expect(repo.report).toHaveBeenCalledWith(CI_REF);
+    expect(repo.reportBody).toHaveBeenCalledWith(CI_REF);
     expect(download.mock.calls[0]?.[0]).toBe("CI-Results-orders-api-uat-a1b2c3d.json");
     expect(download.mock.calls[0]?.[1].type).toBe("application/json");
+    expect(JSON.parse(await textOf(download.mock.calls[0]![1]))).toEqual(body);
     expect(vm().status).toBe("idle");
   });
 
   it("says the download failed, and downloads nothing, when the report is gone", async () => {
-    repo.report.mockRejectedValue(apiError(404));
+    repo.reportBody.mockRejectedValue(apiError(404));
     const vm = renderHook(() => useCiRunReportExportViewModel(CI_REF));
     await act(async () => {
       await vm().downloadJson();

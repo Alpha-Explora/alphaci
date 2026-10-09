@@ -8,10 +8,17 @@ import type { CiRunReport, CiRunReportRef } from "../model/ci-run-report-types";
  * so the PDF, the Markdown and the JSON agree; this only fetches. */
 
 export const ciRunReportRepository = {
-  /** The `ci-run-report/v1` JSON. */
+  /**
+   * The `ci-run-report/v1` JSON exactly as the server sent it, for Download
+   * JSON: a saved file must be the server's document, not the page's shape.
+   */
+  reportBody(ref: CiRunReportRef): Promise<unknown> {
+    return request<unknown>(`/ci/runs/report?${ciRunReportQuery(ref, { format: "json" })}`);
+  },
+
+  /** The same report normalised for drawing. */
   async report(ref: CiRunReportRef): Promise<CiRunReport> {
-    const raw = await request<unknown>(`/ci/runs/report?${ciRunReportQuery(ref, { format: "json" })}`);
-    const report = normalizeCiRunReport(raw);
+    const report = normalizeCiRunReport(await ciRunReportRepository.reportBody(ref));
     if (!report) throw new Error("The server did not return the CI report.");
     return report;
   },

@@ -36,7 +36,7 @@ The current App Router exposes **27 pages**. Routes under `src/app/` are a routi
 | `/login` | `src/app/(access)/login/page.tsx` | `@/features/auth/login` |
 | `/projects/[projectId]` | `src/app/(platform)/projects/[projectId]/page.tsx` | `@/features/projects/detail` |
 | `/projects/[projectId]/qa/report/[runId]` | `src/app/(platform)/projects/[projectId]/qa/report/[runId]/page.tsx` | `@/features/checklists/report` |
-| `/qa/project-report/[deliveryProjectId]/[runId]` | `src/app/(platform)/qa/project-report/[deliveryProjectId]/[runId]/page.tsx` | `@/features/checklists/report` |
+| `/qa/project-report/[deliveryProjectId]/[runId]` | `src/app/(platform)/qa/project-report/[deliveryProjectId]/[runId]/page.tsx` | `@/features/projects/detail` |
 | `/runs` | `src/app/(platform)/runs/page.tsx` | `@/features/runs/list` |
 | `/runs/report` | `src/app/(platform)/runs/report/page.tsx` | `@/features/checklists/report` |
 | `/settings` | `src/app/(platform)/settings/page.tsx` | `@/features/settings/account` |

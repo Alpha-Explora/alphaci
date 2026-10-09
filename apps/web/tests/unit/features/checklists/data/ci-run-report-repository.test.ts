@@ -23,6 +23,13 @@ describe("ciRunReportRepository", () => {
     expect(report.stages).toHaveLength(4);
   });
 
+  it("hands back the body untouched for saving", async () => {
+    const body = ciRunReportWire();
+    mockedRequest.mockResolvedValue(body);
+    expect(await ciRunReportRepository.reportBody(CI_REF)).toBe(body);
+    expect(mockedRequest).toHaveBeenCalledWith(`/ci/runs/report?${QUERY}&format=json`);
+  });
+
   it("refuses a reply that names no execution", async () => {
     mockedRequest.mockResolvedValue({ schemaVersion: "ci-run-report/v1" });
     await expect(ciRunReportRepository.report(CI_REF)).rejects.toThrow(/did not return the CI report/);

@@ -2,8 +2,8 @@ export { ProjectDetailView } from "./views/project-detail-view";
 export { ProjectDetailTabs } from "./views/project-detail-tabs";
 export { WorkflowStageList } from "./views/workflow-stage-list";
 export { ProjectEnvPanel } from "./views/project-env-panel";
-/* A repository's screenshots for a printed report (the Project QA report's appendix). */
-export { VisualEvidence } from "./views/visual-evidence";
+/* The printable Project QA report, with each repository's screenshots in its appendix. */
+export { ProjectQaReportPage } from "./views/project-qa-report-page";
 export { useProjectDetailViewModel } from "./view-models/use-project-detail-view-model";
 export type { ProjectDetailViewModel } from "./view-models/use-project-detail-view-model";
 export { usePipelineRunsViewModel, RUNS_POLL_MS } from "./view-models/use-pipeline-runs-view-model";

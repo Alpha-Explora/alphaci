@@ -174,9 +174,7 @@ export function useCiRunReportExportViewModel(ref: CiRunReportRef): QaExportView
   return useExportViewModel({
     pdfHref: ciRunReportPageHref(ref, { print: true }),
     fetchMarkdown: () => ciRunReportRepository.reportMarkdown(ref),
-    fetchJson: async () => {
-      const report = await ciRunReportRepository.report(ref);
-      return { filename: ciRunReportFilename(ref, "json"), report };
-    },
+    // The file is named by the run it was asked for; the body is saved as sent.
+    fetchJson: async () => ({ filename: ciRunReportFilename(ref, "json"), report: await ciRunReportRepository.reportBody(ref) }),
   });
 }
