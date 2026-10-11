@@ -22,6 +22,7 @@ import {
   dispatchFailureLine,
   normalizeAutomatedResult,
   normalizeRunAutomation,
+  unlinkedSentence,
   verifySettledSince,
 } from "./qa-automation-rules";
 import { repoShortName } from "./project-run-rules";
@@ -88,6 +89,8 @@ export interface PlaywrightItemRow {
   tone: QaTone;
   inferred: boolean;
   failure: QaTestFailure | null;
+  /** For an item that names no test: "Not linked to a Playwright test. Check this by hand." */
+  note: string | null;
 }
 
 export interface PlaywrightResults {
@@ -102,7 +105,7 @@ export const PROJECT_RUN_BRANCH = "uat";
 
 export const MERGED_RESULTS_NAME = "All repositories";
 
-const STATUS_ORDER: Record<QaAutomatedStatus, number> = { failed: 0, unknown: 1, not_run: 2, passed: 3 };
+const STATUS_ORDER: Record<QaAutomatedStatus, number> = { failed: 0, unknown: 1, unlinked: 2, not_run: 3, passed: 4 };
 
 interface ItemSource {
   id: string;
@@ -112,7 +115,10 @@ interface ItemSource {
   result: QaAutomatedItemResult | null;
 }
 
-/** Failed first, then what CI could not tell, then not run, then passed; run order within each. */
+/**
+ * Failed first, then what CI could not tell, then items linked to no test
+ * (checked by hand), then not run, then passed; run order within each.
+ */
 export function playwrightItemRows(items: ReadonlyArray<ItemSource>): PlaywrightItemRow[] {
   return items
     .flatMap((item) => (item.result ? [{ item, result: item.result }] : []))
@@ -130,6 +136,7 @@ export function playwrightItemRows(items: ReadonlyArray<ItemSource>): Playwright
         tone: automatedStatusTone(result.status),
         inferred: result.status === "passed" && result.inferred,
         failure: result.status === "failed" ? result.failure : null,
+        note: result.status === "unlinked" ? unlinkedSentence(result) : null,
       },
     }))
     .sort((a, b) => STATUS_ORDER[a.row.status] - STATUS_ORDER[b.row.status] || a.index - b.index)

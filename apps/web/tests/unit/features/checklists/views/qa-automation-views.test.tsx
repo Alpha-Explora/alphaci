@@ -280,6 +280,45 @@ describe("QA Studio — item Automated badge", () => {
     expect(confirmed?.getAttribute("title")).toBeNull();
   });
 
+  it("shows an item with no test as Not linked, never as the stage's pass", async () => {
+    const items = [
+      runItem(0, {
+        title: "Consignment registers correctly",
+        targetPersona: "qa",
+        verificationType: "playwright",
+        testIdentifier: null,
+        automated: automated({ status: "unlinked", scope: "stage", matchedSpec: null, failure: null }),
+      }),
+      runItem(1, {
+        title: "Totals use the unit test",
+        targetPersona: "qa",
+        verificationType: "unit_test",
+        testIdentifier: null,
+        automated: automated({ source: "unit_test", stage: "quality", status: "unlinked", scope: "stage", matchedSpec: null, failure: null }),
+      }),
+    ];
+    setup(runAs("admin", { items, automation: automation({ verify: verifyFailure({ status: "success" }) }) }));
+    const container = await studio("admin");
+    const row = itemRow(container, "Consignment registers correctly");
+    const badge = row.querySelector(".qa-auto-badge");
+    expect(badge?.textContent).toBe("AutomatedNot linked");
+    expect(badge?.className).not.toContain("qa-auto-badge--success");
+    const toggle = row.querySelector(".qa-auto-toggle");
+    expect(toggle?.getAttribute("title")).toBe("Not linked to a Playwright test. Check this by hand.");
+    click(toggle);
+    const details = row.querySelector<HTMLElement>(".qa-auto-detail");
+    expect(details?.className).toContain("qa-auto-detail--neutral");
+    expect(details?.querySelector(".qa-auto-detail__sentence")?.textContent).toBe(
+      "Not linked to a Playwright test. Check this by hand.",
+    );
+    expect(details?.textContent).toContain("For context: the Verify stage passed, but no test in it is linked to this item.");
+    expect(details?.textContent).not.toContain("Stage result");
+    expect(details?.textContent).not.toContain("Automated: verify stage passed");
+
+    const unit = itemRow(container, "Totals use the unit test").querySelector(".qa-auto-toggle");
+    expect(unit?.getAttribute("title")).toBe("Not linked to a unit test. Check this by hand.");
+  });
+
   it("renders every item of a run from an older backend without a badge or an error", async () => {
     const legacy = runAs("qa", { items: [runItem(0, { title: "Checkout works" })] });
     setup(legacy);
@@ -580,5 +619,19 @@ describe("QA report — automated results", () => {
     expect(rows[0].querySelector(".qa-report-auto-cell")?.textContent).toContain("This spec");
     expect(rows[1].querySelector(".qa-auto-badge")).toBeNull();
     expect(rows[0].querySelector(".qa-pill")?.textContent).toBe("Passed");
+  });
+
+  it("prints an unlinked item's sentence in the checklist table, not a stage result", async () => {
+    const base = frozenReport();
+    const items = base.run.items.map((item, index) =>
+      index === 0
+        ? { ...item, automated: automated({ status: "unlinked", scope: "stage", matchedSpec: null, failure: null }) }
+        : item,
+    );
+    const container = await report({ ...base, run: { ...base.run, items }, automatedResults: automation() });
+    const cell = container.querySelector('[aria-labelledby="qa-report-checklist"] .qa-report-auto-cell');
+    expect(cell?.querySelector(".qa-auto-badge")?.textContent).toBe("AutomatedNot linked");
+    expect(cell?.textContent).toContain("Not linked to a Playwright test. Check this by hand.");
+    expect(cell?.textContent).not.toContain("Stage result");
   });
 });

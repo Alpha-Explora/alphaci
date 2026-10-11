@@ -148,6 +148,20 @@ describe("Playwright tab — what it lists", () => {
     expect(rows[2].inferred).toBe(true);
   });
 
+  it("shows an item linked to no test as neutral, after failures and before not run, never as passed", () => {
+    const rows = playwrightItemRows([
+      { id: "p", title: "Home loads", group: null, testIdentifier: "e2e/home.spec.ts", result: normal("passed") },
+      { id: "n", title: "Refund", group: null, testIdentifier: "e2e/refund.spec.ts", result: normal("not_run") },
+      { id: "u", title: "Consignment registers", group: "Logistics", testIdentifier: null, result: { ...normal("unlinked"), scope: "stage" as const } },
+      { id: "f", title: "Pays", group: null, testIdentifier: "e2e/pay.spec.ts", result: normal("failed") },
+    ]);
+    expect(rows.map((row) => row.id)).toEqual(["f", "u", "n", "p"]);
+    const unlinked = rows[1];
+    expect([unlinked.label, unlinked.tone, unlinked.test, unlinked.inferred]).toEqual(["Not linked", "neutral", null, false]);
+    expect(unlinked.note).toBe("Not linked to a Playwright test. Check this by hand.");
+    expect(rows.filter((row) => row.id !== "u").every((row) => row.note === null)).toBe(true);
+  });
+
   it("lists a repository run's automated items", () => {
     const results = repositoryPlaywrightResults(
       qaRun({ automation: automation(), items: [runItem(0, { title: "Pays", automated: automated() }), runItem(1, { title: "Manual" })] }),
@@ -157,7 +171,7 @@ describe("Playwright tab — what it lists", () => {
   });
 });
 
-function normal(status: "passed" | "failed" | "not_run") {
+function normal(status: "passed" | "failed" | "not_run" | "unlinked") {
   return {
     source: "playwright" as const,
     stage: "verify" as const,

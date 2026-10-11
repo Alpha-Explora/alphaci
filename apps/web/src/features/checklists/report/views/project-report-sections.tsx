@@ -2,7 +2,7 @@
 
 import { AutomatedBadge, StatusPill } from "../../items";
 import { verificationTypeLabel } from "../../model/checklist-rules";
-import { automatedScopeLabel, hasStageResults } from "../../model/qa-automation-rules";
+import { automatedCellNote, hasStageResults } from "../../model/qa-automation-rules";
 import { repositoryHeadLabel } from "../../model/project-report-rules";
 import type { QaProjectReport } from "../../model/project-report-types";
 import type { ProjectQaRunItem } from "../../model/project-run-types";
@@ -18,7 +18,7 @@ import { AutomationTable } from "./qa-report-automation";
 /** The Automated badge and its scope, for an item CI reported on. Nothing for a manual item. */
 function AutomatedCell({ automated }: Readonly<{ automated: ProjectQaRunItem["automated"] }>) {
   if (!automated) return null;
-  const scope = automatedScopeLabel(automated.scope);
+  const scope = automatedCellNote(automated);
   return (
     <span className="qa-report-auto-cell">
       <AutomatedBadge status={automated.status} inferred={automated.inferred} />

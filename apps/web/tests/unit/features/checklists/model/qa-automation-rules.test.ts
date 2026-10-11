@@ -2,6 +2,7 @@ import {
   AUTOMATED_DIFFERS_HINT,
   UNCONFIRMED_PASS_HINT,
   automatedBadgeLabel,
+  automatedCellNote,
   automatedDiffers,
   automatedScopeLabel,
   automatedSentence,
@@ -16,6 +17,7 @@ import {
   failuresToggleLabel,
   hasStageResults,
   isUnconfirmedPass,
+  itemScopeLabel,
   listedFailures,
   MAX_LISTED_FAILURES,
   noAutomationText,
@@ -34,6 +36,8 @@ import {
   stageRunTone,
   stageTestsLabel,
   stageTitle,
+  unlinkedSentence,
+  unlinkedStageNote,
   unlistedFailuresNote,
   verifySettledSince,
 } from "../../../../../src/features/checklists/model/qa-automation-rules";
@@ -594,5 +598,71 @@ describe("stageTestCases", () => {
     }).verify?.tests;
     expect(tests?.passes).toEqual(["a > fine"]);
     expect(tests?.cases).toEqual([expect.objectContaining({ title: "a > fine", status: "passed" })]);
+  });
+});
+
+describe("an unlinked item (no test identifier)", () => {
+  const unlinked = item({ status: "unlinked", scope: "stage", matchedSpec: null, failure: null });
+
+  it("parses the status the backend sends, and still survives an unknown one", () => {
+    expect(normalizeAutomatedResult({ source: "playwright", stage: "verify", status: "unlinked", scope: "stage" })?.status).toBe(
+      "unlinked",
+    );
+    expect(normalizeAutomatedResult({ status: "something_new" })?.status).toBe("unknown");
+  });
+
+  it("reads neutral, never as a pass", () => {
+    expect(automatedStatusTone("unlinked")).toBe("neutral");
+    expect(automatedStatusLabel("unlinked")).toBe("Not linked");
+    expect(automatedBadgeLabel("unlinked", true)).toBe("Not linked");
+    expect(isUnconfirmedPass({ status: "unlinked", inferred: true })).toBe(false);
+  });
+
+  it("says to check it by hand, whatever the stage did", () => {
+    const context = { commitSha: "a1b2c3d", stageResult: stage({ status: "success" }) };
+    expect(automatedSentence(unlinked, context)).toBe("Not linked to a Playwright test. Check this by hand.");
+    expect(automatedSentence(item({ ...unlinked, source: "unit_test", stage: "quality" }), context)).toBe(
+      "Not linked to a unit test. Check this by hand.",
+    );
+    expect(automatedSentence(item({ ...unlinked, source: null, stage: "quality" }))).toBe(
+      "Not linked to a unit test. Check this by hand.",
+    );
+    expect(automatedSentence(item({ ...unlinked, source: "bruno" }))).toBe("Not linked to an API test. Check this by hand.");
+    expect(automatedSentence(item({ ...unlinked, source: null, stage: null }))).toBe(
+      "Not linked to a Playwright test. Check this by hand.",
+    );
+    expect(unlinkedSentence({ source: "unit_test", stage: null })).toBe("Not linked to a unit test. Check this by hand.");
+  });
+
+  it("keeps the stage verdict as context that is plainly not the item's", () => {
+    expect(unlinkedStageNote(unlinked, stage({ status: "success" }))).toBe(
+      "For context: the Verify stage passed, but no test in it is linked to this item.",
+    );
+    expect(unlinkedStageNote(unlinked, stage({ status: "failure" }))).toBe(
+      "For context: the Verify stage failed, but no test in it is linked to this item.",
+    );
+    expect(unlinkedStageNote(item({ ...unlinked, stage: "quality" }), stage({ stage: "quality", status: "running" }))).toBe(
+      "For context: the Quality stage is still running, but no test in it is linked to this item.",
+    );
+    expect(unlinkedStageNote(unlinked, stage({ status: "cancelled" }))).toBe(
+      "For context: the Verify stage was cancelled, but no test in it is linked to this item.",
+    );
+    expect(unlinkedStageNote(unlinked, null)).toBeNull();
+    expect(unlinkedStageNote(unlinked, stage({ status: null }))).toBeNull();
+    expect(unlinkedStageNote(item({ ...unlinked, stage: null }), stage({ status: "success" }))).toBeNull();
+    expect(unlinkedStageNote(item({ status: "passed", scope: "stage" }), stage({ status: "success" }))).toBeNull();
+  });
+
+  it("drops the 'Stage result' scope and prints the sentence in report cells", () => {
+    expect(itemScopeLabel(unlinked)).toBeNull();
+    expect(itemScopeLabel(item({ status: "passed", scope: "stage" }))).toBe("Stage result");
+    expect(automatedCellNote(unlinked)).toBe("Not linked to a Playwright test. Check this by hand.");
+    expect(automatedCellNote(item({ status: "failed", scope: "spec" }))).toBe("This spec");
+    expect(automatedCellNote(item({ status: "passed", scope: null }))).toBeNull();
+  });
+
+  it("never differs from a recorded status", () => {
+    expect(automatedDiffers("passed", "unlinked")).toBe(false);
+    expect(automatedDiffers("failed", "unlinked")).toBe(false);
   });
 });
