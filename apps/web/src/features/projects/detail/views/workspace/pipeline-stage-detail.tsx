@@ -136,6 +136,7 @@ export function StageDetail({
   branch = "",
   visual,
   visualChip = null,
+  visualCaptureOn,
 }: Readonly<{
   projectId: string;
   entry: StageEntry;
@@ -147,6 +148,8 @@ export function StageDetail({
   visual?: VisualChecksViewModel;
   /** "Visual: 2 changed", once `visual` has been read. */
   visualChip?: string | null;
+  /** False when the repository's workflow takes no screenshots on this branch; null when unknown. */
+  visualCaptureOn?: boolean | null;
 }>) {
   const { stage, verdict } = entry;
   const headingId = useId();
@@ -190,7 +193,7 @@ export function StageDetail({
         <StageLogs projectId={projectId} runId={stage.runId} viewMode={viewMode} />
       )}
 
-      {visual && <VisualChecksPanel view={visual} branch={branch} />}
+      {visual && <VisualChecksPanel view={visual} branch={branch} captureOn={visualCaptureOn} />}
     </section>
   );
 }

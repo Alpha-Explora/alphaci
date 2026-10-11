@@ -151,7 +151,7 @@ async function flush() {
   }
 }
 
-async function renderCard(branch = "uat", appRole: AppRole | undefined = "member") {
+async function renderCard(branch = "uat", appRole: AppRole | undefined = "member", visualCaptureOn: boolean | null = null) {
   await act(async () => {
     root = createRoot(host);
     root.render(
@@ -163,6 +163,7 @@ async function renderCard(branch = "uat", appRole: AppRole | undefined = "member
           title={null}
           appRole={appRole}
           repoFullName="Alpha-Explora/logistics2cicd-fe"
+          visualCaptureOn={visualCaptureOn}
         />
       </ul>,
     );
@@ -223,6 +224,17 @@ describe("Verify stage visual checks", () => {
       "No visual checks reported for uat yet. They run with the browser tests after each deploy.",
     );
     expect(host.querySelector(".pipe-shot")).toBeNull();
+  });
+
+  it("says visual testing is off, not pending, when the repository's workflow is off on uat", async () => {
+    mockedChecks.mockResolvedValue({ branch: "uat", runId: null, canApprove: true, snapshots: [] });
+    await renderCard("uat", "member", false);
+    expect(host.querySelector(".pipe-step__visual")?.textContent).toBe("Visual: off for this repo");
+    await openVerify();
+    expect(panel().textContent).toContain(
+      "Visual testing is off in this repository's workflow, so no screenshots are taken on uat.",
+    );
+    expect(panel().textContent).not.toContain("No visual checks reported");
   });
 
   it("folds passing screenshots into a list whose thumbnails load when opened", async () => {

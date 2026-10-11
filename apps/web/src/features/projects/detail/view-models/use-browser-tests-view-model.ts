@@ -9,15 +9,22 @@ import {
 } from "../data/project-browser-tests-api";
 import {
   browserTestsError,
+  browserTestsVisual,
   type BrowserTestsAdded,
   type BrowserTestsError,
   type BrowserTestsStatus,
+  type BrowserTestsVisual,
 } from "../model/browser-test-rules";
 
 export interface BrowserTestsViewModel {
   /** The status read. "error" leaves the card hidden: it is an offer, not a report. */
   status: ProjectStatus;
   browserTests: BrowserTestsStatus | null;
+  /**
+   * Whether the verify workflow takes screenshots, per branch. Null while
+   * loading, after a failed read, and from an older backend that does not say.
+   */
+  visual: BrowserTestsVisual | null;
   /** True while the pull request is being opened. */
   adding: boolean;
   added: BrowserTestsAdded | null;
@@ -72,5 +79,5 @@ export function useBrowserTestsViewModel(options: { projectId: string }): Browse
       .finally(() => setAdding(false));
   }, [adding, projectId]);
 
-  return { status, browserTests, adding, added, addError, add };
+  return { status, browserTests, visual: browserTestsVisual(browserTests), adding, added, addError, add };
 }

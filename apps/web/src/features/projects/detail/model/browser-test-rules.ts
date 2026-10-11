@@ -34,6 +34,18 @@ export interface BrowserTestsStatus {
   canAdd: boolean;
   /** Why `canAdd` is false, in the server's words; null when it is true. */
   reason: string | null;
+  /**
+   * Whether this repo's verify workflow turns visual testing on, per branch.
+   * null = file missing or unreadable. Absent from an older backend, which
+   * reads as unknown (today's behaviour) — never as off.
+   */
+  visual?: BrowserTestsVisual;
+}
+
+/** Per branch: whether the verify workflow takes screenshots; null when unknown. */
+export interface BrowserTestsVisual {
+  dev: boolean | null;
+  uat: boolean | null;
 }
 
 /** 201 from POST workspace/browser-tests. */
@@ -118,6 +130,69 @@ export function splitNote(note: string): BrowserTestsNote {
   const match = /```[a-z]*\n([\s\S]*?)```/.exec(note);
   if (!match) return { text: note.trim(), code: null };
   return { text: note.slice(0, match.index).trim(), code: (match[1] ?? "").trimEnd() };
+}
+
+/* ── Visual testing in the workflow ─────────────────────────────────────── */
+
+function flag(value: unknown): boolean | null {
+  return typeof value === "boolean" ? value : null;
+}
+
+/**
+ * The workflow's visual setting, whatever arrived: null when the backend did
+ * not send it (an older backend) or sent something that is not an object, so
+ * every caller falls back to today's wording rather than claiming "off".
+ */
+export function browserTestsVisual(status: BrowserTestsStatus | null): BrowserTestsVisual | null {
+  const raw: unknown = status?.visual;
+  if (typeof raw !== "object" || raw === null || Array.isArray(raw)) return null;
+  const value = raw as Record<string, unknown>;
+  return { dev: flag(value.dev), uat: flag(value.uat) };
+}
+
+/**
+ * Whether screenshots are taken on a branch whose visual checks are shown:
+ * uat as its workflow says. Null when that is not known — an older backend,
+ * an unreadable file, or main, which the status does not report (and dev,
+ * which is never screenshotted).
+ */
+export function visualCaptureOn(visual: BrowserTestsVisual | null, branch: string): boolean | null {
+  return branch === "uat" ? (visual?.uat ?? null) : null;
+}
+
+export const VISUAL_OFF_LINE = "Visual testing is off in this repository's workflow.";
+
+export const VISUAL_OFF_ON_DEV_LINE =
+  "Visual testing is off in this repository's workflow on dev, so uat stops capturing screenshots at the next promotion.";
+
+export const VISUAL_PROMOTE_LINE = "Turned on in dev. Promote to uat to start capturing screenshots.";
+
+export const VISUAL_UPDATE_LABEL = "Update the workflow";
+
+export const VISUAL_UPDATE_HINT = "Opens the Workflow tab, where the update pull request turns it on in dev.";
+
+/**
+ * What fixes it: the workflow update pull request when dev is off, a
+ * promotion when only uat is; `none` when uat is off and dev unreadable.
+ */
+export type VisualOffFix = "update-workflow" | "promote" | "none";
+
+export interface VisualOffNotice {
+  line: string;
+  fix: VisualOffFix;
+}
+
+/**
+ * The card's "visual testing is off" notice, or null when it is on, unknown,
+ * or not reported by an older backend.
+ */
+export function visualOffNotice(visual: BrowserTestsVisual | null): VisualOffNotice | null {
+  if (!visual) return null;
+  if (visual.dev === false) {
+    return { line: visual.uat === false ? VISUAL_OFF_LINE : VISUAL_OFF_ON_DEV_LINE, fix: "update-workflow" };
+  }
+  if (visual.uat !== false) return null;
+  return { line: VISUAL_OFF_LINE, fix: visual.dev === true ? "promote" : "none" };
 }
 
 /* ── An add that failed ─────────────────────────────────────────────────── */

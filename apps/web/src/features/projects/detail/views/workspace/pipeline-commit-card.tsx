@@ -60,10 +60,16 @@ export function CommitCard({
   viewMode = "deep",
   appRole,
   repoFullName,
+  visualCaptureOn = null,
 }: Readonly<{
   projectId: string;
   /** `owner/repo`, for the file names of downloaded screenshots. */
   repoFullName?: string | null;
+  /**
+   * False when the repository's workflow takes no screenshots on this branch
+   * (from the browser-tests status); null when unknown or an older backend.
+   */
+  visualCaptureOn?: boolean | null;
   branch: string;
   commit: CommitRunGroup<WorkflowRunSummary>;
   title: string | null;
@@ -100,7 +106,7 @@ export function CommitCard({
     appRole,
     repoFullName,
   });
-  const visualChip = visualChipLabel(visual.checks);
+  const visualChip = visualChipLabel(visual.checks, visualCaptureOn);
   const showsVisual = openEntry?.stage.stage === "verify" && isVisualBranch(branch);
 
   return (
@@ -144,6 +150,7 @@ export function CommitCard({
             branch={branch}
             visual={showsVisual ? visual : undefined}
             visualChip={visualChip}
+            visualCaptureOn={visualCaptureOn}
           />
         )}
 

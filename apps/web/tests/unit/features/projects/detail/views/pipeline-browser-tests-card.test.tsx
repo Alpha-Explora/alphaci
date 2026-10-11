@@ -228,3 +228,97 @@ describe("Browser tests card", () => {
     expect(host.querySelector('[role="alert"]')?.textContent).toContain("GitHub refused the pull request: no commits");
   });
 });
+
+describe("Browser tests card — visual testing off in the workflow", () => {
+  type Access = "open" | "role" | "unavailable";
+
+  function WorkflowHarness({
+    access,
+    onOpenWorkflow,
+    workflowHref,
+  }: Readonly<{ access: Access; onOpenWorkflow?: () => void; workflowHref?: string }>) {
+    const view = useBrowserTestsViewModel({ projectId: "p1" });
+    return <BrowserTestsCard view={view} workflowAccess={access} onOpenWorkflow={onOpenWorkflow} workflowHref={workflowHref} />;
+  }
+
+  async function renderWith(
+    value: BrowserTestsStatus,
+    access: Access,
+    onOpenWorkflow?: () => void,
+    workflowHref?: string,
+  ) {
+    mockedStatus.mockResolvedValue(value);
+    await act(async () => {
+      root = createRoot(host);
+      root.render(<WorkflowHarness access={access} onOpenWorkflow={onOpenWorkflow} workflowHref={workflowHref} />);
+    });
+    await flush();
+  }
+
+  const INSTALLED = { installed: true, missingFiles: [], presentFiles: ALL_MISSING };
+
+  function updateButton(): HTMLButtonElement | undefined {
+    return [...host.querySelectorAll("button")].find((node) => node.textContent === "Update the workflow");
+  }
+
+  it("stays one quiet line for an older backend that does not report it", async () => {
+    await renderWith(status(INSTALLED), "open", jest.fn());
+    expect(host.textContent).toBe("Browser tests installed: page loads, links, accessibility, visual");
+    expect(host.querySelector("[data-visual-off]")).toBeNull();
+  });
+
+  it("stays one quiet line when visual is on", async () => {
+    await renderWith(status({ ...INSTALLED, visual: { dev: true, uat: true } }), "open", jest.fn());
+    expect(host.querySelector("[data-visual-off]")).toBeNull();
+  });
+
+  it("says it is off and opens the Workflow tab's update pull request when dev is off", async () => {
+    const onOpenWorkflow = jest.fn();
+    await renderWith(status({ ...INSTALLED, visual: { dev: false, uat: false } }), "open", onOpenWorkflow);
+    const notice = host.querySelector("[data-visual-off]");
+    expect(notice?.querySelector(".pipe-tests__visual-line")?.textContent).toBe(
+      "Visual testing is off in this repository's workflow.",
+    );
+    expect(host.textContent).toContain("Browser tests installed");
+    act(() => updateButton()!.click());
+    expect(onOpenWorkflow).toHaveBeenCalledTimes(1);
+    expect(mockedAdd).not.toHaveBeenCalled();
+    expect(host.innerHTML).not.toMatch(/github\.com/);
+  });
+
+  it("links another repository's Workflow tab inside the product", async () => {
+    await renderWith(status({ ...INSTALLED, visual: { dev: false, uat: false } }), "open", undefined, "/projects/p2#workflow");
+    const link = host.querySelector<HTMLAnchorElement>("[data-visual-off] a");
+    expect(link?.textContent).toBe("Update the workflow");
+    expect(link?.getAttribute("href")).toBe("/projects/p2#workflow");
+  });
+
+  it("says who can update it to a role that cannot", async () => {
+    await renderWith(status({ ...INSTALLED, visual: { dev: false, uat: false } }), "role", jest.fn());
+    expect(updateButton()).toBeUndefined();
+    expect(host.querySelector("[data-visual-off] .pipe-tests__reason")?.textContent).toBe(
+      "A Developer, Team lead or admin can open the workflow update pull request.",
+    );
+  });
+
+  it("offers no action where the update pull request does not exist", async () => {
+    await renderWith(status({ ...INSTALLED, visual: { dev: false, uat: false } }), "unavailable", jest.fn());
+    expect(host.querySelector("[data-visual-off]")).not.toBeNull();
+    expect(updateButton()).toBeUndefined();
+    expect(host.querySelector("[data-visual-off] .pipe-tests__reason")).toBeNull();
+  });
+
+  it("says to promote when dev is on and uat is off", async () => {
+    await renderWith(status({ ...INSTALLED, visual: { dev: true, uat: false } }), "open", jest.fn());
+    expect(host.querySelector("[data-visual-off]")?.textContent).toBe(
+      "Visual testing is off in this repository's workflow.Turned on in dev. Promote to uat to start capturing screenshots.",
+    );
+    expect(updateButton()).toBeUndefined();
+  });
+
+  it("keeps the missing-pack offer beside the notice", async () => {
+    await renderWith(status({ visual: { dev: false, uat: false } }), "open", jest.fn());
+    expect(addButton()).toBeDefined();
+    expect(updateButton()).toBeDefined();
+  });
+});

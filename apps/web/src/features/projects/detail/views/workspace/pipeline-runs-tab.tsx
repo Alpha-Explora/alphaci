@@ -19,6 +19,8 @@ import {
   type WorkflowRunSummary,
 } from "../../view-models/use-pipeline-runs-view-model";
 import { useBrowserTestsViewModel } from "../../view-models/use-browser-tests-view-model";
+import { visualCaptureOn, type BrowserTestsVisual } from "../../model/browser-test-rules";
+import type { WorkflowUpdateAccess } from "../../model/project-detail-tab-rules";
 
 /**
  * Live GitHub Actions runs for this project: branch → run → jobs → steps → log.
@@ -49,6 +51,8 @@ export function PipelineRunsTab({
   projectId,
   appRole,
   onOpenPullRequest,
+  workflowAccess,
+  onOpenWorkflow,
 }: {
   projectId: string;
   /**
@@ -58,6 +62,10 @@ export function PipelineRunsTab({
   appRole?: AppRole;
   /** Opens the Pull requests tab on a number; absent when that tab is not offered. */
   onOpenPullRequest?: (pullRequestNumber: number) => void;
+  /** Whether "Update the workflow" may send this viewer to the update pull request. */
+  workflowAccess?: WorkflowUpdateAccess;
+  /** Opens the Workflow tab, for turning visual testing on. */
+  onOpenWorkflow?: () => void;
 }) {
   const viewMode = runsViewModeFor(appRole);
   const runsView = usePipelineRunsViewModel({ projectId });
@@ -128,7 +136,12 @@ export function PipelineRunsTab({
         </span>
       </div>
 
-      <BrowserTestsCard view={browserTests} onOpenPullRequest={onOpenPullRequest} />
+      <BrowserTestsCard
+        view={browserTests}
+        onOpenPullRequest={onOpenPullRequest}
+        workflowAccess={workflowAccess}
+        onOpenWorkflow={onOpenWorkflow}
+      />
 
       {runsView.reportsUnavailable && (
         <p className="pipe-banner pipe-banner--warning" role="status">
@@ -145,6 +158,7 @@ export function PipelineRunsTab({
           viewMode={viewMode}
           appRole={appRole}
           repoFullName={runsView.repoFullName}
+          visual={browserTests.visual}
         />
       ))}
     </div>
@@ -158,12 +172,15 @@ function BranchSection({
   viewMode,
   appRole,
   repoFullName,
+  visual,
 }: {
   projectId: string;
   repoFullName: string | null;
   section: BranchRunSection<WorkflowRunSummary>;
   viewMode: RunsViewMode;
   appRole?: AppRole;
+  /** The workflow's visual setting, from the browser-tests status; null when unknown. */
+  visual: BrowserTestsVisual | null;
 }) {
   // Computed across the section: a title is only worth showing when it tells
   // this commit apart from the others on the branch.
@@ -196,6 +213,7 @@ function BranchSection({
               viewMode={viewMode}
               appRole={appRole}
               repoFullName={repoFullName}
+              visualCaptureOn={visualCaptureOn(visual, section.branch)}
             />
           ))}
         </ul>

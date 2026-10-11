@@ -111,3 +111,17 @@
   font-size: 0.72rem;
   color: var(--text-primary);
 }
+
+/* "Visual testing is off in this repository's workflow", and what fixes it. */
+.pipe-tests__visual {
+  display: grid;
+  gap: 0.35rem;
+  padding-top: 0.45rem;
+  border-top: 1px solid var(--border);
+}
+
+.pipe-tests__visual-line {
+  margin: 0;
+  font-weight: 650;
+  color: var(--text-primary);
+}

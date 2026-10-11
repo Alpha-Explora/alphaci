@@ -10,6 +10,8 @@ import type {
   WorkflowSettings,
 } from "@/shared/api/contracts";
 
+import { isPullRequestRole } from "./pull-request-compose-rules";
+
 export type ProjectDetailTab =
   | "overview"
   | "code"
@@ -483,6 +485,28 @@ export const UPDATE_PR_ROLE_NOTE =
 /** The backend targets dev, else uat — never main. */
 export const UPDATE_PR_TARGET_NOTE =
   "Opens a pull request into dev (or uat when there is no dev branch).";
+
+/**
+ * Whether this viewer can be sent to the Workflow tab's update pull request
+ * from elsewhere (the Browser tests card): `open` when they can create it,
+ * `role` when the feature is there but their role cannot (say
+ * UPDATE_PR_ROLE_NOTE instead), `unavailable` when the deployment or project
+ * does not offer the update pull request at all.
+ */
+export type WorkflowUpdateAccess = "open" | "role" | "unavailable";
+
+export function workflowUpdateAccess(input: {
+  appRole: AppRole | null | undefined;
+  workflowTabVisible: boolean;
+  updatePrEnabled: boolean;
+  settingsPreviewEnabled: boolean;
+  /** The project overview's `capabilities.workflowSettings`; undefined until it loads. */
+  projectWorkflowSettings: boolean | undefined;
+}): WorkflowUpdateAccess {
+  const offered = input.updatePrEnabled && input.settingsPreviewEnabled && input.projectWorkflowSettings === true;
+  if (!offered) return "unavailable";
+  return input.workflowTabVisible && isPullRequestRole(input.appRole) ? "open" : "role";
+}
 
 export function createUpdatePrLabel(creating: boolean): string {
   if (creating) return "Creating...";
