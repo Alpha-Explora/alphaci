@@ -186,7 +186,7 @@ describe("checklist links and errors", () => {
   });
 
   it("maps role and membership errors, and falls back otherwise", () => {
-    expect(checklistErrorMessage(apiError(403), "x")).toMatch(/team leads/);
+    expect(checklistErrorMessage(apiError(403), "x")).toMatch(/Product owners and admins/);
     expect(checklistErrorMessage(apiError(404), "x")).toMatch(/no longer exists/);
     expect(checklistErrorMessage(new Error("boom"), "fallback")).toBe("fallback");
     expect(checklistErrorMessage(null, "fallback")).toBe("fallback");

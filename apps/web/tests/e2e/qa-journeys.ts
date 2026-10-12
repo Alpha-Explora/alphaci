@@ -122,7 +122,7 @@ const PEOPLE: Record<AppRole, Person> = {
 
 const ROLE_BADGES: Record<AppRole, string> = {
   admin: 'Admin',
-  lead: 'Team lead',
+  lead: 'Product owner',
   qa: 'QA Team',
   member: 'Developer',
 };
@@ -2633,7 +2633,7 @@ async function qaVerifiesAndSignsOff({ page, context, backend, baseUrl }: Journe
   await visible(promo.popover, 'the readiness popover');
   await expectText(promo.popover, checklist.name, 'the checklist row in the popover');
   await expectText(promo.popover, 'Not verified on this commit yet', 'the unverified checklist state');
-  await expectText(promo.popover, 'Team leads merge uat into main once every checklist is approved.', 'who merges, for QA');
+  await expectText(promo.popover, 'Product owners merge uat into main once every checklist is approved.', 'who merges, for QA');
   await page.keyboard.press('Escape');
   assert.equal(await promo.chip.getAttribute('aria-expanded'), 'false', 'Escape closes the popover');
   await neverShown(backend, page.getByRole('button', { name: 'Merge to main' }), 'Merge to main for QA Team');

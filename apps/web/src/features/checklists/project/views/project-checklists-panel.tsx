@@ -86,7 +86,7 @@ function PanelState({
       <p className="hier-state-text">
         {vm.canManage
           ? "Write a checklist for the team, then share it here so developers and QA see what this project has to pass."
-          : "When a team lead shares a QA checklist to this project, its checks appear here."}
+          : "When a Product owner shares a QA checklist to this project, its checks appear here."}
       </p>
       {vm.canManage && workspaceHref ? (
         <Link className="primary-button qa-project-card__manage" href={workspaceHref}>

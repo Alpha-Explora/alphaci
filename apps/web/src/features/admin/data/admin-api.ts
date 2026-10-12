@@ -6,11 +6,12 @@ import { request } from "@/shared/api/request";
 /** Global hierarchy role — the single source of truth for group capabilities. */
 export type { AppRole, AppRoleSource };
 
+/** The product's persona names, as the badge and team roster show them. */
 export const APP_ROLE_LABELS: Record<AppRole, string> = {
   admin: "Admin",
-  lead: "Lead",
+  lead: "Product owner",
   qa: "QA Team",
-  member: "Member",
+  member: "Developer",
 };
 
 export interface AdminUserListItem {

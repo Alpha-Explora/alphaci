@@ -147,7 +147,7 @@ function RunColumn({
         title="No checklist to verify"
         text={
           startBlockedReason ??
-          "When a team lead shares a QA checklist to this project, it can be verified here against each deployed branch."
+          "When a Product owner shares a QA checklist to this project, it can be verified here against each deployed branch."
         }
       />
     );

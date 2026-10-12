@@ -38,7 +38,7 @@ const WORKSPACE_PERMISSION_MESSAGES: Readonly<Record<string, string>> = {
   pr_route_restricted:
     "Developers open pull requests from a feature branch into dev, and from dev into uat.",
   env_vars_lead_only: "Developers and admins can change environment variables.",
-  project_role_forbidden: "Only team leads and admins can make this change.",
+  project_role_forbidden: "Only Product owners and admins can make this change.",
   hosting_lead_only:
     "Developers and admins can change hosting services and custom domains.",
   pr_base_branch_missing:

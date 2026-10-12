@@ -46,9 +46,9 @@ describe("repoShortName", () => {
 });
 
 describe("memberRoleLabel", () => {
-  it("derives the label from the global app role like the backend", () => {
-    expect(memberRoleLabel({ role: "member", appRole: "lead" })).toBe("Lead");
-    expect(memberRoleLabel({ role: "member", appRole: "admin" })).toBe("Lead");
+  it("labels the global app role with the product's persona names", () => {
+    expect(memberRoleLabel({ role: "member", appRole: "lead" })).toBe("Product owner");
+    expect(memberRoleLabel({ role: "member", appRole: "admin" })).toBe("Admin");
     expect(memberRoleLabel({ role: "admin", appRole: "qa" })).toBe("QA Team");
     expect(memberRoleLabel({ role: "admin", appRole: "member" })).toBe("Developer");
   });

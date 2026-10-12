@@ -255,7 +255,7 @@ describe("useShareChecklistViewModel", () => {
     await act(async () => vm().submit());
     expect(vm().status).toBe("error");
     expect(vm().open).toBe(true);
-    expect(vm().error).toMatch(/team leads/);
+    expect(vm().error).toMatch(/Product owners and admins/);
   });
 });
 

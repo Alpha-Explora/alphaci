@@ -377,7 +377,7 @@ describe("useDeleteProjectViewModel", () => {
     act(() => vm().setConfirmName("testfinals"));
     await act(async () => vm().submit());
 
-    expect(vm().error).toMatch(/Team lead or admin/);
+    expect(vm().error).toMatch(/Product owner or admin/);
     expect(onChanged).not.toHaveBeenCalled();
     expect(vm().folder).not.toBeNull();
 

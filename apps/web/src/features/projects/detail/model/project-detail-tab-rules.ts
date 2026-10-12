@@ -480,7 +480,7 @@ export function previewWorkflowLabel(previewing: boolean): string {
 
 /** Shown in place of the update-PR button for roles the backend refuses (QA). */
 export const UPDATE_PR_ROLE_NOTE =
-  "A Developer, Team lead or admin can open the workflow update pull request.";
+  "A Developer, Product owner or admin can open the workflow update pull request.";
 
 /** The backend targets dev, else uat — never main. */
 export const UPDATE_PR_TARGET_NOTE =

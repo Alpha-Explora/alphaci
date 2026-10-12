@@ -364,7 +364,7 @@ export function checklistErrorMessage(cause: unknown, fallback: string): string 
   if (coded) return coded;
   const status = errorStatus(cause);
   if (status === 409) return conflictMessage(errorDetail(cause));
-  if (status === 403) return "Only team leads can change QA checklists.";
+  if (status === 403) return "Only Product owners and admins can change QA checklists.";
   if (status === 404) {
     return "This checklist no longer exists, or you are no longer in this team.";
   }

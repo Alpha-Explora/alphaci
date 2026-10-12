@@ -181,7 +181,7 @@ describe("read-only reasons", () => {
     expect(visualReadOnlyReason({ canApprove: false, appRole: undefined, roleForbidden: false })).toBe("role");
     expect(visualReadOnlyReason({ canApprove: true, appRole: "member", roleForbidden: true })).toBe("role");
     expect(visualReadOnlyNote("role", "uat")).toBe(
-      "Only developers, team leads and admins can approve visual changes.",
+      "Only Developers, Product owners and admins can approve visual changes.",
     );
   });
 
@@ -218,7 +218,7 @@ describe("approval errors", () => {
   it("explains ROLE_FORBIDDEN and NOT_FOUND", () => {
     expect(visualApproveError(new ApiError("403", 403, { code: "VISUAL_APPROVE_ROLE_FORBIDDEN" }))).toMatchObject({
       kind: "forbidden",
-      message: "Only developers, team leads and admins can approve visual changes.",
+      message: "Only Developers, Product owners and admins can approve visual changes.",
     });
     const missing = visualApproveError(new ApiError("404", 404, { code: "VISUAL_RUN_NOT_FOUND" }));
     expect(missing.kind).toBe("not-found");

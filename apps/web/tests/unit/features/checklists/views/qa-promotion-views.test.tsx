@@ -223,7 +223,7 @@ describe("QA Studio — the readiness popover", () => {
     // The promotion PR is named, never linked: ALPHACI is the only UI.
     expect(panel.querySelector(".qa-promo__pr")?.textContent).toBe("Promotion PR #42");
     expect(panel.querySelector("a")).toBeNull();
-    expect(panel.textContent).toContain("Team leads merge uat into main once every checklist is approved.");
+    expect(panel.textContent).toContain("Product owners merge uat into main once every checklist is approved.");
     // Focus stays on the chip: a disclosure, not a menu.
     expect(document.activeElement).not.toBe(panel);
   });

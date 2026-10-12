@@ -83,7 +83,7 @@ function StartRun({
     return (
       <PanelState
         title={`No QA run on ${commitLabel(branch, vm.commitSha)} yet`}
-        text="QA Team members, Team leads and Admins start verification runs. Once one starts, its items and results appear here."
+        text="QA Team members, Product owners and admins start verification runs. Once one starts, its items and results appear here."
       />
     );
   }

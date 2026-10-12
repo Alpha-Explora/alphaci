@@ -212,7 +212,7 @@ describe("Browser tests card", () => {
     await clickAdd();
     expect(addButton()).toBeUndefined();
     expect(host.querySelector('[role="alert"]')?.textContent).toContain(
-      "Only developers, team leads and admins can add browser tests.",
+      "Only Developers, Product owners and admins can add browser tests.",
     );
   });
 
@@ -297,7 +297,7 @@ describe("Browser tests card — visual testing off in the workflow", () => {
     await renderWith(status({ ...INSTALLED, visual: { dev: false, uat: false } }), "role", jest.fn());
     expect(updateButton()).toBeUndefined();
     expect(host.querySelector("[data-visual-off] .pipe-tests__reason")?.textContent).toBe(
-      "A Developer, Team lead or admin can open the workflow update pull request.",
+      "A Developer, Product owner or admin can open the workflow update pull request.",
     );
   });
 

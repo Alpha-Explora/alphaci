@@ -110,7 +110,7 @@ function CardFoot({ vm, data }: Readonly<{ vm: QaPromotionViewModel; data: QaPro
         <span className="qa-promo__muted">
           {data.scope
             ? `Product owners merge ${data.qaBranch} into ${data.targetBranch} once the Project's QA run is approved.`
-            : `Team leads merge ${data.qaBranch} into ${data.targetBranch} once every checklist is approved.`}
+            : `Product owners merge ${data.qaBranch} into ${data.targetBranch} once every checklist is approved.`}
         </span>
       )}
     </div>

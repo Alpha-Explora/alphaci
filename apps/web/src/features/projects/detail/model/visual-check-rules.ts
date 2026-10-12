@@ -282,7 +282,7 @@ export const NEW_SNAPSHOT_NOTE = "No reference yet — approve to make this the 
 
 const APPROVER_ROLES: readonly AppRole[] = ["member", "lead", "admin"];
 
-export const VISUAL_ROLE_NOTE = "Only developers, team leads and admins can approve visual changes.";
+export const VISUAL_ROLE_NOTE = "Only Developers, Product owners and admins can approve visual changes.";
 
 /** Why a panel is read-only: the viewer's role, or a run that is not the latest. */
 export type VisualReadOnlyReason = "role" | "not-latest";
