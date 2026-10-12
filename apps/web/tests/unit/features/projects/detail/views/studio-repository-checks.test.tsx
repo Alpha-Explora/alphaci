@@ -62,8 +62,9 @@ async function render(
   repository: { projectId: string; repoFullName: string },
   visibleTabs: ProjectDetailTab[],
   setTab = jest.fn(),
+  workflowUpdateAccess: "open" | "role" | "unavailable" = "open",
 ) {
-  const render = studioChecksRenderer("project-1", { visibleTabs, setTab, openPullRequest: jest.fn() });
+  const render = studioChecksRenderer("project-1", { visibleTabs, setTab, openPullRequest: jest.fn(), workflowUpdateAccess });
   const container = document.createElement("div");
   document.body.appendChild(container);
   root = createRoot(container);
@@ -144,5 +145,74 @@ describe("StudioRepositoryChecks", () => {
     });
     container = await render(WEB, ADMIN_TABS);
     expect(container.querySelector("[data-browser-tests]")).toBeNull();
+  });
+});
+
+describe("StudioRepositoryChecks — visual testing off in the workflow", () => {
+  const INSTALLED = {
+    installed: true, branch: "dev", missingFiles: [], presentFiles: [], hasLockfile: true, playwrightVersion: "1.56.0", frontend: true, canAdd: false, reason: null,
+  };
+  const NOT_CAPTURED: VisualChecksResponse = { branch: "uat", runId: null, canApprove: false, snapshots: [] };
+
+  it("says off for this repo instead of not captured yet, and how to turn it on", async () => {
+    visual.mockResolvedValue(NOT_CAPTURED);
+    browserTests.mockResolvedValue({ ...INSTALLED, visual: { dev: false, uat: false } });
+    const setTab = jest.fn();
+    const container = await render(WEB, ADMIN_TABS, setTab);
+    expect(container.querySelector(".studio-checks__summary")?.textContent).toBe("Visual: off for this repo");
+    expect(container.querySelector("[data-visual-off]")?.textContent).toContain(
+      "Visual testing is off in this repository's workflow.",
+    );
+    const update = [...container.querySelectorAll("button")].find((button) => button.textContent === "Update the workflow");
+    act(() => update!.click());
+    expect(setTab).toHaveBeenCalledWith("workflow");
+    expect(browserTests).toHaveBeenCalledTimes(1);
+  });
+
+  it("tells a QA viewer who can turn it on", async () => {
+    visual.mockResolvedValue(NOT_CAPTURED);
+    browserTests.mockResolvedValue({ ...INSTALLED, visual: { dev: false, uat: false } });
+    const container = await render(WEB, QA_TABS, jest.fn(), "role");
+    expect(container.querySelector("[data-visual-off] .pipe-tests__reason")?.textContent).toBe(
+      "A Developer, Team lead or admin can open the workflow update pull request.",
+    );
+  });
+
+  it("links another repository's Workflow tab inside the product", async () => {
+    visual.mockResolvedValue(NOT_CAPTURED);
+    browserTests.mockResolvedValue({ ...INSTALLED, visual: { dev: false, uat: false } });
+    const container = await render(API, ADMIN_TABS);
+    expect(container.querySelector<HTMLAnchorElement>("[data-visual-off] a")?.getAttribute("href")).toBe("/projects/project-2#workflow");
+    expect(container.innerHTML).not.toMatch(/github\.com/);
+  });
+
+  it("keeps not captured yet for an older backend, and when visual is on", async () => {
+    visual.mockResolvedValue(NOT_CAPTURED);
+    browserTests.mockResolvedValue(INSTALLED);
+    let container = await render(WEB, ADMIN_TABS);
+    expect(container.querySelector(".studio-checks__summary")?.textContent).toBe("Visual: not captured on uat yet");
+    expect(container.querySelector("[data-browser-tests]")).toBeNull();
+    act(() => root?.unmount());
+    root = null;
+    browserTests.mockResolvedValue({ ...INSTALLED, visual: { dev: true, uat: true } });
+    container = await render(WEB, ADMIN_TABS);
+    expect(container.querySelector(".studio-checks__summary")?.textContent).toBe("Visual: not captured on uat yet");
+  });
+
+  it("keeps not captured yet when the status could not be read", async () => {
+    visual.mockResolvedValue(NOT_CAPTURED);
+    browserTests.mockRejectedValue(new Error("down"));
+    const container = await render(WEB, ADMIN_TABS);
+    expect(container.querySelector(".studio-checks__summary")?.textContent).toBe("Visual: not captured on uat yet");
+  });
+
+  it("says to promote when only uat is off", async () => {
+    visual.mockResolvedValue(NOT_CAPTURED);
+    browserTests.mockResolvedValue({ ...INSTALLED, visual: { dev: true, uat: false } });
+    const container = await render(WEB, ADMIN_TABS);
+    expect(container.querySelector(".studio-checks__summary")?.textContent).toBe("Visual: off for this repo");
+    expect(container.querySelector("[data-visual-off]")?.textContent).toContain(
+      "Turned on in dev. Promote to uat to start capturing screenshots.",
+    );
   });
 });

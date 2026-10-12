@@ -164,6 +164,7 @@ function ItemRow({ row }: Readonly<{ row: PlaywrightItemRow }>) {
         {row.group ? <span>{row.group}</span> : null}
       </p>
       {row.inferred ? <p className="qa-pw-item__hint">{UNCONFIRMED_PASS_HINT}</p> : null}
+      {row.note ? <p className="qa-pw-item__hint">{row.note}</p> : null}
       {row.failure ? (
         <p className="qa-pw-item__failure" title={row.failure.message || row.failure.name}>
           {row.failure.message || row.failure.name}

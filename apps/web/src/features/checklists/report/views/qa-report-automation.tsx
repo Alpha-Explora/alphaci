@@ -2,7 +2,7 @@
 
 import { AutomatedBadge, TonePill } from "../../items";
 import {
-  automatedScopeLabel,
+  automatedCellNote,
   automationStages,
   hasStageResults,
   listedFailures,
@@ -31,7 +31,7 @@ import type { QaRunItem } from "../../model/qa-run-types";
 export function ItemAutomatedCell({ item }: Readonly<{ item: QaRunItem }>) {
   const result = normalizeAutomatedResult(item.automated);
   if (!result) return null;
-  const scope = automatedScopeLabel(result.scope);
+  const scope = automatedCellNote(result);
   return (
     <span className="qa-report-auto-cell">
       <AutomatedBadge status={result.status} inferred={result.inferred} />

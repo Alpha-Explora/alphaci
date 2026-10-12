@@ -28,8 +28,10 @@ export type QaAutomatedSource = "playwright" | "unit_test" | "bruno";
 /**
  * `unknown` — CI cannot tell for this item (still running, or more failures
  * than the report lists). `not_run` — no CI report for this commit yet.
+ * `unlinked` — the item names no test, so nothing CI ran speaks for it; the
+ * stage's verdict rides along as context only and is never the item's pass.
  */
-export type QaAutomatedStatus = "passed" | "failed" | "unknown" | "not_run";
+export type QaAutomatedStatus = "passed" | "failed" | "unknown" | "not_run" | "unlinked";
 
 /**
  * `spec` — the item's own spec file. `suite` — inferred from the whole suite.

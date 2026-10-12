@@ -7,13 +7,14 @@ import {
   AUTOMATED_DIFFERS_HINT,
   UNCONFIRMED_PASS_HINT,
   automatedDiffers,
-  automatedScopeLabel,
   automatedSentence,
   automatedSourceLabel,
   automatedStatusTone,
   isUnconfirmedPass,
+  itemScopeLabel,
   stageName,
   stageResultFor,
+  unlinkedStageNote,
 } from "../../model/qa-automation-rules";
 import type { QaAutomatedItemResult, QaRunAutomationResult } from "../../model/qa-automation-types";
 import { agoLabel } from "../../model/qa-run-rules";
@@ -64,7 +65,7 @@ export function AutomatedToggle({
 function metaLine(result: QaAutomatedItemResult): string {
   return [
     automatedSourceLabel(result.source),
-    automatedScopeLabel(result.scope),
+    itemScopeLabel(result),
     result.stage ? `${stageName(result.stage)} stage` : null,
     result.reportedAt ? `reported ${agoLabel(result.reportedAt)}` : null,
   ]
@@ -80,10 +81,12 @@ export function AutomatedDetails({
 }: Readonly<{ id: string; context: ItemAutomationContext; hidden: boolean }>) {
   const { result } = context;
   const failure = result.status === "failed" ? result.failure : null;
+  const stageNote = unlinkedStageNote(result, stageResultFor(context.automation, result.stage));
   return (
     <div id={id} hidden={hidden} className={`qa-auto-detail qa-auto-detail--${automatedStatusTone(result.status)}`}>
       <p className="qa-auto-detail__sentence">{sentenceOf(context)}</p>
       {isUnconfirmedPass(result) ? <p className="qa-auto-detail__meta">{UNCONFIRMED_PASS_HINT}</p> : null}
+      {stageNote ? <p className="qa-auto-detail__meta">{stageNote}</p> : null}
       <p className="qa-auto-detail__meta">{metaLine(result)}</p>
       {failure ? (
         <div className="qa-auto-detail__failure">

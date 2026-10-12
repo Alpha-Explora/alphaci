@@ -42,11 +42,17 @@ import { ChevronIcon, DownloadIcon, InfoIcon } from "./pipeline-glyphs";
 export function VisualChecksPanel({
   view,
   branch,
-}: Readonly<{ view: VisualChecksViewModel; branch: string }>) {
+  captureOn = null,
+}: Readonly<{
+  view: VisualChecksViewModel;
+  branch: string;
+  /** False when the repository's workflow takes no screenshots here; null when unknown. */
+  captureOn?: boolean | null;
+}>) {
   const headingId = useId();
   return (
     <section className="pipe-visual" aria-labelledby={headingId}>
-      <VisualBody view={view} branch={branch} headingId={headingId} />
+      <VisualBody view={view} branch={branch} headingId={headingId} captureOn={captureOn} />
     </section>
   );
 }
@@ -55,7 +61,8 @@ function VisualBody({
   view,
   branch,
   headingId,
-}: Readonly<{ view: VisualChecksViewModel; branch: string; headingId: string }>) {
+  captureOn,
+}: Readonly<{ view: VisualChecksViewModel; branch: string; headingId: string; captureOn: boolean | null }>) {
   if (view.status === "idle" || view.status === "loading") {
     return (
       <>
@@ -81,7 +88,7 @@ function VisualBody({
     return (
       <>
         <h6 id={headingId} className="pipe-visual__title">Visual checks</h6>
-        <p className="pipe-visual__empty">{visualEmptyMessage(branch)}</p>
+        <p className="pipe-visual__empty">{visualEmptyMessage(branch, captureOn)}</p>
       </>
     );
   }

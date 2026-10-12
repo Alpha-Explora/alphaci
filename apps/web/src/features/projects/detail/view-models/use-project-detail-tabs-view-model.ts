@@ -28,7 +28,9 @@ import {
   tabFromHash,
   commitsBranchFromUrl,
   visibleProjectDetailTabs,
+  workflowUpdateAccess,
   type ProjectDetailTab,
+  type WorkflowUpdateAccess,
 } from "../model/project-detail-tab-rules";
 import { useLazyProjectQuery } from "./use-lazy-project-query";
 import { useProjectAuditViewModel, type ProjectAuditViewModel } from "./use-project-audit-view-model";
@@ -94,6 +96,8 @@ export interface ProjectDetailTabsViewModel {
   projectTargetManagementEnabled: boolean;
   workflowSettingsPreviewEnabled: boolean;
   workflowUpdatePrEnabled: boolean;
+  /** Whether "Update the workflow" (Browser tests card) may send this viewer to the update pull request. */
+  workflowUpdateAccess: WorkflowUpdateAccess;
   ciRuns: ProjectCiRunsResponse | null;
   ciRunsError: string | null;
   deployments: ProjectDeploymentsResponse | null;
@@ -273,6 +277,13 @@ export function useProjectDetailTabsViewModel(options: {
     projectTargetManagementEnabled: caps.projectTargetManagementEnabled,
     workflowSettingsPreviewEnabled: caps.workflowSettingsPreviewEnabled,
     workflowUpdatePrEnabled: caps.workflowUpdatePrEnabled,
+    workflowUpdateAccess: workflowUpdateAccess({
+      appRole,
+      workflowTabVisible: visibleTabs.includes("workflow"),
+      updatePrEnabled: caps.workflowUpdatePrEnabled,
+      settingsPreviewEnabled: caps.workflowSettingsPreviewEnabled,
+      projectWorkflowSettings: overviewCaps.workflowSettings,
+    }),
     ciRuns: ciRunsQuery.data,
     ciRunsError: ciRunsQuery.error,
     deployments: deploymentsQuery.data,

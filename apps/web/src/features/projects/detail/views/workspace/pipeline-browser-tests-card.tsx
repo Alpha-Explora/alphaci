@@ -2,17 +2,24 @@
 
 import "./pipeline-browser-tests.css";
 
-import { useId, type MouseEvent } from "react";
+import Link from "next/link";
+import { useId, type MouseEvent, type ReactNode } from "react";
 
 import {
   ADD_BUTTON_LABEL,
   INSTALLED_LINE,
+  VISUAL_PROMOTE_LINE,
+  VISUAL_UPDATE_HINT,
+  VISUAL_UPDATE_LABEL,
   browserTestsCardState,
   missingChecks,
   openedLabel,
   splitNote,
+  visualOffNotice,
   type BrowserTestsError,
+  type VisualOffNotice,
 } from "../../model/browser-test-rules";
+import { UPDATE_PR_ROLE_NOTE, type WorkflowUpdateAccess } from "../../model/project-detail-tab-rules";
 import type { BrowserTestsViewModel } from "../../view-models/use-browser-tests-view-model";
 import { InfoIcon } from "./pipeline-glyphs";
 
@@ -25,19 +32,35 @@ import { InfoIcon } from "./pipeline-glyphs";
  * Calm on purpose. An installed pack is one muted line; a backend repository
  * gets no card at all; nothing shows while it loads or if the read failed.
  * The pull request is reached in the product, on the Pull requests tab.
+ *
+ * When the repository's verify workflow takes no screenshots (the status's
+ * `visual`), the card says so and how to turn it on — the Workflow tab's
+ * update pull request, or a promotion to uat. An older backend sends no
+ * `visual`, and the card reads as it always did.
  */
 export function BrowserTestsCard({
   view,
   onOpenPullRequest,
+  workflowAccess = "unavailable",
+  onOpenWorkflow,
+  workflowHref,
 }: Readonly<{
   view: BrowserTestsViewModel;
   /** Opens the Pull requests tab on a number; absent when that tab is not offered. */
   onOpenPullRequest?: (pullRequestNumber: number) => void;
+  /** Whether this viewer may be sent to the workflow update pull request. */
+  workflowAccess?: WorkflowUpdateAccess;
+  /** Opens the Workflow tab, where the update pull request is previewed and opened. */
+  onOpenWorkflow?: () => void;
+  /** Without `onOpenWorkflow`: another repository's page, on its Workflow tab. */
+  workflowHref?: string;
 }>) {
   const titleId = useId();
   const state = browserTestsCardState(view.status === "ready" ? view.browserTests : null);
   if (state === "hidden") return null;
-  if (state === "installed" && !view.added) {
+  const notice = visualOffNotice(view.visual);
+  const installedOnly = state === "installed" && !view.added;
+  if (installedOnly && !notice) {
     return (
       <p className="pipe-tests pipe-tests--installed" data-browser-tests>
         <InfoIcon />
@@ -48,8 +71,68 @@ export function BrowserTestsCard({
   return (
     <section className="pipe-tests" aria-labelledby={titleId} data-browser-tests>
       <h3 id={titleId} className="pipe-tests__title">Browser tests</h3>
-      <BrowserTestsBody view={view} onOpenPullRequest={onOpenPullRequest} />
+      {installedOnly ? (
+        <p className="pipe-tests__lead">{INSTALLED_LINE}</p>
+      ) : (
+        <BrowserTestsBody view={view} onOpenPullRequest={onOpenPullRequest} />
+      )}
+      <VisualOff notice={notice} way={{ access: workflowAccess, onOpenWorkflow, workflowHref }} />
     </section>
+  );
+}
+
+/**
+ * "Visual testing is off in this repository's workflow", and the way to turn
+ * it on: the Workflow tab's update pull request when dev is off (or, for a
+ * role that cannot open it, who can), a promotion when only uat is.
+ */
+function VisualOff({ notice, way }: Readonly<{ notice: VisualOffNotice | null; way: WorkflowWay }>) {
+  if (!notice) return null;
+  return (
+    <div className="pipe-tests__visual" data-visual-off>
+      <p className="pipe-tests__visual-line">{notice.line}</p>
+      <VisualFix fix={notice.fix} way={way} />
+    </div>
+  );
+}
+
+interface WorkflowWay {
+  access: WorkflowUpdateAccess;
+  /** Opens this page's Workflow tab. */
+  onOpenWorkflow?: () => void;
+  /** Another repository's page, opened on its Workflow tab. In the product, never GitHub. */
+  workflowHref?: string;
+}
+
+function VisualFix({ fix, way }: Readonly<{ fix: VisualOffNotice["fix"]; way: WorkflowWay }>) {
+  if (fix === "promote") return <p className="pipe-tests__reason">{VISUAL_PROMOTE_LINE}</p>;
+  if (fix !== "update-workflow") return null;
+  if (way.access === "role") return <p className="pipe-tests__reason">{UPDATE_PR_ROLE_NOTE}</p>;
+  if (way.access !== "open") return null;
+  return <UpdateWorkflowAction way={way} />;
+}
+
+function UpdateWorkflowAction({ way }: Readonly<{ way: WorkflowWay }>) {
+  let action: ReactNode = null;
+  if (way.onOpenWorkflow) {
+    action = (
+      <button type="button" className="pipe-approve" onClick={way.onOpenWorkflow}>
+        {VISUAL_UPDATE_LABEL}
+      </button>
+    );
+  } else if (way.workflowHref) {
+    action = (
+      <Link className="pipe-approve" href={way.workflowHref}>
+        {VISUAL_UPDATE_LABEL}
+      </Link>
+    );
+  }
+  if (!action) return null;
+  return (
+    <div className="pipe-tests__actions">
+      {action}
+      <span className="pipe-tests__hint">{VISUAL_UPDATE_HINT}</span>
+    </div>
   );
 }
 

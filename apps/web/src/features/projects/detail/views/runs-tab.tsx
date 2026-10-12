@@ -24,6 +24,8 @@ export function RunsTab({
         projectId={project.id}
         appRole={vm.appRole}
         onOpenPullRequest={vm.visibleTabs.includes("pulls") ? vm.openPullRequest : undefined}
+        workflowAccess={vm.workflowUpdateAccess}
+        onOpenWorkflow={() => vm.setTab("workflow")}
       />
       <ReportedResults project={project} vm={vm} />
     </div>

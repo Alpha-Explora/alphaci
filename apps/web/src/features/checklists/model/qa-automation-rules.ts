@@ -81,7 +81,7 @@ function isoDate(value: unknown): string | null {
 const STAGES: ReadonlyArray<QaAutomationStage> = ["verify", "quality"];
 const STAGE_RUN_STATUSES: ReadonlyArray<QaStageRunStatus> = ["success", "failure", "running", "cancelled"];
 const SOURCES: ReadonlyArray<QaAutomatedSource> = ["playwright", "unit_test", "bruno"];
-const AUTOMATED_STATUSES: ReadonlyArray<QaAutomatedStatus> = ["passed", "failed", "unknown", "not_run"];
+const AUTOMATED_STATUSES: ReadonlyArray<QaAutomatedStatus> = ["passed", "failed", "unknown", "not_run", "unlinked"];
 const SCOPES: ReadonlyArray<QaAutomatedScope> = ["spec", "suite", "stage"];
 
 /* ── Normalising ─────────────────────────────────────────────────────────── */
@@ -214,6 +214,7 @@ const AUTOMATED_STATUS_LABELS: Record<QaAutomatedStatus, string> = {
   failed: "Failed",
   unknown: "Unknown",
   not_run: "Not run",
+  unlinked: "Not linked",
 };
 
 const AUTOMATED_STATUS_TONES: Record<QaAutomatedStatus, QaTone> = {
@@ -221,6 +222,7 @@ const AUTOMATED_STATUS_TONES: Record<QaAutomatedStatus, QaTone> = {
   failed: "danger",
   unknown: "neutral",
   not_run: "neutral",
+  unlinked: "neutral",
 };
 
 const SCOPE_LABELS: Record<QaAutomatedScope, string> = {
@@ -286,6 +288,14 @@ export function automatedStatusTone(status: QaAutomatedStatus): QaTone {
 /** "This spec" / "Whole suite" / "Stage result"; null when CI gave no scope. */
 export function automatedScopeLabel(scope: QaAutomatedScope | null): string | null {
   return scope ? SCOPE_LABELS[scope] ?? null : null;
+}
+
+/**
+ * The scope beside an item's badge. Null for an unlinked item: "Stage result"
+ * there would read as though the stage's verdict were the item's.
+ */
+export function itemScopeLabel(result: Pick<QaAutomatedItemResult, "status" | "scope">): string | null {
+  return result.status === "unlinked" ? null : automatedScopeLabel(result.scope);
 }
 
 export function automatedSourceLabel(source: QaAutomatedSource | null): string {
@@ -356,16 +366,61 @@ function notRunSentence(commitSha: string | null | undefined): string {
   return short ? `Automated: not run for ${short} yet` : "Automated: not run for this commit yet";
 }
 
+/** The kind of test an unlinked item lacks: quality-stage items are unit tests. */
+function unlinkedTestKind(result: Pick<QaAutomatedItemResult, "source" | "stage">): string {
+  if (result.stage === "quality" || result.source === "unit_test") return "a unit test";
+  return result.source === "bruno" ? "an API test" : "a Playwright test";
+}
+
+/**
+ * "Not linked to a Playwright test. Check this by hand." — the item names no
+ * test, so no CI result speaks for it, whatever its stage did.
+ */
+export function unlinkedSentence(result: Pick<QaAutomatedItemResult, "source" | "stage">): string {
+  return `Not linked to ${unlinkedTestKind(result)}. Check this by hand.`;
+}
+
+const STAGE_CONTEXT_VERBS: Record<QaStageRunStatus, string> = {
+  success: "passed",
+  failure: "failed",
+  running: "is still running",
+  cancelled: "was cancelled",
+};
+
+/**
+ * Secondary context for an unlinked item: "For context: the Verify stage
+ * passed, but no test in it is linked to this item." Null for any other
+ * status, and when the stage's verdict is not known.
+ */
+export function unlinkedStageNote(
+  result: Pick<QaAutomatedItemResult, "status" | "stage">,
+  stageResult: QaStageResult | null,
+): string | null {
+  if (result.status !== "unlinked" || !result.stage || !stageResult?.status) return null;
+  const verb = STAGE_CONTEXT_VERBS[stageResult.status] ?? stageResult.status;
+  return `For context: the ${stageName(result.stage)} stage ${verb}, but no test in it is linked to this item.`;
+}
+
+/**
+ * What a report's checklist table prints under an item's badge: the unlinked
+ * sentence, else the scope ("This spec"); null when CI gave no scope.
+ */
+export function automatedCellNote(result: QaAutomatedItemResult): string | null {
+  return result.status === "unlinked" ? unlinkedSentence(result) : automatedScopeLabel(result.scope);
+}
+
 /**
  * "Automated: failed in e2e/checkout.spec.ts", "Automated: passed (whole suite
  * green)", "Automated: verify stage failed", "Automated: not run for a1b2c3d
  * yet", "Automated: unknown — more failures than listed". An inferred pass
- * says so: "Automated: passed in e2e/home.spec.ts (not confirmed)".
+ * says so: "Automated: passed in e2e/home.spec.ts (not confirmed)". An item
+ * with no test: "Not linked to a Playwright test. Check this by hand."
  */
 export function automatedSentence(
   result: QaAutomatedItemResult,
   context: AutomatedSentenceContext = {},
 ): string {
+  if (result.status === "unlinked") return unlinkedSentence(result);
   if (isUnconfirmedPass(result)) return `${verdictSentence(result, "passed")} (not confirmed)`;
   if (result.status === "passed" || result.status === "failed") {
     return verdictSentence(result, result.status);

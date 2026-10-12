@@ -175,8 +175,28 @@ export function visualHeader(counts: VisualCounts): string {
   return ["Visual checks", ...(parts.length > 0 ? parts : ["no screenshots captured"])].join(" · ");
 }
 
-/** "Visual: 2 changed" for the stage's summary, or null when nothing changed. */
-export function visualChipLabel(response: VisualChecksResponse | null): string | null {
+export const VISUAL_OFF_LABEL = "Visual: off for this repo";
+
+/**
+ * Whether to say the repository's workflow takes no screenshots: it says so
+ * (`captureOn === false`, from the browser-tests status) and nothing was
+ * captured for what is shown. Screenshots a run did capture keep their counts.
+ * Unknown (`null`, an older backend) never reads as off.
+ */
+function showsVisualOff(response: VisualChecksResponse | null, captureOn: boolean | null): boolean {
+  if (captureOn !== false) return false;
+  return !response || response.runId === null || response.snapshots.length === 0;
+}
+
+/**
+ * "Visual: 2 changed" for the stage's summary, "Visual: off for this repo"
+ * when the workflow takes no screenshots, or null when nothing changed.
+ */
+export function visualChipLabel(
+  response: VisualChecksResponse | null,
+  captureOn: boolean | null = null,
+): string | null {
+  if (showsVisualOff(response, captureOn)) return VISUAL_OFF_LABEL;
   if (!response) return null;
   const { changed } = visualCounts(response.snapshots);
   return changed > 0 ? `Visual: ${String(changed)} changed` : null;
@@ -187,8 +207,14 @@ export function inheritsUatReferences(snapshots: readonly VisualSnapshot[]): boo
   return snapshots.some((snapshot) => snapshot.inheritedFrom === "uat");
 }
 
-/** "No visual checks reported for uat yet. They run …". */
-export function visualEmptyMessage(branch: string): string {
+/**
+ * "No visual checks reported for uat yet. They run …", or, when the workflow
+ * takes no screenshots there, that it is off rather than pending.
+ */
+export function visualEmptyMessage(branch: string, captureOn: boolean | null = null): string {
+  if (captureOn === false) {
+    return `Visual testing is off in this repository's workflow, so no screenshots are taken on ${branch}.`;
+  }
   return `No visual checks reported for ${branch} yet. They run with the browser tests after each deploy.`;
 }
 
@@ -197,10 +223,17 @@ export function visualEmptyMessage(branch: string): string {
 /**
  * QA / PO Studio's Playwright tab: "Visual: 2 changed · 1 new" for the
  * branch's latest screenshots, "Visual: no changes" when every one matched
- * its reference, "Visual: not captured on uat yet" before any run reported.
+ * its reference, "Visual: not captured on uat yet" before any run reported —
+ * or "Visual: off for this repo" instead when the workflow takes no
+ * screenshots there (`captureOn === false`). Unknown keeps "not captured yet".
  * Reviewing and approving stay on the Pipeline runs tab's Verify stage.
  */
-export function studioVisualSummary(response: VisualChecksResponse | null, branch: string): string {
+export function studioVisualSummary(
+  response: VisualChecksResponse | null,
+  branch: string,
+  captureOn: boolean | null = null,
+): string {
+  if (showsVisualOff(response, captureOn)) return VISUAL_OFF_LABEL;
   if (!response || response.runId === null) return `Visual: not captured on ${branch} yet`;
   const counts = visualCounts(response.snapshots);
   const parts = [
