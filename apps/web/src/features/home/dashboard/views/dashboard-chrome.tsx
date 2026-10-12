@@ -2,47 +2,9 @@
 
 import { motion } from "framer-motion";
 
-import { newProjectHref } from "../../model/home-rules";
+import { HOME_SHORTCUTS } from "../../model/home-layout-rules";
+import type { HomeShortcutId } from "../../model/home-persona-types";
 import { sectionVariants } from "./motion";
-
-export function QuickActionCreateIcon() {
-  return (
-    <svg
-      width="14"
-      height="14"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <path d="M12 5v14M5 12h14" />
-    </svg>
-  );
-}
-
-export function QuickActionWorkflowIcon() {
-  return (
-    <svg
-      width="14"
-      height="14"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <rect x="3" y="3" width="7" height="7" rx="1" />
-      <rect x="14" y="3" width="7" height="7" rx="1" />
-      <rect x="14" y="14" width="7" height="7" rx="1" />
-      <rect x="3" y="14" width="7" height="7" rx="1" />
-    </svg>
-  );
-}
 
 export function QuickActionRunIcon() {
   return (
@@ -63,41 +25,11 @@ export function QuickActionRunIcon() {
   );
 }
 
-const quickActions = [
-  {
-    cmd: "new-project",
-    href: newProjectHref(),
-    display: "Create Project",
-    description: "Connect a repo and generate a pipeline",
-    shortcut: "N",
-    accent: "var(--brand)",
-    icon: QuickActionCreateIcon,
-  },
-  {
-    cmd: "view-projects",
-    href: "/workflows?tab=current",
-    display: "View Projects",
-    description: "See every repository ALPHACI has provisioned",
-    shortcut: "W",
-    accent: "var(--accent-violet)",
-    icon: QuickActionWorkflowIcon,
-  },
-  {
-    cmd: "view-runs",
-    href: "/runs",
-    display: "View Runs",
-    description: "Check live pipeline stage status",
-    shortcut: "R",
-    accent: "var(--success)",
-    icon: QuickActionRunIcon,
-  },
-];
-
-// Real pipeline stages reported by GET /ci/runs — mirrors the /runs page.
-
-/* ── Ops insight rail — the "genuinely useful operational content" ─────────── */
-
-export function KeyboardShortcuts({ reduced }: Readonly<{ reduced: boolean | null }>) {
+/** The footer legend for the role's keyboard shortcuts (the QA Team has no N). */
+export function KeyboardShortcuts({
+  reduced,
+  shortcuts,
+}: Readonly<{ reduced: boolean | null; shortcuts: ReadonlyArray<HomeShortcutId> }>) {
   return (
     <motion.section
       className="dashboard-shortcuts"
@@ -109,14 +41,13 @@ export function KeyboardShortcuts({ reduced }: Readonly<{ reduced: boolean | nul
     >
       <span className="dashboard-shortcuts-label">Keyboard shortcuts</span>
       <div className="dashboard-shortcuts-keys">
-        {quickActions.map((action) => (
-          <span key={action.cmd} className="dashboard-shortcut">
-            <kbd>{action.shortcut}</kbd>
-            <span>{action.display}</span>
+        {shortcuts.map((id) => (
+          <span key={id} className="dashboard-shortcut">
+            <kbd>{HOME_SHORTCUTS[id].key.toUpperCase()}</kbd>
+            <span>{HOME_SHORTCUTS[id].label}</span>
           </span>
         ))}
       </div>
     </motion.section>
   );
 }
-

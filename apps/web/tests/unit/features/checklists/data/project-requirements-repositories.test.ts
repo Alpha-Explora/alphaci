@@ -104,6 +104,16 @@ describe("requirementsRepository", () => {
     expect(await requirementsRepository.countsByProject("ws-1")).toEqual({ "dp-1": 1 });
     expect(mockedRequest).toHaveBeenCalledWith("/workspaces/ws-1/qa-requirements/overview");
   });
+
+  it("reads the team overview whole, normalised", async () => {
+    mockedRequest.mockResolvedValue({
+      groups: [{ deliveryProject: { id: "dp-1", name: "Storefront" }, requirements: [], viewerMembership: "qa" }],
+    });
+    const overview = await requirementsRepository.teamOverview("ws 1");
+    expect(mockedRequest).toHaveBeenCalledWith("/workspaces/ws%201/qa-requirements/overview");
+    expect(overview.projects.map((project) => project.viewerMembership)).toEqual(["qa"]);
+    expect(overview.supports.viewerMembership).toBe(true);
+  });
 });
 
 describe("projectQaRunsRepository", () => {
