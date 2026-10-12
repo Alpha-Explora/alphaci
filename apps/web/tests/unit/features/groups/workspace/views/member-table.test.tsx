@@ -80,6 +80,7 @@ describe("MemberTable roles", () => {
       ],
       true,
     );
+    expect(container.textContent).toContain("Product owner");
     expect(container.textContent).toContain("QA Team");
     expect(container.textContent).toContain("Developer");
     expect(container.querySelector("select")).toBeNull();

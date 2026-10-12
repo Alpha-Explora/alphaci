@@ -419,7 +419,7 @@ export const MOVE_CONFLICT_MESSAGE =
 
 const MOVE_MESSAGES: Record<number, string> = {
   400: "Archived repositories and Projects cannot be moved.",
-  403: "Only a Team lead can move repositories.",
+  403: "Only a Product owner or admin can move repositories.",
   404: "That Project no longer exists in this team. Refresh and try again.",
   409: MOVE_CONFLICT_MESSAGE,
 };
@@ -451,7 +451,7 @@ export function createErrorMessage(cause: unknown): string {
 export const DELETE_NAME_MISMATCH_MESSAGE = "That name doesn't match. Type it exactly to confirm.";
 
 const DELETE_MESSAGES: Record<number, string> = {
-  403: "Only a Team lead or admin can delete this Project.",
+  403: "Only a Product owner or admin can delete this Project.",
   404: "This Project no longer exists. Refresh and try again.",
   429: "Too many requests. Try again in a moment.",
 };

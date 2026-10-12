@@ -1,4 +1,6 @@
 import { completeOnboarding } from "@/features/auth/session";
+import { requirementsRepository } from "@/features/checklists";
+import { projectFoldersRepository } from "@/features/teams/project-folders";
 import {
   getDeliveryProjectRepositories,
   getGroupActivity,
@@ -17,8 +19,10 @@ import type {
   GroupActivityItem,
   GroupSummary,
   MyAssignedRepository,
+  ProjectFoldersSnapshot,
   ProvisionedProject,
   RunGroup,
+  TeamQaOverview,
   WorkflowHistoryItem,
 } from "../model/home-types";
 
@@ -114,6 +118,20 @@ export const homeRepository = {
       : [];
 
     return { group, portfolio, assignments, activity };
+  },
+
+  /** The team's Projects with their repositories, Feature counts and create flags, in one call. */
+  projectFolders(groupId: string): Promise<ProjectFoldersSnapshot> {
+    return projectFoldersRepository.list(groupId);
+  },
+
+  /**
+   * The team's QA overview: every Project's requirements, newest run, counts,
+   * promotion and the caller's own membership. Capability-gated: only a
+   * layout with the QA capability on asks for it.
+   */
+  teamQaOverview(workspaceId: string): Promise<TeamQaOverview> {
+    return requirementsRepository.teamOverview(workspaceId);
   },
 
   async completeOnboarding(): Promise<void> {

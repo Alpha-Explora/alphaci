@@ -66,9 +66,9 @@ export const GROUP_ROLE_LABELS: Record<GroupRole, string> = {
 
 /**
  * The role a team roster shows for a member. Roles come from the global app
- * role, not from anything chosen on the roster, so this derives the label the
- * way the backend derives the team role: lead/admin -> Lead, qa -> QA Team,
- * member -> Developer. A row that carries no app role falls back to its stored
+ * role, not from anything chosen on the roster, and use the product's persona
+ * names: lead -> Product owner, admin -> Admin, qa -> QA Team, member ->
+ * Developer. A row that carries no app role falls back to its stored
  * team-role label.
  */
 export function memberRoleLabel(member: {
@@ -77,8 +77,9 @@ export function memberRoleLabel(member: {
 }): string {
   switch (member.appRole) {
     case "admin":
+      return "Admin";
     case "lead":
-      return "Lead";
+      return "Product owner";
     case "qa":
       return "QA Team";
     case "member":

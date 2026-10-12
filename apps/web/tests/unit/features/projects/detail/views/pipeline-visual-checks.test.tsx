@@ -393,7 +393,7 @@ describe("approving visual changes", () => {
     await flush();
     expect(button("Approve", panel())).toBeUndefined();
     expect(panel().querySelector(".pipe-visual__note")?.textContent).toContain(
-      "Only developers, team leads and admins can approve visual changes.",
+      "Only Developers, Product owners and admins can approve visual changes.",
     );
   });
 
@@ -401,7 +401,7 @@ describe("approving visual changes", () => {
     await show("uat", checks(MIXED, { canApprove: false }), "qa");
     expect(button("Approve", panel())).toBeUndefined();
     expect(panel().querySelector('[role="note"]')?.textContent).toBe(
-      "Only developers, team leads and admins can approve visual changes.",
+      "Only Developers, Product owners and admins can approve visual changes.",
     );
     expect(cardNames()).toEqual(["home-desktop.png", "home-mobile.png", "signup.png"]);
   });

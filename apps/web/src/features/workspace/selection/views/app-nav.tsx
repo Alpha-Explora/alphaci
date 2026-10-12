@@ -314,9 +314,9 @@ function SidebarNavItem({
 }
 
 /* ── Role badge ─────────────────────────────────────────────────────────────
-   Answers "which am I?" at a glance. The label mirrors the GitHub org team
-   that drives the role (`team-lead` → Team lead, `developers` → Developer), so
-   what a user sees here matches what they were added to in GitHub. Hidden when
+   Answers "which am I?" at a glance. The label is the product's persona name
+   (APP_ROLE_BADGE_LABELS: Product owner, QA Team, Developer, Admin), not the
+   GitHub team behind the role, which users never see. Hidden when
    the rail is closed — it has no room for it, and the role is not urgent
    enough to earn an icon-only affordance. */
 

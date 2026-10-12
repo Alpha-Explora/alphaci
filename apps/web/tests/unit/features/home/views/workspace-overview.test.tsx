@@ -53,6 +53,7 @@ function render(
         reduced
         canOpenActivity={canOpenActivity}
         showActivity={showActivity ?? undefined}
+        shortcuts={["create-project", "projects", "runs"]}
       />,
     ),
   );

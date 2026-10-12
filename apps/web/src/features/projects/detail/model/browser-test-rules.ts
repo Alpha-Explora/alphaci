@@ -233,7 +233,7 @@ const CODE_KINDS: Readonly<Record<string, BrowserTestsErrorKind>> = {
 
 const MESSAGES: Readonly<Record<Exclude<BrowserTestsErrorKind, "pr-open" | "pr-refused" | "failed">, string>> = {
   reauth: "GitHub needs you to sign in again before ALPHACI can open this pull request.",
-  forbidden: "Only developers, team leads and admins can add browser tests.",
+  forbidden: "Only Developers, Product owners and admins can add browser tests.",
   "write-forbidden":
     "GitHub did not let your account write to this repository, so no pull request was opened. Ask a repository admin for write access.",
   "no-dev-branch": "This repository has no dev branch yet, and browser tests are added there. Create dev, then try again.",

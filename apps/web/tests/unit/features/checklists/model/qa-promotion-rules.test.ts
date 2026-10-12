@@ -244,7 +244,7 @@ describe("promotionMergeError", () => {
   });
 
   it("403 and 404 have their own copy; anything else keeps the dialog open to retry", () => {
-    expect(promotionMergeError(apiErrorWith(403)).message).toBe("Only a Team lead or Admin can merge uat into main.");
+    expect(promotionMergeError(apiErrorWith(403)).message).toBe("Only a Product owner or admin can merge uat into main.");
     expect(promotionMergeError(apiErrorWith(404)).kind).toBe("not_found");
     const failed = promotionMergeError(new Error("network"));
     expect(failed).toEqual({ kind: "failed", message: "The merge could not be completed. Try again in a moment.", reasons: [], signIn: false });

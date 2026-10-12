@@ -80,13 +80,14 @@ export type AppRole = "admin" | "lead" | "qa" | "member";
 export type AppRoleSource = "github_team" | "manual";
 
 /**
- * User-facing labels for the global role. These mirror the GitHub org teams
- * that drive them (`team-lead` / `qa-team` / `developers`), so what a user sees
- * in the app matches what they were added to in GitHub.
+ * User-facing labels for the global role: the product's persona names
+ * (Admin, Product owner, QA Team, Developer). They are not the GitHub team
+ * names that drive the role (`team-lead` / `qa-team` / `developers`): users
+ * never see GitHub, so the label says what the role does in ALPHACI.
  */
 export const APP_ROLE_BADGE_LABELS: Record<AppRole, string> = {
   admin: "Admin",
-  lead: "Team lead",
+  lead: "Product owner",
   qa: "QA Team",
   member: "Developer",
 };

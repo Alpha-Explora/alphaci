@@ -56,14 +56,14 @@ export function GetStartedJourney({
   const steps: JourneyStep[] = [
     {
       title: "Create a project",
-      desc: "Name a service and pick what its pipeline should check.",
+      desc: "Name the Project your team will deliver; Features and Developers come next.",
       done: hasProjects,
       href: newProjectHref(),
       cta: "Create a project",
     },
     {
-      title: "Connect a repository",
-      desc: "Link a GitHub repo — ALPHACI writes the Actions workflow into it.",
+      title: "Developers add repositories",
+      desc: "A Developer adds each repository to the Project, and ALPHACI writes its Actions workflow.",
       done: hasProvisioned,
       href: "/workflows?tab=setup",
       cta: "Connect a repo",

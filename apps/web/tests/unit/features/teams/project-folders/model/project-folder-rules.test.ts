@@ -402,7 +402,7 @@ describe("delete Project", () => {
       DELETE_NAME_MISMATCH_MESSAGE,
     );
     expect(deleteErrorMessage(apiError(400, { code: "SOMETHING_ELSE" }))).toMatch(/could not be deleted/);
-    expect(deleteErrorMessage(apiError(403))).toMatch(/Team lead or admin/);
+    expect(deleteErrorMessage(apiError(403))).toMatch(/Product owner or admin/);
     expect(deleteErrorMessage(apiError(404))).toMatch(/no longer exists/);
     expect(deleteErrorMessage(apiError(429))).toMatch(/Too many requests/);
     expect(deleteErrorMessage(new Error("offline"))).toMatch(/could not be deleted/);

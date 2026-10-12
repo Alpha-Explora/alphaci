@@ -7,6 +7,8 @@ import {
   normalizeRequirementItem,
   requirementCountsByProject,
 } from "../model/requirement-rules";
+import { normalizeTeamQaOverview } from "../model/team-qa-overview-rules";
+import type { TeamQaOverview } from "../model/team-qa-overview-types";
 import { records, record } from "../model/wire-readers";
 import type {
   CreateRequirementBatchInput,
@@ -131,5 +133,11 @@ export const requirementsRepository = {
   async countsByProject(workspaceId: string): Promise<Record<string, number>> {
     const raw = await request<unknown>(`/workspaces/${enc(workspaceId)}/qa-requirements/overview`);
     return requirementCountsByProject(raw);
+  },
+
+  /** The team overview, whole: every Project with its requirements, newest run, counts and promotion. */
+  async teamOverview(workspaceId: string): Promise<TeamQaOverview> {
+    const raw = await request<unknown>(`/workspaces/${enc(workspaceId)}/qa-requirements/overview`);
+    return normalizeTeamQaOverview(raw);
   },
 };

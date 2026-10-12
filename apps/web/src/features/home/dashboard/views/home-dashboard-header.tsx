@@ -6,6 +6,7 @@ import { motion } from "framer-motion";
 
 import type { useAuthSession } from "@/features/auth/session";
 
+import type { HomeRoleBadge } from "../../model/home-persona-types";
 import { sectionVariants } from "./motion";
 
 type DashboardSession = ReturnType<typeof useAuthSession>["session"];
@@ -38,18 +39,34 @@ function HomeHeaderAvatar({
   );
 }
 
+/* The viewer's role beside the eyebrow: Home is laid out for it, so say which. */
+function HomeHeaderEyebrow({ roleBadge }: Readonly<{ roleBadge: HomeRoleBadge | null }>) {
+  return (
+    <div className="home-header-eyebrow-row">
+      <p className="home-header-eyebrow">SYSTEM.DASHBOARD</p>
+      {roleBadge ? (
+        <span className={`sidebar-role-badge sidebar-role-badge--${roleBadge.role}`}>
+          {roleBadge.label}
+        </span>
+      ) : null}
+    </div>
+  );
+}
+
 function HomeHeaderIdentity({
   guest,
   session,
+  roleBadge,
 }: Readonly<{
   guest: boolean;
   session: DashboardSession;
+  roleBadge: HomeRoleBadge | null;
 }>) {
   return (
     <div className="home-header-id">
       {!guest ? <HomeHeaderAvatar session={session} /> : null}
       <div className="home-header-copy">
-        <p className="home-header-eyebrow">SYSTEM.DASHBOARD</p>
+        <HomeHeaderEyebrow roleBadge={guest ? null : roleBadge} />
         <h1 className="home-header-title">
           {guest
             ? "ALPHACI Dashboard"
@@ -102,6 +119,7 @@ export function HomeDashboardHeader({
   error,
   logoutMessage,
   onRefresh,
+  roleBadge,
 }: Readonly<{
   guest: boolean;
   session: DashboardSession;
@@ -109,6 +127,8 @@ export function HomeDashboardHeader({
   error: string | null;
   logoutMessage: string | null;
   onRefresh: () => void;
+  /** The viewer's role, shown beside the eyebrow; null for none. */
+  roleBadge: HomeRoleBadge | null;
 }>) {
   return (
     <motion.section
@@ -122,7 +142,7 @@ export function HomeDashboardHeader({
       <div className="welcome-banner-flat-accent" aria-hidden="true" />
 
       <div className="home-header-row">
-        <HomeHeaderIdentity guest={guest} session={session} />
+        <HomeHeaderIdentity guest={guest} session={session} roleBadge={roleBadge} />
         <HomeHeaderActions
           guest={guest}
           onRefresh={onRefresh}

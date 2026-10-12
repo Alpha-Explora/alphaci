@@ -174,7 +174,7 @@ describe("StudioRepositoryChecks — visual testing off in the workflow", () => 
     browserTests.mockResolvedValue({ ...INSTALLED, visual: { dev: false, uat: false } });
     const container = await render(WEB, QA_TABS, jest.fn(), "role");
     expect(container.querySelector("[data-visual-off] .pipe-tests__reason")?.textContent).toBe(
-      "A Developer, Team lead or admin can open the workflow update pull request.",
+      "A Developer, Product owner or admin can open the workflow update pull request.",
     );
   });
 

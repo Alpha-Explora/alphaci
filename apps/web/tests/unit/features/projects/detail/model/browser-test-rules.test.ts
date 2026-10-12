@@ -137,7 +137,7 @@ describe("an add that failed", () => {
   });
 
   it.each([
-    ["BROWSER_TESTS_ROLE_FORBIDDEN", 403, "forbidden", "Only developers, team leads and admins can add browser tests."],
+    ["BROWSER_TESTS_ROLE_FORBIDDEN", 403, "forbidden", "Only Developers, Product owners and admins can add browser tests."],
     ["GITHUB_WRITE_FORBIDDEN", 403, "write-forbidden", "GitHub did not let your account write to this repository"],
     ["BROWSER_TESTS_NO_DEV_BRANCH", 409, "no-dev-branch", "This repository has no dev branch yet"],
     ["BROWSER_TESTS_NOTHING_TO_ADD", 409, "nothing-to-add", "already in this repository"],

@@ -337,7 +337,7 @@ function copyFor(kind: QaPromotionMergeErrorKind, cause: unknown): string {
         ? "Your session has ended. Sign in again to merge."
         : "GitHub needs you to sign in again before ALPHACI can merge for you.";
     case "forbidden":
-      return `Only a Team lead or Admin can merge ${QA_BRANCH} into ${PROMOTION_TARGET_BRANCH}.`;
+      return `Only a Product owner or admin can merge ${QA_BRANCH} into ${PROMOTION_TARGET_BRANCH}.`;
     case "not_found":
       return `This project, or its ${QA_BRANCH} → ${PROMOTION_TARGET_BRANCH} pull request, could not be found.`;
     default:

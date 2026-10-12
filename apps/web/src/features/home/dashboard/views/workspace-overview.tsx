@@ -28,11 +28,18 @@ import type {
   RunStats,
   WorkspaceAttentionItem,
 } from "../../model/home-types";
+import type { HomeShortcutId } from "../../model/home-persona-types";
 import { KeyboardShortcuts } from "./dashboard-chrome";
 import { GetStartedJourney } from "./get-started-journey";
 import { sectionVariants } from "./motion";
 import { PipelineActivity } from "./pipeline-activity";
 import { useCountUp } from "./count-up";
+
+/** A dash until the value is known; then the (counting) figure and its suffix. */
+function metricText(known: number | null, shown: number | null, suffix: string): string {
+  if (known === null) return "—";
+  return `${shown ?? known}${suffix}`;
+}
 
 /** Container-less metric cell: a quiet mono figure on a hairline, not a card. */
 export function DashboardMetric({
@@ -41,18 +48,23 @@ export function DashboardMetric({
   loading,
   reduced,
   href,
+  suffix,
 }: Readonly<{
-  value: number;
+  /** Null when it is not known: shown as a dash. */
+  value: number | null;
   label: string;
   loading: boolean;
   reduced: boolean | null;
   href?: string;
+  /** Appended to the figure, e.g. "%". */
+  suffix?: string;
 }>) {
-  const animatedValue = useCountUp(reduced || loading ? null : value, 700);
+  const known = loading || value === null ? null : value;
+  const animatedValue = useCountUp(reduced ? null : known, 700);
   const content = (
     <>
       <span className="metric-cell-num">
-        {loading ? "—" : reduced ? value : (animatedValue ?? value)}
+        {metricText(known, reduced ? known : animatedValue, suffix ?? "")}
       </span>
       <span className="metric-cell-label">{label}</span>
     </>
@@ -107,7 +119,7 @@ function WorkspaceMetricsRail({
   );
 }
 
-function TeamProjectsList({
+export function TeamProjectsList({
   group,
   projects,
   loading,
@@ -160,7 +172,7 @@ function TeamProjectsBody({
   );
 }
 
-function QualityCard({
+export function QualityCard({
   runStats,
   loading,
 }: Readonly<{
@@ -238,6 +250,7 @@ function WorkspacePopulatedOverview({
   attentionItems,
   canOpenActivity,
   showActivity,
+  shortcuts,
 }: Readonly<{
   group: GroupSummary | null;
   projects: ProvisionedProject[];
@@ -252,6 +265,7 @@ function WorkspacePopulatedOverview({
   attentionItems: WorkspaceAttentionItem[];
   canOpenActivity: boolean;
   showActivity: boolean;
+  shortcuts: ReadonlyArray<HomeShortcutId>;
 }>) {
   return (
     <>
@@ -290,7 +304,7 @@ function WorkspacePopulatedOverview({
         </motion.aside>
       </div>
 
-      <KeyboardShortcuts reduced={reduced} />
+      <KeyboardShortcuts reduced={reduced} shortcuts={shortcuts} />
     </>
   );
 }
@@ -307,6 +321,7 @@ export function DashboardWorkspaceOverview({
   reduced,
   canOpenActivity,
   showActivity = SIDEBAR_SHOWS_ACTIVITY,
+  shortcuts,
 }: Readonly<{
   group: GroupSummary | null;
   portfolio: DeliveryPortfolioNode[];
@@ -324,6 +339,8 @@ export function DashboardWorkspaceOverview({
    * entry. Tests pass true to cover the rail itself.
    */
   showActivity?: boolean;
+  /** The keyboard shortcuts legend (the team layout's). */
+  shortcuts: ReadonlyArray<HomeShortcutId>;
 }>) {
   const { deliveryProjectCount, repositoryCount } =
     workspacePortfolioCounts(portfolio);
@@ -371,6 +388,7 @@ export function DashboardWorkspaceOverview({
         attentionItems={attentionItems}
         canOpenActivity={canOpenActivity}
         showActivity={showActivity}
+        shortcuts={shortcuts}
       />
     </div>
   );

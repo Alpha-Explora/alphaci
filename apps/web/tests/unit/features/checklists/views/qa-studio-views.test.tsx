@@ -447,7 +447,7 @@ describe("QaStudioPanel", () => {
     const container = await studio("member");
     expect(buttonNamed(container, "Start QA run")).toBeUndefined();
     expect(container.textContent).toContain(
-      "QA Team members, Team leads and Admins start verification runs.",
+      "QA Team members, Product owners and admins start verification runs.",
     );
 
     const qaOnly = [runItem(0, { targetPersona: "qa" }), runItem(1, { targetPersona: "qa" })];

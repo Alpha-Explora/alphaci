@@ -19,12 +19,16 @@ import {
   firstDashboardError,
   shouldShowWelcomeModal,
 } from "../../model/home-rules";
-import { useHomeDashboardViewModel } from "../view-models/use-home-dashboard-view-model";
-import { DashboardWorkspaceOverview } from "./workspace-overview";
+import { dashboardShortcutHref } from "../../model/home-layout-rules";
+import { homeRoleBadge } from "../../model/home-persona-rules";
+import type { HomeShortcutId } from "../../model/home-persona-types";
 import {
-  dashboardShortcutHref,
-  isEditableShortcutTarget,
-} from "./dashboard-shortcuts";
+  useHomeDashboardViewModel,
+  type HomeDashboardViewModel,
+} from "../view-models/use-home-dashboard-view-model";
+import { DashboardWorkspaceOverview } from "./workspace-overview";
+import { isEditableShortcutTarget } from "./dashboard-shortcuts";
+import { PersonaOverview } from "./persona-overview";
 import {
   DashboardLoadErrors,
   GuestPreviewBanner,
@@ -58,19 +62,20 @@ export function HomeDashboardContent({
   /** Set when a sign-out attempt failed, so the header can say so. */
   logoutMessage: string | null;
 }>) {
-  const router = useRouter();
-  const vm = useHomeDashboardViewModel({ enabled });
-  const { selectedWorkspace } = useWorkspaceSelection();
+  const appRole = session?.appRole;
+  const vm = useHomeDashboardViewModel({ enabled, appRole });
+  const { selectedWorkspace, selectedWorkspaceId } = useWorkspaceSelection();
 
   const guest = isGuest(session);
-  /* The Activity page is a Team lead / admin surface (same rule as the
+  /* The Activity page is a Product owner / admin surface (same rule as the
    * sidebar); anyone else gets no link and no teaser. */
   const canOpenActivity = canOpenTeamActivity({
     guest,
-    appRole: session?.appRole,
+    appRole,
     platformRole: session?.platformRole,
     teamRole: selectedWorkspace?.role ?? null,
   });
+  const layout = vm.layout;
   const error = sessionError;
   const welcomeDismissed = vm.welcomeDismissed;
   const handleWelcomeDismiss = vm.dismissWelcome;
@@ -101,19 +106,7 @@ export function HomeDashboardContent({
     historyLoading,
   );
 
-  useEffect(() => {
-    function handleDashboardShortcut(event: KeyboardEvent) {
-      if (event.metaKey || event.ctrlKey || event.altKey) return;
-      if (isEditableShortcutTarget(event.target)) return;
-      const href = dashboardShortcutHref(event.key.toLowerCase());
-      if (!href) return;
-      event.preventDefault();
-      router.push(href);
-    }
-
-    window.addEventListener("keydown", handleDashboardShortcut);
-    return () => window.removeEventListener("keydown", handleDashboardShortcut);
-  }, [router]);
+  useDashboardShortcuts(layout.shortcuts, selectedWorkspaceId);
 
   const showWelcome = shouldShowWelcomeModal({
     signedIn: enabled,
@@ -157,23 +150,65 @@ export function HomeDashboardContent({
           error={error}
           logoutMessage={logoutMessage}
           onRefresh={refreshDashboard}
+          roleBadge={homeRoleBadge(appRole)}
         />
 
-        <DashboardWorkspaceOverview
-          group={currentGroup}
-          portfolio={portfolio}
-          assignments={assignments}
-          activity={activity}
-          projects={projects}
-          runs={recentRuns}
-          workflowHistoryCount={history.length}
-          loading={overviewBusy}
-          reduced={prefersReducedMotion}
-          canOpenActivity={canOpenActivity}
-        />
+        {layout.persona === "team" ? (
+          <DashboardWorkspaceOverview
+            group={currentGroup}
+            portfolio={portfolio}
+            assignments={assignments}
+            activity={activity}
+            projects={projects}
+            runs={recentRuns}
+            workflowHistoryCount={history.length}
+            loading={overviewBusy}
+            reduced={prefersReducedMotion}
+            canOpenActivity={canOpenActivity}
+            shortcuts={layout.shortcuts}
+          />
+        ) : (
+          <RoleHomeOverview vm={vm} reduced={prefersReducedMotion} />
+        )}
       </div>
     </main>
   );
+}
+
+/** A role's Home, from the view-model's derived dashboard. */
+function RoleHomeOverview({
+  vm,
+  reduced,
+}: Readonly<{ vm: HomeDashboardViewModel; reduced: boolean | null }>) {
+  return (
+    <PersonaOverview
+      layout={vm.layout}
+      data={vm.persona}
+      states={vm.sections}
+      projects={vm.projects.data}
+      runs={vm.teamRuns}
+      historyCount={vm.history.data.length}
+      reduced={reduced}
+    />
+  );
+}
+
+/** The role's keyboard shortcuts (N, W, R; the QA Team has no N), off while typing. */
+function useDashboardShortcuts(shortcuts: ReadonlyArray<HomeShortcutId>, groupId: string | null) {
+  const router = useRouter();
+  useEffect(() => {
+    function handleDashboardShortcut(event: KeyboardEvent) {
+      if (event.metaKey || event.ctrlKey || event.altKey) return;
+      if (isEditableShortcutTarget(event.target)) return;
+      const href = dashboardShortcutHref(event.key.toLowerCase(), shortcuts, groupId);
+      if (!href) return;
+      event.preventDefault();
+      router.push(href);
+    }
+
+    window.addEventListener("keydown", handleDashboardShortcut);
+    return () => window.removeEventListener("keydown", handleDashboardShortcut);
+  }, [router, shortcuts, groupId]);
 }
 
 function HomeDashboardNotices({

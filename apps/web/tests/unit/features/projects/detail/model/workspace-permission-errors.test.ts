@@ -33,7 +33,7 @@ describe("workspacePermissionErrorMessage", () => {
     ],
     [
       "PROJECT_ROLE_FORBIDDEN",
-      "Only team leads and admins can make this change.",
+      "Only Product owners and admins can make this change.",
     ],
     [
       "HOSTING_LEAD_ONLY",

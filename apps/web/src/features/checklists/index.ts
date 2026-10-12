@@ -31,9 +31,26 @@ export { qaScopeFromFolder, REPOSITORY_SCOPE, withProjectOnPage, type QaScope } 
 /* Whether a repository's Checklists tab carries the full "My QA items" list
  * (no Project to send the viewer to). */
 export { checklistsTabShowsMyItems } from "./model/my-qa-items-summary-rules";
+/* `#my-qa-items` on a Project page opens its QA workspace on "My QA items". */
+export { PROJECT_MY_QA_ITEMS_HASH } from "./model/my-qa-items-summary-rules";
 /* Project requirement counts for the team's Project cards. */
 export { canManageRequirements, requirementCountLabel } from "./model/requirement-rules";
 export { requirementsRepository } from "./data/requirements-repository";
+/* The team's QA overview, read whole by requirementsRepository.teamOverview
+ * (Home's role dashboards). */
+export type {
+  TeamQaDefectCounts,
+  TeamQaLatestRun,
+  TeamQaMembership,
+  TeamQaOverview,
+  TeamQaOverviewSupport,
+  TeamQaProject,
+  TeamQaProjectCounts,
+  TeamQaPromotion,
+  TeamQaRequirementSummary,
+  TeamQaVerificationCounts,
+} from "./model/team-qa-overview-types";
+export type { QaRunStatus, QaVerdict } from "./model/qa-run-types";
 export { roleCanStartRun } from "./model/qa-run-rules";
 /* Team-level checklist reads and share edits, for features that show a
  * team's checklists in their own context (the Teams project explorer). */
