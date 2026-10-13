@@ -193,16 +193,18 @@ function EnvHostingForm({
 
   return (
     <div className="env-target-grid">
-      <select
-        aria-label="Target action"
-        value={targetAction}
-        onChange={(event) =>
-          setTargetAction(event.target.value as "create" | "register_existing")
-        }
-      >
-        <option value="create">Create new target</option>
-        <option value="register_existing">Use existing target</option>
-      </select>
+      <FieldLabel label="Setup">
+        <select
+          aria-label="Target action"
+          value={targetAction}
+          onChange={(event) =>
+            setTargetAction(event.target.value as "create" | "register_existing")
+          }
+        >
+          <option value="create">Create new target</option>
+          <option value="register_existing">Use existing target</option>
+        </select>
+      </FieldLabel>
       <div className="env-target-grid__field env-target-grid__field--wide">
         <span>Hosting provider</span>
         <span className="env-static-field">{hosting.label}</span>
@@ -245,13 +247,15 @@ function EnvHostingForm({
           setProviderProjectName={setProviderProjectName}
         />
       )}
-      <input
-        value={branchName}
-        onChange={(event) => setBranchName(event.target.value)}
-        placeholder="Branch"
-      />
+      <FieldLabel label="Branch">
+        <input
+          value={branchName}
+          onChange={(event) => setBranchName(event.target.value)}
+          placeholder="Branch"
+        />
+      </FieldLabel>
       <button
-        className="ghost-button"
+        className="primary-button env-target-grid__submit"
         data-testid="save-target"
         disabled={!canSave}
         type="button"
@@ -275,22 +279,24 @@ function EnvConnectionSelect({
   setProviderConnectionId: (value: string) => void;
 }>) {
   return (
-    <select
-      aria-label="Provider connection"
-      value={activeProviderConnectionId}
-      onChange={(event) => setProviderConnectionId(event.target.value)}
-      disabled={!matchingConnections.length}
-    >
-      {matchingConnections.length ? (
-        matchingConnections.map((connection) => (
-          <option key={connection.id} value={connection.id}>
-            {connection.label} - {connection.tokenLastFour}
-          </option>
-        ))
-      ) : (
-        <option value="">No saved {provider} connection</option>
-      )}
-    </select>
+    <FieldLabel label="Provider connection">
+      <select
+        aria-label="Provider connection"
+        value={activeProviderConnectionId}
+        onChange={(event) => setProviderConnectionId(event.target.value)}
+        disabled={!matchingConnections.length}
+      >
+        {matchingConnections.length ? (
+          matchingConnections.map((connection) => (
+            <option key={connection.id} value={connection.id}>
+              {connection.label} - {connection.tokenLastFour}
+            </option>
+          ))
+        ) : (
+          <option value="">No saved {provider} connection</option>
+        )}
+      </select>
+    </FieldLabel>
   );
 }
 
@@ -321,41 +327,51 @@ function EnvCreateFields({
 }>) {
   return (
     <>
-      <input
-        value={projectName}
-        onChange={(event) => setProjectName(event.target.value)}
-        placeholder="Provider project name"
-      />
-      <input
-        value={rootDirectory}
-        onChange={(event) => setRootDirectory(event.target.value)}
-        placeholder="Root directory"
-      />
-      <input
-        value={buildCommand}
-        onChange={(event) => setBuildCommand(event.target.value)}
-        placeholder="Build command"
-      />
+      <FieldLabel label="Service name">
+        <input
+          value={projectName}
+          onChange={(event) => setProjectName(event.target.value)}
+          placeholder="Provider project name"
+        />
+      </FieldLabel>
+      <FieldLabel label="Root directory">
+        <input
+          value={rootDirectory}
+          onChange={(event) => setRootDirectory(event.target.value)}
+          placeholder="Root directory"
+        />
+      </FieldLabel>
+      <FieldLabel label="Build command">
+        <input
+          value={buildCommand}
+          onChange={(event) => setBuildCommand(event.target.value)}
+          placeholder="Build command"
+        />
+      </FieldLabel>
       {provider === "render" ? (
         <>
-          <select
-            aria-label="Render runtime"
-            value={renderRuntime}
-            onChange={(event) =>
-              setRenderRuntime(event.target.value as RenderRuntime)
-            }
-          >
-            {RENDER_RUNTIME_OPTIONS.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-          <input
-            value={startCommand}
-            onChange={(event) => setStartCommand(event.target.value)}
-            placeholder="Start command"
-          />
+          <FieldLabel label="Deploy method">
+            <select
+              aria-label="Render runtime"
+              value={renderRuntime}
+              onChange={(event) =>
+                setRenderRuntime(event.target.value as RenderRuntime)
+              }
+            >
+              {RENDER_RUNTIME_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </FieldLabel>
+          <FieldLabel label="Start command">
+            <input
+              value={startCommand}
+              onChange={(event) => setStartCommand(event.target.value)}
+              placeholder="Start command"
+            />
+          </FieldLabel>
         </>
       ) : null}
     </>
@@ -375,17 +391,34 @@ function EnvRegisterFields({
 }>) {
   return (
     <>
-      <input
-        value={providerProjectId}
-        onChange={(event) => setProviderProjectId(event.target.value)}
-        placeholder="Provider project ID"
-      />
-      <input
-        value={providerProjectName}
-        onChange={(event) => setProviderProjectName(event.target.value)}
-        placeholder="Provider project name"
-      />
+      <FieldLabel label="Service ID">
+        <input
+          value={providerProjectId}
+          onChange={(event) => setProviderProjectId(event.target.value)}
+          placeholder="Provider project ID"
+        />
+      </FieldLabel>
+      <FieldLabel label="Service name">
+        <input
+          value={providerProjectName}
+          onChange={(event) => setProviderProjectName(event.target.value)}
+          placeholder="Provider project name"
+        />
+      </FieldLabel>
     </>
+  );
+}
+
+/** A visible label around one control of the target form. */
+function FieldLabel({
+  label,
+  children,
+}: Readonly<{ label: string; children: React.ReactNode }>) {
+  return (
+    <label className="env-target-grid__field">
+      <span>{label}</span>
+      {children}
+    </label>
   );
 }
 

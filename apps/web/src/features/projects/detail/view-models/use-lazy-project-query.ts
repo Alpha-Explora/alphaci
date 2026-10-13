@@ -13,6 +13,8 @@ export interface LazyProjectQuery<T> {
   fail: (message: string) => void;
   clearError: () => void;
   setData: Dispatch<SetStateAction<T | null>>;
+  /** Read again, keeping what is shown until the new answer arrives. */
+  reload: () => void;
 }
 
 /**
@@ -34,6 +36,7 @@ export function useLazyProjectQuery<T>(options: {
   const [dataProjectId, setDataProjectId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [errorProjectId, setErrorProjectId] = useState<string | null>(null);
+  const [nonce, setNonce] = useState(0);
 
   const loadedForId = useRef<string | null>(null);
   const req = useRef(0);
@@ -64,7 +67,7 @@ export function useLazyProjectQuery<T>(options: {
     return () => {
       active = false;
     };
-  }, [enabled, errorMessage, load, projectId]);
+  }, [enabled, errorMessage, load, projectId, nonce]);
 
   const selectedData = dataProjectId === projectId ? data : null;
   const selectedError = errorProjectId === projectId ? error : null;
@@ -87,6 +90,11 @@ export function useLazyProjectQuery<T>(options: {
     setErrorProjectId(null);
   }
 
+  function reload() {
+    loadedForId.current = null;
+    setNonce((current) => current + 1);
+  }
+
   return {
     data: selectedData,
     error: selectedError,
@@ -95,5 +103,6 @@ export function useLazyProjectQuery<T>(options: {
     fail,
     clearError,
     setData,
+    reload,
   };
 }

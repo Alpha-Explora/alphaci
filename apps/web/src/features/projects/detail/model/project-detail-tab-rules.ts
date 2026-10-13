@@ -21,7 +21,6 @@ export type ProjectDetailTab =
   | "runs"
   | "workflow"
   | "hosting"
-  | "environment"
   | "qa"
   | "po"
   | "audit"
@@ -37,7 +36,6 @@ export const PROJECT_DETAIL_TABS: ReadonlyArray<ProjectDetailTab> = [
   "runs",
   "workflow",
   "hosting",
-  "environment",
   "qa",
   "po",
   "audit",
@@ -116,9 +114,10 @@ export function checklistsTabCarriesProjectQa(qaScopeKind: "pending" | "project"
 
 /**
  * Developers and Admins — the backend's environment-variable allow-list
- * (refusal code `ENV_VARS_LEAD_ONLY`, a legacy name) for the Environment tab
- * and its list/create/update/delete routes. Product owners (`lead`) and QA
- * Team are refused.
+ * (refusal code `ENV_VARS_LEAD_ONLY`, a legacy name) for the list/create/
+ * update/delete routes, and so for the Hosting tab's Variables column. Product
+ * owners (`lead`), QA Team and a session with no known role are refused, so
+ * they never see that column.
  */
 const ENV_VARS_ROLES: ReadonlySet<AppRole> = new Set<AppRole>(["member", "admin"]);
 
@@ -185,13 +184,13 @@ function allTabsExcept(
  *
  *   - Product owner (`lead`): what they own — the Overview, the Project's
  *     requirements (Checklists), PO Studio (accepting the system on uat and
- *     merging it to main), the Audit trail and Settings. No code, pipeline,
- *     hosting or environment surfaces.
- *   - Developer (`member`): everything except the studios, Environment
- *     included (they change hosting and variables now).
+ *     merging it to main), the Audit trail and Settings. No code, pipeline or
+ *     hosting surfaces.
+ *   - Developer (`member`): everything except the studios, Hosting included
+ *     (they change hosting services and their variables).
  *   - QA Team (`qa`): the same five with QA Studio in place of PO Studio. QA
- *     checks the uat build and its UI there; code, pipeline, hosting and
- *     environment surfaces are not theirs.
+ *     checks the uat build and its UI there; code, pipeline and hosting
+ *     surfaces are not theirs.
  *   - Admin: everything, both studios included.
  */
 const OWNER_TABS: ReadonlySet<ProjectDetailTab> = new Set<ProjectDetailTab>([
@@ -219,13 +218,14 @@ const ROLE_TABS: Readonly<Record<AppRole, ReadonlySet<ProjectDetailTab>>> = {
 
 /**
  * No known role (a session still resolving, or an older backend): the tabs
- * every signed-in viewer had before roles, never a role-gated one.
+ * every signed-in viewer had before roles, never a role-gated one. Hosting is
+ * one of them, read-only and without its Variables column
+ * (`canManageEnvVars`).
  */
 const UNKNOWN_ROLE_TABS: ReadonlySet<ProjectDetailTab> = allTabsExcept(
   "checklists",
   "qa",
   "po",
-  "environment",
 );
 
 /** The role's allow-list. */
@@ -264,8 +264,32 @@ export function visibleProjectDetailTabs(
  * `resolveVisibleTab`, so a link can never reveal a gated tab.
  */
 export function tabFromHash(hash: string | null | undefined): ProjectDetailTab | null {
-  const id = (hash ?? "").replace(/^#/, "");
+  const id = hashId(hash);
+  if (id in TAB_HASH_ALIASES) return TAB_HASH_ALIASES[id];
   return (PROJECT_DETAIL_TABS as ReadonlyArray<string>).includes(id) ? (id as ProjectDetailTab) : null;
+}
+
+function hashId(hash: string | null | undefined): string {
+  return (hash ?? "").replace(/^#/, "");
+}
+
+/**
+ * Hashes of tabs that were merged into another: the Environment tab's
+ * variables live in Hosting now, so `#environment` still opens them.
+ */
+const TAB_HASH_ALIASES: Readonly<Record<string, ProjectDetailTab>> = {
+  environment: "hosting",
+};
+
+/** What the Hosting tab should bring into view when it opens. */
+export type HostingFocus = "variables";
+
+/**
+ * `#environment` (the retired Environment tab) opens Hosting on Production
+ * with its Variables card in view; any other hash asks for nothing.
+ */
+export function hostingFocusFromHash(hash: string | null | undefined): HostingFocus | null {
+  return hashId(hash) === "environment" ? "variables" : null;
 }
 
 /**
@@ -423,18 +447,8 @@ export function hostingProviderLabel(provider: string): string {
   return "Vercel frontend";
 }
 
-export function envMetadataLaneLabel(item: EnvVarMetadata): string {
-  if (item.lane === "production") return "production";
-  return `preview: ${item.gitBranch}`;
-}
-
 export function ciRunRowClass(conclusion: string | null): string {
   if (conclusion === "failure") return "failed";
-  return "provisioned";
-}
-
-export function deploymentRowClass(status: string): string {
-  if (status === "failed") return "failed";
   return "provisioned";
 }
 

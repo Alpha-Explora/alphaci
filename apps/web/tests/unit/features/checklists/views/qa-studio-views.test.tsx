@@ -541,10 +541,9 @@ describe("QaStudioPanel", () => {
 
 describe("QA Studio tab", () => {
   it("appears in Delivery only when the capability is on", async () => {
-    // "lead", not "qa": Environment is now its own gate (ENV_VARS_LEAD_ONLY),
-    // and QA no longer sees it — this test is about the strip's ORDER (QA
-    // Studio directly follows Environment for a viewer who gets both), which
-    // an Admin still exercises. QA's own tab set is covered separately in
+    // An Admin, not "qa": this test is about the strip's ORDER (QA Studio
+    // directly follows Hosting, which holds the old Environment tab's
+    // variables, for a viewer who gets both). QA's own tab set is covered separately in
     // project-detail-tab-visibility.test.ts.
     const on = await render(
       <ProjectDetailTopTabs
@@ -557,7 +556,7 @@ describe("QA Studio tab", () => {
     );
     const tab = on.querySelector("#project-detail-tab-qa");
     expect(tab?.textContent).toBe("QA Studio");
-    expect(tab?.previousElementSibling?.textContent).toBe("Environment");
+    expect(tab?.previousElementSibling?.textContent).toBe("Hosting");
     const off = await render(
       <ProjectDetailTopTabs
         groups={projectDetailTabGroups(visibleProjectDetailTabs("admin", { qaChecklistsEnabled: false }))}

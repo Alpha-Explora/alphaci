@@ -2900,10 +2900,10 @@ async function developerRequestsRetest({ page, backend, baseUrl }: JourneyContex
   // QA Studio is for QA Team, Product owners and Admins: a Developer reads the
   // shared checklists and fixes what QA returns, from the card above.
   await visible(tabs.getByRole('tab', { name: 'Checklists', exact: true }), 'the Checklists tab for a Developer');
-  // A Developer changes hosting and variables now: both tabs are theirs.
-  for (const name of ['Hosting', 'Environment']) {
-    await visible(tabs.getByRole('tab', { name, exact: true }), `the ${name} tab for a Developer`);
-  }
+  // A Developer changes hosting and its variables: one Hosting tab holds both
+  // (the Environment tab was merged into it).
+  await visible(tabs.getByRole('tab', { name: 'Hosting', exact: true }), 'the Hosting tab for a Developer');
+  await neverShown(backend, tabs.getByRole('tab', { name: 'Environment', exact: true }), 'an Environment tab');
   await neverShown(backend, tabs.getByRole('tab', { name: 'QA Studio', exact: true }), 'the QA Studio tab for a Developer');
 
   // A deep link to #qa cannot reveal it either: it lands on Overview. (The page

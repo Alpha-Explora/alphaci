@@ -205,6 +205,8 @@ describe("project Checklists tab gating", () => {
     const container = await renderTabs(false);
     const labels = [...container.querySelectorAll('[role="tab"]')].map((tab) => tab.textContent);
     expect(labels).not.toContain("Checklists");
-    expect(labels).toHaveLength(10);
+    // Hosting carries the old Environment tab's variables, so nine remain.
+    expect(labels).toHaveLength(9);
+    expect(labels).not.toContain("Environment");
   });
 });

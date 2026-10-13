@@ -25,10 +25,12 @@ import {
   overviewTabData,
   resolveVisibleTab,
   shouldHighlightMyQaItems,
+  hostingFocusFromHash,
   tabFromHash,
   commitsBranchFromUrl,
   visibleProjectDetailTabs,
   workflowUpdateAccess,
+  type HostingFocus,
   type ProjectDetailTab,
   type WorkflowUpdateAccess,
 } from "../model/project-detail-tab-rules";
@@ -68,6 +70,13 @@ export interface ProjectDetailTabsViewModel {
   logFocus: DeploymentLogFocus | null;
   openTargetLogs: (focus: DeploymentLogFocus) => void;
   /**
+   * What Hosting should bring into view when it opens: `variables` for an old
+   * `#environment` link (Production, with the Variables card focused). Read
+   * once from the hash at mount; cleared by choosing a tab by hand or by any
+   * other deep link.
+   */
+  hostingFocus: HostingFocus | null;
+  /**
    * The pull request the Pull requests tab should open expanded, set when a
    * commit on the Code tab links to it. Cleared by choosing a tab by hand.
    */
@@ -102,6 +111,8 @@ export interface ProjectDetailTabsViewModel {
   ciRunsError: string | null;
   deployments: ProjectDeploymentsResponse | null;
   deploymentsError: string | null;
+  /** Hosting's Retry: read the deployment history again. */
+  reloadDeployments: () => void;
   /** The Audit tab's rows, read the first time the tab opens. */
   audit: ProjectAuditViewModel;
   workflow: ProjectWorkflowSettingsViewModel;
@@ -138,6 +149,9 @@ export function useProjectDetailTabsViewModel(options: {
     typeof window === "undefined" ? false : shouldHighlightMyQaItems(window.location.search),
   );
   const [logFocus, setLogFocus] = useState<DeploymentLogFocus | null>(null);
+  const [hostingFocus, setHostingFocus] = useState<HostingFocus | null>(() =>
+    typeof window === "undefined" ? null : hostingFocusFromHash(window.location.hash),
+  );
   const [pullFocus, setPullFocus] = useState<number | null>(null);
   const [commitsBranch, setCommitsBranch] = useState<string | null>(() =>
     typeof window === "undefined" ? null : commitsBranchFromUrl(window.location.hash, window.location.search),
@@ -194,6 +208,7 @@ export function useProjectDetailTabsViewModel(options: {
   const { workflowFiles, deploymentTargets, envMetadata } = tabData;
 
   function setTab(next: ProjectDetailTab) {
+    setHostingFocus(null);
     setLogFocus(null);
     setPullFocus(null);
     setCommitsBranch(null);
@@ -202,6 +217,7 @@ export function useProjectDetailTabsViewModel(options: {
   }
 
   function openMyQaItems() {
+    setHostingFocus(null);
     setLogFocus(null);
     setPullFocus(null);
     setChecklistsOpensMyItems(true);
@@ -209,12 +225,14 @@ export function useProjectDetailTabsViewModel(options: {
   }
 
   function openTargetLogs(focus: DeploymentLogFocus) {
+    setHostingFocus(null);
     setPullFocus(null);
     setLogFocus(focus);
     setTabState("hosting");
   }
 
   function openCommits(branch?: string | null) {
+    setHostingFocus(null);
     setLogFocus(null);
     setPullFocus(null);
     setCommitsBranch(branch ?? null);
@@ -222,6 +240,7 @@ export function useProjectDetailTabsViewModel(options: {
   }
 
   function openPullRequest(pullRequestNumber: number) {
+    setHostingFocus(null);
     setLogFocus(null);
     setPullFocus(pullRequestNumber);
     setTabState("pulls");
@@ -257,6 +276,7 @@ export function useProjectDetailTabsViewModel(options: {
     checklistsOpensMyItems,
     logFocus,
     openTargetLogs,
+    hostingFocus,
     pullFocus,
     openPullRequest,
     commitsBranch,
@@ -288,6 +308,7 @@ export function useProjectDetailTabsViewModel(options: {
     ciRunsError: ciRunsQuery.error,
     deployments: deploymentsQuery.data,
     deploymentsError: deploymentsQuery.error,
+    reloadDeployments: deploymentsQuery.reload,
     audit,
     workflow,
   };
