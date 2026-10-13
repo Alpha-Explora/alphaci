@@ -64,7 +64,7 @@ export function PipelineRunsTab({
   onOpenPullRequest?: (pullRequestNumber: number) => void;
   /** Whether "Update the workflow" may send this viewer to the update pull request. */
   workflowAccess?: WorkflowUpdateAccess;
-  /** Opens the Workflow tab, for turning visual testing on. */
+  /** Opens the Pipeline tab's Configuration view, for turning visual testing on. */
   onOpenWorkflow?: () => void;
 }) {
   const viewMode = runsViewModeFor(appRole);

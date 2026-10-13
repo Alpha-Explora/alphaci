@@ -61,10 +61,10 @@ afterEach(() => {
 async function render(
   repository: { projectId: string; repoFullName: string },
   visibleTabs: ProjectDetailTab[],
-  setTab = jest.fn(),
+  openPipeline = jest.fn(),
   workflowUpdateAccess: "open" | "role" | "unavailable" = "open",
 ) {
-  const render = studioChecksRenderer("project-1", { visibleTabs, setTab, openPullRequest: jest.fn(), workflowUpdateAccess });
+  const render = studioChecksRenderer("project-1", { visibleTabs, openPipeline, openPullRequest: jest.fn(), workflowUpdateAccess });
   const container = document.createElement("div");
   document.body.appendChild(container);
   root = createRoot(container);
@@ -79,7 +79,7 @@ async function render(
   return container;
 }
 
-const ADMIN_TABS: ProjectDetailTab[] = ["overview", "pulls", "runs", "qa"];
+const ADMIN_TABS: ProjectDetailTab[] = ["overview", "pulls", "pipeline", "qa"];
 const QA_TABS: ProjectDetailTab[] = ["overview", "checklists", "qa", "audit", "settings"];
 const WEB = { projectId: "project-1", repoFullName: "tone/storefront-web" };
 const API = { projectId: "project-2", repoFullName: "tone/orders-api" };
@@ -98,26 +98,26 @@ describe("StudioRepositoryChecks", () => {
     expect(browserTests).toHaveBeenCalledWith("project-2");
   });
 
-  it("opens this page's Pipeline runs tab for its own repository", async () => {
+  it("opens this page's Pipeline tab on Runs for its own repository", async () => {
     visual.mockResolvedValue(CHANGED);
-    const setTab = jest.fn();
-    const container = await render(WEB, ADMIN_TABS, setTab);
+    const openPipeline = jest.fn();
+    const container = await render(WEB, ADMIN_TABS, openPipeline);
     expect(container.querySelector(".studio-checks__summary")?.textContent).toBe("Visual: 2 changed · 1 new");
     const link = container.querySelector<HTMLButtonElement>("button.studio-checks__link")!;
-    expect(link.textContent).toBe("Review in Pipeline runs");
+    expect(link.textContent).toBe("Review in Pipeline");
     act(() => link.click());
-    expect(setTab).toHaveBeenCalledWith("runs");
+    expect(openPipeline).toHaveBeenCalledWith("runs");
   });
 
-  it("links another repository's Pipeline runs inside the product, never GitHub", async () => {
+  it("links another repository's Pipeline tab inside the product, never GitHub", async () => {
     visual.mockResolvedValue(CHANGED);
     const container = await render(API, ADMIN_TABS);
     const link = container.querySelector<HTMLAnchorElement>("a.studio-checks__link")!;
-    expect(link.getAttribute("href")).toBe("/projects/project-2#runs");
+    expect(link.getAttribute("href")).toBe("/projects/project-2#pipeline");
     expect(container.innerHTML).not.toMatch(/github\.com/);
   });
 
-  it("tells a viewer without Pipeline runs who reviews the change, instead of a link", async () => {
+  it("tells a viewer without the Pipeline tab who reviews the change, instead of a link", async () => {
     visual.mockResolvedValue(CHANGED);
     const container = await render(WEB, QA_TABS);
     expect(container.querySelector(".studio-checks__link")).toBeNull();
@@ -157,15 +157,15 @@ describe("StudioRepositoryChecks — visual testing off in the workflow", () => 
   it("says off for this repo instead of not captured yet, and how to turn it on", async () => {
     visual.mockResolvedValue(NOT_CAPTURED);
     browserTests.mockResolvedValue({ ...INSTALLED, visual: { dev: false, uat: false } });
-    const setTab = jest.fn();
-    const container = await render(WEB, ADMIN_TABS, setTab);
+    const openPipeline = jest.fn();
+    const container = await render(WEB, ADMIN_TABS, openPipeline);
     expect(container.querySelector(".studio-checks__summary")?.textContent).toBe("Visual: off for this repo");
     expect(container.querySelector("[data-visual-off]")?.textContent).toContain(
       "Visual testing is off in this repository's workflow.",
     );
     const update = [...container.querySelectorAll("button")].find((button) => button.textContent === "Update the workflow");
     act(() => update!.click());
-    expect(setTab).toHaveBeenCalledWith("workflow");
+    expect(openPipeline).toHaveBeenCalledWith("configuration");
     expect(browserTests).toHaveBeenCalledTimes(1);
   });
 
@@ -178,7 +178,7 @@ describe("StudioRepositoryChecks — visual testing off in the workflow", () => 
     );
   });
 
-  it("links another repository's Workflow tab inside the product", async () => {
+  it("links another repository's Pipeline configuration (#workflow) inside the product", async () => {
     visual.mockResolvedValue(NOT_CAPTURED);
     browserTests.mockResolvedValue({ ...INSTALLED, visual: { dev: false, uat: false } });
     const container = await render(API, ADMIN_TABS);

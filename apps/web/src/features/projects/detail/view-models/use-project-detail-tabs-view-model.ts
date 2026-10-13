@@ -23,6 +23,9 @@ import {
   isWorkflowSettingsQueryEnabled,
   overviewCapabilityFlags,
   overviewTabData,
+  pipelineConfigurationAvailable,
+  pipelineViewFromHash,
+  resolvePipelineView,
   resolveVisibleTab,
   shouldHighlightMyQaItems,
   hostingFocusFromHash,
@@ -31,6 +34,7 @@ import {
   visibleProjectDetailTabs,
   workflowUpdateAccess,
   type HostingFocus,
+  type PipelineView,
   type ProjectDetailTab,
   type WorkflowUpdateAccess,
 } from "../model/project-detail-tab-rules";
@@ -89,6 +93,17 @@ export interface ProjectDetailTabsViewModel {
    */
   commitsBranch: string | null;
   openCommits: (branch?: string | null) => void;
+  /**
+   * The Pipeline tab's view: Runs (the default) or Configuration (the old
+   * Workflow tab). `#workflow` opens Configuration; choosing a tab by hand
+   * goes back to Runs. Always Runs where Configuration is not offered.
+   */
+  pipelineView: PipelineView;
+  setPipelineView: (view: PipelineView) => void;
+  /** Whether the Pipeline tab offers Configuration; without it there is no toggle. */
+  pipelineConfigurationAvailable: boolean;
+  /** Opens the Pipeline tab on a view: Runs' "Update the workflow", the studios' links. */
+  openPipeline: (view: PipelineView) => void;
   status: ProjectStatus;
   error: string | null;
   overview: ProjectOverviewResponse | null;
@@ -157,6 +172,9 @@ export function useProjectDetailTabsViewModel(options: {
     typeof window === "undefined" ? null : commitsBranchFromUrl(window.location.hash, window.location.search),
   );
   const [checklistsOpensMyItems, setChecklistsOpensMyItems] = useState(false);
+  const [selectedPipelineView, setPipelineView] = useState<PipelineView>(() =>
+    typeof window === "undefined" ? "runs" : pipelineViewFromHash(window.location.hash),
+  );
 
   const caps = useCapabilities();
   const visibleTabs = visibleProjectDetailTabs(appRole, {
@@ -165,6 +183,8 @@ export function useProjectDetailTabsViewModel(options: {
   // Derived, not reset by an effect: if the flag turns off under a selected
   // Checklists tab, the strip falls back to Overview on the same render.
   const tab = resolveVisibleTab(selectedTab, visibleTabs);
+  const configurationAvailable = pipelineConfigurationAvailable(visibleTabs);
+  const pipelineView = resolvePipelineView(selectedPipelineView, configurationAvailable);
   const overviewQuery = useLazyProjectQuery<ProjectOverviewResponse>({
     projectId,
     enabled: Boolean(projectId),
@@ -179,6 +199,7 @@ export function useProjectDetailTabsViewModel(options: {
     projectId,
     enabled: isWorkflowSettingsQueryEnabled({
       tab,
+      pipelineView,
       workflowSettingsPreviewEnabled: caps.workflowSettingsPreviewEnabled,
       overviewWorkflowSettings: overviewCaps.workflowSettings,
     }),
@@ -187,6 +208,7 @@ export function useProjectDetailTabsViewModel(options: {
     projectId,
     enabled: isCiRunsQueryEnabled({
       tab,
+      pipelineView,
       ciRunTrackingEnabled: caps.ciRunTrackingEnabled,
       overviewCiRunTracking: overviewCaps.ciRunTracking,
     }),
@@ -213,7 +235,13 @@ export function useProjectDetailTabsViewModel(options: {
     setPullFocus(null);
     setCommitsBranch(null);
     setChecklistsOpensMyItems(false);
+    setPipelineView("runs");
     setTabState(next);
+  }
+
+  function openPipeline(view: PipelineView) {
+    setTab("pipeline");
+    setPipelineView(view);
   }
 
   function openMyQaItems() {
@@ -281,6 +309,10 @@ export function useProjectDetailTabsViewModel(options: {
     openPullRequest,
     commitsBranch,
     openCommits,
+    pipelineView,
+    setPipelineView,
+    pipelineConfigurationAvailable: configurationAvailable,
+    openPipeline,
     status: overviewQuery.status,
     error: overviewQuery.error,
     overview,
@@ -299,7 +331,7 @@ export function useProjectDetailTabsViewModel(options: {
     workflowUpdatePrEnabled: caps.workflowUpdatePrEnabled,
     workflowUpdateAccess: workflowUpdateAccess({
       appRole,
-      workflowTabVisible: visibleTabs.includes("workflow"),
+      workflowTabVisible: configurationAvailable,
       updatePrEnabled: caps.workflowUpdatePrEnabled,
       settingsPreviewEnabled: caps.workflowSettingsPreviewEnabled,
       projectWorkflowSettings: overviewCaps.workflowSettings,

@@ -226,6 +226,20 @@ function render(ui: React.ReactNode) {
   return { container, root };
 }
 
+/** Opens the Pipeline tab on a view: the strip's tab, then the Runs | Configuration toggle. */
+async function openPipelineView(container: HTMLElement, view: "Runs" | "Configuration") {
+  const button = (label: string) =>
+    Array.from(container.querySelectorAll("button")).find((candidate) => candidate.textContent === label)!;
+  await act(async () => {
+    button("Pipeline").click();
+    await Promise.resolve();
+  });
+  await act(async () => {
+    button(view).click();
+    await Promise.resolve();
+  });
+}
+
 function changeValue(
   element: {
     nodeName?: string;
@@ -785,7 +799,8 @@ describe("Project env provisioning UI", () => {
     expect(rendered.container.textContent).not.toContain("Local snapshot");
     expect(rendered.container.textContent).not.toContain("Sync now");
     expect(rendered.container.textContent).not.toContain("CI token");
-    expect(rendered.container.textContent).toContain("Workflow");
+    // Pipeline runs and Workflow are one Pipeline tab now.
+    expect(rendered.container.textContent).toContain("Pipeline");
     expect(rendered.container.textContent).toContain("Hosting");
     // Environment merged into Hosting: no tab of its own any more.
     expect(
@@ -801,7 +816,13 @@ describe("Project env provisioning UI", () => {
     // that drops one is caught by the same test that covers the rest.
     expect(rendered.container.textContent).toContain("Code");
     expect(rendered.container.textContent).toContain("Pull requests");
-    expect(rendered.container.textContent).toContain("Pipeline runs");
+    for (const retired of ["Pipeline runs", "Workflow"]) {
+      expect(
+        Array.from(rendered.container.querySelectorAll("button")).some(
+          (button) => button.textContent === retired,
+        ),
+      ).toBe(false);
+    }
     expect(rendered.container.textContent).not.toContain(
       "No workflow file metadata is tracked yet.",
     );
@@ -893,13 +914,7 @@ describe("Project env provisioning UI", () => {
       await Promise.resolve();
     });
 
-    const runsTab = Array.from(
-      rendered.container.querySelectorAll("button"),
-    ).find((button) => button.textContent === "Pipeline runs") as HTMLButtonElement;
-    await act(async () => {
-      runsTab.click();
-      await Promise.resolve();
-    });
+    await openPipelineView(rendered.container, "Runs");
 
     expect(mockedProjectApi.getProjectCiRuns).toHaveBeenCalledWith("project-1");
     expect(rendered.container.textContent).toContain(
@@ -954,13 +969,7 @@ describe("Project env provisioning UI", () => {
       await Promise.resolve();
     });
 
-    const runsTab = Array.from(
-      rendered.container.querySelectorAll("button"),
-    ).find((button) => button.textContent === "Pipeline runs") as HTMLButtonElement;
-    await act(async () => {
-      runsTab.click();
-      await Promise.resolve();
-    });
+    await openPipelineView(rendered.container, "Runs");
 
     expect(rendered.container.textContent).toContain("ALPHACI Quality");
     expect(rendered.container.textContent).toContain("quality");
@@ -1005,13 +1014,7 @@ describe("Project env provisioning UI", () => {
       await Promise.resolve();
     });
 
-    const runsTab = Array.from(
-      rendered.container.querySelectorAll("button"),
-    ).find((button) => button.textContent === "Pipeline runs") as HTMLButtonElement;
-    await act(async () => {
-      runsTab.click();
-      await Promise.resolve();
-    });
+    await openPipelineView(rendered.container, "Runs");
 
     expect(rendered.container.textContent).not.toContain(
       "Live GitHub run sync is not enabled",
@@ -1636,13 +1639,7 @@ describe("Project env provisioning UI", () => {
       await Promise.resolve();
     });
 
-    const workflowTab = Array.from(
-      rendered.container.querySelectorAll("button"),
-    ).find((button) => button.textContent === "Workflow") as HTMLButtonElement;
-    await act(async () => {
-      workflowTab.click();
-      await Promise.resolve();
-    });
+    await openPipelineView(rendered.container, "Configuration");
 
     expect(mockedProjectApi.getWorkflowSettings).toHaveBeenCalledWith(
       "project-1",
@@ -1724,13 +1721,7 @@ describe("Project env provisioning UI", () => {
       await Promise.resolve();
     });
 
-    const workflowTab = Array.from(
-      rendered.container.querySelectorAll("button"),
-    ).find((button) => button.textContent === "Workflow") as HTMLButtonElement;
-    await act(async () => {
-      workflowTab.click();
-      await Promise.resolve();
-    });
+    await openPipelineView(rendered.container, "Configuration");
 
     const previewButton = Array.from(
       rendered.container.querySelectorAll("button"),
@@ -1818,13 +1809,7 @@ describe("Project env provisioning UI", () => {
       await Promise.resolve();
     });
 
-    const workflowTab = Array.from(
-      rendered.container.querySelectorAll("button"),
-    ).find((button) => button.textContent === "Workflow") as HTMLButtonElement;
-    await act(async () => {
-      workflowTab.click();
-      await Promise.resolve();
-    });
+    await openPipelineView(rendered.container, "Configuration");
 
     const previewButton = Array.from(
       rendered.container.querySelectorAll("button"),
@@ -1894,13 +1879,7 @@ describe("Project env provisioning UI", () => {
       await Promise.resolve();
     });
 
-    const workflowTab = Array.from(
-      rendered.container.querySelectorAll("button"),
-    ).find((button) => button.textContent === "Workflow") as HTMLButtonElement;
-    await act(async () => {
-      workflowTab.click();
-      await Promise.resolve();
-    });
+    await openPipelineView(rendered.container, "Configuration");
 
     const previewButton = Array.from(
       rendered.container.querySelectorAll("button"),
@@ -1976,23 +1955,14 @@ describe("Project env provisioning UI", () => {
     // The Overview no longer reads drift findings.
     expect(mockedProjectApi.getProjectDrift).not.toHaveBeenCalled();
 
-    await act(async () => {
-      Array.from(rendered.container.querySelectorAll("button"))
-        .find((button) => button.textContent === "Workflow")!
-        .click();
-      await Promise.resolve();
-    });
+    // Pipeline opens on Runs, so the runs are read before Configuration's settings.
+    await openPipelineView(rendered.container, "Runs");
+    expect(rendered.container.textContent).toContain("Unable to load CI runs.");
+
+    await openPipelineView(rendered.container, "Configuration");
     expect(rendered.container.textContent).toContain(
       "Unable to load workflow settings.",
     );
-
-    await act(async () => {
-      Array.from(rendered.container.querySelectorAll("button"))
-        .find((button) => button.textContent === "Pipeline runs")!
-        .click();
-      await Promise.resolve();
-    });
-    expect(rendered.container.textContent).toContain("Unable to load CI runs.");
 
     await act(async () => {
       Array.from(rendered.container.querySelectorAll("button"))
@@ -2078,12 +2048,7 @@ describe("Project env provisioning UI", () => {
       await Promise.resolve();
     });
 
-    await act(async () => {
-      Array.from(previewErrorRendered.container.querySelectorAll("button"))
-        .find((button) => button.textContent === "Workflow")!
-        .click();
-      await Promise.resolve();
-    });
+    await openPipelineView(previewErrorRendered.container, "Configuration");
     await act(async () => {
       Array.from(previewErrorRendered.container.querySelectorAll("button"))
         .find((button) => button.textContent === "Preview")!
@@ -2112,13 +2077,7 @@ describe("Project env provisioning UI", () => {
       await Promise.resolve();
     });
 
-    const workflowTab = Array.from(
-      rendered.container.querySelectorAll("button"),
-    ).find((button) => button.textContent === "Workflow") as HTMLButtonElement;
-    await act(async () => {
-      workflowTab.click();
-      await Promise.resolve();
-    });
+    await openPipelineView(rendered.container, "Configuration");
 
     await act(async () => {
       await Promise.resolve();

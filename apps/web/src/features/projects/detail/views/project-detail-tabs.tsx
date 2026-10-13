@@ -20,8 +20,7 @@ import { ProjectRepoSwitch } from "./project-repo-switch";
 import { projectDetailTabGroups } from "./project-detail-tab-config";
 import { ProjectDetailTopTabs } from "./project-detail-top-tabs";
 import { OverviewTab } from "./overview-tab";
-import { WorkflowTab } from "./workflow-tab";
-import { RunsTab } from "./runs-tab";
+import { PipelineTab } from "./pipeline-tab";
 import { HostingTab } from "./hosting-tab";
 import { AuditTab } from "./audit-tab";
 import { SettingsTab } from "./settings-tab";
@@ -35,8 +34,8 @@ import { PoStudioTabPanel } from "./po-studio-tab-panel";
 export { WorkflowStageList } from "./workflow-stage-list";
 
 /**
- * ProjectDetailTabs — the tabbed project detail (Overview / Workflow / Runs /
- * Hosting / Audit / Settings), extracted from the old split-pane
+ * ProjectDetailTabs — the tabbed project detail (Overview / Code / Pipeline /
+ * Hosting / Audit / Settings and the rest), extracted from the old split-pane
  * Current Projects view so the full project page (/projects/[id]) can render
  * it.
  */
@@ -85,8 +84,7 @@ const TAB_PANELS: Record<
   commits: CommitsTabPanel,
   pulls: PullsTabPanel,
   checklists: ChecklistsTabPanel,
-  runs: RunsTab,
-  workflow: WorkflowTab,
+  pipeline: PipelineTab,
   hosting: HostingTab,
   qa: QaStudioTabPanel,
   po: PoStudioTabPanel,
@@ -109,7 +107,7 @@ export function ProjectDetailTabs({
     viewerLogin,
   });
   const TabPanel = TAB_PANELS[vm.tab];
-  // Five tabs fit beside the title; a Developer's ten and an admin's eleven
+  // Five tabs fit beside the title; a Developer's nine and an admin's eleven
   // keep the scrolling strip of their own. Every role's Checklists tab carries
   // the Project's QA, so nothing on the page links away to the Projects page.
   const productView = seesProjectAsProduct(appRole);

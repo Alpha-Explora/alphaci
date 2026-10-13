@@ -68,7 +68,7 @@ describe("visibleProjectDetailTabs", () => {
   it("gives QA Team the Product owner's five tabs, with QA Studio in place of PO Studio", () => {
     const tabs = visibleProjectDetailTabs("qa", { qaChecklistsEnabled: true });
     expect(tabs).toEqual(["overview", "checklists", "qa", "audit", "settings"]);
-    for (const hidden of ["code", "commits", "pulls", "runs", "workflow", "hosting"] as const) {
+    for (const hidden of ["code", "commits", "pulls", "pipeline", "hosting"] as const) {
       expect(tabs).not.toContain(hidden);
     }
   });
@@ -140,12 +140,12 @@ describe("visibleProjectDetailTabs", () => {
     expect(resolveVisibleTab("checklists", visible)).toBe("overview");
     expect(resolveVisibleTab("qa", visible)).toBe("overview");
     expect(resolveVisibleTab("po", visible)).toBe("overview");
-    expect(resolveVisibleTab("runs", visible)).toBe("runs");
+    expect(resolveVisibleTab("pipeline", visible)).toBe("pipeline");
   });
 
   it("sends QA Team who deep-links to a code or delivery tab to Overview", () => {
     const visible = visibleProjectDetailTabs("qa", { qaChecklistsEnabled: true });
-    for (const tab of ["code", "pulls", "runs", "workflow", "hosting"] as const) {
+    for (const tab of ["code", "pulls", "pipeline", "hosting"] as const) {
       expect(resolveVisibleTab(tab, visible)).toBe("overview");
     }
     expect(resolveVisibleTab("qa", visible)).toBe("qa");
@@ -168,7 +168,7 @@ describe("visibleProjectDetailTabs", () => {
 
   it("sends a Product owner who deep-links to a hidden tab to Overview", () => {
     const visible = visibleProjectDetailTabs("lead", { qaChecklistsEnabled: true });
-    for (const hidden of ["code", "pulls", "runs", "workflow", "hosting"] as const) {
+    for (const hidden of ["code", "pulls", "pipeline", "hosting"] as const) {
       expect(resolveVisibleTab(hidden, visible)).toBe("overview");
     }
     expect(resolveVisibleTab("audit", visible)).toBe("audit");

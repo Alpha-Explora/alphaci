@@ -18,8 +18,7 @@ export type ProjectDetailTab =
   | "commits"
   | "pulls"
   | "checklists"
-  | "runs"
-  | "workflow"
+  | "pipeline"
   | "hosting"
   | "qa"
   | "po"
@@ -33,8 +32,7 @@ export const PROJECT_DETAIL_TABS: ReadonlyArray<ProjectDetailTab> = [
   "commits",
   "pulls",
   "checklists",
-  "runs",
-  "workflow",
+  "pipeline",
   "hosting",
   "qa",
   "po",
@@ -275,11 +273,40 @@ function hashId(hash: string | null | undefined): string {
 
 /**
  * Hashes of tabs that were merged into another: the Environment tab's
- * variables live in Hosting now, so `#environment` still opens them.
+ * variables live in Hosting now, so `#environment` still opens them; Pipeline
+ * runs and Workflow are the Pipeline tab's two views, so `#runs` and
+ * `#workflow` open it (on the view `pipelineViewFromHash` names).
  */
 const TAB_HASH_ALIASES: Readonly<Record<string, ProjectDetailTab>> = {
   environment: "hosting",
+  runs: "pipeline",
+  workflow: "pipeline",
 };
+
+/**
+ * The Pipeline tab's two views: Runs (what ran; the default) and
+ * Configuration (the workflow that produced the runs, once the Workflow tab).
+ */
+export type PipelineView = "runs" | "configuration";
+
+/** `#workflow` (the retired Workflow tab) opens Configuration; any other hash, Runs. */
+export function pipelineViewFromHash(hash: string | null | undefined): PipelineView {
+  return hashId(hash) === "workflow" ? "configuration" : "runs";
+}
+
+/**
+ * Whether the Pipeline tab offers its Configuration view. Every role that had
+ * Pipeline runs had Workflow too, so it follows the Pipeline tab itself; it is
+ * a rule of its own so the two can part without the view changing.
+ */
+export function pipelineConfigurationAvailable(visible: ReadonlyArray<ProjectDetailTab>): boolean {
+  return visible.includes("pipeline");
+}
+
+/** The view to show: Configuration only where it is offered, else Runs. */
+export function resolvePipelineView(view: PipelineView, configurationAvailable: boolean): PipelineView {
+  return view === "configuration" && configurationAvailable ? "configuration" : "runs";
+}
 
 /** What the Hosting tab should bring into view when it opens. */
 export type HostingFocus = "variables";
@@ -402,13 +429,16 @@ export function overviewTabData(
   };
 }
 
+/** Reported results: read while the Pipeline tab shows Runs. */
 export function isCiRunsQueryEnabled(input: {
   tab: ProjectDetailTab;
+  pipelineView: PipelineView;
   ciRunTrackingEnabled: boolean;
   overviewCiRunTracking: boolean | undefined;
 }): boolean {
   return (
-    input.tab === "runs" &&
+    input.tab === "pipeline" &&
+    input.pipelineView === "runs" &&
     input.ciRunTrackingEnabled &&
     input.overviewCiRunTracking === true
   );
@@ -426,13 +456,16 @@ export function isDeploymentsQueryEnabled(input: {
   );
 }
 
+/** Workflow settings: read while the Pipeline tab shows Configuration. */
 export function isWorkflowSettingsQueryEnabled(input: {
   tab: ProjectDetailTab;
+  pipelineView: PipelineView;
   workflowSettingsPreviewEnabled: boolean;
   overviewWorkflowSettings: boolean | undefined;
 }): boolean {
   return (
-    input.tab === "workflow" &&
+    input.tab === "pipeline" &&
+    input.pipelineView === "configuration" &&
     input.workflowSettingsPreviewEnabled &&
     input.overviewWorkflowSettings === true
   );
@@ -501,7 +534,8 @@ export const UPDATE_PR_TARGET_NOTE =
   "Opens a pull request into dev (or uat when there is no dev branch).";
 
 /**
- * Whether this viewer can be sent to the Workflow tab's update pull request
+ * Whether this viewer can be sent to the update pull request (the Pipeline
+ * tab's Configuration view)
  * from elsewhere (the Browser tests card): `open` when they can create it,
  * `role` when the feature is there but their role cannot (say
  * UPDATE_PR_ROLE_NOTE instead), `unavailable` when the deployment or project
@@ -511,6 +545,7 @@ export type WorkflowUpdateAccess = "open" | "role" | "unavailable";
 
 export function workflowUpdateAccess(input: {
   appRole: AppRole | null | undefined;
+  /** Whether the Pipeline tab offers this viewer Configuration (the old Workflow tab). */
   workflowTabVisible: boolean;
   updatePrEnabled: boolean;
   settingsPreviewEnabled: boolean;

@@ -40,7 +40,7 @@ function buildSteps(): DriveStep[] {
       popover: {
         title: "Project sections",
         description:
-          "Everything about this project lives here, grouped by what you came to do. Work holds Overview, Code and Pull requests. Pipeline holds Pipeline runs and the workflow file. Delivery holds Hosting and Environment. Records is the audit trail, and Configuration is Settings — including deleting the project. Nothing sits outside these sections.",
+          "Everything about this project lives here, grouped by what you came to do. Work holds Overview, Code and Pull requests. Pipeline holds the runs and the workflow configuration behind them. Delivery holds Hosting and Environment. Records is the audit trail, and Configuration is Settings — including deleting the project. Nothing sits outside these sections.",
         // A vertical rail on the left: the popover belongs beside it, not
         // under it. This said "bottom" while it was still a horizontal strip.
         side: "right",

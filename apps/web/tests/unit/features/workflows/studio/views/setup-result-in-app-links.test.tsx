@@ -73,7 +73,7 @@ describe("project-created results stay inside ALPHACI", () => {
       <SetupResultPanel setupResult={RESULT} existingRepoResult={null} onViewProject={jest.fn()} />,
     );
 
-    expect(hrefs(container)).toEqual(["/projects/proj%201", "/projects/proj%201#runs"]);
+    expect(hrefs(container)).toEqual(["/projects/proj%201", "/projects/proj%201#pipeline"]);
     // Names and the commit stay readable, as text.
     expect(container.textContent).toContain("acme/api");
     expect(container.textContent).toContain("acme/web");
@@ -93,7 +93,7 @@ describe("project-created results stay inside ALPHACI", () => {
 
     const banner = container.querySelector(".latest-result-banner") as HTMLElement;
     expect(banner).not.toBeNull();
-    expect(hrefs(banner)).toEqual(["/projects/proj%201", "/projects/proj%201#runs"]);
+    expect(hrefs(banner)).toEqual(["/projects/proj%201", "/projects/proj%201#pipeline"]);
     expect(container.querySelector('a[href*="github.com"]')).toBeNull();
   });
 });
