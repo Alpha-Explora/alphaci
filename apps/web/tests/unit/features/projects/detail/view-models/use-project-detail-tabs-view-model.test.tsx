@@ -142,3 +142,51 @@ describe("useProjectDetailTabsViewModel: reloadDeployments", () => {
     await poll(() => repo.deployments.mock.calls.length === 2);
   });
 });
+
+describe("useProjectDetailTabsViewModel: the Pipeline tab's views", () => {
+  it("opens #runs and #pipeline on Pipeline, on Runs", async () => {
+    for (const hash of ["#runs", "#pipeline"]) {
+      await render(hash);
+      expect(vm().tab).toBe("pipeline");
+      expect(vm().pipelineView).toBe("runs");
+      expect(vm().pipelineConfigurationAvailable).toBe(true);
+      act(() => root?.unmount());
+      root = null;
+    }
+  });
+
+  it("opens the retired #workflow on Pipeline, on Configuration", async () => {
+    await render("#workflow");
+    expect(vm().tab).toBe("pipeline");
+    expect(vm().pipelineView).toBe("configuration");
+    expect(vm().visibleTabs).not.toContain("workflow");
+    expect(vm().visibleTabs).not.toContain("runs");
+  });
+
+  it("switches views in place, and goes back to Runs when a tab is chosen by hand", async () => {
+    await render("#pipeline");
+    act(() => vm().setPipelineView("configuration"));
+    expect(vm().tab).toBe("pipeline");
+    expect(vm().pipelineView).toBe("configuration");
+    act(() => vm().setTab("overview"));
+    act(() => vm().setTab("pipeline"));
+    expect(vm().pipelineView).toBe("runs");
+  });
+
+  it("opens Pipeline on a view from elsewhere (Update the workflow, the studios' links)", async () => {
+    await render("", "admin");
+    expect(vm().tab).toBe("overview");
+    act(() => vm().openPipeline("configuration"));
+    expect(vm().tab).toBe("pipeline");
+    expect(vm().pipelineView).toBe("configuration");
+    act(() => vm().openPipeline("runs"));
+    expect(vm().pipelineView).toBe("runs");
+  });
+
+  it("offers no Configuration, and lands on Overview, for a role without Pipeline", async () => {
+    await render("#workflow", "qa");
+    expect(vm().tab).toBe("overview");
+    expect(vm().pipelineConfigurationAvailable).toBe(false);
+    expect(vm().pipelineView).toBe("runs");
+  });
+});

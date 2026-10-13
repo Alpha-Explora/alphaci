@@ -37,7 +37,7 @@ function SecondaryRepoSection({
 
 /**
  * Where to go from here, inside ALPHACI: the new project's page and its
- * Pipeline runs tab, which is where the first CI run will show up.
+ * Pipeline tab (on Runs), which is where the first CI run will show up.
  */
 function ProjectLinks({ projectId }: Readonly<{ projectId: string }>) {
   const base = `/projects/${encodeURIComponent(projectId)}`;
@@ -46,7 +46,7 @@ function ProjectLinks({ projectId }: Readonly<{ projectId: string }>) {
       <Link className="primary-button" href={base}>
         Open project
       </Link>
-      <Link className="ghost-button" href={`${base}#runs`}>
+      <Link className="ghost-button" href={`${base}#pipeline`}>
         Pipeline runs
       </Link>
     </>

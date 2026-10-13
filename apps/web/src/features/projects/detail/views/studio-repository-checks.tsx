@@ -19,14 +19,14 @@ import { BrowserTestsCard } from "./workspace/pipeline-browser-tests-card";
 /** The branch QA and PO Studio verify, whose screenshots the line summarises. */
 const STUDIO_BRANCH = "uat";
 
-export const REVIEW_VISUAL_LABEL = "Review in Pipeline runs";
+export const REVIEW_VISUAL_LABEL = "Review in Pipeline";
 
-/** For a viewer without the Pipeline runs tab (QA Team, Product owners). */
-export const VISUAL_REVIEW_ELSEWHERE = "Developers and admins review visual changes in Pipeline runs.";
+/** For a viewer without the Pipeline tab (QA Team, Product owners). */
+export const VISUAL_REVIEW_ELSEWHERE = "Developers and admins review visual changes in Pipeline.";
 
 /**
- * Where "Review in Pipeline runs" goes: this page's own tab, or the other
- * repository's page opened on that tab. In the product, never GitHub.
+ * Where "Review in Pipeline" goes: this page's Pipeline tab on Runs, or the
+ * other repository's page opened there. In the product, never GitHub.
  */
 function ReviewLink({
   repository,
@@ -41,7 +41,7 @@ function ReviewLink({
     );
   }
   return (
-    <Link className="pipe-link studio-checks__link" href={`/projects/${encodeURIComponent(repository.projectId)}#runs`}>
+    <Link className="pipe-link studio-checks__link" href={`/projects/${encodeURIComponent(repository.projectId)}#pipeline`}>
       {REVIEW_VISUAL_LABEL}
     </Link>
   );
@@ -130,14 +130,14 @@ export function StudioRepositoryChecks({
   repository: RepositoryRef;
   /** The repository whose page this is. */
   isCurrent: boolean;
-  /** Whether this viewer has the Pipeline runs tab at all. */
+  /** Whether this viewer has the Pipeline tab at all. */
   canOpenRuns: boolean;
   onOpenRuns: () => void;
   /** Opens this page's Pull requests tab; absent where that is not offered. */
   onOpenPullRequest?: (pullRequestNumber: number) => void;
   /** Whether "Update the workflow" may send this viewer to the update pull request. */
   workflowAccess?: WorkflowUpdateAccess;
-  /** Opens this page's Workflow tab; absent where that is not offered. */
+  /** Opens this page's Pipeline tab on Configuration; absent where that is not offered. */
   onOpenWorkflow?: () => void;
 }>) {
   // One status read for both lines: the browser-tests card and whether uat takes screenshots.
@@ -156,6 +156,7 @@ export function StudioRepositoryChecks({
         onOpenPullRequest={isCurrent ? onOpenPullRequest : undefined}
         workflowAccess={workflowAccess}
         onOpenWorkflow={isCurrent ? onOpenWorkflow : undefined}
+        // `#workflow` (the retired Workflow tab) opens Pipeline on Configuration.
         workflowHref={isCurrent ? undefined : `/projects/${encodeURIComponent(repository.projectId)}#workflow`}
       />
     </div>
@@ -165,22 +166,22 @@ export function StudioRepositoryChecks({
 /**
  * What a studio tab hands QA / PO Studio's Playwright tab: this page's checks
  * for any repository of the Project, with the in-app ways this viewer has
- * (Pipeline runs, Pull requests) and none they do not.
+ * (Pipeline, Pull requests) and none they do not.
  */
 export function studioChecksRenderer(
   currentProjectId: string,
-  vm: Pick<ProjectDetailTabsViewModel, "visibleTabs" | "setTab" | "openPullRequest" | "workflowUpdateAccess">,
+  vm: Pick<ProjectDetailTabsViewModel, "visibleTabs" | "openPipeline" | "openPullRequest" | "workflowUpdateAccess">,
 ): RenderRepositoryChecks {
-  const canOpenRuns = vm.visibleTabs.includes("runs");
+  const canOpenRuns = vm.visibleTabs.includes("pipeline");
   const onOpenPullRequest = vm.visibleTabs.includes("pulls") ? vm.openPullRequest : undefined;
-  const onOpenWorkflow = () => vm.setTab("workflow");
+  const onOpenWorkflow = () => vm.openPipeline("configuration");
   return function renderChecks(repository) {
     return (
       <StudioRepositoryChecks
         repository={repository}
         isCurrent={repository.projectId === currentProjectId}
         canOpenRuns={canOpenRuns}
-        onOpenRuns={() => vm.setTab("runs")}
+        onOpenRuns={() => vm.openPipeline("runs")}
         onOpenPullRequest={onOpenPullRequest}
         workflowAccess={vm.workflowUpdateAccess}
         onOpenWorkflow={onOpenWorkflow}

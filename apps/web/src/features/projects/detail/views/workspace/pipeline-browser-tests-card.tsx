@@ -34,7 +34,8 @@ import { InfoIcon } from "./pipeline-glyphs";
  * The pull request is reached in the product, on the Pull requests tab.
  *
  * When the repository's verify workflow takes no screenshots (the status's
- * `visual`), the card says so and how to turn it on — the Workflow tab's
+ * `visual`), the card says so and how to turn it on — the Pipeline tab's
+ * Configuration view (once the Workflow tab) and its
  * update pull request, or a promotion to uat. An older backend sends no
  * `visual`, and the card reads as it always did.
  */
@@ -50,9 +51,9 @@ export function BrowserTestsCard({
   onOpenPullRequest?: (pullRequestNumber: number) => void;
   /** Whether this viewer may be sent to the workflow update pull request. */
   workflowAccess?: WorkflowUpdateAccess;
-  /** Opens the Workflow tab, where the update pull request is previewed and opened. */
+  /** Opens Pipeline on Configuration, where the update pull request is previewed and opened. */
   onOpenWorkflow?: () => void;
-  /** Without `onOpenWorkflow`: another repository's page, on its Workflow tab. */
+  /** Without `onOpenWorkflow`: another repository's page, on its Pipeline configuration. */
   workflowHref?: string;
 }>) {
   const titleId = useId();
@@ -83,7 +84,7 @@ export function BrowserTestsCard({
 
 /**
  * "Visual testing is off in this repository's workflow", and the way to turn
- * it on: the Workflow tab's update pull request when dev is off (or, for a
+ * it on: the Pipeline configuration's update pull request when dev is off (or, for a
  * role that cannot open it, who can), a promotion when only uat is.
  */
 function VisualOff({ notice, way }: Readonly<{ notice: VisualOffNotice | null; way: WorkflowWay }>) {
@@ -98,9 +99,9 @@ function VisualOff({ notice, way }: Readonly<{ notice: VisualOffNotice | null; w
 
 interface WorkflowWay {
   access: WorkflowUpdateAccess;
-  /** Opens this page's Workflow tab. */
+  /** Opens this page's Pipeline tab on Configuration. */
   onOpenWorkflow?: () => void;
-  /** Another repository's page, opened on its Workflow tab. In the product, never GitHub. */
+  /** Another repository's page, opened on its Pipeline configuration. In the product, never GitHub. */
   workflowHref?: string;
 }
 

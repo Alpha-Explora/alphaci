@@ -104,7 +104,7 @@ function LatestResultBanner({
         </Link>
         <Link
           className="latest-result-banner__action-btn"
-          href={`/projects/${encodeURIComponent(latestResult.id)}#runs`}
+          href={`/projects/${encodeURIComponent(latestResult.id)}#pipeline`}
         >
           Pipeline runs
         </Link>

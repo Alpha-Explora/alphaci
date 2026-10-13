@@ -169,7 +169,7 @@ export const VISUAL_PROMOTE_LINE = "Turned on in dev. Promote to uat to start ca
 
 export const VISUAL_UPDATE_LABEL = "Update the workflow";
 
-export const VISUAL_UPDATE_HINT = "Opens the Workflow tab, where the update pull request turns it on in dev.";
+export const VISUAL_UPDATE_HINT = "Opens the Pipeline configuration, where the update pull request turns it on in dev.";
 
 /**
  * What fixes it: the workflow update pull request when dev is off, a

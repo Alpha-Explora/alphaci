@@ -2904,6 +2904,11 @@ async function developerRequestsRetest({ page, backend, baseUrl }: JourneyContex
   // (the Environment tab was merged into it).
   await visible(tabs.getByRole('tab', { name: 'Hosting', exact: true }), 'the Hosting tab for a Developer');
   await neverShown(backend, tabs.getByRole('tab', { name: 'Environment', exact: true }), 'an Environment tab');
+  // Pipeline runs and Workflow are one Pipeline tab (Runs | Configuration).
+  await visible(tabs.getByRole('tab', { name: 'Pipeline', exact: true }), 'the Pipeline tab for a Developer');
+  for (const retired of ['Pipeline runs', 'Workflow']) {
+    await neverShown(backend, tabs.getByRole('tab', { name: retired, exact: true }), `a ${retired} tab`);
+  }
   await neverShown(backend, tabs.getByRole('tab', { name: 'QA Studio', exact: true }), 'the QA Studio tab for a Developer');
 
   // A deep link to #qa cannot reveal it either: it lands on Overview. (The page

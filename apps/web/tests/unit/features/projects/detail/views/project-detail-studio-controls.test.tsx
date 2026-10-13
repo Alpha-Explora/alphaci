@@ -147,7 +147,7 @@ describe("Studio controls in the tab row, product view", () => {
 
 describe("Studio controls for an admin", () => {
   const ADMIN_TABS = [
-    "overview", "code", "pulls", "checklists", "runs", "workflow", "hosting", "qa", "po", "audit", "settings",
+    "overview", "code", "pulls", "checklists", "pipeline", "hosting", "qa", "po", "audit", "settings",
   ];
 
   it.each(["qa", "po"])("puts the %s controls on the line under the tab row, leaving the switch alone", (tab) => {

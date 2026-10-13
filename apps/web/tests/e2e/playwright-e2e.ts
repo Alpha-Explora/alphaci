@@ -532,10 +532,10 @@ async function runDashboardAudit(page: Page, baseUrl: string) {
   await expectVisibleText(page, 'Project created');
 
   await expectVisibleText(page, 'orders-api');
+  // Pipeline runs and Workflow are one Pipeline tab: Runs | Configuration.
   for (const tab of [
     'Overview',
-    'Workflow',
-    'Runs',
+    'Pipeline',
     'Deployments',
     'Activity',
     'Audit',
@@ -544,7 +544,8 @@ async function runDashboardAudit(page: Page, baseUrl: string) {
     await page.getByRole('tab', { name: tab }).waitFor({ state: 'visible' });
   }
 
-  await page.getByRole('tab', { name: 'Workflow' }).click();
+  await page.getByRole('tab', { name: 'Pipeline', exact: true }).click();
+  await page.getByRole('tablist', { name: 'Pipeline views' }).getByRole('tab', { name: 'Configuration' }).click();
   await expectVisibleText(page, 'Node version');
   await expectVisibleText(page, 'Lint');
   await expectVisibleText(page, 'Unit tests');
@@ -552,7 +553,7 @@ async function runDashboardAudit(page: Page, baseUrl: string) {
   await expectVisibleText(page, 'Security');
   await expectVisibleText(page, 'Deploy target mappings');
 
-  await page.getByRole('tab', { name: 'Runs' }).click();
+  await page.getByRole('tablist', { name: 'Pipeline views' }).getByRole('tab', { name: 'Runs' }).click();
   await expectVisibleText(page, 'Live GitHub run sync is not enabled');
   await page.getByRole('tab', { name: 'Deployments' }).click();
   await expectVisibleText(page, 'Live deployment sync is not enabled');

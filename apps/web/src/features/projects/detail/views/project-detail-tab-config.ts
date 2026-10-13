@@ -35,11 +35,9 @@ export const PROJECT_DETAIL_TAB_GROUPS: ReadonlyArray<
     ],
   },
   {
+    // One tab, two views (Runs, Configuration): see PipelineTab.
     heading: "Pipeline",
-    items: [
-      { id: "runs", label: "Pipeline runs" },
-      { id: "workflow", label: "Workflow" },
-    ],
+    items: [{ id: "pipeline", label: "Pipeline" }],
   },
   {
     heading: "Delivery",
