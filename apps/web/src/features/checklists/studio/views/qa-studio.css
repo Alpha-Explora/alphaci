@@ -23,7 +23,7 @@
 
 /* The global ghost button draws a transparent border; give it an edge here. */
 .qa-studio .ghost-button {
-  border-color: var(--border-strong);
+  border-color: var(--border-control);
 }
 
 .qa-glyph {

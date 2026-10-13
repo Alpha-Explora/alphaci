@@ -30,7 +30,7 @@
 }
 
 .pf-section .ghost-button {
-  border-color: var(--border-strong);
+  border-color: var(--border-control);
 }
 
 /* A narrow dialog wraps its two actions instead of pushing one out. */

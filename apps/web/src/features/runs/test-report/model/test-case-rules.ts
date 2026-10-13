@@ -6,6 +6,7 @@
  * none; the passing names (`passes`) are then the fallback. */
 
 import type { TestCase, TestCaseStatus } from "@/shared/api/contracts";
+import { stripAnsi } from "@/shared/ui/strip-ansi";
 
 const STATUSES: readonly TestCaseStatus[] = ["passed", "failed", "flaky", "skipped"];
 
@@ -15,8 +16,11 @@ function record(value: unknown): Loose | null {
   return typeof value === "object" && value !== null && !Array.isArray(value) ? (value as Loose) : null;
 }
 
+/** A non-blank string, without the terminal colour codes stored Playwright output keeps. */
 function text(value: unknown): string | undefined {
-  return typeof value === "string" && value.trim() !== "" ? value : undefined;
+  if (typeof value !== "string") return undefined;
+  const plain = stripAnsi(value);
+  return plain.trim() !== "" ? plain : undefined;
 }
 
 function count(value: unknown): number | undefined {

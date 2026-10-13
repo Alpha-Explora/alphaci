@@ -19,6 +19,8 @@
 
 import type { RunGroup, RunOverallStatus } from "@/shared/api/contracts";
 
+import { isFailedConclusion } from "./github-conclusion";
+
 import {
   indexReportedIdentities,
   reportedCommitSha,
@@ -149,10 +151,7 @@ const OVERALL_TONE: Record<RunOverallStatus, CommitHeadline["tone"]> = {
 };
 
 function concludedAsFailed(run: { status: string; conclusion: string | null }): boolean {
-  return (
-    run.status === "completed" &&
-    (run.conclusion === "failure" || run.conclusion === "timed_out")
-  );
+  return run.status === "completed" && isFailedConclusion(run.conclusion);
 }
 
 /**

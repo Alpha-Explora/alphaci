@@ -126,6 +126,12 @@ export interface QaStageResult {
   runUrl: string | null;
   reportedAt: string | null;
   tests: QaStageTests | null;
+  /**
+   * Why the stage ended as it did, in its own words: the first error of the
+   * stage's friendly messages (or a plain `reason`), terminal colour codes
+   * removed. Absent when the server sent none, as older backends do.
+   */
+  reason?: string;
 }
 
 export interface QaRunAutomationResult {

@@ -192,5 +192,6 @@ export function buildPersonaDashboard(input: PersonaDashboardInput): PersonaDash
     branchHealth: health,
     needsAttention,
     createProjectHref: createProjectHref(input.folders, input.groupId),
+    runProjectIds: ids,
   };
 }

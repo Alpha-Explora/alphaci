@@ -156,5 +156,5 @@
 }
 
 .hier-dialog:has(.create-repo) .ghost-button {
-  border-color: var(--border-strong);
+  border-color: var(--border-control);
 }

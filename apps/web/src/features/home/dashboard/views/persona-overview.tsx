@@ -68,6 +68,7 @@ const BLOCKS: Readonly<Record<HomeBlockId, (ctx: BlockContext) => ReactNode>> = 
       state={homeBlockState("team-runs", ctx.states)}
       reduced={ctx.reduced}
       order={ctx.order}
+      projectIds={ctx.data.runProjectIds}
     />
   ),
   "team-projects": (ctx) => (

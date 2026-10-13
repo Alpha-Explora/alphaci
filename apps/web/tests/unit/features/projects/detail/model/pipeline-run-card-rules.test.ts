@@ -347,6 +347,8 @@ describe("headlineChipLabel", () => {
 describe("githubStatusChip", () => {
   it("maps GitHub's status and conclusion onto the card's tones", () => {
     expect(githubStatusChip("completed", "failure")).toEqual({ tone: "danger", label: "Failed" });
+    expect(githubStatusChip("completed", "startup_failure")).toEqual({ tone: "danger", label: "Rejected" });
+    expect(githubStatusChip("completed", "timed_out")).toEqual({ tone: "danger", label: "Timed out" });
     expect(githubStatusChip("completed", "skipped")).toEqual({ tone: "muted", label: "Skipped" });
     expect(githubStatusChip("in_progress", null)).toEqual({ tone: "running", label: "Running" });
     expect(githubStatusChip("queued", null)).toEqual({ tone: "muted", label: "Queued" });

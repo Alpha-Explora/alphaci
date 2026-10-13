@@ -10,6 +10,7 @@ import type {
   WorkflowSettings,
 } from "@/shared/api/contracts";
 
+import { isFailedConclusion } from "./github-conclusion";
 import { isPullRequestRole } from "./pull-request-compose-rules";
 
 export type ProjectDetailTab =
@@ -481,7 +482,7 @@ export function hostingProviderLabel(provider: string): string {
 }
 
 export function ciRunRowClass(conclusion: string | null): string {
-  if (conclusion === "failure") return "failed";
+  if (isFailedConclusion(conclusion)) return "failed";
   return "provisioned";
 }
 

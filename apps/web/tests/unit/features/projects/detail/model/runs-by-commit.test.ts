@@ -146,6 +146,17 @@ describe("commitHeadline", () => {
     expect(commitHeadline(commit!).tone).toBe("running");
   });
 
+  /* GitHub refused to start the workflow: nothing passed, so it is red. */
+  it("reads a run GitHub refused to start as a failure", () => {
+    const [commit] = groupRunsByCommit([ghRun("startup_failure")], [], "dev");
+
+    expect(commitHeadline(commit!)).toEqual({
+      label: "startup_failure",
+      tone: "failure",
+      fromReport: false,
+    });
+  });
+
   it("does not paint a partial pipeline green", () => {
     const [commit] = groupRunsByCommit(
       [ghRun("success")],

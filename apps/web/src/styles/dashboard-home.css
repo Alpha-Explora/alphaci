@@ -697,7 +697,9 @@ html:not([data-theme="light"]) .dash-shell {
 
 .home-header-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
 
-.home-header-btn {
+/* Two classes, so it outranks the hero-scale `.ghost-button` base in
+   globals.css, which loads later. */
+.home-header-actions .home-header-btn {
   display: inline-flex; align-items: center; justify-content: center;
   padding: 0.4rem 1rem; font-size: 0.8rem; min-height: 2.2rem;
 }

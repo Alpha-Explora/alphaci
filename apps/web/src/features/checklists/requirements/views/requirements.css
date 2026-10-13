@@ -255,7 +255,7 @@
 }
 
 .rq-card .ghost-button {
-  border-color: var(--border-strong);
+  border-color: var(--border-control);
 }
 
 .rq-meter {

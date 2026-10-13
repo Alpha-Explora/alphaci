@@ -2,7 +2,7 @@
 
 import { useId, useState } from "react";
 
-import { checkLabel, checkTone, relativeTime } from "@/features/runs";
+import { checkLabel, checkTone, plainFriendlyMessage, relativeTime } from "@/features/runs";
 import { normalizeTestCases, SonarPanel, TestCaseList } from "@/features/runs/test-report";
 import type { FriendlyMessage, StageId } from "@/shared/api/contracts";
 
@@ -428,9 +428,10 @@ function FailedTestList({ results }: Readonly<{ results: StageEntry["stage"]["re
  * with the same failure, so leaving it open buried the one line that differed.
  */
 function Finding({
-  message,
+  message: stored,
   stageStatus,
 }: Readonly<{ message: FriendlyMessage; stageStatus: string }>) {
+  const message = plainFriendlyMessage(stored);
   const askWhy =
     stageStatus === "failure" || stageStatus === "stalled" || stageStatus === "cancelled";
   return (

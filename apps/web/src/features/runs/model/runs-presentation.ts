@@ -1,9 +1,30 @@
+import type { FriendlyMessage } from "@/shared/api/contracts";
+import { stripAnsi } from "@/shared/ui/strip-ansi";
+
 import type {
   RunOverallStatus,
   StageStatus,
   MessageSeverity,
   StageId,
 } from "./runs-types";
+
+/**
+ * A friendly message as the page shows it: the stored text can carry the
+ * terminal colour codes a runner printed (Playwright errors quoted into a
+ * detail or an item), which a browser renders as stray "[2m" fragments.
+ */
+export function plainFriendlyMessage(message: FriendlyMessage): FriendlyMessage {
+  return {
+    ...message,
+    title: stripAnsi(message.title),
+    detail: stripAnsi(message.detail),
+    hint: stripAnsi(message.hint),
+    items: message.items?.map((item) => ({
+      label: stripAnsi(item.label),
+      ...(item.sub === undefined ? {} : { sub: stripAnsi(item.sub) }),
+    })),
+  };
+}
 
 /* ── Color tokens for overall run status ─────────────────────────────────── */
 
@@ -245,6 +266,7 @@ export function checkTone(conclusion: string): CheckTone {
       return "passed";
     case "failure":
     case "timed_out":
+    case "startup_failure":
     case "action_required":
       return "failed";
     case "running":
