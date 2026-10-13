@@ -269,6 +269,13 @@ html[data-theme="light"] {
   letter-spacing: -0.01em;
 }
 
+/* The shared `border: 1px solid transparent` above loads after
+   components.css, so the secondary button's edge has to be restated here or
+   it is wiped out, and in dark mode the button reads as plain text. */
+.ghost-button {
+  border-color: var(--border-control);
+}
+
 .primary-button:disabled,
 .ghost-button:disabled {
   cursor: not-allowed;

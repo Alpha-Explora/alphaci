@@ -132,6 +132,14 @@
   --border-strong: #363642;
   --border-brand: rgba(31, 111, 235, 0.6);
 
+  /* ── Secondary controls (ghost / Hosting buttons) ──────────── */
+  /* --border-strong is ~1.3:1 on a card here, so outlined buttons read as
+     plain text. The control edge clears 3:1 on the card (#24242d), the
+     page (#1a1a21) and a nested tile (#2c2c37); the label sits near
+     --text-primary. Light keeps its existing values (see the light block). */
+  --border-control: #787886;
+  --control-text: #e4e4ea;
+
   /* ── Shadows / glows ───────────────────────────────────────── */
   --shadow-soft: 0 4px 14px rgba(0, 0, 0, 0.25), 0 1px 3px rgba(0, 0, 0, 0.15);
   --shadow-card: 0 10px 40px rgba(0, 0, 0, 0.45), 0 4px 12px rgba(0, 0, 0, 0.3);
@@ -275,6 +283,9 @@
   --border-subtle: rgba(0, 0, 0, 0.03);
   --border-strong: rgba(0, 0, 0, 0.15);
   --border-brand: rgba(9, 105, 218, 0.4);
+  /* Same values the light theme already used for these controls. */
+  --border-control: rgba(0, 0, 0, 0.15);
+  --control-text: var(--text-secondary);
 
   --shadow-soft: 0 2px 8px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.04);
   --shadow-card: 0 4px 20px rgba(0, 0, 0, 0.1), 0 2px 6px rgba(0, 0, 0, 0.06);

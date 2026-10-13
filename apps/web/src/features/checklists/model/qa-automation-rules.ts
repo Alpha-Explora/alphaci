@@ -15,6 +15,7 @@
 
 import { casesFromPasses, normalizeTestCases } from "@/features/runs/test-report";
 import type { TestCase } from "@/shared/api/contracts";
+import { stripAnsi } from "@/shared/ui/strip-ansi";
 
 import type { AppRole } from "@/shared/api/contracts";
 
@@ -89,9 +90,9 @@ const SCOPES: ReadonlyArray<QaAutomatedScope> = ["spec", "suite", "stage"];
 /** A failure needs at least a name to be worth listing. */
 export function normalizeFailure(raw: unknown): QaTestFailure | null {
   const value = record(raw);
-  const name = text(value?.name);
+  const name = plainText(value?.name);
   if (!value || !name) return null;
-  return { name, message: text(value.message) ?? "" };
+  return { name, message: plainText(value.message) ?? "" };
 }
 
 function normalizeFailures(raw: unknown): QaTestFailure[] {
@@ -131,9 +132,32 @@ export function stageTestCases(tests: QaStageTests | null): TestCase[] | null {
   return [...failed, ...casesFromPasses(tests.passes)];
 }
 
+/** Plain text: trimmed, terminal colour codes removed; null when nothing is left. */
+function plainText(value: unknown): string | null {
+  return typeof value === "string" ? text(stripAnsi(value)) : null;
+}
+
+function messageText(message: Loose): string | null {
+  return plainText(message.title) ?? plainText(message.detail);
+}
+
+/** The first error among the stage's friendly messages, else the first message. */
+function leadMessageText(raw: unknown): string | null {
+  if (!Array.isArray(raw)) return null;
+  const messages = raw.map(record).filter((message): message is Loose => message !== null);
+  const lead = messages.find((message) => message.severity === "error") ?? messages[0];
+  return lead ? messageText(lead) : null;
+}
+
+/** Why a stage ended as it did, when the server said: its messages, else a plain reason. */
+function stageReasonOf(value: Loose): string | null {
+  return leadMessageText(value.friendlyMessages) ?? plainText(value.reason);
+}
+
 function normalizeStage(raw: unknown, stage: QaAutomationStage): QaStageResult | null {
   const value = record(raw);
   if (!value) return null;
+  const reason = stageReasonOf(value);
   return {
     stage,
     status: oneOf(value.status, STAGE_RUN_STATUSES),
@@ -141,7 +165,41 @@ function normalizeStage(raw: unknown, stage: QaAutomationStage): QaStageResult |
     runUrl: httpUrl(value.runUrl),
     reportedAt: isoDate(value.reportedAt),
     tests: normalizeTests(value.tests),
+    ...(reason ? { reason } : {}),
   };
+}
+
+/**
+ * The line where a stage's counts go when it sent none. A failed stage that
+ * said why shows its reason ("Quality gate failed: coverage 61% < 80%");
+ * anything else keeps "No test counts reported".
+ */
+export function stageNoCountsLine(result: Pick<QaStageResult, "status" | "reason">): {
+  text: string;
+  isReason: boolean;
+} {
+  if (result.status === "failure" && result.reason) return { text: result.reason, isReason: true };
+  return { text: "No test counts reported", isReason: false };
+}
+
+/**
+ * The line for a stage that has not reported. Verify runs after Quality, so
+ * when Quality failed on the same commit that is why Verify has nothing:
+ * "Not run: Quality failed on a1b2c3d first". Otherwise, as before, "Not
+ * reported for a1b2c3d yet".
+ */
+export function stageMissingLine(
+  stage: QaAutomationStage,
+  commitSha: string | null,
+  upstream: QaStageResult | null,
+): string {
+  const short = shortSha(commitSha);
+  const on = short ? ` on ${short}` : "";
+  if (stage === "verify" && upstream?.status === "failure") {
+    const why = upstream.reason ? ` (${upstream.reason})` : "";
+    return `Not run: ${stageName("quality")} failed${on} first${why}`;
+  }
+  return short ? `Not reported for ${short} yet` : "Not reported yet";
 }
 
 /**

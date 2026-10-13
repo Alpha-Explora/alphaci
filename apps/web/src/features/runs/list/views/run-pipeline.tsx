@@ -12,8 +12,24 @@ import {
   checkTone,
   formatFailedJobs,
 } from "../../model/runs-presentation";
+import { normalizeTestCases, SonarPanel, TestCaseList } from "../../test-report";
 import { StageNode, StageConnector } from "./stage-node";
 import { MessageCard } from "./message-card";
+
+/**
+ * Every browser test the stage ran and what SonarCloud said, as the Project's
+ * Pipeline tab shows them. Nothing when the stage reported neither (an older
+ * pipeline, or a stage that runs no tests and no Sonar scan).
+ */
+function StageReportDetail({ stage }: Readonly<{ stage: StageReport }>) {
+  const cases = normalizeTestCases(stage.results?.tests?.cases) ?? [];
+  return (
+    <>
+      <TestCaseList cases={cases} total={stage.results?.tests?.total} />
+      <SonarPanel sonar={stage.results?.sonar} />
+    </>
+  );
+}
 
 const STAGE_ORDER: Array<StageReport["stage"]> = [
   "access",
@@ -214,6 +230,8 @@ export function RunPipeline({ run, reduced }: RunPipelineProps) {
               ).map((msg, i) => (
                 <MessageCard key={i} message={msg} />
               ))}
+
+              <StageReportDetail stage={expandedStageData} />
 
               {/*
                 The names of the jobs GitHub recorded as failed — not log

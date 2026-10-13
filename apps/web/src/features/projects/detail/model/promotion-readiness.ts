@@ -27,6 +27,8 @@ import type { StageCheck } from "@/shared/api/contracts";
 
 import { checkTone } from "@/features/runs";
 
+import { isFailedConclusion } from "./github-conclusion";
+
 /** Which branch a source branch promotes into, if any. */
 const PROMOTES_INTO: Readonly<Record<string, string>> = {
   dev: "uat",
@@ -109,7 +111,7 @@ function inFlightPromotion(
     if (packageRun.conclusion === "success") {
       return { state: "opened", target, blockedBy: [] };
     }
-    if (packageRun.conclusion === "failure" || packageRun.conclusion === "timed_out") {
+    if (isFailedConclusion(packageRun.conclusion)) {
       return { state: "failed", target, blockedBy: [] };
     }
   }

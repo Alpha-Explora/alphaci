@@ -13,6 +13,7 @@
  */
 
 import type { StageResults } from "@/shared/api/contracts";
+import { stripAnsi } from "@/shared/ui/strip-ansi";
 
 export type FigureTone = "success" | "danger" | "warning" | "muted";
 
@@ -131,6 +132,14 @@ function isNamedFailure(value: unknown): value is TestFailure {
   return typeof name === "string" && name !== "";
 }
 
+/** Stored Playwright text keeps the runner's colour codes; the page shows plain text. */
+function plainFailure(failure: TestFailure): TestFailure {
+  const name = stripAnsi(failure.name);
+  return typeof failure.message === "string"
+    ? { name, message: stripAnsi(failure.message) }
+    : { name };
+}
+
 /**
  * The failing tests by name, for under a failed Tests figure. The reporting
  * workflow caps the list, so `more` counts the failures it left out.
@@ -142,7 +151,9 @@ export function failedTests(results: StageResults | undefined): {
   const tests = results?.tests;
   if (!tests) return { failures: [], more: 0 };
   const listed: unknown[] = Array.isArray(tests.failures) ? tests.failures : [];
-  const failures = listed.filter((value): value is TestFailure => isNamedFailure(value));
+  const failures = listed
+    .filter((value): value is TestFailure => isNamedFailure(value))
+    .map((failure) => plainFailure(failure));
   const failed = isCount(tests.failed) ? tests.failed : failures.length;
   return { failures, more: Math.max(0, failed - failures.length) };
 }

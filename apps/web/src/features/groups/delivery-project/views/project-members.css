@@ -101,5 +101,5 @@
 }
 
 .hier-dialog:has(.project-members-dialog, .project-members__confirm) .ghost-button {
-  border-color: var(--border-strong);
+  border-color: var(--border-control);
 }

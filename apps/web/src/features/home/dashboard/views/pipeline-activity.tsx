@@ -6,16 +6,19 @@ import { motion } from "framer-motion";
 
 import {
   RUN_STAGE_LABELS,
-  RUN_STAGE_ORDER,
   connectorTone,
   shortRepoName,
   timeAgo,
 } from "../../model/home-rules";
+import {
+  runCardHref,
+  runCardReason,
+  runCardStages,
+} from "../../model/home-run-card-rules";
 import type {
   RunGroup,
   RunOverallStatus,
   RunStats,
-  StageStatus,
 } from "../../model/home-types";
 import { QuickActionRunIcon } from "./dashboard-chrome";
 import { EASE_OUT, sectionVariants } from "./motion";
@@ -76,16 +79,21 @@ export function RunActivityCard({
   run,
   reduced,
   featured = false,
-}: Readonly<{ run: RunGroup; reduced: boolean | null; featured?: boolean }>) {
+  projectIds = null,
+}: Readonly<{
+  run: RunGroup;
+  reduced: boolean | null;
+  featured?: boolean;
+  /** Repository → ALPHACI project id; the card opens that Project's Pipeline tab. */
+  projectIds?: ReadonlyMap<string, string> | null;
+}>) {
   const repoShort = shortRepoName(run.repoFullName);
-  const stageMap = new Map(run.stages.map((stage) => [stage.stage, stage]));
-  const stages = RUN_STAGE_ORDER.map((stage) => ({
-    id: stage,
-    status: (stageMap.get(stage)?.status ?? "pending") as StageStatus,
-  }));
+  const stages = runCardStages(run);
+  const reason = runCardReason(run);
   const stageSummary = stages
     .map((stage) => `${RUN_STAGE_LABELS[stage.id]} ${stage.status}`)
     .join(", ");
+  const reasonSentence = reason ? ` ${reason}.` : "";
 
   return (
     <motion.div
@@ -93,9 +101,9 @@ export function RunActivityCard({
       variants={reduced ? undefined : runCardVariants}
     >
       <Link
-        href="/runs"
+        href={runCardHref(run, projectIds)}
         className="run-card-link"
-        aria-label={`Run for ${repoShort} on ${run.branch}, ${run.overallStatus}. ${stageSummary}. Started ${timeAgo(run.startedAt)}. View run details.`}
+        aria-label={`Run for ${repoShort} on ${run.branch}, ${run.overallStatus}. ${stageSummary}.${reasonSentence} Started ${timeAgo(run.startedAt)}. View run details.`}
       >
         <span className="run-card-accent" aria-hidden="true" />
 
@@ -132,6 +140,12 @@ export function RunActivityCard({
             </div>
             <span className="run-track-cap">{RUN_STAGE_LABELS.package}</span>
           </div>
+
+          {reason ? (
+            <span className="run-card-reason" title={reason}>
+              {reason}
+            </span>
+          ) : null}
 
           <div className="run-card-foot">
             <span className="run-card-time">{timeAgo(run.startedAt)}</span>
@@ -198,12 +212,14 @@ export function PipelineActivity({
   loading,
   reduced,
   attentionItems,
+  projectIds = null,
 }: Readonly<{
   runs: RunGroup[];
   stats: RunStats;
   loading: boolean;
   reduced: boolean | null;
   attentionItems: AttentionItem[];
+  projectIds?: ReadonlyMap<string, string> | null;
 }>) {
   const runningCount = stats.running;
   const latest = runs[0] ?? null;
@@ -240,7 +256,7 @@ export function PipelineActivity({
       {/* Operational signal folded in from the retired scope banner:
          the one line answering "is anything wrong?". */}
       <PipelineSignals loading={loading} attentionItems={attentionItems} />
-      <RunsStream loading={loading} latest={latest} rest={rest} reduced={reduced} />
+      <RunsStream loading={loading} latest={latest} rest={rest} reduced={reduced} projectIds={projectIds} />
 
       {/* Recent outcomes sparkline pinned at the foot of the hero. */}
       <div className="runs-outcomes ops-block">
@@ -257,10 +273,10 @@ function PipelineSignals({ loading, attentionItems }: Readonly<{ loading: boolea
   return <div className="runs-hero-status" role="status"><span className="runs-hero-signal"><span className="runs-hero-chip-dot" aria-hidden="true" />All systems operational</span></div>;
 }
 
-function RunsStream({ loading, latest, rest, reduced }: Readonly<{ loading: boolean; latest: RunGroup | null; rest: RunGroup[]; reduced: boolean | null }>) {
+function RunsStream({ loading, latest, rest, reduced, projectIds }: Readonly<{ loading: boolean; latest: RunGroup | null; rest: RunGroup[]; reduced: boolean | null; projectIds: ReadonlyMap<string, string> | null }>) {
   if (loading) return <div className="runs-stream"><RunCardSkeleton /><RunCardSkeleton /></div>;
   if (!latest) return <EmptyRuns />;
-  return <motion.div className="runs-stream" variants={reduced ? undefined : runListVariants} initial={reduced ? false : "hidden"} animate="visible"><RunActivityCard run={latest} reduced={reduced} featured />{rest.map((run) => <RunActivityCard key={run.runId} run={run} reduced={reduced} />)}</motion.div>;
+  return <motion.div className="runs-stream" variants={reduced ? undefined : runListVariants} initial={reduced ? false : "hidden"} animate="visible"><RunActivityCard run={latest} reduced={reduced} featured projectIds={projectIds} />{rest.map((run) => <RunActivityCard key={run.runId} run={run} reduced={reduced} projectIds={projectIds} />)}</motion.div>;
 }
 
 function EmptyRuns() {

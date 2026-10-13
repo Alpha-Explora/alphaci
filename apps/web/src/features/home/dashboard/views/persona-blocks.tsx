@@ -287,6 +287,7 @@ export function RunsBlock({
   state,
   reduced,
   order,
+  projectIds,
 }: Readonly<{
   id: string;
   kicker: string;
@@ -297,6 +298,8 @@ export function RunsBlock({
   state: HomeBlockState;
   reduced: boolean | null;
   order: number;
+  /** Repository → ALPHACI project id, so each card opens its Pipeline tab. */
+  projectIds: ReadonlyMap<string, string>;
 }>) {
   const action = (
     <div className="runs-hero-heading-right">
@@ -314,7 +317,13 @@ export function RunsBlock({
       {runs.length ? (
         <div className="runs-stream home-runs-stream">
           {runs.slice(0, RUNS_SHOWN).map((run, index) => (
-            <RunActivityCard key={run.runId} run={run} reduced={reduced} featured={index === 0} />
+            <RunActivityCard
+              key={run.runId}
+              run={run}
+              reduced={reduced}
+              featured={index === 0}
+              projectIds={projectIds}
+            />
           ))}
         </div>
       ) : (

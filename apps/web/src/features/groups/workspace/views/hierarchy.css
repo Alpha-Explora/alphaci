@@ -689,7 +689,7 @@ a.hier-card:hover {
 }
 
 .hier-dialog--wide .ghost-button {
-  border-color: var(--border-strong);
+  border-color: var(--border-control);
 }
 
 .hier-dialog-footer > .hier-dialog-actions:first-child {

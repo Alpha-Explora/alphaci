@@ -12,7 +12,9 @@ import {
   failuresToggleLabel,
   listedFailures,
   stageCoverage,
+  stageMissingLine,
   stageName,
+  stageNoCountsLine,
   stagePassShare,
   stageRunLabel,
   stageRunTone,
@@ -28,7 +30,7 @@ import type {
 } from "../../model/qa-automation-types";
 import { liveWaitingConfirmation, type LiveConfirmationMode } from "../../model/playwright-live-rules";
 import { formatReportDate } from "../../model/qa-report-rules";
-import { agoLabel, shortSha } from "../../model/qa-run-rules";
+import { agoLabel } from "../../model/qa-run-rules";
 import type { AutomationDispatchControls } from "../view-models/use-qa-automation-view-model";
 import { useDisclosure } from "../view-models/use-remembered-flag";
 import { ChevronDownIcon, CrossIcon, PlayIcon, WarningIcon } from "./studio-icons";
@@ -39,11 +41,22 @@ import { ChevronDownIcon, CrossIcon, PlayIcon, WarningIcon } from "./studio-icon
 
 /* ── One stage ───────────────────────────────────────────────────────────── */
 
-/** "22 / 24 passed" and a slim bar of the passed share. */
-function StageFigures({ tests }: Readonly<{ tests: QaStageTests | null }>) {
+/**
+ * "22 / 24 passed" and a slim bar of the passed share. Without counts, a
+ * failed stage that said why shows its reason instead of "No test counts".
+ */
+function StageFigures({ result }: Readonly<{ result: QaStageResult }>) {
+  const { tests } = result;
   const label = stageTestsLabel(tests);
   const share = stagePassShare(tests);
-  if (!label) return <span className="qa-auto-stage__none">No test counts reported</span>;
+  if (!label) {
+    const line = stageNoCountsLine(result);
+    return (
+      <span className={line.isReason ? "qa-auto-stage__reason" : "qa-auto-stage__none"} title={line.text}>
+        {line.text}
+      </span>
+    );
+  }
   return (
     <span className="qa-auto-stage__figures">
       <span className="qa-auto-stage__count">{label}</span>
@@ -132,7 +145,7 @@ function StageMeta({
   const ago = agoLabel(result.reportedAt);
   return (
     <p className="qa-auto-stage__meta">
-      <StageFigures tests={result.tests} />
+      <StageFigures result={result} />
       <FailedToggle tests={result.tests} disclosure={disclosure} />
       {ago ? (
         <span>
@@ -177,16 +190,22 @@ function StageCard({ result }: Readonly<{ result: QaStageResult }>) {
   );
 }
 
-/** A stage that has not reported while the other has: say so, compactly. */
-function StageMissing({ stage, commitSha }: Readonly<{ stage: QaAutomationStage; commitSha: string | null }>) {
-  const short = shortSha(commitSha);
+/**
+ * A stage that has not reported while the other has: say so, compactly, and
+ * why when the data says (Verify never runs after a failed Quality).
+ */
+function StageMissing({
+  stage,
+  commitSha,
+  upstream,
+}: Readonly<{ stage: QaAutomationStage; commitSha: string | null; upstream: QaStageResult | null }>) {
   return (
     <p className="qa-auto-stage qa-auto-stage--missing">
       <span className="qa-auto-stage__title">
         {stageName(stage)}
         <span className="qa-auto-stage__coverage"> — {stageCoverage(stage)}</span>
       </span>
-      <span className="qa-auto-stage__none">{short ? `Not reported for ${short} yet` : "Not reported yet"}</span>
+      <span className="qa-auto-stage__none">{stageMissingLine(stage, commitSha, upstream)}</span>
     </p>
   );
 }
@@ -327,7 +346,7 @@ export function AutomationStages({
         result ? (
           <StageCard key={stage} result={result} />
         ) : (
-          <StageMissing key={stage} stage={stage} commitSha={commitSha} />
+          <StageMissing key={stage} stage={stage} commitSha={commitSha} upstream={automation.quality} />
         ),
       )}
     </div>

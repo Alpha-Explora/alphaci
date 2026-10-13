@@ -14,6 +14,8 @@ import type { StageId, StageReport } from "@/shared/api/contracts";
 
 import { checkLabel, checkTone, summarizeChecks } from "@/features/runs";
 
+import { isFailedConclusion } from "./github-conclusion";
+
 /* ── Stage names ────────────────────────────────────────────────────────── */
 
 const STAGE_NAMES: Record<StageId, string> = {
@@ -125,10 +127,6 @@ export interface StageVerdict {
 export interface LiveRunState {
   status: string;
   conclusion: string | null;
-}
-
-function isFailedConclusion(conclusion: string | null): boolean {
-  return conclusion === "failure" || conclusion === "timed_out";
 }
 
 function plural(count: number, one: string, many: string): string {
@@ -565,7 +563,7 @@ export function githubStatusChip(
   const tone: VerdictTone =
     conclusion === "success"
       ? "success"
-      : conclusion === "failure" || conclusion === "timed_out"
+      : isFailedConclusion(conclusion)
         ? "danger"
         : "muted";
   return { tone, label: headlineChipLabel(conclusion ?? "completed") };

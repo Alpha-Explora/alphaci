@@ -102,6 +102,7 @@ export function scopedRunsBlock(ctx: BlockContext): ReactNode {
       state={homeBlockState("scoped-runs", ctx.states)}
       reduced={ctx.reduced}
       order={ctx.order}
+      projectIds={ctx.data.runProjectIds}
     />
   );
 }

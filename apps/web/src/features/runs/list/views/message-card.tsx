@@ -1,7 +1,7 @@
 "use client";
 
 import type { FriendlyMessage } from "../../model/runs-types";
-import { severityColors } from "../../model/runs-presentation";
+import { plainFriendlyMessage, severityColors } from "../../model/runs-presentation";
 
 interface MessageCardProps {
   message: FriendlyMessage;
@@ -98,7 +98,8 @@ function SeverityIcon({ severity }: { severity: FriendlyMessage["severity"] }) {
   }
 }
 
-export function MessageCard({ message }: MessageCardProps) {
+export function MessageCard({ message: stored }: MessageCardProps) {
+  const message = plainFriendlyMessage(stored);
   const colors = severityColors(message.severity);
 
   return (

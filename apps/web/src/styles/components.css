@@ -124,9 +124,9 @@
 }
 
 .ghost-button {
-  border-color: var(--border-strong);
+  border-color: var(--border-control);
   background: transparent;
-  color: var(--text-secondary);
+  color: var(--control-text);
   font-weight: 500;
 }
 

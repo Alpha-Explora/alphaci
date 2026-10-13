@@ -29,6 +29,7 @@ import type {
   WorkspaceAttentionItem,
 } from "../../model/home-types";
 import type { HomeShortcutId } from "../../model/home-persona-types";
+import { repoProjectIds } from "../../model/home-run-rules";
 import { KeyboardShortcuts } from "./dashboard-chrome";
 import { GetStartedJourney } from "./get-started-journey";
 import { sectionVariants } from "./motion";
@@ -287,6 +288,7 @@ function WorkspacePopulatedOverview({
           loading={loading}
           reduced={reduced}
           attentionItems={attentionItems}
+          projectIds={repoProjectIds([], projects)}
         />
 
         <motion.aside

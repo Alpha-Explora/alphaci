@@ -29,7 +29,7 @@
 }
 
 .qa-section .ghost-button {
-  border-color: var(--border-strong);
+  border-color: var(--border-control);
 }
 
 .qa-section .primary-button:hover {

@@ -400,6 +400,18 @@
   color: var(--text-muted);
 }
 
+/* A failed stage's own reason, where its counts would be. Danger-tinted
+   text that stays readable on the dark card; one line, full text on hover. */
+.qa-auto-stage__reason {
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  font-size: 0.76rem;
+  color: color-mix(in srgb, var(--danger) 55%, var(--text-primary));
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .qa-auto-stage__meta {
   display: flex;
   flex-wrap: wrap;

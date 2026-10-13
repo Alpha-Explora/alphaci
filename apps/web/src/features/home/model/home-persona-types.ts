@@ -256,4 +256,6 @@ export interface PersonaDashboard {
   branchHealth: BranchHealthRow[];
   needsAttention: AttentionRow[];
   createProjectHref: string | null;
+  /** Each repository's ALPHACI project id (lower-case full name), for run card links. */
+  runProjectIds: ReadonlyMap<string, string>;
 }

@@ -59,6 +59,28 @@
   opacity: 0.55;
 }
 
+/* Stalled: the stage stopped reporting. Amber like running, but a hollow
+   ring that never pulses, so a stuck stage cannot pass for a live one. */
+.pipeline-dot--stalled {
+  background: color-mix(in srgb, var(--accent-amber) 28%, transparent);
+  border-color: var(--accent-amber);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent-amber) 18%, transparent);
+}
+
+/* Blocked: never ran because an earlier stage failed. A muted outline with
+   a slash through it, not the pending dot it used to fall back to. */
+.pipeline-dot--blocked {
+  background: linear-gradient(
+    135deg,
+    transparent calc(50% - 0.75px),
+    var(--text-muted) calc(50% - 0.75px),
+    var(--text-muted) calc(50% + 0.75px),
+    transparent calc(50% + 0.75px)
+  );
+  border-color: var(--text-muted);
+  opacity: 0.85;
+}
+
 /* pending keeps the muted base .pipeline-dot look */
 
 
