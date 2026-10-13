@@ -23,7 +23,6 @@ import { OverviewTab } from "./overview-tab";
 import { WorkflowTab } from "./workflow-tab";
 import { RunsTab } from "./runs-tab";
 import { HostingTab } from "./hosting-tab";
-import { EnvironmentTab } from "./environment-tab";
 import { AuditTab } from "./audit-tab";
 import { SettingsTab } from "./settings-tab";
 import { CodeTabPanel } from "./code-tab-panel";
@@ -37,7 +36,7 @@ export { WorkflowStageList } from "./workflow-stage-list";
 
 /**
  * ProjectDetailTabs — the tabbed project detail (Overview / Workflow / Runs /
- * Hosting / Environment / Audit / Settings), extracted from the old split-pane
+ * Hosting / Audit / Settings), extracted from the old split-pane
  * Current Projects view so the full project page (/projects/[id]) can render
  * it.
  */
@@ -89,7 +88,6 @@ const TAB_PANELS: Record<
   runs: RunsTab,
   workflow: WorkflowTab,
   hosting: HostingTab,
-  environment: EnvironmentTab,
   qa: QaStudioTabPanel,
   po: PoStudioTabPanel,
   audit: AuditTab,

@@ -27,6 +27,16 @@ export interface ProjectDomainsViewProps {
   ) => Promise<boolean>;
   onVerify: (domainId: string) => void;
   onRemove: (domainId: string) => void;
+  /**
+   * List first, with the add form behind a "+ Add domain" button (Cancel
+   * hides it again). Off by default: the form stays open above the list.
+   */
+  collapseAddForm?: boolean;
+  /**
+   * Whether a viewer who cannot manage domains is told so here. A host that
+   * already says it (the Hosting tab's service header) turns it off.
+   */
+  showReadOnlyNote?: boolean;
 }
 
 /**
@@ -185,43 +195,96 @@ export function ProjectDomainsView({
   onAdd,
   onVerify,
   onRemove,
+  collapseAddForm = false,
+  showReadOnlyNote = true,
 }: Readonly<ProjectDomainsViewProps>) {
-  const [hostname, setHostname] = useState("");
-  const [gitBranch, setGitBranch] = useState("");
-  const [targetId, setTargetId] = useState("");
-
-  const activeTargetId = targetId || targets[0]?.id || "";
-
   if (status === "loading") {
     return <p className="env-empty-state">Loading domains…</p>;
   }
 
+  const addArea = (
+    <DomainAddArea
+      canManage={canManage}
+      collapsible={collapseAddForm}
+      isAdding={isAdding}
+      onAdd={onAdd}
+      showReadOnlyNote={showReadOnlyNote}
+      targets={targets}
+    />
+  );
+  const list = (
+    <DomainList
+      canManage={canManage}
+      domains={domains}
+      busyDomainId={busyDomainId}
+      onRemove={onRemove}
+      onVerify={onVerify}
+    />
+  );
+
   return (
     <div className="project-domains">
       {error ? <p className="project-domains__error">{error}</p> : null}
-      {canManage ? (
-        <DomainAddForm
-        targets={targets}
-        hostname={hostname}
-        gitBranch={gitBranch}
-        activeTargetId={activeTargetId}
-        isAdding={isAdding}
-        onHostname={setHostname}
-        onGitBranch={setGitBranch}
-        onTargetId={setTargetId}
-        onAdd={onAdd}
-        />
-      ) : (
-        <p className="env-empty-state">{DOMAINS_LEAD_ONLY_NOTE}</p>
-      )}
-      <DomainList
-        canManage={canManage}
-        domains={domains}
-        busyDomainId={busyDomainId}
-        onRemove={onRemove}
-        onVerify={onVerify}
-      />
+      {collapseAddForm ? list : addArea}
+      {collapseAddForm ? addArea : list}
     </div>
+  );
+}
+
+/**
+ * The add form for those who may add domains, else the read-only note (when
+ * the host has not said it already). Collapsible: a "+ Add domain" button
+ * opens it, Cancel or a successful add closes it.
+ */
+function DomainAddArea({
+  canManage,
+  collapsible,
+  isAdding,
+  onAdd,
+  showReadOnlyNote,
+  targets,
+}: Readonly<{
+  canManage: boolean;
+  collapsible: boolean;
+  isAdding: boolean;
+  onAdd: ProjectDomainsViewProps["onAdd"];
+  showReadOnlyNote: boolean;
+  targets: Array<{ id: string; label: string }>;
+}>) {
+  const [hostname, setHostname] = useState("");
+  const [gitBranch, setGitBranch] = useState("");
+  const [targetId, setTargetId] = useState("");
+  const [open, setOpen] = useState(false);
+  const activeTargetId = targetId || targets[0]?.id || "";
+
+  if (!canManage) {
+    return showReadOnlyNote ? <p className="env-empty-state">{DOMAINS_LEAD_ONLY_NOTE}</p> : null;
+  }
+  if (collapsible && !open) {
+    return (
+      <button
+        className="ghost-button target-action-btn project-domains__open"
+        type="button"
+        onClick={() => setOpen(true)}
+      >
+        + Add domain
+      </button>
+    );
+  }
+  return (
+    <DomainAddForm
+      targets={targets}
+      hostname={hostname}
+      gitBranch={gitBranch}
+      activeTargetId={activeTargetId}
+      isAdding={isAdding}
+      onHostname={setHostname}
+      onGitBranch={setGitBranch}
+      onTargetId={setTargetId}
+      onAdd={onAdd}
+      onAdded={() => setOpen(false)}
+      onCancel={collapsible ? () => setOpen(false) : undefined}
+    />
   );
 }
 
@@ -235,6 +298,8 @@ function DomainAddForm({
   onGitBranch,
   onTargetId,
   onAdd,
+  onAdded,
+  onCancel,
 }: Readonly<{
   targets: Array<{ id: string; label: string }>;
   hostname: string;
@@ -245,6 +310,9 @@ function DomainAddForm({
   onGitBranch: (value: string) => void;
   onTargetId: (value: string) => void;
   onAdd: ProjectDomainsViewProps["onAdd"];
+  onAdded: () => void;
+  /** Set when the form can be closed again (the collapsible layout). */
+  onCancel?: () => void;
 }>) {
   if (targets.length === 0) {
     return (
@@ -263,6 +331,7 @@ function DomainAddForm({
           if (added) {
             onHostname("");
             onGitBranch("");
+            onAdded();
           }
         });
       }}
@@ -305,6 +374,11 @@ function DomainAddForm({
       >
         {isAdding ? "Adding…" : "Add domain"}
       </button>
+      {onCancel ? (
+        <button className="ghost-button" type="button" onClick={onCancel}>
+          Cancel
+        </button>
+      ) : null}
     </form>
   );
 }

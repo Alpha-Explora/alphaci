@@ -537,7 +537,6 @@ async function runDashboardAudit(page: Page, baseUrl: string) {
     'Workflow',
     'Runs',
     'Deployments',
-    'Environment',
     'Activity',
     'Audit',
     'Settings',
@@ -557,7 +556,8 @@ async function runDashboardAudit(page: Page, baseUrl: string) {
   await expectVisibleText(page, 'Live GitHub run sync is not enabled');
   await page.getByRole('tab', { name: 'Deployments' }).click();
   await expectVisibleText(page, 'Live deployment sync is not enabled');
-  await page.getByRole('tab', { name: 'Environment' }).click();
+  // Environment merged into Hosting: its variables are the Hosting tab's Variables card.
+  await page.getByRole('tab', { name: 'Hosting' }).click();
   await expectVisibleText(page, 'Deployment target');
   await expectVisibleText(page, 'Env key quota');
   await expectVisibleText(page, 'Managed Render services');

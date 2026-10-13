@@ -19,3 +19,6 @@ export {
 /* "Export results" for one CI run, for the Project page's pipeline card. */
 export { CiRunReportExport } from "./views/ci-run-report-export";
 export type { CiRunReportRef } from "../model/ci-run-report-types";
+/* The WAI-ARIA menu-button behaviour behind "Export report", for other "⋯"
+ * menus (the Hosting tab's service and variable menus). Behaviour only. */
+export { useMenuButton, type MenuButton } from "./view-models/use-menu-button";

@@ -13,12 +13,18 @@ export function ProjectDomainsPanel({
   enabled,
   canManage,
   targets,
+  collapseAddForm,
+  showReadOnlyNote,
 }: Readonly<{
   projectId: string;
   /** Developer or admin: the only roles the backend lets change domains. */
   canManage: boolean;
   enabled: boolean;
   targets: Array<{ id: string; label: string }>;
+  /** List first, the add form behind "+ Add domain". */
+  collapseAddForm?: boolean;
+  /** False when the host already tells a read-only viewer who can change domains. */
+  showReadOnlyNote?: boolean;
 }>) {
   const {
     domains,
@@ -43,6 +49,8 @@ export function ProjectDomainsPanel({
       onVerify={(id) => void verifyDomain(id)}
       status={status}
       targets={targets}
+      collapseAddForm={collapseAddForm}
+      showReadOnlyNote={showReadOnlyNote}
     />
   );
 }

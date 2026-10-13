@@ -108,8 +108,8 @@ function ActiveBranchRow({ preview, onOpenPullRequest }: RowProps) {
 
 /**
  * Every branch but production's, one line each: which branch, whether it is
- * live, and the commit that put it there. The Hosting tab has the full
- * previews; this is the list to scan.
+ * live, and the commit that put it there. The Hosting tab's Previews
+ * environment lists them too, beside their deploys and variables.
  */
 export function ActiveBranchesList({
   branches,

@@ -1,28 +1,22 @@
 "use client";
 
-import { FormEvent, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 
 import { useCapabilities } from "@/features/capabilities/current";
 import { useProjectEnvProvisioning } from "../view-models/use-project-env-provisioning-view-model";
+import { useEnvVariablesEditor } from "../view-models/use-env-variables-editor-view-model";
 import type {
   DeploymentTarget,
-  EnvLane,
   EnvVarMetadata,
   ProvisionedProject,
   RenderRuntime,
 } from "@/features/projects";
 import { formatApiError } from "@/features/workflows";
 import {
-  envRowsInvalid,
   filterEnvMetadata,
   hostingForProject,
-  isEnvKeyQuotaReached,
-  knownTargetBranches,
   presentScopeOptions,
-  resolveActiveTargetId,
-  resolvePreviewScope,
 } from "../model/env-panel-rules";
-import type { EnvRow } from "../model/env-panel-rules";
 import { EnvHostingSection } from "./env-hosting-section";
 import { EnvProvisionedTable } from "./env-provisioned-table";
 import { EnvVariablesForm } from "./env-variables-form";
@@ -38,23 +32,13 @@ export function ProjectEnvPanel({
   project,
   section = "all",
 }: Readonly<ProjectEnvPanelProps>) {
-  const {
-    addTarget,
-    loading,
-    metadata,
-    providerConnections,
-    provision,
-    removeMetadata,
-    saving,
-    targets,
-    usageItems,
-    validateEnvText,
-  } = useProjectEnvProvisioning(
+  const env = useProjectEnvProvisioning(
     project.id,
     project.status === "provisioned",
     section !== "hosting",
   );
-  const [targetId, setTargetId] = useState("");
+  const { addTarget, loading, metadata, providerConnections, saving, targets, usageItems } = env;
+  const editor = useEnvVariablesEditor(env);
   const [targetAction, setTargetAction] = useState<
     "create" | "register_existing"
   >("create");
@@ -62,8 +46,6 @@ export function ProjectEnvPanel({
   const hosting = useMemo(() => hostingForProject(project), [project]);
   const provider = hosting.provider;
   const slot = hosting.slot;
-  const [lane, setLane] = useState<EnvLane>("preview");
-  const [previewBranch, setPreviewBranch] = useState("");
   const [projectName, setProjectName] = useState(`${project.serviceName}-uat`);
   const [providerProjectId, setProviderProjectId] = useState("");
   const [providerProjectName, setProviderProjectName] = useState(
@@ -75,44 +57,22 @@ export function ProjectEnvPanel({
   const [buildCommand, setBuildCommand] = useState("npm ci && npm run build");
   const [startCommand, setStartCommand] = useState("npm run start:prod");
   const [renderRuntime, setRenderRuntime] = useState<RenderRuntime>("docker");
-  const [rows, setRows] = useState<EnvRow[]>([{ key: "", value: "" }]);
-  const [message, setMessage] = useState<string | null>(null);
-  const [bulkEnvText, setBulkEnvText] = useState("");
-  const [isAddingVariable, setIsAddingVariable] = useState(false);
-  const [isBulkEnvDialogOpen, setIsBulkEnvDialogOpen] = useState(false);
-  const [bulkValidation, setBulkValidation] = useState<
-    Awaited<ReturnType<typeof validateEnvText>> | null
-  >(null);
   const [filterTargetId, setFilterTargetId] = useState("all");
   const [filterEnvironment, setFilterEnvironment] = useState<string>("all");
   const [filterStatus, setFilterStatus] = useState<"all" | EnvVarMetadata["status"]>(
     "all",
   );
-  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
-  const activeTargetId = resolveActiveTargetId(targetId, targets);
-  const activeTarget = targets.find((target) => target.id === activeTargetId);
-  const knownBranches = useMemo(() => knownTargetBranches(targets), [targets]);
-  const activeScope = useMemo(
-    () => resolvePreviewScope(lane, previewBranch, activeTarget?.branchName),
-    [activeTarget?.branchName, lane, previewBranch],
-  );
   const presentScopes = useMemo(() => presentScopeOptions(metadata), [metadata]);
   const matchingConnections = providerConnections.filter(
     (connection) => connection.provider === provider,
   );
   const activeProviderConnectionId =
     providerConnectionId || matchingConnections[0]?.id || "";
-  const envKeyQuota = useMemo(
-    () => usageItems.find((item) => item.code === "env_keys") ?? null,
-    [usageItems],
-  );
-  const envKeyQuotaReached = isEnvKeyQuotaReached(envKeyQuota);
   const resourceUsageItems = useMemo(
     () => usageItems.filter((item) => item.limit > 0),
     [usageItems],
   );
-  const invalid = useMemo(() => envRowsInvalid(rows), [rows]);
   const filteredMetadata = useMemo(
     () =>
       filterEnvMetadata(metadata, {
@@ -126,7 +86,7 @@ export function ProjectEnvPanel({
   const showVariables = section !== "hosting";
 
   async function handleSaveTarget() {
-    setMessage(null);
+    editor.setMessage(null);
     const targetPayload = {
       action: targetAction,
       slot,
@@ -157,91 +117,16 @@ export function ProjectEnvPanel({
     } as const;
     try {
       const target = await addTarget(targetPayload);
-      setTargetId(target.id);
+      editor.setTargetId(target.id);
       onTargetCreated?.(target);
-      setMessage(
+      editor.setMessage(
         targetAction === "create"
           ? "Deployment target created."
           : "Deployment target registered.",
       );
     } catch (error) {
-      setMessage(formatApiError(error, "Deployment target setup failed"));
+      editor.setMessage(formatApiError(error, "Deployment target setup failed"));
     }
-  }
-
-  async function handleProvision(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setMessage(null);
-    try {
-      await provision({
-        deploymentTargetId: activeTargetId,
-        ...activeScope,
-        vars: rows,
-      });
-      setRows([{ key: "", value: "" }]);
-      setIsAddingVariable(false);
-      setMessage("Environment variables provisioned.");
-    } catch (error) {
-      setMessage(
-        formatApiError(error, "Environment variable provisioning failed"),
-      );
-    }
-  }
-
-  async function handleBulkValidate() {
-    if (!activeTargetId) return;
-    setMessage(null);
-    try {
-      const result = await validateEnvText({
-        deploymentTargetId: activeTargetId,
-        ...activeScope,
-        text: bulkEnvText,
-      });
-      setBulkValidation(result);
-      setBulkEnvText("");
-      setMessage(
-        `Parsed ${result.keyCount} env ${result.keyCount === 1 ? "line" : "lines"}. Values were cleared.`,
-      );
-    } catch (error) {
-      setMessage(
-        formatApiError(error, "Environment variable validation failed"),
-      );
-    }
-  }
-
-  function useParsedKeys() {
-    if (!bulkValidation?.keys.length) return;
-    setRows(bulkValidation.keys.map((key) => ({ key, value: "" })));
-    setIsAddingVariable(true);
-    setIsBulkEnvDialogOpen(false);
-  }
-
-  async function handleDeleteMetadata(item: EnvVarMetadata) {
-    if (confirmDeleteId !== item.id) {
-      setConfirmDeleteId(item.id);
-      setMessage(
-        "Confirm delete to remove this key from the provider and ALPHACI metadata.",
-      );
-      return;
-    }
-
-    setMessage(null);
-    try {
-      await removeMetadata(item.id);
-      setConfirmDeleteId(null);
-      setMessage(`${item.key} deleted.`);
-    } catch (error) {
-      setMessage(formatApiError(error, "Environment variable delete failed"));
-    }
-  }
-
-  function startReProvision(item: EnvVarMetadata) {
-    setTargetId(item.deploymentTargetId);
-    setLane(item.lane);
-    setPreviewBranch(item.gitBranch ?? "");
-    setRows([{ key: item.key, value: "" }]);
-    setIsAddingVariable(true);
-    setMessage(`Re-enter the value for ${item.key} before provisioning.`);
   }
 
   return (
@@ -253,7 +138,7 @@ export function ProjectEnvPanel({
           buildCommand={buildCommand}
           hosting={hosting}
           matchingConnections={matchingConnections}
-          message={message}
+          message={editor.message}
           onSaveTarget={() => void handleSaveTarget()}
           ownershipMode={ownershipMode}
           projectName={projectName}
@@ -280,51 +165,51 @@ export function ProjectEnvPanel({
         />
       ) : null}
 
-      {showVariables && isAddingVariable ? (
+      {showVariables && editor.isAddingVariable ? (
         <EnvVariablesForm
-          activeTarget={activeTarget}
-          activeTargetId={activeTargetId}
-          bulkEnvText={bulkEnvText}
-          bulkValidation={bulkValidation}
-          envKeyQuota={envKeyQuota}
-          envKeyQuotaReached={envKeyQuotaReached}
-          invalid={invalid}
-          isBulkEnvDialogOpen={isBulkEnvDialogOpen}
-          knownBranches={knownBranches}
-          lane={lane}
+          activeTarget={editor.activeTarget}
+          activeTargetId={editor.activeTargetId}
+          bulkEnvText={editor.bulkEnvText}
+          bulkValidation={editor.bulkValidation}
+          envKeyQuota={editor.envKeyQuota}
+          envKeyQuotaReached={editor.envKeyQuotaReached}
+          invalid={editor.invalid}
+          isBulkEnvDialogOpen={editor.isBulkEnvDialogOpen}
+          knownBranches={editor.knownBranches}
+          lane={editor.lane}
           loading={loading}
-          onBulkTextChange={setBulkEnvText}
-          onBulkValidate={() => void handleBulkValidate()}
-          onCancel={() => setIsAddingVariable(false)}
-          onLaneChange={setLane}
-          onOpenBulkDialog={() => setIsBulkEnvDialogOpen(true)}
-          onPreviewBranchChange={setPreviewBranch}
-          onProvision={(event) => void handleProvision(event)}
-          onRowsChange={setRows}
-          onTargetIdChange={setTargetId}
-          onUseParsedKeys={useParsedKeys}
-          previewBranch={previewBranch}
-          rows={rows}
+          onBulkTextChange={editor.setBulkEnvText}
+          onBulkValidate={() => void editor.bulkValidate()}
+          onCancel={() => editor.setIsAddingVariable(false)}
+          onLaneChange={editor.setLane}
+          onOpenBulkDialog={() => editor.setIsBulkEnvDialogOpen(true)}
+          onPreviewBranchChange={editor.setPreviewBranch}
+          onProvision={(event) => void editor.provision(event)}
+          onRowsChange={editor.setRows}
+          onTargetIdChange={editor.setTargetId}
+          onUseParsedKeys={editor.applyParsedKeys}
+          previewBranch={editor.previewBranch}
+          rows={editor.rows}
           saving={saving}
-          setIsBulkEnvDialogOpen={setIsBulkEnvDialogOpen}
+          setIsBulkEnvDialogOpen={editor.setIsBulkEnvDialogOpen}
           targets={targets}
         />
       ) : null}
 
       {showVariables ? (
         <EnvProvisionedTable
-          confirmDeleteId={confirmDeleteId}
+          confirmDeleteId={editor.confirmDeleteId}
           filterEnvironment={filterEnvironment}
           filterStatus={filterStatus}
           filterTargetId={filterTargetId}
           filteredMetadata={filteredMetadata}
           metadata={metadata}
-          onDelete={(item) => void handleDeleteMetadata(item)}
+          onDelete={(item) => void editor.deleteMetadata(item)}
           onFilterEnvironmentChange={setFilterEnvironment}
           onFilterStatusChange={setFilterStatus}
           onFilterTargetChange={setFilterTargetId}
-          onReProvision={startReProvision}
-          onStartAdd={() => setIsAddingVariable(true)}
+          onReProvision={editor.startReProvision}
+          onStartAdd={() => editor.setIsAddingVariable(true)}
           presentScopes={presentScopes}
           targets={targets}
         />

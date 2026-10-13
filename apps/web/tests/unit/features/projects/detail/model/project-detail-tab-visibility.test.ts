@@ -10,6 +10,7 @@ import {
   shouldHighlightMyQaItems,
   showOverviewProductionReadiness,
   studioTabFor,
+  tabFromHash,
   visibleProjectDetailTabs,
 } from "../../../../../../src/features/projects/detail/model/project-detail-tab-rules";
 import type { AppRole } from "../../../../../../src/shared/api/contracts";
@@ -19,7 +20,7 @@ describe("visibleProjectDetailTabs", () => {
     const tabs = visibleProjectDetailTabs("admin", { qaChecklistsEnabled: true });
     expect(tabs).toEqual(PROJECT_DETAIL_TABS);
     expect(tabs.indexOf("checklists")).toBe(tabs.indexOf("pulls") + 1);
-    expect(tabs.indexOf("qa")).toBe(tabs.indexOf("environment") + 1);
+    expect(tabs.indexOf("qa")).toBe(tabs.indexOf("hosting") + 1);
     expect(tabs.indexOf("po")).toBe(tabs.indexOf("qa") + 1);
   });
 
@@ -56,10 +57,9 @@ describe("visibleProjectDetailTabs", () => {
     ]);
   });
 
-  it("gives a Developer every tab except the studios, Environment and Hosting included", () => {
+  it("gives a Developer every tab except the studios, Hosting included", () => {
     const tabs = visibleProjectDetailTabs("member", { qaChecklistsEnabled: true });
     expect(tabs).toEqual(PROJECT_DETAIL_TABS.filter((tab) => tab !== "qa" && tab !== "po"));
-    expect(tabs).toContain("environment");
     expect(tabs).toContain("hosting");
     expect(tabs).toContain("checklists");
   });
@@ -68,7 +68,7 @@ describe("visibleProjectDetailTabs", () => {
   it("gives QA Team the Product owner's five tabs, with QA Studio in place of PO Studio", () => {
     const tabs = visibleProjectDetailTabs("qa", { qaChecklistsEnabled: true });
     expect(tabs).toEqual(["overview", "checklists", "qa", "audit", "settings"]);
-    for (const hidden of ["code", "commits", "pulls", "runs", "workflow", "hosting", "environment"] as const) {
+    for (const hidden of ["code", "commits", "pulls", "runs", "workflow", "hosting"] as const) {
       expect(tabs).not.toContain(hidden);
     }
   });
@@ -81,29 +81,35 @@ describe("visibleProjectDetailTabs", () => {
     ]);
   });
 
-  it("leaves Environment exactly as the role decides when the checklists capability is off", () => {
-    // Checklists and QA Studio disappear for everyone; Environment does not
+  it("leaves Hosting exactly as the role decides when the checklists capability is off", () => {
+    // Checklists and QA Studio disappear for everyone; Hosting does not
     // follow that flag.
     for (const role of ["admin", "member"] as const) {
       const tabs = visibleProjectDetailTabs(role, { qaChecklistsEnabled: false });
-      expect(tabs).toContain("environment");
+      expect(tabs).toContain("hosting");
       expect(tabs).not.toContain("checklists");
       expect(tabs).not.toContain("qa");
       expect(tabs).not.toContain("po");
     }
     for (const role of ["qa", "lead"] as const) {
-      expect(visibleProjectDetailTabs(role, { qaChecklistsEnabled: false })).not.toContain("environment");
+      expect(visibleProjectDetailTabs(role, { qaChecklistsEnabled: false })).not.toContain("hosting");
     }
   });
 
-  it("hides Checklists, the studios and Environment from a session with no app role", () => {
+  it("hides Checklists and the studios from a session with no app role, and keeps Hosting", () => {
     for (const role of [undefined, null]) {
       const tabs = visibleProjectDetailTabs(role, { qaChecklistsEnabled: true });
       expect(tabs).toEqual(
-        PROJECT_DETAIL_TABS.filter(
-          (tab) => tab !== "checklists" && tab !== "qa" && tab !== "po" && tab !== "environment",
-        ),
+        PROJECT_DETAIL_TABS.filter((tab) => tab !== "checklists" && tab !== "qa" && tab !== "po"),
       );
+      expect(tabs).toContain("hosting");
+    }
+  });
+
+  it("offers no role an Environment tab: its variables live in Hosting", () => {
+    expect(PROJECT_DETAIL_TABS as ReadonlyArray<string>).not.toContain("environment");
+    for (const role of ["admin", "lead", "qa", "member", null] as const) {
+      expect(visibleProjectDetailTabs(role, { qaChecklistsEnabled: true }) as string[]).not.toContain("environment");
     }
   });
 
@@ -119,9 +125,13 @@ describe("visibleProjectDetailTabs", () => {
     }
   });
 
-  it("offers Environment exactly to the roles that may change variables", () => {
-    for (const role of ["admin", "lead", "qa", "member"] as const) {
-      expect(projectDetailTabsForRole(role).has("environment")).toBe(canManageEnvVars(role));
+  it("offers Hosting (and so its Variables column) to every role that may change variables", () => {
+    for (const role of ["admin", "member"] as const) {
+      expect(canManageEnvVars(role)).toBe(true);
+      expect(projectDetailTabsForRole(role).has("hosting")).toBe(true);
+    }
+    for (const role of ["lead", "qa", null, undefined] as const) {
+      expect(canManageEnvVars(role)).toBe(false);
     }
   });
 
@@ -135,7 +145,7 @@ describe("visibleProjectDetailTabs", () => {
 
   it("sends QA Team who deep-links to a code or delivery tab to Overview", () => {
     const visible = visibleProjectDetailTabs("qa", { qaChecklistsEnabled: true });
-    for (const tab of ["code", "pulls", "runs", "workflow", "hosting", "environment"] as const) {
+    for (const tab of ["code", "pulls", "runs", "workflow", "hosting"] as const) {
       expect(resolveVisibleTab(tab, visible)).toBe("overview");
     }
     expect(resolveVisibleTab("qa", visible)).toBe("qa");
@@ -143,22 +153,22 @@ describe("visibleProjectDetailTabs", () => {
     expect(resolveVisibleTab("po", visible)).toBe("qa");
   });
 
-  it("sends a Developer who deep-links to a studio to Overview, while Checklists and Environment stay reachable", () => {
+  it("sends a Developer who deep-links to a studio to Overview, while Checklists and Hosting stay reachable", () => {
     const visible = visibleProjectDetailTabs("member", { qaChecklistsEnabled: true });
     expect(resolveVisibleTab("qa", visible)).toBe("overview");
     expect(resolveVisibleTab("po", visible)).toBe("overview");
     expect(resolveVisibleTab("checklists", visible)).toBe("checklists");
-    expect(resolveVisibleTab("environment", visible)).toBe("environment");
+    expect(resolveVisibleTab("hosting", visible)).toBe("hosting");
   });
 
   it("sends a QA Team member who deep-links to #environment to Overview", () => {
     const visible = visibleProjectDetailTabs("qa", { qaChecklistsEnabled: true });
-    expect(resolveVisibleTab("environment", visible)).toBe("overview");
+    expect(resolveVisibleTab(tabFromHash("#environment") ?? "overview", visible)).toBe("overview");
   });
 
   it("sends a Product owner who deep-links to a hidden tab to Overview", () => {
     const visible = visibleProjectDetailTabs("lead", { qaChecklistsEnabled: true });
-    for (const hidden of ["code", "pulls", "runs", "workflow", "hosting", "environment"] as const) {
+    for (const hidden of ["code", "pulls", "runs", "workflow", "hosting"] as const) {
       expect(resolveVisibleTab(hidden, visible)).toBe("overview");
     }
     expect(resolveVisibleTab("audit", visible)).toBe("audit");

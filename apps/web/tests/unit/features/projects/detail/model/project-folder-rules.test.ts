@@ -41,7 +41,7 @@ function folder(overrides: Partial<ProjectFolderSummary> = {}): ProjectFolderSum
   };
 }
 
-const ALL_TABS: ProjectDetailTab[] = ["overview", "code", "runs", "hosting", "environment", "qa", "settings"];
+const ALL_TABS: ProjectDetailTab[] = ["overview", "code", "runs", "hosting", "qa", "settings"];
 
 describe("normaliseProjectFolder", () => {
   it("reads the wire shape", () => {

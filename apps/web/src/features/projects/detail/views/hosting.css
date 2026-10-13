@@ -1,0 +1,750 @@
+/* ── Repository page: Hosting tab ────────────────────────────────────────────
+   One service at a time: the service header, the environment switcher
+   (Production / UAT / Previews), then the selected environment's Deployment
+   and Variables cards side by side, stacking on narrow screens. Tokens only,
+   so both themes hold; motion only where the viewer allows it.
+   ------------------------------------------------------------------------- */
+
+.hosting-tab {
+  display: grid;
+  gap: 1rem;
+  min-width: 0;
+}
+
+.hosting-card {
+  display: grid;
+  gap: 0.75rem;
+  min-width: 0;
+  padding: 1rem 1.1rem;
+  border: 1px solid var(--border-layer);
+  border-radius: 0.85rem;
+  background: var(--layer-1);
+}
+
+.hosting-card__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+}
+
+/* Two classes: tab-panel heading rules must not restyle it. */
+.hosting-card .hosting-card__title {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 650;
+  color: var(--text-primary);
+}
+
+.hosting-card__title:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
+.hosting-card__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.hosting-quiet {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.hosting-mono {
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 0.78rem;
+  overflow-wrap: anywhere;
+}
+
+/* A key or branch is text, not a field: beat the light theme's global
+   `[data-theme="light"] code` tile (settings.css) inside this tab. */
+.hosting-card code.hosting-mono:not(.hosting-address__url):not(.hosting-chip) {
+  background: transparent;
+  padding: 0;
+  border: 0;
+}
+
+/* The shared provisioning inputs hard-code a dark fill (dashboard-projects.css),
+   unreadable in light. Inside Hosting they follow the theme. */
+.hosting-card .env-target-grid input,
+.hosting-card .env-target-grid select,
+.hosting-card .deployment-variable-panel input,
+.hosting-card .deployment-variable-panel select,
+.hosting-card .env-provisioning-section > select,
+.hosting-card .env-var-row input {
+  background: var(--bg-base);
+  color: var(--text-primary);
+  border-color: var(--border-strong);
+}
+
+/* ── Buttons ───────────────────────────────────────────────────────────────
+   One bordered style for every action on the tab, and the controls of the
+   reused panels inside it (the variables form, custom domains, the create
+   flow), which otherwise inherit the hero-scale global buttons. Secondary is
+   a filled tile with a visible edge; primary is brand-strong with white text
+   in both themes. 36px tall at least, so every target is touchable. */
+.hosting-btn,
+.hosting-tab .hosting-card .ghost-button,
+.hosting-tab .hosting-card .primary-button,
+.hosting-card.hosting-empty .ghost-button,
+.hosting-card.hosting-empty .primary-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  min-height: 2.25rem;
+  padding: 0 0.9rem;
+  border: 1px solid var(--border-strong);
+  border-radius: 0.5rem;
+  background: var(--layer-2);
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 600;
+  letter-spacing: 0;
+  line-height: 1.2;
+  text-decoration: none;
+  white-space: nowrap;
+  box-shadow: none;
+  transform: none;
+  cursor: pointer;
+}
+
+.hosting-btn:hover,
+.hosting-tab .hosting-card .ghost-button:hover,
+.hosting-card.hosting-empty .ghost-button:hover {
+  border-color: var(--border-brand);
+  background: var(--layer-2-hover);
+  color: var(--text-primary);
+  box-shadow: none;
+  transform: none;
+}
+
+.hosting-btn:focus-visible,
+.hosting-tab .hosting-card .ghost-button:focus-visible,
+.hosting-tab .hosting-card .primary-button:focus-visible,
+.hosting-card.hosting-empty .ghost-button:focus-visible,
+.hosting-card.hosting-empty .primary-button:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
+.hosting-btn--primary,
+.hosting-tab .hosting-card .primary-button,
+.hosting-card.hosting-empty .primary-button {
+  border-color: var(--brand-strong);
+  background: var(--brand-strong);
+  color: white;
+}
+
+.hosting-btn--primary:hover,
+.hosting-tab .hosting-card .primary-button:hover,
+.hosting-card.hosting-empty .primary-button:hover {
+  border-color: var(--brand-strong);
+  background: var(--brand-strong);
+  color: white;
+  box-shadow: var(--glow-brand);
+  transform: none;
+}
+
+.hosting-btn--danger,
+.hosting-btn--danger:hover {
+  border-color: var(--border-danger);
+  color: var(--danger);
+}
+
+.hosting-btn:disabled,
+.hosting-btn[aria-disabled="true"],
+.hosting-tab .hosting-card .ghost-button:disabled,
+.hosting-tab .hosting-card .primary-button:disabled,
+.hosting-card.hosting-empty .ghost-button:disabled,
+.hosting-card.hosting-empty .primary-button:disabled {
+  opacity: 0.45;
+  box-shadow: none;
+  cursor: not-allowed;
+}
+
+/* ── Status dots and pills ─────────────────────────────────────────────── */
+
+.hosting-dot {
+  display: inline-block;
+  flex-shrink: 0;
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: var(--radius-pill);
+  background: var(--text-muted);
+}
+
+.hosting-dot--ok {
+  background: var(--success);
+}
+
+.hosting-dot--pending {
+  background: var(--warning);
+}
+
+.hosting-dot--danger {
+  background: var(--danger);
+}
+
+.hosting-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.15rem 0.55rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+/* ── Service selector and header ───────────────────────────────────────── */
+
+.hosting-services {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.hosting-services__option {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.3rem 0.7rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--text-secondary);
+  font: inherit;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.hosting-services__option[aria-pressed="true"] {
+  border-color: var(--border-brand);
+  background: var(--brand-light);
+  color: var(--text-primary);
+}
+
+.hosting-services__option:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
+.hosting-services__provider {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.hosting-service__top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem 1rem;
+}
+
+.hosting-service__identity {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.55rem;
+  min-width: 0;
+}
+
+.hosting-service__mark {
+  display: inline-grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  border: 1px solid var(--border-tile);
+  border-radius: 0.45rem;
+  background: var(--layer-2);
+  color: var(--text-primary);
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.hosting-card .hosting-service__name {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 650;
+  color: var(--text-primary);
+  overflow-wrap: anywhere;
+}
+
+.hosting-service__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.hosting-service__meta {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+/* The one provider notice, and the lane check: amber, never danger. */
+.hosting-notice {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+  padding: 0.55rem 0.75rem;
+  border: 1px solid var(--border-amber);
+  border-radius: 0.6rem;
+  background: var(--accent-amber-light);
+  color: var(--text-primary);
+  font-size: 0.82rem;
+}
+
+.hosting-notice--block {
+  display: grid;
+  justify-items: start;
+}
+
+.hosting-notice__title {
+  margin: 0;
+  font-weight: 600;
+}
+
+.hosting-notice__keys {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.6rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.hosting-confirm {
+  display: grid;
+  gap: 0.6rem;
+  padding: 0.7rem 0.8rem;
+  border: 1px solid var(--border-danger);
+  border-radius: 0.6rem;
+  background: var(--danger-light);
+}
+
+.hosting-confirm__check {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.45rem;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.hosting-confirm__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.4rem;
+}
+
+/* ── "⋯" menus ─────────────────────────────────────────────────────────── */
+
+.hosting-menu {
+  position: relative;
+}
+
+.hosting-menu__trigger {
+  display: inline-grid;
+  place-items: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border: 1px solid var(--border-strong);
+  border-radius: 0.5rem;
+  background: var(--layer-2);
+  color: var(--text-secondary);
+  font: inherit;
+  font-size: 1rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.hosting-menu__trigger:hover,
+.hosting-menu__trigger[aria-expanded="true"] {
+  color: var(--text-primary);
+  background: var(--layer-2);
+}
+
+.hosting-menu__trigger:focus-visible,
+.hosting-menu__item:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: -2px;
+}
+
+.hosting-menu__list {
+  position: absolute;
+  top: calc(100% + 0.3rem);
+  right: 0;
+  z-index: 20;
+  display: grid;
+  min-width: 15rem;
+  max-width: min(20rem, calc(100vw - 2rem));
+  padding: 0.3rem;
+  border: 1px solid var(--border-layer);
+  border-radius: 0.6rem;
+  background: var(--bg-elevated);
+  box-shadow: var(--shadow-soft);
+}
+
+.hosting-menu__item {
+  display: grid;
+  gap: 0.1rem;
+  padding: 0.45rem 0.6rem;
+  border: 0;
+  border-radius: 0.4rem;
+  background: transparent;
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 0.82rem;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.hosting-menu__item:hover {
+  background: var(--layer-2-hover);
+}
+
+.hosting-menu__item[aria-disabled="true"] {
+  color: var(--text-muted);
+  cursor: not-allowed;
+}
+
+.hosting-menu__item--danger {
+  color: var(--danger);
+}
+
+.hosting-menu__hint {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
+/* ── Environment switcher ──────────────────────────────────────────────── */
+
+.hosting-envs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.hosting-envs__tab {
+  display: grid;
+  gap: 0.15rem;
+  min-width: 9.5rem;
+  padding: 0.55rem 0.8rem;
+  border: 1px solid var(--border);
+  border-radius: 0.7rem;
+  background: transparent;
+  color: var(--text-secondary);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.hosting-envs__tab:hover {
+  background: var(--layer-1-hover);
+}
+
+.hosting-envs__tab[aria-selected="true"] {
+  border-color: var(--border-brand);
+  background: var(--layer-1);
+  color: var(--text-primary);
+}
+
+.hosting-envs__tab:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
+.hosting-envs__name {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.88rem;
+  font-weight: 650;
+}
+
+.hosting-envs__sub {
+  font-size: 0.74rem;
+  color: var(--text-muted);
+}
+
+/* ── The selected environment: two columns, stacked when narrow ────────── */
+
+.hosting-columns {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(380px, 100%), 1fr));
+  gap: 1rem;
+  align-items: start;
+}
+
+.hosting-columns--single {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.hosting-section {
+  display: grid;
+  gap: 0.5rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--border-soft);
+}
+
+.hosting-card .hosting-section__title {
+  margin: 0;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.hosting-address {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.hosting-address__line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.hosting-address__url {
+  flex: 1 1 14rem;
+  min-width: 0;
+  padding: 0.35rem 0.55rem;
+  border: 1px solid var(--border);
+  border-radius: 0.45rem;
+  background: var(--layer-2);
+  color: var(--text-primary);
+}
+
+.hosting-rows {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.hosting-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem 0.75rem;
+  min-width: 0;
+  padding: 0.45rem 0;
+  border-bottom: 1px solid var(--border-subtle);
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.hosting-row:last-child {
+  border-bottom: 0;
+}
+
+.hosting-row__main {
+  display: inline-flex;
+  flex: 1 1 10rem;
+  align-items: center;
+  gap: 0.45rem;
+  min-width: 0;
+  color: var(--text-primary);
+}
+
+.hosting-row__message {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hosting-row__status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-width: 5.5rem;
+}
+
+.hosting-row__time {
+  color: var(--text-muted);
+}
+
+.hosting-row__failed {
+  color: var(--danger);
+}
+
+.hosting-row__link {
+  color: var(--brand);
+}
+
+.hosting-row__confirm {
+  display: inline-flex;
+  gap: 0.35rem;
+}
+
+.hosting-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.05rem 0.45rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--text-secondary);
+  font: inherit;
+  font-size: 0.72rem;
+}
+
+.hosting-chip--link {
+  min-height: 1.5rem;
+  color: var(--brand);
+  cursor: pointer;
+}
+
+.hosting-chip--link:focus-visible,
+.hosting-disclosure:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
+.hosting-disclosure {
+  justify-self: start;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--brand);
+  font: inherit;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.hosting-field {
+  display: grid;
+  gap: 0.25rem;
+  max-width: var(--input-measure);
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+}
+
+.hosting-field select {
+  min-height: 2rem;
+  padding: 0.3rem 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 0.45rem;
+  background: var(--layer-2);
+  color: var(--text-primary);
+  font: inherit;
+}
+
+.hosting-vars__footer {
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--border-soft);
+  color: var(--text-muted);
+}
+
+/* ── Empty state ───────────────────────────────────────────────────────── */
+
+.hosting-card .hosting-empty__title {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 650;
+  color: var(--text-primary);
+}
+
+.hosting-empty__points {
+  display: grid;
+  gap: 0.3rem;
+  margin: 0;
+  padding-left: 1.1rem;
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+}
+
+/* The create / register flow, inside the card rather than a card of its own:
+   every control under its label, two columns, one on narrow screens, and the
+   primary action at the end. */
+.hosting-empty__setup .env-provisioning-panel {
+  padding-top: 0;
+  border-top: 0;
+}
+
+.hosting-empty__setup .env-provisioning-section {
+  border-color: var(--border-soft);
+  background: var(--layer-2);
+}
+
+.hosting-empty__setup .env-provisioning-section .env-target-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem 1rem;
+  align-items: end;
+}
+
+.hosting-empty__setup .env-target-grid__field > span:first-child {
+  color: var(--text-secondary);
+  font-size: 0.76rem;
+  font-weight: 600;
+}
+
+.hosting-empty__setup .env-target-grid > :not(.env-target-grid__submit) {
+  min-width: 0;
+  width: 100%;
+  max-width: none;
+  grid-column: auto;
+}
+
+.hosting-empty__setup .env-target-grid input,
+.hosting-empty__setup .env-target-grid select {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: none;
+  min-height: 2.25rem;
+}
+
+.hosting-empty__setup .env-target-grid__submit {
+  grid-column: 1 / -1;
+  justify-self: end;
+}
+
+@media (max-width: 640px) {
+  .hosting-empty__setup .env-provisioning-section .env-target-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .hosting-empty__setup .env-target-grid__submit {
+    justify-self: stretch;
+  }
+}
+
+/* Custom domains: the list first, the add form behind "+ Add domain". */
+.hosting-tab .project-domains__open {
+  justify-self: start;
+}
+
+/* ── Motion ────────────────────────────────────────────────────────────── */
+
+@media (prefers-reduced-motion: no-preference) {
+  .hosting-envs__tab,
+  .hosting-services__option,
+  .hosting-menu__trigger,
+  .hosting-menu__item {
+    transition:
+      background-color 0.15s ease-out,
+      border-color 0.15s ease-out,
+      color 0.15s ease-out;
+  }
+}
