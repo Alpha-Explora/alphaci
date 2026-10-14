@@ -7,7 +7,12 @@ import { useId, type ReactNode } from "react";
 
 import type { AppRole } from "@/shared/api/contracts";
 
-import { IterationLockedNotice } from "../../iteration";
+import {
+  IterationLockedNotice,
+  IterationNextStepView,
+  useNextIterationViewModel,
+  type StartIterationViewModel,
+} from "../../iteration";
 import { lockedIterationNumber } from "../../model/iteration-rules";
 import { kindCopy } from "../../model/requirement-rules";
 import {
@@ -305,7 +310,15 @@ function RunBody({
   vm,
   run,
   appRole,
-}: Readonly<{ deliveryProjectId: string; vm: ProjectRunViewModel; run: ProjectQaRun; appRole: AppRole | null | undefined }>) {
+  next,
+}: Readonly<{
+  deliveryProjectId: string;
+  vm: ProjectRunViewModel;
+  run: ProjectQaRun;
+  appRole: AppRole | null | undefined;
+  /** After a delivered iteration: the waiting sentence, or Start iteration N+1. */
+  next: StartIterationViewModel;
+}>) {
   const permissions = resolveProjectRunPermissions(run, appRole);
   const editor = useProjectVerificationViewModel({
     deliveryProjectId,
@@ -323,6 +336,7 @@ function RunBody({
   return (
     <div className="qa-run pqa-run__body">
       {lockedNumber === null ? null : <IterationLockedNotice number={lockedNumber} />}
+      <IterationNextStepView vm={next} />
       <RunHead run={run} />
       <StaleNotice vm={vm} run={run} appRole={appRole} />
       <RequirementsChangedNotice run={run} changed={vm.requirementsChanged} />
@@ -341,10 +355,29 @@ function RunBody({
 }
 
 /**
+ * No run on the current heads. Once the iteration is delivered and none is
+ * active, no run can start: the waiting sentence (or, for a Product owner or
+ * admin, Start iteration N+1) takes the Start button's place.
+ */
+function NoRun({
+  vm,
+  appRole,
+  next,
+}: Readonly<{ vm: ProjectRunViewModel; appRole: AppRole | null | undefined; next: StartIterationViewModel }>) {
+  if (next.step.kind === "none") return <StartProjectRun vm={vm} appRole={appRole} />;
+  return (
+    <div className="pqa-next">
+      <IterationNextStepView vm={next} />
+    </div>
+  );
+}
+
+/**
  * A Project's QA run: every repository's uat head, the run that covers them,
  * and — for the QA Team, Product owners and admins — Verification and
  * sign-off. Developers see the same run read-only. `fallback` renders when
- * the server has no Project runs yet (an older backend).
+ * the server has no Project runs yet (an older backend). Between a delivered
+ * iteration and the next, it says who the team is waiting for.
  */
 export function ProjectRunPanel({
   deliveryProjectId,
@@ -357,6 +390,7 @@ export function ProjectRunPanel({
   appRole: AppRole | null | undefined;
   fallback?: ReactNode;
 }>) {
+  const next = useNextIterationViewModel({ deliveryProjectId, enabled: true, appRole });
   let body: ReactNode;
   if (vm.status === "idle" || vm.status === "loading") body = <RunSkeleton />;
   else if (vm.status === "unavailable") {
@@ -371,10 +405,19 @@ export function ProjectRunPanel({
         </button>
       </PanelState>
     );
-  } else if (!vm.run) body = <StartProjectRun vm={vm} appRole={appRole} />;
+  } else if (!vm.run) body = <NoRun vm={vm} appRole={appRole} next={next} />;
   else {
     // Keyed by run: a reopened or newly started run gets fresh drafts and dialogs.
-    body = <RunBody key={vm.run.id} deliveryProjectId={deliveryProjectId} vm={vm} run={vm.run} appRole={appRole} />;
+    body = (
+      <RunBody
+        key={vm.run.id}
+        deliveryProjectId={deliveryProjectId}
+        vm={vm}
+        run={vm.run}
+        appRole={appRole}
+        next={next}
+      />
+    );
   }
   return <div className="pqa-run">{body}</div>;
 }

@@ -28,15 +28,19 @@ function LockGlyph() {
   );
 }
 
-/** "Iteration 3 · Active" or "Iteration 3 · Delivered 14 Oct", as a small pill. */
+/** "Iteration 3 · Active" or "Iteration 3 · Delivered 14 Oct" (with a goal, "Iteration 4 · Loyalty points · Active"), as a small pill. */
 export function IterationStatusPill({
   iteration,
   locale,
-}: Readonly<{ iteration: Pick<ProjectIteration, "number" | "status" | "deliveredAt">; locale?: string }>) {
+}: Readonly<{
+  iteration: Pick<ProjectIteration, "number" | "status" | "deliveredAt"> & { goal?: string | null };
+  locale?: string;
+}>) {
+  const label = iterationStatusLabel(iteration, locale);
   return (
-    <span className="iteration-status" data-status={iteration.status}>
+    <span className="iteration-status" data-status={iteration.status} title={label}>
       <span className="iteration-status__dot" aria-hidden="true" />
-      {iterationStatusLabel(iteration, locale)}
+      <span className="iteration-status__label">{label}</span>
     </span>
   );
 }

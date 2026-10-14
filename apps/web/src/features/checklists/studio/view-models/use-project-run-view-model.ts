@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 
 import { projectQaRunsRepository } from "../../data/project-qa-runs-repository";
+import { useIterationEpoch } from "../../iteration";
 import type { HeadStatus, ProjectQaRun, ProjectRunCurrent } from "../../model/project-run-types";
 import { qaActionError } from "../../model/qa-run-rules";
 import type { QaActionError } from "../../model/qa-run-types";
@@ -88,7 +89,10 @@ export function useProjectRunViewModel(options: {
   const requestRef = useRef(0);
   const active = enabled && Boolean(deliveryProjectId);
   const projectKey = deliveryProjectId ?? "";
-  const key = `${projectKey}|${String(nonce)}`;
+  // A started iteration (Iterations phase 3) reads the run again: the new
+  // iteration has none yet, so QA can start a fresh one.
+  const epoch = useIterationEpoch(deliveryProjectId);
+  const key = `${projectKey}|${String(nonce)}|${String(epoch)}`;
 
   useEffect(() => {
     if (!active || !deliveryProjectId) return;

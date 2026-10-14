@@ -22,6 +22,7 @@
   font-weight: 650;
   line-height: 1.2;
   white-space: nowrap;
+  max-width: min(100%, 26rem);
 }
 
 .iteration-status[data-status="delivered"] {
@@ -63,4 +64,311 @@
   font-weight: 600;
   line-height: 1.5;
   color: var(--text-primary);
+}
+
+/* The goal can be up to 120 characters: the pill keeps one line, ellipsised
+   (max-width above), and says the rest on hover. */
+.iteration-status__label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ── Iterations phase 3 ─────────────────────────────────────────────────────
+   .iteration-waiting   between delivery and the next start (P15): the QA
+                        Team and Developers wait for the Product owner.
+   .iteration-next      the same moment for a Product owner or admin: the
+                        delivered line with Start iteration N+1.
+   .iteration-start*    the Start dialog: goal and carry-over list.
+   Waiting is neutral (nothing is wrong, nothing to do); the next step is the
+   brand tone, because it is an action. Tokens only.
+   ------------------------------------------------------------------------- */
+
+.iteration-waiting {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.55rem;
+  padding: 0.7rem 0.9rem;
+  border: 1px solid var(--border);
+  border-left-width: 3px;
+  border-left-color: var(--accent-violet);
+  border-radius: 0.7rem;
+  background: var(--bg-soft);
+  color: var(--accent-violet);
+}
+
+.iteration-waiting__text,
+.iteration-next__text {
+  margin: 0;
+  font-size: 0.82rem;
+  font-weight: 600;
+  line-height: 1.5;
+  color: var(--text-primary);
+}
+
+.iteration-next {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem 1rem;
+  padding: 0.7rem 0.9rem;
+  border: 1px solid var(--border-brand);
+  border-left-width: 3px;
+  border-left-color: var(--brand);
+  border-radius: 0.7rem;
+  background: var(--brand-light);
+}
+
+/* Two classes: the global .primary-button is hero-scale and loads later. */
+.primary-button.iteration-start-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 2.25rem;
+  padding: 0.45rem 1rem;
+  border-radius: 0.55rem;
+  font-size: 0.82rem;
+  font-weight: 650;
+  letter-spacing: 0;
+  white-space: nowrap;
+}
+
+.hier-dialog:has(.iteration-start) .primary-button,
+.hier-dialog:has(.iteration-start) .ghost-button {
+  min-height: 2.25rem;
+  padding: 0.45rem 1rem;
+  border-radius: 0.55rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  letter-spacing: 0;
+}
+
+.hier-dialog:has(.iteration-start) .ghost-button {
+  border-color: var(--border-control);
+}
+
+.iteration-start {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1rem;
+}
+
+/* The field, its counter and its error share the input's width, so the
+   counter sits under the input's right edge, not the dialog's. */
+.iteration-goal {
+  display: grid;
+  gap: 0.3rem;
+  width: 100%;
+  max-width: 32rem;
+}
+
+.iteration-goal input {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+}
+
+.iteration-goal__count {
+  justify-self: end;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.iteration-goal__error {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--danger);
+}
+
+.iteration-carry {
+  display: grid;
+  gap: 0.6rem;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.iteration-carry__bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem 0.8rem;
+}
+
+.iteration-carry__count {
+  margin-right: auto;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.iteration-carry__action {
+  min-height: 2rem;
+  padding: 0.3rem 0.7rem;
+  border: 1px solid var(--border-control);
+  border-radius: var(--radius-pill);
+  background: var(--bg-panel);
+  color: var(--text-primary);
+  font-size: 0.76rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease;
+}
+
+.iteration-carry__action:hover:not(:disabled) {
+  border-color: var(--border-brand);
+  background: var(--brand-light);
+}
+
+.iteration-carry__action:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
+.iteration-carry__action:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.iteration-carry__empty {
+  margin: 0;
+  padding: 0.7rem 0.85rem;
+  border: 1px dashed var(--border);
+  border-radius: 0.6rem;
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+}
+
+.iteration-carry__groups,
+.iteration-carry__items {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.iteration-carry__groups {
+  gap: 0.75rem;
+}
+
+.iteration-carry__group {
+  display: grid;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+.iteration-carry__requirement {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.45rem;
+  margin: 0;
+}
+
+.iteration-carry__kind {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.1rem 0.5rem;
+  border: 1px solid var(--border-brand);
+  border-radius: var(--radius-pill);
+  background: var(--brand-light);
+  color: var(--brand);
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.iteration-carry__kind[data-kind="system"] {
+  border-color: var(--border-teal);
+  background: var(--accent-teal-light);
+  color: var(--accent-teal);
+}
+
+.iteration-carry__name {
+  min-width: 0;
+  font-size: 0.86rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  overflow-wrap: anywhere;
+}
+
+.iteration-carry__items {
+  gap: 0.25rem;
+  border: 1px solid var(--border);
+  border-radius: 0.6rem;
+  background: var(--bg-panel);
+  overflow: hidden;
+}
+
+.iteration-carry__item + .iteration-carry__item {
+  border-top: 1px solid var(--border-subtle);
+}
+
+.iteration-carry__label {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  padding: 0.5rem 0.7rem;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.iteration-carry__label:hover {
+  background: var(--layer-1-hover);
+}
+
+/* The global form-control rule would stretch the checkbox full width. */
+.iteration-carry__label .iteration-carry__check {
+  flex-shrink: 0;
+  width: 1rem;
+  height: 1rem;
+  margin: 0.15rem 0 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  accent-color: var(--brand);
+  cursor: pointer;
+}
+
+.iteration-carry__label .iteration-carry__check:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
+.iteration-carry__copy {
+  display: grid;
+  gap: 0.1rem;
+  min-width: 0;
+}
+
+.iteration-carry__title {
+  font-size: 0.84rem;
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--text-primary);
+  overflow-wrap: anywhere;
+}
+
+.iteration-carry__hint {
+  font-size: 0.74rem;
+  line-height: 1.4;
+  color: var(--text-secondary);
+}
+
+.iteration-carry__item[data-suggested="true"] .iteration-carry__hint {
+  color: var(--accent-amber);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .iteration-carry__action,
+  .iteration-carry__label {
+    transition: none;
+  }
 }

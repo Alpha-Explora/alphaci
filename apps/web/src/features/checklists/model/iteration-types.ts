@@ -54,7 +54,72 @@ export interface CurrentIteration {
   coveredRepositories: CoveredRepository[];
   /** Server-decided: lead or admin, gate eligible, iteration active. */
   canMergeAll: boolean;
+  /**
+   * Server-decided: a lead or admin, and no iteration is active. Null when the
+   * server did not say (an older backend): nothing about the next iteration renders.
+   */
+  canStartNext: boolean | null;
+  /**
+   * What the Start dialog may carry over (Iterations phase 3). Only with
+   * `canStartNext`; null otherwise, and on a backend that does not send it.
+   */
+  carryOver: CarryOver | null;
 }
+
+/* ── Starting the next iteration (Iterations phase 3) ─────────────────── */
+
+/** A requirement item's Progress, as the carry-over list reports it. */
+export type CarryOverProgress = "todo" | "in_progress" | "done";
+
+/** An item's Verification in the run that delivered the iteration. */
+export type CarryOverLastStatus = "pending" | "in_progress" | "passed" | "failed" | "blocked" | "returned_to_dev";
+
+/** One delivered item that can be carried into the next iteration. */
+export interface CarryOverItem {
+  id: string;
+  title: string;
+  progress: CarryOverProgress;
+  /** Null when the item was not in the delivering run. */
+  lastStatus: CarryOverLastStatus | null;
+  /** Unfinished: pre-selected in the Start dialog. Server-decided. */
+  suggested: boolean;
+}
+
+export interface CarryOverRequirement {
+  requirementId: string;
+  name: string;
+  kind: "functional" | "system";
+  items: CarryOverItem[];
+}
+
+/** The latest delivered iteration's items, grouped by requirement. */
+export interface CarryOver {
+  fromIterationNumber: number;
+  requirements: CarryOverRequirement[];
+}
+
+/** POST /delivery-projects/:id/iterations */
+export interface StartIterationInput {
+  /** Trimmed; left out when empty. At most 120 characters. */
+  goal?: string;
+  carryOver: { requirementItemIds: string[] };
+}
+
+/** The 201 answer, normalised. */
+export interface StartedIteration {
+  iteration: ProjectIteration | null;
+  carriedRequirements: number;
+  carriedItems: number;
+}
+
+/**
+ * What a screen shows about the next iteration, once the current one is
+ * delivered: nothing, "waiting for the Product owner", or Start.
+ */
+export type IterationNextStep =
+  | { kind: "none" }
+  | { kind: "waiting"; text: string }
+  | { kind: "start"; nextNumber: number; text: string };
 
 /** One repository's answer from Merge all repositories. */
 export interface MergeAllRepositoryResult {

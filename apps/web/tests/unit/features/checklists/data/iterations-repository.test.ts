@@ -32,6 +32,24 @@ describe("iterationsRepository", () => {
     expect(result).toEqual({ repositories: [], delivered: false, iteration: null });
   });
 
+  it("starts the next iteration with the goal and the carried ids as JSON, and normalises the 201", async () => {
+    mockedRequest.mockResolvedValue({
+      iteration: { id: "it-4", number: 4, status: "active", goal: "Loyalty points" },
+      carriedRequirements: 1,
+      carriedItems: 2,
+    });
+    const started = await iterationsRepository.start("dp/1", {
+      goal: "Loyalty points",
+      carryOver: { requirementItemIds: ["a", "b"] },
+    });
+    expect(mockedRequest).toHaveBeenCalledWith("/delivery-projects/dp%2F1/iterations", {
+      method: "POST",
+      body: JSON.stringify({ goal: "Loyalty points", carryOver: { requirementItemIds: ["a", "b"] } }),
+    });
+    expect(started.iteration?.number).toBe(4);
+    expect(started.carriedItems).toBe(2);
+  });
+
   it("lets a 404 through for the caller to read as 'no iterations here'", async () => {
     mockedRequest.mockRejectedValue(Object.assign(new Error("Not found"), { status: 404 }));
     await expect(iterationsRepository.current("dp-1")).rejects.toMatchObject({ status: 404 });

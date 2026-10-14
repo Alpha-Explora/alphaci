@@ -22,6 +22,7 @@ import type {
   MergeAllResult,
   ProjectIteration,
 } from "./iteration-types";
+import { normalizeCarryOver } from "./iteration-carry-over-rules";
 import { QA_ERROR_MESSAGES, qaCodeMessage } from "./qa-error-messages";
 import { shortSha } from "./qa-run-rules";
 import {
@@ -109,11 +110,15 @@ export function normalizeCurrentIteration(value: unknown): CurrentIteration | nu
   const raw = record(value) ?? {};
   const iteration = normalizeIteration(raw.iteration);
   if (!iteration) return null;
+  const canStartNext = typeof raw.canStartNext === "boolean" ? raw.canStartNext : null;
   return {
     iteration,
     deliveredRepositories: records(raw.deliveredRepositories).map(deliveredRepositoryFrom).filter(present),
     coveredRepositories: records(raw.coveredRepositories).map(coveredRepositoryFrom).filter(present),
     canMergeAll: raw.canMergeAll === true,
+    canStartNext,
+    // The candidates mean something only to a viewer the server lets start.
+    carryOver: canStartNext === true ? normalizeCarryOver(raw.carryOver) : null,
   };
 }
 
@@ -144,6 +149,12 @@ export function iterationName(number: number): string {
   return `Iteration ${String(number)}`;
 }
 
+/** "Iteration 4 · Loyalty points" with a goal, "Iteration 4" without. */
+export function iterationTitle(iteration: { number: number; goal?: string | null }): string {
+  const goal = iteration.goal?.trim();
+  return goal ? `${iterationName(iteration.number)} · ${goal}` : iterationName(iteration.number);
+}
+
 /**
  * A date in the viewer's locale ("14 Oct" in en-GB, "Oct 14" in en-US), or
  * null when there is none or it is not a date. `locale` is for tests; the
@@ -163,12 +174,12 @@ export function iterationDateLabel(
   }).format(date);
 }
 
-/** "Iteration 3 · Active" or "Iteration 3 · Delivered 14 Oct". */
+/** "Iteration 3 · Active", "Iteration 3 · Delivered 14 Oct", or with a goal "Iteration 4 · Loyalty points · Active". */
 export function iterationStatusLabel(
-  iteration: Pick<ProjectIteration, "number" | "status" | "deliveredAt">,
+  iteration: Pick<ProjectIteration, "number" | "status" | "deliveredAt"> & { goal?: string | null },
   locale?: string,
 ): string {
-  const name = iterationName(iteration.number);
+  const name = iterationTitle(iteration);
   if (iteration.status === "active") return `${name} · Active`;
   const date = iterationDateLabel(iteration.deliveredAt, { locale });
   return date ? `${name} · Delivered ${date}` : `${name} · Delivered`;
@@ -186,15 +197,15 @@ export function iterationLockedText(number: number): string {
   return `${iterationName(number)} was delivered. Changes are locked.`;
 }
 
-/** "Iteration 3 delivered on 14 Oct 2026 by @ana". */
+/** "Iteration 3 delivered on 14 Oct 2026 by @ana" (with its goal: "Iteration 3 · Loyalty points delivered …"). */
 export function deliveredBannerTitle(
-  iteration: Pick<ProjectIteration, "number" | "deliveredAt" | "deliveredByLogin">,
+  iteration: Pick<ProjectIteration, "number" | "deliveredAt" | "deliveredByLogin"> & { goal?: string | null },
   locale?: string,
 ): string {
   const date = iterationDateLabel(iteration.deliveredAt, { withYear: true, locale });
   const on = date ? ` on ${date}` : "";
   const by = iteration.deliveredByLogin ? ` by @${iteration.deliveredByLogin}` : "";
-  return `${iterationName(iteration.number)} delivered${on}${by}`;
+  return `${iterationTitle(iteration)} delivered${on}${by}`;
 }
 
 /* ── How each repository reached main ────────────────────────────────────── */

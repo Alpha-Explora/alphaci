@@ -2,6 +2,8 @@
 
 import "./po-studio.css";
 
+import type { ReactNode } from "react";
+
 import { FormDialog } from "@/features/groups/workspace";
 
 import {
@@ -31,13 +33,16 @@ function bannerTitle(delivered: CurrentIteration | null, fallback: QaPromotionIt
 
 /**
  * "Iteration 3 delivered on 14 Oct 2026 by @ana", then each repository and
- * how it reached main. Without the iterations route (the promotion status
- * alone said "delivered"), the title only, from the promotion's iteration.
+ * how it reached main, then what comes next (`next`: Start iteration N+1 for
+ * a Product owner or admin). Without the iterations route (the promotion
+ * status alone said "delivered"), the title only, from the promotion's
+ * iteration.
  */
 export function PoDeliveredBanner({
   current,
   fallback,
-}: Readonly<{ current: CurrentIteration | null; fallback: QaPromotionIteration | null }>) {
+  next,
+}: Readonly<{ current: CurrentIteration | null; fallback: QaPromotionIteration | null; next?: ReactNode }>) {
   const delivered = current?.iteration.status === "delivered" ? current : null;
   return (
     <div className="po-delivered" role="status">
@@ -58,6 +63,7 @@ export function PoDeliveredBanner({
           ))}
         </ul>
       ) : null}
+      {next ? <div className="po-delivered__next">{next}</div> : null}
     </div>
   );
 }

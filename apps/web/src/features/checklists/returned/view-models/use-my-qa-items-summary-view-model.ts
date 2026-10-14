@@ -1,5 +1,8 @@
 "use client";
 
+import { useCurrentIterationViewModel } from "../../iteration";
+import { iterationNextStep } from "../../model/iteration-start-rules";
+import type { CurrentIteration } from "../../model/iteration-types";
 import {
   EMPTY_MY_QA_ITEMS_SUMMARY,
   myQaItemsDestination,
@@ -29,13 +32,46 @@ export interface MyQaItemsSummaryViewModel {
   total: number;
   /** Where "Open checklist" goes. */
   destination: MyQaItemsDestination;
+  /**
+   * Between a delivered iteration and the next (P15): "Iteration 3 was
+   * delivered on 14 Oct 2026. Waiting for the Product owner to start
+   * iteration 4.", shown instead of the counts. Null otherwise, for a viewer
+   * who may start it, and on a backend that does not say.
+   */
+  waiting: string | null;
   reload: () => void;
 }
 
-function summaryStatus(enabled: boolean, listStatus: string, total: number): MyQaItemsSummaryStatus {
+function summaryStatus(
+  enabled: boolean,
+  listStatus: string,
+  total: number,
+  waiting: string | null,
+): MyQaItemsSummaryStatus {
   if (!enabled) return "hidden";
   if (listStatus === "error") return "error";
+  if (waiting) return "ready";
   return listStatus === "ready" && total > 0 ? "ready" : "hidden";
+}
+
+/**
+ * The waiting sentence, or null. No role is needed: the server says
+ * `canStartNext` only to a viewer who may start, and that viewer's summary
+ * stays as it was (Start lives on the Project page and in PO Studio).
+ */
+function waitingFrom(current: CurrentIteration | null): string | null {
+  const step = iterationNextStep(current, null);
+  return step.kind === "waiting" ? step.text : null;
+}
+
+/** The Project's iteration, read only for a repository filed under a Project. */
+function useWaitingSentence(enabled: boolean, qaScope: QaScope): string | null {
+  const inProject = qaScope.kind === "project";
+  const iteration = useCurrentIterationViewModel({
+    deliveryProjectId: inProject ? qaScope.deliveryProjectId : null,
+    enabled: enabled && inProject,
+  });
+  return waitingFrom(iteration.current);
 }
 
 function summaryCounts(
@@ -69,6 +105,7 @@ export function useMyQaItemsSummaryViewModel(options: {
   const readRepositoryList =
     enabled && qaScope.kind !== "pending" && (!inProject || project.status === "unavailable");
   const repository = useMyQaItemsViewModel({ projectId, enabled: readRepositoryList });
+  const waiting = useWaitingSentence(enabled, qaScope);
 
   const fromProject = inProject && project.status !== "unavailable";
   const source = fromProject ? project : repository;
@@ -76,7 +113,7 @@ export function useMyQaItemsSummaryViewModel(options: {
   const total = myQaItemsSummaryTotal(counts);
 
   return {
-    status: summaryStatus(enabled && qaScope.kind !== "pending", source.status, total),
+    status: summaryStatus(enabled && qaScope.kind !== "pending", source.status, total, waiting),
     error: source.error,
     counts,
     total,
@@ -84,6 +121,7 @@ export function useMyQaItemsSummaryViewModel(options: {
     // no "My QA items" tab to send anyone to: the Checklists tab carries the
     // per-repository list instead.
     destination: fromProject ? myQaItemsDestination(qaScope) : { kind: "checklists-tab" },
+    waiting,
     reload: source.reload,
   };
 }

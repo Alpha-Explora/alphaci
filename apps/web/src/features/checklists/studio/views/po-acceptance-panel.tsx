@@ -4,6 +4,7 @@ import "./po-studio.css";
 
 import type { AppRole } from "@/shared/api/contracts";
 
+import { IterationWaitingNotice, StartIterationAction } from "../../iteration";
 import {
   PO_READY_TEXT,
   PO_READY_TITLE,
@@ -71,6 +72,17 @@ function isDelivered(state: PoAcceptanceState, delivery: PoDeliveryViewModel): b
   return state === "delivered" || delivery.iteration.current?.iteration.status === "delivered";
 }
 
+/**
+ * What follows a delivered iteration in PO Studio: Start iteration N+1 for a
+ * Product owner or admin the server lets start; the waiting sentence for
+ * anyone it does not; nothing when the server did not say.
+ */
+function DeliveredNext({ delivery }: Readonly<{ delivery: PoDeliveryViewModel }>) {
+  const step = delivery.start.step;
+  if (step.kind === "waiting") return <IterationWaitingNotice text={step.text} />;
+  return <StartIterationAction vm={delivery.start} />;
+}
+
 /** The way to the QA run, while there is still something for QA to do. */
 function OpenQaRun({ shown, onOpenQaRun }: Readonly<{ shown: boolean; onOpenQaRun?: () => void }>) {
   if (!shown || !onOpenQaRun) return null;
@@ -121,7 +133,11 @@ function ProjectAcceptance({
         </div>
       </div>
       {delivered ? (
-        <PoDeliveredBanner current={delivery.iteration.current} fallback={promotion.data?.iteration ?? null} />
+        <PoDeliveredBanner
+          current={delivery.iteration.current}
+          fallback={promotion.data?.iteration ?? null}
+          next={delivery.start.step.kind === "none" ? null : <DeliveredNext delivery={delivery} />}
+        />
       ) : (
         <>
           <AcceptanceStatus ready={ready} run={run} />

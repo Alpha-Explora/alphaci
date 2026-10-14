@@ -19,7 +19,7 @@ import {
   SectionHeader,
 } from "@/features/groups/workspace";
 
-import { IterationStatus } from "@/features/checklists/iteration";
+import { IterationHeader } from "@/features/checklists/iteration";
 import { ProjectQaWorkspace } from "@/features/checklists/requirements";
 
 import { useDeliveryProjectViewModel } from "../view-models/use-delivery-project-view-model";
@@ -156,7 +156,8 @@ function DeliveryProjectDetail({
         actions={
           <div style={{ display: "flex", gap: "0.6rem", alignItems: "center" }}>
             <LifecycleStatusBadge status={project.status} />
-            <IterationStatus deliveryProjectId={project.id} enabled={vm.qaEnabled} />
+            {/* "Iteration 3 · Delivered 14 Oct", and Start iteration 4 for a Product owner or admin. */}
+            <IterationHeader deliveryProjectId={project.id} enabled={vm.qaEnabled} appRole={vm.appRole} />
             {createButton}
           </div>
         }

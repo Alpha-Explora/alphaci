@@ -132,6 +132,11 @@ function WorkProject({ project }: Readonly<{ project: MyWorkProject }>) {
           →
         </span>
       </Link>
+      {project.waiting ? (
+        <p className="home-work-waiting" role="status">
+          {project.waiting}
+        </p>
+      ) : null}
       {project.repositories.length ? (
         <ul className="home-work-repos" aria-label={`Repositories in ${project.name}`}>
           {project.repositories.map((repository) => (

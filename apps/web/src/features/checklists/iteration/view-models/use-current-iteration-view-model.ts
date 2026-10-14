@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 
 import { iterationsRepository } from "../../data/iterations-repository";
 import type { CurrentIteration } from "../../model/iteration-types";
+import { useIterationEpoch } from "./iteration-epoch";
 
 /**
  * `idle`: nothing to read (no Project, or not enabled). `unavailable`: the
@@ -50,7 +51,8 @@ function useWatchedReload(watch: string | null, reload: () => void) {
  * Studio's per-repository delivery state. The iteration is an enhancement on
  * screens that work without it, so any failure is `unavailable`, never an
  * error the viewer has to read. A request counter stops a slow read for the
- * previous Project overwriting the one on screen.
+ * previous Project overwriting the one on screen. A started iteration
+ * (announced through the Project's epoch) reads it again.
  */
 export function useCurrentIterationViewModel(options: {
   deliveryProjectId: string | null;
@@ -65,22 +67,24 @@ export function useCurrentIterationViewModel(options: {
   const active = enabled && Boolean(deliveryProjectId);
   const reload = () => setNonce((value) => value + 1);
   useWatchedReload(watch ?? null, reload);
+  const epoch = useIterationEpoch(active ? key : null);
 
   useEffect(() => {
     if (!active) return;
     requestRef.current += 1;
     const requestId = requestRef.current;
-    iterationsRepository
-      .current(key)
+    // Through a promise, so even a reader that returns nothing reads as "unavailable".
+    Promise.resolve()
+      .then(() => iterationsRepository.current(key))
       .then((current) => {
-        if (requestId === requestRef.current) setLoaded({ key, current });
+        if (requestId === requestRef.current) setLoaded({ key, current: current ?? null });
       })
       .catch(() => {
         // A failed refresh keeps what was on screen; a first read hides the iteration.
         if (requestId !== requestRef.current) return;
         setLoaded((previous) => (previous?.key === key && previous.current ? previous : { key, current: null }));
       });
-  }, [active, key, nonce]);
+  }, [active, key, nonce, epoch]);
 
   const current = loaded?.key === key ? loaded : null;
   return {

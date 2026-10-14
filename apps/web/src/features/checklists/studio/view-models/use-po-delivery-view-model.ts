@@ -5,7 +5,12 @@ import { useState } from "react";
 import type { AppRole } from "@/shared/api/contracts";
 
 import { iterationsRepository } from "../../data/iterations-repository";
-import { useCurrentIterationViewModel, type CurrentIterationViewModel } from "../../iteration";
+import {
+  useCurrentIterationViewModel,
+  useStartIterationViewModel,
+  type CurrentIterationViewModel,
+  type StartIterationViewModel,
+} from "../../iteration";
 import {
   canOfferMergeAll,
   mergeAllError,
@@ -26,6 +31,8 @@ export type MergeAllOutcome = { kind: "result"; result: MergeAllResult } | { kin
 export interface PoDeliveryViewModel {
   /** The Project's current iteration: stored delivery state per repository. */
   iteration: CurrentIterationViewModel;
+  /** Once it is delivered: Start iteration N+1 for a Product owner or admin (Iterations phase 3). */
+  start: StartIterationViewModel;
   /** Whether to offer Merge all repositories at all. */
   canMergeAll: boolean;
   /** The covered repositories not in main yet: what Merge all merges. */
@@ -83,6 +90,9 @@ export function usePoDeliveryViewModel(options: {
   const current = iteration.current;
   const pending = current ? pendingRepositories(current) : [];
   const offer = canOfferMergeAll(current, appRole) && pending.length > 0;
+  // A start re-reads the iteration and the QA run itself (the Project's
+  // epoch); the promotion status is this studio's own, so it is asked here.
+  const start = useStartIterationViewModel({ deliveryProjectId, current, appRole, onStarted: promotion.reload });
 
   function refresh() {
     iteration.reload();
@@ -115,6 +125,7 @@ export function usePoDeliveryViewModel(options: {
 
   return {
     iteration,
+    start,
     canMergeAll: offer,
     pending,
     mergeState,

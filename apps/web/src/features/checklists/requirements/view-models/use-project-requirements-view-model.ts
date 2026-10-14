@@ -5,7 +5,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { AppRole } from "@/shared/api/contracts";
 
 import { requirementsRepository } from "../../data/requirements-repository";
-import { useCurrentIterationViewModel, type CurrentIterationViewModel } from "../../iteration";
+import { useCurrentIterationViewModel, useIterationEpoch, type CurrentIterationViewModel } from "../../iteration";
 import { lockedIterationNumber } from "../../model/iteration-rules";
 import {
   removeRequirementItem,
@@ -99,6 +99,9 @@ export function useProjectRequirementsViewModel(options: {
   const [result, setResult] = useState<LoadResult | null>(null);
   const requestRef = useRef(0);
   const key = deliveryProjectId;
+  // A started iteration (Iterations phase 3) reads the list again: the
+  // carried items are the new iteration's requirements.
+  const epoch = useIterationEpoch(deliveryProjectId);
 
   useEffect(() => {
     if (!enabled || !deliveryProjectId) return;
@@ -114,7 +117,7 @@ export function useProjectRequirementsViewModel(options: {
         const missing = errorStatus(cause) === 404;
         setResult({ key, data: null, error: missing ? MISSING_ERROR : LOAD_ERROR, missing });
       });
-  }, [enabled, deliveryProjectId, key, nonce]);
+  }, [enabled, deliveryProjectId, key, nonce, epoch]);
 
   const current = result?.key === key ? result : null;
   const data = current?.data ?? null;

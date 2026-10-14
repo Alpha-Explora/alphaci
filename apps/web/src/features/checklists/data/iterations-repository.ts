@@ -1,7 +1,13 @@
 import { request } from "@/shared/api/request";
 
 import { normalizeCurrentIteration, normalizeMergeAll } from "../model/iteration-rules";
-import type { CurrentIteration, MergeAllResult } from "../model/iteration-types";
+import { normalizeStartedIteration } from "../model/iteration-start-rules";
+import type {
+  CurrentIteration,
+  MergeAllResult,
+  StartedIteration,
+  StartIterationInput,
+} from "../model/iteration-types";
 
 /* The only place in the checklists domain that talks to the Project
  * iteration endpoints (Iterations phase 2). Its own module, so the screens
@@ -35,6 +41,22 @@ export const iterationsRepository = {
   async mergeAll(deliveryProjectId: string): Promise<MergeAllResult> {
     return normalizeMergeAll(
       await request<unknown>(`${projectPath(deliveryProjectId)}/promotion/merge-all`, { method: "POST" }),
+    );
+  },
+
+  /**
+   * Start the Project's next iteration (lead / admin, Iterations phase 3),
+   * carrying the chosen items of the last delivered one. The server numbers
+   * it, copies the items in one transaction, and refuses a second start
+   * (409 ITERATION_ACTIVE) or an item it does not offer (400
+   * ITERATION_CARRY_INVALID).
+   */
+  async start(deliveryProjectId: string, input: StartIterationInput): Promise<StartedIteration> {
+    return normalizeStartedIteration(
+      await request<unknown>(`${projectPath(deliveryProjectId)}/iterations`, {
+        method: "POST",
+        body: JSON.stringify(input),
+      }),
     );
   },
 };
