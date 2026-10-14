@@ -16,6 +16,7 @@ import {
   projectMyItemsCount,
 } from "../../model/project-run-rules";
 import type { MyItemsBucket, ProjectFeedItem } from "../../model/project-run-types";
+import { showsFixProof } from "../../model/qa-attachment-rules";
 import { agoLabel } from "../../model/qa-run-rules";
 import { canSetProgress, itemProgressEditable, kindCopy } from "../../model/requirement-rules";
 import { useItemProgressViewModel, type ItemProgressViewModel } from "../view-models/use-item-progress-view-model";
@@ -23,6 +24,7 @@ import {
   useProjectMyItemsViewModel,
   type ProjectMyItemsViewModel,
 } from "../view-models/use-project-my-items-view-model";
+import { FixProof } from "./fix-proof";
 import { ProgressControl } from "./progress-control";
 
 function Detail({ label, text }: Readonly<{ label: string; text: string | null }>) {
@@ -57,18 +59,35 @@ function QaFindings({ entry }: Readonly<{ entry: ProjectFeedItem }>) {
   );
 }
 
+/**
+ * "Proof of the fix", where the server says the Developer may attach it (QA
+ * returned the item, or it is Done and awaits re-test) or the item already
+ * holds some. Nothing on an older backend, which sends neither.
+ */
+function FixProofSlot({
+  entry,
+  deliveryProjectId,
+  onReload,
+}: Readonly<{ entry: ProjectFeedItem; deliveryProjectId: string; onReload: () => void }>) {
+  const { runId, runItem } = entry;
+  if (!runId || !runItem || !showsFixProof(runItem)) return null;
+  return <FixProof deliveryProjectId={deliveryProjectId} runId={runId} runItem={runItem} onStale={onReload} />;
+}
+
 function FeedRow({
   entry,
   bucket,
   canSet,
   progress,
   onReload,
+  deliveryProjectId,
 }: Readonly<{
   entry: ProjectFeedItem;
   bucket: MyItemsBucket;
   canSet: boolean;
   progress: ItemProgressViewModel;
   onReload: () => void;
+  deliveryProjectId: string;
 }>) {
   const { item, requirement, runItem } = entry;
   return (
@@ -86,6 +105,7 @@ function FeedRow({
       </p>
       <Detail label="Acceptance criteria" text={item.acceptanceCriteria} />
       {bucket === "returned" ? <QaFindings entry={entry} /> : null}
+      <FixProofSlot entry={entry} deliveryProjectId={deliveryProjectId} onReload={onReload} />
       <ProgressControl
         item={item}
         editable={itemProgressEditable(item, canSet)}
@@ -102,12 +122,14 @@ function Bucket({
   canSet,
   progress,
   onReload,
+  deliveryProjectId,
 }: Readonly<{
   bucket: MyItemsBucket;
   entries: ProjectFeedItem[];
   canSet: boolean;
   progress: ItemProgressViewModel;
   onReload: () => void;
+  deliveryProjectId: string;
 }>) {
   if (entries.length === 0) return null;
   const copy = bucketCopy(bucket);
@@ -128,6 +150,7 @@ function Bucket({
             canSet={canSet}
             progress={progress}
             onReload={onReload}
+            deliveryProjectId={deliveryProjectId}
           />
         ))}
       </ul>
@@ -177,7 +200,14 @@ function Buckets({
   ready,
   canSet,
   progress,
-}: Readonly<{ list: ProjectMyItemsViewModel; ready: boolean; canSet: boolean; progress: ItemProgressViewModel }>) {
+  deliveryProjectId,
+}: Readonly<{
+  list: ProjectMyItemsViewModel;
+  ready: boolean;
+  canSet: boolean;
+  progress: ItemProgressViewModel;
+  deliveryProjectId: string;
+}>) {
   if (!ready) {
     return <p className="qa-mine__lede">Nothing here yet. Items appear once a Product owner writes requirements.</p>;
   }
@@ -191,6 +221,7 @@ function Buckets({
           canSet={canSet}
           progress={progress}
           onReload={list.reload}
+          deliveryProjectId={deliveryProjectId}
         />
       ))}
     </>
@@ -216,7 +247,8 @@ function cardState(
 /**
  * "My QA items" for a whole Project: every Developer's items, in four
  * buckets (returned by QA, in progress, to do, ready for QA), with the
- * Progress control for Developers, Product owners and admins. The QA Team
+ * Progress control for Developers, Product owners and admins, and "Proof of
+ * the fix" where the server lets a Developer attach screenshots of it. The QA Team
  * reads the same list; "Ready for QA" is their queue.
  *
  * `hideWhenEmpty` keeps the repository Overview quiet when there is nothing
@@ -260,7 +292,7 @@ export function ProjectMyItemsCard({
         </h2>
         <p className="qa-mine__lede">Everything the Developers in this Project are building, and what QA is waiting on.</p>
       </header>
-      <Buckets list={list} ready={ready} canSet={canSet} progress={progress} />
+      <Buckets list={list} ready={ready} canSet={canSet} progress={progress} deliveryProjectId={deliveryProjectId} />
     </section>
   );
 }

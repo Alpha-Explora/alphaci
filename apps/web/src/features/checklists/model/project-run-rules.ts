@@ -170,6 +170,8 @@ function itemShapeFrom(raw: Loose) {
     canUpdate: typeof raw.canUpdate === "boolean" ? raw.canUpdate : null,
     automated: normalizeAutomatedResult(raw.automated),
     attachmentCount: attachmentCountFrom(raw.attachmentCount),
+    fixProofCount: attachmentCountFrom(raw.fixProofCount),
+    canAttachFixProof: raw.canAttachFixProof === true,
     attachments: attachmentRefsFrom(raw.attachments),
   };
 }
