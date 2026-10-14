@@ -3,6 +3,13 @@
 import type { EnvOwnershipMode } from "@/shared/api/contracts";
 import { formatQuotaStatus } from "../model/workflow-studio-rules";
 import {
+  ALL_ONPREM_DELIVERY_NOTICE,
+  environmentHosting,
+  mixedHostingLine,
+  renderVariablesBlocking,
+  type EnvironmentHosting,
+} from "../model/onprem-hosting-rules";
+import {
   defaultProjectName,
   projectKindToSlot,
 } from "../model/setup-tab-rules";
@@ -91,6 +98,22 @@ function RenderVariablesNotice({ missing }: Readonly<{ missing: boolean }>) {
   );
 }
 
+/**
+ * Where the environments run, when any of them is on-prem. Every environment
+ * on-prem replaces the hosted configuration; a mix keeps it for the managed
+ * environments and names the on-prem ones.
+ */
+function OnpremHostingNotice({ hosting }: Readonly<{ hosting: EnvironmentHosting }>) {
+  if (hosting.mode === "managed") {
+    return null;
+  }
+  return (
+    <div className="env-empty-state" role="status" style={{ marginTop: "1.25rem" }}>
+      {hosting.mode === "onprem" ? ALL_ONPREM_DELIVERY_NOTICE : mixedHostingLine(hosting)}
+    </div>
+  );
+}
+
 function DeliveryProvisioningPanel({
   deploymentOwnershipMode,
   deploymentProvisioning,
@@ -138,25 +161,40 @@ export function SetupWizardDelivery({
   deploymentProvisioning,
   envProvisioningEnabled,
   form,
+  onpremHosting,
   projectCatalog,
   projectQuota,
   selectedProjectKind,
 }: Readonly<WizardStepProps>) {
+  const hosting = environmentHosting({
+    environments: form.environments,
+    environmentsEnabled: form.environmentsEnabled,
+    isMicroservicesShape: projectCatalog.isMicroservicesShape,
+    isMultiRepoShape: projectCatalog.isMultiRepoShape,
+    onpremStatus: onpremHosting.status,
+  });
   return (
     <>
       {projectCatalog.isMicroservicesShape || projectCatalog.isMultiRepoShape ? null : (
-        <SetupWizardEnvironments form={form} />
+        <SetupWizardEnvironments form={form} onpremHosting={onpremHosting} />
       )}
+      <OnpremHostingNotice hosting={hosting} />
+      {/* Every environment on-prem: no Render or Vercel to configure. */}
       <DeliveryProvisioningPanel
         deploymentOwnershipMode={deploymentOwnershipMode}
         deploymentProvisioning={deploymentProvisioning}
-        envProvisioningEnabled={envProvisioningEnabled}
+        envProvisioningEnabled={envProvisioningEnabled && hosting.mode !== "onprem"}
         form={form}
         projectCatalog={projectCatalog}
         selectedProjectKind={selectedProjectKind}
       />
       <QuotaNotice projectQuota={projectQuota} />
-      <RenderVariablesNotice missing={deploymentProvisioning.renderVariablesMissing} />
+      <RenderVariablesNotice
+        missing={renderVariablesBlocking(
+          deploymentProvisioning.renderVariablesMissing,
+          hosting.mode,
+        )}
+      />
     </>
   );
 }

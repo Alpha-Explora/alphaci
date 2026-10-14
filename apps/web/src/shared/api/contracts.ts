@@ -533,6 +533,25 @@ export interface DeploymentProvisioningRequest {
   targets: DeploymentProvisioningTargetRequest[];
 }
 
+/**
+ * A creation-time on-prem target. It needs nothing else: no provider account,
+ * no GitHub call, and it is never forced onto a managed account. With
+ * `environmentSlug` it applies to that environment only and replaces the
+ * shared target for its slot there.
+ */
+export interface OnpremProvisioningTargetRequest {
+  slot: EnvTargetSlot;
+  provider: "onprem-compose";
+  ownershipMode: "byo";
+  environmentSlug?: string;
+}
+
+/** What project creation accepts: the hosted targets plus on-prem ones. */
+export interface CreateDeploymentProvisioningRequest
+  extends Omit<DeploymentProvisioningRequest, "targets"> {
+  targets: Array<DeploymentProvisioningTargetRequest | OnpremProvisioningTargetRequest>;
+}
+
 export interface DeploymentProvisioningResult {
   status: "skipped" | "completed" | "partial" | "failed";
   targets: Array<{
@@ -973,7 +992,7 @@ export interface CreateProjectRequest {
   outputFileName?: string;
   microservicesConfig?: MicroservicesConfig;
   multiRepoConfig?: MicroservicesConfig;
-  deploymentProvisioning?: DeploymentProvisioningRequest;
+  deploymentProvisioning?: CreateDeploymentProvisioningRequest;
   /** Group/workspace to create this project inside (from ?group=<id>). */
   workspaceId?: string;
   /**

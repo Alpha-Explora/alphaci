@@ -111,7 +111,8 @@ export function WorkflowBuilder({ guest = false, session, onboardingCompleted }:
     showProjects, openIndividualSetup,
     handleCreateProject, handleDiscoverExistingRepo, handleSetupExistingRepo, handleGenerateWorkflow,
     catalog, projectCatalog, projects, createForm, deploymentProvisioning,
-    deploymentOwnershipMode, envProvisioningEnabled, github, startTour, startCurrentProjectsTour,
+    deploymentOwnershipMode, envProvisioningEnabled, onpremHosting, github, startTour,
+    startCurrentProjectsTour,
   } = vm;
 
   const actions = studioGuestActions({
@@ -143,6 +144,7 @@ export function WorkflowBuilder({ guest = false, session, onboardingCompleted }:
                 deploymentOwnershipMode={deploymentOwnershipMode}
                 deploymentProvisioning={deploymentProvisioning}
                 envProvisioningEnabled={envProvisioningEnabled}
+                onpremHosting={onpremHosting}
                 github={github}
                 existingRepoBaseBranch={existingRepoBaseBranch}
                 existingRepoDiscovery={existingRepoDiscovery}

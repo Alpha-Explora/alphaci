@@ -1,6 +1,13 @@
 "use client";
 
 import { reviewProjectLabel } from "../model/project-name-rules";
+import {
+  environmentHosting,
+  environmentsRunOnSummary,
+  hostingDeliveryLabel,
+  type EnvironmentHosting,
+  type OnpremHosting,
+} from "../model/onprem-hosting-rules";
 import { githubOrgLogin, selectedShapeLabel } from "../model/setup-tab-rules";
 import { projectOptionLabels } from "../view-models/use-project-options-catalog";
 import type { WizardStepProps } from "./setup-wizard-props";
@@ -44,11 +51,20 @@ function reviewRuntime(
   return `Node ${nodeVersion || "default"}`;
 }
 
-function reviewDeliveryLabel(enabled: boolean): string {
-  if (enabled) {
-    return "Deployment setup included";
+/**
+ * Where each environment runs: only on a deployment that offers on-prem, for
+ * a project that defines its environments.
+ */
+function ReviewEnvironmentsRow({
+  hosting,
+  onpremHosting,
+}: Readonly<{ hosting: EnvironmentHosting; onpremHosting: OnpremHosting }>) {
+  if (onpremHosting.status !== "enabled" || hosting.environments.length === 0) {
+    return null;
   }
-  return "CI workflow only";
+  return (
+    <div><dt>Environments</dt><dd>{environmentsRunOnSummary(hosting)}</dd></div>
+  );
 }
 
 function GithubCreateIcon() {
@@ -101,10 +117,18 @@ export function SetupWizardReview({
   isCreatingProject,
   joinedProjectName,
   onCreateProject,
+  onpremHosting,
   projectCatalog,
 }: Readonly<WizardStepProps>) {
   const owner = githubOrgLogin(github.allRepositoriesAccount?.accountLogin);
   const checkedOptions = projectCatalog.supportedTestOptions.filter(isCheckedOption);
+  const hosting = environmentHosting({
+    environments: form.environments,
+    environmentsEnabled: form.environmentsEnabled,
+    isMicroservicesShape: projectCatalog.isMicroservicesShape,
+    isMultiRepoShape: projectCatalog.isMultiRepoShape,
+    onpremStatus: onpremHosting.status,
+  });
 
   return (
     <>
@@ -121,7 +145,8 @@ export function SetupWizardReview({
           <div><dt>Shape</dt><dd>{selectedShapeLabel(projectCatalog.allRepoShapes, projectCatalog.selectedRepoShapeId)}</dd></div>
           <div><dt>Workflow</dt><dd>{reviewWorkflowLabel(projectCatalog.selectedWorkflowRecipe?.label)} · {reviewOutputFile(form.outputFileName)}</dd></div>
           <div><dt>Runtime</dt><dd>{reviewRuntime(projectCatalog.selectedProjectType?.runtime, projectCatalog.selectedProjectType?.language, form.nodeVersion)} · {form.coverageThreshold}% coverage</dd></div>
-          <div><dt>Delivery</dt><dd>{reviewDeliveryLabel(deploymentProvisioning.enabled)}</dd></div>
+          <div><dt>Delivery</dt><dd>{hostingDeliveryLabel(deploymentProvisioning.enabled, hosting.mode)}</dd></div>
+          <ReviewEnvironmentsRow hosting={hosting} onpremHosting={onpremHosting} />
         </dl>
         <div className="repo-wizard-review__checks">
           {checkedOptions.map((option) => (

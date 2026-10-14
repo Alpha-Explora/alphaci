@@ -1,0 +1,98 @@
+/* ── "Runs on" in the create wizard's Environments step ──────────────────────
+   A two-way segmented control per environment (Managed hosting / On-prem
+   host), built on native radios so arrow keys move between the options and a
+   screen reader announces the group. Shown only where the deployment offers
+   on-prem hosting. Tokens only.
+   ------------------------------------------------------------------------- */
+
+.env-runs-on-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem 0.75rem;
+}
+
+.env-runs-on-note {
+  margin: 0;
+  font-size: 0.78rem;
+  line-height: 1.45;
+  color: var(--text-muted);
+}
+
+.env-runs-on {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.45rem;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.env-runs-on__label {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+}
+
+.env-runs-on__options {
+  display: inline-flex;
+  padding: 0.15rem;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-pill);
+  background: var(--bg-soft);
+}
+
+.env-runs-on__option {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  min-height: 1.9rem;
+  padding: 0 0.75rem;
+  border-radius: var(--radius-pill);
+  font-size: 0.76rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition:
+    background-color 160ms ease-out,
+    color 160ms ease-out,
+    box-shadow 160ms ease-out;
+}
+
+/* The radio stays in the accessibility tree and takes focus; the label draws it. */
+.env-runs-on__option input {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  opacity: 0;
+  cursor: inherit;
+}
+
+.env-runs-on__option:hover {
+  color: var(--text-primary);
+}
+
+.env-runs-on__option:focus-within {
+  outline: 2px solid var(--brand);
+  outline-offset: 1px;
+}
+
+/* The chosen option reads at a glance in both themes, as the Pipeline tab's
+   toggle does: brand tint, brand edge, brand text. */
+.env-runs-on__option:has(input:checked) {
+  background: color-mix(in srgb, var(--brand-strong) 16%, transparent);
+  box-shadow: inset 0 0 0 1px var(--border-brand);
+  color: var(--brand);
+}
+
+.env-runs-on__option:has(input:disabled) {
+  color: var(--text-muted);
+  cursor: not-allowed;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .env-runs-on__option {
+    transition: none;
+  }
+}
