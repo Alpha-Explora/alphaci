@@ -2,7 +2,11 @@
 
 import { useCallback, useState } from "react";
 
-import type { CreateProjectRequest, MvpProjectOptionKey } from "@/shared/api/contracts";
+import type {
+  CreateProjectRequest,
+  EnvTargetSlot,
+  MvpProjectOptionKey,
+} from "@/shared/api/contracts";
 import {
   buildCreateProjectPayload,
   sanitizeRepoNameInput,
@@ -26,6 +30,8 @@ interface BuildPayloadInput {
   ownerType?: "personal" | "organization";
   installationId?: number;
   deploymentProvisioning?: CreateProjectRequest["deploymentProvisioning"];
+  /** The deployable slots, only when the deployment offers on-prem hosting. */
+  onpremSlots?: readonly EnvTargetSlot[];
 }
 
 export function useCreateProjectForm() {

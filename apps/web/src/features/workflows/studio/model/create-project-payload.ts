@@ -1,4 +1,9 @@
-import type { CreateProjectRequest, MvpProjectOptionKey } from "@/shared/api/contracts";
+import type {
+  CreateProjectRequest,
+  EnvTargetSlot,
+  MvpProjectOptionKey,
+} from "@/shared/api/contracts";
+import { withOnpremTargets } from "./onprem-hosting-rules";
 import {
   environmentsProblem,
   type EnvironmentDraft,
@@ -42,6 +47,12 @@ export interface CreateProjectPayloadInput {
   deploymentProvisioning?: CreateProjectRequest["deploymentProvisioning"];
   /** Set only when the user chose to define environments. */
   environments?: readonly EnvironmentDraft[];
+  /**
+   * The project's deployable slots, set only when the deployment offers
+   * on-prem hosting. Without it every environment's "Runs on" is ignored and
+   * the request is exactly what it was before on-prem existed.
+   */
+  onpremSlots?: readonly EnvTargetSlot[];
 }
 
 function sanitizeRepoNameInput(value: string): string {
@@ -195,6 +206,20 @@ function dualShapePayload(
   return { ok: true, payload };
 }
 
+/** Hosted targets, plus on-prem targets for the environments that run on-prem. */
+function standaloneProvisioning(
+  input: CreateProjectPayloadInput,
+): CreateProjectRequest["deploymentProvisioning"] {
+  if (!input.environments || !input.onpremSlots) {
+    return input.deploymentProvisioning;
+  }
+  return withOnpremTargets(
+    input.deploymentProvisioning,
+    input.environments,
+    input.onpremSlots,
+  );
+}
+
 function standalonePayload(input: CreateProjectPayloadInput): CreateProjectPayloadResult {
   if (!input.projectTypeId) {
     return { ok: false, message: "Choose a project type." };
@@ -214,7 +239,12 @@ function standalonePayload(input: CreateProjectPayloadInput): CreateProjectPaylo
   return {
     ok: true,
     payload: {
-      ...sharedFields(input, normalizedRepoName, coverage, outputFileName),
+      ...sharedFields(
+        { ...input, deploymentProvisioning: standaloneProvisioning(input) },
+        normalizedRepoName,
+        coverage,
+        outputFileName,
+      ),
       projectTypeId: input.projectTypeId,
       workflowRecipeId: input.workflowRecipeId,
       serviceName: toSlug(input.serviceName || normalizedRepoName),

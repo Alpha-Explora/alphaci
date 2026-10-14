@@ -38,6 +38,11 @@ import {
   wizardStepReadyFlags,
 } from "../model/setup-tab-rules";
 import { REPOSITORY_CREATE_ROLE_NOTE } from "../model/role-gate-rules";
+import {
+  environmentHosting,
+  renderVariablesBlocking,
+  type OnpremHosting,
+} from "../model/onprem-hosting-rules";
 import type { ProjectChoice } from "./setup-wizard-props";
 import { ExistingRepoSetupPanel } from "./existing-repo-setup-panel";
 import { NewRepoWizard, RepositoryCreationProgress } from "./new-repo-wizard";
@@ -90,6 +95,8 @@ interface WorkflowSetupTabProps {
   deploymentOwnershipMode: EnvOwnershipMode;
   deploymentProvisioning: DeploymentProvisioningFormState;
   envProvisioningEnabled: boolean;
+  /** Whether the Environments step offers "On-prem host". */
+  onpremHosting: OnpremHosting;
   existingRepoBaseBranch: string;
   existingRepoDiscovery: DiscoverExistingRepoResponse | null;
   existingRepoFullName: string;
@@ -160,6 +167,7 @@ export function WorkflowSetupTab({
   existingRepoAllowed,
   deploymentProvisioning,
   envProvisioningEnabled,
+  onpremHosting,
   existingRepoBaseBranch,
   existingRepoDiscovery,
   existingRepoFullName,
@@ -188,11 +196,23 @@ export function WorkflowSetupTab({
   const projectQuota = findProjectQuota(usageItems);
   const projectQuotaReached = isProjectQuotaReached(projectQuota);
   const hasSelectedProjectType = Boolean(projectCatalog.selectedProjectType);
+  // With every environment on-prem there is no Render service to configure,
+  // so the Render-variable rule does not hold the Delivery step or Create.
+  const renderVariablesMissing = renderVariablesBlocking(
+    deploymentProvisioning.renderVariablesMissing,
+    environmentHosting({
+      environments: form.environments,
+      environmentsEnabled: form.environmentsEnabled,
+      isMicroservicesShape: projectCatalog.isMicroservicesShape,
+      isMultiRepoShape: projectCatalog.isMultiRepoShape,
+      onpremStatus: onpremHosting.status,
+    }).mode,
+  );
   const createDisabled = isCreateDisabled({
     isCreatingProject,
     projectQuotaReached,
     loadingProjectOptions: projectCatalog.loadingProjectOptions,
-    renderVariablesMissing: deploymentProvisioning.renderVariablesMissing,
+    renderVariablesMissing,
     repoName: form.repoName,
     isMicroservicesShape: projectCatalog.isMicroservicesShape,
     isMultiRepoShape: projectCatalog.isMultiRepoShape,
@@ -260,7 +280,7 @@ export function WorkflowSetupTab({
       serviceName: form.serviceName,
     }),
     automation: isAutomationStepReady(form.outputFileName, form.nodeVersion),
-    delivery: !deploymentProvisioning.renderVariablesMissing,
+    delivery: !renderVariablesMissing,
     createReady: !createDisabled,
   });
   const finalCreateDisabled = isFinalCreateDisabled({
@@ -384,6 +404,7 @@ export function WorkflowSetupTab({
           deploymentOwnershipMode={deploymentOwnershipMode}
           deploymentProvisioning={deploymentProvisioning}
           envProvisioningEnabled={envProvisioningEnabled}
+          onpremHosting={onpremHosting}
           finalCreateDisabled={finalCreateDisabled}
           form={form}
           github={github}

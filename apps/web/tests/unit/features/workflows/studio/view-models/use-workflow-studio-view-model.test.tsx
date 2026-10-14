@@ -49,6 +49,11 @@ jest.mock("../../../../../../src/features/workflows/studio/data/github-api", () 
   linkGithubInstallation: jest.fn(),
 }));
 
+// The create view reads which deployment providers exist (on-prem or not).
+jest.mock("../../../../../../src/features/workflows/studio/data/deployment-providers-repository", () => ({
+  deploymentProvidersRepository: { list: jest.fn().mockResolvedValue([]) },
+}));
+
 jest.mock("../../../../../../src/features/capabilities/current", () => ({
   useCapabilities: jest.fn(() => ({
     status: "ready",

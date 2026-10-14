@@ -10,11 +10,19 @@
 
 export type EnvironmentDraftRole = "production" | "non_production";
 
+/** Where an environment runs. Absent means managed hosting, today's default. */
+export type EnvironmentRunsOn = "managed" | "onprem";
+
 export interface EnvironmentDraft {
   slug: string;
   displayName: string;
   sourceBranch: string;
   role: EnvironmentDraftRole;
+  /**
+   * Wizard-only: never sent as an environment field. It travels with the row
+   * through reorder and remove, and becomes on-prem deployment targets.
+   */
+  runsOn?: EnvironmentRunsOn;
 }
 
 /** The editable starting point: test and UAT, then production. */

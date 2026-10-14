@@ -20,6 +20,7 @@ import { repositoryRequiresProject } from "@/features/groups";
 import { useCreateProjectForm } from "./use-create-project-form";
 import { useDeploymentProvisioningForm } from "./use-deployment-provisioning-form";
 import { useGithubInstallations } from "./use-github-installations";
+import { useOnpremHosting } from "./use-onprem-hosting";
 import { useProjectOptionsCatalog } from "./use-project-options-catalog";
 import { useProvisionedProjects } from "./use-provisioned-projects";
 import { useWorkflowCatalog } from "./use-workflow-catalog";
@@ -29,6 +30,11 @@ import { useCurrentProjectsTour } from "./use-current-projects-tour";
 import { useCreateTarget } from "./use-create-target";
 import { useTeamProjectOptions } from "./use-team-project-options";
 import { roleGateErrorMessage } from "../model/role-gate-rules";
+import {
+  environmentHosting,
+  onpremSlotsFor,
+  renderVariablesBlocking,
+} from "../model/onprem-hosting-rules";
 import {
   createRepositoryBlocker,
   preselectedWorkspaceId,
@@ -141,6 +147,20 @@ export function useWorkflowStudioViewModel(options: {
   );
   const { deploymentOwnershipMode, envProvisioningEnabled } = useCapabilities();
   const github = useGithubInstallations(setStatusMessage, () => undefined);
+  // "On-prem host" in the Environments step: read when the wizard opens.
+  const onpremHosting = useOnpremHosting({ guest, open: activeView === "setup" });
+  const hosting = environmentHosting({
+    environments: createForm.environments,
+    environmentsEnabled: createForm.environmentsEnabled,
+    isMicroservicesShape: projectCatalog.isMicroservicesShape,
+    isMultiRepoShape: projectCatalog.isMultiRepoShape,
+    onpremStatus: onpremHosting.status,
+  });
+  // With every environment on-prem there is no Render service to configure.
+  const renderVariablesMissing = renderVariablesBlocking(
+    deploymentProvisioning.renderVariablesMissing,
+    hosting.mode,
+  );
 
   const { startTour } = useOnboardingTour({
     session: session ?? null,
@@ -211,7 +231,7 @@ export function useWorkflowStudioViewModel(options: {
     // then keeps its own name, so no projectName is asked for or sent.
     const deliveryProjectId = createTarget.deliveryProjectIdFor(workspaceId);
     const blocker = createRepositoryBlocker({
-      renderVariablesMissing: deploymentProvisioning.renderVariablesMissing,
+      renderVariablesMissing,
       requiresProject,
       deliveryProjectId,
       featuresBlocker: projectFeaturesBlocker(deliveryProjectId, teamProjects.options, appRole),
@@ -230,6 +250,12 @@ export function useWorkflowStudioViewModel(options: {
       workflowRecipeId: projectCatalog.selectedWorkflowRecipeId,
       tests: projectCatalog.tests,
       deploymentProvisioning: deploymentProvisioning.payload,
+      onpremSlots: onpremSlotsFor({
+        status: onpremHosting.status,
+        deploymentProvisioning: deploymentProvisioning.payload,
+        selectedProjectType: projectCatalog.selectedProjectType,
+        selectedProjectTypeId: projectCatalog.selectedProjectTypeId,
+      }),
     });
 
     if (!payloadResult.ok) {
@@ -480,6 +506,8 @@ export function useWorkflowStudioViewModel(options: {
     deploymentProvisioning,
     deploymentOwnershipMode,
     envProvisioningEnabled,
+    /** Whether the Environments step offers "On-prem host" (hidden, disabled with a reason, or enabled). */
+    onpremHosting,
     github,
     startTour,
     startCurrentProjectsTour,

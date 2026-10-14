@@ -89,6 +89,11 @@ jest.mock("../../src/features/workflows/studio/data/github-api", () => ({
 jest.mock("../../src/features/workflows/studio/data/env-provisioning-api", () => ({
   listProviderConnections: jest.fn(),
 }));
+// Which deployment providers exist. Empty by default: an older backend that
+// does not list on-prem, so every test outside "On-prem hosting" sees today's wizard.
+jest.mock("../../src/features/workflows/studio/data/deployment-providers-repository", () => ({
+  deploymentProvidersRepository: { list: jest.fn() },
+}));
 jest.mock("../../src/features/capabilities/current/data/capabilities-api", () => ({
   getCapabilities: jest.fn(),
 }));
@@ -150,6 +155,12 @@ function folders(names: Array<[string, string] | [string, string, number]>) {
     unfiled: [],
   };
 }
+
+const mockedListDeploymentProviders = (
+  jest.requireMock("../../src/features/workflows/studio/data/deployment-providers-repository") as {
+    deploymentProvidersRepository: { list: jest.Mock };
+  }
+).deploymentProvidersRepository.list;
 
 const mockedGetGroups = (
   jest.requireMock("../../src/features/groups/data/hierarchy-api") as {
@@ -378,6 +389,7 @@ describe("WorkflowBuilder project setup", () => {
     mockSearch = "";
     mockAppRole = undefined;
     mockedGetGroups.mockResolvedValue([]);
+    mockedListDeploymentProviders.mockResolvedValue([]);
     mockedListFolders.mockResolvedValue(folders([["dp-1", "testfinals"], ["dp-2", "wallet"]]));
     mockedGetCapabilities.mockResolvedValue({
       envProvisioning: {
@@ -1402,6 +1414,148 @@ describe("WorkflowBuilder project setup", () => {
         // Create can never be reached: the Repository step does not go on.
         expect(findButton("Continue")).toBeDisabled();
         expect(mockedCreateProject).not.toHaveBeenCalled();
+      });
+    });
+  });
+  describe("On-prem hosting", () => {
+    const ONPREM_NOTICE =
+      "Every environment runs on your on-prem host. After the project is created, register the host on the project's Hosting tab.";
+    const RENDER_NOTICE = "Add at least one Render environment variable";
+
+    async function openDeliveryStep(projectTypeId: string) {
+      await renderBuilder();
+      await advanceToStep(3, { projectTypeId, repoName: "ledger" });
+      await waitForCondition(
+        () => container.textContent?.includes("Define this project") ?? false,
+      );
+    }
+
+    // The suite's framer-motion mock remounts the step on every state change:
+    // always re-query, never hold a node.
+    function defineEnvironments() {
+      const toggle = Array.from(
+        container.querySelectorAll<HTMLInputElement>("input[type='checkbox']"),
+      ).find((input) => input.closest("label")?.textContent?.includes("Define this project"));
+      act(() => toggle!.click());
+    }
+
+    function runsOn(environment: number, value: "managed" | "onprem"): HTMLInputElement {
+      const row = container.querySelector(`[aria-label='Environment ${environment}']`)!;
+      return row.querySelector<HTMLInputElement>(`input[type='radio'][value='${value}']`)!;
+    }
+
+    function provisioningToggle(): HTMLInputElement | null {
+      return container.querySelector<HTMLInputElement>(
+        "input[aria-label='Provision deployment target']",
+      );
+    }
+
+    function reviewValue(label: string): string | null | undefined {
+      const rows = Array.from(container.querySelectorAll(".repo-wizard-review__grid > div"));
+      const row = rows.find((candidate) => candidate.querySelector("dt")?.textContent === label);
+      return row?.querySelector("dd")?.textContent;
+    }
+
+    async function createFromReview() {
+      await act(async () => {
+        container.querySelector<HTMLButtonElement>("[data-testid='setup-project-button']")?.click();
+        await Promise.resolve();
+      });
+      await waitForCondition(() => mockedCreateProject.mock.calls.length === 1);
+      return mockedCreateProject.mock.calls[0]![0];
+    }
+
+    it("shows nothing new when the backend does not list on-prem", async () => {
+      await openDeliveryStep("nestjs-api");
+      defineEnvironments();
+      expect(container.querySelector("[aria-label='Environment 1']")).not.toBeNull();
+      expect(container.textContent).not.toContain("Runs on");
+      expect(findButton("Run every environment on-prem")).toBeNull();
+    });
+
+    it("shows on-prem disabled with the server's reason when it is turned off", async () => {
+      mockedListDeploymentProviders.mockResolvedValue([
+        { id: "render", enabled: true },
+        { id: "onprem-compose", enabled: false, reason: "On-prem hosts are off in this deployment." },
+      ]);
+      await openDeliveryStep("nestjs-api");
+      defineEnvironments();
+      expect(container.textContent).toContain(
+        "On-prem host is unavailable: On-prem hosts are off in this deployment.",
+      );
+      expect(runsOn(1, "onprem")).toBeDisabled();
+      expect(runsOn(1, "managed")).toBeChecked();
+      expect(findButton("Run every environment on-prem")).toBeDisabled();
+    });
+
+    it("creates an all on-prem project with no Render or Vercel configuration", async () => {
+      mockedListDeploymentProviders.mockResolvedValue([
+        { id: "onprem-compose", enabled: true, supportedSlots: ["backend", "frontend", "standalone"] },
+      ]);
+      await openDeliveryStep("nestjs-api");
+      // Managed hosting first: a Render target with no variable holds the step.
+      act(() => provisioningToggle()!.click());
+      expect(container.textContent).toContain(RENDER_NOTICE);
+      expect(findButton("Continue")).toBeDisabled();
+
+      defineEnvironments();
+      act(() => findButton("Run every environment on-prem")!.click());
+      expect([1, 2, 3].map((row) => runsOn(row, "onprem").checked)).toEqual([true, true, true]);
+      expect(container.textContent).toContain(ONPREM_NOTICE);
+      expect(provisioningToggle()).toBeNull();
+      expect(container.textContent).not.toContain(RENDER_NOTICE);
+      expect(findButton("Continue")).not.toBeDisabled();
+
+      // Switching one row back undoes only that row, and the hosted setup returns.
+      act(() => runsOn(1, "managed").click());
+      expect([1, 2, 3].map((row) => runsOn(row, "onprem").checked)).toEqual([false, true, true]);
+      expect(provisioningToggle()).not.toBeNull();
+      expect(container.textContent).toContain("UAT and Production run on your on-prem host");
+      expect(findButton("Continue")).toBeDisabled();
+      act(() => runsOn(1, "onprem").click());
+
+      await clickContinue();
+      expect(reviewValue("Delivery")).toBe("On-prem host for every environment");
+      expect(reviewValue("Environments")).toBe(
+        "Test: On-prem host · UAT: On-prem host · Production: On-prem host",
+      );
+      const sent = await createFromReview();
+      expect(sent.deploymentProvisioning).toEqual({
+        enabled: true,
+        targets: ["dev", "uat", "main"].map((environmentSlug) => ({
+          slot: "backend",
+          provider: "onprem-compose",
+          ownershipMode: "byo",
+          environmentSlug,
+        })),
+      });
+      expect(sent.environments).toEqual([
+        { slug: "dev", displayName: "Test", sourceBranch: "dev", role: "non_production" },
+        { slug: "uat", displayName: "UAT", sourceBranch: "uat", role: "non_production" },
+        { slug: "main", displayName: "Production", sourceBranch: "main", role: "production" },
+      ]);
+    });
+
+    it("runs production on-prem and the rest on managed hosting", async () => {
+      mockedListDeploymentProviders.mockResolvedValue([{ id: "onprem-compose", enabled: true }]);
+      await openDeliveryStep("nextjs-app");
+      defineEnvironments();
+      act(() => runsOn(3, "onprem").click());
+      expect(container.textContent).toContain(
+        "Production runs on your on-prem host; register the host on the project's Hosting tab after the project is created. The hosting below applies to Test and UAT.",
+      );
+      expect(provisioningToggle()).not.toBeNull();
+
+      await clickContinue();
+      expect(reviewValue("Environments")).toBe(
+        "Test: Managed hosting · UAT: Managed hosting · Production: On-prem host",
+      );
+      const sent = await createFromReview();
+      expect(sent.deploymentProvisioning).toEqual({
+        enabled: true,
+        targets: [
+          { slot: "frontend", provider: "onprem-compose", ownershipMode: "byo", environmentSlug: "main" },
+        ],
       });
     });
   });
