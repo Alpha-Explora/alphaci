@@ -19,6 +19,7 @@ import {
   SectionHeader,
 } from "@/features/groups/workspace";
 
+import { IterationStatus } from "@/features/checklists/iteration";
 import { ProjectQaWorkspace } from "@/features/checklists/requirements";
 
 import { useDeliveryProjectViewModel } from "../view-models/use-delivery-project-view-model";
@@ -155,6 +156,7 @@ function DeliveryProjectDetail({
         actions={
           <div style={{ display: "flex", gap: "0.6rem", alignItems: "center" }}>
             <LifecycleStatusBadge status={project.status} />
+            <IterationStatus deliveryProjectId={project.id} enabled={vm.qaEnabled} />
             {createButton}
           </div>
         }

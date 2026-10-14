@@ -680,3 +680,30 @@
     animation: none;
   }
 }
+
+/* ── Delivered (Iterations) ───────────────────────────────────────────────
+   The Project's iteration reached main: no longer "ready", not "blocked"
+   either. Violet, the one tone nothing else here uses. */
+.qa-promo-chip[data-tone="delivered"] {
+  --qa-chip-tone: var(--accent-violet);
+  --qa-chip-fill: var(--accent-violet-light);
+  --qa-chip-edge: var(--border-violet);
+}
+
+.qa-promo-pop[data-tone="delivered"],
+.qa-promo[data-ready="delivered"] {
+  --qa-promo-tone: var(--accent-violet);
+}
+
+.qa-promo[data-ready="delivered"] .qa-promo__mark {
+  border-color: var(--border-violet);
+  background: var(--accent-violet-light);
+  color: var(--accent-violet);
+}
+
+.qa-promo__delivered {
+  margin: 0;
+  font-size: 0.78rem;
+  line-height: 1.45;
+  color: var(--text-secondary);
+}

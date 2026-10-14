@@ -44,6 +44,12 @@ function CardHead({
   );
 }
 
+/** The card's tone: delivered, ready, or not ready. */
+function readyState(data: QaPromotionStatus): "delivered" | "true" | "false" {
+  if (data.iterationDelivered) return "delivered";
+  return data.eligible ? "true" : "false";
+}
+
 function ReadyCard({ vm, data }: Readonly<{ vm: QaPromotionViewModel; data: QaPromotionStatus }>) {
   // Folded to its head, which already answers "ready or not"; unfolding is
   // for this visit only.
@@ -53,7 +59,7 @@ function ReadyCard({ vm, data }: Readonly<{ vm: QaPromotionViewModel; data: QaPr
     <section
       className="qa-promo"
       aria-label="Production readiness"
-      data-ready={data.eligible ? "true" : "false"}
+      data-ready={readyState(data)}
       data-collapsed={open ? "false" : "true"}
       aria-busy={vm.refreshing}
     >

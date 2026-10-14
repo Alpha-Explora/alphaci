@@ -10,6 +10,7 @@ import {
   PO_WAITING_TITLE,
   poAcceptanceState,
   poWaitingText,
+  type PoAcceptanceState,
 } from "../../model/po-studio-rules";
 import { headLabel, resolveProjectRunPermissions } from "../../model/project-run-rules";
 import type { ProjectQaRun } from "../../model/project-run-types";
@@ -17,7 +18,9 @@ import { UNFILED_REASON } from "../../model/qa-promotion-rules";
 import type { QaScope } from "../../model/qa-scope";
 import type { ProjectRunViewModel } from "../view-models/use-project-run-view-model";
 import { useProjectReopenViewModel } from "../view-models/use-project-signoff-view-model";
+import { usePoDeliveryViewModel, type PoDeliveryViewModel } from "../view-models/use-po-delivery-view-model";
 import type { QaPromotionViewModel } from "../view-models/use-qa-promotion-view-model";
+import { PoDeliveredBanner, PoMergeAll } from "./po-delivery";
 import { RunSummary, SignoffBanner } from "./run-signoff";
 
 function signedSubject(run: ProjectQaRun): string {
@@ -51,21 +54,114 @@ function QaRunAcceptance({
   );
 }
 
+type ProjectScope = Extract<QaScope, { kind: "project" }>;
+
+/** The acceptance status line: waiting for QA, or ready for main. */
+function AcceptanceStatus({ ready, run }: Readonly<{ ready: boolean; run: ProjectQaRun | null }>) {
+  return (
+    <div className="po-accept__status" role="status">
+      <p className="po-accept__title">{ready ? PO_READY_TITLE : PO_WAITING_TITLE}</p>
+      <p className="po-accept__text">{ready ? PO_READY_TEXT : poWaitingText(run)}</p>
+    </div>
+  );
+}
+
+/** Delivered, by the promotion status or by the stored iteration. */
+function isDelivered(state: PoAcceptanceState, delivery: PoDeliveryViewModel): boolean {
+  return state === "delivered" || delivery.iteration.current?.iteration.status === "delivered";
+}
+
+/** The way to the QA run, while there is still something for QA to do. */
+function OpenQaRun({ shown, onOpenQaRun }: Readonly<{ shown: boolean; onOpenQaRun?: () => void }>) {
+  if (!shown || !onOpenQaRun) return null;
+  return (
+    <button type="button" className="ghost-button po-accept__open" onClick={onOpenQaRun}>
+      View the QA run
+    </button>
+  );
+}
+
+/**
+ * A Project's acceptance: the delivered banner once its iteration reached
+ * main; before that, waiting or ready, each covered repository's stored
+ * state with Merge all repositories, and what QA did with the run.
+ */
+function ProjectAcceptance({
+  qaScope,
+  projectId,
+  state,
+  projectRun,
+  promotion,
+  appRole,
+  onOpenQaRun,
+}: Readonly<{
+  qaScope: ProjectScope;
+  projectId: string;
+  state: PoAcceptanceState;
+  projectRun: ProjectRunViewModel;
+  promotion: QaPromotionViewModel;
+  appRole: AppRole | null | undefined;
+  onOpenQaRun?: () => void;
+}>) {
+  const delivery = usePoDeliveryViewModel({
+    deliveryProjectId: qaScope.deliveryProjectId,
+    projectId,
+    appRole,
+    promotion,
+  });
+  const run = projectRun.status === "ready" ? projectRun.run : null;
+  const delivered = isDelivered(state, delivery);
+  const ready = state === "ready";
+  return (
+    <div className="qa-run-card po-accept" data-state={delivered ? "delivered" : state}>
+      <div className="qa-run-card__head">
+        <div className="qa-run-card__picker">
+          <span className="qa-toolbar__label">Product acceptance</span>
+          <h3 className="qa-run-card__title">{qaScope.projectName}</h3>
+        </div>
+      </div>
+      {delivered ? (
+        <PoDeliveredBanner current={delivery.iteration.current} fallback={promotion.data?.iteration ?? null} />
+      ) : (
+        <>
+          <AcceptanceStatus ready={ready} run={run} />
+          <PoMergeAll vm={delivery} projectName={qaScope.projectName} />
+        </>
+      )}
+      {run ? (
+        <QaRunAcceptance
+          key={run.id}
+          deliveryProjectId={qaScope.deliveryProjectId}
+          vm={projectRun}
+          run={run}
+          appRole={appRole}
+        />
+      ) : null}
+      <OpenQaRun shown={!ready && !delivered} onOpenQaRun={onOpenQaRun} />
+    </div>
+  );
+}
+
 /**
  * PO Studio's column: whether the Project's release candidate is ready for
- * production, and why not yet. The merge itself is the tab bar's readiness
- * chip and Merge to main above it (the same ones QA Studio shows); this panel
- * is the acceptance around it.
- * Verifying items stays with the QA run, a click away in the Checklists tab.
+ * production, and why not yet; Merge all repositories for a Project of two
+ * or more; and, once every repository reached main, the delivered iteration.
+ * The single-repository merge is the tab bar's readiness chip and Merge to
+ * main above it (the same ones QA Studio shows); this panel is the
+ * acceptance around it. Verifying items stays with the QA run, a click away
+ * in the Checklists tab.
  */
 export function PoAcceptancePanel({
   qaScope,
+  projectId,
   projectRun,
   promotion,
   appRole,
   onOpenQaRun,
 }: Readonly<{
   qaScope: QaScope;
+  /** The repository page this studio is on. */
+  projectId: string;
   projectRun: ProjectRunViewModel;
   promotion: QaPromotionViewModel;
   appRole: AppRole | null | undefined;
@@ -82,34 +178,15 @@ export function PoAcceptancePanel({
       </div>
     );
   }
-  const run = projectRun.status === "ready" ? projectRun.run : null;
-  const ready = state === "ready";
   return (
-    <div className="qa-run-card po-accept" data-state={state}>
-      <div className="qa-run-card__head">
-        <div className="qa-run-card__picker">
-          <span className="qa-toolbar__label">Product acceptance</span>
-          <h3 className="qa-run-card__title">{qaScope.projectName}</h3>
-        </div>
-      </div>
-      <div className="po-accept__status" role="status">
-        <p className="po-accept__title">{ready ? PO_READY_TITLE : PO_WAITING_TITLE}</p>
-        <p className="po-accept__text">{ready ? PO_READY_TEXT : poWaitingText(run)}</p>
-      </div>
-      {run ? (
-        <QaRunAcceptance
-          key={run.id}
-          deliveryProjectId={qaScope.deliveryProjectId}
-          vm={projectRun}
-          run={run}
-          appRole={appRole}
-        />
-      ) : null}
-      {!ready && onOpenQaRun ? (
-        <button type="button" className="ghost-button po-accept__open" onClick={onOpenQaRun}>
-          View the QA run
-        </button>
-      ) : null}
-    </div>
+    <ProjectAcceptance
+      qaScope={qaScope}
+      projectId={projectId}
+      state={state}
+      projectRun={projectRun}
+      promotion={promotion}
+      appRole={appRole}
+      onOpenQaRun={onOpenQaRun}
+    />
   );
 }

@@ -7,6 +7,8 @@ import { useId, type ReactNode } from "react";
 
 import type { AppRole } from "@/shared/api/contracts";
 
+import { IterationLockedNotice } from "../../iteration";
+import { lockedIterationNumber } from "../../model/iteration-rules";
 import { kindCopy } from "../../model/requirement-rules";
 import {
   canStartProjectRun,
@@ -14,6 +16,7 @@ import {
   headChangeMessage,
   headChangeMessages,
   headLabel,
+  isRunLocked,
   REQUIREMENTS_CHANGED_NOTE,
   repositoriesLabel,
   requirementsChangedLabel,
@@ -154,6 +157,8 @@ function StaleNotice({
   appRole,
 }: Readonly<{ vm: ProjectRunViewModel; run: ProjectQaRun; appRole: AppRole | null | undefined }>) {
   if (!run.stale && !vm.stale) return null;
+  // A delivered iteration starts no new run: the server would refuse it.
+  const mayStart = canStartProjectRun(appRole) && !isRunLocked(run);
   const messages = headChangeMessages(vm.heads.length > 0 ? vm.heads : run.repositories);
   return (
     <div className="pqa-alert pqa-alert--warning" role="status">
@@ -166,7 +171,7 @@ function StaleNotice({
         </ul>
       ) : null}
       <p className="pqa-alert__text">{STALE_RUN_NOTE}</p>
-      {canStartProjectRun(appRole) ? <StartButton vm={vm} label="Start a run on the current heads" /> : null}
+      {mayStart ? <StartButton vm={vm} label="Start a run on the current heads" /> : null}
     </div>
   );
 }
@@ -313,9 +318,11 @@ function RunBody({
   const reopen = useProjectReopenViewModel({ deliveryProjectId, run, permissions, onRun: vm.applyRun });
   const list = useProjectRunListViewModel(run);
   const evidence = useRunEvidenceViewModel({ deliveryProjectId, run });
+  const lockedNumber = lockedIterationNumber(run.iteration);
 
   return (
     <div className="qa-run pqa-run__body">
+      {lockedNumber === null ? null : <IterationLockedNotice number={lockedNumber} />}
       <RunHead run={run} />
       <StaleNotice vm={vm} run={run} appRole={appRole} />
       <RequirementsChangedNotice run={run} changed={vm.requirementsChanged} />
@@ -327,7 +334,7 @@ function RunBody({
       {list.groups.map((group) => (
         <RunGroup key={group.key} group={group} list={list} editor={editor} evidence={evidence} onReload={vm.reload} />
       ))}
-      {run.status === "open" ? <SignoffFooter vm={signoff} /> : null}
+      {run.status === "open" && lockedNumber === null ? <SignoffFooter vm={signoff} /> : null}
       {signoff.canSignOff ? <SignoffDialog vm={signoff} description={`${run.deliveryProjectName} on ${signedSubject(run)}`} /> : null}
     </div>
   );

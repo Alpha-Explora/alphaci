@@ -9,6 +9,7 @@ import { headChangeMessage, headLabel, REQUIREMENTS_CHANGED_NOTE } from "../../m
 import {
   approvedCountLabel,
   blockingReasons,
+  deliveredNote,
   mergeConfirmText,
   promotionChecklistState,
   promotionRunState,
@@ -97,8 +98,9 @@ function Blocking({ data, id }: Readonly<{ data: QaPromotionStatus; id?: string 
   );
 }
 
-/** The PR number for everyone, and who merges for those who cannot. */
+/** The PR number for everyone, and who merges for those who cannot. Nothing once delivered. */
 function CardFoot({ vm, data }: Readonly<{ vm: QaPromotionViewModel; data: QaPromotionStatus }>) {
+  if (data.iterationDelivered) return null;
   return (
     <div className="qa-promo__foot">
       {data.pullRequest ? (
@@ -134,6 +136,7 @@ export function PromotionDetails({ vm, data }: Readonly<{ vm: QaPromotionViewMod
           ))}
         </ul>
       ) : null}
+      {data.iterationDelivered ? <p className="qa-promo__delivered">{deliveredNote(data)}</p> : null}
       <Blocking data={data} />
       <CardFoot vm={vm} data={data} />
     </>

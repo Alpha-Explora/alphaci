@@ -5,6 +5,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { AppRole } from "@/shared/api/contracts";
 
 import { requirementsRepository } from "../../data/requirements-repository";
+import { useCurrentIterationViewModel, type CurrentIterationViewModel } from "../../iteration";
+import { lockedIterationNumber } from "../../model/iteration-rules";
 import {
   removeRequirementItem,
   requirementsOfKind,
@@ -30,8 +32,16 @@ export interface ProjectRequirementsViewModel {
   functional: Requirement[];
   /** Live System requirements, oldest first. */
   system: Requirement[];
-  /** Server flags first, the app-role allow-list only when a flag is missing. */
+  /**
+   * Server flags first, the app-role allow-list only when a flag is missing;
+   * all off once the Project's iteration is delivered.
+   */
   permissions: RequirementPermissions;
+  /**
+   * The delivered iteration's number, when its requirements are locked. Null
+   * while the iteration is active, and on a backend without iterations.
+   */
+  lockedIteration: number | null;
   reload: () => void;
   /** A requirement the server just saved (created, renamed, reordered). */
   applyRequirement: (requirement: Requirement) => void;
@@ -50,6 +60,22 @@ interface LoadResult {
 const LOAD_ERROR = "This Project's requirements could not be loaded. Try again in a moment.";
 const MISSING_ERROR =
   "Requirements could not be found for this Project. The server may not offer Project requirements yet, or you are no longer in its team.";
+
+const LOCKED: RequirementPermissions = { canManage: false, canSetProgress: false };
+
+/** The server's flags, or every one off once the iteration is delivered. */
+function permissionsFor(
+  data: ProjectRequirements | null,
+  appRole: AppRole | null | undefined,
+  lockedIteration: number | null,
+): RequirementPermissions {
+  return lockedIteration === null ? resolveRequirementPermissions(data, appRole) : LOCKED;
+}
+
+/** The delivered iteration's number from the current-iteration read, or null. */
+function lockedFrom(iteration: CurrentIterationViewModel): number | null {
+  return lockedIterationNumber(iteration.current ? iteration.current.iteration : null);
+}
 
 function loadStatus(result: LoadResult | null): RequirementsStatus {
   if (!result) return "loading";
@@ -93,6 +119,10 @@ export function useProjectRequirementsViewModel(options: {
   const current = result?.key === key ? result : null;
   const data = current?.data ?? null;
   const requirements = data?.requirements ?? [];
+  // The iteration is read beside the list; any failure (an older backend's
+  // 404) leaves it unknown, and the requirements stay exactly as before.
+  const iteration = useCurrentIterationViewModel({ deliveryProjectId, enabled });
+  const lockedIteration = lockedFrom(iteration);
 
   const update = useCallback(
     (change: (list: Requirement[]) => Requirement[]) =>
@@ -109,7 +139,8 @@ export function useProjectRequirementsViewModel(options: {
     error: current?.error ?? null,
     functional: requirementsOfKind(requirements, "functional"),
     system: requirementsOfKind(requirements, "system"),
-    permissions: resolveRequirementPermissions(data, appRole),
+    permissions: permissionsFor(data, appRole, lockedIteration),
+    lockedIteration,
     reload: () => setNonce((value) => value + 1),
     applyRequirement: (saved) => update((list) => upsertRequirement(list, saved)),
     applyItem: (item) => update((list) => upsertRequirementItem(list, item.requirementId, item)),

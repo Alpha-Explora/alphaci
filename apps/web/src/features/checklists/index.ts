@@ -40,6 +40,7 @@ export { requirementsRepository } from "./data/requirements-repository";
  * (Home's role dashboards). */
 export type {
   TeamQaDefectCounts,
+  TeamQaIteration,
   TeamQaLatestRun,
   TeamQaMembership,
   TeamQaOverview,

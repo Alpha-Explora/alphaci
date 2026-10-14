@@ -10,6 +10,7 @@ import type { AppRole } from "@/shared/api/contracts";
 
 import { VERIFICATION_TYPE_OPTIONS } from "./checklist-rules";
 import type { ChecklistVerificationType } from "./checklist-types";
+import { lockedIterationNumber, normalizeIterationRef } from "./iteration-rules";
 import { automationByRepositoryFrom, projectRunAutomationFrom } from "./project-run-automation-rules";
 import { attachmentCountFrom, attachmentRefsFrom, attachmentSettingsFrom } from "./qa-attachment-rules";
 import { normalizeAutomatedResult } from "./qa-automation-rules";
@@ -226,6 +227,27 @@ function runStateFrom(raw: Loose, repositories: HeadStatus[]) {
   };
 }
 
+/** Whether the run's iteration was delivered: nothing on it may change any more. */
+export function isRunLocked(run: Pick<ProjectQaRun, "iteration">): boolean {
+  return lockedIterationNumber(run.iteration) !== null;
+}
+
+/**
+ * A delivered iteration's run, read-only whatever the payload's flags say:
+ * the server refuses every write with ITERATION_DELIVERED, so no control may
+ * look clickable. A run of an active iteration (or an older backend's) is
+ * returned unchanged.
+ */
+export function lockDeliveredRun(run: ProjectQaRun): ProjectQaRun {
+  if (!isRunLocked(run)) return run;
+  return {
+    ...run,
+    permissions: { canSetVerification: false, canSignOff: false, canReopen: false, canDispatch: false },
+    items: run.items.map((item) => ({ ...item, canUpdate: false })),
+    attachments: run.attachments ? { ...run.attachments, canAdd: false } : null,
+  };
+}
+
 /** A Project run, or null when the body has no id. */
 export function normalizeProjectRun(value: unknown): ProjectQaRun | null {
   const raw = record(value);
@@ -233,7 +255,7 @@ export function normalizeProjectRun(value: unknown): ProjectQaRun | null {
   if (!raw || !id) return null;
   const items = runItemsFrom(raw.items, id);
   const repositories = normalizeHeads(raw.repositories);
-  return {
+  return lockDeliveredRun({
     id,
     deliveryProjectId: text(raw.deliveryProjectId) ?? "",
     deliveryProjectName: text(raw.deliveryProjectName) ?? text(raw.checklistName) ?? "Project",
@@ -247,7 +269,8 @@ export function normalizeProjectRun(value: unknown): ProjectQaRun | null {
     automation: projectRunAutomationFrom(raw),
     automationByRepository: automationByRepositoryFrom(raw),
     attachments: attachmentSettingsFrom(raw.attachments),
-  };
+    iteration: normalizeIterationRef(raw.iteration),
+  });
 }
 
 /** The current-heads answer. A body that is not one reads as "no run yet, heads unknown". */

@@ -399,6 +399,7 @@ function StudioColumn({
     return (
       <PoAcceptancePanel
         qaScope={qaScope}
+        projectId={projectId}
         projectRun={projectRun}
         promotion={promotion}
         appRole={appRole}

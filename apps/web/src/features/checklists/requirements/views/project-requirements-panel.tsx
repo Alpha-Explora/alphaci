@@ -8,6 +8,7 @@ import { useEffect, useState } from "react";
 import { LoadingRows } from "@/features/groups/workspace";
 import type { AppRole } from "@/shared/api/contracts";
 
+import { IterationLockedNotice } from "../../iteration";
 import { useItemProgressViewModel, type ItemProgressViewModel } from "../../returned";
 import {
   canSetVerification,
@@ -199,7 +200,11 @@ export function ProjectRequirementsPanel({
   }
   return (
     <div className="rq-panel">
-      <p className="rq-panel__role">{roleLine(vm.permissions, appRole)}</p>
+      {vm.lockedIteration === null ? (
+        <p className="rq-panel__role">{roleLine(vm.permissions, appRole)}</p>
+      ) : (
+        <IterationLockedNotice number={vm.lockedIteration} />
+      )}
       {kinds.map((kind) => (
         <KindSection
           key={kind}

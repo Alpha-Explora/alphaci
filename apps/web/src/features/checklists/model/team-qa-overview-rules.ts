@@ -9,6 +9,7 @@ import type { QaRunStatus, QaVerdict } from "./qa-run-types";
 import type { ProgressCounts, RequirementKind } from "./requirement-types";
 import type {
   TeamQaDefectCounts,
+  TeamQaIteration,
   TeamQaLatestRun,
   TeamQaMembership,
   TeamQaOverview,
@@ -19,12 +20,13 @@ import type {
   TeamQaRequirementSummary,
   TeamQaVerificationCounts,
 } from "./team-qa-overview-types";
-import { oneOf, record, records, text, type Loose } from "./wire-readers";
+import { oneOf, positiveInt, record, records, text, type Loose } from "./wire-readers";
 
 const KINDS: ReadonlyArray<RequirementKind> = ["functional", "system"];
 const RUN_STATUSES: ReadonlyArray<QaRunStatus> = ["open", "signed_off"];
 const VERDICTS: ReadonlyArray<QaVerdict> = ["APPROVED", "REJECTED", "CONDITIONAL"];
 const MEMBERSHIPS: ReadonlyArray<TeamQaMembership> = ["developer", "qa"];
+const ITERATION_STATUSES: ReadonlyArray<TeamQaIteration["status"]> = ["active", "delivered"];
 
 function countOrNull(value: unknown): number | null {
   return typeof value === "number" && Number.isInteger(value) && value >= 0 ? value : null;
@@ -127,6 +129,14 @@ function promotionFrom(value: unknown): TeamQaPromotion | null {
   };
 }
 
+function iterationFrom(value: unknown): TeamQaIteration | null {
+  const raw = record(value);
+  const number = positiveInt(raw?.number);
+  const status = oneOf(raw?.status, ITERATION_STATUSES);
+  if (!number || !status) return null;
+  return { number, status, deliveredAt: text(raw?.deliveredAt) };
+}
+
 function projectFrom(group: Loose): TeamQaProject | null {
   const deliveryProject = record(group.deliveryProject) ?? {};
   const id = text(deliveryProject.id);
@@ -138,6 +148,7 @@ function projectFrom(group: Loose): TeamQaProject | null {
     counts: countsFrom(group.counts),
     promotion: promotionFrom(group.promotion),
     viewerMembership: oneOf(group.viewerMembership, MEMBERSHIPS),
+    iteration: iterationFrom(group.iteration),
   };
 }
 

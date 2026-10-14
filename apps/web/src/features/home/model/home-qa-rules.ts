@@ -191,7 +191,8 @@ export function defectTotals(projects: ReadonlyArray<TeamQaProject>): TeamQaDefe
 
 /* ── Product owner: Ready for production ────────────────────────────────── */
 
-const SHIPPABLE_VERDICTS: ReadonlySet<QaVerdict> = new Set<QaVerdict>(["APPROVED", "CONDITIONAL"]);
+/* Only Approved ships: the merge gate refuses Conditional (decision D3). */
+const SHIPPABLE_VERDICTS: ReadonlySet<QaVerdict> = new Set<QaVerdict>(["APPROVED"]);
 
 interface Shippable {
   run: TeamQaLatestRun;
@@ -202,14 +203,17 @@ interface Shippable {
 function shippable(project: TeamQaProject): Shippable | null {
   const { latestRun: run, promotion } = project;
   if (run?.status !== "signed_off" || !run.verdict || !promotion) return null;
+  // A delivered iteration is already in main: nothing left to promote.
+  if (project.iteration?.status === "delivered") return null;
   if (!SHIPPABLE_VERDICTS.has(run.verdict)) return null;
   if (promotion.mergedRepositories >= promotion.totalRepositories) return null;
   return { run, verdict: run.verdict, promotion };
 }
 
 /**
- * Signed off as Approved or Conditional, and not every repository merged to
- * main yet. A Project whose promotion the server did not report is left out:
+ * Signed off as Approved (Conditional does not open the merge gate), its
+ * iteration not delivered yet, and not every repository merged to main yet
+ * (the server's stored count). A Project whose promotion the server did not report is left out:
  * nothing says it still has something to promote.
  */
 export function isReadyForProduction(project: TeamQaProject): boolean {

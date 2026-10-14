@@ -6,6 +6,7 @@ import { useState, type ReactNode } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 
 import { qaScopeFromFolder, withProjectOnPage, type QaScope } from "@/features/checklists";
+import { IterationStatus } from "@/features/checklists/iteration";
 
 import { projectStatusVariant } from "../../model/projects-rules";
 import type { ProvisionedProject } from "@/features/projects";
@@ -131,6 +132,7 @@ export function ProjectDetailTabs({
   const studioControls = studioControlsSlot(vm.tab, setStudioSlot);
   const headerTabs = productView ? <TitleRowTabs controls={studioControls} tabs={tabs} /> : undefined;
   const clone = overviewClone(vm.tab, project);
+  const iteration = iterationStatusFor(folder, vm);
 
   return (
     <section
@@ -144,6 +146,7 @@ export function ProjectDetailTabs({
         vm={vm}
         tabs={headerTabs}
         clone={clone}
+        iteration={iteration}
       />
       <div
         className="project-sections"
@@ -226,6 +229,18 @@ function repoSwitchFor(
 }
 
 /**
+ * The Project's "Iteration 3 · Active", beside the repository in the header's
+ * identity, whenever the repository is filed under a Project (of any size)
+ * and the QA capability is on. It reads the iteration itself and renders
+ * nothing on a backend without iterations.
+ */
+function iterationStatusFor(folder: ProjectFolderViewModel | undefined, vm: ProjectDetailTabsViewModel): ReactNode {
+  const deliveryProjectId = folder?.project?.deliveryProjectId ?? null;
+  if (!deliveryProjectId || !vm.qaChecklistsEnabled) return undefined;
+  return <IterationStatus deliveryProjectId={deliveryProjectId} enabled />;
+}
+
+/**
  * Clone, on Overview only and for every role: beside the title, so Production
  * Deployment is the panel's first row. A name that cannot be cloned gets no
  * empty column.
@@ -250,6 +265,7 @@ function ProjectPageHeader({
   vm,
   tabs,
   clone,
+  iteration,
 }: Readonly<{
   project: ProvisionedProject;
   external: boolean;
@@ -257,6 +273,8 @@ function ProjectPageHeader({
   vm: ProjectDetailTabsViewModel;
   tabs: ReactNode;
   clone: ReactNode;
+  /** The Project's iteration status, beside the repository on Overview. */
+  iteration: ReactNode;
 }>) {
   const identityShown = vm.tab === "overview";
   if (!folder?.projectName) {
@@ -267,6 +285,7 @@ function ProjectPageHeader({
         tabs={tabs}
         clone={clone}
         identityShown={identityShown}
+        iteration={iteration}
       />
     );
   }
@@ -278,6 +297,7 @@ function ProjectPageHeader({
       tabs={tabs}
       clone={clone}
       identityShown={identityShown}
+      iteration={iteration}
     />
   );
 }
@@ -320,12 +340,14 @@ function ProjectDetailHeader({
   tabs,
   clone,
   identityShown,
+  iteration,
 }: Readonly<{
   project: ProvisionedProject;
   external: boolean;
   tabs?: ReactNode;
   clone?: ReactNode;
   identityShown: boolean;
+  iteration?: ReactNode;
 }>) {
   const title = project.repoFullName;
   // Nothing to show off Overview: no empty row, just the heading.
@@ -339,6 +361,7 @@ function ProjectDetailHeader({
           <p className="project-folder-header__repo">
             <span>{project.serviceName}</span>
             <ProjectStatusBadges project={project} external={external} />
+            {iteration}
           </p>
         </div>
       ) : (
@@ -384,6 +407,7 @@ function ProjectFolderHeader({
   tabs,
   clone,
   identityShown,
+  iteration,
 }: Readonly<{
   project: ProvisionedProject;
   external: boolean;
@@ -391,6 +415,8 @@ function ProjectFolderHeader({
   tabs?: ReactNode;
   clone?: ReactNode;
   identityShown: boolean;
+  /** The Project's iteration status: the Project's, so it sits after the repository's badges. */
+  iteration?: ReactNode;
 }>) {
   const reduceMotion = useReducedMotion();
   return (
@@ -407,6 +433,7 @@ function ProjectFolderHeader({
           <p className="project-folder-header__repo">
             <span className="project-folder-header__repo-name">{project.repoFullName}</span>
             <ProjectStatusBadges project={project} external={external} />
+            {iteration}
           </p>
         </div>
       ) : (

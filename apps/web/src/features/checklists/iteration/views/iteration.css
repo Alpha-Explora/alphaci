@@ -1,0 +1,66 @@
+/* ── Iterations ─────────────────────────────────────────────────────────────
+   .iteration-status   the Project header's "Iteration 3 · Active" pill.
+   .iteration-locked   the banner on a delivered iteration's run and
+                       requirements: read-only, and why.
+   Active is the brand tone; Delivered is violet, the tone PO Studio's
+   delivered banner and the readiness chip use. Tokens only.
+   ------------------------------------------------------------------------- */
+
+.iteration-status {
+  --iteration-tone: var(--brand);
+
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 1.6rem;
+  padding: 0.15rem 0.6rem;
+  border: 1px solid var(--border-brand);
+  border-radius: var(--radius-pill);
+  background: var(--brand-light);
+  color: var(--text-primary);
+  font-size: 0.74rem;
+  font-weight: 650;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.iteration-status[data-status="delivered"] {
+  --iteration-tone: var(--accent-violet);
+
+  border-color: var(--border-violet);
+  background: var(--accent-violet-light);
+}
+
+.iteration-status__dot {
+  flex-shrink: 0;
+  width: 0.45rem;
+  height: 0.45rem;
+  border-radius: 50%;
+  background: var(--iteration-tone);
+}
+
+.iteration-locked {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.55rem;
+  padding: 0.7rem 0.9rem;
+  border: 1px solid var(--border-violet);
+  border-left-width: 3px;
+  border-left-color: var(--accent-violet);
+  border-radius: 0.7rem;
+  background: var(--accent-violet-light);
+  color: var(--accent-violet);
+}
+
+.iteration-glyph {
+  flex-shrink: 0;
+  margin-top: 0.1rem;
+}
+
+.iteration-locked__text {
+  margin: 0;
+  font-size: 0.82rem;
+  font-weight: 600;
+  line-height: 1.5;
+  color: var(--text-primary);
+}
