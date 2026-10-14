@@ -96,4 +96,68 @@ describe("DeploymentLogsConsole", () => {
     expect(ranged).not.toBe(typed);
     expect(ranged.params.get("type")).toBe("build");
   });
+
+  describe("provider rate limiting", () => {
+    const LIVE = { startTime: "2026-09-24T09:59:00.000Z", endTime: null };
+
+    afterEach(() => {
+      jest.useRealTimers();
+    });
+
+    function notice(): HTMLElement | null {
+      return [...container.querySelectorAll<HTMLElement>(".deploy-logs__notice")].find((el) =>
+        el.textContent?.includes("limiting log reads"),
+      ) ?? null;
+    }
+
+    it("keeps the lines, counts down quietly, and clears on the next append", () => {
+      jest.useFakeTimers();
+      render(LIVE);
+      const stream = FakeEventSource.latest();
+      act(() => stream.emit({ kind: "snapshot", ...page([line("a", 1), line("b", 2)]) }));
+      act(() => stream.emit({ kind: "status", source: "live", rateLimited: true, retryAfterMs: 30_000 }));
+
+      expect(notice()?.textContent).toBe("Render is limiting log reads · retrying in 30s");
+      expect(notice()?.classList.contains("deploy-logs__notice--danger")).toBe(false);
+      expect(container.textContent).not.toContain("unavailable");
+      expect(container.querySelectorAll(".deploy-logs__line")).toHaveLength(2);
+
+      act(() => {
+        jest.advanceTimersByTime(12_000);
+      });
+      expect(notice()?.textContent).toContain("retrying in 18s");
+
+      act(() => stream.emit({ kind: "append", source: "live", logs: [line("c", 3)] }));
+      expect(notice()).toBeNull();
+      expect(container.querySelectorAll(".deploy-logs__line")).toHaveLength(3);
+    });
+
+    it("shows the friendly text, not the raw JSON, for an older backend's 429", () => {
+      render(LIVE);
+      const stream = FakeEventSource.latest();
+      act(() =>
+        stream.emit({
+          source: "unavailable",
+          reason: 'Render logs could not be loaded: 429 {"message": "rate limit exceeded"}',
+          logs: [],
+        }),
+      );
+      const text = container.textContent ?? "";
+      expect(text).toContain("The host is rate-limiting log reads right now. Retry in a minute.");
+      expect(text).not.toContain("rate limit exceeded");
+      const retry = [...container.querySelectorAll("button")].find((b) => b.textContent === "Retry");
+      expect(retry).toBeDefined();
+
+      const before = FakeEventSource.instances.length;
+      act(() => retry?.click());
+      expect(FakeEventSource.instances.length).toBe(before + 1);
+    });
+
+    it("still shows other provider failures as unavailable", () => {
+      render(LIVE);
+      act(() => FakeEventSource.latest().emit({ source: "unavailable", reason: "Render returned 503", logs: [] }));
+      expect(container.textContent).toContain("Render logs are unavailable.");
+      expect(container.textContent).toContain("Render returned 503");
+    });
+  });
 });

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { motion } from "framer-motion";
 
+import { newProjectHref } from "../../model/home-rules";
 import type { ProvisionedProject, RunGroup } from "../../model/home-types";
 import { EASE_OUT, sectionVariants } from "./motion";
 
@@ -55,14 +56,14 @@ export function GetStartedJourney({
   const steps: JourneyStep[] = [
     {
       title: "Create a project",
-      desc: "Name a service and pick what its pipeline should check.",
+      desc: "Name the Project your team will deliver; Features and Developers come next.",
       done: hasProjects,
-      href: "/workflows?tab=setup",
+      href: newProjectHref(),
       cta: "Create a project",
     },
     {
-      title: "Connect a repository",
-      desc: "Link a GitHub repo — ALPHACI writes the Actions workflow into it.",
+      title: "Developers add repositories",
+      desc: "A Developer adds each repository to the Project, and ALPHACI writes its Actions workflow.",
       done: hasProvisioned,
       href: "/workflows?tab=setup",
       cta: "Connect a repo",
@@ -132,7 +133,7 @@ export function GetStartedJourney({
       <div className="getstarted-resources">
         <span className="ops-block-label">Resources</span>
         <div className="getstarted-resource-links">
-          <Link href="/workflows?tab=setup">Create a project</Link>
+          <Link href={newProjectHref()}>Create a project</Link>
           <Link href="/runs">View runs</Link>
           <Link href="/guide">Read the guide</Link>
         </div>

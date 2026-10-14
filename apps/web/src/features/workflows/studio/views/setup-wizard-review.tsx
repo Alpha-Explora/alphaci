@@ -1,5 +1,6 @@
 "use client";
 
+import { reviewProjectLabel } from "../model/project-name-rules";
 import { githubOrgLogin, selectedShapeLabel } from "../model/setup-tab-rules";
 import { projectOptionLabels } from "../view-models/use-project-options-catalog";
 import type { WizardStepProps } from "./setup-wizard-props";
@@ -98,6 +99,7 @@ export function SetupWizardReview({
   form,
   github,
   isCreatingProject,
+  joinedProjectName,
   onCreateProject,
   projectCatalog,
 }: Readonly<WizardStepProps>) {
@@ -113,6 +115,7 @@ export function SetupWizardReview({
           <p>ALPHACI will create the repository, protected branches, and the selected CI workflow in one operation.</p>
         </div>
         <dl className="repo-wizard-review__grid">
+          <div><dt>Project</dt><dd>{reviewProjectLabel(joinedProjectName !== null, joinedProjectName, form.projectName)}</dd></div>
           <div><dt>Repository</dt><dd>{owner}/{reviewRepoName(form.repoName)}</dd></div>
           <div><dt>Visibility</dt><dd>{form.visibility}</dd></div>
           <div><dt>Shape</dt><dd>{selectedShapeLabel(projectCatalog.allRepoShapes, projectCatalog.selectedRepoShapeId)}</dd></div>

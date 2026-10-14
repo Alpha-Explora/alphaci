@@ -95,8 +95,21 @@ function reason(value: unknown): { reason?: string } {
   return typeof value === "string" && value ? { reason: value } : {};
 }
 
+/**
+ * The rate-limit fields, additive on the backend. Only a literal `true` counts,
+ * and a wait that is not a finite, non-negative number is dropped rather than
+ * guessed at: the state falls back to its default cooldown.
+ */
+function rateLimit(raw: Raw): { rateLimited?: true; retryAfterMs?: number } {
+  if (raw.rateLimited !== true) return {};
+  const wait = raw.retryAfterMs;
+  const valid = typeof wait === "number" && Number.isFinite(wait) && wait >= 0;
+  return valid ? { rateLimited: true, retryAfterMs: wait } : { rateLimited: true };
+}
+
 export function normalizeLogsResponse(raw: Raw): DeploymentLogsResponse {
   return {
+    ...rateLimit(raw),
     source: source(raw.source),
     ...reason(raw.reason),
     logs: lines(raw.logs),
@@ -112,7 +125,12 @@ export function normalizeStreamEvent(raw: Raw): DeploymentLogStreamEvent {
     return { kind: "append", source: source(raw.source), logs: lines(raw.logs) };
   }
   if (raw.kind === "status") {
-    return { kind: "status", source: source(raw.source), ...reason(raw.reason) };
+    return {
+      kind: "status",
+      source: source(raw.source),
+      ...reason(raw.reason),
+      ...rateLimit(raw),
+    };
   }
   return { kind: "snapshot", ...normalizeLogsResponse(raw) };
 }

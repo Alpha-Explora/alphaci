@@ -11,6 +11,7 @@ import type {
   QaChecklistItem,
   QaChecklistItemInput,
 } from "./checklist-types";
+import { isStaleCode, qaCodeMessage } from "./qa-error-messages";
 
 export const TARGET_PERSONA_OPTIONS: ReadonlyArray<{
   value: ChecklistTargetPersona;
@@ -51,7 +52,10 @@ const TEST_IDENTIFIER_PLACEHOLDERS: Record<ChecklistVerificationType, string> = 
   bruno: "collections/orders/create-order.bru",
 };
 
-/** The section id the Teams page uses for this surface, in its deep links too. */
+/**
+ * The section id the old Teams rail used for this surface. Links minted with
+ * it (`/teams?section=qa-checklists`) are forwarded to /checklists.
+ */
 export const QA_CHECKLISTS_SECTION = "qa-checklists";
 
 export const CHECKLIST_NAME_MAX = 120;
@@ -285,11 +289,38 @@ export function sameProjectSet(a: ReadonlyArray<string>, b: ReadonlyArray<string
 
 /* ── Links ───────────────────────────────────────────────────────────────── */
 
-/** Where a lead manages a checklist: the owning team's page, opened on it. */
+/**
+ * Where a lead manages a checklist: the Checklists page, on the owning team,
+ * opened on it. (It was `/teams?section=qa-checklists`; /teams still forwards
+ * such links here.)
+ */
 export function checklistManageHref(workspaceId: string, checklistId?: string): string {
-  const params = new URLSearchParams({ workspace: workspaceId, section: QA_CHECKLISTS_SECTION });
+  const params = new URLSearchParams({ workspace: workspaceId });
   if (checklistId) params.set("checklist", checklistId);
-  return `/teams?${params.toString()}`;
+  return `/checklists?${params.toString()}`;
+}
+
+/* ── Project ownership ───────────────────────────────────────────────────── */
+
+/**
+ * The Project a checklist now belongs to (it is a System requirement there),
+ * or null for an unassigned checklist or an older backend.
+ */
+export function checklistOwningProjectId(checklist: Pick<QaChecklist, "deliveryProjectId">): string | null {
+  const id = checklist.deliveryProjectId;
+  return typeof id === "string" && id.trim() ? id : null;
+}
+
+/** True once the backend describes checklists as Project requirements (it sends `kind`). */
+export function backendHasProjectRequirements(checklist: Pick<QaChecklist, "kind">): boolean {
+  return typeof checklist.kind === "string";
+}
+
+/** The Projects page, opened on one Project when it is known. */
+export function projectRequirementsHref(workspaceId: string, deliveryProjectId?: string | null): string {
+  const params = new URLSearchParams({ group: workspaceId });
+  if (deliveryProjectId) params.set("project", deliveryProjectId);
+  return `/workflows?${params.toString()}`;
 }
 
 /* ── Errors ──────────────────────────────────────────────────────────────── */
@@ -322,14 +353,18 @@ function conflictMessage(detail: string): string {
 
 /** True for the one error the editor offers a reload for. */
 export function isStaleConflict(cause: unknown): boolean {
+  // A coded refusal (a checklist moved to a Project) is not fixed by a reload.
+  if (qaCodeMessage(cause)) return isStaleCode(cause);
   return errorStatus(cause) === 409 && conflictMessage(errorDetail(cause)) === STALE_CHECKLIST_MESSAGE;
 }
 
 /** Any thrown error to a sentence a person can act on. Never an API object. */
 export function checklistErrorMessage(cause: unknown, fallback: string): string {
+  const coded = qaCodeMessage(cause);
+  if (coded) return coded;
   const status = errorStatus(cause);
   if (status === 409) return conflictMessage(errorDetail(cause));
-  if (status === 403) return "Only team leads can change QA checklists.";
+  if (status === 403) return "Only Product owners and admins can change QA checklists.";
   if (status === 404) {
     return "This checklist no longer exists, or you are no longer in this team.";
   }

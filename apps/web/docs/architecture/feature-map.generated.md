@@ -25,17 +25,17 @@ Feature domains are UI ownership boundaries. They consume backend bounded contex
 | `admin` | `identity-access` | platform administration, user review, and feedback | 16 |
 | `auth` | `identity-access` | sign-in, callback, and session presentation | 18 |
 | `capabilities` | `identity-access` | compatibility capability consumption from /api/v1/capabilities | 6 |
-| `checklists` | `projects` | team QA checklists, their items and sharing, the project Checklists tab, QA Studio verification runs and the Overview "Returned by QA" card | 60 |
-| `groups` | `identity-access` | hierarchy groups, systems, repositories, members, activity, and delivery projects | 50 |
+| `checklists` | `projects` | team QA checklists, their items and sharing, the project Checklists tab, QA Studio verification runs and the Overview "Returned by QA" card | 162 |
+| `groups` | `identity-access` | hierarchy groups, systems, repositories, members, activity, and delivery projects | 59 |
 | `guide` | `platform-ops` | in-product guide | 3 |
-| `home` | `platform-ops` | authenticated home dashboard | 18 |
-| `notifications` | `platform-ops` | inbox and notification preferences | 15 |
-| `projects` | `projects` | project detail, environments, hosting, drift, previews, and workflow settings | 95 |
-| `runs` | `pipelines` | CI run history presentation | 22 |
-| `settings` | `identity-access` | account, workspace, and notification settings | 20 |
-| `teams` | `identity-access` | team listing over hierarchy groups | 10 |
-| `workflows` | `projects` | project creation and workflow studio | 50 |
-| `workspace` | `identity-access` | application shell, navigation, and workspace switching | 10 |
+| `home` | `platform-ops` | authenticated home dashboard | 32 |
+| `notifications` | `platform-ops` | inbox and notification preferences | 16 |
+| `projects` | `projects` | project detail, environments, hosting, drift, previews, and workflow settings | 147 |
+| `runs` | `pipelines` | CI run history presentation | 27 |
+| `settings` | `identity-access` | account, workspace, and notification settings | 22 |
+| `teams` | `identity-access` | team listing over hierarchy groups | 35 |
+| `workflows` | `projects` | project creation and workflow studio | 60 |
+| `workspace` | `identity-access` | application shell, navigation, and workspace switching | 14 |
 
 Cross-feature imports go through a domain or action `index.ts`. `src/shared/` may not import a feature.
 

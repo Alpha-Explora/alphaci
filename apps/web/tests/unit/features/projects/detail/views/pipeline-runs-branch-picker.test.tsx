@@ -23,6 +23,16 @@ jest.mock(
  * made the view throw the moment it started rendering the check roster. A
  * mock that erases more of a module than the test needs breaks on the next
  * thing that module legitimately grows. */
+// Not under test here: the tab reads these once on open.
+jest.mock("../../../../../../src/features/projects/detail/data/project-browser-tests-api", () => ({
+  getProjectBrowserTests: jest.fn(() => Promise.reject(new Error("not under test"))),
+  addProjectBrowserTests: jest.fn(),
+}));
+jest.mock("../../../../../../src/features/projects/detail/data/project-visual-api", () => ({
+  getProjectVisualChecks: jest.fn(() => Promise.resolve({ branch: "uat", runId: null, canApprove: false, snapshots: [] })),
+  approveProjectVisualChecks: jest.fn(),
+}));
+
 jest.mock("../../../../../../src/features/runs", () => ({
   ...jest.requireActual("../../../../../../src/features/runs"),
   getRuns: jest.fn(),
@@ -86,7 +96,7 @@ describe("PipelineRunsTab branch picker", () => {
   it("lists every declared branch, not just the selected one", async () => {
     await act(async () => {
       root = createRoot(host);
-      root.render(<PipelineRunsTab projectId="p1" />);
+      root.render(<PipelineRunsTab projectId="p1" appRole="member" />);
     });
 
     const options = [...host.querySelectorAll("option")].map(
@@ -101,7 +111,7 @@ describe("PipelineRunsTab branch picker", () => {
   it("marks the branches that recorded nothing", async () => {
     await act(async () => {
       root = createRoot(host);
-      root.render(<PipelineRunsTab projectId="p1" />);
+      root.render(<PipelineRunsTab projectId="p1" appRole="member" />);
     });
 
     const labels = [...host.querySelectorAll("option")].map(
@@ -203,7 +213,7 @@ describe("PipelineRunsTab failure output", () => {
   it("shows the real error output, not a note telling you to go read it", async () => {
     await act(async () => {
       root = createRoot(host);
-      root.render(<PipelineRunsTab projectId="p1" />);
+      root.render(<PipelineRunsTab projectId="p1" appRole="member" />);
     });
 
     const text = host.textContent ?? "";
@@ -212,10 +222,23 @@ describe("PipelineRunsTab failure output", () => {
     expect(text).not.toContain("Open the workflow logs");
   });
 
+  it("never sends the reader to GitHub: no stage run link, no full-log link", async () => {
+    await act(async () => {
+      root = createRoot(host);
+      root.render(<PipelineRunsTab projectId="p1" appRole="member" />);
+    });
+
+    // The fixtures carry githubRunUrl and jobUrl; the view must not render them.
+    expect(host.textContent).toContain("sonar-project.properties files are not understood");
+    expect(host.querySelector('a[href*="github.com"]')).toBeNull();
+    expect(host.textContent).not.toContain("View run");
+    expect(host.textContent).not.toContain("Full log");
+  });
+
   it("names the job and step the output came from", async () => {
     await act(async () => {
       root = createRoot(host);
-      root.render(<PipelineRunsTab projectId="p1" />);
+      root.render(<PipelineRunsTab projectId="p1" appRole="member" />);
     });
 
     expect(host.textContent).toContain("SonarCloud .NET Analysis");
@@ -247,7 +270,7 @@ describe("PipelineRunsTab failure output", () => {
 
     await act(async () => {
       root = createRoot(host);
-      root.render(<PipelineRunsTab projectId="p1" />);
+      root.render(<PipelineRunsTab projectId="p1" appRole="member" />);
     });
 
     expect(mockedFailureLog).not.toHaveBeenCalled();
@@ -341,7 +364,7 @@ describe("PipelineRunsTab log excerpt", () => {
   it("shows the error without anyone expanding anything", async () => {
     await act(async () => {
       root = createRoot(host);
-      root.render(<PipelineRunsTab projectId="p1" />);
+      root.render(<PipelineRunsTab projectId="p1" appRole="member" />);
     });
 
     const shown = host.querySelector("pre")?.textContent ?? "";
@@ -354,7 +377,7 @@ describe("PipelineRunsTab log excerpt", () => {
   it("keeps the provisioning noise out of the way until asked", async () => {
     await act(async () => {
       root = createRoot(host);
-      root.render(<PipelineRunsTab projectId="p1" />);
+      root.render(<PipelineRunsTab projectId="p1" appRole="member" />);
     });
 
     const shown = host.querySelector("pre")?.textContent ?? "";
@@ -365,7 +388,7 @@ describe("PipelineRunsTab log excerpt", () => {
   it("marks the error line so it is findable at a glance", async () => {
     await act(async () => {
       root = createRoot(host);
-      root.render(<PipelineRunsTab projectId="p1" />);
+      root.render(<PipelineRunsTab projectId="p1" appRole="member" />);
     });
 
     const errorLine = host.querySelector(".ws-console__line--error");

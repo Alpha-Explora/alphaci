@@ -71,21 +71,11 @@ export function ExternalIcon() {
   );
 }
 
-export function ArrowRightIcon() {
+export function LinkIcon() {
   return (
     <Glyph>
-      <path d="M3 8h9.5M8.75 4.25 12.5 8l-3.75 3.75" />
-    </Glyph>
-  );
-}
-
-export function BranchIcon() {
-  return (
-    <Glyph>
-      <circle cx="4.5" cy="3.5" r="1.5" />
-      <circle cx="4.5" cy="12.5" r="1.5" />
-      <circle cx="11.5" cy="4.5" r="1.5" />
-      <path d="M4.5 5v6M11.5 6c0 2.5-2 3.25-4.5 3.5-1.4.15-2.5.6-2.5 1.5" />
+      <path d="M6.75 9.25a2.5 2.5 0 0 0 3.54 0l2.5-2.5a2.5 2.5 0 0 0-3.54-3.54l-.7.7" />
+      <path d="M9.25 6.75a2.5 2.5 0 0 0-3.54 0l-2.5 2.5a2.5 2.5 0 0 0 3.54 3.54l.7-.7" />
     </Glyph>
   );
 }
@@ -102,6 +92,15 @@ export function CrossIcon() {
   return (
     <Glyph>
       <path d="m4.5 4.5 7 7M11.5 4.5l-7 7" />
+    </Glyph>
+  );
+}
+
+/** A test skipped: a short dash, quieter than a check or a cross. */
+export function SkipIcon() {
+  return (
+    <Glyph>
+      <path d="M4.75 8h6.5" />
     </Glyph>
   );
 }
@@ -191,6 +190,184 @@ export function BracesIcon() {
     <Glyph>
       <path d="M5.5 2.25c-1.25 0-1.75.6-1.75 1.75v2.2c0 .9-.55 1.55-1.5 1.8.95.25 1.5.9 1.5 1.8V12c0 1.15.5 1.75 1.75 1.75" />
       <path d="M10.5 2.25c1.25 0 1.75.6 1.75 1.75v2.2c0 .9.55 1.55 1.5 1.8-.95.25-1.5.9-1.5 1.8V12c0 1.15-.5 1.75-1.75 1.75" />
+    </Glyph>
+  );
+}
+
+export function PlayIcon() {
+  return (
+    <Glyph size={14}>
+      <path d="M5 3.1v9.8a.6.6 0 0 0 .9.52l7.9-4.9a.6.6 0 0 0 0-1.03L5.9 2.58A.6.6 0 0 0 5 3.1Z" />
+    </Glyph>
+  );
+}
+
+export function FlaskIcon({ size = 16 }: Readonly<{ size?: number }>) {
+  return (
+    <Glyph size={size}>
+      <path d="M6 1.75h4M6.75 1.75v4.5L2.9 12.6A1.1 1.1 0 0 0 3.85 14.25h8.3a1.1 1.1 0 0 0 .95-1.65L9.25 6.25v-4.5" />
+      <path d="M4.6 10h6.8" />
+    </Glyph>
+  );
+}
+
+export function InfoIcon() {
+  return (
+    <Glyph size={13}>
+      <circle cx="8" cy="8" r="5.75" />
+      <path d="M8 7.25v3.5M8 5.25v.01" />
+    </Glyph>
+  );
+}
+
+/** A device turning a quarter: rotate portrait ⇄ landscape. */
+export function RotateIcon() {
+  return (
+    <Glyph>
+      <rect x="2" y="6" width="8" height="8" rx="1.2" />
+      <path d="M8 2.25h2.5a3.25 3.25 0 0 1 3.25 3.25V8" />
+      <path d="M12 6.25 13.75 8l1.75-1.75" />
+    </Glyph>
+  );
+}
+
+export function ExpandIcon() {
+  return (
+    <Glyph>
+      <path d="M2.25 6V2.25H6M10 2.25h3.75V6M13.75 10v3.75H10M6 13.75H2.25V10" />
+    </Glyph>
+  );
+}
+
+export function CollapseIcon() {
+  return (
+    <Glyph>
+      <path d="M6 2.25V6H2.25M13.75 6H10V2.25M10 13.75V10h3.75M2.25 10H6v3.75" />
+    </Glyph>
+  );
+}
+
+/** Wide preview: a window whose page takes most of it, a narrow column docked right. */
+export function LayoutWideIcon() {
+  return (
+    <Glyph>
+      <rect x="1.75" y="2.5" width="12.5" height="11" rx="1.2" />
+      <path d="M10.75 2.5v11" />
+    </Glyph>
+  );
+}
+
+/** Split: a window halved. */
+export function LayoutSplitIcon() {
+  return (
+    <Glyph>
+      <rect x="1.75" y="2.5" width="12.5" height="11" rx="1.2" />
+      <path d="M8 2.5v11" />
+    </Glyph>
+  );
+}
+
+/** Move to the other side. */
+export function SwapIcon() {
+  return (
+    <Glyph>
+      <path d="M2.5 5.5h11M11 3l2.5 2.5L11 8" />
+      <path d="M13.5 10.5h-11M5 8l-2.5 2.5L5 13" />
+    </Glyph>
+  );
+}
+
+/** Dock back beside the page: a panel on the right of a window. */
+export function DockIcon() {
+  return (
+    <Glyph>
+      <rect x="1.75" y="2.5" width="12.5" height="11" rx="1.2" />
+      <path d="M9.75 2.5v11" />
+    </Glyph>
+  );
+}
+
+export function MinimizeIcon() {
+  return (
+    <Glyph>
+      <path d="M3.5 12.25h9" />
+    </Glyph>
+  );
+}
+
+export function ChecklistIcon() {
+  return (
+    <Glyph>
+      <path d="m2.25 4.25 1.25 1.25 2.25-2.5M2.25 10.25l1.25 1.25 2.25-2.5" />
+      <path d="M8 4.5h5.75M8 10.5h5.75" />
+    </Glyph>
+  );
+}
+
+/** A git merge: two lines of history joining. "Merge to main". */
+export function MergeIcon() {
+  return (
+    <Glyph>
+      <circle cx="4.5" cy="3.5" r="1.5" />
+      <circle cx="4.5" cy="12.5" r="1.5" />
+      <circle cx="11.5" cy="9" r="1.5" />
+      <path d="M4.5 5v6M4.5 5c0 2.4 2.3 4 5.5 4" />
+    </Glyph>
+  );
+}
+
+/** A camera: "Capture" the preview. */
+export function CameraIcon() {
+  return (
+    <Glyph>
+      <path d="M2.5 5.5h2.2l1.1-1.75h4.4l1.1 1.75h2.2v7h-11z" />
+      <circle cx="8" cy="8.9" r="2.1" />
+    </Glyph>
+  );
+}
+
+/** An arrow into a tray: "Upload" a file. */
+export function UploadIcon() {
+  return (
+    <Glyph>
+      <path d="M8 10.5V2.75M5 5.5 8 2.5l3 3M2.75 10.5v2.75h10.5V10.5" />
+    </Glyph>
+  );
+}
+
+/** A picture: the Evidence heading. */
+export function ImageIcon() {
+  return (
+    <Glyph>
+      <rect x="2.5" y="3" width="11" height="10" rx="1.5" />
+      <circle cx="6" cy="6.5" r="1.1" />
+      <path d="m3 12 3.5-3.5 2.25 2.25L10.5 9l2.75 2.75" />
+    </Glyph>
+  );
+}
+
+/** A bin: delete a screenshot. */
+export function TrashIcon() {
+  return (
+    <Glyph>
+      <path d="M3 4.5h10M6.5 4.5V3h3v1.5M4.5 4.5l.6 8.5h5.8l.6-8.5" />
+    </Glyph>
+  );
+}
+
+/** Previous / next image in the lightbox. */
+export function ChevronLeftIcon() {
+  return (
+    <Glyph>
+      <path d="M10 3.5 5.5 8l4.5 4.5" />
+    </Glyph>
+  );
+}
+
+export function ChevronRightIcon() {
+  return (
+    <Glyph>
+      <path d="M6 3.5 10.5 8 6 12.5" />
     </Glyph>
   );
 }

@@ -13,9 +13,11 @@ import {
   navAvatarInitial,
   reducedMotionEnabled,
   sessionAppRole,
+  type SidebarMainItem,
   type WorkspaceAppRole,
 } from "../model/workspace-types";
 import { useAppNavViewModel } from "../view-models/use-app-nav-view-model";
+import { useSidebarPin } from "../view-models/use-sidebar-pin";
 import { WorkspaceSwitcher } from "./workspace-switcher";
 
 /* ── Types ─────────────────────────────────────────────────────────────────── */
@@ -25,6 +27,18 @@ interface AppNavProps {
   session: AuthSession | null;
   onLogout: () => void;
   isLoggingOut: boolean;
+  /**
+   * The team this page belongs to (a project's owning team). The header
+   * selects it once it is known and listed; see `useAppNavViewModel`.
+   */
+  pageWorkspaceId?: string | null;
+  /**
+   * Called after the viewer picks a DIFFERENT team in the header. A page
+   * scoped to one team (a project) passes this to leave for the picked team,
+   * since staying would leave the header naming a team the page is not in.
+   * Omitted everywhere else, where the pick only rescopes the page.
+   */
+  onWorkspaceSwitch?: (workspaceId: string) => void;
 }
 
 /* ── Icons ─────────────────────────────────────────────────────────────────── */
@@ -108,6 +122,46 @@ function InboxIcon({ size = 16 }: { size?: number }) {
   );
 }
 
+function ChecklistsIcon({ size = 16 }: { size?: number }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M9 11l2 2 4-4" />
+      <path d="M9 4h6a1 1 0 0 1 1 1v1H8V5a1 1 0 0 1 1-1z" />
+      <path d="M16 5h2a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h2" />
+      <line x1="9" y1="17" x2="15" y2="17" />
+    </svg>
+  );
+}
+
+function ActivityIcon({ size = 16 }: { size?: number }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <circle cx="12" cy="12" r="9" />
+      <polyline points="12 7 12 12 15.5 14" />
+    </svg>
+  );
+}
+
 function SettingsIcon({ size = 16 }: { size?: number }) {
   return (
     <svg
@@ -142,6 +196,27 @@ function AdminIcon({ size = 16 }: { size?: number }) {
     >
       <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
       <path d="M9 12l2 2 4-4" />
+    </svg>
+  );
+}
+
+/** A panel with its left column; the column fills while the rail is pinned. */
+function SidebarPanelIcon({ pinned }: Readonly<{ pinned: boolean }>) {
+  return (
+    <svg
+      width={18}
+      height={18}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <rect x="3" y="4" width="18" height="16" rx="2" />
+      <line x1="9" y1="4" x2="9" y2="20" />
+      {pinned ? <rect x="3" y="4" width="6" height="16" rx="2" fill="currentColor" stroke="none" opacity="0.35" /> : null}
     </svg>
   );
 }
@@ -187,7 +262,7 @@ interface SidebarNavItemProps {
  *
  * `.app-sidebar` clips overflow, which is what turns that from truncation into
  * a reveal — without it the 200px-wide invisible labels raise a horizontal
- * scrollbar inside a 64px rail.
+ * scrollbar inside the closed rail.
  */
 function SidebarNavItem({
   href,
@@ -224,7 +299,7 @@ function SidebarNavItem({
       {badgeCount > 0 ? (
         <>
           {/* Two presentations of one number: a bare dot that survives the
-              64px rail, and the real count once the labels are readable. */}
+              closed rail, and the real count once the labels are readable. */}
           <span className="sidebar-nav-dot" aria-hidden="true" />
           <span
             className="sidebar-nav-count"
@@ -239,10 +314,10 @@ function SidebarNavItem({
 }
 
 /* ── Role badge ─────────────────────────────────────────────────────────────
-   Answers "which am I?" at a glance. The label mirrors the GitHub org team
-   that drives the role (`team-lead` → Team lead, `developers` → Developer), so
-   what a user sees here matches what they were added to in GitHub. Hidden when
-   the rail is closed — 64px has no room for it, and the role is not urgent
+   Answers "which am I?" at a glance. The label is the product's persona name
+   (APP_ROLE_BADGE_LABELS: Product owner, QA Team, Developer, Admin), not the
+   GitHub team behind the role, which users never see. Hidden when
+   the rail is closed — it has no room for it, and the role is not urgent
    enough to earn an icon-only affordance. */
 
 function SidebarRoleBadge({ appRole }: Readonly<{ appRole: WorkspaceAppRole }>) {
@@ -253,18 +328,44 @@ function SidebarRoleBadge({ appRole }: Readonly<{ appRole: WorkspaceAppRole }>) 
   );
 }
 
-/* ── Section divider label ──────────────────────────────────────────────────── */
+/* ── Section divider ────────────────────────────────────────────────────────── */
 
-/**
- * Renders both forms at once and lets CSS choose: a hairline rule while the
- * rail is closed, the words once it opens. Swapping them in JS would mean the
- * rail re-flowed mid-transition.
- */
-function SidebarSectionLabel({ text }: { text: string }) {
+/** A hairline between groups, open or closed. The groups need no names. */
+function SidebarDivider() {
   return (
     <div className="sidebar-section" aria-hidden="true">
       <span className="sidebar-section-divider" />
-      <span className="sidebar-section-label">{text}</span>
+    </div>
+  );
+}
+
+/* ── Pin toggle ─────────────────────────────────────────────────────────────── */
+
+/**
+ * The rail's first row: pins it open (the page moves aside) or lets it fold
+ * back to opening on hover. Laid out like a nav item, its icon in the same box,
+ * so it sits on the rail's midline closed and gains its label open.
+ *
+ * Icon only: the rail's own width says what it is. One name, pressed or not,
+ * so a screen reader hears the state rather than a label that flips under the
+ * cursor; the tooltip says what a press will do.
+ */
+function SidebarPinToggle({ pinned, onToggle }: Readonly<{ pinned: boolean; onToggle: () => void }>) {
+  return (
+    <div className="sidebar-toggle-row">
+      <button
+        type="button"
+        className="sidebar-nav-item app-sidebar-toggle"
+        aria-label="Keep sidebar open"
+        aria-pressed={pinned}
+        title={pinned ? "Collapse sidebar" : "Keep sidebar open"}
+        onClick={onToggle}
+      >
+        <span className="sidebar-nav-item-icon">
+          <SidebarPanelIcon pinned={pinned} />
+        </span>
+      </button>
+      <SidebarDivider />
     </div>
   );
 }
@@ -276,19 +377,30 @@ export function AppNav({
   session,
   onLogout,
   isLoggingOut,
+  pageWorkspaceId,
+  onWorkspaceSwitch,
 }: Readonly<AppNavProps>) {
-  const { pathname, workspaces: workspaceVm, notifications } =
-    useAppNavViewModel({ guest });
+  const isPlatformAdmin = isPlatformAdminUser(guest, session);
+  const { pathname, workspaces: workspaceVm, notifications, mainItems } =
+    useAppNavViewModel({
+      guest,
+      isPlatformAdmin,
+      appRole: session?.appRole ?? null,
+      platformRole: session?.platformRole ?? null,
+      pageWorkspaceId,
+    });
   // Cleared on pointerleave. Clicking a nav link navigates but does NOT move
-  // the mouse, so the rail stays hovered — and an expanded rail is 240px of
+  // the mouse, so the rail stays hovered — and an expanded rail is a column of
   // panel sitting on top of the page you just asked for. Suppressing hover
   // until the pointer leaves makes a click read as "take me there", not "take
   // me there and stay in the way". Keyboard focus is never suppressed.
   const [hoverSuppressed, setHoverSuppressed] = useState(false);
+  // Pinned, the rail stays open and the page moves aside; unpinned, it still
+  // opens on hover. The width itself is CSS, keyed off <html>; see app-shell.css.
+  const [sidebarPinned, toggleSidebarPinned] = useSidebarPin();
   const prefersReducedMotion = useReducedMotion();
   const reduced = reducedMotionEnabled(prefersReducedMotion);
   const avatarInitial = navAvatarInitial(session);
-  const isPlatformAdmin = isPlatformAdminUser(guest, session);
   const appRole = sessionAppRole(session);
   const loadWorkspaces = workspaceVm.loadWorkspaces;
 
@@ -311,23 +423,33 @@ export function AppNav({
           full width, so the rail keeps its own brand mark and the expanded
           rail paints over this bar rather than beside it. */}
       <AppHeader guest={guest} session={session} appRole={appRole} avatarInitial={avatarInitial}
-        workspaces={workspaceVm.workspaces} workspaceStatus={workspaceVm.status}
-        loadWorkspaces={loadWorkspaces}
+        workspaces={workspaceVm.workspaces} otherTeams={workspaceVm.otherTeams}
+        workspaceStatus={workspaceVm.status}
+        loadWorkspaces={loadWorkspaces} onWorkspaceSwitch={onWorkspaceSwitch}
         onLogout={onLogout} isLoggingOut={isLoggingOut} />
-      <AppSidebar pathname={pathname} guest={guest} reduced={reduced}
+      <AppSidebar pathname={pathname} guest={guest} mainItems={mainItems} reduced={reduced}
         isPlatformAdmin={isPlatformAdmin} unreadCount={notifications.unreadCount}
         hoverSuppressed={hoverSuppressed}
+        pinned={sidebarPinned}
+        onTogglePinned={() => {
+          // Unpinning under the cursor would leave the rail open on hover, so
+          // the press would seem to do nothing: fold it now, as a nav click does.
+          if (sidebarPinned) setHoverSuppressed(true);
+          toggleSidebarPinned();
+        }}
         onNavigate={() => setHoverSuppressed(true)}
         onPointerLeave={() => setHoverSuppressed(false)} />
     </>
   );
 }
 
-function AppHeader({ guest, session, appRole, avatarInitial, workspaces, workspaceStatus, loadWorkspaces, onLogout, isLoggingOut }: Readonly<{
+function AppHeader({ guest, session, appRole, avatarInitial, workspaces, otherTeams, workspaceStatus, loadWorkspaces, onWorkspaceSwitch, onLogout, isLoggingOut }: Readonly<{
   guest: boolean; session: AuthSession | null; appRole: WorkspaceAppRole; avatarInitial: string;
   workspaces: Parameters<typeof WorkspaceSwitcher>[0]["workspaces"];
+  otherTeams: NonNullable<Parameters<typeof WorkspaceSwitcher>[0]["otherTeams"]>;
   workspaceStatus: NonNullable<Parameters<typeof WorkspaceSwitcher>[0]["status"]>;
-  loadWorkspaces: () => void; onLogout: () => void; isLoggingOut: boolean;
+  loadWorkspaces: () => void; onWorkspaceSwitch?: (workspaceId: string) => void;
+  onLogout: () => void; isLoggingOut: boolean;
 }>) {
   return (
     <header className="app-header">
@@ -338,10 +460,12 @@ function AppHeader({ guest, session, appRole, avatarInitial, workspaces, workspa
         {!guest && (
           <WorkspaceSwitcher
             workspaces={workspaces}
+            otherTeams={otherTeams}
             appRole={appRole}
             status={workspaceStatus}
             onRetry={loadWorkspaces}
             onWorkspaceCreated={loadWorkspaces}
+            onSwitch={onWorkspaceSwitch}
           />
         )}
       </div>
@@ -378,20 +502,47 @@ function HeaderAvatar({ session, avatarInitial }: Readonly<{ session: AuthSessio
   );
 }
 
-function AppSidebar({ pathname, guest, reduced, isPlatformAdmin, unreadCount, hoverSuppressed, onNavigate, onPointerLeave }: Readonly<{
-  pathname: string; guest: boolean; reduced: boolean; isPlatformAdmin: boolean; unreadCount: number;
-  hoverSuppressed: boolean; onNavigate: () => void; onPointerLeave: () => void;
+/** Everything but the badge, per Main entry. */
+const MAIN_ITEMS: Record<SidebarMainItem, {
+  href: string;
+  label: string;
+  icon: SidebarNavItemProps["icon"];
+  isActive: (pathname: string) => boolean;
+}> = {
+  home: { href: "/home", label: "Home", icon: DashboardIcon, isActive: (p) => p === "/home" },
+  projects: { href: "/workflows", label: "Projects", icon: WorkflowsIcon, isActive: (p) => p === "/workflows" },
+  teams: { href: "/teams", label: "Teams", icon: TeamsIcon, isActive: (p) => p === "/teams" || p.startsWith("/groups") },
+  checklists: { href: "/checklists", label: "Checklists", icon: ChecklistsIcon, isActive: (p) => p === "/checklists" },
+  activity: { href: "/activity", label: "Activity", icon: ActivityIcon, isActive: (p) => p === "/activity" },
+  inbox: { href: "/inbox", label: "Inbox", icon: InboxIcon, isActive: (p) => p === "/inbox" },
+};
+
+function AppSidebar({ pathname, guest, mainItems, reduced, isPlatformAdmin, unreadCount, hoverSuppressed, pinned, onTogglePinned, onNavigate, onPointerLeave }: Readonly<{
+  pathname: string; guest: boolean; mainItems: readonly SidebarMainItem[]; reduced: boolean; isPlatformAdmin: boolean; unreadCount: number;
+  hoverSuppressed: boolean; pinned: boolean; onTogglePinned: () => void; onNavigate: () => void; onPointerLeave: () => void;
 }>) {
+  const hasAccountItems = !guest || isPlatformAdmin;
   return (
     <aside className="app-sidebar" data-hover-suppressed={hoverSuppressed ? "true" : "false"} onPointerLeave={onPointerLeave} aria-label="Primary navigation">
       <div className="sidebar-edge-gradient" aria-hidden="true" />
+      <SidebarPinToggle pinned={pinned} onToggle={onTogglePinned} />
       <nav className="sidebar-nav" aria-label="Primary">
-        <SidebarSectionLabel text="Main" />
-        <SidebarNavItem href="/home" label="Home" icon={DashboardIcon} isActive={pathname === "/home"} reduced={reduced} onNavigate={onNavigate} />
-        <SidebarNavItem href="/workflows" label="Projects" icon={WorkflowsIcon} isActive={pathname === "/workflows"} reduced={reduced} onNavigate={onNavigate} />
-        {!guest && <SidebarNavItem href="/teams" label="Teams" icon={TeamsIcon} isActive={pathname === "/teams" || pathname.startsWith("/groups")} reduced={reduced} onNavigate={onNavigate} />}
-        {!guest && <SidebarNavItem href="/inbox" label="Inbox" icon={InboxIcon} isActive={pathname === "/inbox"} reduced={reduced} onNavigate={onNavigate} badgeCount={unreadCount} />}
-        <SidebarSectionLabel text="Account" />
+        {mainItems.map((id) => {
+          const item = MAIN_ITEMS[id];
+          return (
+            <SidebarNavItem
+              key={id}
+              href={item.href}
+              label={item.label}
+              icon={item.icon}
+              isActive={item.isActive(pathname)}
+              reduced={reduced}
+              onNavigate={onNavigate}
+              badgeCount={id === "inbox" ? unreadCount : 0}
+            />
+          );
+        })}
+        {hasAccountItems ? <SidebarDivider /> : null}
         {!guest && <SidebarNavItem href="/settings" label="Settings" icon={SettingsIcon} isActive={pathname === "/settings"} reduced={reduced} onNavigate={onNavigate} />}
         {isPlatformAdmin && <SidebarNavItem href="/admin" label="Admin" icon={AdminIcon} isActive={pathname.startsWith("/admin")} reduced={reduced} onNavigate={onNavigate} />}
       </nav>

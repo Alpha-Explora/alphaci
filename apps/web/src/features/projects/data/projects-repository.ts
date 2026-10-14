@@ -4,19 +4,24 @@ import {
   createWorkflowUpdatePullRequest as requestWorkflowUpdatePullRequest,
   detachDeploymentTarget as requestDetachDeploymentTarget,
   disconnectProject,
+  getDeploymentTargetActions,
   getProjectAuditEvents,
   getProjectCiRuns,
+  getProjectCommits,
   getProjectDeployments,
   getProjectDomains,
   getProjectDrift,
+  getProjectFolder,
   getProjectOverview,
   getProjectPreviews,
   getWorkflowSettings,
   previewWorkflowSettings as requestPreviewWorkflowSettings,
+  reinstallDeploymentSecrets as requestReinstallDeploymentSecrets,
   removeProjectDomain,
   repairProjectDriftFinding,
   runProjectDriftDetection,
   syncDeploymentTarget as requestSyncDeploymentTarget,
+  syncProjectAuditEvents,
   syncProjectSnapshot,
   updateDeploymentTarget as requestUpdateDeploymentTarget,
   verifyProjectDomain,
@@ -24,15 +29,20 @@ import {
 
 import type {
   DeploymentTarget,
+  DeploymentTargetActionsResponse,
   DeploymentTargetSyncResponse,
   DetachDeploymentTargetResponse,
   DisconnectProjectResponse,
   ProjectAuditEventsResponse,
+  ProjectAuditPageRequest,
   ProjectCiRunsResponse,
+  ProjectCommitsPageRequest,
+  ProjectCommitsResponse,
   ProjectDeploymentsResponse,
   ProjectDriftRepairAction,
   ProjectDriftResponse,
   ProjectSyncSnapshotResponse,
+  ReinstallDeploymentSecretsResponse,
   UpdateDeploymentTargetRequest,
   WorkflowSettings,
   WorkflowSettingsPreviewResponse,
@@ -45,12 +55,19 @@ import type {
   ProjectPreviewsResponse,
   RemoveCustomDomainResponse,
 } from "../model/projects-types";
+import { normaliseProjectFolder } from "../detail/model/project-folder-rules";
+import type { ProjectFolderSummary } from "../detail/model/project-folder-types";
 
 /* The only place in this domain that performs I/O. View-models call these;
  * views never do. */
 export const projectsRepository = {
   overview(projectId: string): Promise<ProjectOverviewResponse> {
     return getProjectOverview(projectId);
+  },
+
+  /** The Project this repository is in, normalised; null for a malformed body. */
+  async folder(projectId: string): Promise<ProjectFolderSummary | null> {
+    return normaliseProjectFolder(await getProjectFolder(projectId));
   },
 
   /** One entry per branch, newest deployment each. */
@@ -159,8 +176,24 @@ export const projectsRepository = {
     return repairProjectDriftFinding(projectId, findingId, action);
   },
 
-  audit(projectId: string): Promise<ProjectAuditEventsResponse> {
-    return getProjectAuditEvents(projectId);
+  audit(
+    projectId: string,
+    page?: ProjectAuditPageRequest,
+  ): Promise<ProjectAuditEventsResponse> {
+    return getProjectAuditEvents(projectId, page);
+  },
+
+  /** Reads GitHub activity into the audit trail now; re-read the first page after. */
+  syncAudit(projectId: string): Promise<unknown> {
+    return syncProjectAuditEvents(projectId);
+  },
+
+  /** A branch's commits, newest first; no branch asks for the server's default. */
+  commits(
+    projectId: string,
+    page?: ProjectCommitsPageRequest,
+  ): Promise<ProjectCommitsResponse> {
+    return getProjectCommits(projectId, page);
   },
 
   syncSnapshot(projectId: string): Promise<ProjectSyncSnapshotResponse> {
@@ -190,5 +223,21 @@ export const projectsRepository = {
     return requestDetachDeploymentTarget(projectId, targetId, {
       deleteProviderResource,
     });
+  },
+
+  /** Which management actions a target currently offers, and why not otherwise. */
+  targetActions(
+    projectId: string,
+    targetId: string,
+  ): Promise<DeploymentTargetActionsResponse> {
+    return getDeploymentTargetActions(projectId, targetId);
+  },
+
+  /** Rewrites a target's GitHub Actions secrets from the provider's current state. */
+  reinstallDeploymentSecrets(
+    projectId: string,
+    targetId: string,
+  ): Promise<ReinstallDeploymentSecretsResponse> {
+    return requestReinstallDeploymentSecrets(projectId, targetId);
   },
 };

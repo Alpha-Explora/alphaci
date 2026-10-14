@@ -1,42 +1,33 @@
 "use client";
 
 import {
-  commitUrl,
   createdLabel,
   displayHost,
   previewKey,
   previewStatusLabel,
   previewStatusTone,
-  pullRequestUrl,
   shortCommitSha,
 } from "../../model/projects-rules";
 import type { ProjectBranchPreview } from "../../model/projects-types";
-import { BranchIcon, CommitIcon, ExternalIcon, GithubIcon } from "./deployment-icons";
+import { BranchIcon, CommitIcon, ExternalIcon, PullRequestIcon } from "./deployment-icons";
 
 type RowProps = Readonly<{
   preview: ProjectBranchPreview;
-  repoFullName?: string | null;
+  onOpenPullRequest?: (pullRequestNumber: number) => void;
 }>;
 
-function RowCommit({ preview, repoFullName }: RowProps) {
+function RowCommit({ preview }: RowProps) {
   const sha = shortCommitSha(preview.commitSha);
   if (!sha) {
     return (
       <span className="active-branch__commit active-branch__muted">No commit yet</span>
     );
   }
-  const href = commitUrl(repoFullName, preview.commitSha);
 
   return (
     <span className="active-branch__commit">
       <CommitIcon />
-      {href ? (
-        <a className="deploy-card__sha" href={href} rel="noreferrer noopener" target="_blank">
-          {sha}
-        </a>
-      ) : (
-        <span className="deploy-card__sha">{sha}</span>
-      )}
+      <span className="deploy-card__sha">{sha}</span>
       {preview.commitMessage ? (
         <span className="deploy-card__commit-message">{preview.commitMessage}</span>
       ) : null}
@@ -44,13 +35,28 @@ function RowCommit({ preview, repoFullName }: RowProps) {
   );
 }
 
-function RowPullRequest({ preview, repoFullName }: RowProps) {
-  const href = pullRequestUrl(repoFullName, preview.pullRequestNumber);
-  if (!href) return null;
+/**
+ * "#47" opens that pull request in the Pull requests tab, not on GitHub. A role
+ * without the tab gets no handler, and the number reads as plain text.
+ */
+function RowPullRequest({ preview, onOpenPullRequest }: RowProps) {
+  const number = preview.pullRequestNumber;
+  if (number === null) return null;
+  if (!onOpenPullRequest) {
+    return <span className="active-branch__chip">#{number}</span>;
+  }
 
   return (
-    <a className="active-branch__chip" href={href} rel="noreferrer noopener" target="_blank">
-      <GithubIcon />#{preview.pullRequestNumber}
+    <a
+      className="active-branch__chip"
+      href="#pulls"
+      title={`Open pull request #${number}`}
+      onClick={(event) => {
+        event.preventDefault();
+        onOpenPullRequest(number);
+      }}
+    >
+      <PullRequestIcon />#{number}
     </a>
   );
 }
@@ -77,7 +83,7 @@ function RowVisit({ preview }: RowProps) {
   );
 }
 
-function ActiveBranchRow({ preview, repoFullName }: RowProps) {
+function ActiveBranchRow({ preview, onOpenPullRequest }: RowProps) {
   const tone = previewStatusTone(preview.status);
 
   return (
@@ -90,8 +96,8 @@ function ActiveBranchRow({ preview, repoFullName }: RowProps) {
         <span aria-hidden="true" className={`deploy-card__dot deploy-card__dot--${tone}`} />
         {previewStatusLabel(preview.status)}
       </span>
-      <RowCommit preview={preview} repoFullName={repoFullName} />
-      <RowPullRequest preview={preview} repoFullName={repoFullName} />
+      <RowCommit preview={preview} />
+      <RowPullRequest preview={preview} onOpenPullRequest={onOpenPullRequest} />
       <span className="active-branch__muted active-branch__created">
         {createdLabel(preview)}
       </span>
@@ -102,17 +108,17 @@ function ActiveBranchRow({ preview, repoFullName }: RowProps) {
 
 /**
  * Every branch but production's, one line each: which branch, whether it is
- * live, and the commit that put it there. The Hosting tab has the full
- * previews; this is the list to scan.
+ * live, and the commit that put it there. The Hosting tab's Previews
+ * environment lists them too, beside their deploys and variables.
  */
 export function ActiveBranchesList({
   branches,
-  repoFullName,
   limit,
+  onOpenPullRequest,
 }: Readonly<{
   branches: ProjectBranchPreview[];
-  repoFullName?: string | null;
   limit: number;
+  onOpenPullRequest?: (pullRequestNumber: number) => void;
 }>) {
   if (branches.length === 0) return null;
   const shown = branches.slice(0, limit);
@@ -128,7 +134,7 @@ export function ActiveBranchesList({
           <ActiveBranchRow
             key={previewKey(preview)}
             preview={preview}
-            repoFullName={repoFullName}
+            onOpenPullRequest={onOpenPullRequest}
           />
         ))}
       </ul>

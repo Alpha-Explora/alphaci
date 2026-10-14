@@ -1,4 +1,5 @@
 export { GroupActivityView } from "./views/group-activity-view";
+export { GroupActivitySection } from "./views/group-activity-section";
 export {
   useGroupActivityViewModel,
   type GroupActivityViewModel,

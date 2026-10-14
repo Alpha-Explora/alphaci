@@ -697,7 +697,9 @@ html:not([data-theme="light"]) .dash-shell {
 
 .home-header-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
 
-.home-header-btn {
+/* Two classes, so it outranks the hero-scale `.ghost-button` base in
+   globals.css, which loads later. */
+.home-header-actions .home-header-btn {
   display: inline-flex; align-items: center; justify-content: center;
   padding: 0.4rem 1rem; font-size: 0.8rem; min-height: 2.2rem;
 }
@@ -720,6 +722,9 @@ html:not([data-theme="light"]) .dash-shell {
     align-items: stretch; gap: 1rem;
   }
   .dashboard-shell--fit .metrics-rail { flex: 0 0 auto; }
+  /* Never shrink the header: when the blocks below hold more than fits, flex
+     would otherwise take the overflow out of the header too and clip the title. */
+  .dashboard-shell--fit .home-header { flex: 0 0 auto; }
 
   /* Runs hero fills its column: run stack scrolls, outcomes pin at the foot. */
   .dashboard-shell--fit .runs-hero { display: flex; flex-direction: column; min-height: 0; overflow: hidden; }
@@ -753,6 +758,12 @@ html:not([data-theme="light"]) .dash-shell {
   border-radius: 0.7rem;
   overflow: hidden;
   background: color-mix(in srgb, var(--bg-elevated) 45%, transparent);
+}
+
+/* A role's Home has five metrics. Declared before the breakpoints below so
+   they still fold it to three, then two, columns. */
+.metrics-rail--five {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
 }
 
 .metric-cell {
@@ -837,3 +848,557 @@ html:not([data-theme="light"]) .dash-shell {
 }
 
 .quality-stat-value--danger { color: var(--danger); }
+
+/* ══ Home by role (2026-10): Developer, QA Team, Product owner ══════════════
+   Same parts as the team dashboard: a five-metric rail, a main column of two
+   blocks and the slim side rail. On a fit screen each block's list scrolls
+   inside it, so the page never does. */
+
+.home-header-eyebrow-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.home-main-col {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  min-width: 0;
+}
+
+.home-block {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.home-block-heading {
+  align-items: center;
+  padding-bottom: 0.6rem;
+}
+
+.home-block-note {
+  margin: 0.55rem 0 0;
+  color: var(--text-secondary);
+  font-size: 0.74rem;
+  line-height: 1.45;
+}
+
+.home-block-body {
+  min-width: 0;
+  scrollbar-width: thin;
+}
+
+.home-block-error {
+  color: var(--danger);
+}
+
+.home-block-foot {
+  margin: 0.7rem 0 0;
+  color: var(--text-muted);
+  font-size: 0.68rem;
+}
+
+.home-runs-stream {
+  margin-top: 0.6rem;
+  padding-bottom: 0.2rem;
+}
+
+/* Rows: the team dashboard's project row, one per list item. */
+.home-row-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.home-row-list > li {
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.home-row-list > li:last-child {
+  border-bottom: 0;
+}
+
+.home-row-list .team-project-row:hover .dashboard-row-arrow,
+.home-row-list .team-project-row:focus-visible .dashboard-row-arrow,
+.home-work-project-link:hover .dashboard-row-arrow,
+.home-work-project-link:focus-visible .dashboard-row-arrow {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.home-row-list a:focus-visible,
+.home-work-list a:focus-visible,
+.home-quiet-list a:focus-visible,
+.home-branch-table a:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+  border-radius: 0.4rem;
+}
+
+/* Loading: rows the shape of the rows to come. */
+.home-skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  padding: 0.65rem 0;
+}
+
+.home-skeleton-row {
+  display: block;
+  height: 2rem;
+  border-radius: 0.5rem;
+  background: color-mix(in srgb, var(--text-muted) 14%, transparent);
+  animation: state-pulse 1.5s ease-in-out infinite;
+}
+
+.home-skeleton-row--short {
+  width: 60%;
+}
+
+/* Segmented bar: verification and defect breakdowns. */
+.home-seg {
+  display: flex;
+  gap: 2px;
+  width: 100%;
+  height: 0.4rem;
+  border-radius: var(--radius-pill);
+  overflow: hidden;
+  background: color-mix(in srgb, var(--text-muted) 16%, transparent);
+}
+
+.home-seg-part {
+  flex: 1 1 0;
+  min-width: 0.25rem;
+  height: 100%;
+  transform-origin: left center;
+}
+
+.home-seg-part--passed {
+  background: var(--success);
+}
+
+.home-seg-part--failed,
+.home-seg-part--blocker {
+  background: var(--danger);
+}
+
+.home-seg-part--blocked,
+.home-seg-part--major {
+  background: var(--accent-amber);
+}
+
+.home-seg-part--returned {
+  background: var(--accent-violet);
+}
+
+.home-seg-part--minor {
+  background: var(--brand);
+}
+
+.home-seg-part--pending,
+.home-seg-part--unrated {
+  background: color-mix(in srgb, var(--text-muted) 45%, transparent);
+}
+
+/* Defect severity chips on a returned row. */
+.home-sev-chips {
+  display: inline-flex;
+  flex: 0 0 auto;
+  gap: 0.3rem;
+}
+
+.home-sev {
+  padding: 0.14rem 0.42rem;
+  border-radius: var(--radius-pill);
+  font-size: 0.6rem;
+  font-weight: 750;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.home-sev--blocker {
+  color: var(--danger);
+  background: color-mix(in srgb, var(--danger) 12%, transparent);
+}
+
+.home-sev--major {
+  color: var(--accent-amber);
+  background: color-mix(in srgb, var(--accent-amber) 12%, transparent);
+}
+
+.home-sev--minor {
+  color: var(--brand);
+  background: color-mix(in srgb, var(--brand) 12%, transparent);
+}
+
+/* QA Team: a Project's verification row. */
+.home-verify-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  padding: 0.65rem 0;
+  color: var(--text-primary);
+  text-decoration: none;
+  transition: padding-left 0.16s ease;
+}
+
+.home-verify-row:hover {
+  padding-left: 0.3rem;
+}
+
+.home-verify-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  min-width: 0;
+}
+
+.home-verify-head strong {
+  overflow: hidden;
+  font-size: 0.82rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.home-verify-row:hover .home-verify-head strong {
+  color: var(--brand);
+}
+
+.home-verify-legend {
+  color: var(--text-muted);
+  font-size: 0.68rem;
+}
+
+/* QA Team: open defects by severity. */
+.home-defects {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  padding-top: 0.2rem;
+}
+
+.home-defect-legend {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.3rem 0.9rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.home-defect-legend li {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: var(--text-secondary);
+  font-size: 0.72rem;
+}
+
+.home-legend-swatch {
+  width: 0.55rem;
+  height: 0.55rem;
+  flex: 0 0 auto;
+  border-radius: 2px;
+}
+
+.home-defect-label {
+  flex: 1 1 auto;
+  text-transform: capitalize;
+}
+
+.home-defect-count {
+  color: var(--text-primary);
+  font-family: ui-monospace, monospace;
+  font-weight: 750;
+}
+
+/* Product owner: still in verification, quieter than what can ship. */
+.home-subhead {
+  margin: 0.9rem 0 0.3rem;
+  color: var(--text-muted);
+  font-size: 0.6rem;
+  font-weight: 750;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+.home-quiet-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.home-quiet-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.35rem 0;
+  color: var(--text-secondary);
+  font-size: 0.74rem;
+  text-decoration: none;
+}
+
+.home-quiet-row:hover {
+  color: var(--text-primary);
+}
+
+.home-quiet-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.home-quiet-detail {
+  flex: 0 0 auto;
+  color: var(--text-muted);
+  font-size: 0.68rem;
+}
+
+/* Branch health: repository by dev / uat / main. */
+.home-branch-table {
+  width: 100%;
+  margin-top: 0.35rem;
+  border-collapse: collapse;
+  table-layout: fixed;
+  font-size: 0.76rem;
+}
+
+.home-branch-table th,
+.home-branch-table td {
+  padding: 0.42rem 0.35rem;
+  border-bottom: 1px solid var(--border-soft);
+  text-align: center;
+}
+
+.home-branch-table thead th {
+  width: 3.4rem;
+  color: var(--text-muted);
+  font-size: 0.6rem;
+  font-weight: 750;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.home-branch-table thead th:first-child {
+  width: auto;
+  text-align: left;
+}
+
+.home-branch-table thead th:last-child {
+  width: 5.2rem;
+}
+
+.home-branch-table tbody th {
+  text-align: left;
+}
+
+.home-branch-table tbody tr:last-child th,
+.home-branch-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.home-branch-table td .team-status-dot {
+  display: inline-block;
+  vertical-align: middle;
+}
+
+.home-branch-repo {
+  display: block;
+  overflow: hidden;
+  color: var(--text-primary);
+  font-family: ui-monospace, monospace;
+  font-weight: 650;
+  text-decoration: none;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.home-branch-repo--link:hover {
+  color: var(--brand);
+}
+
+.home-streak {
+  color: var(--danger);
+  font-size: 0.66rem;
+  font-weight: 750;
+  white-space: nowrap;
+}
+
+/* Developer: My work, Projects then their repositories. */
+.home-work-list,
+.home-work-repos {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.home-work-project {
+  padding: 0.45rem 0;
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.home-work-project:last-child {
+  border-bottom: 0;
+}
+
+.home-work-project-link {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  color: var(--text-primary);
+  font-size: 0.8rem;
+  text-decoration: none;
+}
+
+.home-work-project-link strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.home-work-project-link:hover {
+  color: var(--brand);
+}
+
+.home-work-repos {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  margin-top: 0.3rem;
+  padding-left: 0.6rem;
+  border-left: 1px solid var(--border-soft);
+}
+
+.home-work-repo {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 1.75rem;
+  padding: 0.15rem 0.3rem;
+  border-radius: 0.4rem;
+  color: var(--text-secondary);
+  font-size: 0.74rem;
+  text-decoration: none;
+  transition: background 0.16s ease, color 0.16s ease;
+}
+
+.home-work-repo--link:hover {
+  background: color-mix(in srgb, var(--brand) 8%, transparent);
+  color: var(--text-primary);
+}
+
+.home-work-repo-name {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  font-family: ui-monospace, monospace;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.home-work-empty {
+  margin: 0.3rem 0 0;
+  color: var(--text-muted);
+  font-size: 0.7rem;
+}
+
+/* An empty team, for a role that cannot create its first Project. */
+.home-waiting {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  min-width: 0;
+  padding: clamp(1.1rem, 2.5vw, 1.8rem);
+  border: 1px solid var(--border-soft);
+  border-radius: 1rem;
+  background:
+    radial-gradient(130% 120% at 0% 0%, color-mix(in srgb, var(--brand) 9%, transparent), transparent 52%),
+    var(--bg-elevated);
+}
+
+.home-waiting-pulse {
+  width: 0.7rem;
+  height: 0.7rem;
+  flex: 0 0 auto;
+  margin-top: 0.45rem;
+  border-radius: 50%;
+  background: var(--brand);
+  animation: home-waiting-pulse 2.4s ease-in-out infinite;
+}
+
+.home-waiting-pulse--still {
+  animation: none;
+}
+
+@keyframes home-waiting-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--brand) 45%, transparent);
+  }
+
+  50% {
+    box-shadow: 0 0 0 8px color-mix(in srgb, var(--brand) 0%, transparent);
+  }
+}
+
+.home-waiting-copy h2 {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: clamp(1.05rem, 2vw, 1.35rem);
+  letter-spacing: -0.015em;
+}
+
+.home-waiting-copy p:last-child {
+  margin: 0.45rem 0 0;
+  color: var(--text-secondary);
+  font-size: 0.82rem;
+  line-height: 1.5;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .home-skeleton-row,
+  .home-waiting-pulse {
+    animation: none;
+  }
+
+  .home-verify-row,
+  .home-work-repo {
+    transition: none;
+  }
+}
+
+/* Fit screens: the main column splits its height between its two blocks.
+   The first takes what it needs, up to half; the second fills the rest. Each
+   block's body scrolls, so no list can push the page or starve its sibling. */
+@media (min-width: 1024px) and (min-height: 720px) {
+  .dashboard-shell--fit .home-main-col {
+    min-height: 0;
+  }
+
+  .dashboard-shell--fit .home-block {
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .dashboard-shell--fit .home-main-col > .home-block:first-child:not(:last-child) {
+    flex: 0 1 auto;
+    max-height: 50%;
+  }
+
+  .dashboard-shell--fit .home-main-col > .home-block:last-child {
+    flex: 1 1 0;
+  }
+
+  .dashboard-shell--fit .home-block-body {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: auto;
+  }
+}

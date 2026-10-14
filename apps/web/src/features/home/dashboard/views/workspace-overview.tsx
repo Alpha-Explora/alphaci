@@ -3,13 +3,14 @@
 import Link from "next/link";
 import { motion } from "framer-motion";
 
+import { SIDEBAR_SHOWS_ACTIVITY } from "@/features/workspace/selection";
+
 import {
   RUN_STAGE_LABELS,
   buildWorkspaceAttentionItems,
   computeRunStats,
   failedDeliveryProjects,
   isEmptyWorkspace,
-  isGroupManagerRole,
   projectBadgeLabel,
   projectTone,
   shortRepoName,
@@ -27,11 +28,19 @@ import type {
   RunStats,
   WorkspaceAttentionItem,
 } from "../../model/home-types";
+import type { HomeShortcutId } from "../../model/home-persona-types";
+import { repoProjectIds } from "../../model/home-run-rules";
 import { KeyboardShortcuts } from "./dashboard-chrome";
 import { GetStartedJourney } from "./get-started-journey";
 import { sectionVariants } from "./motion";
 import { PipelineActivity } from "./pipeline-activity";
 import { useCountUp } from "./count-up";
+
+/** A dash until the value is known; then the (counting) figure and its suffix. */
+function metricText(known: number | null, shown: number | null, suffix: string): string {
+  if (known === null) return "—";
+  return `${shown ?? known}${suffix}`;
+}
 
 /** Container-less metric cell: a quiet mono figure on a hairline, not a card. */
 export function DashboardMetric({
@@ -40,18 +49,23 @@ export function DashboardMetric({
   loading,
   reduced,
   href,
+  suffix,
 }: Readonly<{
-  value: number;
+  /** Null when it is not known: shown as a dash. */
+  value: number | null;
   label: string;
   loading: boolean;
   reduced: boolean | null;
   href?: string;
+  /** Appended to the figure, e.g. "%". */
+  suffix?: string;
 }>) {
-  const animatedValue = useCountUp(reduced || loading ? null : value, 700);
+  const known = loading || value === null ? null : value;
+  const animatedValue = useCountUp(reduced ? null : known, 700);
   const content = (
     <>
       <span className="metric-cell-num">
-        {loading ? "—" : reduced ? value : (animatedValue ?? value)}
+        {metricText(known, reduced ? known : animatedValue, suffix ?? "")}
       </span>
       <span className="metric-cell-label">{label}</span>
     </>
@@ -106,7 +120,7 @@ function WorkspaceMetricsRail({
   );
 }
 
-function TeamProjectsList({
+export function TeamProjectsList({
   group,
   projects,
   loading,
@@ -159,7 +173,7 @@ function TeamProjectsBody({
   );
 }
 
-function QualityCard({
+export function QualityCard({
   runStats,
   loading,
 }: Readonly<{
@@ -189,25 +203,21 @@ function QualityCard({
   );
 }
 
-function activityEmptyCopy(group: GroupSummary | null): string {
-  if (group && !isGroupManagerRole(group.role)) {
-    return "Team activity is available to group leads.";
-  }
-  return "No recent activity in this workspace.";
-}
-
 function ActivityRail({
   group,
   activity,
+  canOpenActivity,
 }: Readonly<{
   group: GroupSummary | null;
   activity: GroupActivityItem[];
+  /** canOpenTeamActivity for the header team; nobody else is offered the link. */
+  canOpenActivity: boolean;
 }>) {
   return (
     <section className="side-rail-block side-rail-block--divided side-rail-block--grow" aria-labelledby="recent-activity-title">
       <div className="side-rail-head">
         <p className="dashboard-section-kicker" id="recent-activity-title">ACTIVITY</p>
-        {group ? <Link href={`/groups/${group.id}/activity`} className="dashboard-inline-link">Open <span aria-hidden="true">→</span></Link> : null}
+        {group && canOpenActivity ? <Link href={`/groups/${group.id}/activity`} className="dashboard-inline-link">Open <span aria-hidden="true">→</span></Link> : null}
       </div>
       <div className="side-rail-scroll">
         {activity.length ? (
@@ -220,7 +230,7 @@ function ActivityRail({
             ))}
           </div>
         ) : (
-          <p className="dashboard-empty">{activityEmptyCopy(group)}</p>
+          <p className="dashboard-empty">No recent activity in this workspace.</p>
         )}
       </div>
     </section>
@@ -239,6 +249,9 @@ function WorkspacePopulatedOverview({
   reduced,
   runStats,
   attentionItems,
+  canOpenActivity,
+  showActivity,
+  shortcuts,
 }: Readonly<{
   group: GroupSummary | null;
   projects: ProvisionedProject[];
@@ -251,6 +264,9 @@ function WorkspacePopulatedOverview({
   reduced: boolean | null;
   runStats: RunStats;
   attentionItems: WorkspaceAttentionItem[];
+  canOpenActivity: boolean;
+  showActivity: boolean;
+  shortcuts: ReadonlyArray<HomeShortcutId>;
 }>) {
   return (
     <>
@@ -272,6 +288,7 @@ function WorkspacePopulatedOverview({
           loading={loading}
           reduced={reduced}
           attentionItems={attentionItems}
+          projectIds={repoProjectIds([], projects)}
         />
 
         <motion.aside
@@ -283,11 +300,13 @@ function WorkspacePopulatedOverview({
         >
           <TeamProjectsList group={group} projects={projects} loading={loading} />
           <QualityCard runStats={runStats} loading={loading} />
-          <ActivityRail group={group} activity={activity} />
+          {showActivity ? (
+            <ActivityRail group={group} activity={activity} canOpenActivity={canOpenActivity} />
+          ) : null}
         </motion.aside>
       </div>
 
-      <KeyboardShortcuts reduced={reduced} />
+      <KeyboardShortcuts reduced={reduced} shortcuts={shortcuts} />
     </>
   );
 }
@@ -302,6 +321,9 @@ export function DashboardWorkspaceOverview({
   workflowHistoryCount,
   loading,
   reduced,
+  canOpenActivity,
+  showActivity = SIDEBAR_SHOWS_ACTIVITY,
+  shortcuts,
 }: Readonly<{
   group: GroupSummary | null;
   portfolio: DeliveryPortfolioNode[];
@@ -312,6 +334,15 @@ export function DashboardWorkspaceOverview({
   workflowHistoryCount: number;
   loading: boolean;
   reduced: boolean | null;
+  canOpenActivity: boolean;
+  /**
+   * Whether the Activity rail (and its "Open" link) shows at all. Defaults to
+   * SIDEBAR_SHOWS_ACTIVITY: the team feed is hidden for now, like its sidebar
+   * entry. Tests pass true to cover the rail itself.
+   */
+  showActivity?: boolean;
+  /** The keyboard shortcuts legend (the team layout's). */
+  shortcuts: ReadonlyArray<HomeShortcutId>;
 }>) {
   const { deliveryProjectCount, repositoryCount } =
     workspacePortfolioCounts(portfolio);
@@ -325,7 +356,6 @@ export function DashboardWorkspaceOverview({
   const empty = isEmptyWorkspace({
     loading,
     projectCount: projects.length,
-    runCount: runs.length,
     deliveryProjectCount,
   });
   const runStats = computeRunStats(runs);
@@ -358,6 +388,9 @@ export function DashboardWorkspaceOverview({
         reduced={reduced}
         runStats={runStats}
         attentionItems={attentionItems}
+        canOpenActivity={canOpenActivity}
+        showActivity={showActivity}
+        shortcuts={shortcuts}
       />
     </div>
   );

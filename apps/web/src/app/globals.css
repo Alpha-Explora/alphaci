@@ -269,6 +269,13 @@ html[data-theme="light"] {
   letter-spacing: -0.01em;
 }
 
+/* The shared `border: 1px solid transparent` above loads after
+   components.css, so the secondary button's edge has to be restated here or
+   it is wiped out, and in dark mode the button reads as plain text. */
+.ghost-button {
+  border-color: var(--border-control);
+}
+
 .primary-button:disabled,
 .ghost-button:disabled {
   cursor: not-allowed;
@@ -309,31 +316,6 @@ html[data-theme="light"] {
   border: 1px solid var(--border);
   background: var(--bg-surface);
   box-shadow: var(--shadow-soft);
-}
-
-.studio-tab-bar--enhanced {
-  position: sticky;
-  top: 0;
-  z-index: 35;
-  min-height: 4.1rem;
-  align-items: center;
-  gap: 0.35rem;
-  border-top: 1px solid var(--border-soft);
-  border-right: none;
-  border-left: none;
-  border-radius: 0;
-  background:
-    linear-gradient(180deg, rgba(17, 17, 22, 0.9), rgba(10, 15, 30, 0.72)),
-    var(--bg-surface);
-  backdrop-filter: blur(24px) saturate(145%);
-  -webkit-backdrop-filter: blur(24px) saturate(145%);
-  box-shadow:
-    0 12px 32px rgba(0, 0, 0, 0.22),
-    inset 0 1px 0 rgba(255, 255, 255, 0.04);
-}
-
-.studio-tab-button.active {
-  color: var(--brand);
 }
 
 
@@ -871,36 +853,6 @@ html[data-theme="light"] {
   box-shadow: none;
 }
 
-.project-list-header .ghost-button {
-  min-height: 2rem;
-  padding: 0.35rem 0.65rem;
-  border-radius: 6px;
-  font-size: 0.76rem;
-}
-
-.project-list-item:hover,
-.project-list-item.selected {
-  border-color: var(--border-tile);
-  background: var(--layer-2);
-}
-
-.project-list-item.selected {
-  border-color: var(--border-brand);
-  box-shadow: inset 2px 0 0 var(--brand);
-}
-
-.project-list-item.selected {
-  color: var(--text-primary);
-}
-
-.project-list-pagination .ghost-button {
-  min-height: 2rem;
-  padding: 0.35rem 0.65rem;
-  border-radius: 6px;
-  font-size: 0.76rem;
-}
-
-
 .project-inner-tab.active {
   color: var(--brand);
   border-bottom-color: var(--brand);
@@ -919,15 +871,6 @@ html[data-theme="light"] {
   display: flex;
   gap: 0.35rem;
   flex-wrap: wrap;
-}
-
-/* ── Sub-tab bar ─────────────────────────────────────────────────────────── */
-/* Sits in normal flow directly under the project list inside .project-list-rail
-   (no longer a viewport-pinned floating element). */
-
-
-.current-subtab-btn.active {
-  color: var(--text-primary);
 }
 
 .deployment-flow-branch--button.active {
@@ -1360,7 +1303,6 @@ html[data-theme="light"] {
   background: rgba(248, 113, 113, 0.18);
 }
 
-.workflow-page-signal-strip span,
 .settings-preference-kicker,
 .notification-preferences-kicker {
   display: block;
@@ -1425,16 +1367,6 @@ html[data-theme="light"] {
   }
 }
 
-
-@media (max-width: 860px) {
-  .studio-tab-bar--enhanced {
-    position: relative;
-    top: auto;
-    align-items: flex-start;
-    flex-wrap: wrap;
-    padding-block: 0.65rem;
-  }
-}
 
 @media (max-width: 520px) {
   
@@ -1548,7 +1480,6 @@ html[data-theme="light"] {
 @media (max-width: 768px) {
 
   .app-sidebar:hover .sidebar-nav-item-label,
-  .app-sidebar:hover .sidebar-section-label,
   .app-sidebar:hover .sidebar-user-info,
   .app-sidebar:hover .sidebar-signout-label,
   .app-sidebar:hover .sidebar-nav-count {

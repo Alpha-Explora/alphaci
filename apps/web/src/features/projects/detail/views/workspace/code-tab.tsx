@@ -10,6 +10,7 @@ import {
   type RepoContentListing,
 } from "@/features/projects";
 
+import { browseRefFor } from "../../model/browse-ref";
 import { WorkspaceEmpty, WorkspaceError, WorkspaceLoading } from "./workspace-states";
 
 /**
@@ -21,8 +22,8 @@ import { WorkspaceEmpty, WorkspaceError, WorkspaceLoading } from "./workspace-st
  *
  * The path and ref live in component state rather than the URL. A file you are
  * part-way through reading is a reading position, not a destination worth
- * sharing — and every file already carries an "Open on GitHub" link, which is
- * the shareable address people actually expect.
+ * sharing, and a file's address on GitHub is deliberately not offered: ALPHACI
+ * is the only place people are sent to.
  */
 export function CodeTab({ projectId }: { projectId: string }) {
   const [branches, setBranches] = useState<RepoBranch[]>([]);
@@ -56,6 +57,17 @@ export function CodeTab({ projectId }: { projectId: string }) {
         // Display only — this must not move `chosenRef`, or the fetch effect
         // fires a second time for a listing it already has.
         setResolvedRef((current) => current ?? data.defaultBranch);
+        // The list is role-filtered and may not contain the default branch
+        // (`main`). Only then is a ref asked for explicitly; otherwise the
+        // server's own default stands and a cold open stays one request.
+        const fallback = browseRefFor(
+          data.branches.map((branch) => branch.name),
+          data.defaultBranch,
+        );
+        if (fallback !== data.defaultBranch) {
+          setResolvedRef(fallback);
+          setChosenRef((current) => current ?? fallback);
+        }
       })
       .catch(() => {
         // Non-fatal: the file listing below resolves its own ref server-side,
@@ -316,23 +328,13 @@ function FileView({ file }: { file: NonNullable<RepoContentListing["file"]> }) {
       <div className="ws-file__head">
         <strong>{file.name}</strong>
         <span className="ws-file__meta">{formatBytes(file.size)}</span>
-        {file.htmlUrl && (
-          <a
-            className="ws-link"
-            href={file.htmlUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Open on GitHub ↗
-          </a>
-        )}
       </div>
       {file.content === null ? (
         <WorkspaceEmpty
           title="Not shown"
           message={
             file.truncated
-              ? "This file is binary or too large to display. Open it on GitHub instead."
+              ? "This file is binary or too large to preview here."
               : "This file has no readable text content."
           }
         />

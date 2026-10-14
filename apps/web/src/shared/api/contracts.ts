@@ -86,13 +86,14 @@ export type AppRole = "admin" | "lead" | "qa" | "member";
 export type AppRoleSource = "github_team" | "manual";
 
 /**
- * User-facing labels for the global role. These mirror the GitHub org teams
- * that drive them (`team-lead` / `qa-team` / `developers`), so what a user sees
- * in the app matches what they were added to in GitHub.
+ * User-facing labels for the global role: the product's persona names
+ * (Admin, Product owner, QA Team, Developer). They are not the GitHub team
+ * names that drive the role (`team-lead` / `qa-team` / `developers`): users
+ * never see GitHub, so the label says what the role does in ALPHACI.
  */
 export const APP_ROLE_BADGE_LABELS: Record<AppRole, string> = {
   admin: "Admin",
-  lead: "Team lead",
+  lead: "Product owner",
   qa: "QA Team",
   member: "Developer",
 };
@@ -370,6 +371,18 @@ export interface DeploymentTargetActionsResponse {
       url: string | null;
     };
   };
+}
+
+/**
+ * A completed secrets reinstall: the target's GitHub Actions secrets (and,
+ * where applicable, repository variables) were rewritten from the provider's
+ * current state. The record values are secret/variable NAMES the server
+ * wrote — never the underlying secret values.
+ */
+export interface ReinstallDeploymentSecretsResponse {
+  reinstalled: true;
+  githubSecrets: Record<string, string>;
+  githubVariables?: Record<string, string>;
 }
 
 export interface EnvVarMetadata {
@@ -687,26 +700,80 @@ export interface WorkspaceMemberSummary {
   createdAt: string;
 }
 
-export interface AddWorkspaceMemberRequest {
-  loginOrEmail: string;
-  role: WorkspaceRole;
-}
-
-export interface UpdateWorkspaceMemberRoleRequest {
-  role: WorkspaceRole;
-}
-
+/**
+ * One row of GET /projects/:id/audit. Read it only through the Audit tab's
+ * normaliser: an older backend sends no `actorLogin`, `metadata`, `scope` or
+ * `next`, and any field may be missing.
+ */
 export interface ProjectAuditEvent {
   id: string;
   eventCode: string;
   message: string;
   actorUserId: string | null;
+  /** The actor's GitHub login; null for a system event or an unknown user. */
+  actorLogin?: string | null;
+  metadata?: Record<string, unknown> | null;
   createdAt: string;
+  /**
+   * 'project': recorded against the delivery Project this repository is filed
+   * under. 'github': activity read from GitHub (pushes, pull requests,
+   * branches, tags), with the GitHub login in `actorLogin` or
+   * `metadata.githubLogin`.
+   */
+  scope?: "repository" | "project" | "github";
 }
 
+/**
+ * How fresh the GitHub activity in the trail is. 'stale' / 'failed': the last
+ * read of GitHub did not land, so the rows are what was saved before.
+ */
+export interface ProjectAuditGithubSync {
+  status: "ok" | "stale" | "failed";
+  syncedAt: string | null;
+}
+
+/** Newest first. `next` is the cursor for `?before=`, or null on the last page. */
 export interface ProjectAuditEventsResponse {
   enabled: boolean;
   items: ProjectAuditEvent[];
+  next?: string | null;
+  /** Absent on a backend that does not read GitHub activity into the trail. */
+  githubSync?: ProjectAuditGithubSync | null;
+}
+
+/** One commit on a branch, newest first, from GET /projects/:id/commits. */
+export interface ProjectCommit {
+  sha: string;
+  shortSha: string;
+  /** The full message; the first line is its title. */
+  message: string;
+  authorLogin: string | null;
+  authorName: string;
+  authoredAt: string;
+  url: string;
+  /** The pull request that brought the commit in; null for a direct push. */
+  pullRequestNumber: number | null;
+}
+
+/** `branch` is the branch these commits are on; `next` is the `?before=` cursor. */
+export interface ProjectCommitsResponse {
+  branch: string;
+  branches: string[];
+  items: ProjectCommit[];
+  next: string | null;
+}
+
+/** `?branch` (server default when absent), `?limit`, `?before=<next>`. */
+export interface ProjectCommitsPageRequest {
+  branch?: string | null;
+  limit?: number;
+  before?: string | null;
+}
+
+/** `?limit` (1-100, server default 50) and `?before=<next>` for GET /projects/:id/audit. */
+export interface ProjectAuditPageRequest {
+  limit?: number;
+  before?: string | null;
 }
 
 export interface NodeVersionOption {
@@ -762,6 +829,8 @@ export interface SetupProjectRequest extends GenerateWorkflowRequest {
     sourceBranch: string;
     role: "production" | "non_production";
   }>;
+  /** Names the Project (folder) created for the repository: trimmed, 1..80 chars. */
+  projectName?: string;
 }
 
 export interface GenerateWorkflowResponse {
@@ -905,6 +974,18 @@ export interface CreateProjectRequest {
   deploymentProvisioning?: DeploymentProvisioningRequest;
   /** Group/workspace to create this project inside (from ?group=<id>). */
   workspaceId?: string;
+  /**
+   * Team Project (hierarchy delivery project) the new repository joins, from
+   * ?project=<id>. Must belong to `workspaceId`; for multi-repo and
+   * microservices shapes every created repository lands in it.
+   */
+  deliveryProjectId?: string;
+  /**
+   * Names the Project (folder) created for the repository: trimmed, 1..80
+   * chars. Not sent with `deliveryProjectId`; a duplicate in the team is a 409
+   * PROJECT_NAME_TAKEN.
+   */
+  projectName?: string;
 }
 
 export interface CreateProjectResponse {
@@ -1215,7 +1296,7 @@ export interface ProjectDriftFinding {
   id: string;
   projectId: string;
   targetId: string | null;
-  source: "local_snapshot";
+  source: "local_snapshot" | "github_live";
   severity: ProjectDriftSeverity;
   code: string;
   message: string;
@@ -1236,6 +1317,7 @@ export type ProjectDriftRepairAction =
   | "create_workflow_update_pr"
   | "rotate_ci_token"
   | "detach_target"
+  | "repair_branch_protection"
   | "mark_ignored";
 
 export interface ProjectDriftRepairResponse {
@@ -1465,6 +1547,97 @@ export interface StageReport {
    * reporting. Absent means "not known", never "no tools ran".
    */
   checks?: StageCheck[];
+  /**
+   * The figures the stage reported, as stored: test counts and failures,
+   * coverage against its threshold, lint, security, findings and the Sonar
+   * gate.
+   *
+   * `friendlyMessages` turns these into sentences, which suits a failure and
+   * hides a pass: a passing stage's whole value is its numbers ("48 / 48
+   * passed, 87% coverage"). Absent from a backend older than #150 and for a
+   * stage that stored none; every key inside is optional too.
+   */
+  results?: StageResults;
+}
+
+/** What a stage reported about its tests, coverage, lint, security and Sonar. */
+/** How one browser test ended. `flaky` passed on a retry. */
+export type TestCaseStatus = "passed" | "failed" | "flaky" | "skipped";
+
+/**
+ * One browser test as the suite ran it (Playwright's JSON report, summarised
+ * by the central workflow): what it is, what it checks, what it did and how it
+ * ended. Every field but the title and status is optional.
+ */
+export interface TestCase {
+  /** " > "-joined: spec file, describe blocks, test title. */
+  title: string;
+  file?: string;
+  line?: number;
+  /** The Playwright project, normally the browser. */
+  project?: string;
+  status: TestCaseStatus;
+  durationMs?: number;
+  retries?: number;
+  /** What the test checks, in words (its `description` annotation). */
+  description?: string;
+  /** Other annotations it wrote, e.g. a result note or a screenshot awaiting approval. */
+  notes?: { type: string; text: string }[];
+  /** Top-level `test.step`s, in order. */
+  steps?: { title: string; durationMs?: number; failed?: boolean }[];
+  error?: { message: string; location?: string };
+}
+
+/** One SonarCloud issue on new code. */
+export interface SonarIssue {
+  rule: string;
+  severity?: string;
+  type?: string;
+  message: string;
+  file?: string;
+  line?: number;
+}
+
+export interface StageResults {
+  tests?: {
+    passed: number;
+    failed: number;
+    total: number;
+    failures?: { name: string; message?: string }[];
+    /** Names of the tests that passed, when the pipeline reports them. */
+    passes?: string[];
+    /** Every browser test with its detail, failures first; may be a prefix of `total`. */
+    cases?: TestCase[];
+  };
+  coverage?: { pct: number; threshold: number };
+  lint?: {
+    errors: number;
+    warnings: number;
+    issues?: { rule?: string; file?: string; line?: number; message?: string }[];
+  };
+  security?: {
+    high: number;
+    critical: number;
+    items?: { package?: string; id?: string; title?: string; severity?: string }[];
+  };
+  findings?: {
+    secrets?: number;
+    forbiddenLicenses?: number;
+    sbomComponents?: number;
+    undeterminedLicenses?: number;
+    secretItems?: { rule?: string; file?: string; line?: number }[];
+    licenseItems?: { package?: string; version?: string; license?: string }[];
+  };
+  sonar?: {
+    /** `OK`, `ERROR`, or `UNKNOWN` when the analysis ran and the gate could not be read. */
+    gate?: string;
+    /** A setting stopped the analysis, rather than the code failing it. */
+    blockedBy?: string;
+    failedConditions?: { metric: string; status?: string; actual?: string; threshold?: string }[];
+    measures?: Record<string, string>;
+    /** The most severe issues on new code, at most 20. */
+    issues?: SonarIssue[];
+  };
 }
 
 /** One tool's outcome inside a stage. */

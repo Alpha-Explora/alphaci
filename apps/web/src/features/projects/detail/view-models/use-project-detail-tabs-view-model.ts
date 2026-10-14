@@ -9,11 +9,8 @@ import type { ProjectStatus } from "../../model/projects-types";
 import type {
   AppRole,
   DeploymentTarget,
-  ProjectAuditEventsResponse,
   ProjectCiRunsResponse,
   ProjectDeploymentsResponse,
-  ProjectDriftRepairAction,
-  ProjectDriftResponse,
   ProjectOverviewResponse,
   WorkflowFileMetadata,
 } from "@/shared/api/contracts";
@@ -21,20 +18,28 @@ import {
   applyTargetChange,
   applyTargetCreated,
   applyTargetDetached,
-  isAuditQueryEnabled,
   isCiRunsQueryEnabled,
   isDeploymentsQueryEnabled,
-  isDriftQueryEnabled,
-  isSyncAvailable,
   isWorkflowSettingsQueryEnabled,
   overviewCapabilityFlags,
   overviewTabData,
+  pipelineConfigurationAvailable,
+  pipelineViewFromHash,
+  resolvePipelineView,
   resolveVisibleTab,
+  shouldHighlightMyQaItems,
+  hostingFocusFromHash,
   tabFromHash,
+  commitsBranchFromUrl,
   visibleProjectDetailTabs,
+  workflowUpdateAccess,
+  type HostingFocus,
+  type PipelineView,
   type ProjectDetailTab,
+  type WorkflowUpdateAccess,
 } from "../model/project-detail-tab-rules";
 import { useLazyProjectQuery } from "./use-lazy-project-query";
+import { useProjectAuditViewModel, type ProjectAuditViewModel } from "./use-project-audit-view-model";
 import { useProjectWorkflowSettingsViewModel } from "./use-project-workflow-settings-view-model";
 import type { ProjectWorkflowSettingsViewModel } from "./use-project-workflow-settings-view-model";
 
@@ -45,25 +50,66 @@ export interface ProjectDetailTabsViewModel {
   visibleTabs: ProjectDetailTab[];
   /** The viewer's app role, for the QA surfaces. Rights still come from the server. */
   appRole: AppRole | undefined;
+  /** The viewer's GitHub login, for recognising their own branches. */
+  viewerLogin: string | undefined;
   /** The QA checklists capability: gates QA Studio and the "Returned by QA" card. */
   qaChecklistsEnabled: boolean;
+  /**
+   * Set once from `?focus=my-qa-items` at mount: a notification deep-link
+   * (spec §8.6) asking the Overview to scroll to and briefly highlight the
+   * "My QA items" card.
+   */
+  highlightMyQaItems: boolean;
+  /**
+   * The Overview's "Open checklist": the Checklists tab, asked to open on the
+   * viewer's "My QA items" (where it embeds the Project's QA workspace).
+   */
+  openMyQaItems: () => void;
+  /** Set by `openMyQaItems`, cleared by choosing a tab by hand. */
+  checklistsOpensMyItems: boolean;
   /**
    * The target whose logs Hosting should open with, set when the Overview's
    * card asks for its full logs. Cleared by choosing a tab by hand.
    */
   logFocus: DeploymentLogFocus | null;
   openTargetLogs: (focus: DeploymentLogFocus) => void;
+  /**
+   * What Hosting should bring into view when it opens: `variables` for an old
+   * `#environment` link (Production, with the Variables card focused). Read
+   * once from the hash at mount; cleared by choosing a tab by hand or by any
+   * other deep link.
+   */
+  hostingFocus: HostingFocus | null;
+  /**
+   * The pull request the Pull requests tab should open expanded, set when a
+   * commit on the Code tab links to it. Cleared by choosing a tab by hand.
+   */
+  pullFocus: number | null;
+  openPullRequest: (pullRequestNumber: number) => void;
+  /**
+   * The branch the Commits tab opens on, set by a deep link (`#commits` with
+   * `?branch=`, or `openCommits(branch)`); null means the server's default.
+   * Cleared by choosing a tab by hand.
+   */
+  commitsBranch: string | null;
+  openCommits: (branch?: string | null) => void;
+  /**
+   * The Pipeline tab's view: Runs (the default) or Configuration (the old
+   * Workflow tab). `#workflow` opens Configuration; choosing a tab by hand
+   * goes back to Runs. Always Runs where Configuration is not offered.
+   */
+  pipelineView: PipelineView;
+  setPipelineView: (view: PipelineView) => void;
+  /** Whether the Pipeline tab offers Configuration; without it there is no toggle. */
+  pipelineConfigurationAvailable: boolean;
+  /** Opens the Pipeline tab on a view: Runs' "Update the workflow", the studios' links. */
+  openPipeline: (view: PipelineView) => void;
   status: ProjectStatus;
   error: string | null;
   overview: ProjectOverviewResponse | null;
   workflowFiles: WorkflowFileMetadata[];
   deploymentTargets: DeploymentTarget[];
   envMetadata: ProjectOverviewResponse["environment"]["items"];
-  syncSnapshot: ProjectOverviewResponse["syncSnapshot"] | null;
-  syncAvailable: boolean;
-  syncingProjectId: string | null;
-  syncMessage: string | null;
-  syncNow: () => Promise<void>;
   handleTargetChanged: (target: DeploymentTarget) => void;
   handleTargetCreated: (target: DeploymentTarget) => void;
   handleTargetDetached: (targetId: string) => void;
@@ -71,25 +117,19 @@ export interface ProjectDetailTabsViewModel {
   previewDeploymentsEnabled: boolean;
   ciRunTrackingEnabled: boolean;
   deploymentHistoryEnabled: boolean;
-  driftDetectionEnabled: boolean;
-  driftRepairEnabled: boolean;
   projectTargetManagementEnabled: boolean;
   workflowSettingsPreviewEnabled: boolean;
   workflowUpdatePrEnabled: boolean;
+  /** Whether "Update the workflow" (Browser tests card) may send this viewer to the update pull request. */
+  workflowUpdateAccess: WorkflowUpdateAccess;
   ciRuns: ProjectCiRunsResponse | null;
   ciRunsError: string | null;
   deployments: ProjectDeploymentsResponse | null;
   deploymentsError: string | null;
-  drift: ProjectDriftResponse | null;
-  driftError: string | null;
-  runningDriftCheck: boolean;
-  runDriftDetection: () => Promise<void>;
-  repairDriftFinding: (
-    findingId: string,
-    action: ProjectDriftRepairAction,
-  ) => Promise<string>;
-  audit: ProjectAuditEventsResponse | null;
-  auditError: string | null;
+  /** Hosting's Retry: read the deployment history again. */
+  reloadDeployments: () => void;
+  /** The Audit tab's rows, read the first time the tab opens. */
+  audit: ProjectAuditViewModel;
   workflow: ProjectWorkflowSettingsViewModel;
 }
 
@@ -107,30 +147,34 @@ function loadDeployments(
   return projectsRepository.deployments(projectId);
 }
 
-function loadDrift(projectId: string): Promise<ProjectDriftResponse> {
-  return projectsRepository.drift(projectId);
-}
-
-function loadAudit(projectId: string): Promise<ProjectAuditEventsResponse> {
-  return projectsRepository.audit(projectId);
-}
-
 /** ViewModel for the project detail tab set. */
 export function useProjectDetailTabsViewModel(options: {
   projectId: string;
   workflowFilesFallback: WorkflowFileMetadata[] | null | undefined;
   appRole?: AppRole;
+  viewerLogin?: string;
 }): ProjectDetailTabsViewModel {
-  const { projectId, workflowFilesFallback, appRole } = options;
+  const { projectId, workflowFilesFallback, appRole, viewerLogin } = options;
   // A deep link (#qa) picks the first tab. Safe to read window here: the tab
   // set only mounts client-side, once the project overview has loaded.
   const [selectedTab, setTabState] = useState<ProjectDetailTab>(
     () => (typeof window === "undefined" ? null : tabFromHash(window.location.hash)) ?? "overview",
   );
+  const [highlightMyQaItems] = useState<boolean>(() =>
+    typeof window === "undefined" ? false : shouldHighlightMyQaItems(window.location.search),
+  );
   const [logFocus, setLogFocus] = useState<DeploymentLogFocus | null>(null);
-  const [syncingProjectId, setSyncingProjectId] = useState<string | null>(null);
-  const [syncMessage, setSyncMessage] = useState<string | null>(null);
-  const [runningDriftCheck, setRunningDriftCheck] = useState(false);
+  const [hostingFocus, setHostingFocus] = useState<HostingFocus | null>(() =>
+    typeof window === "undefined" ? null : hostingFocusFromHash(window.location.hash),
+  );
+  const [pullFocus, setPullFocus] = useState<number | null>(null);
+  const [commitsBranch, setCommitsBranch] = useState<string | null>(() =>
+    typeof window === "undefined" ? null : commitsBranchFromUrl(window.location.hash, window.location.search),
+  );
+  const [checklistsOpensMyItems, setChecklistsOpensMyItems] = useState(false);
+  const [selectedPipelineView, setPipelineView] = useState<PipelineView>(() =>
+    typeof window === "undefined" ? "runs" : pipelineViewFromHash(window.location.hash),
+  );
 
   const caps = useCapabilities();
   const visibleTabs = visibleProjectDetailTabs(appRole, {
@@ -139,6 +183,8 @@ export function useProjectDetailTabsViewModel(options: {
   // Derived, not reset by an effect: if the flag turns off under a selected
   // Checklists tab, the strip falls back to Overview on the same render.
   const tab = resolveVisibleTab(selectedTab, visibleTabs);
+  const configurationAvailable = pipelineConfigurationAvailable(visibleTabs);
+  const pipelineView = resolvePipelineView(selectedPipelineView, configurationAvailable);
   const overviewQuery = useLazyProjectQuery<ProjectOverviewResponse>({
     projectId,
     enabled: Boolean(projectId),
@@ -153,6 +199,7 @@ export function useProjectDetailTabsViewModel(options: {
     projectId,
     enabled: isWorkflowSettingsQueryEnabled({
       tab,
+      pipelineView,
       workflowSettingsPreviewEnabled: caps.workflowSettingsPreviewEnabled,
       overviewWorkflowSettings: overviewCaps.workflowSettings,
     }),
@@ -161,6 +208,7 @@ export function useProjectDetailTabsViewModel(options: {
     projectId,
     enabled: isCiRunsQueryEnabled({
       tab,
+      pipelineView,
       ciRunTrackingEnabled: caps.ciRunTrackingEnabled,
       overviewCiRunTracking: overviewCaps.ciRunTracking,
     }),
@@ -177,38 +225,53 @@ export function useProjectDetailTabsViewModel(options: {
     load: loadDeployments,
     errorMessage: "Unable to load deployment history.",
   });
-  const driftQuery = useLazyProjectQuery<ProjectDriftResponse>({
-    projectId,
-    enabled: isDriftQueryEnabled({
-      tab,
-      driftDetectionEnabled: caps.driftDetectionEnabled,
-      overviewDriftDetection: overviewCaps.driftDetection,
-    }),
-    load: loadDrift,
-    errorMessage: "Unable to load drift findings.",
-  });
-  const auditQuery = useLazyProjectQuery<ProjectAuditEventsResponse>({
-    projectId,
-    enabled: isAuditQueryEnabled(tab),
-    load: loadAudit,
-    errorMessage: "Unable to load audit events.",
-  });
+  const audit = useProjectAuditViewModel({ projectId, enabled: tab === "audit" });
 
-  const { workflowFiles, deploymentTargets, envMetadata, syncSnapshot } = tabData;
-  const syncAvailable = isSyncAvailable({
-    projectSyncSnapshotsEnabled: caps.projectSyncSnapshotsEnabled,
-    overviewSyncSnapshots: overviewCaps.syncSnapshots,
-    snapshotEnabled: tabData.snapshotEnabled,
-  });
+  const { workflowFiles, deploymentTargets, envMetadata } = tabData;
 
   function setTab(next: ProjectDetailTab) {
+    setHostingFocus(null);
     setLogFocus(null);
+    setPullFocus(null);
+    setCommitsBranch(null);
+    setChecklistsOpensMyItems(false);
+    setPipelineView("runs");
     setTabState(next);
   }
 
+  function openPipeline(view: PipelineView) {
+    setTab("pipeline");
+    setPipelineView(view);
+  }
+
+  function openMyQaItems() {
+    setHostingFocus(null);
+    setLogFocus(null);
+    setPullFocus(null);
+    setChecklistsOpensMyItems(true);
+    setTabState("checklists");
+  }
+
   function openTargetLogs(focus: DeploymentLogFocus) {
+    setHostingFocus(null);
+    setPullFocus(null);
     setLogFocus(focus);
     setTabState("hosting");
+  }
+
+  function openCommits(branch?: string | null) {
+    setHostingFocus(null);
+    setLogFocus(null);
+    setPullFocus(null);
+    setCommitsBranch(branch ?? null);
+    setTabState("commits");
+  }
+
+  function openPullRequest(pullRequestNumber: number) {
+    setHostingFocus(null);
+    setLogFocus(null);
+    setPullFocus(pullRequestNumber);
+    setTabState("pulls");
   }
 
   function handleTargetChanged(target: DeploymentTarget) {
@@ -229,64 +292,33 @@ export function useProjectDetailTabsViewModel(options: {
     );
   }
 
-  async function syncNow() {
-    if (!syncAvailable) return;
-    setSyncingProjectId(projectId);
-    setSyncMessage(null);
-    try {
-      const result = await projectsRepository.syncSnapshot(projectId);
-      overviewQuery.replace(result.overview);
-    } catch {
-      setSyncMessage("Unable to create local snapshot right now.");
-    } finally {
-      setSyncingProjectId(null);
-    }
-  }
-
-  async function runDriftDetection() {
-    setRunningDriftCheck(true);
-    driftQuery.clearError();
-    try {
-      const response = await projectsRepository.runDrift(projectId);
-      driftQuery.replace(response);
-    } catch {
-      driftQuery.fail("Unable to run drift detection.");
-    } finally {
-      setRunningDriftCheck(false);
-    }
-  }
-
-  async function repairDriftFinding(
-    findingId: string,
-    action: ProjectDriftRepairAction,
-  ): Promise<string> {
-    const response = await projectsRepository.repairDrift(
-      projectId,
-      findingId,
-      action,
-    );
-    return response.message;
-  }
-
   return {
     tab,
     setTab,
     visibleTabs,
     appRole,
+    viewerLogin,
     qaChecklistsEnabled: caps.qaChecklistsEnabled,
+    highlightMyQaItems,
+    openMyQaItems,
+    checklistsOpensMyItems,
     logFocus,
     openTargetLogs,
+    hostingFocus,
+    pullFocus,
+    openPullRequest,
+    commitsBranch,
+    openCommits,
+    pipelineView,
+    setPipelineView,
+    pipelineConfigurationAvailable: configurationAvailable,
+    openPipeline,
     status: overviewQuery.status,
     error: overviewQuery.error,
     overview,
     workflowFiles,
     deploymentTargets,
     envMetadata,
-    syncSnapshot,
-    syncAvailable,
-    syncingProjectId,
-    syncMessage,
-    syncNow,
     handleTargetChanged,
     handleTargetCreated,
     handleTargetDetached,
@@ -294,22 +326,22 @@ export function useProjectDetailTabsViewModel(options: {
     previewDeploymentsEnabled: caps.previewDeploymentsEnabled,
     ciRunTrackingEnabled: caps.ciRunTrackingEnabled,
     deploymentHistoryEnabled: caps.deploymentHistoryEnabled,
-    driftDetectionEnabled: caps.driftDetectionEnabled,
-    driftRepairEnabled: caps.driftRepairEnabled,
     projectTargetManagementEnabled: caps.projectTargetManagementEnabled,
     workflowSettingsPreviewEnabled: caps.workflowSettingsPreviewEnabled,
     workflowUpdatePrEnabled: caps.workflowUpdatePrEnabled,
+    workflowUpdateAccess: workflowUpdateAccess({
+      appRole,
+      workflowTabVisible: configurationAvailable,
+      updatePrEnabled: caps.workflowUpdatePrEnabled,
+      settingsPreviewEnabled: caps.workflowSettingsPreviewEnabled,
+      projectWorkflowSettings: overviewCaps.workflowSettings,
+    }),
     ciRuns: ciRunsQuery.data,
     ciRunsError: ciRunsQuery.error,
     deployments: deploymentsQuery.data,
     deploymentsError: deploymentsQuery.error,
-    drift: driftQuery.data,
-    driftError: driftQuery.error,
-    runningDriftCheck,
-    runDriftDetection,
-    repairDriftFinding,
-    audit: auditQuery.data,
-    auditError: auditQuery.error,
+    reloadDeployments: deploymentsQuery.reload,
+    audit,
     workflow,
   };
 }

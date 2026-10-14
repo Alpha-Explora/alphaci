@@ -6,6 +6,8 @@ import type { CreateProjectFormState } from "../view-models/use-create-project-f
 import type { GithubInstallationsState } from "../view-models/use-github-installations";
 import type { ProjectOptionsCatalogState } from "../view-models/use-project-options-catalog";
 import { labelAccentStyle } from "./setup-tab-shared";
+import { ProjectBlockerNote, ProjectChoiceField } from "./setup-project-choice-field";
+import { ProjectNameField } from "./setup-project-name-field";
 import type { WizardStepProps } from "./setup-wizard-props";
 
 function SingleServiceFields({
@@ -78,10 +80,25 @@ function RepositoryOwnerFields({
 export function SetupWizardRepository({
   form,
   github,
+  joinedProjectName,
+  projectChoice,
+  projectBlocker,
   projectCatalog,
 }: Readonly<WizardStepProps>) {
   return (
     <>
+      {projectChoice ? (
+        <ProjectChoiceField choice={projectChoice} />
+      ) : (
+        <ProjectNameField
+          joinedProjectName={joinedProjectName}
+          value={form.projectName}
+          onChange={form.setProjectName}
+          serverError={form.projectNameError}
+        />
+      )}
+      <ProjectBlockerNote blocker={projectBlocker} />
+
       <RepositoryOwnerFields github={github} />
 
       <div className="form-pair-row" style={{ gap: "1rem" }}>

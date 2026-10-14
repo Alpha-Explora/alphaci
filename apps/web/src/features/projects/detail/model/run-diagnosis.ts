@@ -66,7 +66,7 @@ export function diagnoseRunWithoutJobs(run: RunDiagnosisInput): RunDiagnosis {
     return {
       title: "The workflow was rejected before it ran",
       message:
-        "This run finished without starting a single job, which means GitHub refused the workflow file itself. The usual causes are a referenced workflow it cannot resolve, a secret the called workflow does not declare, or invalid YAML. Open the run on GitHub — the reason is named at the top.",
+        "This run finished without starting a single job, which means GitHub refused the workflow file itself. The usual causes are a referenced workflow it cannot resolve, a secret the called workflow does not declare, or invalid YAML. Nothing ran, so there are no logs to show here; a team lead should check the workflow file.",
       isFailure: true,
     };
   }

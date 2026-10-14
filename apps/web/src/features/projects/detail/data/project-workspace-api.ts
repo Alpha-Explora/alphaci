@@ -105,10 +105,19 @@ export interface RunJob {
   steps: RunStep[];
 }
 
+/**
+ * Why a job's log could not be read. `log-no-access` is a permission fault on
+ * ALPHACI's GitHub connection, not an expiry, and the two need different
+ * people to act: nobody can bring back an expired log, an admin can fix access.
+ * Absent from a backend older than #150, which only ever said "expired".
+ */
+export type ProjectLogUnavailableReason = "log-expired" | "log-no-access";
+
 export interface JobLogResponse {
   available: boolean;
   content: string;
   truncated: boolean;
+  reason?: ProjectLogUnavailableReason;
 }
 
 export interface PullRequestSummary {
@@ -203,20 +212,47 @@ export function getProjectPullRequestFiles(
 }
 
 /**
- * The error output of whichever job failed in a run.
+ * One failed (or timed-out) job in a run: its error excerpt, or the reason
+ * there is none, and a plain-English hint when the backend recognised the
+ * failure.
+ */
+export interface ProjectRunFailureEntry {
+  jobId: number;
+  jobName: string;
+  stepName?: string;
+  jobUrl?: string;
+  lines: string[];
+  truncated: boolean;
+  foundErrorMarker: boolean;
+  reason?: ProjectLogUnavailableReason;
+  hint?: string;
+}
+
+/**
+ * The error output of the jobs that failed in a run.
  *
  * `available: false` is a normal answer: GitHub expires logs, and a run can
  * conclude in failure with no failed job when the workflow itself was rejected.
+ *
+ * The top-level fields describe the FIRST failure only — all an older backend
+ * sends. `failures` lists every failed job, including the ones outside the
+ * stage report's needs (promote-to-*, production-gate), capped at ten with the
+ * rest counted in `omittedFailures`. Every field past `available` is optional,
+ * because the backend may deploy after this client.
  */
 export interface RunFailureLogResponse {
   available: boolean;
-  reason?: "no-failed-job" | "log-expired";
+  reason?: "no-failed-job" | ProjectLogUnavailableReason;
+  jobId?: number;
   jobName?: string;
   stepName?: string;
   jobUrl?: string;
   lines?: string[];
   truncated?: boolean;
   foundErrorMarker?: boolean;
+  hint?: string;
+  failures?: ProjectRunFailureEntry[];
+  omittedFailures?: number;
 }
 
 export function getProjectRunFailureLog(projectId: string, runId: number) {
@@ -225,7 +261,27 @@ export function getProjectRunFailureLog(projectId: string, runId: number) {
   );
 }
 
-/** One check GitHub ran against a pull request's head commit. */
+/**
+ * One line GitHub attached to a failed check run: a lint error, a failing
+ * test, a compiler message — the actual error, with a file and a line.
+ */
+export interface CheckAnnotation {
+  path: string;
+  line: number | null;
+  /** GitHub's vocabulary: `failure`, `warning` or `notice`. */
+  level: string;
+  title: string | null;
+  message: string;
+}
+
+/**
+ * One check GitHub ran against a pull request's head commit.
+ *
+ * Only the first six fields come from a backend older than #150. The rest say
+ * which workflow and event a check belongs to (two jobs named `build` are
+ * otherwise indistinguishable), which job's log to open, and what the check
+ * itself reported — so every one of them is optional here.
+ */
 export interface PullRequestCheck {
   name: string;
   status: string;
@@ -233,6 +289,22 @@ export interface PullRequestCheck {
   detailsUrl: string | null;
   startedAt: string | null;
   completedAt: string | null;
+  id?: number | null;
+  /** A check run (Actions or an app) or a commit status such as `alphaci/quality`. */
+  kind?: "check-run" | "status";
+  workflowName?: string | null;
+  /** The event that triggered the workflow: `pull_request`, `push`, ... */
+  event?: string | null;
+  /** The Actions job id, for opening the job's log in the product. */
+  jobId?: number | null;
+  /** The check run's own headline (`output.title`). */
+  title?: string | null;
+  /** The check run's `output.summary`: often markdown, always shown as text. */
+  summary?: string | null;
+  /** A commit status's description. */
+  description?: string | null;
+  /** Present only for failed check runs whose annotations were looked up. */
+  annotations?: CheckAnnotation[];
 }
 
 /**

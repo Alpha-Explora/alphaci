@@ -102,7 +102,7 @@
 
 /* ── Persona badge ───────────────────────────────────────────────────────────
    Same recipe as .sidebar-role-badge (tinted border + 12% fill), a touch
-   larger because it sits in content rather than a 64px rail. */
+   larger because it sits in content rather than the closed rail. */
 .qa-persona-badge {
   flex-shrink: 0;
   display: inline-flex;

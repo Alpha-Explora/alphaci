@@ -1,0 +1,498 @@
+/* The project page as one repository of a multi-repository Project: the
+ * Project titles the page, the repository is the subtitle, and a segmented
+ * switch at the top right opens its sibling repositories. Tokens only — every
+ * colour here is defined for both themes in shared/styles/tokens.css. */
+
+/* ── Header ────────────────────────────────────────────────────────────── */
+.project-folder-header {
+  flex-wrap: wrap;
+  row-gap: 0.75rem;
+}
+
+.project-folder-header__identity {
+  display: grid;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+/* Beats `.project-detail-header p` (0,1,1): a flex row, not a description. */
+.project-detail-header .project-folder-header__repo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem 0.6rem;
+  margin: 0.15rem 0 0;
+  min-width: 0;
+}
+
+.project-folder-header__repo-name {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.project-folder-header__aside,
+.project-detail-header__aside {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.5rem;
+  min-width: 0;
+  max-width: 100%;
+}
+
+/* ── Segmented switch ──────────────────────────────────────────────────── */
+.repo-switch {
+  display: inline-flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.2rem;
+  max-width: 100%;
+  padding: 0.2rem;
+  border: 1px solid var(--border);
+  border-radius: 1.1rem;
+  background: var(--layer-2);
+}
+
+.repo-switch__option {
+  --rs-role: var(--text-muted);
+  --rs-tint: var(--layer-1-hover);
+  --rs-edge: var(--border-strong);
+
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-width: 0;
+  max-width: 100%;
+  min-height: 2rem;
+  padding: 0.3rem 0.8rem;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--text-secondary);
+  font: inherit;
+  font-size: 0.78rem;
+  line-height: 1.2;
+  cursor: pointer;
+  transition:
+    background 0.15s ease-out,
+    color 0.15s ease-out,
+    box-shadow 0.15s ease-out;
+}
+
+.repo-switch__option[data-role="frontend"] {
+  --rs-role: var(--brand);
+  --rs-tint: var(--brand-light);
+  --rs-edge: var(--border-brand);
+}
+
+.repo-switch__option[data-role="backend"] {
+  --rs-role: var(--accent-violet);
+  --rs-tint: var(--accent-violet-light);
+  --rs-edge: var(--border-violet);
+}
+
+.repo-switch__option[data-role="service"] {
+  --rs-role: var(--accent-amber);
+  --rs-tint: var(--accent-amber-light);
+  --rs-edge: var(--border-amber);
+}
+
+.repo-switch__option[data-role="app"] {
+  --rs-role: var(--accent-emerald);
+  --rs-tint: var(--accent-emerald-light);
+  --rs-edge: var(--border-strong);
+}
+
+.repo-switch__role {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex-shrink: 0;
+  font-size: 0.62rem;
+  font-weight: 750;
+  letter-spacing: 0.09em;
+  color: var(--rs-role);
+}
+
+/* The role dot: solid on the page on screen, a ring elsewhere. */
+.repo-switch__role::before {
+  content: "";
+  width: 0.4rem;
+  height: 0.4rem;
+  border: 1.5px solid var(--rs-role);
+  border-radius: 50%;
+}
+
+.repo-switch__name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 600;
+}
+
+.repo-switch__option:not([aria-disabled="true"]):not([aria-checked="true"]):hover {
+  background: var(--layer-2-hover);
+  color: var(--text-primary);
+}
+
+.repo-switch__option[aria-checked="true"] {
+  background: var(--rs-tint);
+  box-shadow: inset 0 0 0 1px var(--rs-edge);
+  color: var(--text-primary);
+  cursor: default;
+}
+
+.repo-switch__option[aria-checked="true"] .repo-switch__role::before {
+  background: var(--rs-role);
+}
+
+.repo-switch__option:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
+/* Dimmed by colour, not opacity: opacity would also fade the tooltip below. */
+.repo-switch__option[aria-disabled="true"] {
+  --rs-role: var(--text-muted);
+
+  color: var(--text-muted);
+  cursor: not-allowed;
+}
+
+.repo-switch__option[aria-disabled="true"] .repo-switch__role::before {
+  border-style: dashed;
+}
+
+/* Opening a sibling: the dot breathes until the next page takes over. */
+.repo-switch__option[data-pending="true"] .repo-switch__role::before {
+  animation: repo-switch-pending 0.9s ease-in-out infinite alternate;
+  background: var(--rs-role);
+}
+
+@keyframes repo-switch-pending {
+  from {
+    opacity: 0.35;
+    transform: scale(0.8);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1.15);
+  }
+}
+
+/* Why an option cannot be opened, on hover. The same sentence is the option's
+ * accessible description (a hidden element), so the tooltip is visual only. */
+.repo-switch__option[data-tooltip]::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  top: calc(100% + 0.45rem);
+  right: 0;
+  z-index: 5;
+  width: max-content;
+  max-width: 15rem;
+  padding: 0.4rem 0.6rem;
+  border: 1px solid var(--border-strong);
+  border-radius: 0.45rem;
+  background: var(--bg-panel);
+  box-shadow: var(--shadow-soft);
+  color: var(--text-primary);
+  font-size: 0.72rem;
+  font-weight: 500;
+  letter-spacing: 0;
+  white-space: normal;
+  text-align: left;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-2px);
+  transition:
+    opacity 0.15s ease-out,
+    transform 0.15s ease-out;
+}
+
+.repo-switch__option[data-tooltip]:hover::after {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* In the tab row the switch matches the tabs' height (a tab is about 1.9rem):
+ * the same pill radius family, a tighter frame and option padding. */
+.project-tabs-row .repo-switch {
+  flex-wrap: nowrap;
+  gap: 0.15rem;
+  padding: 0.15rem;
+  border-radius: var(--radius-pill);
+}
+
+.project-tabs-row .repo-switch__option {
+  min-height: 1.6rem;
+  padding: 0.2rem 0.7rem;
+  font-size: 0.78rem;
+}
+
+/* Role only beside the tabs: with both repository names the switch is ~375px
+ * and pushed the last tab ("Settings") under it at 1440px. The page title
+ * already names the open repository; the name stays in the accessible name
+ * (visually hidden, not display:none) and in the hover tooltip. */
+.project-tabs-row .repo-switch__name {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* ── Sections in the title row (QA Team, Product owner) ─────────────────
+ * Their five tabs sit at the right of the title instead of on a row of their
+ * own. The header's divider is the only rule: the strip drops its own.
+ * Two classes: beats `.project-detail-header` (0,1,0) whichever sheet loads
+ * last. No border of its own: the sections are a nav bar across the page,
+ * its underline the header's only rule, so the Overview summary under it
+ * reads as the panel's first row rather than a second header. */
+.project-detail-header.project-detail-header--tabs {
+  align-items: flex-end;
+  flex-wrap: wrap;
+  row-gap: 0.75rem;
+  padding-bottom: 0.6rem;
+  border-bottom: 0;
+}
+
+/* Flush with the Clone box and the cards under it, so the end fade (there for
+ * a strip that scrolls) would dim the last tab. Five short tabs fit any
+ * desktop width; on a phone the strip still scrolls, just without the fade. */
+.project-detail-header--tabs .project-tabs {
+  max-width: 100%;
+  border-bottom: 0;
+  -webkit-mask-image: none;
+  mask-image: none;
+}
+
+/* Five tabs in the title row need no clusters: the rule between groups put
+ * uneven gaps in a short strip (Overview and Checklists close, the rest fenced
+ * off one by one). One even gap instead. */
+.project-detail-header--tabs .project-tabs__list {
+  gap: 0.2rem;
+  padding-right: 0;
+  padding-bottom: 0;
+}
+
+.project-detail-header--tabs .project-tabs__group {
+  gap: 0.2rem;
+}
+
+.project-detail-header--tabs .project-tabs__group + .project-tabs__group {
+  margin-left: 0;
+  padding-left: 0;
+  border-left: 0;
+}
+
+/* The page's one column may shrink below its content. With the implicit auto
+ * track a header's tab strip (it scrolls, but its min-content is every tab)
+ * set the column's width and pushed every tab off Overview past a phone's
+ * screen, where the panel clipped it. */
+.project-detail-panel.project-detail-panel--page {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+/* ── Studio controls in the tab row (QA Studio, PO Studio) ──────────────
+ * The studio portals its preview controls into `.project-studio-controls`.
+ * In the title row (QA Team, Product owner) they sit at the left of the five
+ * tabs, one line when both fit. When they do not, the tabs keep the first
+ * line and the controls wrap to a line of their own under them: the bar wraps
+ * in reverse, so the later item (the tabs) takes the top line. No box: the
+ * row's underline is the only rule. The slot is empty until the toolbar
+ * arrives, and in full screen, where the toolbar is inside the studio. */
+.project-tabs-bar {
+  display: flex;
+  flex-wrap: wrap-reverse;
+  align-items: center;
+  align-self: stretch;
+  gap: 0.5rem 1.25rem;
+  min-width: 0;
+}
+
+.project-tabs-bar__tabs {
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 100%;
+  margin-left: auto;
+}
+
+.project-studio-controls {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.project-studio-controls:empty {
+  display: none;
+}
+
+/* An admin's tab row is full (every tab and the repository switch): the
+ * controls take the line under it, closer than the sections' own gap. */
+.project-sections > .project-studio-controls {
+  margin-top: -0.55rem;
+}
+
+@media (max-width: 640px) {
+  /* A phone: the tabs take the full first line and scroll, as before. */
+  .project-tabs-bar__tabs {
+    flex-basis: 100%;
+    margin-left: 0;
+  }
+
+  .project-folder-header__aside,
+  .project-detail-header__aside {
+    align-items: flex-start;
+    width: 100%;
+  }
+
+  /* Stacked: the strip takes the full width and scrolls, as it does below
+     the title for every other role. */
+  .project-detail-header.project-detail-header--tabs {
+    align-items: stretch;
+  }
+
+  .project-detail-header--tabs .project-tabs {
+    align-self: stretch;
+  }
+
+  .repo-switch {
+    justify-content: flex-start;
+  }
+
+  /* On its own line above the tabs: full width, options sharing it. */
+  .project-tabs-row .repo-switch {
+    display: flex;
+  }
+
+  .project-tabs-row .repo-switch__option {
+    flex: 1 1 0;
+    justify-content: center;
+  }
+
+  .repo-switch__option[data-tooltip]::after {
+    right: auto;
+    left: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .repo-switch__option,
+  .repo-switch__option[data-tooltip]::after {
+    transition: none;
+  }
+
+  .repo-switch__option[data-pending="true"] .repo-switch__role::before {
+    animation: none;
+  }
+}
+
+/* ── Header layouts: Overview summary, nav bar, other tabs ──────────────
+ * Last in the sheet, same specificity: these override the `--tabs` rules
+ * above at every width.
+ *
+ * `--summary` (Overview): the aside (the sections, or the repository switch)
+ * spans the top; under it the identity (title over repository line) and the
+ * Clone box share a row, left and right, centred on each other: the two
+ * blocks are about the same height and have no eyebrows left to pair up.
+ * Aside first in the markup, so without one the identity takes the top row
+ * and no empty row is left. */
+.project-detail-header.project-detail-header--summary {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 34rem);
+  align-items: center;
+  gap: 1.1rem 2.5rem;
+  padding-bottom: 1.1rem;
+}
+
+.project-detail-header--summary > .project-detail-header__aside,
+.project-detail-header--summary > .project-folder-header__aside {
+  grid-column: 1 / -1;
+  justify-self: end;
+}
+
+.project-detail-header--summary > .project-detail-header__identity,
+.project-detail-header--summary > .project-folder-header__identity,
+.project-detail-header__clone {
+  min-width: 0;
+}
+
+/* `--tabs` (QA Team, Product owner): the aside carries the nav bar's
+ * underline (the header itself has none; see above). */
+.project-detail-header--tabs > .project-detail-header__aside,
+.project-detail-header--tabs > .project-folder-header__aside {
+  justify-self: stretch;
+  align-items: flex-end;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.project-detail-header.project-detail-header--tabs.project-detail-header--summary {
+  padding-bottom: 0.35rem;
+}
+
+/* `--bare` (any other tab): the aside alone, no rule of its own. A
+ * Developer's strip below brings its own underline. */
+.project-detail-header.project-detail-header--bare {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+
+.project-detail-header--bare > .project-folder-header__aside {
+  align-self: flex-end;
+}
+
+.project-detail-header--tabs.project-detail-header--bare > .project-detail-header__aside,
+.project-detail-header--tabs.project-detail-header--bare > .project-folder-header__aside {
+  align-self: stretch;
+}
+
+/* A Developer's and Admin's aside: the repository switch on one short row
+ * above the identity. */
+.project-detail-header--summary:not(.project-detail-header--tabs) > .project-folder-header__aside,
+.project-detail-header--bare:not(.project-detail-header--tabs) > .project-folder-header__aside {
+  flex-flow: row wrap;
+  align-items: center;
+  justify-content: flex-end;
+  column-gap: 1rem;
+}
+
+/* Off Overview the title stays the route's h1, for screen readers only. */
+.project-detail-header__sr-title {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* One column, in reading order: the aside, the title, then Clone. */
+@media (max-width: 900px) {
+  .project-detail-header.project-detail-header--summary {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .project-detail-header--summary > .project-folder-header__aside {
+    justify-self: stretch;
+    align-items: flex-start;
+  }
+
+  /* The switch alone: still one short row, at the right. */
+  .project-detail-header--summary:not(.project-detail-header--tabs) > .project-folder-header__aside {
+    align-items: center;
+    justify-content: flex-end;
+  }
+}

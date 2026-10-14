@@ -43,13 +43,23 @@ function MenuItemBody({
  * click is never popup-blocked — and the two fetch-based exports report back
  * through the status line below the run header.
  */
-export function ExportMenu({ vm }: Readonly<{ vm: QaExportViewModel }>) {
+const DEFAULT_LABEL = "Export report";
+
+/** What the trigger says: the action in progress, else the label it rests on. */
+function triggerLabel(status: QaExportStatus, resting: string | undefined): string {
+  return TRIGGER_LABELS[status] ?? resting ?? DEFAULT_LABEL;
+}
+
+export function ExportMenu({
+  vm,
+  label,
+}: Readonly<{ vm: QaExportViewModel; /** What the trigger says at rest. */ label?: string }>) {
   const menuId = useId();
   const triggerRef = useRef<HTMLButtonElement | null>(null);
   const menuRef = useRef<HTMLDivElement | null>(null);
   const menu = useMenuButton({ triggerRef, menuRef });
   const busy = vm.status === "copying" || vm.status === "downloading";
-  const label = TRIGGER_LABELS[vm.status] ?? "Export report";
+  const triggerText = triggerLabel(vm.status, label);
 
   function run(action: () => Promise<void>) {
     menu.close(true);
@@ -70,7 +80,7 @@ export function ExportMenu({ vm }: Readonly<{ vm: QaExportViewModel }>) {
         onKeyDown={menu.onTriggerKeyDown}
       >
         {vm.status === "copied" ? <CheckIcon /> : <ExportIcon />}
-        <span>{label}</span>
+        <span>{triggerText}</span>
         <ChevronDownIcon />
       </button>
       {menu.open ? (
@@ -78,7 +88,7 @@ export function ExportMenu({ vm }: Readonly<{ vm: QaExportViewModel }>) {
           ref={menuRef}
           id={menuId}
           role="menu"
-          aria-label="Export report"
+          aria-label={label ?? DEFAULT_LABEL}
           className="qa-export__menu"
           onKeyDown={menu.onMenuKeyDown}
         >

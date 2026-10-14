@@ -29,7 +29,7 @@ describe("getCurrentProjectsTourSteps", () => {
     expect(steps.length).toBeGreaterThan(0);
   });
 
-  it("includes a step for the projects list sidebar", () => {
+  it("includes a step for the Projects heading", () => {
     const steps = getCurrentProjectsTourSteps();
     const step = steps.find((s) => s.element === "[data-tour='projects-list']");
     expect(step).toBeDefined();
@@ -61,15 +61,27 @@ describe("getCurrentProjectsTourSteps", () => {
     expect(step).toBeDefined();
   });
 
-  it("includes a step for the sync health checks", () => {
+  /* The health checks left the repository Overview (2026-10-02), and with
+   * them the only [data-tour='sync-health'] anchor. */
+  it("has no step for the removed health checks", () => {
     const steps = getCurrentProjectsTourSteps();
-    const step = steps.find((s) => s.element === "[data-tour='sync-health']");
-    expect(step).toBeDefined();
+    expect(steps.find((s) => s.element === "[data-tour='sync-health']")).toBeUndefined();
   });
 
-  it("first step targets the projects list sidebar", () => {
+  it("first step targets the Projects heading", () => {
     const steps = getCurrentProjectsTourSteps();
     expect(steps[0]?.element).toBe("[data-tour='projects-list']");
+  });
+
+  /* The anchor sits at the top of the page, so a popover placed to its right
+   * would cover the header actions. The page lost its team dropdown (the
+   * header picker chooses the team), so the copy must not send anyone
+   * looking for one. */
+  it("places the first step below the heading and points at the header picker", () => {
+    const steps = getCurrentProjectsTourSteps();
+    expect(steps[0]?.popover?.side).toBe("bottom");
+    expect(steps[0]?.popover?.description).not.toMatch(/sidebar|dropdown/i);
+    expect(steps[0]?.popover?.description).toMatch(/header/i);
   });
 
   it("every step has a non-empty popover title and description", () => {

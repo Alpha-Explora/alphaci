@@ -404,6 +404,7 @@ describe("workflow hooks", () => {
     expect(current?.serviceName).toBe("example-app");
 
     const result = current?.buildPayload({
+      projectName: "Checkout platform",
       isMicroservicesShape: false, isMultiRepoShape: false,
       repoShapeId: "single-app",
       projectTypeId: "nextjs-app",
@@ -421,6 +422,7 @@ describe("workflow hooks", () => {
     expect(result).toEqual({
       ok: true,
       payload: {
+        projectName: "Checkout platform",
         repoName: "example-app",
         visibility: "private",
         repoShape: "single-app",
@@ -443,6 +445,7 @@ describe("workflow hooks", () => {
     });
 
     const organizationResult = current?.buildPayload({
+      projectName: "Checkout platform",
       isMicroservicesShape: false,
       isMultiRepoShape: false,
       repoShapeId: "single-app",
@@ -473,6 +476,7 @@ describe("workflow hooks", () => {
   it("keeps separators typed into the repository name and trims them on submit", async () => {
     let current = null as ReturnType<typeof useCreateProjectForm> | null;
     const baseInput = {
+      projectName: "Checkout platform",
       isMicroservicesShape: false, isMultiRepoShape: false,
       repoShapeId: "single-app",
       projectTypeId: "nextjs-app",
@@ -530,6 +534,7 @@ describe("workflow hooks", () => {
   it("reports create project form validation branches", async () => {
     let current = null as ReturnType<typeof useCreateProjectForm> | null;
     const baseInput = {
+      projectName: "Checkout platform",
       isMicroservicesShape: false, isMultiRepoShape: false,
       repoShapeId: "single-app",
       projectTypeId: "nextjs-app",
@@ -647,6 +652,7 @@ describe("workflow hooks", () => {
 
     expect(
       current?.buildPayload({
+      projectName: "Checkout platform",
         isMicroservicesShape: true, isMultiRepoShape: true,
         repoShapeId: "microservices",
         projectTypeId: "",
@@ -715,6 +721,7 @@ describe("workflow hooks", () => {
 
     expect(
       current?.buildPayload({
+      projectName: "Checkout platform",
         isMicroservicesShape: false, isMultiRepoShape: true,
         repoShapeId: "multi-repo",
         projectTypeId: "",

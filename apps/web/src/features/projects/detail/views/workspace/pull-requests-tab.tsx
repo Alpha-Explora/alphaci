@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
+import type { AppRole } from "@/shared/api/contracts";
 import {
   getProjectPullRequestFiles,
   getProjectPullRequests,
@@ -9,8 +10,10 @@ import {
   type PullRequestSummary,
 } from "@/features/projects";
 
+import { canOpenPoStudio } from "../../model/project-detail-tab-rules";
 import { CreatePullRequestView } from "./create-pull-request-view";
 import { DiffView } from "./diff-view";
+import { PullRequestChecks } from "./pull-request-checks";
 import {
   WorkspaceEmpty,
   WorkspaceError,
@@ -18,7 +21,6 @@ import {
 } from "./workspace-states";
 import {
   usePullRequestReviewViewModel,
-  type PullRequestCheck,
   type PullRequestDetail,
   type MergeMethod,
   type PullRequestDetailResponse,
@@ -27,6 +29,7 @@ import {
 import {
   explainMergeState,
   mergeButtonLabel,
+  workspaceMergeGate,
 } from "../../model/pull-request-merge-rules";
 
 type StateFilter = "open" | "closed" | "all";
@@ -37,17 +40,46 @@ const FILTERS: ReadonlyArray<{ id: StateFilter; label: string }> = [
   { id: "all", label: "All" },
 ];
 
+/** Arriving on a pull request, the list starts on All: the one behind a commit is usually merged. */
+function startFilter(focus: number | null | undefined): StateFilter {
+  return focus == null ? "open" : "all";
+}
+
+function startFocus(focus: number | null | undefined): number | null {
+  return focus ?? null;
+}
+
 /**
  * Pull requests for this project: what is in flight, what each one changes,
  * and opening a new one between any two branches.
  *
  * ALPHACI is where the team works, so proposing, reading and merging a change
- * all happen here. The pull requests are still GitHub's — branch protection
- * only counts reviews and merges GitHub knows about — which is why "Open on
- * GitHub" stays available as a secondary link rather than the way forward.
+ * all happen here. The pull requests are still stored on GitHub — branch
+ * protection only counts reviews and merges GitHub knows about — but nobody
+ * goes there to read or decide one: every check, error and merge is here.
  */
-export function PullRequestsTab({ projectId }: { projectId: string }) {
-  const [filter, setFilter] = useState<StateFilter>("open");
+export function PullRequestsTab({
+  projectId,
+  appRole,
+  viewerLogin,
+  onOpenPoStudio,
+  initialFocusNumber,
+}: {
+  projectId: string;
+  /** The viewer's app role, for the Phase 1 create/merge gates. */
+  appRole?: AppRole;
+  /** The viewer's GitHub login, for the compose presets' "own branch". */
+  viewerLogin?: string | null;
+  /** Opens the PO Studio tab, for the "merge into main" notice's link. */
+  onOpenPoStudio?: () => void;
+  /**
+   * Arriving from a commit on the Code tab: open this pull request expanded.
+   * The list starts on "All", since the pull request behind a commit is
+   * usually merged already.
+   */
+  initialFocusNumber?: number | null;
+}) {
+  const [filter, setFilter] = useState<StateFilter>(() => startFilter(initialFocusNumber));
   const [composing, setComposing] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   // Bumped to re-read the list when the filter did not change, e.g. after
@@ -56,9 +88,8 @@ export function PullRequestsTab({ projectId }: { projectId: string }) {
   // The pull request to open expanded when the list next renders: the one
   // just created, so its merge controls are right there, or one the compose
   // screen pointed at because it already exists.
-  const [focusNumber, setFocusNumber] = useState<number | null>(null);
+  const [focusNumber, setFocusNumber] = useState<number | null>(() => startFocus(initialFocusNumber));
   const [items, setItems] = useState<PullRequestSummary[]>([]);
-  const [pullsUrl, setPullsUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -71,7 +102,6 @@ export function PullRequestsTab({ projectId }: { projectId: string }) {
     return getProjectPullRequests(projectId, filter)
       .then((data) => {
         setItems(data.pullRequests);
-        setPullsUrl(data.pullsUrl);
         setError(null);
       })
       .catch(() =>
@@ -116,6 +146,8 @@ export function PullRequestsTab({ projectId }: { projectId: string }) {
       <div className="ws-panel">
         <CreatePullRequestView
           projectId={projectId}
+          appRole={appRole}
+          viewerLogin={viewerLogin}
           onCancel={() => setComposing(false)}
           onCreated={handleCreated}
           onViewExisting={handleViewExisting}
@@ -150,27 +182,19 @@ export function PullRequestsTab({ projectId }: { projectId: string }) {
           ))}
         </div>
         <div className="ws-toolbar__end">
-          {pullsUrl && (
-            <a
-              className="ws-link"
-              href={pullsUrl}
-              target="_blank"
-              rel="noopener noreferrer"
+          {appRole !== "qa" && (
+            <button
+              type="button"
+              className="primary-button"
+              onClick={() => {
+                setNotice(null);
+                setFocusNumber(null);
+                setComposing(true);
+              }}
             >
-              Open on GitHub ↗
-            </a>
+              New pull request
+            </button>
           )}
-          <button
-            type="button"
-            className="primary-button"
-            onClick={() => {
-              setNotice(null);
-              setFocusNumber(null);
-              setComposing(true);
-            }}
-          >
-            New pull request
-          </button>
         </div>
       </div>
 
@@ -202,6 +226,8 @@ export function PullRequestsTab({ projectId }: { projectId: string }) {
               pr={pr}
               focused={pr.number === focusNumber}
               onMerged={handleMerged}
+              appRole={appRole}
+              onOpenPoStudio={onOpenPoStudio}
             />
           ))}
         </ul>
@@ -215,12 +241,16 @@ function PullRequestRow({
   pr,
   focused = false,
   onMerged,
+  appRole,
+  onOpenPoStudio,
 }: {
   projectId: string;
   pr: PullRequestSummary;
   onMerged: (pullNumber: number) => void;
   /** Open expanded and scrolled into view, e.g. arriving from compose. */
   focused?: boolean;
+  appRole?: AppRole;
+  onOpenPoStudio?: () => void;
 }) {
   const [open, setOpen] = useState(focused);
   const [files, setFiles] = useState<PullRequestFile[] | null>(null);
@@ -285,7 +315,13 @@ function PullRequestRow({
 
       {open && (
         <div className="ws-pr__body">
-          <PullRequestReview projectId={projectId} pr={pr} onMerged={onMerged} />
+          <PullRequestReview
+            projectId={projectId}
+            pr={pr}
+            onMerged={onMerged}
+            appRole={appRole}
+            onOpenPoStudio={onOpenPoStudio}
+          />
           <PullRequestFiles
             files={files}
             loading={loading}
@@ -327,20 +363,22 @@ function PullRequestFiles({
  * This replaced a link reading "Review and merge on GitHub", which was an
  * admission that the product tracked the pull request and then handed the
  * actual decision somewhere else. The two things the decision turns on are
- * here: what the checks say, and whether GitHub will allow the merge.
- *
- * GitHub is still linked, because a diff comment thread and a second
- * reviewer's approval live there. The difference is that it is no longer the
- * only way forward.
+ * here, in reading order: what the checks say — every failure with its own
+ * error and log — then one Merge block saying whether the merge is allowed
+ * and doing it.
  */
 function PullRequestReview({
   projectId,
   pr,
   onMerged,
+  appRole,
+  onOpenPoStudio,
 }: Readonly<{
   projectId: string;
   pr: PullRequestSummary;
   onMerged: (pullNumber: number) => void;
+  appRole?: AppRole;
+  onOpenPoStudio?: () => void;
 }>) {
   const review = usePullRequestReviewViewModel({
     projectId,
@@ -367,53 +405,21 @@ function PullRequestReview({
 
   return (
     <div className="ws-prreview">
-      <PullRequestChecks checks={detail.checks} />
-      <MergeState detail={detail} />
-      <div className="ws-prreview__actions">
-        <MergeButton pr={detail.pullRequest} review={review} />
-        <a
-          className="ws-link"
-          href={pr.htmlUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Open on GitHub ↗
-        </a>
-      </div>
-      <MergeOutcome review={review} />
+      <PullRequestChecks projectId={projectId} checks={detail.checks} />
+      <section className="ws-merge" aria-label="Merge">
+        <h5 className="ws-merge__title">Merge</h5>
+        <MergeState detail={detail} />
+        <div className="ws-merge__actions">
+          <MergeControl
+            pr={detail.pullRequest}
+            review={review}
+            appRole={appRole}
+            onOpenPoStudio={onOpenPoStudio}
+          />
+        </div>
+        <MergeOutcome review={review} />
+      </section>
     </div>
-  );
-}
-
-/** What GitHub's checks say, which is the first half of the decision. */
-function PullRequestChecks({
-  checks,
-}: Readonly<{ checks: PullRequestCheck[] }>) {
-  if (checks.length === 0) {
-    return <p className="ws-hint">No checks have reported for this commit.</p>;
-  }
-
-  return (
-    <ul className="ws-prchecks">
-      {checks.map((check, index) => (
-        <li key={`${check.name}-${String(index)}`} className="ws-prchecks__row">
-          <span className={`ws-pill ws-pill--${checkTone(check)}`}>
-            {check.conclusion ?? check.status}
-          </span>
-          <span className="ws-prchecks__name">{check.name}</span>
-          {check.detailsUrl && (
-            <a
-              className="ws-link"
-              href={check.detailsUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              details ↗
-            </a>
-          )}
-        </li>
-      ))}
-    </ul>
   );
 }
 
@@ -441,6 +447,57 @@ const MERGE_METHODS: ReadonlyArray<{ id: MergeMethod; label: string }> = [
   { id: "squash", label: "Squash and merge" },
   { id: "rebase", label: "Rebase and merge" },
 ];
+
+/**
+ * Whether, and what, to show in place of the merge action — the Phase 1
+ * security gate (`workspaceMergeGate`, mirroring the backend's
+ * `MAIN_MERGE_VIA_QA_STUDIO` and `PR_ROLE_FORBIDDEN` 403s).
+ *
+ * QA gets nothing here at all: it never merges through the workspace, and
+ * saying so on every open pull request would be noise, not help. Every other
+ * role merging into `main` gets the explanatory notice instead of a button
+ * that would only 403 — with a link into QA Studio for the roles that can
+ * actually open it.
+ */
+function MergeControl({
+  pr,
+  review,
+  appRole,
+  onOpenPoStudio,
+}: Readonly<{
+  pr: PullRequestDetail;
+  review: PullRequestReviewViewModel;
+  appRole?: AppRole;
+  onOpenPoStudio?: () => void;
+}>) {
+  if (pr.merged || pr.state === "closed") return null;
+
+  const gate = workspaceMergeGate(appRole, pr.baseRef, pr.headRef);
+  if (gate.allowed) return <MergeButton pr={pr} review={review} />;
+  if (gate.reason === "qa-role") return null;
+  if (gate.reason === "route-restricted") {
+    return (
+      <p className="ws-hint" role="status">
+        Developers merge feature → dev and dev → uat pull requests. Ask a Team
+        lead to merge this one.
+      </p>
+    );
+  }
+
+  return (
+    <p className="ws-hint" role="status">
+      Merges into main go through PO Studio — Ready for production.
+      {canOpenPoStudio(appRole) && onOpenPoStudio ? (
+        <>
+          {" "}
+          <button type="button" className="ws-link" onClick={onOpenPoStudio}>
+            Go to PO Studio
+          </button>
+        </>
+      ) : null}
+    </p>
+  );
+}
 
 /**
  * The merge action: how to merge, and doing it.
@@ -513,20 +570,4 @@ function MergeOutcome({
       {review.mergeMessage}
     </p>
   );
-}
-
-/** A check's conclusion as one of the four workspace pill tones. */
-function checkTone(
-  check: PullRequestCheck,
-): "success" | "failure" | "running" | "neutral" {
-  if (check.status !== "completed") return "running";
-  if (check.conclusion === "success") return "success";
-  if (
-    check.conclusion === "failure" ||
-    check.conclusion === "timed_out" ||
-    check.conclusion === "error"
-  ) {
-    return "failure";
-  }
-  return "neutral";
 }

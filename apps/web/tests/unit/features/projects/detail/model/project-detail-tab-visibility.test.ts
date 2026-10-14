@@ -1,36 +1,279 @@
 import {
   PROJECT_DETAIL_TABS,
+  canManageEnvVars,
+  checklistsTabCarriesProjectQa,
+  canOpenPoStudio,
+  canOpenQaStudio,
+  projectDetailTabsForRole,
   resolveVisibleTab,
+  seesProjectAsProduct,
+  shouldHighlightMyQaItems,
+  showOverviewProductionReadiness,
+  studioTabFor,
+  tabFromHash,
   visibleProjectDetailTabs,
 } from "../../../../../../src/features/projects/detail/model/project-detail-tab-rules";
+import type { AppRole } from "../../../../../../src/shared/api/contracts";
 
 describe("visibleProjectDetailTabs", () => {
-  it("adds Checklists after Pull requests and QA Studio after Environment when the capability is on, for every role", () => {
-    for (const role of ["admin", "lead", "qa", "member"] as const) {
-      const tabs = visibleProjectDetailTabs(role, { qaChecklistsEnabled: true });
-      expect(tabs).toEqual(PROJECT_DETAIL_TABS);
-      expect(tabs.indexOf("checklists")).toBe(tabs.indexOf("pulls") + 1);
-      expect(tabs.indexOf("qa")).toBe(tabs.indexOf("environment") + 1);
+  it("gives Admins every tab, in strip order", () => {
+    const tabs = visibleProjectDetailTabs("admin", { qaChecklistsEnabled: true });
+    expect(tabs).toEqual(PROJECT_DETAIL_TABS);
+    expect(tabs.indexOf("checklists")).toBe(tabs.indexOf("pulls") + 1);
+    expect(tabs.indexOf("qa")).toBe(tabs.indexOf("hosting") + 1);
+    expect(tabs.indexOf("po")).toBe(tabs.indexOf("qa") + 1);
+  });
+
+  it("puts Commits right after Code and before Pull requests, for exactly the roles that see Code", () => {
+    expect(PROJECT_DETAIL_TABS.indexOf("commits")).toBe(PROJECT_DETAIL_TABS.indexOf("code") + 1);
+    expect(PROJECT_DETAIL_TABS.indexOf("pulls")).toBe(PROJECT_DETAIL_TABS.indexOf("commits") + 1);
+    for (const role of ["admin", "member", "lead", "qa", null] as const) {
+      for (const qaChecklistsEnabled of [true, false]) {
+        const tabs = visibleProjectDetailTabs(role, { qaChecklistsEnabled });
+        expect(tabs.includes("commits")).toBe(tabs.includes("code"));
+        if (tabs.includes("code")) expect(tabs.indexOf("commits")).toBe(tabs.indexOf("code") + 1);
+      }
+    }
+    expect(visibleProjectDetailTabs("member", { qaChecklistsEnabled: true })).toContain("commits");
+    expect(visibleProjectDetailTabs("qa", { qaChecklistsEnabled: true })).not.toContain("commits");
+    expect(visibleProjectDetailTabs("lead", { qaChecklistsEnabled: true })).not.toContain("commits");
+  });
+
+  it("gives a Product owner only Overview, Checklists, PO Studio, Audit and Settings", () => {
+    expect(visibleProjectDetailTabs("lead", { qaChecklistsEnabled: true })).toEqual([
+      "overview",
+      "checklists",
+      "po",
+      "audit",
+      "settings",
+    ]);
+  });
+
+  it("drops a Product owner's Checklists and PO Studio while the capability is off", () => {
+    expect(visibleProjectDetailTabs("lead", { qaChecklistsEnabled: false })).toEqual([
+      "overview",
+      "audit",
+      "settings",
+    ]);
+  });
+
+  it("gives a Developer every tab except the studios, Hosting included", () => {
+    const tabs = visibleProjectDetailTabs("member", { qaChecklistsEnabled: true });
+    expect(tabs).toEqual(PROJECT_DETAIL_TABS.filter((tab) => tab !== "qa" && tab !== "po"));
+    expect(tabs).toContain("hosting");
+    expect(tabs).toContain("checklists");
+  });
+
+  /* QA checks the uat build and its UI in QA Studio: the Product owner's set, with QA Studio for PO Studio. */
+  it("gives QA Team the Product owner's five tabs, with QA Studio in place of PO Studio", () => {
+    const tabs = visibleProjectDetailTabs("qa", { qaChecklistsEnabled: true });
+    expect(tabs).toEqual(["overview", "checklists", "qa", "audit", "settings"]);
+    for (const hidden of ["code", "commits", "pulls", "pipeline", "hosting"] as const) {
+      expect(tabs).not.toContain(hidden);
     }
   });
 
-  it("leaves every other tab exactly as it was when the capability is off", () => {
-    const tabs = visibleProjectDetailTabs("lead", { qaChecklistsEnabled: false });
-    expect(tabs).toEqual(
-      PROJECT_DETAIL_TABS.filter((tab) => tab !== "checklists" && tab !== "qa"),
-    );
+  it("drops QA Team's Checklists and QA Studio while the capability is off", () => {
+    expect(visibleProjectDetailTabs("qa", { qaChecklistsEnabled: false })).toEqual([
+      "overview",
+      "audit",
+      "settings",
+    ]);
   });
 
-  it("hides Checklists and QA Studio from a session with no app role", () => {
-    const tabs = visibleProjectDetailTabs(undefined, { qaChecklistsEnabled: true });
-    expect(tabs).not.toContain("checklists");
-    expect(tabs).not.toContain("qa");
+  it("leaves Hosting exactly as the role decides when the checklists capability is off", () => {
+    // Checklists and QA Studio disappear for everyone; Hosting does not
+    // follow that flag.
+    for (const role of ["admin", "member"] as const) {
+      const tabs = visibleProjectDetailTabs(role, { qaChecklistsEnabled: false });
+      expect(tabs).toContain("hosting");
+      expect(tabs).not.toContain("checklists");
+      expect(tabs).not.toContain("qa");
+      expect(tabs).not.toContain("po");
+    }
+    for (const role of ["qa", "lead"] as const) {
+      expect(visibleProjectDetailTabs(role, { qaChecklistsEnabled: false })).not.toContain("hosting");
+    }
+  });
+
+  it("hides Checklists and the studios from a session with no app role, and keeps Hosting", () => {
+    for (const role of [undefined, null]) {
+      const tabs = visibleProjectDetailTabs(role, { qaChecklistsEnabled: true });
+      expect(tabs).toEqual(
+        PROJECT_DETAIL_TABS.filter((tab) => tab !== "checklists" && tab !== "qa" && tab !== "po"),
+      );
+      expect(tabs).toContain("hosting");
+    }
+  });
+
+  it("offers no role an Environment tab: its variables live in Hosting", () => {
+    expect(PROJECT_DETAIL_TABS as ReadonlyArray<string>).not.toContain("environment");
+    for (const role of ["admin", "lead", "qa", "member", null] as const) {
+      expect(visibleProjectDetailTabs(role, { qaChecklistsEnabled: true }) as string[]).not.toContain("environment");
+    }
+  });
+
+  it("gives an unknown role (a newer backend) no more than a session with no role", () => {
+    const tabs = visibleProjectDetailTabs("auditor" as AppRole, { qaChecklistsEnabled: true });
+    expect(tabs).toEqual(visibleProjectDetailTabs(undefined, { qaChecklistsEnabled: true }));
+  });
+
+  it("offers each studio exactly to the roles that may open it", () => {
+    for (const role of ["admin", "lead", "qa", "member"] as const) {
+      expect(projectDetailTabsForRole(role).has("qa")).toBe(canOpenQaStudio(role));
+      expect(projectDetailTabsForRole(role).has("po")).toBe(canOpenPoStudio(role));
+    }
+  });
+
+  it("offers Hosting (and so its Variables column) to every role that may change variables", () => {
+    for (const role of ["admin", "member"] as const) {
+      expect(canManageEnvVars(role)).toBe(true);
+      expect(projectDetailTabsForRole(role).has("hosting")).toBe(true);
+    }
+    for (const role of ["lead", "qa", null, undefined] as const) {
+      expect(canManageEnvVars(role)).toBe(false);
+    }
   });
 
   it("falls back to Overview when the selected tab disappears", () => {
-    const visible = visibleProjectDetailTabs("qa", { qaChecklistsEnabled: false });
+    const visible = visibleProjectDetailTabs("admin", { qaChecklistsEnabled: false });
     expect(resolveVisibleTab("checklists", visible)).toBe("overview");
     expect(resolveVisibleTab("qa", visible)).toBe("overview");
-    expect(resolveVisibleTab("runs", visible)).toBe("runs");
+    expect(resolveVisibleTab("po", visible)).toBe("overview");
+    expect(resolveVisibleTab("pipeline", visible)).toBe("pipeline");
+  });
+
+  it("sends QA Team who deep-links to a code or delivery tab to Overview", () => {
+    const visible = visibleProjectDetailTabs("qa", { qaChecklistsEnabled: true });
+    for (const tab of ["code", "pulls", "pipeline", "hosting"] as const) {
+      expect(resolveVisibleTab(tab, visible)).toBe("overview");
+    }
+    expect(resolveVisibleTab("qa", visible)).toBe("qa");
+    // A Product owner's link brings QA to their own studio.
+    expect(resolveVisibleTab("po", visible)).toBe("qa");
+  });
+
+  it("sends a Developer who deep-links to a studio to Overview, while Checklists and Hosting stay reachable", () => {
+    const visible = visibleProjectDetailTabs("member", { qaChecklistsEnabled: true });
+    expect(resolveVisibleTab("qa", visible)).toBe("overview");
+    expect(resolveVisibleTab("po", visible)).toBe("overview");
+    expect(resolveVisibleTab("checklists", visible)).toBe("checklists");
+    expect(resolveVisibleTab("hosting", visible)).toBe("hosting");
+  });
+
+  it("sends a QA Team member who deep-links to #environment to Overview", () => {
+    const visible = visibleProjectDetailTabs("qa", { qaChecklistsEnabled: true });
+    expect(resolveVisibleTab(tabFromHash("#environment") ?? "overview", visible)).toBe("overview");
+  });
+
+  it("sends a Product owner who deep-links to a hidden tab to Overview", () => {
+    const visible = visibleProjectDetailTabs("lead", { qaChecklistsEnabled: true });
+    for (const hidden of ["code", "pulls", "pipeline", "hosting"] as const) {
+      expect(resolveVisibleTab(hidden, visible)).toBe("overview");
+    }
+    expect(resolveVisibleTab("audit", visible)).toBe("audit");
+    expect(resolveVisibleTab("po", visible)).toBe("po");
+  });
+
+  /* Links written before PO Studio (#qa) still bring a Product owner to their studio. */
+  it("sends a Product owner who deep-links to #qa to PO Studio", () => {
+    const visible = visibleProjectDetailTabs("lead", { qaChecklistsEnabled: true });
+    expect(resolveVisibleTab("qa", visible)).toBe("po");
+  });
+
+  it("keeps an admin on the studio the link names", () => {
+    const visible = visibleProjectDetailTabs("admin", { qaChecklistsEnabled: true });
+    expect(resolveVisibleTab("qa", visible)).toBe("qa");
+    expect(resolveVisibleTab("po", visible)).toBe("po");
+  });
+});
+
+describe("canOpenQaStudio / canOpenPoStudio / studioTabFor", () => {
+  it("gives QA Studio to the QA Team and admins, PO Studio to Team leads and admins", () => {
+    const roles: AppRole[] = ["qa", "lead", "admin", "member"];
+    expect(roles.map((role) => canOpenQaStudio(role))).toEqual([true, false, true, false]);
+    expect(roles.map((role) => canOpenPoStudio(role))).toEqual([false, true, true, false]);
+  });
+
+  it("names each role's own studio: QA Studio for an admin", () => {
+    expect(studioTabFor("qa")).toBe("qa");
+    expect(studioTabFor("lead")).toBe("po");
+    expect(studioTabFor("admin")).toBe("qa");
+    expect(studioTabFor("member")).toBeNull();
+    expect(studioTabFor(undefined)).toBeNull();
+  });
+
+  it("refuses a Developer", () => {
+    expect(canOpenQaStudio("member")).toBe(false);
+    expect(canOpenPoStudio("member")).toBe(false);
+  });
+
+  it("refuses a session with no known role", () => {
+    expect(canOpenQaStudio(null)).toBe(false);
+    expect(canOpenQaStudio(undefined)).toBe(false);
+  });
+});
+
+describe("seesProjectAsProduct", () => {
+  it("is the QA Team and Product owners", () => {
+    expect(seesProjectAsProduct("qa")).toBe(true);
+    expect(seesProjectAsProduct("lead")).toBe(true);
+  });
+
+  it("is not a Developer, an admin or an unknown role", () => {
+    expect(seesProjectAsProduct("member")).toBe(false);
+    expect(seesProjectAsProduct("admin")).toBe(false);
+    expect(seesProjectAsProduct(null)).toBe(false);
+    expect(seesProjectAsProduct(undefined)).toBe(false);
+  });
+});
+
+describe("checklistsTabCarriesProjectQa", () => {
+  it("is true for a repository in a Project, whatever the viewer's role", () => {
+    expect(checklistsTabCarriesProjectQa("project")).toBe(true);
+  });
+
+  it("keeps the per-repository screens for no Project or one still being read", () => {
+    expect(checklistsTabCarriesProjectQa("repository")).toBe(false);
+    expect(checklistsTabCarriesProjectQa("pending")).toBe(false);
+  });
+});
+
+describe("shouldHighlightMyQaItems", () => {
+  it("reads ?focus=my-qa-items off location.search, leading '?' and all", () => {
+    expect(shouldHighlightMyQaItems("?focus=my-qa-items")).toBe(true);
+  });
+
+  it("reads it without a leading '?' too", () => {
+    expect(shouldHighlightMyQaItems("focus=my-qa-items")).toBe(true);
+  });
+
+  it("ignores an unrelated or missing focus value", () => {
+    expect(shouldHighlightMyQaItems("?focus=something-else")).toBe(false);
+    expect(shouldHighlightMyQaItems("?other=1")).toBe(false);
+  });
+
+  it("is false for empty, null or undefined search strings", () => {
+    expect(shouldHighlightMyQaItems("")).toBe(false);
+    expect(shouldHighlightMyQaItems(null)).toBe(false);
+    expect(shouldHighlightMyQaItems(undefined)).toBe(false);
+  });
+
+  it("still finds it alongside other query params", () => {
+    expect(shouldHighlightMyQaItems("?tab=overview&focus=my-qa-items")).toBe(true);
+  });
+});
+
+describe("showOverviewProductionReadiness", () => {
+  it("is for Developers, with the QA capability on", () => {
+    expect(showOverviewProductionReadiness("member", true)).toBe(true);
+    expect(showOverviewProductionReadiness("member", false)).toBe(false);
+  });
+
+  it("leaves Leads, Admins and QA Team to QA Studio", () => {
+    for (const role of ["lead", "admin", "qa"] as const) {
+      expect(showOverviewProductionReadiness(role, true)).toBe(false);
+    }
+    expect(showOverviewProductionReadiness(undefined, true)).toBe(false);
   });
 });

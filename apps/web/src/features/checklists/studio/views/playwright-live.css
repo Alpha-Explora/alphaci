@@ -1,0 +1,359 @@
+/* ── QA Studio / PO Studio → live Playwright progress ────────────────────────
+   .qa-live   one frontend repository's Playwright run at the top of its
+              section in the Playwright tab: the status pill and what it is
+              doing, a progress bar (indeterminate until the total is known),
+              the tests running now and the finished tests, newest first.
+
+   Motion language: things that are happening move, things that happened do
+   not. The bar eases to its new width (400ms, expo-out); an unknown total
+   is a slow sliding band; a running test has a small turning ring; a test
+   that just finished settles in (160ms fade + 3px rise). All of it stops
+   under prefers-reduced-motion. Tokens only; the light theme re-tints
+   through tokens.css.
+   ------------------------------------------------------------------------- */
+
+.qa-live {
+  --qa-live-tone: var(--brand);
+
+  display: grid;
+  gap: 0.6rem;
+  min-width: 0;
+  padding: 0.7rem 0.75rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 0.7rem;
+  background: var(--bg-soft);
+  box-shadow: inset 3px 0 0 var(--qa-live-tone);
+}
+
+.qa-live[data-status="passed"] {
+  --qa-live-tone: var(--success);
+}
+
+.qa-live[data-status="failed"] {
+  --qa-live-tone: var(--danger);
+}
+
+.qa-live[data-status="timedout"] {
+  --qa-live-tone: var(--warning);
+}
+
+.qa-live[data-status="queued"],
+.qa-live[data-status="cancelled"] {
+  --qa-live-tone: var(--border-strong);
+}
+
+.qa-live__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.3rem 0.6rem;
+  min-width: 0;
+}
+
+.qa-studio .qa-live__heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.3rem 0.5rem;
+  min-width: 0;
+  margin: 0;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.qa-live__detail {
+  min-width: 0;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-secondary);
+  overflow-wrap: anywhere;
+}
+
+.qa-live__repo {
+  font-size: 0.72rem;
+  font-weight: 650;
+  color: var(--text-muted);
+}
+
+/* ── The bar ─────────────────────────────────────────────────────────────── */
+.qa-live__bar {
+  position: relative;
+  height: 0.35rem;
+  border-radius: var(--radius-pill);
+  background: var(--border);
+  overflow: hidden;
+}
+
+.qa-live__fill {
+  display: block;
+  width: 0;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--qa-live-tone);
+  transition: width 400ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.qa-live__bar[data-indeterminate="true"] .qa-live__fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 35%;
+  opacity: 0.75;
+  animation: qa-live-slide 1.5s ease-in-out infinite;
+}
+
+/* ── Labels and lists ────────────────────────────────────────────────────── */
+.qa-live__label {
+  margin: 0;
+  font-size: 0.68rem;
+  font-weight: 750;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.qa-live__toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  justify-self: start;
+  padding: 0.15rem 0;
+  border: 0;
+  background: none;
+  font-family: inherit;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+}
+
+.qa-live__toggle .qa-glyph,
+.qa-live__chevron .qa-glyph {
+  transition: transform 160ms ease-out;
+}
+
+.qa-live__toggle[aria-expanded="true"] .qa-glyph,
+.qa-live__expand[aria-expanded="true"] .qa-live__chevron .qa-glyph {
+  transform: rotate(180deg);
+}
+
+.qa-live__toggle:hover {
+  color: var(--text-primary);
+}
+
+.qa-live__toggle:focus-visible,
+.qa-live__expand:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+  border-radius: 0.35rem;
+}
+
+.qa-live__now,
+.qa-live__finished {
+  display: grid;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+.qa-live__running,
+.qa-live__tests {
+  display: grid;
+  gap: 0.15rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.qa-live__finished > div {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.qa-live__finished > div[hidden] {
+  display: none;
+}
+
+.qa-live__running-test,
+.qa-live__row,
+.qa-live__expand {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  min-width: 0;
+  padding: 0.3rem 0.35rem;
+  border-radius: 0.45rem;
+}
+
+.qa-live__test {
+  min-width: 0;
+  animation: qa-live-settle 160ms ease-out both;
+}
+
+.qa-live__expand {
+  width: 100%;
+  border: 0;
+  background: none;
+  font: inherit;
+  text-align: left;
+  color: inherit;
+  cursor: pointer;
+  transition: background-color 140ms ease-out;
+}
+
+.qa-live__expand:hover {
+  background: var(--layer-1-hover);
+}
+
+.qa-live__test-text {
+  display: grid;
+  flex: 1 1 auto;
+  gap: 0.05rem;
+  min-width: 0;
+}
+
+.qa-live__title {
+  font-size: 0.78rem;
+  font-weight: 600;
+  line-height: 1.35;
+  color: var(--text-primary);
+  overflow-wrap: anywhere;
+}
+
+.qa-live__meta {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.68rem;
+  line-height: 1.4;
+  color: var(--text-muted);
+  overflow-wrap: anywhere;
+}
+
+.qa-live__meta:empty {
+  display: none;
+}
+
+.qa-live__chevron {
+  flex-shrink: 0;
+  margin-top: 0.1rem;
+  color: var(--text-muted);
+}
+
+/* ✓ / ✗ / – : a ring in the test's tone. */
+.qa-live__icon {
+  display: inline-grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 1.1rem;
+  height: 1.1rem;
+  margin-top: 0.05rem;
+  border-radius: 50%;
+  color: var(--text-muted);
+  background: var(--layer-1);
+}
+
+.qa-live__icon .qa-glyph {
+  width: 0.7rem;
+  height: 0.7rem;
+}
+
+.qa-live__icon[data-status="passed"] {
+  color: var(--success);
+  background: var(--accent-emerald-light);
+}
+
+.qa-live__icon[data-status="failed"] {
+  color: var(--danger);
+  background: var(--accent-rose-light);
+}
+
+/* A running test: a small turning ring where the icon will be. */
+.qa-live__spinner {
+  flex-shrink: 0;
+  width: 0.85rem;
+  height: 0.85rem;
+  margin: 0.15rem 0.125rem 0;
+  border: 2px solid var(--border-strong);
+  border-top-color: var(--brand);
+  border-radius: 50%;
+  animation: qa-live-spin 900ms linear infinite;
+}
+
+.qa-live__error {
+  margin: 0.15rem 0 0.35rem 1.95rem;
+  padding: 0.5rem 0.6rem;
+  border: 1px solid var(--border-danger);
+  border-radius: 0.45rem;
+  background: var(--danger-light);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.7rem;
+  line-height: 1.5;
+  color: var(--text-primary);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.qa-live__error[hidden] {
+  display: none;
+}
+
+.qa-live__more {
+  justify-self: start;
+  font-size: 0.74rem;
+}
+
+@media (max-width: 560px) {
+  .qa-live {
+    padding: 0.6rem 0.6rem 0.65rem;
+  }
+
+  .qa-live__error {
+    margin-left: 0;
+  }
+}
+
+/* ── Motion ──────────────────────────────────────────────────────────────── */
+@keyframes qa-live-slide {
+  from {
+    transform: translateX(-100%);
+  }
+
+  to {
+    transform: translateX(290%);
+  }
+}
+
+@keyframes qa-live-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes qa-live-settle {
+  from {
+    opacity: 0;
+    transform: translateY(3px);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .qa-live__fill,
+  .qa-live__expand,
+  .qa-live__toggle .qa-glyph,
+  .qa-live__chevron .qa-glyph {
+    transition: none;
+  }
+
+  .qa-live__test,
+  .qa-live__spinner,
+  .qa-live__bar[data-indeterminate="true"] .qa-live__fill {
+    animation: none;
+  }
+
+  /* Still says "running" without turning: the ring keeps its brand quarter. */
+  .qa-live__bar[data-indeterminate="true"] .qa-live__fill {
+    width: 100%;
+    opacity: 0.35;
+  }
+}

@@ -11,6 +11,14 @@ export interface NotificationItem {
   eventCode: string;
   readAt: string | null;
   createdAt: string;
+  /**
+   * Deep-link targets (spec §8.6). Declared non-optional per the backend
+   * contract, but every reader treats an absent field the same as an
+   * explicit null — an older backend simply omits them.
+   */
+  projectId: string | null;
+  groupId: string | null;
+  deliveryProjectId: string | null;
 }
 
 export interface NotificationsResponse {

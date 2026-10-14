@@ -7,7 +7,6 @@ import {
   type ResourceState,
 } from "@/features/groups";
 import {
-  CreateRepositoryDialog,
   HierarchyPageShell,
   LifecycleStatusBadge,
   RepositoryTable,
@@ -20,7 +19,13 @@ import {
   SectionHeader,
 } from "@/features/groups/workspace";
 
+import { ProjectQaWorkspace } from "@/features/checklists/requirements";
+
 import { useDeliveryProjectViewModel } from "../view-models/use-delivery-project-view-model";
+import { useProjectMembersViewModel } from "../view-models/use-project-members-view-model";
+import type { AppRole } from "@/shared/api/contracts";
+import { CreateRepositoryDialog } from "./create-repository-dialog";
+import { ProjectMembersPanel } from "./project-members-panel";
 import { groupDisplayName } from "../../model/groups-rules";
 
 function HierarchyNotReady({
@@ -87,12 +92,22 @@ function DeliveryProjectRepositories({
       emptyTitle="No repositories yet"
       emptyMessage={
         canManage
-          ? "Create a repository to provision a GitHub repo and start assigning members."
+          ? "Add a repository to provision a GitHub repo with its pipeline and hosting."
           : "You don't have access to any repositories in this delivery project yet."
       }
       emptyAction={createButton}
     />
   );
+}
+
+/** Leads and admins manage who works on the Project; nobody else sees it. */
+function ProjectMembersSection({
+  groupId,
+  deliveryProjectId,
+  appRole,
+}: Readonly<{ groupId: string; deliveryProjectId: string; appRole: AppRole | null }>) {
+  const vm = useProjectMembersViewModel({ groupId, deliveryProjectId, appRole });
+  return <ProjectMembersPanel vm={vm} />;
 }
 
 function DeliveryProjectDetail({
@@ -114,13 +129,13 @@ function DeliveryProjectDetail({
   }
 
   const project = vm.project;
-  const createButton = vm.canManage ? (
+  const createButton = vm.canCreateRepository ? (
     <button
       type="button"
       className="primary-button"
       onClick={() => vm.setDialogOpen(true)}
     >
-      Create repository
+      Add repository
     </button>
   ) : undefined;
 
@@ -149,12 +164,25 @@ function DeliveryProjectDetail({
         groupId={groupId}
         status={vm.repositoriesStatus}
         repositories={vm.repositories}
-        canManage={vm.canManage}
+        canManage={vm.canCreateRepository}
         createButton={createButton}
         onRetry={vm.reloadRepositories}
       />
 
-      {vm.canManage ? (
+      <ProjectMembersSection
+        groupId={groupId}
+        deliveryProjectId={project.id}
+        appRole={vm.appRole}
+      />
+
+      {vm.qaEnabled ? (
+        <>
+          <SectionHeader title="Requirements and QA" />
+          <ProjectQaWorkspace deliveryProjectId={project.id} projectName={project.name} appRole={vm.appRole} />
+        </>
+      ) : null}
+
+      {vm.canCreateRepository ? (
         <CreateRepositoryDialog
           open={vm.dialogOpen}
           deliveryProjectId={project.id}

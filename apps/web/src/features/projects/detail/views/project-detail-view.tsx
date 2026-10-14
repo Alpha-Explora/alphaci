@@ -4,7 +4,8 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
 
-import { AppNav } from "@/features/workspace/selection";
+import { AppNav, WorkspaceProvider } from "@/features/workspace/selection";
+import { teamProjectsHref } from "@/features/workflows";
 import { FlowBackground } from "@/shared/layout/flow-background";
 import { PipelineLoader } from "@/shared/layout/pipeline-loader";
 import type { AppRole } from "@/shared/api/contracts";
@@ -20,7 +21,12 @@ import {
   projectRepoFullName,
   routeProjectId,
 } from "../../model/projects-rules";
+import { canManageProjectLifecycle } from "../model/project-detail-tab-rules";
 import { useProjectDetailViewModel } from "../view-models/use-project-detail-view-model";
+import {
+  useProjectFolderViewModel,
+  type ProjectFolderViewModel,
+} from "../view-models/use-project-folder-view-model";
 import { ProjectDangerZone } from "./project-danger-zone";
 
 function ProjectSessionError({
@@ -144,6 +150,8 @@ function ProjectDetailBody({
   enforcedOrg,
   dangerZone,
   appRole,
+  viewerLogin,
+  folder,
   onRetry,
 }: Readonly<{
   guest: boolean;
@@ -157,6 +165,8 @@ function ProjectDetailBody({
   enforcedOrg: string | undefined;
   dangerZone: ReactNode;
   appRole: AppRole | undefined;
+  viewerLogin: string | undefined;
+  folder: ProjectFolderViewModel;
   onRetry: () => void;
 }>) {
   const logoutNotice = logoutMessage ? (
@@ -198,6 +208,8 @@ function ProjectDetailBody({
             external={isExternalRepo(project.repoFullName, enforcedOrg)}
             dangerZone={dangerZone}
             appRole={appRole}
+            viewerLogin={viewerLogin}
+            folder={folder}
           />
         ) : null}
       </div>
@@ -222,6 +234,10 @@ export function ProjectDetailView() {
 
   const guest = isGuest(session);
   const vm = useProjectDetailViewModel({
+    projectId,
+    enabled: isSignedInMember(status, guest),
+  });
+  const folder = useProjectFolderViewModel({
     projectId,
     enabled: isSignedInMember(status, guest),
   });
@@ -267,47 +283,65 @@ export function ProjectDetailView() {
   }
   if (status === "signed-out") return null;
 
-  const dangerZone = (
+  // Danger Zone (disconnect/delete) is admin/lead only — the backend's
+  // `PROJECT_ROLE_FORBIDDEN` allow-list. Built only for a viewer who can use
+  // it: `SettingsDangerZone` renders nothing when this is undefined, so the
+  // control simply does not exist for anyone else, rather than existing and
+  // failing.
+  const dangerZone = canManageProjectLifecycle(session?.appRole) ? (
     <ProjectDangerZone
       vm={vm}
       repoFullName={repoFullName ?? undefined}
       onDelete={() => void handleDeleteProject()}
     />
-  );
+  ) : undefined;
 
+  /*
+   * The header gets its own provider, as the team and studio pages do.
+   * Without one the switcher read the context default — no selection and a
+   * no-op setter — so it named the viewer's first team whatever the
+   * project's, and picking a team did nothing. The project's team is selected
+   * once its overview loads; picking another leaves for that team's Projects.
+   */
   return (
-    <main
-      className="dash-shell"
-      suppressHydrationWarning
-      style={{ overflowX: "hidden" }}
-    >
-      <a href="#main-content" className="skip-link">
-        Skip to main content
-      </a>
-      <FlowBackground />
-      <AppNav
-        guest={guest}
-        session={session}
-        onLogout={() => void handleLogout()}
-        isLoggingOut={isLoggingOut}
-      />
+    <WorkspaceProvider>
+      <main
+        className="dash-shell"
+        suppressHydrationWarning
+        style={{ overflowX: "hidden" }}
+      >
+        <a href="#main-content" className="skip-link">
+          Skip to main content
+        </a>
+        <FlowBackground />
+        <AppNav
+          guest={guest}
+          session={session}
+          onLogout={() => void handleLogout()}
+          isLoggingOut={isLoggingOut}
+          pageWorkspaceId={project?.workspaceId}
+          onWorkspaceSwitch={(workspaceId) => router.push(teamProjectsHref(workspaceId))}
+        />
 
-      <div id="main-content" className="dash-page-content project-page-shell">
-        <div className="project-page-body">
-          <ProjectDetailBody
-            guest={guest}
-            projectId={projectId}
-            loadingOverview={loadingOverview}
-            overviewError={overviewError}
-            logoutMessage={logoutMessage}
-            project={project}
-            enforcedOrg={enforcedOrg}
-            dangerZone={dangerZone}
-            appRole={session?.appRole}
-            onRetry={() => void loadOverview()}
-          />
+        <div id="main-content" className="dash-page-content project-page-shell">
+          <div className="project-page-body">
+            <ProjectDetailBody
+              guest={guest}
+              projectId={projectId}
+              loadingOverview={loadingOverview}
+              overviewError={overviewError}
+              logoutMessage={logoutMessage}
+              project={project}
+              enforcedOrg={enforcedOrg}
+              dangerZone={dangerZone}
+              appRole={session?.appRole}
+              viewerLogin={session?.user.login}
+              folder={folder}
+              onRetry={() => void loadOverview()}
+            />
+          </div>
         </div>
-      </div>
-    </main>
+      </main>
+    </WorkspaceProvider>
   );
 }

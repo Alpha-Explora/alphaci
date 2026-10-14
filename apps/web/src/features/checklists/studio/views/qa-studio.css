@@ -1,22 +1,29 @@
 /* ── Project → QA Studio ─────────────────────────────────────────────────────
-   Toolbar across the top, then the deployed page (~60%) beside the run
-   (~40%). Surfaces follow the project page's graphite ladder (layer-1 cards,
-   border-layer edges) so the tab reads as part of the same product; colour is
-   reserved for state — success / danger / warning / brand — and nothing else.
-   Tokens only; the light theme re-tints through tokens.css.
+   Toolbar across the top, then the deployed page beside the run: wide preview
+   (the page takes most of the width) or split (half each). Surfaces follow
+   the project page's graphite ladder (layer-1 cards, border-layer edges) so
+   the tab reads as part of the same product; colour is reserved for state —
+   success / danger / warning / brand — and nothing else. Tokens only; the
+   light theme re-tints through tokens.css.
    ------------------------------------------------------------------------- */
 
 .qa-studio {
   --qa-pane-height: clamp(32rem, calc(100dvh - 8rem), 54rem);
+  /* The docked columns: wide preview by default (see Panes). */
+  --qa-pane-columns: minmax(0, 1fr) min(26rem, 40%);
 
   display: grid;
+  /* One column that may shrink below its content: with the implicit auto
+     track the panes' min-content (the toolbar, the device) set the studio's
+     width and pushed it past a phone's screen. */
+  grid-template-columns: minmax(0, 1fr);
   gap: 1rem;
   min-width: 0;
 }
 
 /* The global ghost button draws a transparent border; give it an edge here. */
 .qa-studio .ghost-button {
-  border-color: var(--border-strong);
+  border-color: var(--border-control);
 }
 
 .qa-glyph {
@@ -41,20 +48,6 @@
   min-width: 0;
 }
 
-.qa-toolbar__row--address {
-  flex-wrap: nowrap;
-  padding-top: 0.55rem;
-  border-top: 1px solid var(--border);
-}
-
-.qa-toolbar__env {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  flex: 0 1 auto;
-  min-width: 0;
-}
-
 .qa-toolbar__label {
   font-size: 0.66rem;
   font-weight: 700;
@@ -72,9 +65,58 @@
   font-size: 0.82rem;
 }
 
+/* The frame's actions close the row on the right; a row too narrow for them wraps
+   them onto their own line, still right-aligned. */
 .qa-toolbar__actions {
   display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
   gap: 0.35rem;
+  margin-left: auto;
+}
+
+/* Full screen (and a studio with no tab row to host it): a slim bar atop the
+   studio, so Exit full screen and the rest stay in reach. */
+.qa-toolbar[data-placement="studio"] {
+  padding: 0.4rem 0.6rem;
+}
+
+/* Docked, the controls sit in the project page's tab row: no box of their
+   own, sized to the tabs (about 1.9rem), and the actions straight after the
+   size controls — the tabs, not the row's end, are on their right. */
+.qa-toolbar[data-placement="tab-row"] {
+  display: block;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.qa-toolbar[data-placement="tab-row"] .qa-toolbar__row {
+  gap: 0.4rem;
+}
+
+.qa-toolbar[data-placement="tab-row"] .qa-toolbar__actions {
+  gap: 0.3rem;
+  margin-left: 0;
+}
+
+.qa-toolbar[data-placement="tab-row"] .qa-toolbar__select {
+  padding-block: 0.28rem;
+}
+
+.qa-toolbar[data-placement="tab-row"] .qa-device-switch__option {
+  min-height: 1.65rem;
+}
+
+.qa-toolbar[data-placement="tab-row"] .qa-icon-button {
+  width: 2rem;
+  height: 2rem;
+}
+
+.qa-toolbar[data-placement="tab-row"] .qa-layout-switch__option {
+  height: 1.65rem;
 }
 
 .qa-toolbar__error {
@@ -90,12 +132,14 @@
   background: var(--bg-soft);
 }
 
+/* Icon-only: the class name is the accessible name and the tooltip. */
 .qa-device-switch__option {
   display: inline-flex;
   align-items: center;
-  gap: 0.35rem;
+  justify-content: center;
+  min-width: 2rem;
   min-height: 2rem;
-  padding: 0.3rem 0.6rem;
+  padding: 0.3rem 0.5rem;
   border: 0;
   border-radius: 0.45rem;
   background: transparent;
@@ -117,70 +161,91 @@
   box-shadow: var(--shadow-soft);
 }
 
-.qa-device-switch__px {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  font-size: 0.66rem;
-  font-weight: 500;
+/* Resolution: a compact select for the class's sizes, and "Custom…"'s two number fields. */
+.qa-resolution {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  min-width: 0;
+}
+
+.qa-toolbar .qa-resolution__select {
+  max-width: 15rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.qa-resolution__custom {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
   color: var(--text-muted);
 }
 
-/* Route field: "host" + path in one box, like an address bar. */
-.qa-route {
-  display: flex;
-  align-items: center;
-  gap: 0.35rem;
-  flex: 1 1 16rem;
+.qa-resolution .qa-resolution__input {
+  width: 4.6rem;
   min-width: 0;
-}
-
-.qa-route__box {
-  display: flex;
-  align-items: center;
-  flex: 1 1 auto;
-  min-width: 0;
+  padding: 0.4rem 0.45rem;
   border: 1px solid var(--border-strong);
   border-radius: 0.55rem;
   background: var(--bg-soft);
+  color: var(--text-primary);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.8rem;
   transition: border-color 0.16s ease, box-shadow 0.16s ease;
 }
 
-.qa-route__box:focus-within {
+.qa-resolution .qa-resolution__input:focus {
   border-color: var(--accent-indigo);
   box-shadow: 0 0 0 3px var(--accent-indigo-light);
+  outline: none;
 }
 
-.qa-route__box--invalid,
-.qa-route__box--invalid:focus-within {
+.qa-resolution .qa-resolution__input--invalid,
+.qa-resolution .qa-resolution__input--invalid:focus {
   border-color: var(--danger);
 }
 
-.qa-route__host {
-  flex-shrink: 1;
+.qa-resolution__error {
+  flex-basis: 100%;
+}
+
+/* Layout switch: the device switch's segmented look, icon-only, at the
+   address row's button height. A fieldset, so its own defaults are reset. */
+.qa-layout-switch {
+  display: inline-flex;
+  flex-shrink: 0;
   min-width: 0;
-  max-width: 60%;
-  padding-left: 0.65rem;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  font-size: 0.76rem;
-  color: var(--text-muted);
+  margin: 0;
+  padding: 0.15rem;
+  border: 1px solid var(--border-strong);
+  border-radius: 0.55rem;
+  background: var(--bg-soft);
 }
 
-.qa-route .qa-route__input {
-  flex: 1 1 6rem;
-  min-width: 4rem;
-  max-width: none;
-  padding: 0.42rem 0.6rem 0.42rem 0.1rem;
+.qa-layout-switch__option {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.85rem;
+  height: 1.8rem;
+  padding: 0;
   border: 0;
+  border-radius: 0.4rem;
   background: transparent;
-  box-shadow: none;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  font-size: 0.82rem;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: background 0.16s ease, color 0.16s ease;
 }
 
-.qa-route .qa-route__input:focus {
-  box-shadow: none;
+.qa-layout-switch__option:hover {
+  color: var(--text-primary);
+}
+
+.qa-layout-switch__option[aria-pressed="true"] {
+  background: var(--layer-2);
+  color: var(--text-primary);
+  box-shadow: var(--shadow-soft);
 }
 
 .qa-icon-button {
@@ -212,57 +277,59 @@
   cursor: not-allowed;
 }
 
-/* Commit chip. */
-.qa-commit {
-  display: inline-flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.4rem;
-  margin-left: auto;
-  min-width: 0;
-}
-
-.qa-commit__ref {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  padding: 0.28rem 0.55rem;
-  border: 1px solid var(--border-strong);
-  border-radius: var(--radius-pill);
-  background: var(--bg-soft);
-  color: var(--text-secondary);
-}
-
-.qa-commit__ref code {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  font-size: 0.76rem;
-  color: var(--text-primary);
-}
-
-.qa-commit__source {
+/* Shown only when the commit under test is the branch head, not what is deployed. */
+.qa-commit-warning {
   display: inline-flex;
   align-items: center;
   gap: 0.3rem;
-  font-size: 0.74rem;
-  font-weight: 600;
-}
-
-.qa-commit__source--deployment {
-  color: var(--success);
-}
-
-.qa-commit__source--branch_head {
   padding: 0.22rem 0.55rem;
   border: 1px solid var(--border-amber);
   border-radius: var(--radius-pill);
   background: var(--accent-amber-light);
   color: var(--warning);
+  font-size: 0.74rem;
+  font-weight: 600;
 }
 
-/* ── Panes ───────────────────────────────────────────────────────────────── */
+/* Copy link: the icon swap is the sighted confirmation, and it is coloured too. */
+.qa-icon-button[data-status="copied"] {
+  border-color: var(--success);
+  color: var(--success);
+}
+
+.qa-icon-button[data-status="failed"] {
+  border-color: var(--border-amber);
+  color: var(--warning);
+}
+
+.qa-icon-button[aria-pressed="true"] {
+  border-color: var(--border-brand);
+  background: var(--brand-light);
+  color: var(--brand);
+}
+
+.qa-preview__device {
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Panes ───────────────────────────────────────────────────────────────────
+   Docked, `data-layout` picks the columns through one custom property, so the
+   full-screen and narrow-screen rules below still override the grid itself.
+   Wide (the default) gives the page everything the checklist does not need:
+   the column stops at 26rem, a little under the floating drawer's 28rem,
+   where the tab bar (tabs and the readiness chip) and the automation rows
+   still sit on one line. The old fixed share (3fr/2fr) kept growing the checklist with the
+   screen and drew a 1440px desktop at about half size. Capped at 40%, a
+   narrow window is never worse off than that share was. Split halves the
+   width, for writing detailed notes or reading automation results. Below
+   1100px the panes stack. */
+.qa-studio[data-layout="split"] {
+  --qa-pane-columns: minmax(0, 1fr) minmax(0, 1fr);
+}
+
 .qa-studio__panes {
   display: grid;
-  grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+  grid-template-columns: var(--qa-pane-columns);
   gap: 1rem;
   align-items: start;
 }
@@ -281,14 +348,59 @@
   height: auto;
 }
 
+/* The run column is ONE container sharing the pane's height: the tab bar on
+   top (Checklist | Playwright, the "Ready for production" chip, Merge to
+   main), then the selected tab's panel, which takes the rest. Docked it is
+   drawn as one card and the run card inside is flattened into it. Overflow
+   stays visible on the container itself: the Export menu and the chip's
+   popover must never be clipped. */
 .qa-studio__run {
-  min-width: 0;
-}
-
-.qa-studio__run > .qa-run-card {
   display: flex;
   flex-direction: column;
+  min-width: 0;
   max-height: var(--qa-pane-height);
+  border: 1px solid var(--border-layer);
+  border-radius: 0.9rem;
+  background: var(--layer-1);
+  box-shadow: var(--shadow-soft);
+}
+
+/* The selected tab's panel takes what the tab bar leaves. */
+.qa-colpanel {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.qa-colpanel[hidden] {
+  display: none;
+}
+
+/* The Playwright tab scrolls as one; so does the Checklist tab of a Project
+   run (and PO Studio's acceptance), which has no single item list. */
+.qa-colpanel[data-tab="playwright"],
+.qa-studio__run[data-scroll="column"] > .qa-colpanel {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+}
+
+.qa-colpanel > .qa-run-card {
+  display: flex;
+  flex: 0 1 auto;
+  flex-direction: column;
+  min-height: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.qa-colpanel > .qa-panel-state,
+.qa-colpanel > .qa-skeleton-card {
+  flex-shrink: 0;
+  margin: 0.75rem;
 }
 
 .qa-run-card > .qa-run {
@@ -338,65 +450,298 @@
   font-variant-numeric: tabular-nums;
 }
 
-/* The stage the device sits on: a faint dot grid, so a narrow device reads as
-   an object placed on a surface rather than a page with a missing margin. */
+/* The stage the device sits on: a faint dot grid, so the device reads as an
+   object placed on a surface. The padding is the device's breathing room; the
+   fit rule measures the content box, so it is never counted as screen. */
 .qa-stage {
   position: relative;
-  display: flex;
-  justify-content: center;
+  display: grid;
+  place-items: start center;
   flex: 1 1 auto;
   min-height: 0;
+  padding: 1rem;
   overflow: hidden;
   background-color: var(--bg-soft);
   background-image: radial-gradient(var(--border-strong) 1px, transparent 1px);
   background-size: 18px 18px;
 }
 
-.qa-stage[data-device="tablet"],
-.qa-stage[data-device="mobile"] {
-  padding: 1rem;
-}
-
-.qa-stage[data-device="desktop"] {
-  background-image: none;
-}
-
-/* Lays out at the device's real width, then shrinks to fit the pane. */
+/* ── Device ───────────────────────────────────────────────────────────────
+   One DOM for every device: .qa-device[data-frame][data-orientation] holds the
+   chrome parts and the screen. The box is the screen at its drawn size plus
+   the chrome insets (padding); only the iframe is scaled, so the chrome stays
+   legible and never overlaps the screen. Custom properties come from the
+   model: --qa-screen-w/h (the true viewport), --qa-scale, --qa-chrome-*. */
 .qa-device {
   position: relative;
-  flex-shrink: 0;
-  width: var(--qa-device-width, 100%);
-  height: var(--qa-device-height, 100%);
-  transform: scale(var(--qa-scale, 1));
-  transform-origin: top center;
-  background: var(--bg-base);
+  box-sizing: content-box;
+  width: calc(var(--qa-screen-w) * var(--qa-scale, 1) * 1px);
+  height: calc(var(--qa-screen-h) * var(--qa-scale, 1) * 1px);
+  padding: var(--qa-chrome-top) var(--qa-chrome-right) var(--qa-chrome-bottom) var(--qa-chrome-left);
 }
 
-.qa-stage[data-device="tablet"] .qa-device,
-.qa-stage[data-device="mobile"] .qa-device {
-  border: 1px solid var(--border-strong);
-  border-radius: 1rem;
-  overflow: hidden;
-  box-shadow: var(--shadow-elevated);
-}
-
-.qa-device__frame {
-  display: block;
+.qa-device__screen {
+  position: relative;
   width: 100%;
   height: 100%;
+  overflow: hidden;
+  background: var(--device-screen);
+}
+
+/* The page lays out at the device's real size and is drawn at --qa-scale. */
+.qa-device__frame {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: block;
+  width: calc(var(--qa-screen-w) * 1px);
+  height: calc(var(--qa-screen-h) * 1px);
   border: 0;
-  background: var(--bg-base);
+  background: var(--device-screen);
+  transform: scale(var(--qa-scale, 1));
+  transform-origin: 0 0;
 }
 
 .qa-device__loading {
   position: absolute;
   inset: 0;
+  z-index: 1;
   display: grid;
   place-items: center;
   margin: 0;
+  background: var(--layer-1);
   font-size: 0.8rem;
   color: var(--text-muted);
   pointer-events: none;
+}
+
+/* Every chrome part exists in every frame; each frame shows its own. */
+.qa-device__chrome {
+  display: none;
+  position: absolute;
+}
+
+/* Browser: a window with a top bar — traffic lights, the address, the size. */
+.qa-device[data-frame="browser"] {
+  border-radius: 10px;
+  background: var(--layer-2);
+  box-shadow:
+    0 0 0 1px var(--border-tile),
+    var(--shadow-elevated);
+}
+
+.qa-device[data-frame="browser"] .qa-device__screen {
+  border-radius: 0 0 10px 10px;
+}
+
+.qa-device[data-frame="browser"] .qa-device__bar {
+  top: 0;
+  right: 0;
+  left: 0;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.75rem;
+  height: var(--qa-chrome-top);
+  padding: 0 0.8rem;
+  border-bottom: 1px solid var(--border-layer);
+}
+
+.qa-device__dots {
+  display: inline-flex;
+  gap: 0.4rem;
+}
+
+.qa-device__dots > span {
+  width: 0.62rem;
+  height: 0.62rem;
+  border-radius: 50%;
+  background: var(--border-tile);
+}
+
+.qa-device__dots > span:nth-child(1) {
+  background: var(--danger);
+}
+
+.qa-device__dots > span:nth-child(2) {
+  background: var(--warning);
+}
+
+.qa-device__dots > span:nth-child(3) {
+  background: var(--success);
+}
+
+.qa-device__address {
+  justify-self: center;
+  min-width: 0;
+  max-width: min(30rem, 100%);
+  padding: 0.22rem 0.9rem;
+  overflow: hidden;
+  border: 1px solid var(--border-layer);
+  border-radius: var(--radius-pill);
+  background: var(--bg-soft);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.72rem;
+  color: var(--text-secondary);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.qa-device__size {
+  justify-self: end;
+  padding: 0.12rem 0.45rem;
+  border: 1px solid var(--border-layer);
+  border-radius: 0.35rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.68rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+/* Tablet and phone: a dark chassis, whichever theme — hardware is dark. */
+.qa-device[data-frame="tablet"],
+.qa-device[data-frame="phone"] {
+  background: var(--device-chassis);
+  box-shadow:
+    0 0 0 1px var(--device-chassis-rim),
+    inset 0 0 0 3px var(--device-bezel),
+    var(--shadow-elevated);
+}
+
+.qa-device[data-frame="tablet"] {
+  border-radius: 30px;
+}
+
+.qa-device[data-frame="tablet"] .qa-device__screen {
+  border-radius: 8px;
+}
+
+/* Front camera, centred in the top bezel. */
+.qa-device[data-frame="tablet"] .qa-device__sensor {
+  display: block;
+  top: calc(var(--qa-chrome-top) / 2 - 4px);
+  left: calc(50% - 4px);
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--device-lens);
+  box-shadow: 0 0 0 2px var(--device-sensor);
+}
+
+/* Home bar, centred in the bottom bezel. */
+.qa-device[data-frame="tablet"] .qa-device__home {
+  display: block;
+  bottom: calc(var(--qa-chrome-bottom) / 2 - 2px);
+  left: calc(50% - 36px);
+  width: 72px;
+  height: 4px;
+  border-radius: var(--radius-pill);
+  background: var(--device-home);
+}
+
+.qa-device[data-frame="phone"] {
+  border-radius: 42px;
+}
+
+.qa-device[data-frame="phone"] .qa-device__screen {
+  border-radius: 16px;
+}
+
+/* The dynamic island lives in the top bezel, above the screen, never on it. */
+.qa-device[data-frame="phone"] .qa-device__sensor {
+  display: block;
+  top: 12px;
+  left: calc(50% - 46px);
+  width: 92px;
+  height: 22px;
+  border-radius: var(--radius-pill);
+  background:
+    radial-gradient(circle at calc(100% - 13px) 50%, var(--device-lens) 0 3.5px, transparent 4.5px),
+    var(--device-sensor);
+}
+
+.qa-device[data-frame="phone"] .qa-device__home {
+  display: block;
+  bottom: 11px;
+  left: calc(50% - 55px);
+  width: 110px;
+  height: 5px;
+  border-radius: var(--radius-pill);
+  background: var(--device-home);
+}
+
+/* Side buttons, past the chassis edge: action + volume on one side, power on the other. */
+.qa-device[data-frame="phone"] .qa-device__buttons {
+  display: block;
+}
+
+.qa-device[data-frame="phone"] .qa-device__buttons--start {
+  top: 96px;
+  left: -3px;
+  width: 3px;
+  height: 150px;
+  border-radius: 2px 0 0 2px;
+  background: linear-gradient(
+    var(--device-button) 0 26px,
+    transparent 26px 42px,
+    var(--device-button) 42px 94px,
+    transparent 94px 104px,
+    var(--device-button) 104px 150px
+  );
+}
+
+.qa-device[data-frame="phone"] .qa-device__buttons--end {
+  top: 140px;
+  right: -3px;
+  width: 3px;
+  height: 84px;
+  border-radius: 0 2px 2px 0;
+  background: var(--device-button);
+}
+
+/* Landscape: the same chassis turned a quarter — island left, chin right,
+   the buttons along the bottom and top edges. */
+.qa-device[data-frame="phone"][data-orientation="landscape"] .qa-device__sensor {
+  top: calc(50% - 46px);
+  left: 12px;
+  width: 22px;
+  height: 92px;
+  background:
+    radial-gradient(circle at 50% 13px, var(--device-lens) 0 3.5px, transparent 4.5px),
+    var(--device-sensor);
+}
+
+.qa-device[data-frame="phone"][data-orientation="landscape"] .qa-device__home {
+  inset: calc(50% - 55px) 11px auto auto;
+  width: 5px;
+  height: 110px;
+}
+
+.qa-device[data-frame="phone"][data-orientation="landscape"] .qa-device__buttons--start {
+  top: auto;
+  bottom: -3px;
+  left: 96px;
+  width: 150px;
+  height: 3px;
+  border-radius: 0 0 2px 2px;
+  background: linear-gradient(
+    to right,
+    var(--device-button) 0 26px,
+    transparent 26px 42px,
+    var(--device-button) 42px 94px,
+    transparent 94px 104px,
+    var(--device-button) 104px 150px
+  );
+}
+
+.qa-device[data-frame="phone"][data-orientation="landscape"] .qa-device__buttons--end {
+  top: -3px;
+  right: auto;
+  left: 140px;
+  width: 84px;
+  height: 3px;
+  border-radius: 2px 2px 0 0;
 }
 
 .qa-stage--empty {
@@ -1067,6 +1412,14 @@
   white-space: pre-line;
 }
 
+/* The reopen confirmation's second line, under what reopening costs. */
+.qa-reopen-confirm__note {
+  margin: 0 0 0.85rem;
+  font-size: 0.78rem;
+  line-height: 1.5;
+  color: var(--text-muted);
+}
+
 /* ── Signoff dialog ──────────────────────────────────────────────────────── */
 .qa-verdicts {
   display: grid;
@@ -1146,26 +1499,302 @@
   margin-top: -0.4rem;
 }
 
+/* ── Full screen ─────────────────────────────────────────────────────────────
+   The same tree, re-laid out: the studio covers the viewport (above the
+   header at 110 and the rail at 100, below dialogs at 400) and the run column
+   becomes a floating drawer. Nothing up the tree may carry a transform,
+   filter or backdrop-filter, or `position: fixed` would stop meaning "the
+   viewport" — and nothing here adds one. */
+.qa-studio[data-full-screen="true"] {
+  position: fixed;
+  inset: 0;
+  z-index: 120;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 0.75rem;
+  padding: 0.75rem;
+  background: var(--bg-base);
+  overscroll-behavior: contain;
+}
+
+.qa-studio[data-full-screen="true"] .qa-studio__panes {
+  grid-template-columns: minmax(0, 1fr);
+  align-items: stretch;
+  min-height: 0;
+}
+
+.qa-studio[data-full-screen="true"] .qa-studio__preview,
+.qa-studio[data-full-screen="true"] .qa-studio__preview[data-framed="false"] {
+  height: 100%;
+  min-height: 0;
+}
+
+.qa-studio[data-full-screen="true"] .qa-stage {
+  place-items: center;
+  padding: 1.25rem;
+}
+
+/* The floating drawer: ONE run column, moved. A solid surface — no
+   backdrop-filter and no transform, either of which would make it the
+   containing block for the Sign-off dialog's fixed backdrop and trap the
+   dialog inside it. Overflow stays visible so the Export menu is never
+   clipped; only the item list scrolls. */
+.qa-studio[data-full-screen="true"] .qa-studio__run {
+  position: fixed;
+  right: 1rem;
+  bottom: 1rem;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  width: min(28rem, 92vw);
+  max-height: calc(100dvh - 6.5rem);
+  border: 1px solid var(--border-tile);
+  border-radius: 1rem;
+  background: var(--layer-1);
+  box-shadow: var(--shadow-hard);
+  animation: qa-drawer-in 160ms ease-out;
+}
+
+.qa-studio[data-full-screen="true"][data-side="left"] .qa-studio__run {
+  right: auto;
+  left: 1rem;
+}
+
+/* Minimized: hidden, still mounted — drafts, dialogs and polling carry on. */
+.qa-studio[data-checklist="minimized"] .qa-studio__run {
+  display: none;
+}
+
+.qa-studio[data-full-screen="true"] .qa-colpanel > .qa-run-card {
+  flex: 1 1 auto;
+  gap: 0.7rem;
+  padding: 0.75rem 1rem 0.9rem;
+}
+
+.qa-studio[data-full-screen="true"] .qa-run-card__head {
+  padding-bottom: 0.65rem;
+}
+
+.qa-studio[data-full-screen="true"] .qa-colpanel > .qa-panel-state,
+.qa-studio[data-full-screen="true"] .qa-colpanel > .qa-skeleton-card {
+  margin: 0.85rem 1rem 1rem;
+}
+
+/* A Project run's Checklist tab (and PO Studio's acceptance) is many
+   requirement groups, notices and a sign-off banner with no single list to
+   scroll, so its panel scrolls as one (above) and nothing inside is capped.
+   The Export menu belongs to the repository run, which keeps the item-list
+   scrolling; the sign-off dialog is fixed to the viewport (no transform or
+   filter up the tree), so a scrolling panel clips neither. */
+.qa-studio[data-studio] .qa-studio__run[data-scroll="column"] > .qa-colpanel > .qa-run-card {
+  flex: 0 0 auto;
+  max-height: none;
+}
+
+@keyframes qa-drawer-in {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+.qa-drawer__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.55rem 0.55rem 0.55rem 0.95rem;
+  border-bottom: 1px solid var(--border);
+  border-radius: 1rem 1rem 0 0;
+  background: var(--layer-2);
+}
+
+.qa-drawer__heading {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+  color: var(--brand);
+}
+
+.qa-studio .qa-drawer__title {
+  margin: 0;
+  font-size: 0.86rem;
+  font-weight: 700;
+  letter-spacing: 0;
+  color: var(--text-primary);
+  white-space: nowrap;
+}
+
+.qa-drawer__title:focus {
+  outline: none;
+}
+
+.qa-drawer__title:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 3px;
+  border-radius: 0.25rem;
+}
+
+.qa-drawer__progress {
+  padding: 0.1rem 0.5rem;
+  border: 1px solid var(--border-layer);
+  border-radius: var(--radius-pill);
+  background: var(--bg-soft);
+  font-size: 0.72rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.qa-drawer__actions {
+  display: flex;
+  flex-shrink: 0;
+  gap: 0.2rem;
+}
+
+.qa-drawer__button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border: 1px solid transparent;
+  border-radius: 0.5rem;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition:
+    color 0.16s ease,
+    background-color 0.16s ease,
+    border-color 0.16s ease;
+}
+
+.qa-drawer__button:hover {
+  border-color: var(--border-tile);
+  background: var(--layer-2-hover);
+  color: var(--text-primary);
+}
+
+.qa-drawer__button:focus-visible,
+.qa-launcher:focus-visible,
+.qa-icon-button:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
+/* The launcher: brings a minimized drawer back from the same corner. */
+.qa-launcher {
+  position: fixed;
+  right: 1rem;
+  bottom: 1rem;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  min-height: 2.75rem;
+  padding: 0.5rem 0.95rem 0.5rem 0.85rem;
+  border: 1px solid var(--border-tile);
+  border-radius: var(--radius-pill);
+  background: var(--layer-1);
+  color: var(--text-primary);
+  box-shadow: var(--shadow-card);
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 650;
+  cursor: pointer;
+  animation: qa-drawer-in 160ms ease-out;
+  transition:
+    border-color 0.16s ease,
+    background-color 0.16s ease;
+}
+
+.qa-studio[data-side="left"] .qa-launcher {
+  right: auto;
+  left: 1rem;
+}
+
+.qa-launcher:hover {
+  border-color: var(--border-brand);
+  background: var(--layer-1-hover);
+}
+
+.qa-launcher > .qa-glyph {
+  color: var(--brand);
+}
+
+.qa-launcher__text {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.qa-launcher__dot {
+  width: 0.55rem;
+  height: 0.55rem;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--text-muted);
+  box-shadow: 0 0 0 3px var(--bg-soft);
+}
+
+.qa-launcher__dot[data-tone="passed"] {
+  background: var(--success);
+}
+
+.qa-launcher__dot[data-tone="failed"] {
+  background: var(--danger);
+}
+
+.qa-launcher__dot[data-tone="running"] {
+  background: var(--brand);
+  animation: qa-dot-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes qa-dot-pulse {
+  50% {
+    opacity: 0.35;
+  }
+}
+
+/* Narrower full screen: the toolbar row wraps to two lines, so the drawer starts
+   lower. (Wide, it is one row and the base 6.5rem top edge clears it.) */
+@media (max-width: 1199px) {
+  .qa-studio[data-full-screen="true"] .qa-studio__run {
+    max-height: calc(100dvh - 10.5rem);
+  }
+}
+
 /* ── Narrow screens ──────────────────────────────────────────────────────── */
 @media (max-width: 1100px) {
   .qa-studio__panes {
     grid-template-columns: minmax(0, 1fr);
   }
 
+  /* Stacked panes have no width to share: the layout choice does nothing. */
+  .qa-layout-switch {
+    display: none;
+  }
+
   .qa-studio__preview {
     height: 32rem;
   }
 
-  .qa-studio__run > .qa-run-card {
+  .qa-studio__run,
+  .qa-colpanel > .qa-run-card {
     max-height: none;
+  }
+
+  .qa-colpanel[data-tab="playwright"],
+  .qa-studio__run[data-scroll="column"] > .qa-colpanel {
+    overflow-y: visible;
   }
 
   .qa-run > .qa-run__items {
     overflow-y: visible;
-  }
-
-  .qa-commit {
-    margin-left: 0;
   }
 }
 
@@ -1174,40 +1803,42 @@
     height: 28rem;
   }
 
-  .qa-toolbar__env {
+  .qa-toolbar .qa-toolbar__env {
     flex: 1 1 100%;
+    max-width: none;
   }
 
-  .qa-toolbar__env .qa-toolbar__select {
+  /* The icon switch keeps its size; the resolution takes the rest of its
+     line, and the actions wrap under them: two lines, not three. */
+  .qa-resolution {
+    flex: 1 1 9rem;
+  }
+
+  .qa-toolbar .qa-resolution__select {
     flex: 1 1 auto;
+    max-width: none;
   }
 
-  /* The pixel widths are in the tooltip; the labels carry the choice. */
-  .qa-device-switch__px {
+  .qa-device__size {
     display: none;
   }
 
-  .qa-device-switch {
-    flex: 1 1 100%;
+  .qa-stage {
+    padding: 0.75rem;
   }
 
-  .qa-device-switch__option {
-    flex: 1 1 0;
-    justify-content: center;
-    padding-inline: 0.4rem;
+  .qa-studio[data-full-screen="true"] {
+    padding: 0.5rem;
   }
 
-  /* The environment picker already names where; the path gets the width. */
-  .qa-route__host {
-    display: none;
+  .qa-studio[data-full-screen="true"] .qa-studio__run {
+    right: 4vw;
+    bottom: 0.75rem;
+    max-height: 62dvh;
   }
 
-  .qa-route .qa-route__input {
-    padding-left: 0.6rem;
-  }
-
-  .qa-route {
-    flex-basis: 100%;
+  .qa-studio[data-full-screen="true"][data-side="left"] .qa-studio__run {
+    left: 4vw;
   }
 
   .qa-run-item {
@@ -1242,7 +1873,15 @@
   .qa-device-switch__option,
   .qa-icon-button,
   .qa-run-item,
-  .qa-verdict {
+  .qa-verdict,
+  .qa-drawer__button,
+  .qa-launcher {
     transition: none;
+  }
+
+  .qa-studio[data-full-screen="true"] .qa-studio__run,
+  .qa-launcher,
+  .qa-launcher__dot[data-tone="running"] {
+    animation: none;
   }
 }

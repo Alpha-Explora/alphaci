@@ -36,11 +36,19 @@
 }
 
 /* ── The rail ────────────────────────────────────────────────────────────────
-   Closed at 64px, revealed to 240px on hover or keyboard focus. `overflow:
-   hidden` is load-bearing, not tidying: the labels are opacity-0 rather than
-   display:none, so they still lay out ~200px wide inside a 64px column and
-   would raise a horizontal scrollbar along the rail's foot. Clipping is also
-   what makes the closed state read as a reveal rather than as truncation. */
+   Closed at --sidebar-collapsed, revealed to --sidebar-open on hover or
+   keyboard focus, painting over the page. Pinned (the header's toggle sets
+   html[data-sidebar-pinned]), --sidebar-width IS the open width: the rail
+   stays open and .dash-shell's gutter grows with it, so the page moves aside
+   instead of sitting under it. `overflow: hidden` is load-bearing, not
+   tidying: the labels are opacity-0 rather than display:none, so they still
+   lay out ~200px wide inside the closed column and would raise a horizontal
+   scrollbar along the rail's foot. Clipping is also what makes the closed
+   state read as a reveal rather than as truncation. */
+html[data-sidebar-pinned="true"] {
+  --sidebar-width: var(--sidebar-open);
+}
+
 .app-sidebar {
   position: fixed;
   top: 56px;
@@ -211,7 +219,7 @@
    set on keyboard focus. This one is never suppressed. */
 .app-sidebar:has(:focus-visible),
 .app-sidebar:not([data-hover-suppressed="true"]):hover {
-  width: 240px;
+  width: var(--sidebar-open);
   box-shadow:
     inset -1px 0 0 rgba(255, 255, 255, 0.06),
     8px 0 48px rgba(0, 0, 0, 0.45);
@@ -219,7 +227,6 @@
 
 /* Everything that only makes sense once there is room to read it. */
 .app-sidebar .sidebar-nav-item-label,
-.app-sidebar .sidebar-section-label,
 .app-sidebar .sidebar-user-info,
 .app-sidebar .sidebar-signout-label,
 .app-sidebar .sidebar-nav-count {
@@ -227,27 +234,28 @@
   transition: opacity 0.15s ease-out;
 }
 
+html[data-sidebar-pinned="true"] .app-sidebar .sidebar-nav-item-label,
+html[data-sidebar-pinned="true"] .app-sidebar .sidebar-user-info,
+html[data-sidebar-pinned="true"] .app-sidebar .sidebar-signout-label,
+html[data-sidebar-pinned="true"] .app-sidebar .sidebar-nav-count,
 .app-sidebar:has(:focus-visible) .sidebar-nav-item-label,
-.app-sidebar:has(:focus-visible) .sidebar-section-label,
 .app-sidebar:has(:focus-visible) .sidebar-user-info,
 .app-sidebar:has(:focus-visible) .sidebar-signout-label,
 .app-sidebar:has(:focus-visible) .sidebar-nav-count,
 .app-sidebar:not([data-hover-suppressed="true"]):hover .sidebar-nav-item-label,
-.app-sidebar:not([data-hover-suppressed="true"]):hover .sidebar-section-label,
 .app-sidebar:not([data-hover-suppressed="true"]):hover .sidebar-user-info,
 .app-sidebar:not([data-hover-suppressed="true"]):hover .sidebar-signout-label,
 .app-sidebar:not([data-hover-suppressed="true"]):hover .sidebar-nav-count {
   opacity: 1;
 }
 
-/* Section headings: a hairline while closed, the words once open. Both are in
-   the DOM so the rail never re-flows mid-transition. */
+/* Between groups: a hairline, the same open or closed. */
 .sidebar-section {
   position: relative;
   display: flex;
   align-items: center;
-  height: 1.9rem;
-  margin: 0.65rem 0 0.15rem;
+  height: 1rem;
+  margin: 0.35rem 0;
   padding: 0 0.65rem;
 }
 
@@ -257,19 +265,41 @@
   right: 0.9rem;
   height: 1px;
   background: var(--border);
-  transition: opacity 0.15s ease-out;
 }
 
-.app-sidebar:has(:focus-visible) .sidebar-section-divider,
-.app-sidebar:not([data-hover-suppressed="true"]):hover .sidebar-section-divider {
-  opacity: 0;
+/* ── Pin toggle: the rail's first row ──────────────────────────────────────
+   A nav item in all but element: same padding, the icon in the same box, so it
+   sits on the closed rail's midline and gains its label as the rail opens. */
+.sidebar-toggle-row {
+  flex-shrink: 0;
+  padding: 0.75rem 0.5rem 0;
 }
 
-/* Unread: a dot that survives 64px, swapped for the real count once open. */
+.sidebar-toggle-row + .sidebar-nav {
+  padding-top: 0;
+}
+
+.app-sidebar .app-sidebar-toggle {
+  border: 0;
+  background: transparent;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.app-sidebar .app-sidebar-toggle[aria-pressed="true"] {
+  color: var(--brand);
+}
+
+/* Unread: a dot that survives the closed rail, swapped for the real count
+   once open. On the icon's top-right corner: the icon box centres the glyph at
+   half its width, and the glyph is 16px, so +5px is just inside its edge.
+   It must stay inside the nav item, which clips (overflow: hidden) and is only
+   as wide as the icon box while the rail is closed. */
 .sidebar-nav-dot {
   position: absolute;
-  top: 6px;
-  left: 38px;
+  top: 5px;
+  left: calc((var(--sidebar-collapsed) - 1rem) / 2 + 5px);
   width: 7px;
   height: 7px;
   border-radius: 50%;
@@ -278,6 +308,7 @@
   transition: opacity 0.15s ease-out;
 }
 
+html[data-sidebar-pinned="true"] .app-sidebar .sidebar-nav-dot,
 .app-sidebar:has(:focus-visible) .sidebar-nav-dot,
 .app-sidebar:not([data-hover-suppressed="true"]):hover .sidebar-nav-dot {
   opacity: 0;
@@ -307,14 +338,14 @@
   padding-left: 0;
 }
 
-/* The icon box spans the rail MINUS .sidebar-nav's 0.5rem side padding, so the
-   glyph centres on the rail's midline (32px) rather than 8px off it — and sits
-   on the same x whether the rail is 64px or 240px, so opening reveals labels
-   instead of sliding every icon sideways. */
+/* The icon box spans the CLOSED rail minus .sidebar-nav's 0.5rem side
+   padding, so the glyph centres on the closed rail's midline rather than 8px
+   off it — and sits on the same x whether the rail is closed, open or pinned,
+   so opening reveals labels instead of sliding every icon sideways. */
 .app-sidebar .sidebar-nav-item-icon {
   display: grid;
   place-items: center;
-  width: calc(var(--sidebar-width) - 1rem);
+  width: calc(var(--sidebar-collapsed) - 1rem);
   flex-shrink: 0;
 }
 
@@ -351,19 +382,6 @@
 
 .sidebar-nav::-webkit-scrollbar {
   display: none;
-}
-
-/* Section label — subtle uppercase divider text */
-.sidebar-section-label {
-  padding: 0.35rem 0.5rem 0.2rem;
-  font-size: 0.65rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  color: var(--text-muted);
-  white-space: nowrap;
-  overflow: hidden;
-  margin-top: 0.25rem;
 }
 
 /* Collapsed: just a thin rule */
@@ -752,6 +770,27 @@
 }
 
 @media (max-width: 768px) {
+  /* No room to pin on a phone: the rail stays closed, the page keeps the
+     width, and the toggle that would do nothing is not offered. */
+  html[data-sidebar-pinned="true"] {
+    --sidebar-width: var(--sidebar-collapsed);
+  }
+
+  .sidebar-toggle-row {
+    display: none;
+  }
+
+  html[data-sidebar-pinned="true"] .app-sidebar .sidebar-nav-item-label,
+  html[data-sidebar-pinned="true"] .app-sidebar .sidebar-user-info,
+  html[data-sidebar-pinned="true"] .app-sidebar .sidebar-signout-label,
+  html[data-sidebar-pinned="true"] .app-sidebar .sidebar-nav-count {
+    opacity: 0;
+  }
+
+  html[data-sidebar-pinned="true"] .app-sidebar .sidebar-nav-dot {
+    opacity: 1;
+  }
+
   .app-sidebar:hover {
     width: var(--sidebar-width);
     box-shadow:

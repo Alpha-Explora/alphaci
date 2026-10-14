@@ -96,14 +96,6 @@ function CiRunActions({ run }: Readonly<{ run: ProjectCiRun }>) {
         justifyContent: "flex-end",
       }}
     >
-      <a
-        className="ghost-button"
-        href={run.htmlUrl}
-        rel="noreferrer"
-        target="_blank"
-      >
-        GitHub run
-      </a>
       <CiRunRerunButton canRerun={run.canRerun} />
     </span>
   );

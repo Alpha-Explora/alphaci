@@ -24,6 +24,7 @@ import {
 const template = (): EnvironmentDraft[] => [...ENVIRONMENT_TEMPLATE];
 
 const payloadInput = {
+  projectName: "Shop",
   repoName: "shop",
   visibility: "private" as const,
   serviceName: "shop",

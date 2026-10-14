@@ -1,0 +1,127 @@
+/*
+ * The "Browser tests" card above the commits on the Pipeline runs tab.
+ * Tokens only, so both themes follow. Quiet by design: it is an offer, and it
+ * sits above the runs someone came to read.
+ */
+
+.pipe-tests {
+  display: grid;
+  gap: 0.45rem;
+  min-width: 0;
+  margin: 0;
+  padding: 0.65rem 0.85rem;
+  border: 1px dashed var(--border-strong);
+  border-radius: 0.6rem;
+  background: var(--bg-soft);
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+}
+
+.pipe-tests--installed {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.4rem 0.75rem;
+  border-style: solid;
+  border-color: var(--border);
+  background: transparent;
+  font-size: 0.74rem;
+  color: var(--text-muted);
+}
+
+.pipe-tests__title {
+  margin: 0;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.pipe-tests__lead,
+.pipe-tests__reason,
+.pipe-tests__done {
+  margin: 0;
+}
+
+.pipe-tests__reason {
+  color: var(--text-muted);
+}
+
+.pipe-tests__done {
+  font-weight: 650;
+  color: var(--success);
+}
+
+.pipe-tests__missing {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pipe-tests__missing li {
+  padding: 0.1rem 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  background: var(--bg-frost);
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.pipe-tests__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem 0.75rem;
+}
+
+.pipe-tests__hint {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
+.pipe-tests .pipe-link {
+  color: var(--brand);
+}
+
+.pipe-tests .pipe-link:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
+.pipe-tests__notes {
+  display: grid;
+  gap: 0.35rem;
+  margin: 0;
+  padding-left: 1.1rem;
+  font-size: 0.74rem;
+}
+
+.pipe-tests__code {
+  max-width: 100%;
+  margin: 0.3rem 0 0;
+  padding: 0.45rem 0.6rem;
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: 0.4rem;
+  background: var(--bg-frost);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.72rem;
+  color: var(--text-primary);
+}
+
+/* "Visual testing is off in this repository's workflow", and what fixes it. */
+.pipe-tests__visual {
+  display: grid;
+  gap: 0.35rem;
+  padding-top: 0.45rem;
+  border-top: 1px solid var(--border);
+}
+
+.pipe-tests__visual-line {
+  margin: 0;
+  font-weight: 650;
+  color: var(--text-primary);
+}

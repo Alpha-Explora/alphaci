@@ -7,6 +7,7 @@ export {
   GROUP_ROLE_LABELS,
   isGlobalCreatorRole,
   isGroupManagerRole,
+  memberRoleLabel,
 } from "@/features/groups/data/hierarchy-contracts";
 
 /** Status-badge variant for a provisioned project on the group projects grid. */

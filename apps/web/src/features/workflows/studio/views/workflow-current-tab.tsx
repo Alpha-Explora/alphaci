@@ -1,29 +1,48 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 
-import { getGroups } from "@/features/groups";
-import type { GroupSummary } from "@/features/groups";
-import type {
-  CreateProjectResult,
-  ProvisionedProject,
-} from "@/shared/api/contracts";
+import type { ReactNode } from "react";
+
+import type { CreateProjectResult } from "@/shared/api/contracts";
 import { WorkflowStageList } from "@/features/projects/detail";
 import { DeploymentProvisioningSummary } from "./setup-result-panel";
 import { FlowExplainer } from "@/features/guide/overview";
-import { GroupWorkspacePanel } from "@/features/teams/detail";
+import {
+  ProjectExplorerHost,
+  type ProjectExplorerSlot,
+} from "@/features/teams/project-folders";
+import { useCapabilities } from "@/features/capabilities/current";
+import {
+  GROUPS_LOAD_ERROR,
+  useCurrentProjectsViewModel,
+} from "../view-models/use-current-projects-view-model";
+import { CreateProjectActions } from "./create-project-menu";
+import "./current-projects.css";
+import { GuideIcon } from "./studio-icons";
 
-interface WorkflowCurrentTabProps {
+interface HeaderActionsProps {
+  /**
+   * A guest's "Create project", which sends them to sign up. Everyone else's
+   * comes from the explorer: the New Project dialog for a Product owner or
+   * admin, nothing for a Developer or QA Team.
+   */
+  onGuestCreate?: () => void;
+  /** Starts the Current Projects tour. Omitted for guests, which hides "Show guide". */
+  onStartGuide?: () => void;
+}
+
+interface WorkflowCurrentTabProps extends HeaderActionsProps {
   latestResult: CreateProjectResult | null;
   loadingProjects: boolean;
   onOpenSetup: () => void;
-  renderGroupCreate: (groupId: string, onComplete: () => void) => React.ReactNode;
-  projects: ProvisionedProject[];
+  /** Product owner or admin: the no-team state asks for a team, then a Project. */
+  canCreateProjects?: boolean;
+  guest?: boolean;
 }
 
-const cardVariants = {
+const pageVariants = {
   hidden: { opacity: 0, y: 12 },
   show: {
     opacity: 1,
@@ -31,23 +50,6 @@ const cardVariants = {
     transition: { type: "spring" as const, stiffness: 280, damping: 22 },
   },
 };
-
-const GROUP_LIST_PAGE_SIZE = 8;
-
-/** One team. Every entry has a group now that the ungrouped bucket is gone. */
-interface GroupListEntry {
-  key: string;
-  name: string;
-  description: string | null;
-  projects: ProvisionedProject[];
-  groupId: string;
-  group: GroupSummary;
-}
-
-function repositoryCountLabel(count: number): string {
-  if (count === 1) return "repository";
-  return "repositories";
-}
 
 function LatestResultBanner({
   latestResult,
@@ -83,23 +85,9 @@ function LatestResultBanner({
         <strong className="latest-result-banner__filename">
           {latestResult.outputFileName}
         </strong>
-        {latestResult.githubCommitUrl ? (
-          <a
-            href={latestResult.githubCommitUrl}
-            target="_blank"
-            rel="noreferrer"
-            className="latest-result-banner__commit-link"
-          >
-            commit:{" "}
-            <span className="latest-result-banner__sha">
-              {latestResult.githubCommitSha.slice(0, 10)}
-            </span>
-          </a>
-        ) : (
-          <code className="latest-result-banner__sha-plain">
-            {latestResult.githubCommitSha.slice(0, 10)}
-          </code>
-        )}
+        <code className="latest-result-banner__sha-plain">
+          {latestResult.githubCommitSha.slice(0, 10)}
+        </code>
       </p>
 
       <WorkflowStageList files={latestResult.workflowFiles} />
@@ -108,30 +96,18 @@ function LatestResultBanner({
       />
 
       <div className="latest-result-banner__actions">
-        <a
+        <Link
           className="latest-result-banner__action-btn latest-result-banner__action-btn--primary"
-          href={latestResult.repoUrl}
-          target="_blank"
-          rel="noreferrer"
+          href={`/projects/${encodeURIComponent(latestResult.id)}`}
         >
-          Open Repository
-        </a>
-        <a
+          Open Project
+        </Link>
+        <Link
           className="latest-result-banner__action-btn"
-          href={`${latestResult.repoUrl}/actions`}
-          target="_blank"
-          rel="noreferrer"
+          href={`/projects/${encodeURIComponent(latestResult.id)}#pipeline`}
         >
-          Open Actions
-        </a>
-        <a
-          className="latest-result-banner__action-btn"
-          href={`${latestResult.repoUrl}/blob/main/${latestResult.workflowPath}`}
-          target="_blank"
-          rel="noreferrer"
-        >
-          View Workflow File
-        </a>
+          Pipeline runs
+        </Link>
       </div>
 
       <p className="latest-result-banner__footer">
@@ -145,9 +121,19 @@ function LatestResultBanner({
   );
 }
 
+/** The no-team line, by role: who creates the first Project. */
+function noTeamLine(canCreateProjects: boolean, guest: boolean): string {
+  if (guest) return "Projects live inside a team. Sign up to create one. ";
+  return canCreateProjects
+    ? "Create a workspace from the picker in the header — a workspace is a team — then create its first Project. "
+    : "Projects are created by Product owners. Once one is added to your team it appears here. ";
+}
+
 function CurrentTabEmptyState({
   onOpenSetup,
-}: Readonly<{ onOpenSetup: () => void }>) {
+  canCreateProjects,
+  guest,
+}: Readonly<{ onOpenSetup: () => void; canCreateProjects: boolean; guest: boolean }>) {
   return (
     <div
       className="glass-panel"
@@ -180,9 +166,8 @@ function CurrentTabEmptyState({
             maxWidth: "32rem",
           }}
         >
-          Create a workspace from the picker in the header — a workspace is
-          a team — then create a repository inside it. ALPHACI
-          provisions the repository and commits a workflow that runs
+          {noTeamLine(canCreateProjects, guest)}
+          ALPHACI provisions the repository and commits a workflow that runs
           through the gated stages below on every change. Open the{" "}
           <Link href="/guide" className="inline-link">
             guide
@@ -202,436 +187,225 @@ function CurrentTabEmptyState({
       >
         <FlowExplainer variant="compact" />
       </div>
-      <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>
-        <button
-          className="ghost-button"
-          type="button"
-          onClick={onOpenSetup}
-          style={{
-            padding: "0.6rem 1.4rem",
-            fontSize: "0.88rem",
-            minHeight: "2.5rem",
-          }}
-        >
-          Create a project
-        </button>
-      </div>
-    </div>
-  );
-}
-
-function GroupListItems({
-  pagedEntries,
-  selectedKey,
-  onSelect,
-}: Readonly<{
-  pagedEntries: GroupListEntry[];
-  selectedKey: string | undefined;
-  onSelect: (key: string) => void;
-}>) {
-  if (pagedEntries.length === 0) {
-    return <p className="project-list-empty">No groups match.</p>;
-  }
-  return (
-    <>
-      {pagedEntries.map((entry) => {
-        const isSelected = selectedKey === entry.key;
-        return (
+      {guest ? (
+        <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>
           <button
-            key={entry.key}
-            className={`project-list-item${isSelected ? " selected" : ""}`}
-            data-project-id={entry.key}
+            className="ghost-button"
             type="button"
-            aria-pressed={isSelected}
-            onClick={() => onSelect(entry.key)}
-          >
-            <span className="project-list-title">{entry.name}</span>
-            <span className="project-list-meta">
-              {entry.projects.length}{" "}
-              {repositoryCountLabel(entry.projects.length)}
-            </span>
-          </button>
-        );
-      })}
-    </>
-  );
-}
-
-function GroupListPagination({
-  filteredCount,
-  currentPage,
-  pageCount,
-  onPrev,
-  onNext,
-}: Readonly<{
-  filteredCount: number;
-  currentPage: number;
-  pageCount: number;
-  onPrev: () => void;
-  onNext: () => void;
-}>) {
-  if (filteredCount === 0) return null;
-  return (
-    <div className="project-list-pagination">
-      <button
-        className="ghost-button"
-        type="button"
-        onClick={onPrev}
-        disabled={currentPage <= 1}
-      >
-        Prev
-      </button>
-      <span className="project-list-pagination-status">
-        Page {currentPage} of {pageCount}
-      </span>
-      <button
-        className="ghost-button"
-        type="button"
-        onClick={onNext}
-        disabled={currentPage >= pageCount}
-      >
-        Next
-      </button>
-    </div>
-  );
-}
-
-function GroupListRail({
-  groupsError,
-  groupListQuery,
-  onQueryChange,
-  pagedEntries,
-  selectedKey,
-  onSelect,
-  filteredCount,
-  currentPage,
-  pageCount,
-  onPrev,
-  onNext,
-}: Readonly<{
-  groupsError: string | null;
-  groupListQuery: string;
-  onQueryChange: (value: string) => void;
-  pagedEntries: GroupListEntry[];
-  selectedKey: string | undefined;
-  onSelect: (key: string) => void;
-  filteredCount: number;
-  currentPage: number;
-  pageCount: number;
-  onPrev: () => void;
-  onNext: () => void;
-}>) {
-  return (
-    <div className="project-list-rail">
-      <aside
-        className="project-list"
-        aria-label="Teams"
-        data-tour="projects-list"
-      >
-        <div className="project-list-body">
-          <>
-            <input
-              className="project-list-search"
-              aria-label="Search groups"
-              type="search"
-              placeholder="Search groups..."
-              value={groupListQuery}
-              onChange={(event) => onQueryChange(event.target.value)}
-            />
-            {groupsError ? (
-              <p className="project-list-empty">{groupsError}</p>
-            ) : null}
-            <GroupListItems
-              pagedEntries={pagedEntries}
-              selectedKey={selectedKey}
-              onSelect={onSelect}
-            />
-            <GroupListPagination
-              filteredCount={filteredCount}
-              currentPage={currentPage}
-              pageCount={pageCount}
-              onPrev={onPrev}
-              onNext={onNext}
-            />
-          </>
-        </div>
-      </aside>
-    </div>
-  );
-}
-
-function groupDescription(entry: GroupListEntry): string {
-  if (entry.description) return entry.description;
-  if (entry.group) return "Projects owned by this group.";
-  return "Projects not owned by any group.";
-}
-
-function SelectedGroupPane({
-  selectedEntry,
-  renderGroupCreate,
-  onDeleted,
-}: Readonly<{
-  selectedEntry: GroupListEntry | null;
-  renderGroupCreate: (groupId: string, onComplete: () => void) => React.ReactNode;
-  onDeleted: (groupId: string) => void;
-}>) {
-  if (!selectedEntry) return null;
-  return (
-    <div className="project-detail-column">
-      <motion.article
-        key={selectedEntry.key}
-        variants={cardVariants}
-        initial="hidden"
-        animate="show"
-        className="project-detail-panel"
-      >
-        <div className="project-detail-header">
-          <div>
-            <h3>{selectedEntry.name}</h3>
-            <p>{groupDescription(selectedEntry)}</p>
-          </div>
-          <span className="project-detail-header-badges">
-            <span className="branch-chip">
-              {selectedEntry.projects.length}{" "}
-              {repositoryCountLabel(selectedEntry.projects.length)}
-            </span>
-          </span>
-        </div>
-        <GroupWorkspacePanel
-          group={selectedEntry.group}
-          projects={selectedEntry.projects}
-          renderCreateProject={(onComplete) =>
-            renderGroupCreate(selectedEntry.group.id, onComplete)
-          }
-          onDeleted={onDeleted}
-        />
-      </motion.article>
-    </div>
-  );
-}
-
-function CurrentTabWorkspace({
-  groupsError,
-  groupListQuery,
-  onQueryChange,
-  pagedEntries,
-  selectedEntry,
-  onSelect,
-  filteredCount,
-  currentPage,
-  pageCount,
-  onPrev,
-  onNext,
-  renderGroupCreate,
-  onDeleted,
-}: Readonly<{
-  groupsError: string | null;
-  groupListQuery: string;
-  onQueryChange: (value: string) => void;
-  pagedEntries: GroupListEntry[];
-  selectedEntry: GroupListEntry | null;
-  onSelect: (key: string) => void;
-  filteredCount: number;
-  currentPage: number;
-  pageCount: number;
-  onPrev: () => void;
-  onNext: () => void;
-  renderGroupCreate: (groupId: string, onComplete: () => void) => React.ReactNode;
-  onDeleted: (groupId: string) => void;
-}>) {
-  return (
-    <div className="project-workspace">
-      <GroupListRail
-        groupsError={groupsError}
-        groupListQuery={groupListQuery}
-        onQueryChange={onQueryChange}
-        pagedEntries={pagedEntries}
-        selectedKey={selectedEntry?.key}
-        onSelect={onSelect}
-        filteredCount={filteredCount}
-        currentPage={currentPage}
-        pageCount={pageCount}
-        onPrev={onPrev}
-        onNext={onNext}
-      />
-      <SelectedGroupPane
-        selectedEntry={selectedEntry}
-        renderGroupCreate={renderGroupCreate}
-        onDeleted={onDeleted}
-      />
-    </div>
-  );
-}
-
-function CurrentTabBody({
-  loading,
-  entries,
-  onOpenSetup,
-  groupsError,
-  groupListQuery,
-  onQueryChange,
-  pagedEntries,
-  selectedEntry,
-  onSelect,
-  filteredCount,
-  currentPage,
-  pageCount,
-  onPrev,
-  onNext,
-  renderGroupCreate,
-  onDeleted,
-}: Readonly<{
-  loading: boolean;
-  entries: GroupListEntry[];
-  onOpenSetup: () => void;
-  groupsError: string | null;
-  groupListQuery: string;
-  onQueryChange: (value: string) => void;
-  pagedEntries: GroupListEntry[];
-  selectedEntry: GroupListEntry | null;
-  onSelect: (key: string) => void;
-  filteredCount: number;
-  currentPage: number;
-  pageCount: number;
-  onPrev: () => void;
-  onNext: () => void;
-  renderGroupCreate: (groupId: string, onComplete: () => void) => React.ReactNode;
-  onDeleted: (groupId: string) => void;
-}>) {
-  if (loading) {
-    return (
-      <div className="repo-grid">
-        {[0, 1, 2].map((i) => (
-          <div
-            key={i}
-            className="skeleton-card glass-panel"
+            onClick={onOpenSetup}
             style={{
-              minHeight: "12rem",
-              background: "rgba(17, 17, 22, 0.3)",
-              animation: "state-pulse 1.5s infinite",
+              padding: "0.6rem 1.4rem",
+              fontSize: "0.88rem",
+              minHeight: "2.5rem",
             }}
-          />
-        ))}
+          >
+            Create a project
+          </button>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+const NO_EXPLORER_ACTIONS: ProjectExplorerSlot["actions"] = {
+  createEmptyProject: null,
+  addRepositoryHref: null,
+};
+
+/**
+ * The page's heading row. Left: "Projects" (the page's one h1) with the
+ * team's Project count. Right: the guide, then the create actions — the
+ * primary "Create project" (the New Project dialog: Product owner, admin)
+ * and, for an admin, the "⋯" menu's Add repository with no Project chosen.
+ * A Developer adds repositories from a Project's card or detail instead.
+ *
+ * No team dropdown: the team is the one selected in the header, and a second
+ * picker here is how the page and the header used to disagree.
+ */
+function CurrentProjectsHeader({
+  count,
+  actions,
+  explorerActions = NO_EXPLORER_ACTIONS,
+}: Readonly<{
+  count: number | null;
+  actions: HeaderActionsProps;
+  explorerActions?: ProjectExplorerSlot["actions"];
+}>) {
+  const { onGuestCreate, onStartGuide } = actions;
+  const create = onGuestCreate ?? explorerActions.createEmptyProject;
+  return (
+    <div className="project-detail-header current-projects-header">
+      <div className="current-projects-heading" data-tour="projects-list">
+        <h1 className="workflow-page-title current-projects-title">
+          Projects
+          {count === null ? null : (
+            <span className="group-section-count" aria-label={`${count} ${count === 1 ? "Project" : "Projects"}`}>
+              {count}
+            </span>
+          )}
+        </h1>
       </div>
+      <div className="current-projects-actions">
+        {onStartGuide ? (
+          <button
+            type="button"
+            className="ghost-button"
+            aria-label="Show guided tour for Current Projects"
+            onClick={onStartGuide}
+          >
+            <GuideIcon />
+            Show guide
+          </button>
+        ) : null}
+        <CreateProjectActions
+          onCreateProject={create}
+          onCreateEmptyProject={null}
+          addRepositoryHref={explorerActions.addRepositoryHref}
+        />
+      </div>
+    </div>
+  );
+}
+
+function GroupsLoadError({ onRetry }: Readonly<{ onRetry: () => void }>) {
+  return (
+    <div className="error-inline" role="alert">
+      <span className="error-inline-icon" aria-hidden="true">⚠</span>
+      <p className="error-inline-msg">{GROUPS_LOAD_ERROR}</p>
+      <button type="button" className="ghost-button" onClick={onRetry}>
+        Retry
+      </button>
+    </div>
+  );
+}
+
+/**
+ * The header team's Projects: the heading (with the count and the create
+ * actions the explorer allows) over the Project cards. Keyed by team, so a
+ * header switch starts the explorer afresh rather than showing one team's
+ * cards under another's count.
+ */
+function TeamProjects({
+  team,
+  linkedFolderId,
+  opensNewProject,
+  actions,
+}: Readonly<{
+  team: { id: string; name: string };
+  linkedFolderId: string | null;
+  opensNewProject: boolean;
+  actions: HeaderActionsProps;
+}>) {
+  const { qaChecklistsEnabled } = useCapabilities();
+  return (
+    <ProjectExplorerHost
+      groupId={team.id}
+      groupName={team.name}
+      qaChecklistsEnabled={qaChecklistsEnabled}
+      initialFolderId={linkedFolderId}
+      openNewProjectOnArrival={opensNewProject}
+    >
+      {(explorer): ReactNode => (
+        <>
+          <CurrentProjectsHeader
+            count={explorer.count}
+            actions={actions}
+            explorerActions={explorer.actions}
+          />
+          <motion.div variants={pageVariants} initial="hidden" animate="show">
+            {explorer.panel}
+          </motion.div>
+        </>
+      )}
+    </ProjectExplorerHost>
+  );
+}
+
+function CurrentTabSkeleton() {
+  return (
+    <div className="repo-grid">
+      {[0, 1, 2].map((i) => (
+        <div
+          key={i}
+          className="skeleton-card glass-panel"
+          style={{
+            minHeight: "12rem",
+            background: "rgba(17, 17, 22, 0.3)",
+            animation: "state-pulse 1.5s infinite",
+          }}
+        />
+      ))}
+    </div>
+  );
+}
+
+function CurrentTabContent({
+  vm,
+  onOpenSetup,
+  actions,
+  canCreateProjects,
+  guest,
+}: Readonly<{
+  vm: ReturnType<typeof useCurrentProjectsViewModel>;
+  onOpenSetup: () => void;
+  actions: HeaderActionsProps;
+  canCreateProjects: boolean;
+  guest: boolean;
+}>) {
+  if (vm.status === "error" || !vm.team) {
+    return (
+      <>
+        <CurrentProjectsHeader count={null} actions={actions} />
+        {vm.status === "error" ? (
+          <GroupsLoadError onRetry={vm.retry} />
+        ) : (
+          <CurrentTabEmptyState
+            onOpenSetup={onOpenSetup}
+            canCreateProjects={canCreateProjects}
+            guest={guest}
+          />
+        )}
+      </>
     );
   }
-  if (entries.length === 0) {
-    return <CurrentTabEmptyState onOpenSetup={onOpenSetup} />;
-  }
   return (
-    <CurrentTabWorkspace
-      groupsError={groupsError}
-      groupListQuery={groupListQuery}
-      onQueryChange={onQueryChange}
-      pagedEntries={pagedEntries}
-      selectedEntry={selectedEntry}
-      onSelect={onSelect}
-      filteredCount={filteredCount}
-      currentPage={currentPage}
-      pageCount={pageCount}
-      onPrev={onPrev}
-      onNext={onNext}
-      renderGroupCreate={renderGroupCreate}
-      onDeleted={onDeleted}
+    <TeamProjects
+      key={vm.team.id}
+      team={vm.team}
+      linkedFolderId={vm.linkedFolderId}
+      opensNewProject={vm.opensNewProject}
+      actions={actions}
     />
   );
 }
 
 /**
- * Current Projects — team-centric split pane. The left rail lists the user's
- * TEAMS; the right pane lists the selected team's repositories. Creating a
- * system in a team provisions its repository, so each repo here is a system of
- * the team. The per-project detail tabs live on the full page (/projects/[id])
- * via ProjectDetailTabs — "Open full page" is the way into them.
+ * Current Projects: the Project cards of the team selected in the header,
+ * straight on the page. Each card opens its Project (Manage opens the detail);
+ * the per-repository detail lives on the full page (/projects/[id]). The
+ * team's members, checklists, activity and settings are pages of their own —
+ * Teams, Checklists, Activity, and the Settings page's Team tab.
  *
- * There is no individual/personal side any more. A workspace IS a team and
- * every project belongs to one, so the old Repositories/Teams toggle addressed
- * a bucket that could never fill — it advertised a capability and then reported
- * that the reader had none of it.
+ * There is no individual/personal side. A workspace IS a team and every project
+ * belongs to one.
  */
 export function WorkflowCurrentTab({
   latestResult,
   loadingProjects,
   onOpenSetup,
-  renderGroupCreate,
-  projects,
+  canCreateProjects = false,
+  guest = false,
+  onGuestCreate,
+  onStartGuide,
 }: Readonly<WorkflowCurrentTabProps>) {
-  const [groups, setGroups] = useState<GroupSummary[] | null>(null);
-  const [groupsError, setGroupsError] = useState<string | null>(null);
-  const [selectedKey, setSelectedKey] = useState<string | null>(null);
-  const [groupListQuery, setGroupListQuery] = useState("");
-  const [groupListPage, setGroupListPage] = useState(1);
-
-  useEffect(() => {
-    let active = true;
-    void getGroups()
-      .then((items) => {
-        if (active) {
-          setGroups(items);
-          setGroupsError(null);
-        }
-      })
-      .catch(() => {
-        if (active) {
-          setGroups([]);
-          setGroupsError("Could not load groups.");
-        }
-      });
-    return () => {
-      active = false;
-    };
-  }, []);
-
-  const entries: GroupListEntry[] = useMemo(() => {
-    const groupList = groups ?? [];
-    const list: GroupListEntry[] = groupList.map((group) => ({
-      key: group.id,
-      name: group.name,
-      description: group.description,
-      projects: projects.filter((project) => project.workspaceId === group.id),
-      groupId: group.id,
-      group,
-    }));
-    return list;
-  }, [groups, projects]);
-
-  const filteredEntries = useMemo(() => {
-    const query = groupListQuery.trim().toLowerCase();
-    if (!query) return entries;
-    return entries.filter((entry) =>
-      entry.name.toLowerCase().includes(query),
-    );
-  }, [entries, groupListQuery]);
-
-  const groupListPageCount = Math.max(
-    1,
-    Math.ceil(filteredEntries.length / GROUP_LIST_PAGE_SIZE),
-  );
-  const currentGroupListPage = Math.min(groupListPage, groupListPageCount);
-  const pagedEntries = useMemo(() => {
-    const start = (currentGroupListPage - 1) * GROUP_LIST_PAGE_SIZE;
-    return filteredEntries.slice(start, start + GROUP_LIST_PAGE_SIZE);
-  }, [filteredEntries, currentGroupListPage]);
-
-  const selectedEntry =
-    entries.find((entry) => entry.key === selectedKey) ?? entries[0] ?? null;
-
-  function handleGroupDeleted(groupId: string) {
-    setGroups((current) =>
-      current ? current.filter((group) => group.id !== groupId) : current,
-    );
-    setSelectedKey((current) => (current === groupId ? null : current));
-  }
-
-  const loading = loadingProjects || groups === null;
+  const vm = useCurrentProjectsViewModel({ loadingProjects });
+  const actions: HeaderActionsProps = { onGuestCreate, onStartGuide };
 
   return (
     <motion.section
       className="tab-content-panel"
       id="workflow-panel-current"
-      role="tabpanel"
-      aria-labelledby="workflow-tab-current"
-      tabIndex={0}
+      aria-label="Current projects"
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
@@ -643,26 +417,22 @@ export function WorkflowCurrentTab({
       }}
     >
       {latestResult ? <LatestResultBanner latestResult={latestResult} /> : null}
-      <CurrentTabBody
-        loading={loading}
-        entries={entries}
-        onOpenSetup={onOpenSetup}
-        groupsError={groupsError}
-        groupListQuery={groupListQuery}
-        onQueryChange={setGroupListQuery}
-        pagedEntries={pagedEntries}
-        selectedEntry={selectedEntry}
-        onSelect={setSelectedKey}
-        filteredCount={filteredEntries.length}
-        currentPage={currentGroupListPage}
-        pageCount={groupListPageCount}
-        onPrev={() => setGroupListPage((page) => Math.max(1, page - 1))}
-        onNext={() =>
-          setGroupListPage((page) => Math.min(groupListPageCount, page + 1))
-        }
-        renderGroupCreate={renderGroupCreate}
-        onDeleted={handleGroupDeleted}
-      />
+      {vm.status === "loading" ? (
+        <CurrentTabSkeleton />
+      ) : (
+        /* --page drops the card chrome (the content IS the page, as on
+           /projects/[id]) but keeps the compact button sizing that
+           globals.css scopes to .project-detail-panel. */
+        <div className="project-detail-panel project-detail-panel--page current-projects-page">
+          <CurrentTabContent
+            vm={vm}
+            onOpenSetup={onOpenSetup}
+            actions={actions}
+            canCreateProjects={canCreateProjects}
+            guest={guest}
+          />
+        </div>
+      )}
     </motion.section>
   );
 }

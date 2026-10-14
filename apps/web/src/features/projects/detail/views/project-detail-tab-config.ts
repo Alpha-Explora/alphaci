@@ -29,23 +29,22 @@ export const PROJECT_DETAIL_TAB_GROUPS: ReadonlyArray<
     items: [
       { id: "overview", label: "Overview" },
       { id: "code", label: "Code" },
+      { id: "commits", label: "Commits" },
       { id: "pulls", label: "Pull requests" },
       { id: "checklists", label: "Checklists" },
     ],
   },
   {
+    // One tab, two views (Runs, Configuration): see PipelineTab.
     heading: "Pipeline",
-    items: [
-      { id: "runs", label: "Pipeline runs" },
-      { id: "workflow", label: "Workflow" },
-    ],
+    items: [{ id: "pipeline", label: "Pipeline" }],
   },
   {
     heading: "Delivery",
     items: [
       { id: "hosting", label: "Hosting" },
-      { id: "environment", label: "Environment" },
       { id: "qa", label: "QA Studio" },
+      { id: "po", label: "PO Studio" },
     ],
   },
   { heading: "Records", items: [{ id: "audit", label: "Audit" }] },

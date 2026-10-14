@@ -15,10 +15,10 @@ export interface TourCallbacks {
 }
 
 /**
- * The selector for the first step that is always present when the Current
- * Projects tab is active and at least one project exists. The projects-list
- * aside is rendered unconditionally once the tab is active, so we use it as
- * the guaranteed anchor.
+ * The selector for the first step: the "Projects" heading at the top of the
+ * projects view. It renders whenever the view does, so it is the guaranteed
+ * anchor. (The name predates the heading, which replaced a team dropdown; the
+ * anchor moved with it.)
  */
 const PROJECTS_LIST_SELECTOR = "[data-tour='projects-list']";
 
@@ -28,10 +28,10 @@ function buildSteps(): DriveStep[] {
     {
       element: PROJECTS_LIST_SELECTOR,
       popover: {
-        title: "Your provisioned projects",
+        title: "Your team's Projects",
         description:
-          "This sidebar lists every GitHub repository ALPHACI has provisioned for you. Click any project to open its detail view on the right. Use the New button at the top to set up another project.",
-        side: "right",
+          "These are the Projects of the team selected in the header — switch team there. Each card opens its Project; Manage opens its repositories and checklists. A Product owner's Create project starts a new, empty Project; a Developer's Add repository, on a card or in Manage, puts a repository in one.",
+        side: "bottom",
         align: "start",
       },
     },
@@ -40,7 +40,7 @@ function buildSteps(): DriveStep[] {
       popover: {
         title: "Project sections",
         description:
-          "Everything about this project lives here, grouped by what you came to do. Work holds Overview, Code and Pull requests. Pipeline holds Pipeline runs and the workflow file. Delivery holds Hosting and Environment. Records is the audit trail, and Configuration is Settings — including deleting the project. Nothing sits outside these sections.",
+          "Everything about this project lives here, grouped by what you came to do. Work holds Overview, Code and Pull requests. Pipeline holds the runs and the workflow configuration behind them. Delivery holds Hosting and Environment. Records is the audit trail, and Configuration is Settings — including deleting the project. Nothing sits outside these sections.",
         // A vertical rail on the left: the popover belongs beside it, not
         // under it. This said "bottom" while it was still a horizontal strip.
         side: "right",
@@ -60,16 +60,6 @@ function buildSteps(): DriveStep[] {
         align: "start",
       },
     },
-    {
-      element: "[data-tour='sync-health']",
-      popover: {
-        title: "Health checks",
-        description:
-          "ALPHACI runs a set of automated checks against each project — CI token validity, workflow file presence, branch protection rules, and more. Green rows mean everything is in order. Red rows show what needs attention before your pipeline will work correctly.",
-        side: "top",
-        align: "start",
-      },
-    },
   ];
 }
 
@@ -78,7 +68,7 @@ function buildSteps(): DriveStep[] {
  * the DOM are included. The projects-list step is always retained — it is the
  * one element guaranteed to be rendered whenever this tour is launched.
  *
- * Most detail-pane anchors (tabs, deployment targets, health checks) only
+ * Most detail-pane anchors (tabs, deployment targets) only
  * appear when a project is selected; skipping absent steps prevents driver.js
  * from erroring or jumping to an off-screen position.
  */

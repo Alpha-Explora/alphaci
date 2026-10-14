@@ -93,8 +93,15 @@ jest.mock("../../src/features/projects/detail/data/projects-api", () => ({
   ),
 }));
 
-// The Current Projects rail now groups repositories by the user's groups —
-// resolve to "no groups" so projects land in the Ungrouped bucket.
+// WorkflowCurrentTab's view-model reads ?group= / ?project= once on arrival.
+jest.mock("next/navigation", () => ({
+  useSearchParams: () => new URLSearchParams(),
+  usePathname: () => "/workflows",
+  useRouter: () => ({ push: jest.fn(), replace: jest.fn() }),
+}));
+
+// Current Projects shows the header's team, resolved against the caller's
+// teams — resolve to "no teams" by default.
 jest.mock("../../src/features/groups/data/hierarchy-api", () => ({
   getGroups: jest.fn().mockResolvedValue([]),
 }));
@@ -219,6 +226,20 @@ function render(ui: React.ReactNode) {
   return { container, root };
 }
 
+/** Opens the Pipeline tab on a view: the strip's tab, then the Runs | Configuration toggle. */
+async function openPipelineView(container: HTMLElement, view: "Runs" | "Configuration") {
+  const button = (label: string) =>
+    Array.from(container.querySelectorAll("button")).find((candidate) => candidate.textContent === label)!;
+  await act(async () => {
+    button("Pipeline").click();
+    await Promise.resolve();
+  });
+  await act(async () => {
+    button(view).click();
+    await Promise.resolve();
+  });
+}
+
 function changeValue(
   element: {
     nodeName?: string;
@@ -261,6 +282,31 @@ function clickButton(container: ParentNode, label: string) {
     throw new Error(`Button "${label}" was not found`);
   }
   button.click();
+}
+
+/* The Hosting tab keeps Edit build settings and Detach in the service's "⋯" menu. */
+function clickServiceMenuItem(container: ParentNode, label: string) {
+  const trigger = container.querySelector<HTMLButtonElement>(
+    '.hosting-service button[aria-haspopup="menu"]',
+  );
+  if (!trigger) {
+    throw new Error("The service menu was not found");
+  }
+  act(() => {
+    trigger.click();
+  });
+  const item = Array.from(
+    container.querySelectorAll<HTMLElement>('[role="menuitem"]'),
+  ).find(
+    (element) =>
+      element.querySelector(".hosting-menu__label")?.textContent === label,
+  );
+  if (!item) {
+    throw new Error(`Menu item "${label}" was not found`);
+  }
+  act(() => {
+    item.click();
+  });
 }
 
 function mockCapabilities(
@@ -628,24 +674,16 @@ describe("Project env provisioning UI", () => {
     jest.clearAllMocks();
   });
 
-  /* The rail is teams and nothing else. It previously carried an "Ungrouped"
-   * bucket and a Repositories/Teams toggle for projects owned by no team —
-   * both removed with personal workspaces, since every project now belongs to
-   * a team and that bucket could never fill. */
-  it("lists the caller's teams and shows the selected team's repositories", async () => {
+  /* The dropdown is teams and nothing else. The old rail once carried an
+   * "Ungrouped" bucket and a Repositories/Teams toggle for projects owned by
+   * no team — both removed with personal workspaces, since every project now
+   * belongs to a team and that bucket could never fill. */
+  /* The team dropdown was removed with the navigation cleanup: the page shows
+   * the header's team, so the heading is plain "Projects" with no picker. */
+  it("shows the header team's Projects under a plain heading, with no team picker", async () => {
     mockCapabilities(true);
     mockEnvHook();
 
-    const frontendProject: ProvisionedProject = {
-      ...provisionedProject,
-      id: "project-2",
-      repoFullName: "tone/web-client",
-      serviceName: "web-client",
-      status: "provisioned",
-      workflowPath: ".github/workflows/10-alphaci-quality.yml",
-      githubCommitSha: "def456",
-      workspaceId: "workspace-1",
-    };
     (
       jest.requireMock("../../src/features/groups/data/hierarchy-api") as {
         getGroups: jest.Mock;
@@ -664,37 +702,30 @@ describe("Project env provisioning UI", () => {
         latestResult={null}
         loadingProjects={false}
         onOpenSetup={jest.fn()}
-        renderGroupCreate={() => null}
-        projects={[
-          { ...provisionedProject, workspaceId: "workspace-1" },
-          frontendProject,
-        ]}
       />,
     );
     root = rendered.root;
 
-    // Flush the groups fetch so both projects land in their team's bucket.
+    // Flush the teams fetch.
     await act(async () => {});
 
-    expect(
-      rendered.container.querySelector(".project-workspace"),
-    ).not.toBeNull();
-    expect(rendered.container.querySelector(".project-list")).not.toBeNull();
+    // No card and no rail, and no team dropdown in the heading either.
+    expect(rendered.container.querySelector(".project-workspace")).toBeNull();
+    expect(rendered.container.querySelector(".project-list-rail")).toBeNull();
+    expect(rendered.container.querySelector("[role='tablist']")).toBeNull();
+    const heading = rendered.container.querySelector("h1");
+    expect(heading?.textContent).toMatch(/^Projects/);
+    expect(rendered.container.querySelector("[aria-haspopup='listbox']")).toBeNull();
+    expect(rendered.container.textContent).not.toContain("Projects owned by this group.");
+    expect(rendered.container.textContent).not.toContain("Platform");
 
-    // The rail is a team list — there is no ownership toggle beside it.
+    // There is no ownership toggle beside it.
     expect(
       rendered.container.querySelector(".project-ownership-toggle"),
     ).toBeNull();
     expect(rendered.container.textContent).not.toContain(
       "individual repositories",
     );
-
-    const detailPanel = rendered.container.querySelector(
-      ".project-detail-panel",
-    );
-    expect(detailPanel).not.toBeNull();
-    expect(detailPanel?.textContent).toContain("Platform");
-    expect(detailPanel?.textContent).toContain("2 repositories");
   });
 
   it("loads the project overview and renders control-center tabs with empty states", async () => {
@@ -749,7 +780,10 @@ describe("Project env provisioning UI", () => {
     });
 
     const rendered = render(
-      <ProjectDetailTabs project={provisionedProject} />,
+      // admin: this test asserts every section renders, Environment
+      // included — Environment is admin/Developer only, so a session with no
+      // role would not see it.
+      <ProjectDetailTabs project={provisionedProject} appRole="admin" />,
     );
     root = rendered.root;
 
@@ -761,12 +795,19 @@ describe("Project env provisioning UI", () => {
       "project-1",
     );
     expect(rendered.container.textContent).toContain("Overview");
-    expect(rendered.container.textContent).toContain("Local snapshot");
-    expect(rendered.container.textContent).toContain("Not synced yet");
-    expect(rendered.container.textContent).toContain("Sync now");
-    expect(rendered.container.textContent).toContain("Workflow");
+    // The Overview no longer carries the snapshot, health checks or facts.
+    expect(rendered.container.textContent).not.toContain("Local snapshot");
+    expect(rendered.container.textContent).not.toContain("Sync now");
+    expect(rendered.container.textContent).not.toContain("CI token");
+    // Pipeline runs and Workflow are one Pipeline tab now.
+    expect(rendered.container.textContent).toContain("Pipeline");
     expect(rendered.container.textContent).toContain("Hosting");
-    expect(rendered.container.textContent).toContain("Environment");
+    // Environment merged into Hosting: no tab of its own any more.
+    expect(
+      Array.from(rendered.container.querySelectorAll("button")).some(
+        (button) => button.textContent === "Environment",
+      ),
+    ).toBe(false);
     // "Activity" and "Audit" were once two sections; there is one now, and the
     // rail calls it Audit.
     expect(rendered.container.textContent).toContain("Audit");
@@ -775,8 +816,14 @@ describe("Project env provisioning UI", () => {
     // that drops one is caught by the same test that covers the rest.
     expect(rendered.container.textContent).toContain("Code");
     expect(rendered.container.textContent).toContain("Pull requests");
-    expect(rendered.container.textContent).toContain("Pipeline runs");
-    expect(rendered.container.textContent).toContain(
+    for (const retired of ["Pipeline runs", "Workflow"]) {
+      expect(
+        Array.from(rendered.container.querySelectorAll("button")).some(
+          (button) => button.textContent === retired,
+        ),
+      ).toBe(false);
+    }
+    expect(rendered.container.textContent).not.toContain(
       "No workflow file metadata is tracked yet.",
     );
 
@@ -789,9 +836,7 @@ describe("Project env provisioning UI", () => {
       deploymentsTab.click();
     });
 
-    expect(rendered.container.textContent).toContain(
-      "No deployment targets configured.",
-    );
+    expect(rendered.container.textContent).toContain("Host this repository");
   });
 
   it("titles the page with the repository and badges an external repo", async () => {
@@ -799,7 +844,7 @@ describe("Project env provisioning UI", () => {
     mockEnvHook();
     mockedProjectApi.getProjectOverview.mockRejectedValue(new Error("offline"));
 
-    const rendered = render(<ProjectDetailTabs project={provisionedProject} />);
+    const rendered = render(<ProjectDetailTabs project={provisionedProject} appRole="admin" />);
     root = rendered.root;
     await act(async () => {
       await Promise.resolve();
@@ -813,7 +858,7 @@ describe("Project env provisioning UI", () => {
 
     act(() => {
       rendered.root.render(
-        <ProjectDetailTabs project={provisionedProject} external />,
+        <ProjectDetailTabs project={provisionedProject} appRole="admin" external />,
       );
     });
 
@@ -821,340 +866,6 @@ describe("Project env provisioning UI", () => {
       rendered.container.querySelector(".project-status-badge.external")
         ?.textContent,
     ).toBe("External");
-  });
-
-  it("runs local project sync and renders the latest snapshot state", async () => {
-    mockCapabilities(true, true);
-    mockEnvHook();
-    mockedProjectApi.getProjectOverview.mockResolvedValue({
-      project: {
-        ...provisionedProject,
-        createdAt: "2026-06-12T00:00:00.000Z",
-        updatedAt: "2026-06-12T00:00:00.000Z",
-      },
-      workflow: {
-        path: provisionedProject.workflowPath,
-        files: [],
-        stageCount: 0,
-        history: [],
-      },
-      deploymentTargets: { items: [], count: 0 },
-      environment: { items: [], count: 0, failedCount: 0 },
-      ciAuth: {
-        status: "missing",
-        tokenPresent: false,
-        tokenPrefix: null,
-        createdAt: null,
-        updatedAt: null,
-        revokedAt: null,
-      },
-      health: { summary: "warning", checks: [] },
-      syncSnapshot: {
-        enabled: true,
-        mode: "local_snapshot",
-        latest: null,
-      },
-      capabilities: {
-        envProvisioning: true,
-        workflowSettings: false,
-        syncSnapshots: true,
-        ciRunTracking: false,
-        deploymentHistory: false,
-        driftDetection: false,
-      },
-    });
-
-    const rendered = render(
-      <ProjectDetailTabs project={provisionedProject} />,
-    );
-    root = rendered.root;
-
-    await act(async () => {
-      await Promise.resolve();
-    });
-
-    const syncButton = Array.from(
-      rendered.container.querySelectorAll("button"),
-    ).find((button) => button.textContent === "Sync now") as HTMLButtonElement;
-
-    await act(async () => {
-      syncButton.click();
-      await Promise.resolve();
-    });
-
-    expect(mockedProjectApi.syncProjectSnapshot).toHaveBeenCalledWith(
-      "project-1",
-    );
-    expect(rendered.container.textContent).toContain("warning");
-    expect(rendered.container.textContent).toContain("1 finding");
-  });
-
-  it("renders drift findings and keeps repair actions disabled", async () => {
-    mockCapabilities(true, true, false, false, false, false, false, true);
-    mockEnvHook();
-    mockedProjectApi.getProjectOverview.mockResolvedValue({
-      ...projectOverviewWithTargets([]),
-      capabilities: {
-        envProvisioning: true,
-        workflowSettings: false,
-        syncSnapshots: true,
-        ciRunTracking: false,
-        deploymentHistory: false,
-        driftDetection: true,
-      },
-    });
-    mockedProjectApi.getProjectDrift.mockResolvedValue({
-      enabled: true,
-      mode: "local_snapshot",
-      findings: [
-        {
-          id: "finding-1",
-          projectId: "project-1",
-          targetId: null,
-          source: "local_snapshot",
-          severity: "warning",
-          code: "workflow_files_missing",
-          message: "No workflow file metadata is tracked for this project.",
-          details: {},
-          status: "active",
-          detectedAt: "2026-06-13T00:00:00.000Z",
-          resolvedAt: null,
-        },
-      ],
-    });
-    mockedProjectApi.runProjectDriftDetection.mockResolvedValue({
-      enabled: true,
-      mode: "local_snapshot",
-      findings: [
-        {
-          id: "finding-2",
-          projectId: "project-1",
-          targetId: null,
-          source: "local_snapshot",
-          severity: "error",
-          code: "ci_token_missing",
-          message: "No active CI token metadata is tracked for this project.",
-          details: {},
-          status: "active",
-          detectedAt: "2026-06-13T00:01:00.000Z",
-          resolvedAt: null,
-        },
-      ],
-    });
-
-    const rendered = render(
-      <ProjectDetailTabs project={provisionedProject} />,
-    );
-    root = rendered.root;
-
-    await act(async () => {
-      await Promise.resolve();
-    });
-
-    expect(mockedProjectApi.getProjectDrift).toHaveBeenCalledWith("project-1");
-    expect(rendered.container.textContent).toContain("Health findings");
-    expect(rendered.container.textContent).toContain("workflow_files_missing");
-    expect(rendered.container.textContent).toContain("local_snapshot");
-    const repairButton = Array.from(
-      rendered.container.querySelectorAll("button"),
-    ).find(
-      (button) =>
-        button.textContent === "Repair actions coming in the next phase",
-    ) as HTMLButtonElement;
-    expect(repairButton.disabled).toBe(true);
-
-    const runButton = Array.from(
-      rendered.container.querySelectorAll("button"),
-    ).find(
-      (button) => button.textContent === "Run drift check",
-    ) as HTMLButtonElement;
-    await act(async () => {
-      runButton.click();
-      await Promise.resolve();
-    });
-
-    expect(mockedProjectApi.runProjectDriftDetection).toHaveBeenCalledWith(
-      "project-1",
-    );
-    expect(rendered.container.textContent).toContain("ci_token_missing");
-  });
-
-  it("requires confirmation before running a supported drift repair", async () => {
-    mockCapabilities(true, true, false, false, false, false, false, true, true);
-    mockEnvHook();
-    mockedProjectApi.getProjectOverview.mockResolvedValue({
-      ...projectOverviewWithTargets([]),
-      capabilities: {
-        envProvisioning: true,
-        workflowSettings: false,
-        syncSnapshots: true,
-        ciRunTracking: false,
-        deploymentHistory: false,
-        driftDetection: true,
-      },
-    });
-    mockedProjectApi.getProjectDrift.mockResolvedValue({
-      enabled: true,
-      mode: "local_snapshot",
-      findings: [
-        {
-          id: "finding-1",
-          projectId: "project-1",
-          targetId: null,
-          source: "local_snapshot",
-          severity: "error",
-          code: "ci_token_missing",
-          message: "No active CI token metadata is tracked for this project.",
-          details: {},
-          status: "active",
-          detectedAt: "2026-06-13T00:00:00.000Z",
-          resolvedAt: null,
-        },
-      ],
-    });
-
-    const rendered = render(
-      <ProjectDetailTabs project={provisionedProject} />,
-    );
-    root = rendered.root;
-
-    await act(async () => {
-      await Promise.resolve();
-    });
-
-    const rotateButton = Array.from(
-      rendered.container.querySelectorAll("button"),
-    ).find(
-      (button) => button.textContent === "Rotate CI token",
-    ) as HTMLButtonElement;
-    act(() => {
-      rotateButton.click();
-    });
-
-    expect(mockedProjectApi.repairProjectDriftFinding).not.toHaveBeenCalled();
-    expect(rendered.container.textContent).toContain(
-      "Confirm repair to run this local-safe action.",
-    );
-
-    const confirmButton = Array.from(
-      rendered.container.querySelectorAll("button"),
-    ).find(
-      (button) => button.textContent === "Confirm repair",
-    ) as HTMLButtonElement;
-    await act(async () => {
-      confirmButton.click();
-      await Promise.resolve();
-    });
-
-    expect(mockedProjectApi.repairProjectDriftFinding).toHaveBeenCalledWith(
-      "project-1",
-      "finding-1",
-      "rotate_ci_token",
-    );
-    expect(rendered.container.textContent).toContain(
-      "Run drift check again to refresh findings.",
-    );
-  });
-
-  it("exposes workflow update PR repair for central workflow drift", async () => {
-    mockCapabilities(true, true, false, true, false, false, false, true, true);
-    mockEnvHook();
-    mockedProjectApi.getProjectOverview.mockResolvedValue({
-      ...projectOverviewWithTargets([]),
-      capabilities: {
-        envProvisioning: true,
-        workflowSettings: false,
-        syncSnapshots: true,
-        ciRunTracking: false,
-        deploymentHistory: false,
-        driftDetection: true,
-      },
-    });
-    mockedProjectApi.getProjectDrift.mockResolvedValue({
-      enabled: true,
-      mode: "local_snapshot",
-      findings: [
-        {
-          id: "finding-1",
-          projectId: "project-1",
-          targetId: null,
-          source: "local_snapshot",
-          severity: "warning",
-          code: "central_workflow_ref_outdated",
-          message: "Central workflow ref is outdated.",
-          details: {},
-          status: "active",
-          detectedAt: "2026-06-14T00:00:00.000Z",
-          resolvedAt: null,
-        },
-      ],
-    });
-
-    const rendered = render(
-      <ProjectDetailTabs project={provisionedProject} />,
-    );
-    root = rendered.root;
-
-    await act(async () => {
-      await Promise.resolve();
-    });
-
-    expect(rendered.container.textContent).toContain(
-      "central_workflow_ref_outdated",
-    );
-    expect(rendered.container.textContent).toContain("Create update PR");
-    expect(rendered.container.textContent).not.toContain("Preview workflow");
-  });
-
-  it("does not show local repair actions for unsupported live-provider findings", async () => {
-    mockCapabilities(true, true, false, false, false, false, false, true, true);
-    mockEnvHook();
-    mockedProjectApi.getProjectOverview.mockResolvedValue({
-      ...projectOverviewWithTargets([]),
-      capabilities: {
-        envProvisioning: true,
-        workflowSettings: false,
-        syncSnapshots: true,
-        ciRunTracking: false,
-        deploymentHistory: false,
-        driftDetection: true,
-      },
-    });
-    mockedProjectApi.getProjectDrift.mockResolvedValue({
-      enabled: true,
-      mode: "local_snapshot",
-      findings: [
-        {
-          id: "finding-live",
-          projectId: "project-1",
-          targetId: "target-1",
-          source: "local_snapshot",
-          severity: "error",
-          code: "provider_env_key_missing_live",
-          message: "Provider env key needs live activation.",
-          details: {},
-          status: "active",
-          detectedAt: "2026-06-13T00:00:00.000Z",
-          resolvedAt: null,
-        },
-      ],
-    });
-
-    const rendered = render(
-      <ProjectDetailTabs project={provisionedProject} />,
-    );
-    root = rendered.root;
-
-    await act(async () => {
-      await Promise.resolve();
-    });
-
-    expect(rendered.container.textContent).toContain(
-      "provider_env_key_missing_live",
-    );
-    expect(rendered.container.textContent).not.toContain("Confirm repair");
-    expect(rendered.container.textContent).not.toContain("Rotate CI token");
-    expect(mockedProjectApi.repairProjectDriftFinding).not.toHaveBeenCalled();
   });
 
   it("renders CI runs empty state from the local contract", async () => {
@@ -1195,7 +906,7 @@ describe("Project env provisioning UI", () => {
     });
 
     const rendered = render(
-      <ProjectDetailTabs project={provisionedProject} />,
+      <ProjectDetailTabs project={provisionedProject} appRole="admin" />,
     );
     root = rendered.root;
 
@@ -1203,13 +914,7 @@ describe("Project env provisioning UI", () => {
       await Promise.resolve();
     });
 
-    const runsTab = Array.from(
-      rendered.container.querySelectorAll("button"),
-    ).find((button) => button.textContent === "Pipeline runs") as HTMLButtonElement;
-    await act(async () => {
-      runsTab.click();
-      await Promise.resolve();
-    });
+    await openPipelineView(rendered.container, "Runs");
 
     expect(mockedProjectApi.getProjectCiRuns).toHaveBeenCalledWith("project-1");
     expect(rendered.container.textContent).toContain(
@@ -1218,7 +923,7 @@ describe("Project env provisioning UI", () => {
     expect(rendered.container.textContent).toContain("No CI runs tracked yet.");
   });
 
-  it("renders failed CI run with GitHub link and hides rerun when disabled", async () => {
+  it("renders failed CI run without a GitHub link and hides rerun when disabled", async () => {
     mockCapabilities(true, true, false, false, false, true);
     mockEnvHook();
     mockedProjectApi.getProjectOverview.mockResolvedValue({
@@ -1256,7 +961,7 @@ describe("Project env provisioning UI", () => {
     });
 
     const rendered = render(
-      <ProjectDetailTabs project={provisionedProject} />,
+      <ProjectDetailTabs project={provisionedProject} appRole="admin" />,
     );
     root = rendered.root;
 
@@ -1264,13 +969,7 @@ describe("Project env provisioning UI", () => {
       await Promise.resolve();
     });
 
-    const runsTab = Array.from(
-      rendered.container.querySelectorAll("button"),
-    ).find((button) => button.textContent === "Pipeline runs") as HTMLButtonElement;
-    await act(async () => {
-      runsTab.click();
-      await Promise.resolve();
-    });
+    await openPipelineView(rendered.container, "Runs");
 
     expect(rendered.container.textContent).toContain("ALPHACI Quality");
     expect(rendered.container.textContent).toContain("quality");
@@ -1278,11 +977,10 @@ describe("Project env provisioning UI", () => {
     expect(rendered.container.textContent).toContain("abc123");
     expect(rendered.container.textContent).toContain("failure");
     expect(rendered.container.textContent).not.toContain("Rerun");
+    // The run's own page on GitHub is not offered: ALPHACI is the only UI.
     expect(
-      rendered.container.querySelector(
-        'a[href="https://github.com/tone/orders-api/actions/runs/1"]',
-      ),
-    ).not.toBeNull();
+      rendered.container.querySelector('a[href*="github.com"]'),
+    ).toBeNull();
   });
 
   it("shows a simulated-data caveat for CI runs when live sync is enabled but nothing is connected", async () => {
@@ -1308,7 +1006,7 @@ describe("Project env provisioning UI", () => {
     });
 
     const rendered = render(
-      <ProjectDetailTabs project={provisionedProject} />,
+      <ProjectDetailTabs project={provisionedProject} appRole="admin" />,
     );
     root = rendered.root;
 
@@ -1316,13 +1014,7 @@ describe("Project env provisioning UI", () => {
       await Promise.resolve();
     });
 
-    const runsTab = Array.from(
-      rendered.container.querySelectorAll("button"),
-    ).find((button) => button.textContent === "Pipeline runs") as HTMLButtonElement;
-    await act(async () => {
-      runsTab.click();
-      await Promise.resolve();
-    });
+    await openPipelineView(rendered.container, "Runs");
 
     expect(rendered.container.textContent).not.toContain(
       "Live GitHub run sync is not enabled",
@@ -1340,7 +1032,7 @@ describe("Project env provisioning UI", () => {
     );
 
     const rendered = render(
-      <ProjectDetailTabs project={provisionedProject} />,
+      <ProjectDetailTabs project={provisionedProject} appRole="admin" />,
     );
     root = rendered.root;
 
@@ -1357,21 +1049,26 @@ describe("Project env provisioning UI", () => {
       deploymentsTab.click();
     });
 
-    expect(rendered.container.textContent).toContain("orders-api-test");
-    expect(rendered.container.textContent).toContain("render · backend · test");
-    expect(rendered.container.textContent).toContain("orders-web");
-    expect(rendered.container.textContent).toContain(
-      "vercel · frontend · main",
+    // One service at a time: the first, with a selector for the other.
+    const header = () => rendered.container.querySelector(".hosting-service");
+    expect(header()?.querySelector("h3")?.textContent).toBe("orders-api-test");
+    expect(header()?.textContent).toContain(
+      "Render · Backend · deploys from Git · npm run build in apps/api",
     );
-    // Provider activation SHIPPED — this used to assert a "coming soon"
-    // placeholder that no longer renders. Each target now carries its own
-    // controls, which is what replaced it.
-    expect(rendered.container.textContent).toContain("Edit");
-    expect(rendered.container.textContent).toContain("Sync");
-    expect(rendered.container.textContent).toContain("Detach");
-    // The log viewer is opened by a "Logs" control on each target now;
-    // "Live console" was the old always-visible heading.
-    expect(rendered.container.textContent).toContain("Logs");
+    expect(header()?.textContent).toContain("Sync");
+    expect(header()?.textContent).toContain("Logs");
+    const selector = rendered.container.querySelector(".hosting-services");
+    expect(selector?.textContent).toContain("orders-web");
+
+    act(() => {
+      Array.from(selector!.querySelectorAll("button"))
+        .find((button) => button.textContent?.includes("orders-web"))!
+        .click();
+    });
+    expect(header()?.querySelector("h3")?.textContent).toBe("orders-web");
+    expect(header()?.textContent).toContain(
+      "Vercel · Frontend · deploys from Git · npm run build in apps/web",
+    );
   });
 
   it("renders mixed Render and Vercel deployment history from the local contract", async () => {
@@ -1429,7 +1126,7 @@ describe("Project env provisioning UI", () => {
     });
 
     const rendered = render(
-      <ProjectDetailTabs project={provisionedProject} />,
+      <ProjectDetailTabs project={provisionedProject} appRole="admin" />,
     );
     root = rendered.root;
 
@@ -1453,29 +1150,41 @@ describe("Project env provisioning UI", () => {
     expect(rendered.container.textContent).toContain(
       "Live deployment sync is not enabled",
     );
-    expect(rendered.container.textContent).toContain("orders-api-test");
-    expect(rendered.container.textContent).toContain("render - test - ready");
-    expect(rendered.container.textContent).toContain("abc123");
-    expect(rendered.container.textContent).toContain("orders-web");
-    expect(rendered.container.textContent).toContain(
-      "vercel - production - building",
-    );
-    expect(rendered.container.textContent).toContain("def456");
+    // The Render service tracks `test`: its deploy sits under Previews, so
+    // Production lists none and shows no empty "Recent deploys" heading.
+    expect(
+      rendered.container.querySelector('[aria-label="Recent deploys"]'),
+    ).toBeNull();
     expect(
       rendered.container.querySelector(
         'a[href="https://orders-api-test.onrender.com"]',
       ),
     ).not.toBeNull();
-    expect(
-      rendered.container.querySelector(
-        'a[href="https://dashboard.render.com/web/srv-1/logs"]',
-      ),
-    ).not.toBeNull();
+    act(() => {
+      Array.from(rendered.container.querySelectorAll('[role="tab"]'))
+        .find((tab) => tab.textContent?.startsWith("Previews"))!
+        .dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+    const recent = () =>
+      rendered.container.querySelector('[aria-label="Recent deploys"]');
+    expect(recent()?.textContent).toContain("abc123");
+    expect(recent()?.textContent).toContain("ready");
+    expect(recent()?.textContent).not.toContain("def456");
+
+    // The Vercel service's production deploy is its own.
+    act(() => {
+      Array.from(rendered.container.querySelectorAll(".hosting-services button"))
+        .find((button) => button.textContent?.includes("orders-web"))!
+        .dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+    expect(recent()?.textContent).toContain("def456");
+    expect(recent()?.textContent).toContain("building");
+    // Provider consoles are not linked from the history any more.
     expect(
       rendered.container.querySelector(
         'a[href="https://vercel.com/flowci-team/orders-web/deployments"]',
       ),
-    ).not.toBeNull();
+    ).toBeNull();
   });
 
   it("shows a simulated-data caveat for deployment history when live sync is enabled but nothing is connected", async () => {
@@ -1500,7 +1209,7 @@ describe("Project env provisioning UI", () => {
     });
 
     const rendered = render(
-      <ProjectDetailTabs project={provisionedProject} />,
+      <ProjectDetailTabs project={provisionedProject} appRole="admin" />,
     );
     root = rendered.root;
 
@@ -1534,7 +1243,7 @@ describe("Project env provisioning UI", () => {
     );
 
     const rendered = render(
-      <ProjectDetailTabs project={provisionedProject} />,
+      <ProjectDetailTabs project={provisionedProject} appRole="admin" />,
     );
     root = rendered.root;
 
@@ -1551,12 +1260,7 @@ describe("Project env provisioning UI", () => {
       deploymentsTab.click();
     });
 
-    const editButton = Array.from(
-      rendered.container.querySelectorAll("button"),
-    ).find((button) => button.textContent === "Edit") as HTMLButtonElement;
-    act(() => {
-      editButton.click();
-    });
+    clickServiceMenuItem(rendered.container, "Edit build settings");
 
     expect(
       rendered.container.querySelector('[data-testid="target-edit-drawer"]'),
@@ -1622,7 +1326,7 @@ describe("Project env provisioning UI", () => {
     });
 
     const rendered = render(
-      <ProjectDetailTabs project={provisionedProject} />,
+      <ProjectDetailTabs project={provisionedProject} appRole="admin" />,
     );
     root = rendered.root;
 
@@ -1635,11 +1339,7 @@ describe("Project env provisioning UI", () => {
         .find((button) => button.textContent === "Hosting")!
         .click();
     });
-    act(() => {
-      Array.from(rendered.container.querySelectorAll("button"))
-        .find((button) => button.textContent === "Edit")!
-        .click();
-    });
+    clickServiceMenuItem(rendered.container, "Edit build settings");
 
     changeValue(
       rendered.container.querySelector<HTMLInputElement>(
@@ -1730,7 +1430,7 @@ describe("Project env provisioning UI", () => {
     );
 
     const rendered = render(
-      <ProjectDetailTabs project={provisionedProject} />,
+      <ProjectDetailTabs project={provisionedProject} appRole="admin" />,
     );
     root = rendered.root;
 
@@ -1743,11 +1443,7 @@ describe("Project env provisioning UI", () => {
         .find((button) => button.textContent === "Hosting")!
         .click();
     });
-    act(() => {
-      Array.from(rendered.container.querySelectorAll("button"))
-        .find((button) => button.textContent === "Edit")!
-        .click();
-    });
+    clickServiceMenuItem(rendered.container, "Edit build settings");
 
     await act(async () => {
       Array.from(rendered.container.querySelectorAll("button"))
@@ -1769,11 +1465,7 @@ describe("Project env provisioning UI", () => {
       "Unable to sync target metadata.",
     );
 
-    act(() => {
-      Array.from(rendered.container.querySelectorAll("button"))
-        .find((button) => button.textContent === "Detach")!
-        .click();
-    });
+    clickServiceMenuItem(rendered.container, "Detach");
     await act(async () => {
       Array.from(rendered.container.querySelectorAll("button"))
         .find((button) => button.textContent === "Confirm detach")!
@@ -1793,7 +1485,7 @@ describe("Project env provisioning UI", () => {
     );
 
     const rendered = render(
-      <ProjectDetailTabs project={provisionedProject} />,
+      <ProjectDetailTabs project={provisionedProject} appRole="admin" />,
     );
     root = rendered.root;
 
@@ -1810,12 +1502,7 @@ describe("Project env provisioning UI", () => {
       deploymentsTab.click();
     });
 
-    const detachButton = Array.from(
-      rendered.container.querySelectorAll("button"),
-    ).find((button) => button.textContent === "Detach") as HTMLButtonElement;
-    act(() => {
-      detachButton.click();
-    });
+    clickServiceMenuItem(rendered.container, "Detach");
 
     expect(mockedProjectApi.detachDeploymentTarget).not.toHaveBeenCalled();
     expect(rendered.container.textContent).toContain("Confirm detach");
@@ -1838,13 +1525,9 @@ describe("Project env provisioning UI", () => {
       "target-render",
       { deleteProviderResource: false },
     );
-    // Note: with the last target removed, DeploymentTargetsList falls back to
-    // its "No deployment targets configured." empty state before the success
-    // message (targetMessage) has a chance to render — this is pre-existing
-    // behavior of the early-return guard, not something introduced here.
-    expect(rendered.container.textContent).toContain(
-      "No deployment targets configured.",
-    );
+    // With the last target removed, the tab falls back to its empty state
+    // before the success message has a chance to render.
+    expect(rendered.container.textContent).toContain("Host this repository");
   });
 
   it("opts in to deleting the live provider resource when the checkbox is checked", async () => {
@@ -1859,7 +1542,7 @@ describe("Project env provisioning UI", () => {
     });
 
     const rendered = render(
-      <ProjectDetailTabs project={provisionedProject} />,
+      <ProjectDetailTabs project={provisionedProject} appRole="admin" />,
     );
     root = rendered.root;
 
@@ -1876,12 +1559,7 @@ describe("Project env provisioning UI", () => {
       deploymentsTab.click();
     });
 
-    const detachButton = Array.from(
-      rendered.container.querySelectorAll("button"),
-    ).find((button) => button.textContent === "Detach") as HTMLButtonElement;
-    act(() => {
-      detachButton.click();
-    });
+    clickServiceMenuItem(rendered.container, "Detach");
 
     // Checkbox is unchecked by default — the opt-in must be explicit.
     const deleteResourceCheckbox = rendered.container.querySelector(
@@ -1953,7 +1631,7 @@ describe("Project env provisioning UI", () => {
     });
 
     const rendered = render(
-      <ProjectDetailTabs project={provisionedProject} />,
+      <ProjectDetailTabs project={provisionedProject} appRole="admin" />,
     );
     root = rendered.root;
 
@@ -1961,13 +1639,7 @@ describe("Project env provisioning UI", () => {
       await Promise.resolve();
     });
 
-    const workflowTab = Array.from(
-      rendered.container.querySelectorAll("button"),
-    ).find((button) => button.textContent === "Workflow") as HTMLButtonElement;
-    await act(async () => {
-      workflowTab.click();
-      await Promise.resolve();
-    });
+    await openPipelineView(rendered.container, "Configuration");
 
     expect(mockedProjectApi.getWorkflowSettings).toHaveBeenCalledWith(
       "project-1",
@@ -2041,7 +1713,7 @@ describe("Project env provisioning UI", () => {
     });
 
     const rendered = render(
-      <ProjectDetailTabs project={provisionedProject} />,
+      <ProjectDetailTabs project={provisionedProject} appRole="admin" />,
     );
     root = rendered.root;
 
@@ -2049,13 +1721,7 @@ describe("Project env provisioning UI", () => {
       await Promise.resolve();
     });
 
-    const workflowTab = Array.from(
-      rendered.container.querySelectorAll("button"),
-    ).find((button) => button.textContent === "Workflow") as HTMLButtonElement;
-    await act(async () => {
-      workflowTab.click();
-      await Promise.resolve();
-    });
+    await openPipelineView(rendered.container, "Configuration");
 
     const previewButton = Array.from(
       rendered.container.querySelectorAll("button"),
@@ -2083,10 +1749,86 @@ describe("Project env provisioning UI", () => {
       "project-1",
       expect.objectContaining({ nodeVersion: "22" }),
     );
-    expect(rendered.container.textContent).toContain(
+    // The update PR is named by number and opens in the Pull requests tab.
+    expect(rendered.container.textContent).toContain("Pull request #42");
+    expect(rendered.container.textContent).not.toContain(
       "https://github.com/tone/orders-api/pull/42",
     );
+    expect(
+      rendered.container.querySelector('a[href*="github.com"]'),
+    ).toBeNull();
   });
+
+
+  // A Product owner (lead) and QA Team have no Workflow tab at all.
+  it.each([["member", true], ["admin", true]] as const)(
+    "update PR button for %s: shown=%s",
+    async (role, shown) => {
+    mockCapabilities(true, true, true, true);
+    mockEnvHook();
+    mockedProjectApi.getProjectOverview.mockResolvedValue({
+      project: {
+        ...provisionedProject,
+        createdAt: "2026-06-12T00:00:00.000Z",
+        updatedAt: "2026-06-12T00:00:00.000Z",
+      },
+      workflow: {
+        path: provisionedProject.workflowPath,
+        files: [],
+        stageCount: 0,
+        history: [],
+      },
+      deploymentTargets: { items: [], count: 0 },
+      environment: { items: [], count: 0, failedCount: 0 },
+      ciAuth: {
+        status: "active",
+        tokenPresent: true,
+        tokenPrefix: "aci_test",
+        createdAt: "2026-06-12T00:00:00.000Z",
+        updatedAt: "2026-06-12T00:00:00.000Z",
+        revokedAt: null,
+      },
+      health: { summary: "ok", checks: [] },
+      syncSnapshot: { enabled: true, mode: "local_snapshot", latest: null },
+      capabilities: {
+        envProvisioning: true,
+        workflowSettings: true,
+        syncSnapshots: true,
+        ciRunTracking: false,
+        deploymentHistory: false,
+        driftDetection: false,
+      },
+    });
+
+    const rendered = render(
+      <ProjectDetailTabs project={provisionedProject} appRole={role} />,
+    );
+    root = rendered.root;
+
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    await openPipelineView(rendered.container, "Configuration");
+
+    const previewButton = Array.from(
+      rendered.container.querySelectorAll("button"),
+    ).find((button) => button.textContent === "Preview") as HTMLButtonElement;
+    await act(async () => {
+      previewButton.click();
+      await Promise.resolve();
+    });
+
+    const hasButton = Array.from(rendered.container.querySelectorAll("button")).some(
+      (button) => button.textContent === "Create update PR",
+    );
+    expect(hasButton).toBe(shown);
+    expect(rendered.container.textContent?.includes("A Developer, Team lead or admin can")).toBe(!shown);
+    if (shown) {
+      expect(rendered.container.textContent).toContain("Opens a pull request into dev");
+    }
+  },
+  );
 
   it("shows clean copy when workflow update PR creation fails", async () => {
     mockCapabilities(true, true, true, true);
@@ -2129,7 +1871,7 @@ describe("Project env provisioning UI", () => {
     });
 
     const rendered = render(
-      <ProjectDetailTabs project={provisionedProject} />,
+      <ProjectDetailTabs project={provisionedProject} appRole="admin" />,
     );
     root = rendered.root;
 
@@ -2137,13 +1879,7 @@ describe("Project env provisioning UI", () => {
       await Promise.resolve();
     });
 
-    const workflowTab = Array.from(
-      rendered.container.querySelectorAll("button"),
-    ).find((button) => button.textContent === "Workflow") as HTMLButtonElement;
-    await act(async () => {
-      workflowTab.click();
-      await Promise.resolve();
-    });
+    await openPipelineView(rendered.container, "Configuration");
 
     const previewButton = Array.from(
       rendered.container.querySelectorAll("button"),
@@ -2188,9 +1924,6 @@ describe("Project env provisioning UI", () => {
       workflowSettings: true,
     };
     mockedProjectApi.getProjectOverview.mockResolvedValue(overview);
-    mockedProjectApi.getProjectDrift.mockRejectedValueOnce(
-      new Error("drift unavailable"),
-    );
     mockedProjectApi.getProjectCiRuns.mockRejectedValueOnce(
       new Error("runs unavailable"),
     );
@@ -2203,15 +1936,9 @@ describe("Project env provisioning UI", () => {
     mockedProjectApi.getWorkflowSettings.mockRejectedValueOnce(
       new Error("settings unavailable"),
     );
-    mockedProjectApi.syncProjectSnapshot.mockRejectedValueOnce(
-      new Error("sync unavailable"),
-    );
-    mockedProjectApi.runProjectDriftDetection.mockRejectedValueOnce(
-      new Error("drift run unavailable"),
-    );
 
     const rendered = render(
-      <ProjectDetailTabs project={provisionedProject} />,
+      <ProjectDetailTabs project={provisionedProject} appRole="admin" />,
     );
     root = rendered.root;
 
@@ -2225,37 +1952,17 @@ describe("Project env provisioning UI", () => {
       await Promise.resolve();
     });
 
-    expect(rendered.container.textContent).toContain(
-      "Unable to load drift findings.",
-    );
+    // The Overview no longer reads drift findings.
+    expect(mockedProjectApi.getProjectDrift).not.toHaveBeenCalled();
 
-    await act(async () => {
-      Array.from(rendered.container.querySelectorAll("button"))
-        .find((button) => button.textContent === "Sync now")!
-        .click();
-      await Promise.resolve();
-    });
-    expect(rendered.container.textContent).toContain(
-      "Unable to create local snapshot right now.",
-    );
+    // Pipeline opens on Runs, so the runs are read before Configuration's settings.
+    await openPipelineView(rendered.container, "Runs");
+    expect(rendered.container.textContent).toContain("Unable to load CI runs.");
 
-    await act(async () => {
-      Array.from(rendered.container.querySelectorAll("button"))
-        .find((button) => button.textContent === "Workflow")!
-        .click();
-      await Promise.resolve();
-    });
+    await openPipelineView(rendered.container, "Configuration");
     expect(rendered.container.textContent).toContain(
       "Unable to load workflow settings.",
     );
-
-    await act(async () => {
-      Array.from(rendered.container.querySelectorAll("button"))
-        .find((button) => button.textContent === "Pipeline runs")!
-        .click();
-      await Promise.resolve();
-    });
-    expect(rendered.container.textContent).toContain("Unable to load CI runs.");
 
     await act(async () => {
       Array.from(rendered.container.querySelectorAll("button"))
@@ -2264,6 +1971,9 @@ describe("Project env provisioning UI", () => {
       await Promise.resolve();
     });
     expect(rendered.container.textContent).toContain(
+      "ALPHACI couldn't load deploy history, so it may be incomplete.",
+    );
+    expect(rendered.container.textContent).not.toContain(
       "Unable to load deployment history.",
     );
     expect(rendered.container.querySelector('a[href*="railway"]')).toBeNull();
@@ -2287,7 +1997,7 @@ describe("Project env provisioning UI", () => {
     );
 
     const overviewErrorRendered = render(
-      <ProjectDetailTabs project={provisionedProject} />,
+      <ProjectDetailTabs project={provisionedProject} appRole="admin" />,
     );
     root = overviewErrorRendered.root;
 
@@ -2330,7 +2040,7 @@ describe("Project env provisioning UI", () => {
     );
 
     const previewErrorRendered = render(
-      <ProjectDetailTabs project={provisionedProject} />,
+      <ProjectDetailTabs project={provisionedProject} appRole="admin" />,
     );
     root = previewErrorRendered.root;
 
@@ -2338,12 +2048,7 @@ describe("Project env provisioning UI", () => {
       await Promise.resolve();
     });
 
-    await act(async () => {
-      Array.from(previewErrorRendered.container.querySelectorAll("button"))
-        .find((button) => button.textContent === "Workflow")!
-        .click();
-      await Promise.resolve();
-    });
+    await openPipelineView(previewErrorRendered.container, "Configuration");
     await act(async () => {
       Array.from(previewErrorRendered.container.querySelectorAll("button"))
         .find((button) => button.textContent === "Preview")!
@@ -2356,65 +2061,6 @@ describe("Project env provisioning UI", () => {
     );
   });
 
-  it("shows a clean drift repair failure message", async () => {
-    mockCapabilities(true, true, false, false, false, false, false, true, true);
-    mockEnvHook();
-    const overview = projectOverviewWithTargets([]);
-    overview.capabilities = {
-      ...overview.capabilities,
-      driftDetection: true,
-    };
-    mockedProjectApi.getProjectOverview.mockResolvedValue(overview);
-    mockedProjectApi.getProjectDrift.mockResolvedValue({
-      enabled: true,
-      mode: "local_snapshot",
-      findings: [
-        {
-          id: "finding-1",
-          code: "ci_token_missing",
-          severity: "error",
-          source: "flowci",
-          message: "CI token missing",
-          detectedAt: "2026-06-12T00:00:00.000Z",
-        },
-      ],
-    });
-    mockedProjectApi.repairProjectDriftFinding.mockRejectedValueOnce(
-      new Error("repair failed"),
-    );
-
-    const rendered = render(
-      <ProjectDetailTabs project={provisionedProject} />,
-    );
-    root = rendered.root;
-
-    await act(async () => {
-      await Promise.resolve();
-    });
-    await act(async () => {
-      await Promise.resolve();
-    });
-    await act(async () => {
-      await Promise.resolve();
-    });
-
-    act(() => {
-      Array.from(rendered.container.querySelectorAll("button"))
-        .find((button) => button.textContent === "Rotate CI token")!
-        .click();
-    });
-    await act(async () => {
-      Array.from(rendered.container.querySelectorAll("button"))
-        .find((button) => button.textContent === "Confirm repair")!
-        .click();
-      await Promise.resolve();
-    });
-
-    expect(rendered.container.textContent).toContain(
-      "Unable to run repair action.",
-    );
-  });
-
   it("previews workflow settings after editing all workflow inputs", async () => {
     mockCapabilities(true, true, true, false);
     mockEnvHook();
@@ -2423,7 +2069,7 @@ describe("Project env provisioning UI", () => {
     );
 
     const rendered = render(
-      <ProjectDetailTabs project={provisionedProject} />,
+      <ProjectDetailTabs project={provisionedProject} appRole="admin" />,
     );
     root = rendered.root;
 
@@ -2431,13 +2077,7 @@ describe("Project env provisioning UI", () => {
       await Promise.resolve();
     });
 
-    const workflowTab = Array.from(
-      rendered.container.querySelectorAll("button"),
-    ).find((button) => button.textContent === "Workflow") as HTMLButtonElement;
-    await act(async () => {
-      workflowTab.click();
-      await Promise.resolve();
-    });
+    await openPipelineView(rendered.container, "Configuration");
 
     await act(async () => {
       await Promise.resolve();
@@ -2491,7 +2131,7 @@ describe("Project env provisioning UI", () => {
         latestResult={null}
         loadingProjects={false}
         onOpenSetup={onOpenSetup}
-        projects={[]}
+        guest
       />,
     );
     root = emptyRendered.root;
@@ -2519,7 +2159,6 @@ describe("Project env provisioning UI", () => {
         latestResult={null}
         loadingProjects
         onOpenSetup={jest.fn()}
-        projects={[]}
       />,
     );
     root = loadingRendered.root;

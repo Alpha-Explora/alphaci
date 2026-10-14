@@ -7,9 +7,11 @@ import {
   useEffect,
   useId,
   useRef,
+  useSyncExternalStore,
   type FormEvent,
   type ReactNode,
 } from "react";
+import { createPortal } from "react-dom";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 
 import type { ResourceState } from "@/features/groups";
@@ -249,39 +251,96 @@ export function ResourceBoundary({
 
 /* ── Dialog ───────────────────────────────────────────────────────────────── */
 
+function dialogClasses(size: "default" | "wide"): { backdrop: string; panel: string } {
+  return size === "wide"
+    ? { backdrop: "hier-dialog-backdrop hier-dialog-backdrop--wide", panel: "hier-dialog hier-dialog--wide" }
+    : { backdrop: "hier-dialog-backdrop", panel: "hier-dialog" };
+}
+
+const noSubscription = () => () => undefined;
+
+/** False on the server and while hydrating, true once mounted in a browser. */
+function useIsClient(): boolean {
+  return useSyncExternalStore(noSubscription, () => true, () => false);
+}
+
+/**
+ * Where a dialog renders. A wide sheet goes to <body>: inside a page panel
+ * whose backdrop-filter or transform makes it the containing block, a
+ * "fixed" sheet would centre on that panel and slide under the app header
+ * at small heights. The default card stays where it always was.
+ */
+function DialogLayer({ portal, children }: { portal: boolean; children: ReactNode }) {
+  const client = useIsClient();
+  return portal && client ? createPortal(children, document.body) : <>{children}</>;
+}
+
+function describedById(describedBy: string | undefined, description: string | undefined, descId: string) {
+  if (describedBy) return describedBy;
+  return description ? descId : undefined;
+}
+
+/**
+ * "default": the 440px card every create/invite/assign dialog uses.
+ * "wide": a landscape sheet, min(1100px, 94vw), whose header and footer stay
+ * pinned while only the body scrolls (a full-screen sheet on phones).
+ */
+export type DialogSize = "default" | "wide";
+
 export function Dialog({
   open,
   onClose,
   title,
   description,
+  describedBy,
+  size = "default",
   children,
 }: {
   open: boolean;
   onClose: () => void;
   title: string;
   description?: string;
+  /**
+   * The id of a description the caller renders itself (inside a scrolling
+   * body, say). Takes the place of `description` for aria-describedby.
+   */
+  describedBy?: string;
+  size?: DialogSize;
   children: ReactNode;
 }) {
   const reduced = useReducedMotion();
+  const classes = dialogClasses(size);
   const panelRef = useRef<HTMLDivElement>(null);
   const restoreFocusRef = useRef<HTMLElement | null>(null);
   const titleId = useId();
   const descId = useId();
+  /* The latest onClose for Escape. Callers often pass a new function every
+   * render; if the effect below depended on it, each re-render (a keystroke)
+   * would re-run it and pull focus back to the first field. */
+  const onCloseRef = useRef(onClose);
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  });
 
+  /* Focus the first field (or the one marked data-autofocus) on open and
+   * restore focus on close: once per opening, never on a re-render while open. */
   useEffect(() => {
     if (!open) return;
     restoreFocusRef.current = document.activeElement as HTMLElement | null;
     const timer = window.setTimeout(() => {
-      const focusable = panelRef.current?.querySelector<HTMLElement>(
-        "input, select, textarea, button",
-      );
+      // A field marked data-autofocus wins over the first one in the DOM
+      // (a side list of tabs can come before the field to type in).
+      const panel = panelRef.current;
+      const focusable =
+        panel?.querySelector<HTMLElement>("[data-autofocus]") ??
+        panel?.querySelector<HTMLElement>("input, select, textarea, button");
       focusable?.focus();
     }, 0);
 
     function onKey(event: KeyboardEvent) {
       if (event.key === "Escape") {
         event.stopPropagation();
-        onClose();
+        onCloseRef.current();
       }
     }
     document.addEventListener("keydown", onKey);
@@ -290,32 +349,35 @@ export function Dialog({
       document.removeEventListener("keydown", onKey);
       restoreFocusRef.current?.focus?.();
     };
-  }, [open, onClose]);
+  }, [open]);
 
   return (
+    <DialogLayer portal={size === "wide"}>
     <AnimatePresence>
       {open && (
         <motion.div
-          className="hier-dialog-backdrop"
+          className={classes.backdrop}
           initial={reduced ? false : { opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={reduced ? undefined : { opacity: 0 }}
-          transition={{ duration: 0.16 }}
+          transition={{ duration: 0.12 }}
           onMouseDown={(event) => {
             if (event.target === event.currentTarget) onClose();
           }}
         >
           <motion.div
             ref={panelRef}
-            className="hier-dialog"
+            className={classes.panel}
             role="dialog"
             aria-modal="true"
             aria-labelledby={titleId}
-            aria-describedby={description ? descId : undefined}
-            initial={reduced ? false : { opacity: 0, scale: 0.96, y: 8 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={reduced ? undefined : { opacity: 0, scale: 0.96, y: 8 }}
-            transition={{ duration: 0.2, ease: EASE_OUT }}
+            aria-describedby={describedById(describedBy, description, descId)}
+            /* Opacity and a short lift only, both compositor-friendly: no
+               scale, which re-rasterised the panel and its large shadow. */
+            initial={reduced ? false : { opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={reduced ? undefined : { opacity: 0, y: 6 }}
+            transition={{ duration: 0.14, ease: EASE_OUT }}
           >
             <h2 className="hier-dialog-title" id={titleId}>
               {title}
@@ -330,12 +392,56 @@ export function Dialog({
         </motion.div>
       )}
     </AnimatePresence>
+    </DialogLayer>
+  );
+}
+
+function FormDialogFooter({
+  error,
+  submitLabel,
+  submitting,
+  canSubmit,
+  onClose,
+}: {
+  error?: string | null;
+  submitLabel: string;
+  submitting: boolean;
+  canSubmit: boolean;
+  onClose: () => void;
+}) {
+  return (
+    <>
+      {error && (
+        <p className="error-text" role="alert" style={{ margin: "0.4rem 0 0", fontSize: "0.8rem" }}>
+          {error}
+        </p>
+      )}
+      <div className="hier-dialog-actions">
+        <button
+          type="button"
+          className="ghost-button"
+          onClick={onClose}
+          disabled={submitting}
+        >
+          Cancel
+        </button>
+        <button
+          type="submit"
+          className="primary-button"
+          disabled={submitting || !canSubmit}
+        >
+          {submitting ? "Working…" : submitLabel}
+        </button>
+      </div>
+    </>
   );
 }
 
 /**
  * Dialog + form scaffolding shared by every create/invite/assign dialog:
- * submit + cancel actions, inline error, and a busy state.
+ * submit + cancel actions, inline error, and a busy state. `size="wide"`
+ * pins the title and the actions and scrolls only the body between them, so
+ * Cancel and Create are never cut off, however short the window.
  */
 export function FormDialog({
   open,
@@ -346,6 +452,7 @@ export function FormDialog({
   submitting,
   error,
   canSubmit = true,
+  size = "default",
   onSubmit,
   children,
 }: {
@@ -357,39 +464,54 @@ export function FormDialog({
   submitting: boolean;
   error?: string | null;
   canSubmit?: boolean;
+  size?: DialogSize;
   onSubmit: () => void;
   children: ReactNode;
 }) {
+  const bodyDescId = useId();
   function handleSubmit(event: FormEvent) {
     event.preventDefault();
     if (!submitting && canSubmit) onSubmit();
   }
+  const footer = (
+    <FormDialogFooter
+      error={error}
+      submitLabel={submitLabel}
+      submitting={submitting}
+      canSubmit={canSubmit}
+      onClose={onClose}
+    />
+  );
+  if (size !== "wide") {
+    return (
+      <Dialog open={open} onClose={onClose} title={title} description={description}>
+        <form onSubmit={handleSubmit} noValidate>
+          {children}
+          {footer}
+        </form>
+      </Dialog>
+    );
+  }
+  // Wide: the description scrolls with the body, so at small heights only
+  // the title and the actions hold their room.
   return (
-    <Dialog open={open} onClose={onClose} title={title} description={description}>
-      <form onSubmit={handleSubmit} noValidate>
-        {children}
-        {error && (
-          <p className="error-text" role="alert" style={{ margin: "0.4rem 0 0", fontSize: "0.8rem" }}>
-            {error}
-          </p>
-        )}
-        <div className="hier-dialog-actions">
-          <button
-            type="button"
-            className="ghost-button"
-            onClick={onClose}
-            disabled={submitting}
-          >
-            Cancel
-          </button>
-          <button
-            type="submit"
-            className="primary-button"
-            disabled={submitting || !canSubmit}
-          >
-            {submitting ? "Working…" : submitLabel}
-          </button>
+    <Dialog
+      open={open}
+      onClose={onClose}
+      title={title}
+      describedBy={description ? bodyDescId : undefined}
+      size="wide"
+    >
+      <form className="hier-dialog-form" onSubmit={handleSubmit} noValidate>
+        <div className="hier-dialog-body">
+          {description && (
+            <p className="hier-dialog-desc" id={bodyDescId}>
+              {description}
+            </p>
+          )}
+          {children}
         </div>
+        <div className="hier-dialog-footer">{footer}</div>
       </form>
     </Dialog>
   );

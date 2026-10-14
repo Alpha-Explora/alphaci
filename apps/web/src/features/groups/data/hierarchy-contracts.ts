@@ -14,7 +14,12 @@
  * convention and are documented as the shared FE↔BE assumption in docs/UI_LAYOUTS.md.
  */
 
-import type { AppRole, WorkspaceRole } from "@/shared/api/contracts";
+import type {
+  AppRole,
+  DeploymentProvisioningRequest,
+  DeploymentProvisioningResult,
+  WorkspaceRole,
+} from "@/shared/api/contracts";
 
 /**
  * Create capability (systems, delivery projects, repositories) is governed by
@@ -58,6 +63,31 @@ export const GROUP_ROLE_LABELS: Record<GroupRole, string> = {
   member: "Member",
   viewer: "Viewer",
 };
+
+/**
+ * The role a team roster shows for a member. Roles come from the global app
+ * role, not from anything chosen on the roster, and use the product's persona
+ * names: lead -> Product owner, admin -> Admin, qa -> QA Team, member ->
+ * Developer. A row that carries no app role falls back to its stored
+ * team-role label.
+ */
+export function memberRoleLabel(member: {
+  role: GroupRole;
+  appRole?: AppRole | null;
+}): string {
+  switch (member.appRole) {
+    case "admin":
+      return "Admin";
+    case "lead":
+      return "Product owner";
+    case "qa":
+      return "QA Team";
+    case "member":
+      return "Developer";
+    default:
+      return GROUP_ROLE_LABELS[member.role];
+  }
+}
 
 /** Ranks (plan §2.1) — used only for sorting/derived UI, never sent on the wire. */
 export const GROUP_ROLE_RANK: Record<GroupRole, number> = {
@@ -190,6 +220,8 @@ export interface GroupMember {
   name: string;
   email: string | null;
   avatarUrl: string | null;
+  /** The member's global app role, when the backend reports it. */
+  appRole?: AppRole | null;
   invitedBy: string | null;
   invitedAt: string | null;
   removedAt: string | null;
@@ -202,10 +234,6 @@ export interface AddGroupMemberRequest {
   userId: string;
   /** Defaults to 'member'. 'admin' is not grantable — ownership moves via transfer. */
   role?: GrantableRole;
-}
-
-export interface UpdateMemberRoleRequest {
-  role: GroupRole;
 }
 
 /* ── Systems & Delivery Projects (plan §2.5) ───────────────────────────────── */
@@ -270,10 +298,93 @@ export interface HierarchyRepository {
   updatedAt: string;
 }
 
+/**
+ * "Add repository" inside a Project (POST /delivery-projects/:id/repositories).
+ * The same setup the create wizard runs for one repository, so `projectTypeId`
+ * (a stack from GET /catalog/project-options) is required. An omitted
+ * `deploymentProvisioning` means the managed defaults: frontend stacks on
+ * Vercel, backend stacks on Render.
+ */
 export interface CreateRepositoryRequest {
   name: string;
-  /** Private only — enforced by the backend, not just defaulted (plan §2.6). */
-  visibility: "private";
+  projectTypeId: string;
+  /** The UI sends 'private'; the backend also accepts 'public', as the wizard does. */
+  visibility?: "private" | "public";
+  workflowRecipeId?: string;
+  serviceName?: string;
+  repoShape?: "standalone" | "mono" | "monorepo";
+  servicePath?: string;
+  nodeVersion?: string;
+  coverageThreshold?: number;
+  tests?: Partial<Record<string, boolean>>;
+  outputFileName?: string;
+  deploymentProvisioning?: DeploymentProvisioningRequest;
+}
+
+/** What the hosting step of "Add repository" did. `skipped` = none requested. */
+export type RepositoryHostingOutcome = "provisioned" | "partial" | "failed" | "skipped";
+
+export interface RepositoryHostingFailure {
+  slot: string;
+  provider: string;
+  reason: string;
+}
+
+/** The repository row plus how its setup went. A hosting failure does not fail the create. */
+export interface CreatedRepositoryResponse extends HierarchyRepository {
+  provisioning: {
+    projectId: string;
+    repoFullName: string;
+    repoUrl: string;
+    workflowPath: string;
+    branchesCreated: string[];
+    hosting: {
+      outcome: RepositoryHostingOutcome;
+      failures: RepositoryHostingFailure[];
+    };
+    deploymentProvisioning?: DeploymentProvisioningResult;
+  };
+}
+
+/* ── Project members (delivery-project membership + its GitHub access) ────── */
+
+/** Derived server-side from the app role: member -> developer, qa -> qa. */
+export type DeliveryProjectMemberKind = "developer" | "qa";
+
+export interface DeliveryProjectMember {
+  id: string;
+  deliveryProjectId: string;
+  userId: string;
+  memberKind: DeliveryProjectMemberKind;
+  status: "active" | "removed";
+  addedBy: string | null;
+  createdAt: string;
+  updatedAt: string;
+  login: string | null;
+  name: string | null;
+  avatarUrl: string | null;
+}
+
+/** The GitHub side of a membership change. `stub`: nothing is granted yet. */
+export interface ProjectMemberGithubAccess {
+  syncMode: "live" | "stub";
+  /** Repositories a grant (add) or a revoke (remove) was queued for. */
+  repositoriesQueued: number;
+}
+
+export interface ProjectMembersResponse {
+  items: DeliveryProjectMember[];
+}
+
+export interface ProjectMemberChangeResponse {
+  member: DeliveryProjectMember;
+  githubAccess: ProjectMemberGithubAccess;
+}
+
+export interface ProjectMembersSyncResponse {
+  items: DeliveryProjectMember[];
+  syncMode: "live";
+  repositoriesQueued: number;
 }
 
 export interface UpdateRepositoryRequest {

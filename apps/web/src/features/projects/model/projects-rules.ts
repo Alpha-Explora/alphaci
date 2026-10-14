@@ -225,24 +225,6 @@ export function splitOverviewPreviews(
   return { production, branches };
 }
 
-/** The pull request on GitHub, when both halves of the address are known. */
-export function pullRequestUrl(
-  repoFullName: string | null | undefined,
-  pullRequestNumber: number | null,
-): string | null {
-  if (!repoFullName || pullRequestNumber === null) return null;
-  return `https://github.com/${repoFullName}/pull/${pullRequestNumber}`;
-}
-
-/** The commit on GitHub, when both halves of the address are known. */
-export function commitUrl(
-  repoFullName: string | null | undefined,
-  commitSha: string | null,
-): string | null {
-  if (!repoFullName || !commitSha) return null;
-  return `https://github.com/${repoFullName}/commit/${commitSha}`;
-}
-
 /** "https://web-app.vercel.app/" -> "web-app.vercel.app". Unparseable URLs pass through. */
 export function displayHost(url: string): string {
   try {

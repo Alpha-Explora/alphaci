@@ -6,10 +6,10 @@ import { VerdictPill } from "../../items";
 import {
   agoLabel,
   blockersLabel,
-  commitLabel,
   itemStatusLabel,
   openDefectsLabel,
   passedLabel,
+  REOPEN_CONFIRM,
   statusSegments,
   verdictLabel,
   verdictTone,
@@ -21,14 +21,14 @@ import { SealIcon } from "./studio-icons";
 
 /* ── Summary ─────────────────────────────────────────────────────────────── */
 
-function segmentsLabel(run: QaRun): string {
+function segmentsLabel(run: Pick<QaRun, "summary">): string {
   return statusSegments(run)
     .map((segment) => `${segment.count} ${itemStatusLabel(segment.status).toLowerCase()}`)
     .join(", ");
 }
 
 /** Passed out of total, the run's mix as one bar, and what is still open. */
-export function RunSummary({ run }: Readonly<{ run: QaRun }>) {
+export function RunSummary({ run }: Readonly<{ run: Pick<QaRun, "summary"> }>) {
   const segments = statusSegments(run);
   const { openDefects, blockers } = run.summary;
   return (
@@ -67,49 +67,78 @@ export function RunSummary({ run }: Readonly<{ run: QaRun }>) {
 
 export function SignoffBanner({
   run,
+  subject,
   reopen,
-}: Readonly<{ run: QaRun; reopen: QaReopenViewModel }>) {
+}: Readonly<{
+  run: Pick<QaRun, "status" | "signoff">;
+  /** What was signed off: "uat @ 9f8e7d6", or the Project's repositories. */
+  subject: string;
+  reopen: QaReopenViewModel;
+}>) {
   const signoff = run.signoff;
   if (run.status !== "signed_off" || !signoff) return null;
   const ago = agoLabel(signoff.signedAt);
   return (
-    <div className={`qa-signoff-banner qa-signoff-banner--${verdictTone(signoff.verdict)}`}>
-      <span className="qa-signoff-banner__seal" aria-hidden="true">
-        <SealIcon />
-      </span>
-      <div className="qa-signoff-banner__body">
-        <p className="qa-signoff-banner__title">
-          Signed off <VerdictPill verdict={signoff.verdict} />
-        </p>
-        <p className="qa-signoff-banner__meta">
-          by <strong>@{signoff.signedBy.login}</strong>
-          {ago ? ` · ${ago}` : ""} · {commitLabel(run.branch, run.commitSha)}
-        </p>
-        {signoff.summary ? <p className="qa-signoff-banner__text">{signoff.summary}</p> : null}
-        {signoff.conditions ? (
-          <div className="qa-signoff-banner__conditions">
-            <span>Conditions</span>
-            <p>{signoff.conditions}</p>
-          </div>
-        ) : null}
-        <p className="qa-signoff-banner__note">Signed-off runs are read-only.</p>
-        {reopen.error ? (
-          <p className="qa-form-error" role="alert">
-            {reopen.error.message}
+    <>
+      <div className={`qa-signoff-banner qa-signoff-banner--${verdictTone(signoff.verdict)}`}>
+        <span className="qa-signoff-banner__seal" aria-hidden="true">
+          <SealIcon />
+        </span>
+        <div className="qa-signoff-banner__body">
+          <p className="qa-signoff-banner__title">
+            Signed off <VerdictPill verdict={signoff.verdict} />
           </p>
-        ) : null}
+          <p className="qa-signoff-banner__meta">
+            by <strong>@{signoff.signedBy.login}</strong>
+            {ago ? ` · ${ago}` : ""} · {subject}
+          </p>
+          {signoff.summary ? <p className="qa-signoff-banner__text">{signoff.summary}</p> : null}
+          {signoff.conditions ? (
+            <div className="qa-signoff-banner__conditions">
+              <span>Conditions</span>
+              <p>{signoff.conditions}</p>
+            </div>
+          ) : null}
+          <p className="qa-signoff-banner__note">Signed-off runs are read-only.</p>
+        </div>
+        <ReopenButton reopen={reopen} className="ghost-button qa-signoff-banner__reopen" />
       </div>
-      {reopen.canReopen ? (
-        <button
-          type="button"
-          className="ghost-button qa-signoff-banner__reopen"
-          disabled={reopen.status === "reopening"}
-          onClick={() => void reopen.reopen()}
-        >
-          {reopen.status === "reopening" ? "Reopening…" : "Reopen run"}
-        </button>
-      ) : null}
-    </div>
+      <ReopenDialog reopen={reopen} />
+    </>
+  );
+}
+
+/* ── Reopen ──────────────────────────────────────────────────────────────── */
+
+/** "Reopen run", for viewers the server lets reopen: opens the confirmation. */
+export function ReopenButton({ reopen, className }: Readonly<{ reopen: QaReopenViewModel; className: string }>) {
+  if (!reopen.canReopen) return null;
+  return (
+    <button type="button" className={className} disabled={reopen.status === "reopening"} onClick={reopen.ask}>
+      {reopen.status === "reopening" ? "Reopening…" : "Reopen run"}
+    </button>
+  );
+}
+
+/**
+ * The confirmation every "Reopen run" goes through: reopening removes the
+ * sign-off, so Merge to main is blocked until QA signs off again. A refusal
+ * is shown here, to retry or cancel.
+ */
+export function ReopenDialog({ reopen }: Readonly<{ reopen: QaReopenViewModel }>) {
+  return (
+    <FormDialog
+      open={reopen.confirming}
+      onClose={reopen.cancel}
+      title={REOPEN_CONFIRM.title}
+      description={REOPEN_CONFIRM.text}
+      submitLabel="Reopen run"
+      submitting={reopen.status === "reopening"}
+      error={reopen.error?.message ?? null}
+      onSubmit={() => void reopen.reopen()}
+    >
+      <p className="qa-reopen-confirm__note">{REOPEN_CONFIRM.note}</p>
+    </FormDialog>
   );
 }
 
@@ -171,7 +200,10 @@ function VerdictOptions({ vm }: Readonly<{ vm: QaSignoffViewModel }>) {
   );
 }
 
-export function SignoffDialog({ vm, run }: Readonly<{ vm: QaSignoffViewModel; run: QaRun }>) {
+export function SignoffDialog({
+  vm,
+  description,
+}: Readonly<{ vm: QaSignoffViewModel; /** What is being signed off, e.g. "Release smoke test on uat @ 9f8e7d6". */ description: string }>) {
   const busy = vm.status === "submitting";
   const allowed = vm.eligibility.some((entry) => entry.verdict === vm.verdict && entry.allowed);
   return (
@@ -179,7 +211,7 @@ export function SignoffDialog({ vm, run }: Readonly<{ vm: QaSignoffViewModel; ru
       open={vm.status !== "closed"}
       onClose={vm.closeDialog}
       title="Sign off this run"
-      description={`${run.checklistName} on ${commitLabel(run.branch, run.commitSha)}. Signing off locks the run.`}
+      description={`${description}. Signing off locks the run.`}
       submitLabel="Sign off"
       submitting={busy}
       canSubmit={allowed}

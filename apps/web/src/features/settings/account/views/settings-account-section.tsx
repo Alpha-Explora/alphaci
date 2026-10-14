@@ -198,11 +198,9 @@ function AccountIdentitySection({
 function AccountWorkspaceSection({
   workspaces,
   workspacesError,
-  currentUserId,
 }: Readonly<{
   workspaces: WorkspacesMeResponse | null;
   workspacesError: string | null;
-  currentUserId: string;
 }>) {
   if (workspacesError) {
     return (
@@ -270,10 +268,7 @@ function AccountWorkspaceSection({
                   </span>
                 </div>
               </div>
-              <WorkspaceMembersSection
-                workspace={workspace}
-                currentUserId={currentUserId}
-              />
+              <WorkspaceMembersSection workspace={workspace} />
             </div>
           ))}
         </div>
@@ -533,7 +528,6 @@ export function SettingsAccountSection({
         <AccountWorkspaceSection
           workspaces={workspaces}
           workspacesError={workspacesError}
-          currentUserId={session?.user.id ?? ""}
         />
       ) : null}
       {notificationsEnabled ? (

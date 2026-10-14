@@ -32,15 +32,14 @@ const customJestConfig = {
   coverageReporters: ['text', 'lcov', 'json-summary'],
   coverageThreshold: {
     global: {
-      // Today's real floor across the measured layers (view-models, model,
-      // data, and the two tracked JSX files). The previous 90/80 thresholds
-      // were aspirational and never enforced — CI did not run npm test, and
-      // the numbers have been below the target since before the feature-MVVM
-      // migration. Set the gate at the current reality and ratchet up as
-      // tests are added.
-      // 345 tests pass when the known-broken project-env-panel suite is
-      // excluded (the CI configuration), so the gate is set to the floor
-      // that run produces. The 10-test-included run is slightly higher.
+      // A floor across the measured layers (view-models, model, data, and the
+      // two tracked JSX files), enforced by the "Unit tests" step in
+      // .github/workflows/boundaries.yml, which runs the whole suite with no
+      // exclusions. The numbers date from when that step first ran (345
+      // tests, one suite excluded); on 2026-09-25 the suite was 1158 tests and
+      // measured 73.35% statements, 74.6% branches, 73.63% functions and
+      // 74.95% lines, identically on Windows and on the Linux CI runner. The
+      // floor is far below that: ratchet it up rather than let it drift.
       branches: 47,
       functions: 42,
       lines: 50,

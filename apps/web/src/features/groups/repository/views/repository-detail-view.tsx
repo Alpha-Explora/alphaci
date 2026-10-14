@@ -59,16 +59,6 @@ function RepositoryHeaderActions({
       }}
     >
       <RepositoryStatusBadge status={repository.status} />
-      {repository.htmlUrl ? (
-        <a
-          className="hier-btn-sm"
-          href={repository.htmlUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Open on GitHub
-        </a>
-      ) : null}
     </div>
   );
 }
@@ -77,6 +67,7 @@ function RepositorySections({
   groupId,
   repositoryId,
   canManage,
+  canWriteConfiguration,
   githubSyncLive,
   tab,
   onTab,
@@ -84,6 +75,7 @@ function RepositorySections({
   groupId: string;
   repositoryId: string;
   canManage: boolean;
+  canWriteConfiguration: boolean;
   githubSyncLive: boolean;
   tab: RepoTab;
   onTab: (tab: RepoTab) => void;
@@ -118,7 +110,10 @@ function RepositorySections({
           githubSyncLive={githubSyncLive}
         />
       ) : (
-        <ConfigurationPanel repositoryId={repositoryId} />
+        <ConfigurationPanel
+          repositoryId={repositoryId}
+          canWrite={canWriteConfiguration}
+        />
       )}
     </>
   );
@@ -226,6 +221,7 @@ function RepositoryDetail({
         groupId={groupId}
         repositoryId={repository.id}
         canManage={vm.canManage}
+        canWriteConfiguration={vm.canWriteConfiguration}
         githubSyncLive={vm.githubSyncLive}
         tab={vm.tab}
         onTab={vm.setTab}

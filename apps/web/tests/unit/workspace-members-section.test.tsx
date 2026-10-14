@@ -2,22 +2,15 @@ import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 
 import { WorkspaceMembersSection } from "../../src/features/settings/account/views/workspace-members-section";
-import {
-  addWorkspaceMember,
-  getWorkspaceMembers,
-  removeWorkspaceMember,
-} from "../../src/features/workspace/selection/data/workspaces-api";
+import { getWorkspaceMembers } from "../../src/features/workspace/selection/data/workspaces-api";
+import type * as workspacesApi from "../../src/features/workspace/selection/data/workspaces-api";
 
 jest.mock("../../src/features/workspace/selection/data/workspaces-api", () => ({
-  addWorkspaceMember: jest.fn(),
+  getMyWorkspaces: jest.fn(),
   getWorkspaceMembers: jest.fn(),
-  removeWorkspaceMember: jest.fn(),
-  updateWorkspaceMemberRole: jest.fn(),
 }));
 
-const mockedAddMember = addWorkspaceMember as jest.MockedFunction<typeof addWorkspaceMember>;
 const mockedGetMembers = getWorkspaceMembers as jest.MockedFunction<typeof getWorkspaceMembers>;
-const mockedRemoveMember = removeWorkspaceMember as jest.MockedFunction<typeof removeWorkspaceMember>;
 
 const leadWorkspace = {
   id: "workspace-1",
@@ -26,24 +19,30 @@ const leadWorkspace = {
   role: "admin" as const,
 };
 
+const TONE = {
+  id: "member-1",
+  workspaceId: "workspace-1",
+  userId: "user-1",
+  role: "admin" as const,
+  login: "tone",
+  name: "Tone",
+  email: "tone@example.test",
+  avatarUrl: null,
+  createdAt: "2026-06-15T00:00:00.000Z",
+};
+
+const DEV = {
+  ...TONE,
+  id: "member-2",
+  userId: "user-2",
+  role: "member" as const,
+  login: "dev",
+  name: "",
+  email: null,
+};
+
 describe("WorkspaceMembersSection", () => {
   let root: Root | null = null;
-
-  beforeEach(() => {
-    mockedGetMembers.mockResolvedValue([
-      {
-        id: "member-1",
-        workspaceId: "workspace-1",
-        userId: "user-1",
-        role: "admin",
-        login: "tone",
-        name: "Tone",
-        email: "tone@example.test",
-        avatarUrl: null,
-        createdAt: "2026-06-15T00:00:00.000Z",
-      },
-    ]);
-  });
 
   afterEach(() => {
     if (root) {
@@ -54,80 +53,72 @@ describe("WorkspaceMembersSection", () => {
     jest.clearAllMocks();
   });
 
-  it("loads members and prevents removing the last lead", async () => {
+  async function render(workspace = leadWorkspace): Promise<HTMLElement> {
     const container = document.createElement("div");
     document.body.appendChild(container);
     root = createRoot(container);
-
     await act(async () => {
-      root!.render(<WorkspaceMembersSection workspace={leadWorkspace} currentUserId="user-2" />);
+      root!.render(<WorkspaceMembersSection workspace={workspace} />);
       await Promise.resolve();
     });
+    return container;
+  }
 
-    expect(container.textContent).toContain("Tone");
-    expect(container.querySelector<HTMLSelectElement>('select[aria-label="Role for tone"]')?.disabled).toBe(true);
-    expect(Array.from(container.querySelectorAll("button")).find((button) => button.textContent === "Remove")?.disabled).toBe(true);
+  it("lists the members with their role, read-only", async () => {
+    mockedGetMembers.mockResolvedValue([TONE, DEV]);
+    const container = await render();
+
+    expect(mockedGetMembers).toHaveBeenCalledWith("workspace-1");
+    const rows = [...container.querySelectorAll("li")];
+    expect(rows).toHaveLength(2);
+    expect(rows[0].textContent).toContain("Tone");
+    expect(rows[0].textContent).toContain("@tone / tone@example.test");
+    expect(rows[0].textContent).toContain("Lead");
+    // A nameless member falls back to the login.
+    expect(rows[1].textContent).toContain("dev");
+    expect(rows[1].textContent).toContain("Member");
   });
 
-  it("adds registered users when the viewer can manage the workspace", async () => {
-    mockedAddMember.mockResolvedValue({
-      id: "member-2",
-      workspaceId: "workspace-1",
-      userId: "user-2",
-      role: "member",
-      login: "dev",
-      name: "Dev User",
-      email: null,
-      avatarUrl: null,
-      createdAt: "2026-06-15T00:00:00.000Z",
-    });
-    const container = document.createElement("div");
-    document.body.appendChild(container);
-    root = createRoot(container);
+  /* The backend is retiring the /workspaces/:id/members writes; the roster is
+   * edited on /teams. Even a Lead gets no add, role or remove control here. */
+  it("offers no add, role or remove control, even to a Lead", async () => {
+    mockedGetMembers.mockResolvedValue([TONE, DEV]);
+    const container = await render();
 
-    await act(async () => {
-      root!.render(<WorkspaceMembersSection workspace={leadWorkspace} currentUserId="user-1" />);
-      await Promise.resolve();
-    });
-
-    const input = container.querySelector<HTMLInputElement>('input[aria-label="GitHub login or email"]')!;
-    await act(async () => {
-      const descriptor = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value");
-      descriptor?.set?.call(input, "dev");
-      input.dispatchEvent(new Event("input", { bubbles: true }));
-      input.dispatchEvent(new Event("change", { bubbles: true }));
-    });
-    await act(async () => {
-      Array.from(container.querySelectorAll("button"))
-        .find((button) => button.textContent === "Add")!
-        .click();
-      await Promise.resolve();
-    });
-
-    expect(mockedAddMember).toHaveBeenCalledWith("workspace-1", {
-      loginOrEmail: "dev",
-      role: "member",
-    });
-    expect(container.textContent).toContain("Dev User");
+    expect(container.querySelector("input")).toBeNull();
+    expect(container.querySelector("select")).toBeNull();
+    expect(container.querySelector("button")).toBeNull();
+    // And the data layer no longer has the write functions to call.
+    const actual = jest.requireActual<typeof workspacesApi>(
+      "../../src/features/workspace/selection/data/workspaces-api",
+    );
+    expect(Object.keys(actual).sort()).toEqual(["getMyWorkspaces", "getWorkspaceMembers"]);
   });
 
-  it("renders member controls read-only for non-admin roles", async () => {
-    const container = document.createElement("div");
-    document.body.appendChild(container);
-    root = createRoot(container);
+  it("links to the team's Members page on /teams", async () => {
+    mockedGetMembers.mockResolvedValue([TONE]);
+    const container = await render();
+    const link = [...container.querySelectorAll("a")].find(
+      (anchor) => anchor.textContent === "Manage members in Teams",
+    );
+    expect(link?.getAttribute("href")).toBe("/teams?workspace=workspace-1");
+  });
 
+  it("says so when the members cannot be loaded, and still links to Teams", async () => {
+    mockedGetMembers.mockRejectedValue(new Error("offline"));
+    const container = await render({ ...leadWorkspace, role: "viewer" as never });
     await act(async () => {
-      root!.render(
-        <WorkspaceMembersSection
-          workspace={{ ...leadWorkspace, role: "viewer" }}
-          currentUserId="user-2"
-        />,
-      );
       await Promise.resolve();
     });
 
-    expect(container.querySelector<HTMLInputElement>('input[aria-label="GitHub login or email"]')).toBeNull();
-    expect(container.querySelector<HTMLSelectElement>('select[aria-label="Role for tone"]')?.disabled).toBe(true);
-    expect(mockedRemoveMember).not.toHaveBeenCalled();
+    expect(container.textContent).toContain("Workspace members are unavailable right now.");
+    expect(container.querySelector("li")).toBeNull();
+    expect(container.textContent).toContain("Manage members in Teams");
+  });
+
+  it("shows a loading line until the members arrive", async () => {
+    mockedGetMembers.mockReturnValue(new Promise(() => undefined));
+    const container = await render();
+    expect(container.textContent).toContain("Loading members...");
   });
 });

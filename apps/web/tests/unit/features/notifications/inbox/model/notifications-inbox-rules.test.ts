@@ -9,6 +9,18 @@ import type { NotificationItem } from "../../../../../../src/features/notificati
  * behaviour directly testable — no React, no fetch mock, no jsdom. That is the
  * practical payoff of the model/ layer, not just the tidier folder. */
 
+// The fixtures and the rule each read the wall clock. Pin it (local mid-afternoon,
+// built with the local-time constructor so it means the same in every zone) so a
+// run that straddles midnight cannot file "today" under Yesterday.
+beforeAll(() => {
+  jest.useFakeTimers();
+  jest.setSystemTime(new Date(2026, 8, 25, 15, 0, 0));
+});
+
+afterAll(() => {
+  jest.useRealTimers();
+});
+
 function at(offsetDays: number, id = "n-1"): NotificationItem {
   const created = new Date();
   created.setDate(created.getDate() - offsetDays);
@@ -20,6 +32,9 @@ function at(offsetDays: number, id = "n-1"): NotificationItem {
     eventCode: "run.succeeded",
     readAt: null,
     createdAt: created.toISOString(),
+    projectId: null,
+    groupId: null,
+    deliveryProjectId: null,
   };
 }
 

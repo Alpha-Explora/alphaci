@@ -10,6 +10,7 @@ import {
   usePullRequestReviewViewModel,
   type PullRequestReviewViewModel,
 } from "../../../../../../src/features/projects/detail/view-models/use-pull-request-review-view-model";
+import { ApiError } from "../../../../../../src/shared/api/request";
 
 jest.mock(
   "../../../../../../src/features/projects/detail/data/project-workspace-api",
@@ -138,6 +139,25 @@ describe("usePullRequestReviewViewModel merging", () => {
     expect(current().mergeFailed).toBe(true);
     expect(current().mergeMessage).toBe(
       "Squash merges are not allowed on this repository.",
+    );
+  });
+
+  /** Phase 1 security gate: MAIN_MERGE_VIA_QA_STUDIO (PERSONA_WORKFLOW_SPEC.md §8.1). */
+  it("shows the backend's MAIN_MERGE_VIA_QA_STUDIO sentence, not the raw server message", async () => {
+    mockMerge.mockRejectedValue(
+      new ApiError("Request failed with status 403", 403, {
+        code: "MAIN_MERGE_VIA_QA_STUDIO",
+        message: "generic backend text",
+      }),
+    );
+
+    await act(async () => {
+      await current().merge();
+    });
+
+    expect(current().mergeFailed).toBe(true);
+    expect(current().mergeMessage).toBe(
+      "Merges into main go through PO Studio — Ready for production.",
     );
   });
 });

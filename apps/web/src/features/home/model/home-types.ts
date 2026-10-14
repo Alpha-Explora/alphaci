@@ -19,6 +19,21 @@ export type {
   HierarchySystem,
   MyAssignedRepository,
 } from "@/features/groups";
+export type {
+  FolderRepository,
+  ProjectFolder,
+  ProjectFoldersSnapshot,
+} from "@/features/teams/project-folders";
+export type {
+  TeamQaDefectCounts,
+  TeamQaLatestRun,
+  TeamQaOverview,
+  TeamQaProject,
+  TeamQaPromotion,
+  TeamQaRequirementSummary,
+  TeamQaVerificationCounts,
+} from "@/features/checklists";
+export type { AppRole } from "@/shared/api/contracts";
 
 import type { RunGroup, RunOverallStatus, StageId } from "@/shared/api/contracts";
 import type {

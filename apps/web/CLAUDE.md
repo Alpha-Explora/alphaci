@@ -169,21 +169,40 @@ Use `useAuthSession().signOut` / `isSigningOut`. Do not call `logout()` and
 
 ## Routes
 
-22 routes; 14 static / 9 dynamic at build. Everything except `/`, `/login`,
-`/signup` and `/auth/callback` is a one-line re-export from a feature.
+27 routes; 16 static / 11 dynamic at build (plus `/_not-found`). Everything
+except `/`, `/login`, `/signup` and `/auth/callback` is a one-line re-export
+from a feature.
 
 ```
 /                                    /admin
 /login  /signup  /auth/callback      /admin/feedback
 /home                                /admin/users/[id]
 /workflows                           /groups/[groupId]
-/runs                                /groups/[groupId]/activity
+/runs  /runs/report                  /groups/[groupId]/activity
 /projects/[projectId]                /groups/[groupId]/members
+/projects/[projectId]/qa/report/[runId]
+/qa/project-report/[deliveryProjectId]/[runId]
 /teams                               /groups/[groupId]/systems
-/settings                            /groups/[groupId]/systems/[systemId]
-/inbox                               /groups/[groupId]/repositories/[repositoryId]
-/guide                               /groups/[groupId]/delivery-projects/[deliveryProjectId]
+/checklists  /activity               /groups/[groupId]/systems/[systemId]
+/settings                            /groups/[groupId]/repositories/[repositoryId]
+/inbox                               /groups/[groupId]/delivery-projects/[deliveryProjectId]
+/guide
 ```
+
+The team pages all show the team selected in the header's workspace picker
+(the only team selector; one list under "Your teams", sorted by name, where a
+platform admin's non-member teams are merged in; a "+" Create team button sits
+at the right end of that heading for Team leads and Admins): `/workflows` its Project cards, `/teams` its
+members, `/checklists` its QA checklist templates, `/activity` its activity &
+audit feed, and `/settings?tab=team` its own settings. `/teams` forwards old
+`?section=` links to those pages (`legacyTeamsRedirect` in
+`features/teams/model/teams-rules.ts`). The team pages open straight onto
+their content card (no hero header; the page's h1 is visually hidden). The
+sidebar offers Activity only to whoever the backend lets read the feed — a
+Team lead (global app role `lead`) who belongs to the selected team, or an
+admin / platform admin. The stored per-team role does not decide; the backend
+derives the team role from the app role (`canOpenTeamActivity` in
+`features/workspace/selection/model/workspace-types.ts`).
 
 `/runs` is built and wired to the BE run history. (Earlier revisions of this
 file said it was blocked on the webhook receiver; it isn't.)

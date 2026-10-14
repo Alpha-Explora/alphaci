@@ -28,13 +28,17 @@ import {
   isExistingDiscoverDisabled,
   isExistingSetupDisabled,
   isFinalCreateDisabled,
+  isExistingSetupMode,
   isGenerateDisabled,
+  isProjectChoiceMissing,
   isProjectQuotaReached,
   isRepositoryStepReady,
   nextWizardStep,
   teamChoiceState,
   wizardStepReadyFlags,
 } from "../model/setup-tab-rules";
+import { REPOSITORY_CREATE_ROLE_NOTE } from "../model/role-gate-rules";
+import type { ProjectChoice } from "./setup-wizard-props";
 import { ExistingRepoSetupPanel } from "./existing-repo-setup-panel";
 import { NewRepoWizard, RepositoryCreationProgress } from "./new-repo-wizard";
 import { SetupModeToggle } from "./setup-mode-toggle";
@@ -45,6 +49,12 @@ import { SetupTeamScope } from "./setup-team-scope";
 import { GenerateYamlLink } from "./setup-wizard-automation";
 
 interface WorkflowSetupTabProps {
+  /**
+   * Developer or admin (or a guest, who is sent to sign up instead). The
+   * backend refuses repository creation and existing-repo onboarding for a
+   * Product owner and QA Team, so the controls are replaced by a note.
+   */
+  canCreateRepositories: boolean;
   createResult: CreateProjectResult | null;
   /**
    * Where the create was started from. "in-team" means a team panel already
@@ -63,6 +73,20 @@ interface WorkflowSetupTabProps {
   workspaces?: WorkspaceSummary[] | null;
   selectedWorkspaceId?: string | null;
   onChangeWorkspace?: (workspaceId: string | null) => void;
+  /** "Team / Project" when a ?project= link files the repository in a Project. */
+  targetProjectLabel?: string | null;
+  /** That Project's own name: the wizard shows "Adding to Project: <name>" and asks for none. */
+  joinedProjectName?: string | null;
+  /** A Developer's Project select (see WizardStepProps), or null. */
+  projectChoice: ProjectChoice | null;
+  /** Why the target Project cannot take a repository yet (no Feature), or null. */
+  projectBlocker?: string | null;
+  /**
+   * Whether "Existing repository" is offered. Onboarding an existing
+   * repository names a NEW Project, which a Developer may not create, so a
+   * Developer only gets the new-repository path (filed in a Project).
+   */
+  existingRepoAllowed: boolean;
   deploymentOwnershipMode: EnvOwnershipMode;
   deploymentProvisioning: DeploymentProvisioningFormState;
   envProvisioningEnabled: boolean;
@@ -87,6 +111,9 @@ interface WorkflowSetupTabProps {
   projectCatalog: ProjectOptionsCatalogState;
   reducedMotion: boolean;
 }
+
+/** The Repository step in WIZARD_STEPS. */
+const REPOSITORY_STEP_INDEX = 1;
 
 function setupTabEnter(reducedMotion: boolean) {
   if (reducedMotion) {
@@ -119,12 +146,18 @@ function InlineSetupResult({
 }
 
 export function WorkflowSetupTab({
+  canCreateRepositories,
   createResult,
   deploymentOwnershipMode,
   creationScope,
   workspaces,
   selectedWorkspaceId,
   onChangeWorkspace,
+  targetProjectLabel,
+  joinedProjectName = null,
+  projectChoice,
+  projectBlocker = null,
+  existingRepoAllowed,
   deploymentProvisioning,
   envProvisioningEnabled,
   existingRepoBaseBranch,
@@ -151,7 +184,7 @@ export function WorkflowSetupTab({
   const usageItems = useProjectUsage();
   const [activeWizardStep, setActiveWizardStep] = useState(0);
   const [furthestWizardStep, setFurthestWizardStep] = useState(0);
-  const isExistingMode = setupMode === "existing";
+  const isExistingMode = isExistingSetupMode(setupMode, existingRepoAllowed);
   const projectQuota = findProjectQuota(usageItems);
   const projectQuotaReached = isProjectQuotaReached(projectQuota);
   const hasSelectedProjectType = Boolean(projectCatalog.selectedProjectType);
@@ -186,6 +219,8 @@ export function WorkflowSetupTab({
     loadingProjectOptions: projectCatalog.loadingProjectOptions,
     existingRepoFullName,
     hasSelectedProjectType,
+    projectName: form.projectName,
+    projectNameServerError: form.projectNameError,
   });
   const enforcedOrgLinkedRepos = filterEnforcedOrgRepos(
     github.linkedRepos,
@@ -216,6 +251,9 @@ export function WorkflowSetupTab({
       hasSelectedProjectType,
     }),
     repository: isRepositoryStepReady({
+      projectName: joinedProjectName === null ? form.projectName : null,
+      projectNameServerError: form.projectNameError,
+      projectChoiceMissing: isProjectChoiceMissing(projectChoice) || projectBlocker !== null,
       repoName: form.repoName,
       isMicroservicesShape: projectCatalog.isMicroservicesShape,
       isMultiRepoShape: projectCatalog.isMultiRepoShape,
@@ -230,6 +268,17 @@ export function WorkflowSetupTab({
     teamChoiceMissing: team.teamChoiceMissing,
     priorStepsReady: wizardStepReady.slice(0, 4).every(Boolean),
   });
+
+  // A "name taken" refusal takes the user back to the Repository step, where
+  // the field shows it. Applied while rendering (state derived from a changing
+  // input), not in an effect.
+  const [seenProjectNameError, setSeenProjectNameError] = useState<string | null>(null);
+  if (form.projectNameError !== seenProjectNameError) {
+    setSeenProjectNameError(form.projectNameError);
+    if (form.projectNameError && !isExistingMode) {
+      setActiveWizardStep(REPOSITORY_STEP_INDEX);
+    }
+  }
 
   function goToWizardStep(step: number) {
     if (!canSelectWizardStep(step, furthestWizardStep, wizardStepReady)) {
@@ -251,19 +300,36 @@ export function WorkflowSetupTab({
     setActiveWizardStep((current) => Math.max(0, current - 1));
   }
 
+  if (!canCreateRepositories) {
+    return (
+      <section
+        className="create-project-layout"
+        id="workflow-panel-setup"
+        aria-label="Create project"
+      >
+        <div className="create-project-main">
+          <p className="env-empty-state" role="status">
+            {REPOSITORY_CREATE_ROLE_NOTE}
+          </p>
+        </div>
+      </section>
+    );
+  }
+
   return (
     <motion.section
       className="create-project-layout"
       id="workflow-panel-setup"
-      role="tabpanel"
-      aria-labelledby="workflow-tab-setup"
-      tabIndex={0}
+      aria-label="Create project"
       initial={setupTabEnter(reducedMotion)}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] }}
     >
       <div className="create-project-main">
         <SetupTabHeader
+          // The top-level create view already has the page's "Create project"
+          // h1; a team panel has no heading of its own, so it keeps this one.
+          showTitle={creationScope === "in-team"}
           form={form}
           isExistingMode={isExistingMode}
           projectCatalog={projectCatalog}
@@ -274,6 +340,7 @@ export function WorkflowSetupTab({
           onChangeWorkspace={onChangeWorkspace}
           selectedWorkspaceId={selectedWorkspaceId}
           workspaces={workspaces}
+          targetProjectLabel={targetProjectLabel}
         />
         <CatalogLoadingNotice loading={projectCatalog.loadingProjectOptions} />
         <RepositoryCreationProgress
@@ -287,6 +354,7 @@ export function WorkflowSetupTab({
             Flip EXISTING_REPO_MODE_ENABLED to true to restore the segmented
             control; all handlers and the existing-mode panel remain wired. */}
         <SetupModeToggle
+          allowed={existingRepoAllowed}
           setupMode={setupMode}
           onChangeSetupMode={onChangeSetupMode}
         />
@@ -304,9 +372,12 @@ export function WorkflowSetupTab({
           noLinkedRepos={noLinkedRepos}
           onChangeExistingRepoBaseBranch={onChangeExistingRepoBaseBranch}
           onChangeExistingRepoFullName={onChangeExistingRepoFullName}
+          onChangeProjectName={form.setProjectName}
           onDiscoverExistingRepo={onDiscoverExistingRepo}
           onRetryLinkedRepos={github.loadLinkedRepos}
           onSetupExistingRepo={onSetupExistingRepo}
+          projectName={form.projectName}
+          projectNameError={form.projectNameError}
         />
         <NewRepoWizard
           activeWizardStep={activeWizardStep}
@@ -318,6 +389,9 @@ export function WorkflowSetupTab({
           github={github}
           isCreatingProject={isCreatingProject}
           isExistingMode={isExistingMode}
+          joinedProjectName={joinedProjectName}
+          projectChoice={projectChoice}
+          projectBlocker={projectBlocker}
           onBack={goToPreviousWizardStep}
           onCreateProject={onCreateProject}
           onNext={goToNextWizardStep}

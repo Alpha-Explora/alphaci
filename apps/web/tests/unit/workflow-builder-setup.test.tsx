@@ -2,6 +2,7 @@ import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 
 import { WorkflowBuilder } from "../../src/features/workflows/studio/views/workflow-builder";
+import { WorkspaceProvider } from "../../src/features/workspace/selection/views/workspace-selection-context";
 import {
   createProject,
   createGithubRepo,
@@ -20,6 +21,7 @@ import {
   getMyWorkspaces,
 } from "../support/api-client";
 import type { ProjectOptionsResponse } from "../../src/shared/api/contracts";
+import { ApiError } from "../../src/shared/api/request";
 
 jest.mock("framer-motion", () => {
   const React = jest.requireActual("react");
@@ -31,7 +33,7 @@ jest.mock("framer-motion", () => {
         () =>
         ({ children, ...props }: { children?: React.ReactNode } & Record<string, unknown>) => {
           const domProps = { ...props };
-          for (const key of ["initial", "animate", "exit", "transition", "whileHover", "whileTap", "layout", "layoutId"]) {
+          for (const key of ["initial", "animate", "exit", "transition", "whileHover", "whileTap", "whileInView", "viewport", "variants", "layout", "layoutId"]) {
             delete domProps[key];
           }
 
@@ -48,14 +50,22 @@ jest.mock("framer-motion", () => {
   };
 });
 
-// The onboarding tour hook (rendered inside WorkflowBuilder) reads useSearchParams.
+// The view-models read the query string (?tab=setup, ?group=) and write the
+// chosen group back with router.replace. `mockSearch` is the page's query.
+let mockSearch = "";
+const mockReplace = jest.fn();
 jest.mock("next/navigation", () => ({
-  useSearchParams: () => ({ get: () => null }),
-  useRouter: () => ({ push: () => undefined }),
+  useSearchParams: () => new URLSearchParams(mockSearch),
+  usePathname: () => "/workflows",
+  useRouter: () => ({
+    push: () => undefined,
+    replace: (...args: unknown[]) => mockReplace(...args),
+  }),
 }));
 
 jest.mock("../../src/features/projects/detail/data/projects-api", () => ({
   createProject: jest.fn(),
+  setupProject: jest.fn(),
   getProjects: jest.fn(),
 }));
 jest.mock("../../src/features/workflows/studio/data/existing-repos-api", () => ({
@@ -87,6 +97,25 @@ jest.mock("../../src/features/projects/detail/data/usage-api", () => ({
 }));
 jest.mock("../../src/features/groups/data/hierarchy-api", () => ({
   getGroups: jest.fn().mockResolvedValue([]),
+  getDeliveryProject: jest.fn(),
+}));
+
+// The project explorer reads the caller's role from the session itself (the
+// builder gets it as a prop). `mockAppRole` is that session's role.
+let mockAppRole: string | undefined;
+jest.mock("../../src/features/auth/session", () => ({
+  ...jest.requireActual("../../src/features/auth/session"),
+  useAuthSession: () => ({ session: { appRole: mockAppRole } }),
+}));
+
+// A Developer picks the Project a repository goes into from the team's
+// Projects; a Product owner's Create project opens the New Project dialog.
+jest.mock("../../src/features/teams/project-folders/data/project-folders-repository", () => ({
+  projectFoldersRepository: {
+    list: jest.fn(),
+    create: jest.fn(),
+    listChecklists: jest.fn().mockResolvedValue([]),
+  },
 }));
 
 // Every project belongs to a team, so the Setup tab has to name one. Default to
@@ -96,6 +125,47 @@ jest.mock("../../src/features/workspace/selection/data/workspaces-api", () => ({
   getMyWorkspaces: jest.fn(),
 }));
 
+const mockedListFolders = (
+  jest.requireMock("../../src/features/teams/project-folders/data/project-folders-repository") as {
+    projectFoldersRepository: { list: jest.Mock };
+  }
+).projectFoldersRepository.list;
+
+/** The team's Projects, as GET /groups/:id/project-folders normalises them. */
+/** The team's Projects; a third entry is the Project's active Feature count (none: unknown). */
+function folders(names: Array<[string, string] | [string, string, number]>) {
+  return {
+    groupId: "workspace-1",
+    canManage: false,
+    canCreateProject: null,
+    canCreateRepository: null,
+    folders: names.map(([deliveryProjectId, name, featureCount]) => ({
+      deliveryProjectId,
+      systemId: "sys-1",
+      name,
+      createdAt: null,
+      featureCount: featureCount ?? null,
+      repositories: [],
+    })),
+    unfiled: [],
+  };
+}
+
+const mockedGetGroups = (
+  jest.requireMock("../../src/features/groups/data/hierarchy-api") as {
+    getGroups: jest.Mock;
+  }
+).getGroups;
+const mockedGetDeliveryProject = (
+  jest.requireMock("../../src/features/groups/data/hierarchy-api") as {
+    getDeliveryProject: jest.Mock;
+  }
+).getDeliveryProject;
+const mockedSetupProject = (
+  jest.requireMock("../../src/features/projects/detail/data/projects-api") as {
+    setupProject: jest.Mock;
+  }
+).setupProject;
 const mockedCreateProject = createProject as jest.MockedFunction<typeof createProject>;
 const mockedCreateGithubRepo = createGithubRepo as jest.MockedFunction<typeof createGithubRepo>;
 const mockedGenerateWorkflow = generateWorkflow as jest.MockedFunction<typeof generateWorkflow>;
@@ -305,6 +375,10 @@ describe("WorkflowBuilder project setup", () => {
   let root: Root;
 
   beforeEach(() => {
+    mockSearch = "";
+    mockAppRole = undefined;
+    mockedGetGroups.mockResolvedValue([]);
+    mockedListFolders.mockResolvedValue(folders([["dp-1", "testfinals"], ["dp-2", "wallet"]]));
     mockedGetCapabilities.mockResolvedValue({
       envProvisioning: {
         enabled: true,
@@ -399,25 +473,44 @@ describe("WorkflowBuilder project setup", () => {
     jest.clearAllMocks();
   });
 
-  async function renderBuilder() {
-    await act(async () => {
-      root.render(<WorkflowBuilder login="tone" plan="pro" />);
-    });
+  function leadSession(appRole: "admin" | "lead" | "qa" | "member") {
+    return { appRole } as unknown as NonNullable<
+      React.ComponentProps<typeof WorkflowBuilder>["session"]
+    >;
+  }
 
-    // Current Projects is the default tab now — open Create Project first,
-    // the same way a user reaches the setup form.
-    await waitForCondition(
-      () =>
-        container.querySelector<HTMLButtonElement>("#workflow-tab-setup") !==
-        null,
-    );
+  /**
+   * The create wizard, arrived at the way every entry point does now: a
+   * `?tab=setup` link (the Projects page's "Create project" is the New Project
+   * dialog). An admin by default — the one role with today's free Project
+   * name; a Developer chooses one of the team's Projects instead.
+   */
+  async function renderBuilder(appRole: "admin" | "lead" | "qa" | "member" = "admin") {
+    if (!mockSearch) mockSearch = "tab=setup";
     await act(async () => {
-      container
-        .querySelector<HTMLButtonElement>("#workflow-tab-setup")
-        ?.click();
+      root.render(
+        <WorkflowBuilder
+          login="tone"
+          plan="pro"
+          session={leadSession(appRole)}
+        />,
+      );
     });
 
     await waitForCondition(() => container.textContent?.includes("Next.js App") ?? false);
+  }
+
+  function createProjectButton(): HTMLButtonElement | null {
+    return container.querySelector<HTMLButtonElement>(
+      "[data-testid='create-project-button']",
+    );
+  }
+
+  async function clickCreateProjectButton() {
+    await waitForCondition(() => createProjectButton() !== null);
+    await act(async () => {
+      createProjectButton()?.click();
+    });
   }
 
   function findButton(startsWith: string): HTMLButtonElement | null {
@@ -445,7 +538,7 @@ describe("WorkflowBuilder project setup", () => {
    */
   async function advanceToStep(
     stopAt: number,
-    values: { projectTypeId?: string; repoName?: string } = {},
+    values: { projectTypeId?: string; repoName?: string; projectName?: string | null } = {},
   ) {
     if (values.projectTypeId) {
       const select =
@@ -455,6 +548,12 @@ describe("WorkflowBuilder project setup", () => {
     if (stopAt === 0) return;
     await clickContinue();
 
+    // The Project name is required; a link into an existing Project shows a
+    // read-only line instead, so there is no input to fill then.
+    const projectNameInput = container.querySelector<HTMLInputElement>("#project-name");
+    if (projectNameInput && values.projectName !== null) {
+      changeValue(projectNameInput, values.projectName ?? "Checkout platform");
+    }
     if (values.repoName) {
       const input = container.querySelector<HTMLInputElement>("#repo-name");
       if (input) changeValue(input, values.repoName);
@@ -465,7 +564,7 @@ describe("WorkflowBuilder project setup", () => {
   }
 
   async function advanceToReview(
-    values: { projectTypeId?: string; repoName?: string } = {},
+    values: { projectTypeId?: string; repoName?: string; projectName?: string | null } = {},
   ) {
     await advanceToStep(4, values);
     await waitForCondition(
@@ -502,6 +601,7 @@ describe("WorkflowBuilder project setup", () => {
         workflowRecipeId: "frontend-standard-ci",
         serviceName: "demo-next-app",
         outputFileName: "ci.yml",
+        projectName: "Checkout platform",
       }),
     );
     expect(mockedCreateGithubRepo).not.toHaveBeenCalled();
@@ -704,7 +804,9 @@ describe("WorkflowBuilder project setup", () => {
         }),
       }),
     );
-    expect(container.textContent).toContain("Current Projects");
+    // Back on the projects view, with the create result banner on top.
+    expect(container.textContent).toContain("Project Created Successfully");
+    expect(container.querySelector("h1")?.textContent).toMatch(/^Projects/);
   });
 
   /*
@@ -735,5 +837,572 @@ describe("WorkflowBuilder project setup", () => {
     ).toBeNull();
     expect(mockedCreateGithubRepo).not.toHaveBeenCalled();
     expect(mockedCreateProject).not.toHaveBeenCalled();
+  });
+
+  it.each(["member", "qa", "lead", "admin"] as const)(
+    "offers %s no Create project button on the projects view without a team",
+    async (role) => {
+      await act(async () => {
+        root.render(
+          <WorkflowBuilder login="tone" plan="pro" session={leadSession(role)} />,
+        );
+      });
+      await waitForCondition(
+        () => container.textContent?.includes("No groups or projects yet.") ?? false,
+      );
+      expect(createProjectButton()).toBeNull();
+      expect(container.textContent).not.toContain("Create project");
+    },
+  );
+
+  it.each(["lead", "qa"] as const)(
+    "replaces the create and onboard controls with a note for %s",
+    async (role) => {
+      mockSearch = "tab=setup";
+      await act(async () => {
+        root.render(
+          <WorkflowBuilder login="tone" plan="pro" session={leadSession(role)} />,
+        );
+      });
+      await waitForCondition(
+        () =>
+          container.textContent?.includes(
+            "Developers create repositories inside a Project.",
+          ) ?? false,
+      );
+      expect(container.querySelector("#project-type-select")).toBeNull();
+      expect(findButton("Existing repository")).toBeNull();
+    },
+  );
+
+  it.each(["member", "admin"] as const)(
+    "shows the create wizard for %s",
+    async (role) => {
+      await renderBuilder(role);
+      expect(container.querySelector("#project-type-select")).not.toBeNull();
+      expect(container.textContent).not.toContain(
+        "Developers create repositories inside a Project.",
+      );
+    },
+  );
+
+  describe("a Developer's Project", () => {
+    function choice(): HTMLSelectElement | null {
+      return container.querySelector<HTMLSelectElement>("[data-testid='setup-project-choice']");
+    }
+
+    async function openDeveloperRepositoryStep() {
+      await renderBuilder("member");
+      const select = container.querySelector<HTMLSelectElement>("#project-type-select");
+      if (select) changeValue(select, "nextjs-app");
+      await clickContinue();
+      await waitForCondition(() => (choice()?.options.length ?? 0) > 1);
+    }
+
+    function reviewValue(label: string): string | null | undefined {
+      const rows = Array.from(container.querySelectorAll(".repo-wizard-review__grid > div"));
+      const row = rows.find((candidate) => candidate.querySelector("dt")?.textContent === label);
+      return row?.querySelector("dd")?.textContent;
+    }
+
+    it("is chosen from the team's Projects instead of named, then the repository is filed there", async () => {
+      await openDeveloperRepositoryStep();
+      expect(mockedListFolders).toHaveBeenCalledWith("workspace-1");
+      expect(container.querySelector("#project-name")).toBeNull();
+      // Onboarding an existing repository names a new Project: not a Developer's path.
+      expect(findButton("Existing repository")).toBeNull();
+      expect(container.textContent).toContain("Choose the Project this repository belongs to.");
+      expect(Array.from(choice()!.options).map((option) => option.textContent)).toEqual([
+        "Select a Project…",
+        "testfinals",
+        "wallet",
+      ]);
+
+      changeValue(container.querySelector<HTMLInputElement>("#repo-name")!, "demo-next-app");
+      // Nothing moves on until a Project is picked.
+      expect(findButton("Continue")).toBeDisabled();
+      await act(async () => {
+        changeValue(choice()!, "dp-2");
+        await Promise.resolve();
+      });
+      expect(choice()!.value).toBe("dp-2");
+      expect(findButton("Continue")).not.toBeDisabled();
+
+      for (let step = 1; step < 4; step += 1) await clickContinue();
+      await waitForCondition(
+        () => container.querySelector("[data-testid='setup-project-button']") !== null,
+      );
+      expect(reviewValue("Project")).toBe("wallet");
+
+      await act(async () => {
+        container.querySelector<HTMLButtonElement>("[data-testid='setup-project-button']")?.click();
+        await Promise.resolve();
+      });
+      const sent = mockedCreateProject.mock.calls[0][0];
+      expect(sent.deliveryProjectId).toBe("dp-2");
+      expect(sent.workspaceId).toBe("workspace-1");
+      expect(sent).not.toHaveProperty("projectName");
+    });
+
+    it("lists a Project with no Feature yet disabled, saying so (Features before repositories)", async () => {
+      mockedListFolders.mockResolvedValue(folders([["dp-1", "testfinals", 2], ["dp-2", "wallet", 0]]));
+      await openDeveloperRepositoryStep();
+      const options = Array.from(choice()!.options);
+      expect(options.map((option) => option.textContent)).toEqual([
+        "Select a Project…",
+        "testfinals",
+        "wallet (no Features yet)",
+      ]);
+      expect(options.map((option) => option.disabled)).toEqual([false, false, true]);
+      expect(container.querySelector("[data-testid='setup-project-blocker']")).toBeNull();
+
+      changeValue(container.querySelector<HTMLInputElement>("#repo-name")!, "demo-next-app");
+      await act(async () => {
+        changeValue(choice()!, "dp-1");
+        await Promise.resolve();
+      });
+      expect(findButton("Continue")).not.toBeDisabled();
+    });
+
+    it("says so when the Product owner has not created a Project yet", async () => {
+      mockedListFolders.mockResolvedValue(folders([]));
+      await renderBuilder("member");
+      const select = container.querySelector<HTMLSelectElement>("#project-type-select");
+      if (select) changeValue(select, "nextjs-app");
+      await clickContinue();
+      await waitForCondition(
+        () => container.querySelector("[data-testid='setup-project-choice-empty']") !== null,
+      );
+      expect(container.querySelector("[data-testid='setup-project-choice-empty']")?.textContent).toBe(
+        "Your Product owner hasn't created a Project yet.",
+      );
+      expect(choice()!.disabled).toBe(true);
+      changeValue(container.querySelector<HTMLInputElement>("#repo-name")!, "demo-next-app");
+      expect(findButton("Continue")).toBeDisabled();
+    });
+
+    it("offers a retry when the team's Projects do not load", async () => {
+      mockedListFolders.mockRejectedValueOnce(new ApiError("boom", 500));
+      await renderBuilder("member");
+      const select = container.querySelector<HTMLSelectElement>("#project-type-select");
+      if (select) changeValue(select, "nextjs-app");
+      await clickContinue();
+      await waitForCondition(
+        () => container.querySelector("[data-testid='setup-project-choice-error']") !== null,
+      );
+      await act(async () => {
+        findButton("Try again")?.click();
+        await Promise.resolve();
+      });
+      await waitForCondition(() => (choice()?.options.length ?? 0) === 3);
+    });
+  });
+
+  it("maps a PROJECT_FEATURES_REQUIRED refusal to its sentence", async () => {
+    mockedCreateProject.mockRejectedValueOnce(
+      new ApiError("Request failed with status 409", 409, {
+        code: "PROJECT_FEATURES_REQUIRED",
+        message: "x",
+        deliveryProjectId: "dp-2",
+      }),
+    );
+    await renderBuilder();
+    await advanceToReview({ projectTypeId: "nextjs-app", repoName: "demo-next-app" });
+    await act(async () => {
+      container.querySelector<HTMLButtonElement>("[data-testid='setup-project-button']")?.click();
+      await Promise.resolve();
+    });
+    await waitForCondition(
+      () => container.textContent?.includes("Waiting for your Product owner to add the first Feature.") ?? false,
+    );
+  });
+
+  it("maps a PROJECT_REQUIRED refusal to its sentence", async () => {
+    mockedCreateProject.mockRejectedValueOnce(
+      new ApiError("Request failed with status 400", 400, { code: "PROJECT_REQUIRED", message: "x" }),
+    );
+    await renderBuilder();
+    await advanceToReview({ projectTypeId: "nextjs-app", repoName: "demo-next-app" });
+    await act(async () => {
+      container.querySelector<HTMLButtonElement>("[data-testid='setup-project-button']")?.click();
+      await Promise.resolve();
+    });
+    await waitForCondition(
+      () => container.textContent?.includes("Choose the Project this repository belongs to.") ?? false,
+    );
+  });
+
+  /* About ten places link to /workflows?tab=setup, some with &group=<id>
+   * (home, the `n` shortcut, /teams, group pages). The tab bar is gone, so
+   * the link is now the only way those arrive on the create view. */
+  it("opens the create view from ?tab=setup&group= with that team preselected", async () => {
+    mockedGetMyWorkspaces.mockResolvedValue({
+      enabled: true,
+      items: [
+        { id: "workspace-1", name: "Platform", kind: "team", role: "admin" },
+        { id: "workspace-2", name: "Payments", kind: "team", role: "member" },
+      ],
+    });
+    mockSearch = "tab=setup&group=workspace-2";
+    await act(async () => {
+      root.render(
+        <WorkflowBuilder login="tone" plan="pro" session={leadSession("admin")} />,
+      );
+    });
+
+    await waitForCondition(() => container.textContent?.includes("Next.js App") ?? false);
+    expect(container.querySelector("h1")?.textContent).toBe("Create project");
+    expect(createProjectButton()).toBeNull();
+
+    await advanceToReview({ projectTypeId: "nextjs-app", repoName: "demo-next-app" });
+    expect(
+      container.querySelector<HTMLSelectElement>("[data-testid='setup-workspace-select']")
+        ?.value,
+    ).toBe("workspace-2");
+  });
+
+  it("returns to the projects view from Back to projects and drops ?tab", async () => {
+    mockSearch = "tab=setup";
+    await act(async () => {
+      root.render(
+        <WorkflowBuilder login="tone" plan="pro" session={leadSession("admin")} />,
+      );
+    });
+    await waitForCondition(() => findButton("Back to projects") !== null);
+
+    await act(async () => {
+      findButton("Back to projects")?.click();
+    });
+
+    await waitForCondition(
+      () => container.textContent?.includes("No groups or projects yet.") ?? false,
+    );
+    expect(container.querySelector("#project-type-select")).toBeNull();
+    expect(mockReplace).toHaveBeenCalledWith("/workflows", { scroll: false });
+  });
+
+  /* The projects view has no team picker: it shows the HEADER's team, which a
+   * ?group= link seeds (WorkflowStudioView hands it to WorkspaceProvider).
+   * A Product owner's "Create project" is the New Project dialog for that
+   * team; an admin also gets the "⋯" Add repository, pre-scoped to it. */
+  async function renderHeaderTeam(appRole: "admin" | "lead" | "member" | "qa") {
+    mockAppRole = appRole;
+    mockedGetGroups.mockResolvedValue([
+      { id: "workspace-1", name: "Platform", description: null, status: "active" },
+      { id: "workspace-2", name: "Payments", description: null, status: "active" },
+    ]);
+    await act(async () => {
+      root.render(
+        <WorkspaceProvider initialWorkspaceId="workspace-2">
+          <WorkflowBuilder login="tone" plan="pro" session={leadSession(appRole)} />
+        </WorkspaceProvider>,
+      );
+    });
+    await waitForCondition(
+      () => container.querySelector("h1")?.textContent?.startsWith("Projects") ?? false,
+    );
+    await waitForCondition(() => container.querySelectorAll("li.pf-card").length === 2);
+    expect(container.querySelector("#main-content [aria-haspopup='listbox']")).toBeNull();
+  }
+
+  it("opens the New Project dialog, not the wizard, from a Product owner's Create project", async () => {
+    await renderHeaderTeam("lead");
+    expect(mockedListFolders).toHaveBeenCalledWith("workspace-2");
+    expect(container.querySelector("[data-testid='create-menu-button']")).toBeNull();
+    await clickCreateProjectButton();
+    expect(container.querySelector('[role="dialog"]')?.textContent).toContain("New Project");
+    expect(container.querySelector("#project-type-select")).toBeNull();
+    expect(container.querySelector("a.pf-card__add")).toBeNull();
+  });
+
+  it("gives an admin Create project and the team's Add repository", async () => {
+    await renderHeaderTeam("admin");
+    expect(createProjectButton()).not.toBeNull();
+    await act(async () => {
+      container.querySelector<HTMLButtonElement>("[data-testid='create-menu-button']")?.click();
+    });
+    const add = container.querySelector<HTMLAnchorElement>("[role='menuitem']");
+    expect(add?.textContent).toContain("Add repository");
+    expect(add?.getAttribute("href")).toBe("/workflows?tab=setup&group=workspace-2");
+  });
+
+  it("gives a Developer no Create project, and Add repository on each Project", async () => {
+    await renderHeaderTeam("member");
+    expect(createProjectButton()).toBeNull();
+    expect(container.querySelector("[data-testid='create-menu-button']")).toBeNull();
+    expect(
+      Array.from(container.querySelectorAll<HTMLAnchorElement>("a.pf-card__add")).map((a) => a.getAttribute("href")),
+    ).toEqual([
+      "/workflows?tab=setup&group=workspace-2&project=dp-1",
+      "/workflows?tab=setup&group=workspace-2&project=dp-2",
+    ]);
+  });
+
+  /* Home's and the group page's "Create project" link here with ?new=project. */
+  it("opens the New Project dialog on arrival from ?new=project, for a Product owner only", async () => {
+    mockSearch = "group=workspace-2&new=project";
+    await renderHeaderTeam("lead");
+    expect(container.querySelector('[role="dialog"]')?.textContent).toContain("New Project");
+    expect(container.querySelector("#project-type-select")).toBeNull();
+  });
+
+  it("ignores ?new=project for a Developer", async () => {
+    mockSearch = "new=project";
+    await renderHeaderTeam("member");
+    expect(container.querySelector('[role="dialog"]')).toBeNull();
+  });
+
+  it("gives QA Team neither", async () => {
+    await renderHeaderTeam("qa");
+    expect(createProjectButton()).toBeNull();
+    expect(container.querySelector("[data-testid='create-menu-button']")).toBeNull();
+    expect(container.querySelector("a.pf-card__add")).toBeNull();
+  });
+
+  describe("Project name", () => {
+    async function openRepositoryStep() {
+      await renderBuilder();
+      const select = container.querySelector<HTMLSelectElement>("#project-type-select");
+      if (select) changeValue(select, "nextjs-app");
+      await clickContinue();
+    }
+
+    async function clickCreate() {
+      await act(async () => {
+        container.querySelector<HTMLButtonElement>("[data-testid='setup-project-button']")?.click();
+        await Promise.resolve();
+      });
+    }
+
+    // The suite's framer-motion mock hands out a new component per render, so
+    // the step remounts on every state change: always re-query, never hold a node.
+    function projectNameInput(): HTMLInputElement {
+      return container.querySelector<HTMLInputElement>("#project-name")!;
+    }
+
+    function repoNameInput(): HTMLInputElement {
+      return container.querySelector<HTMLInputElement>("#repo-name")!;
+    }
+
+    function reviewValue(label: string): string | null | undefined {
+      const rows = Array.from(container.querySelectorAll(".repo-wizard-review__grid > div"));
+      const row = rows.find((candidate) => candidate.querySelector("dt")?.textContent === label);
+      return row?.querySelector("dd")?.textContent;
+    }
+
+    it("asks for it first on the Repository step, independent of the repository name", async () => {
+      await openRepositoryStep();
+
+      expect(projectNameInput()).not.toBeNull();
+      expect(projectNameInput().required).toBe(true);
+      expect(container.textContent).toContain(
+        "The name your team sees on Teams → Projects. It can differ from the repository names.",
+      );
+      // Above the repository name in the document.
+      expect(
+        projectNameInput().compareDocumentPosition(repoNameInput()) &
+          Node.DOCUMENT_POSITION_FOLLOWING,
+      ).toBeTruthy();
+
+      // Typing a repository name neither fills nor unblocks the Project name.
+      changeValue(repoNameInput(), "demo-next-app");
+      expect(projectNameInput().value).toBe("");
+      expect(findButton("Continue")).toBeDisabled();
+
+      changeValue(projectNameInput(), "Checkout platform");
+      expect(findButton("Continue")).not.toBeDisabled();
+      // ...and editing the repository name later never overwrites it.
+      changeValue(repoNameInput(), "other-repo");
+      expect(projectNameInput().value).toBe("Checkout platform");
+    });
+
+    it("keeps Continue disabled for a blank or over-long name and says why", async () => {
+      await openRepositoryStep();
+      changeValue(repoNameInput(), "demo-next-app");
+
+      changeValue(projectNameInput(), "   ");
+      expect(findButton("Continue")).toBeDisabled();
+
+      changeValue(projectNameInput(), "x".repeat(81));
+      expect(findButton("Continue")).toBeDisabled();
+      expect(
+        container.querySelector("[data-testid='setup-project-name-error']")?.textContent,
+      ).toContain("80 characters or fewer");
+      expect(projectNameInput().getAttribute("aria-invalid")).toBe("true");
+
+      changeValue(projectNameInput(), "x".repeat(80));
+      expect(findButton("Continue")).not.toBeDisabled();
+    });
+
+    it("shows it on Review and sends it trimmed", async () => {
+      await renderBuilder();
+      await advanceToReview({
+        projectTypeId: "nextjs-app",
+        repoName: "demo-next-app",
+        projectName: "  Checkout platform  ",
+      });
+
+      expect(reviewValue("Project")).toBe("Checkout platform");
+
+      await clickCreate();
+      expect(mockedCreateProject).toHaveBeenCalledTimes(1);
+      const sent = mockedCreateProject.mock.calls[0][0];
+      expect(sent.projectName).toBe("Checkout platform");
+      expect(sent).not.toHaveProperty("deliveryProjectId");
+    });
+
+    it("maps a 409 PROJECT_NAME_TAKEN to the field and returns to the Repository step", async () => {
+      mockedCreateProject.mockRejectedValueOnce(
+        new ApiError("Request failed with status 409", 409, {
+          statusCode: 409,
+          code: "PROJECT_NAME_TAKEN",
+          message: "A project named Checkout platform already exists.",
+        }),
+      );
+      await renderBuilder();
+      await advanceToReview({ projectTypeId: "nextjs-app", repoName: "demo-next-app" });
+      await clickCreate();
+
+      await waitForCondition(() => container.querySelector("#project-name") !== null);
+      const error = container.querySelector("[data-testid='setup-project-name-error']");
+      expect(error?.textContent).toBe(
+        "A Project with this name already exists in this team. Choose another name.",
+      );
+      expect(container.querySelector("#project-name")?.getAttribute("aria-invalid")).toBe("true");
+      // Back on the Repository step, and it cannot be continued with the same name.
+      expect(container.querySelector("#repo-name")).not.toBeNull();
+      expect(container.querySelector("[data-testid='setup-project-button']")).toBeNull();
+      expect(findButton("Continue")).toBeDisabled();
+
+      // Another name clears the refusal and unblocks the step.
+      changeValue(projectNameInput(), "Checkout platform 2");
+      expect(container.querySelector("[data-testid='setup-project-name-error']")).toBeNull();
+      expect(findButton("Continue")).not.toBeDisabled();
+    });
+
+    describe("on the Existing repository path", () => {
+      async function openExistingMode() {
+        await renderBuilder();
+        await act(async () => {
+          findButton("Existing repository")?.click();
+        });
+        await waitForCondition(() => container.querySelector("#existing-repo-select") !== null);
+      }
+
+      it("asks for the name, blocks Set up CI/CD until it is valid, and sends it", async () => {
+        mockedSetupProject.mockResolvedValue({
+          id: "project-9",
+          repoFullName: "tone/example-app",
+          repoUrl: "https://github.com/tone/example-app",
+          workflowPath: ".github/workflows/ci.yml",
+        });
+        await openExistingMode();
+        expect(projectNameInput()).not.toBeNull();
+
+        changeValue(
+          container.querySelector<HTMLSelectElement>("#existing-repo-select")!,
+          "tone/example-app",
+        );
+        expect(findButton("Set up CI/CD")).toBeDisabled();
+
+        changeValue(projectNameInput(), "  Loyalty app ");
+        expect(findButton("Set up CI/CD")).not.toBeDisabled();
+
+        await act(async () => {
+          findButton("Set up CI/CD")?.click();
+          await Promise.resolve();
+        });
+        expect(mockedSetupProject).toHaveBeenCalledWith(
+          expect.objectContaining({ repoFullName: "tone/example-app", projectName: "Loyalty app" }),
+        );
+      });
+
+      it("shows a name already taken on the field", async () => {
+        mockedSetupProject.mockRejectedValueOnce(
+          new ApiError("Request failed with status 409", 409, { code: "PROJECT_NAME_TAKEN" }),
+        );
+        await openExistingMode();
+        changeValue(
+          container.querySelector<HTMLSelectElement>("#existing-repo-select")!,
+          "tone/example-app",
+        );
+        changeValue(projectNameInput(), "Loyalty app");
+        await act(async () => {
+          findButton("Set up CI/CD")?.click();
+          await Promise.resolve();
+        });
+        await waitForCondition(
+          () => container.querySelector("[data-testid='setup-project-name-error']") !== null,
+        );
+        expect(container.querySelector("[data-testid='setup-project-name-error']")?.textContent).toBe(
+          "A Project with this name already exists in this team. Choose another name.",
+        );
+      });
+    });
+
+    describe("when the repository joins an existing Project", () => {
+      const DP = "3f2b8c1e-5a4d-4e6f-9b7a-1c2d3e4f5a6b";
+
+      async function openLinkedWizard() {
+        mockSearch = `tab=setup&group=workspace-1&project=${DP}`;
+        mockedGetDeliveryProject.mockResolvedValue({
+          id: DP,
+          name: "loyalty",
+          groupId: "workspace-1",
+          status: "active",
+        });
+        // A Developer's Add repository link: the Project is fixed, nothing to choose.
+        await act(async () => {
+          root.render(<WorkflowBuilder login="tone" plan="pro" session={leadSession("member")} />);
+        });
+        await waitForCondition(() => container.textContent?.includes("Next.js App") ?? false);
+        const select = container.querySelector<HTMLSelectElement>("#project-type-select");
+        if (select) changeValue(select, "nextjs-app");
+        await waitForCondition(
+          () => container.querySelector("[data-testid='setup-target-project']") !== null,
+        );
+      }
+
+      it("replaces the field with a read-only line and sends no projectName", async () => {
+        await openLinkedWizard();
+        await clickContinue();
+
+        expect(container.querySelector("#project-name")).toBeNull();
+        expect(container.querySelector("[data-testid='setup-project-choice']")).toBeNull();
+        expect(
+          container.querySelector("[data-testid='setup-adding-to-project']")?.textContent,
+        ).toBe("Adding to Project: loyalty");
+
+        // Only the repository name stands between the user and Continue.
+        changeValue(repoNameInput(), "demo-next-app");
+        expect(findButton("Continue")).not.toBeDisabled();
+        for (let step = 1; step < 4; step += 1) await clickContinue();
+        await waitForCondition(
+          () => container.querySelector("[data-testid='setup-project-button']") !== null,
+        );
+        expect(reviewValue("Project")).toBe("loyalty");
+
+        await clickCreate();
+        const sent = mockedCreateProject.mock.calls[0][0];
+        expect(sent.deliveryProjectId).toBe(DP);
+        expect(sent).not.toHaveProperty("projectName");
+      });
+
+      it("blocks a Developer's link to a Project with no Feature yet, with the same sentence", async () => {
+        mockedListFolders.mockResolvedValue(folders([[DP, "loyalty", 0]]));
+        await openLinkedWizard();
+        await clickContinue();
+        await waitForCondition(
+          () => container.querySelector("[data-testid='setup-project-blocker']") !== null,
+        );
+        expect(container.querySelector("[data-testid='setup-project-blocker']")?.textContent).toBe(
+          "Waiting for your Product owner to add the first Feature.",
+        );
+        changeValue(repoNameInput(), "demo-next-app");
+        // Create can never be reached: the Repository step does not go on.
+        expect(findButton("Continue")).toBeDisabled();
+        expect(mockedCreateProject).not.toHaveBeenCalled();
+      });
+    });
   });
 });

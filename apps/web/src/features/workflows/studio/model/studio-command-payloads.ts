@@ -47,6 +47,8 @@ export interface SetupExistingRepoPayloadInput {
   coverageThreshold: string;
   outputFileName: string;
   deploymentProvisioning: SetupProjectRequest["deploymentProvisioning"];
+  /** Trimmed and already validated by the caller; the existing-repo path never joins a Project. */
+  projectName: string;
 }
 
 export function buildSetupExistingRepoPayload(
@@ -69,6 +71,7 @@ export function buildSetupExistingRepoPayload(
     coverageThreshold: clampCoverageThreshold(input.coverageThreshold),
     outputFileName: input.outputFileName || "ci.yml",
     deploymentProvisioning: input.deploymentProvisioning,
+    projectName: input.projectName.trim(),
   };
 }
 

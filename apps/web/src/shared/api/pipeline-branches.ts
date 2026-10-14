@@ -25,6 +25,25 @@ export const WORKING_BRANCH: PipelineBranch = PIPELINE_BRANCHES[0];
  */
 export const PROMOTION_BRANCHES = PIPELINE_BRANCHES.slice(1);
 
+/**
+ * The hosted branch QA verifies before it is promoted to main, and the only
+ * branch the backend accepts QA runs on (anything else is a 400).
+ *
+ * Mirrors `QA_BRANCH` in the backend's `kernel/config/pipeline-branches.ts`.
+ * QA Studio offers this environment and no other, so it must never be written
+ * out as a literal in a view.
+ */
+export const QA_BRANCH: PipelineBranch = "uat";
+
+/**
+ * The production tier: the last rung, reached only through the promotion
+ * engine's Hop 3 (`uat` -> `main`) and never pushed to, or merged into
+ * directly from the generic workspace UI. Named here, like `QA_BRANCH`, so a
+ * rule asking "is this base the production branch" never spells out the
+ * literal itself.
+ */
+export const PRODUCTION_BRANCH: PipelineBranch = "main";
+
 /** The flow as a label, e.g. "dev > uat > main". */
 export const PROMOTION_FLOW_LABEL = PIPELINE_BRANCHES.join(" > ");
 

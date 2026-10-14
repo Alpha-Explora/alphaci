@@ -1,0 +1,682 @@
+/* ── "Ready for production" ──────────────────────────────────────────────────
+   One question — is uat's current commit QA-approved for main? — answered in
+   two places from the same pieces:
+     .qa-promo-chip / .qa-promo-pop  QA Studio and PO Studio: a status chip in
+                                     the run column's tab bar, its popover,
+                                     and Merge to main beside it.
+     .qa-promo                       the project Overview's read-only card,
+                                     folded to its head.
+   Tone is carried by one rule or dot (success when ready, amber while not,
+   neutral while unknown); everything else stays quiet. Tokens only.
+   ------------------------------------------------------------------------- */
+
+.qa-promo {
+  --qa-promo-tone: var(--border-strong);
+
+  display: grid;
+  gap: 0.55rem;
+  min-width: 0;
+  padding: 0.6rem 0.8rem 0.7rem;
+  border: 1px solid var(--border-layer);
+  border-left: 3px solid var(--qa-promo-tone);
+  border-radius: 0.9rem;
+  background: var(--layer-1);
+  box-shadow: var(--shadow-soft);
+}
+
+.qa-promo[data-ready="true"] {
+  --qa-promo-tone: var(--success);
+}
+
+.qa-promo[data-collapsed="true"] {
+  padding-bottom: 0.6rem;
+}
+
+.qa-promo[aria-busy="true"] .qa-promo__body {
+  opacity: 0.7;
+}
+
+/* ── Head: fold toggle + title, and Merge to main ─────────────────────────── */
+.qa-promo__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.45rem 0.75rem;
+}
+
+.qa-promo__toggle {
+  display: inline-flex;
+  flex: 1 1 14rem;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+  min-height: 2.25rem;
+  padding: 0.15rem 0.3rem 0.15rem 0;
+  border: 0;
+  border-radius: 0.5rem;
+  background: none;
+  font: inherit;
+  text-align: left;
+  color: var(--text-primary);
+  cursor: pointer;
+}
+
+.qa-promo__toggle > .qa-glyph {
+  flex-shrink: 0;
+  color: var(--text-muted);
+  transition: transform 160ms ease-out;
+}
+
+.qa-promo__toggle[aria-expanded="false"] > .qa-glyph {
+  transform: rotate(-90deg);
+}
+
+.qa-promo__toggle:hover > .qa-glyph {
+  color: var(--text-primary);
+}
+
+.qa-promo__toggle:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
+.qa-promo__mark {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border: 1px solid var(--border-layer);
+  border-radius: 0.6rem;
+  background: var(--bg-soft);
+  color: var(--text-muted);
+}
+
+.qa-promo[data-ready="true"] .qa-promo__mark {
+  border-color: var(--success);
+  background: var(--accent-emerald-light);
+  color: var(--success);
+}
+
+.qa-promo__titles {
+  display: grid;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.qa-promo__title {
+  font-size: 0.9rem;
+  font-weight: 700;
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+  color: var(--text-primary);
+}
+
+.qa-promo__route {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.1rem 0;
+  font-size: 0.74rem;
+  color: var(--text-muted);
+}
+
+.qa-promo__route > * + *::before {
+  content: "·";
+  margin: 0 0.4rem;
+  color: var(--border-tile);
+}
+
+.qa-promo__route code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.72rem;
+  color: var(--text-secondary);
+}
+
+/* Two classes: the global .primary-button is hero-scale and loads later. */
+.qa-coltabs-bar .qa-promo__merge {
+  flex-shrink: 0;
+  gap: 0.4rem;
+  min-height: 2.2rem;
+  padding: 0.4rem 0.85rem 0.4rem 0.7rem;
+  border-radius: 0.55rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.qa-coltabs-bar .qa-promo__merge:disabled {
+  border-color: var(--border-strong);
+  background: transparent;
+  box-shadow: none;
+  color: var(--text-muted);
+  transform: none;
+  cursor: not-allowed;
+}
+
+.qa-promo__why {
+  margin: -0.2rem 0 0;
+  font-size: 0.72rem;
+  line-height: 1.45;
+  color: var(--text-muted);
+}
+
+/* ── Body: checklists, what blocks, the PR ───────────────────────────────── */
+.qa-promo__body {
+  display: grid;
+  gap: 0.55rem;
+  padding-top: 0.55rem;
+  border-top: 1px solid var(--border);
+  transition: opacity 160ms ease-out;
+}
+
+.qa-promo__body[hidden] {
+  display: none;
+}
+
+.qa-promo__rows {
+  display: grid;
+  gap: 0.35rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.qa-promo__row {
+  --qa-row-tone: var(--text-muted);
+
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.45rem 0.6rem;
+  border: 1px solid var(--border);
+  border-radius: 0.6rem;
+  background: var(--bg-frost);
+}
+
+.qa-promo__row[data-tone="success"] {
+  --qa-row-tone: var(--success);
+}
+
+.qa-promo__row[data-tone="danger"] {
+  --qa-row-tone: var(--danger);
+}
+
+.qa-promo__row[data-tone="warning"] {
+  --qa-row-tone: var(--warning);
+}
+
+.qa-promo__row[data-tone="brand"] {
+  --qa-row-tone: var(--brand);
+}
+
+.qa-promo__tick {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.35rem;
+  height: 1.35rem;
+  border: 1px solid var(--qa-row-tone);
+  border-radius: 50%;
+  color: var(--qa-row-tone);
+}
+
+.qa-promo__row[data-tone="success"] .qa-promo__tick {
+  background: var(--accent-emerald-light);
+}
+
+.qa-promo__tick .qa-glyph {
+  width: 0.8rem;
+  height: 0.8rem;
+}
+
+.qa-promo__dot {
+  width: 0.4rem;
+  height: 0.4rem;
+  border-radius: 50%;
+  background: var(--qa-row-tone);
+}
+
+.qa-promo__row-text {
+  display: grid;
+  gap: 0.05rem;
+  min-width: 0;
+}
+
+.qa-promo__name {
+  font-size: 0.82rem;
+  font-weight: 650;
+  line-height: 1.35;
+  color: var(--text-primary);
+  overflow-wrap: anywhere;
+}
+
+.qa-promo__state {
+  font-size: 0.72rem;
+  line-height: 1.35;
+  color: var(--qa-row-tone);
+}
+
+.qa-promo__label {
+  margin: 0;
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.qa-promo__reasons {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.qa-promo__reasons ul,
+.qa-promo-outcome__reasons {
+  display: grid;
+  gap: 0.2rem;
+  margin: 0;
+  padding-left: 1.05rem;
+  font-size: 0.78rem;
+  line-height: 1.45;
+  color: var(--text-secondary);
+}
+
+.qa-promo__foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.35rem 0.9rem;
+  font-size: 0.76rem;
+}
+
+.qa-promo__muted {
+  color: var(--text-muted);
+  line-height: 1.45;
+}
+
+.qa-promo__pr {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+/* ── The tab bar's status chip ───────────────────────────────────────────── */
+.qa-promo-status {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  min-width: 0;
+  margin-left: auto;
+}
+
+.qa-promo-chip {
+  --qa-chip-tone: var(--text-muted);
+  --qa-chip-fill: var(--bg-soft);
+  --qa-chip-edge: var(--border-strong);
+
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-width: 0;
+  min-height: 1.9rem;
+  padding: 0.2rem 0.45rem 0.2rem 0.6rem;
+  border: 1px solid var(--qa-chip-edge);
+  border-radius: 999px;
+  background: var(--qa-chip-fill);
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 0.76rem;
+  font-weight: 650;
+  line-height: 1.2;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    border-color 140ms ease-out,
+    box-shadow 140ms ease-out;
+}
+
+.qa-promo-chip[data-tone="ready"] {
+  --qa-chip-tone: var(--success);
+  --qa-chip-fill: var(--accent-emerald-light);
+  --qa-chip-edge: var(--success);
+}
+
+.qa-promo-chip[data-tone="blocked"] {
+  --qa-chip-tone: var(--warning);
+  --qa-chip-fill: var(--accent-amber-light);
+  --qa-chip-edge: var(--warning);
+}
+
+.qa-promo-chip:hover {
+  box-shadow: var(--shadow-soft);
+}
+
+.qa-promo-chip:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
+.qa-promo-chip__dot {
+  flex-shrink: 0;
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: var(--qa-chip-tone);
+}
+
+/* Unknown while it is being read: the dot breathes, nothing else moves. */
+.qa-promo-chip[data-tone="unknown"] .qa-promo-chip__dot {
+  animation: qa-promo-dot 1.4s ease-in-out infinite;
+}
+
+.qa-promo-chip__full,
+.qa-promo-chip__short {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.qa-promo-chip__short {
+  display: none;
+}
+
+.qa-promo-chip > .qa-glyph {
+  flex-shrink: 0;
+  width: 0.85rem;
+  height: 0.85rem;
+  color: var(--text-muted);
+  transition: transform 160ms ease-out;
+}
+
+.qa-promo-chip[aria-expanded="true"] > .qa-glyph {
+  transform: rotate(180deg);
+}
+
+/* Narrow column: "Ready" / "Not ready"; the full sentence stays the name. */
+@container qa-coltabs (max-width: 40rem) {
+  .qa-promo-chip__full {
+    display: none;
+  }
+
+  .qa-promo-chip__short {
+    display: inline;
+  }
+}
+
+/* The popover: anchored under the chip, over the panel, never inside it. */
+.qa-promo-pop {
+  --qa-promo-tone: var(--border-strong);
+
+  position: absolute;
+  top: calc(100% + 0.3rem);
+  right: 0.5rem;
+  z-index: 5;
+  display: grid;
+  align-content: start;
+  gap: 0.55rem;
+  width: min(25rem, calc(100% - 1rem));
+  max-height: min(30rem, 62dvh);
+  padding: 0.75rem 0.85rem 0.85rem;
+  border: 1px solid var(--border-tile);
+  border-left: 3px solid var(--qa-promo-tone);
+  border-radius: 0.8rem;
+  background: var(--layer-1);
+  box-shadow: var(--shadow-hard);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  animation: qa-promo-pop-in 140ms ease-out;
+}
+
+.qa-promo-pop[hidden] {
+  display: none;
+}
+
+.qa-promo-pop[data-tone="ready"] {
+  --qa-promo-tone: var(--success);
+}
+
+.qa-promo-pop[data-tone="blocked"] {
+  --qa-promo-tone: var(--warning);
+}
+
+.qa-promo-pop[aria-busy="true"] > :not(.qa-promo-pop__head) {
+  opacity: 0.7;
+}
+
+.qa-promo-pop__head {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.qa-promo-pop__title {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 700;
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+  color: var(--text-primary);
+}
+
+/* In the popover the route and the gate stack: no separator to orphan. */
+.qa-promo-pop .qa-promo__route {
+  display: grid;
+  gap: 0.1rem;
+  margin: 0;
+}
+
+.qa-promo-pop .qa-promo__route > * + *::before {
+  content: none;
+}
+
+.qa-promo-pop .qa-promo__why {
+  margin: 0;
+}
+
+.qa-promo-pop .qa-promo-pop__retry {
+  justify-self: start;
+  min-height: 2rem;
+  padding: 0.3rem 0.8rem;
+  font-size: 0.78rem;
+}
+
+@keyframes qa-promo-pop-in {
+  from {
+    opacity: 0;
+    translate: 0 -0.25rem;
+  }
+
+  to {
+    opacity: 1;
+    translate: 0 0;
+  }
+}
+
+@keyframes qa-promo-dot {
+  50% {
+    opacity: 0.35;
+  }
+}
+
+/* ── How the last merge ended ────────────────────────────────────────────── */
+.qa-promo__live {
+  display: grid;
+}
+
+/* In the run column: under the tab bar, above the panel, until dismissed. */
+.qa-studio__run > .qa-promo__live {
+  flex-shrink: 0;
+  padding: 0.6rem 0.75rem 0;
+}
+
+.qa-promo__live:empty {
+  display: none;
+}
+
+.qa-promo-outcome {
+  --qa-outcome-tone: var(--success);
+  --qa-outcome-fill: var(--accent-emerald-light);
+
+  position: relative;
+  display: grid;
+  justify-items: start;
+  gap: 0.35rem;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--qa-outcome-tone);
+  border-radius: 0.6rem;
+  background: var(--qa-outcome-fill);
+}
+
+.qa-promo-outcome[data-tone="warning"] {
+  --qa-outcome-tone: var(--warning);
+  --qa-outcome-fill: var(--accent-amber-light);
+}
+
+.qa-promo-outcome[data-tone="danger"] {
+  --qa-outcome-tone: var(--danger);
+  --qa-outcome-fill: var(--accent-rose-light);
+}
+
+.qa-promo-outcome__title {
+  margin: 0;
+  padding-right: 4rem;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.qa-promo-outcome__text {
+  margin: 0;
+  font-size: 0.78rem;
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+
+/* GitHub's own words, verbatim: set apart as a quote, never paraphrased. */
+.qa-promo-outcome__quote {
+  justify-self: stretch;
+  margin: 0;
+  padding: 0.45rem 0.6rem;
+  border-left: 2px solid var(--qa-outcome-tone);
+  border-radius: 0 0.4rem 0.4rem 0;
+  background: var(--bg-soft);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.76rem;
+  line-height: 1.5;
+  color: var(--text-primary);
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+
+.qa-promo-outcome__dismiss {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.65rem;
+  font-size: 0.74rem;
+}
+
+.qa-promo__live .qa-promo-outcome__signin {
+  min-height: 2rem;
+  padding: 0.3rem 0.8rem;
+  font-size: 0.78rem;
+}
+
+/* ── Loading and a failed read ───────────────────────────────────────────── */
+.qa-promo-skeleton {
+  flex-shrink: 0;
+  height: 3.6rem;
+  border-radius: 0.9rem;
+}
+
+.qa-promo-error {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  padding: 0.6rem 0.8rem;
+  border: 1px solid var(--accent-rose-glow);
+  border-radius: 0.8rem;
+  background: var(--accent-rose-light);
+}
+
+.qa-promo-error p {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--text-primary);
+}
+
+/* ── The merge confirmation ──────────────────────────────────────────────── */
+.qa-promo-confirm {
+  display: grid;
+  gap: 0;
+  margin: 0 0 0.85rem;
+  border: 1px solid var(--border);
+  border-radius: 0.65rem;
+  background: var(--bg-soft);
+}
+
+.qa-promo-confirm > div {
+  display: grid;
+  grid-template-columns: 6.5rem minmax(0, 1fr);
+  gap: 0.75rem;
+  padding: 0.5rem 0.75rem;
+}
+
+.qa-promo-confirm > div + div {
+  border-top: 1px solid var(--border);
+}
+
+.qa-promo-confirm dt {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.qa-promo-confirm dd {
+  margin: 0;
+  font-size: 0.84rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  overflow-wrap: anywhere;
+}
+
+.qa-promo-confirm code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.8rem;
+}
+
+.qa-promo-confirm__note {
+  margin: 0;
+  font-size: 0.76rem;
+  line-height: 1.5;
+  color: var(--text-muted);
+}
+
+@media (max-width: 560px) {
+  .qa-promo-confirm > div {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.15rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .qa-promo__toggle > .qa-glyph,
+  .qa-promo__body,
+  .qa-promo-chip,
+  .qa-promo-chip > .qa-glyph {
+    transition: none;
+  }
+
+  .qa-promo-pop,
+  .qa-promo-chip[data-tone="unknown"] .qa-promo-chip__dot {
+    animation: none;
+  }
+}

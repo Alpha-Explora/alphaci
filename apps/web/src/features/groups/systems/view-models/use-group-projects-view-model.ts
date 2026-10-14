@@ -2,25 +2,28 @@
 
 import { useApiResource } from "@/features/groups";
 import { useAuthSession } from "@/features/auth/session";
+import { newProjectHref } from "@/features/workflows";
 
 import { groupsRepository } from "../../data/groups-repository";
-import { isGlobalCreatorRole } from "../../model/groups-rules";
+import { canCreateProjectFolder } from "../../model/creation-role-rules";
 import type { ProvisionedProject } from "../../model/groups-types";
 
 export interface GroupProjectsViewModel {
   projects: ProvisionedProject[];
   status: ReturnType<typeof useApiResource<ProvisionedProject[]>>["state"];
   reload: () => void;
-  /** True when the caller may create a project in this group. */
+  /** True when the caller may create a Project in this group (Product owner, admin). */
   canManage: boolean;
+  /** The Projects page, on this group, with the New Project dialog open. */
+  createProjectHref: string;
 }
 
 /**
  * ViewModel for the projects a group owns.
  *
- * `canManage` follows the GLOBAL role (Lead/Admin), not the per-group
- * membership tier, mirroring the backend gate — a plain member cannot create a
- * project even in a group they belong to. The list itself is scoped
+ * `canManage` follows the GLOBAL role (Product owner / admin), not the
+ * per-group membership tier, mirroring the backend gate — a Developer adds
+ * repositories to a Project but never creates one. The list itself is scoped
  * server-side: managers and admins see everything, a member sees only the
  * repositories they are assigned to.
  */
@@ -38,6 +41,7 @@ export function useGroupProjectsViewModel(
     projects: data ?? [],
     status: state,
     reload,
-    canManage: isGlobalCreatorRole(session?.appRole),
+    canManage: canCreateProjectFolder(session?.appRole),
+    createProjectHref: newProjectHref(groupId),
   };
 }

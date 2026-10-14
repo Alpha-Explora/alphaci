@@ -10,6 +10,7 @@ import type {
   WorkflowSettings,
   WorkflowSettingsPreviewResponse,
 } from "@/features/projects";
+import { isPullRequestRole } from "../model/pull-request-compose-rules";
 import type { ProjectDetailTabsViewModel } from "../view-models/use-project-detail-tabs-view-model";
 import { WorkflowStageList } from "./workflow-stage-list";
 import {
@@ -18,6 +19,8 @@ import {
   centralRefIsListed,
   coverageHasPreset,
   createUpdatePrLabel,
+  UPDATE_PR_ROLE_NOTE,
+  UPDATE_PR_TARGET_NOTE,
   previewDiffBadgeClass,
   previewWorkflowLabel,
 } from "../model/project-detail-tab-rules";
@@ -42,6 +45,10 @@ export function WorkflowTab({
         targets={vm.deploymentTargets}
         workflow={vm.workflow}
         workflowUpdatePrEnabled={vm.workflowUpdatePrEnabled}
+        canCreateUpdatePr={isPullRequestRole(vm.appRole)}
+        // The update PR opens in the Pull requests tab; a role without it just
+        // sees the number.
+        onOpenPullRequest={vm.visibleTabs.includes("pulls") ? vm.openPullRequest : undefined}
       />
       <WorkflowFiles files={vm.workflowFiles} />
     </div>
@@ -73,11 +80,15 @@ function WorkflowSettingsPanel({
   targets,
   workflow,
   workflowUpdatePrEnabled,
+  canCreateUpdatePr,
+  onOpenPullRequest,
 }: Readonly<{
   enabled: boolean;
   targets: DeploymentTarget[];
   workflow: ProjectDetailTabsViewModel["workflow"];
   workflowUpdatePrEnabled: boolean;
+  canCreateUpdatePr: boolean;
+  onOpenPullRequest?: (pullRequestNumber: number) => void;
 }>) {
   if (!enabled) return null;
   return (
@@ -100,6 +111,8 @@ function WorkflowSettingsPanel({
         preview={workflow.preview}
         workflow={workflow}
         workflowUpdatePrEnabled={workflowUpdatePrEnabled}
+        canCreateUpdatePr={canCreateUpdatePr}
+        onOpenPullRequest={onOpenPullRequest}
       />
     </div>
   );
@@ -469,10 +482,14 @@ function WorkflowPreviewResult({
   preview,
   workflow,
   workflowUpdatePrEnabled,
+  canCreateUpdatePr,
+  onOpenPullRequest,
 }: Readonly<{
   preview: WorkflowSettingsPreviewResponse | null;
   workflow: ProjectDetailTabsViewModel["workflow"];
   workflowUpdatePrEnabled: boolean;
+  canCreateUpdatePr: boolean;
+  onOpenPullRequest?: (pullRequestNumber: number) => void;
 }>) {
   if (!preview) return null;
   return (
@@ -490,6 +507,8 @@ function WorkflowPreviewResult({
       <CreateUpdatePrRow
         workflow={workflow}
         enabled={workflowUpdatePrEnabled}
+        canCreate={canCreateUpdatePr}
+        onOpenPullRequest={onOpenPullRequest}
       />
       <WorkflowError message={workflow.updatePrError} />
     </>
@@ -499,11 +518,18 @@ function WorkflowPreviewResult({
 function CreateUpdatePrRow({
   workflow,
   enabled,
+  canCreate,
+  onOpenPullRequest,
 }: Readonly<{
   workflow: ProjectDetailTabsViewModel["workflow"];
   enabled: boolean;
+  canCreate: boolean;
+  onOpenPullRequest?: (pullRequestNumber: number) => void;
 }>) {
   if (!enabled) return null;
+  if (!canCreate) {
+    return <p className="env-empty-state">{UPDATE_PR_ROLE_NOTE}</p>;
+  }
   return (
     <div
       style={{
@@ -526,26 +552,42 @@ function CreateUpdatePrRow({
       >
         {createUpdatePrLabel(workflow.creatingPr)}
       </button>
-      <WorkflowPrLink url={workflow.updatePr?.pullRequestUrl ?? null} />
+      <span style={{ color: "var(--text-secondary)", fontSize: "0.78rem" }}>
+        {UPDATE_PR_TARGET_NOTE}
+      </span>
+      <WorkflowPrLink
+        number={workflow.updatePr?.pullRequestNumber ?? null}
+        onOpen={onOpenPullRequest}
+      />
     </div>
   );
 }
 
-function WorkflowPrLink({ url }: Readonly<{ url: string | null }>) {
-  if (!url) return null;
+/**
+ * The update pull request, by number. It opens in the Pull requests tab rather
+ * than on GitHub; without that tab (no `onOpen`) it is only a label.
+ */
+function WorkflowPrLink({
+  number,
+  onOpen,
+}: Readonly<{ number: number | null; onOpen?: (pullRequestNumber: number) => void }>) {
+  if (number === null) return null;
+  const label = `Pull request #${String(number)}`;
+  if (!onOpen) {
+    return <span style={{ color: "var(--text-secondary)", fontSize: "0.78rem" }}>{label}</span>;
+  }
   return (
-    <a
+    <button
       className="ghost-button"
-      href={url}
-      target="_blank"
-      rel="noreferrer"
+      type="button"
+      onClick={() => onOpen(number)}
       style={{
         minHeight: "2rem",
         padding: "0.35rem 0.85rem",
         fontSize: "0.78rem",
       }}
     >
-      {url}
-    </a>
+      {label}
+    </button>
   );
 }

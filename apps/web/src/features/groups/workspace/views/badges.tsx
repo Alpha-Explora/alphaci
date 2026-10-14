@@ -2,9 +2,11 @@
 
 import {
   GROUP_ROLE_LABELS,
+  memberRoleLabel,
   type AssignmentStatus,
   type DeliveryProjectStatus,
   type GithubSyncState,
+  type GroupMember,
   type GroupMemberStatus,
   type GroupRole,
   type GroupStatus,
@@ -47,6 +49,20 @@ export function RoleBadge({ role }: { role: GroupRole }) {
           ? "muted"
           : "muted";
   return <Badge tone={tone} label={GROUP_ROLE_LABELS[role]} dot={false} />;
+}
+
+/* The labels a team's leading members carry: a Product owner or Admin by app
+ * role, or the top membership tier ("Lead") on a row with no app role. */
+const BRAND_ROLE_LABELS: ReadonlySet<string> = new Set(["Product owner", "Admin", "Lead"]);
+
+/** Read-only role for a roster row: derived from the global app role. */
+export function MemberRoleBadge({
+  member,
+}: {
+  member: Pick<GroupMember, "role" | "appRole">;
+}) {
+  const label = memberRoleLabel(member);
+  return <Badge tone={BRAND_ROLE_LABELS.has(label) ? "brand" : "muted"} label={label} dot={false} />;
 }
 
 /* ── Assignment access status (plan §2.2: pending|active|revoked|failed) ──── */

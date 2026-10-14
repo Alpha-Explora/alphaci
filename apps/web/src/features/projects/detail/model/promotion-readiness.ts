@@ -25,6 +25,10 @@
 
 import type { StageCheck } from "@/shared/api/contracts";
 
+import { checkTone } from "@/features/runs";
+
+import { isFailedConclusion } from "./github-conclusion";
+
 /** Which branch a source branch promotes into, if any. */
 const PROMOTES_INTO: Readonly<Record<string, string>> = {
   dev: "uat",
@@ -34,6 +38,17 @@ const PROMOTES_INTO: Readonly<Record<string, string>> = {
 export type PromotionState =
   /** The promotion pull request was opened or updated. */
   | "opened"
+  /**
+   * The promotion job was still running when the stage reported, so its
+   * outcome is not in the report. Saying "not opened" here was false half the
+   * time: the stage reports first and the promotion job finishes after it.
+   */
+  | "in-progress"
+  /**
+   * The promotion job was still running when the stage reported, and GitHub
+   * has since finished the stage's run as failed: the promotion is what broke.
+   */
+  | "failed"
   /** Something in the stage failed, so the promotion job never ran. */
   | "blocked"
   /** The job skipped and nothing visible explains it. */
@@ -78,19 +93,58 @@ function belongsToAnotherBranch(name: string, branch: string): boolean {
   );
 }
 
+/** What GitHub says now about the package stage's run. */
+export interface PackageRunState {
+  status: string;
+  conclusion: string | null;
+}
+
+/**
+ * The promotion job was mid-flight when the stage reported: the live package
+ * run settles it once GitHub has finished that run.
+ */
+function inFlightPromotion(
+  target: string,
+  packageRun: PackageRunState | null,
+): PromotionReadiness {
+  if (packageRun?.status === "completed") {
+    if (packageRun.conclusion === "success") {
+      return { state: "opened", target, blockedBy: [] };
+    }
+    if (isFailedConclusion(packageRun.conclusion)) {
+      return { state: "failed", target, blockedBy: [] };
+    }
+  }
+  return { state: "in-progress", target, blockedBy: [] };
+}
+
+/*
+ * Only failures block. A skipped job on this branch is either the promotion
+ * itself or another branch's deploy, and neither is something to report as a
+ * reason: the first is the outcome being explained, the second never applied.
+ */
+function blockingChecks(checks: readonly StageCheck[], branch: string): string[] {
+  return checks
+    .filter((check) => checkTone(check.conclusion) === "failed")
+    .filter((check) => !belongsToAnotherBranch(check.name, branch))
+    .map((check) => check.name);
+}
+
 export function promotionReadiness(
   branch: string,
   checks: readonly StageCheck[] | undefined,
+  /**
+   * The package run as GitHub reports it now, when the run list carries it.
+   * Only consulted when the report caught the promotion job mid-flight: the
+   * report is a snapshot, and this is the one question it cannot answer.
+   */
+  packageRun: PackageRunState | null = null,
 ): PromotionReadiness {
   const target = PROMOTES_INTO[branch];
-  if (!target || !checks || checks.length === 0) {
-    return NOT_APPLICABLE;
-  }
-
-  const promotionJob = checks.find((check) =>
-    check.name.startsWith(`promote-to-${target}`),
-  );
-  if (!promotionJob) {
+  const promotionJob = target
+    ? checks?.find((check) => check.name.startsWith(`promote-to-${target}`))
+    : undefined;
+  if (!target || !promotionJob) {
     return NOT_APPLICABLE;
   }
 
@@ -98,21 +152,11 @@ export function promotionReadiness(
     return { state: "opened", target, blockedBy: [] };
   }
 
-  /*
-   * Only failures block. A skipped job on this branch is either the promotion
-   * itself or another branch's deploy, and neither is something to report as a
-   * reason: the first is the outcome being explained, the second never applied.
-   */
-  const blockedBy = checks
-    .filter(
-      (check) =>
-        check.conclusion === "failure" ||
-        check.conclusion === "timed_out" ||
-        check.conclusion === "action_required",
-    )
-    .filter((check) => !belongsToAnotherBranch(check.name, branch))
-    .map((check) => check.name);
+  if (checkTone(promotionJob.conclusion) === "running") {
+    return inFlightPromotion(target, packageRun);
+  }
 
+  const blockedBy = blockingChecks(checks ?? [], branch);
   return blockedBy.length > 0
     ? { state: "blocked", target, blockedBy }
     : { state: "did-not-run", target, blockedBy: [] };

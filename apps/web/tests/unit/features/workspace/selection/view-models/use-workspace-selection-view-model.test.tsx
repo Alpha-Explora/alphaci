@@ -6,11 +6,17 @@ import { useWorkspaceSelectionViewModel } from "../../../../../../src/features/w
 
 jest.mock("../../../../../../src/features/workspace/selection/data/workspace-repository", () => ({
   getWorkspaces: jest.fn(),
+  getVisibleTeams: jest.fn(),
 }));
 
-import { getWorkspaces } from "../../../../../../src/features/workspace/selection/data/workspace-repository";
+import {
+  getVisibleTeams,
+  getWorkspaces,
+} from "../../../../../../src/features/workspace/selection/data/workspace-repository";
+import { useWorkspaceSelection } from "../../../../../../src/features/workspace/selection/views/workspace-selection-context";
 
 const mockedGetWorkspaces = getWorkspaces as jest.MockedFunction<typeof getWorkspaces>;
+const mockedGetVisibleTeams = getVisibleTeams as jest.MockedFunction<typeof getVisibleTeams>;
 
 describe("useWorkspaceSelectionViewModel", () => {
   let root: Root | null = null;
@@ -77,5 +83,81 @@ describe("useWorkspaceSelectionViewModel", () => {
     });
 
     expect(mockedGetWorkspaces).not.toHaveBeenCalled();
+  });
+
+  describe("for a platform admin", () => {
+    const mine = {
+      enabled: true,
+      items: [{ id: "workspace-1", name: "Workspace", kind: "team" as const, role: "admin" as const }],
+    };
+
+    type Captured = {
+      vm: ReturnType<typeof useWorkspaceSelectionViewModel> | null;
+      selectedId: string | null;
+    };
+
+    async function renderAdmin(includeOtherTeams: boolean): Promise<Captured> {
+      const captured: Captured = { vm: null, selectedId: null };
+      function Probe() {
+        // eslint-disable-next-line react-hooks/immutability
+        captured.vm = useWorkspaceSelectionViewModel({ enabled: true, includeOtherTeams });
+        // eslint-disable-next-line react-hooks/immutability
+        captured.selectedId = useWorkspaceSelection().selectedWorkspaceId;
+        return null;
+      }
+      const container = document.createElement("div");
+      root = createRoot(container);
+      await act(async () => {
+        root!.render(
+          <WorkspaceProvider>
+            <Probe />
+          </WorkspaceProvider>,
+        );
+      });
+      return captured;
+    }
+
+    it("also lists the teams they are not a member of", async () => {
+      mockedGetWorkspaces.mockResolvedValue(mine);
+      mockedGetVisibleTeams.mockResolvedValue([
+        { id: "workspace-1", name: "Workspace" },
+        { id: "workspace-9", name: "Johns Kitchen" },
+      ]);
+      const captured = await renderAdmin(true);
+      expect(mockedGetVisibleTeams).toHaveBeenCalledTimes(1);
+      expect(captured.vm?.otherTeams).toEqual([
+        { id: "workspace-9", name: "Johns Kitchen", kind: "team", role: "admin" },
+      ]);
+    });
+
+    /* Both lists are published in one update, so a remembered selection of a
+     * team the admin is not in is not reset to their first own team. */
+    it("keeps a remembered other-team selection", async () => {
+      window.localStorage.setItem("flowci.workspaceId", "workspace-9");
+      mockedGetWorkspaces.mockResolvedValue(mine);
+      mockedGetVisibleTeams.mockResolvedValue([{ id: "workspace-9", name: "Johns Kitchen" }]);
+      const captured = await renderAdmin(true);
+      expect(captured.selectedId).toBe("workspace-9");
+      expect(window.localStorage.getItem("flowci.workspaceId")).toBe("workspace-9");
+    });
+
+    it("still loads the admin's own teams when the full list fails", async () => {
+      mockedGetWorkspaces.mockResolvedValue(mine);
+      mockedGetVisibleTeams.mockRejectedValue(new Error("offline"));
+      const captured = await renderAdmin(true);
+      expect(captured.vm?.status).toBe("ready");
+      expect(captured.vm?.workspaces).toEqual(mine);
+      expect(captured.vm?.otherTeams).toEqual([]);
+    });
+
+    it("never asks for the full list for anyone else", async () => {
+      window.localStorage.setItem("flowci.workspaceId", "workspace-9");
+      mockedGetWorkspaces.mockResolvedValue(mine);
+      const captured = await renderAdmin(false);
+      expect(mockedGetVisibleTeams).not.toHaveBeenCalled();
+      expect(captured.vm?.otherTeams).toEqual([]);
+      // A non-member team is not selectable: the selection falls back.
+      expect(captured.selectedId).toBe("workspace-1");
+    });
   });
 });

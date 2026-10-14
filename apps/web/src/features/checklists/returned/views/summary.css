@@ -1,0 +1,76 @@
+/* ── My QA items summary (repository Overview) ──────────────────────────────
+   The compact face of the "My QA items" card: a heading, the way to the full
+   list, and one quiet chip per state. It reuses the card's surface and edge
+   (.qa-returned .qa-mine) so the Overview reads the same; only the layout
+   inside is new. Tokens only.
+   ------------------------------------------------------------------------- */
+
+.qa-summary {
+  gap: 0.75rem;
+}
+
+.qa-summary__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem 1rem;
+}
+
+/* Two classes: the card's ghost-button edge rule must still apply, and the
+   global button sizes must not blow it up to a hero CTA. */
+.qa-summary .qa-summary__open {
+  min-height: 2.25rem;
+  padding: 0.35rem 0.9rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.qa-summary__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.qa-summary__chip {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.4rem;
+  padding: 0.35rem 0.75rem;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-pill);
+  background: var(--bg-soft);
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+  transition:
+    border-color 160ms ease-out,
+    background-color 160ms ease-out;
+}
+
+.qa-summary__chip-count {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-primary);
+}
+
+/* Returned is the one that needs the developer: the same amber as the card's
+   edge, and only while there is something returned. */
+.qa-summary__chip[data-bucket="returned"]:not([data-empty]) {
+  border-color: var(--border-amber);
+  background: var(--accent-amber-light);
+}
+
+.qa-summary__chip[data-bucket="returned"]:not([data-empty]) .qa-summary__chip-count {
+  color: var(--warning);
+}
+
+.qa-summary__chip[data-empty] {
+  color: var(--text-muted);
+}
+
+.qa-summary__chip[data-empty] .qa-summary__chip-count {
+  color: var(--text-muted);
+}

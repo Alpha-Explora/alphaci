@@ -41,6 +41,7 @@ export function EnvVariablesForm({
   previewBranch,
   rows,
   saving,
+  scopeLabel,
   setIsBulkEnvDialogOpen,
   targets,
 }: Readonly<{
@@ -68,6 +69,12 @@ export function EnvVariablesForm({
   previewBranch: string;
   rows: EnvRow[];
   saving: boolean;
+  /**
+   * Set when the form opens on one environment (the Hosting tab's Variables
+   * card): the target, lane and branch are already chosen, so their pickers
+   * give way to this line, e.g. "Preview · branch uat".
+   */
+  scopeLabel?: string;
   setIsBulkEnvDialogOpen: (open: boolean) => void;
   targets: DeploymentTarget[];
 }>) {
@@ -85,12 +92,14 @@ export function EnvVariablesForm({
         </div>
       </div>
 
-      <EnvBranchTargetPicker
-        activeTarget={activeTarget}
-        activeTargetId={activeTargetId}
-        onTargetIdChange={onTargetIdChange}
-        targets={targets}
-      />
+      {scopeLabel ? null : (
+        <EnvBranchTargetPicker
+          activeTarget={activeTarget}
+          activeTargetId={activeTargetId}
+          onTargetIdChange={onTargetIdChange}
+          targets={targets}
+        />
+      )}
 
       <div className="env-variable-workspace">
         <EnvVariableEditor
@@ -104,6 +113,7 @@ export function EnvVariablesForm({
           onRowsChange={onRowsChange}
           previewBranch={previewBranch}
           rows={rows}
+          scopeLabel={scopeLabel}
           submitDisabled={
             saving || loading || !activeTargetId || invalid || envKeyQuotaReached
           }
@@ -184,6 +194,7 @@ function EnvVariableEditor({
   onRowsChange,
   previewBranch,
   rows,
+  scopeLabel,
   submitDisabled,
 }: Readonly<{
   envKeyQuota: UsageLimitItem | null;
@@ -196,6 +207,7 @@ function EnvVariableEditor({
   onRowsChange: (rows: EnvRow[]) => void;
   previewBranch: string;
   rows: EnvRow[];
+  scopeLabel?: string;
   submitDisabled: boolean;
 }>) {
   return (
@@ -203,41 +215,17 @@ function EnvVariableEditor({
       <div className="env-variable-subheader">
         <div>
           <strong>Variables</strong>
-          <span>
-            {lane === "production"
-              ? "These values apply to the production branch."
-              : "These values apply to this branch only."}
-          </span>
+          <span>{scopeLabel ?? laneHint(lane)}</span>
         </div>
-        <div className="env-environment-tabs" aria-label="Deployment lane">
-          {(["production", "preview"] as EnvLane[]).map((value) => (
-            <button
-              key={value}
-              className={lane === value ? "primary-button" : "ghost-button"}
-              type="button"
-              onClick={() => onLaneChange(value)}
-            >
-              {value === "production" ? "Production" : "Branch"}
-            </button>
-          ))}
-        </div>
+        {scopeLabel ? null : <EnvLaneToggle lane={lane} onLaneChange={onLaneChange} />}
       </div>
 
-      {lane === "preview" ? (
-        <label className="env-branch-field">
-          <span>Branch</span>
-          <input
-            list="env-known-branches"
-            onChange={(event) => onPreviewBranchChange(event.target.value)}
-            placeholder="feature/checkout"
-            value={previewBranch}
-          />
-          <datalist id="env-known-branches">
-            {knownBranches.map((branch) => (
-              <option key={branch} value={branch} />
-            ))}
-          </datalist>
-        </label>
+      {lane === "preview" && !scopeLabel ? (
+        <EnvBranchField
+          knownBranches={knownBranches}
+          onPreviewBranchChange={onPreviewBranchChange}
+          previewBranch={previewBranch}
+        />
       ) : null}
 
       <div className="env-variable-column-labels" aria-hidden="true">
@@ -296,6 +284,59 @@ function EnvVariableEditor({
         </button>
       </div>
     </section>
+  );
+}
+
+function laneHint(lane: EnvLane): string {
+  return lane === "production"
+    ? "These values apply to the production branch."
+    : "These values apply to this branch only.";
+}
+
+function EnvLaneToggle({
+  lane,
+  onLaneChange,
+}: Readonly<{ lane: EnvLane; onLaneChange: (value: EnvLane) => void }>) {
+  return (
+    <div className="env-environment-tabs" aria-label="Deployment lane">
+      {(["production", "preview"] as EnvLane[]).map((value) => (
+        <button
+          key={value}
+          className={lane === value ? "primary-button" : "ghost-button"}
+          type="button"
+          onClick={() => onLaneChange(value)}
+        >
+          {value === "production" ? "Production" : "Branch"}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function EnvBranchField({
+  knownBranches,
+  onPreviewBranchChange,
+  previewBranch,
+}: Readonly<{
+  knownBranches: string[];
+  onPreviewBranchChange: (value: string) => void;
+  previewBranch: string;
+}>) {
+  return (
+    <label className="env-branch-field">
+      <span>Branch</span>
+      <input
+        list="env-known-branches"
+        onChange={(event) => onPreviewBranchChange(event.target.value)}
+        placeholder="feature/checkout"
+        value={previewBranch}
+      />
+      <datalist id="env-known-branches">
+        {knownBranches.map((branch) => (
+          <option key={branch} value={branch} />
+        ))}
+      </datalist>
+    </label>
   );
 }
 

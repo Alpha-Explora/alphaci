@@ -20,9 +20,13 @@ import type {
   ProjectDriftRepairAction,
   ProjectDriftRepairResponse,
   ProjectAuditEventsResponse,
+  ProjectAuditPageRequest,
+  ProjectCommitsPageRequest,
+  ProjectCommitsResponse,
   ProjectOverviewResponse,
   ProjectSyncSnapshotResponse,
   ProvisionedProjectsResponse,
+  ReinstallDeploymentSecretsResponse,
   SetupProjectRequest,
   SetupProjectResponse,
   UpdateDeploymentTargetRequest,
@@ -61,6 +65,15 @@ export async function getProjects(
 
 export async function getProjectOverview(projectId: string): Promise<ProjectOverviewResponse> {
   return request<ProjectOverviewResponse>(`/projects/${encodeURIComponent(projectId)}/overview`);
+}
+
+/**
+ * The Project (hierarchy delivery project) this repository sits in, with its
+ * sibling repositories. Returned raw: the repository normalises it. A 404
+ * means the caller cannot see the project — or a backend older than the route.
+ */
+export async function getProjectFolder(projectId: string): Promise<unknown> {
+  return request<unknown>(`/projects/${encodeURIComponent(projectId)}/folder`);
 }
 
 export async function syncProjectSnapshot(projectId: string): Promise<ProjectSyncSnapshotResponse> {
@@ -217,9 +230,36 @@ export async function repairProjectDriftFinding(
 
 export async function getProjectAuditEvents(
   projectId: string,
+  page: ProjectAuditPageRequest = {},
 ): Promise<ProjectAuditEventsResponse> {
+  const params = new URLSearchParams();
+  if (page.limit !== undefined) params.set("limit", String(page.limit));
+  if (page.before) params.set("before", page.before);
+  const query = params.toString();
   return request<ProjectAuditEventsResponse>(
-    `/projects/${encodeURIComponent(projectId)}/audit`,
+    `/projects/${encodeURIComponent(projectId)}/audit${query ? `?${query}` : ""}`,
+  );
+}
+
+/** Asks the server to read GitHub activity into the trail now. The body is not read. */
+export async function syncProjectAuditEvents(projectId: string): Promise<unknown> {
+  return request<unknown>(`/projects/${encodeURIComponent(projectId)}/audit/sync`, {
+    method: "POST",
+  });
+}
+
+/** One page of a branch's commits, newest first. No `branch`: the server's default. */
+export async function getProjectCommits(
+  projectId: string,
+  page: ProjectCommitsPageRequest = {},
+): Promise<ProjectCommitsResponse> {
+  const params = new URLSearchParams();
+  if (page.branch) params.set("branch", page.branch);
+  if (page.limit !== undefined) params.set("limit", String(page.limit));
+  if (page.before) params.set("before", page.before);
+  const query = params.toString();
+  return request<ProjectCommitsResponse>(
+    `/projects/${encodeURIComponent(projectId)}/commits${query ? `?${query}` : ""}`,
   );
 }
 
@@ -269,6 +309,23 @@ export async function getDeploymentTargetActions(
 ): Promise<DeploymentTargetActionsResponse> {
   return request<DeploymentTargetActionsResponse>(
     `/projects/${encodeURIComponent(projectId)}/deployment-targets/${encodeURIComponent(targetId)}/actions`,
+  );
+}
+
+/**
+ * Rewrites this target's GitHub Actions secrets (and, where applicable,
+ * variables) from the provider's current state. No body. Only offered when
+ * `getDeploymentTargetActions` reports `reinstallDeploymentSecrets.enabled`.
+ */
+export async function reinstallDeploymentSecrets(
+  projectId: string,
+  targetId: string,
+): Promise<ReinstallDeploymentSecretsResponse> {
+  return request<ReinstallDeploymentSecretsResponse>(
+    `/projects/${encodeURIComponent(projectId)}/deployment-targets/${encodeURIComponent(targetId)}/reinstall-secrets`,
+    {
+      method: "POST",
+    },
   );
 }
 

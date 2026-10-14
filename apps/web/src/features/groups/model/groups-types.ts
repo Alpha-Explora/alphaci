@@ -6,7 +6,10 @@
  * changes rather than every view. */
 export type {
   AddGroupMemberRequest,
+  CreatedRepositoryResponse,
   DeliveryProject,
+  DeliveryProjectMember,
+  DeliveryProjectMemberKind,
   GroupActivityItem,
   GroupActivityQuery,
   GroupActivityResponse,

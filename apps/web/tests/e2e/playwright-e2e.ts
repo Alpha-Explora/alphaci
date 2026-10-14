@@ -1,7 +1,10 @@
 import { spawn } from 'node:child_process';
 import process from 'node:process';
-import type { Page, Route } from 'playwright';
+import type { Page } from 'playwright';
 import { chromium, firefox, webkit } from 'playwright';
+
+import { runQaJourneys } from './qa-journeys';
+import { expectVisibleText, json, text } from './support';
 
 type BrowserName = 'chromium' | 'firefox' | 'webkit';
 
@@ -54,22 +57,6 @@ function launchBrowser(name: BrowserName) {
     default:
       return chromium.launch({ headless: true });
   }
-}
-
-function json(route: Route, body: unknown) {
-  return route.fulfill({
-    status: 200,
-    contentType: 'application/json',
-    body: JSON.stringify(body),
-  });
-}
-
-function text(route: Route, status: number, body: string) {
-  return route.fulfill({
-    status,
-    contentType: 'text/plain',
-    body,
-  });
 }
 
 const sessionUser = {
@@ -175,7 +162,20 @@ async function installDashboardAuditApi(page: Page) {
         authenticated: true,
         user: sessionUser,
         subscription,
+        // An admin, so /workflows offers "Create project".
+        appRole: 'admin',
       });
+    }
+
+    if (path === '/groups') {
+      return json(route, [
+        {
+          id: 'workspace-1',
+          name: 'Design team',
+          description: 'Projects owned by the design team.',
+          status: 'active',
+        },
+      ]);
     }
 
     if (path === '/capabilities') {
@@ -504,23 +504,6 @@ async function installDashboardAuditApi(page: Page) {
   });
 }
 
-async function expectVisibleText(page: Page, textValue: string) {
-  try {
-    await page.getByText(textValue, { exact: false }).first().waitFor({
-      state: 'visible',
-      timeout: 15_000,
-    });
-  } catch (error) {
-    const visibleText = await page.locator('body').evaluate((element) =>
-      element instanceof HTMLElement ? element.innerText.slice(0, 2000) : '',
-    );
-    throw new Error(
-      `Expected visible text not found: ${textValue}\nVisible text snapshot:\n${visibleText}`,
-      { cause: error },
-    );
-  }
-}
-
 async function runDashboardAudit(page: Page, baseUrl: string) {
   const consoleMessages: string[] = [];
   const failedResponses: string[] = [];
@@ -540,19 +523,20 @@ async function runDashboardAudit(page: Page, baseUrl: string) {
 
   await installDashboardAuditApi(page);
   await page.goto(`${baseUrl}/workflows`, { waitUntil: 'networkidle' });
-  await expectVisibleText(page, 'Create & Manage Projects');
-  await expectVisibleText(page, 'Design team');
+  // The heading is plain "Projects": the team comes from the header picker,
+  // and the page has no dropdown of its own.
+  await page.getByRole('heading', { level: 1, name: /^Projects/ }).waitFor({ state: 'visible' });
+  await page.getByRole('button', { name: /^Active workspace:/ }).waitFor({ state: 'visible' });
+  await page.getByRole('button', { name: 'Create project' }).waitFor({ state: 'visible' });
   await page.getByRole('button', { name: 'Notifications' }).click();
   await expectVisibleText(page, 'Project created');
 
-  await page.getByRole('tab', { name: 'Current Projects' }).click();
   await expectVisibleText(page, 'orders-api');
+  // Pipeline runs and Workflow are one Pipeline tab: Runs | Configuration.
   for (const tab of [
     'Overview',
-    'Workflow',
-    'Runs',
+    'Pipeline',
     'Deployments',
-    'Environment',
     'Activity',
     'Audit',
     'Settings',
@@ -560,7 +544,8 @@ async function runDashboardAudit(page: Page, baseUrl: string) {
     await page.getByRole('tab', { name: tab }).waitFor({ state: 'visible' });
   }
 
-  await page.getByRole('tab', { name: 'Workflow' }).click();
+  await page.getByRole('tab', { name: 'Pipeline', exact: true }).click();
+  await page.getByRole('tablist', { name: 'Pipeline views' }).getByRole('tab', { name: 'Configuration' }).click();
   await expectVisibleText(page, 'Node version');
   await expectVisibleText(page, 'Lint');
   await expectVisibleText(page, 'Unit tests');
@@ -568,11 +553,12 @@ async function runDashboardAudit(page: Page, baseUrl: string) {
   await expectVisibleText(page, 'Security');
   await expectVisibleText(page, 'Deploy target mappings');
 
-  await page.getByRole('tab', { name: 'Runs' }).click();
+  await page.getByRole('tablist', { name: 'Pipeline views' }).getByRole('tab', { name: 'Runs' }).click();
   await expectVisibleText(page, 'Live GitHub run sync is not enabled');
   await page.getByRole('tab', { name: 'Deployments' }).click();
   await expectVisibleText(page, 'Live deployment sync is not enabled');
-  await page.getByRole('tab', { name: 'Environment' }).click();
+  // Environment merged into Hosting: its variables are the Hosting tab's Variables card.
+  await page.getByRole('tab', { name: 'Hosting' }).click();
   await expectVisibleText(page, 'Deployment target');
   await expectVisibleText(page, 'Env key quota');
   await expectVisibleText(page, 'Managed Render services');
@@ -630,6 +616,7 @@ async function main() {
   const baseUrl = process.env.E2E_BASE_URL || `http://127.0.0.1:${port}`;
   const browserName = resolveBrowser(process.env.E2E_BROWSER || 'chromium');
   const dashboardAudit = process.env.E2E_DASHBOARD_AUDIT === '1';
+  const qaJourneys = process.env.E2E_QA_JOURNEYS === '1';
   const isExternalTarget = Boolean(process.env.E2E_BASE_URL);
   const waitTimeoutMs = isExternalTarget ? 120_000 : 45_000;
 
@@ -648,6 +635,14 @@ async function main() {
 
     const browser = await launchBrowser(browserName);
     try {
+      if (qaJourneys) {
+        // Each journey opens its own browser context, so it gets its own
+        // mocked backend, storage and permissions.
+        const passed = await runQaJourneys(browser, baseUrl, process.env.E2E_QA_ONLY);
+        console.log(`Playwright QA journeys passed on ${browserName} (${passed} scenarios)`);
+        return;
+      }
+
       const page = await browser.newPage();
       if (dashboardAudit) {
         await runDashboardAudit(page, baseUrl);

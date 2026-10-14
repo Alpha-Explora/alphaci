@@ -1,99 +1,34 @@
 "use client";
 
-import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
-import { useReducedMotion } from "framer-motion";
+import { TeamPageShell, type TeamPageHeading } from "@/features/teams/shell";
 
-import { FlowBackground } from "@/shared/layout/flow-background";
-import { PipelineLoader } from "@/shared/layout/pipeline-loader";
-import { WorkspaceProvider } from "@/features/workspace/selection";
-import { useAuthSession } from "@/features/auth/session";
-import { isGuest } from "@/features/auth/session";
+import { legacyTeamsRedirect } from "../../model/teams-rules";
+import { TeamMembersPanel } from "./team-members-panel";
 
-import {
-  EMPTY_TEAMS_DEEP_LINK,
-  parseTeamsDeepLink,
-} from "../../model/teams-rules";
-import { TeamsDetailContent } from "./teams-detail-content";
+const HEADING: TeamPageHeading = {
+  title: (team) => (team ? `Members · ${team.name}` : "Teams"),
+};
 
 /**
- * Public view for the teams route.
+ * Public view for /teams: the Members page for the team selected in the
+ * header.
  *
- * Owns the session guards and the WorkspaceProvider the content reads its
- * selection from. Sign-out goes through useAuthSession rather than calling
- * logout() here — a view performing its own I/O is what this layer prevents.
+ * One workspace IS one team, so this page has no team list and no create
+ * button of its own — both would duplicate the header. The team's other
+ * sections moved to their own pages; an old `?section=` link is forwarded
+ * there before anything draws (legacyTeamsRedirect).
  */
 export function TeamsDetailView() {
-  const router = useRouter();
-  const { status, session, error: sessionError, refresh, signOut, isSigningOut } =
-    useAuthSession();
-  const prefersReducedMotion = useReducedMotion();
-  // Read once on arrival. The first client render is the session loader on
-  // both sides of hydration, so nothing rendered depends on it yet.
-  const [deepLink] = useState(() =>
-    typeof window === "undefined"
-      ? EMPTY_TEAMS_DEEP_LINK
-      : parseTeamsDeepLink(window.location.search),
-  );
-
-  useEffect(() => {
-    if (status === "signed-out") router.replace("/login?next=/teams");
-  }, [router, status]);
-
-  async function handleLogout() {
-    await signOut();
-    router.push("/");
-  }
-
-  if (status === "loading") return <PipelineLoader label="Loading team" />;
-
-  if (status === "error") {
-    return (
-      <main className="dash-shell">
-        <FlowBackground />
-        <div className="state-body">
-          <div className="state-card">
-            <h1>Session verification failed</h1>
-            <p>
-              We could not verify your session. Please retry or sign in again.
-            </p>
-            {sessionError ? (
-              <p className="error-text" style={{ fontSize: "0.82rem" }}>
-                {sessionError}
-              </p>
-            ) : null}
-            <div className="hero-actions">
-              <button
-                className="primary-button"
-                type="button"
-                onClick={() => void refresh()}
-              >
-                Retry
-              </button>
-              <Link className="ghost-button" href="/login?next=/teams">
-                Go to login
-              </Link>
-            </div>
-          </div>
-        </div>
-      </main>
-    );
-  }
-
-  if (status === "signed-out") return null;
-
   return (
-    <WorkspaceProvider initialWorkspaceId={deepLink.workspaceId}>
-      <TeamsDetailContent
-        deepLink={deepLink}
-        guest={isGuest(session)}
-        session={session}
-        onLogout={() => void handleLogout()}
-        isLoggingOut={isSigningOut}
-        prefersReducedMotion={prefersReducedMotion}
-        enabled={status === "signed-in"}
-      />
-    </WorkspaceProvider>
+    <TeamPageShell
+      loadingLabel="Loading team"
+      path="/teams"
+      heading={HEADING}
+      redirect={legacyTeamsRedirect}
+    >
+      {({ team, vm }) => (
+        <TeamMembersPanel key={team.id} team={team} onMembershipChanged={vm.refreshTeam} />
+      )}
+    </TeamPageShell>
   );
 }

@@ -1,0 +1,400 @@
+/* ── Project QA run ────────────────────────────────────────────────────────
+   The run panel reuses QA Studio's run classes (qa-run-item, qa-summary,
+   qa-signoff-banner…) so a Project run reads exactly like a repository run.
+   What is new here: the repository heads strip, the stale and
+   "requirements changed" notices, the per-requirement groups and the
+   acceptance criteria block. Tokens only.
+   ------------------------------------------------------------------------- */
+
+.pqa-run {
+  display: grid;
+  gap: 0.9rem;
+}
+
+.pqa-run__body {
+  display: grid;
+  gap: 0.9rem;
+}
+
+.pqa-note {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--text-muted);
+}
+
+/* Every repository's uat head, one chip per repository. */
+.pqa-heads {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.pqa-head {
+  display: grid;
+  gap: 0.1rem;
+  min-width: 0;
+  padding: 0.45rem 0.65rem;
+  border: 1px solid var(--border);
+  border-radius: 0.6rem;
+  background: var(--bg-frost);
+}
+
+.pqa-head[data-changed="true"] {
+  border-color: var(--border-amber);
+  background: var(--accent-amber-light);
+}
+
+.pqa-head__name {
+  font-size: 0.8rem;
+  font-weight: 650;
+  color: var(--text-primary);
+  overflow-wrap: anywhere;
+}
+
+.pqa-head__sha {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.72rem;
+  color: var(--text-secondary);
+}
+
+.pqa-head__change {
+  font-size: 0.74rem;
+  font-weight: 600;
+  color: var(--warning);
+}
+
+/* Notices: stale (needs action) and requirements changed (informational). */
+.pqa-alert {
+  display: grid;
+  gap: 0.4rem;
+  padding: 0.8rem 0.95rem;
+  border: 1px solid var(--border);
+  border-left-width: 3px;
+  border-radius: 0.7rem;
+  background: var(--layer-2);
+}
+
+.pqa-alert--warning {
+  border-color: var(--border-amber);
+  border-left-color: var(--warning);
+  background: var(--accent-amber-light);
+}
+
+.pqa-alert--info {
+  border-left-color: var(--brand);
+}
+
+.pqa-alert__title {
+  margin: 0;
+  font-size: 0.86rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.pqa-alert__text {
+  margin: 0;
+  font-size: 0.8rem;
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+
+.pqa-alert__list {
+  margin: 0;
+  padding-left: 1.1rem;
+  font-size: 0.8rem;
+  line-height: 1.5;
+  color: var(--text-primary);
+}
+
+.pqa-alert .primary-button {
+  justify-self: start;
+}
+
+/* What the list shows: All, or one Verification, each with its count. */
+.pqa-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.pqa-filter {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 1.85rem;
+  padding: 0 0.7rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  background: var(--layer-2);
+  color: var(--text-secondary);
+  font-size: 0.76rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.pqa-filter:hover {
+  background: var(--layer-2-hover);
+  color: var(--text-primary);
+}
+
+.pqa-filter:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
+.pqa-filter[aria-pressed="true"] {
+  border-color: var(--border-brand);
+  background: var(--brand-light);
+  color: var(--brand);
+}
+
+.pqa-filter__count {
+  min-width: 1.1rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+/* One requirement's items. */
+.pqa-group {
+  display: grid;
+  gap: 0.4rem;
+}
+
+/* One line where it fits: the kind, then the name wrapping beside it (never
+   onto a line of its own), then the count on the right. */
+.pqa-group__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.pqa-group__head > .pqa-group__title {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.pqa-group__name {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.pqa-group__progress {
+  flex-shrink: 0;
+  font-size: 0.74rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* The heading folds its items away; the chevron says which way. */
+.pqa-group__toggle {
+  display: inline-flex;
+  align-items: baseline;
+  min-width: 0;
+  gap: 0.5rem;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.pqa-group__toggle::before {
+  content: "";
+  width: 0.4rem;
+  height: 0.4rem;
+  border-right: 2px solid var(--text-muted);
+  border-bottom: 2px solid var(--text-muted);
+  transform: rotate(-45deg);
+  transition: transform 0.15s ease;
+}
+
+.pqa-group__toggle[aria-expanded="true"]::before {
+  transform: rotate(45deg);
+}
+
+.pqa-group__toggle:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 3px;
+  border-radius: 0.3rem;
+}
+
+/* Denser rows than a repository run's: a Project run lists every requirement. */
+.pqa-run .qa-run-item {
+  gap: 0.65rem;
+  padding: 0.6rem 0.75rem;
+}
+
+.pqa-run .qa-run-item__body {
+  gap: 0.3rem;
+}
+
+.pqa-group .pqa-group__title {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  margin: 0.2rem 0 0;
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.pqa-kind {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.1rem 0.5rem;
+  border: 1px solid var(--border-brand);
+  border-radius: var(--radius-pill);
+  background: var(--brand-light);
+  color: var(--brand);
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.pqa-kind[data-kind="system"] {
+  border-color: var(--border-teal);
+  background: var(--accent-teal-light);
+  color: var(--accent-teal);
+}
+
+/* A <details>: block, because a details element ignores grid in some
+   browsers. Open while the item needs QA, folded once it passed. */
+.pqa-criteria {
+  padding: 0.4rem 0.65rem;
+  border-radius: 0.5rem;
+  background: var(--bg-soft);
+}
+
+.pqa-criteria__label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.pqa-criteria__label:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+  border-radius: 0.25rem;
+}
+
+.pqa-criteria p {
+  margin: 0.2rem 0 0;
+  font-size: 0.8rem;
+  line-height: 1.5;
+  color: var(--text-secondary);
+  white-space: pre-line;
+}
+
+/* Verification in one click: one button per status, the current one pressed. */
+.pqa-verify {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+}
+
+.pqa-verify__option {
+  min-height: 1.85rem;
+  padding: 0 0.65rem;
+  border: 1px solid var(--border);
+  border-radius: 0.45rem;
+  background: var(--layer-2);
+  color: var(--text-secondary);
+  font-size: 0.76rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.pqa-verify__option:hover:not(:disabled) {
+  background: var(--layer-2-hover);
+  color: var(--text-primary);
+}
+
+.pqa-verify__option:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
+.pqa-verify__option:disabled {
+  cursor: default;
+}
+
+.pqa-verify__option:disabled:not([aria-pressed="true"]) {
+  opacity: 0.55;
+}
+
+.pqa-verify__option[aria-pressed="true"] {
+  border-color: var(--border-brand);
+  background: var(--brand-light);
+  color: var(--brand);
+}
+
+.pqa-verify__option[aria-pressed="true"][data-status="passed"] {
+  border-color: var(--success);
+  background: var(--accent-emerald-light);
+  color: var(--success);
+}
+
+.pqa-verify__option[aria-pressed="true"][data-status="failed"],
+.pqa-verify__option[aria-pressed="true"][data-status="returned_to_dev"] {
+  border-color: var(--border-danger);
+  background: var(--danger-light);
+  color: var(--danger);
+}
+
+.pqa-verify__option[aria-pressed="true"][data-status="blocked"] {
+  border-color: var(--border-amber);
+  background: var(--accent-amber-light);
+  color: var(--warning);
+}
+
+.pqa-progress-unknown {
+  font-size: 0.74rem;
+  color: var(--text-muted);
+}
+
+.pqa-pass-hint {
+  margin: 0;
+  font-size: 0.76rem;
+  color: var(--text-muted);
+}
+
+/* QA Studio's legacy run column, once the server gates by Project. */
+.qa-run-card__history {
+  margin: 0;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--border-amber);
+  border-radius: 0.6rem;
+  background: var(--accent-amber-light);
+  font-size: 0.78rem;
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pqa-filter,
+  .pqa-verify__option,
+  .pqa-group__toggle::before {
+    transition: none;
+  }
+}

@@ -1,6 +1,7 @@
 import {
   isGlobalCreatorRole,
   isGroupManagerRole,
+  memberRoleLabel,
   projectStatusVariant,
   repoShortName,
 } from "../../../../../src/features/groups/model/groups-rules";
@@ -41,5 +42,19 @@ describe("repoShortName", () => {
 
   it("falls back to the whole string when there is no slash", () => {
     expect(repoShortName("orders-api")).toBe("orders-api");
+  });
+});
+
+describe("memberRoleLabel", () => {
+  it("labels the global app role with the product's persona names", () => {
+    expect(memberRoleLabel({ role: "member", appRole: "lead" })).toBe("Product owner");
+    expect(memberRoleLabel({ role: "member", appRole: "admin" })).toBe("Admin");
+    expect(memberRoleLabel({ role: "admin", appRole: "qa" })).toBe("QA Team");
+    expect(memberRoleLabel({ role: "admin", appRole: "member" })).toBe("Developer");
+  });
+
+  it("falls back to the stored team-role label without an app role", () => {
+    expect(memberRoleLabel({ role: "delegated_lead" })).toBe("Delegated lead");
+    expect(memberRoleLabel({ role: "member", appRole: null })).toBe("Member");
   });
 });

@@ -14,7 +14,6 @@ import {
 } from "@/features/projects/deployment-logs";
 import {
   canFramePreview,
-  commitUrl,
   createdLabel,
   displayHost,
   previewFrameSandbox,
@@ -34,7 +33,6 @@ import {
   BranchIcon,
   CommitIcon,
   ExternalIcon,
-  GithubIcon,
 } from "./deployment-icons";
 
 /** The width the framed page lays out at before it is scaled into the card. */
@@ -42,8 +40,6 @@ const THUMBNAIL_LAYOUT_WIDTH = 1280;
 
 type CardProps = Readonly<{
   preview: ProjectBranchPreview;
-  /** Owner/name on GitHub, for the commit link. */
-  repoFullName?: string | null;
 }>;
 
 type SurfaceProps = Readonly<{
@@ -214,21 +210,15 @@ function DomainValue({ preview }: CardProps) {
   return <ExternalLink href={preview.previewUrl} />;
 }
 
-function CommitLine({ preview, repoFullName }: CardProps) {
+/** The SHA is text, not a link: the commit lives on GitHub, which this app does not send people to. */
+function CommitLine({ preview }: CardProps) {
   const sha = shortCommitSha(preview.commitSha);
   if (!sha) return null;
-  const href = commitUrl(repoFullName, preview.commitSha);
 
   return (
     <span className="deploy-card__source-line">
       <CommitIcon />
-      {href ? (
-        <a className="deploy-card__sha" href={href} rel="noreferrer noopener" target="_blank">
-          {sha}
-        </a>
-      ) : (
-        <span className="deploy-card__sha">{sha}</span>
-      )}
+      <span className="deploy-card__sha">{sha}</span>
       {preview.commitMessage ? (
         <span className="deploy-card__commit-message">
           {preview.commitMessage}
@@ -238,7 +228,7 @@ function CommitLine({ preview, repoFullName }: CardProps) {
   );
 }
 
-function DeploymentFacts({ preview, repoFullName }: CardProps) {
+function DeploymentFacts({ preview }: CardProps) {
   const tone = previewStatusTone(preview.status);
 
   return (
@@ -266,30 +256,17 @@ function DeploymentFacts({ preview, repoFullName }: CardProps) {
           <BranchIcon />
           <span className="deploy-card__branch">{preview.branch}</span>
         </span>
-        <CommitLine preview={preview} repoFullName={repoFullName} />
+        <CommitLine preview={preview} />
       </Fact>
     </dl>
   );
 }
 
-function DeploymentActions({ preview, repoFullName }: CardProps) {
-  const github = commitUrl(repoFullName, preview.commitSha);
+function DeploymentActions({ preview }: CardProps) {
   const deployed = preview.status !== "not_deployed";
 
   return (
     <div className="deploy-card__actions">
-      {github ? (
-        <a
-          aria-label="View commit on GitHub"
-          className="ghost-button target-action-btn deploy-card__icon-button"
-          href={github}
-          rel="noreferrer noopener"
-          target="_blank"
-          title="View commit on GitHub"
-        >
-          <GithubIcon />
-        </a>
-      ) : null}
       {preview.inspectorUrl ? (
         <a
           className="ghost-button target-action-btn"
@@ -320,7 +297,6 @@ function DeploymentActions({ preview, repoFullName }: CardProps) {
  */
 export function ProductionDeploymentCard({
   preview,
-  repoFullName,
   projectId,
   onOpenFullLogs,
 }: CardProps & SurfaceProps) {
@@ -336,7 +312,7 @@ export function ProductionDeploymentCard({
             {previewHostLabel(preview)} · {preview.targetName}
           </p>
         </div>
-        <DeploymentActions preview={preview} repoFullName={repoFullName} />
+        <DeploymentActions preview={preview} />
       </header>
       <div className={`deploy-card__body deploy-card__body--${surface}`}>
         <Surface
@@ -344,7 +320,7 @@ export function ProductionDeploymentCard({
           preview={preview}
           projectId={projectId}
         />
-        <DeploymentFacts preview={preview} repoFullName={repoFullName} />
+        <DeploymentFacts preview={preview} />
       </div>
     </article>
   );

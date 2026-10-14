@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useEffect, useState } from "react";
 import { useReducedMotion } from "framer-motion";
 
 import { FlowBackground } from "@/shared/layout/flow-background";
@@ -10,6 +10,7 @@ import { PipelineLoader } from "@/shared/layout/pipeline-loader";
 import { WorkspaceProvider } from "@/features/workspace/selection";
 import { useAuthSession } from "@/features/auth/session";
 
+import { settingsSectionFromSearch } from "../../model/settings-rules";
 import { SettingsContent } from "./settings-content";
 
 /**
@@ -18,9 +19,27 @@ import { SettingsContent } from "./settings-content";
  * Owns the session guards, the compact-layout media query, and the
  * WorkspaceProvider the content reads from. Sign-out goes through
  * useAuthSession rather than calling logout() here.
+ *
+ * `?tab=team&workspace=…` (a forwarded `/teams?section=settings` link) opens
+ * the Team tab on that team. Read with useSearchParams, whose Suspense
+ * boundary this owns so the route stays static.
  */
 export function SettingsView() {
+  return (
+    <Suspense fallback={<PipelineLoader label="Loading settings" />}>
+      <SettingsRoute />
+    </Suspense>
+  );
+}
+
+function SettingsRoute() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  // Read once on arrival: the link says where to open, not what stays open.
+  const [link] = useState(() => ({
+    section: settingsSectionFromSearch(searchParams.toString()),
+    workspaceId: searchParams.get("workspace") || null,
+  }));
   const { status, session, error, refresh, signOut, isSigningOut } =
     useAuthSession();
   const prefersReducedMotion = useReducedMotion();
@@ -108,8 +127,9 @@ export function SettingsView() {
   }
 
   return (
-    <WorkspaceProvider>
+    <WorkspaceProvider initialWorkspaceId={link.workspaceId}>
       <SettingsContent
+        initialSection={link.section}
         session={session}
         onLogout={() => void handleLogout()}
         isLoggingOut={isSigningOut}

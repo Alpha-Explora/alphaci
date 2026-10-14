@@ -38,7 +38,7 @@ function forgetPrintFlag() {
  * face. The ref is only set when print actually fires, so React's development
  * double-effect (mount, cleanup, mount) still prints exactly once.
  */
-function useAutoPrint(enabled: boolean) {
+export function useAutoPrint(enabled: boolean) {
   const printed = useRef(false);
   useEffect(() => {
     if (!enabled || printed.current) return;

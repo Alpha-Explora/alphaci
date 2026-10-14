@@ -15,17 +15,20 @@ export function SetupTabHeader({
   form,
   isExistingMode,
   projectCatalog,
+  showTitle = true,
 }: Readonly<{
   form: CreateProjectFormState;
   isExistingMode: boolean;
   projectCatalog: ProjectOptionsCatalogState;
+  /** False when the page around the form already names it. */
+  showTitle?: boolean;
 }>) {
   const title = isExistingMode ? "Add CI/CD to Existing Repo" : "Create Project";
   const dualShape = projectCatalog.isMicroservicesShape || projectCatalog.isMultiRepoShape;
 
   return (
     <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "1.25rem", flexWrap: "wrap" }}>
-      <h2 style={{ margin: 0, fontSize: "1.5rem" }}>{title}</h2>
+      {showTitle ? <h2 style={{ margin: 0, fontSize: "1.5rem" }}>{title}</h2> : null}
       {dualShape ? (
         <>
           <CatalogBadge

@@ -26,9 +26,6 @@ function summarizeFailures(run: RunGroup) {
     failedStageCount: failedStages.length,
     errorCount: errors.length,
     firstError: errors[0]?.title ?? null,
-    workflowUrl:
-      failedStages.find((stage) => stage.githubRunUrl)?.githubRunUrl ??
-      run.stages.find((stage) => stage.githubRunUrl)?.githubRunUrl,
   };
 }
 
@@ -107,7 +104,6 @@ export function RunCard({ run, index, reduced }: RunCardProps) {
             run={run}
             reduced={reduced}
             visibleCommit={visibleCommit}
-            workflowUrl={failureSummary.workflowUrl}
           />
         ) : null}
       </AnimatePresence>
@@ -204,13 +200,11 @@ function WorkflowDetails({
   run,
   reduced,
   visibleCommit,
-  workflowUrl,
 }: Readonly<{
   id: string;
   run: RunGroup;
   reduced: boolean;
   visibleCommit: string;
-  workflowUrl?: string;
 }>) {
   return (
     <motion.div
@@ -226,32 +220,6 @@ function WorkflowDetails({
           <span>Workflow for commit</span>
           <strong>{visibleCommit}</strong>
         </div>
-        {workflowUrl ? (
-          <a
-            href={workflowUrl}
-            target="_blank"
-            rel="noreferrer"
-            className="runs-workflow-github-link"
-            onClick={(event) => event.stopPropagation()}
-          >
-            Open in GitHub
-            <svg
-              width="12"
-              height="12"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2.2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden="true"
-            >
-              <path d="M14 3h7v7" />
-              <path d="M10 14 21 3" />
-              <path d="M21 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5" />
-            </svg>
-          </a>
-        ) : null}
       </div>
       <RunPipeline run={run} reduced={reduced} />
     </motion.div>

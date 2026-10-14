@@ -1,7 +1,15 @@
 import {
+  EMPTY_TEAMS_DEEP_LINK,
+  SETTINGS_TEAM_TAB,
+  TEAM_PAGE_PATHS,
+  canManageTeamSettings,
+  legacyTeamsRedirect,
+  linkedItemId,
+  linksToProjects,
   memberCountLabel,
   parseTeamsDeepLink,
   resolveSelectedTeam,
+  teamMembersHref,
   toUserError,
 } from "../../../../../src/features/teams/model/teams-rules";
 import type { Team } from "../../../../../src/features/teams/model/teams-types";
@@ -81,7 +89,7 @@ describe("parseTeamsDeepLink", () => {
   it("reads the team, section and checklist a link asks for", () => {
     expect(
       parseTeamsDeepLink("?workspace=ws-1&section=qa-checklists&checklist=cl-1"),
-    ).toEqual({ workspaceId: "ws-1", section: "qa-checklists", checklistId: "cl-1" });
+    ).toEqual({ workspaceId: "ws-1", section: "qa-checklists", checklistId: "cl-1", projectId: null });
   });
 
   it("treats missing or empty values as absent", () => {
@@ -89,7 +97,129 @@ describe("parseTeamsDeepLink", () => {
       workspaceId: null,
       section: null,
       checklistId: null,
+      projectId: null,
     });
     expect(parseTeamsDeepLink("?workspace=").workspaceId).toBeNull();
+    expect(parseTeamsDeepLink("?project=").projectId).toBeNull();
+  });
+
+  it("reads the Project a Manage project link opens", () => {
+    expect(parseTeamsDeepLink("?workspace=ws-1&section=projects&project=dp-1")).toEqual({
+      workspaceId: "ws-1",
+      section: "projects",
+      checklistId: null,
+      projectId: "dp-1",
+    });
+  });
+});
+
+describe("linksToProjects", () => {
+  it("opens the Projects section by name or by naming a Project", () => {
+    expect(linksToProjects(parseTeamsDeepLink("?section=projects"))).toBe(true);
+    expect(linksToProjects(parseTeamsDeepLink("?project=dp-1"))).toBe(true);
+    expect(linksToProjects(parseTeamsDeepLink("?section=qa-checklists"))).toBe(false);
+    expect(linksToProjects(EMPTY_TEAMS_DEEP_LINK)).toBe(false);
+    expect(linksToProjects(undefined)).toBe(false);
+  });
+});
+
+describe("linkedItemId", () => {
+  it("opens the item on the team the link was made for", () => {
+    expect(linkedItemId("cl-1", "ws-1", "ws-1")).toBe("cl-1");
+  });
+
+  it("does not open it on another team", () => {
+    expect(linkedItemId("cl-1", "ws-1", "ws-2")).toBeNull();
+  });
+
+  it("applies a team-less link to the team on screen", () => {
+    expect(linkedItemId("cl-1", null, "ws-2")).toBe("cl-1");
+  });
+
+  it("is null without an item", () => {
+    expect(linkedItemId(null, "ws-1", "ws-1")).toBeNull();
+    expect(linkedItemId(undefined, undefined, "ws-1")).toBeNull();
+  });
+});
+
+/* Every former section of the team rail is a page of its own now; an old
+ * /teams?section=… link (a bookmark, an email, another page's link) is
+ * forwarded there, carrying the team and item it named. */
+describe("legacyTeamsRedirect", () => {
+  function redirect(search: string) {
+    return legacyTeamsRedirect(parseTeamsDeepLink(search));
+  }
+
+  it("sends checklist templates to /checklists, with the team and checklist", () => {
+    expect(redirect("?workspace=ws-1&section=qa-checklists&checklist=cl-1")).toBe(
+      "/checklists?workspace=ws-1&checklist=cl-1",
+    );
+    expect(redirect("?section=qa-checklists")).toBe("/checklists");
+  });
+
+  it("sends activity to /activity", () => {
+    expect(redirect("?workspace=ws-1&section=activity")).toBe("/activity?workspace=ws-1");
+    expect(redirect("?section=activity")).toBe("/activity");
+  });
+
+  it("sends settings to the Settings page's Team tab", () => {
+    expect(redirect("?workspace=ws-1&section=settings")).toBe("/settings?tab=team&workspace=ws-1");
+    expect(redirect("?section=settings")).toBe(`/settings?tab=${SETTINGS_TEAM_TAB}`);
+  });
+
+  it("sends projects, with or without a Project, to /workflows", () => {
+    expect(redirect("?workspace=ws-1&section=projects&project=dp-1")).toBe(
+      "/workflows?group=ws-1&project=dp-1",
+    );
+    expect(redirect("?workspace=ws-1&section=projects")).toBe("/workflows?group=ws-1");
+    // ?project= alone is enough: a Project only ever lived in that section.
+    expect(redirect("?project=dp-1")).toBe("/workflows?project=dp-1");
+  });
+
+  it("keeps members, overview, unknown sections and plain links on /teams", () => {
+    expect(redirect("?workspace=ws-1&section=members")).toBeNull();
+    expect(redirect("?section=overview")).toBeNull();
+    expect(redirect("?section=nope")).toBeNull();
+    expect(redirect("?workspace=ws-1")).toBeNull();
+    expect(redirect("")).toBeNull();
+  });
+
+  it("encodes the ids it carries", () => {
+    expect(redirect("?workspace=ws%201&section=activity")).toBe("/activity?workspace=ws+1");
+  });
+});
+
+describe("page paths", () => {
+  it("names one page per former section", () => {
+    expect(TEAM_PAGE_PATHS).toEqual({
+      members: "/teams",
+      checklists: "/checklists",
+      activity: "/activity",
+      settings: "/settings",
+      projects: "/workflows",
+    });
+  });
+
+  it("links to a team's Members page", () => {
+    expect(teamMembersHref("ws-1")).toBe("/teams?workspace=ws-1");
+    expect(teamMembersHref(null)).toBe("/teams");
+    expect(teamMembersHref()).toBe("/teams");
+  });
+});
+
+describe("canManageTeamSettings", () => {
+  it("allows the Lead and a Delegated lead", () => {
+    expect(canManageTeamSettings("admin")).toBe(true);
+    expect(canManageTeamSettings("delegated_lead")).toBe(true);
+  });
+
+  /* An allow-list: a role nobody has named here gets no power. */
+  it("refuses everyone else, including roles it has never heard of", () => {
+    expect(canManageTeamSettings("member")).toBe(false);
+    expect(canManageTeamSettings("viewer")).toBe(false);
+    expect(canManageTeamSettings("qa")).toBe(false);
+    expect(canManageTeamSettings("")).toBe(false);
+    expect(canManageTeamSettings(null)).toBe(false);
+    expect(canManageTeamSettings(undefined)).toBe(false);
   });
 });

@@ -18,7 +18,7 @@
 /* The global ghost button draws a transparent border; give it an edge here. */
 .qa-returned .ghost-button,
 .qa-returned-error .ghost-button {
-  border-color: var(--border-strong);
+  border-color: var(--border-control);
 }
 
 .qa-returned__header {
@@ -52,14 +52,6 @@
   font-size: 0.72rem;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
-}
-
-.qa-returned__lede {
-  margin: 0;
-  max-width: 64ch;
-  font-size: 0.82rem;
-  line-height: 1.55;
-  color: var(--text-secondary);
 }
 
 .qa-returned__list {
@@ -216,4 +208,289 @@
   font-weight: 500;
   line-height: 1.45;
   color: var(--danger);
+}
+
+/* ── My QA items: the card's two sections ────────────────────────────────────
+   "Returned by QA" keeps the warning edge (it needs you); a card holding only
+   your checks on uat carries the brand edge instead — work to record, not a
+   problem to fix. Sections are separated by a hairline, not boxed again. */
+.qa-mine[data-tone="checks"] {
+  border-left-color: var(--brand);
+}
+
+.qa-mine__count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.35rem;
+  height: 1.35rem;
+  padding: 0 0.4rem;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-pill);
+  background: var(--bg-soft);
+  color: var(--text-secondary);
+  font-size: 0.72rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.qa-mine__section {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.qa-mine__section + .qa-mine__section {
+  padding-top: 0.9rem;
+  border-top: 1px solid var(--border);
+}
+
+/* Two classes: `.tab-content-panel h3`-style rules must not restyle it. */
+.qa-mine .qa-mine__section-title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.45rem;
+  margin: 0;
+  font-size: 0.86rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.qa-mine__section-title code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.qa-mine__lede {
+  margin: -0.2rem 0 0;
+  max-width: 64ch;
+  font-size: 0.8rem;
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+
+.qa-mine__list {
+  display: grid;
+  gap: 0.6rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.qa-mine__row {
+  display: grid;
+  gap: 0.45rem;
+  padding: 0.8rem 0.95rem;
+  border: 1px solid var(--border);
+  border-radius: 0.7rem;
+  background: var(--bg-frost);
+}
+
+.qa-mine__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.qa-mine__title {
+  font-size: 0.9rem;
+  font-weight: 650;
+  line-height: 1.4;
+  color: var(--text-primary);
+  overflow-wrap: anywhere;
+}
+
+.qa-mine__desc {
+  margin: 0;
+  max-width: 72ch;
+  font-size: 0.8rem;
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+
+.qa-mine__tags {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.qa-mine__test {
+  padding: 0.1rem 0.4rem;
+  border-radius: 0.35rem;
+  background: var(--bg-soft);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.72rem;
+  color: var(--text-secondary);
+  overflow-wrap: anywhere;
+}
+
+.qa-mine__recorded {
+  display: grid;
+  justify-items: start;
+  gap: 0.3rem;
+}
+
+.qa-mine__recorded p {
+  margin: 0;
+  max-width: 72ch;
+  font-size: 0.8rem;
+  line-height: 1.5;
+  color: var(--text-secondary);
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+
+.qa-mine__controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.9rem;
+  padding-top: 0.2rem;
+}
+
+/* The global input cap and select padding are for forms; this is a row control. */
+.qa-mine__status .hier-select {
+  width: auto;
+  min-width: 10.5rem;
+  max-width: none;
+  padding-block: 0.38rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.qa-mine__text-button {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--brand);
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.qa-mine__text-button:hover:not(:disabled) {
+  text-decoration: underline;
+}
+
+.qa-mine__text-button:disabled {
+  color: var(--text-muted);
+  cursor: not-allowed;
+}
+
+.qa-mine__text-button:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+  border-radius: 0.25rem;
+}
+
+.qa-mine__saving,
+.qa-mine__readonly {
+  margin: 0;
+  font-size: 0.74rem;
+  color: var(--text-muted);
+}
+
+.qa-mine__editor {
+  display: grid;
+  gap: 0.6rem;
+  padding: 0.75rem;
+  border: 1px solid var(--border-brand);
+  border-radius: 0.65rem;
+  background: var(--bg-soft);
+}
+
+.qa-mine__editor .qa-mine__field {
+  margin: 0;
+}
+
+.qa-mine__editor .hier-select,
+.qa-mine__editor .hier-textarea {
+  max-width: none;
+  font-size: 0.82rem;
+}
+
+.qa-mine__editor .hier-textarea {
+  min-height: 3.5rem;
+}
+
+.qa-mine__required {
+  font-weight: 500;
+  color: var(--warning);
+}
+
+.qa-mine__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
+.qa-mine__error {
+  margin: 0;
+  font-size: 0.76rem;
+  font-weight: 500;
+  line-height: 1.45;
+  color: var(--danger);
+}
+
+.qa-mine__alert {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  padding: 0.55rem 0.7rem;
+  border: 1px solid var(--accent-rose-glow);
+  border-radius: 0.55rem;
+  background: var(--accent-rose-light);
+}
+
+.qa-mine__alert p {
+  flex: 1 1 14rem;
+  margin: 0;
+  font-size: 0.8rem;
+  line-height: 1.45;
+  color: var(--text-primary);
+}
+
+@media (max-width: 560px) {
+  .qa-mine__head {
+    flex-direction: column;
+    gap: 0.35rem;
+  }
+
+  .qa-mine__status,
+  .qa-mine__status .hier-select {
+    width: 100%;
+  }
+}
+
+/* ── Notification deep-link highlight (spec §8.6) ────────────────────────────
+   A one-shot pulse when the Overview opens with ?focus=my-qa-items, so a
+   developer who followed a "QA returned this" notification can find the card
+   without hunting. `qa-mine--focused` is a stable class for the component's
+   lifetime, so this plays once on mount (iteration-count 1) and never
+   replays on later re-renders. */
+.qa-mine--focused {
+  animation: qa-mine-focus-pulse 1.6s ease-out 1;
+}
+
+@keyframes qa-mine-focus-pulse {
+  0%,
+  40% {
+    box-shadow: 0 0 0 3px var(--accent-violet-glow);
+  }
+  100% {
+    box-shadow: 0 0 0 0 transparent;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .qa-mine--focused {
+    animation: none;
+  }
 }

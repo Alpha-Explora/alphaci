@@ -7,7 +7,12 @@ export {
    * that guards systems, delivery projects and repositories: Lead and Admin
    * yes, Developer no. */
   isGlobalCreatorRole,
+  /* Who may create a Project (an empty one, from Create project): Product
+   * owner (lead) or admin. A Developer adds repositories to one instead. */
+  canCreateProjectFolder,
 } from "@/features/groups";
+/* "Create project" from Home: the Projects page, New Project dialog open. */
+export { newProjectHref } from "@/features/workflows";
 
 import type {
   ConnectorTone,
@@ -98,18 +103,34 @@ export function workspacePortfolioCounts(portfolio: DeliveryPortfolioNode[]): {
   return { deliveryProjectCount, repositoryCount };
 }
 
+/**
+ * A team with no projects and no delivery projects is empty whatever runs
+ * arrived: runs belong to projects, so any run beside zero projects is another
+ * team's and must not hide the get-started journey.
+ */
 export function isEmptyWorkspace(input: {
   loading: boolean;
   projectCount: number;
-  runCount: number;
   deliveryProjectCount: number;
 }): boolean {
   return (
     !input.loading &&
     input.projectCount === 0 &&
-    input.runCount === 0 &&
     input.deliveryProjectCount === 0
   );
+}
+
+/**
+ * The runs to show for the header team. The backend already narrows by team;
+ * this guards the case where it did not: with zero projects loaded, no run can
+ * be this team's.
+ */
+export function runsForTeam(
+  runs: RunGroup[],
+  projects: readonly ProvisionedProject[],
+  projectsReady: boolean,
+): RunGroup[] {
+  return projectsReady && projects.length === 0 ? [] : runs;
 }
 
 function countSuffix(count: number, singular: string, plural: string): string {

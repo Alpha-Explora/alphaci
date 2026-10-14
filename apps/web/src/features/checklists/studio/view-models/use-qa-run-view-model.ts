@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 
 import { qaRunsRepository } from "../../data/qa-runs-repository";
-import { qaActionError } from "../../model/qa-run-rules";
+import { lockLegacyRun, qaActionError } from "../../model/qa-run-rules";
 import type {
   QaActionError,
   QaCommitSource,
@@ -72,7 +72,8 @@ function loadedView(current: LoadResult | null) {
   return {
     error: current?.error ?? null,
     ...loadedCommit(data),
-    run: data?.run ?? null,
+    // A legacy repository run is read-only history once Project runs exist.
+    run: data?.run ? lockLegacyRun(data.run) : null,
   };
 }
 

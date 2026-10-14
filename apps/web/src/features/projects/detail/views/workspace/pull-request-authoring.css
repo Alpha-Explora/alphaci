@@ -38,6 +38,65 @@ button.ws-link {
   cursor: pointer;
 }
 
+/* Presets: a radiogroup of pills. The native radio stays in the DOM (visually
+   hidden) so keyboard and screen-reader behaviour is the browser's own. */
+.ws-preset {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.ws-preset__option {
+  position: relative;
+  display: grid;
+  gap: 0.15rem;
+  min-height: 2.75rem;
+  padding: 0.5rem 0.9rem;
+  border: 1px solid var(--border-subtle);
+  border-radius: 999px;
+  background: var(--bg-soft);
+  color: var(--text-primary);
+  cursor: pointer;
+}
+
+.ws-preset__option:hover {
+  border-color: var(--border-brand);
+}
+
+.ws-preset__option[data-checked="true"] {
+  border-color: var(--border-brand);
+  background: var(--brand-light);
+  color: var(--brand);
+}
+
+.ws-preset__option:has(.ws-preset__input:focus-visible) {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
+.ws-preset__option[data-disabled="true"] {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.ws-preset__input {
+  position: absolute;
+  opacity: 0;
+  inset: 0;
+  margin: 0;
+  cursor: inherit;
+}
+
+.ws-preset__label {
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.ws-preset__reason {
+  font-size: 0.72rem;
+  color: var(--text-secondary);
+}
+
 .ws-compose__branches {
   display: flex;
   flex-wrap: wrap;

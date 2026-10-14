@@ -6,6 +6,7 @@
  * The client renders it; it never recomputes counts the server already gave. */
 
 import type { ChecklistTargetPersona } from "./checklist-types";
+import type { QaRunAutomationWire } from "./qa-automation-types";
 import type {
   QaActor,
   QaDefectSeverity,
@@ -72,7 +73,11 @@ export interface QaReport {
   run: QaRun;
   summary: QaReportSummary;
   defects: QaReportDefect[];
-  /** Reserved for CI-collected test results; always null in v1. */
-  automatedResults: null;
+  /**
+   * CI results for the run's commit, per stage. Null (or absent, on reports
+   * built before automation existed) when nothing was collected. Read it only
+   * through `normalizeRunAutomation`.
+   */
+  automatedResults?: QaRunAutomationWire | null;
   signoffHistory: QaReportSignoffEntry[];
 }

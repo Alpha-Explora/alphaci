@@ -12,6 +12,8 @@ export {
   type AppNavViewModel,
 } from "./view-models/use-app-nav-view-model";
 export { AppNav } from "./views/app-nav";
+/* The root layout runs this in <head>, so a pinned rail is open on first paint. */
+export { SIDEBAR_PIN_BOOT_SCRIPT } from "./model/sidebar-pin";
 export { WorkspaceSwitcher } from "./views/workspace-switcher";
 export type {
   WorkspaceMemberSummary,
@@ -24,5 +26,5 @@ export type {
 } from "./model/workspace-types";
 /* Who may create a workspace. Exported because the Teams empty state offers
    the same action as the header switcher and must agree with it. */
-export { canCreateWorkspace } from "./model/workspace-types";
+export { canCreateWorkspace, canOpenTeamActivity, SIDEBAR_SHOWS_ACTIVITY } from "./model/workspace-types";
 export * from "./data/workspaces-api";

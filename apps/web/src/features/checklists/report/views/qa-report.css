@@ -674,20 +674,22 @@
 }
 
 .qa-report-table__col-item {
-  width: 26%;
+  width: 25%;
 }
 
+/* "Developer" must fit on one line. */
 .qa-report-table__col-persona {
-  width: 9.5%;
+  width: 10.5%;
 }
 
 .qa-report-table__col-verify {
-  width: 20%;
+  width: 18%;
 }
 
-/* Wide enough for the longest pill ("Returned to dev") at print size. */
+/* Wide enough for the longest pill ("Returned to dev") and the Automated
+   badge ("Automated | Unknown") at print size. */
 .qa-report-table__col-status {
-  width: 17%;
+  width: 19%;
 }
 
 .qa-report-table thead {
@@ -720,6 +722,72 @@
 
 .qa-report-table tr {
   break-inside: avoid;
+}
+
+/* An item's own screenshots, on a row under it. The item row above loses its
+   rule so the two read as one entry. */
+.qa-report-table tr[data-evidence="true"] td {
+  border-bottom-color: transparent;
+}
+
+.qa-report-table__evidence td {
+  padding-top: 0;
+}
+
+.qa-report-evidence {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr));
+  align-items: start;
+  gap: 0.6em;
+}
+
+.qa-report-evidence__figure {
+  display: grid;
+  align-content: start;
+  gap: 0.3em;
+  margin: 0;
+  break-inside: avoid;
+}
+
+/* The box shrinks to the image: a tall phone shot is narrower, never a wide
+   frame with empty space beside it. */
+.qa-report-evidence__figure img {
+  display: block;
+  justify-self: start;
+  width: auto;
+  height: auto;
+  max-width: 100%;
+  max-height: 16em;
+  border: 1px solid var(--border-layer);
+  border-radius: 0.4em;
+  background: var(--layer-2);
+}
+
+.qa-report-evidence__figure figcaption {
+  font-size: 0.92em;
+  line-height: 1.35;
+  color: var(--text-secondary);
+}
+
+.qa-report-evidence__kind {
+  display: block;
+  font-size: 0.82em;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.qa-report-evidence__missing {
+  display: grid;
+  place-items: center;
+  min-height: 5em;
+  padding: 0.5em;
+  border: 1px dashed var(--border-layer);
+  border-radius: 0.4em;
+  font-size: 0.9em;
+  color: var(--text-muted);
+  text-align: center;
 }
 
 /* Everything inside the table is sized in em, off the table's own size, so
@@ -769,6 +837,131 @@
 .qa-report-table .qa-severity {
   margin-bottom: 0.35em;
   font-size: 0.78em;
+}
+
+/* The item's automated result, under its status pill. */
+.qa-report-auto-cell {
+  display: grid;
+  justify-items: start;
+  gap: 0.15em;
+  margin-top: 0.45em;
+}
+
+.qa-report-table .qa-auto-badge {
+  font-size: 0.8em;
+}
+
+/* ── 4. Automated results ────────────────────────────────────────────────── */
+
+.qa-report-auto {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.qa-report-auto__lede {
+  margin: 0;
+  font-size: 0.8rem;
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+
+/* Four short columns: no need for the checklist table's phone-scroll width. */
+.qa-report-table.qa-report-auto__table {
+  min-width: 30rem;
+}
+
+.qa-report-auto__col-stage {
+  width: 32%;
+}
+
+.qa-report-auto__col-status {
+  width: 20%;
+}
+
+.qa-report-auto__col-tests {
+  width: 22%;
+}
+
+/* The stage names are row headers: read like cells, not like the column heads. */
+.qa-report-table tbody th {
+  padding: 0.65rem 0.6rem;
+  border-bottom: 1px solid var(--border-layer);
+  background: none;
+  font-size: inherit;
+  font-weight: inherit;
+  letter-spacing: 0;
+  text-transform: none;
+  vertical-align: top;
+  color: var(--text-secondary);
+}
+
+.qa-report-table tbody tr:last-child th {
+  border-bottom: 0;
+}
+
+.qa-report-auto__count {
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-primary);
+}
+
+.qa-report-table__sub.qa-report-auto__failed {
+  color: var(--danger);
+}
+
+.qa-report-auto__failures {
+  padding: 0.75rem 0.95rem 0.8rem;
+  border: 1px solid var(--border-layer);
+  border-left: 4px solid var(--danger);
+  border-radius: 0.7rem;
+}
+
+.qa-report-auto__failures-title {
+  margin: 0 0 0.5rem;
+  font-family: inherit;
+  font-size: 0.74rem;
+  font-weight: 750;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.qa-report-auto__list {
+  display: grid;
+  gap: 0.45rem;
+  margin: 0;
+  padding-left: 1.4rem;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.qa-report-auto__list li {
+  break-inside: avoid;
+}
+
+.qa-report-auto__name {
+  font-family: var(--qa-report-mono);
+  font-size: 0.76rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  overflow-wrap: anywhere;
+}
+
+.qa-report-auto__message {
+  margin: 0.15rem 0 0;
+  font-family: var(--qa-report-mono);
+  font-size: 0.72rem;
+  line-height: 1.5;
+  color: var(--text-secondary);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.qa-report-auto__note {
+  margin: 0.55rem 0 0;
+  font-size: 0.76rem;
+  font-weight: 600;
+  color: var(--text-secondary);
 }
 
 /* ── 5. Defect log ───────────────────────────────────────────────────────── */
@@ -1135,8 +1328,32 @@
     padding: 1.6mm;
   }
 
-  .qa-report-table tbody tr:last-child td {
+  .qa-report-table tbody th {
+    font-size: 8pt;
+  }
+
+  .qa-report-table tbody tr:last-child td,
+  .qa-report-table tbody tr:last-child th {
     border-bottom: 1px solid var(--print-rule);
+  }
+
+  .qa-report-auto__lede,
+  .qa-report-auto__list {
+    font-size: 8.5pt;
+  }
+
+  .qa-report-auto__name {
+    font-size: 8pt;
+  }
+
+  .qa-report-auto__message {
+    font-size: 7.5pt;
+  }
+
+  .qa-report-auto__failures {
+    padding: 2.5mm 3mm;
+    border-radius: 0;
+    break-inside: auto;
   }
 
   .qa-report-footer {

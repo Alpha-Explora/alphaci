@@ -1,7 +1,10 @@
 import {
+  canMergeViaWorkspace,
   explainMergeState,
   mergeButtonLabel,
+  workspaceMergeGate,
 } from "../../../../../../src/features/projects/detail/model/pull-request-merge-rules";
+import type { AppRole } from "../../../../../../src/shared/api/contracts";
 
 describe("explainMergeState", () => {
   it("calls a clean pull request ready", () => {
@@ -58,5 +61,64 @@ describe("mergeButtonLabel", () => {
     expect(mergeButtonLabel("merge")).toBe("Merge");
     expect(mergeButtonLabel("squash")).toBe("Squash and merge");
     expect(mergeButtonLabel("rebase")).toBe("Rebase and merge");
+  });
+});
+
+/**
+ * Phase 1 security gates: the two 403s the backend sends for
+ * `POST .../pull-requests/:number/merge` (PERSONA_WORKFLOW_SPEC.md §5, §8.1).
+ */
+describe("workspaceMergeGate / canMergeViaWorkspace", () => {
+  const ROLES: ReadonlyArray<AppRole> = ["admin", "lead", "member"];
+
+  it("blocks every role from merging into main through the workspace", () => {
+    for (const role of ROLES) {
+      expect(workspaceMergeGate(role, "main", "uat")).toEqual({
+        allowed: false,
+        reason: "main-via-qa-studio",
+      });
+      expect(canMergeViaWorkspace(role, "main", "uat")).toBe(false);
+    }
+  });
+
+  it("blocks QA from merging anything here, even a non-main base", () => {
+    expect(workspaceMergeGate("qa", "dev", "feature/x")).toEqual({
+      allowed: false,
+      reason: "qa-role",
+    });
+    expect(canMergeViaWorkspace("qa", "uat", "dev")).toBe(false);
+  });
+
+  it("gives QA's block priority when the base is also main", () => {
+    expect(workspaceMergeGate("qa", "main", "uat")).toEqual({
+      allowed: false,
+      reason: "qa-role",
+    });
+  });
+
+  it("allows a Developer feature -> dev and dev -> uat", () => {
+    expect(canMergeViaWorkspace("member", "dev", "feature/x")).toBe(true);
+    expect(canMergeViaWorkspace("member", "uat", "dev")).toBe(true);
+  });
+
+  it("restricts a Developer's other routes (feature -> uat, uat -> dev)", () => {
+    expect(workspaceMergeGate("member", "uat", "feature/x")).toEqual({
+      allowed: false,
+      reason: "route-restricted",
+    });
+    expect(canMergeViaWorkspace("member", "dev", "uat")).toBe(false);
+  });
+
+  it("lets leads and admins merge any non-main route", () => {
+    for (const role of ["lead", "admin"] as const) {
+      expect(canMergeViaWorkspace(role, "uat", "feature/x")).toBe(true);
+      expect(canMergeViaWorkspace(role, "dev", "uat")).toBe(true);
+      expect(canMergeViaWorkspace(role, "dev", "feature/x")).toBe(true);
+    }
+  });
+
+  it("denies a session with no known role, even for a non-main base", () => {
+    expect(canMergeViaWorkspace(undefined, "dev", "feature/x")).toBe(false);
+    expect(canMergeViaWorkspace(null, "dev", "feature/x")).toBe(false);
   });
 });

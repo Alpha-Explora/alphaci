@@ -561,12 +561,6 @@
   transform: rotate(90deg);
 }
 
-/* GitHub link hover */
-.runs-gh-link:hover {
-  text-decoration: underline;
-  color: var(--brand-strong);
-}
-
 .runs-run-card:hover {
   border-color: var(--border-tile);
   background: var(--layer-1-hover);
@@ -885,23 +879,6 @@
   white-space: nowrap;
 }
 
-.runs-workflow-github-link {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  color: var(--brand);
-  font-size: 0.74rem;
-  font-weight: 700;
-  text-decoration: none;
-  white-space: nowrap;
-}
-
-.runs-workflow-github-link:hover,
-.runs-workflow-github-link:focus-visible {
-  color: var(--brand-strong);
-  text-decoration: underline;
-}
-
 @media (max-width: 760px) {
   .runs-commit-row {
     grid-template-columns: auto minmax(0, 1fr) auto;
@@ -1108,6 +1085,19 @@
   inset: 0;
   background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--accent-amber) 90%, transparent), transparent);
   animation: flow-travel 1.8s ease-in-out infinite;
+}
+
+/* Why a failed run failed, in the failing stage's own words. One line;
+   the full text is in the title and the link's label. */
+.run-card-reason {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  font-size: 0.76rem;
+  line-height: 1.35;
+  color: color-mix(in srgb, var(--danger) 55%, var(--text-primary));
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .run-card-foot {

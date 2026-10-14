@@ -2,10 +2,12 @@
 
 import type { ReactNode } from "react";
 
+import type { QaScope } from "@/features/checklists";
 import { QaStudioPanel } from "@/features/checklists/studio";
 import type { ProvisionedProject } from "@/features/projects";
 
 import type { ProjectDetailTabsViewModel } from "../view-models/use-project-detail-tabs-view-model";
+import { studioChecksRenderer } from "./studio-repository-checks";
 
 /**
  * The QA Studio tab. The studio belongs to the checklists domain; this file
@@ -14,10 +16,24 @@ import type { ProjectDetailTabsViewModel } from "../view-models/use-project-deta
 export function QaStudioTabPanel({
   project,
   vm,
+  qaScope,
+  studioToolbarSlot,
 }: Readonly<{
   project: ProvisionedProject;
   vm: ProjectDetailTabsViewModel;
   dangerZone?: ReactNode;
+  qaScope?: QaScope;
+  /** The tab row's slot for the studio's preview controls (see ProjectDetailTabs). */
+  studioToolbarSlot?: HTMLElement | null;
 }>) {
-  return <QaStudioPanel projectId={project.id} appRole={vm.appRole} />;
+  return (
+    <QaStudioPanel
+      projectId={project.id}
+      appRole={vm.appRole}
+      projectName={project.repoFullName}
+      qaScope={qaScope}
+      toolbarSlot={studioToolbarSlot}
+      renderRepositoryChecks={studioChecksRenderer(project.id, vm)}
+    />
+  );
 }

@@ -6,6 +6,9 @@ import type { ReactNode } from "react";
 
 import { LoadingRows } from "@/features/groups/workspace";
 
+import Link from "next/link";
+
+import { projectRequirementsHref } from "../../model/checklist-rules";
 import type { ChecklistShareTarget } from "../../model/checklist-types";
 import {
   useWorkspaceChecklistsViewModel,
@@ -17,24 +20,21 @@ import { ChecklistEditor } from "./checklist-editor";
 import { ChecklistList } from "./checklist-list";
 
 /** The list screen's header row: the same shape as every other team section. */
-function ListHead({ vm }: Readonly<{ vm: WorkspaceChecklistsViewModel }>) {
+function ListHead({ vm, projectsHref }: Readonly<{ vm: WorkspaceChecklistsViewModel; projectsHref: string }>) {
   return (
     <div className="group-section-head">
-      <h3 className="group-section-title">
-        QA checklists
+      <h2 className="group-section-title">
+        Checklist templates
         {vm.status === "ready" ? (
           <span className="group-section-count">{vm.checklists.length}</span>
         ) : null}
-      </h3>
+      </h2>
       {vm.canManage && vm.checklists.length > 0 ? (
-        <button
-          type="button"
-          className="primary-button group-section-action"
-          onClick={vm.startCreate}
-        >
+        // New requirements are written on a Project, where they apply to every repository.
+        <Link className="primary-button group-section-action" href={projectsHref}>
           <PlusIcon />
-          New checklist
-        </button>
+          Add requirements in a Project
+        </Link>
       ) : null}
     </div>
   );
@@ -107,6 +107,7 @@ function ScreenBody({
         projects={projects}
         canManage={vm.canManage}
         now={vm.now}
+        workspaceId={workspaceId}
         onEdit={() => vm.editChecklist(selected.id)}
         onShared={vm.applyShared}
         onArchived={vm.applyArchived}
@@ -148,9 +149,10 @@ export function WorkspaceChecklistsSection({
     );
   }
 
+  const projectsHref = projectRequirementsHref(workspaceId);
   return (
     <div className="qa-section">
-      <ListHead vm={vm} />
+      <ListHead vm={vm} projectsHref={projectsHref} />
       <ChecklistList
         status={vm.status}
         error={vm.error}
@@ -161,7 +163,7 @@ export function WorkspaceChecklistsSection({
         onShowArchivedChange={vm.setShowArchived}
         onOpen={vm.openChecklist}
         onRetry={vm.reload}
-        onCreate={vm.startCreate}
+        projectsHref={projectsHref}
       />
     </div>
   );

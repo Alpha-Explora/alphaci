@@ -10,9 +10,8 @@
  * that is the right cascade is a design question; this file only preserves the
  * answer the code already gives.
  * 
- * Three classes stayed in globals.css because moving them flips a tie even from
- * here: latest-result-banner__eyebrow, latest-result-banner__chips and
- * studio-tab-bar--enhanced.
+ * Two classes stayed in globals.css because moving them flips a tie even from
+ * here: latest-result-banner__eyebrow and latest-result-banner__chips.
  */
 
 /* ── Skip-to-content ───────────────────────────────────────────────────── */
@@ -125,9 +124,9 @@
 }
 
 .ghost-button {
-  border-color: var(--border-strong);
+  border-color: var(--border-control);
   background: transparent;
-  color: var(--text-secondary);
+  color: var(--control-text);
   font-weight: 500;
 }
 

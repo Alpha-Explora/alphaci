@@ -42,13 +42,28 @@ export interface DeploymentLogsResponse {
   hasMore: boolean;
   next: LogCursor | null;
   filters: LogFilterKey[];
+  /**
+   * Legacy (non-append) mode only: the provider rate-limited this read and the
+   * backend kept the connection. `logs` is empty then, and the lines already
+   * shown are still true.
+   */
+  rateLimited?: boolean;
+  /** How long the backend waits before reading again. Absent when not sent or invalid. */
+  retryAfterMs?: number;
 }
 
 /** One event of the `mode=append` stream. */
 export type DeploymentLogStreamEvent =
   | ({ kind: "snapshot" } & DeploymentLogsResponse)
   | { kind: "append"; source: LogSource; logs: DeploymentLogLine[] }
-  | { kind: "status"; source: LogSource; reason?: string };
+  | {
+      kind: "status";
+      source: LogSource;
+      reason?: string;
+      /** The provider answered 429; the stream stays open and resumes after the cooldown. */
+      rateLimited?: boolean;
+      retryAfterMs?: number;
+    };
 
 /**
  * The span of time a log view covers. `endTime: null` is the current deploy:

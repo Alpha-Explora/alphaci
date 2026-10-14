@@ -58,6 +58,8 @@
   --success: #10b981; /* Emerald Green — completed / passing   */
   --warning: #f59e0b; /* Amber — partial / needs review        */
   --danger: #ef4444; /* Rose Red — failed / danger            */
+  --danger-light: rgba(239, 68, 68, 0.12);
+  --border-danger: rgba(239, 68, 68, 0.3);
 
   /* ── Secondary accent: tech purple ─────────────────────────── */
   /* Secondary chart accent + secondary actions, plan badges, highlights */
@@ -109,9 +111,12 @@
 
   /* ── Sidebar layout ────────────────────────────────────────── */
   /* The rail expands on hover by painting OVER the page, so the layout only
-     ever reserves its collapsed width. Do not animate this. */
-  --sidebar-width: 64px;
-  --sidebar-collapsed: 64px;
+     reserves its collapsed width — unless the viewer pins it open, when
+     --sidebar-width becomes --sidebar-open (app-shell.css) and the page moves
+     aside. --sidebar-collapsed is the rail itself and never changes. */
+  --sidebar-collapsed: 52px;
+  --sidebar-open: 216px;
+  --sidebar-width: var(--sidebar-collapsed);
 
   /* ── Surface-level accent tints ───────────────────────────── */
   /* Subtle background tints for section separators and hover states */
@@ -126,6 +131,14 @@
   --border-subtle: rgba(54, 54, 66, 0.2);
   --border-strong: #363642;
   --border-brand: rgba(31, 111, 235, 0.6);
+
+  /* ── Secondary controls (ghost / Hosting buttons) ──────────── */
+  /* --border-strong is ~1.3:1 on a card here, so outlined buttons read as
+     plain text. The control edge clears 3:1 on the card (#24242d), the
+     page (#1a1a21) and a nested tile (#2c2c37); the label sits near
+     --text-primary. Light keeps its existing values (see the light block). */
+  --border-control: #787886;
+  --control-text: #e4e4ea;
 
   /* ── Shadows / glows ───────────────────────────────────────── */
   --shadow-soft: 0 4px 14px rgba(0, 0, 0, 0.25), 0 1px 3px rgba(0, 0, 0, 0.15);
@@ -171,6 +184,24 @@
   --print-danger-tint: #fdecec;
   --print-brand: #0550ae;
   --print-brand-tint: #e8f0fb;
+
+  /* ── Device hardware (QA Studio frames) ─────────────────────── */
+  /* Theme-independent on purpose, like paper: a phone or tablet is a dark
+     object in either theme. Only the chassis is drawn in these; the browser
+     frame follows the theme, as a real browser's chrome does. */
+  --device-chassis: #0c0c10;
+  --device-chassis-rim: #3a3a46;
+  --device-bezel: #050507;
+  --device-sensor: #000;
+  --device-lens: #1b2536;
+  --device-button: #26262f;
+  --device-home: rgba(255, 255, 255, 0.5);
+  /* A browser's default canvas: what shows through a page with no background. */
+  --device-screen: #fff;
+
+  /* The dim behind a screenshot lightbox. Theme-independent on purpose:
+     a photo viewer reads best on near-black in either theme. */
+  --scrim: rgba(6, 6, 10, 0.86);
 }
 
 [data-theme="light"] {
@@ -208,6 +239,8 @@
   --success: #059669;
   --warning: #d97706;
   --danger: #dc2626;
+  --danger-light: rgba(220, 38, 38, 0.08);
+  --border-danger: rgba(220, 38, 38, 0.25);
 
   --accent-violet: #7c3aed;
   --accent-violet-light: rgba(124, 58, 237, 0.08);
@@ -254,6 +287,9 @@
   --border-subtle: rgba(0, 0, 0, 0.03);
   --border-strong: rgba(0, 0, 0, 0.15);
   --border-brand: rgba(9, 105, 218, 0.4);
+  /* Same values the light theme already used for these controls. */
+  --border-control: rgba(0, 0, 0, 0.15);
+  --control-text: var(--text-secondary);
 
   --shadow-soft: 0 2px 8px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.04);
   --shadow-card: 0 4px 20px rgba(0, 0, 0, 0.1), 0 2px 6px rgba(0, 0, 0, 0.06);

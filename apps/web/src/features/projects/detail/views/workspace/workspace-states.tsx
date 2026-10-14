@@ -8,6 +8,8 @@
  * fails differently reads as three separate products.
  */
 
+import { isFailedConclusion } from "../../model/github-conclusion";
+
 export function WorkspaceLoading({ rows = 4 }: { rows?: number }) {
   return (
     <div className="ws-loading" role="status" aria-label="Loading">
@@ -67,7 +69,7 @@ export function statusTone(
     return status === "queued" || status === "waiting" ? "neutral" : "running";
   }
   if (conclusion === "success") return "success";
-  if (conclusion === "failure" || conclusion === "timed_out") return "failure";
+  if (isFailedConclusion(conclusion)) return "failure";
   return "neutral";
 }
 

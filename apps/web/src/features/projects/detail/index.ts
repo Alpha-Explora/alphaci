@@ -2,9 +2,17 @@ export { ProjectDetailView } from "./views/project-detail-view";
 export { ProjectDetailTabs } from "./views/project-detail-tabs";
 export { WorkflowStageList } from "./views/workflow-stage-list";
 export { ProjectEnvPanel } from "./views/project-env-panel";
+/* The printable Project QA report, with each repository's screenshots in its appendix. */
+export { ProjectQaReportPage } from "./views/project-qa-report-page";
 export { useProjectDetailViewModel } from "./view-models/use-project-detail-view-model";
 export type { ProjectDetailViewModel } from "./view-models/use-project-detail-view-model";
 export { usePipelineRunsViewModel, RUNS_POLL_MS } from "./view-models/use-pipeline-runs-view-model";
 export type { PipelineRunsViewModel } from "./view-models/use-pipeline-runs-view-model";
 export { groupRunsByPipelineBranch } from "./model/runs-by-branch";
 export type { BranchRun, BranchRunSection } from "./model/runs-by-branch";
+/* The studio role gates — notifications' deep-link rules (spec §8.6) send a
+ * viewer to their own studio (`#qa` or `#po`), else `#overview`. */
+export { canOpenQaStudio, studioTabFor } from "./model/project-detail-tab-rules";
+/* Who opens a Project as one product (QA Team, Product owner) — also read by
+ * the Projects explorer, whose repository chips open only the frontend for them. */
+export { seesProjectAsProduct } from "./model/project-detail-tab-rules";

@@ -3,6 +3,7 @@
 import type { AppRole } from "@/shared/api/contracts";
 
 import { useRequestRetestViewModel } from "../../returned";
+import { normalizeRunAutomation } from "../../model/qa-automation-rules";
 import {
   agoLabel,
   commitLabel,
@@ -55,8 +56,17 @@ function StartRun({
   vm,
   branch,
   appRole,
-}: Readonly<{ vm: QaRunViewModel; branch: string; appRole: AppRole | null | undefined }>) {
+  blockedReason,
+}: Readonly<{
+  vm: QaRunViewModel;
+  branch: string;
+  appRole: AppRole | null | undefined;
+  blockedReason: string | null;
+}>) {
   const starting = vm.status === "starting";
+  if (blockedReason) {
+    return <PanelState title="No new repository runs" text={blockedReason} />;
+  }
   if (!vm.commitSha) {
     return (
       <PanelState
@@ -73,7 +83,7 @@ function StartRun({
     return (
       <PanelState
         title={`No QA run on ${commitLabel(branch, vm.commitSha)} yet`}
-        text="QA Team members, Team leads and Admins start verification runs. Once one starts, its items and results appear here."
+        text="QA Team members, Product owners and admins start verification runs. Once one starts, its items and results appear here."
       />
     );
   }
@@ -116,8 +126,16 @@ function RunHeader({ run, exporter }: Readonly<{ run: QaRun; exporter: QaExportV
   );
 }
 
-/** A run and everything that can be done to it. Mounted only once a run exists. */
-function RunBody({ projectId, vm, run }: Readonly<{ projectId: string; vm: QaRunViewModel; run: QaRun }>) {
+/**
+ * A run and everything that can be done to it. Mounted only once a run
+ * exists. Its CI results and "Run Playwright" live in the column's Playwright
+ * tab; each automated item still shows its own result here.
+ */
+function RunBody({
+  projectId,
+  vm,
+  run,
+}: Readonly<{ projectId: string; vm: QaRunViewModel; run: QaRun }>) {
   const editor = useQaItemEditorViewModel({ projectId, run, onRun: vm.applyRun });
   const signoff = useQaSignoffViewModel({ projectId, run, onRun: vm.applyRun });
   const reopen = useQaReopenViewModel({ projectId, run, onRun: vm.applyRun });
@@ -125,11 +143,12 @@ function RunBody({ projectId, vm, run }: Readonly<{ projectId: string; vm: QaRun
   const exporter = useQaExportViewModel({ projectId, runId: run.id });
   const items = [...run.items].sort((a, b) => a.position - b.position);
   const open = run.status === "open";
+  const automation = normalizeRunAutomation(run.automation);
 
   return (
     <div className="qa-run">
       <RunHeader run={run} exporter={exporter} />
-      <SignoffBanner run={run} reopen={reopen} />
+      <SignoffBanner run={run} subject={commitLabel(run.branch, run.commitSha)} reopen={reopen} />
       <RunSummary run={run} />
       <ol className="qa-run__items">
         {items.map((item, index) => (
@@ -140,12 +159,15 @@ function RunBody({ projectId, vm, run }: Readonly<{ projectId: string; vm: QaRun
             run={run}
             editor={editor}
             retest={retest}
+            automation={automation}
             onReload={vm.reload}
           />
         ))}
       </ol>
       {open ? <SignoffFooter vm={signoff} /> : null}
-      {signoff.canSignOff ? <SignoffDialog vm={signoff} run={run} /> : null}
+      {signoff.canSignOff ? (
+        <SignoffDialog vm={signoff} description={`${run.checklistName} on ${commitLabel(run.branch, run.commitSha)}`} />
+      ) : null}
     </div>
   );
 }
@@ -156,11 +178,17 @@ export function RunPanel({
   vm,
   branch,
   appRole,
+  startBlockedReason = null,
 }: Readonly<{
   projectId: string;
   vm: QaRunViewModel;
   branch: string;
   appRole: AppRole | null | undefined;
+  /**
+   * Why no new repository run can start here (it is history: QA verifies
+   * the Project). Null keeps the Start button.
+   */
+  startBlockedReason?: string | null;
 }>) {
   if (vm.status === "idle" || vm.status === "loading") return <RunSkeleton />;
   if (vm.status === "error") {
@@ -172,7 +200,7 @@ export function RunPanel({
       </PanelState>
     );
   }
-  if (!vm.run) return <StartRun vm={vm} branch={branch} appRole={appRole} />;
+  if (!vm.run) return <StartRun vm={vm} branch={branch} appRole={appRole} blockedReason={startBlockedReason} />;
   // Keyed by run: a reopened or newly started run gets fresh drafts and dialogs.
   return <RunBody key={vm.run.id} projectId={projectId} vm={vm} run={vm.run} />;
 }

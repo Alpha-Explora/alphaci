@@ -5,22 +5,26 @@ import type { ProjectDetailTabsViewModel } from "../view-models/use-project-deta
 import { PipelineRunsTab } from "./workspace/pipeline-runs-tab";
 import { CiRunsList } from "./ci-runs-list";
 
+/**
+ * The Pipeline tab's Runs view (once the Pipeline runs tab): the live run list
+ * and what the workflow reported back. PipelineTab owns the tab panel.
+ */
 export function RunsTab({
   project,
   vm,
 }: Readonly<{
   project: ProvisionedProject;
   vm: ProjectDetailTabsViewModel;
-  dangerZone?: React.ReactNode;
 }>) {
   return (
-    <div
-      role="tabpanel"
-      id="project-detail-panel-runs"
-      aria-labelledby="project-detail-tab-runs"
-      style={{ display: "grid", gap: "1.25rem" }}
-    >
-      <PipelineRunsTab projectId={project.id} />
+    <div style={{ display: "grid", gap: "1.25rem" }}>
+      <PipelineRunsTab
+        projectId={project.id}
+        appRole={vm.appRole}
+        onOpenPullRequest={vm.visibleTabs.includes("pulls") ? vm.openPullRequest : undefined}
+        workflowAccess={vm.workflowUpdateAccess}
+        onOpenWorkflow={() => vm.setPipelineView("configuration")}
+      />
       <ReportedResults project={project} vm={vm} />
     </div>
   );

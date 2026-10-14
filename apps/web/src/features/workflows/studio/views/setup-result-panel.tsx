@@ -1,6 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
+import Link from "next/link";
 import { useEffect, useState } from "react";
 
 import { useCapabilities } from "@/features/capabilities/current";
@@ -18,53 +19,37 @@ interface SetupResultPanelProps {
   onViewProject: () => void;
 }
 
-interface CommitLinkProps {
-  sha: string;
-  url: string | null;
-}
-
-function CommitLink({ sha, url }: Readonly<CommitLinkProps>) {
-  const short = sha.slice(0, 10);
-  if (url) {
-    return (
-      <a href={url} target="_blank" rel="noreferrer">
-        <code>{short}</code>
-      </a>
-    );
-  }
-  return <code>{short}</code>;
-}
-
-interface SecondaryRepoSectionProps {
-  url: string | undefined;
-  fullName: string | undefined;
+/** The commit, as text: the repository's own page is not somewhere this app sends people. */
+function CommitText({ sha }: Readonly<{ sha: string }>) {
+  return <code>{sha.slice(0, 10)}</code>;
 }
 
 function SecondaryRepoSection({
-  url,
   fullName,
-}: Readonly<SecondaryRepoSectionProps>) {
-  if (!url) return null;
+}: Readonly<{ fullName: string | undefined }>) {
+  if (!fullName) return null;
   return (
     <p className="helper-text" style={{ margin: 0 }}>
-      Secondary repo:{" "}
-      <a href={url} target="_blank" rel="noreferrer">
-        {fullName}
-      </a>
+      Secondary repo: {fullName}
     </p>
   );
 }
 
-interface SecondaryRepoLinkProps {
-  url: string | undefined;
-}
-
-function SecondaryRepoLink({ url }: Readonly<SecondaryRepoLinkProps>) {
-  if (!url) return null;
+/**
+ * Where to go from here, inside ALPHACI: the new project's page and its
+ * Pipeline tab (on Runs), which is where the first CI run will show up.
+ */
+function ProjectLinks({ projectId }: Readonly<{ projectId: string }>) {
+  const base = `/projects/${encodeURIComponent(projectId)}`;
   return (
-    <a className="ghost-button" href={url} target="_blank" rel="noreferrer">
-      Open secondary repo
-    </a>
+    <>
+      <Link className="primary-button" href={base}>
+        Open project
+      </Link>
+      <Link className="ghost-button" href={`${base}#pipeline`}>
+        Pipeline runs
+      </Link>
+    </>
   );
 }
 
@@ -426,11 +411,9 @@ export function DeploymentProvisioningSummary({
 
 function ExistingRepoResultView({
   existingRepoResult,
-  repoUrl,
   onViewProject,
 }: Readonly<{
   existingRepoResult: NonNullable<SetupResultPanelProps["existingRepoResult"]>;
-  repoUrl: string | null;
   onViewProject: () => void;
 }>) {
   return (
@@ -443,14 +426,9 @@ function ExistingRepoResultView({
     >
       <div className="result-repo-header">
         <span className="result-status-dot" aria-hidden="true" />
-        <a
-          href={repoUrl ?? undefined}
-          target="_blank"
-          rel="noreferrer"
-          className="result-repo-name"
-        >
+        <span className="result-repo-name">
           {existingRepoResult.repoFullName}
-        </a>
+        </span>
       </div>
       <div className="result-branches">
         <span className="branch-chip">{existingRepoResult.status}</span>
@@ -484,33 +462,11 @@ function ExistingRepoResultView({
           Commit
         </p>
         <div className="terminal-hash">
-          <CommitLink
-            sha={existingRepoResult.githubCommitSha}
-            url={existingRepoResult.githubCommitUrl}
-          />
+          <CommitText sha={existingRepoResult.githubCommitSha} />
         </div>
       </div>
       <div className="result-actions">
-        {repoUrl ? (
-          <a
-            className="primary-button"
-            href={repoUrl}
-            target="_blank"
-            rel="noreferrer"
-          >
-            Open repo
-          </a>
-        ) : null}
-        {repoUrl ? (
-          <a
-            className="ghost-button"
-            href={`${repoUrl}/blob/${existingRepoResult.githubCommitSha}/${existingRepoResult.workflowPath}`}
-            target="_blank"
-            rel="noreferrer"
-          >
-            View workflow
-          </a>
-        ) : null}
+        <ProjectLinks projectId={existingRepoResult.id} />
         <button
           className="ghost-button"
           type="button"
@@ -554,14 +510,7 @@ function CreatedProjectResultView({
     >
       <div className="result-repo-header">
         <span className="result-status-dot" aria-hidden="true" />
-        <a
-          href={setupResult.repoUrl}
-          target="_blank"
-          rel="noreferrer"
-          className="result-repo-name"
-        >
-          {setupResult.repoFullName}
-        </a>
+        <span className="result-repo-name">{setupResult.repoFullName}</span>
       </div>
       <div className="result-branches">
         <span className="branch-chip">{setupResult.status}</span>
@@ -597,34 +546,12 @@ function CreatedProjectResultView({
           Commit
         </p>
         <div className="terminal-hash">
-          <CommitLink
-            sha={setupResult.githubCommitSha}
-            url={setupResult.githubCommitUrl}
-          />
+          <CommitText sha={setupResult.githubCommitSha} />
         </div>
       </div>
-      <SecondaryRepoSection
-        url={setupResult.secondaryRepoUrl}
-        fullName={setupResult.secondaryRepoFullName}
-      />
+      <SecondaryRepoSection fullName={setupResult.secondaryRepoFullName} />
       <div className="result-actions">
-        <a
-          className="primary-button"
-          href={setupResult.repoUrl}
-          target="_blank"
-          rel="noreferrer"
-        >
-          Open repo
-        </a>
-        <a
-          className="ghost-button"
-          href={`${setupResult.repoUrl}/blob/main/${setupResult.workflowPath}`}
-          target="_blank"
-          rel="noreferrer"
-        >
-          View workflow
-        </a>
-        <SecondaryRepoLink url={setupResult.secondaryRepoUrl} />
+        <ProjectLinks projectId={setupResult.id} />
         {envProvisioningEnabled ? (
           <button
             className="ghost-button"
@@ -667,10 +594,6 @@ export function SetupResultPanel({
 
   if (!existingRepoResult && !setupResult) return null;
 
-  const repoUrl = existingRepoResult
-    ? `https://github.com/${existingRepoResult.repoFullName}`
-    : null;
-
   return (
     <aside
       className={`result-panel${setupResult ? " result-panel--success" : ""}`}
@@ -682,7 +605,6 @@ export function SetupResultPanel({
         {existingRepoResult ? (
           <ExistingRepoResultView
             existingRepoResult={existingRepoResult}
-            repoUrl={repoUrl}
             onViewProject={onViewProject}
           />
         ) : setupResult ? (

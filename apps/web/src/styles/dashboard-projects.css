@@ -63,10 +63,6 @@
   word-break: break-all;
 }
 
-.result-repo-name:hover {
-  text-decoration: underline;
-}
-
 .result-branches {
   display: flex;
   flex-wrap: wrap;
@@ -100,150 +96,7 @@
   gap: 1rem;
 }
 
-.project-workspace {
-  display: grid;
-  grid-template-columns: minmax(14rem, 18rem) minmax(0, 1fr);
-  gap: 1rem;
-  align-items: start;
-}
-
-/* Left rail: project list + sub-tab bar glued together, sticky as one unit.
- * Sizes to its content (so a short group list stays short) but never grows
- * past one screen — at that point the inner .project-list-body scrolls. */
-.project-list-rail {
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-  /* Bounded card: hugs content when the list is short, but a long list (e.g.
-   * many individual repositories) caps at ~32rem and scrolls internally rather
-   * than running the full viewport height. */
-  max-height: min(calc(100dvh - 11rem), 32rem);
-  gap: 0.75rem;
-  position: sticky;
-  top: 5rem;
-}
-
-/* Right column: swaps between the selected project detail and the history log. */
-.project-detail-column {
-  min-width: 0;
-}
-
-.project-list,
-.project-detail-panel {
-  border: 1px solid var(--border-layer);
-  border-radius: 8px;
-  background: var(--layer-1);
-  box-shadow: var(--shadow-soft);
-}
-
-.project-list {
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-  /* Hug content; the rail's max-height caps overall height and the body
-   * scrolls internally past that point. Was height:100%, which forced the
-   * whole box to a full screen even with only a couple of groups. */
-  max-height: 100%;
-  gap: 0.4rem;
-  overflow: hidden;
-  padding: 0.75rem;
-}
-
-.project-list-body {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  flex: 1 1 auto;
-  min-height: 0;
-  align-content: start;
-  gap: 0.4rem;
-  overflow-x: hidden;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  padding: 0.05rem 0.2rem 0.1rem 0;
-  scrollbar-color: var(--border-tile) transparent;
-  scrollbar-width: thin;
-}
-
-.project-list-body::-webkit-scrollbar { width: 0.38rem; }
-
-.project-list-body::-webkit-scrollbar-thumb {
-  border-radius: 999px;
-  background: var(--border-tile);
-}
-
-.project-list-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem;
-  padding: 0 0 0.55rem;
-  border-bottom: 1px solid var(--border-soft);
-  color: var(--text-primary);
-  font-size: 0.85rem;
-  font-weight: 700;
-}
-
-.project-list-item {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 0.2rem 0.6rem;
-  width: 100%;
-  padding: 0.65rem;
-  border: 1px solid transparent;
-  border-radius: 6px;
-  background: transparent;
-  color: var(--text-secondary);
-  cursor: pointer;
-  text-align: left;
-}
-
-.project-list-title {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-size: 0.86rem;
-  font-weight: 700;
-}
-
-.project-list-meta {
-  grid-column: 1;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  color: var(--text-muted);
-  font-size: 0.76rem;
-}
-
-.project-list-item .project-list-badges {
-  grid-column: 2;
-  grid-row: 1 / span 2;
-  align-self: center;
-  display: inline-flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 0.3rem;
-}
-
-.project-list-search {
-  width: 100%;
-  max-width: none;
-  padding: 0.45rem 0.65rem;
-  border-radius: 6px;
-  font-size: 0.8rem;
-  min-height: 2.25rem;
-}
-
-/* "+ New group" action in the Groups rail — full-width under the search box. */
-.project-list-create {
-  width: 100%;
-  min-height: 2.25rem;
-  padding: 0.45rem 0.65rem;
-  font-size: 0.8rem;
-  border-radius: 6px;
-}
-
+/* Shared by every .project-list-empty ("No … yet.") line in the team panels. */
 .project-list-empty {
   min-width: 0;
   width: 100%;
@@ -255,32 +108,20 @@
   text-align: center;
 }
 
-.project-list-pagination {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.5rem;
-  padding-top: 0.5rem;
-  margin-top: 0.15rem;
-  border-top: 1px solid var(--border-soft);
-}
-
-.project-list-pagination-status {
-  color: var(--text-muted);
-  font-size: 0.76rem;
-  white-space: nowrap;
-}
-
 .project-detail-panel {
   display: grid;
   gap: 1rem;
   min-width: 0;
   padding: 1rem;
+  border: 1px solid var(--border-layer);
+  border-radius: 8px;
+  background: var(--layer-1);
+  box-shadow: var(--shadow-soft);
 }
 
 /* On the full project page the panel IS the page, so it drops the card chrome
    and spans gutter to gutter. The base class stays for the compact button
-   sizing in globals.css; the /workflows split view keeps its card. */
+   sizing in globals.css. /workflows uses it the same way. */
 .project-detail-panel--page {
   border: 0;
   border-radius: 0;
@@ -315,6 +156,53 @@
   margin: 0.25rem 0 0;
   color: var(--text-secondary);
   font-size: 0.82rem;
+}
+
+/* ── /workflows heading row ───────────────────────────────────────────────
+ * The page has no card: the heading row sits on the page, the header team's
+ * Project cards under it. The row reuses .project-detail-header (the same
+ * divider as /projects/[id]) and wraps rather than squeezing on narrow
+ * screens. The team comes from the header picker; the page has none. */
+.workflow-view-body {
+  padding: 1.25rem var(--layout-gutter) 2.5rem;
+}
+
+/* One column that may shrink below its content. With the default auto track a
+ * wide child (the team panel's section strip) widened the whole column past a
+ * phone's screen, and the heading row and dropdown were stretched with it. */
+.current-projects-page,
+.setup-view {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.current-projects-header {
+  flex-wrap: wrap;
+  align-items: center;
+  row-gap: 0.85rem;
+}
+
+.current-projects-heading {
+  flex: 1 1 18rem;
+  min-width: 0;
+}
+
+.current-projects-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+/* The create view's header already supplies the gutter and the heading. */
+.setup-view .create-project-main {
+  padding: 0.5rem 0 0;
+}
+
+@media (max-width: 640px) {
+  .current-projects-heading {
+    flex-basis: auto;
+    width: 100%;
+  }
 }
 
 .project-detail-grid {
@@ -354,11 +242,6 @@
   color: var(--text-primary);
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   font-size: 0.78rem;
-}
-
-.project-workspace .project-status-badge {
-  border-radius: 6px;
-  letter-spacing: 0;
 }
 
 .env-provisioning-panel {
@@ -1188,31 +1071,6 @@
   font-size: 0.8rem;
 }
 
-@media (max-width: 920px) {
-  .project-workspace {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .project-list-rail {
-    position: static;
-    width: 100%;
-    height: 22rem;
-  }
-
-  .project-list {
-    position: static;
-  }
-
-  .project-list-body { grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr)); }
-
-  .project-list-header,
-  .project-list-search,
-  .project-list-empty,
-  .project-list-pagination {
-    grid-column: 1 / -1;
-  }
-}
-
 @media (max-width: 640px) {
 
   .project-detail-header,
@@ -2036,6 +1894,52 @@
   padding: 0 0.5rem 0.4rem;
 }
 
+/* The tab row with a control at its end (the repository switch). The row
+   carries the underline: the strip inside scrolls, the control does not, so a
+   switch never scrolls out of reach with the tabs. The strip's own bottom
+   padding moves to the row, which keeps tabs and switch centred on each other. */
+.project-tabs-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding-bottom: 0.4rem;
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.project-tabs-row > .project-tabs {
+  flex: 1 1 0;
+  min-width: 0;
+  border-bottom: 0;
+}
+
+.project-tabs-row .project-tabs__list {
+  padding-bottom: 0;
+}
+
+.project-tabs-row__trailing {
+  flex: none;
+  min-width: 0;
+  max-width: 100%;
+}
+
+/* Below a phone's width the switch takes a line of its own, above the tabs, so
+   neither is squeezed: the strip keeps scrolling at the full width. */
+@media (max-width: 640px) {
+  .project-tabs-row {
+    flex-wrap: wrap;
+    row-gap: 0.5rem;
+  }
+
+  .project-tabs-row > .project-tabs {
+    flex-basis: 100%;
+  }
+
+  .project-tabs-row__trailing {
+    order: -1;
+    flex-basis: 100%;
+  }
+}
+
 .project-tabs__group {
   display: flex;
   align-items: center;
@@ -2054,13 +1958,13 @@
 .project-tab {
   display: flex;
   align-items: center;
-  gap: 0.4rem;
-  padding: 0.45rem 0.8rem;
+  gap: 0.35rem;
+  padding: 0.3rem 0.65rem;
   border: none;
-  border-radius: 0.5rem;
+  border-radius: 0.4rem;
   background: transparent;
   color: var(--text-secondary);
-  font-size: 0.86rem;
+  font-size: 0.8rem;
   font-weight: 500;
   white-space: nowrap;
   cursor: pointer;

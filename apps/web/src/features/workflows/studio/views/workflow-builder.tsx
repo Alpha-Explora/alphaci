@@ -4,14 +4,12 @@ import { MotionConfig, motion, useReducedMotion } from "framer-motion";
 import { useRouter } from "next/navigation";
 
 import { useWorkflowStudioViewModel } from "../view-models/use-workflow-studio-view-model";
-import {
-  statusBannerVariant,
-  type WorkflowTab,
-} from "../model/workflow-studio-rules";
+import { statusBannerVariant } from "../model/workflow-studio-rules";
+import { studioCreateGates } from "../model/role-gate-rules";
 import { WorkflowCurrentTab } from "./workflow-current-tab";
 import { GeneratingOverlay } from "./generating-overlay";
 import { WorkflowSetupTab } from "./workflow-setup-tab";
-import { WorkflowStudioTabs } from "./workflow-studio-tabs";
+import { BackIcon, GuideIcon } from "./studio-icons";
 
 interface WorkflowBuilderProps {
   login: string;
@@ -61,57 +59,40 @@ function WorkflowStatusBanners({
   );
 }
 
-function GuideIcon() {
-  return (
-    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <circle cx="12" cy="12" r="10" />
-      <line x1="12" y1="8" x2="12" y2="12" />
-      <line x1="12" y1="16" x2="12.01" y2="16" />
-    </svg>
-  );
-}
-
-function WorkflowStudioGuideLinks({
+/**
+ * The create view's heading row: the page's h1, the way back to the projects
+ * view, and the create-project tour (hidden for guests, as before).
+ */
+function SetupViewHeader({
   guest,
-  activeTab,
+  onBack,
   onStartTour,
-  onStartCurrentProjectsTour,
-}: Readonly<{
-  guest: boolean;
-  activeTab: WorkflowTab;
-  onStartTour: () => void;
-  onStartCurrentProjectsTour: () => void;
-}>) {
-  if (guest) return null;
-  if (activeTab === "setup") {
-    return (
-      <button
-        type="button"
-        className="gh-app-install-link"
-        style={{ background: "none", border: "none", cursor: "pointer", padding: 0 }}
-        aria-label="Show guided tour for the Create Project form"
-        onClick={onStartTour}
-      >
-        <GuideIcon />
-        Show guide
-      </button>
-    );
-  }
-  if (activeTab === "current") {
-    return (
-      <button
-        type="button"
-        className="gh-app-install-link"
-        style={{ background: "none", border: "none", cursor: "pointer", padding: 0 }}
-        aria-label="Show guided tour for Current Projects"
-        onClick={onStartCurrentProjectsTour}
-      >
-        <GuideIcon />
-        Show guide
-      </button>
-    );
-  }
-  return null;
+}: Readonly<{ guest: boolean; onBack: () => void; onStartTour: () => void }>) {
+  return (
+    <div className="project-detail-header current-projects-header">
+      <div className="current-projects-heading">
+        <h1 className="workflow-page-title">Create project</h1>
+        <p>Provision a repository and its gated ALPHACI workflow inside one of your teams.</p>
+      </div>
+      <div className="current-projects-actions">
+        <button type="button" className="ghost-button" onClick={onBack}>
+          <BackIcon />
+          Back to projects
+        </button>
+        {guest ? null : (
+          <button
+            type="button"
+            className="ghost-button"
+            aria-label="Show guided tour for the Create Project form"
+            onClick={onStartTour}
+          >
+            <GuideIcon />
+            Show guide
+          </button>
+        )}
+      </div>
+    </div>
+  );
 }
 
 export function WorkflowBuilder({ guest = false, session, onboardingCompleted }: Readonly<WorkflowBuilderProps>) {
@@ -119,13 +100,15 @@ export function WorkflowBuilder({ guest = false, session, onboardingCompleted }:
   const prefersReducedMotion = useReducedMotion();
   const reducedMotion = prefersReducedMotion === true;
   const vm = useWorkflowStudioViewModel({ guest, session, onboardingCompleted });
+  const gates = studioCreateGates(session?.appRole, guest);
   const sendGuestToSignup = () => router.push("/signup");
   const {
-    activeTab, statusMessage, isCreatingProject, isDiscoveringExistingRepo, isSettingUpExistingRepo,
+    activeView, statusMessage, isCreatingProject, isDiscoveringExistingRepo, isSettingUpExistingRepo,
     createResult, existingRepoDiscovery, existingRepoResult, setupMode, setSetupMode,
     existingRepoFullName, setExistingRepoFullName, existingRepoBaseBranch, setExistingRepoBaseBranch,
-    workspaces, selectedCreateWorkspaceId, setSelectedCreateWorkspaceId,
-    handleTabKeyDown, handleStudioTabChange, openIndividualSetup,
+    workspaces, selectedCreateWorkspaceId, setSelectedCreateWorkspaceId, targetProjectLabel,
+    joinedProjectName, projectChoice, projectBlocker,
+    showProjects, openIndividualSetup,
     handleCreateProject, handleDiscoverExistingRepo, handleSetupExistingRepo, handleGenerateWorkflow,
     catalog, projectCatalog, projects, createForm, deploymentProvisioning,
     deploymentOwnershipMode, envProvisioningEnabled, github, startTour, startCurrentProjectsTour,
@@ -150,87 +133,57 @@ export function WorkflowBuilder({ guest = false, session, onboardingCompleted }:
           catalogError={catalog.catalogError}
           projectOptionsError={projectCatalog.projectOptionsError}
         />
-        <WorkflowStudioTabs
-          activeTab={activeTab}
-          onChange={handleStudioTabChange}
-          onKeyDown={handleTabKeyDown}
-          trailing={
-            <WorkflowStudioGuideLinks
-              guest={guest}
-              activeTab={activeTab}
-              onStartTour={startTour}
-              onStartCurrentProjectsTour={startCurrentProjectsTour}
-            />
-          }
-        />
-        <div style={activeTab === "setup" ? undefined : { padding: "0.5rem var(--layout-gutter) 2.5rem" }}>
-          {activeTab === "setup" ? (
-            <WorkflowSetupTab
-              form={createForm}
-              deploymentOwnershipMode={deploymentOwnershipMode}
-              deploymentProvisioning={deploymentProvisioning}
-              envProvisioningEnabled={envProvisioningEnabled}
-              github={github}
-              existingRepoBaseBranch={existingRepoBaseBranch}
-              existingRepoDiscovery={existingRepoDiscovery}
-              existingRepoFullName={existingRepoFullName}
-              existingRepoResult={existingRepoResult}
-              isCreatingProject={isCreatingProject}
-              isDiscoveringExistingRepo={isDiscoveringExistingRepo}
-              isSettingUpExistingRepo={isSettingUpExistingRepo}
-              setupMode={setupMode}
-              onChangeExistingRepoBaseBranch={setExistingRepoBaseBranch}
-              onChangeExistingRepoFullName={setExistingRepoFullName}
-              onChangeSetupMode={setSetupMode}
-              onCreateProject={actions.onCreateProject}
-              onDiscoverExistingRepo={actions.onDiscoverExistingRepo}
-              onGenerateWorkflow={actions.onGenerateWorkflow}
-              onSetupExistingRepo={actions.onSetupExistingRepo}
-              creationScope="choose-team"
-              workspaces={workspaces}
-              selectedWorkspaceId={selectedCreateWorkspaceId}
-              onChangeWorkspace={setSelectedCreateWorkspaceId}
-              projectCatalog={projectCatalog}
-              onViewProject={openIndividualSetup}
-              reducedMotion={reducedMotion}
-              createResult={createResult}
-            />
+        <div className="workflow-view-body">
+          {activeView === "setup" ? (
+            <div className="project-detail-panel project-detail-panel--page setup-view">
+              <SetupViewHeader guest={guest} onBack={showProjects} onStartTour={startTour} />
+              <WorkflowSetupTab
+                canCreateRepositories={gates.canCreateRepositories}
+                form={createForm}
+                deploymentOwnershipMode={deploymentOwnershipMode}
+                deploymentProvisioning={deploymentProvisioning}
+                envProvisioningEnabled={envProvisioningEnabled}
+                github={github}
+                existingRepoBaseBranch={existingRepoBaseBranch}
+                existingRepoDiscovery={existingRepoDiscovery}
+                existingRepoFullName={existingRepoFullName}
+                existingRepoResult={existingRepoResult}
+                isCreatingProject={isCreatingProject}
+                isDiscoveringExistingRepo={isDiscoveringExistingRepo}
+                isSettingUpExistingRepo={isSettingUpExistingRepo}
+                setupMode={setupMode}
+                onChangeExistingRepoBaseBranch={setExistingRepoBaseBranch}
+                onChangeExistingRepoFullName={setExistingRepoFullName}
+                onChangeSetupMode={setSetupMode}
+                onCreateProject={actions.onCreateProject}
+                onDiscoverExistingRepo={actions.onDiscoverExistingRepo}
+                onGenerateWorkflow={actions.onGenerateWorkflow}
+                onSetupExistingRepo={actions.onSetupExistingRepo}
+                creationScope="choose-team"
+                workspaces={workspaces}
+                selectedWorkspaceId={selectedCreateWorkspaceId}
+                onChangeWorkspace={setSelectedCreateWorkspaceId}
+                targetProjectLabel={targetProjectLabel}
+                joinedProjectName={joinedProjectName}
+                projectChoice={projectChoice}
+                projectBlocker={projectBlocker}
+                existingRepoAllowed={gates.existingRepoAllowed}
+                projectCatalog={projectCatalog}
+                onViewProject={openIndividualSetup}
+                reducedMotion={reducedMotion}
+                createResult={createResult}
+              />
+            </div>
           ) : null}
-          {activeTab === "current" ? (
+          {activeView === "current" ? (
             <WorkflowCurrentTab
               latestResult={createResult}
               loadingProjects={projects.loadingProjects}
               onOpenSetup={openIndividualSetup}
-              projects={projects.projects}
-              renderGroupCreate={(selectedGroupId, onComplete) => (
-                <WorkflowSetupTab
-                  form={createForm}
-                  deploymentOwnershipMode={deploymentOwnershipMode}
-                  deploymentProvisioning={deploymentProvisioning}
-                  envProvisioningEnabled={envProvisioningEnabled}
-                  github={github}
-                  existingRepoBaseBranch={existingRepoBaseBranch}
-                  existingRepoDiscovery={existingRepoDiscovery}
-                  existingRepoFullName={existingRepoFullName}
-                  existingRepoResult={existingRepoResult}
-                  isCreatingProject={isCreatingProject}
-                  isDiscoveringExistingRepo={isDiscoveringExistingRepo}
-                  isSettingUpExistingRepo={isSettingUpExistingRepo}
-                  setupMode={setupMode}
-                  onChangeExistingRepoBaseBranch={setExistingRepoBaseBranch}
-                  onChangeExistingRepoFullName={setExistingRepoFullName}
-                  onChangeSetupMode={setSetupMode}
-                  onCreateProject={guest ? sendGuestToSignup : () => void handleCreateProject(selectedGroupId, onComplete)}
-                  onDiscoverExistingRepo={actions.onDiscoverExistingRepo}
-                  onGenerateWorkflow={actions.onGenerateWorkflow}
-                  onSetupExistingRepo={actions.onSetupExistingRepo}
-                  projectCatalog={projectCatalog}
-                  creationScope="in-team"
-                  onViewProject={onComplete}
-                  reducedMotion={reducedMotion}
-                  createResult={createResult}
-                />
-              )}
+              canCreateProjects={gates.canCreateProjects}
+              guest={guest}
+              onGuestCreate={guest ? sendGuestToSignup : undefined}
+              onStartGuide={guest ? undefined : startCurrentProjectsTour}
             />
           ) : null}
         </div>

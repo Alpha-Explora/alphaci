@@ -1,12 +1,6 @@
 "use client";
 
-import {
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  useSyncExternalStore,
-} from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import {
   getDeploymentTargetLogs,
@@ -33,6 +27,7 @@ import {
   applyGapPage,
   applyOlderLoading,
   applyOlderPage,
+  applyRateLimited,
   applySnapshot,
   applyStatus,
   initialLogState,
@@ -40,6 +35,7 @@ import {
   type LogState,
 } from "../model/log-state";
 import { LEGACY_LOG_FILTERS } from "../model/log-normalize";
+import { useHiddenPause } from "./use-hidden-pause";
 
 /** Debounce on the server-side search, so typing is not a query per key. */
 export const LOG_SEARCH_DEBOUNCE_MS = 350;
@@ -53,8 +49,8 @@ const MALFORMED_ERROR = "Received a malformed log update.";
 
 export type DeploymentLogsStatus = "idle" | "loading" | "ready" | "error";
 /**
- * `live` tails an open window; `paused` is the same window while the tab is
- * hidden (the stream is closed to spare provider calls); `closed` is a window
+ * `live` tails an open window; `paused` is the same window after the tab has
+ * been hidden for a while (the stream is closed to spare provider calls); `closed` is a window
  * that has ended, fetched once; `off` has no window at all.
  */
 export type LogTailState = "off" | "connecting" | "live" | "paused" | "closed";
@@ -67,6 +63,11 @@ export interface DeploymentLogsViewModel {
   source: LogSource | null;
   /** Why the provider did not answer, or why lines are simulated. */
   reason: string | null;
+  /**
+   * While the provider is rate limiting reads: when it lifts (epoch ms). The
+   * lines stay; the view shows a countdown, and the next event clears it.
+   */
+  rateLimitedUntil: number | null;
   /** Filters this provider supports. Controls render only for these. */
   supportedFilters: readonly LogFilterKey[];
   tail: LogTailState;
@@ -82,20 +83,6 @@ export interface DeploymentLogsViewModel {
   restart: () => void;
   /** Display string. Never an API object. */
   error: string | null;
-}
-
-function subscribeVisibility(onChange: () => void) {
-  document.addEventListener("visibilitychange", onChange);
-  return () => document.removeEventListener("visibilitychange", onChange);
-}
-
-/** Whether the page is on screen. Assumed visible during the server render. */
-function useDocumentVisible(): boolean {
-  return useSyncExternalStore(
-    subscribeVisibility,
-    () => document.visibilityState !== "hidden",
-    () => true,
-  );
 }
 
 function timeOf(iso: string): number {
@@ -132,6 +119,7 @@ function readState(state: LogState, key: string, on: boolean) {
     errorCount: errorCount(state.buffer.lines),
     source: state.source,
     reason: state.reason,
+    rateLimitedUntil: state.rateLimitedUntil,
     supportedFilters: state.filters ?? LEGACY_LOG_FILTERS,
     atLive: state.buffer.atLive,
     error: state.error,
@@ -141,12 +129,12 @@ function readState(state: LogState, key: string, on: boolean) {
 function deriveTail(
   on: boolean,
   logWindow: LogWindow | null,
-  visible: boolean,
+  paused: boolean,
   received: boolean,
 ): LogTailState {
   if (!on || !logWindow) return "off";
   if (logWindow.endTime !== null) return "closed";
-  if (!visible) return "paused";
+  if (paused) return "paused";
   return received ? "live" : "connecting";
 }
 
@@ -216,8 +204,13 @@ async function fillGap(fill: GapFill): Promise<void> {
  * fetch. Older lines page in backward on request. Errors-only, the type and
  * the search are server-side filters, so changing one is a new query.
  *
- * Cost: the stream is closed while the tab is hidden and reopened from the
- * newest line held when it is shown again; the overlap is deduped by id.
+ * Cost: the stream is closed once the tab has been hidden for 30s and reopened
+ * from the newest line held when it is shown again; the overlap is deduped by
+ * id. One stream per instance: the effect's cleanup closes it before any
+ * reopen, so a re-render or a StrictMode remount never leaves two.
+ *
+ * A provider 429 is not an outage: the backend keeps the stream open and says
+ * when it will read again, so the lines stay and only a countdown is shown.
  */
 export function useDeploymentLogsViewModel(options: {
   projectId: string;
@@ -234,7 +227,7 @@ export function useDeploymentLogsViewModel(options: {
   const [search, setSearch] = useState("");
   const [text, setText] = useState("");
   const [nonce, setNonce] = useState(0);
-  const visible = useDocumentVisible();
+  const paused = useHiddenPause();
 
   const key = JSON.stringify([
     projectId,
@@ -265,7 +258,7 @@ export function useDeploymentLogsViewModel(options: {
 
   // Live tail. Reopened when the query changes or the tab is shown again.
   useEffect(() => {
-    if (!on || !windowStart || windowEnd !== null || !visible) return;
+    if (!on || !windowStart || windowEnd !== null || paused) return;
     const held = stateFor(stateRef.current, key).buffer;
     const resumeFrom = newestTimestamp(held);
 
@@ -280,7 +273,11 @@ export function useDeploymentLogsViewModel(options: {
             return;
           }
           if (event.kind === "status") {
-            setState((prev) => applyStatus(prev, key, event.source, event.reason));
+            setState((prev) =>
+              event.rateLimited
+                ? applyRateLimited(prev, key, event.retryAfterMs, Date.now())
+                : applyStatus(prev, key, event.source, event.reason),
+            );
             return;
           }
           const until = newestTimestamp(stateFor(stateRef.current, key).buffer);
@@ -303,7 +300,7 @@ export function useDeploymentLogsViewModel(options: {
       },
     );
     return () => stream.close();
-  }, [on, key, query, projectId, targetId, windowStart, windowEnd, visible]);
+  }, [on, key, query, projectId, targetId, windowStart, windowEnd, paused]);
 
   // Closed window: one fetch of its newest page.
   useEffect(() => {
@@ -349,7 +346,7 @@ export function useDeploymentLogsViewModel(options: {
 
   return {
     ...readState(current, key, on),
-    tail: deriveTail(on, logWindow, visible, current.received),
+    tail: deriveTail(on, logWindow, paused, current.received),
     older,
     loadOlder,
     errorsOnly,

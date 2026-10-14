@@ -1,0 +1,491 @@
+import { act } from "react";
+import { createRoot, type Root } from "react-dom/client";
+
+import { projectFoldersRepository } from "../../../../../../src/features/teams/project-folders/data/project-folders-repository";
+import { MOVE_CONFLICT_MESSAGE } from "../../../../../../src/features/teams/project-folders/model/project-folder-rules";
+import { useProjectFoldersViewModel } from "../../../../../../src/features/teams/project-folders/view-models/use-project-folders-view-model";
+import { useMoveRepositoryViewModel } from "../../../../../../src/features/teams/project-folders/view-models/use-move-repository-view-model";
+import { useDeleteProjectViewModel } from "../../../../../../src/features/teams/project-folders/view-models/use-delete-project-view-model";
+import { useCreateProjectFolderViewModel } from "../../../../../../src/features/teams/project-folders/view-models/use-create-project-folder-view-model";
+import { apiError, foldersSnapshot, GROUP_ID } from "../folder-fixtures";
+
+jest.mock("../../../../../../src/features/teams/project-folders/data/project-folders-repository", () => ({
+  projectFoldersRepository: {
+    list: jest.fn(),
+    create: jest.fn(),
+    moveRepository: jest.fn(),
+    archive: jest.fn(),
+    requirementCounts: jest.fn(),
+    deleteProject: jest.fn(),
+  },
+}));
+
+const mockSession = { appRole: "lead" as string | undefined };
+jest.mock("../../../../../../src/features/auth/session", () => ({
+  useAuthSession: () => ({ session: { appRole: mockSession.appRole } }),
+}));
+
+const repo = projectFoldersRepository as jest.Mocked<typeof projectFoldersRepository>;
+
+let root: Root | null = null;
+
+afterEach(() => {
+  if (root) act(() => root?.unmount());
+  root = null;
+  document.body.innerHTML = "";
+  jest.clearAllMocks();
+  mockSession.appRole = "lead";
+});
+
+function renderHook<T>(useHook: () => T): () => T {
+  let latest: T | undefined;
+  function Probe({ onRender }: { onRender: (value: T) => void }) {
+    onRender(useHook());
+    return null;
+  }
+  const container = document.createElement("div");
+  document.body.appendChild(container);
+  root = createRoot(container);
+  act(() =>
+    root!.render(
+      <Probe
+        onRender={(value) => {
+          latest = value;
+        }}
+      />,
+    ),
+  );
+  return () => latest as T;
+}
+
+async function flush() {
+  await act(async () => {
+    await Promise.resolve();
+    await Promise.resolve();
+    await Promise.resolve();
+  });
+}
+
+describe("useProjectFoldersViewModel", () => {
+  it("loads the team's Projects and their requirement counts", async () => {
+    repo.list.mockResolvedValue(foldersSnapshot());
+    repo.requirementCounts.mockResolvedValue({ "dp-1": 2 });
+    const vm = renderHook(() =>
+      useProjectFoldersViewModel({ groupId: GROUP_ID, groupName: "Checkout", qaChecklistsEnabled: true }),
+    );
+    expect(vm().status).toBe("loading");
+    expect(vm().count).toBeNull();
+    await flush();
+    expect(vm().status).toBe("ready");
+    expect(vm().count).toBe(2);
+    expect(vm().unfiled).toHaveLength(1);
+    expect(vm().canManage).toBe(true);
+    // A Product owner creates Projects; Developers fill them.
+    expect(vm().canCreateProject).toBe(true);
+    expect(vm().canCreateRepository).toBe(false);
+    expect(vm().canCreateUnfiledRepository).toBe(false);
+    expect(vm().canVerifyInQaStudio).toBe(true);
+    expect(vm().requirementCounts).toEqual({ "dp-1": 2 });
+    expect(vm().appRole).toBe("lead");
+    expect(repo.list).toHaveBeenCalledWith(GROUP_ID);
+    expect(repo.requirementCounts).toHaveBeenCalledWith(GROUP_ID);
+
+    act(() => vm().openFolder("dp-1"));
+    expect(vm().selected?.name).toBe("testfinals");
+    act(() => vm().closeFolder());
+    expect(vm().selected).toBeNull();
+  });
+
+  it("opens a deep-linked Project once it loads, and only on its own team", async () => {
+    repo.list.mockResolvedValue(foldersSnapshot());
+    repo.requirementCounts.mockResolvedValue({});
+    const vm = renderHook(() =>
+      useProjectFoldersViewModel({
+        groupId: GROUP_ID,
+        groupName: "Checkout",
+        qaChecklistsEnabled: false,
+        initialFolderId: "dp-1",
+      }),
+    );
+    // Nothing to open until the team's Projects arrive.
+    expect(vm().selected).toBeNull();
+    await flush();
+    expect(vm().selected?.deliveryProjectId).toBe("dp-1");
+    act(() => vm().closeFolder());
+    expect(vm().selected).toBeNull();
+  });
+
+  it("keeps an opened Project with its team: another team opens on its list", async () => {
+    repo.list.mockResolvedValue(foldersSnapshot());
+    repo.requirementCounts.mockResolvedValue({});
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    root = createRoot(container);
+    let latest: ReturnType<typeof useProjectFoldersViewModel> | null = null;
+    const capture = (value: ReturnType<typeof useProjectFoldersViewModel>) => {
+      latest = value;
+    };
+    function Probe({ groupId, onRender }: Readonly<{ groupId: string; onRender: typeof capture }>) {
+      onRender(useProjectFoldersViewModel({ groupId, groupName: "Checkout", qaChecklistsEnabled: false }));
+      return null;
+    }
+    act(() => root!.render(<Probe groupId={GROUP_ID} onRender={capture} />));
+    await flush();
+    act(() => latest!.openFolder("dp-1"));
+    expect(latest!.selected?.deliveryProjectId).toBe("dp-1");
+
+    // The other team happens to hold a Project with the same id.
+    repo.list.mockResolvedValue(foldersSnapshot({ groupId: "ws-2" }));
+    act(() => root!.render(<Probe groupId="ws-2" onRender={capture} />));
+    await flush();
+    expect(latest!.status).toBe("ready");
+    expect(latest!.selected).toBeNull();
+  });
+
+  it("never asks for requirement counts when the capability is off", async () => {
+    repo.list.mockResolvedValue(foldersSnapshot());
+    mockSession.appRole = "qa";
+    const vm = renderHook(() =>
+      useProjectFoldersViewModel({ groupId: GROUP_ID, groupName: "Checkout", qaChecklistsEnabled: false }),
+    );
+    await flush();
+    expect(repo.requirementCounts).not.toHaveBeenCalled();
+    expect(vm().requirementCounts).toBeNull();
+    expect(vm().canVerifyInQaStudio).toBe(false);
+    expect(vm().canCreateRepository).toBe(false);
+  });
+
+  it.each([
+    ["lead", { canCreateProject: true, canCreateRepository: false, canCreateUnfiledRepository: false }],
+    ["member", { canCreateProject: false, canCreateRepository: true, canCreateUnfiledRepository: false }],
+    ["admin", { canCreateProject: true, canCreateRepository: true, canCreateUnfiledRepository: true }],
+    ["qa", { canCreateProject: false, canCreateRepository: false, canCreateUnfiledRepository: false }],
+    [undefined, { canCreateProject: false, canCreateRepository: false, canCreateUnfiledRepository: false }],
+  ])("derives what %s may create from the app role when the server sends no flags", async (role, expected) => {
+    repo.list.mockResolvedValue(foldersSnapshot());
+    mockSession.appRole = role;
+    const vm = renderHook(() =>
+      useProjectFoldersViewModel({ groupId: GROUP_ID, groupName: "C", qaChecklistsEnabled: false }),
+    );
+    // Before the list arrives, too: the header's Create project needs no round trip.
+    expect(vm()).toMatchObject(expected);
+    await flush();
+    expect(vm()).toMatchObject(expected);
+  });
+
+  it("follows the server's canCreateProject / canCreateRepository once they arrive", async () => {
+    repo.list.mockResolvedValue(foldersSnapshot({ canCreateProject: false, canCreateRepository: true }));
+    mockSession.appRole = "lead";
+    const vm = renderHook(() =>
+      useProjectFoldersViewModel({ groupId: GROUP_ID, groupName: "C", qaChecklistsEnabled: false }),
+    );
+    expect(vm().canCreateProject).toBe(true);
+    await flush();
+    expect(vm().canCreateProject).toBe(false);
+    expect(vm().canCreateRepository).toBe(true);
+  });
+
+  it("gives QA Team QA Studio but not a Developer", async () => {
+    repo.list.mockResolvedValue(foldersSnapshot());
+    repo.requirementCounts.mockResolvedValue({});
+    mockSession.appRole = "qa";
+    let vm = renderHook(() =>
+      useProjectFoldersViewModel({ groupId: GROUP_ID, groupName: "C", qaChecklistsEnabled: true }),
+    );
+    await flush();
+    expect(vm().canVerifyInQaStudio).toBe(true);
+    act(() => root?.unmount());
+    mockSession.appRole = "member";
+    vm = renderHook(() => useProjectFoldersViewModel({ groupId: GROUP_ID, groupName: "C", qaChecklistsEnabled: true }));
+    await flush();
+    expect(vm().canVerifyInQaStudio).toBe(false);
+  });
+
+  it("reports a display string when the load fails, and recovers on reload", async () => {
+    repo.list.mockRejectedValueOnce(apiError(404));
+    const vm = renderHook(() =>
+      useProjectFoldersViewModel({ groupId: GROUP_ID, groupName: "C", qaChecklistsEnabled: false }),
+    );
+    await flush();
+    expect(vm().status).toBe("error");
+    expect(vm().error).toBe("This team's Projects are not available.");
+
+    repo.list.mockResolvedValueOnce(foldersSnapshot());
+    act(() => vm().reload());
+    await flush();
+    expect(vm().status).toBe("ready");
+    expect(vm().error).toBeNull();
+  });
+
+  it("keeps the Projects usable when the requirement counts cannot be read (an older backend)", async () => {
+    repo.list.mockResolvedValue(foldersSnapshot());
+    repo.requirementCounts.mockRejectedValue(apiError(404));
+    const vm = renderHook(() =>
+      useProjectFoldersViewModel({ groupId: GROUP_ID, groupName: "C", qaChecklistsEnabled: true }),
+    );
+    await flush();
+    expect(vm().status).toBe("ready");
+    expect(vm().requirementCounts).toBeNull();
+  });
+});
+
+describe("useMoveRepositoryViewModel", () => {
+  const { folders } = foldersSnapshot();
+  const source = folders[0];
+  const repository = source.repositories[0];
+
+  it("moves, refetches, and reports an emptied source Project", async () => {
+    repo.moveRepository.mockResolvedValue({ moved: true, sourceDeliveryProjectId: "dp-1", sourceDeliveryProjectEmpty: true });
+    repo.archive.mockResolvedValue(undefined);
+    const onChanged = jest.fn();
+    const vm = renderHook(() => useMoveRepositoryViewModel({ onChanged }));
+    act(() => vm().openFor(repository, source));
+    expect(vm().repository?.repositoryId).toBe("repo-fe");
+    await act(async () => vm().submit(folders));
+    expect(repo.moveRepository).not.toHaveBeenCalled(); // no target picked yet
+
+    act(() => vm().setTargetId("dp-2"));
+    await act(async () => vm().submit(folders));
+    expect(repo.moveRepository).toHaveBeenCalledWith("repo-fe", "dp-2");
+    expect(vm().repository).toBeNull();
+    expect(vm().notice).toEqual({
+      text: "Moved testfinals-frontend to wallet.",
+      emptied: { deliveryProjectId: "dp-1", name: "testfinals" },
+    });
+    expect(onChanged).toHaveBeenCalledTimes(1);
+
+    await act(async () => vm().archiveEmptied());
+    expect(repo.archive).toHaveBeenCalledWith("dp-1");
+    expect(vm().notice).toEqual({ text: "Archived testfinals.", emptied: null });
+    expect(onChanged).toHaveBeenCalledTimes(2);
+
+    act(() => vm().dismissNotice());
+    expect(vm().notice).toBeNull();
+  });
+
+  it("explains a concurrent move (409) and refetches", async () => {
+    repo.moveRepository.mockRejectedValue(apiError(409));
+    const onChanged = jest.fn();
+    const vm = renderHook(() => useMoveRepositoryViewModel({ onChanged }));
+    act(() => vm().openFor(repository, source));
+    act(() => vm().setTargetId("dp-2"));
+    await act(async () => vm().submit(folders));
+    expect(vm().status).toBe("error");
+    expect(vm().error).toBe(MOVE_CONFLICT_MESSAGE);
+    expect(vm().repository).not.toBeNull();
+    expect(onChanged).toHaveBeenCalledTimes(1);
+  });
+
+  it("keeps the dialog open without refetching on other failures", async () => {
+    repo.moveRepository.mockRejectedValue(apiError(400));
+    const onChanged = jest.fn();
+    const vm = renderHook(() => useMoveRepositoryViewModel({ onChanged }));
+    act(() => vm().openFor(repository, source));
+    act(() => vm().setTargetId("dp-2"));
+    await act(async () => vm().submit(folders));
+    expect(vm().error).toMatch(/Archived/);
+    expect(onChanged).not.toHaveBeenCalled();
+    act(() => vm().close());
+    expect(vm().repository).toBeNull();
+  });
+});
+
+describe("useDeleteProjectViewModel", () => {
+  const folder = foldersSnapshot().folders[0]; // testfinals: repo-fe + repo-be, both linked
+
+  it("requires an exact name match before it will call the server", async () => {
+    const onDeleted = jest.fn();
+    const onChanged = jest.fn();
+    const vm = renderHook(() => useDeleteProjectViewModel({ onDeleted, onChanged }));
+    act(() => vm().openFor(folder));
+    expect(vm().folder?.name).toBe("testfinals");
+    expect(vm().canSubmit).toBe(false);
+
+    act(() => vm().setConfirmName("testfinal"));
+    expect(vm().canSubmit).toBe(false);
+    await act(async () => vm().submit());
+    expect(repo.deleteProject).not.toHaveBeenCalled();
+
+    act(() => vm().setConfirmName("testfinals"));
+    expect(vm().canSubmit).toBe(true);
+  });
+
+  it("deletes, closes, refetches and reports the notice", async () => {
+    repo.deleteProject.mockResolvedValue({
+      deliveryProjectId: "dp-1",
+      name: "testfinals",
+      deletedRepositories: [
+        { repositoryId: "repo-fe", name: "testfinals-fe", projectId: "proj-fe", githubRepoDeleted: false },
+        { repositoryId: "repo-be", name: "testfinals-be", projectId: "proj-be", githubRepoDeleted: false },
+      ],
+    });
+    const onDeleted = jest.fn();
+    const onChanged = jest.fn();
+    const vm = renderHook(() => useDeleteProjectViewModel({ onDeleted, onChanged }));
+    act(() => vm().openFor(folder));
+    act(() => vm().setConfirmName("testfinals"));
+    act(() => vm().setDeleteGithubRepos(true));
+    await act(async () => vm().submit());
+
+    expect(repo.deleteProject).toHaveBeenCalledWith("dp-1", {
+      confirmName: "testfinals",
+      deleteGithubRepos: true,
+      deleteProviderResources: false,
+      deleteSonarProjects: false,
+    });
+    expect(vm().folder).toBeNull();
+    expect(vm().status).toBe("idle");
+    expect(vm().notice).toBe("Deleted testfinals and 2 repositories.");
+    expect(onDeleted).toHaveBeenCalledTimes(1);
+    expect(onChanged).toHaveBeenCalledTimes(1);
+
+    act(() => vm().dismissNotice());
+    expect(vm().notice).toBeNull();
+  });
+
+  it("keeps the dialog open on a 409 partial failure, showing the server message, and refetches", async () => {
+    repo.deleteProject.mockRejectedValue(
+      apiError(409, {
+        code: "PROVIDER_DELETE_FAILED",
+        message: "testfinals-be could not be removed from Render. Try again.",
+        deletedRepositories: [
+          { repositoryId: "repo-fe", name: "testfinals-fe", projectId: "proj-fe", githubRepoDeleted: true },
+        ],
+        failedRepository: { repositoryId: "repo-be", name: "testfinals-be" },
+      }),
+    );
+    const onDeleted = jest.fn();
+    const onChanged = jest.fn();
+    const vm = renderHook(() => useDeleteProjectViewModel({ onDeleted, onChanged }));
+    act(() => vm().openFor(folder));
+    act(() => vm().setConfirmName("testfinals"));
+    await act(async () => vm().submit());
+
+    expect(vm().status).toBe("error");
+    expect(vm().error).toBe("testfinals-be could not be removed from Render. Try again.");
+    expect(vm().folder).not.toBeNull();
+    expect(onDeleted).not.toHaveBeenCalled();
+    expect(onChanged).toHaveBeenCalledTimes(1);
+  });
+
+  it("maps other failures to a display string without refetching, and Escape/Cancel still works", async () => {
+    repo.deleteProject.mockRejectedValue(apiError(403));
+    const onDeleted = jest.fn();
+    const onChanged = jest.fn();
+    const vm = renderHook(() => useDeleteProjectViewModel({ onDeleted, onChanged }));
+    act(() => vm().openFor(folder));
+    act(() => vm().setConfirmName("testfinals"));
+    await act(async () => vm().submit());
+
+    expect(vm().error).toMatch(/Product owner or admin/);
+    expect(onChanged).not.toHaveBeenCalled();
+    expect(vm().folder).not.toBeNull();
+
+    act(() => vm().close());
+    expect(vm().folder).toBeNull();
+  });
+
+  it("guards a stale response behind a request counter", async () => {
+    let resolveFirst!: (value: unknown) => void;
+    let resolveSecond!: (value: unknown) => void;
+    repo.deleteProject
+      .mockImplementationOnce(() => new Promise((resolve) => (resolveFirst = resolve)))
+      .mockImplementationOnce(() => new Promise((resolve) => (resolveSecond = resolve)));
+    const onDeleted = jest.fn();
+    const onChanged = jest.fn();
+    const vm = renderHook(() => useDeleteProjectViewModel({ onDeleted, onChanged }));
+    act(() => vm().openFor(folder));
+    act(() => vm().setConfirmName("testfinals"));
+
+    // Two submits fired before either resolves — a stale `active` flag alone
+    // would let whichever resolves last win, in either order.
+    act(() => {
+      void vm().submit();
+      void vm().submit();
+    });
+    expect(repo.deleteProject).toHaveBeenCalledTimes(2);
+
+    await act(async () => {
+      resolveSecond({ deliveryProjectId: "dp-1", name: "testfinals", deletedRepositories: [] });
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    expect(onDeleted).toHaveBeenCalledTimes(1);
+    expect(vm().folder).toBeNull();
+    expect(vm().notice).toBe("Deleted testfinals and 0 repositories.");
+
+    await act(async () => {
+      resolveFirst({ deliveryProjectId: "dp-1", name: "STALE", deletedRepositories: [] });
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    // The stale first response must not fire a second notice or re-open anything.
+    expect(onDeleted).toHaveBeenCalledTimes(1);
+    expect(vm().notice).toBe("Deleted testfinals and 0 repositories.");
+  });
+});
+
+describe("useCreateProjectFolderViewModel", () => {
+  it("validates, creates, closes and tells the explorer", async () => {
+    repo.create.mockResolvedValue(undefined);
+    const onCreated = jest.fn();
+    const vm = renderHook(() => useCreateProjectFolderViewModel({ groupId: GROUP_ID, onCreated }));
+    act(() => vm().openDialog());
+    expect(vm().open).toBe(true);
+    expect(vm().canSubmit).toBe(false);
+    await act(async () => vm().submit());
+    expect(vm().error).toMatch(/name/);
+    expect(repo.create).not.toHaveBeenCalled();
+
+    act(() => vm().setName("  checkout  "));
+    act(() => vm().setDescription("  Pay flows "));
+    await act(async () => vm().submit());
+    expect(repo.create).toHaveBeenCalledWith(GROUP_ID, { name: "checkout", description: "Pay flows" });
+    expect(vm().open).toBe(false);
+    expect(onCreated).toHaveBeenCalledWith("checkout");
+  });
+
+  it("opens on arrival when a deep link asked, once the caller may create", () => {
+    const allowed = { value: false };
+    const vm = renderHook(() =>
+      useCreateProjectFolderViewModel({
+        groupId: GROUP_ID,
+        onCreated: jest.fn(),
+        openOnArrival: true,
+        canCreate: allowed.value,
+      }),
+    );
+    // The session is still loading: nothing opens yet.
+    expect(vm().open).toBe(false);
+    allowed.value = true;
+    act(() => vm().setName("a")); // any re-render, as the session arriving would cause
+    expect(vm().open).toBe(true);
+    // Once: closing it does not bring it back.
+    act(() => vm().closeDialog());
+    act(() => vm().setName("b"));
+    expect(vm().open).toBe(false);
+  });
+
+  it("maps PROJECT_CREATE_FORBIDDEN to its sentence", async () => {
+    repo.create.mockRejectedValue(apiError(403, { code: "PROJECT_CREATE_FORBIDDEN", message: "x" }));
+    const vm = renderHook(() => useCreateProjectFolderViewModel({ groupId: GROUP_ID, onCreated: jest.fn() }));
+    act(() => vm().openDialog());
+    act(() => vm().setName("checkout"));
+    await act(async () => vm().submit());
+    expect(vm().error).toBe("Product owners create Projects.");
+  });
+
+  it("omits an empty description and surfaces a server refusal", async () => {
+    repo.create.mockRejectedValue(apiError(409));
+    const vm = renderHook(() => useCreateProjectFolderViewModel({ groupId: GROUP_ID, onCreated: jest.fn() }));
+    act(() => vm().openDialog());
+    act(() => vm().setName("checkout"));
+    await act(async () => vm().submit());
+    expect(repo.create).toHaveBeenCalledWith(GROUP_ID, { name: "checkout" });
+    expect(vm().status).toBe("error");
+    expect(vm().error).toMatch(/already exists/);
+    expect(vm().open).toBe(true);
+    act(() => vm().closeDialog());
+    expect(vm().open).toBe(false);
+  });
+});

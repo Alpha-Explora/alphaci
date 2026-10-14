@@ -64,13 +64,21 @@ export function getApiBaseUrl(): string {
   return API_BASE_URL;
 }
 
+/**
+ * A multipart body (a file upload) carries its own Content-Type with the
+ * boundary the browser picks; forcing JSON's would break it.
+ */
+function isMultipart(body: RequestInit["body"]): boolean {
+  return typeof FormData !== "undefined" && body instanceof FormData;
+}
+
 /** Fetch with the session cookie, throwing ApiError on any non-2xx reply. */
 async function send(path: string, init?: RequestInit): Promise<Response> {
   const response = await fetch(`${API_BASE_URL}${path}`, {
     ...init,
     credentials: "include",
     headers: {
-      "Content-Type": "application/json",
+      ...(isMultipart(init?.body) ? {} : { "Content-Type": "application/json" }),
       ...init?.headers,
     },
     cache: "no-store",
@@ -104,6 +112,12 @@ export async function requestText(path: string, init?: RequestInit): Promise<str
   const response = await send(path, init);
   if (response.status === 204) return "";
   return response.text();
+}
+
+/** A binary body (an image). Same cookie and ApiError as `request`. */
+export async function requestBlob(path: string, init?: RequestInit): Promise<Blob> {
+  const response = await send(path, init);
+  return response.blob();
 }
 
 export async function request<T>(path: string, init?: RequestInit): Promise<T> {

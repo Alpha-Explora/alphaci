@@ -9,6 +9,7 @@ import type {
   ChecklistTargetPersona,
   ChecklistVerificationType,
 } from "./checklist-types";
+import type { QaAutomatedResultWire, QaRunAutomationWire } from "./qa-automation-types";
 
 export type QaRunItemStatus =
   | "pending"
@@ -65,6 +66,12 @@ export interface QaRunItem {
   /** Server-decided for this viewer and this item's persona. */
   canUpdate: boolean;
   previous: QaPreviousResult | null;
+  /**
+   * What CI reported for this item on this run's commit. Null for manual
+   * items; ABSENT from older backends and older frozen reports. Read it only
+   * through `normalizeAutomatedResult`. Never changes `status`.
+   */
+  automated?: QaAutomatedResultWire | null;
 }
 
 export interface QaSignoff {
@@ -112,6 +119,17 @@ export interface QaRunListItem {
 export interface QaRun extends QaRunListItem {
   items: QaRunItem[];
   permissions: QaRunPermissions;
+  /**
+   * Per-stage CI results for this run's exact branch and commit. ABSENT from
+   * older backends. Read it only through `normalizeRunAutomation`.
+   */
+  automation?: QaRunAutomationWire | null;
+  /**
+   * True on a repository-scope run once Project QA runs exist: read-only
+   * history (writes are refused with QA_RUN_LEGACY_READONLY). Absent from
+   * older backends. Read it through `lockLegacyRun`.
+   */
+  legacy?: boolean;
 }
 
 export interface QaRunListResponse {
@@ -135,6 +153,21 @@ export interface QaReturnedItem {
 
 export interface QaReturnedItemsResponse {
   items: QaReturnedItem[];
+}
+
+/**
+ * An item the current uat run assigns to developers, where the viewer can see
+ * and — when `item.canUpdate` says so — record its result.
+ */
+export type QaDeveloperItem = QaReturnedItem;
+
+/**
+ * GET /projects/:id/qa-my-items. Read it only through `normalizeMyQaItems`:
+ * an older backend may send neither list, or not have the route at all.
+ */
+export interface QaMyItemsResponse {
+  returned: QaReturnedItem[];
+  developerItems: QaDeveloperItem[];
 }
 
 export interface CreateQaRunInput {

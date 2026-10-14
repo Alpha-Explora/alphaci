@@ -1,0 +1,1265 @@
+/* ── Project → Pipeline runs ─────────────────────────────────────────────────
+   One card per commit:
+
+   .pipe-commit     the card: header (title, sha, author, time, status chip),
+                    the stage stepper, the promotion banner, the opened stage,
+                    and the workflow-run list behind the footer toggle.
+   .pipe-steps      Access → Quality → Package → Verify, left to right.
+   .pipe-stage      the opened stage, in QA Studio's automation-card language
+                    (.qa-auto-stage): a tone rule on the left, a chip, one
+                    line of figures, then the failure itself.
+   .pipe-runs       GitHub's workflow runs, jobs and steps for the commit.
+
+   Tokens only, so the light theme re-tints through tokens.css. Every tone
+   class sets --pipe-tone (ink) and --pipe-fill (wash); nothing below picks a
+   colour of its own.
+   ------------------------------------------------------------------------- */
+
+.pipe-commit,
+.pipe-step,
+.pipe-stage,
+.pipe-chip,
+.pipe-banner,
+.pipe-run {
+  --pipe-tone: var(--text-muted);
+  --pipe-fill: var(--bg-frost);
+}
+
+.pipe-commit--success,
+.pipe-step--success,
+.pipe-stage--success,
+.pipe-chip--success,
+.pipe-banner--success,
+.pipe-run--success {
+  --pipe-tone: var(--success);
+  --pipe-fill: var(--accent-emerald-light);
+}
+
+.pipe-commit--danger,
+.pipe-step--danger,
+.pipe-stage--danger,
+.pipe-chip--danger,
+.pipe-banner--danger,
+.pipe-run--failure {
+  --pipe-tone: var(--danger);
+  --pipe-fill: var(--accent-rose-light);
+}
+
+.pipe-commit--warning,
+.pipe-step--warning,
+.pipe-stage--warning,
+.pipe-chip--warning,
+.pipe-banner--warning {
+  --pipe-tone: var(--warning);
+  --pipe-fill: var(--accent-amber-light);
+}
+
+.pipe-commit--running,
+.pipe-step--running,
+.pipe-stage--running,
+.pipe-chip--running,
+.pipe-banner--running,
+.pipe-run--running {
+  --pipe-tone: var(--brand);
+  --pipe-fill: var(--brand-light);
+}
+
+.pipe-glyph {
+  flex-shrink: 0;
+}
+
+/* ── Shared bits ─────────────────────────────────────────────────────────── */
+
+.pipe-chip {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.18rem 0.6rem 0.18rem 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  background: var(--pipe-fill);
+  color: var(--pipe-tone);
+  font-size: 0.74rem;
+  font-weight: 650;
+  line-height: 1.3;
+  white-space: nowrap;
+}
+
+.pipe-chip__dot {
+  width: 0.45rem;
+  height: 0.45rem;
+  border-radius: 50%;
+  background: currentcolor;
+}
+
+.pipe-chip--running .pipe-chip__dot {
+  animation: pipe-beacon 1.6s ease-out infinite;
+}
+
+.pipe-sha {
+  padding: 0.05rem 0.35rem;
+  border-radius: 0.3rem;
+  background: var(--bg-frost);
+  box-shadow: inset 0 0 0 1px var(--border);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.pipe-sha--title {
+  font-size: 0.85rem;
+  color: var(--text-primary);
+}
+
+.pipe-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.74rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.pipe-link .pipe-glyph {
+  transition: transform 140ms ease-out;
+}
+
+.pipe-link:hover {
+  color: var(--brand);
+  text-decoration: underline;
+}
+
+.pipe-link:hover .pipe-glyph {
+  transform: translate(1px, -1px);
+}
+
+.pipe-text-button {
+  padding: 0.1rem 0.2rem;
+  border: 0;
+  border-radius: 0.3rem;
+  background: none;
+  font: inherit;
+  font-size: 0.74rem;
+  font-weight: 650;
+  color: var(--brand);
+  cursor: pointer;
+}
+
+.pipe-logs-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-height: 2.75rem;
+  padding: 0.15rem 0.45rem 0.15rem 0.2rem;
+}
+
+.pipe-text-button:hover {
+  text-decoration: underline;
+}
+
+.pipe-link:focus-visible,
+.pipe-text-button:focus-visible,
+.pipe-toggle:focus-visible,
+.pipe-foot-toggle:focus-visible,
+.pipe-step__button:focus-visible,
+.pipe-run__head:focus-visible,
+.pipe-why__summary:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
+.pipe-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.55rem;
+  margin: 0;
+  padding: 0.5rem 0.7rem;
+  border: 1px solid var(--border);
+  border-radius: 0.55rem;
+  background: var(--pipe-fill);
+  font-size: 0.78rem;
+  line-height: 1.45;
+  color: var(--text-secondary);
+}
+
+.pipe-banner > .pipe-glyph {
+  margin-top: 0.12rem;
+  color: var(--pipe-tone);
+}
+
+.pipe-banner--danger {
+  color: var(--text-primary);
+}
+
+/* ── The commit list and card ────────────────────────────────────────────── */
+
+.pipe-commits {
+  display: grid;
+  gap: 0.75rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pipe-commit {
+  display: grid;
+  gap: 0.75rem;
+  min-width: 0;
+  padding: 0.85rem 1rem 0.7rem;
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--pipe-tone);
+  border-radius: 0.8rem;
+  background: var(--bg-surface);
+  transition: border-color 160ms ease-out;
+}
+
+.pipe-commit:hover {
+  border-top-color: var(--border-strong);
+  border-right-color: var(--border-strong);
+  border-bottom-color: var(--border-strong);
+}
+
+.pipe-commit__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+}
+
+/* The export beside the verdict: they read as one group, wrapping under the identity when narrow. */
+.pipe-commit__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+.pipe-commit__identity {
+  display: grid;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.pipe-commit__title {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 650;
+  line-height: 1.35;
+  letter-spacing: 0;
+  color: var(--text-primary);
+  overflow-wrap: anywhere;
+}
+
+.pipe-commit__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.2rem 0.5rem;
+  margin: 0;
+  font-size: 0.74rem;
+  color: var(--text-muted);
+}
+
+.pipe-commit__meta > * + *::before,
+.pipe-run__meta > * + *::before {
+  content: "·";
+  margin-right: 0.5rem;
+  color: var(--text-muted);
+}
+
+.pipe-commit__meta time {
+  font-variant-numeric: tabular-nums;
+  color: var(--text-secondary);
+}
+
+.pipe-commit__foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 0.45rem;
+  border-top: 1px solid var(--border-soft);
+}
+
+.pipe-foot-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-height: 1.9rem;
+  padding: 0.15rem 0.45rem 0.15rem 0.2rem;
+  border: 0;
+  border-radius: 0.4rem;
+  background: none;
+  font: inherit;
+  font-size: 0.76rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.pipe-foot-toggle:hover {
+  background: var(--bg-frost);
+  color: var(--text-primary);
+}
+
+.pipe-foot-toggle .pipe-glyph,
+.pipe-logs-toggle .pipe-glyph,
+.pipe-run__caret .pipe-glyph,
+.pipe-why__summary .pipe-glyph {
+  transition: transform 160ms ease-out;
+}
+
+.pipe-foot-toggle[aria-expanded="false"] .pipe-glyph,
+.pipe-logs-toggle[aria-expanded="false"] .pipe-glyph,
+.pipe-run__head[aria-expanded="false"] .pipe-run__caret .pipe-glyph,
+.pipe-why:not([open]) .pipe-why__summary .pipe-glyph {
+  transform: rotate(-90deg);
+}
+
+/* ── The stepper ─────────────────────────────────────────────────────────── */
+
+.pipe-steps {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* Every step but the last takes an equal share of the row, and its line runs
+   from its label to the next step: solid in the tone of a stage that passed,
+   dashed after one that did not, so where the pipeline stopped is where the
+   line changes. */
+.pipe-step {
+  display: flex;
+  flex: 1 1 0;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.pipe-step:last-child {
+  flex: 0 1 auto;
+}
+
+.pipe-step:not(:last-child)::after {
+  flex: 1 1 1rem;
+  min-width: 1rem;
+  border-top: 2px dashed var(--border-strong);
+  content: "";
+}
+
+.pipe-step--success:not(:last-child)::after {
+  border-top-style: solid;
+  border-top-color: var(--success);
+}
+
+.pipe-step__button {
+  display: flex;
+  flex: 0 1 auto;
+  align-items: center;
+  gap: 0.55rem;
+  min-width: 0;
+  min-height: 2.5rem;
+  padding: 0.45rem 0.55rem;
+  border: 1px solid transparent;
+  border-radius: 0.6rem;
+  background: none;
+  font: inherit;
+  text-align: left;
+  color: inherit;
+  cursor: pointer;
+  transition:
+    background-color 140ms ease-out,
+    border-color 140ms ease-out;
+}
+
+.pipe-step__button:hover {
+  border-color: var(--border);
+  background: var(--bg-frost);
+}
+
+.pipe-step[data-open="true"] .pipe-step__button {
+  border-color: var(--border-strong);
+  background: var(--pipe-fill);
+}
+
+.pipe-step__icon {
+  display: inline-grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 1.6rem;
+  height: 1.6rem;
+  border: 1.5px solid var(--pipe-tone);
+  border-radius: 50%;
+  background: var(--pipe-fill);
+  color: var(--pipe-tone);
+}
+
+.pipe-step--muted .pipe-step__icon {
+  border-style: dashed;
+  background: transparent;
+}
+
+.pipe-step--running .pipe-step__icon {
+  animation: pipe-beacon 1.6s ease-out infinite;
+}
+
+.pipe-step__text {
+  display: grid;
+  gap: 0.05rem;
+  min-width: 0;
+}
+
+.pipe-step__name {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.pipe-step--muted .pipe-step__name {
+  color: var(--text-secondary);
+}
+
+.pipe-step__state {
+  font-size: 0.72rem;
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--pipe-tone);
+}
+
+.pipe-step--muted .pipe-step__state {
+  font-weight: 500;
+}
+
+/* ── The opened stage ────────────────────────────────────────────────────── */
+
+.pipe-stage {
+  display: grid;
+  gap: 0.55rem;
+  min-width: 0;
+  padding: 0.7rem 0.85rem 0.75rem 0.9rem;
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--pipe-tone);
+  border-radius: 0.6rem;
+  background: var(--bg-soft);
+  animation: pipe-reveal 180ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.pipe-stage__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem 0.75rem;
+}
+
+.pipe-stage__title {
+  min-width: 0;
+  margin: 0;
+  font-size: 0.84rem;
+  font-weight: 700;
+  letter-spacing: 0;
+  color: var(--text-primary);
+}
+
+.pipe-stage__coverage {
+  font-weight: 500;
+  color: var(--text-muted);
+}
+
+.pipe-stage__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem 0.85rem;
+  font-size: 0.74rem;
+  color: var(--text-muted);
+}
+
+.pipe-stage__meta time {
+  font-variant-numeric: tabular-nums;
+  color: var(--text-secondary);
+}
+
+.pipe-stage__none {
+  color: var(--text-muted);
+}
+
+.pipe-stage__reason {
+  margin: 0;
+  font-size: 0.78rem;
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+
+.pipe-figures {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.3rem 0.55rem;
+}
+
+.pipe-figures__count {
+  font-size: 0.78rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  color: var(--text-primary);
+}
+
+.pipe-figures__bar {
+  width: 4.5rem;
+  height: 0.3rem;
+  border-radius: var(--radius-pill);
+  background: var(--border-strong);
+  overflow: hidden;
+}
+
+.pipe-stage--danger .pipe-figures__bar {
+  background: var(--accent-rose-glow);
+}
+
+.pipe-figures__fill {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--success);
+  transform-origin: left center;
+  animation: pipe-fill 520ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.pipe-figures__note {
+  white-space: nowrap;
+}
+
+.pipe-figures__note + .pipe-figures__note::before {
+  content: "·";
+  margin-right: 0.55rem;
+}
+
+.pipe-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  padding: 0.05rem 0.3rem 0.05rem 0.4rem;
+  border: 1px solid var(--border);
+  border-radius: 0.35rem;
+  background: var(--bg-frost);
+  font: inherit;
+  font-weight: 650;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.pipe-toggle:hover {
+  border-color: var(--border-strong);
+  color: var(--text-primary);
+}
+
+.pipe-toggle--danger {
+  border-color: var(--accent-rose-glow);
+  background: var(--accent-rose-light);
+  color: var(--danger);
+}
+
+.pipe-toggle--danger:hover {
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
+.pipe-toggle .pipe-glyph {
+  transition: transform 160ms ease-out;
+}
+
+.pipe-toggle[aria-expanded="true"] .pipe-glyph {
+  transform: rotate(180deg);
+}
+
+/* The checks, once asked for: marks, names and outcomes in three columns. */
+.pipe-roster {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 0.2rem 0.5rem;
+  margin: 0;
+  padding: 0.5rem 0.6rem;
+  border-radius: 0.45rem;
+  background: var(--bg-frost);
+  box-shadow: inset 0 0 0 1px var(--border-soft);
+  list-style: none;
+  animation: pipe-reveal 180ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.pipe-roster[hidden] {
+  display: none;
+}
+
+.pipe-roster__row {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: subgrid;
+  align-items: center;
+  font-size: 0.76rem;
+}
+
+.pipe-roster__row .pipe-glyph {
+  color: var(--text-muted);
+}
+
+.pipe-roster__row--passed .pipe-glyph {
+  color: var(--success);
+}
+
+.pipe-roster__row--failed .pipe-glyph {
+  color: var(--danger);
+}
+
+.pipe-roster__row--running .pipe-glyph {
+  color: var(--brand);
+}
+
+.pipe-roster__name {
+  color: var(--text-primary);
+  overflow-wrap: anywhere;
+}
+
+.pipe-roster__row--skipped .pipe-roster__name {
+  color: var(--text-muted);
+}
+
+.pipe-roster__outcome {
+  font-variant-numeric: tabular-nums;
+  color: var(--text-muted);
+}
+
+.pipe-roster__row--failed .pipe-roster__outcome {
+  font-weight: 650;
+  color: var(--danger);
+}
+
+/* ── What our grading said ──────────────────────────────────────────────── */
+
+.pipe-finding {
+  --pipe-finding-fill: var(--bg-frost);
+
+  display: grid;
+  gap: 0.3rem;
+  min-width: 0;
+}
+
+.pipe-finding--error {
+  --pipe-finding-fill: var(--accent-rose-light);
+}
+
+.pipe-finding--warning {
+  --pipe-finding-fill: var(--accent-amber-light);
+}
+
+.pipe-finding__title {
+  margin: 0;
+  font-size: 0.84rem;
+  font-weight: 650;
+  line-height: 1.4;
+  color: var(--text-primary);
+}
+
+.pipe-finding__detail {
+  margin: 0;
+  font-size: 0.78rem;
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+
+.pipe-finding__items {
+  display: grid;
+  gap: 0.25rem;
+  margin: 0.1rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pipe-finding__item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.15rem 0.6rem;
+  padding: 0.35rem 0.55rem;
+  border-radius: 0.4rem;
+  background: var(--pipe-finding-fill);
+  font-size: 0.74rem;
+}
+
+.pipe-finding__label {
+  padding: 0;
+  background: none;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  overflow-wrap: anywhere;
+}
+
+.pipe-finding__sub {
+  min-width: 0;
+  color: var(--text-secondary);
+  overflow-wrap: anywhere;
+}
+
+/* The generic advice, folded away: the same paragraph on every commit with
+   the same failure, so open it buried the one line that differed. */
+.pipe-why {
+  font-size: 0.76rem;
+}
+
+.pipe-why__summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.1rem 0.2rem 0.1rem 0;
+  border-radius: 0.3rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  cursor: pointer;
+  list-style: none;
+}
+
+.pipe-why__summary::-webkit-details-marker {
+  display: none;
+}
+
+.pipe-why__summary:hover {
+  color: var(--text-primary);
+}
+
+.pipe-why__body {
+  max-width: 72ch;
+  margin: 0.3rem 0 0 1.1rem;
+  line-height: 1.55;
+  color: var(--text-secondary);
+}
+
+/* ── The error output ────────────────────────────────────────────────────── */
+
+.pipe-log {
+  display: grid;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+.pipe-log__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.25rem 0.75rem;
+}
+
+.pipe-log__source {
+  min-width: 0;
+  margin: 0;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  overflow-wrap: anywhere;
+}
+
+.pipe-log__step {
+  font-weight: 400;
+  color: var(--text-secondary);
+}
+
+.pipe-log__more {
+  justify-self: start;
+}
+
+.pipe-log__console {
+  max-height: 22rem;
+  padding: 0.7rem 0.85rem;
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  background: var(--bg-base);
+  font-size: 0.74rem;
+}
+
+/* Every failed job in the run, one block each, divided by a hairline.
+   minmax(0, 1fr) columns all the way down, so a long log line scrolls inside
+   its console instead of widening the card past the pane. */
+.pipe-failures {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.85rem;
+  min-width: 0;
+}
+
+.pipe-failures .pipe-log,
+.pipe-job__error {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.pipe-job__log {
+  min-width: 0;
+}
+
+.pipe-failures > .pipe-log + .pipe-log {
+  padding-top: 0.85rem;
+  border-top: 1px dashed var(--border-strong);
+}
+
+.pipe-failures__more {
+  margin: 0;
+  font-size: 0.76rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+/* "What happened": the backend's plain-English reading of a failure, set
+   apart from the log so it is read first. */
+.pipe-hint {
+  display: grid;
+  gap: 0.15rem;
+  padding: 0.5rem 0.7rem;
+  border: 1px solid var(--border-amber);
+  border-left: 3px solid var(--warning);
+  border-radius: 0.45rem;
+  background: var(--accent-amber-light);
+}
+
+.pipe-hint__label {
+  margin: 0;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--warning);
+}
+
+.pipe-hint__text {
+  max-width: 80ch;
+  margin: 0;
+  font-size: 0.8rem;
+  line-height: 1.5;
+  color: var(--text-primary);
+}
+
+/* ── The stage's own figures ─────────────────────────────────────────────── */
+
+.pipe-results {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.5rem;
+  margin: 0;
+}
+
+.pipe-result {
+  --pipe-tone: var(--text-muted);
+
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.35rem;
+  padding: 0.18rem 0.55rem;
+  border: 1px solid var(--border);
+  border-radius: 0.4rem;
+  background: var(--bg-frost);
+  font-size: 0.74rem;
+}
+
+.pipe-result--success {
+  --pipe-tone: var(--success);
+}
+
+.pipe-result--danger {
+  --pipe-tone: var(--danger);
+
+  border-color: var(--border-danger);
+  background: var(--accent-rose-light);
+}
+
+.pipe-result--warning {
+  --pipe-tone: var(--warning);
+
+  border-color: var(--border-amber);
+  background: var(--accent-amber-light);
+}
+
+.pipe-result__label {
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.pipe-result__value {
+  margin: 0;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--pipe-tone);
+}
+
+.pipe-results__failures {
+  display: grid;
+  gap: 0.25rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pipe-results__failure {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.15rem 0.6rem;
+  padding: 0.35rem 0.55rem;
+  border-radius: 0.4rem;
+  background: var(--accent-rose-light);
+  font-size: 0.74rem;
+}
+
+.pipe-results__test {
+  padding: 0;
+  background: none;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  overflow-wrap: anywhere;
+}
+
+.pipe-results__message,
+.pipe-results__more {
+  min-width: 0;
+  color: var(--text-secondary);
+  overflow-wrap: anywhere;
+}
+
+.pipe-results__more {
+  padding: 0 0.55rem;
+  font-size: 0.74rem;
+}
+
+/* ── Workflow runs, jobs and steps ───────────────────────────────────────── */
+
+.pipe-runs {
+  display: grid;
+  gap: 0.4rem;
+  margin: -0.25rem 0 0.2rem;
+  padding: 0;
+  list-style: none;
+  animation: pipe-reveal 180ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.pipe-run {
+  border: 1px solid var(--border);
+  border-radius: 0.55rem;
+  background: var(--bg-soft);
+  overflow: hidden;
+}
+
+.pipe-run__head {
+  display: grid;
+  grid-template-columns: auto minmax(8rem, max-content) minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.35rem 0.7rem;
+  width: 100%;
+  min-height: 2.5rem;
+  padding: 0.45rem 0.7rem 0.45rem 0.5rem;
+  border: 0;
+  background: none;
+  font: inherit;
+  text-align: left;
+  color: var(--text-primary);
+  cursor: pointer;
+}
+
+.pipe-run__head:hover {
+  background: var(--bg-frost);
+}
+
+.pipe-run__caret {
+  display: inline-flex;
+  color: var(--text-muted);
+}
+
+.pipe-run__label {
+  font-size: 0.8rem;
+  font-weight: 650;
+  overflow-wrap: anywhere;
+}
+
+.pipe-run__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.15rem 0.5rem;
+  min-width: 0;
+  font-size: 0.72rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-muted);
+}
+
+.pipe-run__branch {
+  margin-right: 0.3rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  color: var(--text-secondary);
+}
+
+.pipe-run__body {
+  display: grid;
+  gap: 0.6rem;
+  padding: 0.2rem 0.75rem 0.75rem 2rem;
+}
+
+.pipe-run__body > .pipe-link {
+  justify-self: start;
+}
+
+.pipe-jobs {
+  display: grid;
+  gap: 0.45rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pipe-job {
+  display: grid;
+  gap: 0.45rem;
+  padding: 0.55rem 0.7rem;
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  background: var(--bg-frost);
+}
+
+.pipe-job__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem 0.6rem;
+}
+
+.pipe-job__name {
+  flex: 1;
+  min-width: 8rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.pipe-job__steps {
+  display: grid;
+  gap: 0.2rem;
+  margin: 0;
+  padding: 0 0 0 0.35rem;
+  list-style: none;
+}
+
+.pipe-job__step {
+  --pipe-tone: var(--text-muted);
+
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.74rem;
+  color: var(--text-secondary);
+}
+
+.pipe-job__step--success {
+  --pipe-tone: var(--success);
+}
+
+.pipe-job__step--failure {
+  --pipe-tone: var(--danger);
+
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.pipe-job__step--running {
+  --pipe-tone: var(--brand);
+}
+
+.pipe-job__step-dot {
+  width: 0.45rem;
+  height: 0.45rem;
+  border-radius: 50%;
+  background: var(--pipe-tone);
+}
+
+.pipe-job__step-name {
+  overflow-wrap: anywhere;
+}
+
+.pipe-job__step-outcome {
+  color: var(--pipe-tone);
+}
+
+/* A failed job's error in one to three lines, above its steps. */
+.pipe-job__error {
+  display: grid;
+  gap: 0.4rem;
+  min-width: 0;
+}
+
+.pipe-job__preview {
+  margin: 0;
+  padding: 0.4rem 0.6rem;
+  border: 1px solid var(--border-danger);
+  border-left: 3px solid var(--danger);
+  border-radius: 0.4rem;
+  background: var(--accent-rose-light);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.72rem;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  color: var(--text-primary);
+}
+
+.pipe-job__preview-line {
+  display: block;
+}
+
+/* ── Motion ──────────────────────────────────────────────────────────────── */
+
+@keyframes pipe-reveal {
+  from {
+    opacity: 0;
+    transform: translateY(-3px);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes pipe-fill {
+  from {
+    transform: scaleX(0);
+  }
+
+  to {
+    transform: scaleX(1);
+  }
+}
+
+@keyframes pipe-beacon {
+  0% {
+    box-shadow: 0 0 0 0 var(--brand-glow);
+  }
+
+  70% {
+    box-shadow: 0 0 0 0.35rem transparent;
+  }
+
+  100% {
+    box-shadow: 0 0 0 0 transparent;
+  }
+}
+
+/* ── Narrow: the stepper stands up, the run rows stack ───────────────────── */
+
+@media (max-width: 720px) {
+  .pipe-steps {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0;
+  }
+
+  .pipe-step,
+  .pipe-step:last-child {
+    position: relative;
+    flex: 0 0 auto;
+    padding-bottom: 0.4rem;
+  }
+
+  .pipe-step:last-child {
+    padding-bottom: 0;
+  }
+
+  /* Upright, the line runs down from each icon to the next. */
+  .pipe-step:not(:last-child)::after {
+    position: absolute;
+    top: calc(0.45rem + 1.6rem + 1px);
+    bottom: 0;
+    left: calc(0.55rem + 0.8rem - 1px);
+    min-width: 0;
+    border-top: 0;
+    border-left: 2px dashed var(--border-strong);
+  }
+
+  .pipe-step--success:not(:last-child)::after {
+    border-left-style: solid;
+    border-left-color: var(--success);
+  }
+
+  .pipe-step__button {
+    flex: 1 1 auto;
+  }
+
+  .pipe-stage__row {
+    flex-wrap: wrap;
+  }
+
+  .pipe-stage__coverage {
+    display: block;
+  }
+
+  .pipe-stage__dash {
+    display: none;
+  }
+
+  .pipe-step__text {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0 0.5rem;
+  }
+
+  .pipe-run__head {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+  }
+
+  .pipe-run__meta {
+    grid-column: 2 / -1;
+    grid-row: 2;
+  }
+
+  .pipe-run__body {
+    padding-left: 0.75rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .pipe-commit {
+    padding: 0.75rem 0.75rem 0.6rem;
+  }
+
+  .pipe-commit__head {
+    flex-direction: column;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pipe-stage,
+  .pipe-roster,
+  .pipe-runs,
+  .pipe-figures__fill,
+  .pipe-chip--running .pipe-chip__dot,
+  .pipe-step--running .pipe-step__icon {
+    animation: none;
+  }
+
+  .pipe-commit,
+  .pipe-step__button,
+  .pipe-link .pipe-glyph,
+  .pipe-toggle .pipe-glyph,
+  .pipe-foot-toggle .pipe-glyph,
+  .pipe-run__caret .pipe-glyph,
+  .pipe-why__summary .pipe-glyph {
+    transition: none;
+  }
+}

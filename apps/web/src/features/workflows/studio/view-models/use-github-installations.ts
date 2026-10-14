@@ -10,6 +10,7 @@ import {
 } from "@/features/workflows/studio/data/github-api";
 import type { GithubInstallationAccount, LinkedGitHubRepo } from "@/shared/api/contracts";
 import { formatApiError } from "../model/workflow-studio-rules";
+import { roleGateErrorMessage } from "../model/role-gate-rules";
 import { navigateToExternalUrl } from "./navigation";
 
 export function useGithubInstallations(
@@ -178,7 +179,7 @@ export function useGithubInstallations(
         );
       })
       .catch((error: unknown) => {
-        setStatusMessage(formatApiError(error, "GitHub App installation link failed"));
+        setStatusMessage(roleGateErrorMessage(error, "GitHub App installation link failed"));
       })
       .finally(() => {
         setLinkingInstallation(false);
@@ -213,7 +214,7 @@ export function useGithubInstallations(
         `Linked ${response.reposLinked} GitHub repo${response.reposLinked === 1 ? "" : "s"}. Installation access: ${access}.`,
       );
     } catch (error) {
-      setStatusMessage(formatApiError(error, "GitHub App installation link failed"));
+      setStatusMessage(roleGateErrorMessage(error, "GitHub App installation link failed"));
     } finally {
       setLinkingInstallation(false);
     }

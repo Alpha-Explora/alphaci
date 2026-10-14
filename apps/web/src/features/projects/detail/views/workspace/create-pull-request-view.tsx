@@ -1,5 +1,12 @@
 "use client";
 
+import { useId } from "react";
+
+import type { AppRole } from "@/shared/api/contracts";
+import {
+  selectableBaseBranches,
+  selectableHeadBranches,
+} from "../../model/pull-request-compose-rules";
 import { DiffView } from "./diff-view";
 import { WorkspaceError, WorkspaceLoading } from "./workspace-states";
 import {
@@ -19,17 +26,31 @@ import {
  */
 export function CreatePullRequestView({
   projectId,
+  appRole,
+  viewerLogin,
   onCancel,
   onCreated,
   onViewExisting,
 }: Readonly<{
   projectId: string;
+  /** The viewer's app role. QA does not open pull requests. */
+  appRole?: AppRole;
+  /** The viewer's GitHub login, to find their own branches for the presets. */
+  viewerLogin?: string | null;
   onCancel: () => void;
   onCreated: (pullRequest: PullRequestSummary) => void;
   /** Leave compose for a pull request that is already open for this pair. */
   onViewExisting: (pullNumber: number) => void;
 }>) {
-  const vm = useCreatePullRequestViewModel({ projectId, onCreated });
+  // Called unconditionally regardless of role — QA reaches this component
+  // only through a stale UI state or a direct link, and skipping the hook
+  // for that case would break the rules of hooks for one defensive path.
+  const vm = useCreatePullRequestViewModel({
+    projectId,
+    appRole,
+    viewerLogin,
+    onCreated,
+  });
 
   return (
     <section className="ws-compose" aria-labelledby="ws-compose-title">
@@ -42,11 +63,16 @@ export function CreatePullRequestView({
         </button>
       </div>
 
-      {vm.status === "loading" ? (
+      {appRole === "qa" ? (
+        <p className="ws-hint" role="status">
+          QA does not open pull requests.
+        </p>
+      ) : vm.status === "loading" ? (
         <WorkspaceLoading rows={3} />
       ) : (
         <>
-          <BranchPickers vm={vm} />
+          <PresetPicker vm={vm} />
+          <BranchPickers vm={vm} appRole={appRole} />
           <ComposeBody vm={vm} onViewExisting={onViewExisting} />
         </>
       )}
@@ -54,8 +80,69 @@ export function CreatePullRequestView({
   );
 }
 
-function BranchPickers({ vm }: Readonly<{ vm: CreatePullRequestViewModel }>) {
+/**
+ * The common pull requests as one choice, above the free pickers. Native
+ * radios in a named group, so arrow keys and screen readers behave as they
+ * should; an unavailable preset is disabled and says why in text.
+ */
+function PresetPicker({ vm }: Readonly<{ vm: CreatePullRequestViewModel }>) {
+  const groupId = useId();
+  if (vm.presets.length === 0) return null;
   const busy = vm.status === "submitting";
+
+  return (
+    <div
+      className="ws-preset"
+      role="radiogroup"
+      aria-label="Pull request type"
+    >
+      {vm.presets.map((preset) => {
+        const reasonId = `${groupId}-${preset.id}-reason`;
+        return (
+          <label
+            key={preset.id}
+            className="ws-preset__option"
+            data-checked={vm.preset === preset.id ? "true" : "false"}
+            data-disabled={preset.available ? "false" : "true"}
+          >
+            <input
+              type="radio"
+              className="ws-preset__input"
+              name={groupId}
+              value={preset.id}
+              checked={vm.preset === preset.id}
+              disabled={busy || !preset.available}
+              aria-describedby={preset.reason ? reasonId : undefined}
+              onChange={() => vm.selectPreset(preset.id)}
+            />
+            <span className="ws-preset__label">{preset.label}</span>
+            {preset.reason && (
+              <span id={reasonId} className="ws-preset__reason">
+                {preset.reason}
+              </span>
+            )}
+          </label>
+        );
+      })}
+    </div>
+  );
+}
+
+function BranchPickers({
+  vm,
+  appRole,
+}: Readonly<{ vm: CreatePullRequestViewModel; appRole?: AppRole }>) {
+  const busy = vm.status === "submitting";
+  // A preset fixes the base; Feature → Dev leaves the head to the person, and
+  // Dev → UAT fixes both. Only Custom (or no presets at all, e.g. QA) is free.
+  const presetOn = vm.presets.length > 0 && vm.preset !== "custom";
+  const baseLocked = presetOn;
+  const headLocked = presetOn && vm.preset === "dev-to-uat";
+  // `main` is never a selectable base: Hop 3 is locked to the promotion
+  // engine and QA Studio, not this composer, for every role.
+  const baseOptions = selectableBaseBranches(vm.branches, appRole);
+  // A Developer only picks a feature branch (into dev) or dev (into uat).
+  const headOptions = selectableHeadBranches(vm.branches, appRole, vm.base);
 
   return (
     <div className="ws-compose__branches">
@@ -64,10 +151,10 @@ function BranchPickers({ vm }: Readonly<{ vm: CreatePullRequestViewModel }>) {
         <select
           className="ws-select"
           value={vm.base}
-          disabled={busy}
+          disabled={busy || baseLocked}
           onChange={(event) => vm.setBase(event.target.value)}
         >
-          {vm.branches.map((name) => (
+          {baseOptions.map((name) => (
             <option key={name} value={name}>
               {name}
             </option>
@@ -79,7 +166,7 @@ function BranchPickers({ vm }: Readonly<{ vm: CreatePullRequestViewModel }>) {
         type="button"
         className="ws-compose__swap"
         onClick={vm.swapBranches}
-        disabled={busy || !vm.head}
+        disabled={busy || !vm.head || presetOn || appRole === "member"}
         aria-label="Swap the two branches"
         title="Swap the two branches"
       >
@@ -91,19 +178,17 @@ function BranchPickers({ vm }: Readonly<{ vm: CreatePullRequestViewModel }>) {
         <select
           className="ws-select"
           value={vm.head}
-          disabled={busy}
+          disabled={busy || headLocked}
           onChange={(event) => vm.setHead(event.target.value)}
         >
           <option value="" disabled>
             Choose a branch…
           </option>
-          {vm.branches
-            .filter((name) => name !== vm.base)
-            .map((name) => (
-              <option key={name} value={name}>
-                {name}
-              </option>
-            ))}
+          {headOptions.map((name) => (
+            <option key={name} value={name}>
+              {name}
+            </option>
+          ))}
         </select>
       </label>
     </div>

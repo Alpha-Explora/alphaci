@@ -12,12 +12,17 @@ const routeFiles: Record<string, string> = {
   "/home": "(platform)/home/page.tsx",
   "/inbox": "(platform)/inbox/page.tsx",
   "/runs": "(platform)/runs/page.tsx",
+  "/runs/report": "(platform)/runs/report/page.tsx",
   "/settings": "(platform)/settings/page.tsx",
   "/teams": "(platform)/teams/page.tsx",
+  "/checklists": "(platform)/checklists/page.tsx",
+  "/activity": "(platform)/activity/page.tsx",
   "/workflows": "(platform)/workflows/page.tsx",
   "/projects/[projectId]": "(platform)/projects/[projectId]/page.tsx",
   "/projects/[projectId]/qa/report/[runId]":
     "(platform)/projects/[projectId]/qa/report/[runId]/page.tsx",
+  "/qa/project-report/[deliveryProjectId]/[runId]":
+    "(platform)/qa/project-report/[deliveryProjectId]/[runId]/page.tsx",
   "/admin": "(platform)/admin/page.tsx",
   "/admin/feedback": "(platform)/admin/feedback/page.tsx",
   "/admin/users/[id]": "(platform)/admin/users/[id]/page.tsx",
