@@ -133,7 +133,6 @@ export function isRepositoryStepReady(input: {
   repoName: string;
   isMicroservicesShape: boolean;
   isMultiRepoShape: boolean;
-  serviceName: string;
 }): boolean {
   if (input.projectChoiceMissing) {
     return false;
@@ -147,7 +146,8 @@ export function isRepositoryStepReady(input: {
   if (input.isMicroservicesShape || input.isMultiRepoShape) {
     return true;
   }
-  return Boolean(input.serviceName.trim());
+  // The service is named after the repository, so the name must leave a slug.
+  return Boolean(toSlug(input.repoName));
 }
 
 /** A Developer's Project select is showing and nothing is picked yet. */
@@ -160,8 +160,27 @@ export function isExistingSetupMode(setupMode: "new" | "existing", allowed: bool
   return allowed && setupMode === "existing";
 }
 
-export function isAutomationStepReady(outputFileName: string, nodeVersion: string): boolean {
-  return Boolean(outputFileName.trim() && nodeVersion);
+/**
+ * The runtime a non-Node stack runs on, for the wizard to show: the stack's
+ * framework with its language, e.g. ".NET (C#)". The language alone ("C#")
+ * named the code, not the runtime. The SDK version is not in the project
+ * options; the workflow catalog sets it.
+ */
+export function stackRuntimeLabel(
+  projectType: { runtime?: string; language?: string; framework?: string; label?: string } | null | undefined,
+): string {
+  const name = projectType?.framework || projectType?.label || projectType?.runtime || "Runtime from catalog";
+  const language = projectType?.language;
+  return language && language !== name ? `${name} (${language})` : name;
+}
+
+/** An example repository name that fits the stack: "my-api" for .NET, not "my-next-app". */
+export function repoNamePlaceholder(runtime: string | undefined): string {
+  return (runtime ?? "node") === "node" ? "my-next-app" : "my-api";
+}
+
+export function isAutomationStepReady(nodeVersion: string): boolean {
+  return Boolean(nodeVersion);
 }
 
 export function wizardStepReadyFlags(input: {
@@ -178,6 +197,8 @@ export function teamChoiceState(input: {
   creationScope: "choose-team" | "in-team";
   workspaceCount: number;
   selectedWorkspaceId?: string | null;
+  /** A known Project fixes the team (its own), so none is asked for. */
+  projectKnown?: boolean;
 }): {
   mustChooseTeam: boolean;
   needsTeamChoice: boolean;
@@ -185,7 +206,8 @@ export function teamChoiceState(input: {
   teamChoiceMissing: boolean;
 } {
   const mustChooseTeam = input.creationScope === "choose-team";
-  const needsTeamChoice = mustChooseTeam && input.workspaceCount > 1;
+  const needsTeamChoice =
+    mustChooseTeam && input.workspaceCount > 1 && input.projectKnown !== true;
   const hasNoTeam = mustChooseTeam && input.workspaceCount === 0;
   return {
     mustChooseTeam,

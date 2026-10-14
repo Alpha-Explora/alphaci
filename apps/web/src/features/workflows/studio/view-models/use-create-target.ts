@@ -9,26 +9,18 @@ import type { WorkspaceSummary } from "@/shared/api/contracts";
 import {
   applicableTargetProject,
   chosenTargetProject,
+  createTargetView,
   effectiveDeliveryProjectId,
-  joinedProjectName,
   parseCreateTargetParams,
   readTargetProject,
-  targetProjectLabel,
+  type CreateTargetView,
   type ProjectChoiceOption,
   type ResolvedTargetProject,
 } from "../model/create-target-rules";
 
-export interface CreateTarget {
+export interface CreateTarget extends CreateTargetView {
   /** The team a link asked for on arrival; the workspace load preselects it. */
   initialGroupId: string | null;
-  /** "Team / Project" for a `?project=` link, or null when no linked Project applies. */
-  label: string | null;
-  /** The linked Project's own name (a fixed line in the wizard), else null. */
-  linkedProjectName: string | null;
-  /** The Project's own name while the repository joins one (linked or picked), else null. */
-  joinedProjectName: string | null;
-  /** The Project picked in the wizard for the selected team, or null. */
-  chosenProjectId: string | null;
   /** Pick (or, with null, clear) the Project in the selected team. */
   chooseProject: (option: ProjectChoiceOption | null) => void;
   /** The Project id to send for a repository created in `workspaceId`. */
@@ -39,7 +31,8 @@ export interface CreateTarget {
  * Reads `?group=` and `?project=` for the Create Project wizard.
  *
  * `?project=` is resolved against the server before it is used, so a stale or
- * foreign id is dropped instead of sent. A later link to the same page (the
+ * foreign id is dropped instead of sent. Once resolved, the Project fixes the
+ * team the repository is created in. A later link to the same page (the
  * studio's own "Create repository in this Project") changes the search params
  * without remounting, so the change is applied while rendering, the way React
  * recommends for state derived from a changing input.
@@ -56,8 +49,8 @@ export function useCreateTarget(options: {
   const link = parseCreateTargetParams(searchParams);
   const [initialGroupId] = useState(link.groupId);
   const [target, setTarget] = useState<ResolvedTargetProject | null>(null);
-  // A Developer's pick from the wizard's Project select. Kept with the team it
-  // was picked in, so switching teams drops it rather than sending it there.
+  // A Developer's pick from the wizard's Project select, kept with the team it
+  // was picked in.
   const [chosen, setChosen] = useState<ResolvedTargetProject | null>(null);
   const searchKey = searchParams.toString();
   const [seenSearch, setSeenSearch] = useState(searchKey);
@@ -93,15 +86,12 @@ export function useCreateTarget(options: {
     };
   }, [deliveryProjectId, guest]);
 
-  const applicable = applicableTargetProject(target, chosen, selectedWorkspaceId);
+  const linked = deliveryProjectId ? target : null;
   return {
+    ...createTargetView({ linked, chosen, selectedWorkspaceId, workspaces }),
     initialGroupId,
-    label: targetProjectLabel(target, selectedWorkspaceId, workspaces),
-    linkedProjectName: joinedProjectName(target, selectedWorkspaceId),
-    joinedProjectName: joinedProjectName(applicable, selectedWorkspaceId),
-    chosenProjectId: effectiveDeliveryProjectId(chosen, selectedWorkspaceId) ?? null,
     chooseProject: (option) => setChosen(chosenTargetProject(option, selectedWorkspaceId)),
-    deliveryProjectIdFor: (workspaceId) =>
-      effectiveDeliveryProjectId(applicableTargetProject(target, chosen, workspaceId), workspaceId),
+    deliveryProjectIdFor: (forWorkspaceId) =>
+      effectiveDeliveryProjectId(applicableTargetProject(linked, chosen, forWorkspaceId), forWorkspaceId),
   };
 }

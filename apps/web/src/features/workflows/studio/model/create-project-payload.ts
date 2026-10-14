@@ -23,8 +23,6 @@ export interface CreateProjectPayloadInput {
   projectName: string | null;
   repoName: string;
   visibility: CreateProjectRequest["visibility"];
-  serviceName: string;
-  servicePath: string;
   nodeVersion: string;
   coverageThreshold: string;
   outputFileName: string;
@@ -45,7 +43,7 @@ export interface CreateProjectPayloadInput {
   ownerType?: "personal" | "organization";
   installationId?: number;
   deploymentProvisioning?: CreateProjectRequest["deploymentProvisioning"];
-  /** Set only when the user chose to define environments. */
+  /** Set only when the project is created with its own environments (on-prem hosting). */
   environments?: readonly EnvironmentDraft[];
   /**
    * The project's deployable slots, set only when the deployment offers
@@ -54,6 +52,21 @@ export interface CreateProjectPayloadInput {
    */
   onpremSlots?: readonly EnvTargetSlot[];
 }
+
+/**
+ * Every workflow option on, Docker included, whatever the catalog defaults
+ * say. The create wizard no longer offers the options: only Docker changes
+ * the scaffold (it adds the ./Dockerfile that managed Render and on-prem
+ * deploys build), and the other four have no effect on the generated pipeline.
+ */
+export const ALWAYS_ON_TESTS: Readonly<Record<MvpProjectOptionKey, boolean>> = {
+  lint: true,
+  unit: true,
+  build: true,
+  coverage: true,
+  security: true,
+  docker: true,
+};
 
 function sanitizeRepoNameInput(value: string): string {
   return value
@@ -247,8 +260,11 @@ function standalonePayload(input: CreateProjectPayloadInput): CreateProjectPaylo
       ),
       projectTypeId: input.projectTypeId,
       workflowRecipeId: input.workflowRecipeId,
-      serviceName: toSlug(input.serviceName || normalizedRepoName),
-      servicePath: input.servicePath.trim() || ".",
+      // Always the repository's slug at the repository root: nothing needs a
+      // different name, and another path points the pipeline at a folder the
+      // scaffold never creates.
+      serviceName: toSlug(normalizedRepoName),
+      servicePath: ".",
       ...(input.environments
         ? { environments: input.environments.map(trimmedEnvironment) }
         : {}),

@@ -49,7 +49,7 @@ function buildSteps(): DriveStep[] {
       popover: {
         title: "Workflow recipe",
         description:
-          "A recipe is a preset combination of CI jobs — lint, test, build, security, and more. Standard CI covers most teams well. You can fine-tune individual checks in the Workflow checks section below.",
+          "A recipe is a preset combination of CI jobs — lint, test, build, security, and more. Standard CI covers most teams well.",
         side: "right",
         align: "start",
       },
@@ -59,7 +59,7 @@ function buildSteps(): DriveStep[] {
       popover: {
         title: "Name your repository",
         description:
-          "This becomes your GitHub repository name. Use lowercase words separated by hyphens — for example my-first-service. The name must be unique within your GitHub account or organisation.",
+          "This becomes your GitHub repository name, and the service takes the same name. Use lowercase words separated by hyphens — for example my-first-service. The name must be unique within your GitHub account or organisation.",
         side: "bottom",
         align: "start",
       },
@@ -70,36 +70,6 @@ function buildSteps(): DriveStep[] {
         title: "Visibility",
         description:
           "Private keeps your code visible only to collaborators. Public makes the repository open to everyone on GitHub. You can change this later in GitHub repository settings.",
-        side: "bottom",
-        align: "start",
-      },
-    },
-    {
-      element: "#service-name",
-      popover: {
-        title: "Service name",
-        description:
-          "A short identifier used inside the generated workflow YAML — for example my-next-app. It does not have to match the repository name, but keeping them the same simplifies onboarding.",
-        side: "bottom",
-        align: "start",
-      },
-    },
-    {
-      element: "#service-path",
-      popover: {
-        title: "Service path",
-        description:
-          "The directory inside the repository where this service lives. Use . if your service is at the root. For a monorepo you might use packages/api or apps/web.",
-        side: "bottom",
-        align: "start",
-      },
-    },
-    {
-      element: "#output-file-name",
-      popover: {
-        title: "Workflow file name",
-        description:
-          "The filename for the generated GitHub Actions workflow, stored under .github/workflows/. The default ci.yml is fine for most projects. Use a different name if you plan to run multiple pipelines in the same repository.",
         side: "bottom",
         align: "start",
       },
@@ -125,16 +95,6 @@ function buildSteps(): DriveStep[] {
       },
     },
     {
-      element: "[data-tour='test-toggles']",
-      popover: {
-        title: "Workflow checks",
-        description:
-          "Toggle individual CI jobs on or off. Greyed-out chips are not supported by the selected recipe. You can always update these settings and regenerate the workflow later.",
-        side: "top",
-        align: "start",
-      },
-    },
-    {
       element: CREATE_BUTTON_SELECTOR,
       popover: {
         title: "Ready to create",
@@ -153,8 +113,8 @@ function buildSteps(): DriveStep[] {
  * the button is guaranteed to be present whenever the Setup form is rendered.
  *
  * This prevents driver.js from erroring or jumping when fields that are
- * conditionally rendered (e.g. #service-name only appears for the standalone
- * repo shape) are absent from the DOM at tour-start time.
+ * conditionally rendered (e.g. #node-version only appears for a stack that
+ * runs on Node) are absent from the DOM at tour-start time.
  */
 export function filterStepsForDom(steps: DriveStep[]): DriveStep[] {
   return steps.filter((step) => {

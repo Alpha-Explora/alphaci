@@ -6,6 +6,7 @@ import type {
   EnvLane,
   EnvOwnershipMode,
   EnvProvider,
+  EnvTargetSlot,
   RenderDeployMethod,
   RenderRuntime,
 } from "@/shared/api/contracts";
@@ -366,6 +367,109 @@ export function optionalTrim(value: string | undefined): string | undefined {
 
 export function targetBranchName(value: string | undefined): string {
   return value?.trim() || "uat";
+}
+
+function defaultProviderForSlot(slot: EnvTargetSlot): EnvProvider {
+  return slot === "frontend" ? "vercel" : "render";
+}
+
+/**
+ * Root directory for a slot, given the repo shape.
+ *
+ * Only the microservices scaffold has backend/ and frontend/ directories. A
+ * single-app repo carries its service at the root, and each multi-repo
+ * repository carries a flat standalone scaffold. Defaulting every backend slot
+ * to "backend" pointed Render at a folder that does not exist, and the deploy
+ * failed after a green build.
+ */
+function defaultRootDirectory(slot: EnvTargetSlot, repoShapeId: string | undefined): string {
+  return repoShapeId === "microservices" ? slot : ".";
+}
+
+/**
+ * The hosted target a slot starts with. The build and start commands, runtime
+ * and deploy method are still sent as before, but the wizard no longer shows
+ * them: a centrally managed Render service always deploys the image the
+ * pipeline builds from ./Dockerfile, and the backend ignores those fields.
+ */
+export function defaultProvisioningTarget(
+  slot: EnvTargetSlot,
+  projectName: string,
+  repoShapeId?: string,
+): DeploymentProvisioningTargetRequest {
+  const normalizedSlot: EnvTargetSlot = slot === "frontend" ? "frontend" : "backend";
+  const provider = defaultProviderForSlot(normalizedSlot);
+  const render = provider === "render";
+  return {
+    slot: normalizedSlot,
+    provider,
+    // BYO hosting is archived: every target deploys on the platform's
+    // centralized Render/Vercel accounts.
+    ownershipMode: "flowci_managed",
+    projectName,
+    branchName: "uat",
+    rootDirectory: defaultRootDirectory(normalizedSlot, repoShapeId),
+    buildCommand: render ? "npm ci && npm run build" : "npm run build",
+    startCommand: render ? "npm run start:prod" : undefined,
+    renderDeployMethod: render ? "native_git" : undefined,
+    renderServiceType: render ? "web_service" : undefined,
+    renderRuntime: render ? "docker" : undefined,
+    renderInstanceType: render ? "free" : undefined,
+    // Preview with no branch named: the wizard means "the branch this target
+    // tracks", which the backend resolves from the target itself.
+    env: [{ lane: "preview" as const, vars: [] }],
+  };
+}
+
+function sameSlots(
+  targets: readonly DeploymentProvisioningTargetRequest[],
+  seeds: readonly { slot: EnvTargetSlot }[],
+): boolean {
+  return (
+    targets.length === seeds.length &&
+    targets.every((target, index) => target.slot === seeds[index]?.slot)
+  );
+}
+
+/**
+ * The hosted targets after the repository name, shape or stack changed.
+ *
+ * Same slots: every target keeps what was typed into it (variables, region),
+ * and a name still equal to the old default (or empty) follows the new one; a
+ * name the person changed stays. Different slots: fresh default targets.
+ */
+export function reseedTargets(
+  targets: readonly DeploymentProvisioningTargetRequest[],
+  previous: readonly { slot: EnvTargetSlot; projectName: string }[],
+  next: readonly { slot: EnvTargetSlot; projectName: string }[],
+  repoShapeId?: string,
+): DeploymentProvisioningTargetRequest[] {
+  if (!sameSlots(targets, next)) {
+    return next.map((seed) => defaultProvisioningTarget(seed.slot, seed.projectName, repoShapeId));
+  }
+  return targets.map((target, index) => {
+    const name = target.projectName ?? "";
+    const followsDefault = name === "" || name === (previous[index]?.projectName ?? "");
+    return followsDefault ? { ...target, projectName: next[index]?.projectName ?? name } : target;
+  });
+}
+
+/**
+ * Where a target's variables are written: the branch the target tracks (the
+ * preview lane), or the provider's production environment.
+ */
+export function variableLaneLabel(
+  lane: EnvLane,
+  target: DeploymentProvisioningTargetRequest,
+): string {
+  return lane === "production"
+    ? "Production"
+    : `${activeBranch(target.branchName)} branch`;
+}
+
+/** The provider's word for what it creates: a Render service, a Vercel project. */
+export function targetNameLabel(target: DeploymentProvisioningTargetRequest): string {
+  return target.provider === "vercel" ? "Project name" : "Service name";
 }
 
 export function sanitizeProvisioningTarget(

@@ -10,57 +10,11 @@ import type {
   EnvProvider,
   EnvTargetSlot,
 } from "@/shared/api/contracts";
-import { sanitizeProvisioningTarget } from "../model/deployment-provisioning-rules";
-
-function defaultProviderForSlot(slot: EnvTargetSlot): EnvProvider {
-  return slot === "frontend" ? "vercel" : "render";
-}
-
-/**
- * Root directory for a slot, given the repo shape.
- *
- * Only the microservices scaffold has backend/ and frontend/ directories. A
- * single-app repo carries its service at the root, and each multi-repo
- * repository carries a flat standalone scaffold. Defaulting every backend slot
- * to "backend" pointed Render at a folder that does not exist, and the deploy
- * failed after a green build.
- */
-function defaultRootDirectory(
-  slot: EnvTargetSlot,
-  repoShapeId: string | undefined,
-): string {
-  return repoShapeId === "microservices" ? slot : ".";
-}
-
-function defaultTarget(
-  slot: EnvTargetSlot,
-  projectName: string,
-  repoShapeId?: string,
-): DeploymentProvisioningTargetRequest {
-  const normalizedSlot: EnvTargetSlot =
-    slot === "frontend" ? "frontend" : "backend";
-  const provider = defaultProviderForSlot(normalizedSlot);
-  return {
-    slot: normalizedSlot,
-    provider,
-    // BYO hosting is archived: every target deploys on the platform's
-    // centralized Render/Vercel accounts.
-    ownershipMode: "flowci_managed",
-    projectName,
-    branchName: "uat",
-    rootDirectory: defaultRootDirectory(normalizedSlot, repoShapeId),
-    buildCommand:
-      provider === "render" ? "npm ci && npm run build" : "npm run build",
-    startCommand: provider === "render" ? "npm run start:prod" : undefined,
-    renderDeployMethod: provider === "render" ? "native_git" : undefined,
-    renderServiceType: provider === "render" ? "web_service" : undefined,
-    renderRuntime: provider === "render" ? "docker" : undefined,
-    renderInstanceType: provider === "render" ? "free" : undefined,
-    // Preview with no branch named: the wizard means "the branch this target
-    // tracks", which the backend resolves from the target itself.
-    env: [{ lane: "preview" as const, vars: [] }],
-  };
-}
+import {
+  defaultProvisioningTarget,
+  reseedTargets,
+  sanitizeProvisioningTarget,
+} from "../model/deployment-provisioning-rules";
 
 function sanitizedEnvSets(
   envSets: DeploymentProvisioningEnvSet[] | undefined,
@@ -154,17 +108,79 @@ function countRenderVariables(
   return branchVarCount + groupVarCount;
 }
 
-export function useDeploymentProvisioningForm(repoShapeId?: string) {
+/** The provisioning request as sent: empty variables dropped, targets trimmed. */
+function hostedPayloadFor(request: DeploymentProvisioningRequest): DeploymentProvisioningRequest {
+  const sharedEnv = sanitizedEnvSets(request.sharedEnv);
+  const activeProviders = new Set(request.targets.map((target) => target.provider));
+  const variableGroups = sanitizedVariableGroups(request.variableGroups, activeProviders);
+  const targets = request.targets.map((target) => ({
+    ...sanitizeProvisioningTarget(target),
+    env: sanitizedEnvSets(target.env),
+  }));
+  return {
+    ...request,
+    enabled: true,
+    ...(variableGroups.length ? { variableGroups } : { variableGroups: undefined }),
+    ...(sharedEnv.length ? { sharedEnv } : { sharedEnv: undefined }),
+    targets,
+  };
+}
+
+/** The hosted targets a form starts with, and keeps named after the repository. */
+export interface ProvisioningSeed {
+  slot: EnvTargetSlot;
+  projectName: string;
+}
+
+function seedKey(repoShapeId: string | undefined, seeds: readonly ProvisioningSeed[]): string {
+  return `${repoShapeId ?? ""}|${seeds.map((seed) => `${seed.slot}:${seed.projectName}`).join(",")}`;
+}
+
+function initialTargets(
+  repoShapeId: string | undefined,
+  seeds: readonly ProvisioningSeed[] | undefined,
+): DeploymentProvisioningTargetRequest[] {
+  if (!seeds?.length) return [defaultProvisioningTarget("backend", "", repoShapeId)];
+  return seeds.map((seed) => defaultProvisioningTarget(seed.slot, seed.projectName, repoShapeId));
+}
+
+export function useDeploymentProvisioningForm(
+  repoShapeId?: string,
+  options: {
+    /**
+     * The default targets for the current repository name, shape and stack.
+     * When they change, the targets follow (see reseedTargets): what was typed
+     * into a target is kept, and only a name nobody edited is renamed.
+     */
+    seeds?: readonly ProvisioningSeed[];
+  } = {},
+) {
+  const { seeds } = options;
   const [enabled, setEnabled] = useState(false);
-  const [request, setRequest] = useState<DeploymentProvisioningRequest>({
+  const [request, setRequest] = useState<DeploymentProvisioningRequest>(() => ({
     enabled: false,
-    targets: [defaultTarget("backend", "", repoShapeId)],
-  });
+    targets: initialTargets(repoShapeId, seeds),
+  }));
+  const [seeded, setSeeded] = useState(() => ({
+    key: seeds ? seedKey(repoShapeId, seeds) : "",
+    seeds: seeds ?? [],
+  }));
+
+  // State derived from a changing input, applied while rendering.
+  const nextKey = seeds ? seedKey(repoShapeId, seeds) : seeded.key;
+  if (seeds && nextKey !== seeded.key) {
+    const previous = seeded.seeds;
+    setSeeded({ key: nextKey, seeds });
+    setRequest((current) => ({
+      ...current,
+      targets: reseedTargets(current.targets, previous, seeds, repoShapeId),
+    }));
+  }
 
   function setDefaultTarget(slot: EnvTargetSlot, projectName: string) {
     setRequest({
       enabled: true,
-      targets: [defaultTarget(slot, projectName, repoShapeId)],
+      targets: [defaultProvisioningTarget(slot, projectName, repoShapeId)],
     });
     setEnabled(true);
   }
@@ -175,60 +191,34 @@ export function useDeploymentProvisioningForm(repoShapeId?: string) {
     setRequest({
       enabled: true,
       targets: targets.map((target) =>
-        defaultTarget(target.slot, target.projectName, repoShapeId),
+        defaultProvisioningTarget(target.slot, target.projectName, repoShapeId),
       ),
     });
     setEnabled(true);
   }
 
-  const payload = useMemo<DeploymentProvisioningRequest | undefined>(() => {
-    if (!enabled) {
-      return undefined;
-    }
+  /** The request as sent when hosting is on, whether or not it is on now. */
+  const hostedPayload = useMemo(() => hostedPayloadFor(request), [request]);
+  const payload = enabled ? hostedPayload : undefined;
 
-    const sharedEnv = sanitizedEnvSets(request.sharedEnv);
-    const activeProviders = new Set(
-      request.targets.map((target) => target.provider),
-    );
-    const variableGroups = sanitizedVariableGroups(
-      request.variableGroups,
-      activeProviders,
-    );
-
-    const targets = request.targets.map((target) => ({
-      ...sanitizeProvisioningTarget(target),
-      env: sanitizedEnvSets(target.env),
-    }));
-
-    return {
-      ...request,
-      enabled: true,
-      ...(variableGroups.length
-        ? { variableGroups }
-        : { variableGroups: undefined }),
-      ...(sharedEnv.length ? { sharedEnv } : { sharedEnv: undefined }),
-      targets,
-    };
-  }, [enabled, request]);
-
-  const renderVariableCount = useMemo(() => {
-    if (!payload) {
-      return 0;
-    }
-
-    return countRenderVariables(
-      payload.targets,
-      payload.variableGroups ?? [],
-    );
-  }, [payload]);
-  const renderVariablesRequired = Boolean(
-    payload?.targets.some((target) => target.provider === "render"),
+  const hostedRenderVariableCount = useMemo(
+    () => countRenderVariables(hostedPayload.targets, hostedPayload.variableGroups ?? []),
+    [hostedPayload],
   );
-  const renderVariablesMissing =
-    renderVariablesRequired && renderVariableCount === 0;
+  const hostedRenderVariablesRequired = hostedPayload.targets.some(
+    (target) => target.provider === "render",
+  );
+  /** Render deploys with no variable at all, were hosting on. */
+  const hostedRenderVariablesMissing =
+    hostedRenderVariablesRequired && hostedRenderVariableCount === 0;
+  const renderVariableCount = enabled ? hostedRenderVariableCount : 0;
+  const renderVariablesRequired = enabled && hostedRenderVariablesRequired;
+  const renderVariablesMissing = enabled && hostedRenderVariablesMissing;
 
   return {
     enabled,
+    hostedPayload,
+    hostedRenderVariablesMissing,
     payload,
     renderVariableCount,
     renderVariablesMissing,

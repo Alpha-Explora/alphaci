@@ -60,24 +60,6 @@ describe("getProjectTourSteps", () => {
     expect(step).toBeDefined();
   });
 
-  it("includes a step for the service name input", () => {
-    const steps = getProjectTourSteps();
-    const step = steps.find((s) => s.element === "#service-name");
-    expect(step).toBeDefined();
-  });
-
-  it("includes a step for the service path input", () => {
-    const steps = getProjectTourSteps();
-    const step = steps.find((s) => s.element === "#service-path");
-    expect(step).toBeDefined();
-  });
-
-  it("includes a step for the output file name input", () => {
-    const steps = getProjectTourSteps();
-    const step = steps.find((s) => s.element === "#output-file-name");
-    expect(step).toBeDefined();
-  });
-
   it("includes a step for the node version selector", () => {
     const steps = getProjectTourSteps();
     const step = steps.find((s) => s.element === "#node-version");
@@ -90,11 +72,14 @@ describe("getProjectTourSteps", () => {
     expect(step).toBeDefined();
   });
 
-  it("includes a step for the test toggles container", () => {
-    const steps = getProjectTourSteps();
-    const step = steps.find((s) => s.element === "[data-tour='test-toggles']");
-    expect(step).toBeDefined();
-  });
+  /* The Repository step no longer asks for a service name or path, and the
+   * Automation step no longer offers a workflow file name or check chips. */
+  it.each(["#service-name", "#service-path", "#output-file-name", "[data-tour='test-toggles']"])(
+    "has no step for the removed %s field",
+    (selector) => {
+      expect(getProjectTourSteps().some((step) => step.element === selector)).toBe(false);
+    },
+  );
 
   it("final step targets the Create button", () => {
     const steps = getProjectTourSteps();

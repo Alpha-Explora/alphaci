@@ -205,6 +205,60 @@ export function applicableTargetProject(
   return null;
 }
 
+/**
+ * The team the repository is created in. A known Project (a resolved
+ * `?project=` link, else the one a Developer picked) decides it: the backend
+ * needs `workspaceId` and the Project must belong to it, so it is the
+ * Project's own team. Only with no Project known does the team picker's
+ * selection apply.
+ */
+export function createWorkspaceId(
+  linked: ResolvedTargetProject | null,
+  chosen: ResolvedTargetProject | null,
+  selectedWorkspaceId: string | null,
+): string | null {
+  return linked?.groupId ?? chosen?.groupId ?? selectedWorkspaceId;
+}
+
+/** What the wizard derives from the linked and picked Projects and the team pick. */
+export interface CreateTargetView {
+  /** The team the repository is created in: a known Project's own, else the pick. */
+  workspaceId: string | null;
+  /** Whether a Project is known (linked or picked), so no team is asked for. */
+  projectKnown: boolean;
+  /** Whether the known Project was picked in the wizard (and can be un-picked). */
+  projectChosen: boolean;
+  /** "Team / Project" for the known Project, or null when none applies. */
+  label: string | null;
+  /** The linked Project's own name (a fixed line in the wizard), else null. */
+  linkedProjectName: string | null;
+  /** The Project's own name while the repository joins one (linked or picked), else null. */
+  joinedProjectName: string | null;
+  /** The Project picked in the wizard, or null. */
+  chosenProjectId: string | null;
+}
+
+export function createTargetView(input: {
+  /** The resolved `?project=` link's Project, only on a wizard link. */
+  linked: ResolvedTargetProject | null;
+  chosen: ResolvedTargetProject | null;
+  selectedWorkspaceId: string | null;
+  workspaces: ReadonlyArray<{ id: string; name: string }> | null;
+}): CreateTargetView {
+  const { linked, chosen, workspaces } = input;
+  const workspaceId = createWorkspaceId(linked, chosen, input.selectedWorkspaceId);
+  const applicable = applicableTargetProject(linked, chosen, workspaceId);
+  return {
+    workspaceId,
+    projectKnown: applicable !== null,
+    projectChosen: applicable !== null && applicable === chosen,
+    label: targetProjectLabel(applicable, workspaceId, workspaces),
+    linkedProjectName: joinedProjectName(linked, workspaceId),
+    joinedProjectName: joinedProjectName(applicable, workspaceId),
+    chosenProjectId: effectiveDeliveryProjectId(chosen, workspaceId) ?? null,
+  };
+}
+
 /** The create payload, owned by the team (and Project) it is created in. */
 export function scopeCreatePayload<T extends object>(
   payload: T,
