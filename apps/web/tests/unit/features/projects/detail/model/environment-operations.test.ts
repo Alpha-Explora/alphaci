@@ -1,5 +1,6 @@
 import {
   buildEnvironmentRows,
+  canPromoteEnvironment,
   type DeploymentProviderSummary,
   type EnvironmentDeployment,
   type ProjectEnvironment,
@@ -187,5 +188,16 @@ describe("buildEnvironmentRows", () => {
       kind: "unavailable",
       reason: "A deployment is in progress.",
     });
+  });
+});
+
+describe("canPromoteEnvironment", () => {
+  it("allows all hosting managers and developers outside production only", () => {
+    expect(canPromoteEnvironment("admin", true)).toBe(true);
+    expect(canPromoteEnvironment("lead", true)).toBe(true);
+    expect(canPromoteEnvironment("member", false)).toBe(true);
+    expect(canPromoteEnvironment("member", true)).toBe(false);
+    expect(canPromoteEnvironment("qa", false)).toBe(false);
+    expect(canPromoteEnvironment(undefined, false)).toBe(false);
   });
 });

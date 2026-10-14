@@ -46,7 +46,12 @@ type TabProps = Readonly<{
 export function HostingTab({ project, vm }: TabProps) {
   return (
     <div className="hosting-tab">
-      <EnvironmentOperationsPanel projectId={project.id} targets={vm.deploymentTargets} />
+      <EnvironmentOperationsPanel
+        appRole={vm.appRole}
+        onTargetCreated={vm.handleTargetCreated}
+        projectId={project.id}
+        targets={vm.deploymentTargets}
+      />
       <HostingContent project={project} vm={vm} />
     </div>
   );

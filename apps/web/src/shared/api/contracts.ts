@@ -268,9 +268,11 @@ export interface DeploymentTarget {
 
 export interface CreateDeploymentTargetRequest {
   action: "create" | "register_existing";
+  /** Project environment this target deploys; omitted for the legacy branch path. */
+  environmentId?: string;
   slot: EnvTargetSlot;
   ownershipMode: EnvOwnershipMode;
-  provider: EnvProvider;
+  provider: DeploymentTargetProvider;
   providerConnectionId?: string;
   providerProjectId?: string;
   providerProjectName?: string;

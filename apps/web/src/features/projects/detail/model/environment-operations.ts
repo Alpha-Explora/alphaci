@@ -1,4 +1,5 @@
 import type { DeploymentTarget } from "@/shared/api/contracts";
+import type { AppRole } from "@/shared/api/contracts";
 import { providerDisplayName, providerPublicUrl } from "./provider-urls";
 
 /**
@@ -73,6 +74,7 @@ export interface EnvironmentDeploymentEntry {
 
 export interface EnvironmentTargetRow {
   id: string;
+  provider: DeploymentTarget["provider"];
   slot: string;
   providerLabel: string;
   name: string;
@@ -101,6 +103,15 @@ const IN_FLIGHT: ReadonlySet<EnvironmentDeploymentStatus> = new Set([
   "pending",
   "deploying",
 ]);
+
+/** Roles allowed to promote environment releases under the backend policy. */
+export function canPromoteEnvironment(
+  appRole: AppRole | null | undefined,
+  production: boolean,
+): boolean {
+  if (appRole === "admin" || appRole === "lead") return true;
+  return !production && appRole === "member";
+}
 
 export function buildEnvironmentRows(input: {
   environments: readonly ProjectEnvironment[];
@@ -244,6 +255,7 @@ function targetRow(
 ): EnvironmentTargetRow {
   return {
     id: target.id,
+    provider: target.provider,
     slot: target.slot,
     providerLabel:
       providerSummary(target.provider, providers)?.label ??

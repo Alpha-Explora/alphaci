@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 
-import type { DeploymentTarget } from "@/shared/api/contracts";
+import type { AppRole, DeploymentTarget, EnvTargetSlot } from "@/shared/api/contracts";
 import {
   deploymentStatusLabel,
   shortCommit,
@@ -22,8 +22,15 @@ import {
 export function EnvironmentOperationsPanel({
   projectId,
   targets,
-}: Readonly<{ projectId: string; targets: readonly DeploymentTarget[] }>) {
-  const vm = useEnvironmentOperationsViewModel({ projectId, targets });
+  appRole,
+  onTargetCreated,
+}: Readonly<{
+  projectId: string;
+  targets: readonly DeploymentTarget[];
+  appRole?: AppRole | null;
+  onTargetCreated?: (target: DeploymentTarget) => void;
+}>) {
+  const vm = useEnvironmentOperationsViewModel({ projectId, targets, appRole, onTargetCreated });
   if (vm.status === "loading") {
     return <p className="env-empty-state">Loading environments...</p>;
   }
@@ -74,6 +81,7 @@ function EnvironmentCard({
       <PromotionControl row={row} vm={vm} />
       <EnvironmentMessageLine environmentId={environment.id} vm={vm} />
       <HostRegistration row={row} vm={vm} />
+      <OnpremTargetSetup row={row} vm={vm} />
       <DeploymentHistory entries={row.history} />
     </article>
   );
@@ -170,6 +178,15 @@ function PromotionControl({
       </p>
     );
   }
+  if (!vm.canPromote(environment.role === "production")) {
+    return (
+      <p className="env-empty-state" style={{ margin: 0 }}>
+        {environment.role === "production"
+          ? "Only product owners and admins can promote to production."
+          : "This role cannot promote releases."}
+      </p>
+    );
+  }
   const confirming = vm.confirmingEnvironmentId === environment.id;
   return (
     <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
@@ -219,7 +236,7 @@ function HostRegistration({
   vm,
 }: Readonly<{ row: EnvironmentRow; vm: EnvironmentOperationsViewModel }>) {
   const [name, setName] = useState("");
-  if (!vm.hostsEnabled || !row.hostDelivered) return null;
+  if (!vm.hostsEnabled || !vm.canManageHosts || !row.hostDelivered) return null;
   const environmentId = row.environment.id;
   if (vm.hostToken?.environmentId === environmentId) {
     return (
@@ -253,6 +270,65 @@ function HostRegistration({
         type="submit"
       >
         Register host
+      </button>
+    </form>
+  );
+}
+
+function OnpremTargetSetup({
+  row,
+  vm,
+}: Readonly<{ row: EnvironmentRow; vm: EnvironmentOperationsViewModel }>) {
+  const [slot, setSlot] = useState<EnvTargetSlot>("standalone");
+  const [name, setName] = useState("");
+  if (
+    !vm.hostsEnabled ||
+    !vm.canManageHosts ||
+    row.targets.some((target) => target.provider !== "onprem-compose")
+  ) {
+    return null;
+  }
+  const slots: EnvTargetSlot[] = ["backend", "frontend", "standalone"];
+  const available = slots.filter(
+    (candidate) => !row.targets.some((target) => target.slot === candidate),
+  );
+  if (available.length === 0) return null;
+  const selectedSlot = available.includes(slot) ? slot : available[0];
+  return (
+    <form
+      aria-label={`Add on-prem target to ${row.environment.displayName}`}
+      onSubmit={(event) => {
+        event.preventDefault();
+        void vm.addOnpremTarget(row.environment.id, selectedSlot, name.trim());
+      }}
+      style={{ display: "flex", gap: "0.5rem", alignItems: "center", flexWrap: "wrap" }}
+    >
+      <label>
+        On-prem slot{" "}
+        <select
+          aria-label={`On-prem slot for ${row.environment.displayName}`}
+          onChange={(event) => setSlot(event.target.value as EnvTargetSlot)}
+          value={selectedSlot}
+        >
+          {available.map((candidate) => (
+            <option key={candidate} value={candidate}>{candidate}</option>
+          ))}
+        </select>
+      </label>
+      <label>
+        Host label{" "}
+        <input
+          aria-label={`On-prem host label for ${row.environment.displayName}`}
+          onChange={(event) => setName(event.target.value)}
+          value={name}
+        />
+      </label>
+      <button
+        className="ghost-button"
+        disabled={!name.trim() || vm.busyEnvironmentId !== null}
+        type="submit"
+      >
+        Add on-prem target
       </button>
     </form>
   );

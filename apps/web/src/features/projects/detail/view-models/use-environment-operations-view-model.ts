@@ -2,12 +2,13 @@
 
 import { useEffect, useRef, useState } from "react";
 
-import type { DeploymentTarget } from "@/shared/api/contracts";
+import type { AppRole, DeploymentTarget, EnvTargetSlot } from "@/shared/api/contracts";
 import type { ProjectStatus } from "../../model/projects-types";
 import {
   getDeploymentProviders,
   getProjectEnvironments,
   getProjectReleases,
+  createOnpremEnvironmentTarget,
   promoteRelease,
   registerOnpremHost,
 } from "../data/environments-api";
@@ -19,6 +20,7 @@ import {
   type EnvironmentRow,
   type ProjectEnvironment,
   type ProjectRelease,
+  canPromoteEnvironment,
 } from "../model/environment-operations";
 
 export interface EnvironmentMessage {
@@ -34,6 +36,8 @@ export interface EnvironmentOperationsViewModel {
   releasesNote: string | null;
   rows: EnvironmentRow[];
   hostsEnabled: boolean;
+  canManageHosts: boolean;
+  canPromote: (production: boolean) => boolean;
   busyEnvironmentId: string | null;
   confirmingEnvironmentId: string | null;
   message: EnvironmentMessage | null;
@@ -41,6 +45,11 @@ export interface EnvironmentOperationsViewModel {
   promote: (row: EnvironmentRow) => Promise<void>;
   cancelPromotion: () => void;
   registerHost: (environmentId: string, name: string) => Promise<void>;
+  addOnpremTarget: (
+    environmentId: string,
+    slot: EnvTargetSlot,
+    name: string,
+  ) => Promise<void>;
   dismissHostToken: () => void;
 }
 
@@ -74,8 +83,10 @@ async function loadOperations(projectId: string): Promise<Loaded> {
 export function useEnvironmentOperationsViewModel(options: {
   projectId: string;
   targets: readonly DeploymentTarget[];
+  appRole?: AppRole | null;
+  onTargetCreated?: (target: DeploymentTarget) => void;
 }): EnvironmentOperationsViewModel {
-  const { projectId, targets } = options;
+  const { projectId, targets, appRole, onTargetCreated } = options;
   const [status, setStatus] = useState<ProjectStatus>("loading");
   const [loaded, setLoaded] = useState<Loaded | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -169,19 +180,56 @@ export function useEnvironmentOperationsViewModel(options: {
     }
   }
 
+  async function addOnpremTarget(
+    environmentId: string,
+    slot: EnvTargetSlot,
+    name: string,
+  ) {
+    setBusyEnvironmentId(environmentId);
+    setMessage(null);
+    try {
+      const target = await createOnpremEnvironmentTarget(projectId, {
+        environmentId,
+        slot,
+        name,
+      });
+      onTargetCreated?.(target);
+      setMessage({
+        environmentId,
+        tone: "info",
+        text: `${slot} on-prem target added. Register a host to receive releases.`,
+      });
+      setReloads((count) => count + 1);
+    } catch (error) {
+      setMessage({
+        environmentId,
+        tone: "error",
+        text: apiErrorReason(error, "Unable to add the on-prem target."),
+      });
+    } finally {
+      setBusyEnvironmentId(null);
+    }
+  }
+
   return {
     status,
     loadError,
     releasesNote: loaded?.releasesNote ?? null,
     rows,
     hostsEnabled: loaded ? onpremHostsEnabled(loaded.providers) : false,
+    canManageHosts: appRole === "member" || appRole === "admin",
+    canPromote: (production) => canPromoteEnvironment(appRole, production),
     busyEnvironmentId,
     confirmingEnvironmentId,
     message,
     hostToken,
-    promote,
+    promote: async (row) => {
+      if (!canPromoteEnvironment(appRole, row.environment.role === "production")) return;
+      await promote(row);
+    },
     cancelPromotion: () => setConfirmingEnvironmentId(null),
     registerHost,
+    addOnpremTarget,
     dismissHostToken: () => setHostToken(null),
   };
 }

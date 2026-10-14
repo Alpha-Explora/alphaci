@@ -1,6 +1,10 @@
 import { request } from "@/shared/api/request";
 
 import type {
+  CreateDeploymentTargetRequest,
+  DeploymentTarget,
+} from "@/shared/api/contracts";
+import type {
   DeploymentProviderSummary,
   EnvironmentDeployment,
   ProjectEnvironment,
@@ -51,5 +55,24 @@ export function registerOnpremHost(
   return request<{ id: string; name: string; token: string }>(
     `${projectPath(projectId)}/environments/${encodeURIComponent(environmentId)}/hosts`,
     { method: "POST", body: JSON.stringify({ name }) },
+  );
+}
+
+/** Attach an on-prem Compose slot to a project environment. */
+export function createOnpremEnvironmentTarget(
+  projectId: string,
+  input: { environmentId: string; slot: "backend" | "frontend" | "standalone"; name: string },
+): Promise<DeploymentTarget> {
+  const body: CreateDeploymentTargetRequest = {
+    action: "create",
+    environmentId: input.environmentId,
+    slot: input.slot,
+    ownershipMode: "byo",
+    provider: "onprem-compose",
+    providerProjectName: input.name,
+  };
+  return request<DeploymentTarget>(
+    `${projectPath(projectId)}/deployment-targets`,
+    { method: "POST", body: JSON.stringify(body) },
   );
 }
