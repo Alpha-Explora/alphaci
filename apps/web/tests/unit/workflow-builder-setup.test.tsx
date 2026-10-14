@@ -89,6 +89,11 @@ jest.mock("../../src/features/workflows/studio/data/github-api", () => ({
 jest.mock("../../src/features/workflows/studio/data/env-provisioning-api", () => ({
   listProviderConnections: jest.fn(),
 }));
+// Which deployment providers exist. Empty by default: an older backend that
+// does not list on-prem, so every test outside "On-prem hosting" sees today's wizard.
+jest.mock("../../src/features/workflows/studio/data/deployment-providers-repository", () => ({
+  deploymentProvidersRepository: { list: jest.fn() },
+}));
 jest.mock("../../src/features/capabilities/current/data/capabilities-api", () => ({
   getCapabilities: jest.fn(),
 }));
@@ -150,6 +155,12 @@ function folders(names: Array<[string, string] | [string, string, number]>) {
     unfiled: [],
   };
 }
+
+const mockedListDeploymentProviders = (
+  jest.requireMock("../../src/features/workflows/studio/data/deployment-providers-repository") as {
+    deploymentProvidersRepository: { list: jest.Mock };
+  }
+).deploymentProvidersRepository.list;
 
 const mockedGetGroups = (
   jest.requireMock("../../src/features/groups/data/hierarchy-api") as {
@@ -370,6 +381,8 @@ function changeValue(element: HTMLInputElement | HTMLSelectElement, value: strin
   });
 }
 
+const RENDER_NOTICE = "Add at least one Render environment variable";
+
 describe("WorkflowBuilder project setup", () => {
   let container: HTMLDivElement;
   let root: Root;
@@ -378,6 +391,7 @@ describe("WorkflowBuilder project setup", () => {
     mockSearch = "";
     mockAppRole = undefined;
     mockedGetGroups.mockResolvedValue([]);
+    mockedListDeploymentProviders.mockResolvedValue([]);
     mockedListFolders.mockResolvedValue(folders([["dp-1", "testfinals"], ["dp-2", "wallet"]]));
     mockedGetCapabilities.mockResolvedValue({
       envProvisioning: {
@@ -521,6 +535,18 @@ describe("WorkflowBuilder project setup", () => {
     );
   }
 
+  /** The Delivery step's Hosting radio for a choice. */
+  function hostingRadio(value: "hosted" | "onprem" | "none"): HTMLInputElement | null {
+    return container.querySelector<HTMLInputElement>(`fieldset.wizard-hosting input[value='${value}']`);
+  }
+
+  /** Every value of one Review row: the first, then any detail lines. */
+  function reviewRow(label: string): string[] {
+    const rows = Array.from(container.querySelectorAll(".repo-wizard-review__grid > div"));
+    const row = rows.find((candidate) => candidate.querySelector("dt")?.textContent === label);
+    return Array.from(row?.querySelectorAll("dd") ?? []).map((dd) => dd.textContent ?? "");
+  }
+
   async function clickContinue() {
     await act(async () => {
       findButton("Continue")?.click();
@@ -600,10 +626,15 @@ describe("WorkflowBuilder project setup", () => {
         projectTypeId: "nextjs-app",
         workflowRecipeId: "frontend-standard-ci",
         serviceName: "demo-next-app",
+        servicePath: ".",
         outputFileName: "ci.yml",
         projectName: "Checkout platform",
+        // Every option on and Docker included, whatever the catalog says
+        // (nextjs-app defaults docker off): the chips are gone.
+        tests: { lint: true, unit: true, build: true, coverage: true, security: true, docker: true },
       }),
     );
+    expect(mockedCreateProject.mock.calls[0]![0]).not.toHaveProperty("environments");
     expect(mockedCreateGithubRepo).not.toHaveBeenCalled();
     expect(mockedGenerateWorkflow).not.toHaveBeenCalled();
     expect(container.textContent).toContain("tone/demo-next-app");
@@ -742,7 +773,7 @@ describe("WorkflowBuilder project setup", () => {
     expect(mockedCreateGithubRepo).not.toHaveBeenCalled();
   });
 
-  it("includes hosting provisioning in project creation when enabled", async () => {
+  it("sends the Vercel / Render target by default, named after the repository", async () => {
     mockedCreateProject.mockResolvedValueOnce({
       id: "project-1",
       repoFullName: "tone/orders-api",
@@ -752,8 +783,8 @@ describe("WorkflowBuilder project setup", () => {
       workflowFiles: stagedWorkflowFiles,
       githubCommitSha: "commit-sha",
       githubCommitUrl: "https://github.com/tone/orders-api/commit/commit-sha",
-      projectTypeId: "nestjs-api",
-      workflowRecipeId: "backend-api-ci",
+      projectTypeId: "nextjs-app",
+      workflowRecipeId: "frontend-standard-ci",
     });
 
     await renderBuilder();
@@ -764,15 +795,18 @@ describe("WorkflowBuilder project setup", () => {
       repoName: "orders-api",
     });
 
-    expect(container.textContent).toContain("Deployment provisioning");
-    const provisioningToggle = container.querySelector<HTMLInputElement>(
-      "input[aria-label='Provision deployment target']",
+    // One Hosting choice, Vercel / Render by default; no on/off switch.
+    expect(container.querySelector("input[aria-label='Provision deployment target']")).toBeNull();
+    expect(hostingRadio("hosted")?.checked).toBe(true);
+    expect(container.querySelector("[data-testid='setup-hosted-targets']")).not.toBeNull();
+    expect(
+      container.querySelector<HTMLInputElement>("input[aria-label='Provider project name']")?.value,
+    ).toBe("orders-api");
+    // The environments are the fixed path, read-only.
+    expect(container.querySelector("[data-testid='setup-environments']")?.textContent).toContain(
+      "devTest→uatUAT→mainProduction",
     );
-    expect(provisioningToggle).not.toBeNull();
-
-    act(() => {
-      provisioningToggle!.click();
-    });
+    expect(container.textContent).not.toContain("Define this project");
 
     await clickContinue();
     await waitForCondition(
@@ -781,6 +815,8 @@ describe("WorkflowBuilder project setup", () => {
           "[data-testid='setup-project-button']",
         ) !== null,
     );
+    expect(reviewRow("Hosting")).toEqual(["Vercel / Render", "Vercel · orders-api (frontend)"]);
+    expect(reviewRow("Environments")).toEqual(["dev → uat → main"]);
 
     await act(async () => {
       container.querySelector<HTMLButtonElement>("[data-testid='setup-project-button']")?.click();
@@ -789,24 +825,87 @@ describe("WorkflowBuilder project setup", () => {
 
     await waitForCondition(() => container.textContent?.includes("tone/orders-api") ?? false);
 
-    expect(mockedCreateProject).toHaveBeenCalledWith(
+    const sent = mockedCreateProject.mock.calls[0]![0];
+    expect(sent.deploymentProvisioning).toEqual(
       expect.objectContaining({
-        deploymentProvisioning: expect.objectContaining({
-          enabled: true,
-          targets: [
-            expect.objectContaining({
-              provider: "vercel",
-              slot: "frontend",
-              projectName: "orders-api",
-              branchName: "uat",
-            }),
-          ],
-        }),
+        enabled: true,
+        targets: [
+          expect.objectContaining({
+            provider: "vercel",
+            slot: "frontend",
+            ownershipMode: "flowci_managed",
+            projectName: "orders-api",
+            branchName: "uat",
+          }),
+        ],
       }),
     );
+    expect(sent).not.toHaveProperty("environments");
     // Back on the projects view, with the create result banner on top.
     expect(container.textContent).toContain("Project Created Successfully");
     expect(container.querySelector("h1")?.textContent).toMatch(/^Projects/);
+  });
+
+  it("holds Vercel / Render on a Render variable, and not None", async () => {
+    await renderBuilder();
+    await advanceToStep(3, { projectTypeId: "nestjs-api", repoName: "ledger" });
+
+    expect(container.textContent).toContain(RENDER_NOTICE);
+    expect(findButton("Continue")).toBeDisabled();
+
+    changeValue(container.querySelector<HTMLInputElement>("input[aria-label='Variable key 1']")!, "database_url");
+    changeValue(container.querySelector<HTMLInputElement>("input[aria-label='Variable value 1']")!, "postgres://db");
+    expect(container.textContent).not.toContain(RENDER_NOTICE);
+    expect(findButton("Continue")).not.toBeDisabled();
+
+    // None: nothing to deploy, so the rule does not apply.
+    act(() => hostingRadio("none")!.click());
+    expect(container.querySelector("[data-testid='setup-hosted-targets']")).toBeNull();
+    expect(container.querySelector("[data-testid='setup-hosting-description']")?.textContent).toBe(
+      "Only the repository and its CI workflow are created. Nothing is deployed.",
+    );
+
+    await clickContinue();
+    expect(reviewRow("Hosting")).toEqual(["None — CI workflow only"]);
+    await act(async () => {
+      container.querySelector<HTMLButtonElement>("[data-testid='setup-project-button']")?.click();
+      await Promise.resolve();
+    });
+    await waitForCondition(() => mockedCreateProject.mock.calls.length === 1);
+    const sent = mockedCreateProject.mock.calls[0]![0];
+    expect(sent.deploymentProvisioning).toEqual({ enabled: false, targets: [] });
+    expect(sent).not.toHaveProperty("environments");
+  });
+
+  it("keeps the Vercel / Render variables when switching hosting and back", async () => {
+    await renderBuilder();
+    await advanceToStep(3, { projectTypeId: "nestjs-api", repoName: "ledger" });
+    changeValue(container.querySelector<HTMLInputElement>("input[aria-label='Variable key 1']")!, "API_KEY");
+    changeValue(container.querySelector<HTMLInputElement>("input[aria-label='Variable value 1']")!, "secret");
+    act(() => hostingRadio("none")!.click());
+    act(() => hostingRadio("hosted")!.click());
+    expect(container.querySelector<HTMLInputElement>("input[aria-label='Variable key 1']")?.value).toBe("API_KEY");
+    expect(findButton("Continue")).not.toBeDisabled();
+  });
+
+  /* The Automation step asks only for the runtime and the coverage bar. */
+  it("offers no workflow checks or workflow file name on Automation", async () => {
+    await renderBuilder();
+    await advanceToStep(2, { projectTypeId: "nextjs-app", repoName: "demo-next-app" });
+    expect(container.querySelector("#coverage-threshold")).not.toBeNull();
+    expect(container.querySelector("#node-version")).not.toBeNull();
+    expect(container.querySelector("#output-file-name")).toBeNull();
+    expect(container.querySelector("[data-tour='test-toggles']")).toBeNull();
+    expect(container.querySelector("input[type='checkbox']")).toBeNull();
+  });
+
+  /* The Repository step asks for neither a service name nor a path. */
+  it("names the service after the repository, asking for neither name nor path", async () => {
+    await renderBuilder();
+    await advanceToStep(1, { projectTypeId: "nextjs-app", repoName: "Demo App" });
+    expect(container.querySelector("#service-name")).toBeNull();
+    expect(container.querySelector("#service-path")).toBeNull();
+    expect(findButton("Continue")).not.toBeDisabled();
   });
 
   /*
@@ -1369,9 +1468,11 @@ describe("WorkflowBuilder project setup", () => {
 
         expect(container.querySelector("#project-name")).toBeNull();
         expect(container.querySelector("[data-testid='setup-project-choice']")).toBeNull();
+        // The joined Project is named once, by the line above the steps.
+        expect(container.querySelector("[data-testid='setup-adding-to-project']")).toBeNull();
         expect(
-          container.querySelector("[data-testid='setup-adding-to-project']")?.textContent,
-        ).toBe("Adding to Project: loyalty");
+          container.querySelector("[data-testid='setup-target-project']")?.textContent,
+        ).toContain("loyalty");
 
         // Only the repository name stands between the user and Continue.
         changeValue(repoNameInput(), "demo-next-app");
@@ -1403,6 +1504,191 @@ describe("WorkflowBuilder project setup", () => {
         expect(findButton("Continue")).toBeDisabled();
         expect(mockedCreateProject).not.toHaveBeenCalled();
       });
+    });
+  });
+  describe("On-prem hosting", () => {
+    const ONPREM_NOTICE =
+      "Every environment runs on your on-prem host. After the project is created, register the host on the project's Hosting tab.";
+
+    async function openDeliveryStep(projectTypeId: string) {
+      await renderBuilder();
+      await advanceToStep(3, { projectTypeId, repoName: "ledger" });
+      await waitForCondition(() => hostingRadio("hosted") !== null);
+    }
+
+    function reviewValue(label: string): string | null | undefined {
+      return reviewRow(label)[0];
+    }
+
+    async function createFromReview() {
+      await act(async () => {
+        container.querySelector<HTMLButtonElement>("[data-testid='setup-project-button']")?.click();
+        await Promise.resolve();
+      });
+      await waitForCondition(() => mockedCreateProject.mock.calls.length === 1);
+      return mockedCreateProject.mock.calls[0]![0];
+    }
+
+    it("is not offered when the backend does not list it, and no environment can be edited", async () => {
+      await openDeliveryStep("nestjs-api");
+      expect(hostingRadio("onprem")).toBeNull();
+      expect(
+        Array.from(container.querySelectorAll("fieldset.wizard-hosting label")).map((label) => label.textContent),
+      ).toEqual(["Vercel / Render", "None — CI only"]);
+      expect(container.querySelector("fieldset.wizard-hosting legend")?.textContent).toBe("Hosting");
+      // The fixed path, read-only: no checkbox, Add, Remove, rename, reorder or Runs on.
+      expect(container.querySelector("[data-testid='setup-environments']")).not.toBeNull();
+      expect(container.querySelector(".wizard-delivery input[type='checkbox']")).toBeNull();
+      expect(findButton("Add environment")).toBeNull();
+      expect(container.querySelector("[aria-label='Environment 1']")).toBeNull();
+      expect(container.textContent).not.toContain("Runs on");
+    });
+
+    it("shows on-prem disabled with the server's reason when it is turned off", async () => {
+      mockedListDeploymentProviders.mockResolvedValue([
+        { id: "render", enabled: true },
+        { id: "onprem-compose", enabled: false, reason: "On-prem hosts are off in this deployment." },
+      ]);
+      await openDeliveryStep("nestjs-api");
+      await waitForCondition(() => hostingRadio("onprem") !== null);
+      expect(hostingRadio("onprem")).toBeDisabled();
+      expect(hostingRadio("hosted")).toBeChecked();
+      const note = container.querySelector("[data-testid='setup-hosting-unavailable']");
+      expect(note?.textContent).toBe(
+        "On-prem host is unavailable: On-prem hosts are off in this deployment.",
+      );
+      expect(hostingRadio("onprem")?.getAttribute("aria-describedby")).toBe(note?.id);
+    });
+
+    it("creates an on-prem project: the fixed environments, on-prem targets only", async () => {
+      mockedListDeploymentProviders.mockResolvedValue([
+        { id: "onprem-compose", enabled: true, supportedSlots: ["backend", "frontend", "standalone"] },
+      ]);
+      await openDeliveryStep("nestjs-api");
+      await waitForCondition(() => hostingRadio("onprem") !== null);
+      // Vercel / Render first: a Render target with no variable holds the step.
+      expect(container.textContent).toContain(RENDER_NOTICE);
+      expect(findButton("Continue")).toBeDisabled();
+
+      act(() => hostingRadio("onprem")!.click());
+      expect(hostingRadio("onprem")).toBeChecked();
+      expect(container.querySelector("[data-testid='setup-hosting-description']")?.textContent).toBe(ONPREM_NOTICE);
+      expect(container.querySelector("[data-testid='setup-hosted-targets']")).toBeNull();
+      expect(container.querySelector("[data-testid='setup-environments']")?.textContent).toContain(
+        "Each runs on your on-prem host.",
+      );
+      expect(container.textContent).not.toContain(RENDER_NOTICE);
+      expect(findButton("Continue")).not.toBeDisabled();
+
+      await clickContinue();
+      expect(reviewValue("Hosting")).toBe("On-prem host — dev, uat, main");
+      expect(reviewValue("Environments")).toBe("dev → uat → main");
+      const sent = await createFromReview();
+      expect(sent.deploymentProvisioning).toEqual({
+        enabled: true,
+        targets: ["dev", "uat", "main"].map((environmentSlug) => ({
+          slot: "backend",
+          provider: "onprem-compose",
+          ownershipMode: "byo",
+          environmentSlug,
+        })),
+      });
+      expect((sent as { environments?: unknown }).environments).toEqual([
+        { slug: "dev", displayName: "Test", sourceBranch: "dev", role: "non_production" },
+        { slug: "uat", displayName: "UAT", sourceBranch: "uat", role: "non_production" },
+        { slug: "main", displayName: "Production", sourceBranch: "main", role: "production" },
+      ]);
+    });
+
+    it("targets the frontend slot for a frontend stack", async () => {
+      mockedListDeploymentProviders.mockResolvedValue([{ id: "onprem-compose", enabled: true }]);
+      await openDeliveryStep("nextjs-app");
+      await waitForCondition(() => hostingRadio("onprem") !== null);
+      act(() => hostingRadio("onprem")!.click());
+      await clickContinue();
+      const sent = await createFromReview();
+      expect(sent.deploymentProvisioning?.targets.map((target) => target.slot)).toEqual([
+        "frontend",
+        "frontend",
+        "frontend",
+      ]);
+    });
+  });
+
+  describe("the team box", () => {
+    const DP = "3f2b8c1e-5a4d-4e6f-9b7a-1c2d3e4f5a6b";
+
+    beforeEach(() => {
+      mockedGetMyWorkspaces.mockResolvedValue({
+        enabled: true,
+        items: [
+          { id: "workspace-1", name: "Platform", kind: "team", role: "member" },
+          { id: "workspace-2", name: "Payments", kind: "team", role: "member" },
+        ],
+      });
+    });
+
+    it("gives way to a linked Project, whose own team is sent", async () => {
+      // No ?group=: the Project alone names the team.
+      mockSearch = `tab=setup&project=${DP}`;
+      mockedGetDeliveryProject.mockResolvedValue({
+        id: DP,
+        name: "loyalty",
+        groupId: "workspace-2",
+        status: "active",
+      });
+      await renderBuilder("member");
+      await waitForCondition(
+        () => container.querySelector("[data-testid='setup-target-project']") !== null,
+      );
+      expect(container.querySelector("[data-testid='setup-workspace-select']")).toBeNull();
+      expect(container.querySelector("[data-testid='setup-target-project']")?.textContent).toContain(
+        "Project: Payments / loyalty",
+      );
+
+      await advanceToReview({ projectTypeId: "nextjs-app", repoName: "demo-next-app", projectName: null });
+      expect(container.querySelector<HTMLButtonElement>("[data-testid='setup-project-button']")).not.toBeDisabled();
+      await act(async () => {
+        container.querySelector<HTMLButtonElement>("[data-testid='setup-project-button']")?.click();
+        await Promise.resolve();
+      });
+      await waitForCondition(() => mockedCreateProject.mock.calls.length === 1);
+      const sent = mockedCreateProject.mock.calls[0]![0];
+      expect(sent.workspaceId).toBe("workspace-2");
+      expect(sent.deliveryProjectId).toBe(DP);
+    });
+
+    it("stays only until a Developer picks the Project, which can be let go of", async () => {
+      await renderBuilder("member");
+      const teamSelect = () =>
+        container.querySelector<HTMLSelectElement>("[data-testid='setup-workspace-select']");
+      expect(teamSelect()).not.toBeNull();
+      await act(async () => {
+        changeValue(teamSelect()!, "workspace-2");
+        await Promise.resolve();
+      });
+      const select = container.querySelector<HTMLSelectElement>("#project-type-select");
+      if (select) changeValue(select, "nextjs-app");
+      await clickContinue();
+      const choice = () => container.querySelector<HTMLSelectElement>("[data-testid='setup-project-choice']");
+      await waitForCondition(() => (choice()?.options.length ?? 0) > 1);
+      expect(mockedListFolders).toHaveBeenLastCalledWith("workspace-2");
+
+      await act(async () => {
+        changeValue(choice()!, "dp-2");
+        await Promise.resolve();
+      });
+      expect(teamSelect()).toBeNull();
+      expect(container.querySelector("[data-testid='setup-target-project']")?.textContent).toContain(
+        "Project: Payments / wallet",
+      );
+
+      await act(async () => {
+        findButton("Change team")?.click();
+        await Promise.resolve();
+      });
+      expect(teamSelect()?.value).toBe("workspace-2");
+      expect(container.querySelector("[data-testid='setup-target-project']")).toBeNull();
     });
   });
 });

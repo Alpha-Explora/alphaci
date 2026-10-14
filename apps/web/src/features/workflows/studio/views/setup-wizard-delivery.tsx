@@ -1,70 +1,17 @@
 "use client";
 
-import type { EnvOwnershipMode } from "@/shared/api/contracts";
+import { useId } from "react";
+
 import { formatQuotaStatus } from "../model/workflow-studio-rules";
 import {
-  defaultProjectName,
-  projectKindToSlot,
-} from "../model/setup-tab-rules";
-import type { CreateProjectFormState } from "../view-models/use-create-project-form";
-import type { DeploymentProvisioningFormState } from "../view-models/use-deployment-provisioning-form";
-import type { ProjectOptionsCatalogState } from "../view-models/use-project-options-catalog";
+  HOSTING_DESCRIPTIONS,
+  renderVariablesBlockingFor,
+  type HostingOption,
+} from "../model/hosting-choice-rules";
+import type { HostingChoiceState } from "../view-models/use-hosting-choice";
 import { DeploymentProvisioningSetup } from "./deployment-provisioning-setup";
+import { EnvironmentsPath } from "./setup-wizard-environments";
 import type { WizardStepProps } from "./setup-wizard-props";
-
-function applyDeploymentDefaults(
-  deploymentProvisioning: DeploymentProvisioningFormState,
-  form: CreateProjectFormState,
-  projectCatalog: ProjectOptionsCatalogState,
-  selectedProjectKind: "frontend" | "backend",
-) {
-  if (projectCatalog.isMicroservicesShape || projectCatalog.isMultiRepoShape) {
-    deploymentProvisioning.setDefaultTargets([
-      {
-        slot: "backend",
-        projectName: defaultProjectName(
-          form.backendServiceName,
-          form.repoName,
-          "backend",
-        ),
-      },
-      {
-        slot: "frontend",
-        projectName: defaultProjectName(
-          form.frontendServiceName,
-          form.repoName,
-          "frontend",
-        ),
-      },
-    ]);
-    return;
-  }
-
-  deploymentProvisioning.setDefaultTarget(
-    projectKindToSlot(selectedProjectKind),
-    defaultProjectName(form.serviceName, form.repoName),
-  );
-}
-
-function handleDeploymentProvisioningEnabledChange(
-  enabled: boolean,
-  deploymentProvisioning: DeploymentProvisioningFormState,
-  form: CreateProjectFormState,
-  projectCatalog: ProjectOptionsCatalogState,
-  selectedProjectKind: "frontend" | "backend",
-) {
-  if (!enabled) {
-    deploymentProvisioning.setEnabled(false);
-    return;
-  }
-
-  applyDeploymentDefaults(
-    deploymentProvisioning,
-    form,
-    projectCatalog,
-    selectedProjectKind,
-  );
-}
 
 function QuotaNotice({
   projectQuota,
@@ -73,9 +20,9 @@ function QuotaNotice({
     return null;
   }
   return (
-    <div className="env-empty-state" role="status" style={{ marginTop: "1.25rem" }}>
+    <p className="wizard-notice" role="status">
       Project quota: {formatQuotaStatus(projectQuota)}
-    </div>
+    </p>
   );
 }
 
@@ -84,75 +31,152 @@ function RenderVariablesNotice({ missing }: Readonly<{ missing: boolean }>) {
     return null;
   }
   return (
-    <div className="env-empty-state" role="alert" style={{ marginTop: "1.25rem" }}>
+    <p className="wizard-notice wizard-notice--alert" role="alert">
       Add at least one Render environment variable before creating the repository.
-    </div>
+    </p>
   );
 }
 
-function DeliveryProvisioningPanel({
+function HostingRadio({
+  checked,
+  name,
+  noteId,
+  onSelect,
+  option,
+}: Readonly<{
+  checked: boolean;
+  name: string;
+  noteId: string;
+  onSelect: () => void;
+  option: HostingOption;
+}>) {
+  return (
+    <label className="wizard-segmented__option" data-value={option.value}>
+      <input
+        type="radio"
+        name={name}
+        value={option.value}
+        checked={checked}
+        disabled={option.disabled}
+        aria-describedby={option.reason ? noteId : undefined}
+        onChange={onSelect}
+      />
+      <span>{option.label}</span>
+    </label>
+  );
+}
+
+/**
+ * One project-wide Hosting choice: a native radio group (arrow keys move
+ * between options, a screen reader announces the group by its legend), drawn
+ * as segmented pills. An option the deployment cannot offer stays visible,
+ * disabled, with the reason beside the group.
+ */
+function HostingChoiceField({ hosting }: Readonly<{ hosting: HostingChoiceState }>) {
+  const name = useId();
+  const noteId = useId();
+  const unavailable = hosting.options.find((option) => option.reason);
+  return (
+    <fieldset className="wizard-hosting" data-tour="hosting">
+      <legend className="wizard-field__label">Hosting</legend>
+      <div className="wizard-segmented">
+        {hosting.options.map((option) => (
+          <HostingRadio
+            key={option.value}
+            checked={hosting.choice === option.value}
+            name={name}
+            noteId={noteId}
+            onSelect={() => hosting.select(option.value)}
+            option={option}
+          />
+        ))}
+      </div>
+      <p className="wizard-field__hint" data-testid="setup-hosting-description">
+        {HOSTING_DESCRIPTIONS[hosting.choice]}
+      </p>
+      {unavailable ? (
+        <p className="wizard-field__hint" id={noteId} data-testid="setup-hosting-unavailable">
+          {unavailable.label} is unavailable: {unavailable.reason}
+        </p>
+      ) : null}
+    </fieldset>
+  );
+}
+
+/** Vercel / Render on a deployment that does not offer provisioning: the backend's default. */
+function DefaultHostingNote() {
+  return (
+    <p className="wizard-notice" role="status">
+      ALPHACI sets up its default Render or Vercel target for this stack.
+    </p>
+  );
+}
+
+function HostedTargets({
   deploymentOwnershipMode,
   deploymentProvisioning,
   envProvisioningEnabled,
-  form,
   projectCatalog,
   selectedProjectKind,
-}: Readonly<{
-  deploymentOwnershipMode: EnvOwnershipMode;
-  deploymentProvisioning: DeploymentProvisioningFormState;
-  envProvisioningEnabled: boolean;
-  form: CreateProjectFormState;
-  projectCatalog: ProjectOptionsCatalogState;
-  selectedProjectKind: "frontend" | "backend";
-}>) {
+}: Readonly<
+  Pick<
+    WizardStepProps,
+    | "deploymentOwnershipMode"
+    | "deploymentProvisioning"
+    | "envProvisioningEnabled"
+    | "projectCatalog"
+    | "selectedProjectKind"
+  >
+>) {
   if (!envProvisioningEnabled) {
-    return null;
+    return <DefaultHostingNote />;
   }
-
   return (
-    <div style={{ marginTop: "1.5rem" }}>
-      <DeploymentProvisioningSetup
-        enabled={deploymentProvisioning.enabled}
-        ownershipMode={deploymentOwnershipMode}
-        repoShape={projectCatalog.selectedRepoShapeId}
-        selectedProjectKind={selectedProjectKind}
-        value={deploymentProvisioning.request}
-        onChange={deploymentProvisioning.setRequest}
-        onEnabledChange={(enabled) =>
-          handleDeploymentProvisioningEnabledChange(
-            enabled,
-            deploymentProvisioning,
-            form,
-            projectCatalog,
-            selectedProjectKind,
-          )
-        }
-      />
-    </div>
+    <DeploymentProvisioningSetup
+      ownershipMode={deploymentOwnershipMode}
+      repoShape={projectCatalog.selectedRepoShapeId}
+      selectedProjectKind={selectedProjectKind}
+      value={deploymentProvisioning.request}
+      onChange={deploymentProvisioning.setRequest}
+    />
   );
 }
 
+/**
+ * The Delivery step: where the project runs (one choice for the whole
+ * project), the fixed dev, uat, main path, and for Vercel / Render the
+ * hosting targets and their variables.
+ */
 export function SetupWizardDelivery({
   deploymentOwnershipMode,
   deploymentProvisioning,
   envProvisioningEnabled,
   form,
+  hosting,
   projectCatalog,
   projectQuota,
   selectedProjectKind,
 }: Readonly<WizardStepProps>) {
+  const renderVariablesMissing = renderVariablesBlockingFor({
+    choice: hosting.choice,
+    provisioningOffered: envProvisioningEnabled,
+    missing: deploymentProvisioning.hostedRenderVariablesMissing,
+  });
   return (
-    <>
-      <DeliveryProvisioningPanel
-        deploymentOwnershipMode={deploymentOwnershipMode}
-        deploymentProvisioning={deploymentProvisioning}
-        envProvisioningEnabled={envProvisioningEnabled}
-        form={form}
-        projectCatalog={projectCatalog}
-        selectedProjectKind={selectedProjectKind}
-      />
+    <div className="wizard-delivery">
+      <HostingChoiceField hosting={hosting} />
+      <EnvironmentsPath choice={hosting.choice} environments={form.environments} />
+      {hosting.choice === "hosted" ? (
+        <HostedTargets
+          deploymentOwnershipMode={deploymentOwnershipMode}
+          deploymentProvisioning={deploymentProvisioning}
+          envProvisioningEnabled={envProvisioningEnabled}
+          projectCatalog={projectCatalog}
+          selectedProjectKind={selectedProjectKind}
+        />
+      ) : null}
       <QuotaNotice projectQuota={projectQuota} />
-      <RenderVariablesNotice missing={deploymentProvisioning.renderVariablesMissing} />
-    </>
+      <RenderVariablesNotice missing={renderVariablesMissing} />
+    </div>
   );
 }

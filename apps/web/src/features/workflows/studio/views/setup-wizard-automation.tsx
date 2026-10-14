@@ -1,11 +1,8 @@
 "use client";
 
-import { motion } from "framer-motion";
-
-import type { MvpProjectOptionKey } from "@/shared/api/contracts";
 import { HelpTip } from "@/shared/ui/help-tip";
-import { projectOptionLabels } from "../view-models/use-project-options-catalog";
-import { labelAccentStyle, projectOptionDescriptions } from "./setup-tab-shared";
+
+import { stackRuntimeLabel } from "../model/setup-tab-rules";
 import type { WizardStepProps } from "./setup-wizard-props";
 
 function NodeVersionOptions({
@@ -30,140 +27,82 @@ function NodeVersionOptions({
   );
 }
 
-function WorkflowCheckChip({
-  option,
-  onToggle,
-}: Readonly<{
-  option: {
-    checked: boolean;
-    key: MvpProjectOptionKey;
-    supported: boolean;
-  };
-  onToggle: (key: MvpProjectOptionKey) => void;
-}>) {
-  const disabledClass = option.supported ? "" : " disabled";
-  const activeClass = option.checked ? " enhancement-chip-label--active" : "";
+/**
+ * Node version for a stack that runs on Node; for any other stack the
+ * workflow engine catalog fixes the runtime, so it is shown, not asked for.
+ * (A .NET project used to be asked for a Node version, and the review step
+ * then confirmed one back that its pipeline never receives.)
+ */
+function RuntimeField({
+  form,
+  projectCatalog,
+}: Readonly<Pick<WizardStepProps, "form" | "projectCatalog">>) {
+  const runtime = projectCatalog.selectedProjectType?.runtime ?? "node";
+  if (runtime !== "node") {
+    return (
+      <div className="wizard-field">
+        <span className="wizard-field__label">Runtime</span>
+        <span className="wizard-field__static">
+          {stackRuntimeLabel(projectCatalog.selectedProjectType)}
+        </span>
+        <p className="wizard-field__hint">The workflow catalog sets the SDK version for this stack.</p>
+      </div>
+    );
+  }
   return (
-    <motion.label
-      className={`enhancement-chip-label-premium${disabledClass}${activeClass}`}
-      htmlFor={`chip-${option.key}`}
-      title={projectOptionDescriptions[option.key]}
-      aria-label={`${projectOptionLabels[option.key]} — ${projectOptionDescriptions[option.key]}`}
-      style={option.supported ? undefined : { opacity: 0.45, cursor: "not-allowed" }}
-      whileTap={option.supported ? { scale: 0.95 } : undefined}
-      animate={option.checked ? { scale: 1 } : { scale: 1 }}
-      transition={{ type: "spring", stiffness: 500, damping: 20 }}
-    >
-      <input
-        id={`chip-${option.key}`}
-        type="checkbox"
-        checked={option.checked}
-        disabled={!option.supported}
-        onChange={() => onToggle(option.key)}
-      />
-      <span className="enhancement-chip-dot" aria-hidden="true" />
-      {projectOptionLabels[option.key]}
-    </motion.label>
+    <div className="wizard-field">
+      <label className="wizard-field__label" htmlFor="node-version">
+        Node version
+      </label>
+      <select
+        id="node-version"
+        value={form.nodeVersion}
+        onChange={(event) => form.setNodeVersion(event.target.value)}
+        className="premium-input"
+      >
+        <NodeVersionOptions versions={projectCatalog.nodeVersions} />
+      </select>
+      <p className="wizard-field__hint">The Node.js version the CI runner uses.</p>
+    </div>
   );
 }
 
+/**
+ * The Automation step: the runtime and the coverage bar. The workflow's
+ * checks come from the recipe, and every project gets a Dockerfile (managed
+ * Render and on-prem deploys build it), so neither is a choice here.
+ */
 export function SetupWizardAutomation({
   form,
   projectCatalog,
 }: Readonly<WizardStepProps>) {
-  // The catalog declares the runtime per stack ('node', 'dotnet', ...). Reading
-  // it here keeps the form from offering a choice the pipeline will not honour:
-  // a non-Node stack takes its runtime version from the catalog, so there is
-  // nothing here for the user to pick.
-  const runtime = projectCatalog.selectedProjectType?.runtime ?? "node";
-  const runsOnNode = runtime === "node";
-  const runtimeLabel = projectCatalog.selectedProjectType?.language ?? runtime;
-
   return (
-    <>
-      <div style={{ marginTop: "1.5rem" }}>
-        <label className="input-label" htmlFor="output-file-name" style={labelAccentStyle}>
-          Workflow file name
+    <div className="wizard-grid">
+      <RuntimeField form={form} projectCatalog={projectCatalog} />
+      <div className="wizard-field">
+        <label className="wizard-field__label" htmlFor="coverage-threshold">
+          Coverage
+          <HelpTip text="The minimum percentage of code that unit tests must exercise. Pipeline runs fail the Quality stage if coverage drops below this number." />
         </label>
-        <input
-          id="output-file-name"
-          value={form.outputFileName}
-          onChange={(event) => form.setOutputFileName(event.target.value)}
-          placeholder="ci.yml"
+        <select
+          id="coverage-threshold"
+          value={form.coverageThreshold}
+          onChange={(event) => form.setCoverageThreshold(event.target.value)}
           className="premium-input"
-        />
-      </div>
-
-      <div className="form-pair-row" style={{ marginTop: "1.5rem", gap: "1rem" }}>
-        {/*
-          Only shown for stacks that run on Node. The field used to render for
-          every stack, so a .NET project was asked to choose a Node version and
-          the review step then confirmed one back. A non-Node stack takes its
-          runtime version from the workflow engine catalog instead, which is
-          why there is nothing to pick here.
-        */}
-        {runsOnNode ? (
-          <div>
-            <label className="input-label" htmlFor="node-version" style={labelAccentStyle}>
-              Node version
-            </label>
-            <select
-              id="node-version"
-              value={form.nodeVersion}
-              onChange={(event) => form.setNodeVersion(event.target.value)}
-              className="premium-input"
-            >
-              <NodeVersionOptions versions={projectCatalog.nodeVersions} />
-            </select>
-          </div>
-        ) : (
-          <div>
-            <label className="input-label" style={labelAccentStyle}>
-              Runtime
-            </label>
-            <div className="premium-input" aria-readonly="true">
-              {runtimeLabel}
-            </div>
-          </div>
-        )}
-        <div>
-          <label className="input-label" htmlFor="coverage-threshold" style={labelAccentStyle}>
-            Coverage
-            <HelpTip text="The minimum percentage of code that unit tests must exercise. Pipeline runs fail the Quality stage if coverage drops below this number." />
-          </label>
-          <select
-            id="coverage-threshold"
-            value={form.coverageThreshold}
-            onChange={(event) => form.setCoverageThreshold(event.target.value)}
-            className="premium-input"
-          >
-            <option value="0">None (0%)</option>
-            <option value="60">Basic (60%)</option>
-            <option value="80">Standard (80%)</option>
-            <option value="90">Strict (90%)</option>
-            <option value="100">Full (100%)</option>
-          </select>
-        </div>
-      </div>
-
-      <div style={{ marginTop: "1.5rem" }}>
-        <span
-          className="input-label"
-          style={{ ...labelAccentStyle, marginTop: 0, marginBottom: "0.6rem", display: "block" }}
         >
-          Workflow checks
-        </span>
-        <div data-tour="test-toggles" className="enhancement-chips" aria-label="Workflow checks" role="group" style={{ gap: "0.5rem", flexWrap: "wrap" }}>
-          {projectCatalog.supportedTestOptions.map((option) => (
-            <WorkflowCheckChip
-              key={option.key}
-              option={option}
-              onToggle={projectCatalog.toggleTestOption}
-            />
-          ))}
-        </div>
+          <option value="0">None (0%)</option>
+          <option value="60">Basic (60%)</option>
+          <option value="80">Standard (80%)</option>
+          <option value="90">Strict (90%)</option>
+          <option value="100">Full (100%)</option>
+        </select>
+        <p className="wizard-field__hint">Below this, the Quality stage fails.</p>
       </div>
-    </>
+      <p className="wizard-field__note wizard-field--full" data-testid="setup-automation-note">
+        The checks come from the workflow recipe. Every repository also gets a
+        Dockerfile, which Render and on-prem deploys build.
+      </p>
+    </div>
   );
 }
 
@@ -189,7 +128,7 @@ export function GenerateYamlLink({
 
   const label = isCreatingProject ? "Generating…" : "Generate YAML only";
   return (
-    <div style={{ marginTop: "1rem", display: "flex", alignItems: "center", gap: "0.65rem" }}>
+    <div className="wizard-generate-yaml">
       <button
         type="button"
         className="generate-yaml-link"

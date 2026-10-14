@@ -11,6 +11,7 @@ import type {
   ValidateEnvVarsResponse,
 } from "@/features/projects";
 import type { EnvOwnershipMode } from "@/shared/api/contracts";
+import { providerDisplayName } from "./provider-urls";
 
 export const ENV_KEY_PATTERN = /^[A-Z_][A-Z0-9_]{1,127}$/;
 
@@ -72,12 +73,12 @@ export function activeBranch(branchName: string | null | undefined): string {
 
 export function targetOptionLabel(target: {
   providerProjectName: string;
-  provider: EnvProvider;
+  provider: DeploymentTarget["provider"];
   slot: EnvTargetSlot;
   branchName: string;
   renderRuntime?: RenderRuntime | string | null;
 }): string {
-  const provider = target.provider === "render" ? "Render" : "Vercel";
+  const provider = providerDisplayName(target.provider);
   const branch = activeBranch(target.branchName);
   const runtime =
     target.provider === "render" && target.renderRuntime

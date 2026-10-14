@@ -1,8 +1,8 @@
 "use client";
 
 import { reviewProjectLabel } from "../model/project-name-rules";
-import { githubOrgLogin, selectedShapeLabel } from "../model/setup-tab-rules";
-import { projectOptionLabels } from "../view-models/use-project-options-catalog";
+import { environmentPathLine, hostingReviewLines } from "../model/hosting-choice-rules";
+import { githubOrgLogin, selectedShapeLabel, stackRuntimeLabel } from "../model/setup-tab-rules";
 import type { WizardStepProps } from "./setup-wizard-props";
 
 function reviewRepoName(repoName: string): string {
@@ -19,13 +19,6 @@ function reviewWorkflowLabel(label?: string): string {
   return label;
 }
 
-function reviewOutputFile(outputFileName: string): string {
-  if (!outputFileName) {
-    return "ci.yml";
-  }
-  return outputFileName;
-}
-
 /**
  * The runtime line, for whatever runtime the stack actually uses.
  *
@@ -34,21 +27,38 @@ function reviewOutputFile(outputFileName: string): string {
  * stack takes the SDK from the workflow engine catalog.
  */
 function reviewRuntime(
-  runtime: string | undefined,
-  language: string | undefined,
+  projectType: Parameters<typeof stackRuntimeLabel>[0],
   nodeVersion: string,
 ): string {
-  if ((runtime ?? "node") !== "node") {
-    return language ?? runtime ?? "runtime from catalog";
+  if ((projectType?.runtime ?? "node") !== "node") {
+    return stackRuntimeLabel(projectType);
   }
   return `Node ${nodeVersion || "default"}`;
 }
 
-function reviewDeliveryLabel(enabled: boolean): string {
-  if (enabled) {
-    return "Deployment setup included";
-  }
-  return "CI workflow only";
+/** The Hosting choice, with the Vercel / Render targets under it when there are any. */
+function ReviewHostingRow({
+  deploymentProvisioning,
+  envProvisioningEnabled,
+  form,
+  hosting,
+}: Readonly<
+  Pick<WizardStepProps, "deploymentProvisioning" | "envProvisioningEnabled" | "form" | "hosting">
+>) {
+  const lines = hostingReviewLines({
+    choice: hosting.choice,
+    environments: form.environments,
+    hostedTargets: envProvisioningEnabled ? deploymentProvisioning.hostedPayload.targets : [],
+  });
+  return (
+    <div className="repo-wizard-review__wide">
+      <dt>Hosting</dt>
+      <dd>{lines.heading}</dd>
+      {lines.details.map((line) => (
+        <dd className="repo-wizard-review__detail" key={line}>{line}</dd>
+      ))}
+    </div>
+  );
 }
 
 function GithubCreateIcon() {
@@ -89,22 +99,19 @@ function ReviewCreateButton({
   );
 }
 
-function isCheckedOption(option: { checked: boolean }): boolean {
-  return option.checked;
-}
-
 export function SetupWizardReview({
   deploymentProvisioning,
+  envProvisioningEnabled,
   finalCreateDisabled,
   form,
   github,
+  hosting,
   isCreatingProject,
   joinedProjectName,
   onCreateProject,
   projectCatalog,
 }: Readonly<WizardStepProps>) {
   const owner = githubOrgLogin(github.allRepositoriesAccount?.accountLogin);
-  const checkedOptions = projectCatalog.supportedTestOptions.filter(isCheckedOption);
 
   return (
     <>
@@ -119,15 +126,16 @@ export function SetupWizardReview({
           <div><dt>Repository</dt><dd>{owner}/{reviewRepoName(form.repoName)}</dd></div>
           <div><dt>Visibility</dt><dd>{form.visibility}</dd></div>
           <div><dt>Shape</dt><dd>{selectedShapeLabel(projectCatalog.allRepoShapes, projectCatalog.selectedRepoShapeId)}</dd></div>
-          <div><dt>Workflow</dt><dd>{reviewWorkflowLabel(projectCatalog.selectedWorkflowRecipe?.label)} · {reviewOutputFile(form.outputFileName)}</dd></div>
-          <div><dt>Runtime</dt><dd>{reviewRuntime(projectCatalog.selectedProjectType?.runtime, projectCatalog.selectedProjectType?.language, form.nodeVersion)} · {form.coverageThreshold}% coverage</dd></div>
-          <div><dt>Delivery</dt><dd>{reviewDeliveryLabel(deploymentProvisioning.enabled)}</dd></div>
+          <div><dt>Workflow</dt><dd>{reviewWorkflowLabel(projectCatalog.selectedWorkflowRecipe?.label)}</dd></div>
+          <div><dt>Runtime</dt><dd>{reviewRuntime(projectCatalog.selectedProjectType, form.nodeVersion)} · {form.coverageThreshold}% coverage</dd></div>
+          <div className="repo-wizard-review__wide"><dt>Environments</dt><dd>{environmentPathLine(form.environments)}</dd></div>
+          <ReviewHostingRow
+            deploymentProvisioning={deploymentProvisioning}
+            envProvisioningEnabled={envProvisioningEnabled}
+            form={form}
+            hosting={hosting}
+          />
         </dl>
-        <div className="repo-wizard-review__checks">
-          {checkedOptions.map((option) => (
-            <span key={option.key}>{projectOptionLabels[option.key]}</span>
-          ))}
-        </div>
       </section>
 
       <ReviewCreateButton

@@ -27,6 +27,7 @@ import { HostingDeploymentCard } from "./hosting-deployment-card";
 import { environmentPanelId, environmentTabId, HostingEnvironmentSwitcher } from "./hosting-environment-switcher";
 import { HostingServiceHeader, HostingServiceSelector } from "./hosting-service-header";
 import { HostingVariablesCard, type ManagedVariables } from "./hosting-variables-card";
+import { EnvironmentOperationsPanel } from "./environment-operations-panel";
 import { ProjectEnvPanel } from "./project-env-panel";
 
 type TabProps = Readonly<{
@@ -43,6 +44,20 @@ type TabProps = Readonly<{
  * opens them here. Branch previews stay on the Overview.
  */
 export function HostingTab({ project, vm }: TabProps) {
+  return (
+    <div className="hosting-tab">
+      <EnvironmentOperationsPanel
+        appRole={vm.appRole}
+        onTargetCreated={vm.handleTargetCreated}
+        projectId={project.id}
+        targets={vm.deploymentTargets}
+      />
+      <HostingContent project={project} vm={vm} />
+    </div>
+  );
+}
+
+function HostingContent({ project, vm }: TabProps) {
   if (!vm.deploymentTargets.length) return <HostingEmptyState project={project} vm={vm} />;
   if (canManageEnvVars(vm.appRole) && vm.envProvisioningEnabled && project.status === "provisioned") {
     return <ManagedHosting project={project} vm={vm} />;

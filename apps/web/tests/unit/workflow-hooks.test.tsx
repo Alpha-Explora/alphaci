@@ -610,12 +610,14 @@ describe("workflow hooks", () => {
     });
     await flushMicrotasks();
 
+    // The service is always the repository's slug at the repository root:
+    // a typed service name or path is not sent (the wizard no longer asks).
     expect(current?.buildPayload(baseInput)).toEqual({
       ok: true,
       payload: expect.objectContaining({
         nodeVersion: "24",
         outputFileName: "custom.yaml",
-        serviceName: "api-service",
+        serviceName: "example-app",
         servicePath: ".",
         visibility: "public",
       }),

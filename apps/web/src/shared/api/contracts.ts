@@ -7,6 +7,12 @@ export type SubscriptionPlan = "free" | "pro";
 export type SubscriptionStatus = "inactive" | "active" | "canceled";
 export type EnvProvider = "render" | "vercel";
 /**
+ * Providers a deployment target can name. On-prem hosts are attached to
+ * environments, not chosen in the create-project studio, so they extend the
+ * provisioning providers here only.
+ */
+export type DeploymentTargetProvider = EnvProvider | "onprem-compose";
+/**
  * Render's own environment naming on a deployment target. NOT the env-var lane
  * — that is EnvLane. The two used to be one type, which made a Render service
  * name and an environment-variable scope move together.
@@ -229,9 +235,11 @@ export interface CreateProviderConnectionRequest {
 export interface DeploymentTarget {
   id: string;
   projectId: string;
+  /** Project environment this target deploys; null on the legacy branch path. */
+  environmentId?: string | null;
   slot: EnvTargetSlot;
   ownershipMode: EnvOwnershipMode;
-  provider: EnvProvider;
+  provider: DeploymentTargetProvider;
   providerConnectionId: string | null;
   providerProjectId: string;
   providerProjectName: string;
@@ -260,9 +268,11 @@ export interface DeploymentTarget {
 
 export interface CreateDeploymentTargetRequest {
   action: "create" | "register_existing";
+  /** Project environment this target deploys; omitted for the legacy branch path. */
+  environmentId?: string;
   slot: EnvTargetSlot;
   ownershipMode: EnvOwnershipMode;
-  provider: EnvProvider;
+  provider: DeploymentTargetProvider;
   providerConnectionId?: string;
   providerProjectId?: string;
   providerProjectName?: string;
@@ -521,6 +531,25 @@ export interface DeploymentProvisioningRequest {
   variableGroups?: DeploymentProvisioningVariableGroup[];
   sharedEnv?: DeploymentProvisioningEnvSet[];
   targets: DeploymentProvisioningTargetRequest[];
+}
+
+/**
+ * A creation-time on-prem target. It needs nothing else: no provider account,
+ * no GitHub call, and it is never forced onto a managed account. With
+ * `environmentSlug` it applies to that environment only and replaces the
+ * shared target for its slot there.
+ */
+export interface OnpremProvisioningTargetRequest {
+  slot: EnvTargetSlot;
+  provider: "onprem-compose";
+  ownershipMode: "byo";
+  environmentSlug?: string;
+}
+
+/** What project creation accepts: the hosted targets plus on-prem ones. */
+export interface CreateDeploymentProvisioningRequest
+  extends Omit<DeploymentProvisioningRequest, "targets"> {
+  targets: Array<DeploymentProvisioningTargetRequest | OnpremProvisioningTargetRequest>;
 }
 
 export interface DeploymentProvisioningResult {
@@ -811,6 +840,16 @@ export interface SetupProjectRequest extends GenerateWorkflowRequest {
   deploymentProvisioning?: DeploymentProvisioningRequest;
   /** Group/workspace to create this project inside (from ?group=<id>). */
   workspaceId?: string;
+  /**
+   * The project's ordered environments (single-repository projects only).
+   * Omit it to create the project on the fixed dev, uat, main branch path.
+   */
+  environments?: Array<{
+    slug: string;
+    displayName: string;
+    sourceBranch: string;
+    role: "production" | "non_production";
+  }>;
   /** Names the Project (folder) created for the repository: trimmed, 1..80 chars. */
   projectName?: string;
 }
@@ -953,7 +992,7 @@ export interface CreateProjectRequest {
   outputFileName?: string;
   microservicesConfig?: MicroservicesConfig;
   multiRepoConfig?: MicroservicesConfig;
-  deploymentProvisioning?: DeploymentProvisioningRequest;
+  deploymentProvisioning?: CreateDeploymentProvisioningRequest;
   /** Group/workspace to create this project inside (from ?group=<id>). */
   workspaceId?: string;
   /**

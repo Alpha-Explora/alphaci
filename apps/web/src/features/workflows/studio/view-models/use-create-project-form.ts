@@ -2,11 +2,19 @@
 
 import { useCallback, useState } from "react";
 
-import type { CreateProjectRequest, MvpProjectOptionKey } from "@/shared/api/contracts";
+import type {
+  CreateProjectRequest,
+  EnvTargetSlot,
+  MvpProjectOptionKey,
+} from "@/shared/api/contracts";
 import {
   buildCreateProjectPayload,
   sanitizeRepoNameInput,
 } from "../model/create-project-payload";
+import {
+  ENVIRONMENT_TEMPLATE,
+  type EnvironmentDraft,
+} from "../model/project-environments-rules";
 import { effectiveDualServiceName } from "../model/setup-tab-rules";
 import { toSlug } from "../model/workflow-studio-rules";
 
@@ -22,6 +30,10 @@ interface BuildPayloadInput {
   ownerType?: "personal" | "organization";
   installationId?: number;
   deploymentProvisioning?: CreateProjectRequest["deploymentProvisioning"];
+  /** The project's own environments, sent only with on-prem hosting. */
+  environments?: readonly EnvironmentDraft[];
+  /** The deployable slots, only when the deployment offers on-prem hosting. */
+  onpremSlots?: readonly EnvTargetSlot[];
 }
 
 export function useCreateProjectForm() {
@@ -37,6 +49,11 @@ export function useCreateProjectForm() {
   const [coverageThreshold, setCoverageThreshold] = useState("80");
   const [outputFileName, setOutputFileName] = useState("ci.yml");
   const [serviceNameTouched, setServiceNameTouched] = useState(false);
+  // The fixed dev, uat, main path. The wizard shows it read-only and sends it
+  // only with on-prem hosting; the editing rules stay in the model.
+  const [environments, setEnvironments] = useState<EnvironmentDraft[]>([
+    ...ENVIRONMENT_TEMPLATE,
+  ]);
 
   // Microservices dual-slot state
   const [backendProjectTypeId, setBackendProjectTypeId] = useState("nestjs");
@@ -101,8 +118,6 @@ export function useCreateProjectForm() {
     return buildCreateProjectPayload({
       repoName,
       visibility,
-      serviceName,
-      servicePath,
       nodeVersion,
       coverageThreshold,
       outputFileName,
@@ -125,6 +140,7 @@ export function useCreateProjectForm() {
     backendWorkflowRecipeId,
     buildPayload,
     coverageThreshold,
+    environments,
     frontendProjectTypeId,
     frontendServiceName: effectiveFrontendServiceName,
     frontendServicePath,
@@ -141,6 +157,7 @@ export function useCreateProjectForm() {
     setBackendServicePath,
     setBackendWorkflowRecipeId,
     setCoverageThreshold,
+    setEnvironments,
     setFrontendProjectTypeId,
     setFrontendServiceName,
     setFrontendServicePath,

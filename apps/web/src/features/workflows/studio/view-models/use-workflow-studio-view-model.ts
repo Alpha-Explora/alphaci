@@ -18,8 +18,8 @@ import { getMyWorkspaces } from "@/features/workspace";
 import { useCapabilities } from "@/features/capabilities/current";
 import { repositoryRequiresProject } from "@/features/groups";
 import { useCreateProjectForm } from "./use-create-project-form";
-import { useDeploymentProvisioningForm } from "./use-deployment-provisioning-form";
 import { useGithubInstallations } from "./use-github-installations";
+import { useOnpremHosting } from "./use-onprem-hosting";
 import { useProjectOptionsCatalog } from "./use-project-options-catalog";
 import { useProvisionedProjects } from "./use-provisioned-projects";
 import { useWorkflowCatalog } from "./use-workflow-catalog";
@@ -28,7 +28,9 @@ import { useOnboardingTour } from "./use-onboarding-tour";
 import { useCurrentProjectsTour } from "./use-current-projects-tour";
 import { useCreateTarget } from "./use-create-target";
 import { useTeamProjectOptions } from "./use-team-project-options";
+import { useWizardHosting } from "./use-wizard-hosting";
 import { roleGateErrorMessage } from "../model/role-gate-rules";
+import { ALWAYS_ON_TESTS } from "../model/create-project-payload";
 import {
   createRepositoryBlocker,
   preselectedWorkspaceId,
@@ -113,6 +115,8 @@ export function useWorkflowStudioViewModel(options: {
     openSetup: () => setActiveView("setup"),
   });
   const linkedGroupId = createTarget.initialGroupId;
+  // The team the repository goes into: a known Project's own, else the pick.
+  const createWorkspaceId = createTarget.workspaceId;
 
   // A Developer files every repository in a Project: without a `?project=`
   // link the wizard asks which, from the team's own Projects.
@@ -122,11 +126,11 @@ export function useWorkflowStudioViewModel(options: {
   // Read for a linked Project too: its Feature count says whether a
   // Developer may create in it yet (Features before repositories).
   const teamProjects = useTeamProjectOptions({
-    groupId: selectedCreateWorkspaceId,
+    groupId: createWorkspaceId,
     enabled: requiresProject && activeView === "setup",
   });
   const featuresBlocker = projectFeaturesBlocker(
-    createTarget.deliveryProjectIdFor(selectedCreateWorkspaceId),
+    createTarget.deliveryProjectIdFor(createWorkspaceId),
     teamProjects.options,
     appRole,
   );
@@ -136,11 +140,17 @@ export function useWorkflowStudioViewModel(options: {
   const history = useWorkflowHistory(setStatusMessage);
   const projects = useProvisionedProjects(setStatusMessage);
   const createForm = useCreateProjectForm();
-  const deploymentProvisioning = useDeploymentProvisioningForm(
-    projectCatalog.selectedRepoShapeId,
-  );
   const { deploymentOwnershipMode, envProvisioningEnabled } = useCapabilities();
   const github = useGithubInstallations(setStatusMessage, () => undefined);
+  // "On-prem host" in the Delivery step's Hosting choice: read when the wizard opens.
+  const onpremHosting = useOnpremHosting({ guest, open: activeView === "setup" });
+  const wizardHosting = useWizardHosting({
+    createForm,
+    envProvisioningEnabled,
+    onpremHosting,
+    projectCatalog,
+  });
+  const { deploymentProvisioning, hosting, renderVariablesMissing } = wizardHosting;
 
   const { startTour } = useOnboardingTour({
     session: session ?? null,
@@ -203,15 +213,15 @@ export function useWorkflowStudioViewModel(options: {
     onComplete?: () => void,
   ) {
     // Group context (in-team) fixes the owner; the top-level Create tab
-    // (choose-team) uses the caller's selection, which the effect preselects
-    // when they belong to exactly one team.
-    const workspaceId = selectedGroupId ?? selectedCreateWorkspaceId ?? undefined;
+    // (choose-team) uses the known Project's team, else the caller's
+    // selection, which the effect preselects when they have exactly one team.
+    const workspaceId = selectedGroupId ?? createWorkspaceId ?? undefined;
     // A ?project= link files the repository (both, for a pair) in that team
     // Project — only while creating in that Project's own team. The Project
     // then keeps its own name, so no projectName is asked for or sent.
     const deliveryProjectId = createTarget.deliveryProjectIdFor(workspaceId);
     const blocker = createRepositoryBlocker({
-      renderVariablesMissing: deploymentProvisioning.renderVariablesMissing,
+      renderVariablesMissing,
       requiresProject,
       deliveryProjectId,
       featuresBlocker: projectFeaturesBlocker(deliveryProjectId, teamProjects.options, appRole),
@@ -228,8 +238,8 @@ export function useWorkflowStudioViewModel(options: {
       repoShapeId: projectCatalog.selectedRepoShapeId,
       projectTypeId: projectCatalog.selectedProjectTypeId,
       workflowRecipeId: projectCatalog.selectedWorkflowRecipeId,
-      tests: projectCatalog.tests,
-      deploymentProvisioning: deploymentProvisioning.payload,
+      tests: ALWAYS_ON_TESTS,
+      ...wizardHosting.createFields(),
     });
 
     if (!payloadResult.ok) {
@@ -448,6 +458,12 @@ export function useWorkflowStudioViewModel(options: {
     workspaces,
     selectedCreateWorkspaceId,
     setSelectedCreateWorkspaceId,
+    /** The team the repository is created in (a known Project's own, else the pick). */
+    createWorkspaceId,
+    /** Whether a Project is known (linked or picked): the team box gives way to it. */
+    projectKnown: createTarget.projectKnown,
+    /** Un-pick a Developer's Project, to choose another team; null when nothing was picked. */
+    clearChosenProject: chosenProjectClearer(createTarget),
     targetProjectLabel: createTarget.label,
     joinedProjectName: createTarget.joinedProjectName,
     /**
@@ -480,10 +496,22 @@ export function useWorkflowStudioViewModel(options: {
     deploymentProvisioning,
     deploymentOwnershipMode,
     envProvisioningEnabled,
+    /** Whether the deployment offers "On-prem host" (hidden, disabled with a reason, or enabled). */
+    onpremHosting,
+    /** The Delivery step's project-wide Hosting choice. */
+    hosting,
     github,
     startTour,
     startCurrentProjectsTour,
   };
+}
+
+/** Un-picks a Developer's Project (to choose another team), or null when none was picked. */
+function chosenProjectClearer(createTarget: {
+  projectChosen: boolean;
+  chooseProject: (option: null) => void;
+}): (() => void) | null {
+  return createTarget.projectChosen ? () => createTarget.chooseProject(null) : null;
 }
 
 export type WorkflowStudioViewModel = ReturnType<typeof useWorkflowStudioViewModel>;

@@ -1,5 +1,4 @@
 import type { CSSProperties } from "react";
-import type { MvpProjectOptionKey } from "@/shared/api/contracts";
 
 /**
  * Existing-repository onboarding.
@@ -17,20 +16,11 @@ export const EXISTING_REPO_MODE_ENABLED = true;
 
 export const WIZARD_STEPS = [
   { label: "Blueprint", detail: "Shape and stack" },
-  { label: "Repository", detail: "Name and service" },
-  { label: "Automation", detail: "Workflow and checks" },
-  { label: "Delivery", detail: "Deployment options" },
+  { label: "Repository", detail: "Name and visibility" },
+  { label: "Automation", detail: "Runtime and coverage" },
+  { label: "Delivery", detail: "Hosting" },
   { label: "Review", detail: "Confirm and create" },
 ] as const;
-
-export const projectOptionDescriptions: Record<MvpProjectOptionKey, string> = {
-  lint: "Run code quality checks before build.",
-  unit: "Run the starter project's test script.",
-  build: "Compile or bundle the project.",
-  coverage: "Enforce the configured coverage threshold.",
-  security: "Run dependency and workflow security checks.",
-  docker: "Build a container image when the recipe supports it.",
-};
 
 export const labelAccentStyle: CSSProperties = {
   borderLeft: "2px solid var(--brand)",
