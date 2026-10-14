@@ -10,6 +10,7 @@
  * and 2.5. Views read only the normalised shapes below. */
 
 import type { ChecklistVerificationType } from "./checklist-types";
+import type { QaAttachmentRef, QaRunAttachmentSettings } from "./qa-attachment-types";
 import type { QaAutomatedItemResult, QaRunAutomationResult } from "./qa-automation-types";
 import type {
   QaActor,
@@ -100,6 +101,13 @@ export interface ProjectQaRunItem {
    * Information only: never changes `status`.
    */
   automated: QaAutomatedItemResult | null;
+  /**
+   * How many screenshots the item holds, from the run payload. Null on a
+   * server that sends none (then the Evidence section stays hidden).
+   */
+  attachmentCount: number | null;
+  /** The report's frozen per-item images (ids and captions, no URLs). Empty on a run payload. */
+  attachments: QaAttachmentRef[];
 }
 
 /** One covered repository's CI results, on the uat head the run captured. */
@@ -148,6 +156,11 @@ export interface ProjectQaRun {
   automation: QaRunAutomationResult | null;
   /** The same per repository; null when the server sent no breakdown. */
   automationByRepository: RepositoryAutomation[] | null;
+  /**
+   * Whether screenshots exist on this server and this viewer may add them.
+   * Null when the server sent no answer: the Evidence section is hidden.
+   */
+  attachments: QaRunAttachmentSettings | null;
 }
 
 /* ── Run Playwright on a Project run ────────────────────────────────────── */

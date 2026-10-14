@@ -17,6 +17,8 @@ import {
 import type { QaDefectSeverity, QaItemDraft } from "../../model/qa-run-types";
 import { progressLabel, progressTone } from "../../model/requirement-rules";
 import type { ProjectVerificationViewModel } from "../view-models/use-project-verification-view-model";
+import type { RunEvidenceViewModel } from "../view-models/use-run-evidence-view-model";
+import { ItemEvidence } from "./item-evidence";
 import { StatusMarker } from "./status-marker";
 
 type ItemProps = Readonly<{
@@ -24,6 +26,8 @@ type ItemProps = Readonly<{
   index: number;
   editor: ProjectVerificationViewModel;
   onReload: () => void;
+  /** The run's screenshots; omitted, the item shows no Evidence section. */
+  evidence?: RunEvidenceViewModel;
 }>;
 
 function VerifiedLine({ item }: Readonly<{ item: ProjectQaRunItem }>) {
@@ -102,7 +106,7 @@ function ProgressTag({ item }: Readonly<{ item: ProjectQaRunItem }>) {
  * status stays visible (pressed, not clickable) even where this viewer could
  * not have set it — Passed before a Developer marked the item Done.
  */
-function VerificationButtons({ item, index, editor }: Omit<ItemProps, "onReload">) {
+function VerificationButtons({ item, index, editor }: Pick<ItemProps, "item" | "index" | "editor">) {
   const allowed = editor.allowedStatuses(item);
   const draft = editor.openItemId === item.id ? editor.draft : null;
   const value = draft?.status ?? item.status;
@@ -232,7 +236,7 @@ function ItemError({ item, editor, onReload }: ItemProps) {
   );
 }
 
-function ItemControls({ item, index, editor }: Omit<ItemProps, "onReload">) {
+function ItemControls({ item, index, editor }: Pick<ItemProps, "item" | "index" | "editor">) {
   const editable = editor.allowedStatuses(item).length > 0;
   const editing = editor.openItemId === item.id;
   if (!editable) return null;
@@ -294,6 +298,7 @@ export function ProjectRunItem(props: ItemProps) {
         <ItemControls item={item} index={index} editor={editor} />
         <ItemEditor item={item} editor={editor} />
         <ItemError {...props} />
+        {props.evidence ? <ItemEvidence item={item} evidence={props.evidence} /> : null}
       </div>
     </li>
   );

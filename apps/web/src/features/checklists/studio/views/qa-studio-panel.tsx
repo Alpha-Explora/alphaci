@@ -2,7 +2,7 @@
 
 import "./qa-studio.css";
 
-import { useId, type ReactNode, type Ref } from "react";
+import { useId, useRef, type ReactNode, type Ref } from "react";
 import { createPortal } from "react-dom";
 
 import type { AppRole } from "@/shared/api/contracts";
@@ -21,6 +21,7 @@ import type { QaRun, QaRunSummaryCounts } from "../../model/qa-run-types";
 import { REPOSITORY_SCOPE, type QaScope, type RepositoryRoles } from "../../model/qa-scope";
 import { scopePlaywrightResults, studioColumnRules, type StudioColumnRules } from "../../model/studio-role-rules";
 import { automationSignal, launcherLabel, NO_QA_ENVIRONMENT } from "../../model/qa-studio-rules";
+import { PreviewCaptureContext, type PreviewCaptureTarget } from "../view-models/preview-capture-target";
 import { useFloatingChecklistFocus } from "../view-models/use-floating-checklist-focus";
 import type { ProjectRunViewModel } from "../view-models/use-project-run-view-model";
 import type { QaPromotionViewModel } from "../view-models/use-qa-promotion-view-model";
@@ -175,7 +176,7 @@ function RunSkeletonCard() {
   return <div className="hier-skeleton qa-skeleton-card" aria-hidden="true" />;
 }
 
-function PreviewColumn({ vm }: Readonly<{ vm: StudioViewportViewModel }>) {
+function PreviewColumn({ vm, frameRef }: Readonly<{ vm: StudioViewportViewModel; frameRef: PreviewCaptureTarget }>) {
   if (vm.status === "loading") return <div className="hier-skeleton qa-skeleton-stage" aria-hidden="true" />;
   if (vm.status === "error") {
     return (
@@ -191,7 +192,7 @@ function PreviewColumn({ vm }: Readonly<{ vm: StudioViewportViewModel }>) {
       />
     );
   }
-  return <PreviewPane vm={vm} />;
+  return <PreviewPane vm={vm} frameRef={frameRef} />;
 }
 
 /** What the drawer and its launcher read of a run: a repository run, or a Project run. */
@@ -680,6 +681,8 @@ export function QaStudioPanel({
   const tabsId = useId();
   const rules = studioColumnRules(appRole);
   const roles = repositoryRoles(qaScope);
+  // The preview iframe, for an item's "Capture" (cropped to it). Offered to the run column below.
+  const previewFrameRef = useRef<HTMLIFrameElement | null>(null);
   const source = playwrightSource(runs, qaScope);
   const results = scopePlaywrightResults(
     playwrightResults(source, { projectId, repoFullName: projectName ?? null }),
@@ -702,7 +705,7 @@ export function QaStudioPanel({
       <StudioControls vm={viewport} commit={snapshot.commit} fullScreenRef={focus.toggleRef} slot={toolbarSlot} />
       <div className="qa-studio__panes">
         <div className="qa-studio__preview" data-framed={previewFramed(viewport)}>
-          <PreviewColumn vm={viewport} />
+          <PreviewColumn vm={viewport} frameRef={previewFrameRef} />
         </div>
         <RunDock
           vm={viewport}
@@ -727,19 +730,21 @@ export function QaStudioPanel({
             tabsId={tabsId}
             tab={columnTab.tab}
             checklist={
-              <StudioColumn
-                studio={studio}
-                onOpenQaRun={onOpenQaRun}
-                qaScope={qaScope}
-                projectMode={projectMode}
-                projectRun={projectRun}
-                projectId={projectId}
-                appRole={appRole}
-                checklists={checklists}
-                viewport={viewport}
-                run={run}
-                promotion={promotion}
-              />
+              <PreviewCaptureContext.Provider value={previewFrameRef}>
+                <StudioColumn
+                  studio={studio}
+                  onOpenQaRun={onOpenQaRun}
+                  qaScope={qaScope}
+                  projectMode={projectMode}
+                  projectRun={projectRun}
+                  projectId={projectId}
+                  appRole={appRole}
+                  checklists={checklists}
+                  viewport={viewport}
+                  run={run}
+                  promotion={promotion}
+                />
+              </PreviewCaptureContext.Provider>
             }
             playwright={
               <PlaywrightColumn

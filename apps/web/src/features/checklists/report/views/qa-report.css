@@ -724,6 +724,72 @@
   break-inside: avoid;
 }
 
+/* An item's own screenshots, on a row under it. The item row above loses its
+   rule so the two read as one entry. */
+.qa-report-table tr[data-evidence="true"] td {
+  border-bottom-color: transparent;
+}
+
+.qa-report-table__evidence td {
+  padding-top: 0;
+}
+
+.qa-report-evidence {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr));
+  align-items: start;
+  gap: 0.6em;
+}
+
+.qa-report-evidence__figure {
+  display: grid;
+  align-content: start;
+  gap: 0.3em;
+  margin: 0;
+  break-inside: avoid;
+}
+
+/* The box shrinks to the image: a tall phone shot is narrower, never a wide
+   frame with empty space beside it. */
+.qa-report-evidence__figure img {
+  display: block;
+  justify-self: start;
+  width: auto;
+  height: auto;
+  max-width: 100%;
+  max-height: 16em;
+  border: 1px solid var(--border-layer);
+  border-radius: 0.4em;
+  background: var(--layer-2);
+}
+
+.qa-report-evidence__figure figcaption {
+  font-size: 0.92em;
+  line-height: 1.35;
+  color: var(--text-secondary);
+}
+
+.qa-report-evidence__kind {
+  display: block;
+  font-size: 0.82em;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.qa-report-evidence__missing {
+  display: grid;
+  place-items: center;
+  min-height: 5em;
+  padding: 0.5em;
+  border: 1px dashed var(--border-layer);
+  border-radius: 0.4em;
+  font-size: 0.9em;
+  color: var(--text-muted);
+  text-align: center;
+}
+
 /* Everything inside the table is sized in em, off the table's own size, so
    the 8pt print table scales as one piece (rem would ignore it). */
 .qa-report-table__num {

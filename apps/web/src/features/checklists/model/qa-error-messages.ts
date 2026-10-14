@@ -7,7 +7,7 @@
  * "repository"). An unknown code is not mapped: the caller falls back to its
  * own copy. */
 
-import { errorCode, errorDetails, texts } from "./wire-readers";
+import { errorCode, errorDetails, errorStatus, texts } from "./wire-readers";
 
 export const QA_ERROR_MESSAGES: Readonly<Record<string, string>> = {
   QA_NO_REQUIREMENTS:
@@ -45,6 +45,35 @@ export const QA_ERROR_MESSAGES: Readonly<Record<string, string>> = {
   REQUIREMENT_ORDER_MISMATCH:
     "The list changed while you were reordering it. Reload, then move the item again.",
 };
+
+/**
+ * The evidence (screenshot) codes. Kept apart from the map above because
+ * QA_RUN_SIGNED_OFF means something narrower here: elsewhere a signed-off run
+ * refuses a Verification write with the server's own sentence, and that copy
+ * must not change.
+ */
+export const QA_ATTACHMENT_ERROR_MESSAGES: Readonly<Record<string, string>> = {
+  QA_RUN_SIGNED_OFF:
+    "This run is signed off, so its screenshots are frozen. A Product owner reopens the run before evidence can change.",
+  QA_ATTACHMENT_LIMIT: "This item already has 5 screenshots, the most it can hold. Delete one to add another.",
+  QA_ATTACHMENT_TOO_LARGE: "This image is too large. A screenshot can be up to 3 MB and 8000 × 8000 pixels.",
+  QA_ATTACHMENT_TYPE: "Only PNG, JPEG and WebP images can be attached.",
+  QA_ATTACHMENT_FORBIDDEN:
+    "You cannot change this item's evidence. The QA Team, Product owners and admins add screenshots; the uploader, a Product owner or an admin removes one.",
+  QA_ATTACHMENTS_UNAVAILABLE:
+    "Screenshots are not available on this server right now. Try again later, or ask an admin to check attachment storage.",
+};
+
+/**
+ * The product sentence for an evidence failure, or null when its code is not
+ * an evidence code. A bare 413 (a proxy refusing the body before the server
+ * saw it) reads as "too large" too.
+ */
+export function attachmentCodeMessage(cause: unknown): string | null {
+  const message = QA_ATTACHMENT_ERROR_MESSAGES[errorCode(cause)];
+  if (message) return message;
+  return errorStatus(cause) === 413 ? QA_ATTACHMENT_ERROR_MESSAGES.QA_ATTACHMENT_TOO_LARGE : null;
+}
 
 /** Codes a reload resolves: someone else wrote first. */
 const STALE_CODES: ReadonlySet<string> = new Set([

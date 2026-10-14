@@ -38,6 +38,7 @@ import {
   useProjectVerificationViewModel,
   type ProjectVerificationViewModel,
 } from "../view-models/use-project-verification-view-model";
+import { useRunEvidenceViewModel, type RunEvidenceViewModel } from "../view-models/use-run-evidence-view-model";
 import { ProjectRunItem } from "./project-run-item";
 import { RunSummary, SignoffBanner, SignoffDialog, SignoffFooter } from "./run-signoff";
 
@@ -237,11 +238,13 @@ function RunGroup({
   group,
   list,
   editor,
+  evidence,
   onReload,
 }: Readonly<{
   group: ProjectRunListGroup;
   list: ProjectRunListViewModel;
   editor: ProjectVerificationViewModel;
+  evidence: RunEvidenceViewModel;
   onReload: () => void;
 }>) {
   const listId = useId();
@@ -281,6 +284,7 @@ function RunGroup({
               item={item}
               index={group.offset + group.items.indexOf(item)}
               editor={editor}
+              evidence={evidence}
               onReload={onReload}
             />
           ))}
@@ -308,6 +312,7 @@ function RunBody({
   const signoff = useProjectSignoffViewModel({ deliveryProjectId, run, permissions, onRun: vm.applyRun });
   const reopen = useProjectReopenViewModel({ deliveryProjectId, run, permissions, onRun: vm.applyRun });
   const list = useProjectRunListViewModel(run);
+  const evidence = useRunEvidenceViewModel({ deliveryProjectId, run });
 
   return (
     <div className="qa-run pqa-run__body">
@@ -320,7 +325,7 @@ function RunBody({
       <RunFilters list={list} />
       {list.status === "empty" ? <p className="pqa-note">{runFilterEmptyText(list.filter)}</p> : null}
       {list.groups.map((group) => (
-        <RunGroup key={group.key} group={group} list={list} editor={editor} onReload={vm.reload} />
+        <RunGroup key={group.key} group={group} list={list} editor={editor} evidence={evidence} onReload={vm.reload} />
       ))}
       {run.status === "open" ? <SignoffFooter vm={signoff} /> : null}
       {signoff.canSignOff ? <SignoffDialog vm={signoff} description={`${run.deliveryProjectName} on ${signedSubject(run)}`} /> : null}

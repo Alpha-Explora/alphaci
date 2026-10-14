@@ -6,7 +6,7 @@ import { repositoryHeadLabel } from "../../model/project-report-rules";
 import type { QaProjectReport, QaProjectReportRepository } from "../../model/project-report-types";
 import { actorLabel, formatReportDate, reportVerdictTone, runStatusLabel } from "../../model/qa-report-rules";
 import { ExecutiveSummary, Meta, ReportSection, StateNote, VerdictStamp } from "./qa-report-document";
-import { ProjectAutomatedResults, ProjectChecklistTable } from "./project-report-sections";
+import { ProjectAutomatedResults, ProjectChecklistTable, type RenderItemEvidence } from "./project-report-sections";
 import { DefectLog, SignoffRecord } from "./qa-report-sections";
 
 function Masthead({ report }: Readonly<{ report: QaProjectReport }>) {
@@ -91,7 +91,13 @@ function VisualEvidenceSection({
 export function ProjectQaReportDocument({
   report,
   renderVisualEvidence,
-}: Readonly<{ report: QaProjectReport; renderVisualEvidence?: RenderVisualEvidence }>) {
+  renderItemEvidence,
+}: Readonly<{
+  report: QaProjectReport;
+  renderVisualEvidence?: RenderVisualEvidence;
+  /** Each item's own screenshots, under it in the checklist. The appendix above is separate. */
+  renderItemEvidence?: RenderItemEvidence;
+}>) {
   return (
     <article
       className={`qa-report-sheet qa-report qa-report--${reportVerdictTone(report.summary.verdict)}`}
@@ -102,7 +108,7 @@ export function ProjectQaReportDocument({
       <MetaGrid report={report} />
       <ExecutiveSummary report={report} />
       <ReportSection id="qa-report-checklist" number="02" title="Checklist">
-        <ProjectChecklistTable items={report.run.items} />
+        <ProjectChecklistTable items={report.run.items} renderItemEvidence={renderItemEvidence} />
       </ReportSection>
       <ReportSection id="qa-report-automated" number="03" title="Automated results">
         <ProjectAutomatedResults report={report} />
