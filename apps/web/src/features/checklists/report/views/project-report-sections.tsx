@@ -1,5 +1,7 @@
 "use client";
 
+import { Fragment, type ReactNode } from "react";
+
 import { AutomatedBadge, StatusPill } from "../../items";
 import { verificationTypeLabel } from "../../model/checklist-rules";
 import { automatedCellNote, hasStageResults } from "../../model/qa-automation-rules";
@@ -27,9 +29,22 @@ function AutomatedCell({ automated }: Readonly<{ automated: ProjectQaRunItem["au
   );
 }
 
-function ItemRow({ item }: Readonly<{ item: ProjectQaRunItem }>) {
+/** What the page draws under an item: its screenshots. */
+export type RenderItemEvidence = (item: ProjectQaRunItem) => ReactNode;
+
+/** The item's screenshots on a row of their own, under the item, across every column but the number. */
+function EvidenceRow({ item, render }: Readonly<{ item: ProjectQaRunItem; render: RenderItemEvidence }>) {
   return (
-    <tr>
+    <tr className="qa-report-table__evidence">
+      <td aria-hidden="true" />
+      <td colSpan={5}>{render(item)}</td>
+    </tr>
+  );
+}
+
+function ItemRow({ item, withEvidence }: Readonly<{ item: ProjectQaRunItem; withEvidence?: boolean }>) {
+  return (
+    <tr data-evidence={withEvidence ? "true" : undefined}>
       <td className="qa-report-table__num">{item.position + 1}</td>
       <td>
         <span className="qa-report-table__title">{item.requirementName}</span>
@@ -54,7 +69,10 @@ function ItemRow({ item }: Readonly<{ item: ProjectQaRunItem }>) {
 }
 
 /** Every item of the Project run, Features first then System requirements, as the server ordered them. */
-export function ProjectChecklistTable({ items }: Readonly<{ items: ReadonlyArray<ProjectQaRunItem> }>) {
+export function ProjectChecklistTable({
+  items,
+  renderItemEvidence,
+}: Readonly<{ items: ReadonlyArray<ProjectQaRunItem>; renderItemEvidence?: RenderItemEvidence }>) {
   if (items.length === 0) {
     return <p className="qa-report-muted">This run has no checklist items.</p>;
   }
@@ -80,9 +98,15 @@ export function ProjectChecklistTable({ items }: Readonly<{ items: ReadonlyArray
           </tr>
         </thead>
         <tbody>
-          {items.map((item) => (
-            <ItemRow key={item.id} item={item} />
-          ))}
+          {items.map((item) => {
+            const withEvidence = Boolean(renderItemEvidence) && item.attachments.length > 0;
+            return (
+              <Fragment key={item.id}>
+                <ItemRow item={item} withEvidence={withEvidence} />
+                {withEvidence && renderItemEvidence ? <EvidenceRow item={item} render={renderItemEvidence} /> : null}
+              </Fragment>
+            );
+          })}
         </tbody>
       </table>
     </div>

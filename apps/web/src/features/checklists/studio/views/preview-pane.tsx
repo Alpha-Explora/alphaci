@@ -11,6 +11,7 @@ import {
   orientationLabel,
   scaleLabel,
 } from "../../model/qa-studio-rules";
+import type { PreviewCaptureTarget } from "../view-models/preview-capture-target";
 import { usePaneSize } from "../view-models/use-pane-size";
 import type { StudioViewportViewModel } from "../view-models/use-studio-viewport-view-model";
 import { ExternalIcon } from "./studio-icons";
@@ -56,7 +57,8 @@ function DeviceFrame({
   vm,
   url,
   sandbox,
-}: Readonly<{ vm: StudioViewportViewModel; url: string; sandbox: string }>) {
+  frameRef,
+}: Readonly<{ vm: StudioViewportViewModel; url: string; sandbox: string; frameRef?: PreviewCaptureTarget }>) {
   const { ref: stageRef, width, height } = usePaneSize<HTMLDivElement>();
   const [loadedKey, setLoadedKey] = useState<string | null>(null);
   const { style, scale } = deviceStyle(vm, { width, height });
@@ -97,6 +99,7 @@ function DeviceFrame({
             )}
             <iframe
               key={frameKey}
+              ref={frameRef}
               className="qa-device__frame"
               onLoad={() => setLoadedKey(frameKey)}
               referrerPolicy="no-referrer"
@@ -130,7 +133,7 @@ function Unavailable({ vm }: Readonly<{ vm: StudioViewportViewModel }>) {
   );
 }
 
-function PaneContent({ vm }: Readonly<{ vm: StudioViewportViewModel }>) {
+function PaneContent({ vm, frameRef }: Readonly<{ vm: StudioViewportViewModel; frameRef?: PreviewCaptureTarget }>) {
   if (!vm.canFrame || !vm.pageUrl) return <Unavailable vm={vm} />;
   // Framable, but the dashboard origin is not known yet (server render).
   if (!vm.sandbox) {
@@ -142,13 +145,17 @@ function PaneContent({ vm }: Readonly<{ vm: StudioViewportViewModel }>) {
       </div>
     );
   }
-  return <DeviceFrame vm={vm} url={vm.pageUrl} sandbox={vm.sandbox} />;
+  return <DeviceFrame vm={vm} url={vm.pageUrl} sandbox={vm.sandbox} frameRef={frameRef} />;
 }
 
-export function PreviewPane({ vm }: Readonly<{ vm: StudioViewportViewModel }>) {
+/**
+ * `frameRef` receives the live iframe, so an item's "Capture" can crop a
+ * screenshot of the tab to it. It changes nothing about the frame itself.
+ */
+export function PreviewPane({ vm, frameRef }: Readonly<{ vm: StudioViewportViewModel; frameRef?: PreviewCaptureTarget }>) {
   return (
     <section className="qa-preview" aria-label="Preview">
-      <PaneContent vm={vm} />
+      <PaneContent vm={vm} frameRef={frameRef} />
     </section>
   );
 }

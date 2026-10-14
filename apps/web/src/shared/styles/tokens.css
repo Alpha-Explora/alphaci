@@ -198,6 +198,10 @@
   --device-home: rgba(255, 255, 255, 0.5);
   /* A browser's default canvas: what shows through a page with no background. */
   --device-screen: #fff;
+
+  /* The dim behind a screenshot lightbox. Theme-independent on purpose:
+     a photo viewer reads best on near-black in either theme. */
+  --scrim: rgba(6, 6, 10, 0.86);
 }
 
 [data-theme="light"] {

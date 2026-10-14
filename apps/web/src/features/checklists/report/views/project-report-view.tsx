@@ -13,7 +13,12 @@ import {
 } from "../view-models/use-project-report-view-model";
 import type { QaProjectReportRepository } from "../../model/project-report-types";
 import { useAutoPrint } from "../view-models/use-qa-report-view-model";
+import {
+  useReportEvidenceViewModel,
+  type ReportEvidenceViewModel,
+} from "../view-models/use-report-evidence-view-model";
 import { ProjectQaReportDocument, type RenderVisualEvidence } from "./project-report-document";
+import { ReportItemEvidence } from "./project-report-evidence";
 import { PrinterIcon } from "./report-icons";
 
 function param(value: string | string[] | undefined): string {
@@ -75,11 +80,22 @@ function ReportError({ vm }: Readonly<{ vm: ProjectReportViewModel }>) {
 
 function ReportBody({
   vm,
+  evidence,
   renderVisualEvidence,
-}: Readonly<{ vm: ProjectReportViewModel; renderVisualEvidence?: RenderVisualEvidence }>) {
+}: Readonly<{
+  vm: ProjectReportViewModel;
+  evidence: ReportEvidenceViewModel;
+  renderVisualEvidence?: RenderVisualEvidence;
+}>) {
   if (vm.status === "loading") return <ReportSkeleton />;
   if (vm.status === "error" || !vm.report) return <ReportError vm={vm} />;
-  return <ProjectQaReportDocument report={vm.report} renderVisualEvidence={renderVisualEvidence} />;
+  return (
+    <ProjectQaReportDocument
+      report={vm.report}
+      renderVisualEvidence={renderVisualEvidence}
+      renderItemEvidence={(item) => <ReportItemEvidence item={item} vm={evidence} />}
+    />
+  );
 }
 
 /** What the host hands the page to draw each repository's screenshots, and to say when they are in. */
@@ -97,16 +113,16 @@ function ProjectQaReportPage({ renderEvidence }: Readonly<{ renderEvidence?: Ren
       setSettled((previous) => (previous.has(projectId) ? previous : new Set(previous).add(projectId))),
     [],
   );
-  const vm = useProjectReportViewModel({
-    deliveryProjectId: param(params?.deliveryProjectId),
-    runId: param(params?.runId),
-    autoPrint: false,
-  });
+  const deliveryProjectId = param(params?.deliveryProjectId);
+  const runId = param(params?.runId);
+  const vm = useProjectReportViewModel({ deliveryProjectId, runId, autoPrint: false });
+  const itemEvidence = useReportEvidenceViewModel({ deliveryProjectId, runId, report: vm.report });
   // The print dialog waits for the screenshots: printing before they load would
   // put empty frames in the PDF.
   const evidenceIn =
     !renderEvidence || (vm.report !== null && vm.report.repositories.every((r) => settled.has(r.projectId)));
-  useAutoPrint(search?.get("print") === "1" && vm.status === "ready" && evidenceIn);
+  // ...and so does each item's own evidence.
+  useAutoPrint(search?.get("print") === "1" && vm.status === "ready" && evidenceIn && itemEvidence.settled);
   const renderVisualEvidence: RenderVisualEvidence | undefined = renderEvidence
     ? (repository) => renderEvidence(repository, { onSettled: () => settle(repository.projectId) })
     : undefined;
@@ -114,7 +130,7 @@ function ProjectQaReportPage({ renderEvidence }: Readonly<{ renderEvidence?: Ren
     <div className="qa-report-page">
       <Toolbar vm={vm} />
       <main className="qa-report-page__main">
-        <ReportBody vm={vm} renderVisualEvidence={renderVisualEvidence} />
+        <ReportBody vm={vm} evidence={itemEvidence} renderVisualEvidence={renderVisualEvidence} />
       </main>
     </div>
   );

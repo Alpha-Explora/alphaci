@@ -11,6 +11,7 @@ import type { AppRole } from "@/shared/api/contracts";
 import { VERIFICATION_TYPE_OPTIONS } from "./checklist-rules";
 import type { ChecklistVerificationType } from "./checklist-types";
 import { automationByRepositoryFrom, projectRunAutomationFrom } from "./project-run-automation-rules";
+import { attachmentCountFrom, attachmentRefsFrom, attachmentSettingsFrom } from "./qa-attachment-rules";
 import { normalizeAutomatedResult } from "./qa-automation-rules";
 import { QA_ERROR_MESSAGES } from "./qa-error-messages";
 import { QA_ITEM_STATUSES, QA_SEVERITIES, QA_VERDICTS, shortSha, statusShowsDefect } from "./qa-run-rules";
@@ -168,6 +169,8 @@ function itemShapeFrom(raw: Loose) {
     sourceItemId: text(raw.sourceItemId),
     canUpdate: typeof raw.canUpdate === "boolean" ? raw.canUpdate : null,
     automated: normalizeAutomatedResult(raw.automated),
+    attachmentCount: attachmentCountFrom(raw.attachmentCount),
+    attachments: attachmentRefsFrom(raw.attachments),
   };
 }
 
@@ -243,6 +246,7 @@ export function normalizeProjectRun(value: unknown): ProjectQaRun | null {
     permissions: permissionFlagsFrom(raw.permissions),
     automation: projectRunAutomationFrom(raw),
     automationByRepository: automationByRepositoryFrom(raw),
+    attachments: attachmentSettingsFrom(raw.attachments),
   };
 }
 

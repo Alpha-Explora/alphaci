@@ -27,7 +27,7 @@ This snapshot is generated from the current source tree. It is descriptive evide
 
 | Area | Source files |
 |---|---:|
-| Feature domains | 599 |
+| Feature domains | 611 |
 | `src/shared` | 20 |
 | `src/app` | 32 |
 
