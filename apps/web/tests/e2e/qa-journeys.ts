@@ -3239,7 +3239,6 @@ async function developerAddsRepositoryToProject({ page, backend, baseUrl }: Jour
     (await choice.locator('option').allTextContents()).join(',') === 'Select a Project…,loyalty,storefront',
   );
   await page.locator('#repo-name').fill('loyalty-web');
-  await page.locator('#service-name').fill('loyalty-web');
   const next = page.getByRole('button', { name: /^Continue/ });
   assert.equal(await next.isDisabled(), true, 'Continue waits for the Project');
   await choice.selectOption({ label: 'loyalty' });
@@ -3299,7 +3298,6 @@ async function developerWaitsForFirstFeature({ page, backend, baseUrl }: Journey
   await page.getByRole('button', { name: /^Continue/ }).click();
   await expectText(page.getByTestId('setup-project-blocker'), note, 'the wizard blocker for a linked Project');
   await page.locator('#repo-name').fill('loyalty-web');
-  await page.locator('#service-name').fill('loyalty-web');
   assert.equal(await page.getByRole('button', { name: /^Continue/ }).isDisabled(), true, 'Create can never be reached');
 
   // The Product owner writes loyalty's first Feature.
@@ -3314,7 +3312,6 @@ async function developerWaitsForFirstFeature({ page, backend, baseUrl }: Journey
   await page.locator('#project-type-select').selectOption('nextjs-app');
   await page.getByRole('button', { name: /^Continue/ }).click();
   await page.locator('#repo-name').fill('loyalty-web');
-  await page.locator('#service-name').fill('loyalty-web');
   assert.equal(await page.getByTestId('setup-project-blocker').count(), 0, 'no blocker once the Feature exists');
   assert.equal(await page.getByRole('button', { name: /^Continue/ }).isDisabled(), false, 'the Developer goes ahead');
   assert.equal(backend.callsTo('POST', /^\/projects$/).length, 0, 'nothing was created');

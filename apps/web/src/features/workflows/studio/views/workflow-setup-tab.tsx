@@ -1,5 +1,7 @@
 "use client";
 
+import "./setup-wizard.css";
+
 import { useState } from "react";
 import { motion } from "framer-motion";
 
@@ -13,6 +15,7 @@ import type {
 import type { CreateProjectFormState } from "../view-models/use-create-project-form";
 import type { DeploymentProvisioningFormState } from "../view-models/use-deployment-provisioning-form";
 import type { GithubInstallationsState } from "../view-models/use-github-installations";
+import type { HostingChoiceState } from "../view-models/use-hosting-choice";
 import type { ProjectOptionsCatalogState } from "../view-models/use-project-options-catalog";
 import { useProjectUsage } from "../view-models/use-project-usage";
 import {
@@ -38,11 +41,7 @@ import {
   wizardStepReadyFlags,
 } from "../model/setup-tab-rules";
 import { REPOSITORY_CREATE_ROLE_NOTE } from "../model/role-gate-rules";
-import {
-  environmentHosting,
-  renderVariablesBlocking,
-  type OnpremHosting,
-} from "../model/onprem-hosting-rules";
+import { renderVariablesBlockingFor } from "../model/hosting-choice-rules";
 import type { ProjectChoice } from "./setup-wizard-props";
 import { ExistingRepoSetupPanel } from "./existing-repo-setup-panel";
 import { NewRepoWizard, RepositoryCreationProgress } from "./new-repo-wizard";
@@ -78,7 +77,14 @@ interface WorkflowSetupTabProps {
   workspaces?: WorkspaceSummary[] | null;
   selectedWorkspaceId?: string | null;
   onChangeWorkspace?: (workspaceId: string | null) => void;
-  /** "Team / Project" when a ?project= link files the repository in a Project. */
+  /**
+   * Whether the Project is known (a resolved `?project=` link, or a
+   * Developer's pick): its own team is used and the team box gives way to it.
+   */
+  projectKnown: boolean;
+  /** Un-pick a Developer's Project to choose another team, or null. */
+  onClearProject: (() => void) | null;
+  /** "Team / Project" for the known Project, or null. */
   targetProjectLabel?: string | null;
   /** That Project's own name: the wizard shows "Adding to Project: <name>" and asks for none. */
   joinedProjectName?: string | null;
@@ -95,8 +101,8 @@ interface WorkflowSetupTabProps {
   deploymentOwnershipMode: EnvOwnershipMode;
   deploymentProvisioning: DeploymentProvisioningFormState;
   envProvisioningEnabled: boolean;
-  /** Whether the Environments step offers "On-prem host". */
-  onpremHosting: OnpremHosting;
+  /** The Delivery step's project-wide Hosting choice. */
+  hosting: HostingChoiceState;
   existingRepoBaseBranch: string;
   existingRepoDiscovery: DiscoverExistingRepoResponse | null;
   existingRepoFullName: string;
@@ -160,6 +166,8 @@ export function WorkflowSetupTab({
   workspaces,
   selectedWorkspaceId,
   onChangeWorkspace,
+  projectKnown,
+  onClearProject,
   targetProjectLabel,
   joinedProjectName = null,
   projectChoice,
@@ -167,7 +175,7 @@ export function WorkflowSetupTab({
   existingRepoAllowed,
   deploymentProvisioning,
   envProvisioningEnabled,
-  onpremHosting,
+  hosting,
   existingRepoBaseBranch,
   existingRepoDiscovery,
   existingRepoFullName,
@@ -196,18 +204,13 @@ export function WorkflowSetupTab({
   const projectQuota = findProjectQuota(usageItems);
   const projectQuotaReached = isProjectQuotaReached(projectQuota);
   const hasSelectedProjectType = Boolean(projectCatalog.selectedProjectType);
-  // With every environment on-prem there is no Render service to configure,
-  // so the Render-variable rule does not hold the Delivery step or Create.
-  const renderVariablesMissing = renderVariablesBlocking(
-    deploymentProvisioning.renderVariablesMissing,
-    environmentHosting({
-      environments: form.environments,
-      environmentsEnabled: form.environmentsEnabled,
-      isMicroservicesShape: projectCatalog.isMicroservicesShape,
-      isMultiRepoShape: projectCatalog.isMultiRepoShape,
-      onpremStatus: onpremHosting.status,
-    }).mode,
-  );
+  // Only Vercel / Render has a Render service to configure, so the
+  // Render-variable rule holds the Delivery step and Create for it alone.
+  const renderVariablesMissing = renderVariablesBlockingFor({
+    choice: hosting.choice,
+    provisioningOffered: envProvisioningEnabled,
+    missing: deploymentProvisioning.hostedRenderVariablesMissing,
+  });
   const createDisabled = isCreateDisabled({
     isCreatingProject,
     projectQuotaReached,
@@ -260,6 +263,7 @@ export function WorkflowSetupTab({
     creationScope,
     workspaceCount: countWorkspaces(workspaces),
     selectedWorkspaceId,
+    projectKnown,
   });
   const wizardStepReady = wizardStepReadyFlags({
     blueprint: isBlueprintReady({
@@ -277,9 +281,8 @@ export function WorkflowSetupTab({
       repoName: form.repoName,
       isMicroservicesShape: projectCatalog.isMicroservicesShape,
       isMultiRepoShape: projectCatalog.isMultiRepoShape,
-      serviceName: form.serviceName,
     }),
-    automation: isAutomationStepReady(form.outputFileName, form.nodeVersion),
+    automation: isAutomationStepReady(form.nodeVersion),
     delivery: !renderVariablesMissing,
     createReady: !createDisabled,
   });
@@ -360,6 +363,8 @@ export function WorkflowSetupTab({
           onChangeWorkspace={onChangeWorkspace}
           selectedWorkspaceId={selectedWorkspaceId}
           workspaces={workspaces}
+          projectKnown={projectKnown}
+          onClearProject={onClearProject}
           targetProjectLabel={targetProjectLabel}
         />
         <CatalogLoadingNotice loading={projectCatalog.loadingProjectOptions} />
@@ -404,7 +409,7 @@ export function WorkflowSetupTab({
           deploymentOwnershipMode={deploymentOwnershipMode}
           deploymentProvisioning={deploymentProvisioning}
           envProvisioningEnabled={envProvisioningEnabled}
-          onpremHosting={onpremHosting}
+          hosting={hosting}
           finalCreateDisabled={finalCreateDisabled}
           form={form}
           github={github}

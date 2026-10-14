@@ -2,6 +2,8 @@ import {
   applicableTargetProject,
   chosenTargetProject,
   createRepositoryBlocker,
+  createTargetView,
+  createWorkspaceId,
   effectiveDeliveryProjectId,
   projectChoiceEntries,
   projectChoiceOptions,
@@ -149,5 +151,37 @@ describe("the target Project", () => {
   it("scopes the create payload", () => {
     expect(scopeCreatePayload({ repoName: "x" }, "ws-1", DP)).toEqual({ repoName: "x", workspaceId: "ws-1", deliveryProjectId: DP });
     expect(scopeCreatePayload({ repoName: "x" }, undefined, undefined)).toEqual({ repoName: "x" });
+  });
+});
+
+describe("createWorkspaceId", () => {
+  const CHOSEN = { id: "dp-9", name: "wallet", groupId: "ws-2" };
+
+  it("is the known Project's own team, else the team picked", () => {
+    expect(createWorkspaceId(TARGET, null, null)).toBe("ws-1");
+    expect(createWorkspaceId(TARGET, null, "ws-2")).toBe("ws-1");
+    expect(createWorkspaceId(null, CHOSEN, null)).toBe("ws-2");
+    expect(createWorkspaceId(null, null, "ws-2")).toBe("ws-2");
+    expect(createWorkspaceId(null, null, null)).toBeNull();
+  });
+
+  it("drives the whole view: the Project line replaces the team box", () => {
+    expect(
+      createTargetView({ linked: TARGET, chosen: null, selectedWorkspaceId: null, workspaces: WORKSPACES }),
+    ).toEqual({
+      workspaceId: "ws-1",
+      projectKnown: true,
+      projectChosen: false,
+      label: "Checkout squad / testfinals",
+      linkedProjectName: "testfinals",
+      joinedProjectName: "testfinals",
+      chosenProjectId: null,
+    });
+    expect(
+      createTargetView({ linked: null, chosen: CHOSEN, selectedWorkspaceId: "ws-2", workspaces: WORKSPACES }),
+    ).toMatchObject({ workspaceId: "ws-2", projectKnown: true, projectChosen: true, label: "Payments / wallet" });
+    expect(
+      createTargetView({ linked: null, chosen: null, selectedWorkspaceId: "ws-2", workspaces: WORKSPACES }),
+    ).toMatchObject({ workspaceId: "ws-2", projectKnown: false, label: null });
   });
 });

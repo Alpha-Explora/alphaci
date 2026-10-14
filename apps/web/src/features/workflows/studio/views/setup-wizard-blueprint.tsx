@@ -124,9 +124,9 @@ function StandaloneCatalogFields({
   projectCatalog,
 }: Readonly<{ projectCatalog: ProjectOptionsCatalogState }>) {
   return (
-    <div className="form-pair-row" style={{ gap: "1rem" }}>
-      <div>
-        <label className="input-label" htmlFor="project-type-select" style={labelAccentStyle}>
+    <div className="wizard-grid">
+      <div className="wizard-field">
+        <label className="wizard-field__label" htmlFor="project-type-select">
           Language / framework
         </label>
         <select
@@ -142,13 +142,13 @@ function StandaloneCatalogFields({
             </option>
           ))}
         </select>
-        <p style={{ color: "var(--text-muted)", fontSize: "0.72rem", margin: "0.3rem 0 0", lineHeight: 1.4 }}>
-          TypeScript • JavaScript
+        <p className="wizard-field__hint">
+          {projectCatalog.selectedProjectType?.language ?? "TypeScript • JavaScript"}
         </p>
       </div>
 
-      <div>
-        <label className="input-label" htmlFor="workflow-recipe-select" style={labelAccentStyle}>
+      <div className="wizard-field">
+        <label className="wizard-field__label" htmlFor="workflow-recipe-select">
           Workflow recipe
         </label>
         <select
@@ -165,7 +165,7 @@ function StandaloneCatalogFields({
           ))}
         </select>
         {projectCatalog.selectedWorkflowRecipe?.description ? (
-          <p style={{ color: "var(--text-muted)", fontSize: "0.75rem", margin: "0.3rem 0 0", lineHeight: 1.5 }}>
+          <p className="wizard-field__hint">
             {projectCatalog.selectedWorkflowRecipe.description}
           </p>
         ) : null}

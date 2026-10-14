@@ -1,8 +1,8 @@
 import type { EnvOwnershipMode, UsageLimitItem } from "@/shared/api/contracts";
-import type { OnpremHosting } from "../model/onprem-hosting-rules";
 import type { CreateProjectFormState } from "../view-models/use-create-project-form";
 import type { DeploymentProvisioningFormState } from "../view-models/use-deployment-provisioning-form";
 import type { GithubInstallationsState } from "../view-models/use-github-installations";
+import type { HostingChoiceState } from "../view-models/use-hosting-choice";
 import type { ProjectOptionsCatalogState } from "../view-models/use-project-options-catalog";
 import type { TeamProjectOptionsStatus } from "../view-models/use-team-project-options";
 
@@ -28,8 +28,8 @@ export interface WizardStepProps {
   /** The Project the repository joins (read-only line, no name asked), or null. */
   joinedProjectName: string | null;
   onCreateProject: () => void;
-  /** Whether the Environments step offers "On-prem host". */
-  onpremHosting: OnpremHosting;
+  /** The Delivery step's project-wide Hosting choice (Vercel / Render, on-prem, none). */
+  hosting: HostingChoiceState;
   /**
    * A Developer without a `?project=` link chooses the Project here, in place
    * of the free Project name; null for everyone who need not choose.

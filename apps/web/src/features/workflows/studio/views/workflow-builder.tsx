@@ -106,12 +106,12 @@ export function WorkflowBuilder({ guest = false, session, onboardingCompleted }:
     activeView, statusMessage, isCreatingProject, isDiscoveringExistingRepo, isSettingUpExistingRepo,
     createResult, existingRepoDiscovery, existingRepoResult, setupMode, setSetupMode,
     existingRepoFullName, setExistingRepoFullName, existingRepoBaseBranch, setExistingRepoBaseBranch,
-    workspaces, selectedCreateWorkspaceId, setSelectedCreateWorkspaceId, targetProjectLabel,
-    joinedProjectName, projectChoice, projectBlocker,
+    workspaces, setSelectedCreateWorkspaceId, createWorkspaceId, projectKnown, clearChosenProject,
+    targetProjectLabel, joinedProjectName, projectChoice, projectBlocker,
     showProjects, openIndividualSetup,
     handleCreateProject, handleDiscoverExistingRepo, handleSetupExistingRepo, handleGenerateWorkflow,
     catalog, projectCatalog, projects, createForm, deploymentProvisioning,
-    deploymentOwnershipMode, envProvisioningEnabled, onpremHosting, github, startTour,
+    deploymentOwnershipMode, envProvisioningEnabled, hosting, github, startTour,
     startCurrentProjectsTour,
   } = vm;
 
@@ -122,7 +122,7 @@ export function WorkflowBuilder({ guest = false, session, onboardingCompleted }:
     handleDiscoverExistingRepo,
     handleGenerateWorkflow,
     handleSetupExistingRepo,
-    selectedCreateWorkspaceId,
+    createWorkspaceId,
   });
 
   return (
@@ -144,7 +144,7 @@ export function WorkflowBuilder({ guest = false, session, onboardingCompleted }:
                 deploymentOwnershipMode={deploymentOwnershipMode}
                 deploymentProvisioning={deploymentProvisioning}
                 envProvisioningEnabled={envProvisioningEnabled}
-                onpremHosting={onpremHosting}
+                hosting={hosting}
                 github={github}
                 existingRepoBaseBranch={existingRepoBaseBranch}
                 existingRepoDiscovery={existingRepoDiscovery}
@@ -163,8 +163,10 @@ export function WorkflowBuilder({ guest = false, session, onboardingCompleted }:
                 onSetupExistingRepo={actions.onSetupExistingRepo}
                 creationScope="choose-team"
                 workspaces={workspaces}
-                selectedWorkspaceId={selectedCreateWorkspaceId}
+                selectedWorkspaceId={createWorkspaceId}
                 onChangeWorkspace={setSelectedCreateWorkspaceId}
+                projectKnown={projectKnown}
+                onClearProject={clearChosenProject}
                 targetProjectLabel={targetProjectLabel}
                 joinedProjectName={joinedProjectName}
                 projectChoice={projectChoice}
@@ -201,7 +203,8 @@ function studioGuestActions(input: {
   handleDiscoverExistingRepo: () => void;
   handleGenerateWorkflow: () => void;
   handleSetupExistingRepo: () => void;
-  selectedCreateWorkspaceId: string | null;
+  /** The team the repository is created in (a known Project's own, else the pick). */
+  createWorkspaceId: string | null;
 }): {
   onCreateProject: () => void;
   onDiscoverExistingRepo: () => void;
@@ -217,7 +220,7 @@ function studioGuestActions(input: {
     };
   }
   return {
-    onCreateProject: () => void input.handleCreateProject(input.selectedCreateWorkspaceId ?? undefined),
+    onCreateProject: () => void input.handleCreateProject(input.createWorkspaceId ?? undefined),
     onDiscoverExistingRepo: input.handleDiscoverExistingRepo,
     onGenerateWorkflow: input.handleGenerateWorkflow,
     onSetupExistingRepo: input.handleSetupExistingRepo,

@@ -145,12 +145,14 @@ function ExistingRepoSetupFields({
       ) : null}
 
       {/* This path never joins an existing Project, so the name is always asked for. */}
-      <ProjectNameField
-        joinedProjectName={null}
-        value={projectName}
-        onChange={onChangeProjectName}
-        serverError={projectNameError}
-      />
+      <div className="wizard-field">
+        <ProjectNameField
+          joinedProjectName={null}
+          value={projectName}
+          onChange={onChangeProjectName}
+          serverError={projectNameError}
+        />
+      </div>
 
       <div className="form-pair-row" style={{ gap: "1rem" }}>
         <div>

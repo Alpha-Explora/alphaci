@@ -60,7 +60,7 @@ describe("DeploymentProvisioningSetup", () => {
     });
   });
 
-  it("builds a Render backend target with write-only env vars", () => {
+  it("shows a Render backend card with only the fields that take effect", () => {
     const onChange = jest.fn();
     const value: DeploymentProvisioningRequest = {
       enabled: true,
@@ -83,7 +83,6 @@ describe("DeploymentProvisioningSetup", () => {
 
     const rendered = render(
       <DeploymentProvisioningSetup
-        enabled
         repoShape="single-app"
         selectedProjectKind="backend"
         value={value}
@@ -91,26 +90,32 @@ describe("DeploymentProvisioningSetup", () => {
       />,
     );
 
-    expect(rendered.container.textContent).toContain("Deployment provisioning");
+    // No on/off switch: the Delivery step's Hosting choice decides.
     expect(
-      rendered.container.querySelector<HTMLInputElement>(
-        "input[aria-label='Provision deployment target']",
-      ),
-    ).toBeChecked();
-    expect(rendered.container.textContent).toContain("Render backend");
-    expect(
-      rendered.container.querySelector<HTMLSelectElement>(
-        "select[aria-label='Provider']",
-      ),
+      rendered.container.querySelector("input[aria-label='Provision deployment target']"),
     ).toBeNull();
+    expect(rendered.container.textContent).toContain("Render backend");
+    expect(rendered.container.textContent).toContain("Centralized on ALPHACI");
     expect(
-      rendered.container.querySelector<HTMLSelectElement>(
-        "select[aria-label='Render runtime']",
-      ),
-    ).toHaveValue("docker");
-    expect(rendered.container.textContent).toContain("Node.js / Bun");
-    expect(rendered.container.textContent).toContain("Python");
-    expect(rendered.container.textContent).toContain("Go");
+      rendered.container.querySelector<HTMLInputElement>("input[aria-label='Provider project name']"),
+    ).toHaveValue("orders-api-test");
+    expect(rendered.container.textContent).toContain("Service name");
+    expect(
+      rendered.container.querySelector<HTMLInputElement>("input[aria-label='Render region']"),
+    ).toHaveValue("singapore");
+    expect(rendered.container.textContent).toContain("free web service");
+    // Ignored for a managed Render service, so never shown.
+    for (const hidden of [
+      "Render runtime",
+      "Render deployment method",
+      "Provider build command",
+      "Provider start command",
+      "Provider root directory",
+      "Provider",
+    ]) {
+      expect(rendered.container.querySelector(`[aria-label='${hidden}']`)).toBeNull();
+    }
+    expect(rendered.container.textContent).not.toContain("npm ci && npm run build");
     expect(
       rendered.container.querySelector<HTMLInputElement>(
         "input[aria-label='Variable value 1']",
@@ -123,7 +128,7 @@ describe("DeploymentProvisioningSetup", () => {
     rendered.unmount();
   });
 
-  it("updates the Render runtime choice", () => {
+  it("updates the region and where the target's variables go", () => {
     const onChange = jest.fn();
     const value: DeploymentProvisioningRequest = {
       enabled: true,
@@ -131,14 +136,9 @@ describe("DeploymentProvisioningSetup", () => {
         {
           slot: "backend",
           provider: "render",
-          ownershipMode: "byo",
-          renderDeployMethod: "native_git",
-          renderRuntime: "node",
-          projectName: "orders-api-test",
-          branchName: "test",
-          rootDirectory: ".",
-          buildCommand: "npm ci && npm run build",
-          startCommand: "npm run start:prod",
+          ownershipMode: "flowci_managed",
+          projectName: "orders-api",
+          branchName: "uat",
           env: [{ lane: "preview" as const, vars: [] }],
         },
       ],
@@ -146,7 +146,6 @@ describe("DeploymentProvisioningSetup", () => {
 
     const rendered = render(
       <DeploymentProvisioningSetup
-        enabled
         repoShape="single-app"
         selectedProjectKind="backend"
         value={value}
@@ -155,21 +154,44 @@ describe("DeploymentProvisioningSetup", () => {
     );
 
     changeValue(
-      rendered.container.querySelector<HTMLSelectElement>(
-        "select[aria-label='Render runtime']",
-      )!,
-      "python",
+      rendered.container.querySelector<HTMLInputElement>("input[aria-label='Render region']")!,
+      "frankfurt",
+    );
+    expect(onChange).toHaveBeenLastCalledWith(
+      expect.objectContaining({ targets: [expect.objectContaining({ renderRegion: "frankfurt" })] }),
     );
 
-    expect(onChange).toHaveBeenCalledWith(
+    const lane = rendered.container.querySelector<HTMLSelectElement>(
+      "select[aria-label='Provisioning environment']",
+    )!;
+    expect(Array.from(lane.options).map((option) => option.textContent)).toEqual([
+      "uat branch",
+      "Production",
+    ]);
+    changeValue(lane, "production");
+    expect(onChange).toHaveBeenLastCalledWith(
       expect.objectContaining({
-        targets: [
-          expect.objectContaining({
-            renderRuntime: "python",
-          }),
-        ],
+        targets: [expect.objectContaining({ env: [{ lane: "production", vars: [] }] })],
       }),
     );
+
+    rendered.unmount();
+  });
+
+  it("keeps shared defaults collapsed until opened", () => {
+    const rendered = render(
+      <DeploymentProvisioningSetup
+        repoShape="single-app"
+        selectedProjectKind="backend"
+        value={{ enabled: true, targets: [] }}
+        onChange={jest.fn()}
+      />,
+    );
+    const details = rendered.container.querySelector<HTMLDetailsElement>("details.wizard-shared-defaults");
+    expect(details).not.toBeNull();
+    expect(details!.open).toBe(false);
+    expect(details!.querySelector("summary")?.textContent).toContain("Shared defaults");
+    expect(details!.querySelector("summary")?.textContent).toContain("Optional");
 
     rendered.unmount();
   });
@@ -218,7 +240,6 @@ describe("DeploymentProvisioningSetup", () => {
 
     const rendered = render(
       <DeploymentProvisioningSetup
-        enabled
         repoShape="single-app"
         selectedProjectKind="backend"
         value={value}
@@ -310,7 +331,6 @@ describe("DeploymentProvisioningSetup", () => {
 
     const rendered = render(
       <DeploymentProvisioningSetup
-        enabled
         repoShape="multi"
         value={value}
         onChange={onChange}
@@ -385,7 +405,6 @@ describe("DeploymentProvisioningSetup", () => {
 
     const rendered = render(
       <DeploymentProvisioningSetup
-        enabled
         repoShape="single-app"
         selectedProjectKind="frontend"
         value={value}
@@ -421,7 +440,6 @@ describe("DeploymentProvisioningSetup", () => {
     const onChange = jest.fn();
     const rendered = render(
       <DeploymentProvisioningSetup
-        enabled
         repoShape="single-app"
         selectedProjectKind="backend"
         value={{ enabled: true, targets: [] }}
@@ -431,10 +449,8 @@ describe("DeploymentProvisioningSetup", () => {
 
     expect(rendered.container.textContent).toContain("Render backend");
     expect(
-      rendered.container.querySelector<HTMLSelectElement>(
-        "select[aria-label='Render runtime']",
-      ),
-    ).toHaveValue("docker");
+      rendered.container.querySelector<HTMLInputElement>("input[aria-label='Render region']"),
+    ).toHaveValue("singapore");
 
     rendered.unmount();
   });
@@ -443,7 +459,6 @@ describe("DeploymentProvisioningSetup", () => {
     const onChange = jest.fn();
     const rendered = render(
       <DeploymentProvisioningSetup
-        enabled
         repoShape="single-app"
         selectedProjectKind="frontend"
         value={{ enabled: true, targets: [] }}
@@ -452,10 +467,9 @@ describe("DeploymentProvisioningSetup", () => {
     );
 
     expect(rendered.container.textContent).toContain("Vercel frontend");
+    expect(rendered.container.textContent).toContain("Project name");
     expect(
-      rendered.container.querySelector<HTMLSelectElement>(
-        "select[aria-label='Render runtime']",
-      ),
+      rendered.container.querySelector<HTMLInputElement>("input[aria-label='Render region']"),
     ).toBeNull();
 
     rendered.unmount();

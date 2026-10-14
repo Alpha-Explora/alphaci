@@ -30,6 +30,8 @@ interface BuildPayloadInput {
   ownerType?: "personal" | "organization";
   installationId?: number;
   deploymentProvisioning?: CreateProjectRequest["deploymentProvisioning"];
+  /** The project's own environments, sent only with on-prem hosting. */
+  environments?: readonly EnvironmentDraft[];
   /** The deployable slots, only when the deployment offers on-prem hosting. */
   onpremSlots?: readonly EnvTargetSlot[];
 }
@@ -47,8 +49,8 @@ export function useCreateProjectForm() {
   const [coverageThreshold, setCoverageThreshold] = useState("80");
   const [outputFileName, setOutputFileName] = useState("ci.yml");
   const [serviceNameTouched, setServiceNameTouched] = useState(false);
-  // Opt-in: without it the project keeps the fixed dev, uat, main path.
-  const [environmentsEnabled, setEnvironmentsEnabled] = useState(false);
+  // The fixed dev, uat, main path. The wizard shows it read-only and sends it
+  // only with on-prem hosting; the editing rules stay in the model.
   const [environments, setEnvironments] = useState<EnvironmentDraft[]>([
     ...ENVIRONMENT_TEMPLATE,
   ]);
@@ -116,8 +118,6 @@ export function useCreateProjectForm() {
     return buildCreateProjectPayload({
       repoName,
       visibility,
-      serviceName,
-      servicePath,
       nodeVersion,
       coverageThreshold,
       outputFileName,
@@ -129,7 +129,6 @@ export function useCreateProjectForm() {
       frontendWorkflowRecipeId,
       frontendServiceName: effectiveFrontendServiceName,
       frontendServicePath,
-      ...(environmentsEnabled ? { environments } : {}),
       ...input,
     });
   }
@@ -142,7 +141,6 @@ export function useCreateProjectForm() {
     buildPayload,
     coverageThreshold,
     environments,
-    environmentsEnabled,
     frontendProjectTypeId,
     frontendServiceName: effectiveFrontendServiceName,
     frontendServicePath,
@@ -160,7 +158,6 @@ export function useCreateProjectForm() {
     setBackendWorkflowRecipeId,
     setCoverageThreshold,
     setEnvironments,
-    setEnvironmentsEnabled,
     setFrontendProjectTypeId,
     setFrontendServiceName,
     setFrontendServicePath,

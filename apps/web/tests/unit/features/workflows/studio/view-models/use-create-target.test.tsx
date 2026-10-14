@@ -70,8 +70,41 @@ describe("useCreateTarget", () => {
     expect(get().target.label).toBe("Checkout squad / testfinals");
     expect(get().target.deliveryProjectIdFor("ws-1")).toBe(DP);
     expect(get().target.deliveryProjectIdFor("ws-2")).toBeUndefined();
+    expect(get().target.workspaceId).toBe("ws-1");
+    expect(get().target.projectKnown).toBe(true);
+    expect(get().target.projectChosen).toBe(false);
 
+    // The Project fixes the team: a different team selection does not move it.
     act(() => get().setSelected("ws-2"));
+    expect(get().target.label).toBe("Checkout squad / testfinals");
+    expect(get().target.workspaceId).toBe("ws-1");
+  });
+
+  it("takes the team from a resolved ?project= link when no team was selected", async () => {
+    mockedParams.mockReturnValue(new URLSearchParams(`tab=setup&project=${DP}`));
+    mockedGet.mockResolvedValue({ id: DP, name: "ledger", groupId: "ws-2", status: "active" } as never);
+    const { get } = renderTarget(null);
+    expect(get().target.workspaceId).toBeNull();
+    expect(get().target.projectKnown).toBe(false);
+    await flush();
+    expect(get().target.workspaceId).toBe("ws-2");
+    expect(get().target.projectKnown).toBe(true);
+    expect(get().target.label).toBe("Payments / ledger");
+    expect(get().target.deliveryProjectIdFor(get().target.workspaceId)).toBe(DP);
+  });
+
+  it("takes the team from a picked Project, and lets it go again", async () => {
+    mockedParams.mockReturnValue(new URLSearchParams("tab=setup"));
+    const { get } = renderTarget("ws-2");
+    act(() => get().target.chooseProject({ id: "dp-9", name: "wallet", featureCount: 1 }));
+    expect(get().target.workspaceId).toBe("ws-2");
+    expect(get().target.projectKnown).toBe(true);
+    expect(get().target.projectChosen).toBe(true);
+    expect(get().target.chosenProjectId).toBe("dp-9");
+    expect(get().target.label).toBe("Payments / wallet");
+
+    act(() => get().target.chooseProject(null));
+    expect(get().target.projectKnown).toBe(false);
     expect(get().target.label).toBeNull();
   });
 
