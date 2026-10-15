@@ -43,23 +43,11 @@ export type DeploymentStrategy =
   | "render_image_pushed"
   | "render_existing_service";
 export type RenderServiceType =
-  | "web_service"
-  | "private_service"
-  | "background_worker"
-  | "cron_job";
+  "web_service" | "private_service" | "background_worker" | "cron_job";
 export type RenderRuntime =
-  | "node"
-  | "python"
-  | "ruby"
-  | "go"
-  | "rust"
-  | "elixir"
-  | "docker";
+  "node" | "python" | "ruby" | "go" | "rust" | "elixir" | "docker";
 export type RenderDeployMethod =
-  | "managed_image"
-  | "byo_image"
-  | "native_git"
-  | "existing_service";
+  "managed_image" | "byo_image" | "native_git" | "existing_service";
 
 export interface SessionUser {
   id: string;
@@ -626,13 +614,7 @@ export interface CatalogCategoriesResponse {
 }
 
 export type ProjectOptionKey =
-  | "lint"
-  | "unit"
-  | "build"
-  | "coverage"
-  | "security"
-  | "docker"
-  | "e2e";
+  "lint" | "unit" | "build" | "coverage" | "security" | "docker" | "e2e";
 
 export type MvpProjectOptionKey = Exclude<ProjectOptionKey, "e2e">;
 
@@ -1230,12 +1212,7 @@ export interface ProjectCiRunRerunResponse {
 }
 
 export type DeploymentHistoryStatus =
-  | "queued"
-  | "building"
-  | "ready"
-  | "failed"
-  | "canceled"
-  | "unknown";
+  "queued" | "building" | "ready" | "failed" | "canceled" | "unknown";
 
 export interface ProjectDeploymentHistoryItem {
   id: string;
@@ -1287,8 +1264,7 @@ export interface ProjectDeploymentsResponse {
  * real address, and a freshly provisioned project is made entirely of them.
  */
 export type ProjectBranchPreviewStatus =
-  | DeploymentHistoryStatus
-  | "not_deployed";
+  DeploymentHistoryStatus | "not_deployed";
 
 export interface ProjectBranchPreview {
   branch: string;
@@ -1387,6 +1363,7 @@ export type ProjectDriftRepairAction =
   | "rotate_ci_token"
   | "detach_target"
   | "repair_branch_protection"
+  | "repair_ci_api_url"
   | "mark_ignored";
 
 export interface ProjectDriftRepairResponse {
@@ -1546,11 +1523,7 @@ export interface PendingAccountResponse {
 /* ── CI Runs ─────────────────────────────────────────────────────────────── */
 
 export type RunOverallStatus =
-  | "success"
-  | "failure"
-  | "running"
-  | "cancelled"
-  | "partial";
+  "success" | "failure" | "running" | "cancelled" | "partial";
 /**
  * Mirrors STAGE_ORDER in the backend's pipelines/ci/application/stages.ts, and
  * the CHECK constraint on workflow.ci_run_reports.stage. All three widen
@@ -1755,7 +1728,7 @@ export interface RunsResponse {
  * Derived from CreateProjectResponse plus helpers computed on the client side.
  */
 export interface CreateProjectResult {
-  hostAssignments?: CreateProjectResponse['hostAssignments'];
+  hostAssignments?: CreateProjectResponse["hostAssignments"];
   hostAssignmentError?: string;
   /** Database ID of the provisioned project record. */
   id: string;
