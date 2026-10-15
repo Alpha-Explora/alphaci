@@ -22,9 +22,9 @@ import {
   headChangeMessages,
   headLabel,
   isRunLocked,
-  REQUIREMENTS_CHANGED_NOTE,
   repositoriesLabel,
   requirementsChangedLabel,
+  requirementsChangedNote,
   resolveProjectRunPermissions,
   runFilterEmptyText,
   runFilterLabel,
@@ -186,7 +186,7 @@ function RequirementsChangedNotice({ run, changed }: Readonly<{ run: ProjectQaRu
   return (
     <div className="pqa-alert pqa-alert--info" role="status">
       <p className="pqa-alert__title">{requirementsChangedLabel(run)}</p>
-      <p className="pqa-alert__text">{REQUIREMENTS_CHANGED_NOTE}</p>
+      <p className="pqa-alert__text">{requirementsChangedNote(run)}</p>
     </div>
   );
 }

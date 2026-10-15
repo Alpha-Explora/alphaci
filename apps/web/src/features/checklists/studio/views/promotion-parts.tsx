@@ -5,7 +5,7 @@ import "./promotion.css";
 import { FormDialog } from "@/features/groups/workspace";
 
 import { VerdictPill } from "../../items";
-import { headChangeMessage, headLabel, REQUIREMENTS_CHANGED_NOTE } from "../../model/project-run-rules";
+import { headChangeMessage, headLabel } from "../../model/project-run-rules";
 import {
   approvedCountLabel,
   blockingReasons,
@@ -74,11 +74,6 @@ function ProjectGate({ data }: Readonly<{ data: QaPromotionStatus }>) {
           );
         })}
       </ul>
-      {data.requirementsChanged ? (
-        <p className="qa-promo__muted">
-          Requirements changed since sign-off. {REQUIREMENTS_CHANGED_NOTE}
-        </p>
-      ) : null}
     </>
   );
 }
