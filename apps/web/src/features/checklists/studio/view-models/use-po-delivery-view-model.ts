@@ -33,7 +33,7 @@ export interface PoDeliveryViewModel {
   iteration: CurrentIterationViewModel;
   /** Once it is delivered: Start iteration N+1 for a Product owner or admin (Iterations phase 3). */
   start: StartIterationViewModel;
-  /** Whether to offer Merge all repositories at all. */
+  /** Whether Merge to main merges every repository not in main yet (else it merges this one). */
   canMergeAll: boolean;
   /** The covered repositories not in main yet: what Merge all merges. */
   pending: CoveredRepository[];
@@ -54,7 +54,7 @@ export interface PoDeliveryViewModel {
 
 /**
  * What the iteration watches on the promotion status: its delivery flags and
- * head. A Merge to main from the tab bar changes them, so the per-repository
+ * head. A merge of this repository alone changes them, so the per-repository
  * state is read again. Null until the status is known.
  */
 function promotionWatch(data: QaPromotionStatus | null): string | null {
@@ -63,24 +63,28 @@ function promotionWatch(data: QaPromotionStatus | null): string | null {
 }
 
 /**
- * ViewModel for PO Studio's delivery: the stored per-repository state of the
- * Project's iteration (so a reload still shows what is in main), and — for a
- * Product owner or admin on a Project of two or more repositories — Merge all
- * repositories, with each repository's result and a retry after a partial
- * failure. The server re-checks the gate and decides when the iteration is
- * Delivered; this only asks and explains.
+ * ViewModel for a Project's delivery, shared by the studio's tab bar and PO
+ * Studio's column: the stored per-repository state of the Project's
+ * iteration (so a reload still shows what is in main), and — for a Product
+ * owner or admin on a Project of two or more repositories — the merge of
+ * every repository not in main yet, which the tab bar's Merge to main runs,
+ * with each repository's result and a retry after a partial failure. The
+ * server re-checks the gate and decides when the iteration is Delivered;
+ * this only asks and explains. Disabled (a repository in no Project), it
+ * reads nothing and offers nothing.
  */
 export function usePoDeliveryViewModel(options: {
-  deliveryProjectId: string;
+  deliveryProjectId: string | null;
+  enabled: boolean;
   /** The repository page this studio is on, for "Sign in again". */
   projectId: string;
   appRole: AppRole | null | undefined;
   promotion: QaPromotionViewModel;
 }): PoDeliveryViewModel {
-  const { deliveryProjectId, projectId, appRole, promotion } = options;
+  const { deliveryProjectId, enabled, projectId, appRole, promotion } = options;
   const iteration = useCurrentIterationViewModel({
     deliveryProjectId,
-    enabled: true,
+    enabled,
     watch: promotionWatch(promotion.data),
   });
   const [mergeState, setMergeState] = useState<MergeAllState>("idle");
@@ -92,7 +96,12 @@ export function usePoDeliveryViewModel(options: {
   const offer = canOfferMergeAll(current, appRole) && pending.length > 0;
   // A start re-reads the iteration and the QA run itself (the Project's
   // epoch); the promotion status is this studio's own, so it is asked here.
-  const start = useStartIterationViewModel({ deliveryProjectId, current, appRole, onStarted: promotion.reload });
+  const start = useStartIterationViewModel({
+    deliveryProjectId: deliveryProjectId ?? "",
+    current,
+    appRole,
+    onStarted: promotion.reload,
+  });
 
   function refresh() {
     iteration.reload();
@@ -100,6 +109,7 @@ export function usePoDeliveryViewModel(options: {
   }
 
   async function run(fromDialog: boolean) {
+    if (!deliveryProjectId) return;
     setViaDialog(fromDialog);
     setMergeState("merging");
     setDialogError(null);

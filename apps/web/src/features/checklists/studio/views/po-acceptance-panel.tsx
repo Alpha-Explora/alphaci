@@ -19,9 +19,9 @@ import { UNFILED_REASON } from "../../model/qa-promotion-rules";
 import type { QaScope } from "../../model/qa-scope";
 import type { ProjectRunViewModel } from "../view-models/use-project-run-view-model";
 import { useProjectReopenViewModel } from "../view-models/use-project-signoff-view-model";
-import { usePoDeliveryViewModel, type PoDeliveryViewModel } from "../view-models/use-po-delivery-view-model";
+import type { PoDeliveryViewModel } from "../view-models/use-po-delivery-view-model";
 import type { QaPromotionViewModel } from "../view-models/use-qa-promotion-view-model";
-import { PoDeliveredBanner, PoMergeAll } from "./po-delivery";
+import { PoDeliveredBanner, PoDeliveryState } from "./po-delivery";
 import { RunSummary, SignoffBanner } from "./run-signoff";
 
 function signedSubject(run: ProjectQaRun): string {
@@ -96,31 +96,25 @@ function OpenQaRun({ shown, onOpenQaRun }: Readonly<{ shown: boolean; onOpenQaRu
 /**
  * A Project's acceptance: the delivered banner once its iteration reached
  * main; before that, waiting or ready, each covered repository's stored
- * state with Merge all repositories, and what QA did with the run.
+ * state, and what QA did with the run.
  */
 function ProjectAcceptance({
   qaScope,
-  projectId,
   state,
   projectRun,
   promotion,
+  delivery,
   appRole,
   onOpenQaRun,
 }: Readonly<{
   qaScope: ProjectScope;
-  projectId: string;
   state: PoAcceptanceState;
   projectRun: ProjectRunViewModel;
   promotion: QaPromotionViewModel;
+  delivery: PoDeliveryViewModel;
   appRole: AppRole | null | undefined;
   onOpenQaRun?: () => void;
 }>) {
-  const delivery = usePoDeliveryViewModel({
-    deliveryProjectId: qaScope.deliveryProjectId,
-    projectId,
-    appRole,
-    promotion,
-  });
   const run = projectRun.status === "ready" ? projectRun.run : null;
   const delivered = isDelivered(state, delivery);
   const ready = state === "ready";
@@ -141,7 +135,7 @@ function ProjectAcceptance({
       ) : (
         <>
           <AcceptanceStatus ready={ready} run={run} />
-          <PoMergeAll vm={delivery} projectName={qaScope.projectName} />
+          <PoDeliveryState vm={delivery} />
         </>
       )}
       {run ? (
@@ -160,26 +154,27 @@ function ProjectAcceptance({
 
 /**
  * PO Studio's column: whether the Project's release candidate is ready for
- * production, and why not yet; Merge all repositories for a Project of two
- * or more; and, once every repository reached main, the delivered iteration.
- * The single-repository merge is the tab bar's readiness chip and Merge to
- * main above it (the same ones QA Studio shows); this panel is the
- * acceptance around it. Verifying items stays with the QA run, a click away
+ * production, and why not yet; each repository's state on the way to main;
+ * and, once every repository reached main, the delivered iteration. The
+ * merge itself is the tab bar's readiness chip and Merge to main above it
+ * (the same ones QA Studio shows; on a Project of two or more repositories
+ * it merges every one not in main yet); this panel is the acceptance around
+ * it. Verifying items stays with the QA run, a click away
  * in the Checklists tab.
  */
 export function PoAcceptancePanel({
   qaScope,
-  projectId,
   projectRun,
   promotion,
+  delivery,
   appRole,
   onOpenQaRun,
 }: Readonly<{
   qaScope: QaScope;
-  /** The repository page this studio is on. */
-  projectId: string;
   projectRun: ProjectRunViewModel;
   promotion: QaPromotionViewModel;
+  /** The Project's delivery, shared with the tab bar's Merge to main. */
+  delivery: PoDeliveryViewModel;
   appRole: AppRole | null | undefined;
   /** Opens the Project's QA run (the Checklists tab). */
   onOpenQaRun?: () => void;
@@ -197,10 +192,10 @@ export function PoAcceptancePanel({
   return (
     <ProjectAcceptance
       qaScope={qaScope}
-      projectId={projectId}
       state={state}
       projectRun={projectRun}
       promotion={promotion}
+      delivery={delivery}
       appRole={appRole}
       onOpenQaRun={onOpenQaRun}
     />

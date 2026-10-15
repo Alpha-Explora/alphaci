@@ -21,9 +21,11 @@ import type { QaPromotionIteration } from "../../model/qa-promotion-types";
 import type { PoDeliveryViewModel } from "../view-models/use-po-delivery-view-model";
 import { CheckIcon, MergeIcon } from "./studio-icons";
 
-/* PO Studio's delivery: the delivered banner once the Project's iteration
- * reached main, and — before that — each covered repository's stored state
- * with "Merge all repositories" for a Product owner or admin. */
+/* A Project's delivery: the delivered banner once its iteration reached main
+ * and, before that, each covered repository's stored state (PO Studio's
+ * column); and the tab bar's Merge to main on a Project of two or more
+ * repositories, which merges every one not in main yet, with its
+ * confirmation and per-repository results. */
 
 function bannerTitle(delivered: CurrentIteration | null, fallback: QaPromotionIteration | null): string {
   if (delivered) return deliveredBannerTitle(delivered.iteration);
@@ -154,65 +156,75 @@ function ErrorOutcome({ vm, error }: Readonly<{ vm: PoDeliveryViewModel; error: 
   );
 }
 
-/** How the last Merge all ended: a live region, so the answer is announced. */
-function MergeAllOutcomeView({ vm }: Readonly<{ vm: PoDeliveryViewModel }>) {
+/**
+ * How the last merge of every repository ended, with Retry after a partial
+ * failure. Drawn inside the tab bar's merge live region, so it is announced.
+ */
+export function MergeAllOutcome({ vm }: Readonly<{ vm: PoDeliveryViewModel }>) {
   const outcome = vm.outcome;
-  return (
-    <div className="po-delivery__live" role="status" aria-live="polite">
-      {outcome?.kind === "result" ? <ResultOutcome vm={vm} result={outcome.result} /> : null}
-      {outcome?.kind === "error" ? <ErrorOutcome vm={vm} error={outcome.error} /> : null}
-    </div>
-  );
+  if (outcome?.kind === "result") return <ResultOutcome vm={vm} result={outcome.result} />;
+  if (outcome?.kind === "error") return <ErrorOutcome vm={vm} error={outcome.error} />;
+  return null;
 }
 
 /**
- * The active iteration's delivery: each covered repository's stored state,
- * Merge all repositories (confirmed first) for those the server lets merge,
- * and how the last attempt ended. Nothing at all on a backend without
- * iterations, or before QA signed the Project off as Approved.
+ * The active iteration's delivery in PO Studio's column: each covered
+ * repository's stored state. Merging is the tab bar's Merge to main. Nothing
+ * on a backend without iterations.
  */
-export function PoMergeAll({ vm, projectName }: Readonly<{ vm: PoDeliveryViewModel; projectName: string }>) {
+export function PoDeliveryState({ vm }: Readonly<{ vm: PoDeliveryViewModel }>) {
   const current = vm.iteration.current;
   if (!current || current.iteration.status !== "active") return null;
-  if (current.coveredRepositories.length === 0 && !vm.outcome) return null;
+  if (current.coveredRepositories.length === 0) return null;
   return (
     <section className="po-delivery" aria-label="Delivery to main">
       <p className="qa-toolbar__label">Delivery to main</p>
       <CoveredRows current={current} />
-      {/* After an attempt, its outcome (and Retry) takes the button's place until dismissed. */}
-      {vm.canMergeAll && !vm.outcome ? (
-        <button
-          type="button"
-          className="primary-button po-delivery__merge"
-          disabled={vm.mergeState !== "idle"}
-          onClick={vm.openConfirm}
-        >
-          <MergeIcon />
-          {vm.mergeState === "merging" ? "Merging…" : "Merge all repositories"}
-        </button>
-      ) : null}
-      <MergeAllOutcomeView vm={vm} />
-      {vm.canMergeAll ? (
-        <FormDialog
-          open={vm.dialogOpen}
-          onClose={vm.cancelConfirm}
-          title="Merge all repositories into main?"
-          description={mergeAllConfirmText(projectName, vm.pending)}
-          submitLabel="Merge all repositories"
-          submitting={vm.mergeState === "merging"}
-          error={vm.dialogError}
-          onSubmit={() => void vm.confirmMergeAll()}
-        >
-          <ul className="po-delivery__rows" aria-label="Repositories to merge">
-            {vm.pending.map((repository) => (
-              <li key={repository.projectId} className="po-delivery__row" data-tone="neutral">
-                <span className="po-delivery__name">{repository.repoFullName}</span>
-                <span className="po-delivery__state">uat → main</span>
-              </li>
-            ))}
-          </ul>
-        </FormDialog>
-      ) : null}
     </section>
+  );
+}
+
+/**
+ * The tab bar's Merge to main when it merges every repository not in main
+ * yet (`canMergeAll`): confirmed first, for those the server lets merge.
+ */
+export function MergeAllToMain({ vm }: Readonly<{ vm: PoDeliveryViewModel }>) {
+  if (!vm.canMergeAll) return null;
+  return (
+    <button
+      type="button"
+      className="primary-button qa-promo__merge"
+      disabled={vm.mergeState !== "idle"}
+      onClick={vm.openConfirm}
+    >
+      <MergeIcon />
+      {vm.mergeState === "merging" ? "Merging…" : "Merge to main"}
+    </button>
+  );
+}
+
+/** The confirmation of a merge of every repository: each one named before anything merges. */
+export function MergeAllDialog({ vm, projectName }: Readonly<{ vm: PoDeliveryViewModel; projectName: string }>) {
+  if (!vm.canMergeAll) return null;
+  return (
+    <FormDialog
+      open={vm.dialogOpen}
+      onClose={vm.cancelConfirm}
+      title="Merge every repository into main?"
+      description={mergeAllConfirmText(projectName, vm.pending)}
+      submitLabel="Merge to main"
+      submitting={vm.mergeState === "merging"}
+      error={vm.dialogError}
+      onSubmit={() => void vm.confirmMergeAll()}
+    >
+      <ul className="po-delivery__rows" aria-label="Repositories to merge">
+        {vm.pending.map((repository) => (
+          <li key={repository.projectId} className="po-delivery__row" data-tone="neutral">
+            <span className="po-delivery__name">{repository.repoFullName}</span>
+            <span className="po-delivery__state">uat → main</span>
+          </li>
+        ))}
+      </ul>
+    </FormDialog>
   );
 }
