@@ -1,4 +1,5 @@
 import {
+  showsProjectQaWorkspace,
   createErrorMessage,
   createRepositoryHref,
   deleteConfirmMatches,
@@ -439,5 +440,15 @@ describe("delete Project", () => {
       failedRepository: null,
     });
     expect(deletePartialFailure(apiError(409, { failedRepository: { name: "no id" } })).failedRepository).toBeNull();
+  });
+});
+
+describe("showsProjectQaWorkspace", () => {
+  it("drops the Project's workspace only for a Developer, once the Project has a repository", () => {
+    expect(showsProjectQaWorkspace("member", 2)).toBe(false);
+    expect(showsProjectQaWorkspace("member", 0)).toBe(true);
+    for (const role of ["lead", "qa", "admin", null] as const) {
+      expect(showsProjectQaWorkspace(role, 2)).toBe(true);
+    }
   });
 });

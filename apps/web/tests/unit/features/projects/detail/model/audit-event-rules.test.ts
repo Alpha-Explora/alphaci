@@ -44,7 +44,7 @@ describe("auditEventLabel", () => {
     ["pull_request_created", "Pull request opened"],
     ["pull_request_merged", "Pull request merged"],
     ["workflow_pr_created", "Workflow update pull request opened"],
-    ["qa.run.created", "QA run started"],
+    ["qa.run.created", "QA testing started"],
     ["qa.item.status_changed", "QA item status changed"],
     ["qa.automation.dispatched", "Automated tests started"],
     ["qa.promotion.merged", "Merged to main"],

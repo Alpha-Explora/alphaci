@@ -120,7 +120,7 @@ describe("The Project QA run between iterations", () => {
     iterations.current.mockResolvedValue(normalizeCurrentIteration(waitingWire()));
     const container = await render(<RunHarness role="qa" />);
     expect(waitingText(container)).toMatch(WAITING);
-    expect(buttonNamed(container, "Start Project QA run")).toBeUndefined();
+    expect(buttonNamed(container, "Start QA testing")).toBeUndefined();
     expect(buttonNamed(container, "Start iteration 4")).toBeUndefined();
   });
 
@@ -138,7 +138,7 @@ describe("The Project QA run between iterations", () => {
     expect(waitingText(container)).toBeNull();
     expect(container.querySelector(".iteration-next__text")?.textContent).toMatch(/^Iteration 3 was delivered on .+\.$/);
     expect(buttonNamed(container, "+Start iteration 4")).toBeDefined();
-    expect(buttonNamed(container, "Start Project QA run")).toBeUndefined();
+    expect(buttonNamed(container, "Start QA testing")).toBeUndefined();
   });
 
   it("adds the waiting sentence under a delivered run, which has left the tab", async () => {
@@ -157,7 +157,7 @@ describe("The Project QA run between iterations", () => {
     iterations.current.mockResolvedValue(normalizeCurrentIteration(currentWire()));
     const active = await render(<RunHarness role="qa" />);
     expect(waitingText(active)).toBeNull();
-    expect(buttonNamed(active, "Start Project QA run")).toBeDefined();
+    expect(buttonNamed(active, "Start QA testing")).toBeDefined();
     act(() => root?.unmount());
 
     const older = deliveredWire();
@@ -204,7 +204,7 @@ describe("Start iteration 4: the dialog", () => {
     expect(await dialogGone()).toBe(true);
     // The QA run reads again: the new iteration lets QA start a fresh run.
     expect(runs.current).toHaveBeenCalled();
-    expect(buttonNamed(container, "Start Project QA run")).toBeDefined();
+    expect(buttonNamed(container, "Start QA testing")).toBeDefined();
     expect(buttonNamed(container, "+Start iteration 4")).toBeUndefined();
   });
 

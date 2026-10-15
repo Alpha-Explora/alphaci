@@ -51,7 +51,7 @@ function plural(count: number, one: string, many: string): string {
  * a new uat head.
  */
 export function poWaitingText(run: Pick<ProjectQaRun, "status" | "summary" | "signoff" | "stale"> | null): string {
-  if (!run) return `The QA Team has not started this Project's QA run yet. ${UNLOCK}`;
+  if (!run) return `The QA Team has not started QA testing for this Project yet. ${UNLOCK}`;
   if (run.stale) return `uat moved since this run started, so the QA Team verifies the current heads again. ${UNLOCK}`;
   if (run.status === "signed_off" && run.signoff && run.signoff.verdict !== "APPROVED") {
     const verdict = run.signoff.verdict === "REJECTED" ? "Rejected" : "Conditional";

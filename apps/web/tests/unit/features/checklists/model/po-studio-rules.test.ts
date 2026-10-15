@@ -34,7 +34,7 @@ describe("poAcceptanceState", () => {
 
 describe("poWaitingText", () => {
   it("says what QA still has to do", () => {
-    expect(poWaitingText(null)).toMatch(/^The QA Team has not started this Project's QA run yet\./);
+    expect(poWaitingText(null)).toMatch(/^The QA Team has not started QA testing for this Project yet\./);
     const open = run({ items: [runItemWire({ status: "passed" }), runItemWire({ id: "b", position: 1 }), runItemWire({ id: "c", position: 2 })] });
     expect(poWaitingText(open)).toMatch(/^1 of 3 items passed, 2 still with QA\./);
   });

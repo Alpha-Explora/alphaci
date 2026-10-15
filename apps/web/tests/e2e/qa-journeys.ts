@@ -2563,7 +2563,7 @@ async function qaVerifiesProject({ page, backend, baseUrl }: JourneyContext) {
   await openProjectDetail(page, baseUrl, 'storefront');
   await expectRoleBadge(page, 'qa');
   await visible(page.getByRole('tab', { name: 'QA run', selected: true }), 'the QA run first for the QA Team');
-  await page.getByRole('button', { name: 'Start Project QA run' }).click();
+  await page.getByRole('button', { name: 'Start QA testing' }).click();
   const start = onlyCall(backend.callsTo('POST', new RegExp(`^/delivery-projects/${STOREFRONT_FOLDER}/qa-runs$`)), 'Project run start');
   assert.deepEqual(start.body, {}, 'no body: the server reads every repository head');
   const verify = page.locator('.pqa-run .pqa-verify');
@@ -2855,10 +2855,10 @@ async function developerRequestsRetest({ page, backend, baseUrl }: JourneyContex
   await expectText(summary.locator('li[data-bucket="returned"] .qa-summary__chip-count'), '2', 'two returned items in the summary');
   await expectText(summary.locator('li[data-bucket="todo"] .qa-summary__chip-count'), '1', 'the developer item still to do');
   assert.equal(await summary.locator('li.qa-returned__row').count(), 0, 'no per-item rows on the Overview');
-  assert.deepEqual(await summary.getByRole('button').allTextContents(), ['Open checklist'], 'one control on the summary');
+  assert.deepEqual(await summary.getByRole('button').allTextContents(), ['Open progress'], 'one control on the summary');
   // This server has no Project-wide list, so the Project workspace's My QA items
   // tab (the Checklists tab, a Developer's too) shows the per-repository card.
-  await summary.getByRole('button', { name: 'Open checklist' }).click();
+  await summary.getByRole('button', { name: 'Open progress' }).click();
   const tabs = page.getByRole('tablist', { name: 'Project sections' });
   await visible(tabs.getByRole('tab', { name: 'Checklists', selected: true }), 'the Checklists tab, opened from the summary');
   const card = page.locator('section.qa-returned').filter({ has: page.locator('#qa-mine-title') });

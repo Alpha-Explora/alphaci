@@ -223,7 +223,7 @@ export function promotionRunState(
   status: Pick<QaPromotionStatus, "run">,
 ): PromotionChecklistState {
   const run = status.run;
-  if (!run?.verdict) return { tone: "neutral", label: "No signed-off Project QA run yet", approved: false };
+  if (!run?.verdict) return { tone: "neutral", label: "QA has not signed the Project off yet", approved: false };
   if (run.stale) return { tone: "warning", label: "Project run is stale: uat moved since sign-off", approved: false };
   if (run.verdict === "APPROVED") return { tone: "success", label: "Project run approved for the current heads", approved: true };
   if (run.verdict === "CONDITIONAL") {
@@ -294,7 +294,7 @@ export function blockingReasons(
   if (status.reasons.length > 0) return status.reasons;
   if (status.scope === "unfiled") return [UNFILED_REASON];
   if (status.scope === "project") {
-    return [`The Project's latest signed-off QA run must be Approved on every repository's current ${status.qaBranch} head.`];
+    return [`QA must sign the Project off Approved on its current ${status.qaBranch} build.`];
   }
   if (status.checklists.length === 0) return ["No QA checklist is shared with this project yet."];
   return [`Every shared checklist must be signed off Approved on ${status.qaBranch}'s current commit.`];
@@ -339,7 +339,7 @@ export function mergeDisabledReason(status: MergeReasonStatus, mergedHead: strin
   if (status.iterationDelivered) return `${deliveredTitle(status)}: every repository is already in ${status.targetBranch}.`;
   if (!status.headSha) return `${status.qaBranch}'s current commit could not be resolved.`;
   if (!status.eligible && status.scope === "project") {
-    return `Merging opens once the Project's latest QA run is signed off Approved on every repository's current ${status.qaBranch} head.`;
+    return `Merging opens once QA signs the Project off Approved on its current ${status.qaBranch} build.`;
   }
   if (!status.eligible) {
     return `Merging opens once every shared checklist is signed off Approved on ${status.qaBranch} @ ${shortSha(status.headSha)}.`;

@@ -42,8 +42,8 @@ interface LoadResult {
   missing: boolean;
 }
 
-const LOAD_ERROR = "The Project's QA run could not be loaded. Try again in a moment.";
-const START_ERROR = "The Project QA run could not be started. Try again in a moment.";
+const LOAD_ERROR = "QA testing could not be loaded. Try again in a moment.";
+const START_ERROR = "QA testing could not be started. Try again in a moment.";
 
 function viewStatus(active: boolean, current: LoadResult | null, starting: boolean): ProjectRunViewStatus {
   if (!active) return "idle";
