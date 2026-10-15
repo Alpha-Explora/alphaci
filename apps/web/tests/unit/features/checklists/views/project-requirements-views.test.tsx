@@ -105,6 +105,31 @@ describe("ProjectRequirementsPanel", () => {
     expect(buttonNamed(container, "New Feature")).toBeDefined();
   });
 
+  it("shows each Feature like a closed dropdown: title, description and progress, its user stories hidden", async () => {
+    loadRequirements("lead");
+    const container = await render(<ProjectRequirementsPanel deliveryProjectId="dp-1" appRole="lead" />);
+    const card = container.querySelector<HTMLElement>(".rq-card")!;
+    const toggle = card.querySelector<HTMLButtonElement>(".rq-card__toggle")!;
+    const body = card.querySelector<HTMLElement>(".rq-card__body")!;
+    expect(card.querySelector(".rq-card__title")?.contains(toggle)).toBe(true);
+    expect(toggle.getAttribute("aria-expanded")).toBe("false");
+    expect(toggle.getAttribute("aria-controls")).toBe(body.id);
+    expect(body.hidden).toBe(true);
+    expect(card.querySelector(".rq-meter")).not.toBeNull();
+    // Edit and Archive stay in the header, outside the hidden list.
+    expect(body.contains(buttonNamed(card, "Edit")!)).toBe(false);
+
+    await act(async () => toggle.click());
+    expect(toggle.getAttribute("aria-expanded")).toBe("true");
+    expect(body.hidden).toBe(false);
+    expect(body.querySelector(".rq-items")).not.toBeNull();
+    expect(buttonNamed(body, "Add user story")).toBeDefined();
+
+    await act(async () => toggle.click());
+    expect(toggle.getAttribute("aria-expanded")).toBe("false");
+    expect(body.hidden).toBe(true);
+  });
+
   it("gives a Product owner the Features first, with create, edit, reorder and Progress", async () => {
     loadRequirements("lead");
     const container = await render(

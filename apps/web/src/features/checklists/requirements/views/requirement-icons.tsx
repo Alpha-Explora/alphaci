@@ -36,6 +36,15 @@ export function ArrowDownIcon() {
   );
 }
 
+/** A requirement card's dropdown: points down closed, turned up (by CSS) when open. */
+export function ChevronDownIcon() {
+  return (
+    <Glyph size={13}>
+      <path d="m4.25 6.25 3.75 3.75 3.75-3.75" />
+    </Glyph>
+  );
+}
+
 export function PlusIcon() {
   return (
     <Glyph>
