@@ -206,9 +206,13 @@ export function WorkflowSetupTab({
   reducedMotion,
 }: Readonly<WorkflowSetupTabProps>) {
   const usageItems = useProjectUsage();
-  // The machine list is read here, not only by the Delivery step's rows: whether
-  // the rows show decides whether an on-prem problem can hold the wizard.
-  const hostSelection = useSetupHostSelection();
+  // The machines are read only for on-prem hosting: the Delivery step's rows are
+  // their only use, and whether the rows show decides whether an on-prem problem
+  // can hold the wizard. The hosting choice is the effective one, so on-prem
+  // here means the deployment offers it.
+  const hostSelection = useSetupHostSelection({
+    enabled: hosting.choice === "onprem",
+  });
   const [activeWizardStep, setActiveWizardStep] = useState(0);
   const [furthestWizardStep, setFurthestWizardStep] = useState(0);
   const isExistingMode = isExistingSetupMode(setupMode, existingRepoAllowed);
