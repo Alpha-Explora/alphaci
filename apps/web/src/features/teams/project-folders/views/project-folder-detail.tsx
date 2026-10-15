@@ -13,6 +13,7 @@ import {
   emptyRepositoriesCopy,
   folderFeatureGate,
   repositoryCountLabel,
+  showsProjectQaWorkspace,
   studioLinkFor,
   verifyProjectId,
   type FolderFeatureGate,
@@ -144,6 +145,7 @@ function ProjectQaSection({
   folder,
 }: Readonly<{ vm: ProjectFoldersViewModel; folder: ProjectFolder }>) {
   if (!vm.qaChecklistsEnabled) return null;
+  if (!showsProjectQaWorkspace(vm.appRole, folder.repositories.length)) return null;
   return (
     <section className="pf-detail__block" aria-labelledby="pf-qa-title">
       <h4 className="pf-subhead" id="pf-qa-title">

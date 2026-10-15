@@ -49,7 +49,7 @@ export function historyMetaLabel(iteration: HistoryIteration, locale?: string): 
 /** What a card says instead of a checklist, when it has none to show. */
 export function historyNoReportText(iteration: Pick<HistoryIteration, "status" | "signoffRunId">): string | null {
   if (iteration.status === "active") {
-    return "This iteration is in progress. Its requirements and QA run are on the Checklists tab.";
+    return "This iteration is in progress. Its requirements, progress and QA testing are on the Checklists tab.";
   }
   if (!iteration.signoffRunId) return "No QA sign-off was recorded for this iteration.";
   return null;

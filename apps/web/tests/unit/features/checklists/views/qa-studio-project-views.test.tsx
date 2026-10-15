@@ -148,7 +148,7 @@ describe("QA Studio — Project-level QA", () => {
     setup(projectGate());
     projectRuns.current.mockResolvedValue(normalizeProjectRunCurrent({ run: projectRunWire() }));
     const container = await studio("qa", PROJECT_SCOPE);
-    expect(container.textContent).toContain("Project QA run");
+    expect(container.textContent).toContain("QA testing");
     expect(container.textContent).toContain("storefront");
     expect(container.querySelectorAll(".pqa-group")).toHaveLength(2);
     expect(runs.current).not.toHaveBeenCalled();
@@ -162,7 +162,7 @@ describe("QA Studio — Project-level QA", () => {
     const { chip, popover: section } = readiness(container);
     await click(chip);
     expect(section.hidden).toBe(false);
-    expect(section.textContent).toContain("storefront QA run");
+    expect(section.textContent).toContain("storefront QA testing");
     expect(section.textContent).toContain("Project run is stale: uat moved since sign-off");
     // A Product owner gets no per-repository head rows in the gate.
     expect(section.textContent).not.toContain("orders-api moved since this run (e4f5a6b → ffffeee)");
@@ -170,9 +170,9 @@ describe("QA Studio — Project-level QA", () => {
     expect(section.textContent).not.toContain('"orders-api" moved');
     expect(section.textContent).toContain("The Project's code on uat changed since QA signed it off.");
     expect(section.textContent).not.toContain("Release smoke test");
-    expect(section.querySelector(".qa-promo__why")?.textContent).toMatch(/every repository's current uat head/);
+    expect(section.querySelector(".qa-promo__why")?.textContent).toMatch(/QA signs the Project off Approved on its current uat build/);
     const merge = container.querySelector<HTMLButtonElement>("button.qa-promo__merge")!;
-    expect(document.getElementById(merge.getAttribute("aria-describedby")!)?.textContent).toMatch(/every repository's current uat head/);
+    expect(document.getElementById(merge.getAttribute("aria-describedby")!)?.textContent).toMatch(/QA signs the Project off Approved on its current uat build/);
   });
 
   it("falls back to the repository run when the server has no Project runs", async () => {
@@ -206,7 +206,7 @@ describe("QA Studio — Project-level QA", () => {
     // The QA Team sees the Project: one sentence, no repository or commit.
     expect(container.textContent).toContain("The Project's code on uat changed since this run started.");
     expect(container.textContent).not.toContain("orders-api");
-    expect(container.textContent).toContain("Start Project QA run");
+    expect(container.textContent).toContain("Start QA testing");
   });
 });
 

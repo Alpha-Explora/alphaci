@@ -17,10 +17,16 @@ import { ProjectRequirementsPanel } from "./project-requirements-panel";
 export type ProjectQaWorkspaceTab = "requirements" | "run" | "items";
 type WorkspaceTab = ProjectQaWorkspaceTab;
 
+/**
+ * In the order work moves: what to build (Requirements), where every story
+ * stands (Progress), and QA checking each story on uat before signing the
+ * Project off (QA testing). The ids keep their old names: `#my-qa-items`
+ * deep links and notifications still open Progress.
+ */
 const TABS: ReadonlyArray<{ id: WorkspaceTab; label: string }> = [
   { id: "requirements", label: "Requirements" },
-  { id: "run", label: "QA run" },
-  { id: "items", label: "My QA items" },
+  { id: "items", label: "Progress" },
+  { id: "run", label: "QA testing" },
 ];
 
 const ARROW_STEPS: Readonly<Record<string, number>> = { ArrowRight: 1, ArrowLeft: -1 };

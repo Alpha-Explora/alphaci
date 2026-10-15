@@ -70,7 +70,7 @@ export function verificationBlock(ctx: BlockContext): ReactNode {
       order={ctx.order}
     >
       {data.verification.length ? (
-        <HomeRowList label="Projects with a QA run" reduced={reduced}>
+        <HomeRowList label="Projects in QA testing" reduced={reduced}>
           {data.verification.map((row) => (
             <HomeRow key={row.deliveryProjectId} reduced={reduced}>
               <VerificationLink row={row} reduced={reduced} />
@@ -78,7 +78,7 @@ export function verificationBlock(ctx: BlockContext): ReactNode {
           ))}
         </HomeRowList>
       ) : (
-        <EmptyLine>No Project has a QA run yet.</EmptyLine>
+        <EmptyLine>No Project is in QA testing yet.</EmptyLine>
       )}
     </HomeBlock>
   );
