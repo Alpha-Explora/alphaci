@@ -11,7 +11,9 @@ import type {
   WorkflowSettingsPreviewResponse,
 } from "@/features/projects";
 import { isPullRequestRole } from "../model/pull-request-compose-rules";
+import { useBrowserTestsViewModel } from "../view-models/use-browser-tests-view-model";
 import type { ProjectDetailTabsViewModel } from "../view-models/use-project-detail-tabs-view-model";
+import { BrowserTestsCard } from "./workspace/pipeline-browser-tests-card";
 import { WorkflowStageList } from "./workflow-stage-list";
 import {
   COVERAGE_THRESHOLD_OPTIONS,
@@ -25,7 +27,26 @@ import {
   previewWorkflowLabel,
 } from "../model/project-detail-tab-rules";
 
+/**
+ * What the Verify stage runs in the browser: the starter checks ALPHACI adds,
+ * the repository's own tests, and whether screenshots are on. Pipeline set-up,
+ * so it sits with the workflow it configures (not over the run history). A
+ * backend repository gets nothing.
+ */
+function BrowserTestsSection({ project, vm }: Readonly<{ project: ProvisionedProject; vm: ProjectDetailTabsViewModel }>) {
+  const view = useBrowserTestsViewModel({ projectId: project.id });
+  return (
+    <BrowserTestsCard
+      view={view}
+      onOpenPullRequest={vm.visibleTabs.includes("pulls") ? vm.openPullRequest : undefined}
+      workflowAccess={vm.workflowUpdateAccess}
+      inConfiguration
+    />
+  );
+}
+
 export function WorkflowTab({
+  project,
   vm,
 }: Readonly<{
   project: ProvisionedProject;
@@ -50,6 +71,7 @@ export function WorkflowTab({
         // sees the number.
         onOpenPullRequest={vm.visibleTabs.includes("pulls") ? vm.openPullRequest : undefined}
       />
+      <BrowserTestsSection project={project} vm={vm} />
       <WorkflowFiles files={vm.workflowFiles} />
     </div>
   );
