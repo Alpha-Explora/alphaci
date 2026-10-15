@@ -11,6 +11,24 @@ export function AssignmentForm({ vm }: { vm: AssignmentVm }) {
       }}
       style={{ display: "grid", gap: 8 }}
     >
+      <MachineField vm={vm} />
+      {vm.config.ports.map((port) => (
+        <PortFields key={port.slot} port={port} vm={vm} />
+      ))}
+      <IngressFields vm={vm} />
+      <p>
+        AlphaCI picks a free host port on the machine for each service. Health
+        paths must respond successfully. Production requires an existing HTTPS
+        ingress.
+      </p>
+      <AssignmentActions vm={vm} />
+    </form>
+  );
+}
+/** A choice only when several machines are connected. */
+function MachineField({ vm }: { vm: AssignmentVm }) {
+  if (vm.choices.length > 1)
+    return (
       <label>
         Machine{" "}
         <select
@@ -18,25 +36,23 @@ export function AssignmentForm({ vm }: { vm: AssignmentVm }) {
           onChange={(event) => vm.setSelected(event.target.value)}
           required
         >
-          <option value="">Choose an enrolled machine</option>
-          {vm.hosts.map((host) => (
+          <option value="">Choose a connected machine</option>
+          {vm.choices.map((host) => (
             <option value={host.id} key={host.id}>
               {host.name} · {hostConnectionLabel(host)}
             </option>
           ))}
         </select>
       </label>
-      {vm.config.ports.map((port) => (
-        <PortFields key={port.slot} port={port} vm={vm} />
-      ))}
-      <IngressFields vm={vm} />
-      <p>
-        Use different host ports for every environment on this machine. Health
-        paths must respond successfully. Production requires an existing HTTPS
-        ingress.
-      </p>
-      <AssignmentActions vm={vm} />
-    </form>
+    );
+  const machine =
+    vm.hosts.find((host) => host.id === vm.selected) ?? vm.automatic;
+  return machine ? (
+    <p>Machine: {machine.name}</p>
+  ) : (
+    <p role="status">
+      No machine is connected. Enroll a host, or start its agent, then assign.
+    </p>
   );
 }
 function PortFields({
@@ -46,22 +62,13 @@ function PortFields({
   port: AssignmentVm["config"]["ports"][number];
   vm: AssignmentVm;
 }) {
+  const hostPort = vm.hostPorts.find(
+    (item) => item.slot === port.slot,
+  )?.hostPort;
   return (
     <fieldset>
       <legend>{port.slot}</legend>
-      <label>
-        Host port{" "}
-        <input
-          type="number"
-          required
-          min={1}
-          max={65535}
-          value={port.hostPort}
-          onChange={(event) =>
-            vm.port(port.slot, "hostPort", event.target.value)
-          }
-        />
-      </label>{" "}
+      {hostPort ? <p>Host port {hostPort}</p> : null}
       <label>
         Container port{" "}
         <input
@@ -70,9 +77,7 @@ function PortFields({
           min={1}
           max={65535}
           value={port.containerPort}
-          onChange={(event) =>
-            vm.port(port.slot, "containerPort", event.target.value)
-          }
+          onChange={(event) => vm.port(port.slot, event.target.value)}
         />
       </label>{" "}
       <label>
@@ -145,7 +150,7 @@ function AssignmentActions({ vm }: { vm: AssignmentVm }) {
         <button
           className="ghost-button"
           type="submit"
-          disabled={vm.busy || !vm.selected}
+          disabled={vm.busy || !vm.canAssign}
         >
           {assignLabel(vm)}
         </button>

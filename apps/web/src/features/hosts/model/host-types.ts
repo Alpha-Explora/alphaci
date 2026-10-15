@@ -29,6 +29,8 @@ export interface EnrollmentReceipt {
 }
 export type AssignmentConfig =
   import("@/shared/api/contracts").OnpremAssignmentConfig;
+export type AssignmentRequestConfig =
+  import("@/shared/api/contracts").OnpremAssignmentRequestConfig;
 export interface MachineAssignment {
   id: string;
   machineId: string;
@@ -59,6 +61,25 @@ export function hostConnectionLabel(
   return host.status === "prerequisites_failed"
     ? "Prerequisites failed"
     : "Connected";
+}
+/** Machines AlphaCI assigns to: enrolled, checking in, not revoked. */
+export function healthyHosts(hosts: readonly MachineSummary[]) {
+  return hosts.filter(
+    (host) =>
+      host.status === "connected" || host.status === "prerequisites_failed",
+  );
+}
+/** The request part of a stored config: everything except host ports. */
+export function requestedConfig(
+  config: AssignmentConfig | AssignmentRequestConfig,
+): AssignmentRequestConfig {
+  return {
+    ...config,
+    ports: config.ports.map(({ slot, containerPort }) => ({
+      slot,
+      containerPort,
+    })),
+  };
 }
 export function canManageHosts(
   appRole: string | undefined,
