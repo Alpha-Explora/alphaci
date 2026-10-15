@@ -40,6 +40,11 @@ export interface WizardStepProps {
    * has no Feature), or null. Blocks the Repository step and Create.
    */
   projectBlocker?: string | null;
+  /**
+   * Why Create cannot be sent yet, shown above the Review step's button, or
+   * null. The same reason the top banner gives after a refused Create.
+   */
+  createBlocker?: string | null;
   projectCatalog: ProjectOptionsCatalogState;
   projectQuota: UsageLimitItem | null;
   selectedProjectKind: "frontend" | "backend";

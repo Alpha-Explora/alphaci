@@ -42,6 +42,11 @@ import {
 } from "../model/setup-tab-rules";
 import { REPOSITORY_CREATE_ROLE_NOTE } from "../model/role-gate-rules";
 import { renderVariablesBlockingFor } from "../model/hosting-choice-rules";
+import {
+  createBlockerReason,
+  deliveryHostProblem,
+  isDeliveryStepReady,
+} from "../model/setup-delivery-rules";
 import type { ProjectChoice } from "./setup-wizard-props";
 import { ExistingRepoSetupPanel } from "./existing-repo-setup-panel";
 import { NewRepoWizard, RepositoryCreationProgress } from "./new-repo-wizard";
@@ -265,6 +270,18 @@ export function WorkflowSetupTab({
     selectedWorkspaceId,
     projectKnown,
   });
+  // The on-prem host problem holds the Delivery step and Create, so it is shown
+  // on the Delivery step and again above the Review step's button.
+  const hostProblem = deliveryHostProblem({
+    choice: hosting.choice,
+    environments: form.environments,
+  });
+  const createBlocker = createBlockerReason({
+    hostProblem,
+    renderVariablesMissing,
+    projectBlocker,
+    projectQuota,
+  });
   const wizardStepReady = wizardStepReadyFlags({
     blueprint: isBlueprintReady({
       selectedRepoShapeId: projectCatalog.selectedRepoShapeId,
@@ -283,7 +300,7 @@ export function WorkflowSetupTab({
       isMultiRepoShape: projectCatalog.isMultiRepoShape,
     }),
     automation: isAutomationStepReady(form.nodeVersion),
-    delivery: !renderVariablesMissing,
+    delivery: isDeliveryStepReady({ renderVariablesMissing, hostProblem }),
     createReady: !createDisabled,
   });
   const finalCreateDisabled = isFinalCreateDisabled({
@@ -418,6 +435,7 @@ export function WorkflowSetupTab({
           joinedProjectName={joinedProjectName}
           projectChoice={projectChoice}
           projectBlocker={projectBlocker}
+          createBlocker={createBlocker}
           onBack={goToPreviousWizardStep}
           onCreateProject={onCreateProject}
           onNext={goToNextWizardStep}

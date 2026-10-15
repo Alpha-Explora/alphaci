@@ -130,6 +130,17 @@ jest.mock("../../src/features/workspace/selection/data/workspaces-api", () => ({
   getMyWorkspaces: jest.fn(),
 }));
 
+// The on-prem machine list the Delivery step offers: one online machine, so a
+// test can assign it to an environment without a host inventory request.
+jest.mock("../../src/features/workflows/studio/view-models/use-setup-host-selection", () => ({
+  useSetupHostSelection: () => ({
+    workspaceId: "workspace-1",
+    hosts: [{ id: "machine-1", name: "Build box", status: "online" }],
+    error: null,
+    refresh: () => undefined,
+  }),
+}));
+
 const mockedListFolders = (
   jest.requireMock("../../src/features/teams/project-folders/data/project-folders-repository") as {
     projectFoldersRepository: { list: jest.Mock };
@@ -742,6 +753,25 @@ describe("WorkflowBuilder project setup", () => {
         "[data-testid='setup-project-button']",
       )?.disabled,
     ).toBe(true);
+  });
+
+  it("gives the reason Create is blocked above the Review button, not only in the top banner", async () => {
+    mockedGetMyUsage.mockResolvedValueOnce({
+      enabled: true,
+      plan: "free",
+      items: [{ code: "projects", current: 5, limit: 5, upgradeRequired: true }],
+    });
+
+    await renderBuilder();
+    await advanceToStep(3, { projectTypeId: "nextjs-app", repoName: "demo-next-app" });
+    await clickContinue();
+
+    const button = container.querySelector<HTMLButtonElement>("[data-testid='setup-project-button']");
+    expect(button?.disabled).toBe(true);
+    const blocker = button?.previousElementSibling;
+    expect(blocker?.getAttribute("role")).toBe("alert");
+    expect(blocker?.textContent).toBe("Project quota: Limit reached. Upgrade to continue.");
+    expect(button?.getAttribute("aria-describedby")).toBe(blocker?.id);
   });
 
   it("shows a create project error when createProject rejects", async () => {
@@ -1612,6 +1642,62 @@ describe("WorkflowBuilder project setup", () => {
         "frontend",
         "frontend",
       ]);
+    });
+
+    describe("a machine on Delivery", () => {
+      const PRODUCTION_BLOCKER = "Add an HTTPS URL for Production, or choose Assign later.";
+
+      /** The fieldset of one environment in the machine list, found by its name. */
+      function machineFieldset(name: string): HTMLFieldSetElement | null {
+        const fieldsets = container.querySelectorAll<HTMLFieldSetElement>(
+          "section[aria-label='Choose on-prem machines'] fieldset",
+        );
+        return Array.from(fieldsets).find((fieldset) => fieldset.querySelector("legend")?.textContent === name) ?? null;
+      }
+
+      function productionUrl(): HTMLInputElement {
+        return machineFieldset("Production")!.querySelector<HTMLInputElement>("input[type='url']")!;
+      }
+
+      /** Opens Delivery with on-prem hosting chosen: Continue is open until a machine needs a URL. */
+      async function openOnpremDelivery() {
+        mockedListDeploymentProviders.mockResolvedValue([{ id: "onprem-compose", enabled: true }]);
+        await openDeliveryStep("nestjs-api");
+        await waitForCondition(() => hostingRadio("onprem") !== null);
+        act(() => hostingRadio("onprem")!.click());
+        expect(findButton("Continue")).not.toBeDisabled();
+      }
+
+      it("holds Continue for Production on a machine with no HTTPS URL, and says how to fix it", async () => {
+        await openOnpremDelivery();
+
+        changeValue(machineFieldset("Production")!.querySelector("select")!, "machine-1");
+        expect(findButton("Continue")).toBeDisabled();
+        expect(machineFieldset("Production")?.textContent).toContain(PRODUCTION_BLOCKER);
+        expect(machineFieldset("Test")?.textContent).not.toContain(PRODUCTION_BLOCKER);
+        expect(container.textContent).toContain("Continue is off until the host problem above is fixed.");
+
+        // An http address is not HTTPS, so Production stays held. Each change
+        // re-queries the field: the test's framer-motion mock remounts the step.
+        changeValue(productionUrl(), "http://ledger.example.com");
+        expect(findButton("Continue")).toBeDisabled();
+
+        changeValue(productionUrl(), "https://ledger.example.com");
+        expect(findButton("Continue")).not.toBeDisabled();
+        expect(machineFieldset("Production")?.textContent).not.toContain(PRODUCTION_BLOCKER);
+        expect(container.textContent).not.toContain("Continue is off until the host problem above is fixed.");
+      });
+
+      it("unblocks Continue when Production goes back to Assign later", async () => {
+        await openOnpremDelivery();
+
+        changeValue(machineFieldset("Production")!.querySelector("select")!, "machine-1");
+        expect(findButton("Continue")).toBeDisabled();
+
+        changeValue(machineFieldset("Production")!.querySelector("select")!, "");
+        expect(findButton("Continue")).not.toBeDisabled();
+        expect(machineFieldset("Production")?.textContent).not.toContain(PRODUCTION_BLOCKER);
+      });
     });
   });
 

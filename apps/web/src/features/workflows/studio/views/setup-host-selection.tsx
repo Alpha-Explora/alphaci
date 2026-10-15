@@ -2,6 +2,7 @@
 import Link from "next/link";
 import { useEffect, useRef } from "react";
 import type { EnvironmentDraft } from "../model/project-environments-rules";
+import { onpremHostProblems } from "../model/setup-delivery-rules";
 import { useSetupHostSelection } from "../view-models/use-setup-host-selection";
 export function SetupHostSelection({
   environments,
@@ -92,6 +93,7 @@ export function SetupHostSelection({
       }),
     );
   }
+  const problems = onpremHostProblems(environments);
   return (
     <section aria-label="Choose on-prem machines">
       <h4>Machines</h4>
@@ -115,6 +117,7 @@ export function SetupHostSelection({
           environment={environment}
           index={index}
           hosts={vm.hosts}
+          problem={problems[index] ?? null}
           select={select}
           change={change}
         />
@@ -127,12 +130,15 @@ function SetupHostRow({
   environment,
   index,
   hosts,
+  problem,
   select,
   change,
 }: {
   environment: EnvironmentDraft;
   index: number;
   hosts: ReturnType<typeof useSetupHostSelection>["hosts"];
+  /** Why this environment's machine cannot be used yet, or null. */
+  problem: string | null;
   select: (index: number, machineId: string) => void;
   change: (
     index: number,
@@ -157,6 +163,11 @@ function SetupHostRow({
           ))}{" "}
         </select>
       </label>
+      {problem ? (
+        <p className="wizard-field__hint wizard-field__hint--error" role="alert">
+          {problem}
+        </p>
+      ) : null}
       <SetupAssignmentFields
         environment={environment}
         index={index}
