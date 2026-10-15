@@ -98,7 +98,7 @@ export function selectableWorkspaces(
 }
 
 /** The primary sidebar entries, in order. */
-export type SidebarMainItem = "home" | "projects" | "teams" | "checklists" | "activity" | "inbox";
+export type SidebarMainItem = "home" | "projects" | "teams" | "checklists" | "activity" | "inbox" | "hosts";
 
 
 /**
@@ -168,10 +168,12 @@ export function sidebarMainItems(input: {
   showChecklists?: boolean;
   /** Defaults to SIDEBAR_SHOWS_ACTIVITY. */
   showActivity?: boolean;
+  hostsEnabled?: boolean;
 }): SidebarMainItem[] {
   const items: SidebarMainItem[] = ["home", "projects"];
   if (input.guest) return items;
   items.push("teams");
+  if(input.hostsEnabled)items.push("hosts");
   const showChecklists = input.showChecklists ?? SIDEBAR_SHOWS_CHECKLISTS;
   if (showChecklists && input.qaChecklistsEnabled) items.push("checklists");
   const showActivity = input.showActivity ?? SIDEBAR_SHOWS_ACTIVITY;

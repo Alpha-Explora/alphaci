@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import {HostAssignmentPanel} from '@/features/hosts';
 
 import type { AppRole, DeploymentTarget, EnvTargetSlot } from "@/shared/api/contracts";
 import {
@@ -24,8 +25,10 @@ export function EnvironmentOperationsPanel({
   targets,
   appRole,
   onTargetCreated,
+  workspaceId,
 }: Readonly<{
   projectId: string;
+  workspaceId?: string|null;
   targets: readonly DeploymentTarget[];
   appRole?: AppRole | null;
   onTargetCreated?: (target: DeploymentTarget) => void;
@@ -51,6 +54,7 @@ export function EnvironmentOperationsPanel({
         {vm.rows.map((row) => (
           <li key={row.environment.id}>
             <EnvironmentCard row={row} vm={vm} />
+            {row.hostDelivered&&workspaceId&&row.targets.every(target=>target.slot==='frontend'||target.slot==='backend')?<HostAssignmentPanel key={row.environment.id} projectId={projectId} environmentId={row.environment.id} workspaceId={workspaceId} slots={row.targets.map(target=>target.slot as 'frontend'|'backend')} production={row.environment.role==='production'} canManage={vm.canManageHosts}/>:null}
           </li>
         ))}
       </ol>

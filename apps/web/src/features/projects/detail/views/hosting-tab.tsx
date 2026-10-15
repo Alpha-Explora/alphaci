@@ -50,6 +50,7 @@ export function HostingTab({ project, vm }: TabProps) {
         appRole={vm.appRole}
         onTargetCreated={vm.handleTargetCreated}
         projectId={project.id}
+        workspaceId={project.workspaceId??null}
         targets={vm.deploymentTargets}
       />
       <HostingContent project={project} vm={vm} />

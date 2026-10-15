@@ -11,6 +11,7 @@ import {
 import type { HostingChoiceState } from "../view-models/use-hosting-choice";
 import { DeploymentProvisioningSetup } from "./deployment-provisioning-setup";
 import { EnvironmentsPath } from "./setup-wizard-environments";
+import {SetupHostSelection} from './setup-host-selection';
 import type { WizardStepProps } from "./setup-wizard-props";
 
 function QuotaNotice({
@@ -166,6 +167,7 @@ export function SetupWizardDelivery({
     <div className="wizard-delivery">
       <HostingChoiceField hosting={hosting} />
       <EnvironmentsPath choice={hosting.choice} environments={form.environments} />
+      {hosting.choice==='onprem'?<SetupHostSelection environments={form.environments} onChange={form.setEnvironments} slot={selectedProjectKind}/>:null}
       {hosting.choice === "hosted" ? (
         <HostedTargets
           deploymentOwnershipMode={deploymentOwnershipMode}

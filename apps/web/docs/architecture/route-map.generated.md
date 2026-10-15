@@ -12,7 +12,7 @@ sources:
 
 # Frontend route map
 
-The current App Router exposes **27 pages**. Routes under `src/app/` are a routing table. Feature code lives in `src/features/`.
+The current App Router exposes **28 pages**. Routes under `src/app/` are a routing table. Feature code lives in `src/features/`.
 
 | Route | Page module | Feature composition |
 |---|---|---|
@@ -32,6 +32,7 @@ The current App Router exposes **27 pages**. Routes under `src/app/` are a routi
 | `/groups/[groupId]/systems/[systemId]` | `src/app/(platform)/groups/[groupId]/systems/[systemId]/page.tsx` | `@/features/groups/system-detail` |
 | `/guide` | `src/app/(public)/guide/page.tsx` | `@/features/guide/overview` |
 | `/home` | `src/app/(platform)/home/page.tsx` | `@/features/home/dashboard` |
+| `/hosts` | `src/app/(platform)/hosts/page.tsx` | `@/features/hosts` |
 | `/inbox` | `src/app/(platform)/inbox/page.tsx` | `@/features/notifications/inbox` |
 | `/login` | `src/app/(access)/login/page.tsx` | `@/features/auth/login` |
 | `/projects/[projectId]` | `src/app/(platform)/projects/[projectId]/page.tsx` | `@/features/projects/detail` |

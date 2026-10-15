@@ -1,5 +1,9 @@
 # Directory Update Log
 
+## 2026-10-15
+
+- **Creation**: Added the workspace Hosts route and lean MVVM feature, checksum-verifying installer instructions, explicit Hosting assignments, readiness reasons, and optional project setup selections. Added the on-prem Hosts contract and preserved existing normal sign-in and promotion rules.
+
 ## 2026-09-15
 
 * **Creation**: Added the real Enterprise client-composition settings surface. It is gated by the backend-owned `runtime.client-composition` capability and `clientComposition.enabled` projection, while hosted/EDU profile stubs and artifact scans fail closed on the exported `EnterpriseClientCompositionSettingsView` symbol.
