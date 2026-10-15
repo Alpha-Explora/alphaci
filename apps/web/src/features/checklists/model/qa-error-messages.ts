@@ -54,7 +54,7 @@ export const QA_ERROR_MESSAGES: Readonly<Record<string, string>> = {
   QA_RUN_MISSING_ITEMS:
     "Requirement items were added after this run started, so QA has not verified them. They are now in the run as Pending: reload the run, verify them, then sign off.",
   ITERATION_CARRY_INVALID:
-    "Some selected items can no longer be carried over: only items of the last delivered iteration can be. Close this dialog, reload the page and choose again.",
+    "Items are no longer carried over: a new iteration starts with an empty checklist. Close this dialog, reload the page and start it again.",
 };
 
 /**

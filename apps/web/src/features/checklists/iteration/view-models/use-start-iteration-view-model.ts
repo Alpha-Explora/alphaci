@@ -6,25 +6,16 @@ import type { AppRole } from "@/shared/api/contracts";
 
 import { iterationsRepository } from "../../data/iterations-repository";
 import {
-  carryOverGroups,
-  carryOverItemIds,
-  carrySelectionLabel,
-  selectAllUnfinished,
-  selectedCarryIds,
-  toggleCarryItem,
-  unfinishedItemIds,
-  type CarryOverGroup,
-} from "../../model/iteration-carry-over-rules";
-import {
   ITERATION_GOAL_MAX,
   iterationGoalError,
   iterationNextStep,
   startErrorRefreshesOnClose,
+  startIterationDescription,
   startIterationErrorMessage,
   startIterationInput,
   startIterationLabel,
 } from "../../model/iteration-start-rules";
-import type { CarryOver, CurrentIteration, IterationNextStep, StartedIteration } from "../../model/iteration-types";
+import type { CurrentIteration, IterationNextStep, StartedIteration } from "../../model/iteration-types";
 import { announceIterationChanged } from "./iteration-epoch";
 
 export interface StartIterationViewModel {
@@ -32,80 +23,54 @@ export interface StartIterationViewModel {
   step: IterationNextStep;
   /** "Start iteration 4"; empty unless Start is offered. */
   label: string;
-  /** The delivered iteration the list comes from. */
-  fromIterationNumber: number | null;
+  /** The dialog's sentence: the new iteration starts empty; empty unless Start is offered. */
+  description: string;
   open: boolean;
   goal: string;
   goalMax: number;
   /** An over-long goal, said as the viewer types. */
   goalError: string | null;
-  groups: CarryOverGroup[];
-  selectedCount: number;
-  totalCount: number;
-  unfinishedCount: number;
-  /** "3 of 7 items selected". */
-  selectionLabel: string;
   submitting: boolean;
   /** A refused start, in product words. The dialog stays open with it. */
   error: string | null;
   openDialog: () => void;
   close: () => void;
   setGoal: (goal: string) => void;
-  toggleItem: (id: string) => void;
-  selectAllUnfinished: () => void;
-  clear: () => void;
   submit: () => Promise<void>;
 }
 
 /** The dialog's own state while it is open. */
 interface DialogState {
   goal: string;
-  selected: ReadonlySet<string>;
   error: string | null;
   /** Someone else started it meanwhile: closing re-reads the Project. */
   refreshOnClose: boolean;
 }
 
-const CLOSED: DialogState = { goal: "", selected: new Set<string>(), error: null, refreshOnClose: false };
+const CLOSED: DialogState = { goal: "", error: null, refreshOnClose: false };
 
-/** Opening: no goal, and every unfinished item pre-checked. */
-function freshDialog(carryOver: CarryOver | null): DialogState {
-  return { ...CLOSED, selected: new Set(unfinishedItemIds(carryOver)) };
-}
-
-/** The carry-over list, only while Start is offered. */
-function offeredCarryOver(step: IterationNextStep, current: CurrentIteration | null): CarryOver | null {
-  return step.kind === "start" ? (current?.carryOver ?? null) : null;
-}
-
-/** Everything the dialog shows, from its state and the list. */
-function dialogView(step: IterationNextStep, state: DialogState, carryOver: CarryOver | null) {
-  const ids = selectedCarryIds(state.selected, carryOver);
-  const total = carryOverItemIds(carryOver).length;
+/** Everything the dialog shows, from its state. */
+function dialogView(step: IterationNextStep, state: DialogState) {
   return {
     step,
     label: step.kind === "start" ? startIterationLabel(step.nextNumber) : "",
-    fromIterationNumber: carryOver ? carryOver.fromIterationNumber : null,
+    description: step.kind === "start" ? startIterationDescription(step.nextNumber) : "",
     goal: state.goal,
     goalMax: ITERATION_GOAL_MAX,
     goalError: iterationGoalError(state.goal),
-    groups: carryOverGroups(carryOver, state.selected),
-    selectedCount: ids.length,
-    totalCount: total,
-    unfinishedCount: unfinishedItemIds(carryOver).length,
-    selectionLabel: carrySelectionLabel(ids.length, total),
     error: state.error,
   };
 }
 
 /**
- * ViewModel for "Start iteration N+1" (Iterations phase 3): whether this
- * viewer is offered it at all, and the dialog — an optional goal and the
- * delivered iteration's items to carry over, the unfinished ones pre-checked.
- * On success it announces the change, so the iteration, requirements, QA run
- * and My QA items of this Project all read again; on a refusal the dialog
- * stays open with the reason. The server re-checks who may start and what
- * may be carried, so nothing here can start an iteration on its own say-so.
+ * ViewModel for "Start iteration N+1": whether this viewer is offered it at
+ * all, and the dialog — an optional goal. The new iteration starts with an
+ * empty checklist (every item was passed before the last one merged, so
+ * nothing is carried over). On success it announces the change, so the
+ * iteration, requirements, QA run and My QA items of this Project all read
+ * again; on a refusal the dialog stays open with the reason. The server
+ * re-checks who may start, so nothing here can start an iteration on its own
+ * say-so.
  */
 export function useStartIterationViewModel(options: {
   deliveryProjectId: string;
@@ -118,8 +83,7 @@ export function useStartIterationViewModel(options: {
   const [dialog, setDialog] = useState<DialogState | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const step = iterationNextStep(current, appRole);
-  const carryOver = offeredCarryOver(step, current);
-  const view = dialogView(step, dialog ?? CLOSED, carryOver);
+  const view = dialogView(step, dialog ?? CLOSED);
 
   function update(change: (state: DialogState) => DialogState) {
     setDialog((state) => (state ? change(state) : state));
@@ -133,7 +97,7 @@ export function useStartIterationViewModel(options: {
 
   async function submit() {
     if (!dialog || submitting || step.kind !== "start" || view.goalError) return;
-    const input = startIterationInput(dialog.goal, selectedCarryIds(dialog.selected, carryOver));
+    const input = startIterationInput(dialog.goal);
     setSubmitting(true);
     update((state) => ({ ...state, error: null }));
     try {
@@ -154,14 +118,10 @@ export function useStartIterationViewModel(options: {
     open: dialog !== null && step.kind === "start",
     submitting,
     openDialog: () => {
-      if (step.kind === "start" && !dialog) setDialog(freshDialog(carryOver));
+      if (step.kind === "start" && !dialog) setDialog(CLOSED);
     },
     close,
     setGoal: (goal) => update((state) => ({ ...state, goal })),
-    toggleItem: (id) => update((state) => ({ ...state, selected: toggleCarryItem(state.selected, id) })),
-    selectAllUnfinished: () =>
-      update((state) => ({ ...state, selected: selectAllUnfinished(state.selected, carryOver) })),
-    clear: () => update((state) => ({ ...state, selected: new Set<string>() })),
     submit,
   };
 }

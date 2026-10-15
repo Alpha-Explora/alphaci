@@ -51,36 +51,9 @@ export function deliveredWire(overrides: Record<string, unknown> = {}): Record<s
   });
 }
 
-/**
- * Iterations phase 3: the delivered Iteration 3's items a Product owner may
- * carry into Iteration 4. Two unfinished (suggested), one done and passed.
- */
-export function carryOverWire(): Record<string, unknown> {
-  return {
-    fromIterationNumber: 3,
-    requirements: [
-      {
-        requirementId: "req-checkout",
-        name: "Checkout",
-        kind: "functional",
-        items: [
-          { id: "item-pay", title: "Pay by card", progress: "done", lastStatus: "passed", suggested: false },
-          { id: "item-coupon", title: "Apply a coupon", progress: "done", lastStatus: "returned_to_dev", suggested: true },
-        ],
-      },
-      {
-        requirementId: "req-security",
-        name: "Security headers",
-        kind: "system",
-        items: [{ id: "item-csp", title: "Content-Security-Policy", progress: "in_progress", lastStatus: null, suggested: true }],
-      },
-    ],
-  };
-}
-
 /** Delivered, seen by a Product owner the server lets start the next iteration. */
 export function startableWire(overrides: Record<string, unknown> = {}): Record<string, unknown> {
-  return deliveredWire({ canStartNext: true, carryOver: carryOverWire(), ...overrides });
+  return deliveredWire({ canStartNext: true, ...overrides });
 }
 
 /** Delivered, seen by someone who waits (QA, a Developer): `canStartNext` is false. */
