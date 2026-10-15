@@ -29,6 +29,7 @@ import { CodeTabPanel } from "./code-tab-panel";
 import { CommitsTabPanel } from "./commits-tab-panel";
 import { PullsTabPanel } from "./pulls-tab-panel";
 import { ChecklistsTabPanel } from "./checklists-tab-panel";
+import { HistoryTabPanel } from "./history-tab-panel";
 import { QaStudioTabPanel } from "./qa-studio-tab-panel";
 import { PoStudioTabPanel } from "./po-studio-tab-panel";
 
@@ -90,6 +91,7 @@ const TAB_PANELS: Record<
   qa: QaStudioTabPanel,
   po: PoStudioTabPanel,
   audit: AuditTab,
+  history: HistoryTabPanel,
   settings: SettingsTab,
 };
 

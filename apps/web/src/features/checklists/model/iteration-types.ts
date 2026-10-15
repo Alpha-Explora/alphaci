@@ -24,6 +24,14 @@ export interface ProjectIteration extends IterationRef {
   deliveredByLogin: string | null;
 }
 
+/** One row of the Project's History (GET /delivery-projects/:id/iterations). */
+export interface HistoryIteration extends ProjectIteration {
+  startedAt: string | null;
+  startedByLogin: string | null;
+  /** The run QA signed off Approved and that was delivered; null while active. */
+  signoffRunId: string | null;
+}
+
 /** How a repository's signed-off uat head reached main. */
 export type DeliveryHow = "merged" | "already_in_main";
 
