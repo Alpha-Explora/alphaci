@@ -50,6 +50,9 @@ export const QA_ERROR_MESSAGES: Readonly<Record<string, string>> = {
     "This Project has no repositories yet, so there is nothing to merge to main. Add a repository first.",
   /* Iterations phase 3: starting the next iteration. */
   ITERATION_ACTIVE: "This Project already has an active iteration. Deliver it before starting the next one.",
+  /* Approved needs every item the iteration holds: the server added the missing ones to the run. */
+  QA_RUN_MISSING_ITEMS:
+    "Requirement items were added after this run started, so QA has not verified them. They are now in the run as Pending: reload the run, verify them, then sign off.",
   ITERATION_CARRY_INVALID:
     "Some selected items can no longer be carried over: only items of the last delivered iteration can be. Close this dialog, reload the page and choose again.",
 };
@@ -90,6 +93,7 @@ const STALE_CODES: ReadonlySet<string> = new Set([
   "REQUIREMENT_ORDER_MISMATCH",
   "QA_ITEM_STALE",
   "QA_RUN_CHANGED",
+  "QA_RUN_MISSING_ITEMS",
 ]);
 
 /** True when the failure carries a code a reload fixes. */
