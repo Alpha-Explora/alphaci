@@ -80,3 +80,19 @@ it("checks the downloaded bytes before either extracting or executing the instal
   expect(enrollmentInstructions(receipt).ubuntu).not.toContain(receipt.code);
   expect(enrollmentInstructions(receipt).windows).not.toContain(receipt.code);
 });
+it("runs the Windows installer in-process so -Ports binds as an int array", () => {
+  const { windows } = enrollmentInstructions({
+    apiUrl: "https://api.example.com",
+    id: "e",
+    code: "c",
+    expiresAt: "2026-10-15T00:00:00Z",
+    installer: { version: "0.1.0", url: "https://x/i", sha256: "a".repeat(64) },
+  });
+  expect(windows).toContain(
+    "Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass -Force",
+  );
+  expect(windows).toContain(
+    "& (Join-Path $directory 'windows/Install-AlphaCIHost.ps1')",
+  );
+  expect(windows).not.toContain("powershell.exe");
+});

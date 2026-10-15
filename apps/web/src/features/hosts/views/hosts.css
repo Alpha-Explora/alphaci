@@ -1,0 +1,420 @@
+/* ── Hosts ──────────────────────────────────────────────────────────────────
+   .hosts           the workspace Hosts page: header, add flow, machine list.
+   .hosts-panel     one step of the add-host flow (name → install → connected).
+   .hosts-steps     the three-step progress strip at the top of each panel.
+   .hosts-task      a numbered instruction with its copyable command or code.
+   .hosts-card      one enrolled machine with its status and next action.
+   Tokens only.
+   ------------------------------------------------------------------------- */
+
+.hosts {
+  display: grid;
+  gap: 1.25rem;
+  padding: 1.5rem;
+}
+
+.hosts__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.hosts .hosts__title {
+  margin: 0 0 0.25rem;
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.hosts-muted {
+  margin: 0;
+  max-width: 72ch;
+  font-size: 0.85rem;
+  line-height: 1.55;
+  color: var(--text-secondary);
+}
+
+/* Add-host flow ---------------------------------------------------------- */
+
+.hosts-panel {
+  display: grid;
+  gap: 1.1rem;
+  padding: 1.25rem;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-card);
+  background: var(--bg-soft);
+}
+
+.hosts-panel--success {
+  border-color: rgba(52, 211, 153, 0.35);
+}
+
+.hosts .hosts-panel__title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.hosts-panel__actions {
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.hosts-steps {
+  display: flex;
+  gap: 0.5rem 1.25rem;
+  flex-wrap: wrap;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+.hosts-steps__item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.hosts-steps__dot {
+  display: inline-grid;
+  place-items: center;
+  width: 1.35rem;
+  height: 1.35rem;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+.hosts-steps__item--current {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.hosts-steps__item--current .hosts-steps__dot {
+  border-color: var(--brand);
+  background: var(--brand);
+  color: var(--bg-base);
+}
+
+.hosts-steps__item--done .hosts-steps__dot {
+  border-color: var(--success);
+  color: var(--success);
+}
+
+.hosts-field {
+  display: grid;
+  gap: 0.35rem;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.hosts-field__label {
+  padding: 0;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.hosts-field__hint {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+.hosts-field input[type="text"],
+.hosts-field input:not([type]) {
+  max-width: 28rem;
+}
+
+.hosts-platforms {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+  gap: 0.75rem;
+  max-width: 40rem;
+  margin-top: 0.2rem;
+}
+
+.hosts-platform {
+  position: relative;
+  display: grid;
+  gap: 0.2rem;
+  padding: 0.85rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease;
+}
+
+.hosts-platform:hover {
+  border-color: var(--brand-light, var(--brand));
+}
+
+.hosts-platform input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.hosts-platform:has(input:focus-visible) {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
+.hosts-platform--selected {
+  border-color: var(--brand);
+  background: rgba(88, 166, 255, 0.08);
+}
+
+.hosts-platform__name {
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.hosts-platform__summary {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+}
+
+/* Install instructions ---------------------------------------------------- */
+
+.hosts-task {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.85rem;
+}
+
+.hosts-task__num {
+  display: inline-grid;
+  place-items: center;
+  width: 1.6rem;
+  height: 1.6rem;
+  border-radius: 999px;
+  background: rgba(88, 166, 255, 0.12);
+  color: var(--brand);
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.hosts-task__body {
+  display: grid;
+  gap: 0.45rem;
+  min-width: 0;
+}
+
+.hosts .hosts-task__title {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.hosts-checklist {
+  display: grid;
+  gap: 0.25rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.83rem;
+  color: var(--text-secondary);
+}
+
+.hosts-checklist li::before {
+  content: "✓";
+  margin-right: 0.5rem;
+  color: var(--success);
+}
+
+.hosts-code {
+  position: relative;
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  background: var(--bg-base);
+}
+
+.hosts-code pre {
+  margin: 0;
+  max-height: 14rem;
+  overflow: auto;
+  padding: 0.85rem 5rem 0.85rem 0.9rem;
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 0.76rem;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-break: break-all;
+  color: var(--text-primary);
+}
+
+.hosts-code--secret pre {
+  font-size: 0.9rem;
+  letter-spacing: 0.02em;
+}
+
+.hosts-copy {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  padding: 0.3rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.hosts-copy:hover {
+  border-color: var(--brand);
+}
+
+.hosts-waiting {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.75rem 0.9rem;
+  border-radius: 8px;
+  background: rgba(88, 166, 255, 0.08);
+  font-size: 0.85rem;
+  color: var(--text-primary);
+}
+
+.hosts-spinner {
+  width: 0.95rem;
+  height: 0.95rem;
+  border: 2px solid rgba(88, 166, 255, 0.3);
+  border-top-color: var(--brand);
+  border-radius: 999px;
+  animation: hosts-spin 0.9s linear infinite;
+}
+
+@keyframes hosts-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hosts-spinner {
+    animation: none;
+  }
+}
+
+.hosts-details {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.hosts-details summary {
+  cursor: pointer;
+  color: var(--text-secondary);
+}
+
+.hosts-details ul {
+  display: grid;
+  list-style: disc;
+  gap: 0.4rem;
+  margin: 0.6rem 0 0;
+  padding-left: 1.1rem;
+  line-height: 1.5;
+}
+
+.hosts-details code {
+  word-break: break-all;
+  font-family: var(--font-mono, ui-monospace, monospace);
+}
+
+/* Machine list ------------------------------------------------------------ */
+
+.hosts-list {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.hosts-card {
+  display: grid;
+  gap: 0.6rem;
+  padding: 1rem 1.1rem;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-card);
+  background: var(--bg-soft);
+}
+
+.hosts-card__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
+.hosts .hosts-card__name {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.hosts-card__meta {
+  margin: 0.15rem 0 0;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+.hosts-card__actions {
+  display: grid;
+  gap: 0.5rem;
+  padding-top: 0.6rem;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.hosts-card__buttons {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.hosts-danger {
+  color: var(--danger);
+}
+
+.hosts-alert {
+  margin: 0;
+  padding: 0.7rem 0.9rem;
+  border: 1px solid rgba(248, 113, 113, 0.3);
+  border-radius: 8px;
+  background: rgba(248, 113, 113, 0.08);
+  font-size: 0.83rem;
+  color: var(--text-primary);
+}
+
+.hosts-alert ul {
+  list-style: disc;
+  margin: 0.35rem 0 0;
+  padding-left: 1.1rem;
+  color: var(--text-secondary);
+}
+
+.hosts-empty {
+  display: grid;
+  gap: 0.5rem;
+  padding: 1.25rem;
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-card);
+}
+
+.hosts-empty ol {
+  margin: 0;
+  list-style: decimal;
+  padding-left: 1.2rem;
+  font-size: 0.85rem;
+  line-height: 1.7;
+  color: var(--text-secondary);
+}

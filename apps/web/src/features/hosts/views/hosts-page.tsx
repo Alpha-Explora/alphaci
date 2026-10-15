@@ -1,4 +1,5 @@
 "use client";
+import "./hosts.css";
 import { TeamPageShell } from "@/features/teams/shell";
 import { useCapabilities } from "@/features/capabilities/current";
 import { canManageHosts } from "../model/host-types";
@@ -41,40 +42,96 @@ function WorkspaceHosts({
     return <p role="status">Loading host capability…</p>;
   if (availability !== "enabled")
     return <p>On-prem hosting is unavailable for this deployment.</p>;
+  return <HostsContent vm={vm} canManage={canManage} />;
+}
+type HostsVm = ReturnType<typeof useHostsViewModel>;
+function HostsContent({ vm, canManage }: { vm: HostsVm; canManage: boolean }) {
+  const flowOpen = vm.adding || Boolean(vm.receipt);
+  // The pending row for the code on screen is already shown by the guide.
+  const hosts = vm.hosts.filter((host) => host.id !== vm.receipt?.id);
   return (
     <section
-      className="glass-panel team-detail-surface"
+      className="glass-panel team-detail-surface hosts"
       aria-label="Workspace hosts"
-      style={{ padding: "1.5rem", display: "grid", gap: "1rem" }}
     >
-      <header>
-        <h2>Hosts</h2>
-        <p>
-          Enroll a machine once, then assign project environments to it from
-          Hosting.
-        </p>
-      </header>
+      <HostsHeader vm={vm} showAdd={canManage && !flowOpen} />
       {vm.error ? (
-        <p role="alert" className="error-text">
+        <p role="alert" className="hosts-alert">
           {vm.error}
         </p>
       ) : null}
-      {canManage ? (
-        <AddHostForm vm={vm} />
-      ) : (
-        <p>
-          Your role can view hosts. A Developer or admin with workspace access
-          can enroll and assign them.
+      {!canManage ? (
+        <p className="hosts-muted">
+          You can view hosts. A Developer or admin of this workspace can add and
+          manage them.
         </p>
-      )}
-      <EnrollmentCard vm={vm} />
-      {vm.status === "loading" ? <p role="status">Loading machines…</p> : null}
-      {vm.hosts.length === 0 && vm.status === "ready" ? (
-        <p>No hosts enrolled in this workspace.</p>
       ) : null}
-      {vm.hosts.map((host) => (
+      {vm.adding ? <AddHostForm vm={vm} /> : null}
+      <EnrollmentCard vm={vm} />
+      <HostList
+        vm={vm}
+        hosts={hosts}
+        canManage={canManage}
+        showEmpty={vm.status === "ready" && !flowOpen}
+      />
+    </section>
+  );
+}
+function HostsHeader({ vm, showAdd }: { vm: HostsVm; showAdd: boolean }) {
+  return (
+    <header className="hosts__head">
+      <div>
+        <h2 className="hosts__title">Hosts</h2>
+        <p className="hosts-muted">
+          Machines you own where AlphaCI deploys your apps. Add each machine
+          once, then pick it for an environment in a project’s Hosting tab.
+        </p>
+      </div>
+      {showAdd ? (
+        <button
+          className="primary-button"
+          type="button"
+          onClick={vm.startAdding}
+        >
+          Add host
+        </button>
+      ) : null}
+    </header>
+  );
+}
+function HostList({
+  vm,
+  hosts,
+  canManage,
+  showEmpty,
+}: {
+  vm: HostsVm;
+  hosts: HostsVm["hosts"];
+  canManage: boolean;
+  showEmpty: boolean;
+}) {
+  if (vm.status === "loading")
+    return (
+      <p role="status" className="hosts-muted">
+        Loading machines…
+      </p>
+    );
+  if (!hosts.length)
+    return showEmpty ? (
+      <div className="hosts-empty">
+        <p className="hosts-panel__title">No hosts yet</p>
+        <ol>
+          <li>Name the machine and pick its operating system.</li>
+          <li>Run one command on it and paste a one-time code.</li>
+          <li>It connects here, ready to receive deployments.</li>
+        </ol>
+      </div>
+    ) : null;
+  return (
+    <div className="hosts-list">
+      {hosts.map((host) => (
         <HostCard key={host.id} host={host} vm={vm} canManage={canManage} />
       ))}
-    </section>
+    </div>
   );
 }
