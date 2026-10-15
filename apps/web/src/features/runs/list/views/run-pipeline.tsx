@@ -12,7 +12,7 @@ import {
   checkTone,
   formatFailedJobs,
 } from "../../model/runs-presentation";
-import { normalizeTestCases, SonarPanel, TestCaseList } from "../../test-report";
+import { hasSonarDetail, normalizeTestCases, SonarPanel, TestCaseList } from "../../test-report";
 import { StageNode, StageConnector } from "./stage-node";
 import { MessageCard } from "./message-card";
 
@@ -51,10 +51,17 @@ interface RunPipelineProps {
   reduced: boolean;
 }
 
+/**
+ * The stage a run opens on: the one that failed, else the one still running,
+ * else — a passing run — Quality when SonarCloud reported on it, so its
+ * SonarCloud results are in view on every repository, not only one whose
+ * Quality failed.
+ */
 function preferredStage(run: RunGroup): StageReport["stage"] | null {
   return (
     run.stages.find((stage) => stage.status === "failure")?.stage ??
     run.stages.find((stage) => stage.status === "running")?.stage ??
+    run.stages.find((stage) => stage.stage === "quality" && hasSonarDetail(stage.results?.sonar))?.stage ??
     null
   );
 }

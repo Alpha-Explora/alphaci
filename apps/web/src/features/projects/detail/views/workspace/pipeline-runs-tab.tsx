@@ -6,7 +6,6 @@ import { useMemo } from "react";
 import Link from "next/link";
 
 import { WorkspaceEmpty, WorkspaceError, WorkspaceLoading } from "./workspace-states";
-import { BrowserTestsCard } from "./pipeline-browser-tests-card";
 import { CommitCard } from "./pipeline-commit-card";
 import { distinctCommitTitles } from "../../model/pipeline-run-card-rules";
 import { runsViewModeFor, type RunsViewMode } from "../../model/runs-view-mode";
@@ -20,7 +19,6 @@ import {
 } from "../../view-models/use-pipeline-runs-view-model";
 import { useBrowserTestsViewModel } from "../../view-models/use-browser-tests-view-model";
 import { visualCaptureOn, type BrowserTestsVisual } from "../../model/browser-test-rules";
-import type { WorkflowUpdateAccess } from "../../model/project-detail-tab-rules";
 
 /**
  * Live GitHub Actions runs for this project: branch → run → jobs → steps → log.
@@ -50,9 +48,6 @@ import type { WorkflowUpdateAccess } from "../../model/project-detail-tab-rules"
 export function PipelineRunsTab({
   projectId,
   appRole,
-  onOpenPullRequest,
-  workflowAccess,
-  onOpenWorkflow,
 }: {
   projectId: string;
   /**
@@ -60,16 +55,12 @@ export function PipelineRunsTab({
    * every other role the summary with logs behind a disclosure.
    */
   appRole?: AppRole;
-  /** Opens the Pull requests tab on a number; absent when that tab is not offered. */
-  onOpenPullRequest?: (pullRequestNumber: number) => void;
-  /** Whether "Update the workflow" may send this viewer to the update pull request. */
-  workflowAccess?: WorkflowUpdateAccess;
-  /** Opens the Pipeline tab's Configuration view, for turning visual testing on. */
-  onOpenWorkflow?: () => void;
 }) {
   const viewMode = runsViewModeFor(appRole);
   const runsView = usePipelineRunsViewModel({ projectId });
-  // Read once when the tab opens, beside the run list rather than inside its poll.
+  // Read once when the tab opens, beside the run list rather than inside its poll:
+  // whether the Verify stage takes screenshots, for its visual results. The
+  // "Browser tests" setup card lives in QA / PO Studio's Playwright tab, not here.
   const browserTests = useBrowserTestsViewModel({ projectId });
 
   if (runsView.status === "loading") return <WorkspaceLoading rows={5} />;
@@ -135,13 +126,6 @@ export function PipelineRunsTab({
           </Link>
         </span>
       </div>
-
-      <BrowserTestsCard
-        view={browserTests}
-        onOpenPullRequest={onOpenPullRequest}
-        workflowAccess={workflowAccess}
-        onOpenWorkflow={onOpenWorkflow}
-      />
 
       {runsView.reportsUnavailable && (
         <p className="pipe-banner pipe-banner--warning" role="status">
