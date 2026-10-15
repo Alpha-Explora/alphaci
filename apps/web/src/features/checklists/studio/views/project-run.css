@@ -110,6 +110,38 @@
 }
 
 /* Between a delivered iteration and the next: the panel's only content. */
+/* A delivered iteration: its run left this tab for History. Violet, the
+   tone of "Delivered" everywhere. */
+.pqa-delivered-state {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.pqa-delivered {
+  display: grid;
+  justify-items: start;
+  gap: 0.5rem;
+  padding: 1rem 1.1rem;
+  border: 1px solid var(--border-violet);
+  border-radius: 0.9rem;
+  background: var(--accent-violet-light);
+}
+
+.pqa-delivered__title {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.pqa-delivered__text {
+  margin: 0;
+  max-width: 64ch;
+  font-size: 0.84rem;
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+
 .pqa-next {
   display: grid;
   gap: 0.6rem;

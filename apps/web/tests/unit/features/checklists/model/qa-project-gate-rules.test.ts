@@ -43,6 +43,15 @@ describe("error codes (product sentences)", () => {
     expect(isStaleCode(apiErrorWith(409, { code: "QA_NO_REQUIREMENTS" }))).toBe(false);
   });
 
+  it("explains an Approved sign-off refused for items the run lacked, and offers a reload to see them", () => {
+    const refused = apiErrorWith(409, { code: "QA_RUN_MISSING_ITEMS", missingItems: 2, message: "raw" });
+    expect(qaActionError(refused, "x")).toEqual({
+      message:
+        "Requirement items were added after this run started, so QA has not verified them. They are now in the run as Pending: reload the run, verify them, then sign off.",
+      stale: true,
+    });
+  });
+
   it("uses the sentences on the legacy run and checklist screens too", () => {
     expect(qaActionError(apiErrorWith(409, { code: "QA_RUN_LEGACY_READONLY", message: "raw" }), "x")).toEqual({
       message: QA_ERROR_MESSAGES.QA_RUN_LEGACY_READONLY,

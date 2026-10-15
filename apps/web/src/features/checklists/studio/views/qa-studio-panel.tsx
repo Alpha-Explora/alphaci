@@ -19,9 +19,15 @@ import { UNFILED_REASON } from "../../model/qa-promotion-rules";
 import { passedLabel } from "../../model/qa-run-rules";
 import type { QaRun, QaRunSummaryCounts } from "../../model/qa-run-types";
 import { REPOSITORY_SCOPE, type QaScope, type RepositoryRoles } from "../../model/qa-scope";
-import { scopePlaywrightResults, studioColumnRules, type StudioColumnRules } from "../../model/studio-role-rules";
+import {
+  scopePlaywrightResults,
+  showsRepositories,
+  studioColumnRules,
+  type StudioColumnRules,
+} from "../../model/studio-role-rules";
 import { automationSignal, launcherLabel, NO_QA_ENVIRONMENT } from "../../model/qa-studio-rules";
 import { PreviewCaptureContext, type PreviewCaptureTarget } from "../view-models/preview-capture-target";
+import { ShowRepositoriesContext } from "../view-models/repository-visibility";
 import { useFloatingChecklistFocus } from "../view-models/use-floating-checklist-focus";
 import type { PoDeliveryViewModel } from "../view-models/use-po-delivery-view-model";
 import type { ProjectRunViewModel } from "../view-models/use-project-run-view-model";
@@ -729,80 +735,82 @@ export function QaStudioPanel({
   );
 
   return (
-    <div
-      role="tabpanel"
-      id={`project-detail-panel-${studio}`}
-      aria-labelledby={`project-detail-tab-${studio}`}
-      className="qa-studio"
-      data-studio={studio}
-      data-full-screen={String(viewport.isFullScreen)}
-      data-layout={viewport.layout}
-      data-checklist={mode}
-      data-side={viewport.floatingSide}
-    >
-      <StudioControls vm={viewport} commit={snapshot.commit} fullScreenRef={focus.toggleRef} slot={toolbarSlot} />
-      <div className="qa-studio__panes">
-        <div className="qa-studio__preview" data-framed={previewFramed(viewport)}>
-          <PreviewColumn vm={viewport} frameRef={previewFrameRef} />
-        </div>
-        <RunDock
-          vm={viewport}
-          run={snapshot.current}
-          title={DRAWER_TITLES[studio]}
-          scroll={projectMode ? "column" : "items"}
-          drawerId={drawerId}
-          headingId={headingId}
-          headingRef={focus.drawerRef}
-        >
-          <ColumnHead
-            rules={rules}
-            promotion={promotion}
-            delivery={delivery}
-            columnTab={columnTab}
-            tabsId={tabsId}
-            results={results}
-            label={`${DRAWER_TITLES[studio]} and Playwright`}
-          />
-          <ColumnFoot promotion={promotion} delivery={delivery} qaScope={qaScope} repositoryName={projectName ?? projectId} />
-          <ColumnPanels
-            rules={rules}
-            tabsId={tabsId}
-            tab={columnTab.tab}
-            checklist={
-              <PreviewCaptureContext.Provider value={previewFrameRef}>
-                <StudioColumn
-                  studio={studio}
-                  onOpenQaRun={onOpenQaRun}
-                  qaScope={qaScope}
-                  projectMode={projectMode}
-                  projectRun={projectRun}
-                  projectId={projectId}
+    <ShowRepositoriesContext.Provider value={showsRepositories(appRole)}>
+      <div
+        role="tabpanel"
+        id={`project-detail-panel-${studio}`}
+        aria-labelledby={`project-detail-tab-${studio}`}
+        className="qa-studio"
+        data-studio={studio}
+        data-full-screen={String(viewport.isFullScreen)}
+        data-layout={viewport.layout}
+        data-checklist={mode}
+        data-side={viewport.floatingSide}
+      >
+        <StudioControls vm={viewport} commit={snapshot.commit} fullScreenRef={focus.toggleRef} slot={toolbarSlot} />
+        <div className="qa-studio__panes">
+          <div className="qa-studio__preview" data-framed={previewFramed(viewport)}>
+            <PreviewColumn vm={viewport} frameRef={previewFrameRef} />
+          </div>
+          <RunDock
+            vm={viewport}
+            run={snapshot.current}
+            title={DRAWER_TITLES[studio]}
+            scroll={projectMode ? "column" : "items"}
+            drawerId={drawerId}
+            headingId={headingId}
+            headingRef={focus.drawerRef}
+          >
+            <ColumnHead
+              rules={rules}
+              promotion={promotion}
+              delivery={delivery}
+              columnTab={columnTab}
+              tabsId={tabsId}
+              results={results}
+              label={`${DRAWER_TITLES[studio]} and Playwright`}
+            />
+            <ColumnFoot promotion={promotion} delivery={delivery} qaScope={qaScope} repositoryName={projectName ?? projectId} />
+            <ColumnPanels
+              rules={rules}
+              tabsId={tabsId}
+              tab={columnTab.tab}
+              checklist={
+                <PreviewCaptureContext.Provider value={previewFrameRef}>
+                  <StudioColumn
+                    studio={studio}
+                    onOpenQaRun={onOpenQaRun}
+                    qaScope={qaScope}
+                    projectMode={projectMode}
+                    projectRun={projectRun}
+                    projectId={projectId}
+                    appRole={appRole}
+                    checklists={checklists}
+                    viewport={viewport}
+                    run={run}
+                    promotion={promotion}
+                    delivery={delivery}
+                  />
+                </PreviewCaptureContext.Provider>
+              }
+              playwright={
+                <PlaywrightColumn
+                  source={source}
+                  results={results}
                   appRole={appRole}
-                  checklists={checklists}
-                  viewport={viewport}
-                  run={run}
-                  promotion={promotion}
-                  delivery={delivery}
+                  projectId={projectId}
+                  opened={columnTab.playwrightOpened}
+                  viewer={{ rules, roles, active: columnTab.tab === "playwright" }}
+                  renderRepositoryChecks={renderRepositoryChecks}
                 />
-              </PreviewCaptureContext.Provider>
-            }
-            playwright={
-              <PlaywrightColumn
-                source={source}
-                results={results}
-                appRole={appRole}
-                projectId={projectId}
-                opened={columnTab.playwrightOpened}
-                viewer={{ rules, roles, active: columnTab.tab === "playwright" }}
-                renderRepositoryChecks={renderRepositoryChecks}
-              />
-            }
-          />
-        </RunDock>
+              }
+            />
+          </RunDock>
+        </div>
+        {mode === "minimized" ? (
+          <ChecklistLauncher vm={viewport} run={snapshot.current} drawerId={drawerId} launcherRef={focus.launcherRef} />
+        ) : null}
       </div>
-      {mode === "minimized" ? (
-        <ChecklistLauncher vm={viewport} run={snapshot.current} drawerId={drawerId} launcherRef={focus.launcherRef} />
-      ) : null}
-    </div>
+    </ShowRepositoriesContext.Provider>
   );
 }

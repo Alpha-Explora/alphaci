@@ -412,8 +412,20 @@ export function requirementsChangedLabel(run: Pick<ProjectQaRun, "status">): str
     : "Requirements changed since this run started";
 }
 
-export const REQUIREMENTS_CHANGED_NOTE =
-  "This does not change what can merge. A Product owner can reopen the run so QA verifies the change.";
+/**
+ * What a requirement change means for the run. Merge to main needs every
+ * item passed in the signed-off run, and nothing changed after the sign-off;
+ * new items join an open run as Pending, and reopening a signed-off run adds
+ * whatever it lacks.
+ */
+export function requirementsChangedNote(run: Pick<ProjectQaRun, "status">): string {
+  return run.status === "signed_off"
+    ? "Merge to main stays blocked until QA verifies the change. A Product owner reopens the run: new items join it as Pending, and QA signs off again."
+    : "New items join this run as Pending. Merge to main needs every item passed.";
+}
+
+/** The Project-level form of the head changes, for those who never see repositories. */
+export const PROJECT_CHANGED_SINCE_RUN = "The Project's code on uat changed since this run started.";
 
 export const STALE_RUN_NOTE =
   "The run no longer covers what is on uat. Start a new run so QA verifies the current heads; its results carry over as history.";

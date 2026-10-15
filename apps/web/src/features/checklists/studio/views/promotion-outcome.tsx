@@ -5,6 +5,7 @@ import type { ReactNode } from "react";
 import { MERGE_REFUSED_HINT, mergeErrorTitle, mergedLabel } from "../../model/qa-promotion-rules";
 import type { QaPromotionMergeError, QaPromotionMergeResult } from "../../model/qa-promotion-types";
 import type { QaPromotionViewModel } from "../view-models/use-qa-promotion-view-model";
+import { useShowRepositories } from "../view-models/repository-visibility";
 
 /**
  * Which pull request this is, as text. It names the PR without sending anyone to
@@ -33,10 +34,12 @@ function OutcomeFrame({
 }
 
 function Merged({ result, targetBranch, onDismiss }: Readonly<{ result: QaPromotionMergeResult; targetBranch: string; onDismiss: () => void }>) {
+  const showRepositories = useShowRepositories();
   return (
     <OutcomeFrame tone="success" title={`Merged into ${targetBranch}`} onDismiss={onDismiss}>
-      <p className="qa-promo-outcome__text">{mergedLabel(result, targetBranch)}</p>
-      {result.pullRequest ? (
+      {/* The merge commit and pull request are repository detail. */}
+      {showRepositories ? <p className="qa-promo-outcome__text">{mergedLabel(result, targetBranch)}</p> : null}
+      {showRepositories && result.pullRequest ? (
         <PullRequestRef label={`Pull request #${result.pullRequest.number}`} />
       ) : null}
     </OutcomeFrame>
@@ -45,11 +48,12 @@ function Merged({ result, targetBranch, onDismiss }: Readonly<{ result: QaPromot
 
 /** GitHub said no: its words, verbatim, and what usually unblocks it. */
 function Refused({ result, onDismiss }: Readonly<{ result: QaPromotionMergeResult; onDismiss: () => void }>) {
+  const showRepositories = useShowRepositories();
   return (
     <OutcomeFrame tone="warning" title="GitHub refused the merge" onDismiss={onDismiss}>
       <blockquote className="qa-promo-outcome__quote">{result.message}</blockquote>
       <p className="qa-promo-outcome__text">{MERGE_REFUSED_HINT}</p>
-      {result.pullRequest ? (
+      {showRepositories && result.pullRequest ? (
         <PullRequestRef label={`Pull request #${result.pullRequest.number}`} />
       ) : null}
     </OutcomeFrame>

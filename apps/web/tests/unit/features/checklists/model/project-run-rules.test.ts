@@ -25,6 +25,7 @@ import {
   repoShortName,
   repositoriesLabel,
   requirementsChangedLabel,
+  requirementsChangedNote,
   resolveProjectRunPermissions,
   runFilterCounts,
   runFilterEmptyText,
@@ -235,6 +236,13 @@ describe("what the run panel says", () => {
   it("words requirement changes by run state", () => {
     expect(requirementsChangedLabel({ status: "signed_off" })).toBe("Requirements changed since sign-off");
     expect(requirementsChangedLabel({ status: "open" })).toBe("Requirements changed since this run started");
+    // Blocking now: a signed-off run must be reopened; an open run takes the new items.
+    expect(requirementsChangedNote({ status: "signed_off" })).toBe(
+      "Merge to main stays blocked until QA verifies the change. A Product owner reopens the run: new items join it as Pending, and QA signs off again.",
+    );
+    expect(requirementsChangedNote({ status: "open" })).toBe(
+      "New items join this run as Pending. Merge to main needs every item passed.",
+    );
   });
 
   it("groups items by requirement, Features first, in run order", () => {

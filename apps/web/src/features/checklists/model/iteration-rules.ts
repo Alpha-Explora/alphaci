@@ -22,7 +22,6 @@ import type {
   MergeAllResult,
   ProjectIteration,
 } from "./iteration-types";
-import { normalizeCarryOver } from "./iteration-carry-over-rules";
 import { QA_ERROR_MESSAGES, qaCodeMessage } from "./qa-error-messages";
 import { shortSha } from "./qa-run-rules";
 import {
@@ -117,8 +116,6 @@ export function normalizeCurrentIteration(value: unknown): CurrentIteration | nu
     coveredRepositories: records(raw.coveredRepositories).map(coveredRepositoryFrom).filter(present),
     canMergeAll: raw.canMergeAll === true,
     canStartNext,
-    // The candidates mean something only to a viewer the server lets start.
-    carryOver: canStartNext === true ? normalizeCarryOver(raw.carryOver) : null,
   };
 }
 
@@ -190,6 +187,25 @@ export function lockedIterationNumber(
   iteration: Pick<IterationRef, "number" | "status"> | null | undefined,
 ): number | null {
   return iteration?.status === "delivered" ? iteration.number : null;
+}
+
+/** The Requirements and QA run tabs once their iteration is delivered: its work has left them. */
+export function deliveredIterationTitle(number: number): string {
+  return `${iterationName(number)} was delivered`;
+}
+
+function historyPlace(historyOnPage: boolean): string {
+  return historyOnPage ? "in History" : "in the History tab of each repository";
+}
+
+/** Where the delivered Features went, naming History when the page has the tab. */
+export function deliveredRequirementsText(historyOnPage: boolean): string {
+  return `Its Features are archived ${historyPlace(historyOnPage)}, read-only, with QA's results. The next iteration starts with an empty list.`;
+}
+
+/** Where the delivered QA run went. */
+export function deliveredRunText(historyOnPage: boolean): string {
+  return `Its QA run is archived ${historyPlace(historyOnPage)}, read-only, exactly as QA signed it off. The next iteration starts a new run.`;
 }
 
 /** The read-only banner on a delivered iteration's QA run and requirements. */
@@ -286,6 +302,24 @@ export function canOfferMergeAll(
 ): boolean {
   if (!current?.canMergeAll || current.iteration.status !== "active") return false;
   return current.coveredRepositories.length > 1 && roleCanDeliver(role);
+}
+
+/**
+ * The Project's place on the way to main, as one row, for those who never see
+ * repositories: not in main yet, or partly (a merge stopped part-way).
+ */
+export function projectDeliveryState(
+  covered: ReadonlyArray<Pick<CoveredRepository, "delivered">>,
+): DeliveryRowState {
+  const reached = covered.filter((repository) => repository.delivered).length;
+  if (reached === 0) return { tone: "neutral", label: "Not in main yet" };
+  if (reached === covered.length) return { tone: "success", label: "In main" };
+  return { tone: "neutral", label: "Partly in main: Merge to main finishes it" };
+}
+
+/** The merge confirmation in Project words: no repository named. */
+export function projectMergeConfirmText(projectName: string): string {
+  return `Merge ${projectName} into main with your GitHub account. The iteration is delivered once all of it is in main.`;
 }
 
 export function mergeAllConfirmText(projectName: string, pending: ReadonlyArray<Pick<CoveredRepository, "repoFullName">>): string {

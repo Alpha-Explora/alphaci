@@ -24,6 +24,14 @@ export interface ProjectIteration extends IterationRef {
   deliveredByLogin: string | null;
 }
 
+/** One row of the Project's History (GET /delivery-projects/:id/iterations). */
+export interface HistoryIteration extends ProjectIteration {
+  startedAt: string | null;
+  startedByLogin: string | null;
+  /** The run QA signed off Approved and that was delivered; null while active. */
+  signoffRunId: string | null;
+}
+
 /** How a repository's signed-off uat head reached main. */
 export type DeliveryHow = "merged" | "already_in_main";
 
@@ -59,57 +67,22 @@ export interface CurrentIteration {
    * server did not say (an older backend): nothing about the next iteration renders.
    */
   canStartNext: boolean | null;
-  /**
-   * What the Start dialog may carry over (Iterations phase 3). Only with
-   * `canStartNext`; null otherwise, and on a backend that does not send it.
-   */
-  carryOver: CarryOver | null;
 }
 
 /* ── Starting the next iteration (Iterations phase 3) ─────────────────── */
 
-/** A requirement item's Progress, as the carry-over list reports it. */
-export type CarryOverProgress = "todo" | "in_progress" | "done";
-
-/** An item's Verification in the run that delivered the iteration. */
-export type CarryOverLastStatus = "pending" | "in_progress" | "passed" | "failed" | "blocked" | "returned_to_dev";
-
-/** One delivered item that can be carried into the next iteration. */
-export interface CarryOverItem {
-  id: string;
-  title: string;
-  progress: CarryOverProgress;
-  /** Null when the item was not in the delivering run. */
-  lastStatus: CarryOverLastStatus | null;
-  /** Unfinished: pre-selected in the Start dialog. Server-decided. */
-  suggested: boolean;
-}
-
-export interface CarryOverRequirement {
-  requirementId: string;
-  name: string;
-  kind: "functional" | "system";
-  items: CarryOverItem[];
-}
-
-/** The latest delivered iteration's items, grouped by requirement. */
-export interface CarryOver {
-  fromIterationNumber: number;
-  requirements: CarryOverRequirement[];
-}
-
-/** POST /delivery-projects/:id/iterations */
+/**
+ * POST /delivery-projects/:id/iterations. The new iteration starts with an
+ * empty checklist: nothing is carried over (ITERATIONS_PLAN.md 6a).
+ */
 export interface StartIterationInput {
   /** Trimmed; left out when empty. At most 120 characters. */
   goal?: string;
-  carryOver: { requirementItemIds: string[] };
 }
 
 /** The 201 answer, normalised. */
 export interface StartedIteration {
   iteration: ProjectIteration | null;
-  carriedRequirements: number;
-  carriedItems: number;
 }
 
 /**

@@ -103,12 +103,6 @@ function waitingText(scope: ParentNode): string | null {
   return scope.querySelector(".iteration-waiting__text")?.textContent ?? null;
 }
 
-function checkedTitles(): string[] {
-  return [...document.querySelectorAll<HTMLInputElement>(".iteration-carry__check")]
-    .filter((box) => box.checked)
-    .map((box) => box.closest("label")?.querySelector(".iteration-carry__title")?.textContent ?? "");
-}
-
 /* ── QA Studio and the Project's QA run tab (one panel) ───────────────── */
 
 function RunHarness({ role }: Readonly<{ role: AppRole }>) {
@@ -147,12 +141,14 @@ describe("The Project QA run between iterations", () => {
     expect(buttonNamed(container, "Start Project QA run")).toBeUndefined();
   });
 
-  it("adds the waiting sentence under a delivered run's locked banner", async () => {
+  it("adds the waiting sentence under a delivered run, which has left the tab", async () => {
     const wire = projectRunWire({ status: "signed_off", iteration: { id: "it-3", number: 3, status: "delivered" } });
     runs.current.mockResolvedValue(normalizeProjectRunCurrent({ run: wire, heads: [] }));
     iterations.current.mockResolvedValue(normalizeCurrentIteration(waitingWire()));
     const container = await render(<RunHarness role="qa" />);
-    expect(container.querySelector(".iteration-locked")).not.toBeNull();
+    expect(container.querySelector(".pqa-delivered")).not.toBeNull();
+    // No History on this screen: the sentence names where it is, without a button.
+    expect(container.querySelector(".pqa-delivered__text")?.textContent).toContain("in the History tab of each repository");
     expect(waitingText(container)).toMatch(WAITING);
   });
 
@@ -172,10 +168,10 @@ describe("The Project QA run between iterations", () => {
     expect(container.querySelector(".iteration-next")).toBeNull();
     act(() => root?.unmount());
 
-    // canStartNext without carryOver (a phase 2 backend): no Start for a Product owner.
+    // canStartNext alone offers Start: no carry-over list is needed any more.
     iterations.current.mockResolvedValue(normalizeCurrentIteration(deliveredWire({ canStartNext: true })));
     const lead = await render(<RunHarness role="lead" />);
-    expect(buttonNamed(lead, "+Start iteration 4")).toBeUndefined();
+    expect(buttonNamed(lead, "+Start iteration 4")).toBeDefined();
     expect(waitingText(lead)).toBeNull();
   });
 });
@@ -183,27 +179,20 @@ describe("The Project QA run between iterations", () => {
 /* ── The Start dialog, through the screen ───────────────────────────────── */
 
 describe("Start iteration 4: the dialog", () => {
-  it("pre-checks the unfinished items, clears, re-selects, and starts with the goal", async () => {
+  it("asks only for a goal, says the iteration starts empty, and starts it", async () => {
     noRunYet();
     iterations.current.mockResolvedValue(normalizeCurrentIteration(startableWire()));
-    iterations.start.mockResolvedValue({ iteration: null, carriedRequirements: 2, carriedItems: 2 });
+    iterations.start.mockResolvedValue({ iteration: null });
     const container = await render(<RunHarness role="lead" />);
     await click(buttonNamed(container, "+Start iteration 4"));
     const open = dialog();
     expect(open?.querySelector("h2")?.textContent).toBe("Start iteration 4");
-    expect(open?.textContent).toContain("Carry over from Iteration 3");
-    expect([...open!.querySelectorAll(".iteration-carry__kind")].map((chip) => chip.textContent)).toEqual([
-      "Feature",
-      "System requirement",
-    ]);
-    expect(open?.textContent).toContain("Done · QA: Returned to dev · restarts In progress");
-    expect(checkedTitles()).toEqual(["Apply a coupon", "Content-Security-Policy"]);
-    expect(open?.textContent).toContain("2 of 3 items selected");
-
-    await click(buttonNamed(open!, "Clear"));
-    expect(checkedTitles()).toEqual([]);
-    await click(buttonNamed(open!, "Select all unfinished"));
-    expect(checkedTitles()).toEqual(["Apply a coupon", "Content-Security-Policy"]);
+    expect(open?.textContent).toContain(
+      "Iteration 4 starts with an empty checklist: Iteration 3's requirements and QA results stay with Iteration 3, read-only.",
+    );
+    // No carry-over list: no checkboxes at all.
+    expect(open?.querySelectorAll('input[type="checkbox"]')).toHaveLength(0);
+    expect(buttonNamed(open!, "Select all unfinished")).toBeUndefined();
 
     await type(open!.querySelector<HTMLInputElement>(".iteration-goal input")!, "Loyalty points");
     iterations.current.mockResolvedValue(
@@ -211,10 +200,7 @@ describe("Start iteration 4: the dialog", () => {
     );
     runs.current.mockClear();
     await click(buttonNamed(open!, "Start iteration 4"));
-    expect(iterations.start).toHaveBeenCalledWith("dp-1", {
-      goal: "Loyalty points",
-      carryOver: { requirementItemIds: ["item-coupon", "item-csp"] },
-    });
+    expect(iterations.start).toHaveBeenCalledWith("dp-1", { goal: "Loyalty points" });
     expect(await dialogGone()).toBe(true);
     // The QA run reads again: the new iteration lets QA start a fresh run.
     expect(runs.current).toHaveBeenCalled();
@@ -285,7 +271,7 @@ function po(role: AppRole, reload: () => void = jest.fn()) {
 describe("PO Studio's delivered banner", () => {
   it("offers a Product owner Start iteration 4, and a start re-reads the promotion status", async () => {
     iterations.current.mockResolvedValue(normalizeCurrentIteration(startableWire()));
-    iterations.start.mockResolvedValue({ iteration: null, carriedRequirements: 0, carriedItems: 0 });
+    iterations.start.mockResolvedValue({ iteration: null });
     const reload = jest.fn();
     const container = await render(po("lead", reload));
     const banner = container.querySelector(".po-delivered");
@@ -293,7 +279,7 @@ describe("PO Studio's delivered banner", () => {
     expect(start).toBeDefined();
     await click(start);
     await click(buttonNamed(dialog()!, "Start iteration 4"));
-    expect(iterations.start).toHaveBeenCalledWith("dp-1", { carryOver: { requirementItemIds: ["item-coupon", "item-csp"] } });
+    expect(iterations.start).toHaveBeenCalledWith("dp-1", {});
     expect(reload).toHaveBeenCalled();
   });
 
@@ -304,8 +290,10 @@ describe("PO Studio's delivered banner", () => {
     expect(buttonNamed(container, "+Start iteration 4")).toBeUndefined();
   });
 
-  it("adds nothing on a backend without carry-over", async () => {
-    iterations.current.mockResolvedValue(normalizeCurrentIteration(deliveredWire({ canStartNext: true })));
+  it("adds nothing on a backend that does not say who may start", async () => {
+    const older = deliveredWire();
+    delete older.canStartNext;
+    iterations.current.mockResolvedValue(normalizeCurrentIteration(older));
     const container = await render(po("lead"));
     expect(container.querySelector(".po-delivered")).not.toBeNull();
     expect(container.querySelector(".po-delivered__next")).toBeNull();
