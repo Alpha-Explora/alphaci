@@ -1,29 +1,29 @@
 /* ── History ────────────────────────────────────────────────────────────────
-   .history          the Project's History tab: every iteration, newest first.
-   .history-card     one iteration; its title is a dropdown toggle. Delivered
+   .ihist          the Project's History tab: every iteration, newest first.
+   .ihist-card     one iteration; its title is a dropdown toggle. Delivered
                      is violet (the tone of "Delivered" everywhere), active the
                      brand tone. Tokens only.
-   .history-report   a delivered iteration's frozen checklist and QA results.
+   .ihist-report   a delivered iteration's frozen checklist and QA results.
    ------------------------------------------------------------------------- */
 
-.history {
+.ihist {
   display: grid;
   gap: 1rem;
 }
 
-.history__head {
+.ihist__head {
   display: grid;
   gap: 0.3rem;
 }
 
-.history .history__title {
+.ihist .ihist__title {
   margin: 0;
   font-size: 1.05rem;
   font-weight: 700;
   color: var(--text-primary);
 }
 
-.history__intro {
+.ihist__intro {
   margin: 0;
   max-width: 72ch;
   font-size: 0.82rem;
@@ -31,38 +31,38 @@
   color: var(--text-secondary);
 }
 
-.history-list,
-.history-groups,
-.history-items,
-.history-heads {
+.ihist-list,
+.ihist-groups,
+.ihist-items,
+.ihist-heads {
   display: grid;
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
-.history-list {
+.ihist-list {
   gap: 0.75rem;
 }
 
-.history-card {
-  --history-tone: var(--brand);
+.ihist-card {
+  --ihist-tone: var(--brand);
 
   display: grid;
   gap: 0.35rem;
   padding: clamp(0.85rem, 1.6vw, 1.1rem);
   border: 1px solid var(--border-layer);
-  border-left: 3px solid var(--history-tone);
+  border-left: 3px solid var(--ihist-tone);
   border-radius: 0.9rem;
   background: var(--layer-1);
   box-shadow: var(--shadow-soft);
 }
 
-.history-card[data-status="delivered"] {
-  --history-tone: var(--accent-violet);
+.ihist-card[data-status="delivered"] {
+  --ihist-tone: var(--accent-violet);
 }
 
-.history-card__head {
+.ihist-card__head {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -70,7 +70,7 @@
   gap: 0.5rem 0.75rem;
 }
 
-.history-card .history-card__title {
+.ihist-card .ihist-card__title {
   margin: 0;
   font-size: 0.98rem;
   font-weight: 700;
@@ -79,7 +79,7 @@
   overflow-wrap: anywhere;
 }
 
-.history-card__toggle {
+.ihist-card__toggle {
   display: inline-flex;
   align-items: center;
   gap: 0.45rem;
@@ -93,44 +93,44 @@
   cursor: pointer;
 }
 
-.history-card__toggle:hover span {
+.ihist-card__toggle:hover span {
   text-decoration: underline;
   text-underline-offset: 0.2em;
 }
 
-.history-card__toggle:focus-visible {
-  outline: 2px solid var(--history-tone);
+.ihist-card__toggle:focus-visible {
+  outline: 2px solid var(--ihist-tone);
   outline-offset: 3px;
   border-radius: 0.3rem;
 }
 
-.history-card__chevron {
+.ihist-card__chevron {
   flex: none;
   color: var(--text-secondary);
   transition: transform 160ms ease;
 }
 
-.history-card[data-open="true"] .history-card__chevron {
+.ihist-card[data-open="true"] .ihist-card__chevron {
   transform: rotate(180deg);
 }
 
-.history-card__meta {
+.ihist-card__meta {
   margin: 0;
   font-size: 0.78rem;
   color: var(--text-muted);
 }
 
-.history-card__body {
+.ihist-card__body {
   display: grid;
   gap: 0.75rem;
   padding-top: 0.5rem;
 }
 
-.history-card__body[hidden] {
+.ihist-card__body[hidden] {
   display: none;
 }
 
-.history-note {
+.ihist-note {
   display: grid;
   gap: 0.5rem;
   justify-items: start;
@@ -140,33 +140,33 @@
   color: var(--text-secondary);
 }
 
-.history-note p {
+.ihist-note p {
   margin: 0;
 }
 
-.history-skeleton {
+.ihist-skeleton {
   min-height: 6rem;
   border-radius: 0.75rem;
 }
 
-.history-report {
+.ihist-report {
   display: grid;
   gap: 0.75rem;
 }
 
-.history-signoff {
+.ihist-signoff {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 0.4rem 0.6rem;
 }
 
-.history-signoff__by {
+.ihist-signoff__by {
   font-size: 0.8rem;
   color: var(--text-secondary);
 }
 
-.history-signoff__summary {
+.ihist-signoff__summary {
   flex-basis: 100%;
   margin: 0;
   font-size: 0.82rem;
@@ -174,7 +174,7 @@
   color: var(--text-primary);
 }
 
-.history-score {
+.ihist-score {
   margin: 0;
   font-size: 0.82rem;
   font-weight: 600;
@@ -182,20 +182,20 @@
   font-variant-numeric: tabular-nums;
 }
 
-.history-heads {
+.ihist-heads {
   gap: 0.25rem;
 }
 
-.history-heads__item code {
+.ihist-heads__item code {
   font-size: 0.76rem;
   color: var(--text-secondary);
 }
 
-.history-groups {
+.ihist-groups {
   gap: 0.75rem;
 }
 
-.history-group__head {
+.ihist-group__head {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -203,7 +203,7 @@
   margin: 0 0 0.35rem;
 }
 
-.history-group__kind {
+.ihist-group__kind {
   font-size: 0.66rem;
   font-weight: 700;
   letter-spacing: 0.08em;
@@ -211,27 +211,27 @@
   color: var(--brand);
 }
 
-.history-group__name {
+.ihist-group__name {
   font-size: 0.86rem;
   font-weight: 650;
   color: var(--text-primary);
   overflow-wrap: anywhere;
 }
 
-.history-group__count {
+.ihist-group__count {
   margin-left: auto;
   font-size: 0.74rem;
   color: var(--text-muted);
   font-variant-numeric: tabular-nums;
 }
 
-.history-items {
+.ihist-items {
   border: 1px solid var(--border-layer);
   border-radius: 0.65rem;
   overflow: hidden;
 }
 
-.history-item {
+.ihist-item {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -241,11 +241,11 @@
   background: var(--layer-2);
 }
 
-.history-item + .history-item {
+.ihist-item + .ihist-item {
   border-top: 1px solid var(--border-layer);
 }
 
-.history-item__title {
+.ihist-item__title {
   flex: 1 1 18rem;
   min-width: 0;
   font-size: 0.82rem;
@@ -254,19 +254,19 @@
   overflow-wrap: anywhere;
 }
 
-.history-item__facts {
+.ihist-item__facts {
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
 }
 
-.history-item__progress {
+.ihist-item__progress {
   font-size: 0.74rem;
   color: var(--text-muted);
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .history-card__chevron {
+  .ihist-card__chevron {
     transition: none;
   }
 }
