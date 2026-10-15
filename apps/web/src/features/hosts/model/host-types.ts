@@ -23,6 +23,8 @@ export interface EnrollmentReceipt {
   id: string;
   code: string;
   expiresAt: string;
+  /** Set when this code replaces the credential of an enrolled machine. */
+  replacesMachineId?: string | null;
   installer: { version: string; url: string; sha256: string };
 }
 export type AssignmentConfig =

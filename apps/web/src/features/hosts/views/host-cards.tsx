@@ -64,6 +64,12 @@ export function EnrollmentCard({ vm }: { vm: HostsVm }) {
         The code expires at {new Date(receipt.expiresAt).toLocaleTimeString()}.
         Paste it once into the installer prompt.
       </p>
+      {receipt.replacesMachineId ? (
+        <p>
+          This code replaces the host&apos;s credential. Run the command on that
+          host; its current credential stops working once the code is used.
+        </p>
+      ) : null}
       {!vm.expired ? (
         <code style={{ wordBreak: "break-all" }}>{receipt.code}</code>
       ) : null}
@@ -85,10 +91,9 @@ export function EnrollmentCard({ vm }: { vm: HostsVm }) {
         <summary>Windows installation command</summary>
         <p>
           Run in an administrator PowerShell window as the account that owns
-          Ubuntu. The example forwards ports 8080 through 8082 from the local
-          network. Add the ports selected for other environments when rerunning
-          the installer. Client servers should use a dedicated WSL account and
-          startup task.
+          Ubuntu. The host forwards the port of each environment assigned to it
+          from the local network, and stops forwarding it when unassigned.
+          Client servers should use a dedicated WSL account and startup task.
         </p>
         <pre style={{ whiteSpace: "pre-wrap", wordBreak: "break-all" }}>
           {instructions.windows}

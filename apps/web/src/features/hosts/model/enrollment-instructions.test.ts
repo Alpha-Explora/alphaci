@@ -80,3 +80,35 @@ it("checks the downloaded bytes before either extracting or executing the instal
   expect(enrollmentInstructions(receipt).ubuntu).not.toContain(receipt.code);
   expect(enrollmentInstructions(receipt).windows).not.toContain(receipt.code);
 });
+const plainReceipt = {
+  id: "e",
+  code: "code",
+  expiresAt: "later",
+  apiUrl: "https://api.example.com",
+  installer: {
+    version: "0.1.0",
+    url: "https://download.example.com/agent.tar.gz",
+    sha256: "a".repeat(64),
+  },
+};
+it("asks the installer to replace the existing credential only for a replacement receipt", () => {
+  const fresh = enrollmentInstructions({
+    ...plainReceipt,
+    replacesMachineId: null,
+  });
+  expect(fresh.ubuntu).not.toContain("--replace");
+  expect(fresh.windows).not.toContain("-ReplaceCredential");
+  const replacement = enrollmentInstructions({
+    ...plainReceipt,
+    replacesMachineId: "machine",
+  });
+  expect(replacement.ubuntu).toMatch(
+    /install\.sh" --enroll 'https:\/\/api\.example\.com' --replace$/,
+  );
+  expect(replacement.windows).toContain(
+    "-ApiUrl 'https://api.example.com' -ReplaceCredential -OnlyWhenSignedIn",
+  );
+});
+it("lets the Windows host forward its assigned ports instead of a fixed range", () => {
+  expect(enrollmentInstructions(plainReceipt).windows).not.toContain("-Ports");
+});
