@@ -1,7 +1,12 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import { createHostEnrollment, listHosts, revokeHost } from "../data/hosts-api";
-import type { EnrollmentReceipt, MachineSummary } from "../model/host-types";
+import {
+  enrollmentProgress,
+  type EnrollmentReceipt,
+  type HostPlatform,
+  type MachineSummary,
+} from "../model/host-types";
 export function useHostsViewModel(
   workspaceId: string,
   canManage: boolean,
@@ -14,9 +19,21 @@ export function useHostsViewModel(
   const [busy, setBusy] = useState(false),
     [confirmation, setConfirmation] = useState<string | null>(null);
   const [name, setName] = useState(""),
-    [platform, setPlatform] = useState<"windows" | "ubuntu">("windows");
+    [platform, setPlatform] = useState<HostPlatform>("windows");
+  const [adding, setAdding] = useState(false),
+    [enrolled, setEnrolled] = useState<{
+      name: string;
+      platform: HostPlatform;
+    } | null>(null);
   const [now, setNow] = useState(Date.now()),
     [reload, setReload] = useState(0);
+  const progress =
+    receipt && enrolled
+      ? enrollmentProgress(receipt, enrolled.name, hosts, now)
+      : null;
+  // While a fresh code waits for its machine, check in faster so the page
+  // flips to "connected" moments after the installer finishes.
+  const waiting = progress === "waiting";
   const pending = useRef(false),
     scope = useRef<string | null>(workspaceId);
   useEffect(() => {
@@ -25,6 +42,11 @@ export function useHostsViewModel(
       scope.current = null;
     };
   }, [workspaceId]);
+  useEffect(() => {
+    if (!waiting) return;
+    const tick = setInterval(() => setNow(Date.now()), 1_000);
+    return () => clearInterval(tick);
+  }, [waiting]);
   useEffect(() => {
     if (!enabled) return;
     const abort = new AbortController();
@@ -46,31 +68,41 @@ export function useHostsViewModel(
           }
         });
     void load();
-    const timer = setInterval(() => {
-      setNow(Date.now());
-      void load();
-    }, 10_000);
+    const timer = setInterval(
+      () => {
+        setNow(Date.now());
+        void load();
+      },
+      waiting ? 3_000 : 10_000,
+    );
     return () => {
       active = false;
       abort.abort();
       clearInterval(timer);
     };
-  }, [workspaceId, reload, enabled]);
+  }, [workspaceId, reload, enabled, waiting]);
   async function enroll(replacement?: MachineSummary) {
     if (!canManage || pending.current) return;
     if (replacement && confirmation !== `replace:${replacement.id}`) {
       setConfirmation(`replace:${replacement.id}`);
       return;
     }
+    const target = {
+      name: replacement?.name ?? name.trim(),
+      platform: replacement?.platform ?? platform,
+    };
     await perform(async () => {
       const result = await createHostEnrollment(workspaceId, {
-        name: replacement?.name ?? name,
-        platform: replacement?.platform ?? platform,
+        name: target.name,
+        platform: target.platform,
         requestId: crypto.randomUUID(),
         ...(replacement ? { replacesMachineId: replacement.id } : {}),
       });
       if (scope.current === workspaceId) {
         setReceipt(result);
+        setEnrolled(target);
+        setAdding(false);
+        setName("");
         setConfirmation(null);
         setReload((value) => value + 1);
       }
@@ -111,6 +143,9 @@ export function useHostsViewModel(
     status,
     error,
     receipt,
+    enrolled,
+    progress,
+    adding,
     busy,
     confirmation,
     name,
@@ -118,10 +153,18 @@ export function useHostsViewModel(
     platform,
     setPlatform,
     now,
-    expired: Boolean(receipt && Date.parse(receipt.expiresAt) <= now),
+    expired: progress === "expired",
     enroll,
     revoke,
-    dismiss: () => setReceipt(null),
+    startAdding: () => {
+      setAdding(true);
+      setConfirmation(null);
+    },
+    closeAdding: () => setAdding(false),
+    dismiss: () => {
+      setReceipt(null);
+      setEnrolled(null);
+    },
     cancel: () => setConfirmation(null),
   };
 }
