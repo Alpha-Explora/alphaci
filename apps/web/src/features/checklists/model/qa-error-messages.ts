@@ -51,7 +51,7 @@ export const QA_ERROR_MESSAGES: Readonly<Record<string, string>> = {
   /* Iterations phase 3: starting the next iteration. */
   ITERATION_ACTIVE: "This Project already has an active iteration. Deliver it before starting the next one.",
   ITERATION_CARRY_INVALID:
-    "Some selected items can no longer be carried over: only items of the last delivered iteration can be. Close this dialog, reload the page and choose again.",
+    "Items are no longer carried over: a new iteration starts with an empty checklist. Close this dialog, reload the page and start it again.",
 };
 
 /**

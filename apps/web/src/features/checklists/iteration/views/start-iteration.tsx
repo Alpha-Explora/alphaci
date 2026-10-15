@@ -7,16 +7,15 @@ import { useId } from "react";
 import { FormDialog } from "@/features/groups/workspace";
 import type { AppRole } from "@/shared/api/contracts";
 
-import type { CarryOverGroup } from "../../model/iteration-carry-over-rules";
 import { useCurrentIterationViewModel } from "../view-models/use-current-iteration-view-model";
 import { useNextIterationViewModel } from "../view-models/use-next-iteration-view-model";
 import { useStartIterationViewModel, type StartIterationViewModel } from "../view-models/use-start-iteration-view-model";
 import { IterationStatusPill } from "./iteration-status";
 
-/* Iterations phase 3: "Start iteration N+1" with its carry-over dialog, and
- * the sentence everyone else reads while the Product owner has not started
- * it yet (P15). Each renders nothing unless the server said enough: an older
- * backend's screens are exactly as before. */
+/* "Start iteration N+1" with its dialog (a goal; the new iteration starts
+ * with an empty checklist), and the sentence everyone else reads while the
+ * Product owner has not started it yet (P15). Each renders nothing unless the
+ * server said enough: an older backend's screens are exactly as before. */
 
 /** An hourglass, decorative: it always sits beside the sentence it marks. */
 function WaitGlyph() {
@@ -49,80 +48,6 @@ export function IterationWaitingNotice({ text }: Readonly<{ text: string }>) {
   );
 }
 
-function CarryGroup({ group, vm }: Readonly<{ group: CarryOverGroup; vm: StartIterationViewModel }>) {
-  return (
-    <li className="iteration-carry__group">
-      <p className="iteration-carry__requirement">
-        <span className="iteration-carry__kind" data-kind={group.kind}>
-          {group.kindLabel}
-        </span>
-        <span className="iteration-carry__name">{group.name}</span>
-      </p>
-      <ul className="iteration-carry__items" aria-label={`${group.kindLabel}: ${group.name}`}>
-        {group.items.map((item) => (
-          <li key={item.id} className="iteration-carry__item" data-suggested={item.suggested ? "true" : undefined}>
-            <label className="iteration-carry__label">
-              <input
-                type="checkbox"
-                className="iteration-carry__check"
-                checked={item.checked}
-                disabled={vm.submitting}
-                onChange={() => vm.toggleItem(item.id)}
-              />
-              <span className="iteration-carry__copy">
-                <span className="iteration-carry__title">{item.title}</span>
-                <span className="iteration-carry__hint">{item.hint}</span>
-              </span>
-            </label>
-          </li>
-        ))}
-      </ul>
-    </li>
-  );
-}
-
-function CarryOverList({ vm }: Readonly<{ vm: StartIterationViewModel }>) {
-  const from = vm.fromIterationNumber;
-  const nextName = vm.step.kind === "start" ? `iteration ${String(vm.step.nextNumber)}` : "the next iteration";
-  return (
-    <fieldset className="hier-field iteration-carry">
-      <legend className="hier-field-label">Carry over{from ? ` from Iteration ${String(from)}` : ""}</legend>
-      {vm.groups.length === 0 ? (
-        <p className="iteration-carry__empty">Nothing to carry over: {nextName} starts empty.</p>
-      ) : (
-        <>
-          <div className="iteration-carry__bar">
-            <span className="iteration-carry__count" aria-live="polite">
-              {vm.selectionLabel}
-            </span>
-            <button
-              type="button"
-              className="iteration-carry__action"
-              disabled={vm.submitting || vm.unfinishedCount === 0}
-              onClick={vm.selectAllUnfinished}
-            >
-              Select all unfinished
-            </button>
-            <button
-              type="button"
-              className="iteration-carry__action"
-              disabled={vm.submitting || vm.selectedCount === 0}
-              onClick={vm.clear}
-            >
-              Clear
-            </button>
-          </div>
-          <ul className="iteration-carry__groups">
-            {vm.groups.map((group) => (
-              <CarryGroup key={group.requirementId} group={group} vm={vm} />
-            ))}
-          </ul>
-        </>
-      )}
-    </fieldset>
-  );
-}
-
 function GoalField({ vm }: Readonly<{ vm: StartIterationViewModel }>) {
   const errorId = useId();
   return (
@@ -152,26 +77,23 @@ function GoalField({ vm }: Readonly<{ vm: StartIterationViewModel }>) {
   );
 }
 
-/** The dialog: an optional goal, and the delivered iteration's items with the unfinished ones pre-checked. */
+/** The dialog: an optional goal. The new iteration starts with an empty checklist. */
 export function StartIterationDialog({ vm }: Readonly<{ vm: StartIterationViewModel }>) {
   if (vm.step.kind !== "start") return null;
-  const from = vm.fromIterationNumber;
   return (
     <FormDialog
       open={vm.open}
       onClose={vm.close}
       title={vm.label}
-      description={`Name what this iteration is for, and choose the work to bring along. Unfinished items are already ticked.${from ? ` Everything delivered stays with Iteration ${String(from)}.` : ""}`}
+      description={vm.description}
       submitLabel={vm.label}
       submitting={vm.submitting}
       error={vm.error}
       canSubmit={vm.goalError === null}
-      size="wide"
       onSubmit={() => void vm.submit()}
     >
       <div className="iteration-start">
         <GoalField vm={vm} />
-        <CarryOverList vm={vm} />
       </div>
     </FormDialog>
   );
