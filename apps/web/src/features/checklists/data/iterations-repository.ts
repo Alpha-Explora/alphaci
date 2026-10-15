@@ -1,9 +1,11 @@
 import { request } from "@/shared/api/request";
 
+import { normalizeIterationHistory } from "../model/iteration-history-rules";
 import { normalizeCurrentIteration, normalizeMergeAll } from "../model/iteration-rules";
 import { normalizeStartedIteration } from "../model/iteration-start-rules";
 import type {
   CurrentIteration,
+  HistoryIteration,
   MergeAllResult,
   StartedIteration,
   StartIterationInput,
@@ -31,6 +33,11 @@ export const iterationsRepository = {
    */
   async current(deliveryProjectId: string): Promise<CurrentIteration | null> {
     return normalizeCurrentIteration(await request<unknown>(`${projectPath(deliveryProjectId)}/iterations/current`));
+  },
+
+  /** Every iteration of the Project, newest first (the History tab). */
+  async list(deliveryProjectId: string): Promise<HistoryIteration[]> {
+    return normalizeIterationHistory(await request<unknown>(`${projectPath(deliveryProjectId)}/iterations`));
   },
 
   /**

@@ -31,9 +31,9 @@ describe("the Pipeline tab (Pipeline runs + Workflow)", () => {
     }
   });
 
-  it("gives a Developer nine tabs", () => {
+  it("gives a Developer ten tabs", () => {
     expect(visibleProjectDetailTabs("member", { qaChecklistsEnabled: true })).toEqual([
-      "overview", "code", "commits", "pulls", "checklists", "pipeline", "hosting", "audit", "settings",
+      "overview", "code", "commits", "pulls", "checklists", "pipeline", "hosting", "audit", "history", "settings",
     ]);
   });
 
