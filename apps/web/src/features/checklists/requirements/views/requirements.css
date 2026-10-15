@@ -155,6 +155,33 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* A delivered iteration: its Features left this list for History. Violet,
+   the tone of "Delivered" everywhere. */
+.rq-delivered {
+  display: grid;
+  justify-items: start;
+  gap: 0.5rem;
+  padding: 1rem 1.1rem;
+  border: 1px solid var(--border-violet);
+  border-radius: 0.9rem;
+  background: var(--accent-violet-light);
+}
+
+.rq-delivered__title {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.rq-delivered__text {
+  margin: 0;
+  max-width: 64ch;
+  font-size: 0.84rem;
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+
 .rq-empty {
   display: grid;
   justify-items: start;

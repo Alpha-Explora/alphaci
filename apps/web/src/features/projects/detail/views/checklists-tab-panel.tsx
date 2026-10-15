@@ -50,6 +50,7 @@ export function ChecklistsTabPanel({
           appRole={vm.appRole}
           enabled={vm.qaChecklistsEnabled}
           opensOn={vm.checklistsOpensMyItems ? "items" : undefined}
+          onOpenHistory={vm.visibleTabs.includes("history") ? () => vm.setTab("history") : undefined}
           itemsFallback={
             <MyQaItemsCard
               appRole={vm.appRole}

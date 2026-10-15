@@ -21,11 +21,12 @@ import type { ProjectRunViewModel } from "../view-models/use-project-run-view-mo
 import { useProjectReopenViewModel } from "../view-models/use-project-signoff-view-model";
 import type { PoDeliveryViewModel } from "../view-models/use-po-delivery-view-model";
 import type { QaPromotionViewModel } from "../view-models/use-qa-promotion-view-model";
+import { useShowRepositories } from "../view-models/repository-visibility";
 import { PoDeliveredBanner, PoDeliveryState } from "./po-delivery";
 import { RunSummary, SignoffBanner } from "./run-signoff";
 
-function signedSubject(run: ProjectQaRun): string {
-  if (run.repositories.length === 0) return run.deliveryProjectName;
+function signedSubject(run: ProjectQaRun, showRepositories: boolean): string {
+  if (!showRepositories || run.repositories.length === 0) return run.deliveryProjectName;
   return run.repositories.map((head) => headLabel(head.repoFullName, head.runSha)).join(", ");
 }
 
@@ -46,11 +47,12 @@ function QaRunAcceptance({
   appRole: AppRole | null | undefined;
 }>) {
   const permissions = resolveProjectRunPermissions(run, appRole);
+  const showRepositories = useShowRepositories();
   const reopen = useProjectReopenViewModel({ deliveryProjectId, run, permissions, onRun: vm.applyRun });
   return (
     <>
       <RunSummary run={run} />
-      <SignoffBanner run={run} subject={signedSubject(run)} reopen={reopen} />
+      <SignoffBanner run={run} subject={signedSubject(run, showRepositories)} reopen={reopen} />
     </>
   );
 }
@@ -135,7 +137,7 @@ function ProjectAcceptance({
       ) : (
         <>
           <AcceptanceStatus ready={ready} run={run} />
-          <PoDeliveryState vm={delivery} />
+          <PoDeliveryState vm={delivery} projectName={qaScope.projectName} />
         </>
       )}
       {run ? (

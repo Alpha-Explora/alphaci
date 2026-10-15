@@ -2,6 +2,8 @@
 
 import "./history.css";
 
+import type { AppRole } from "@/shared/api/contracts";
+
 import { StatusPill, VerdictPill } from "../../items";
 import {
   HISTORY_EMPTY_TEXT,
@@ -16,6 +18,7 @@ import { groupPassLabel, groupRunItems, headLabel } from "../../model/project-ru
 import type { ProjectQaRun, ProjectRunGroup } from "../../model/project-run-types";
 import { blockersLabel, openDefectsLabel, passedLabel } from "../../model/qa-run-rules";
 import { kindCopy, progressLabel } from "../../model/requirement-rules";
+import { showsRepositories } from "../../model/studio-role-rules";
 import {
   useIterationHistoryViewModel,
   type HistoryReport,
@@ -83,7 +86,7 @@ function HistoryGroup({ group }: Readonly<{ group: ProjectRunGroup }>) {
 }
 
 /** The frozen report: who signed it off, the score, the heads it verified, every item. */
-function FrozenReport({ run }: Readonly<{ run: ProjectQaRun }>) {
+function FrozenReport({ run, showRepositories }: Readonly<{ run: ProjectQaRun; showRepositories: boolean }>) {
   const signoff = run.signoff;
   return (
     <div className="ihist-report">
@@ -97,7 +100,7 @@ function FrozenReport({ run }: Readonly<{ run: ProjectQaRun }>) {
       <p className="ihist-score">
         {passedLabel(run)} · {openDefectsLabel(run.summary.openDefects)} · {blockersLabel(run.summary.blockers)}
       </p>
-      {run.repositories.length > 0 ? (
+      {showRepositories && run.repositories.length > 0 ? (
         <ul className="ihist-heads" aria-label="What QA verified">
           {run.repositories.map((head) => (
             <li key={head.projectId} className="ihist-heads__item">
@@ -118,7 +121,8 @@ function FrozenReport({ run }: Readonly<{ run: ProjectQaRun }>) {
 function ReportBody({
   report,
   onRetry,
-}: Readonly<{ report: HistoryReport | undefined; onRetry: () => void }>) {
+  showRepositories,
+}: Readonly<{ report: HistoryReport | undefined; onRetry: () => void; showRepositories: boolean }>) {
   if (!report || report.status === "loading") {
     return <div className="hier-skeleton ihist-skeleton" aria-hidden="true" />;
   }
@@ -132,11 +136,15 @@ function ReportBody({
       </div>
     );
   }
-  return <FrozenReport run={report.run} />;
+  return <FrozenReport run={report.run} showRepositories={showRepositories} />;
 }
 
 /** One iteration: its title as the toggle, and — opened — its frozen checklist. */
-function HistoryCard({ iteration, vm }: Readonly<{ iteration: HistoryIteration; vm: IterationHistoryViewModel }>) {
+function HistoryCard({
+  iteration,
+  vm,
+  showRepositories,
+}: Readonly<{ iteration: HistoryIteration; vm: IterationHistoryViewModel; showRepositories: boolean }>) {
   const open = vm.open[iteration.id] === true;
   const bodyId = `history-${iteration.id}`;
   const note = historyNoReportText(iteration);
@@ -166,6 +174,7 @@ function HistoryCard({ iteration, vm }: Readonly<{ iteration: HistoryIteration; 
             <ReportBody
               report={iteration.signoffRunId ? vm.reports[iteration.signoffRunId] : undefined}
               onRetry={() => vm.retryReport(iteration)}
+              showRepositories={showRepositories}
             />
           )
         ) : null}
@@ -174,7 +183,7 @@ function HistoryCard({ iteration, vm }: Readonly<{ iteration: HistoryIteration; 
   );
 }
 
-function HistoryBody({ vm }: Readonly<{ vm: IterationHistoryViewModel }>) {
+function HistoryBody({ vm, showRepositories }: Readonly<{ vm: IterationHistoryViewModel; showRepositories: boolean }>) {
   if (vm.status === "loading" || vm.status === "idle") {
     return <div className="hier-skeleton ihist-skeleton" aria-hidden="true" />;
   }
@@ -195,7 +204,7 @@ function HistoryBody({ vm }: Readonly<{ vm: IterationHistoryViewModel }>) {
   return (
     <ul className="ihist-list" aria-label="Iterations, newest first">
       {vm.iterations.map((iteration) => (
-        <HistoryCard key={iteration.id} iteration={iteration} vm={vm} />
+        <HistoryCard key={iteration.id} iteration={iteration} vm={vm} showRepositories={showRepositories} />
       ))}
     </ul>
   );
@@ -211,7 +220,14 @@ export function IterationHistoryPanel({
   deliveryProjectId,
   projectName,
   enabled,
-}: Readonly<{ deliveryProjectId: string; projectName: string; enabled: boolean }>) {
+  appRole,
+}: Readonly<{
+  deliveryProjectId: string;
+  projectName: string;
+  enabled: boolean;
+  /** Product owners and the QA Team see the Project only: no commits per repository. */
+  appRole?: AppRole | null;
+}>) {
   const vm = useIterationHistoryViewModel({ deliveryProjectId, enabled });
   return (
     <section className="ihist" aria-labelledby="history-title">
@@ -221,7 +237,7 @@ export function IterationHistoryPanel({
         </h3>
         <p className="ihist__intro">{HISTORY_INTRO}</p>
       </div>
-      <HistoryBody vm={vm} />
+      <HistoryBody vm={vm} showRepositories={showsRepositories(appRole)} />
     </section>
   );
 }

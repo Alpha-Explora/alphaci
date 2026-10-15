@@ -172,6 +172,21 @@ describe("IterationHistoryPanel", () => {
     expect(runs.get).toHaveBeenCalledTimes(1);
   });
 
+  it("shows the QA Team and Product owners the Project, not the commits each repository was verified at", async () => {
+    iterations.list.mockResolvedValue(HISTORY);
+    runs.get.mockResolvedValue(frozenRun());
+    for (const role of ["qa", "lead", "admin"] as const) {
+      const container = await render(
+        <IterationHistoryPanel deliveryProjectId="dp-1" projectName="Logistics2" enabled appRole={role} />,
+      );
+      await click(toggles(container)[1]);
+      expect(container.querySelector(".ihist-heads") === null).toBe(role !== "admin");
+      expect(container.textContent).toContain("2/2 passed");
+      act(() => root?.unmount());
+      root = null;
+    }
+  });
+
   it("points the active iteration to the Checklists tab", async () => {
     iterations.list.mockResolvedValue(HISTORY);
     const container = await render(panel());

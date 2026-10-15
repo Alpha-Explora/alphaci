@@ -8,8 +8,10 @@ import type { AppRole } from "@/shared/api/contracts";
 
 import { ProjectMyItemsCard } from "../../returned";
 import { ProjectRunPanel, useProjectRunViewModel } from "../../studio";
+import { lockedIterationNumber } from "../../model/iteration-rules";
 import { projectWorkspaceOpensMyItems } from "../../model/my-qa-items-summary-rules";
 import { canSetVerification } from "../../model/requirement-rules";
+import { showsRepositories } from "../../model/studio-role-rules";
 import { ProjectRequirementsPanel } from "./project-requirements-panel";
 
 export type ProjectQaWorkspaceTab = "requirements" | "run" | "items";
@@ -37,19 +39,28 @@ function firstTab(appRole: AppRole | null | undefined, opensOn: WorkspaceTab | u
   return appRole === "qa" ? "run" : "requirements";
 }
 
+/** The QA run tab's one line for this viewer, in Project words for those who never see repositories. */
+function runRoleLine(appRole: AppRole | null | undefined): string {
+  if (canSetVerification(appRole)) {
+    return showsRepositories(appRole)
+      ? "Verify every item against the uat head of each repository, then sign the Project off."
+      : "Verify every item on the Project's uat build, then sign the Project off.";
+  }
+  return "What the QA Team verified, on which uat heads. Merging to main follows its sign-off.";
+}
+
 function RunTab({
   deliveryProjectId,
   appRole,
-}: Readonly<{ deliveryProjectId: string; appRole: AppRole | null | undefined }>) {
+  onOpenHistory,
+}: Readonly<{ deliveryProjectId: string; appRole: AppRole | null | undefined; onOpenHistory?: () => void }>) {
   const vm = useProjectRunViewModel({ deliveryProjectId, enabled: true });
+  // A delivered iteration's run has left this tab; the role line goes with it.
+  const delivered = vm.run !== null && lockedIterationNumber(vm.run.iteration) !== null;
   return (
     <>
-      <p className="rq-panel__role">
-        {canSetVerification(appRole)
-          ? "Verify every item against the uat head of each repository, then sign the Project off."
-          : "What the QA Team verified, on which uat heads. Merging to main follows its sign-off."}
-      </p>
-      <ProjectRunPanel deliveryProjectId={deliveryProjectId} vm={vm} appRole={appRole} />
+      {delivered ? null : <p className="rq-panel__role">{runRoleLine(appRole)}</p>}
+      <ProjectRunPanel deliveryProjectId={deliveryProjectId} vm={vm} appRole={appRole} onOpenHistory={onOpenHistory} />
     </>
   );
 }
@@ -68,6 +79,7 @@ export function ProjectQaWorkspace({
   onFeatureCount,
   opensOn,
   itemsFallback,
+  onOpenHistory,
 }: Readonly<{
   deliveryProjectId: string;
   projectName: string;
@@ -84,6 +96,8 @@ export function ProjectQaWorkspace({
   opensOn?: WorkspaceTab;
   /** Stands in on "My QA items" when the server has no Project-wide list (an older backend). */
   itemsFallback?: ReactNode;
+  /** Opens the page's History tab (the repository page); omitted where there is none. */
+  onOpenHistory?: () => void;
 }>) {
   const [tab, setTab] = useState<WorkspaceTab>(() => firstTab(appRole, opensOn));
   const [seenRequest, setSeenRequest] = useState(newFeatureRequest);
@@ -150,9 +164,12 @@ export function ProjectQaWorkspace({
             appRole={appRole}
             newFeatureRequest={pendingRequest}
             onFeatureCount={onFeatureCount}
+            onOpenHistory={onOpenHistory}
           />
         ) : null}
-        {tab === "run" ? <RunTab deliveryProjectId={deliveryProjectId} appRole={appRole} /> : null}
+        {tab === "run" ? (
+          <RunTab deliveryProjectId={deliveryProjectId} appRole={appRole} onOpenHistory={onOpenHistory} />
+        ) : null}
         {tab === "items" ? (
           <ProjectMyItemsCard
             deliveryProjectId={deliveryProjectId}

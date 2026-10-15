@@ -141,12 +141,14 @@ describe("The Project QA run between iterations", () => {
     expect(buttonNamed(container, "Start Project QA run")).toBeUndefined();
   });
 
-  it("adds the waiting sentence under a delivered run's locked banner", async () => {
+  it("adds the waiting sentence under a delivered run, which has left the tab", async () => {
     const wire = projectRunWire({ status: "signed_off", iteration: { id: "it-3", number: 3, status: "delivered" } });
     runs.current.mockResolvedValue(normalizeProjectRunCurrent({ run: wire, heads: [] }));
     iterations.current.mockResolvedValue(normalizeCurrentIteration(waitingWire()));
     const container = await render(<RunHarness role="qa" />);
-    expect(container.querySelector(".iteration-locked")).not.toBeNull();
+    expect(container.querySelector(".pqa-delivered")).not.toBeNull();
+    // No History on this screen: the sentence names where it is, without a button.
+    expect(container.querySelector(".pqa-delivered__text")?.textContent).toContain("in the History tab of each repository");
     expect(waitingText(container)).toMatch(WAITING);
   });
 

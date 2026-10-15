@@ -12,6 +12,7 @@ import type { QaPromotionStatus } from "../../../../../src/features/checklists/m
 import type { QaScope } from "../../../../../src/features/checklists/model/qa-scope";
 import { normalizeProjectRequirements } from "../../../../../src/features/checklists/model/requirement-rules";
 import { ProjectRequirementsPanel } from "../../../../../src/features/checklists/requirements/views/project-requirements-panel";
+import { ShowRepositoriesContext } from "../../../../../src/features/checklists/studio/view-models/repository-visibility";
 import { usePoDeliveryViewModel } from "../../../../../src/features/checklists/studio/view-models/use-po-delivery-view-model";
 import { useProjectRunViewModel } from "../../../../../src/features/checklists/studio/view-models/use-project-run-view-model";
 import type { ProjectRunViewModel } from "../../../../../src/features/checklists/studio/view-models/use-project-run-view-model";
@@ -21,7 +22,7 @@ import { MergeAllDialog, MergeAllOutcome } from "../../../../../src/features/che
 import { ProjectRunPanel } from "../../../../../src/features/checklists/studio/views/project-run-panel";
 import { StudioMergeAction } from "../../../../../src/features/checklists/studio/views/promotion-bar";
 import type { AppRole } from "../../../../../src/shared/api/contracts";
-import { currentWire, deliveredWire } from "../iteration-fixtures";
+import { currentWire, deliveredWire, startableWire, waitingWire } from "../iteration-fixtures";
 import { apiErrorWith, readyWire } from "../qa-promotion-fixtures";
 import { projectRequirementsWire, projectRunWire } from "../requirement-fixtures";
 
@@ -134,13 +135,13 @@ describe("IterationStatus (the Project header)", () => {
   });
 });
 
-function RunHarness({ role }: Readonly<{ role: AppRole }>) {
+function RunHarness({ role, onOpenHistory }: Readonly<{ role: AppRole; onOpenHistory?: () => void }>) {
   const vm = useProjectRunViewModel({ deliveryProjectId: "dp-1", enabled: true });
-  return <ProjectRunPanel deliveryProjectId="dp-1" vm={vm} appRole={role} />;
+  return <ProjectRunPanel deliveryProjectId="dp-1" vm={vm} appRole={role} onOpenHistory={onOpenHistory} />;
 }
 
 describe("QA Studio's run on a delivered iteration", () => {
-  it("says the iteration was delivered, and nothing looks clickable", async () => {
+  it("leaves the tab: archived in History, with no item, verdict or sign-off control left", async () => {
     const wire = projectRunWire({
       status: "signed_off",
       signoff: { id: "so-1", verdict: "APPROVED", signedAt: "2026-10-13T10:00:00.000Z", signedBy: { id: "u", login: "ana-qa" }, conditions: null },
@@ -148,12 +149,19 @@ describe("QA Studio's run on a delivered iteration", () => {
       iteration: { id: "it-3", number: 3, status: "delivered" },
     });
     runs.current.mockResolvedValue(normalizeProjectRunCurrent({ run: wire, heads: [] }));
-    const container = await render(<RunHarness role="admin" />);
-    expect(container.querySelector(".iteration-locked")?.textContent).toBe("Iteration 3 was delivered. Changes are locked.");
-    const enabled = [...container.querySelectorAll<HTMLButtonElement>(".pqa-verify button")].filter((button) => !button.disabled);
-    expect(enabled).toEqual([]);
+    const onOpenHistory = jest.fn();
+    const container = await render(<RunHarness role="admin" onOpenHistory={onOpenHistory} />);
+    expect(container.querySelector(".pqa-delivered__title")?.textContent).toBe("Iteration 3 was delivered");
+    expect(container.querySelector(".pqa-delivered__text")?.textContent).toBe(
+      "Its QA run is archived in History, read-only, exactly as QA signed it off. The next iteration starts a new run.",
+    );
+    // The run itself is gone from this tab: no items, no sign-off, no Reopen.
+    expect(container.querySelector(".pqa-verify")).toBeNull();
+    expect(container.querySelector(".qa-summary")).toBeNull();
     expect(buttonNamed(container, "Reopen")).toBeUndefined();
     expect(buttonNamed(container, "Sign off")).toBeUndefined();
+    await click(buttonNamed(container, "View in History"));
+    expect(onOpenHistory).toHaveBeenCalledTimes(1);
   });
 
   it("shows no banner on an active iteration or an older backend", async () => {
@@ -171,14 +179,36 @@ function loadRequirements() {
 }
 
 describe("Project requirements on a delivered iteration", () => {
-  it("are read-only with the banner", async () => {
+  it("leave the list: archived in History, with Start iteration 4 for a Product owner", async () => {
     loadRequirements();
-    iterations.current.mockResolvedValue(normalizeCurrentIteration(deliveredWire()));
-    const container = await render(<ProjectRequirementsPanel deliveryProjectId="dp-1" appRole="lead" />);
-    expect(container.querySelector(".iteration-locked")?.textContent).toBe("Iteration 3 was delivered. Changes are locked.");
+    iterations.current.mockResolvedValue(normalizeCurrentIteration(startableWire()));
+    const onOpenHistory = jest.fn();
+    const container = await render(
+      <ProjectRequirementsPanel deliveryProjectId="dp-1" appRole="lead" onOpenHistory={onOpenHistory} />,
+    );
+    expect(container.querySelector(".rq-delivered__title")?.textContent).toBe("Iteration 3 was delivered");
+    expect(container.querySelector(".rq-delivered__text")?.textContent).toBe(
+      "Its Features are archived in History, read-only, with QA's results. The next iteration starts with an empty list.",
+    );
+    // No Feature of the delivered iteration is listed any more.
+    expect(container.querySelector(".rq-card")).toBeNull();
+    expect(container.querySelector(".rq-section")).toBeNull();
     expect(buttonNamed(container, "New Feature")).toBeUndefined();
-    expect(buttonNamed(container, "Add user story")).toBeUndefined();
-    expect(container.querySelectorAll('button[aria-label^="Move "]').length).toBe(0);
+    expect(buttonNamed(container, "+Start iteration 4")).toBeDefined();
+    await click(buttonNamed(container, "View in History"));
+    expect(onOpenHistory).toHaveBeenCalledTimes(1);
+  });
+
+  it("tell everyone else to wait, and name History without a button where the page has none", async () => {
+    loadRequirements();
+    iterations.current.mockResolvedValue(normalizeCurrentIteration(waitingWire()));
+    const container = await render(<ProjectRequirementsPanel deliveryProjectId="dp-1" appRole="member" />);
+    expect(container.querySelector(".rq-card")).toBeNull();
+    expect(container.querySelector(".rq-delivered__text")?.textContent).toContain("in the History tab of each repository");
+    expect(buttonNamed(container, "View in History")).toBeUndefined();
+    expect(container.querySelector(".iteration-waiting__text")?.textContent).toMatch(
+      /Waiting for the Product owner to start iteration 4\./,
+    );
   });
 
   it("are exactly as before on an active iteration or without the route", async () => {
@@ -349,6 +379,31 @@ describe("PO Studio: a delivered iteration", () => {
     ]);
     expect(buttonNamed(container, "Merge to main")).toBeUndefined();
     expect(container.querySelector(".po-accept__status")).toBeNull();
+  });
+
+  it("tells a Product owner about the Project, never its repositories, merge commits or pull requests", async () => {
+    iterations.current.mockResolvedValue(normalizeCurrentIteration(deliveredWire()));
+    const container = await render(
+      <ShowRepositoriesContext.Provider value={false}>{po(promotionVm(DELIVERED))}</ShowRepositoriesContext.Provider>,
+    );
+    const banner = container.querySelector(".po-delivered")!;
+    expect(banner.textContent).toMatch(/Iteration 3 delivered on .+ by @ana/);
+    expect(banner.textContent).toContain("Main holds exactly what QA signed off.");
+    expect(banner.querySelectorAll(".po-delivery__row")).toHaveLength(0);
+    expect(container.textContent).not.toContain("storefront-web");
+    expect(container.textContent).not.toContain("abc1234");
+  });
+
+  it("shows a Product owner one row for the Project on its way to main", async () => {
+    iterations.current.mockResolvedValue(normalizeCurrentIteration(currentWire()));
+    const container = await render(
+      <ShowRepositoriesContext.Provider value={false}>{po(promotionVm(READY))}</ShowRepositoriesContext.Provider>,
+    );
+    const rows = [...container.querySelectorAll(".po-delivery__row")].map((row) => row.textContent);
+    expect(rows).toEqual(["StorefrontPartly in main: Merge to main finishes it"]);
+    await click(buttonNamed(bar(container), "Merge to main"));
+    expect(dialog()?.textContent).toContain("Merge Storefront into main?");
+    expect(dialog()?.textContent).not.toContain("tone/orders-api");
   });
 
   it("still says delivered from the promotion status alone", async () => {

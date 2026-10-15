@@ -424,6 +424,9 @@ export function requirementsChangedNote(run: Pick<ProjectQaRun, "status">): stri
     : "New items join this run as Pending. Merge to main needs every item passed.";
 }
 
+/** The Project-level form of the head changes, for those who never see repositories. */
+export const PROJECT_CHANGED_SINCE_RUN = "The Project's code on uat changed since this run started.";
+
 export const STALE_RUN_NOTE =
   "The run no longer covers what is on uat. Start a new run so QA verifies the current heads; its results carry over as history.";
 

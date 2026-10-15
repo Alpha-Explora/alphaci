@@ -270,6 +270,21 @@ export function promotionChecklistState(entry: QaPromotionChecklist): PromotionC
  */
 export const UNFILED_REASON = QA_ERROR_MESSAGES.QA_PROJECT_REQUIRED;
 
+/**
+ * The server's reasons in Project words, for those who never see
+ * repositories: a stale run ("…"orders-api" moved from…") and an unreadable
+ * head ("Could not read the uat head of "web"") become one Project sentence
+ * each; every other reason is already about the Project and is kept.
+ */
+export function projectReasons(reasons: ReadonlyArray<string>): string[] {
+  const words = reasons.map((reason) => {
+    if (/^Project run is stale: ".+"/.test(reason)) return "The Project's code on uat changed since QA signed it off.";
+    if (reason.startsWith("Could not read the uat head of")) return "ALPHACI could not read the Project's uat build. Try again in a moment.";
+    return reason;
+  });
+  return [...new Set(words)];
+}
+
 export function blockingReasons(
   status: Pick<QaPromotionStatus, "eligible" | "reasons" | "checklists" | "qaBranch"> &
     Partial<Pick<QaPromotionStatus, "scope" | "iterationDelivered">>,

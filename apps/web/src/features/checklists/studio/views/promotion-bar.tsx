@@ -12,6 +12,7 @@ import {
   promotionTitle,
 } from "../../model/qa-promotion-rules";
 import type { QaPromotionStatus } from "../../model/qa-promotion-types";
+import { useShowRepositories } from "../view-models/repository-visibility";
 import { useDisclosurePopover } from "../view-models/use-disclosure-popover";
 import type { PoDeliveryViewModel } from "../view-models/use-po-delivery-view-model";
 import type { QaPromotionViewModel } from "../view-models/use-qa-promotion-view-model";
@@ -29,13 +30,14 @@ type BarProps = Readonly<{ vm: QaPromotionViewModel }>;
 
 /** The popover's head: the verdict, the route and the gate in a line. */
 function PopoverHead({ data, headingId }: Readonly<{ data: QaPromotionStatus; headingId: string }>) {
+  const showRepositories = useShowRepositories();
   return (
     <div className="qa-promo-pop__head">
       <p className="qa-promo-pop__title" id={headingId}>
         {promotionTitle(data)}
       </p>
       <p className="qa-promo__route">
-        <code>{promotionRoute(data)}</code>
+        {showRepositories ? <code>{promotionRoute(data)}</code> : null}
         <span>{approvedCountLabel(data)}</span>
       </p>
     </div>

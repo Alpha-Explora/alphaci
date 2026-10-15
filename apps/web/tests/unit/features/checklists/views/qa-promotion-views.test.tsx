@@ -202,7 +202,7 @@ describe("QA Studio — the readiness chip in the tab bar", () => {
 describe("QA Studio — the readiness popover", () => {
   it("opens under the chip with everything the strip showed: route, rows, reasons, PR, who merges", async () => {
     setup(promotionWire());
-    const container = await studio("qa");
+    const container = await studio("admin");
     const button = chip(container);
     const panel = popover(container);
     expect(button.getAttribute("aria-expanded")).toBe("false");
@@ -223,9 +223,38 @@ describe("QA Studio — the readiness popover", () => {
     // The promotion PR is named, never linked: ALPHACI is the only UI.
     expect(panel.querySelector(".qa-promo__pr")?.textContent).toBe("Promotion PR #42");
     expect(panel.querySelector("a")).toBeNull();
-    expect(panel.textContent).toContain("Product owners merge uat into main once every checklist is approved.");
     // Focus stays on the chip: a disclosure, not a menu.
     expect(document.activeElement).not.toBe(panel);
+  });
+
+  it("shows the QA Team the Project only: no commit route and no pull request", async () => {
+    setup(promotionWire());
+    const container = await studio("qa");
+    await click(chip(container));
+    const panel = popover(container);
+    expect(panel.textContent).toContain("1 of 2 checklists approved");
+    expect(panel.querySelector(".qa-promo__route code")).toBeNull();
+    expect(panel.querySelector(".qa-promo__pr")).toBeNull();
+    expect(panel.textContent).toContain("Product owners merge uat into main once every checklist is approved.");
+  });
+
+  it("merges for a Product owner without naming a commit or pull request", async () => {
+    setup(readyWire());
+    runs.mergePromotion.mockResolvedValue({
+      merged: true,
+      sha: "5555555abcdef",
+      message: "Pull Request successfully merged",
+      pullRequest: { number: 42, url: "https://github.com/tone/storefront-web/pull/42" },
+    });
+    const container = await studio("lead");
+    await click(mergeButton(container));
+    expect(dialog()?.textContent).not.toContain("9f8e7d6");
+    expect(dialog()?.textContent).not.toContain("#42");
+    await click(dialogButton("Merge to main"));
+    const outcome = container.querySelector(".qa-promo-outcome")!;
+    expect(outcome.textContent).toContain("Merged into main");
+    expect(outcome.textContent).not.toContain("5555555");
+    expect(outcome.querySelector(".qa-promo__pr")).toBeNull();
   });
 
   it("closes on Escape and gives focus back to the chip", async () => {
@@ -317,7 +346,8 @@ describe("QA Studio — Merge to main beside the chip", () => {
       message: "Pull Request successfully merged",
       pullRequest: { number: 42, url: "https://github.com/tone/storefront-web/pull/42" },
     });
-    const container = await studio("lead");
+    // An admin sees the commit and pull request; a Product owner does not (below).
+    const container = await studio("admin");
     const button = mergeButton(container)!;
     expect(button.disabled).toBe(false);
     await click(button);
@@ -351,7 +381,7 @@ describe("QA Studio — Merge to main beside the chip", () => {
     setup(readyWire());
     const refusal = "At least 1 approving review is required by reviewers with write access.";
     runs.mergePromotion.mockResolvedValue({ merged: false, sha: null, message: refusal, pullRequest: { number: 42, url: "https://github.com/tone/storefront-web/pull/42" } });
-    const container = await studio("lead");
+    const container = await studio("admin");
     await click(mergeButton(container));
     await click(dialogButton("Merge to main"));
     const outcome = container.querySelector(".qa-promo-outcome")!;

@@ -32,6 +32,7 @@ export function HistoryTabPanel({
           deliveryProjectId={qaScope.deliveryProjectId}
           projectName={qaScope.projectName}
           enabled={vm.qaChecklistsEnabled}
+          appRole={vm.appRole}
         />
       ) : (
         <div className="qa-panel-state">
