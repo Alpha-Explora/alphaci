@@ -153,7 +153,7 @@ describe("QA Studio's run on a delivered iteration", () => {
     const container = await render(<RunHarness role="admin" onOpenHistory={onOpenHistory} />);
     expect(container.querySelector(".pqa-delivered__title")?.textContent).toBe("Iteration 3 was delivered");
     expect(container.querySelector(".pqa-delivered__text")?.textContent).toBe(
-      "Its QA run is archived in History, read-only, exactly as QA signed it off. The next iteration starts a new run.",
+      "Its QA testing is archived in History, read-only, exactly as QA signed it off. The next iteration is tested afresh.",
     );
     // The run itself is gone from this tab: no items, no sign-off, no Reopen.
     expect(container.querySelector(".pqa-verify")).toBeNull();

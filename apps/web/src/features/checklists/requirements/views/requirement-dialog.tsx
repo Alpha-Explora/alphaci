@@ -608,7 +608,7 @@ export function ArchiveRequirementDialog({ vm }: Readonly<{ vm: RequirementDialo
       open={open}
       onClose={vm.close}
       title={`Archive ${requirement.name}?`}
-      description={`The ${copy.singular.toLowerCase()} leaves this Project and the next QA run. Runs already started keep their copy, and signed-off runs stay as they are.`}
+      description={`The ${copy.singular.toLowerCase()} leaves this Project and future QA testing. Testing already under way keeps its copy, and signed-off testing stays as it is.`}
       submitLabel="Archive"
       submitting={vm.status === "archiving"}
       error={vm.error?.message ?? null}

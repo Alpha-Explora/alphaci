@@ -125,7 +125,7 @@ function ManageActions({
   if (vm.confirmDeleteId === item.id) {
     return (
       <span className="rq-item__actions" role="group" aria-label={`Delete ${item.title}?`}>
-        <span className="rq-item__confirm">Delete it? Open QA runs keep their copy.</span>
+        <span className="rq-item__confirm">Delete it? QA testing under way keeps its copy.</span>
         <button type="button" className="hier-btn-danger" disabled={busy} onClick={() => void vm.confirmDelete(item)}>
           {busy && vm.busyItemId === item.id ? "Deleting…" : "Delete"}
         </button>

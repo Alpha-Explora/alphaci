@@ -108,6 +108,21 @@ describe("/runs run detail", () => {
     expect(view.textContent).not.toContain(ESC);
   });
 
+  it("opens a passing run on Quality when SonarCloud reported, so every repository shows it", () => {
+    const passing = {
+      ...runWith(stage("quality", "success", { results: { sonar: { gate: "OK", measures: { bugs: "0", coverage: "96.7" } } } })),
+      overallStatus: "success",
+    } as RunGroup;
+    const view = render(<RunPipeline run={passing} reduced />);
+    expect(view.querySelector(".tr-sonar")?.textContent).toContain("96.7%");
+  });
+
+  it("opens nothing on a passing run that SonarCloud did not report on", () => {
+    const passing = { ...runWith(stage("quality", "success")), overallStatus: "success" } as RunGroup;
+    const view = render(<RunPipeline run={passing} reduced />);
+    expect(view.querySelector(".tr-sonar")).toBeNull();
+  });
+
   it("adds no test or Sonar section when the stage reported neither", () => {
     const view = render(<RunPipeline run={runWith(stage("package", "failure"))} reduced />);
     expect(view.querySelector(".tr-cases")).toBeNull();

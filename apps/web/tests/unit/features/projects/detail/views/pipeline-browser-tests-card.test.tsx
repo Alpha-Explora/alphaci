@@ -124,6 +124,14 @@ describe("Browser tests card", () => {
     expect(host.textContent).toContain("Opens a pull request into dev.");
   });
 
+  it("says a repository's own browser tests already run, and that ALPHACI's checks are what is missing", async () => {
+    await render(status({ ownTests: { count: 2, paths: ["e2e/intake.spec.ts", "e2e/tabs.spec.ts"] } }));
+    expect(host.querySelector(".pipe-tests__lead")?.textContent).toBe(
+      "Your 2 browser test files on dev run in the Verify stage. ALPHACI's standard checks are not added yet:",
+    );
+    expect(addButton()).toBeDefined();
+  });
+
   it("shows the reason instead of the button when the role cannot add", async () => {
     await render(status({ canAdd: false, reason: "Your role cannot add browser tests to this project." }));
     expect(addButton()).toBeUndefined();
@@ -284,6 +292,23 @@ describe("Browser tests card — visual testing off in the workflow", () => {
     expect(onOpenWorkflow).toHaveBeenCalledTimes(1);
     expect(mockedAdd).not.toHaveBeenCalled();
     expect(host.innerHTML).not.toMatch(/github\.com/);
+  });
+
+  it("in the Pipeline configuration, says where the update pull request is instead of linking to it", async () => {
+    mockedStatus.mockResolvedValue(status({ ...INSTALLED, visual: { dev: false, uat: false } }));
+    function InConfiguration() {
+      const view = useBrowserTestsViewModel({ projectId: "p1" });
+      return <BrowserTestsCard view={view} workflowAccess="open" inConfiguration />;
+    }
+    await act(async () => {
+      root = createRoot(host);
+      root.render(<InConfiguration />);
+    });
+    await flush();
+    expect(host.querySelector("[data-visual-off]")?.textContent).toContain(
+      "Open the workflow update pull request in the settings above: it turns visual testing on in dev.",
+    );
+    expect(updateButton()).toBeUndefined();
   });
 
   it("links another repository's Workflow tab inside the product", async () => {

@@ -4,7 +4,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useRef } from "react";
 
 import { useCapabilities } from "@/features/capabilities/current";
-import { useHostAvailability } from "@/features/hosts";
+import { useHostAvailability } from "@/features/hosts/availability";
 import { useNotificationsSummaryViewModel } from "@/features/notifications/summary";
 
 import {

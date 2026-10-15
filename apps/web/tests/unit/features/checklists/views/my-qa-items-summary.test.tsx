@@ -91,7 +91,7 @@ describe("MyQaItemsSummary", () => {
     expect(container.textContent).toContain("Ready for QA");
     expect(container.querySelector(".qa-returned__row")).toBeNull();
     const labels = [...container.querySelectorAll("button")].map((b) => b.textContent);
-    expect(labels).toEqual(["Open checklist"]);
+    expect(labels).toEqual(["Open progress"]);
 
     act(() => {
       [...container.querySelectorAll("button")][0].click();
@@ -114,7 +114,7 @@ describe("MyQaItemsSummary", () => {
     expect(runs.myItems).not.toHaveBeenCalled();
     expect(chips(container)).toEqual({ returned: "2", inProgress: "0", todo: "3", readyForQa: "1" });
     const link = container.querySelector("a.qa-summary__open");
-    expect(link?.textContent).toBe("Open checklist");
+    expect(link?.textContent).toBe("Open progress");
     expect(link?.getAttribute("href")).toBe("/workflows?group=g-1&project=dp-1#my-qa-items");
   });
 

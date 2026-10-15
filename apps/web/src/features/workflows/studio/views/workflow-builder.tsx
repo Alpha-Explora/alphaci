@@ -2,6 +2,7 @@
 
 import { MotionConfig, motion, useReducedMotion } from "framer-motion";
 import { useRouter } from "next/navigation";
+import { useEffect, useRef } from "react";
 
 import { useWorkflowStudioViewModel } from "../view-models/use-workflow-studio-view-model";
 import { statusBannerVariant } from "../model/workflow-studio-rules";
@@ -28,9 +29,16 @@ function WorkflowStatusBanners({
   catalogError: string | null;
   projectOptionsError: string | null;
 }>) {
+  const banner = useRef<HTMLDivElement>(null);
+  // The banner sits above the wizard; a Create blocked from the Review step
+  // would otherwise report its reason off-screen and the button looks dead.
+  useEffect(() => {
+    if (statusMessage)
+      banner.current?.scrollIntoView?.({ behavior: "smooth", block: "center" });
+  }, [statusMessage]);
   if (!statusMessage && !catalogError && !projectOptionsError) return null;
   return (
-    <div style={{ padding: "0.5rem var(--layout-gutter) 0" }}>
+    <div ref={banner} style={{ padding: "0.5rem var(--layout-gutter) 0" }}>
       {statusMessage ? (
         <motion.p
           className={`status-banner ${statusBannerVariant(statusMessage)}`}

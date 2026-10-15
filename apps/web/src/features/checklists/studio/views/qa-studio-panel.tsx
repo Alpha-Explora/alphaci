@@ -422,7 +422,7 @@ function StudioColumn({
       <div className="qa-run-card">
         <div className="qa-run-card__head">
           <div className="qa-run-card__picker">
-            <span className="qa-toolbar__label">Project QA run</span>
+            <span className="qa-toolbar__label">QA testing</span>
             <h3 className="qa-run-card__title">{qaScope.projectName}</h3>
           </div>
         </div>

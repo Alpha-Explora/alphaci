@@ -172,7 +172,7 @@ describe("ProjectRequirementsPanel", () => {
     const container = await render(<ProjectRequirementsPanel deliveryProjectId="dp-1" appRole="qa" />);
     expect(container.querySelector('input[type="radio"]')).toBeNull();
     expect(container.textContent).toContain("Progress: To do");
-    expect(container.textContent).toContain("you verify them on the Project QA run");
+    expect(container.textContent).toContain("you verify them in QA testing");
     expect(buttonNamed(container, "New Feature")).toBeUndefined();
   });
 
@@ -686,15 +686,15 @@ describe("ProjectRunPanel", () => {
     // The QA Team sees the Project, not its repositories.
     expect(qa.textContent).not.toContain("storefront-web");
     expect(qa.textContent).toContain("snapshots every requirement of this Project on its current uat build");
-    await act(async () => buttonNamed(qa, "Start Project QA run")!.click());
+    await act(async () => buttonNamed(qa, "Start QA testing")!.click());
     expect(runs.start).toHaveBeenCalledWith("dp-1");
     act(() => root?.unmount());
     root = null;
 
     const dev = await render(<RunHarness role="member" />);
     expect(dev.textContent).toContain("storefront-web");
-    expect(buttonNamed(dev, "Start Project QA run")).toBeUndefined();
-    expect(dev.textContent).toContain("QA Team members, Product owners and admins start the Project's QA run.");
+    expect(buttonNamed(dev, "Start QA testing")).toBeUndefined();
+    expect(dev.textContent).toContain("QA Team members, Product owners and admins start QA testing.");
   });
 });
 
@@ -757,14 +757,15 @@ describe("ProjectQaWorkspace", () => {
     expect(lead.querySelector("section.rq-section")).not.toBeNull();
     const tab = lead.querySelector<HTMLButtonElement>('[role="tab"][aria-selected="true"]')!;
     await act(async () => tab.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowRight", bubbles: true })));
-    expect(selected()).toBe("QA run");
-    await act(async () => buttonNamed(lead, "My QA items")!.click());
-    expect(selected()).toBe("My QA items");
+    // Plan, build, test: Progress sits between Requirements and QA testing.
+    expect(selected()).toBe("Progress");
+    await act(async () => buttonNamed(lead, "QA testing")!.click());
+    expect(selected()).toBe("QA testing");
     act(() => root?.unmount());
     root = null;
 
     const qa = await render(<ProjectQaWorkspace deliveryProjectId="dp-1" projectName="storefront" appRole="qa" />);
-    expect(qa.querySelector('[role="tab"][aria-selected="true"]')?.textContent).toBe("QA run");
+    expect(qa.querySelector('[role="tab"][aria-selected="true"]')?.textContent).toBe("QA testing");
     expect(qa.textContent).toContain("then sign the Project off");
   });
 
@@ -777,7 +778,7 @@ describe("ProjectQaWorkspace", () => {
     window.history.replaceState(null, "", "#my-qa-items");
     try {
       const view = await render(<ProjectQaWorkspace deliveryProjectId="dp-1" projectName="storefront" appRole="qa" />);
-      expect(view.querySelector('[role="tab"][aria-selected="true"]')?.textContent).toBe("My QA items");
+      expect(view.querySelector('[role="tab"][aria-selected="true"]')?.textContent).toBe("Progress");
     } finally {
       window.history.replaceState(null, "", window.location.pathname);
     }
@@ -792,7 +793,7 @@ describe("ProjectQaWorkspace", () => {
     const view = await render(
       <ProjectQaWorkspace deliveryProjectId="dp-1" projectName="storefront" appRole="lead" opensOn="items" />,
     );
-    expect(view.querySelector('[role="tab"][aria-selected="true"]')?.textContent).toBe("My QA items");
+    expect(view.querySelector('[role="tab"][aria-selected="true"]')?.textContent).toBe("Progress");
   });
 
   it("brings the Requirements tab forward and opens New Feature on a new request, never on a revisit", async () => {
@@ -804,8 +805,8 @@ describe("ProjectQaWorkspace", () => {
     );
     const container = await render(view(0));
     const selected = () => container.querySelector('[role="tab"][aria-selected="true"]')?.textContent;
-    await act(async () => buttonNamed(container, "QA run")!.click());
-    expect(selected()).toBe("QA run");
+    await act(async () => buttonNamed(container, "QA testing")!.click());
+    expect(selected()).toBe("QA testing");
 
     await act(async () => root!.render(view(1)));
     for (let i = 0; i < 4; i += 1) {
@@ -818,7 +819,7 @@ describe("ProjectQaWorkspace", () => {
     await act(async () => buttonNamed(document.body, "Cancel")!.click());
 
     // Leaving and coming back to the tab does not reopen it.
-    await act(async () => buttonNamed(container, "QA run")!.click());
+    await act(async () => buttonNamed(container, "QA testing")!.click());
     await act(async () => buttonNamed(container, "Requirements")!.click());
     for (let i = 0; i < 4; i += 1) {
       await act(async () => {

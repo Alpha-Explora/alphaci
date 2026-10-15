@@ -94,6 +94,28 @@ export function useHostAssignmentViewModel(options: HostAssignmentOptions) {
       relevant = false;
     };
   }, [workspaceId, projectId, environmentId, reload]);
+  // Connection status is derived from lastSeenAt, so a machine list loaded once
+  // turns every host "Offline" ninety seconds later. Refresh just the machines
+  // (not the assignment, which would overwrite an edit in progress).
+  useEffect(() => {
+    const timer = setInterval(() => {
+      listHosts(workspaceId)
+        .then((machines) => {
+          if (!active.current) return;
+          setHosts(
+            machines.filter(
+              (host) =>
+                host.status !== "revoked" &&
+                host.status !== "enrollment_pending",
+            ),
+          );
+        })
+        .catch(() => {
+          // Keep the last list; the next tick retries.
+        });
+    }, 20_000);
+    return () => clearInterval(timer);
+  }, [workspaceId]);
   // A picker is needed only when several machines could take the environment;
   // with exactly one, the server assigns it without a choice.
   const choices = healthyHosts(hosts);
@@ -191,8 +213,6 @@ export function useHostAssignmentViewModel(options: HostAssignmentOptions) {
     /** The only healthy machine, used without asking. */
     automatic,
     canAssign: Boolean(machineId),
-    /** Host ports AlphaCI allocated for the current assignment. */
-    hostPorts: current?.config?.ports ?? [],
     current,
     checks,
     error,

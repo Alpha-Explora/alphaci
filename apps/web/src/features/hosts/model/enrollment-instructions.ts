@@ -22,6 +22,7 @@ $directory = Join-Path $env:TEMP ('alphaci-agent-' + [guid]::NewGuid())
 New-Item -ItemType Directory -Path $directory | Out-Null
 tar -xzf $archive -C $directory
 if ($LASTEXITCODE -ne 0) { throw 'Archive extraction failed.' }
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File (Join-Path $directory 'windows/Install-AlphaCIHost.ps1') -Distro Ubuntu -ClientSubnets LocalSubnet -ApiUrl ${psQuote(receipt.apiUrl)}${replace ? " -ReplaceCredential" : ""} -OnlyWhenSignedIn`,
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass -Force
+& (Join-Path $directory 'windows/Install-AlphaCIHost.ps1') -Distro Ubuntu -ClientSubnets LocalSubnet -ApiUrl ${psQuote(receipt.apiUrl)}${replace ? " -ReplaceCredential" : ""} -OnlyWhenSignedIn`,
   };
 }

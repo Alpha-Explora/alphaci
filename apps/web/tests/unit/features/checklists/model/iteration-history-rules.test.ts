@@ -64,7 +64,7 @@ describe("the History sentences", () => {
 
   it("points the active iteration to Checklists, and names a delivery without a sign-off", () => {
     expect(historyNoReportText(two!)).toBe(
-      "This iteration is in progress. Its requirements and QA run are on the Checklists tab.",
+      "This iteration is in progress. Its requirements, progress and QA testing are on the Checklists tab.",
     );
     expect(historyNoReportText(one!)).toBeNull();
     expect(historyNoReportText({ status: "delivered", signoffRunId: null })).toBe(

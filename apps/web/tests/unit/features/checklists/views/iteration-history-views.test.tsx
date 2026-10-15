@@ -192,7 +192,7 @@ describe("IterationHistoryPanel", () => {
     const container = await render(panel());
     await click(toggles(container)[0]);
     expect(container.textContent).toContain(
-      "This iteration is in progress. Its requirements and QA run are on the Checklists tab.",
+      "This iteration is in progress. Its requirements, progress and QA testing are on the Checklists tab.",
     );
     expect(runs.get).not.toHaveBeenCalled();
   });
