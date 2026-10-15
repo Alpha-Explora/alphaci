@@ -7,6 +7,7 @@ import Link from "next/link";
 import { useEffect, useRef } from "react";
 import { useReducedMotion } from "framer-motion";
 
+import { IterationWaitingNotice } from "../../iteration";
 import { summaryChipLabel } from "../../model/my-qa-items-summary-rules";
 import { MY_ITEMS_BUCKETS } from "../../model/project-run-rules";
 import { REPOSITORY_SCOPE, type QaScope } from "../../model/qa-scope";
@@ -75,7 +76,8 @@ function OpenChecklist({
  * state (Returned, In progress, To do, Ready for QA) and a way to the full
  * list — the Project's "My QA items" for a repository filed under a Project,
  * this repository's Checklists tab otherwise. No per-item rows or controls
- * here. It appears only while there is something to count.
+ * here. It appears only while there is something to count, or, between a
+ * delivered iteration and the next, to say who the team is waiting for.
  */
 export function MyQaItemsSummary({
   projectId,
@@ -116,11 +118,11 @@ export function MyQaItemsSummary({
       <div className="qa-summary__head">
         <h2 ref={headingRef} tabIndex={-1} className="qa-returned__heading" id="qa-summary-title">
           My QA items
-          <span className="qa-mine__count">{vm.total}</span>
+          {vm.waiting ? null : <span className="qa-mine__count">{vm.total}</span>}
         </h2>
         <OpenChecklist vm={vm} onOpenChecklists={onOpenChecklists} />
       </div>
-      <SummaryChips vm={vm} />
+      {vm.waiting ? <IterationWaitingNotice text={vm.waiting} /> : <SummaryChips vm={vm} />}
     </section>
   );
 }

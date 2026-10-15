@@ -144,8 +144,17 @@ describe("productionView (Product owner)", () => {
     expect(isReadyForProduction(changed)).toBe(false);
   });
 
-  it("counts a Conditional sign-off as shippable", () => {
-    expect(isReadyForProduction({ ...PAY, latestRun: { ...PAY.latestRun!, verdict: "CONDITIONAL" } })).toBe(true);
+  it("does not count a Conditional sign-off as shippable: the merge gate needs Approved", () => {
+    expect(isReadyForProduction({ ...PAY, latestRun: { ...PAY.latestRun!, verdict: "CONDITIONAL" } })).toBe(false);
+  });
+
+  it("drops a Project whose iteration was delivered", () => {
+    expect(isReadyForProduction({ ...PAY, iteration: { number: 1, status: "delivered", deliveredAt: "2026-10-14T10:00:00Z" } })).toBe(false);
+    expect(isReadyForProduction({ ...PAY, iteration: { number: 2, status: "active", deliveredAt: null } })).toBe(true);
+  });
+
+  it("reads the server's stored merged count: every repository merged is not ready any more", () => {
+    expect(isReadyForProduction({ ...PAY, promotion: { mergedRepositories: 2, totalRepositories: 2, lastMergedAt: null } })).toBe(false);
   });
 
   it("shows only the open or signed-off state from an older backend", () => {

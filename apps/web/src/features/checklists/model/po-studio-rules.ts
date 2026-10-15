@@ -17,7 +17,9 @@ export type PoAcceptanceState =
   /** QA has not signed the current uat heads off as Approved yet. */
   | "waiting"
   /** Signed off Approved on every repository's current head: ready for main. */
-  | "ready";
+  | "ready"
+  /** The Project's iteration reached main: nothing left to accept or merge. */
+  | "delivered";
 
 export function poAcceptanceState(input: {
   scope: QaScope;
@@ -27,6 +29,7 @@ export function poAcceptanceState(input: {
   const { scope, promotionStatus, promotion } = input;
   if (scope.kind === "pending" || promotionStatus === "loading") return "loading";
   if (scope.kind === "repository" || promotion?.scope === "unfiled") return "unfiled";
+  if (promotion?.iterationDelivered === true) return "delivered";
   return promotion?.eligible === true ? "ready" : "waiting";
 }
 

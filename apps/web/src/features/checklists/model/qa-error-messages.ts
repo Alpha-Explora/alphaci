@@ -44,6 +44,14 @@ export const QA_ERROR_MESSAGES: Readonly<Record<string, string>> = {
   REQUIREMENT_KIND_INVALID: "A requirement is either a Feature or a System requirement.",
   REQUIREMENT_ORDER_MISMATCH:
     "The list changed while you were reordering it. Reload, then move the item again.",
+  /* Iterations: a write against a delivered iteration, and a Project with nothing to merge. */
+  ITERATION_DELIVERED: "This iteration was delivered, so its requirements and QA are locked.",
+  PROJECT_HAS_NO_REPOSITORIES:
+    "This Project has no repositories yet, so there is nothing to merge to main. Add a repository first.",
+  /* Iterations phase 3: starting the next iteration. */
+  ITERATION_ACTIVE: "This Project already has an active iteration. Deliver it before starting the next one.",
+  ITERATION_CARRY_INVALID:
+    "Some selected items can no longer be carried over: only items of the last delivered iteration can be. Close this dialog, reload the page and choose again.",
 };
 
 /**
@@ -102,5 +110,31 @@ export function qaCodeMessage(cause: unknown): string | null {
     const reasons = texts(errorDetails(cause)?.reasons);
     if (reasons.length > 0) return `${message} ${reasons.join(" ")}`;
   }
+  if (code === "ITERATION_DELIVERED") return iterationDeliveredMessage(cause) ?? message;
+  if (code === "ITERATION_ACTIVE") return iterationActiveMessage(cause) ?? message;
   return message;
+}
+
+/** The iteration a code names in its details (`iterationNumber`), when it is a real number. */
+function detailsIterationNumber(cause: unknown): number | null {
+  const number = errorDetails(cause)?.iterationNumber;
+  return typeof number === "number" && Number.isInteger(number) && number >= 1 ? number : null;
+}
+
+/**
+ * ITERATION_ACTIVE names the active iteration when the server says which one:
+ * "Iteration 4 is still active. Deliver it before starting the next one."
+ */
+function iterationActiveMessage(cause: unknown): string | null {
+  const number = detailsIterationNumber(cause);
+  return number === null ? null : `Iteration ${String(number)} is still active. Deliver it before starting the next one.`;
+}
+
+/**
+ * ITERATION_DELIVERED names the iteration when the server says which one
+ * (`iterationNumber`): "Iteration 3 was delivered, so …".
+ */
+function iterationDeliveredMessage(cause: unknown): string | null {
+  const number = detailsIterationNumber(cause);
+  return number === null ? null : `Iteration ${String(number)} was delivered, so its requirements and QA are locked.`;
 }

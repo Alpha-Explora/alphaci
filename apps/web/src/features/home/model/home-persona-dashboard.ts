@@ -182,7 +182,7 @@ export function buildPersonaDashboard(input: PersonaDashboardInput): PersonaDash
     runs: layout.persona === "developer" ? runsFailuresFirst(scopedRuns) : scopedRuns,
     runStats,
     returned: returnedRows(scopedQa, links),
-    myWork: myWorkProjects(scopedFolders, latestRunByRepo(scopedRuns), links),
+    myWork: myWorkProjects(scopedFolders, latestRunByRepo(scopedRuns), links, overview),
     addRepositoryHref: addRepositoryHref(input.folders, scope, input.groupId),
     verification: verificationRows(scopedQa, links),
     uatAutomation: uatAutomationRows(input.teamRuns, ids),

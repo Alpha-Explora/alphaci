@@ -109,6 +109,12 @@
   color: var(--text-primary);
 }
 
+/* Between a delivered iteration and the next: the panel's only content. */
+.pqa-next {
+  display: grid;
+  gap: 0.6rem;
+}
+
 .pqa-alert .primary-button {
   justify-self: start;
 }

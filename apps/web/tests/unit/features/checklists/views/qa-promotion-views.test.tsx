@@ -427,3 +427,37 @@ describe("QA Studio — Merge to main beside the chip", () => {
     expect(chip(container).getAttribute("aria-label")).toBe("Ready for production");
   });
 });
+
+describe("QA Studio — a delivered iteration (Iterations phase 2)", () => {
+  const delivered = {
+    scope: "project",
+    eligible: false,
+    canMerge: true,
+    iterationDelivered: true,
+    repositoryDelivered: true,
+    iteration: { id: "it-3", number: 3, status: "delivered", deliveredAt: "2026-10-14T10:00:00.000Z" },
+  };
+
+  it("turns the chip violet and names the iteration; Merge to main is gone", async () => {
+    setup(readyWire(delivered));
+    const container = await studio("lead");
+    expect(chip(container).getAttribute("data-tone")).toBe("delivered");
+    expect(chip(container).getAttribute("aria-label")).toBe("Iteration 3 delivered");
+    expect(mergeButton(container)).toBeNull();
+    expect(popover(container).textContent).not.toContain("What blocks the merge");
+    expect(popover(container).querySelector(".qa-promo__delivered")?.textContent).toMatch(/^Iteration 3 delivered on /);
+  });
+
+  it("reads 'main already contains this commit' as a success, never GitHub refusing", async () => {
+    setup(readyWire({ repositoryDelivered: false }));
+    runs.mergePromotion.mockResolvedValue({ merged: false, how: "already_in_main", message: "main already contains this commit" } as never);
+    const container = await studio("lead");
+    await click(mergeButton(container));
+    await click(dialogButton("Merge to main"));
+    const outcome = container.querySelector(".qa-promo-outcome")!;
+    expect(outcome.getAttribute("data-tone")).toBe("success");
+    expect(outcome.textContent).toContain("Already in main");
+    expect(outcome.textContent).toContain("main already contains this commit");
+    expect(outcome.textContent).not.toContain("GitHub refused the merge");
+  });
+});

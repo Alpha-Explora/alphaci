@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 
 import { qaAttachmentsRepository } from "../../data/qa-attachments-repository";
+import { isRunLocked } from "../../model/project-run-rules";
 import type { ProjectQaRun } from "../../model/project-run-types";
 import {
   anyUrlExpired,
@@ -97,7 +98,8 @@ export function useRunEvidenceViewModel(options: { deliveryProjectId: string; ru
     deliveryProjectId,
     runId: run.id,
     canAdd: canAddEvidence(run),
-    open: run.status === "open",
+    // A delivered iteration's run is frozen, even one left open.
+    open: run.status === "open" && !isRunLocked(run),
     forItem: (itemId) => (byItem ? (byItem[itemId] ?? []) : undefined),
     reload,
     refreshIfExpired: () => {

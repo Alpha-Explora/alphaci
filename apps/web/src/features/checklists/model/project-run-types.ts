@@ -10,6 +10,7 @@
  * and 2.5. Views read only the normalised shapes below. */
 
 import type { ChecklistVerificationType } from "./checklist-types";
+import type { IterationRef } from "./iteration-types";
 import type { QaAttachmentRef, QaRunAttachmentSettings } from "./qa-attachment-types";
 import type { QaAutomatedItemResult, QaRunAutomationResult } from "./qa-automation-types";
 import type {
@@ -161,6 +162,11 @@ export interface ProjectQaRun {
    * Null when the server sent no answer: the Evidence section is hidden.
    */
   attachments: QaRunAttachmentSettings | null;
+  /**
+   * The iteration this run belongs to. Null on an older backend. Once it is
+   * `delivered`, the normaliser locks the run: every permission is off.
+   */
+  iteration: IterationRef | null;
 }
 
 /* ── Run Playwright on a Project run ────────────────────────────────────── */

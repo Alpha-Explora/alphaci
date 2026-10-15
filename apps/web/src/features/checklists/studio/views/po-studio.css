@@ -41,3 +41,166 @@
 .po-accept__open {
   justify-self: start;
 }
+
+/* ── Delivery (Iterations) ────────────────────────────────────────────────
+   .po-delivery    the active iteration: each covered repository's stored
+                   state, Merge all repositories and its per-repository
+                   results.
+   .po-delivered   the banner once the iteration reached main. Violet: the
+                   tone of "Delivered" everywhere (chip, header pill). */
+.po-delivery {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.po-delivery__rows {
+  display: grid;
+  gap: 0.35rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.po-delivery__row {
+  --po-row-tone: var(--border-strong);
+
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.15rem 0.6rem;
+  align-items: baseline;
+  padding: 0.45rem 0.65rem;
+  border: 1px solid var(--border-layer);
+  border-left: 3px solid var(--po-row-tone);
+  border-radius: 0.55rem;
+  background: var(--layer-2);
+  font-size: 0.8rem;
+}
+
+.po-delivery__row[data-tone="success"] {
+  --po-row-tone: var(--success);
+}
+
+.po-delivery__row[data-tone="danger"] {
+  --po-row-tone: var(--danger);
+}
+
+.po-delivery__name {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-weight: 650;
+  color: var(--text-primary);
+}
+
+.po-delivery__state {
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+/* A delivered repository's detail ("Merged into main · PR #12 · merge commit
+   abc1234") is too long to sit beside the name in the narrow studio column:
+   on one line it squeezed the name to a letter a line. It takes its own row. */
+.po-delivery__state--detail {
+  grid-column: 1 / -1;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.po-delivery__message {
+  grid-column: 1 / -1;
+  color: var(--text-muted);
+  line-height: 1.45;
+}
+
+.po-delivery__merge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  justify-self: start;
+}
+
+.po-delivery__outcome {
+  display: grid;
+  gap: 0.45rem;
+  padding: 0.7rem 0.85rem;
+  border: 1px solid var(--border);
+  border-left-width: 3px;
+  border-left-color: var(--success);
+  border-radius: 0.7rem;
+  background: var(--layer-1);
+}
+
+.po-delivery__outcome[data-tone="danger"] {
+  border-left-color: var(--danger);
+}
+
+.po-delivery__outcome-title {
+  margin: 0;
+  font-size: 0.86rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.po-delivery__outcome-text {
+  margin: 0;
+  font-size: 0.8rem;
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+
+.po-delivery__reasons {
+  margin: 0;
+  padding-left: 1.1rem;
+  font-size: 0.8rem;
+  line-height: 1.5;
+  color: var(--text-primary);
+}
+
+.po-delivery__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.po-delivered {
+  display: grid;
+  gap: 0.45rem;
+  padding: 0.8rem 0.9rem;
+  border: 1px solid var(--border-violet);
+  border-left-width: 3px;
+  border-left-color: var(--accent-violet);
+  border-radius: 0.7rem;
+  background: var(--accent-violet-light);
+}
+
+.po-delivered__title {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.po-delivered__mark {
+  display: inline-flex;
+  flex-shrink: 0;
+  color: var(--accent-violet);
+}
+
+.po-delivered__text {
+  margin: 0;
+  font-size: 0.8rem;
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+
+/* What follows the delivery: Start iteration N+1, or the waiting sentence. */
+.po-delivered__next {
+  display: grid;
+  justify-items: start;
+  gap: 0.45rem;
+  padding-top: 0.55rem;
+  border-top: 1px solid var(--border-violet);
+}

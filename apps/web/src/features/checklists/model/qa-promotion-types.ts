@@ -8,6 +8,7 @@
  * crashing the studio. The server alone decides eligibility and who may
  * merge; the client only explains it. */
 
+import type { IterationRef } from "./iteration-types";
 import type { HeadStatus } from "./project-run-types";
 import type { QaRunStatus, QaVerdict } from "./qa-run-types";
 
@@ -41,6 +42,10 @@ export interface QaPromotionStatusWire {
   run?: unknown;
   repositories?: unknown;
   requirementsChanged?: unknown;
+  /* Newer still: the stored delivery state of the Project's iteration. */
+  repositoryDelivered?: unknown;
+  iterationDelivered?: unknown;
+  iteration?: unknown;
 }
 
 export interface QaPromotionMergeWire {
@@ -48,6 +53,8 @@ export interface QaPromotionMergeWire {
   sha?: unknown;
   message?: unknown;
   pullRequest?: unknown;
+  /* Optional: `already_in_main` when main held the head and nothing was merged. */
+  how?: unknown;
 }
 
 /** One shared checklist, and where it stands on uat's current commit. */
@@ -106,6 +113,21 @@ export interface QaPromotionStatus {
   repositories: HeadStatus[];
   /** Informational only: requirements were edited since the sign-off. */
   requirementsChanged: boolean;
+  /**
+   * The server's stored answer: this repository's main already contains the
+   * signed-off uat head. Null on an older backend, which keeps the card's
+   * in-memory "just merged" flag instead.
+   */
+  repositoryDelivered: boolean | null;
+  /** The Project's iteration is Delivered: nothing is merged again. Only an explicit `true`. */
+  iterationDelivered: boolean;
+  /** The Project's current iteration, when the server sent it. */
+  iteration: QaPromotionIteration | null;
+}
+
+/** The iteration the promotion status speaks for. */
+export interface QaPromotionIteration extends IterationRef {
+  deliveredAt: string | null;
 }
 
 export interface QaPromotionMergeResult {
@@ -115,6 +137,11 @@ export interface QaPromotionMergeResult {
   /** GitHub's own words: its confirmation, or why it refused (shown verbatim). */
   message: string;
   pullRequest: { number: number; url: string } | null;
+  /**
+   * Nothing was merged because main already contains the head: never an
+   * error. True only when the server said `how: "already_in_main"`.
+   */
+  alreadyInMain: boolean;
 }
 
 /** A merge that did not go through, as the card explains it. */
@@ -123,6 +150,8 @@ export type QaPromotionMergeErrorKind =
   | "moved"
   | "reauth"
   | "project_required"
+  | "delivered"
+  | "no_repositories"
   | "forbidden"
   | "not_found"
   | "failed";

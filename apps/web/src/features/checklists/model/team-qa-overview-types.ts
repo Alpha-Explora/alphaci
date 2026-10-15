@@ -68,6 +68,13 @@ export interface TeamQaPromotion {
   lastMergedAt: string | null;
 }
 
+/** The Project's current iteration (Iterations phase 2). */
+export interface TeamQaIteration {
+  number: number;
+  status: "active" | "delivered";
+  deliveredAt: string | null;
+}
+
 /** The caller's own Project membership. */
 export type TeamQaMembership = "developer" | "qa";
 
@@ -78,6 +85,8 @@ export interface TeamQaProject {
   counts: TeamQaProjectCounts;
   promotion: TeamQaPromotion | null;
   viewerMembership: TeamQaMembership | null;
+  /** Null when the server did not send it (an older backend). */
+  iteration: TeamQaIteration | null;
 }
 
 /** Which of the newer per-Project fields the server sent, on any Project. */

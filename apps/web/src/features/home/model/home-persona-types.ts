@@ -156,6 +156,12 @@ export interface MyWorkProject {
   name: string;
   href: string;
   repositories: MyWorkRepository[];
+  /**
+   * Between a delivered iteration and the next: "Iteration 3 was delivered on
+   * 14 Oct 2026. Waiting for the Product owner to start iteration 4." Null
+   * while an iteration is active, and when the server did not say.
+   */
+  waiting: string | null;
 }
 
 export interface VerificationRow {

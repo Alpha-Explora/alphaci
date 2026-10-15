@@ -80,11 +80,38 @@ function Failed({
   );
 }
 
+/**
+ * Nothing to merge because main already holds this commit: a success, never
+ * an error. The server's sentence, verbatim, and no "a reviewer must approve".
+ */
+function AlreadyInMain({
+  result,
+  targetBranch,
+  onDismiss,
+}: Readonly<{ result: QaPromotionMergeResult; targetBranch: string; onDismiss: () => void }>) {
+  return (
+    <OutcomeFrame tone="success" title={`Already in ${targetBranch}`} onDismiss={onDismiss}>
+      <p className="qa-promo-outcome__text">{result.message}</p>
+    </OutcomeFrame>
+  );
+}
+
+/**
+ * A refusal is "already in main" when the reply says so, or when the status
+ * read after it says this repository's main now holds the head.
+ */
+function refusedAsAlreadyInMain(vm: QaPromotionViewModel, result: QaPromotionMergeResult): boolean {
+  return result.alreadyInMain || vm.data?.repositoryDelivered === true;
+}
+
 function OutcomeBody({ vm, targetBranch }: Readonly<{ vm: QaPromotionViewModel; targetBranch: string }>) {
   const outcome = vm.outcome;
   if (!outcome) return null;
   if (outcome.kind === "merged") {
     return <Merged result={outcome.result} targetBranch={targetBranch} onDismiss={vm.dismissOutcome} />;
+  }
+  if (outcome.kind === "refused" && refusedAsAlreadyInMain(vm, outcome.result)) {
+    return <AlreadyInMain result={outcome.result} targetBranch={targetBranch} onDismiss={vm.dismissOutcome} />;
   }
   if (outcome.kind === "refused") return <Refused result={outcome.result} onDismiss={vm.dismissOutcome} />;
   return <Failed error={outcome.error} signInHref={vm.signInHref} onDismiss={vm.dismissOutcome} />;
