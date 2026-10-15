@@ -234,6 +234,59 @@
   overflow-wrap: anywhere;
 }
 
+/* The title is the card's dropdown toggle: the items open under it. */
+.rq-card__toggle {
+  display: inline-flex;
+  align-items: flex-start;
+  gap: 0.45rem;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.rq-card__toggle:hover .rq-card__name {
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
+.rq-card__toggle:focus-visible {
+  outline: 2px solid var(--rq-tone);
+  outline-offset: 3px;
+  border-radius: 0.3rem;
+}
+
+.rq-card__chevron {
+  display: inline-flex;
+  flex: none;
+  margin-top: 0.2rem;
+  color: var(--text-secondary);
+  transition: transform 160ms ease;
+}
+
+.rq-card[data-open="true"] .rq-card__chevron {
+  transform: rotate(180deg);
+}
+
+.rq-card__body {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.rq-card__body[hidden] {
+  display: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rq-card__chevron {
+    transition: none;
+  }
+}
+
 .rq-card__desc {
   margin: 0;
   max-width: 68ch;
