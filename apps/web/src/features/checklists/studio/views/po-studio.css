@@ -44,8 +44,8 @@
 
 /* ── Delivery (Iterations) ────────────────────────────────────────────────
    .po-delivery    the active iteration: each covered repository's stored
-                   state, Merge all repositories and its per-repository
-                   results.
+                   state. __outcome: how the tab bar's Merge to main of
+                   every repository ended, per repository.
    .po-delivered   the banner once the iteration reached main. Violet: the
                    tone of "Delivered" everywhere (chip, header pill). */
 .po-delivery {
@@ -109,13 +109,6 @@
   grid-column: 1 / -1;
   color: var(--text-muted);
   line-height: 1.45;
-}
-
-.po-delivery__merge {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  justify-self: start;
 }
 
 .po-delivery__outcome {

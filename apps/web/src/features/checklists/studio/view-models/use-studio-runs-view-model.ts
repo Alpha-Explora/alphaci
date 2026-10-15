@@ -3,6 +3,7 @@
 import type { AppRole } from "@/shared/api/contracts";
 
 import type { QaScope } from "../../model/qa-scope";
+import { usePoDeliveryViewModel, type PoDeliveryViewModel } from "./use-po-delivery-view-model";
 import { useProjectRunViewModel, type ProjectRunViewModel } from "./use-project-run-view-model";
 import { useQaPromotionViewModel, type QaPromotionViewModel } from "./use-qa-promotion-view-model";
 import { useQaRunViewModel, type QaRunViewModel } from "./use-qa-run-view-model";
@@ -18,6 +19,8 @@ export interface StudioRunsViewModel {
   checklists: StudioChecklistsViewModel;
   run: QaRunViewModel;
   promotion: QaPromotionViewModel;
+  /** The Project's delivery: what Merge to main merges on a Project of two or more repositories. */
+  delivery: PoDeliveryViewModel;
 }
 
 /**
@@ -72,5 +75,12 @@ export function useStudioRunsViewModel(options: {
     appRole,
     watch: projectMode ? projectWatch(projectRun) : repositoryWatch(run),
   });
-  return { status: projectRun.status, projectMode, projectRun, checklists, run, promotion };
+  const delivery = usePoDeliveryViewModel({
+    deliveryProjectId: qaScope.kind === "project" ? qaScope.deliveryProjectId : null,
+    enabled: enabled && projectMode,
+    projectId,
+    appRole,
+    promotion,
+  });
+  return { status: projectRun.status, projectMode, projectRun, checklists, run, promotion, delivery };
 }

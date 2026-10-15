@@ -11,6 +11,7 @@ import type { QaPromotionStatus } from "../../../../../src/features/checklists/m
 import type { QaScope } from "../../../../../src/features/checklists/model/qa-scope";
 import { MyQaItemsSummary } from "../../../../../src/features/checklists/returned/views/my-qa-items-summary";
 import { ProjectMyItemsCard } from "../../../../../src/features/checklists/returned/views/project-my-items-card";
+import { usePoDeliveryViewModel } from "../../../../../src/features/checklists/studio/view-models/use-po-delivery-view-model";
 import { useProjectRunViewModel } from "../../../../../src/features/checklists/studio/view-models/use-project-run-view-model";
 import type { ProjectRunViewModel } from "../../../../../src/features/checklists/studio/view-models/use-project-run-view-model";
 import type { QaPromotionViewModel } from "../../../../../src/features/checklists/studio/view-models/use-qa-promotion-view-model";
@@ -271,16 +272,14 @@ const DELIVERED = normalizePromotionStatus(
   }),
 );
 
+function PoColumn({ role, reload }: Readonly<{ role: AppRole; reload: () => void }>) {
+  const promotion = promotionVm(DELIVERED, reload);
+  const delivery = usePoDeliveryViewModel({ deliveryProjectId: "dp-1", enabled: true, projectId: "proj-fe", appRole: role, promotion });
+  return <PoAcceptancePanel qaScope={SCOPE} projectRun={NO_RUN} promotion={promotion} delivery={delivery} appRole={role} />;
+}
+
 function po(role: AppRole, reload: () => void = jest.fn()) {
-  return (
-    <PoAcceptancePanel
-      qaScope={SCOPE}
-      projectId="proj-fe"
-      projectRun={NO_RUN}
-      promotion={promotionVm(DELIVERED, reload)}
-      appRole={role}
-    />
-  );
+  return <PoColumn role={role} reload={reload} />;
 }
 
 describe("PO Studio's delivered banner", () => {

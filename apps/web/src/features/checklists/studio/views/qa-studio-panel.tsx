@@ -23,6 +23,7 @@ import { scopePlaywrightResults, studioColumnRules, type StudioColumnRules } fro
 import { automationSignal, launcherLabel, NO_QA_ENVIRONMENT } from "../../model/qa-studio-rules";
 import { PreviewCaptureContext, type PreviewCaptureTarget } from "../view-models/preview-capture-target";
 import { useFloatingChecklistFocus } from "../view-models/use-floating-checklist-focus";
+import type { PoDeliveryViewModel } from "../view-models/use-po-delivery-view-model";
 import type { ProjectRunViewModel } from "../view-models/use-project-run-view-model";
 import type { QaPromotionViewModel } from "../view-models/use-qa-promotion-view-model";
 import { useStudioColumnTab, type StudioColumnTabViewModel } from "../view-models/use-studio-column-tab";
@@ -41,9 +42,10 @@ import {
   type RenderRepositoryChecks,
 } from "./playwright-panel";
 import { PoAcceptancePanel } from "./po-acceptance-panel";
+import { MergeAllDialog, MergeAllOutcome } from "./po-delivery";
 import { PreviewPane } from "./preview-pane";
 import { ProjectRunPanel } from "./project-run-panel";
-import { MergeToMain, PromotionBarFoot, PromotionStatusChip } from "./promotion-bar";
+import { PromotionBarFoot, PromotionStatusChip, StudioMergeAction } from "./promotion-bar";
 import { RunPanel } from "./run-panel";
 import { ChecklistIcon, DockIcon, MinimizeIcon, SwapIcon } from "./studio-icons";
 import { StudioToolbar, type StudioToolbarPlacement } from "./studio-toolbar";
@@ -381,6 +383,7 @@ function StudioColumn({
   viewport,
   run,
   promotion,
+  delivery,
 }: Readonly<{
   studio: StudioKind;
   onOpenQaRun?: () => void;
@@ -393,15 +396,16 @@ function StudioColumn({
   viewport: StudioViewportViewModel;
   run: QaRunViewModel;
   promotion: QaPromotionViewModel;
+  delivery: PoDeliveryViewModel;
 }>) {
   if (qaScope.kind === "pending") return <RunSkeletonCard />;
   if (studio === "po" && projectMode) {
     return (
       <PoAcceptancePanel
         qaScope={qaScope}
-        projectId={projectId}
         projectRun={projectRun}
         promotion={promotion}
+        delivery={delivery}
         appRole={appRole}
         onOpenQaRun={onOpenQaRun}
       />
@@ -572,11 +576,13 @@ function ColumnPanels({
 
 /**
  * The bar atop the column: Checklist | Playwright (when this viewer has
- * them), the readiness chip and Merge to main.
+ * them), the readiness chip and Merge to main — of every repository not in
+ * main yet when the Project has two or more, else of this one.
  */
 function ColumnHead({
   rules,
   promotion,
+  delivery,
   columnTab,
   tabsId,
   results,
@@ -584,17 +590,48 @@ function ColumnHead({
 }: Readonly<{
   rules: StudioColumnRules;
   promotion: QaPromotionViewModel;
+  delivery: PoDeliveryViewModel;
   columnTab: StudioColumnTabViewModel;
   tabsId: string;
   results: PlaywrightResults | null;
   label: string;
 }>) {
   return (
-    <ColumnBar status={<PromotionStatusChip vm={promotion} />} action={<MergeToMain vm={promotion} />} tabs={rules.tabs}>
+    <ColumnBar
+      status={<PromotionStatusChip vm={promotion} />}
+      action={<StudioMergeAction promotion={promotion} delivery={delivery} />}
+      tabs={rules.tabs}
+    >
       {rules.tabs ? (
         <ColumnTabs vm={columnTab} baseId={tabsId} status={playwrightTabStatus(results)} label={label} />
       ) : null}
     </ColumnBar>
+  );
+}
+
+/**
+ * Under the bar: how the last merge ended — of this repository, or of every
+ * repository — in one live region, then the confirmations, named by the
+ * repository or, for every repository, by the Project.
+ */
+function ColumnFoot({
+  promotion,
+  delivery,
+  qaScope,
+  repositoryName,
+}: Readonly<{
+  promotion: QaPromotionViewModel;
+  delivery: PoDeliveryViewModel;
+  qaScope: QaScope;
+  repositoryName: string;
+}>) {
+  return (
+    <>
+      <PromotionBarFoot vm={promotion} projectName={repositoryName}>
+        <MergeAllOutcome vm={delivery} />
+      </PromotionBarFoot>
+      <MergeAllDialog vm={delivery} projectName={qaScope.kind === "project" ? qaScope.projectName : repositoryName} />
+    </>
   );
 }
 
@@ -669,7 +706,7 @@ export function QaStudioPanel({
 }>) {
   const viewport = useStudioViewportViewModel({ projectId, enabled: Boolean(projectId) });
   const runs = useStudioRunsViewModel({ projectId, appRole, qaScope, branch: viewport.environment?.branch ?? null });
-  const { projectMode, projectRun, checklists, run, promotion } = runs;
+  const { projectMode, projectRun, checklists, run, promotion, delivery } = runs;
   const focus = useFloatingChecklistFocus({
     isFullScreen: viewport.isFullScreen,
     isChecklistOpen: viewport.isChecklistOpen,
@@ -720,12 +757,13 @@ export function QaStudioPanel({
           <ColumnHead
             rules={rules}
             promotion={promotion}
+            delivery={delivery}
             columnTab={columnTab}
             tabsId={tabsId}
             results={results}
             label={`${DRAWER_TITLES[studio]} and Playwright`}
           />
-          <PromotionBarFoot vm={promotion} projectName={projectName ?? projectId} />
+          <ColumnFoot promotion={promotion} delivery={delivery} qaScope={qaScope} repositoryName={projectName ?? projectId} />
           <ColumnPanels
             rules={rules}
             tabsId={tabsId}
@@ -744,6 +782,7 @@ export function QaStudioPanel({
                   viewport={viewport}
                   run={run}
                   promotion={promotion}
+                  delivery={delivery}
                 />
               </PreviewCaptureContext.Provider>
             }

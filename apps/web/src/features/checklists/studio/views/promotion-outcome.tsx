@@ -120,12 +120,18 @@ function OutcomeBody({ vm, targetBranch }: Readonly<{ vm: QaPromotionViewModel; 
 /**
  * How the last merge ended. Always mounted as a live region, so the result is
  * announced; visible even when the card is folded, because it answers the
- * button the viewer just pressed.
+ * button the viewer just pressed. `children`: how a merge of every
+ * repository ended, in the same region.
  */
-export function PromotionOutcome({ vm, targetBranch }: Readonly<{ vm: QaPromotionViewModel; targetBranch: string }>) {
+export function PromotionOutcome({
+  vm,
+  targetBranch,
+  children,
+}: Readonly<{ vm: QaPromotionViewModel; targetBranch: string; children?: ReactNode }>) {
   return (
     <div className="qa-promo__live" role="status" aria-live="polite">
       <OutcomeBody vm={vm} targetBranch={targetBranch} />
+      {children}
     </div>
   );
 }

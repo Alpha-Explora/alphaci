@@ -12,11 +12,14 @@ import type { QaPromotionStatus } from "../../../../../src/features/checklists/m
 import type { QaScope } from "../../../../../src/features/checklists/model/qa-scope";
 import { normalizeProjectRequirements } from "../../../../../src/features/checklists/model/requirement-rules";
 import { ProjectRequirementsPanel } from "../../../../../src/features/checklists/requirements/views/project-requirements-panel";
+import { usePoDeliveryViewModel } from "../../../../../src/features/checklists/studio/view-models/use-po-delivery-view-model";
 import { useProjectRunViewModel } from "../../../../../src/features/checklists/studio/view-models/use-project-run-view-model";
 import type { ProjectRunViewModel } from "../../../../../src/features/checklists/studio/view-models/use-project-run-view-model";
 import type { QaPromotionViewModel } from "../../../../../src/features/checklists/studio/view-models/use-qa-promotion-view-model";
 import { PoAcceptancePanel } from "../../../../../src/features/checklists/studio/views/po-acceptance-panel";
+import { MergeAllDialog, MergeAllOutcome } from "../../../../../src/features/checklists/studio/views/po-delivery";
 import { ProjectRunPanel } from "../../../../../src/features/checklists/studio/views/project-run-panel";
+import { StudioMergeAction } from "../../../../../src/features/checklists/studio/views/promotion-bar";
 import type { AppRole } from "../../../../../src/shared/api/contracts";
 import { currentWire, deliveredWire } from "../iteration-fixtures";
 import { apiErrorWith, readyWire } from "../qa-promotion-fixtures";
@@ -214,38 +217,68 @@ function promotionVm(data: QaPromotionStatus, reload: () => void = jest.fn()): Q
 
 const NO_RUN = { status: "ready", run: null, heads: [], stale: false, requirementsChanged: false } as unknown as ProjectRunViewModel;
 
-function po(promotion: QaPromotionViewModel, role: AppRole = "lead") {
+/** PO Studio as QaStudioPanel arranges it: the tab bar's merge, what it answered, then the column. */
+function PoStudio({ promotion, role }: Readonly<{ promotion: QaPromotionViewModel; role: AppRole }>) {
+  const delivery = usePoDeliveryViewModel({ deliveryProjectId: "dp-1", enabled: true, projectId: "proj-fe", appRole: role, promotion });
   return (
-    <PoAcceptancePanel qaScope={SCOPE} projectId="proj-fe" projectRun={NO_RUN} promotion={promotion} appRole={role} />
+    <>
+      <div className="test-bar">
+        <StudioMergeAction promotion={promotion} delivery={delivery} />
+      </div>
+      <div role="status">
+        <MergeAllOutcome vm={delivery} />
+      </div>
+      <MergeAllDialog vm={delivery} projectName="Storefront" />
+      <PoAcceptancePanel qaScope={SCOPE} projectRun={NO_RUN} promotion={promotion} delivery={delivery} appRole={role} />
+    </>
   );
+}
+
+function po(promotion: QaPromotionViewModel, role: AppRole = "lead") {
+  return <PoStudio promotion={promotion} role={role} />;
+}
+
+function bar(container: HTMLElement): HTMLElement {
+  return container.querySelector<HTMLElement>(".test-bar")!;
 }
 
 const READY = normalizePromotionStatus(readyWire({ scope: "project", repositoryDelivered: false }));
 
-describe("PO Studio: Merge all repositories", () => {
-  it("shows each covered repository's stored state and offers Merge all to a Product owner", async () => {
+/** This repository already reached main: alone, its Merge to main would be disabled. */
+function thisRepositoryMerged(data: QaPromotionStatus): QaPromotionViewModel {
+  return { ...promotionVm(data), canMerge: true, disabledReason: "uat @ abc1234 is already merged into main." };
+}
+
+describe("PO Studio: Merge to main on a Project of two repositories", () => {
+  it("shows each covered repository's state in the column, and the one merge button in the tab bar", async () => {
     iterations.current.mockResolvedValue(normalizeCurrentIteration(currentWire()));
-    const container = await render(po(promotionVm(READY)));
+    const container = await render(po(thisRepositoryMerged(READY)));
     const rows = [...container.querySelectorAll(".po-delivery__row")].map((row) => row.textContent);
     expect(rows).toEqual(["tone/storefront-webMerged into main", "tone/orders-apiNot in main yet"]);
-    expect(buttonNamed(container, "Merge all repositories")).toBeDefined();
+    expect(container.querySelector(".po-delivery button")).toBeNull();
+    expect(buttonNamed(container, "Merge all repositories")).toBeUndefined();
+    const merge = buttonNamed(bar(container), "Merge to main");
+    // Enabled although this repository is in main: it merges the rest.
+    expect(merge?.disabled).toBe(false);
+    expect(container.querySelectorAll(".qa-promo__merge")).toHaveLength(1);
   });
 
-  it("does not offer it to the QA Team, nor when the server says no", async () => {
+  it("is this repository's merge when the server does not offer every repository, and absent for the QA Team", async () => {
     iterations.current.mockResolvedValue(normalizeCurrentIteration(currentWire()));
     const qa = await render(po(promotionVm(READY), "qa"));
-    expect(buttonNamed(qa, "Merge all repositories")).toBeUndefined();
+    expect(buttonNamed(qa, "Merge to main")).toBeUndefined();
     act(() => root?.unmount());
     iterations.current.mockResolvedValue(normalizeCurrentIteration(currentWire({ canMergeAll: false })));
-    const lead = await render(po(promotionVm(READY)));
-    expect(buttonNamed(lead, "Merge all repositories")).toBeUndefined();
+    const lead = await render(po(thisRepositoryMerged(READY)));
+    expect(buttonNamed(bar(lead), "Merge to main")?.disabled).toBe(true);
+    expect(iterations.mergeAll).not.toHaveBeenCalled();
   });
 
-  it("confirms, shows each repository's result, and retries only after a partial failure", async () => {
+  it("confirms naming each repository, shows each one's result, and retries only after a partial failure", async () => {
     iterations.current.mockResolvedValue(normalizeCurrentIteration(currentWire()));
     const reload = jest.fn();
-    const container = await render(po(promotionVm(READY, reload)));
-    await click(buttonNamed(container, "Merge all repositories"));
+    const container = await render(po({ ...thisRepositoryMerged(READY), reload }));
+    await click(buttonNamed(bar(container), "Merge to main"));
     expect(dialog()?.textContent).toContain("tone/orders-api");
     iterations.mergeAll.mockResolvedValueOnce({
       repositories: [
@@ -254,7 +287,7 @@ describe("PO Studio: Merge all repositories", () => {
       delivered: false,
       iteration: null,
     });
-    await click(buttonNamed(dialog()!, "Merge all repositories"));
+    await click(buttonNamed(dialog()!, "Merge to main"));
     expect(iterations.mergeAll).toHaveBeenCalledWith("dp-1");
     expect(await dialogGone()).toBe(true);
     expect(container.textContent).toContain("0 of 1 repositories reached main. Retry merges only the rest.");
@@ -277,8 +310,8 @@ describe("PO Studio: Merge all repositories", () => {
     iterations.current.mockResolvedValue(normalizeCurrentIteration(currentWire()));
     iterations.mergeAll.mockRejectedValue(apiErrorWith(409, { code: "ITERATION_DELIVERED", iterationNumber: 3 }));
     const container = await render(po(promotionVm(READY)));
-    await click(buttonNamed(container, "Merge all repositories"));
-    await click(buttonNamed(dialog()!, "Merge all repositories"));
+    await click(buttonNamed(bar(container), "Merge to main"));
+    await click(buttonNamed(dialog()!, "Merge to main"));
     expect(await dialogGone()).toBe(true);
     expect(container.textContent).toContain("Already delivered");
     expect(container.textContent).toContain("Iteration 3 was delivered, so its requirements and QA are locked.");
@@ -314,7 +347,7 @@ describe("PO Studio: a delivered iteration", () => {
       "tone/storefront-webMerged into main · PR #12 · merge commit abc1234",
       "tone/orders-apiAlready in main",
     ]);
-    expect(buttonNamed(container, "Merge all repositories")).toBeUndefined();
+    expect(buttonNamed(container, "Merge to main")).toBeUndefined();
     expect(container.querySelector(".po-accept__status")).toBeNull();
   });
 
