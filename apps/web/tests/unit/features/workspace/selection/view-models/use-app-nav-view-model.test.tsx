@@ -7,7 +7,7 @@ import type { WorkspaceSummary } from "../../../../../../src/features/workspace/
 
 jest.mock("next/navigation", () => ({ usePathname: () => "/teams" }));
 let mockHostAvailability = "disabled";
-jest.mock("../../../../../../src/features/hosts", () => ({
+jest.mock("../../../../../../src/features/hosts/availability", () => ({
   useHostAvailability: () => mockHostAvailability,
 }));
 
