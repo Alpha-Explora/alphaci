@@ -256,7 +256,7 @@ export const NO_RUN_TITLE = "No QA run yet";
 
 export function noRunText(project: boolean): string {
   return project
-    ? "Playwright results attach to the Project's QA run. Once it starts (in the Checklist tab), each repository's results on uat appear here."
+    ? "Playwright results attach to the Project's QA testing. Once it starts (in the Checklist tab), each repository's results on uat appear here."
     : "Playwright results attach to a QA run. Once one starts (in the Checklist tab), its results appear here.";
 }
 

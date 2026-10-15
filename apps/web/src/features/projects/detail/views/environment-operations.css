@@ -1,0 +1,238 @@
+/* ── Hosting › Environments ─────────────────────────────────────────────────
+   .envops          the environment list in promotion order.
+   .envops-card     one environment: header (name, role, branch, status),
+                      Release and Host sections side by side, advanced tools.
+   Tokens only.
+   ------------------------------------------------------------------------- */
+
+.envops {
+  display: grid;
+  gap: 1rem;
+}
+
+.envops__head {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.envops .envops__title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.envops__intro,
+.envops-muted,
+.envops-note {
+  margin: 0;
+  font-size: 0.8rem;
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+
+.envops-muted {
+  color: var(--text-muted);
+}
+
+.envops__list {
+  display: grid;
+  gap: 0.9rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.envops-card {
+  display: grid;
+  gap: 1rem;
+  padding: 1.1rem 1.2rem;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-card);
+  background: var(--bg-soft);
+}
+
+.envops-card__head {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.envops-card__step {
+  display: inline-grid;
+  place-items: center;
+  width: 1.8rem;
+  height: 1.8rem;
+  border-radius: 999px;
+  background: rgba(88, 166, 255, 0.12);
+  color: var(--brand);
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.envops-card__titles {
+  display: grid;
+  gap: 0.3rem;
+  min-width: 0;
+}
+
+.envops .envops-card__name {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.envops-card__meta {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  margin: 0;
+}
+
+.envops-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.1rem 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.envops-chip--prod {
+  border-color: rgba(251, 191, 36, 0.35);
+  color: var(--accent-amber);
+}
+
+.envops-chip--branch {
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-weight: 500;
+}
+
+.envops-card__body {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr));
+  gap: 1rem;
+}
+
+.envops-section {
+  display: grid;
+  align-content: start;
+  gap: 0.6rem;
+  min-width: 0;
+}
+
+.envops .envops-section__label {
+  margin: 0;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.envops-release {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.envops .envops-release__line {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--text-primary);
+}
+
+.envops-targets {
+  display: grid;
+  gap: 0.35rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.envops-target {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  font-size: 0.8rem;
+}
+
+.envops-target__slot {
+  padding: 0.05rem 0.45rem;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.05);
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.envops-target__provider {
+  color: var(--text-primary);
+}
+
+.envops-link {
+  color: var(--brand);
+  font-weight: 600;
+}
+
+.envops-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.envops-history > summary,
+.envops-advanced > summary {
+  cursor: pointer;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.envops-history ul {
+  display: grid;
+  gap: 0.3rem;
+  margin: 0.5rem 0 0;
+  padding-left: 1.1rem;
+  list-style: disc;
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+}
+
+.envops-advanced {
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.envops-advanced__body {
+  display: grid;
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+}
+
+.envops-inline-form {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.envops-field {
+  display: grid;
+  gap: 0.25rem;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.envops-token {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.envops-token__value {
+  word-break: break-all;
+}

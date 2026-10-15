@@ -52,13 +52,13 @@ function ProjectGate({ data }: Readonly<{ data: QaPromotionStatus }>) {
   const showRepositories = useShowRepositories();
   return (
     <>
-      <ul className="qa-promo__rows" aria-label="Project QA run">
+      <ul className="qa-promo__rows" aria-label="QA testing">
         <li className="qa-promo__row" data-tone={state.tone}>
           <span className="qa-promo__tick" aria-hidden="true">
             {state.approved ? <CheckIcon /> : <span className="qa-promo__dot" />}
           </span>
           <span className="qa-promo__row-text">
-            <span className="qa-promo__name">{data.deliveryProject?.name ?? "Project"} QA run</span>
+            <span className="qa-promo__name">{data.deliveryProject?.name ?? "Project"} QA testing</span>
             <span className="qa-promo__state">{state.label}</span>
           </span>
           {data.run?.verdict ? <VerdictPill verdict={data.run.verdict} /> : null}
@@ -111,7 +111,7 @@ function CardFoot({ vm, data }: Readonly<{ vm: QaPromotionViewModel; data: QaPro
       {vm.canMerge ? null : (
         <span className="qa-promo__muted">
           {data.scope
-            ? `Product owners merge ${data.qaBranch} into ${data.targetBranch} once the Project's QA run is approved.`
+            ? `Product owners merge ${data.qaBranch} into ${data.targetBranch} once QA signs the Project off Approved.`
             : `Product owners merge ${data.qaBranch} into ${data.targetBranch} once every checklist is approved.`}
         </span>
       )}

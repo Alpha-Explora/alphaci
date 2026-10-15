@@ -35,13 +35,13 @@ const EASE_OUT: [number, number, number, number] = [0.16, 1, 0.3, 1];
 /** One line, for the viewer's role: what they do here. */
 function roleLine(permissions: RequirementPermissions, appRole: AppRole | null | undefined): string {
   if (permissions.canManage) {
-    return "You write the requirements. Developers move each item's Progress; the QA Team verifies them on the Project QA run.";
+    return "You write the requirements. Developers move each item's Progress; the QA Team verifies them in QA testing.";
   }
   if (permissions.canSetProgress) {
     return "Move each item's Progress as you build it. Mark it Done when it is ready for QA.";
   }
   if (canSetVerification(appRole)) {
-    return "Developers mark items Done; you verify them on the Project QA run.";
+    return "Developers mark items Done; you verify them in QA testing.";
   }
   return "Requirements for every repository in this Project.";
 }

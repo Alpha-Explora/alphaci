@@ -262,7 +262,7 @@ describe("Studio column — the Checklist tab", () => {
     setup();
     const container = await studio("qa");
     const checklistPanel = panel(container, "checklist");
-    expect(checklistPanel.textContent).toContain("Project QA run");
+    expect(checklistPanel.textContent).toContain("QA testing");
     expect(checklistPanel.querySelectorAll(".pqa-group").length).toBeGreaterThan(0);
     expect(checklistPanel.querySelector(".qa-auto-stage")).toBeNull();
     expect(buttonNamed(checklistPanel, "Run Playwright")).toBeUndefined();

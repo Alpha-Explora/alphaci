@@ -278,10 +278,10 @@ export function ProjectMyItemsCard({
     >
       <header className="qa-returned__header">
         <h2 ref={headingRef} tabIndex={-1} className="qa-returned__heading" id="pmi-title">
-          My QA items
+          Progress
           {waiting ? null : <span className="qa-mine__count">{total}</span>}
         </h2>
-        <p className="qa-mine__lede">Everything the Developers in this Project are building, and what QA is waiting on.</p>
+        <p className="qa-mine__lede">Where every story stands: to do, in progress, sent back by QA, and ready for QA testing.</p>
       </header>
       <CardContent list={list} next={next} ready={ready} canSet={canSet} progress={progress} />
     </section>

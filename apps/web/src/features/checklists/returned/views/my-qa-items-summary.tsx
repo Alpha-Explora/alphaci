@@ -37,7 +37,7 @@ function useFocusWhenReady(requested: boolean, ready: boolean) {
 
 function SummaryChips({ vm }: Readonly<{ vm: MyQaItemsSummaryViewModel }>) {
   return (
-    <ul className="qa-summary__chips" aria-label="My QA items by state">
+    <ul className="qa-summary__chips" aria-label="Progress by state">
       {MY_ITEMS_BUCKETS.map((bucket) => (
         <li
           key={bucket}
@@ -60,13 +60,13 @@ function OpenChecklist({
   if (vm.destination.kind === "project") {
     return (
       <Link className="ghost-button qa-summary__open" href={vm.destination.href}>
-        Open checklist
+        Open progress
       </Link>
     );
   }
   return (
     <button type="button" className="ghost-button qa-summary__open" onClick={onOpenChecklists}>
-      Open checklist
+      Open progress
     </button>
   );
 }
@@ -117,7 +117,7 @@ export function MyQaItemsSummary({
     >
       <div className="qa-summary__head">
         <h2 ref={headingRef} tabIndex={-1} className="qa-returned__heading" id="qa-summary-title">
-          My QA items
+          Progress
           {vm.waiting ? null : <span className="qa-mine__count">{vm.total}</span>}
         </h2>
         <OpenChecklist vm={vm} onOpenChecklists={onOpenChecklists} />

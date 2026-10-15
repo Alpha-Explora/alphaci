@@ -205,7 +205,7 @@ export function deliveredRequirementsText(historyOnPage: boolean): string {
 
 /** Where the delivered QA run went. */
 export function deliveredRunText(historyOnPage: boolean): string {
-  return `Its QA run is archived ${historyPlace(historyOnPage)}, read-only, exactly as QA signed it off. The next iteration starts a new run.`;
+  return `Its QA testing is archived ${historyPlace(historyOnPage)}, read-only, exactly as QA signed it off. The next iteration is tested afresh.`;
 }
 
 /** The read-only banner on a delivered iteration's QA run and requirements. */

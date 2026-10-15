@@ -155,8 +155,8 @@ function StartProjectRun({ vm, appRole }: Readonly<{ vm: ProjectRunViewModel; ap
   if (!canStartProjectRun(appRole)) {
     return (
       <PanelState
-        title="No Project QA run yet"
-        text="QA Team members, Product owners and admins start the Project's QA run. Once one starts, its items and results appear here."
+        title="QA testing has not started"
+        text="QA Team members, Product owners and admins start QA testing. Once it starts, every story and its result appears here."
       >
         <MovedSinceLatest vm={vm} showRepositories={shown} />
         <HeadsList heads={vm.heads} withRun={false} shown={shown} />
@@ -167,7 +167,7 @@ function StartProjectRun({ vm, appRole }: Readonly<{ vm: ProjectRunViewModel; ap
     <PanelState title="Verify this Project" text={startRunText(vm.heads.length, shown)}>
       <MovedSinceLatest vm={vm} showRepositories={shown} />
       <HeadsList heads={vm.heads} withRun={false} shown={shown} />
-      <StartButton vm={vm} label="Start Project QA run" />
+      <StartButton vm={vm} label="Start QA testing" />
     </PanelState>
   );
 }
@@ -449,11 +449,11 @@ export function ProjectRunPanel({
   if (vm.status === "idle" || vm.status === "loading") body = <RunSkeleton />;
   else if (vm.status === "unavailable") {
     body = fallback ?? (
-      <PanelState title="Project QA runs are not available" text="This server does not offer Project QA runs yet." />
+      <PanelState title="QA testing is not available" text="This server does not offer Project QA testing yet." />
     );
   } else if (vm.status === "error") {
     body = (
-      <PanelState title="The Project QA run did not load" text={vm.error ?? ""} tone="danger">
+      <PanelState title="QA testing did not load" text={vm.error ?? ""} tone="danger">
         <button type="button" className="ghost-button" onClick={vm.reload}>
           Try again
         </button>

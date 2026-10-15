@@ -249,7 +249,7 @@ describe("Playwright tab — which empty state shows", () => {
   it("has the copy the tab shows", () => {
     expect(notRunText("uat")).toBe("Playwright hasn't run on uat yet");
     expect(UNSUPPORTED_TEXT).toBe("This server doesn't report automated results.");
-    expect(noRunText(true)).toMatch(/Project's QA run/);
+    expect(noRunText(true)).toMatch(/Project's QA testing/);
     expect(noRunText(false)).toMatch(/a QA run/);
   });
 });

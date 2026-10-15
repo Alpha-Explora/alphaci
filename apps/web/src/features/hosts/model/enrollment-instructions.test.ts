@@ -112,3 +112,13 @@ it("asks the installer to replace the existing credential only for a replacement
 it("lets the Windows host forward its assigned ports instead of a fixed range", () => {
   expect(enrollmentInstructions(plainReceipt).windows).not.toContain("-Ports");
 });
+it("runs the Windows installer in-process", () => {
+  const { windows } = enrollmentInstructions(plainReceipt);
+  expect(windows).toContain(
+    "Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass -Force",
+  );
+  expect(windows).toContain(
+    "& (Join-Path $directory 'windows/Install-AlphaCIHost.ps1')",
+  );
+  expect(windows).not.toContain("powershell.exe");
+});

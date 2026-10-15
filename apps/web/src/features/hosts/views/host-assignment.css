@@ -1,0 +1,200 @@
+/* ── Host assignment (inside a project's Hosting environment card) ──────────
+   .hassign           summary of the assigned machine, problems, change form.
+   .hassign-summary   which machine runs this environment, its status, ports.
+   .hassign-form      the assign/change form, collapsed once assigned.
+   Tokens only.
+   ------------------------------------------------------------------------- */
+
+.hassign {
+  display: grid;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.hassign-hint {
+  margin: 0;
+  font-size: 0.8rem;
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+
+.hassign-summary {
+  display: grid;
+  gap: 0.5rem;
+  padding: 0.8rem 0.9rem;
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+  background: var(--bg-base);
+}
+
+.hassign-summary--empty {
+  border-style: dashed;
+}
+
+.hassign-summary__row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.hassign .hassign-summary__name {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.hassign-facts {
+  display: grid;
+  gap: 0.3rem;
+  margin: 0;
+  font-size: 0.8rem;
+}
+
+.hassign-facts > div {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.hassign-facts dt {
+  min-width: 5.5rem;
+  color: var(--text-muted);
+}
+
+.hassign-facts dd {
+  margin: 0;
+  color: var(--text-primary);
+  word-break: break-all;
+}
+
+.hassign-alert {
+  margin: 0;
+  padding: 0.65rem 0.85rem;
+  border: 1px solid rgba(248, 113, 113, 0.3);
+  border-radius: 8px;
+  background: rgba(248, 113, 113, 0.08);
+  font-size: 0.8rem;
+  color: var(--text-primary);
+}
+
+.hassign .hassign-alert__title {
+  margin: 0;
+  font-weight: 600;
+}
+
+.hassign-alert ul {
+  margin: 0.3rem 0 0;
+  padding-left: 1.1rem;
+  list-style: disc;
+  color: var(--text-secondary);
+}
+
+.hassign-change > summary,
+.hassign-checks > summary {
+  cursor: pointer;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--brand);
+}
+
+.hassign-checks > summary {
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.hassign-form {
+  display: grid;
+  gap: 0.85rem;
+  margin-top: 0.75rem;
+}
+
+.hassign-field {
+  display: grid;
+  gap: 0.3rem;
+  min-width: 0;
+}
+
+.hassign-field__label {
+  padding: 0;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.hassign-ports legend.hassign-field__label {
+  text-transform: capitalize;
+}
+
+.hassign-field__hint {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
+.hassign-field select,
+.hassign-field input {
+  width: 100%;
+  min-width: 0;
+}
+
+.hassign-ports {
+  display: grid;
+  gap: 0.4rem;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.hassign-ports__grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.6rem;
+}
+
+@media (max-width: 520px) {
+  .hassign-ports__grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.hassign-ingress {
+  display: grid;
+  gap: 0.6rem;
+}
+
+.hassign-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.hassign-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.hassign-link {
+  font-size: 0.8rem;
+  color: var(--brand);
+}
+
+.hassign-checks ul {
+  display: grid;
+  gap: 0.25rem;
+  margin: 0.5rem 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+}
+
+.hassign-check--passed span {
+  color: var(--success);
+}
+
+.hassign-check--failed span {
+  color: var(--danger);
+}

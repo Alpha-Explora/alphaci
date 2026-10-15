@@ -29,7 +29,7 @@ interface LoadResult {
   missing: boolean;
 }
 
-const LOAD_ERROR = "The Project's QA items could not be loaded. Try again in a moment.";
+const LOAD_ERROR = "The Project's progress could not be loaded. Try again in a moment.";
 
 function loadStatus(active: boolean, result: LoadResult | null): ProjectMyItemsStatus {
   if (!active) return "idle";

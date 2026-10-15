@@ -293,6 +293,17 @@ export function folderFeatureGate(
   };
 }
 
+/**
+ * Whether a Project's page carries its Requirements / Progress / QA testing
+ * workspace. A Developer works from each repository's Checklists tab, which is
+ * the same workspace, so here it would only repeat it; with no repository yet
+ * it stays, so the Developer can read the Features before building the first
+ * one. Every other role keeps it (a Product owner writes the Features here).
+ */
+export function showsProjectQaWorkspace(appRole: AppRole | null | undefined, repositoryCount: number): boolean {
+  return !(appRole === "member" && repositoryCount > 0);
+}
+
 /** The folders with locally known Feature counts (a Feature just written) laid over the server's. */
 export function withFeatureCounts(
   folders: ReadonlyArray<ProjectFolder>,
