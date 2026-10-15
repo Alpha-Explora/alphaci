@@ -2,7 +2,6 @@
 
 import "./history.css";
 
-import { IterationStatusPill } from "../../iteration";
 import { StatusPill, VerdictPill } from "../../items";
 import {
   HISTORY_EMPTY_TEXT,
@@ -28,7 +27,7 @@ function Chevron() {
   return (
     <svg
       aria-hidden="true"
-      className="history-card__chevron"
+      className="ihist-card__chevron"
       fill="none"
       focusable="false"
       height="13"
@@ -44,23 +43,36 @@ function Chevron() {
   );
 }
 
+/**
+ * "Delivered" or "Active", in the iteration pill's tones. The card title
+ * already names the iteration, so the pill says only its state.
+ */
+function StateTag({ status }: Readonly<{ status: HistoryIteration["status"] }>) {
+  return (
+    <span className="iteration-status" data-status={status}>
+      <span className="iteration-status__dot" aria-hidden="true" />
+      <span className="iteration-status__label">{status === "delivered" ? "Delivered" : "Active"}</span>
+    </span>
+  );
+}
+
 /** One requirement and its items, as QA left them. */
 function HistoryGroup({ group }: Readonly<{ group: ProjectRunGroup }>) {
   return (
-    <li className="history-group">
-      <p className="history-group__head">
-        <span className="history-group__kind" data-kind={group.kind}>
+    <li className="ihist-group">
+      <p className="ihist-group__head">
+        <span className="ihist-group__kind" data-kind={group.kind}>
           {kindCopy(group.kind).singular}
         </span>
-        <span className="history-group__name">{group.requirementName}</span>
-        <span className="history-group__count">{groupPassLabel(group)}</span>
+        <span className="ihist-group__name">{group.requirementName}</span>
+        <span className="ihist-group__count">{groupPassLabel(group)}</span>
       </p>
-      <ul className="history-items" aria-label={`${kindCopy(group.kind).items} of ${group.requirementName}`}>
+      <ul className="ihist-items" aria-label={`${kindCopy(group.kind).items} of ${group.requirementName}`}>
         {group.items.map((item) => (
-          <li key={item.id} className="history-item">
-            <span className="history-item__title">{item.title}</span>
-            <span className="history-item__facts">
-              {item.progress ? <span className="history-item__progress">{progressLabel(item.progress)}</span> : null}
+          <li key={item.id} className="ihist-item">
+            <span className="ihist-item__title">{item.title}</span>
+            <span className="ihist-item__facts">
+              {item.progress ? <span className="ihist-item__progress">{progressLabel(item.progress)}</span> : null}
               <StatusPill status={item.status} />
             </span>
           </li>
@@ -74,27 +86,27 @@ function HistoryGroup({ group }: Readonly<{ group: ProjectRunGroup }>) {
 function FrozenReport({ run }: Readonly<{ run: ProjectQaRun }>) {
   const signoff = run.signoff;
   return (
-    <div className="history-report">
+    <div className="ihist-report">
       {signoff ? (
-        <div className="history-signoff">
+        <div className="ihist-signoff">
           <VerdictPill verdict={signoff.verdict} />
-          <span className="history-signoff__by">{historySignoffLabel(signoff)}</span>
-          {signoff.summary ? <p className="history-signoff__summary">{signoff.summary}</p> : null}
+          <span className="ihist-signoff__by">{historySignoffLabel(signoff)}</span>
+          {signoff.summary ? <p className="ihist-signoff__summary">{signoff.summary}</p> : null}
         </div>
       ) : null}
-      <p className="history-score">
+      <p className="ihist-score">
         {passedLabel(run)} · {openDefectsLabel(run.summary.openDefects)} · {blockersLabel(run.summary.blockers)}
       </p>
       {run.repositories.length > 0 ? (
-        <ul className="history-heads" aria-label="What QA verified">
+        <ul className="ihist-heads" aria-label="What QA verified">
           {run.repositories.map((head) => (
-            <li key={head.projectId} className="history-heads__item">
+            <li key={head.projectId} className="ihist-heads__item">
               <code>{headLabel(head.repoFullName, head.runSha)}</code>
             </li>
           ))}
         </ul>
       ) : null}
-      <ul className="history-groups">
+      <ul className="ihist-groups">
         {groupRunItems(run.items).map((group) => (
           <HistoryGroup key={group.key} group={group} />
         ))}
@@ -108,11 +120,11 @@ function ReportBody({
   onRetry,
 }: Readonly<{ report: HistoryReport | undefined; onRetry: () => void }>) {
   if (!report || report.status === "loading") {
-    return <div className="hier-skeleton history-skeleton" aria-hidden="true" />;
+    return <div className="hier-skeleton ihist-skeleton" aria-hidden="true" />;
   }
   if (report.status === "error") {
     return (
-      <div className="history-note" role="alert">
+      <div className="ihist-note" role="alert">
         <p>{report.message}</p>
         <button type="button" className="ghost-button" onClick={onRetry}>
           Try again
@@ -129,12 +141,12 @@ function HistoryCard({ iteration, vm }: Readonly<{ iteration: HistoryIteration; 
   const bodyId = `history-${iteration.id}`;
   const note = historyNoReportText(iteration);
   return (
-    <li className="history-card" data-status={iteration.status} data-open={String(open)}>
-      <div className="history-card__head">
-        <h4 className="history-card__title">
+    <li className="ihist-card" data-status={iteration.status} data-open={String(open)}>
+      <div className="ihist-card__head">
+        <h4 className="ihist-card__title">
           <button
             type="button"
-            className="history-card__toggle"
+            className="ihist-card__toggle"
             aria-expanded={open}
             aria-controls={bodyId}
             onClick={() => vm.toggle(iteration)}
@@ -143,13 +155,13 @@ function HistoryCard({ iteration, vm }: Readonly<{ iteration: HistoryIteration; 
             <Chevron />
           </button>
         </h4>
-        <IterationStatusPill iteration={iteration} />
+        <StateTag status={iteration.status} />
       </div>
-      <p className="history-card__meta">{historyMetaLabel(iteration)}</p>
-      <div id={bodyId} className="history-card__body" hidden={!open}>
+      <p className="ihist-card__meta">{historyMetaLabel(iteration)}</p>
+      <div id={bodyId} className="ihist-card__body" hidden={!open}>
         {open ? (
           note ? (
-            <p className="history-note">{note}</p>
+            <p className="ihist-note">{note}</p>
           ) : (
             <ReportBody
               report={iteration.signoffRunId ? vm.reports[iteration.signoffRunId] : undefined}
@@ -164,14 +176,14 @@ function HistoryCard({ iteration, vm }: Readonly<{ iteration: HistoryIteration; 
 
 function HistoryBody({ vm }: Readonly<{ vm: IterationHistoryViewModel }>) {
   if (vm.status === "loading" || vm.status === "idle") {
-    return <div className="hier-skeleton history-skeleton" aria-hidden="true" />;
+    return <div className="hier-skeleton ihist-skeleton" aria-hidden="true" />;
   }
   if (vm.status === "unavailable") {
-    return <p className="history-note">This server does not keep iterations yet.</p>;
+    return <p className="ihist-note">This server does not keep iterations yet.</p>;
   }
   if (vm.status === "error") {
     return (
-      <div className="history-note" role="alert">
+      <div className="ihist-note" role="alert">
         <p>{vm.error}</p>
         <button type="button" className="ghost-button" onClick={vm.reload}>
           Try again
@@ -179,9 +191,9 @@ function HistoryBody({ vm }: Readonly<{ vm: IterationHistoryViewModel }>) {
       </div>
     );
   }
-  if (vm.iterations.length === 0) return <p className="history-note">{HISTORY_EMPTY_TEXT}</p>;
+  if (vm.iterations.length === 0) return <p className="ihist-note">{HISTORY_EMPTY_TEXT}</p>;
   return (
-    <ul className="history-list" aria-label="Iterations, newest first">
+    <ul className="ihist-list" aria-label="Iterations, newest first">
       {vm.iterations.map((iteration) => (
         <HistoryCard key={iteration.id} iteration={iteration} vm={vm} />
       ))}
@@ -202,12 +214,12 @@ export function IterationHistoryPanel({
 }: Readonly<{ deliveryProjectId: string; projectName: string; enabled: boolean }>) {
   const vm = useIterationHistoryViewModel({ deliveryProjectId, enabled });
   return (
-    <section className="history" aria-labelledby="history-title">
-      <div className="history__head">
-        <h3 className="history__title" id="history-title">
+    <section className="ihist" aria-labelledby="history-title">
+      <div className="ihist__head">
+        <h3 className="ihist__title" id="history-title">
           {projectName} history
         </h3>
-        <p className="history__intro">{HISTORY_INTRO}</p>
+        <p className="ihist__intro">{HISTORY_INTRO}</p>
       </div>
       <HistoryBody vm={vm} />
     </section>

@@ -112,7 +112,7 @@ function panel(): ReactNode {
 }
 
 function toggles(container: HTMLElement): HTMLButtonElement[] {
-  return [...container.querySelectorAll<HTMLButtonElement>(".history-card__toggle")];
+  return [...container.querySelectorAll<HTMLButtonElement>(".ihist-card__toggle")];
 }
 
 describe("IterationHistoryPanel", () => {
@@ -120,14 +120,28 @@ describe("IterationHistoryPanel", () => {
     iterations.list.mockResolvedValue(HISTORY);
     const container = await render(panel());
     expect(iterations.list).toHaveBeenCalledWith("dp-1");
-    expect(container.querySelector(".history__title")?.textContent).toBe("Logistics2 history");
+    expect(container.querySelector(".ihist__title")?.textContent).toBe("Logistics2 history");
     expect(toggles(container).map((toggle) => toggle.textContent)).toEqual([
       "Iteration 2 · Loyalty points",
       "Iteration 1",
     ]);
     expect(toggles(container).every((toggle) => toggle.getAttribute("aria-expanded") === "false")).toBe(true);
     expect(container.textContent).toMatch(/Delivered .+ by @ana/);
+    // The pill says only the state: the title already names the iteration.
+    expect([...container.querySelectorAll(".iteration-status__label")].map((pill) => pill.textContent)).toEqual([
+      "Active",
+      "Delivered",
+    ]);
     expect(runs.get).not.toHaveBeenCalled();
+  });
+
+  it("never uses the legacy history-* class names, which globals.css styles as an error box", async () => {
+    iterations.list.mockResolvedValue(HISTORY);
+    runs.get.mockResolvedValue(frozenRun());
+    const container = await render(panel());
+    await click(toggles(container)[1]);
+    const classes = [...container.querySelectorAll("[class]")].flatMap((element) => [...element.classList]);
+    expect(classes.filter((name) => name.startsWith("history"))).toEqual([]);
   });
 
   it("opens a delivered iteration onto its frozen checklist and QA results, read once", async () => {
@@ -145,7 +159,7 @@ describe("IterationHistoryPanel", () => {
     expect(body.textContent).toMatch(/Signed off by @ana-qa on /);
     expect(body.textContent).toContain("All verified on uat.");
     expect(body.textContent).toContain("2/2 passed");
-    expect([...body.querySelectorAll(".history-group__name")].map((name) => name.textContent)).toEqual([
+    expect([...body.querySelectorAll(".ihist-group__name")].map((name) => name.textContent)).toEqual([
       "Checkout with saved cards",
       "Release smoke test",
     ]);
