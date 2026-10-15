@@ -43,11 +43,23 @@ export type DeploymentStrategy =
   | "render_image_pushed"
   | "render_existing_service";
 export type RenderServiceType =
-  "web_service" | "private_service" | "background_worker" | "cron_job";
+  | "web_service"
+  | "private_service"
+  | "background_worker"
+  | "cron_job";
 export type RenderRuntime =
-  "node" | "python" | "ruby" | "go" | "rust" | "elixir" | "docker";
+  | "node"
+  | "python"
+  | "ruby"
+  | "go"
+  | "rust"
+  | "elixir"
+  | "docker";
 export type RenderDeployMethod =
-  "managed_image" | "byo_image" | "native_git" | "existing_service";
+  | "managed_image"
+  | "byo_image"
+  | "native_git"
+  | "existing_service";
 
 export interface SessionUser {
   id: string;
@@ -547,9 +559,13 @@ export interface OnpremProvisioningTargetRequest {
 }
 
 /** What project creation accepts: the hosted targets plus on-prem ones. */
-export interface CreateDeploymentProvisioningRequest
-  extends Omit<DeploymentProvisioningRequest, "targets"> {
-  targets: Array<DeploymentProvisioningTargetRequest | OnpremProvisioningTargetRequest>;
+export interface CreateDeploymentProvisioningRequest extends Omit<
+  DeploymentProvisioningRequest,
+  "targets"
+> {
+  targets: Array<
+    DeploymentProvisioningTargetRequest | OnpremProvisioningTargetRequest
+  >;
 }
 
 export interface DeploymentProvisioningResult {
@@ -610,7 +626,13 @@ export interface CatalogCategoriesResponse {
 }
 
 export type ProjectOptionKey =
-  "lint" | "unit" | "build" | "coverage" | "security" | "docker" | "e2e";
+  | "lint"
+  | "unit"
+  | "build"
+  | "coverage"
+  | "security"
+  | "docker"
+  | "e2e";
 
 export type MvpProjectOptionKey = Exclude<ProjectOptionKey, "e2e">;
 
@@ -845,6 +867,11 @@ export interface SetupProjectRequest extends GenerateWorkflowRequest {
    * Omit it to create the project on the fixed dev, uat, main branch path.
    */
   environments?: Array<{
+    hostAssignment?: {
+      machineId: string;
+      requestId: string;
+      config: OnpremAssignmentConfig;
+    };
     slug: string;
     displayName: string;
     sourceBranch: string;
@@ -976,6 +1003,15 @@ export interface MicroservicesConfig {
   frontend: MicroserviceSlotConfig;
 }
 
+export interface OnpremAssignmentConfig {
+  ports: Array<{
+    slot: "frontend" | "backend";
+    hostPort: number;
+    containerPort: number;
+  }>;
+  health: Array<{ slot: "frontend" | "backend"; path: string | null }>;
+  ingress: { mode: "direct" | "configured"; publicUrl: string | null };
+}
 export interface CreateProjectRequest {
   repoName: string;
   visibility: "private" | "public";
@@ -1010,6 +1046,13 @@ export interface CreateProjectRequest {
 }
 
 export interface CreateProjectResponse {
+  hostAssignmentError?: string;
+  hostAssignments?: Array<{
+    environmentId: string;
+    status: "assigned" | "failed";
+    assignmentId?: string;
+    message?: string;
+  }>;
   id: string;
   repoFullName: string;
   repoUrl: string;
@@ -1187,7 +1230,12 @@ export interface ProjectCiRunRerunResponse {
 }
 
 export type DeploymentHistoryStatus =
-  "queued" | "building" | "ready" | "failed" | "canceled" | "unknown";
+  | "queued"
+  | "building"
+  | "ready"
+  | "failed"
+  | "canceled"
+  | "unknown";
 
 export interface ProjectDeploymentHistoryItem {
   id: string;
@@ -1498,7 +1546,11 @@ export interface PendingAccountResponse {
 /* ── CI Runs ─────────────────────────────────────────────────────────────── */
 
 export type RunOverallStatus =
-  "success" | "failure" | "running" | "cancelled" | "partial";
+  | "success"
+  | "failure"
+  | "running"
+  | "cancelled"
+  | "partial";
 /**
  * Mirrors STAGE_ORDER in the backend's pipelines/ci/application/stages.ts, and
  * the CHECK constraint on workflow.ci_run_reports.stage. All three widen
@@ -1634,12 +1686,22 @@ export interface StageResults {
   lint?: {
     errors: number;
     warnings: number;
-    issues?: { rule?: string; file?: string; line?: number; message?: string }[];
+    issues?: {
+      rule?: string;
+      file?: string;
+      line?: number;
+      message?: string;
+    }[];
   };
   security?: {
     high: number;
     critical: number;
-    items?: { package?: string; id?: string; title?: string; severity?: string }[];
+    items?: {
+      package?: string;
+      id?: string;
+      title?: string;
+      severity?: string;
+    }[];
   };
   findings?: {
     secrets?: number;
@@ -1654,7 +1716,12 @@ export interface StageResults {
     gate?: string;
     /** A setting stopped the analysis, rather than the code failing it. */
     blockedBy?: string;
-    failedConditions?: { metric: string; status?: string; actual?: string; threshold?: string }[];
+    failedConditions?: {
+      metric: string;
+      status?: string;
+      actual?: string;
+      threshold?: string;
+    }[];
     measures?: Record<string, string>;
     /** The most severe issues on new code, at most 20. */
     issues?: SonarIssue[];
@@ -1688,6 +1755,8 @@ export interface RunsResponse {
  * Derived from CreateProjectResponse plus helpers computed on the client side.
  */
 export interface CreateProjectResult {
+  hostAssignments?: CreateProjectResponse['hostAssignments'];
+  hostAssignmentError?: string;
   /** Database ID of the provisioned project record. */
   id: string;
   repoFullName: string;

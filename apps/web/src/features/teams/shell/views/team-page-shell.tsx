@@ -26,6 +26,7 @@ import { TeamsEmptyState } from "./teams-empty-state";
 
 /** What a team page gets to draw with, once its team has resolved. */
 export interface TeamPageContext {
+  session: AuthSession | null;
   team: Team;
   vm: SelectedTeamViewModel;
   /** What the link asked to open, read once on arrival. */
@@ -193,7 +194,7 @@ function TeamPageContent({
       />
     );
   } else if (vm.team) {
-    body = children({ team: vm.team, vm, deepLink });
+    body = children({ team: vm.team, vm, deepLink, session });
   } else {
     body = (
       <TeamsEmptyState

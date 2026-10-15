@@ -512,6 +512,7 @@ const MAIN_ITEMS: Record<SidebarMainItem, {
   home: { href: "/home", label: "Home", icon: DashboardIcon, isActive: (p) => p === "/home" },
   projects: { href: "/workflows", label: "Projects", icon: WorkflowsIcon, isActive: (p) => p === "/workflows" },
   teams: { href: "/teams", label: "Teams", icon: TeamsIcon, isActive: (p) => p === "/teams" || p.startsWith("/groups") },
+  hosts: { href: "/hosts", label: "Hosts", icon: WorkflowsIcon, isActive: (p) => p === "/hosts" },
   checklists: { href: "/checklists", label: "Checklists", icon: ChecklistsIcon, isActive: (p) => p === "/checklists" },
   activity: { href: "/activity", label: "Activity", icon: ActivityIcon, isActive: (p) => p === "/activity" },
   inbox: { href: "/inbox", label: "Inbox", icon: InboxIcon, isActive: (p) => p === "/inbox" },

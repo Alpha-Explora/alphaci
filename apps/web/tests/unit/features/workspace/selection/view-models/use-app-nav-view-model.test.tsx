@@ -6,6 +6,10 @@ import { useAppNavViewModel } from "../../../../../../src/features/workspace/sel
 import type { WorkspaceSummary } from "../../../../../../src/features/workspace/selection/model/workspace-types";
 
 jest.mock("next/navigation", () => ({ usePathname: () => "/teams" }));
+let mockHostAvailability = "disabled";
+jest.mock("../../../../../../src/features/hosts", () => ({
+  useHostAvailability: () => mockHostAvailability,
+}));
 
 jest.mock("../../../../../../src/features/capabilities/current", () => ({
   useCapabilities: () => ({ qaChecklistsEnabled: true }),
@@ -18,25 +22,34 @@ jest.mock("../../../../../../src/features/notifications/summary", () => ({
 /* The Activity entry is hidden by default (SIDEBAR_SHOWS_ACTIVITY, covered in
  * workspace-nav-rules.test.ts). These tests are about WHO would get it once it
  * is shown, so the sidebar rule is called with the entry switched on. */
-jest.mock("../../../../../../src/features/workspace/selection/model/workspace-types", () => {
-  const actual = jest.requireActual(
-    "../../../../../../src/features/workspace/selection/model/workspace-types",
-  );
-  return {
-    ...actual,
-    sidebarMainItems: (input: Parameters<typeof actual.sidebarMainItems>[0]) =>
-      actual.sidebarMainItems({ ...input, showActivity: true }),
-  };
-});
+jest.mock(
+  "../../../../../../src/features/workspace/selection/model/workspace-types",
+  () => {
+    const actual = jest.requireActual(
+      "../../../../../../src/features/workspace/selection/model/workspace-types",
+    );
+    return {
+      ...actual,
+      sidebarMainItems: (
+        input: Parameters<typeof actual.sidebarMainItems>[0],
+      ) => actual.sidebarMainItems({ ...input, showActivity: true }),
+    };
+  },
+);
 
-jest.mock("../../../../../../src/features/workspace/selection/data/workspace-repository", () => ({
-  getWorkspaces: jest.fn(),
-  getVisibleTeams: jest.fn(),
-}));
+jest.mock(
+  "../../../../../../src/features/workspace/selection/data/workspace-repository",
+  () => ({
+    getWorkspaces: jest.fn(),
+    getVisibleTeams: jest.fn(),
+  }),
+);
 
 import { getWorkspaces } from "../../../../../../src/features/workspace/selection/data/workspace-repository";
 
-const mockedGetWorkspaces = getWorkspaces as jest.MockedFunction<typeof getWorkspaces>;
+const mockedGetWorkspaces = getWorkspaces as jest.MockedFunction<
+  typeof getWorkspaces
+>;
 
 let root: Root | null = null;
 
@@ -49,13 +62,18 @@ afterEach(() => {
 
 async function mainItemsFor(
   teamRole: WorkspaceSummary["role"],
-  session: { appRole: "admin" | "lead" | "qa" | "member"; platformRole?: string | null },
+  session: {
+    appRole: "admin" | "lead" | "qa" | "member";
+    platformRole?: string | null;
+  },
 ): Promise<string[]> {
   if (root) act(() => root?.unmount());
   window.localStorage.clear();
   mockedGetWorkspaces.mockResolvedValue({
     enabled: true,
-    items: [{ id: "ws-1", name: "Checkout squad", kind: "team", role: teamRole }],
+    items: [
+      { id: "ws-1", name: "Checkout squad", kind: "team", role: teamRole },
+    ],
   });
   const captured: { items: string[] } = { items: [] };
   function Probe() {
@@ -80,16 +98,32 @@ async function mainItemsFor(
  * global app role, so it opens the feed to Team leads who belong to the team
  * and to platform admins; the stored per-team role does not decide. */
 describe("useAppNavViewModel Activity entry", () => {
+  it("shows Hosts only when the on-prem provider is enabled", async () => {
+    expect(await mainItemsFor("member", { appRole: "member" })).not.toContain(
+      "hosts",
+    );
+    mockHostAvailability = "enabled";
+    expect(await mainItemsFor("member", { appRole: "member" })).toContain(
+      "hosts",
+    );
+    mockHostAvailability = "disabled";
+  });
   it("shows Activity to the header team's Lead", async () => {
-    expect(await mainItemsFor("admin", { appRole: "lead" })).toContain("activity");
+    expect(await mainItemsFor("admin", { appRole: "lead" })).toContain(
+      "activity",
+    );
   });
 
   it("shows Activity to a Team lead whose stored team role is member", async () => {
-    expect(await mainItemsFor("member", { appRole: "lead" })).toContain("activity");
+    expect(await mainItemsFor("member", { appRole: "lead" })).toContain(
+      "activity",
+    );
   });
 
   it("hides Activity from a Developer with a stored Delegated lead role", async () => {
-    expect(await mainItemsFor("delegated_lead", { appRole: "member" })).not.toContain("activity");
+    expect(
+      await mainItemsFor("delegated_lead", { appRole: "member" }),
+    ).not.toContain("activity");
   });
 
   it("hides Activity from a QA Team member of the team", async () => {
@@ -100,13 +134,20 @@ describe("useAppNavViewModel Activity entry", () => {
   });
 
   it("hides Activity from a Developer", async () => {
-    expect(await mainItemsFor("member", { appRole: "member" })).not.toContain("activity");
+    expect(await mainItemsFor("member", { appRole: "member" })).not.toContain(
+      "activity",
+    );
   });
 
   it("shows Activity to a platform admin on a team they only belong to as a member", async () => {
-    expect(await mainItemsFor("member", { appRole: "admin" })).toContain("activity");
-    expect(await mainItemsFor("member", { appRole: "member", platformRole: "super_admin" })).toContain(
+    expect(await mainItemsFor("member", { appRole: "admin" })).toContain(
       "activity",
     );
+    expect(
+      await mainItemsFor("member", {
+        appRole: "member",
+        platformRole: "super_admin",
+      }),
+    ).toContain("activity");
   });
 });

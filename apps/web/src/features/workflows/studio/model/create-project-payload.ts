@@ -4,6 +4,7 @@ import type {
   MvpProjectOptionKey,
 } from "@/shared/api/contracts";
 import { withOnpremTargets } from "./onprem-hosting-rules";
+import { setupHostAssignmentsProblem } from "./setup-host-assignment-rules";
 import {
   environmentsProblem,
   type EnvironmentDraft,
@@ -89,7 +90,9 @@ function invalidRepoName(repoName: string): CreateProjectPayloadResult | null {
   return null;
 }
 
-function invalidProjectName(projectName: string | null): CreateProjectPayloadResult | null {
+function invalidProjectName(
+  projectName: string | null,
+): CreateProjectPayloadResult | null {
   if (projectName === null) {
     return null;
   }
@@ -97,7 +100,9 @@ function invalidProjectName(projectName: string | null): CreateProjectPayloadRes
   return check.ok ? null : { ok: false, message: check.message };
 }
 
-function projectNameField(projectName: string | null): Pick<CreateProjectRequest, "projectName"> {
+function projectNameField(
+  projectName: string | null,
+): Pick<CreateProjectRequest, "projectName"> {
   const check = projectName === null ? null : validateProjectName(projectName);
   return check?.ok ? { projectName: check.name } : {};
 }
@@ -109,21 +114,34 @@ function invalidShape(repoShapeId: string): CreateProjectPayloadResult | null {
   return null;
 }
 
-function invalidCoverage(coverageThreshold: string): CreateProjectPayloadResult | null {
+function invalidCoverage(
+  coverageThreshold: string,
+): CreateProjectPayloadResult | null {
   const coverage = Number(coverageThreshold);
   if (!Number.isInteger(coverage) || coverage < 0 || coverage > 100) {
-    return { ok: false, message: "Coverage threshold must be between 0 and 100." };
+    return {
+      ok: false,
+      message: "Coverage threshold must be between 0 and 100.",
+    };
   }
   return null;
 }
 
-function invalidOutputFileName(outputFileName: string): CreateProjectPayloadResult | null {
+function invalidOutputFileName(
+  outputFileName: string,
+): CreateProjectPayloadResult | null {
   const normalized = outputFileName.trim() || "ci.yml";
   if (normalized.includes("/") || normalized.includes("\\")) {
-    return { ok: false, message: "Workflow file name must be a .yml or .yaml basename." };
+    return {
+      ok: false,
+      message: "Workflow file name must be a .yml or .yaml basename.",
+    };
   }
   if (!/\.ya?ml$/i.test(normalized)) {
-    return { ok: false, message: "Workflow file name must be a .yml or .yaml basename." };
+    return {
+      ok: false,
+      message: "Workflow file name must be a .yml or .yaml basename.",
+    };
   }
   return null;
 }
@@ -151,10 +169,17 @@ function ownerFields(
   return { ownerType };
 }
 
-function dualSlotNames(input: CreateProjectPayloadInput, normalizedRepoName: string) {
+function dualSlotNames(
+  input: CreateProjectPayloadInput,
+  normalizedRepoName: string,
+) {
   return {
-    backend: toSlug(input.backendServiceName || `${normalizedRepoName}-backend`),
-    frontend: toSlug(input.frontendServiceName || `${normalizedRepoName}-frontend`),
+    backend: toSlug(
+      input.backendServiceName || `${normalizedRepoName}-backend`,
+    ),
+    frontend: toSlug(
+      input.frontendServiceName || `${normalizedRepoName}-frontend`,
+    ),
   };
 }
 
@@ -163,7 +188,10 @@ function sharedFields(
   normalizedRepoName: string,
   coverage: number,
   outputFileName: string,
-): Omit<CreateProjectRequest, "projectTypeId" | "workflowRecipeId" | "serviceName" | "servicePath"> {
+): Omit<
+  CreateProjectRequest,
+  "projectTypeId" | "workflowRecipeId" | "serviceName" | "servicePath"
+> {
   return {
     ...projectNameField(input.projectName),
     repoName: normalizedRepoName,
@@ -180,7 +208,10 @@ function sharedFields(
   };
 }
 
-function dualSlotConfig(input: CreateProjectPayloadInput, names: { backend: string; frontend: string }) {
+function dualSlotConfig(
+  input: CreateProjectPayloadInput,
+  names: { backend: string; frontend: string },
+) {
   return {
     backend: {
       projectTypeId: input.backendProjectTypeId,
@@ -233,7 +264,9 @@ function standaloneProvisioning(
   );
 }
 
-function standalonePayload(input: CreateProjectPayloadInput): CreateProjectPayloadResult {
+function standalonePayload(
+  input: CreateProjectPayloadInput,
+): CreateProjectPayloadResult {
   if (!input.projectTypeId) {
     return { ok: false, message: "Choose a project type." };
   }
@@ -241,7 +274,8 @@ function standalonePayload(input: CreateProjectPayloadInput): CreateProjectPaylo
     return { ok: false, message: "Choose a workflow recipe." };
   }
   const environmentsInvalid = input.environments
-    ? environmentsProblem(input.environments)
+    ? (environmentsProblem(input.environments) ??
+      setupHostAssignmentsProblem(input.environments))
     : null;
   if (environmentsInvalid) {
     return { ok: false, message: environmentsInvalid };
@@ -274,6 +308,9 @@ function standalonePayload(input: CreateProjectPayloadInput): CreateProjectPaylo
 
 function trimmedEnvironment(environment: EnvironmentDraft): EnvironmentDraft {
   return {
+    ...(environment.hostAssignment
+      ? { hostAssignment: environment.hostAssignment }
+      : {}),
     slug: environment.slug.trim(),
     displayName: environment.displayName.trim(),
     sourceBranch: environment.sourceBranch.trim(),

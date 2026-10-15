@@ -4,6 +4,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useRef } from "react";
 
 import { useCapabilities } from "@/features/capabilities/current";
+import { useHostAvailability } from "@/features/hosts";
 import { useNotificationsSummaryViewModel } from "@/features/notifications/summary";
 
 import {
@@ -34,7 +35,8 @@ export interface AppNavViewModel {
  * loads. Applied once per team, so the viewer's own pick afterwards stands.
  */
 function useSelectPageWorkspace(pageWorkspaceId: string | null | undefined) {
-  const { workspaces, otherWorkspaces, setSelectedWorkspaceId } = useWorkspaceSelection();
+  const { workspaces, otherWorkspaces, setSelectedWorkspaceId } =
+    useWorkspaceSelection();
   const appliedFor = useRef<string | null>(null);
 
   useEffect(() => {
@@ -71,8 +73,13 @@ export function useAppNavViewModel(options: {
     includeOtherTeams: Boolean(options.isPlatformAdmin),
   });
   useSelectPageWorkspace(options.pageWorkspaceId);
-  const notifications = useNotificationsSummaryViewModel({ guest: options.guest });
-  const { qaChecklistsEnabled } = useCapabilities();
+  const notifications = useNotificationsSummaryViewModel({
+    guest: options.guest,
+  });
+  const { qaChecklistsEnabled, envProvisioningEnabled } = useCapabilities();
+  const hostAvailability = useHostAvailability(
+    !options.guest && envProvisioningEnabled,
+  );
   // The header team's role decides Activity: the feed is per team, and the
   // backend opens it to that team's Lead and Delegated leads only.
   const { selectedWorkspace } = useWorkspaceSelection();
@@ -89,6 +96,11 @@ export function useAppNavViewModel(options: {
     error: workspaces.error,
     workspaces,
     notifications,
-    mainItems: sidebarMainItems({ guest: options.guest, qaChecklistsEnabled, canOpenActivity }),
+    mainItems: sidebarMainItems({
+      guest: options.guest,
+      qaChecklistsEnabled,
+      canOpenActivity,
+      hostsEnabled: hostAvailability === "enabled",
+    }),
   };
 }

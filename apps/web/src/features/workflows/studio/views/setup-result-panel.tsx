@@ -273,9 +273,12 @@ function ServiceUrlLine({ url }: Readonly<{ url: string }>) {
   );
 }
 
-function provisioningStatusCopy(status: DeploymentProvisioningResult["status"]): string {
+function provisioningStatusCopy(
+  status: DeploymentProvisioningResult["status"],
+): string {
   if (status === "completed") return "Provider targets were created.";
-  if (status === "partial") return "Some provider provisioning steps need attention.";
+  if (status === "partial")
+    return "Some provider provisioning steps need attention.";
   return "Provider provisioning failed.";
 }
 
@@ -467,11 +470,7 @@ function ExistingRepoResultView({
       </div>
       <div className="result-actions">
         <ProjectLinks projectId={existingRepoResult.id} />
-        <button
-          className="ghost-button"
-          type="button"
-          onClick={onViewProject}
-        >
+        <button className="ghost-button" type="button" onClick={onViewProject}>
           View projects
         </button>
       </div>
@@ -483,9 +482,9 @@ function ExistingRepoResultView({
           margin: 0,
         }}
       >
-        Workflow committed to <code>{existingRepoResult.workflowPath}</code>{" "}
-        on the repository&apos;s default branch. Push to <code>test</code>{" "}
-        to trigger your first CI run.
+        Workflow committed to <code>{existingRepoResult.workflowPath}</code> on
+        the repository&apos;s default branch. Push to <code>test</code> to
+        trigger your first CI run.
       </p>
     </motion.div>
   );
@@ -534,6 +533,7 @@ function CreatedProjectResultView({
       <DeploymentProvisioningSummary
         result={setupResult.deploymentProvisioning}
       />
+      <HostAssignmentResults result={setupResult} />
       <div>
         <p
           className="helper-text"
@@ -561,11 +561,7 @@ function CreatedProjectResultView({
             Configure env vars
           </button>
         ) : null}
-        <button
-          className="ghost-button"
-          type="button"
-          onClick={onViewProject}
-        >
+        <button className="ghost-button" type="button" onClick={onViewProject}>
           View projects
         </button>
       </div>
@@ -578,10 +574,33 @@ function CreatedProjectResultView({
         }}
       >
         Workflow committed to <code>{setupResult.workflowPath}</code> on{" "}
-        <code>main</code>. Push to <code>test</code> to trigger your first
-        CI run.
+        <code>main</code>. Push to <code>test</code> to trigger your first CI
+        run.
       </p>
     </motion.div>
+  );
+}
+
+function HostAssignmentResults({ result }: { result: CreateProjectResult }) {
+  const failures =
+    result.hostAssignments?.filter((item) => item.status === "failed") ?? [];
+  if (!failures.length && !result.hostAssignmentError) return null;
+  return (
+    <div role="status">
+      <p>
+        The project was created. These environments still need a host
+        assignment:
+      </p>
+      {result.hostAssignmentError ? <p>{result.hostAssignmentError}</p> : null}
+      <ul>
+        {failures.map((item) => (
+          <li key={item.environmentId}>{item.message}</li>
+        ))}
+      </ul>
+      <Link href={`/projects/${result.id}`}>
+        Open the project’s Hosting panel to retry the assignment.
+      </Link>
+    </div>
   );
 }
 
