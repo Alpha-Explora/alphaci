@@ -1,18 +1,18 @@
 "use client";
-import { hostConnectionLabel } from "../model/host-types";
+import { hostConnectionLabel, hostStatusTone } from "../model/host-types";
 import type { useHostAssignmentViewModel } from "../view-models/use-host-assignment-view-model";
 export type AssignmentVm = ReturnType<typeof useHostAssignmentViewModel>;
 export function AssignmentForm({ vm }: { vm: AssignmentVm }) {
   return (
     <form
+      className="hassign-form"
       onSubmit={(event) => {
         event.preventDefault();
         void vm.assign();
       }}
-      style={{ display: "grid", gap: 8 }}
     >
-      <label>
-        Machine{" "}
+      <label className="hassign-field">
+        <span className="hassign-field__label">Machine</span>
         <select
           value={vm.selected}
           onChange={(event) => vm.setSelected(event.target.value)}
@@ -30,10 +30,9 @@ export function AssignmentForm({ vm }: { vm: AssignmentVm }) {
         <PortFields key={port.slot} port={port} vm={vm} />
       ))}
       <IngressFields vm={vm} />
-      <p>
-        Use different host ports for every environment on this machine. Health
-        paths must respond successfully. Production requires an existing HTTPS
-        ingress.
+      <p className="hassign-hint">
+        Each environment on a machine needs its own host port. The health path
+        must return a success response. Production needs an HTTPS ingress URL.
       </p>
       <AssignmentActions vm={vm} />
     </form>
@@ -47,52 +46,55 @@ function PortFields({
   vm: AssignmentVm;
 }) {
   return (
-    <fieldset>
-      <legend>{port.slot}</legend>
-      <label>
-        Host port{" "}
-        <input
-          type="number"
-          required
-          min={1}
-          max={65535}
-          value={port.hostPort}
-          onChange={(event) =>
-            vm.port(port.slot, "hostPort", event.target.value)
-          }
-        />
-      </label>{" "}
-      <label>
-        Container port{" "}
-        <input
-          type="number"
-          required
-          min={1}
-          max={65535}
-          value={port.containerPort}
-          onChange={(event) =>
-            vm.port(port.slot, "containerPort", event.target.value)
-          }
-        />
-      </label>{" "}
-      <label>
-        Health path{" "}
-        <input
-          value={
-            vm.config.health.find((item) => item.slot === port.slot)?.path ?? ""
-          }
-          placeholder="/health"
-          onChange={(event) => vm.health(port.slot, event.target.value)}
-        />
-      </label>
+    <fieldset className="hassign-ports">
+      <legend className="hassign-field__label">{port.slot}</legend>
+      <div className="hassign-ports__grid">
+        <label className="hassign-field">
+          <span className="hassign-field__hint">Host port</span>
+          <input
+            type="number"
+            required
+            min={1}
+            max={65535}
+            value={port.hostPort}
+            onChange={(event) =>
+              vm.port(port.slot, "hostPort", event.target.value)
+            }
+          />
+        </label>
+        <label className="hassign-field">
+          <span className="hassign-field__hint">Container port</span>
+          <input
+            type="number"
+            required
+            min={1}
+            max={65535}
+            value={port.containerPort}
+            onChange={(event) =>
+              vm.port(port.slot, "containerPort", event.target.value)
+            }
+          />
+        </label>
+        <label className="hassign-field">
+          <span className="hassign-field__hint">Health path</span>
+          <input
+            value={
+              vm.config.health.find((item) => item.slot === port.slot)?.path ??
+              ""
+            }
+            placeholder="/health"
+            onChange={(event) => vm.health(port.slot, event.target.value)}
+          />
+        </label>
+      </div>
     </fieldset>
   );
 }
 function IngressFields({ vm }: { vm: AssignmentVm }) {
   return (
-    <>
-      <label>
-        Ingress{" "}
+    <div className="hassign-ingress">
+      <label className="hassign-field">
+        <span className="hassign-field__label">How users reach it</span>
         <select
           value={vm.config.ingress.mode}
           onChange={(event) =>
@@ -105,13 +107,15 @@ function IngressFields({ vm }: { vm: AssignmentVm }) {
             }))
           }
         >
-          <option value="direct">Direct host ports</option>
-          <option value="configured">Existing ingress or reverse proxy</option>
+          <option value="direct">Directly on the host port</option>
+          <option value="configured">
+            Through an existing proxy or domain
+          </option>
         </select>
       </label>
       {vm.config.ingress.mode === "configured" ? (
-        <label>
-          Public application URL{" "}
+        <label className="hassign-field">
+          <span className="hassign-field__label">Public application URL</span>
           <input
             type="url"
             required
@@ -129,21 +133,21 @@ function IngressFields({ vm }: { vm: AssignmentVm }) {
           />
         </label>
       ) : null}
-    </>
+    </div>
   );
 }
 function AssignmentActions({ vm }: { vm: AssignmentVm }) {
   return (
     <>
       {vm.confirmation ? (
-        <p>
-          Confirm this change. It affects future work. Existing containers and
-          data stay on the host until explicitly stopped or removed.
+        <p className="hassign-hint">
+          Confirm this change. It applies to the next deployment. Containers and
+          data already on the machine stay until you stop or remove them.
         </p>
       ) : null}
-      <div style={{ display: "flex", gap: 8 }}>
+      <div className="hassign-actions">
         <button
-          className="ghost-button"
+          className="primary-button"
           type="submit"
           disabled={vm.busy || !vm.selected}
         >
@@ -170,22 +174,69 @@ function AssignmentActions({ vm }: { vm: AssignmentVm }) {
 }
 function assignLabel(vm: AssignmentVm) {
   if (vm.confirmation === "replace") return "Confirm replacement";
-  return vm.current ? "Save assignment" : "Assign machine";
+  return vm.current ? "Save changes" : "Assign machine";
 }
 export function AssignmentSummary({ vm }: { vm: AssignmentVm }) {
-  if (vm.status === "loading") return <p role="status">Loading assignment…</p>;
-  if (!vm.current) return <p>No reusable machine assigned.</p>;
-  if (vm.current.machineId === null)
+  if (vm.status === "loading")
     return (
-      <p>
-        Legacy host: {vm.current.name}. Confirm a replacement to switch to a
-        reusable machine.
+      <p role="status" className="hassign-hint">
+        Loading assignment…
       </p>
     );
+  if (!vm.current)
+    return (
+      <div className="hassign-summary hassign-summary--empty">
+        <p className="hassign-summary__name">No machine assigned</p>
+        <p className="hassign-hint">
+          Pick one of your workspace&apos;s machines below so releases have
+          somewhere to run.
+        </p>
+      </div>
+    );
+  if (vm.current.machineId === null)
+    return (
+      <div className="hassign-summary">
+        <p className="hassign-summary__name">Legacy host: {vm.current.name}</p>
+        <p className="hassign-hint">
+          Assign a reusable machine below to replace it.
+        </p>
+      </div>
+    );
   const machine = vm.hosts.find((host) => host.id === vm.current?.machineId);
+  const label = machine ? hostConnectionLabel(machine) : "Unavailable";
+  const { ports, ingress } = vm.current.config;
   return (
-    <p>
-      {machine?.name ?? "Machine unavailable"} · revision {vm.current.revision}
-    </p>
+    <div className="hassign-summary">
+      <div className="hassign-summary__row">
+        <p className="hassign-summary__name">
+          {machine?.name ?? "Machine unavailable"}
+        </p>
+        <span className={`status-chip status-chip-${hostStatusTone(label)}`}>
+          {label}
+        </span>
+      </div>
+      <dl className="hassign-facts">
+        {ports.map((port) => (
+          <div key={port.slot}>
+            <dt>{port.slot === "frontend" ? "Frontend" : "Backend"}</dt>
+            <dd>
+              port {port.hostPort} → {port.containerPort}
+            </dd>
+          </div>
+        ))}
+        <div>
+          <dt>Reached at</dt>
+          <dd>
+            {ingress.mode === "configured" && ingress.publicUrl ? (
+              <a href={ingress.publicUrl} target="_blank" rel="noreferrer">
+                {ingress.publicUrl}
+              </a>
+            ) : (
+              "host port on the local network"
+            )}
+          </dd>
+        </div>
+      </dl>
+    </div>
   );
 }
