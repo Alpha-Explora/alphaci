@@ -16,8 +16,10 @@ sources:
 # On-prem host enrollment and assignment
 
 The thin `/hosts` route renders the Hosts feature inside the existing workspace
-shell. Navigation uses the environment provisioning capability. The server's
-on-prem flag and existing access/subscription checks remain authoritative.
+shell. Navigation requires environment provisioning and the enabled
+`onprem-compose` provider from `/deployment-providers`. The Hosts page uses
+the same availability check before loading inventory. The server's on-prem
+flag and existing access/subscription checks remain authoritative.
 Inventory is workspace scoped, polls every ten seconds, and displays pending,
 connected, prerequisite failure, offline, or revoked. A heartbeat older than 90
 seconds is offline. None of these labels implies application health.
