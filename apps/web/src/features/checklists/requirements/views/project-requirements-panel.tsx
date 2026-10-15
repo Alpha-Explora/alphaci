@@ -8,8 +8,9 @@ import { useEffect, useState } from "react";
 import { LoadingRows } from "@/features/groups/workspace";
 import type { AppRole } from "@/shared/api/contracts";
 
-import { IterationLockedNotice } from "../../iteration";
+import { IterationNextStep } from "../../iteration";
 import { useItemProgressViewModel, type ItemProgressViewModel } from "../../returned";
+import { deliveredIterationTitle, deliveredRequirementsText } from "../../model/iteration-rules";
 import {
   canSetVerification,
   kindCopy,
@@ -130,6 +131,40 @@ function KindSection({
   );
 }
 
+/**
+ * A delivered iteration's Features are archived: they leave this list and
+ * are kept, read-only with QA's results, in the History tab. What is left is
+ * the next step — Start iteration N+1 for a Product owner or admin, the
+ * waiting sentence for everyone else — and the way to History where the page
+ * has one (`onOpenHistory`).
+ */
+function DeliveredRequirements({
+  number,
+  deliveryProjectId,
+  appRole,
+  onOpenHistory,
+}: Readonly<{
+  number: number;
+  deliveryProjectId: string;
+  appRole: AppRole | null | undefined;
+  onOpenHistory?: () => void;
+}>) {
+  return (
+    <div className="rq-panel">
+      <div className="rq-delivered" role="status">
+        <p className="rq-delivered__title">{deliveredIterationTitle(number)}</p>
+        <p className="rq-delivered__text">{deliveredRequirementsText(Boolean(onOpenHistory))}</p>
+        {onOpenHistory ? (
+          <button type="button" className="ghost-button" onClick={onOpenHistory}>
+            View in History
+          </button>
+        ) : null}
+      </div>
+      <IterationNextStep deliveryProjectId={deliveryProjectId} enabled appRole={appRole} />
+    </div>
+  );
+}
+
 function shouldOpenRequested(request: number, handled: number, vm: ProjectRequirementsViewModel): boolean {
   return request > 0 && request !== handled && vm.status === "ready" && vm.permissions.canManage;
 }
@@ -170,6 +205,7 @@ export function ProjectRequirementsPanel({
   kinds = SHOWN_REQUIREMENT_KINDS,
   newFeatureRequest = 0,
   onFeatureCount,
+  onOpenHistory,
 }: Readonly<{
   deliveryProjectId: string;
   appRole: AppRole | null | undefined;
@@ -180,6 +216,8 @@ export function ProjectRequirementsPanel({
   newFeatureRequest?: number;
   /** Told the live Feature count whenever it is known. */
   onFeatureCount?: (count: number) => void;
+  /** Opens the page's History tab, where a delivered iteration's Features are kept. */
+  onOpenHistory?: () => void;
 }>) {
   const vm = useProjectRequirementsViewModel({ deliveryProjectId, enabled, appRole });
   const dialog = useRequirementDialogViewModel({ deliveryProjectId, onSaved: vm.applyRequirement });
@@ -198,13 +236,19 @@ export function ProjectRequirementsPanel({
       </div>
     );
   }
+  if (vm.lockedIteration !== null) {
+    return (
+      <DeliveredRequirements
+        number={vm.lockedIteration}
+        deliveryProjectId={deliveryProjectId}
+        appRole={appRole}
+        onOpenHistory={onOpenHistory}
+      />
+    );
+  }
   return (
     <div className="rq-panel">
-      {vm.lockedIteration === null ? (
-        <p className="rq-panel__role">{roleLine(vm.permissions, appRole)}</p>
-      ) : (
-        <IterationLockedNotice number={vm.lockedIteration} />
-      )}
+      <p className="rq-panel__role">{roleLine(vm.permissions, appRole)}</p>
       {kinds.map((kind) => (
         <KindSection
           key={kind}

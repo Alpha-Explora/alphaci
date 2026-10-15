@@ -8,12 +8,11 @@ import { useId, type ReactNode } from "react";
 import type { AppRole } from "@/shared/api/contracts";
 
 import {
-  IterationLockedNotice,
   IterationNextStepView,
   useNextIterationViewModel,
   type StartIterationViewModel,
 } from "../../iteration";
-import { lockedIterationNumber } from "../../model/iteration-rules";
+import { deliveredIterationTitle, deliveredRunText, lockedIterationNumber } from "../../model/iteration-rules";
 import { kindCopy } from "../../model/requirement-rules";
 import {
   canStartProjectRun,
@@ -22,6 +21,7 @@ import {
   headChangeMessages,
   headLabel,
   isRunLocked,
+  PROJECT_CHANGED_SINCE_RUN,
   repositoriesLabel,
   requirementsChangedLabel,
   requirementsChangedNote,
@@ -32,6 +32,7 @@ import {
 } from "../../model/project-run-rules";
 import type { HeadStatus, ProjectQaRun } from "../../model/project-run-types";
 import { agoLabel, shortSha } from "../../model/qa-run-rules";
+import { showsRepositories } from "../../model/studio-role-rules";
 import {
   useProjectRunListViewModel,
   type ProjectRunListGroup,
@@ -77,8 +78,12 @@ function RunSkeleton() {
 }
 
 /** Every repository's uat head: now, and (with a run) what the run captured. */
-function HeadsList({ heads, withRun }: Readonly<{ heads: HeadStatus[]; withRun: boolean }>) {
-  if (heads.length === 0) return null;
+function HeadsList({
+  heads,
+  withRun,
+  shown,
+}: Readonly<{ heads: HeadStatus[]; withRun: boolean; shown: boolean }>) {
+  if (!shown || heads.length === 0) return null;
   return (
     <ul className="pqa-heads" aria-label="uat heads of this Project's repositories">
       {heads.map((head) => {
@@ -115,13 +120,20 @@ function StartButton({ vm, label }: Readonly<{ vm: ProjectRunViewModel; label: s
 }
 
 /** No run on the current heads yet: start one, or say who can. */
+/** What changed since a run: each repository, or — for those who see only the Project — one sentence. */
+function changeMessages(heads: ReadonlyArray<HeadStatus>, showRepositories: boolean): string[] {
+  const messages = headChangeMessages(heads);
+  if (showRepositories || messages.length === 0) return messages;
+  return [PROJECT_CHANGED_SINCE_RUN];
+}
+
 /** No run on the current heads, but an earlier one exists: say what moved since it. */
-function MovedSinceLatest({ vm }: Readonly<{ vm: ProjectRunViewModel }>) {
-  const messages = vm.stale ? headChangeMessages(vm.heads) : [];
+function MovedSinceLatest({ vm, showRepositories }: Readonly<{ vm: ProjectRunViewModel; showRepositories: boolean }>) {
+  const messages = vm.stale ? changeMessages(vm.heads, showRepositories) : [];
   if (messages.length === 0) return null;
   return (
     <div className="pqa-alert pqa-alert--warning" role="status">
-      <p className="pqa-alert__title">uat moved since the latest Project run</p>
+      <p className="pqa-alert__title">uat changed since the latest Project run</p>
       <ul className="pqa-alert__list">
         {messages.map((message) => (
           <li key={message}>{message}</li>
@@ -131,26 +143,30 @@ function MovedSinceLatest({ vm }: Readonly<{ vm: ProjectRunViewModel }>) {
   );
 }
 
+function startRunText(count: number, showRepositories: boolean): string {
+  if (!showRepositories) {
+    return "A run snapshots every requirement of this Project on its current uat build, so QA verifies them together.";
+  }
+  return `A run captures the uat head of every repository in this Project${count > 0 ? ` (${repositoriesLabel(count)})` : ""} and snapshots every requirement, so QA verifies them together.`;
+}
+
 function StartProjectRun({ vm, appRole }: Readonly<{ vm: ProjectRunViewModel; appRole: AppRole | null | undefined }>) {
-  const count = vm.heads.length;
+  const shown = showsRepositories(appRole);
   if (!canStartProjectRun(appRole)) {
     return (
       <PanelState
         title="No Project QA run yet"
         text="QA Team members, Product owners and admins start the Project's QA run. Once one starts, its items and results appear here."
       >
-        <MovedSinceLatest vm={vm} />
-        <HeadsList heads={vm.heads} withRun={false} />
+        <MovedSinceLatest vm={vm} showRepositories={shown} />
+        <HeadsList heads={vm.heads} withRun={false} shown={shown} />
       </PanelState>
     );
   }
   return (
-    <PanelState
-      title="Verify this Project"
-      text={`A run captures the uat head of every repository in this Project${count > 0 ? ` (${repositoriesLabel(count)})` : ""} and snapshots every requirement, so QA verifies them together.`}
-    >
-      <MovedSinceLatest vm={vm} />
-      <HeadsList heads={vm.heads} withRun={false} />
+    <PanelState title="Verify this Project" text={startRunText(vm.heads.length, shown)}>
+      <MovedSinceLatest vm={vm} showRepositories={shown} />
+      <HeadsList heads={vm.heads} withRun={false} shown={shown} />
       <StartButton vm={vm} label="Start Project QA run" />
     </PanelState>
   );
@@ -164,7 +180,7 @@ function StaleNotice({
   if (!run.stale && !vm.stale) return null;
   // A delivered iteration starts no new run: the server would refuse it.
   const mayStart = canStartProjectRun(appRole) && !isRunLocked(run);
-  const messages = headChangeMessages(vm.heads.length > 0 ? vm.heads : run.repositories);
+  const messages = changeMessages(vm.heads.length > 0 ? vm.heads : run.repositories, showsRepositories(appRole));
   return (
     <div className="pqa-alert pqa-alert--warning" role="status">
       <p className="pqa-alert__title">This run is stale</p>
@@ -191,7 +207,7 @@ function RequirementsChangedNotice({ run, changed }: Readonly<{ run: ProjectQaRu
   );
 }
 
-function RunHead({ run }: Readonly<{ run: ProjectQaRun }>) {
+function RunHead({ run, showRepositories }: Readonly<{ run: ProjectQaRun; showRepositories: boolean }>) {
   const ago = agoLabel(run.createdAt);
   return (
     <p className="qa-run-card__started">
@@ -202,14 +218,16 @@ function RunHead({ run }: Readonly<{ run: ProjectQaRun }>) {
       ) : (
         "Started"
       )}
-      {ago ? ` · ${ago}` : ""} · {repositoriesLabel(run.repositories.length)} · {run.items.length}{" "}
+      {ago ? ` · ${ago}` : ""}
+      {showRepositories ? ` · ${repositoriesLabel(run.repositories.length)}` : ""} · {run.items.length}{" "}
       {run.items.length === 1 ? "item" : "items"}
     </p>
   );
 }
 
-function signedSubject(run: ProjectQaRun): string {
-  if (run.repositories.length === 0) return run.deliveryProjectName;
+/** What was signed off: each repository at its head, or — for those who see only the Project — the Project. */
+function signedSubject(run: ProjectQaRun, showRepositories: boolean): string {
+  if (!showRepositories || run.repositories.length === 0) return run.deliveryProjectName;
   return run.repositories.map((head) => headLabel(head.repoFullName, head.runSha)).join(", ");
 }
 
@@ -332,16 +350,16 @@ function RunBody({
   const list = useProjectRunListViewModel(run);
   const evidence = useRunEvidenceViewModel({ deliveryProjectId, run });
   const lockedNumber = lockedIterationNumber(run.iteration);
+  const shown = showsRepositories(appRole);
 
   return (
     <div className="qa-run pqa-run__body">
-      {lockedNumber === null ? null : <IterationLockedNotice number={lockedNumber} />}
       <IterationNextStepView vm={next} />
-      <RunHead run={run} />
+      <RunHead run={run} showRepositories={shown} />
       <StaleNotice vm={vm} run={run} appRole={appRole} />
       <RequirementsChangedNotice run={run} changed={vm.requirementsChanged} />
-      <SignoffBanner run={run} subject={signedSubject(run)} reopen={reopen} />
-      <HeadsList heads={vm.heads.length > 0 ? vm.heads : run.repositories} withRun />
+      <SignoffBanner run={run} subject={signedSubject(run, shown)} reopen={reopen} />
+      <HeadsList heads={vm.heads.length > 0 ? vm.heads : run.repositories} withRun shown={shown} />
       <RunSummary run={run} />
       <RunFilters list={list} />
       {list.status === "empty" ? <p className="pqa-note">{runFilterEmptyText(list.filter)}</p> : null}
@@ -349,7 +367,39 @@ function RunBody({
         <RunGroup key={group.key} group={group} list={list} editor={editor} evidence={evidence} onReload={vm.reload} />
       ))}
       {run.status === "open" && lockedNumber === null ? <SignoffFooter vm={signoff} /> : null}
-      {signoff.canSignOff ? <SignoffDialog vm={signoff} description={`${run.deliveryProjectName} on ${signedSubject(run)}`} /> : null}
+      {signoff.canSignOff ? (
+        <SignoffDialog
+          vm={signoff}
+          description={shown ? `${run.deliveryProjectName} on ${signedSubject(run, shown)}` : run.deliveryProjectName}
+        />
+      ) : null}
+    </div>
+  );
+}
+
+/**
+ * A delivered iteration's run has left this tab: it is archived, read-only as
+ * QA signed it off, in History. What is left is the next step — Start
+ * iteration N+1, or the waiting sentence — and the way to History where the
+ * page has one.
+ */
+function DeliveredRun({
+  number,
+  next,
+  onOpenHistory,
+}: Readonly<{ number: number; next: StartIterationViewModel; onOpenHistory?: () => void }>) {
+  return (
+    <div className="pqa-delivered-state">
+      <div className="pqa-delivered" role="status">
+        <p className="pqa-delivered__title">{deliveredIterationTitle(number)}</p>
+        <p className="pqa-delivered__text">{deliveredRunText(Boolean(onOpenHistory))}</p>
+        {onOpenHistory ? (
+          <button type="button" className="ghost-button" onClick={onOpenHistory}>
+            View in History
+          </button>
+        ) : null}
+      </div>
+      <IterationNextStepView vm={next} />
     </div>
   );
 }
@@ -384,13 +434,17 @@ export function ProjectRunPanel({
   vm,
   appRole,
   fallback,
+  onOpenHistory,
 }: Readonly<{
   deliveryProjectId: string;
   vm: ProjectRunViewModel;
   appRole: AppRole | null | undefined;
   fallback?: ReactNode;
+  /** Opens the page's History tab, where a delivered iteration's run is kept. */
+  onOpenHistory?: () => void;
 }>) {
   const next = useNextIterationViewModel({ deliveryProjectId, enabled: true, appRole });
+  const deliveredNumber = vm.run ? lockedIterationNumber(vm.run.iteration) : null;
   let body: ReactNode;
   if (vm.status === "idle" || vm.status === "loading") body = <RunSkeleton />;
   else if (vm.status === "unavailable") {
@@ -406,7 +460,9 @@ export function ProjectRunPanel({
       </PanelState>
     );
   } else if (!vm.run) body = <NoRun vm={vm} appRole={appRole} next={next} />;
-  else {
+  else if (deliveredNumber !== null) {
+    body = <DeliveredRun number={deliveredNumber} next={next} onOpenHistory={onOpenHistory} />;
+  } else {
     // Keyed by run: a reopened or newly started run gets fresh drafts and dialogs.
     body = (
       <RunBody

@@ -1,3 +1,6 @@
+import { projectDeliveryState } from "../../../../../src/features/checklists/model/iteration-rules";
+import { projectReasons } from "../../../../../src/features/checklists/model/qa-promotion-rules";
+import { showsRepositories } from "../../../../../src/features/checklists/model/studio-role-rules";
 import {
   historyMetaLabel,
   historyNoReportText,
@@ -74,5 +77,41 @@ describe("the History sentences", () => {
       historySignoffLabel({ signedBy: { login: "ana-qa" }, signedAt: "2026-10-15T04:58:07.000Z" }, "en-GB"),
     ).toBe("Signed off by @ana-qa on 15 Oct 2026");
     expect(historySignoffLabel({ signedBy: null, signedAt: null })).toBe("Signed off");
+  });
+});
+
+describe("the Project view: no repositories for Product owners and the QA Team", () => {
+  it("shows repositories to Developers, admins and an unknown session only", () => {
+    expect(["lead", "qa", "member", "admin", null, undefined].map((role) => showsRepositories(role as never))).toEqual([
+      false,
+      false,
+      true,
+      true,
+      true,
+      true,
+    ]);
+  });
+
+  it("puts the Project's place on the way to main in one row", () => {
+    expect(projectDeliveryState([{ delivered: false }, { delivered: false }]).label).toBe("Not in main yet");
+    expect(projectDeliveryState([{ delivered: true }, { delivered: false }]).label).toBe(
+      "Partly in main: Merge to main finishes it",
+    );
+    expect(projectDeliveryState([{ delivered: true }]).label).toBe("In main");
+  });
+
+  it("rewrites the server's per-repository reasons in Project words, once each", () => {
+    expect(
+      projectReasons([
+        'Project run is stale: "api" moved from aaaaaaa to bbbbbbb',
+        'Project run is stale: "web" moved from ccccccc to ddddddd',
+        'Could not read the uat head of "web"',
+        "Latest sign-off is Rejected",
+      ]),
+    ).toEqual([
+      "The Project's code on uat changed since QA signed it off.",
+      "ALPHACI could not read the Project's uat build. Try again in a moment.",
+      "Latest sign-off is Rejected",
+    ]);
   });
 });

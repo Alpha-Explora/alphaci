@@ -164,8 +164,11 @@ describe("QA Studio — Project-level QA", () => {
     expect(section.hidden).toBe(false);
     expect(section.textContent).toContain("storefront QA run");
     expect(section.textContent).toContain("Project run is stale: uat moved since sign-off");
-    expect(section.textContent).toContain("orders-api moved since this run (e4f5a6b → ffffeee)");
-    expect(section.textContent).toContain('Project run is stale: "orders-api" moved');
+    // A Product owner gets no per-repository head rows in the gate.
+    expect(section.textContent).not.toContain("orders-api moved since this run (e4f5a6b → ffffeee)");
+    // The server's per-repository reason, in Project words.
+    expect(section.textContent).not.toContain('"orders-api" moved');
+    expect(section.textContent).toContain("The Project's code on uat changed since QA signed it off.");
     expect(section.textContent).not.toContain("Release smoke test");
     expect(section.querySelector(".qa-promo__why")?.textContent).toMatch(/every repository's current uat head/);
     const merge = container.querySelector<HTMLButtonElement>("button.qa-promo__merge")!;
@@ -199,7 +202,10 @@ describe("QA Studio — Project-level QA", () => {
       }),
     );
     const container = await studio("qa", PROJECT_SCOPE);
-    expect(container.textContent).toContain("uat moved since the latest Project run");
+    expect(container.textContent).toContain("uat changed since the latest Project run");
+    // The QA Team sees the Project: one sentence, no repository or commit.
+    expect(container.textContent).toContain("The Project's code on uat changed since this run started.");
+    expect(container.textContent).not.toContain("orders-api");
     expect(container.textContent).toContain("Start Project QA run");
   });
 });

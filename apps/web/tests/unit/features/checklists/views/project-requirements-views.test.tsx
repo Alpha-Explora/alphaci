@@ -645,10 +645,22 @@ describe("ProjectRunPanel", () => {
         }),
       }),
     );
-    const container = await render(<RunHarness role="qa" />);
-    expect(container.textContent).toContain("This run is stale");
-    expect(container.textContent).toContain("orders-api moved since this run (e4f5a6b → ffffeee)");
-    expect(buttonNamed(container, "Start a run on the current heads")).toBeDefined();
+    // An admin works in the repositories: each one that moved is named.
+    const admin = await render(<RunHarness role="admin" />);
+    expect(admin.textContent).toContain("This run is stale");
+    expect(admin.textContent).toContain("orders-api moved since this run (e4f5a6b → ffffeee)");
+    expect(buttonNamed(admin, "Start a run on the current heads")).toBeDefined();
+    act(() => root?.unmount());
+    root = null;
+
+    // The QA Team sees the Project only: one sentence, no repository, no commit.
+    const qa = await render(<RunHarness role="qa" />);
+    expect(qa.textContent).toContain("This run is stale");
+    expect(qa.textContent).toContain("The Project's code on uat changed since this run started.");
+    expect(qa.textContent).not.toContain("orders-api");
+    expect(qa.textContent).not.toContain("storefront-web");
+    expect(qa.querySelector(".pqa-heads")).toBeNull();
+    expect(buttonNamed(qa, "Start a run on the current heads")).toBeDefined();
   });
 
   it("says when requirements changed since sign-off", async () => {
@@ -671,13 +683,16 @@ describe("ProjectRunPanel", () => {
     runs.current.mockResolvedValue(normalizeProjectRunCurrent({ run: null, heads: [headWire({ runSha: null })] }));
     runs.start.mockResolvedValue({ created: true, run: normalizeProjectRunCurrent({ run: projectRunWire() }).run! });
     const qa = await render(<RunHarness role="qa" />);
-    expect(qa.textContent).toContain("storefront-web");
+    // The QA Team sees the Project, not its repositories.
+    expect(qa.textContent).not.toContain("storefront-web");
+    expect(qa.textContent).toContain("snapshots every requirement of this Project on its current uat build");
     await act(async () => buttonNamed(qa, "Start Project QA run")!.click());
     expect(runs.start).toHaveBeenCalledWith("dp-1");
     act(() => root?.unmount());
     root = null;
 
     const dev = await render(<RunHarness role="member" />);
+    expect(dev.textContent).toContain("storefront-web");
     expect(buttonNamed(dev, "Start Project QA run")).toBeUndefined();
     expect(dev.textContent).toContain("QA Team members, Product owners and admins start the Project's QA run.");
   });

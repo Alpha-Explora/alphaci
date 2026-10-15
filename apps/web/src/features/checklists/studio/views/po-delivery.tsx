@@ -11,6 +11,8 @@ import {
   deliveredBannerTitle,
   deliveredRepositoryDetail,
   mergeAllConfirmText,
+  projectDeliveryState,
+  projectMergeConfirmText,
   mergeAllErrorTitle,
   mergeAllFailures,
   mergeAllRowState,
@@ -19,6 +21,7 @@ import {
 import type { CurrentIteration, MergeAllError, MergeAllResult } from "../../model/iteration-types";
 import type { QaPromotionIteration } from "../../model/qa-promotion-types";
 import type { PoDeliveryViewModel } from "../view-models/use-po-delivery-view-model";
+import { useShowRepositories } from "../view-models/repository-visibility";
 import { CheckIcon, MergeIcon } from "./studio-icons";
 
 /* A Project's delivery: the delivered banner once its iteration reached main
@@ -46,6 +49,7 @@ export function PoDeliveredBanner({
   next,
 }: Readonly<{ current: CurrentIteration | null; fallback: QaPromotionIteration | null; next?: ReactNode }>) {
   const delivered = current?.iteration.status === "delivered" ? current : null;
+  const showRepositories = useShowRepositories();
   return (
     <div className="po-delivered" role="status">
       <p className="po-delivered__title">
@@ -54,8 +58,12 @@ export function PoDeliveredBanner({
         </span>
         {bannerTitle(delivered, fallback)}
       </p>
-      <p className="po-delivered__text">Every repository&apos;s main holds the uat heads QA signed off. Nothing here can change any more.</p>
-      {delivered && delivered.deliveredRepositories.length > 0 ? (
+      <p className="po-delivered__text">
+        {showRepositories
+          ? "Every repository's main holds the uat heads QA signed off. Nothing here can change any more."
+          : "Main holds exactly what QA signed off. Nothing here can change any more."}
+      </p>
+      {showRepositories && delivered && delivered.deliveredRepositories.length > 0 ? (
         <ul className="po-delivery__rows" aria-label="How each repository reached main">
           {delivered.deliveredRepositories.map((repository) => (
             <li key={repository.projectId} className="po-delivery__row" data-tone="success">
@@ -105,12 +113,26 @@ function ResultRows({ result }: Readonly<{ result: MergeAllResult }>) {
   );
 }
 
+/** Why a merge stopped, without naming repositories: GitHub's reasons, once each. */
+function FailureMessages({ result }: Readonly<{ result: MergeAllResult }>) {
+  const messages = [...new Set(mergeAllFailures(result).map((row) => row.message).filter((m): m is string => Boolean(m)))];
+  if (messages.length === 0) return null;
+  return (
+    <ul className="po-delivery__reasons">
+      {messages.map((message) => (
+        <li key={message}>{message}</li>
+      ))}
+    </ul>
+  );
+}
+
 function ResultOutcome({ vm, result }: Readonly<{ vm: PoDeliveryViewModel; result: MergeAllResult }>) {
   const failed = mergeAllFailures(result).length > 0;
+  const showRepositories = useShowRepositories();
   return (
     <div className="po-delivery__outcome" data-tone={failed ? "danger" : "success"}>
       <p className="po-delivery__outcome-title">{mergeAllSummary(result)}</p>
-      <ResultRows result={result} />
+      {showRepositories ? <ResultRows result={result} /> : <FailureMessages result={result} />}
       <div className="po-delivery__actions">
         {failed ? (
           <button
@@ -172,14 +194,25 @@ export function MergeAllOutcome({ vm }: Readonly<{ vm: PoDeliveryViewModel }>) {
  * repository's stored state. Merging is the tab bar's Merge to main. Nothing
  * on a backend without iterations.
  */
-export function PoDeliveryState({ vm }: Readonly<{ vm: PoDeliveryViewModel }>) {
+export function PoDeliveryState({ vm, projectName }: Readonly<{ vm: PoDeliveryViewModel; projectName: string }>) {
   const current = vm.iteration.current;
+  const showRepositories = useShowRepositories();
   if (!current || current.iteration.status !== "active") return null;
   if (current.coveredRepositories.length === 0) return null;
+  const project = projectDeliveryState(current.coveredRepositories);
   return (
     <section className="po-delivery" aria-label="Delivery to main">
       <p className="qa-toolbar__label">Delivery to main</p>
-      <CoveredRows current={current} />
+      {showRepositories ? (
+        <CoveredRows current={current} />
+      ) : (
+        <ul className="po-delivery__rows" aria-label="This Project on the way to main">
+          <li className="po-delivery__row" data-tone={project.tone}>
+            <span className="po-delivery__name">{projectName}</span>
+            <span className="po-delivery__state">{project.label}</span>
+          </li>
+        </ul>
+      )}
     </section>
   );
 }
@@ -205,26 +238,29 @@ export function MergeAllToMain({ vm }: Readonly<{ vm: PoDeliveryViewModel }>) {
 
 /** The confirmation of a merge of every repository: each one named before anything merges. */
 export function MergeAllDialog({ vm, projectName }: Readonly<{ vm: PoDeliveryViewModel; projectName: string }>) {
+  const showRepositories = useShowRepositories();
   if (!vm.canMergeAll) return null;
   return (
     <FormDialog
       open={vm.dialogOpen}
       onClose={vm.cancelConfirm}
-      title="Merge every repository into main?"
-      description={mergeAllConfirmText(projectName, vm.pending)}
+      title={showRepositories ? "Merge every repository into main?" : `Merge ${projectName} into main?`}
+      description={showRepositories ? mergeAllConfirmText(projectName, vm.pending) : projectMergeConfirmText(projectName)}
       submitLabel="Merge to main"
       submitting={vm.mergeState === "merging"}
       error={vm.dialogError}
       onSubmit={() => void vm.confirmMergeAll()}
     >
-      <ul className="po-delivery__rows" aria-label="Repositories to merge">
-        {vm.pending.map((repository) => (
-          <li key={repository.projectId} className="po-delivery__row" data-tone="neutral">
-            <span className="po-delivery__name">{repository.repoFullName}</span>
-            <span className="po-delivery__state">uat → main</span>
-          </li>
-        ))}
-      </ul>
+      {showRepositories ? (
+        <ul className="po-delivery__rows" aria-label="Repositories to merge">
+          {vm.pending.map((repository) => (
+            <li key={repository.projectId} className="po-delivery__row" data-tone="neutral">
+              <span className="po-delivery__name">{repository.repoFullName}</span>
+              <span className="po-delivery__state">uat → main</span>
+            </li>
+          ))}
+        </ul>
+      ) : null}
     </FormDialog>
   );
 }

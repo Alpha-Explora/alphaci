@@ -22,6 +22,16 @@ import type { RepositoryRole, RepositoryRoles } from "./qa-scope";
 
 export type { RepositoryRole, RepositoryRoles };
 
+/**
+ * Product owners and the QA Team judge a Project as one product: they never
+ * see its repositories or commits (names, uat heads, merge commits, pull
+ * requests), only the Project. Developers and admins, who work in the
+ * repositories, keep them; so does a session with no known role, as before.
+ */
+export function showsRepositories(role: AppRole | null | undefined): boolean {
+  return role !== "lead" && role !== "qa";
+}
+
 export interface StudioColumnRules {
   /** Checklist | Playwright tabs; false: the Checklist content alone, no tablist. */
   tabs: boolean;
