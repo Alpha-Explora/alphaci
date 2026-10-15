@@ -9,7 +9,7 @@ import {
   type HostingOption,
 } from "../model/hosting-choice-rules";
 import type { HostingChoiceState } from "../view-models/use-hosting-choice";
-import { deliveryHostProblem } from "../model/setup-delivery-rules";
+import { firstHostProblem } from "../model/setup-delivery-rules";
 import { DeploymentProvisioningSetup } from "./deployment-provisioning-setup";
 import { EnvironmentsPath } from "./setup-wizard-environments";
 import {SetupHostSelection} from './setup-host-selection';
@@ -167,6 +167,8 @@ export function SetupWizardDelivery({
   envProvisioningEnabled,
   form,
   hosting,
+  hostProblems,
+  hostSelection,
   projectCatalog,
   projectQuota,
   selectedProjectKind,
@@ -176,15 +178,12 @@ export function SetupWizardDelivery({
     provisioningOffered: envProvisioningEnabled,
     missing: deploymentProvisioning.hostedRenderVariablesMissing,
   });
-  const hostProblem = deliveryHostProblem({
-    choice: hosting.choice,
-    environments: form.environments,
-  });
+  const hostProblem = firstHostProblem(hostProblems);
   return (
     <div className="wizard-delivery">
       <HostingChoiceField hosting={hosting} />
       <EnvironmentsPath choice={hosting.choice} environments={form.environments} />
-      {hosting.choice==='onprem'?<SetupHostSelection environments={form.environments} onChange={form.setEnvironments} slot={selectedProjectKind}/>:null}
+      {hosting.choice==='onprem'?<SetupHostSelection environments={form.environments} hostProblems={hostProblems} hostSelection={hostSelection} onChange={form.setEnvironments} slot={selectedProjectKind}/>:null}
       <HostProblemNotice problem={hostProblem} />
       {hosting.choice === "hosted" ? (
         <HostedTargets

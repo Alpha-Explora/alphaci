@@ -11,8 +11,8 @@ import {
  * Failure modes of the on-prem host assignments on the Delivery step:
  * - Production on a machine without an HTTPS URL, which the backend refuses;
  * - a machine on an environment that is not on-prem;
- * - two environments sharing a machine and host port;
- * - a health path that is not an application path.
+ * - a container port or health path the machine cannot serve.
+ * Host ports are chosen by AlphaCI on the machine, so they are never checked here.
  */
 
 const PRODUCTION = "Add an HTTPS URL for Production, or choose Assign later.";
@@ -25,12 +25,11 @@ function onprem(): EnvironmentDraft[] {
   }));
 }
 
-/** An environment assigned to a machine, with one port and the root health path. */
+/** An environment assigned to a machine, with one container port and the root health path. */
 function assigned(
   environment: EnvironmentDraft,
   overrides: {
-    machineId?: string;
-    hostPort?: number;
+    containerPort?: number;
     healthPath?: string | null;
     publicUrl?: string | null;
   } = {},
@@ -38,15 +37,10 @@ function assigned(
   return {
     ...environment,
     hostAssignment: {
-      machineId: overrides.machineId ?? "machine-1",
       requestId: "request-1",
       config: {
         ports: [
-          {
-            slot: "backend",
-            hostPort: overrides.hostPort ?? 8080,
-            containerPort: 4000,
-          },
+          { slot: "backend", containerPort: overrides.containerPort ?? 4000 },
         ],
         health: [{ slot: "backend", path: overrides.healthPath ?? "/" }],
         ingress: {
@@ -67,22 +61,14 @@ describe("setupHostAssignmentsProblem", () => {
   it("has no problem for a non-production environment with no HTTPS URL", () => {
     const [dev, uat, main] = onprem();
     expect(
-      setupHostAssignmentsProblem([
-        assigned(dev!, { hostPort: 8080 }),
-        assigned(uat!, { hostPort: 8081 }),
-        main!,
-      ]),
+      setupHostAssignmentsProblem([assigned(dev!), assigned(uat!), main!]),
     ).toBeNull();
   });
 
   it("names Production that has a machine but no HTTPS URL, with the fix", () => {
     const [dev, uat, main] = onprem();
     expect(
-      setupHostAssignmentsProblem([
-        dev!,
-        uat!,
-        assigned(main!, { hostPort: 8082, publicUrl: null }),
-      ]),
+      setupHostAssignmentsProblem([dev!, uat!, assigned(main!, { publicUrl: null })]),
     ).toBe(PRODUCTION);
   });
 
@@ -92,7 +78,7 @@ describe("setupHostAssignmentsProblem", () => {
       setupHostAssignmentsProblem([
         dev!,
         uat!,
-        assigned(main!, { hostPort: 8082, publicUrl: "http://ledger.example.com" }),
+        assigned(main!, { publicUrl: "http://ledger.example.com" }),
       ]),
     ).toBe(PRODUCTION);
   });
@@ -103,7 +89,7 @@ describe("setupHostAssignmentsProblem", () => {
       setupHostAssignmentsProblem([
         dev!,
         uat!,
-        assigned(main!, { hostPort: 8082, publicUrl: "https://ledger.example.com" }),
+        assigned(main!, { publicUrl: "https://ledger.example.com" }),
       ]),
     ).toBeNull();
   });
@@ -119,46 +105,20 @@ describe("setupHostAssignmentsProblem", () => {
     ).toBe("Assign machines only to on-prem environments.");
   });
 
-  it("refuses two environments on one machine and host port", () => {
-    const [dev, uat, main] = onprem();
-    const problems = setupHostAssignmentProblems([
-      assigned(dev!, { hostPort: 8080 }),
-      assigned(uat!, { hostPort: 8080 }),
-      main!,
-    ]);
-    expect(problems).toEqual([
-      null,
-      "Use different host ports for environments sharing a machine.",
-      null,
-    ]);
-  });
-
-  it("allows the same host port on different machines", () => {
+  it("refuses a container port outside 1 to 65535", () => {
     const [dev, uat, main] = onprem();
     expect(
-      setupHostAssignmentsProblem([
-        assigned(dev!, { machineId: "machine-1", hostPort: 8080 }),
-        assigned(uat!, { machineId: "machine-2", hostPort: 8080 }),
-        main!,
-      ]),
-    ).toBeNull();
-  });
-
-  it("refuses a port outside 1 to 65535", () => {
-    const [dev, uat, main] = onprem();
+      setupHostAssignmentsProblem([assigned(dev!, { containerPort: 70000 }), uat!, main!]),
+    ).toBe("Use whole container port numbers from 1 to 65535.");
     expect(
-      setupHostAssignmentsProblem([assigned(dev!, { hostPort: 70000 }), uat!, main!]),
-    ).toBe("Use whole port numbers from 1 to 65535.");
+      setupHostAssignmentsProblem([assigned(dev!, { containerPort: Number.NaN }), uat!, main!]),
+    ).toBe("Use whole container port numbers from 1 to 65535.");
   });
 
   it("refuses a health path that is not an application path", () => {
     const [dev, uat, main] = onprem();
     expect(
-      setupHostAssignmentsProblem([
-        assigned(dev!, { healthPath: "health" }),
-        uat!,
-        main!,
-      ]),
+      setupHostAssignmentsProblem([assigned(dev!, { healthPath: "health" }), uat!, main!]),
     ).toBe("Enter an application health path, or choose Assign later.");
     expect(
       setupHostAssignmentsProblem([
@@ -175,7 +135,7 @@ describe("setupHostAssignmentsProblem", () => {
       setupHostAssignmentsProblem([
         assigned(dev!, { healthPath: "health" }),
         uat!,
-        assigned(main!, { hostPort: 8082, publicUrl: null }),
+        assigned(main!, { publicUrl: null }),
       ]),
     ).toBe("Enter an application health path, or choose Assign later.");
   });
@@ -186,11 +146,15 @@ describe("setupHostAssignmentProblems", () => {
     const [dev, uat, main] = onprem();
     expect(
       setupHostAssignmentProblems([
-        assigned(dev!, { hostPort: 8080 }),
+        assigned(dev!, { healthPath: "health" }),
         uat!,
-        assigned(main!, { hostPort: 8082, publicUrl: null }),
+        assigned(main!, { publicUrl: null }),
       ]),
-    ).toEqual([null, null, PRODUCTION]);
+    ).toEqual([
+      "Enter an application health path, or choose Assign later.",
+      null,
+      PRODUCTION,
+    ]);
   });
 
   it("is empty for an empty list", () => {

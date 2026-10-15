@@ -135,7 +135,7 @@ jest.mock("../../src/features/workspace/selection/data/workspaces-api", () => ({
 jest.mock("../../src/features/workflows/studio/view-models/use-setup-host-selection", () => ({
   useSetupHostSelection: () => ({
     workspaceId: "workspace-1",
-    hosts: [{ id: "machine-1", name: "Build box", status: "online" }],
+    hosts: [{ id: "machine-1", name: "Build box", status: "connected" }],
     error: null,
     refresh: () => undefined,
   }),
@@ -1655,6 +1655,11 @@ describe("WorkflowBuilder project setup", () => {
         return Array.from(fieldsets).find((fieldset) => fieldset.querySelector("legend")?.textContent === name) ?? null;
       }
 
+      /** The text of the whole machine list, where each problem is shown. */
+      function sectionText(): string {
+        return container.querySelector("section[aria-label='Choose on-prem machines']")?.textContent ?? "";
+      }
+
       function productionUrl(): HTMLInputElement {
         return machineFieldset("Production")!.querySelector<HTMLInputElement>("input[type='url']")!;
       }
@@ -1671,8 +1676,14 @@ describe("WorkflowBuilder project setup", () => {
       it("holds Continue for Production on a machine with no HTTPS URL, and says how to fix it", async () => {
         await openOnpremDelivery();
 
-        changeValue(machineFieldset("Production")!.querySelector("select")!, "machine-1");
+        // Test is on the machine with its defaults: it has no problem to name.
+        changeValue(machineFieldset("Test")!.querySelector("select")!, "automatic");
+        expect(findButton("Continue")).not.toBeDisabled();
+
+        changeValue(machineFieldset("Production")!.querySelector("select")!, "automatic");
         expect(findButton("Continue")).toBeDisabled();
+        // Exactly one message on the page, and it is inside Production.
+        expect(sectionText().split(PRODUCTION_BLOCKER).length - 1).toBe(1);
         expect(machineFieldset("Production")?.textContent).toContain(PRODUCTION_BLOCKER);
         expect(machineFieldset("Test")?.textContent).not.toContain(PRODUCTION_BLOCKER);
         expect(container.textContent).toContain("Continue is off until the host problem above is fixed.");
@@ -1691,7 +1702,7 @@ describe("WorkflowBuilder project setup", () => {
       it("unblocks Continue when Production goes back to Assign later", async () => {
         await openOnpremDelivery();
 
-        changeValue(machineFieldset("Production")!.querySelector("select")!, "machine-1");
+        changeValue(machineFieldset("Production")!.querySelector("select")!, "automatic");
         expect(findButton("Continue")).toBeDisabled();
 
         changeValue(machineFieldset("Production")!.querySelector("select")!, "");

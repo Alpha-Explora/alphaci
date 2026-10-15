@@ -3,18 +3,19 @@ import {
   type EnvironmentDraft,
 } from "../../../../../../src/features/workflows/studio/model/project-environments-rules";
 import {
+  TEAM_CHOICE_MISSING_MESSAGE,
   createBlockerReason,
-  deliveryHostProblem,
+  deliveryHostProblems,
+  firstHostProblem,
   isDeliveryStepReady,
-  onpremHostProblems,
 } from "../../../../../../src/features/workflows/studio/model/setup-delivery-rules";
 import { RENDER_VARIABLES_MISSING_MESSAGE } from "../../../../../../src/features/workflows/studio/model/create-target-rules";
 import type { UsageLimitItem } from "../../../../../../src/shared/api/contracts";
 
 /**
  * What holds the Delivery step, and the Create blocker the Review step shows:
- * - an on-prem host problem holds Delivery only under on-prem hosting, since
- *   only on-prem sends its environments;
+ * - an on-prem host problem holds Delivery only under on-prem hosting, and only
+ *   while machine rows are on screen to fix it;
  * - each blocker that holds Create names itself, in a fixed order.
  */
 
@@ -30,10 +31,9 @@ function productionWithoutHttps(): EnvironmentDraft[] {
       ...main!,
       runsOn: "onprem",
       hostAssignment: {
-        machineId: "machine-1",
         requestId: "request-1",
         config: {
-          ports: [{ slot: "backend", hostPort: 8082, containerPort: 4000 }],
+          ports: [{ slot: "backend", containerPort: 4000 }],
           health: [{ slot: "backend", path: "/" }],
           ingress: { mode: "configured", publicUrl: null },
         },
@@ -46,11 +46,15 @@ function quota(current: number, limit: number, upgradeRequired = false): UsageLi
   return { code: "projects", current, limit, upgradeRequired };
 }
 
-describe("deliveryHostProblem", () => {
-  it("names the Production problem under on-prem hosting", () => {
+describe("deliveryHostProblems", () => {
+  it("names Production under on-prem hosting, with machine rows on screen", () => {
     expect(
-      deliveryHostProblem({ choice: "onprem", environments: productionWithoutHttps() }),
-    ).toBe(PRODUCTION);
+      deliveryHostProblems({
+        choice: "onprem",
+        environments: productionWithoutHttps(),
+        machineRowsShown: true,
+      }),
+    ).toEqual([null, null, PRODUCTION]);
   });
 
   it("checks every environment as on-prem, though the form holds no Runs on under on-prem", () => {
@@ -58,25 +62,39 @@ describe("deliveryHostProblem", () => {
     const [dev, uat, main] = ENVIRONMENT_TEMPLATE;
     const held = productionWithoutHttps()[2]!;
     expect(
-      deliveryHostProblem({
+      deliveryHostProblems({
         choice: "onprem",
         environments: [dev!, uat!, { ...main!, hostAssignment: held.hostAssignment }],
+        machineRowsShown: true,
       }),
-    ).toBe(PRODUCTION);
+    ).toEqual([null, null, PRODUCTION]);
   });
 
   it("does not check environments under Vercel / Render or CI-only hosting", () => {
     // A machine left on an environment after the user switched hosting: no
     // screen shows it, so it must not hold the step.
-    expect(
-      deliveryHostProblem({ choice: "hosted", environments: productionWithoutHttps() }),
-    ).toBeNull();
-    expect(
-      deliveryHostProblem({ choice: "none", environments: productionWithoutHttps() }),
-    ).toBeNull();
+    for (const choice of ["hosted", "none"] as const) {
+      expect(
+        deliveryHostProblems({
+          choice,
+          environments: productionWithoutHttps(),
+          machineRowsShown: true,
+        }),
+      ).toEqual([null, null, null]);
+    }
   });
 
-  it("has no problem on-prem when Production has an HTTPS URL", () => {
+  it("holds nothing when no healthy machine is shown, so no row would name the fix", () => {
+    expect(
+      deliveryHostProblems({
+        choice: "onprem",
+        environments: productionWithoutHttps(),
+        machineRowsShown: false,
+      }),
+    ).toEqual([null, null, null]);
+  });
+
+  it("gives no problem when Production has an HTTPS URL", () => {
     const environments = productionWithoutHttps();
     const main = environments[2]!;
     const fixed: EnvironmentDraft = {
@@ -90,29 +108,22 @@ describe("deliveryHostProblem", () => {
       },
     };
     expect(
-      deliveryHostProblem({
-        choice: "onprem",
-        environments: [...environments.slice(0, 2), fixed],
-      }),
-    ).toBeNull();
-  });
-
-  it("has no problem on-prem while every environment is on Assign later", () => {
-    expect(
-      deliveryHostProblem({
-        choice: "onprem",
-        environments: ENVIRONMENT_TEMPLATE.map((environment) => ({
-          ...environment,
-          runsOn: "onprem" as const,
-        })),
-      }),
+      firstHostProblem(
+        deliveryHostProblems({
+          choice: "onprem",
+          environments: [...environments.slice(0, 2), fixed],
+          machineRowsShown: true,
+        }),
+      ),
     ).toBeNull();
   });
 });
 
-describe("onpremHostProblems", () => {
-  it("gives each environment its own problem, in promotion order", () => {
-    expect(onpremHostProblems(productionWithoutHttps())).toEqual([null, null, PRODUCTION]);
+describe("firstHostProblem", () => {
+  it("is the first problem in order, or null", () => {
+    expect(firstHostProblem([null, "a", "b"])).toBe("a");
+    expect(firstHostProblem([null, null])).toBeNull();
+    expect(firstHostProblem([])).toBeNull();
   });
 });
 
@@ -134,6 +145,7 @@ describe("isDeliveryStepReady", () => {
 
 describe("createBlockerReason", () => {
   const none = {
+    teamChoiceMissing: false,
     hostProblem: null,
     renderVariablesMissing: false,
     projectBlocker: null,
@@ -145,12 +157,25 @@ describe("createBlockerReason", () => {
     expect(createBlockerReason({ ...none, projectQuota: quota(1, 5) })).toBeNull();
   });
 
-  it("gives the host problem first", () => {
+  it("gives the missing team first", () => {
+    expect(
+      createBlockerReason({
+        ...none,
+        teamChoiceMissing: true,
+        hostProblem: PRODUCTION,
+        projectQuota: quota(5, 5),
+      }),
+    ).toBe(TEAM_CHOICE_MISSING_MESSAGE);
+    expect(TEAM_CHOICE_MISSING_MESSAGE).toBe("Choose the team this project belongs to.");
+  });
+
+  it("gives the host problem before the Render variable, the Project blocker or the quota", () => {
     expect(
       createBlockerReason({
         ...none,
         hostProblem: PRODUCTION,
         renderVariablesMissing: true,
+        projectBlocker: "This Project has no Feature yet.",
         projectQuota: quota(5, 5),
       }),
     ).toBe(PRODUCTION);

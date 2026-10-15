@@ -12,12 +12,14 @@ import type {
   SetupProjectResponse,
   WorkspaceSummary,
 } from "@/shared/api/contracts";
+import { healthyHosts } from "@/features/hosts";
 import type { CreateProjectFormState } from "../view-models/use-create-project-form";
 import type { DeploymentProvisioningFormState } from "../view-models/use-deployment-provisioning-form";
 import type { GithubInstallationsState } from "../view-models/use-github-installations";
 import type { HostingChoiceState } from "../view-models/use-hosting-choice";
 import type { ProjectOptionsCatalogState } from "../view-models/use-project-options-catalog";
 import { useProjectUsage } from "../view-models/use-project-usage";
+import { useSetupHostSelection } from "../view-models/use-setup-host-selection";
 import {
   canSelectWizardStep,
   countWorkspaces,
@@ -44,7 +46,8 @@ import { REPOSITORY_CREATE_ROLE_NOTE } from "../model/role-gate-rules";
 import { renderVariablesBlockingFor } from "../model/hosting-choice-rules";
 import {
   createBlockerReason,
-  deliveryHostProblem,
+  deliveryHostProblems,
+  firstHostProblem,
   isDeliveryStepReady,
 } from "../model/setup-delivery-rules";
 import type { ProjectChoice } from "./setup-wizard-props";
@@ -203,6 +206,9 @@ export function WorkflowSetupTab({
   reducedMotion,
 }: Readonly<WorkflowSetupTabProps>) {
   const usageItems = useProjectUsage();
+  // The machine list is read here, not only by the Delivery step's rows: whether
+  // the rows show decides whether an on-prem problem can hold the wizard.
+  const hostSelection = useSetupHostSelection();
   const [activeWizardStep, setActiveWizardStep] = useState(0);
   const [furthestWizardStep, setFurthestWizardStep] = useState(0);
   const isExistingMode = isExistingSetupMode(setupMode, existingRepoAllowed);
@@ -270,13 +276,17 @@ export function WorkflowSetupTab({
     selectedWorkspaceId,
     projectKnown,
   });
-  // The on-prem host problem holds the Delivery step and Create, so it is shown
-  // on the Delivery step and again above the Review step's button.
-  const hostProblem = deliveryHostProblem({
+  // The on-prem host problems hold the Delivery step and Create, so they are
+  // shown on the Delivery step and again above the Review step's button. They
+  // are only checked while the machine rows are on screen to fix them.
+  const hostProblems = deliveryHostProblems({
     choice: hosting.choice,
     environments: form.environments,
+    machineRowsShown: healthyHosts(hostSelection.hosts).length > 0,
   });
+  const hostProblem = firstHostProblem(hostProblems);
   const createBlocker = createBlockerReason({
+    teamChoiceMissing: team.teamChoiceMissing,
     hostProblem,
     renderVariablesMissing,
     projectBlocker,
@@ -436,6 +446,8 @@ export function WorkflowSetupTab({
           projectChoice={projectChoice}
           projectBlocker={projectBlocker}
           createBlocker={createBlocker}
+          hostProblems={hostProblems}
+          hostSelection={hostSelection}
           onBack={goToPreviousWizardStep}
           onCreateProject={onCreateProject}
           onNext={goToNextWizardStep}
