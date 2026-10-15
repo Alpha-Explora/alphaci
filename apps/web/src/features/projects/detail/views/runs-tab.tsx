@@ -18,13 +18,7 @@ export function RunsTab({
 }>) {
   return (
     <div style={{ display: "grid", gap: "1.25rem" }}>
-      <PipelineRunsTab
-        projectId={project.id}
-        appRole={vm.appRole}
-        onOpenPullRequest={vm.visibleTabs.includes("pulls") ? vm.openPullRequest : undefined}
-        workflowAccess={vm.workflowUpdateAccess}
-        onOpenWorkflow={() => vm.setPipelineView("configuration")}
-      />
+      <PipelineRunsTab projectId={project.id} appRole={vm.appRole} />
       <ReportedResults project={project} vm={vm} />
     </div>
   );

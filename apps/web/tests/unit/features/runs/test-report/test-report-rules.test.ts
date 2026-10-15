@@ -118,6 +118,10 @@ describe("SonarCloud wording", () => {
     expect(sonarMetricName("new_coverage")).toBe("Coverage on new code");
     expect(sonarMetricName("cognitive_complexity")).toBe("cognitive_complexity");
     expect(sonarValue("coverage", "74.1")).toBe("74.1%");
+    // SonarCloud sends coverage on new code unrounded: one decimal, as SonarCloud shows it.
+    expect(sonarValue("new_coverage", "96.27659574468085")).toBe("96.3%");
+    expect(sonarValue("duplicated_lines_density", "0.0")).toBe("0.0%");
+    expect(sonarValue("new_coverage", "80")).toBe("80%");
     expect(sonarValue("bugs", "0")).toBe("0");
     expect(sonarValue("new_security_rating", "1.0")).toBe("A");
     expect(sonarValue("bugs", undefined)).toBe("—");

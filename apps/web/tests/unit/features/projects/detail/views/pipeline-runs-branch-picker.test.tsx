@@ -7,6 +7,7 @@ import {
   getProjectRunFailureLog,
 } from "../../../../../../src/features/projects/detail/data/project-workspace-api";
 import { getRuns } from "../../../../../../src/features/runs";
+import { getProjectBrowserTests } from "../../../../../../src/features/projects/detail/data/project-browser-tests-api";
 
 jest.mock(
   "../../../../../../src/features/projects/detail/data/project-workspace-api",
@@ -91,6 +92,28 @@ describe("PipelineRunsTab branch picker", () => {
     act(() => root?.unmount());
     host.remove();
     jest.clearAllMocks();
+  });
+
+  it("has no Browser tests setup card, even with the starter tests missing on dev", async () => {
+    (getProjectBrowserTests as jest.Mock).mockResolvedValueOnce({
+      installed: false,
+      branch: "dev",
+      missingFiles: ["playwright.config.ts", "tests/e2e/pages.e2e-spec.ts"],
+      presentFiles: [],
+      hasLockfile: true,
+      playwrightVersion: null,
+      canAdd: true,
+      reason: null,
+    });
+    await act(async () => {
+      root = createRoot(host);
+      root.render(<PipelineRunsTab projectId="p1" appRole="member" />);
+    });
+    await act(async () => {
+      await Promise.resolve();
+    });
+    expect(host.textContent).not.toContain("Browser tests");
+    expect([...host.querySelectorAll("button")].some((button) => button.textContent === "Add browser tests")).toBe(false);
   });
 
   it("lists every declared branch, not just the selected one", async () => {
