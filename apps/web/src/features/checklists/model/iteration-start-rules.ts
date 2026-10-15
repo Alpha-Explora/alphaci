@@ -3,9 +3,10 @@
  * reads. Pure: no React, no fetch, no Next.
  *
  * The server alone decides who may start (`canStartNext`: a lead or admin,
- * and no iteration active) and what may be carried. On a backend that does
- * not send `canStartNext` or `carryOver`, every rule here answers "nothing":
- * the screens render exactly as before. */
+ * and no iteration active). The new iteration starts with an empty
+ * checklist: every item was passed before the last one could merge, so
+ * nothing is carried over. On a backend that does not send `canStartNext`,
+ * every rule here answers "nothing": the screens render exactly as before. */
 
 import type { AppRole } from "@/shared/api/contracts";
 
@@ -48,11 +49,10 @@ export function waitingForNextIterationText(iteration: DeliveredIteration, local
 /**
  * What a screen shows once the Project's iteration is delivered and none is
  * active:
- * - `start` for a Product owner or admin the server lets start, when it also
- *   sent the carry-over list;
+ * - `start` for a Product owner or admin the server lets start;
  * - `waiting` for everyone the server does not let start;
  * - `none` while an iteration is active, and whenever the server did not say
- *   (no `canStartNext`, or `canStartNext` without `carryOver`).
+ *   (no `canStartNext`).
  */
 export function iterationNextStep(
   current: CurrentIteration | null,
@@ -63,7 +63,7 @@ export function iterationNextStep(
   if (current.canStartNext === false) {
     return { kind: "waiting", text: waitingForNextIterationText(current.iteration, locale) };
   }
-  if (current.canStartNext !== true || !current.carryOver || !roleCanStartIteration(role)) return NONE;
+  if (current.canStartNext !== true || !roleCanStartIteration(role)) return NONE;
   return {
     kind: "start",
     nextNumber: current.iteration.number + 1,
@@ -78,25 +78,22 @@ export function iterationGoalError(goal: string): string | null {
     : null;
 }
 
-/** The request body: the goal trimmed (left out when empty) and the carried item ids. */
-export function startIterationInput(goal: string, requirementItemIds: ReadonlyArray<string>): StartIterationInput {
+/** The request body: the goal trimmed, left out when empty. Nothing is carried over. */
+export function startIterationInput(goal: string): StartIterationInput {
   const trimmed = goal.trim();
-  const carryOver = { requirementItemIds: [...requirementItemIds] };
-  return trimmed ? { goal: trimmed, carryOver } : { carryOver };
+  return trimmed ? { goal: trimmed } : {};
 }
 
-function count(value: unknown): number {
-  return typeof value === "number" && Number.isInteger(value) && value >= 0 ? value : 0;
-}
-
-/** The 201 answer. A body that is not one still reads as "started", with nothing counted. */
+/** The 201 answer. A body that is not one still reads as "started". */
 export function normalizeStartedIteration(value: unknown): StartedIteration {
   const raw = record(value) ?? {};
-  return {
-    iteration: normalizeIteration(raw.iteration),
-    carriedRequirements: count(raw.carriedRequirements),
-    carriedItems: count(raw.carriedItems),
-  };
+  return { iteration: normalizeIteration(raw.iteration) };
+}
+
+/** The Start dialog's sentence: the new iteration is empty, the delivered one keeps its work. */
+export function startIterationDescription(nextNumber: number): string {
+  const previous = iterationName(nextNumber - 1);
+  return `Name what this iteration is for. ${iterationName(nextNumber)} starts with an empty checklist: ${previous}'s requirements and QA results stay with ${previous}, read-only.`;
 }
 
 const STATUS_COPY: Readonly<Record<number, string>> = {

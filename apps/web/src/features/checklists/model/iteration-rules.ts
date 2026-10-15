@@ -22,7 +22,6 @@ import type {
   MergeAllResult,
   ProjectIteration,
 } from "./iteration-types";
-import { normalizeCarryOver } from "./iteration-carry-over-rules";
 import { QA_ERROR_MESSAGES, qaCodeMessage } from "./qa-error-messages";
 import { shortSha } from "./qa-run-rules";
 import {
@@ -117,8 +116,6 @@ export function normalizeCurrentIteration(value: unknown): CurrentIteration | nu
     coveredRepositories: records(raw.coveredRepositories).map(coveredRepositoryFrom).filter(present),
     canMergeAll: raw.canMergeAll === true,
     canStartNext,
-    // The candidates mean something only to a viewer the server lets start.
-    carryOver: canStartNext === true ? normalizeCarryOver(raw.carryOver) : null,
   };
 }
 

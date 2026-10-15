@@ -21,8 +21,6 @@ const iterations = iterationsRepository as jest.Mocked<typeof iterationsReposito
 
 const STARTED: StartedIteration = {
   iteration: { id: "it-4", number: 4, status: "active", goal: "Loyalty points", deliveredAt: null, deliveredByLogin: null },
-  carriedRequirements: 2,
-  carriedItems: 2,
 };
 
 /* The ViewModel under test, read after every render (never reassigned while rendering). */
@@ -91,40 +89,22 @@ async function run(action: (vm: StartIterationViewModel) => unknown) {
   await settle();
 }
 
-function checked(): string[] {
-  return vm().groups.flatMap((group) => group.items.filter((item) => item.checked).map((item) => item.id));
-}
-
 describe("useStartIterationViewModel", () => {
-  it("offers Start iteration 4 to a Product owner and opens with the unfinished items pre-checked", async () => {
+  it("offers Start iteration 4 to a Product owner, saying it starts with an empty checklist", async () => {
     iterations.current.mockResolvedValue(normalizeCurrentIteration(startableWire()));
     await mount("lead");
     expect(vm().step.kind).toBe("start");
     expect(vm().label).toBe("Start iteration 4");
+    expect(vm().description).toBe(
+      "Name what this iteration is for. Iteration 4 starts with an empty checklist: Iteration 3's requirements and QA results stay with Iteration 3, read-only.",
+    );
     expect(vm().open).toBe(false);
     await run((model) => model.openDialog());
     expect(vm().open).toBe(true);
-    expect(vm().fromIterationNumber).toBe(3);
-    expect(checked()).toEqual(["item-coupon", "item-csp"]);
-    expect(vm().selectionLabel).toBe("2 of 3 items selected");
-    expect(vm().unfinishedCount).toBe(2);
+    expect(vm()).not.toHaveProperty("groups");
   });
 
-  it("clears, ticks one, and selects all unfinished again without dropping the extra one", async () => {
-    iterations.current.mockResolvedValue(normalizeCurrentIteration(startableWire()));
-    await mount("admin");
-    await run((model) => model.openDialog());
-    await run((model) => model.clear());
-    expect(checked()).toEqual([]);
-    expect(vm().selectedCount).toBe(0);
-    await run((model) => model.toggleItem("item-pay"));
-    await run((model) => model.selectAllUnfinished());
-    expect(checked()).toEqual(["item-pay", "item-coupon", "item-csp"]);
-    await run((model) => model.toggleItem("item-coupon"));
-    expect(checked()).toEqual(["item-pay", "item-csp"]);
-  });
-
-  it("submits the trimmed goal and the ticked ids, closes, and re-reads the Project", async () => {
+  it("submits the trimmed goal only, closes, and re-reads the Project", async () => {
     iterations.current.mockResolvedValue(normalizeCurrentIteration(startableWire()));
     iterations.start.mockResolvedValue(STARTED);
     const onStarted = jest.fn();
@@ -134,10 +114,7 @@ describe("useStartIterationViewModel", () => {
     await run((model) => model.setGoal("  Loyalty points  "));
     iterations.current.mockResolvedValue(normalizeCurrentIteration(currentWire({ iteration: { id: "it-4", number: 4, status: "active", goal: "Loyalty points" } })));
     await run((model) => model.submit());
-    expect(iterations.start).toHaveBeenCalledWith("dp-submit", {
-      goal: "Loyalty points",
-      carryOver: { requirementItemIds: ["item-coupon", "item-csp"] },
-    });
+    expect(iterations.start).toHaveBeenCalledWith("dp-submit", { goal: "Loyalty points" });
     expect(onStarted).toHaveBeenCalledWith(STARTED);
     expect(vm().open).toBe(false);
     expect(iterations.current).toHaveBeenCalledTimes(2);
@@ -145,14 +122,13 @@ describe("useStartIterationViewModel", () => {
     expect((await until((model) => model.step.kind === "none")).label).toBe("");
   });
 
-  it("starts empty when nothing is ticked, leaving the goal out", async () => {
+  it("sends an empty body without a goal", async () => {
     iterations.current.mockResolvedValue(normalizeCurrentIteration(startableWire()));
     iterations.start.mockResolvedValue(STARTED);
     await mount("lead", { project: "dp-empty" });
     await run((model) => model.openDialog());
-    await run((model) => model.clear());
     await run((model) => model.submit());
-    expect(iterations.start).toHaveBeenCalledWith("dp-empty", { carryOver: { requirementItemIds: [] } });
+    expect(iterations.start).toHaveBeenCalledWith("dp-empty", {});
   });
 
   it("keeps the dialog open with a product sentence when the server refuses", async () => {
@@ -160,18 +136,10 @@ describe("useStartIterationViewModel", () => {
     await mount("lead", { project: "dp-refused" });
     await run((model) => model.openDialog());
 
-    iterations.start.mockRejectedValueOnce(apiErrorWith(400, { code: "ITERATION_CARRY_INVALID", invalidIds: ["item-csp"] }));
-    await run((model) => model.submit());
-    expect(vm().open).toBe(true);
-    expect(vm().submitting).toBe(false);
-    expect(vm().error).toBe(
-      "Some selected items can no longer be carried over: only items of the last delivered iteration can be. Close this dialog, reload the page and choose again.",
-    );
-    expect(checked()).toEqual(["item-coupon", "item-csp"]);
-
     iterations.start.mockRejectedValueOnce(apiErrorWith(409, { code: "ITERATION_ACTIVE", iterationNumber: 4 }));
     await run((model) => model.submit());
     expect(vm().open).toBe(true);
+    expect(vm().submitting).toBe(false);
     expect(vm().error).toBe("Iteration 4 is still active. Deliver it before starting the next one.");
 
     // Someone else started it: closing reads the Project again.
@@ -191,16 +159,14 @@ describe("useStartIterationViewModel", () => {
     expect(iterations.start).not.toHaveBeenCalled();
   });
 
-  it("reopens fresh: no goal, the unfinished items ticked again", async () => {
+  it("reopens fresh: no goal", async () => {
     iterations.current.mockResolvedValue(normalizeCurrentIteration(startableWire()));
     await mount("lead");
     await run((model) => model.openDialog());
     await run((model) => model.setGoal("Draft"));
-    await run((model) => model.clear());
     await run((model) => model.close());
     await run((model) => model.openDialog());
     expect(vm().goal).toBe("");
-    expect(checked()).toEqual(["item-coupon", "item-csp"]);
   });
 
   it("offers nothing to someone who waits, and never opens", async () => {
@@ -209,6 +175,6 @@ describe("useStartIterationViewModel", () => {
     expect(vm().step.kind).toBe("waiting");
     await run((model) => model.openDialog());
     expect(vm().open).toBe(false);
-    expect(vm().groups).toEqual([]);
+    expect(vm().description).toBe("");
   });
 });
