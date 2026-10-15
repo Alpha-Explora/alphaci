@@ -23,6 +23,8 @@ jest.mock(
 
 const repo = projectsRepository as jest.Mocked<typeof projectsRepository>;
 
+const PR_URL = "https://github.com/tone/orders-api/pull/42";
+
 const CI_FINDING: ProjectDriftFinding = {
   id: "f-ci",
   projectId: "p1",
@@ -72,6 +74,12 @@ function button(label: string): HTMLButtonElement | undefined {
   );
 }
 
+function links(): string[] {
+  return Array.from(container?.querySelectorAll("a") ?? []).map(
+    (anchor) => anchor.getAttribute("href") ?? "",
+  );
+}
+
 async function click(target: HTMLButtonElement) {
   await act(async () => {
     target.click();
@@ -98,7 +106,7 @@ describe("ProjectDriftPanel", () => {
     expect(text()).toContain(CI_FINDING.message);
   });
 
-  it("asks once before it writes, then repairs and checks again so the list shows what is left", async () => {
+  it("asks once before it acts, then reports the pull request the repair opened and checks again", async () => {
     repo.drift.mockResolvedValue(found([CI_FINDING]));
     repo.repairDrift.mockResolvedValue({
       enabled: true,
@@ -106,7 +114,8 @@ describe("ProjectDriftPanel", () => {
       findingId: "f-ci",
       action: "repair_ci_api_url",
       status: "completed",
-      message: "CI points at https://api.alphaci.test; committed to dev",
+      message: `Opened a pull request into dev: ${PR_URL}`,
+      result: { pullRequestUrl: PR_URL, pullRequestNumber: 42 },
     });
     repo.runDrift.mockResolvedValue(found([]));
 
@@ -116,7 +125,7 @@ describe("ProjectDriftPanel", () => {
 
     await click(repair as HTMLButtonElement);
     expect(repo.repairDrift).not.toHaveBeenCalled();
-    expect(text()).toContain("Confirm to reset the two AlphaCI CI secrets");
+    expect(text()).toContain("open a pull request into dev");
 
     await click(button("Confirm repair") as HTMLButtonElement);
 
@@ -126,8 +135,31 @@ describe("ProjectDriftPanel", () => {
       "repair_ci_api_url",
     );
     expect(repo.runDrift).toHaveBeenCalledWith("p1");
-    expect(text()).toContain("committed to dev");
+    expect(text()).toContain(`Opened a pull request into dev: ${PR_URL}`);
+    expect(links()).toContain(PR_URL);
     expect(text()).toContain("No active findings.");
+  });
+
+  it("shows no pull request link when the repair found nothing to change", async () => {
+    repo.drift.mockResolvedValue(found([CI_FINDING]));
+    repo.repairDrift.mockResolvedValue({
+      enabled: true,
+      mode: "local_safe",
+      findingId: "f-ci",
+      action: "repair_ci_api_url",
+      status: "completed",
+      message:
+        "CI points at https://api.alphaci.test; dev already names it, so no workflow change was needed.",
+      result: {},
+    });
+    repo.runDrift.mockResolvedValue(found([CI_FINDING]));
+
+    await render("lead");
+    await click(button("Repair") as HTMLButtonElement);
+    await click(button("Confirm repair") as HTMLButtonElement);
+
+    expect(text()).toContain("no workflow change was needed");
+    expect(links()).toEqual([]);
   });
 
   it("shows the repair to a member only as a note, because the backend refuses them", async () => {

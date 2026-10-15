@@ -2,6 +2,7 @@ import type {
   AppRole,
   ProjectDriftFinding,
   ProjectDriftRepairAction,
+  ProjectDriftRepairResponse,
 } from "@/shared/api/contracts";
 import { canManageProjectLifecycle } from "./project-detail-tab-rules";
 
@@ -56,4 +57,12 @@ export function driftAffectedFiles(
       ? [`${branch}: ${path}`]
       : [];
   });
+}
+
+/** The pull request a repair opened, or found already open, when it made one. */
+export function driftPullRequestUrl(
+  response: Pick<ProjectDriftRepairResponse, "result">,
+): string | null {
+  const url = response.result?.["pullRequestUrl"];
+  return typeof url === "string" && url.length > 0 ? url : null;
 }

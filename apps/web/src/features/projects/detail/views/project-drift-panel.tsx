@@ -7,14 +7,15 @@ import type {
   ProjectDriftFinding,
   ProjectDriftRepairAction,
 } from "@/shared/api/contracts";
+import { apiErrorReason } from "../model/api-error-reason";
 import {
   DRIFT_REPAIR_LEAD_ONLY_MESSAGE,
   canRunDriftRepair,
   driftAffectedFiles,
   driftFindingTitle,
+  driftPullRequestUrl,
   driftRepairActionFor,
 } from "../model/drift-finding-rules";
-import { apiErrorReason } from "../model/api-error-reason";
 import { useProjectDriftViewModel } from "../view-models/use-project-drift-view-model";
 
 type PendingRepair = {
@@ -22,10 +23,13 @@ type PendingRepair = {
   action: ProjectDriftRepairAction;
 } | null;
 
+/** What a repair reports: the message, and the pull request it opened, if any. */
+type RepairNotice = { text: string; url: string | null } | null;
+
 /**
  * The project's health findings, for Settings. Anyone may run the checks; the
  * repair buttons follow the backend's gate (the roles that manage the project).
- * A repair asks once more before it writes, because it commits to branches.
+ * A repair asks once more before it acts, because it opens a pull request.
  */
 export function ProjectDriftPanel({
   projectId,
@@ -37,7 +41,7 @@ export function ProjectDriftPanel({
   const vm = useProjectDriftViewModel(projectId);
   const [pending, setPending] = useState<PendingRepair>(null);
   const [repairingId, setRepairingId] = useState<string | null>(null);
-  const [notice, setNotice] = useState<string | null>(null);
+  const [notice, setNotice] = useState<RepairNotice>(null);
 
   async function applyRepair(
     finding: ProjectDriftFinding,
@@ -45,17 +49,22 @@ export function ProjectDriftPanel({
   ) {
     if (pending?.findingId !== finding.id || pending.action !== action) {
       setPending({ findingId: finding.id, action });
-      setNotice(
-        "Confirm to reset the two AlphaCI CI secrets and commit the new address to each affected branch.",
-      );
+      setNotice({
+        text: "Confirm to reset the two AlphaCI CI secrets and open a pull request into dev that points the workflows at this deployment.",
+        url: null,
+      });
       return;
     }
     setRepairingId(finding.id);
     setNotice(null);
     try {
-      setNotice(await vm.repair(finding.id, action));
+      const outcome = await vm.repair(finding.id, action);
+      setNotice({ text: outcome.message, url: driftPullRequestUrl(outcome) });
     } catch (caught) {
-      setNotice(apiErrorReason(caught, "Unable to apply the repair."));
+      setNotice({
+        text: apiErrorReason(caught, "Unable to apply the repair."),
+        url: null,
+      });
     } finally {
       setPending(null);
       setRepairingId(null);
@@ -105,7 +114,15 @@ export function ProjectDriftPanel({
       </header>
       {notice ? (
         <p className="env-empty-state" role="status" style={{ margin: 0 }}>
-          {notice}
+          {notice.text}
+          {notice.url ? (
+            <>
+              {" "}
+              <a href={notice.url} target="_blank" rel="noreferrer">
+                Open pull request
+              </a>
+            </>
+          ) : null}
         </p>
       ) : null}
       {vm.error ? (

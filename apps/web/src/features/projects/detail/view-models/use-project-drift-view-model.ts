@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import type {
   ProjectDriftRepairAction,
+  ProjectDriftRepairResponse,
   ProjectDriftResponse,
 } from "@/shared/api/contracts";
 import { projectsRepository } from "../../data/projects-repository";
@@ -18,11 +19,14 @@ export interface ProjectDriftViewModel {
   status: ProjectDriftStatus;
   /** Run the checks now, replacing the active findings with what they find. */
   check: () => Promise<void>;
-  /** Apply one repair, then check again so the list shows what is left. */
+  /**
+   * Apply one repair, then check again. The response says what happened, and
+   * for a workflow fix, which pull request carries it.
+   */
   repair: (
     findingId: string,
     action: ProjectDriftRepairAction,
-  ) => Promise<string>;
+  ) => Promise<ProjectDriftRepairResponse>;
 }
 
 /**
@@ -81,7 +85,7 @@ export function useProjectDriftViewModel(
         action,
       );
       await check();
-      return outcome.message;
+      return outcome;
     },
     [projectId, check],
   );

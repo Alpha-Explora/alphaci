@@ -2,6 +2,7 @@ import {
   canRunDriftRepair,
   driftAffectedFiles,
   driftFindingTitle,
+  driftPullRequestUrl,
   driftRepairActionFor,
 } from "@/features/projects/detail/model/drift-finding-rules";
 
@@ -45,5 +46,18 @@ describe("drift finding rules", () => {
       }),
     ).toEqual(["dev: .github/workflows/ci.yml"]);
     expect(driftAffectedFiles({ details: {} })).toEqual([]);
+  });
+});
+
+describe("driftPullRequestUrl", () => {
+  it("returns the pull request a repair opened, and null when it opened none", () => {
+    expect(
+      driftPullRequestUrl({
+        result: { pullRequestUrl: "https://github.com/acme/shop/pull/3" },
+      }),
+    ).toBe("https://github.com/acme/shop/pull/3");
+    expect(driftPullRequestUrl({ result: {} })).toBeNull();
+    expect(driftPullRequestUrl({ result: { pullRequestUrl: "" } })).toBeNull();
+    expect(driftPullRequestUrl({})).toBeNull();
   });
 });
