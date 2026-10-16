@@ -2499,10 +2499,8 @@ async function qaLongProjectRunFits({ page, baseUrl }: JourneyContext) {
   assert.ok(kind && count && Math.abs(kind.y - count.y) < 12, 'the kind and the count share the heading row');
   await shot(page, 'n-qa-studio');
 
-  // Floating, the drawer scrolls the same way and keeps its header.
+  // In full screen the same panel floats in the corner, scrolls the same way and keeps its header.
   await page.getByRole('button', { name: 'Full screen' }).click();
-  // Full screen opens on the page, the checklist minimized to its launcher.
-  await page.locator('button.qa-launcher').click();
   const drawer = page.getByRole('region', { name: 'QA checklist' });
   await visible(drawer, 'the floating drawer');
   const drawerBox = await drawer.boundingBox();
@@ -2678,13 +2676,11 @@ async function qaVerifiesAndSignsOff({ page, context, backend, baseUrl }: Journe
   await eventually('the studio to go full screen', async () => (await studio.getAttribute('data-full-screen')) === 'true');
   const studioBox = await studio.boundingBox();
   assert.deepEqual(studioBox, { x: 0, y: 0, width: 1440, height: 900 }, 'full screen covers the whole viewport');
+  // The panel was open docked, so it is open here too: one choice for both.
   const launcher = page.locator('button.qa-launcher');
-  await expectText(launcher, 'QA checklist · 0/3 passed', 'the launcher progress');
-  await absent(page.getByRole('region', { name: 'QA checklist' }), 'the drawer before it is opened');
-
-  await launcher.click();
+  await absent(launcher, 'the button of a panel that is open');
   const drawer = page.getByRole('region', { name: 'QA checklist' });
-  await visible(drawer, 'the floating checklist drawer');
+  await visible(drawer, 'the floating checklist panel');
   const drawerBox = await drawer.boundingBox();
   assert.ok(drawerBox && drawerBox.x + drawerBox.width <= 1440 - 15 && drawerBox.y + drawerBox.height <= 900 - 15, 'the drawer floats in the bottom-right corner');
   assert.equal(await page.locator('.qa-run-card').count(), 1, 'one run column, moved, never a second copy');
@@ -2696,22 +2692,22 @@ async function qaVerifiesAndSignsOff({ page, context, backend, baseUrl }: Journe
   // Automated evidence never rewrites what the tester recorded.
   assert.equal(backend.runs[0].items[0].status, 'passed');
 
-  // 2 → Failed opens a details draft. Minimizing only hides the drawer: the draft survives.
+  // 2 → Failed opens a details draft. Hiding only hides the panel: the draft survives.
   await statusSelect(page, 2).selectOption('failed');
   const editor = runItem(page, second.title).locator('form.qa-item-editor');
   await visible(editor, 'the item 2 details editor');
   await editor.getByPlaceholder('What went wrong').fill('Coupon applied twice on a two-line cart.');
-  await drawer.getByRole('button', { name: 'Minimize checklist' }).click();
-  await absent(drawer, 'the minimized drawer');
-  await expectText(launcher, 'QA checklist · 1/3 passed', 'the launcher after item 1 passed');
+  await drawer.getByRole('button', { name: 'Hide QA checklist' }).click();
+  await absent(drawer, 'the hidden panel');
+  await expectText(launcher, 'QA checklist · 1/3 passed', 'the button after item 1 passed');
   await launcher.click();
   await visible(editor, 'the item 2 draft after re-opening');
-  assert.equal(await editor.getByPlaceholder('What went wrong').inputValue(), 'Coupon applied twice on a two-line cart.', 'the draft survived minimize');
+  assert.equal(await editor.getByPlaceholder('What went wrong').inputValue(), 'Coupon applied twice on a two-line cart.', 'the draft survived hiding');
   await expectText(runItem(page, first.title).locator(STATUS_PILL), 'Passed', 'item 1 still passed after re-opening');
-  assert.equal(patchesTo(item2.id).length, 0, 'nothing was sent for item 2 by minimizing');
+  assert.equal(patchesTo(item2.id).length, 0, 'nothing was sent for item 2 by hiding');
 
-  // Leave full screen from the drawer: docked beside the page again, same frame.
-  await drawer.getByRole('button', { name: 'Dock beside the page' }).click();
+  // Leave full screen: the panel floats over the docked preview again, same frame.
+  await page.getByRole('button', { name: 'Full screen' }).click();
   await eventually('the studio to dock', async () => (await studio.getAttribute('data-full-screen')) === 'false');
   assert.equal(await page.evaluate(() => document.body.style.overflow), '', 'the page scrolls again');
   assert.equal(
@@ -3374,9 +3370,8 @@ async function leadMergesToMain({ page, backend, baseUrl }: JourneyContext) {
   await expectText(popover.locator('.qa-promo__pr'), 'Promotion PR #42', 'the promotion PR name');
   await absent(popover.locator('a.qa-promo__pr'), 'a link out to the promotion PR');
 
-  // Full screen: the SAME tab bar rides in the floating drawer, under its header.
+  // Full screen: the SAME tab bar rides in the floating panel, under its header.
   await page.getByRole('button', { name: 'Full screen' }).click();
-  await page.locator('button.qa-launcher').click();
   const drawer = page.getByRole('region', { name: 'Acceptance' });
   await visible(drawer, 'the floating drawer');
   await visible(drawer.locator('.qa-coltabs-bar button.qa-promo-chip'), 'the readiness chip inside the drawer');

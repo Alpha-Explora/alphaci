@@ -236,8 +236,6 @@ describe("QaStudioPanel", () => {
       "Reload preview",
       "Copy link",
       "Open in new tab",
-      "Wide preview",
-      "Split",
       "Full screen",
     ]);
     // The actions close the row: nothing follows them.
@@ -665,78 +663,79 @@ describe("QA Studio — device viewports and full screen", () => {
     expect(container.querySelector(".qa-preview__device")?.textContent).toBe("Tablet · 1024 × 768 · Landscape");
   });
 
-  it("mounts the run column once, floats it in full screen, and keeps it mounted when minimized", async () => {
+  it("mounts the run panel once, floats it docked and in full screen, and keeps it mounted when hidden", async () => {
     setup({ run: runAs("qa", { items: ITEMS }) });
     const container = await studio("qa");
     const studioRoot = container.querySelector(".qa-studio")!;
     const column = container.querySelector(".qa-studio__run");
     const card = container.querySelector(".qa-run-card");
-    expect(studioRoot.getAttribute("data-checklist")).toBe("docked");
-    expect(container.querySelector(".qa-launcher")).toBeNull();
-
-    await click(fullScreenButton(container));
-    expect(document.body.style.overflow).toBe("hidden");
-    expect(studioRoot.getAttribute("data-checklist")).toBe("minimized");
-    const launcher = container.querySelector<HTMLButtonElement>(".qa-launcher")!;
-    expect(launcher.textContent).toContain("QA checklist · 0/3 passed");
-    expect(launcher.getAttribute("aria-expanded")).toBe("false");
-    expect(launcher.getAttribute("aria-controls")).toBe(column?.id);
-
-    await click(launcher);
+    // Open from the first visit, as a labelled region with its header.
     expect(studioRoot.getAttribute("data-checklist")).toBe("open");
     expect(column?.getAttribute("role")).toBe("region");
-    const heading = container.querySelector(".qa-drawer__title");
-    expect(heading?.textContent).toBe("QA checklist");
-    expect(document.activeElement).toBe(heading);
+    expect(container.querySelector(".qa-drawer__title")?.textContent).toBe("QA checklist");
+    expect(container.querySelector(".qa-launcher")).toBeNull();
 
-    await click(container.querySelector('button[aria-label="Move to the left side"]'));
-    expect(studioRoot.getAttribute("data-side")).toBe("left");
-
-    // Change an item, then minimize: the same column and card stay mounted.
-    await click(container.querySelector('button[aria-label="Minimize checklist"]'));
-    expect(studioRoot.getAttribute("data-checklist")).toBe("minimized");
-    expect(document.activeElement).toBe(container.querySelector(".qa-launcher"));
+    // Hide: the same column and card stay mounted; the button takes focus.
+    await click(container.querySelector('button[aria-label="Hide QA checklist"]'));
+    expect(studioRoot.getAttribute("data-checklist")).toBe("hidden");
+    const launcher = container.querySelector<HTMLButtonElement>(".qa-launcher")!;
+    expect(document.activeElement).toBe(launcher);
+    expect(launcher.textContent).toContain("QA checklist · 0/3 passed");
+    expect(launcher.getAttribute("title")).toBe("Show QA checklist");
+    expect(launcher.getAttribute("aria-expanded")).toBe("false");
+    expect(launcher.getAttribute("aria-controls")).toBe(column?.id);
     expect(container.querySelector(".qa-studio__run")).toBe(column);
     expect(container.querySelector(".qa-run-card")).toBe(card);
     expect(container.querySelectorAll(".qa-run-card")).toHaveLength(1);
     expect(container.querySelectorAll(".qa-run__head")).toHaveLength(1);
+    // Inside the preview's box, not the page's: the button floats over the page too.
+    expect(container.querySelector(".qa-studio__panes")?.contains(launcher)).toBe(true);
 
-    // Dock: back beside the page, the same column again.
-    await click(container.querySelector(".qa-launcher"));
-    await click(container.querySelector('button[aria-label="Dock beside the page"]'));
-    expect(studioRoot.getAttribute("data-full-screen")).toBe("false");
+    // Show: focus goes into the panel.
+    await click(launcher);
+    expect(studioRoot.getAttribute("data-checklist")).toBe("open");
+    expect(document.activeElement).toBe(container.querySelector(".qa-drawer__title"));
+
+    await click(container.querySelector('button[aria-label="Move to the left side"]'));
+    expect(studioRoot.getAttribute("data-side")).toBe("left");
+
+    // Full screen keeps the panel as it is: open, on its side, the same column.
+    await click(fullScreenButton(container));
+    expect(document.body.style.overflow).toBe("hidden");
+    expect(studioRoot.getAttribute("data-checklist")).toBe("open");
+    expect(studioRoot.getAttribute("data-side")).toBe("left");
     expect(container.querySelector(".qa-studio__run")).toBe(column);
+    // No Dock button any more: there is no docked column to go back to.
+    expect(container.querySelector('button[aria-label="Dock beside the page"]')).toBeNull();
+    await click(fullScreenButton(container));
+    expect(studioRoot.getAttribute("data-full-screen")).toBe("false");
     expect(container.querySelector(".qa-run-card")).toBe(card);
     expect(document.body.style.overflow).toBe("");
-    expect(document.activeElement).toBe(fullScreenButton(container));
   });
 
-  it("opens Sign off from the floating drawer and keeps full screen while its Escape closes it", async () => {
+  it("opens Sign off from the floating panel and keeps full screen while its Escape closes it", async () => {
     setup({ run: runAs("qa", { items: ITEMS }) });
     const container = await studio("qa");
     await click(fullScreenButton(container));
-    await click(container.querySelector(".qa-launcher"));
     await click(buttonNamed(container, "Sign off"));
     expect(document.querySelectorAll('[role="dialog"]')).toHaveLength(1);
     await act(async () => {
       document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true }));
     });
     expect(container.querySelector(".qa-studio")?.getAttribute("data-full-screen")).toBe("true");
+    // The dialog took that Escape: the panel stays open under it.
+    expect(container.querySelector(".qa-studio")?.getAttribute("data-checklist")).toBe("open");
   });
 
-  it("says when CI is failing on the launcher's dot", async () => {
+  it("says when CI is failing on the hidden panel's button", async () => {
     setup({ run: runAs("qa", { items: ITEMS, automation: automation() }) });
     const container = await studio("qa");
-    await click(fullScreenButton(container));
+    await click(container.querySelector('button[aria-label="Hide QA checklist"]'));
     const dot = container.querySelector(".qa-launcher__dot");
     expect(dot?.getAttribute("data-tone")).toBe("failed");
     expect(container.querySelector(".qa-launcher")?.textContent).toContain("Automated tests failed");
   });
 });
-
-function layoutButton(container: HTMLElement, name: "Wide preview" | "Split"): HTMLButtonElement | null {
-  return container.querySelector<HTMLButtonElement>(`.qa-layout-switch button[aria-label="${name}"]`);
-}
 
 /** jsdom has no ResizeObserver: a stand-in that records what it watches and can report a new size. */
 class FakeResizeObserver {
@@ -766,61 +765,66 @@ class FakeResizeObserver {
   }
 }
 
-describe("QA Studio — layouts", () => {
+describe("QA Studio — the run panel", () => {
   afterEach(() => {
     delete (globalThis as { ResizeObserver?: unknown }).ResizeObserver;
     FakeResizeObserver.instances = [];
   });
 
-  it("opens on wide preview and switches to split without remounting the frame or the run column", async () => {
+  it("gives the page the whole width: no layout switch, no layout attribute", async () => {
+    setup({ run: runAs("qa", { items: ITEMS }) });
+    const container = await studio("qa");
+    expect(container.querySelector(".qa-layout-switch")).toBeNull();
+    expect(container.querySelector('button[aria-label="Split"]')).toBeNull();
+    expect(container.querySelector(".qa-studio")?.hasAttribute("data-layout")).toBe(false);
+    // The panel floats over the preview, inside the same box.
+    const panes = container.querySelector(".qa-studio__panes")!;
+    expect(panes.contains(container.querySelector(".qa-studio__preview"))).toBe(true);
+    expect(panes.contains(container.querySelector(".qa-studio__run"))).toBe(true);
+  });
+
+  it("remembers a hidden panel for this viewer, and opens hidden next time", async () => {
+    setup({ run: runAs("qa", { items: ITEMS }) });
+    const first = await studio("qa");
+    await click(first.querySelector('button[aria-label="Hide QA checklist"]'));
+    expect(window.localStorage.getItem("alphaci.qa-studio.panel")).toBe("hidden");
+    act(() => root?.unmount());
+    root = null;
+
+    const container = await studio("qa");
+    expect(container.querySelector(".qa-studio")?.getAttribute("data-checklist")).toBe("hidden");
+    expect(container.querySelector(".qa-launcher")).not.toBeNull();
+    // Still mounted, only hidden.
+    expect(container.querySelectorAll(".qa-run-card")).toHaveLength(1);
+  });
+
+  it("hides on an Escape from inside the panel, docked and in full screen, and full screen stays", async () => {
     setup({ run: runAs("qa", { items: ITEMS }) });
     const container = await studio("qa");
     const studioRoot = container.querySelector(".qa-studio")!;
-    const frame = container.querySelector("iframe");
-    const column = container.querySelector(".qa-studio__run");
-    const card = container.querySelector(".qa-run-card");
-    expect(frame).not.toBeNull();
-    expect(studioRoot.getAttribute("data-layout")).toBe("wide");
-    expect(container.querySelector(".qa-layout-switch legend")?.textContent).toBe("Layout");
-    expect(layoutButton(container, "Wide preview")?.getAttribute("aria-pressed")).toBe("true");
-    expect(layoutButton(container, "Split")?.getAttribute("aria-pressed")).toBe("false");
+    const inside = container.querySelector<HTMLElement>('button[aria-label="Move to the left side"]')!;
+    await act(async () => {
+      inside.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true }));
+    });
+    expect(studioRoot.getAttribute("data-checklist")).toBe("hidden");
+    expect(document.activeElement).toBe(container.querySelector(".qa-launcher"));
 
-    await click(layoutButton(container, "Split"));
-    expect(studioRoot.getAttribute("data-layout")).toBe("split");
-    expect(layoutButton(container, "Split")?.getAttribute("aria-pressed")).toBe("true");
-    expect(layoutButton(container, "Wide preview")?.getAttribute("aria-pressed")).toBe("false");
-    expect(window.localStorage.getItem("alphaci.qa-studio.layout")).toBe("split");
-
-    await click(layoutButton(container, "Wide preview"));
-    expect(studioRoot.getAttribute("data-layout")).toBe("wide");
-
-    // Only the attribute changed: the site under test and the run's drafts were never touched.
-    expect(container.querySelector("iframe")).toBe(frame);
-    expect(container.querySelectorAll("iframe")).toHaveLength(1);
-    expect(container.querySelector(".qa-studio__run")).toBe(column);
-    expect(container.querySelector(".qa-run-card")).toBe(card);
-  });
-
-  it("opens on the layout this viewer chose last time", async () => {
-    window.localStorage.setItem("alphaci.qa-studio.layout", "split");
-    setup({ run: runAs("qa", { items: ITEMS }) });
-    const container = await studio("qa");
-    expect(container.querySelector(".qa-studio")?.getAttribute("data-layout")).toBe("split");
-    expect(layoutButton(container, "Split")?.getAttribute("aria-pressed")).toBe("true");
-  });
-
-  it("hides the layout switch in full screen and brings it back, choice kept, when docked again", async () => {
-    setup({ run: runAs("qa", { items: ITEMS }) });
-    const container = await studio("qa");
-    await click(layoutButton(container, "Split"));
+    await click(container.querySelector(".qa-launcher"));
     await click(fullScreenButton(container));
-    expect(container.querySelector(".qa-layout-switch")).toBeNull();
-    await click(fullScreenButton(container));
-    expect(container.querySelector(".qa-layout-switch")).not.toBeNull();
-    expect(container.querySelector(".qa-studio")?.getAttribute("data-layout")).toBe("split");
+    const heading = container.querySelector<HTMLElement>(".qa-drawer__title")!;
+    await act(async () => {
+      heading.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true }));
+    });
+    expect(studioRoot.getAttribute("data-checklist")).toBe("hidden");
+    expect(studioRoot.getAttribute("data-full-screen")).toBe("true");
+    // An Escape from outside the panel still leaves full screen.
+    await act(async () => {
+      document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true }));
+    });
+    expect(studioRoot.getAttribute("data-full-screen")).toBe("false");
   });
 
-  it("refits the device when a layout change resizes the stage, watching the same stage throughout", async () => {
+  it("refits the device when full screen resizes the stage, watching the same stage throughout", async () => {
     (globalThis as { ResizeObserver?: unknown }).ResizeObserver = FakeResizeObserver;
     setup({ run: runAs("qa", { items: ITEMS }) });
     const container = await studio("qa");
@@ -829,18 +833,17 @@ describe("QA Studio — layouts", () => {
     const observer = FakeResizeObserver.instances.find((instance) => instance.observed.includes(stage))!;
     expect(observer).toBeDefined();
 
-    // Wide: a 1000px stage draws the 1440px desktop at (1000 - 0) / 1440.
+    // Docked: a 1000px stage draws the 1440px desktop at (1000 - 0) / 1440.
     await act(async () => observer.resize(1000, 800));
-    const wideScale = Number(device.style.getPropertyValue("--qa-scale"));
-    expect(wideScale).toBeCloseTo(1000 / 1440, 5);
+    expect(Number(device.style.getPropertyValue("--qa-scale"))).toBeCloseTo(1000 / 1440, 5);
 
-    // Split narrows the column; CSS resizes the stage and the observer reports it.
-    await click(layoutButton(container, "Split"));
+    // Full screen widens the stage; CSS resizes it and the observer reports it.
+    await click(fullScreenButton(container));
     expect(observer.disconnected).toBe(false);
     expect(container.querySelector(".qa-stage")).toBe(stage);
-    await act(async () => observer.resize(700, 800));
-    expect(Number(device.style.getPropertyValue("--qa-scale"))).toBeCloseTo(700 / 1440, 5);
-    expect(container.querySelector(".qa-preview__scale")?.textContent).toBe("Scaled to 49%");
+    await act(async () => observer.resize(1300, 1100));
+    expect(Number(device.style.getPropertyValue("--qa-scale"))).toBeCloseTo(1300 / 1440, 5);
+    expect(container.querySelector(".qa-preview__scale")?.textContent).toBe("Scaled to 90%");
   });
 });
 
@@ -927,8 +930,8 @@ describe("QA Studio — controls in the tab row", () => {
     expect(device.getAttribute("data-orientation")).toBe("landscape");
     await chooseOption(resolutionSelect(slot), "820x1180");
     expect(container.querySelector(".qa-preview__device")?.textContent).toBe("Tablet · 1180 × 820 · Landscape");
-    await click(slot.querySelector('button[aria-label="Split"]'));
-    expect(container.querySelector(".qa-studio")?.getAttribute("data-layout")).toBe("split");
+    // No layout switch in the row: the page always has the whole width.
+    expect(slot.querySelector(".qa-layout-switch")).toBeNull();
     expect(container.querySelector("iframe")).toBe(frame);
   });
 

@@ -2,7 +2,6 @@ import {
   addressLabel,
   automationSignal,
   chromeSize,
-  DEFAULT_STUDIO_LAYOUT,
   defaultEnvironmentKey,
   customResolutionChoice,
   DEVICE_PRESETS,
@@ -11,7 +10,6 @@ import {
   dimensionsLabel,
   fitDeviceScale,
   frameChrome,
-  isStudioLayout,
   launcherLabel,
   MIN_DEVICE_SCALE,
   NO_QA_ENVIRONMENT,
@@ -23,9 +21,9 @@ import {
   resolveDeviceDimensions,
   resolveEnvironment,
   resolveResolution,
-  resolveStudioLayout,
+  resolveStudioPanel,
   scaleLabel,
-  STUDIO_LAYOUTS,
+  studioPanelKey,
   studioEnvironments,
   validateCustomResolution,
 } from "../../../../../src/features/checklists/model/qa-studio-rules";
@@ -172,26 +170,19 @@ describe("fitDeviceScale (both axes, never above 1)", () => {
   });
 });
 
-describe("studio layout", () => {
-  it("offers wide preview (the default) and split, in that order", () => {
-    expect(STUDIO_LAYOUTS.map((option) => option.id)).toEqual(["wide", "split"]);
-    expect(STUDIO_LAYOUTS.map((option) => option.label)).toEqual(["Wide preview", "Split"]);
-    expect(DEFAULT_STUDIO_LAYOUT).toBe("wide");
+describe("studio run panel", () => {
+  it("is remembered per studio", () => {
+    expect(studioPanelKey("qa")).toBe("alphaci.qa-studio.panel");
+    expect(studioPanelKey("po")).toBe("alphaci.po-studio.panel");
   });
 
-  it("reads back a stored layout, and falls back to wide for anything else", () => {
-    expect(resolveStudioLayout("split")).toBe("split");
-    expect(resolveStudioLayout("wide")).toBe("wide");
-    expect(resolveStudioLayout(null)).toBe("wide");
-    expect(resolveStudioLayout("")).toBe("wide");
-    expect(resolveStudioLayout("full-screen")).toBe("wide");
-    expect(resolveStudioLayout("SPLIT")).toBe("wide");
-  });
-
-  it("recognises only the layouts this build knows", () => {
-    expect(isStudioLayout("split")).toBe(true);
-    expect(isStudioLayout("stacked")).toBe(false);
-    expect(isStudioLayout(undefined)).toBe(false);
+  it("is open unless the viewer hid it: a first visit or anything unknown shows the checklist", () => {
+    expect(resolveStudioPanel("hidden")).toBe("hidden");
+    expect(resolveStudioPanel("open")).toBe("open");
+    expect(resolveStudioPanel(null)).toBe("open");
+    expect(resolveStudioPanel("")).toBe("open");
+    expect(resolveStudioPanel("split")).toBe("open");
+    expect(resolveStudioPanel("HIDDEN")).toBe("open");
   });
 });
 
@@ -200,6 +191,12 @@ describe("floating checklist launcher", () => {
     const run = qaRun({ items: [runItem(0, { status: "passed" }), runItem(1), runItem(2, { status: "passed" })] });
     expect(launcherLabel(run)).toBe("QA checklist · 2/3 passed");
     expect(launcherLabel(null)).toBe("QA checklist");
+  });
+
+  it("names PO Studio's panel by its own title", () => {
+    const run = qaRun({ items: [runItem(0, { status: "passed" }), runItem(1)] });
+    expect(launcherLabel(run, "Acceptance")).toBe("Acceptance · 1/2 passed");
+    expect(launcherLabel(null, "Acceptance")).toBe("Acceptance");
   });
 
   it("gives one automation dot: running wins, then a failure, then a pass", () => {

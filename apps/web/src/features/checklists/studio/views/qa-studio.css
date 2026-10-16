@@ -1,6 +1,7 @@
 /* ── Project → QA Studio ─────────────────────────────────────────────────────
-   Toolbar across the top, then the deployed page beside the run: wide preview
-   (the page takes most of the width) or split (half each). Surfaces follow
+   Toolbar across the top, then the deployed page across the whole width, with
+   the run panel (Checklist | Playwright) floating over its edge or hidden
+   behind a button. Surfaces follow
    the project page's graphite ladder (layer-1 cards, border-layer edges) so
    the tab reads as part of the same product; colour is reserved for state —
    success / danger / warning / brand — and nothing else. Tokens only; the
@@ -9,8 +10,9 @@
 
 .qa-studio {
   --qa-pane-height: clamp(32rem, calc(100dvh - 8rem), 54rem);
-  /* The docked columns: wide preview by default (see Panes). */
-  --qa-pane-columns: minmax(0, 1fr) min(26rem, 40%);
+  /* The floating run panel's width, docked: the full-screen drawer's 28rem,
+     never wider than the preview it floats over. */
+  --qa-panel-width: min(28rem, calc(100% - 1.5rem));
 
   display: grid;
   /* One column that may shrink below its content: with the implicit auto
@@ -115,10 +117,6 @@
   height: 2rem;
 }
 
-.qa-toolbar[data-placement="tab-row"] .qa-layout-switch__option {
-  height: 1.65rem;
-}
-
 .qa-toolbar__error {
   margin: 0;
 }
@@ -210,44 +208,6 @@
   flex-basis: 100%;
 }
 
-/* Layout switch: the device switch's segmented look, icon-only, at the
-   address row's button height. A fieldset, so its own defaults are reset. */
-.qa-layout-switch {
-  display: inline-flex;
-  flex-shrink: 0;
-  min-width: 0;
-  margin: 0;
-  padding: 0.15rem;
-  border: 1px solid var(--border-strong);
-  border-radius: 0.55rem;
-  background: var(--bg-soft);
-}
-
-.qa-layout-switch__option {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 1.85rem;
-  height: 1.8rem;
-  padding: 0;
-  border: 0;
-  border-radius: 0.4rem;
-  background: transparent;
-  color: var(--text-muted);
-  cursor: pointer;
-  transition: background 0.16s ease, color 0.16s ease;
-}
-
-.qa-layout-switch__option:hover {
-  color: var(--text-primary);
-}
-
-.qa-layout-switch__option[aria-pressed="true"] {
-  background: var(--layer-2);
-  color: var(--text-primary);
-  box-shadow: var(--shadow-soft);
-}
-
 .qa-icon-button {
   display: inline-flex;
   align-items: center;
@@ -313,25 +273,46 @@
 }
 
 /* ── Panes ───────────────────────────────────────────────────────────────────
-   Docked, `data-layout` picks the columns through one custom property, so the
-   full-screen and narrow-screen rules below still override the grid itself.
-   Wide (the default) gives the page everything the checklist does not need:
-   the column stops at 26rem, a little under the floating drawer's 28rem,
-   where the tab bar (tabs and the readiness chip) and the automation rows
-   still sit on one line. The old fixed share (3fr/2fr) kept growing the checklist with the
-   screen and drew a 1440px desktop at about half size. Capped at 40%, a
-   narrow window is never worse off than that share was. Split halves the
-   width, for writing detailed notes or reading automation results. Below
-   1100px the panes stack. */
-.qa-studio[data-layout="split"] {
-  --qa-pane-columns: minmax(0, 1fr) minmax(0, 1fr);
-}
-
+   The page under test always has the studio's whole width: a desktop page in
+   a shared column was drawn at about half size. The run panel floats over the
+   preview's edge (28rem, where the tab bar and the automation rows still sit
+   on one line), on the right or the left (`data-side`), and hides behind a
+   button (`data-checklist="hidden"`). The panes are its positioning box.
+   Below 1100px there is no width to float over: the panel stacks under the
+   page instead. */
 .qa-studio__panes {
+  position: relative;
   display: grid;
-  grid-template-columns: var(--qa-pane-columns);
+  grid-template-columns: minmax(0, 1fr);
   gap: 1rem;
   align-items: start;
+}
+
+/* Open, the panel needs the pane's height even when the preview is only a
+   message; and the message steps aside rather than sitting under it. */
+.qa-studio[data-checklist="open"] .qa-studio__panes {
+  min-height: var(--qa-pane-height);
+}
+
+.qa-studio[data-checklist="open"] .qa-studio__preview[data-framed="false"] {
+  margin-right: calc(var(--qa-panel-width) + 1.5rem);
+}
+
+.qa-studio[data-checklist="open"][data-side="left"] .qa-studio__preview[data-framed="false"] {
+  margin-right: 0;
+  margin-left: calc(var(--qa-panel-width) + 1.5rem);
+}
+
+/* The caption (device, "Scaled to") stays readable beside an open panel
+   instead of peeking out from under its edge. Full screen floats the panel
+   below the caption, so it needs none of this. */
+.qa-studio[data-checklist="open"]:not([data-full-screen="true"]) .qa-preview__caption {
+  padding-right: calc(var(--qa-panel-width) + 1.5rem);
+}
+
+.qa-studio[data-checklist="open"][data-side="left"]:not([data-full-screen="true"]) .qa-preview__caption {
+  padding-right: 0.85rem;
+  padding-left: calc(var(--qa-panel-width) + 1.5rem);
 }
 
 /* Both panes share one height and only the item list scrolls: the app shell
@@ -348,21 +329,45 @@
   height: auto;
 }
 
-/* The run column is ONE container sharing the pane's height: the tab bar on
-   top (Checklist | Playwright, the "Ready for production" chip, Merge to
-   main), then the selected tab's panel, which takes the rest. Docked it is
-   drawn as one card and the run card inside is flattened into it. Overflow
-   stays visible on the container itself: the Export menu and the chip's
-   popover must never be clipped. */
+/* The run panel is ONE container: its header, the tab bar (Checklist |
+   Playwright, the "Ready for production" chip, Merge to main), then the
+   selected tab's panel, which takes the rest. Docked it floats over the
+   preview's edge at the pane's height; the run card inside is flattened into
+   it. A solid surface, and no transform or filter (the slide is opacity
+   only): either would make it the containing block for the Sign-off dialog's
+   fixed backdrop and trap the dialog inside. Overflow stays visible: the
+   Export menu and the chip's popover must never be clipped. */
 .qa-studio__run {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  bottom: 0.75rem;
+  z-index: 3;
   display: flex;
   flex-direction: column;
+  width: var(--qa-panel-width);
   min-width: 0;
-  max-height: var(--qa-pane-height);
-  border: 1px solid var(--border-layer);
-  border-radius: 0.9rem;
+  border: 1px solid var(--border-tile);
+  border-radius: 1rem;
   background: var(--layer-1);
-  box-shadow: var(--shadow-soft);
+  box-shadow: var(--shadow-hard);
+  animation: qa-drawer-in 160ms ease-out;
+}
+
+.qa-studio[data-side="left"] .qa-studio__run {
+  right: auto;
+  left: 0.75rem;
+}
+
+/* A capture takes the tab's pixels where the page is: the panel and its
+   button go transparent for that moment, never hidden, so focus stays on
+   Capture and nothing remounts. */
+.qa-studio[data-capturing="true"] .qa-studio__run,
+.qa-studio[data-capturing="true"] .qa-launcher {
+  opacity: 0;
+  pointer-events: none;
+  animation: none;
+  transition: none;
 }
 
 /* The selected tab's panel takes what the tab bar leaves. */
@@ -1533,26 +1538,16 @@
   padding: 1.25rem;
 }
 
-/* The floating drawer: ONE run column, moved. A solid surface — no
-   backdrop-filter and no transform, either of which would make it the
-   containing block for the Sign-off dialog's fixed backdrop and trap the
-   dialog inside it. Overflow stays visible so the Export menu is never
-   clipped; only the item list scrolls. */
+/* The same panel, fixed to the viewport's corner instead of the preview's
+   edge, and as tall as its content allows. Only the item list scrolls. */
 .qa-studio[data-full-screen="true"] .qa-studio__run {
   position: fixed;
+  top: auto;
   right: 1rem;
   bottom: 1rem;
-  z-index: 3;
-  display: flex;
-  flex-direction: column;
   gap: 0;
   width: min(28rem, 92vw);
   max-height: calc(100dvh - 6.5rem);
-  border: 1px solid var(--border-tile);
-  border-radius: 1rem;
-  background: var(--layer-1);
-  box-shadow: var(--shadow-hard);
-  animation: qa-drawer-in 160ms ease-out;
 }
 
 .qa-studio[data-full-screen="true"][data-side="left"] .qa-studio__run {
@@ -1560,8 +1555,8 @@
   left: 1rem;
 }
 
-/* Minimized: hidden, still mounted — drafts, dialogs and polling carry on. */
-.qa-studio[data-checklist="minimized"] .qa-studio__run {
+/* Hidden: still mounted — drafts, dialogs and polling carry on. */
+.qa-studio[data-checklist="hidden"] .qa-studio__run {
   display: none;
 }
 
@@ -1687,12 +1682,14 @@
   outline-offset: 2px;
 }
 
-/* The launcher: brings a minimized drawer back from the same corner. */
+/* The button a hidden panel collapses to: the preview's bottom corner on the
+   panel's side (the top carries the device and scale), the viewport's in full
+   screen. */
 .qa-launcher {
-  position: fixed;
-  right: 1rem;
-  bottom: 1rem;
-  z-index: 2;
+  position: absolute;
+  right: 0.75rem;
+  bottom: 0.75rem;
+  z-index: 3;
   display: inline-flex;
   align-items: center;
   gap: 0.55rem;
@@ -1714,6 +1711,17 @@
 }
 
 .qa-studio[data-side="left"] .qa-launcher {
+  right: auto;
+  left: 0.75rem;
+}
+
+.qa-studio[data-full-screen="true"] .qa-launcher {
+  position: fixed;
+  right: 1rem;
+  bottom: 1rem;
+}
+
+.qa-studio[data-full-screen="true"][data-side="left"] .qa-launcher {
   right: auto;
   left: 1rem;
 }
@@ -1770,13 +1778,31 @@
 
 /* ── Narrow screens ──────────────────────────────────────────────────────── */
 @media (max-width: 1100px) {
-  .qa-studio__panes {
-    grid-template-columns: minmax(0, 1fr);
+  /* No width to float over: the panel (or its button) stacks under the page. */
+  .qa-studio[data-checklist="open"] .qa-studio__panes {
+    min-height: 0;
   }
 
-  /* Stacked panes have no width to share: the layout choice does nothing. */
-  .qa-layout-switch {
-    display: none;
+  .qa-studio:not([data-full-screen="true"]) .qa-studio__run {
+    position: static;
+    width: auto;
+    box-shadow: var(--shadow-soft);
+    animation: none;
+  }
+
+  .qa-studio:not([data-full-screen="true"]) .qa-launcher {
+    position: static;
+    justify-self: end;
+  }
+
+  .qa-studio[data-checklist="open"] .qa-studio__preview[data-framed="false"] {
+    margin-right: 0;
+    margin-left: 0;
+  }
+
+  .qa-studio[data-checklist="open"]:not([data-full-screen="true"]) .qa-preview__caption {
+    padding-right: 0.85rem;
+    padding-left: 0.85rem;
   }
 
   .qa-studio__preview {
@@ -1879,7 +1905,7 @@
     transition: none;
   }
 
-  .qa-studio[data-full-screen="true"] .qa-studio__run,
+  .qa-studio__run,
   .qa-launcher,
   .qa-launcher__dot[data-tone="running"] {
     animation: none;

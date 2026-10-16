@@ -183,12 +183,12 @@ function buttonNamed(scope: ParentNode, name: string): HTMLButtonElement | undef
 }
 
 describe("Studio column — one container", () => {
-  it("stacks the tab bar (tabs, readiness chip), the merge outcome's live region, then the panels", async () => {
+  it("stacks its header, the tab bar (tabs, readiness chip), the merge outcome's live region, then the panels", async () => {
     setup();
     const container = await studio("qa");
     const column = container.querySelector<HTMLElement>(".qa-studio__run")!;
     const order = [...column.children].map((child) => child.getAttribute("role") ?? child.className);
-    expect(order).toEqual(["qa-coltabs-bar", "status", "tabpanel", "tabpanel"]);
+    expect(order).toEqual(["qa-drawer__head", "qa-coltabs-bar", "status", "tabpanel", "tabpanel"]);
     // No promotion strip: the checklist panel starts right under the bar (the live region is empty).
     expect(column.querySelector(".qa-promo")).toBeNull();
     expect(column.querySelector('[role="status"]')?.childElementCount).toBe(0);
