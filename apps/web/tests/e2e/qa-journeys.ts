@@ -2323,7 +2323,7 @@ async function openProjectDetail(page: Page, baseUrl: string, name: string) {
   await visible(card, `the ${name} Project card`);
   await card.getByRole('button', { name: `Manage ${name}` }).click();
   await expectText(page.locator('.pf-detail__title'), name, `the ${name} detail`);
-  await visible(page.getByRole('tablist', { name: 'Project QA' }), 'the Project QA tabs');
+  await visible(page.locator('section.rq-workspace'), 'the Project QA workspace');
 }
 
 const FEATURE = {
@@ -2364,8 +2364,7 @@ async function leadWritesProjectRequirements({ page, backend, baseUrl }: Journey
   assert.equal(await page.locator('.pf-card__add').count(), 0, 'no Add repository for a Product owner, blocked or not');
   await storefrontCard.getByRole('button', { name: 'Add a Feature to storefront' }).click();
   await expectText(page.locator('.pf-detail__title'), 'storefront', 'the storefront detail');
-  const tablist = page.getByRole('tablist', { name: 'Project QA' });
-  await visible(tablist.getByRole('tab', { name: 'Requirements', selected: true }), 'Requirements first for a Product owner');
+  await visible(page.getByRole('region', { name: 'Requirements' }), "a Product owner's one view, Requirements");
   const features = page.locator('section.rq-section[data-kind="functional"]');
   const dialog = page.getByRole('dialog', { name: 'New Feature' });
   await visible(dialog, 'New Feature, opened by the nudge');
@@ -2433,7 +2432,7 @@ async function leadWritesProjectRequirements({ page, backend, baseUrl }: Journey
   // same Requirements, no pointer out to the Projects page.
   await openProjectTab(page, baseUrl, 'Checklists');
   const panel = page.locator('#project-detail-panel-checklists');
-  await visible(panel.getByRole('tab', { name: 'Requirements', selected: true }), "the Project's QA workspace in the Checklists tab");
+  await visible(panel.getByRole('region', { name: 'Requirements' }), "the Project's QA workspace in the Checklists tab");
   await expectText(
     panel.locator('article.rq-card').filter({ hasText: FEATURE.name }).locator('.rq-meter__label'),
     '0 of 3 done',
@@ -2556,10 +2555,9 @@ async function developerMovesProgress({ page, backend, baseUrl }: JourneyContext
   const progress = onlyCall(backend.callsTo('PATCH', /^\/requirements\/[^/]+\/items\/[^/]+\/progress$/), 'Progress write');
   assert.deepEqual(progress.body, { progress: 'done', expectedRowVersion: 1 });
 
-  await page.getByRole('tab', { name: 'My QA items' }).click();
-  const ready = page.locator('section[data-bucket="readyForQa"]');
-  await expectText(ready, FEATURE.stories[0], 'the story in QA’s queue');
-  await expectText(page.locator('section[data-bucket="inProgress"]'), FEATURE.stories[1], 'the story still in progress');
+  // One view, no tabs: the checklist itself shows the story moved on.
+  assert.equal(await page.getByRole('tab').count(), 0, 'no Requirements | Progress | QA testing tabs for a Developer');
+  assert.ok(await group.getByRole('radio', { name: 'Done' }).isChecked(), 'the story reads Done on the checklist');
 }
 
 /**
@@ -2570,7 +2568,7 @@ async function developerMovesProgress({ page, backend, baseUrl }: JourneyContext
 async function qaVerifiesProject({ page, backend, baseUrl }: JourneyContext) {
   await openProjectDetail(page, baseUrl, 'storefront');
   await expectRoleBadge(page, 'qa');
-  await visible(page.getByRole('tab', { name: 'QA run', selected: true }), 'the QA run first for the QA Team');
+  await visible(page.getByRole('region', { name: 'QA testing' }), "the QA Team's one view, its run");
   await page.getByRole('button', { name: 'Start QA testing' }).click();
   const start = onlyCall(backend.callsTo('POST', new RegExp(`^/delivery-projects/${STOREFRONT_FOLDER}/qa-runs$`)), 'Project run start');
   assert.deepEqual(start.body, {}, 'no body: the server reads every repository head');
@@ -3063,8 +3061,7 @@ async function leadSwitchesRepositories({ page, backend, baseUrl }: JourneyConte
   // The Project's QA lives in the Checklists tab itself.
   await tabs.getByRole('tab', { name: 'Checklists', exact: true }).click();
   const panel = page.locator('#project-detail-panel-checklists');
-  await visible(panel.getByRole('tablist', { name: 'Project QA' }), "the Project's QA workspace in the Checklists tab");
-  await visible(panel.getByRole('tab', { name: 'Requirements', selected: true }), 'its Requirements first for a Team lead');
+  await visible(panel.getByRole('region', { name: 'Requirements' }), "the Project's QA workspace in the Checklists tab, a Product owner's Requirements");
 
   // The explorer's Manage view: the frontend opens, the backend is a label.
   await page.goto(`${baseUrl}/workflows?group=${WORKSPACE.id}&project=${STOREFRONT_FOLDER}`, { waitUntil: 'domcontentloaded' });
@@ -3145,7 +3142,7 @@ async function leadOrganisesProjects({ page, backend, baseUrl }: JourneyContext)
   assert.equal(await page.getByRole('link', { name: 'Add repository' }).count(), 0, 'no Add repository for a Product owner');
 
   // Requirements and QA belong to the Project now: no per-repository checklist attach.
-  await visible(page.getByRole('tablist', { name: 'Project QA' }), 'the Project QA workspace');
+  await visible(page.locator('section.rq-workspace'), 'the Project QA workspace');
   // System requirements are hidden for now (SHOWN_REQUIREMENT_KINDS): Features only.
   await visible(page.locator('section.rq-section[data-kind="functional"]'), 'the Features section');
   assert.equal(await page.locator('section.rq-section[data-kind="system"]').count(), 0, 'no System requirements section');

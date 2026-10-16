@@ -61,12 +61,10 @@ export interface ProjectDetailTabsViewModel {
    */
   highlightMyQaItems: boolean;
   /**
-   * The Overview's "Open checklist": the Checklists tab, asked to open on the
-   * viewer's "My QA items" (where it embeds the Project's QA workspace).
+   * The Overview's "Open checklist": the Checklists tab, which embeds the
+   * Project's QA workspace in the viewer's own view.
    */
   openMyQaItems: () => void;
-  /** Set by `openMyQaItems`, cleared by choosing a tab by hand. */
-  checklistsOpensMyItems: boolean;
   /**
    * The target whose logs Hosting should open with, set when the Overview's
    * card asks for its full logs. Cleared by choosing a tab by hand.
@@ -171,7 +169,6 @@ export function useProjectDetailTabsViewModel(options: {
   const [commitsBranch, setCommitsBranch] = useState<string | null>(() =>
     typeof window === "undefined" ? null : commitsBranchFromUrl(window.location.hash, window.location.search),
   );
-  const [checklistsOpensMyItems, setChecklistsOpensMyItems] = useState(false);
   const [selectedPipelineView, setPipelineView] = useState<PipelineView>(() =>
     typeof window === "undefined" ? "runs" : pipelineViewFromHash(window.location.hash),
   );
@@ -234,7 +231,6 @@ export function useProjectDetailTabsViewModel(options: {
     setLogFocus(null);
     setPullFocus(null);
     setCommitsBranch(null);
-    setChecklistsOpensMyItems(false);
     setPipelineView("runs");
     setTabState(next);
   }
@@ -248,7 +244,6 @@ export function useProjectDetailTabsViewModel(options: {
     setHostingFocus(null);
     setLogFocus(null);
     setPullFocus(null);
-    setChecklistsOpensMyItems(true);
     setTabState("checklists");
   }
 
@@ -301,7 +296,6 @@ export function useProjectDetailTabsViewModel(options: {
     qaChecklistsEnabled: caps.qaChecklistsEnabled,
     highlightMyQaItems,
     openMyQaItems,
-    checklistsOpensMyItems,
     logFocus,
     openTargetLogs,
     hostingFocus,
