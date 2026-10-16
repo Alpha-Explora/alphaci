@@ -258,6 +258,17 @@
   letter-spacing: 0.02em;
 }
 
+.hosts-install {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem 0.9rem;
+  flex-wrap: wrap;
+}
+
+.hosts-install .hosts-muted {
+  flex: 1 1 16rem;
+}
+
 .hosts-copy {
   position: absolute;
   top: 0.5rem;
