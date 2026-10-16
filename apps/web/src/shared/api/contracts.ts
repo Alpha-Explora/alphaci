@@ -1004,7 +1004,24 @@ export interface MicroservicesConfig {
   frontend: MicroserviceSlotConfig;
 }
 
-/** A stored assignment: AlphaCI allocated every host port on the machine. */
+/**
+ * The machine's report on its automatic HTTPS tunnel. Present on an assignment
+ * whose ingress mode is "tunnel"; null for every other mode.
+ */
+export interface TunnelReport {
+  status: "waiting" | "starting" | "running" | "unavailable" | "failed";
+  /** https URL the machine reported; present only while it is fresh. */
+  publicUrl: string | null;
+  /** One plain sentence for the user. */
+  message: string;
+  reportedAt: string | null;
+}
+
+/**
+ * A stored assignment: AlphaCI allocated every host port on the machine.
+ * "tunnel" has the machine run a quick tunnel and report its address; the
+ * client sends publicUrl as null in that mode.
+ */
 export interface OnpremAssignmentConfig {
   ports: Array<{
     slot: "frontend" | "backend";
@@ -1012,7 +1029,10 @@ export interface OnpremAssignmentConfig {
     containerPort: number;
   }>;
   health: Array<{ slot: "frontend" | "backend"; path: string | null }>;
-  ingress: { mode: "direct" | "configured"; publicUrl: string | null };
+  ingress: {
+    mode: "direct" | "configured" | "tunnel";
+    publicUrl: string | null;
+  };
 }
 /** What a client asks for: host ports are chosen by the server. */
 export interface OnpremAssignmentRequestConfig {

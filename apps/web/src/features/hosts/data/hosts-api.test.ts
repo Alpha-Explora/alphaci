@@ -52,6 +52,23 @@ it("scopes inventory and enrollment to the explicit workspace and posts codes on
     },
   );
 });
+it("sends tunnel ingress with no public URL, since the machine creates it", async () => {
+  const input: Parameters<typeof assignHost>[2] = {
+    expectedAssignmentId: null,
+    requestId: "request",
+    config: {
+      ports: [{ slot: "frontend", containerPort: 3000 }],
+      health: [{ slot: "frontend", path: "/" }],
+      ingress: { mode: "tunnel", publicUrl: null },
+    },
+  };
+  await assignHost("p", "e", input);
+  expect(request).toHaveBeenLastCalledWith(
+    "/projects/p/environments/e/host-assignment",
+    { method: "POST", body: JSON.stringify(input) },
+  );
+});
+
 it("passes explicit comparison and request id without another project creation", async () => {
   const input = {
     machineId: "m",

@@ -19,7 +19,8 @@ import type { UsageLimitItem } from "../../../../../../src/shared/api/contracts"
  * - each blocker that holds Create names itself, in a fixed order.
  */
 
-const PRODUCTION = "Add an HTTPS URL for Production, or choose Assign later.";
+const PRODUCTION =
+  "Add an HTTPS URL or choose the automatic HTTPS address for Production, or choose Assign later.";
 
 /** The fixed path with Production on a machine that has no HTTPS URL. */
 function productionWithoutHttps(): EnvironmentDraft[] {

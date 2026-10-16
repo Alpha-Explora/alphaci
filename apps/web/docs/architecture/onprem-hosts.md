@@ -38,8 +38,13 @@ checks. Assign/replace POSTs carry a stable request ID for network retries and
 the expected current assignment ID for compare-and-set. Any edit clears the
 replacement confirmation. Unassign uses the expected ID too. A conflict needs
 a refresh. No page load or generic retry changes an assignment automatically.
-Users edit ports, health paths, and ingress explicitly; production requires a
-configured HTTPS ingress URL. Readiness preserves failed and unverified checks.
+Users edit ports, health paths, and ingress explicitly. Ingress is direct, a
+configured URL behind a proxy, or an automatic `tunnel`: the machine runs a
+quick tunnel and reports its HTTPS address, which the assignment returns as
+`tunnel` (null unless the mode is `tunnel`; `waiting` until a fresh report). A
+tunnel request sends a null public URL. Production requires an HTTPS address:
+a configured HTTPS URL or the tunnel. Readiness preserves failed and unverified
+checks.
 
 Project setup optionally selects machines for its on-prem environments.
 Workspace changes clear prior selections. Refresh hosts loads new enrollments.

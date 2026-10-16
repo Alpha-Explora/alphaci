@@ -31,6 +31,7 @@ export type AssignmentConfig =
   import("@/shared/api/contracts").OnpremAssignmentConfig;
 export type AssignmentRequestConfig =
   import("@/shared/api/contracts").OnpremAssignmentRequestConfig;
+export type TunnelReport = import("@/shared/api/contracts").TunnelReport;
 export interface MachineAssignment {
   id: string;
   machineId: string;
@@ -38,6 +39,8 @@ export interface MachineAssignment {
   environmentId: string;
   revision: number;
   config: AssignmentConfig;
+  /** The machine's tunnel report; null unless config.ingress.mode is "tunnel". */
+  tunnel: TunnelReport | null;
 }
 export type HostAssignment =
   | MachineAssignment
@@ -80,6 +83,29 @@ export function requestedConfig(
       containerPort,
     })),
   };
+}
+/** Shown while the machine has not reported a tunnel address and said nothing else. */
+export const TUNNEL_WAITING_MESSAGE =
+  "Waiting for the machine to report its address";
+/** Where an assignment's environment is reached, as the summary shows it. */
+export type ReachedAt =
+  | { kind: "link"; href: string }
+  | { kind: "text"; text: string };
+export function reachedAt(
+  config: AssignmentConfig,
+  tunnel: TunnelReport | null,
+): ReachedAt {
+  const { ingress } = config;
+  if (ingress.mode === "configured" && ingress.publicUrl)
+    return { kind: "link", href: ingress.publicUrl };
+  if (ingress.mode === "tunnel") {
+    if (tunnel?.publicUrl) return { kind: "link", href: tunnel.publicUrl };
+    return {
+      kind: "text",
+      text: tunnel?.message.trim() || TUNNEL_WAITING_MESSAGE,
+    };
+  }
+  return { kind: "text", text: "host port on the local network" };
 }
 export function canManageHosts(
   appRole: string | undefined,

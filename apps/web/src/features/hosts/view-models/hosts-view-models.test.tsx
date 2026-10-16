@@ -173,6 +173,7 @@ it("assigns the only connected machine without a choice or host ports", async ()
       health: [{ slot: "frontend", path: "/" }],
       ingress: { mode: "direct", publicUrl: null },
     },
+    tunnel: null,
   });
   const seen = probe(() => useHostAssignmentViewModel(options));
   await settle();
