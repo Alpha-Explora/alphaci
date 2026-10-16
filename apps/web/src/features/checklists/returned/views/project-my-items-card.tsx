@@ -14,9 +14,9 @@ import {
   bucketCopy,
   feedItemKey,
   MY_ITEMS_BUCKETS,
+  projectMyItemsCount,
 } from "../../model/project-run-rules";
 import type { MyItemsBucket, ProjectFeedItem } from "../../model/project-run-types";
-import { agoLabel } from "../../model/qa-run-rules";
 import { canSetProgress, itemProgressEditable, kindCopy } from "../../model/requirement-rules";
 import { useItemProgressViewModel, type ItemProgressViewModel } from "../view-models/use-item-progress-view-model";
 import {
@@ -24,6 +24,7 @@ import {
   type ProjectMyItemsViewModel,
 } from "../view-models/use-project-my-items-view-model";
 import { ProgressControl } from "./progress-control";
+import { QaFindings } from "./qa-findings";
 
 function Detail({ label, text }: Readonly<{ label: string; text: string | null }>) {
   if (!text) return null;
@@ -32,28 +33,6 @@ function Detail({ label, text }: Readonly<{ label: string; text: string | null }
       <span className="qa-returned__detail-label">{label}</span>
       <p>{text}</p>
     </div>
-  );
-}
-
-/** What QA recorded, on a returned item: who, how bad, and how to reproduce it. */
-function QaFindings({ entry }: Readonly<{ entry: ProjectFeedItem }>) {
-  const runItem = entry.runItem;
-  if (!runItem) return null;
-  const by = runItem.verifiedBy;
-  const ago = agoLabel(runItem.verifiedAt);
-  return (
-    <>
-      {by ? (
-        <p className="qa-returned__meta">
-          <span>
-            Returned by <strong>@{by.login}</strong>
-            {ago ? ` · ${ago}` : ""}
-          </span>
-        </p>
-      ) : null}
-      <Detail label="QA notes" text={runItem.notes} />
-      <Detail label="Reproduction steps" text={runItem.reproductionSteps} />
-    </>
   );
 }
 
@@ -85,7 +64,7 @@ function FeedRow({
         <span>{requirement.name}</span>
       </p>
       <Detail label="Acceptance criteria" text={item.acceptanceCriteria} />
-      {bucket === "returned" ? <QaFindings entry={entry} /> : null}
+      {bucket === "returned" ? <QaFindings runItem={runItem} /> : null}
       <ProgressControl
         item={item}
         editable={itemProgressEditable(item, canSet)}
@@ -174,23 +153,16 @@ function CardPlaceholder({
 
 function Buckets({
   list,
-  buckets,
   ready,
   canSet,
   progress,
-}: Readonly<{
-  list: ProjectMyItemsViewModel;
-  buckets: ReadonlyArray<MyItemsBucket>;
-  ready: boolean;
-  canSet: boolean;
-  progress: ItemProgressViewModel;
-}>) {
+}: Readonly<{ list: ProjectMyItemsViewModel; ready: boolean; canSet: boolean; progress: ItemProgressViewModel }>) {
   if (!ready) {
     return <p className="qa-mine__lede">Nothing here yet. Items appear once a Product owner writes requirements.</p>;
   }
   return (
     <>
-      {buckets.map((bucket) => (
+      {MY_ITEMS_BUCKETS.map((bucket) => (
         <Bucket
           key={bucket}
           bucket={bucket}
@@ -207,65 +179,19 @@ function Buckets({
 /** Between a delivered iteration and the next, who the team waits for; otherwise the buckets. */
 function CardContent({
   list,
-  scope,
   next,
   ready,
   canSet,
   progress,
 }: Readonly<{
   list: ProjectMyItemsViewModel;
-  scope: CardScope;
   next: StartIterationViewModel;
   ready: boolean;
   canSet: boolean;
   progress: ItemProgressViewModel;
 }>) {
-  if (scope.iterationStep && next.step.kind !== "none") return <IterationNextStepView vm={next} />;
-  return <Buckets list={list} buckets={scope.buckets} ready={ready} canSet={canSet} progress={progress} />;
-}
-
-/** The whole list, or (`returnedOnly`) just what QA sent back, as the Developer's checklist shows it. */
-interface CardScope {
-  buckets: ReadonlyArray<MyItemsBucket>;
-  /** Only the whole list stands in for who the team waits for; the checklist says that itself. */
-  iterationStep: boolean;
-  /** Only what was sent back: nothing to show is shown as nothing. */
-  hideWhenEmpty: boolean;
-  title: string;
-  lede: string;
-}
-
-const RETURNED_ONLY_BUCKETS: ReadonlyArray<MyItemsBucket> = ["returned"];
-
-function cardScope(returnedOnly: boolean, hideWhenEmpty: boolean): CardScope {
-  if (returnedOnly) {
-    return {
-      buckets: RETURNED_ONLY_BUCKETS,
-      iterationStep: false,
-      hideWhenEmpty: true,
-      title: "Returned by QA",
-      lede: "What QA sent back, with its notes. Move each item on again once it is fixed.",
-    };
-  }
-  return {
-    buckets: MY_ITEMS_BUCKETS,
-    iterationStep: true,
-    hideWhenEmpty,
-    title: "Progress",
-    lede: "Where every story stands: to do, in progress, sent back by QA, and ready for QA testing.",
-  };
-}
-
-function scopeCount(scope: CardScope, data: ProjectMyItemsViewModel["data"]): number {
-  return scope.buckets.reduce((sum, bucket) => sum + data[bucket].length, 0);
-}
-
-/** What the card knows once its list and the iteration step are read. */
-function cardFacts(scope: CardScope, list: ProjectMyItemsViewModel, next: StartIterationViewModel, enabled: boolean) {
-  const waiting = scope.iterationStep && next.step.kind !== "none";
-  const total = scopeCount(scope, list.data);
-  const ready = list.status === "ready" && total > 0;
-  return { waiting, total, ready, state: cardState(enabled, list.status, ready || waiting, scope.hideWhenEmpty) };
+  if (next.step.kind !== "none") return <IterationNextStepView vm={next} />;
+  return <Buckets list={list} ready={ready} canSet={canSet} progress={progress} />;
 }
 
 type CardState = "hidden" | "fallback" | "loading" | "error" | "list";
@@ -295,9 +221,6 @@ function cardState(
  * when the server has no project-wide list (an older backend). Between a
  * delivered iteration and the next, the buckets give way to who the team is
  * waiting for (or, for a Product owner or admin, Start iteration N+1).
- *
- * `returnedOnly` is the Developer's checklist's own strip: only what QA
- * sent back, with its findings, and nothing at all when there is none.
  */
 export function ProjectMyItemsCard({
   deliveryProjectId,
@@ -306,7 +229,6 @@ export function ProjectMyItemsCard({
   hideWhenEmpty = false,
   highlightRequested = false,
   fallback = null,
-  returnedOnly = false,
 }: Readonly<{
   deliveryProjectId: string;
   enabled: boolean;
@@ -314,16 +236,17 @@ export function ProjectMyItemsCard({
   hideWhenEmpty?: boolean;
   highlightRequested?: boolean;
   fallback?: ReactNode;
-  returnedOnly?: boolean;
 }>) {
-  const scope = cardScope(returnedOnly, hideWhenEmpty);
   const list = useProjectMyItemsViewModel({ deliveryProjectId, enabled });
   const progress = useItemProgressViewModel({ onSaved: list.applyItem });
-  const next = useNextIterationViewModel({ deliveryProjectId, enabled: enabled && scope.iterationStep, appRole });
-  const { waiting, total, ready, state } = cardFacts(scope, list, next, enabled);
+  const next = useNextIterationViewModel({ deliveryProjectId, enabled, appRole });
+  const waiting = next.step.kind !== "none";
+  const total = projectMyItemsCount(list.data);
+  const ready = list.status === "ready" && total > 0;
   const canSet = canSetProgress(appRole);
   const headingRef = useFocusWhenReady(highlightRequested, ready);
 
+  const state = cardState(enabled, list.status, ready || waiting, hideWhenEmpty);
   if (state !== "list") return <CardPlaceholder state={state} list={list} fallback={fallback} />;
   return (
     <section
@@ -333,12 +256,12 @@ export function ProjectMyItemsCard({
     >
       <header className="qa-returned__header">
         <h2 ref={headingRef} tabIndex={-1} className="qa-returned__heading" id="pmi-title">
-          {scope.title}
+          Progress
           {waiting ? null : <span className="qa-mine__count">{total}</span>}
         </h2>
-        <p className="qa-mine__lede">{scope.lede}</p>
+        <p className="qa-mine__lede">Where every story stands: to do, in progress, sent back by QA, and ready for QA testing.</p>
       </header>
-      <CardContent list={list} scope={scope} next={next} ready={ready} canSet={canSet} progress={progress} />
+      <CardContent list={list} next={next} ready={ready} canSet={canSet} progress={progress} />
     </section>
   );
 }

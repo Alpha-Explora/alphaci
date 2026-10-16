@@ -738,27 +738,6 @@ describe("ProjectMyItemsCard", () => {
     expect(fallback.textContent).toBe("legacy card");
   });
 
-  /* The Developer's checklist carries only what QA sent back, above the
-   * Features: the findings once lived on the Progress tab. */
-  it("shows only what QA returned, with its findings, and nothing when none was", async () => {
-    runs.myItems.mockResolvedValue(
-      normalizeProjectMyItems({
-        returned: [feed({ runId: "prun-1", runItem: runItemWire({ status: "returned_to_dev", defectSeverity: "major", notes: "Card declined", verifiedBy: { id: "u", login: "ana-qa" } }) })],
-        todo: [feed({ item: itemWire({ id: "i3" }) })],
-      }),
-    );
-    const returned = await render(<ProjectMyItemsCard deliveryProjectId="dp-1" enabled appRole="member" returnedOnly />);
-    expect(returned.querySelector("#pmi-title")?.textContent).toBe("Returned by QA1");
-    expect([...returned.querySelectorAll(".qa-mine__section-title")].map((title) => title.textContent)).toEqual(["Returned by QA1"]);
-    expect(returned.textContent).toContain("Card declined");
-    act(() => root?.unmount());
-    root = null;
-
-    runs.myItems.mockResolvedValue(normalizeProjectMyItems({ todo: [feed({ item: itemWire({ id: "i3" }) })] }));
-    const none = await render(<ProjectMyItemsCard deliveryProjectId="dp-1" enabled appRole="member" returnedOnly />);
-    expect(none.textContent).toBe("");
-  });
-
   it("gives the QA Team the list without Progress controls", async () => {
     runs.myItems.mockResolvedValue(normalizeProjectMyItems({ readyForQa: [feed({ item: itemWire({ progress: "done" }) })] }));
     const container = await render(<ProjectMyItemsCard deliveryProjectId="dp-1" enabled appRole="qa" />);
@@ -798,11 +777,12 @@ describe("ProjectQaWorkspace", () => {
 
     loadAll("member");
     const member = await render(<ProjectQaWorkspace deliveryProjectId="dp-1" projectName="storefront" appRole="member" />);
-    // The same Features, with Progress to move and no authoring; QA's returns would head them.
+    // The same Features, with Progress to move and no authoring; QA's verdicts come from the run.
     expect(member.querySelector("section.rq-section")).not.toBeNull();
     expect(member.querySelector("fieldset.rq-progress")).not.toBeNull();
     expect(buttonNamed(member, "New Feature")).toBeUndefined();
-    expect(runs.myItems).toHaveBeenCalled();
+    expect(runs.current).toHaveBeenCalled();
+    expect(runs.myItems).not.toHaveBeenCalled();
     act(() => root?.unmount());
     root = null;
 
@@ -813,7 +793,7 @@ describe("ProjectQaWorkspace", () => {
   });
 
   /* Home's "Returned by QA" links here with #my-qa-items: a Developer's
-   * checklist already heads with them, and nobody is moved off their view. */
+   * checklist opens on that chip, and nobody is moved off their view. */
   it("keeps every persona on its own view for a #my-qa-items deep link", async () => {
     loadAll("lead");
     window.history.replaceState(null, "", "#my-qa-items");
@@ -856,5 +836,114 @@ describe("ProjectQaWorkspace", () => {
     const container = await render(<ProjectQaWorkspace deliveryProjectId="dp-1" projectName="storefront" appRole="lead" enabled={false} />);
     expect(container.textContent).toBe("");
     expect(requirements.listForProject).not.toHaveBeenCalled();
+  });
+});
+
+describe("The Developer's checklist", () => {
+  /** item-1 sent back by QA with its findings, item-2 still pending QA. */
+  function loadReturnedRun() {
+    loadRequirements("member");
+    runs.current.mockResolvedValue(
+      normalizeProjectRunCurrent({
+        run: projectRunWire({
+          items: [
+            runItemWire({
+              sourceItemId: "item-1",
+              status: "returned_to_dev",
+              defectSeverity: "major",
+              notes: "Card declined",
+              reproductionSteps: "Pay with the saved Visa",
+              verifiedBy: { id: "u", login: "ana-qa" },
+            }),
+            runItemWire({ id: "run-item-2", position: 1, sourceItemId: "item-2", status: "pending" }),
+          ],
+        }),
+      }),
+    );
+  }
+
+  function developer() {
+    return render(<ProjectQaWorkspace deliveryProjectId="dp-1" projectName="storefront" appRole="member" />);
+  }
+
+  function chip(container: HTMLElement, label: string): HTMLButtonElement {
+    const found = [...container.querySelectorAll<HTMLButtonElement>(".rq-filter")].find((button) =>
+      button.textContent?.startsWith(label),
+    );
+    if (!found) throw new Error(`no ${label} chip`);
+    return found;
+  }
+
+  function rows(container: HTMLElement): HTMLElement[] {
+    return [...container.querySelectorAll<HTMLElement>("li.rq-item")];
+  }
+
+  it("puts QA's verdict and notes on the item it sent back, and nothing on one still pending", async () => {
+    loadReturnedRun();
+    const container = await developer();
+    const [returned, pending] = rows(container);
+    expect(returned?.getAttribute("data-verdict")).toBe("returned_to_dev");
+    expect(returned?.querySelector(".rq-item__verdict .qa-pill")).not.toBeNull();
+    expect(returned?.querySelector(".rq-item__verdict .qa-severity")).not.toBeNull();
+    expect(returned?.textContent).toContain("Returned by @ana-qa");
+    expect(returned?.textContent).toContain("Card declined");
+    expect(returned?.textContent).toContain("Pay with the saved Visa");
+    expect(pending?.querySelector(".rq-item__verdict")).toBeNull();
+    expect(pending?.querySelector(".qa-returned__detail")).toBeNull();
+  });
+
+  it("counts each chip, QA's word winning over Progress, and shows only the matches, opened", async () => {
+    loadReturnedRun();
+    const container = await developer();
+    const counts = Object.fromEntries(
+      [...container.querySelectorAll(".rq-filter")].map((button) => [
+        button.getAttribute("data-filter"),
+        button.querySelector(".rq-filter__count")?.textContent,
+      ]),
+    );
+    // item-1 is To do, but QA sent it back: it counts as Returned by QA only.
+    expect(counts).toEqual({ all: "2", returned: "1", todo: "0", in_progress: "0", done: "1" });
+    expect(chip(container, "All").getAttribute("aria-pressed")).toBe("true");
+    expect(container.querySelector(".rq-card__body")?.hasAttribute("hidden")).toBe(true);
+
+    await act(async () => chip(container, "Returned by QA").click());
+    expect(container.querySelector(".rq-card__body")?.hasAttribute("hidden")).toBe(false);
+    expect(rows(container).map((row) => row.querySelector(".rq-item__index")?.textContent)).toEqual(["01"]);
+
+    // A filter hides rows, never renumbers them.
+    await act(async () => chip(container, "Done").click());
+    expect(rows(container).map((row) => row.querySelector(".rq-item__index")?.textContent)).toEqual(["02"]);
+
+    await act(async () => chip(container, "To do").click());
+    expect(container.querySelector(".rq-empty--filtered")?.textContent).toBe("Nothing left to do.");
+    expect(container.querySelector("article.rq-card")).toBeNull();
+  });
+
+  it("opens on Returned by QA for Home's #my-qa-items link", async () => {
+    loadReturnedRun();
+    window.history.replaceState(null, "", "#my-qa-items");
+    try {
+      const container = await developer();
+      expect(chip(container, "Returned by QA").getAttribute("aria-pressed")).toBe("true");
+      expect(rows(container)).toHaveLength(1);
+    } finally {
+      window.history.replaceState(null, "", window.location.pathname);
+    }
+  });
+
+  it("still lists every item without a run, or on a backend without Project runs", async () => {
+    loadRequirements("member");
+    runs.current.mockRejectedValue(Object.assign(new Error("404"), { status: 404 }));
+    const container = await developer();
+    expect(container.querySelector(".rq-item__verdict")).toBeNull();
+    expect(chip(container, "All").querySelector(".rq-filter__count")?.textContent).toBe("2");
+  });
+
+  it("gives the Product owner no chips and no verdicts", async () => {
+    loadReturnedRun();
+    loadRequirements("lead");
+    const container = await render(<ProjectQaWorkspace deliveryProjectId="dp-1" projectName="storefront" appRole="lead" />);
+    expect(container.querySelector(".rq-filters")).toBeNull();
+    expect(container.querySelector(".rq-item__verdict")).toBeNull();
   });
 });

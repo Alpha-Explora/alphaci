@@ -18,6 +18,7 @@ export {
  * the project-wide "My QA items" list. */
 export { ProjectMyItemsCard } from "./views/project-my-items-card";
 export { ProgressControl } from "./views/progress-control";
+export { hasQaFindings, QaFindings } from "./views/qa-findings";
 export {
   useItemProgressViewModel,
   type ItemProgressViewModel,

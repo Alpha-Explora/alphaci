@@ -2,12 +2,12 @@
 
 import "./requirements.css";
 
-import { useState, type ReactNode } from "react";
+import { useState } from "react";
 
 import type { AppRole } from "@/shared/api/contracts";
 
-import { ProjectMyItemsCard } from "../../returned";
 import { ProjectRunPanel, useProjectRunViewModel } from "../../studio";
+import { verdictsBySourceItem } from "../../model/checklist-filter-rules";
 import { CHECKLIST_VIEW_LABELS, checklistViewFor } from "../../model/checklist-view-rules";
 import { lockedIterationNumber } from "../../model/iteration-rules";
 import { canSetVerification } from "../../model/requirement-rules";
@@ -41,11 +41,34 @@ function RunView({
 }
 
 /**
+ * The Developer's checklist: the Features, each item's Progress to move, and
+ * QA's verdict on it from the current run (its notes when it was sent back,
+ * failed or blocked), narrowed by the chips. No run yet, or an older backend
+ * without Project runs, simply means no verdicts.
+ */
+function DeveloperView({
+  deliveryProjectId,
+  appRole,
+  onOpenHistory,
+}: Readonly<{ deliveryProjectId: string; appRole: AppRole | null | undefined; onOpenHistory?: () => void }>) {
+  const run = useProjectRunViewModel({ deliveryProjectId, enabled: true });
+  return (
+    <ProjectRequirementsPanel
+      deliveryProjectId={deliveryProjectId}
+      appRole={appRole}
+      onOpenHistory={onOpenHistory}
+      verdicts={verdictsBySourceItem(run.run)}
+      filterable
+    />
+  );
+}
+
+/**
  * Everything QA about one Project, as the ONE view this viewer's role works
  * (`checklistViewFor`): a Product owner's Requirements (written by them, with
  * every item's progress), a Developer's Checklist (the same Features, each
- * item's Progress to move, and what QA sent back on top), or the QA Team's
- * run. Mounted by the Project detail screens; it owns its view-models.
+ * item's Progress to move, with QA's verdict on it), or the QA Team's run.
+ * Mounted by the Project detail screens; it owns its view-models.
  */
 export function ProjectQaWorkspace({
   deliveryProjectId,
@@ -54,7 +77,6 @@ export function ProjectQaWorkspace({
   enabled = true,
   newFeatureRequest = 0,
   onFeatureCount,
-  itemsFallback,
   onOpenHistory,
 }: Readonly<{
   deliveryProjectId: string;
@@ -65,8 +87,6 @@ export function ProjectQaWorkspace({
   newFeatureRequest?: number;
   /** The Project's live Feature count, each time the Requirements view reads it. */
   onFeatureCount?: (count: number) => void;
-  /** Stands in for what QA sent back when the server has no Project-wide list (an older backend). */
-  itemsFallback?: ReactNode;
   /** Opens the page's History tab (the repository page); omitted where there is none. */
   onOpenHistory?: () => void;
 }>) {
@@ -98,16 +118,7 @@ export function ProjectQaWorkspace({
           <RunView deliveryProjectId={deliveryProjectId} appRole={appRole} onOpenHistory={onOpenHistory} />
         ) : null}
         {view === "developer" ? (
-          <>
-            <ProjectMyItemsCard
-              deliveryProjectId={deliveryProjectId}
-              enabled
-              appRole={appRole}
-              fallback={itemsFallback}
-              returnedOnly
-            />
-            <ProjectRequirementsPanel deliveryProjectId={deliveryProjectId} appRole={appRole} onOpenHistory={onOpenHistory} />
-          </>
+          <DeveloperView deliveryProjectId={deliveryProjectId} appRole={appRole} onOpenHistory={onOpenHistory} />
         ) : null}
       </div>
     </section>

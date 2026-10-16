@@ -3,6 +3,7 @@
 import { useState } from "react";
 
 import type { ItemProgressViewModel } from "../../returned";
+import { itemMatches, NO_VERDICTS, type ChecklistFilter, type ItemVerdicts } from "../../model/checklist-filter-rules";
 import {
   donePercent,
   itemProgressEditable,
@@ -37,12 +38,16 @@ function CardItems({
   items,
   progress,
   onReload,
+  verdicts,
+  filter,
 }: Readonly<{
   requirement: Requirement;
   permissions: RequirementPermissions;
   items: RequirementItemsViewModel;
   progress: ItemProgressViewModel;
   onReload: () => void;
+  verdicts: ItemVerdicts;
+  filter: ChecklistFilter;
 }>) {
   const copy = kindCopy(requirement.kind);
   if (requirement.items.length === 0) {
@@ -56,7 +61,8 @@ function CardItems({
   }
   return (
     <ol className="rq-items" aria-label={`${copy.items} of ${requirement.name}`}>
-      {requirement.items.map((item, index) => (
+      {/* A filter hides rows, never renumbers them: 03 stays the third story. */}
+      {requirement.items.map((item, index) => itemMatches(item, verdicts, filter) ? (
         <RequirementItemRow
           key={item.id}
           item={item}
@@ -68,8 +74,9 @@ function CardItems({
           items={items}
           progress={progress}
           onReload={onReload}
+          verdict={verdicts.get(item.id)}
         />
-      ))}
+      ) : null)}
     </ol>
   );
 }
@@ -97,6 +104,10 @@ function AddItem({
  * The card opens like a dropdown: its title, description and progress show,
  * and its items stay hidden until the title is pressed. Hidden, not
  * unmounted, so an item being edited keeps its draft when the card closes.
+ *
+ * With a `filter` on (the Developer's chips) it shows only the items that
+ * match, and opens by itself so they are in view; pressing the title still
+ * closes it. `verdicts` puts QA's verdict on each item.
  */
 export function RequirementCard({
   requirement,
@@ -108,6 +119,8 @@ export function RequirementCard({
   onRemoved,
   onRequirement,
   onReload,
+  verdicts = NO_VERDICTS,
+  filter = "all",
 }: Readonly<{
   requirement: Requirement;
   permissions: RequirementPermissions;
@@ -118,6 +131,8 @@ export function RequirementCard({
   onRemoved: (requirementId: string, itemId: string) => void;
   onRequirement: (requirement: Requirement) => void;
   onReload: () => void;
+  verdicts?: ItemVerdicts;
+  filter?: ChecklistFilter;
 }>) {
   const copy = kindCopy(requirement.kind);
   const items = useRequirementItemsViewModel({
@@ -130,7 +145,10 @@ export function RequirementCard({
   const canManage = permissions.canManage;
   const titleId = `rq-${requirement.id}`;
   const itemsId = `rq-${requirement.id}-items`;
-  const [open, setOpen] = useState(false);
+  // Closed by default, open while a filter is on. A press holds only for the
+  // filter it was made under: choosing another chip shows its matches again.
+  const [pressed, setPressed] = useState<{ filter: ChecklistFilter; open: boolean } | null>(null);
+  const open = pressed?.filter === filter ? pressed.open : filter !== "all";
 
   return (
     <article className="rq-card" data-kind={requirement.kind} data-open={String(open)} aria-labelledby={titleId}>
@@ -146,7 +164,7 @@ export function RequirementCard({
               className="rq-card__toggle"
               aria-expanded={open}
               aria-controls={itemsId}
-              onClick={() => setOpen((value) => !value)}
+              onClick={() => setPressed({ filter, open: !open })}
             >
               <span className="rq-card__name">{requirement.name}</span>
               <span className="rq-card__chevron">
@@ -172,7 +190,15 @@ export function RequirementCard({
       </header>
 
       <div id={itemsId} className="rq-card__body" hidden={!open}>
-        <CardItems requirement={requirement} permissions={permissions} items={items} progress={progress} onReload={onReload} />
+        <CardItems
+          requirement={requirement}
+          permissions={permissions}
+          items={items}
+          progress={progress}
+          onReload={onReload}
+          verdicts={verdicts}
+          filter={filter}
+        />
         {canManage ? <AddItem items={items} addLabel={copy.addItem} itemLabel={copy.item} /> : null}
       </div>
     </article>
