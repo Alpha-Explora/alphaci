@@ -9,6 +9,7 @@ import {
   RESOLUTION_PRESETS,
   resolutionLabel,
   validateCustomResolution,
+  viewportLabel,
   type DevicePresetId,
 } from "../../model/qa-studio-rules";
 import { commitSourceLabel } from "../../model/qa-run-rules";
@@ -198,8 +199,8 @@ function ResolutionPicker({ vm }: Readonly<{ vm: StudioViewportViewModel }>) {
 
 /**
  * Portrait ⇄ landscape, only for the devices that turn (Desktop has nothing to
- * rotate, so it gets no button rather than a disabled one). An icon: the
- * preview's caption says which orientation it is now, the name says where it goes.
+ * rotate, so it gets no button rather than a disabled one). An icon: its
+ * name says where it goes, and so which way the device is now.
  */
 function RotateButton({ vm }: Readonly<{ vm: StudioViewportViewModel }>) {
   if (!vm.canRotate) return null;
@@ -214,6 +215,22 @@ function RotateButton({ vm }: Readonly<{ vm: StudioViewportViewModel }>) {
     >
       <RotateIcon />
     </button>
+  );
+}
+
+/**
+ * How far the page is shrunk to fit, so a tester knows 48% is not how it
+ * ships. Nothing at life size. The viewport is in its name and tooltip too,
+ * since the preview shows no caption.
+ */
+function ScaleBadge({ vm }: Readonly<{ vm: StudioViewportViewModel }>) {
+  if (!vm.scalePercent || !vm.scaleLabel) return null;
+  const name = `${vm.scaleLabel} · ${viewportLabel(vm.device, vm.dimensions)}`;
+  return (
+    <span className="qa-scale" title={name}>
+      <span aria-hidden="true">{vm.scalePercent}</span>
+      <span className="sr-only">{name}</span>
+    </span>
   );
 }
 
@@ -337,6 +354,7 @@ export function StudioToolbar({
         <DeviceSwitch vm={vm} />
         <ResolutionPicker vm={vm} />
         <RotateButton vm={vm} />
+        <ScaleBadge vm={vm} />
         <CommitSourceWarning commitSource={commit?.commitSource ?? null} />
         <FrameActions vm={vm} fullScreenRef={fullScreenRef} />
       </div>

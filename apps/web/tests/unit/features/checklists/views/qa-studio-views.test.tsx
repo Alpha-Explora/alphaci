@@ -652,8 +652,8 @@ describe("QA Studio — device viewports and full screen", () => {
     const device = container.querySelector<HTMLElement>(".qa-device")!;
     expect(device.style.getPropertyValue("--qa-screen-w")).toBe("1440");
     expect(device.style.getPropertyValue("--qa-screen-h")).toBe("900");
-    expect(container.querySelector(".qa-device__size")?.textContent).toBe("1440 × 900");
-    expect(container.querySelector(".qa-device__address")?.textContent).toBe("shop.example.com");
+    // The page itself, edge to edge: no mock browser bar or caption around it.
+    expect(container.querySelector(".qa-device__bar, .qa-preview__caption")).toBeNull();
     // Desktop does not turn, so it has no Rotate at all rather than a disabled one.
     expect(rotateButton(container)).toBeNull();
     await click(radioNamed(container, "Tablet"));
@@ -823,7 +823,10 @@ describe("QA Studio — the run panel", () => {
     expect(container.querySelector(".qa-stage")).toBe(stage);
     await act(async () => observer.resize(1300, 1100));
     expect(Number(device.style.getPropertyValue("--qa-scale"))).toBeCloseTo(1300 / 1440, 5);
-    expect(container.querySelector(".qa-preview__scale")?.textContent).toBe("Scaled to 90%");
+    // The toolbar says how far the page is shrunk, and names the viewport it lays out at.
+    const scale = container.querySelector(".qa-scale")!;
+    expect(scale.querySelector('[aria-hidden="true"]')?.textContent).toBe("90%");
+    expect(scale.getAttribute("title")).toBe("Scaled to 90% · Desktop · 1440 × 900");
   });
 });
 

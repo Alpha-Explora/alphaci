@@ -286,8 +286,9 @@ export function orientationLabel(orientation: DeviceOrientation): string {
 }
 
 /**
- * The chrome around the screen, in on-screen pixels: the browser's top bar,
- * a tablet's bezel, a phone's chassis. The screen sits inside these insets and
+ * The chrome around the screen, in on-screen pixels: a tablet's bezel, a
+ * phone's chassis. Desktop has none: the page under test is drawn edge to edge,
+ * not inside a mock browser window. The screen sits inside these insets and
  * nothing is ever drawn over it, so a site's fixed header is never covered.
  * `outsetX`/`outsetY` are hardware drawn past the frame's edge (a phone's side
  * buttons). The chrome does not scale with the device: it stays legible, and
@@ -302,7 +303,7 @@ export interface FrameChrome {
   outsetY: number;
 }
 
-const BROWSER_CHROME: FrameChrome = { top: 40, right: 0, bottom: 0, left: 0, outsetX: 0, outsetY: 0 };
+const BROWSER_CHROME: FrameChrome = { top: 0, right: 0, bottom: 0, left: 0, outsetX: 0, outsetY: 0 };
 const TABLET_CHROME: FrameChrome = { top: 26, right: 26, bottom: 26, left: 26, outsetX: 0, outsetY: 0 };
 
 /* A phone turned landscape is the same chassis turned a quarter: the top
@@ -360,6 +361,18 @@ export function fitDeviceScale(
 export function scaleLabel(scale: number): string | null {
   if (scale >= 1) return null;
   return `Scaled to ${Math.round(scale * 100)}%`;
+}
+
+/** "Tablet · 1024 × 768 · Landscape": what the page lays out at (no orientation for Desktop). */
+export function viewportLabel(device: Pick<DevicePreset, "label" | "rotatable">, dimensions: DeviceDimensions): string {
+  const size = `${device.label} · ${dimensionsLabel(dimensions)}`;
+  return device.rotatable ? `${size} · ${orientationLabel(dimensions.orientation)}` : size;
+}
+
+/** "62%", the toolbar's short form of `scaleLabel`; null at life size. */
+export function scalePercent(scale: number): string | null {
+  if (scale >= 1) return null;
+  return `${Math.round(scale * 100)}%`;
 }
 
 /* ── The run rail ────────────────────────────────────────────────────────── */
@@ -426,14 +439,6 @@ function originOf(url: string, base?: string): URL | null {
   } catch {
     return null;
   }
-}
-
-/** "shop.example.com/checkout?step=2" for the browser frame's address pill. */
-export function addressLabel(pageUrl: string): string {
-  const url = originOf(pageUrl);
-  if (!url) return pageUrl;
-  const path = url.pathname === "/" ? "" : url.pathname;
-  return `${url.host}${path}${url.search}`;
 }
 
 /** The preview's origin with the path appended. Null for an unusable address. */
