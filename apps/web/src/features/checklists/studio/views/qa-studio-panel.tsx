@@ -30,6 +30,7 @@ import { PreviewCaptureContext, type PreviewCaptureTarget } from "../view-models
 import { ShowRepositoriesContext } from "../view-models/repository-visibility";
 import { useFloatingChecklistFocus } from "../view-models/use-floating-checklist-focus";
 import { useStudioCaptureTarget } from "../view-models/use-studio-capture-target";
+import { useStudioFitHeight } from "../view-models/use-studio-fit-height";
 import type { PoDeliveryViewModel } from "../view-models/use-po-delivery-view-model";
 import type { ProjectRunViewModel } from "../view-models/use-project-run-view-model";
 import type { QaPromotionViewModel } from "../view-models/use-qa-promotion-view-model";
@@ -687,6 +688,8 @@ export function QaStudioPanel({
   const roles = repositoryRoles(qaScope);
   // The preview iframe, for an item's "Capture" (cropped to it, the panel made transparent meanwhile).
   const capture = useStudioCaptureTarget();
+  // Docked, the panes run to the window's bottom edge (full screen sizes them by CSS alone).
+  const { attach: attachPanes, style: panesStyle } = useStudioFitHeight<HTMLDivElement>();
   const source = playwrightSource(runs, qaScope);
   const results = scopePlaywrightResults(
     playwrightResults(source, { projectId, repoFullName: projectName ?? null }),
@@ -707,7 +710,11 @@ export function QaStudioPanel({
         data-capturing={String(capture.capturing)}
       >
         <StudioControls vm={viewport} commit={snapshot.commit} fullScreenRef={focus.toggleRef} slot={toolbarSlot} />
-        <div className="qa-studio__panes">
+        <div
+          className="qa-studio__panes"
+          ref={attachPanes}
+          style={panesStyle}
+        >
           <div className="qa-studio__preview" data-framed={previewFramed(viewport)}>
             <PreviewColumn vm={viewport} frameRef={capture.target} />
           </div>

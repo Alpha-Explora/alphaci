@@ -12,12 +12,17 @@ import {
 import { useBranchPreviewsViewModel, useDashboardOrigin } from "@/features/projects/previews";
 
 import {
+  chromeSize,
   devicePreset,
   CUSTOM_RESOLUTION_OPTION,
   customResolutionChoice,
+  fitDeviceScale,
+  frameChrome,
   previewPageUrl,
   resolveDeviceDimensions,
   resolveEnvironment,
+  scaleLabel,
+  scalePercent,
   studioEnvironments,
   type DeviceDimensions,
   type DeviceOrientation,
@@ -27,6 +32,7 @@ import {
   type StudioEnvironment,
 } from "../../model/qa-studio-rules";
 import { useCopyLink, type CopyLinkStatus } from "./use-copy-link";
+import { usePaneSize } from "./use-pane-size";
 import { useStudioFullScreen, type StudioFullScreenState } from "./use-studio-full-screen";
 import { useStudioPanel, type StudioPanelState } from "./use-studio-panel";
 import { useStudioResolution } from "./use-studio-resolution";
@@ -53,6 +59,13 @@ export interface StudioViewportViewModel extends StudioFullScreenState, StudioPa
   setCustomResolution: (width: number, height: number) => void;
   /** The viewport the page lays out at, resolution and orientation applied. */
   dimensions: DeviceDimensions;
+  /** Callback ref for the stage the device is drawn in: its size decides `scale`. */
+  attachStage: (element: HTMLDivElement | null) => void;
+  /** How much the page is shrunk to fit the stage, by both axes; 1 until measured. */
+  scale: number;
+  /** "73%" for the toolbar, and "Scaled to 73%" for its name; null at life size. */
+  scalePercent: string | null;
+  scaleLabel: string | null;
   canRotate: boolean;
   /** Portrait ⇄ landscape. Does nothing on a device that cannot rotate. */
   rotate: () => void;
@@ -151,6 +164,11 @@ export function useStudioViewportViewModel(options: {
   const device = devicePreset(deviceId);
   const { resolution, chooseResolution, chooseCustomResolution } = useStudioResolution(deviceId);
   const copy = useCopyLink(frame.pageUrl);
+  // Measured here, not in the preview, so the toolbar (in the tab row) can say how far the page is shrunk.
+  const stage = usePaneSize<HTMLDivElement>();
+  const dimensions = resolveDeviceDimensions(device, orientation, resolution);
+  const chrome = chromeSize(frameChrome(device.frame, dimensions.orientation));
+  const scale = fitDeviceScale(dimensions.width, dimensions.height, stage.width, stage.height, chrome.width, chrome.height);
 
   function setResolution(value: string) {
     // "Custom…" starts from the size in view, so choosing it never jumps the frame.
@@ -170,7 +188,11 @@ export function useStudioViewportViewModel(options: {
     resolution,
     setResolution,
     setCustomResolution: chooseCustomResolution,
-    dimensions: resolveDeviceDimensions(device, orientation, resolution),
+    dimensions,
+    attachStage: stage.ref,
+    scale,
+    scalePercent: scalePercent(scale),
+    scaleLabel: scaleLabel(scale),
     canRotate: device.rotatable,
     rotate: () => {
       if (device.rotatable) setOrientation((value) => (value === "portrait" ? "landscape" : "portrait"));
