@@ -272,11 +272,12 @@ describe("QA Studio — the readiness popover", () => {
     setup(promotionWire());
     const container = await studio("qa");
     await click(container.querySelector('button[aria-label="Full screen"]'));
-    await click(container.querySelector("button.qa-launcher"));
     await click(chip(container));
     await key(chip(container), "Escape");
     expect(popover(container).hidden).toBe(true);
     expect(container.querySelector(".qa-studio")?.getAttribute("data-full-screen")).toBe("true");
+    // The popover took that Escape: the panel stays open too.
+    expect(container.querySelector(".qa-studio")?.getAttribute("data-checklist")).toBe("open");
   });
 
   it("closes on a press outside, without taking focus", async () => {
@@ -425,13 +426,12 @@ describe("QA Studio — Merge to main beside the chip", () => {
     expect(window.localStorage.getItem("alphaci.qa-studio.promotion-card.collapsed")).toBeNull();
   });
 
-  it("is mounted once and moves with the run column into the full-screen drawer, under its header", async () => {
+  it("is mounted once, under the panel's header, and stays there in full screen", async () => {
     setup(readyWire(), runAs("lead", { branch: "uat", items: [runItem(0)] }));
     const container = await studio("lead");
     const before = chip(container);
     const runCard = container.querySelector(".qa-run-card");
     await click(container.querySelector('button[aria-label="Full screen"]'));
-    await click(container.querySelector("button.qa-launcher"));
     const drawer = container.querySelector('[role="region"]')!;
     expect(drawer.contains(before)).toBe(true);
     expect(container.querySelectorAll(".qa-coltabs-bar")).toHaveLength(1);

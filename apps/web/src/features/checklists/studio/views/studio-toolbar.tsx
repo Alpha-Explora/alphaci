@@ -8,10 +8,8 @@ import {
   DEVICE_PRESETS,
   RESOLUTION_PRESETS,
   resolutionLabel,
-  STUDIO_LAYOUTS,
   validateCustomResolution,
   type DevicePresetId,
-  type StudioLayout,
 } from "../../model/qa-studio-rules";
 import { commitSourceLabel } from "../../model/qa-run-rules";
 import type { QaCommitSource } from "../../model/qa-run-types";
@@ -23,8 +21,6 @@ import {
   DesktopIcon,
   ExpandIcon,
   ExternalIcon,
-  LayoutSplitIcon,
-  LayoutWideIcon,
   LinkIcon,
   MobileIcon,
   ReloadIcon,
@@ -37,11 +33,6 @@ const DEVICE_ICONS: Record<DevicePresetId, () => ReactNode> = {
   desktop: DesktopIcon,
   tablet: TabletIcon,
   mobile: MobileIcon,
-};
-
-const LAYOUT_ICONS: Record<StudioLayout, () => ReactNode> = {
-  wide: LayoutWideIcon,
-  split: LayoutSplitIcon,
 };
 
 /** Copy link's three states: the icon and tooltip say it, the live region announces it. */
@@ -242,39 +233,6 @@ function CommitSourceWarning({ commitSource }: Readonly<{ commitSource: QaCommit
 }
 
 /**
- * Wide preview ⇄ Split, beside Full screen. Toggle buttons (aria-pressed) in a
- * fieldset named "Layout", so each is a plain Tab stop that Enter or Space switches — no hotkey,
- * which would fire inside notes and never inside the cross-origin frame.
- * Rendered only while docked: full screen has no columns to share, and below
- * 1100px, where the panes stack, CSS hides it too.
- */
-function LayoutSwitch({ vm }: Readonly<{ vm: StudioViewportViewModel }>) {
-  if (vm.isFullScreen) return null;
-  return (
-    <fieldset className="qa-layout-switch">
-      <legend className="sr-only">Layout</legend>
-      {STUDIO_LAYOUTS.map((option) => {
-        const Icon = LAYOUT_ICONS[option.id];
-        const selected = vm.layout === option.id;
-        return (
-          <button
-            key={option.id}
-            type="button"
-            className="qa-layout-switch__option"
-            aria-pressed={selected}
-            aria-label={option.label}
-            title={option.hint}
-            onClick={() => vm.setLayout(option.id)}
-          >
-            <Icon />
-          </button>
-        );
-      })}
-    </fieldset>
-  );
-}
-
-/**
  * Copies the environment's page URL, to share with someone who is not in the
  * studio. The live region is always rendered (a region added together with its
  * text is not reliably announced) and says nothing until a copy has happened.
@@ -331,7 +289,6 @@ function FrameActions({
           <ExternalIcon />
         </a>
       ) : null}
-      <LayoutSwitch vm={vm} />
       <button
         ref={fullScreenRef}
         type="button"

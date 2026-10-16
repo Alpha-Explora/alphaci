@@ -167,7 +167,9 @@ export function useItemEvidenceViewModel(options: {
     setStatus("preparing");
     setError(null);
     try {
-      adopt(await captureElement(frame), "capture");
+      const grab = () => captureElement(frame);
+      const hiding = captureTarget?.whileCapturing;
+      adopt(await (hiding ? hiding(grab) : grab()), "capture");
     } catch (cause) {
       failPreparing(captureErrorMessage(cause));
     }

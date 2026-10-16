@@ -247,50 +247,12 @@ export function CollapseIcon() {
   );
 }
 
-/** Wide preview: a window whose page takes most of it, a narrow column docked right. */
-export function LayoutWideIcon() {
-  return (
-    <Glyph>
-      <rect x="1.75" y="2.5" width="12.5" height="11" rx="1.2" />
-      <path d="M10.75 2.5v11" />
-    </Glyph>
-  );
-}
-
-/** Split: a window halved. */
-export function LayoutSplitIcon() {
-  return (
-    <Glyph>
-      <rect x="1.75" y="2.5" width="12.5" height="11" rx="1.2" />
-      <path d="M8 2.5v11" />
-    </Glyph>
-  );
-}
-
 /** Move to the other side. */
 export function SwapIcon() {
   return (
     <Glyph>
       <path d="M2.5 5.5h11M11 3l2.5 2.5L11 8" />
       <path d="M13.5 10.5h-11M5 8l-2.5 2.5L5 13" />
-    </Glyph>
-  );
-}
-
-/** Dock back beside the page: a panel on the right of a window. */
-export function DockIcon() {
-  return (
-    <Glyph>
-      <rect x="1.75" y="2.5" width="12.5" height="11" rx="1.2" />
-      <path d="M9.75 2.5v11" />
-    </Glyph>
-  );
-}
-
-export function MinimizeIcon() {
-  return (
-    <Glyph>
-      <path d="M3.5 12.25h9" />
     </Glyph>
   );
 }

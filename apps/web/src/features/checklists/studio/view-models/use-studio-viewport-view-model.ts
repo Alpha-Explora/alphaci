@@ -28,10 +28,10 @@ import {
 } from "../../model/qa-studio-rules";
 import { useCopyLink, type CopyLinkStatus } from "./use-copy-link";
 import { useStudioFullScreen, type StudioFullScreenState } from "./use-studio-full-screen";
-import { useStudioLayout, type StudioLayoutState } from "./use-studio-layout";
+import { useStudioPanel, type StudioPanelState } from "./use-studio-panel";
 import { useStudioResolution } from "./use-studio-resolution";
 
-export interface StudioViewportViewModel extends StudioFullScreenState, StudioLayoutState {
+export interface StudioViewportViewModel extends StudioFullScreenState, StudioPanelState {
   /** The previews request: loading until the environments are known. */
   status: "loading" | "ready" | "error";
   error: string | null;
@@ -76,7 +76,7 @@ export interface StudioViewportViewModel extends StudioFullScreenState, StudioLa
   unavailableReason: string | null;
   /**
    * Changes whenever the frame must re-mount: a reload or a new environment.
-   * Never the device, resolution, orientation, layout or full screen: those only
+   * Never the device, resolution, orientation, the panel or full screen: those only
    * restyle the frame, so the page under test keeps its state.
    */
   frameKey: string;
@@ -121,8 +121,9 @@ function frameKeyOf(environment: StudioEnvironment | null, pageUrl: string | nul
 /**
  * ViewModel for the studio's left pane and toolbar: which environment is
  * under test (only ever the QA branch), on which device, resolution and
- * orientation — and how the studio is laid out: wide preview or split when
- * docked, or full screen with its checklist floating over the page.
+ * orientation — and how the studio is laid out: the page across the whole
+ * width, docked or full screen, with the run panel floating over its edge
+ * (open or hidden, remembered per studio).
  *
  * The previews come from the same ViewModel the Overview's deployment cards
  * use, so the studio sees exactly the environments and embeddability verdicts
@@ -131,6 +132,8 @@ function frameKeyOf(environment: StudioEnvironment | null, pageUrl: string | nul
 export function useStudioViewportViewModel(options: {
   projectId: string;
   enabled: boolean;
+  /** Whose panel preference to read: QA Studio's or PO Studio's. */
+  studio?: "qa" | "po";
 }): StudioViewportViewModel {
   const previews = useBranchPreviewsViewModel(options);
   const origin = useDashboardOrigin();
@@ -138,7 +141,7 @@ export function useStudioViewportViewModel(options: {
   const [deviceId, setDeviceId] = useState<DevicePresetId>("desktop");
   const [orientation, setOrientation] = useState<DeviceOrientation>("portrait");
   const fullScreen = useStudioFullScreen();
-  const layout = useStudioLayout();
+  const panel = useStudioPanel(options.studio ?? "qa");
   const [nonce, setNonce] = useState(0);
 
   const environments = studioEnvironments(previews.previews);
@@ -179,6 +182,6 @@ export function useStudioViewportViewModel(options: {
     reload: () => setNonce((value) => value + 1),
     retry: previews.reload,
     ...fullScreen,
-    ...layout,
+    ...panel,
   };
 }

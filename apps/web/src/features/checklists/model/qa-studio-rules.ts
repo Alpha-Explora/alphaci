@@ -362,50 +362,38 @@ export function scaleLabel(scale: number): string | null {
   return `Scaled to ${Math.round(scale * 100)}%`;
 }
 
-/* ── Layout ──────────────────────────────────────────────────────────────── */
+/* ── The run panel ───────────────────────────────────────────────────────── */
 
 /**
- * How the docked (not full-screen) studio shares its width. "wide" gives the
- * page most of it, because a desktop page drawn in a 60% pane is scaled to
- * about half size; "split" halves it, for writing detailed notes or reading
- * automation results. Full screen is the third arrangement and has its own
- * toggle. Every layout only restyles the one studio tree: the frame and the
- * run column are never remounted to change it.
+ * The page under test always gets the studio's whole width; the run panel
+ * (Checklist | Playwright) floats over its edge and can be hidden behind a
+ * button. Whether it is open is a per-viewer, per-studio preference: a tester
+ * who works with it hidden in QA Studio is not making that choice for PO
+ * Studio. Hiding only restyles: the panel stays mounted either way.
  */
-export type StudioLayout = "wide" | "split";
-
-export interface StudioLayoutOption {
-  id: StudioLayout;
-  label: string;
-  /** The tooltip: what the layout is for. */
-  hint: string;
+export function studioPanelKey(studio: "qa" | "po"): string {
+  return `alphaci.${studio}-studio.panel`;
 }
 
-export const STUDIO_LAYOUTS: ReadonlyArray<StudioLayoutOption> = [
-  { id: "wide", label: "Wide preview", hint: "Wide preview: the page gets most of the width" },
-  { id: "split", label: "Split", hint: "Split: page and checklist share the width, for detailed notes" },
-];
-
-export const DEFAULT_STUDIO_LAYOUT: StudioLayout = "wide";
-
-export function isStudioLayout(value: unknown): value is StudioLayout {
-  return STUDIO_LAYOUTS.some((option) => option.id === value);
-}
+export type StudioPanelState = "open" | "hidden";
 
 /**
- * A remembered layout, read back from storage. Anything that is not a layout
- * this build knows (nothing stored, an old or hand-edited value) is the
- * default, so a stale preference can never leave the studio unlaid-out.
+ * What storage holds, as a panel state. Open unless the viewer hid it: the
+ * checklist is what the studio is for, so a first visit, unreadable storage
+ * or an unknown value shows it.
  */
-export function resolveStudioLayout(stored: string | null): StudioLayout {
-  return isStudioLayout(stored) ? stored : DEFAULT_STUDIO_LAYOUT;
+export function resolveStudioPanel(stored: string | null): StudioPanelState {
+  return stored === "hidden" ? "hidden" : "open";
 }
 
 /* ── Floating checklist launcher ─────────────────────────────────────────── */
 
-/** "QA checklist · 3/5 passed", or just "QA checklist" before a run exists. */
-export function launcherLabel(run: Pick<QaRun, "summary"> | null): string {
-  return run ? `QA checklist · ${passedLabel(run)}` : "QA checklist";
+/**
+ * "QA checklist · 3/5 passed", or just the title before a run exists. PO
+ * Studio's panel is its "Acceptance".
+ */
+export function launcherLabel(run: Pick<QaRun, "summary"> | null, title = "QA checklist"): string {
+  return run ? `${title} · ${passedLabel(run)}` : title;
 }
 
 export type AutomationSignalTone = "running" | "failed" | "passed" | "none";

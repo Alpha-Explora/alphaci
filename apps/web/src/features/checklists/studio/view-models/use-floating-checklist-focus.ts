@@ -17,27 +17,25 @@ function focusLost(): boolean {
 
 /**
  * Where focus goes after a change of mode, so a keyboard user is never left
- * on a control that just disappeared:
- *   - the drawer is opened in full screen → into the drawer;
- *   - it is minimized → back to the launcher that reopens it;
+ * on a control that just disappeared. The same docked and in full screen:
+ *   - the panel is opened → into the panel;
+ *   - it is hidden → back to the button that reopens it;
  *   - full screen starts or ends and focus was lost with the control that had
  *     it → the Full screen toggle. The toolbar itself changes places (the tab
  *     row docked, a bar atop the studio in full screen), so the toggle that was
- *     pressed is gone and its twin in the new place takes focus; so does the
- *     toggle when the drawer's Dock button disappears.
+ *     pressed is gone and its twin in the new place takes focus.
  */
 function focusTarget(was: Mode, now: Mode): FocusTarget {
   if (was.isFullScreen !== now.isFullScreen) return focusLost() ? "toggle" : null;
-  if (!now.isFullScreen) return null;
   if (!was.isChecklistOpen && now.isChecklistOpen) return "drawer";
   if (was.isChecklistOpen && !now.isChecklistOpen) return "launcher";
   return null;
 }
 
 /**
- * Focus handling for the floating checklist. The refs go on the three elements
- * focus moves between: the drawer's heading (focusable, tabIndex -1), the
- * launcher pill and the toolbar's Full screen toggle.
+ * Focus handling for the floating run panel. The refs go on the three elements
+ * focus moves between: the panel's heading (focusable, tabIndex -1), the
+ * button that reopens it and the toolbar's Full screen toggle.
  */
 export function useFloatingChecklistFocus(mode: Mode) {
   const drawerRef = useRef<HTMLHeadingElement | null>(null);
