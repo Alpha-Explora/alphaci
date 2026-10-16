@@ -244,7 +244,7 @@ function Verdict({ verdict }: Readonly<{ verdict: ProjectQaRunItem | undefined }
  * One story or item: what it is, how QA knows it is done, and its Progress.
  * Developers get the Progress control and nothing else; Product owners and
  * admins also edit, reorder and delete it. Given QA's `verdict` (the
- * Developer's checklist), it shows that too, with QA's notes when the item
+ * Project checklist), it shows that too, with QA's notes when the item
  * was sent back, failed or blocked.
  */
 export function RequirementItemRow({

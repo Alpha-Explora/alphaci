@@ -105,7 +105,7 @@ function AddItem({
  * and its items stay hidden until the title is pressed. Hidden, not
  * unmounted, so an item being edited keeps its draft when the card closes.
  *
- * With a `filter` on (the Developer's chips) it shows only the items that
+ * With a `filter` on (the checklist chips) it shows only the items that
  * match, and opens by itself so they are in view; pressing the title still
  * closes it. `verdicts` puts QA's verdict on each item.
  */

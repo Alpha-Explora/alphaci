@@ -839,7 +839,7 @@ describe("ProjectQaWorkspace", () => {
   });
 });
 
-describe("The Developer's checklist", () => {
+describe("The Project checklist (Developer and Product owner)", () => {
   /** item-1 sent back by QA with its findings, item-2 still pending QA. */
   function loadReturnedRun() {
     loadRequirements("member");
@@ -939,11 +939,22 @@ describe("The Developer's checklist", () => {
     expect(chip(container, "All").querySelector(".rq-filter__count")?.textContent).toBe("2");
   });
 
-  it("gives the Product owner no chips and no verdicts", async () => {
+  /* The Product owner sees the progress of what it wrote: the same chips and
+   * QA's verdicts, with its authoring kept. */
+  it("gives the Product owner the same chips and verdicts, and keeps its authoring", async () => {
     loadReturnedRun();
     loadRequirements("lead");
     const container = await render(<ProjectQaWorkspace deliveryProjectId="dp-1" projectName="storefront" appRole="lead" />);
+    expect(chip(container, "Returned by QA").querySelector(".rq-filter__count")?.textContent).toBe("1");
+    expect(rows(container)[0]?.getAttribute("data-verdict")).toBe("returned_to_dev");
+    expect(buttonNamed(container, "New Feature")).toBeDefined();
+    expect(container.querySelector('button[aria-label^="Move "]')).not.toBeNull();
+  });
+
+  it("gives the QA Team no chips: its view is the run", async () => {
+    loadReturnedRun();
+    loadRequirements("qa");
+    const container = await render(<ProjectQaWorkspace deliveryProjectId="dp-1" projectName="storefront" appRole="qa" />);
     expect(container.querySelector(".rq-filters")).toBeNull();
-    expect(container.querySelector(".rq-item__verdict")).toBeNull();
   });
 });

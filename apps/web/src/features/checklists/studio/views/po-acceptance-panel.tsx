@@ -23,6 +23,7 @@ import type { PoDeliveryViewModel } from "../view-models/use-po-delivery-view-mo
 import type { QaPromotionViewModel } from "../view-models/use-qa-promotion-view-model";
 import { useShowRepositories } from "../view-models/repository-visibility";
 import { PoDeliveredBanner, PoDeliveryState } from "./po-delivery";
+import { PoRunItems } from "./po-run-items";
 import { RunSummary, SignoffBanner } from "./run-signoff";
 
 function signedSubject(run: ProjectQaRun, showRepositories: boolean): string {
@@ -85,16 +86,6 @@ function DeliveredNext({ delivery }: Readonly<{ delivery: PoDeliveryViewModel }>
   return <StartIterationAction vm={delivery.start} />;
 }
 
-/** The way to the QA run, while there is still something for QA to do. */
-function OpenQaRun({ shown, onOpenQaRun }: Readonly<{ shown: boolean; onOpenQaRun?: () => void }>) {
-  if (!shown || !onOpenQaRun) return null;
-  return (
-    <button type="button" className="ghost-button po-accept__open" onClick={onOpenQaRun}>
-      View the QA run
-    </button>
-  );
-}
-
 /**
  * A Project's acceptance: the delivered banner once its iteration reached
  * main; before that, waiting or ready, each covered repository's stored
@@ -107,7 +98,6 @@ function ProjectAcceptance({
   promotion,
   delivery,
   appRole,
-  onOpenQaRun,
 }: Readonly<{
   qaScope: ProjectScope;
   state: PoAcceptanceState;
@@ -115,7 +105,6 @@ function ProjectAcceptance({
   promotion: QaPromotionViewModel;
   delivery: PoDeliveryViewModel;
   appRole: AppRole | null | undefined;
-  onOpenQaRun?: () => void;
 }>) {
   const run = projectRun.status === "ready" ? projectRun.run : null;
   const delivered = isDelivered(state, delivery);
@@ -149,7 +138,7 @@ function ProjectAcceptance({
           appRole={appRole}
         />
       ) : null}
-      <OpenQaRun shown={!ready && !delivered} onOpenQaRun={onOpenQaRun} />
+      {run && !delivered ? <PoRunItems run={run} /> : null}
     </div>
   );
 }
@@ -161,8 +150,8 @@ function ProjectAcceptance({
  * merge itself is the tab bar's readiness chip and Merge to main above it
  * (the same ones QA Studio shows; on a Project of two or more repositories
  * it merges every one not in main yet); this panel is the acceptance around
- * it. Verifying items stays with the QA run, a click away
- * in the Checklists tab.
+ * it. QA's results are here too, read-only (PoRunItems); verifying items
+ * stays with the QA Team.
  */
 export function PoAcceptancePanel({
   qaScope,
@@ -170,7 +159,6 @@ export function PoAcceptancePanel({
   promotion,
   delivery,
   appRole,
-  onOpenQaRun,
 }: Readonly<{
   qaScope: QaScope;
   projectRun: ProjectRunViewModel;
@@ -178,8 +166,6 @@ export function PoAcceptancePanel({
   /** The Project's delivery, shared with the tab bar's Merge to main. */
   delivery: PoDeliveryViewModel;
   appRole: AppRole | null | undefined;
-  /** Opens the Project's QA run (the Checklists tab). */
-  onOpenQaRun?: () => void;
 }>) {
   const state = poAcceptanceState({ scope: qaScope, promotionStatus: promotion.status, promotion: promotion.data });
   if (state === "loading") return <div className="hier-skeleton qa-skeleton-card" aria-hidden="true" />;
@@ -199,7 +185,6 @@ export function PoAcceptancePanel({
       promotion={promotion}
       delivery={delivery}
       appRole={appRole}
-      onOpenQaRun={onOpenQaRun}
     />
   );
 }
