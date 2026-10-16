@@ -360,19 +360,20 @@ describe("Windows install file", () => {
     );
   });
 
-  it("propagates the installer's exit code and keeps the code file only for 3010", () => {
+  it("propagates the installer's exit code and always removes its own code file", () => {
     const call = contents.indexOf("-EnrollCodeFile $enrollCodeFile");
     const reset = contents.indexOf("$LASTEXITCODE = 0");
     const result = contents.indexOf("$exitCode = $LASTEXITCODE");
-    const keep = contents.indexOf("$keepCodeFile = ($exitCode -eq 3010)");
     const finallyAt = contents.indexOf("} finally {");
     expect(reset).toBeGreaterThan(-1);
     expect(reset).toBeLessThan(call);
     expect(call).toBeLessThan(result);
-    expect(result).toBeLessThan(keep);
-    expect(keep).toBeLessThan(finallyAt);
+    expect(result).toBeLessThan(finallyAt);
+    // The code file is removed in finally on every path, 3010 included, and the
+    // keep-the-file flag is gone.
+    expect(contents).not.toContain("$keepCodeFile");
     expect(contents).toContain(
-      "if (-not $keepCodeFile) { Remove-Item -LiteralPath $enrollCodeFile",
+      "} finally {\r\n  Remove-Item -LiteralPath $enrollCodeFile -Force -ErrorAction SilentlyContinue",
     );
     expect(contents).toContain("\r\nexit $exitCode\r\n");
   });
@@ -648,16 +649,13 @@ itOnWindows("runs the PowerShell block: the installer gets the code from a user-
   expect(readdirSync(paths.scratch)).toEqual([]);
 });
 
-itOnWindows("keeps the code file, and returns 3010, when the installer needs a restart", () => {
+itOnWindows("removes its code file, the archive and the extracted directory, and returns 3010, when the installer needs a restart", () => {
   const paths = fixture();
   const sha256 = windowsArchive(paths);
   const run = runWindowsBlock(paths, sha256, { installerExit: 3010 });
   expect(run.status).toBe(3010);
-  // Only the code file is left: the archive and the extracted directory are removed.
-  const left = readdirSync(paths.scratch);
-  expect(left).toHaveLength(1);
-  expect(left[0]).toMatch(/^alphaci-enroll-.*\.txt$/);
-  expect(readFileSync(join(paths.scratch, left[0]), "utf8")).toBe(code);
+  // Nothing is left in TEMP: the rerun writes a fresh code file from the .cmd.
+  expect(readdirSync(paths.scratch)).toEqual([]);
 });
 
 itOnWindows("removes the code file and passes other installer failures through", () => {

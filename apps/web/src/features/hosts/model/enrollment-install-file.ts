@@ -164,7 +164,6 @@ function windowsScript({ url, sha256, apiUrl, code, replace }: InstallFacts) {
     "$archive = Join-Path $env:TEMP ('alphaci-agent-' + [guid]::NewGuid() + '.tar.gz')",
     "$directory = Join-Path $env:TEMP ('alphaci-agent-' + [guid]::NewGuid())",
     "$exitCode = 0",
-    "$keepCodeFile = $false",
     "try {",
     "  # The installer reads the code file and deletes it. Only this user may touch it.",
     "  # WA is needed: Remove-Item fails with read and delete alone, even though",
@@ -184,11 +183,9 @@ function windowsScript({ url, sha256, apiUrl, code, replace }: InstallFacts) {
     "  $LASTEXITCODE = 0",
     `  & (Join-Path $directory 'windows/Install-AlphaCIHost.ps1') -Distro Ubuntu -ClientSubnets LocalSubnet -ApiUrl ${psQuote(apiUrl)}${replace ? " -ReplaceCredential" : ""} -OnlyWhenSignedIn -EnrollCodeFile $enrollCodeFile`,
     "  $exitCode = $LASTEXITCODE",
-    // 3010: a restart is needed. The installer reads the code file only after its
-    // restart check, so the file stays for the rerun.
-    "  $keepCodeFile = ($exitCode -eq 3010)",
     "} finally {",
-    "  if (-not $keepCodeFile) { Remove-Item -LiteralPath $enrollCodeFile -Force -ErrorAction SilentlyContinue }",
+    // Always removed, 3010 included: a rerun writes a fresh code file from the .cmd.
+    "  Remove-Item -LiteralPath $enrollCodeFile -Force -ErrorAction SilentlyContinue",
     "  Remove-Item -LiteralPath $archive -Force -ErrorAction SilentlyContinue",
     "  Remove-Item -LiteralPath $directory -Recurse -Force -ErrorAction SilentlyContinue",
     "}",
