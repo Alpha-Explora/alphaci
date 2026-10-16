@@ -66,3 +66,14 @@ export function driftPullRequestUrl(
   const url = response.result?.["pullRequestUrl"];
   return typeof url === "string" && url.length > 0 ? url : null;
 }
+
+/**
+ * The branch a repair proposes its pull request into, as detection recorded it.
+ * Null for a finding raised before the base was recorded.
+ */
+export function driftRepairBaseBranch(
+  finding: Pick<ProjectDriftFinding, "details">,
+): string | null {
+  const base = finding.details["baseBranch"];
+  return typeof base === "string" && base.length > 0 ? base : null;
+}

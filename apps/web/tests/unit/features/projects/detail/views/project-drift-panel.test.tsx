@@ -34,7 +34,10 @@ const CI_FINDING: ProjectDriftFinding = {
   code: "ci_api_url_stale",
   message:
     "CI workflows still point at http://localhost:4000 instead of https://api.alphaci.test.",
-  details: { files: [{ branch: "dev", path: ".github/workflows/ci.yml" }] },
+  details: {
+    baseBranch: "dev",
+    files: [{ branch: "dev", path: ".github/workflows/ci.yml" }],
+  },
   status: "active",
   detectedAt: "2026-10-16T00:00:00.000Z",
   resolvedAt: null,
@@ -104,6 +107,23 @@ describe("ProjectDriftPanel", () => {
     expect(text()).toContain("CI points at an old AlphaCI address");
     expect(text()).toContain("dev: .github/workflows/ci.yml");
     expect(text()).toContain(CI_FINDING.message);
+  });
+
+  it("names the base branch the finding was raised on in the confirmation", async () => {
+    repo.drift.mockResolvedValue(
+      found([
+        {
+          ...CI_FINDING,
+          details: { ...CI_FINDING.details, baseBranch: "develop" },
+        },
+      ]),
+    );
+
+    await render("lead");
+    await click(button("Repair") as HTMLButtonElement);
+
+    expect(text()).toContain("open a pull request into develop");
+    expect(text()).not.toContain("into dev ");
   });
 
   it("asks once before it acts, then reports the pull request the repair opened and checks again", async () => {

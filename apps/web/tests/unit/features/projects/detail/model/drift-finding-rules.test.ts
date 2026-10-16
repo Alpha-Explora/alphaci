@@ -3,6 +3,7 @@ import {
   driftAffectedFiles,
   driftFindingTitle,
   driftPullRequestUrl,
+  driftRepairBaseBranch,
   driftRepairActionFor,
 } from "@/features/projects/detail/model/drift-finding-rules";
 
@@ -59,5 +60,14 @@ describe("driftPullRequestUrl", () => {
     expect(driftPullRequestUrl({ result: {} })).toBeNull();
     expect(driftPullRequestUrl({ result: { pullRequestUrl: "" } })).toBeNull();
     expect(driftPullRequestUrl({})).toBeNull();
+  });
+});
+
+describe("driftRepairBaseBranch", () => {
+  it("names the base branch detection recorded, and nothing for an older finding", () => {
+    expect(driftRepairBaseBranch({ details: { baseBranch: "develop" } })).toBe(
+      "develop",
+    );
+    expect(driftRepairBaseBranch({ details: {} })).toBeNull();
   });
 });

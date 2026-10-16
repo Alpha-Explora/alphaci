@@ -14,6 +14,7 @@ import {
   driftAffectedFiles,
   driftFindingTitle,
   driftPullRequestUrl,
+  driftRepairBaseBranch,
   driftRepairActionFor,
 } from "../model/drift-finding-rules";
 import { useProjectDriftViewModel } from "../view-models/use-project-drift-view-model";
@@ -50,7 +51,7 @@ export function ProjectDriftPanel({
     if (pending?.findingId !== finding.id || pending.action !== action) {
       setPending({ findingId: finding.id, action });
       setNotice({
-        text: "Confirm to reset the two AlphaCI CI secrets and open a pull request into dev that points the workflows at this deployment.",
+        text: `Confirm to reset the two AlphaCI CI secrets and open a pull request into ${driftRepairBaseBranch(finding) ?? "the project's first environment branch"} that points the workflows at this deployment.`,
         url: null,
       });
       return;
