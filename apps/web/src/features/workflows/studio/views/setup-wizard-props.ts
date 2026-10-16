@@ -5,6 +5,10 @@ import type { GithubInstallationsState } from "../view-models/use-github-install
 import type { HostingChoiceState } from "../view-models/use-hosting-choice";
 import type { ProjectOptionsCatalogState } from "../view-models/use-project-options-catalog";
 import type { TeamProjectOptionsStatus } from "../view-models/use-team-project-options";
+import type { useSetupHostSelection } from "../view-models/use-setup-host-selection";
+
+/** The machine list the Delivery step's host rows choose from. */
+type HostSelectionState = ReturnType<typeof useSetupHostSelection>;
 
 /** A Developer's "which Project does this repository belong to" select. */
 export interface ProjectChoice {
@@ -40,6 +44,18 @@ export interface WizardStepProps {
    * has no Feature), or null. Blocks the Repository step and Create.
    */
   projectBlocker?: string | null;
+  /**
+   * Why Create cannot be sent yet, shown above the Review step's button, or
+   * null.
+   */
+  createBlocker?: string | null;
+  /**
+   * Each environment's on-prem host problem, or null. Computed once by the
+   * wizard: all null unless the machine rows are on screen to fix them.
+   */
+  hostProblems: readonly (string | null)[];
+  /** The machine list the Delivery step's host rows choose from. */
+  hostSelection: HostSelectionState;
   projectCatalog: ProjectOptionsCatalogState;
   projectQuota: UsageLimitItem | null;
   selectedProjectKind: "frontend" | "backend";
