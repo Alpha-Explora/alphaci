@@ -76,7 +76,7 @@ export interface StudioViewportViewModel extends StudioFullScreenState, StudioPa
   unavailableReason: string | null;
   /**
    * Changes whenever the frame must re-mount: a reload or a new environment.
-   * Never the device, resolution, orientation, the panel or full screen: those only
+   * Never the device, resolution, orientation, the rail or full screen: those only
    * restyle the frame, so the page under test keeps its state.
    */
   frameKey: string;
@@ -121,9 +121,9 @@ function frameKeyOf(environment: StudioEnvironment | null, pageUrl: string | nul
 /**
  * ViewModel for the studio's left pane and toolbar: which environment is
  * under test (only ever the QA branch), on which device, resolution and
- * orientation — and how the studio is laid out: the page across the whole
- * width, docked or full screen, with the run panel floating over its edge
- * (open or hidden, remembered per studio).
+ * orientation — and how the studio is laid out: docked or full screen, with
+ * the run panel as a rail on the right edge (pinned open or opening on hover,
+ * remembered per studio).
  *
  * The previews come from the same ViewModel the Overview's deployment cards
  * use, so the studio sees exactly the environments and embeddability verdicts

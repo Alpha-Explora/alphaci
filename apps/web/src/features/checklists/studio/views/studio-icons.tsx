@@ -247,12 +247,16 @@ export function CollapseIcon() {
   );
 }
 
-/** Move to the other side. */
-export function SwapIcon() {
+/**
+ * The run rail's pin: a window with its right column, filled while pinned —
+ * the app's left rail toggle, mirrored to the side this rail is on.
+ */
+export function RailPinIcon({ pinned }: Readonly<{ pinned: boolean }>) {
   return (
     <Glyph>
-      <path d="M2.5 5.5h11M11 3l2.5 2.5L11 8" />
-      <path d="M13.5 10.5h-11M5 8l-2.5 2.5L5 13" />
+      <rect x="1.75" y="2.5" width="12.5" height="11" rx="1.2" />
+      <path d="M10.25 2.5v11" />
+      {pinned ? <rect x="10.25" y="2.5" width="4" height="11" rx="1" fill="currentColor" stroke="none" opacity="0.35" /> : null}
     </Glyph>
   );
 }
