@@ -95,10 +95,13 @@ function windowsScript({ url, sha256, apiUrl, code, replace }: InstallFacts) {
     "@echo off",
     "rem AlphaCI installer for this machine. It contains a one-time enrollment code: keep it private and delete it after the install succeeds.",
     "setlocal",
+    // The path reaches PowerShell through the environment, never inside a quoted
+    // command, so an apostrophe in the folder name (O'Brien) cannot break a command.
+    'set "ALPHACI_INSTALL_FILE=%~f0"',
     "rem Installing needs administrator rights. Relaunch this same file elevated.",
     "net session >nul 2>&1",
     "if errorlevel 1 (",
-    `  powershell -NoProfile -ExecutionPolicy Bypass -Command "Start-Process -FilePath '%~f0' -Verb RunAs"`,
+    `  powershell -NoProfile -ExecutionPolicy Bypass -Command "Start-Process -FilePath $env:ALPHACI_INSTALL_FILE -Verb RunAs"`,
     "  exit /b",
     ")",
     // The code is written without a line break, so the file holds exactly the code.
@@ -106,7 +109,7 @@ function windowsScript({ url, sha256, apiUrl, code, replace }: InstallFacts) {
     `<nul set /p "=${code}">"%ALPHACI_ENROLL_CODE_PATH%"`,
     // The PowerShell steps below the label are read from this file, so the code
     // and the URLs never appear on a command line.
-    `powershell -NoProfile -ExecutionPolicy Bypass -Command "$t=[IO.File]::ReadAllText('%~f0'); & ([scriptblock]::Create($t.Substring($t.LastIndexOf(':__POWERSHELL__')+15)))"`,
+    `powershell -NoProfile -ExecutionPolicy Bypass -Command "$t=[IO.File]::ReadAllText($env:ALPHACI_INSTALL_FILE); & ([scriptblock]::Create($t.Substring($t.LastIndexOf(':__POWERSHELL__')+15)))"`,
     'set "ALPHACI_RESULT=%ERRORLEVEL%"',
     'del /q "%ALPHACI_ENROLL_CODE_PATH%" 2>nul',
     "echo.",

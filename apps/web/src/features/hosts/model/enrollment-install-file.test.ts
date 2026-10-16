@@ -247,6 +247,19 @@ describe("Windows install file", () => {
     expect(contents.replace(/\r\n/g, "")).not.toContain("\n");
   });
 
+  it("hands the install file path to PowerShell through the environment, never inside quotes", () => {
+    const set = contents.indexOf('set "ALPHACI_INSTALL_FILE=%~f0"');
+    expect(set).toBeGreaterThan(-1);
+    expect(set).toBeLessThan(contents.indexOf("net session"));
+    // %~f0 appears only on the set line, so no quoted command carries the path.
+    expect(contents.split("%~f0")).toHaveLength(2);
+    expect(contents).not.toContain("'%~f0'");
+    expect(contents).toContain(
+      'Command "Start-Process -FilePath $env:ALPHACI_INSTALL_FILE -Verb RunAs"',
+    );
+    expect(contents).toContain("ReadAllText($env:ALPHACI_INSTALL_FILE)");
+  });
+
   it("writes the code from one set /p line and nowhere else", () => {
     const lines = contents.split("\r\n").filter((line) => line.includes(code));
     expect(lines).toEqual([`<nul set /p "=${code}">"%ALPHACI_ENROLL_CODE_PATH%"`]);
@@ -305,12 +318,14 @@ fs.writeFileSync(
   JSON.stringify({
     argv: process.argv.slice(2),
     codeFile: present ? fs.readFileSync(codePath, "utf8") : null,
+    installFile: process.env.ALPHACI_INSTALL_FILE ?? null,
   }),
 );
 `;
 
 /**
- * Runs the batch for real under cmd.exe. Its bare `net` and `powershell` calls
+ * Runs the batch for real under cmd.exe, from a folder whose name has an
+ * apostrophe, and returns the batch path. Its bare `net` and `powershell` calls
  * are rerouted to stub .cmd files through `call`: a .cmd started without `call`
  * never returns to the batch, so a stub would end the run at its first call.
  * Nothing real is elevated or started; the stub records what it was given.
@@ -331,9 +346,11 @@ function runBatch(paths: ReturnType<typeof fixture>, netExitCode: number) {
       /^( *)powershell /gm,
       (_, indent: string) => `${indent}call "${powershell}" `,
     );
-  const batch = join(paths.directory, "alphaci-install-office.cmd");
+  const folder = join(paths.directory, "O'Brien");
+  mkdirSync(folder);
+  const batch = join(folder, "alphaci-install-office.cmd");
   writeFileSync(batch, text);
-  return execFileSync("cmd.exe", ["/d", "/c", batch], {
+  execFileSync("cmd.exe", ["/d", "/c", batch], {
     env: childEnv({
       TEMP: paths.scratch,
       TMP: paths.scratch,
@@ -341,6 +358,7 @@ function runBatch(paths: ReturnType<typeof fixture>, netExitCode: number) {
     }),
     input: "\r\n",
   });
+  return batch;
 }
 
 /** Process env with the given names replaced; Windows names are case-insensitive. */
@@ -360,25 +378,32 @@ const itOnWindows = onWindows ? it : it.skip;
 
 itOnWindows("writes the code file for the PowerShell step and removes it afterwards", () => {
   const paths = fixture();
-  runBatch(paths, 0);
+  const batch = runBatch(paths, 0);
+  expect(batch).toContain("O'Brien");
   const seen = JSON.parse(readFileSync(paths.log, "utf8")) as {
     argv: string[];
     codeFile: string | null;
+    installFile: string | null;
   };
   expect(seen.codeFile).toBe(code);
   expect(seen.argv.join("\n")).not.toContain(code);
   expect(seen.argv.some((arg) => arg.includes("ReadAllText"))).toBe(true);
+  expect(seen.installFile).toBe(batch);
   expect(readdirSync(paths.scratch)).toEqual([]);
 });
 
 itOnWindows("relaunches elevated without writing the code when not an administrator", () => {
   const paths = fixture();
-  runBatch(paths, 1);
+  const batch = runBatch(paths, 1);
+  expect(batch).toContain("O'Brien");
   const seen = JSON.parse(readFileSync(paths.log, "utf8")) as {
     argv: string[];
     codeFile: string | null;
+    installFile: string | null;
   };
   expect(seen.argv.join(" ")).toContain("-Verb RunAs");
+  // The elevated call gets the exact path, apostrophe included, from the environment.
+  expect(seen.installFile).toBe(batch);
   expect(seen.codeFile).toBeNull();
   expect(readdirSync(paths.scratch)).toEqual([]);
 });
