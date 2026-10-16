@@ -15,6 +15,20 @@ import {
   type MachineSummary,
   type ReadinessCheck,
 } from "../model/host-types";
+/**
+ * The assignment on screen, with its tunnel report taken from a fresh read of
+ * the same assignment. Anything else (another assignment, one no longer in
+ * tunnel mode, a legacy binding) keeps the previous value.
+ */
+function withTunnelReport(
+  previous: HostAssignment | null,
+  fresh: HostAssignment | null,
+): HostAssignment | null {
+  if (!previous || !fresh || previous.id !== fresh.id) return previous;
+  if (previous.machineId === null || fresh.machineId === null) return previous;
+  if (fresh.config.ingress.mode !== "tunnel") return previous;
+  return { ...previous, tunnel: fresh.tunnel };
+}
 export interface HostAssignmentOptions {
   projectId: string;
   environmentId: string;
@@ -56,6 +70,17 @@ export function useHostAssignmentViewModel(options: HostAssignmentOptions) {
       active.current = false;
     };
   }, []);
+  // The 20 s timer below reads the stored assignment's mode and this
+  // environment through a ref, so it sees current values without restarting.
+  const tunnelWatch = useRef({ projectId, environmentId, tunnel: false }),
+    tunnelRequest = useRef(0);
+  useEffect(() => {
+    tunnelWatch.current = {
+      projectId,
+      environmentId,
+      tunnel: current?.config?.ingress.mode === "tunnel",
+    };
+  }, [projectId, environmentId, current]);
   useEffect(() => {
     let relevant = true;
     Promise.all([
@@ -96,8 +121,28 @@ export function useHostAssignmentViewModel(options: HostAssignmentOptions) {
   }, [workspaceId, projectId, environmentId, reload]);
   // Connection status is derived from lastSeenAt, so a machine list loaded once
   // turns every host "Offline" ninety seconds later. Refresh just the machines
-  // (not the assignment, which would overwrite an edit in progress).
+  // (not the assignment, which would overwrite an edit in progress). While the
+  // assignment is in tunnel mode the same tick also re-reads its tunnel report
+  // and readiness, and only those two values change.
   useEffect(() => {
+    const refreshTunnel = () => {
+      const watched = tunnelWatch.current;
+      if (!watched.tunnel) return;
+      const attempt = ++tunnelRequest.current;
+      Promise.all([
+        getAssignment(watched.projectId, watched.environmentId),
+        getReadiness(watched.projectId, watched.environmentId),
+      ])
+        .then(([assignment, readiness]) => {
+          // Only the newest refresh lands, and nothing lands after unmount.
+          if (!active.current || attempt !== tunnelRequest.current) return;
+          setChecks(readiness.checks);
+          setCurrent((previous) => withTunnelReport(previous, assignment));
+        })
+        .catch(() => {
+          // Keep the last tunnel report and checks; the next tick retries.
+        });
+    };
     const timer = setInterval(() => {
       listHosts(workspaceId)
         .then((machines) => {
@@ -113,6 +158,7 @@ export function useHostAssignmentViewModel(options: HostAssignmentOptions) {
         .catch(() => {
           // Keep the last list; the next tick retries.
         });
+      refreshTunnel();
     }, 20_000);
     return () => clearInterval(timer);
   }, [workspaceId]);

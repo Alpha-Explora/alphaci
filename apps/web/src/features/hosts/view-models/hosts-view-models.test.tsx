@@ -2,6 +2,7 @@ import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { useHostsViewModel } from "./use-hosts-view-model";
 import { useHostAssignmentViewModel } from "./use-host-assignment-view-model";
+import type { MachineAssignment, ReadinessCheck } from "../model/host-types";
 import { createHostEnrollment, listHosts } from "../data/hosts-api";
 import {
   assignHost,
@@ -216,4 +217,143 @@ it("shows legacy bindings and invalidates replacement confirmation after edits",
   expect(seen().confirmation).toBeNull();
   await act(() => seen().assign());
   expect(assignHost).not.toHaveBeenCalled();
+});
+
+const tunnelAssignment: MachineAssignment = {
+  id: "a",
+  machineId: "only",
+  projectId: "project",
+  environmentId: "env",
+  revision: 1,
+  config: {
+    ports: [{ slot: "frontend", hostPort: 8080, containerPort: 3000 }],
+    health: [{ slot: "frontend", path: "/" }],
+    ingress: { mode: "tunnel", publicUrl: null },
+  },
+  tunnel: {
+    status: "waiting",
+    publicUrl: null,
+    message: "Waiting for the machine to report its address",
+    reportedAt: null,
+  },
+};
+const reportedTunnel: MachineAssignment = {
+  ...tunnelAssignment,
+  tunnel: {
+    status: "running",
+    publicUrl: "https://quick-words.trycloudflare.com",
+    message: "The tunnel is running.",
+    reportedAt: "2026-10-16T00:00:00Z",
+  },
+};
+const directAssignment: MachineAssignment = {
+  ...tunnelAssignment,
+  config: {
+    ...tunnelAssignment.config,
+    ingress: { mode: "direct", publicUrl: null },
+  },
+  tunnel: null,
+};
+const passedCheck: ReadinessCheck = {
+  id: "ingress",
+  status: "passed",
+  message: "The HTTPS address answers.",
+};
+/** Lets the promise chains behind a timer tick settle inside act. */
+async function flushPromises() {
+  await act(async () => {
+    for (let tick = 0; tick < 10; tick++) await Promise.resolve();
+  });
+}
+describe("tunnel refresh on the assignment timer", () => {
+  beforeEach(() => {
+    jest.useFakeTimers();
+    jest.mocked(listHosts).mockResolvedValue([connected("only")]);
+  });
+  it("picks up the tunnel report and readiness without touching an unsaved edit", async () => {
+    jest.mocked(getAssignment).mockResolvedValue(tunnelAssignment);
+    jest.mocked(getReadiness).mockResolvedValue({ checks: [] });
+    const seen = probe(() => useHostAssignmentViewModel(options));
+    await flushPromises();
+    expect(seen().current).toMatchObject({ tunnel: { status: "waiting" } });
+
+    act(() => seen().port("frontend", "3100"));
+    act(() => seen().health("frontend", "/ready"));
+    await act(() => seen().assign());
+    expect(seen().confirmation).toBe("replace");
+
+    jest.mocked(getAssignment).mockResolvedValue(reportedTunnel);
+    jest.mocked(getReadiness).mockResolvedValue({ checks: [passedCheck] });
+    await act(async () => {
+      jest.advanceTimersByTime(20_000);
+    });
+    await flushPromises();
+
+    expect(getAssignment).toHaveBeenCalledTimes(2);
+    expect(seen().current).toMatchObject({
+      id: "a",
+      tunnel: {
+        status: "running",
+        publicUrl: "https://quick-words.trycloudflare.com",
+      },
+    });
+    expect(seen().checks).toEqual([passedCheck]);
+    expect(seen().config.ports).toEqual([
+      { slot: "frontend", containerPort: 3100 },
+    ]);
+    expect(seen().config.health).toEqual([
+      { slot: "frontend", path: "/ready" },
+    ]);
+    expect(seen().confirmation).toBe("replace");
+  });
+  it("makes no assignment or readiness request while the assignment is not in tunnel mode", async () => {
+    jest.mocked(getAssignment).mockResolvedValue(directAssignment);
+    jest.mocked(getReadiness).mockResolvedValue({ checks: [] });
+    probe(() => useHostAssignmentViewModel(options));
+    await flushPromises();
+    await act(async () => {
+      jest.advanceTimersByTime(60_000);
+    });
+    await flushPromises();
+    // The machine list still refreshes on every tick: initial load plus three.
+    expect(listHosts).toHaveBeenCalledTimes(4);
+    expect(getAssignment).toHaveBeenCalledTimes(1);
+    expect(getReadiness).toHaveBeenCalledTimes(1);
+  });
+  it("makes no tunnel request without a current assignment", async () => {
+    jest.mocked(getAssignment).mockResolvedValue(null);
+    probe(() => useHostAssignmentViewModel(options));
+    await flushPromises();
+    await act(async () => {
+      jest.advanceTimersByTime(60_000);
+    });
+    await flushPromises();
+    expect(getAssignment).toHaveBeenCalledTimes(1);
+    expect(getReadiness).toHaveBeenCalledTimes(1);
+  });
+  it("keeps the last tunnel report and checks when a refresh fails", async () => {
+    jest.mocked(getAssignment).mockResolvedValue(reportedTunnel);
+    jest.mocked(getReadiness).mockResolvedValue({ checks: [passedCheck] });
+    const seen = probe(() => useHostAssignmentViewModel(options));
+    await flushPromises();
+
+    jest.mocked(getAssignment).mockRejectedValue(new Error("Network failure"));
+    jest.mocked(getReadiness).mockResolvedValue({
+      checks: [{ id: "ingress", status: "failed", message: "Not answering." }],
+    });
+    await act(async () => {
+      jest.advanceTimersByTime(20_000);
+    });
+    await flushPromises();
+
+    expect(getAssignment).toHaveBeenCalledTimes(2);
+    expect(seen().current).toMatchObject({
+      tunnel: {
+        status: "running",
+        publicUrl: "https://quick-words.trycloudflare.com",
+      },
+    });
+    expect(seen().checks).toEqual([passedCheck]);
+    expect(seen().error).toBeNull();
+  });
 });
