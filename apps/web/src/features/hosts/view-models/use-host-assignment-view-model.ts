@@ -15,20 +15,6 @@ import {
   type MachineSummary,
   type ReadinessCheck,
 } from "../model/host-types";
-/**
- * The assignment on screen, with its tunnel report taken from a fresh read of
- * the same assignment. Anything else (another assignment, one no longer in
- * tunnel mode, a legacy binding) keeps the previous value.
- */
-function withTunnelReport(
-  previous: HostAssignment | null,
-  fresh: HostAssignment | null,
-): HostAssignment | null {
-  if (!previous || !fresh || previous.id !== fresh.id) return previous;
-  if (previous.machineId === null || fresh.machineId === null) return previous;
-  if (fresh.config.ingress.mode !== "tunnel") return previous;
-  return { ...previous, tunnel: fresh.tunnel };
-}
 export interface HostAssignmentOptions {
   projectId: string;
   environmentId: string;
@@ -72,8 +58,13 @@ export function useHostAssignmentViewModel(options: HostAssignmentOptions) {
   }, []);
   // The 20 s timer below reads the stored assignment's mode and this
   // environment through a ref, so it sees current values without restarting.
-  const tunnelWatch = useRef({ projectId, environmentId, tunnel: false }),
-    tunnelRequest = useRef(0);
+  const tunnelWatch = useRef({ projectId, environmentId, tunnel: false });
+  // Each authoritative read or write of the assignment takes a new number. A
+  // timer read lands only if no later one was started, so a slow poll cannot
+  // put back an assignment that a load, assign or unassign already replaced.
+  const serverRead = useRef(0);
+  // The assignment a replace or unassign confirmation was opened against.
+  const confirmedFor = useRef<string | null>(null);
   useEffect(() => {
     tunnelWatch.current = {
       projectId,
@@ -90,6 +81,7 @@ export function useHostAssignmentViewModel(options: HostAssignmentOptions) {
     ])
       .then(([machines, assignment, readiness]) => {
         if (!relevant) return;
+        serverRead.current += 1;
         setHosts(
           machines.filter(
             (host) =>
@@ -121,26 +113,28 @@ export function useHostAssignmentViewModel(options: HostAssignmentOptions) {
   }, [workspaceId, projectId, environmentId, reload]);
   // Connection status is derived from lastSeenAt, so a machine list loaded once
   // turns every host "Offline" ninety seconds later. Refresh just the machines
-  // (not the assignment, which would overwrite an edit in progress). While the
-  // assignment is in tunnel mode the same tick also re-reads its tunnel report
-  // and readiness, and only those two values change.
+  // on every tick. While the stored assignment is in tunnel mode the same tick
+  // also re-reads it with its readiness, and the server's answer replaces what
+  // is shown (its tunnel report, id, revision, machine, mode). The form's own
+  // edits live in `config`, `selected` and `confirmation`, which this never
+  // touches.
   useEffect(() => {
     const refreshTunnel = () => {
       const watched = tunnelWatch.current;
       if (!watched.tunnel) return;
-      const attempt = ++tunnelRequest.current;
+      const read = ++serverRead.current;
       Promise.all([
         getAssignment(watched.projectId, watched.environmentId),
         getReadiness(watched.projectId, watched.environmentId),
       ])
         .then(([assignment, readiness]) => {
-          // Only the newest refresh lands, and nothing lands after unmount.
-          if (!active.current || attempt !== tunnelRequest.current) return;
+          // Only the newest read lands, and nothing lands after unmount.
+          if (!active.current || read !== serverRead.current) return;
           setChecks(readiness.checks);
-          setCurrent((previous) => withTunnelReport(previous, assignment));
+          setCurrent(assignment);
         })
         .catch(() => {
-          // Keep the last tunnel report and checks; the next tick retries.
+          // Keep the last assignment and checks; the next tick retries.
         });
     };
     const timer = setInterval(() => {
@@ -167,16 +161,37 @@ export function useHostAssignmentViewModel(options: HostAssignmentOptions) {
   const choices = healthyHosts(hosts);
   const automatic = choices.length === 1 ? choices[0]! : null;
   const machineId = selected || automatic?.id || "";
-  async function assign() {
-    if (!canManage || pending.current || !machineId) return;
-    if (current && confirmation !== "replace") {
-      setConfirmation("replace");
-      return;
+  // A confirmation survives refreshes untouched, but it only sends for the
+  // assignment it was opened against. If the server has since replaced or
+  // removed that assignment, the click is refused and the user reviews again.
+  // Returns true only when a confirmation is open for this assignment.
+  function confirmed(kind: "replace" | "unassign"): boolean {
+    if (confirmation !== kind) {
+      confirmedFor.current = current?.id ?? null;
+      setConfirmation(kind);
+      return false;
     }
-    const key = JSON.stringify({ machineId, current: current?.id, config });
+    if (confirmedFor.current === (current?.id ?? null)) return true;
+    confirmedFor.current = null;
+    setConfirmation(null);
+    setError(
+      "The assignment changed on the server since you confirmed. Review it, then confirm again.",
+    );
+    return false;
+  }
+  function requestIdFor(key: string): string {
     if (request.current?.key !== key)
       request.current = { key, id: crypto.randomUUID() };
-    const requestId = request.current.id;
+    return request.current.id;
+  }
+  async function assign() {
+    if (!canManage || pending.current || !machineId) return;
+    // A replacement is confirmed first: one click opens it, the next sends.
+    if ((current || confirmation === "replace") && !confirmed("replace"))
+      return;
+    const requestId = requestIdFor(
+      JSON.stringify({ machineId, current: current?.id, config }),
+    );
     await perform(async () => {
       const result = await assignHost(projectId, environmentId, {
         ...(selected ? { machineId: selected } : {}),
@@ -185,6 +200,7 @@ export function useHostAssignmentViewModel(options: HostAssignmentOptions) {
         config,
       });
       if (active.current) {
+        serverRead.current += 1;
         setCurrent(result);
         setConfirmation(null);
         setReload((value) => value + 1);
@@ -193,15 +209,13 @@ export function useHostAssignmentViewModel(options: HostAssignmentOptions) {
   }
   async function unassign() {
     if (!canManage || !current || pending.current) return;
-    if (confirmation !== "unassign") {
-      setConfirmation("unassign");
-      return;
-    }
+    if (!confirmed("unassign")) return;
     pending.current = true;
     setBusy(true);
     try {
       await unassignHost(projectId, environmentId, current.id);
       if (active.current) {
+        serverRead.current += 1;
         setCurrent(null);
         setConfirmation(null);
         setReload((value) => value + 1);

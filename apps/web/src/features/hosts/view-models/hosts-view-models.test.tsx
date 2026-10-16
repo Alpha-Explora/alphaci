@@ -3,6 +3,10 @@ import { createRoot, type Root } from "react-dom/client";
 import { useHostsViewModel } from "./use-hosts-view-model";
 import { useHostAssignmentViewModel } from "./use-host-assignment-view-model";
 import type { MachineAssignment, ReadinessCheck } from "../model/host-types";
+import {
+  AssignmentSummary,
+  type AssignmentVm,
+} from "../views/host-assignment-form";
 import { createHostEnrollment, listHosts } from "../data/hosts-api";
 import {
   assignHost,
@@ -265,6 +269,16 @@ async function flushPromises() {
     for (let tick = 0; tick < 10; tick++) await Promise.resolve();
   });
 }
+/** Renders the Hosting summary for a view-model and returns its text. */
+function renderSummary(vm: AssignmentVm) {
+  const host = document.createElement("div");
+  const summaryRoot = createRoot(host);
+  act(() => summaryRoot.render(<AssignmentSummary vm={vm} />));
+  return {
+    text: host.textContent ?? "",
+    unmount: () => act(() => summaryRoot.unmount()),
+  };
+}
 describe("tunnel refresh on the assignment timer", () => {
   beforeEach(() => {
     jest.useFakeTimers();
@@ -355,5 +369,119 @@ describe("tunnel refresh on the assignment timer", () => {
     });
     expect(seen().checks).toEqual([passedCheck]);
     expect(seen().error).toBeNull();
+  });
+  it("follows the server when the assignment is replaced, and keeps an unsaved edit", async () => {
+    jest.mocked(getAssignment).mockResolvedValue(reportedTunnel);
+    jest.mocked(getReadiness).mockResolvedValue({ checks: [passedCheck] });
+    const seen = probe(() => useHostAssignmentViewModel(options));
+    await flushPromises();
+    act(() => seen().port("frontend", "3100"));
+
+    // Someone else replaced the assignment: a new id, its tunnel not yet reported.
+    jest
+      .mocked(getAssignment)
+      .mockResolvedValue({ ...tunnelAssignment, id: "b", revision: 2 });
+    await act(async () => {
+      jest.advanceTimersByTime(20_000);
+    });
+    await flushPromises();
+
+    expect(seen().current).toMatchObject({
+      id: "b",
+      revision: 2,
+      tunnel: { status: "waiting", publicUrl: null },
+    });
+    expect(seen().config.ports).toEqual([
+      { slot: "frontend", containerPort: 3100 },
+    ]);
+    const summary = renderSummary(seen());
+    expect(summary.text).not.toContain("quick-words.trycloudflare.com");
+    expect(summary.text).toContain(
+      "Waiting for the machine to report its address",
+    );
+    summary.unmount();
+  });
+  it("falls back to no machine when the server has no assignment, and keeps an unsaved edit", async () => {
+    jest.mocked(getAssignment).mockResolvedValue(reportedTunnel);
+    jest.mocked(getReadiness).mockResolvedValue({ checks: [passedCheck] });
+    const seen = probe(() => useHostAssignmentViewModel(options));
+    await flushPromises();
+    act(() => seen().port("frontend", "3100"));
+    act(() => seen().health("frontend", "/ready"));
+
+    jest.mocked(getAssignment).mockResolvedValue(null);
+    await act(async () => {
+      jest.advanceTimersByTime(20_000);
+    });
+    await flushPromises();
+
+    expect(seen().current).toBeNull();
+    expect(seen().config.ports).toEqual([
+      { slot: "frontend", containerPort: 3100 },
+    ]);
+    expect(seen().config.health).toEqual([
+      { slot: "frontend", path: "/ready" },
+    ]);
+    const summary = renderSummary(seen());
+    expect(summary.text).toContain("No machine assigned");
+    expect(summary.text).not.toContain("quick-words.trycloudflare.com");
+    summary.unmount();
+  });
+  it("does not send a replacement confirmed against an assignment the server has since replaced", async () => {
+    jest.mocked(getAssignment).mockResolvedValue(tunnelAssignment);
+    jest.mocked(getReadiness).mockResolvedValue({ checks: [] });
+    const seen = probe(() => useHostAssignmentViewModel(options));
+    await flushPromises();
+    await act(() => seen().assign());
+    expect(seen().confirmation).toBe("replace");
+
+    jest
+      .mocked(getAssignment)
+      .mockResolvedValue({ ...tunnelAssignment, id: "b", revision: 2 });
+    await act(async () => {
+      jest.advanceTimersByTime(20_000);
+    });
+    await flushPromises();
+    expect(seen().confirmation).toBe("replace");
+
+    await act(() => seen().assign());
+    expect(assignHost).not.toHaveBeenCalled();
+    expect(seen().confirmation).toBeNull();
+    expect(seen().error).toMatch(/changed on the server/);
+  });
+  it("does not put back an assignment that a save replaced while a refresh was in flight", async () => {
+    const replaced: MachineAssignment = {
+      ...tunnelAssignment,
+      id: "b",
+      revision: 2,
+    };
+    let answerRefresh!: (value: MachineAssignment) => void;
+    jest
+      .mocked(getAssignment)
+      .mockResolvedValueOnce(tunnelAssignment)
+      .mockReturnValueOnce(
+        new Promise<MachineAssignment>((done) => {
+          answerRefresh = done;
+        }),
+      )
+      .mockResolvedValue(replaced);
+    jest.mocked(getReadiness).mockResolvedValue({ checks: [] });
+    jest.mocked(assignHost).mockResolvedValue(replaced);
+    const seen = probe(() => useHostAssignmentViewModel(options));
+    await flushPromises();
+
+    await act(async () => {
+      jest.advanceTimersByTime(20_000);
+    });
+    await act(() => seen().assign());
+    await act(() => seen().assign());
+    await flushPromises();
+    expect(seen().current).toMatchObject({ id: "b" });
+
+    await act(async () => {
+      answerRefresh(tunnelAssignment);
+    });
+    await flushPromises();
+    expect(seen().current).toMatchObject({ id: "b" });
   });
 });
