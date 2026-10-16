@@ -26,10 +26,17 @@ seconds is offline. None of these labels implies application health.
 
 Enrollment/revoke controls follow application hosting roles and non-viewer
 workspace membership. A code remains only in the mounted workspace view state,
-expires at the server timestamp, and can be hidden. The generated installation
-commands verify the downloaded SHA-256 before extracting or executing it.
-Codes and machine credentials never enter URLs, browser storage, navigation
-state, or installation command arguments. The installer asks for the code locally.
+expires at the server timestamp, and can be hidden. The browser can also save
+an install file for the machine (`.sh` on Ubuntu, `.cmd` on Windows). It is
+offered only for installer 0.2.0 and later, compared as numbers. It is built
+from the receipt in the browser and never sent back to the server. Its
+body carries the code. Each file hands it to the installer through a file that
+the installer deletes, and the install file deletes itself after a successful
+run, so a failed run keeps it for a rerun. The copy-paste command still has the
+installer ask for the code locally. Both
+generated installers verify the downloaded SHA-256 before extracting or
+executing it. Codes and machine credentials never enter URLs, browser storage,
+navigation state, or command-line arguments.
 Credential replacement and revocation require explicit confirmation. Existing
 containers and data can keep running while offline.
 

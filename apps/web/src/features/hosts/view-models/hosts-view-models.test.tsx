@@ -8,11 +8,15 @@ import {
   type AssignmentVm,
 } from "../views/host-assignment-form";
 import { createHostEnrollment, listHosts } from "../data/hosts-api";
+import { downloadBlob } from "@/shared/browser/download-blob";
 import {
   assignHost,
   getAssignment,
   getReadiness,
 } from "../data/assignments-api";
+jest.mock("@/shared/browser/download-blob", () => ({
+  downloadBlob: jest.fn(),
+}));
 jest.mock("../data/hosts-api", () => ({
   listHosts: jest.fn(),
   createHostEnrollment: jest.fn(),
@@ -57,7 +61,7 @@ const receipt = {
   code: "private-code",
   expiresAt: new Date(Date.now() + 600_000).toISOString(),
   installer: {
-    version: "0.1.0",
+    version: "0.2.0",
     url: "https://api.example/installer",
     sha256: "a".repeat(64),
   },
@@ -127,6 +131,55 @@ it("expires the displayed code from the server expiration timestamp", async () =
   await act(async () => jest.advanceTimersByTime(10_000));
   expect(seen().expired).toBe(true);
 });
+it("saves an install file named for the machine, and refuses a code it cannot write", async () => {
+  jest.mocked(createHostEnrollment).mockResolvedValue({
+    ...receipt,
+    code: "Qz9_-".repeat(8) + "Qz9",
+  });
+  const seen = probe(() => useHostsViewModel("workspace", true));
+  await settle();
+  act(() => {
+    seen().setName("Office server");
+    seen().setPlatform("ubuntu");
+  });
+  await act(() => seen().enroll());
+  expect(seen().canDownloadInstallFile).toBe(true);
+  act(() => seen().downloadInstallFile());
+  expect(downloadBlob).toHaveBeenCalledWith(
+    "alphaci-install-office-server.sh",
+    expect.any(Blob),
+  );
+
+  jest.mocked(createHostEnrollment).mockResolvedValue(receipt);
+  act(() => seen().dismiss());
+  act(() => seen().startAdding());
+  act(() => seen().setName("Second"));
+  await act(() => seen().enroll());
+  jest.mocked(downloadBlob).mockClear();
+  act(() => seen().downloadInstallFile());
+  expect(downloadBlob).not.toHaveBeenCalled();
+  expect(seen().error).toBe("Invalid enrollment code.");
+});
+
+it("offers no install file for an installer older than 0.2.0", async () => {
+  jest.mocked(createHostEnrollment).mockResolvedValue({
+    ...receipt,
+    code: "Qz9_-".repeat(8) + "Qz9",
+    installer: { ...receipt.installer, version: "0.1.9" },
+  });
+  const seen = probe(() => useHostsViewModel("workspace", true));
+  await settle();
+  act(() => {
+    seen().setName("Old server");
+    seen().setPlatform("ubuntu");
+  });
+  await act(() => seen().enroll());
+  expect(seen().canDownloadInstallFile).toBe(false);
+  act(() => seen().downloadInstallFile());
+  expect(downloadBlob).not.toHaveBeenCalled();
+  expect(seen().error).toBeNull();
+});
+
 const options = {
   projectId: "project",
   environmentId: "env",

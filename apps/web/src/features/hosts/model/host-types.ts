@@ -155,7 +155,10 @@ export interface PlatformGuide {
   label: string;
   summary: string;
   prerequisites: string[];
+  /** Where and how to run the copy-paste command. */
   runIn: string;
+  /** Where and how to run the downloaded install file. */
+  fileRunIn: string;
 }
 export const PLATFORM_GUIDES: Record<HostPlatform, PlatformGuide> = {
   windows: {
@@ -167,7 +170,9 @@ export const PLATFORM_GUIDES: Record<HostPlatform, PlatformGuide> = {
       "Administrator access on the machine",
     ],
     runIn:
-      "Paste it into Windows PowerShell opened as Administrator (the prompt starts with PS C:\\>), signed in as the account that owns Ubuntu. Do not open Ubuntu or type wsl first; the installer sets up Ubuntu for you.",
+      "Paste it into Windows PowerShell opened as Administrator (the prompt starts with PS C:\\>), signed in as the account that owns Ubuntu. Ubuntu must already be installed in WSL2; the installer does not install it and stops with a message if it is missing.",
+    fileRunIn:
+      "Double-click the file on the Windows machine, signed in as the account that owns Ubuntu. It asks for administrator permission itself. Ubuntu must already be installed in WSL2; the installer does not install it and stops with a message if it is missing.",
   },
   ubuntu: {
     label: "Ubuntu",
@@ -178,6 +183,8 @@ export const PLATFORM_GUIDES: Record<HostPlatform, PlatformGuide> = {
       "A user that can run sudo",
     ],
     runIn: "Open a terminal on the machine and paste the command.",
+    fileRunIn:
+      "Copy the file to the machine (for example with scp), then run it there with bash as your normal user. It asks for sudo itself.",
   },
 };
 export function lastSeenLabel(lastSeenAt: string | null, now = Date.now()) {
