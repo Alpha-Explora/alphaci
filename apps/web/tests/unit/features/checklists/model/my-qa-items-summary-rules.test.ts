@@ -4,7 +4,6 @@ import {
   myQaItemsDestination,
   myQaItemsSummaryTotal,
   projectMyItemsSummary,
-  projectWorkspaceOpensMyItems,
   repositoryMyItemsSummary,
   summaryChipLabel,
 } from "../../../../../src/features/checklists/model/my-qa-items-summary-rules";
@@ -110,13 +109,3 @@ describe("myQaItemsDestination", () => {
   });
 });
 
-describe("projectWorkspaceOpensMyItems", () => {
-  it("reads #my-qa-items, with or without the hash sign", () => {
-    expect(projectWorkspaceOpensMyItems("#my-qa-items")).toBe(true);
-    expect(projectWorkspaceOpensMyItems("my-qa-items")).toBe(true);
-  });
-
-  it.each(["", "#run", null, undefined])("ignores %p", (hash) => {
-    expect(projectWorkspaceOpensMyItems(hash)).toBe(false);
-  });
-});

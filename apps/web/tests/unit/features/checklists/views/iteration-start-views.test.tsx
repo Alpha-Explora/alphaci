@@ -4,11 +4,14 @@ import { createRoot, type Root } from "react-dom/client";
 import { iterationsRepository } from "../../../../../src/features/checklists/data/iterations-repository";
 import { projectQaRunsRepository } from "../../../../../src/features/checklists/data/project-qa-runs-repository";
 import { IterationHeader } from "../../../../../src/features/checklists/iteration";
+import { requirementsRepository } from "../../../../../src/features/checklists/data/requirements-repository";
 import { normalizeCurrentIteration } from "../../../../../src/features/checklists/model/iteration-rules";
 import { EMPTY_PROJECT_MY_ITEMS, normalizeProjectRunCurrent } from "../../../../../src/features/checklists/model/project-run-rules";
 import { normalizePromotionStatus } from "../../../../../src/features/checklists/model/qa-promotion-rules";
 import type { QaPromotionStatus } from "../../../../../src/features/checklists/model/qa-promotion-types";
 import type { QaScope } from "../../../../../src/features/checklists/model/qa-scope";
+import { normalizeProjectRequirements } from "../../../../../src/features/checklists/model/requirement-rules";
+import { ProjectQaWorkspace } from "../../../../../src/features/checklists/requirements/views/project-qa-workspace";
 import { MyQaItemsSummary } from "../../../../../src/features/checklists/returned/views/my-qa-items-summary";
 import { ProjectMyItemsCard } from "../../../../../src/features/checklists/returned/views/project-my-items-card";
 import { usePoDeliveryViewModel } from "../../../../../src/features/checklists/studio/view-models/use-po-delivery-view-model";
@@ -20,13 +23,17 @@ import { ProjectRunPanel } from "../../../../../src/features/checklists/studio/v
 import type { AppRole } from "../../../../../src/shared/api/contracts";
 import { currentWire, deliveredWire, startableWire, waitingWire } from "../iteration-fixtures";
 import { apiErrorWith, readyWire } from "../qa-promotion-fixtures";
-import { projectRunWire } from "../requirement-fixtures";
+import { projectRequirementsWire, projectRunWire } from "../requirement-fixtures";
 
 jest.mock("../../../../../src/features/checklists/data/iterations-repository", () => ({
   iterationsRepository: { current: jest.fn(), mergeAll: jest.fn(), start: jest.fn() },
 }));
 jest.mock("../../../../../src/features/checklists/data/project-qa-runs-repository", () => ({
   projectQaRunsRepository: { current: jest.fn(), reopen: jest.fn(), myItems: jest.fn(), start: jest.fn() },
+}));
+
+jest.mock("../../../../../src/features/checklists/data/requirements-repository", () => ({
+  requirementsRepository: { listForProject: jest.fn() },
 }));
 
 const iterations = iterationsRepository as jest.Mocked<typeof iterationsRepository>;
@@ -173,6 +180,47 @@ describe("The Project QA run between iterations", () => {
     const lead = await render(<RunHarness role="lead" />);
     expect(buttonNamed(lead, "+Start iteration 4")).toBeDefined();
     expect(waitingText(lead)).toBeNull();
+  });
+});
+
+/* ── The Checklists tab's one view, between iterations ─────────────────── */
+
+describe("The Checklists tab between iterations", () => {
+  const requirements = requirementsRepository as jest.Mocked<typeof requirementsRepository>;
+
+  function workspace(role: AppRole) {
+    return <ProjectQaWorkspace deliveryProjectId="dp-1" projectName="storefront" appRole={role} />;
+  }
+
+  /* The Progress tab a Product owner no longer has also offered Start: the
+   * requirements say the iteration was delivered and offer it once. */
+  it("offers a Product owner Start iteration 4 once, on the requirements it writes", async () => {
+    noRunYet();
+    requirements.listForProject.mockResolvedValue(normalizeProjectRequirements(projectRequirementsWire()));
+    iterations.current.mockResolvedValue(normalizeCurrentIteration(startableWire()));
+    const container = await render(workspace("lead"));
+    const starts = [...container.querySelectorAll("button")].filter((b) => b.textContent?.trim() === "+Start iteration 4");
+    expect(starts).toHaveLength(1);
+    expect(container.querySelector(".rq-panel .rq-delivered")).not.toBeNull();
+  });
+
+  it("tells a Developer who the team waits for, once, on its checklist", async () => {
+    noRunYet();
+    runs.myItems.mockResolvedValue(EMPTY_PROJECT_MY_ITEMS);
+    requirements.listForProject.mockResolvedValue(normalizeProjectRequirements(projectRequirementsWire()));
+    iterations.current.mockResolvedValue(normalizeCurrentIteration(waitingWire()));
+    const container = await render(workspace("member"));
+    expect(waitingText(container)).toMatch(WAITING);
+    expect(container.querySelectorAll(".iteration-waiting__text")).toHaveLength(1);
+  });
+
+  it("adds nothing above the requirements while an iteration is active", async () => {
+    noRunYet();
+    requirements.listForProject.mockResolvedValue(normalizeProjectRequirements(projectRequirementsWire()));
+    iterations.current.mockResolvedValue(normalizeCurrentIteration(currentWire()));
+    const container = await render(workspace("lead"));
+    expect(buttonNamed(container, "+Start iteration 4")).toBeUndefined();
+    expect(waitingText(container)).toBeNull();
   });
 });
 
