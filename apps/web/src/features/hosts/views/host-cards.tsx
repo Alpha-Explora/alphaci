@@ -199,15 +199,32 @@ export function EnrollmentCard({ vm }: { vm: HostsVm }) {
       <div className="hosts-task">
         <span className="hosts-task__num">2</span>
         <div className="hosts-task__body">
-          <p className="hosts-task__title">Copy and run this command</p>
-          <p className="hosts-muted">{guide.runIn}</p>
+          <p className="hosts-task__title">Run the installer on this machine</p>
+          <p className="hosts-muted">{guide.fileRunIn}</p>
           {receipt.replacesMachineId ? (
             <p className="hosts-muted">
-              This code replaces the machine&apos;s credential. Run the command
-              on that machine; its current credential stops working once the
-              code is used.
+              This code replaces the machine&apos;s credential. Run the file or
+              command on that machine; its current credential stops working once
+              the code is used.
             </p>
           ) : null}
+          <div className="hosts-install">
+            <button
+              className="primary-button"
+              type="button"
+              onClick={vm.downloadInstallFile}
+            >
+              Download install file
+            </button>
+            <p className="hosts-muted">
+              The file contains this machine&apos;s one-time code. Keep it
+              private, and delete it after the install succeeds.
+            </p>
+          </div>
+          <p className="hosts-muted">
+            Or copy the command instead; the installer then asks for the code in
+            step 3. {guide.runIn}
+          </p>
           <div className="hosts-code">
             <pre>{command}</pre>
             <CopyButton value={command} label="install command" />
@@ -219,7 +236,8 @@ export function EnrollmentCard({ vm }: { vm: HostsVm }) {
         <span className="hosts-task__num">3</span>
         <div className="hosts-task__body">
           <p className="hosts-task__title">
-            Paste this code when the installer asks for it
+            If you copied the command, paste this code when the installer asks
+            for it
           </p>
           <p className="hosts-muted">
             It works once and expires in{" "}
@@ -242,8 +260,9 @@ export function EnrollmentCard({ vm }: { vm: HostsVm }) {
         <summary>Troubleshooting and manual verification</summary>
         <ul>
           <li>
-            The command checks the download against SHA-256{" "}
-            <code>{receipt.installer.sha256}</code> before running anything.
+            The install file and the command check the download against
+            SHA-256 <code>{receipt.installer.sha256}</code> before running
+            anything.
             Installer {receipt.installer.version}:{" "}
             <a href={receipt.installer.url}>download the archive</a>.
           </li>
@@ -256,7 +275,7 @@ export function EnrollmentCard({ vm }: { vm: HostsVm }) {
           ) : null}
           <li>
             If the installer reports a missing prerequisite, fix it and run the
-            same command again with this code.
+            same file again, or the same command with this code.
           </li>
         </ul>
       </details>

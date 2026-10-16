@@ -3,11 +3,15 @@ import { createRoot, type Root } from "react-dom/client";
 import { useHostsViewModel } from "./use-hosts-view-model";
 import { useHostAssignmentViewModel } from "./use-host-assignment-view-model";
 import { createHostEnrollment, listHosts } from "../data/hosts-api";
+import { downloadBlob } from "@/shared/browser/download-blob";
 import {
   assignHost,
   getAssignment,
   getReadiness,
 } from "../data/assignments-api";
+jest.mock("@/shared/browser/download-blob", () => ({
+  downloadBlob: jest.fn(),
+}));
 jest.mock("../data/hosts-api", () => ({
   listHosts: jest.fn(),
   createHostEnrollment: jest.fn(),
@@ -122,6 +126,35 @@ it("expires the displayed code from the server expiration timestamp", async () =
   await act(async () => jest.advanceTimersByTime(10_000));
   expect(seen().expired).toBe(true);
 });
+it("saves an install file named for the machine, and refuses a code it cannot write", async () => {
+  jest.mocked(createHostEnrollment).mockResolvedValue({
+    ...receipt,
+    code: "Qz9_-".repeat(8) + "Qz9",
+  });
+  const seen = probe(() => useHostsViewModel("workspace", true));
+  await settle();
+  act(() => {
+    seen().setName("Office server");
+    seen().setPlatform("ubuntu");
+  });
+  await act(() => seen().enroll());
+  act(() => seen().downloadInstallFile());
+  expect(downloadBlob).toHaveBeenCalledWith(
+    "alphaci-install-office-server.sh",
+    expect.any(Blob),
+  );
+
+  jest.mocked(createHostEnrollment).mockResolvedValue(receipt);
+  act(() => seen().dismiss());
+  act(() => seen().startAdding());
+  act(() => seen().setName("Second"));
+  await act(() => seen().enroll());
+  jest.mocked(downloadBlob).mockClear();
+  act(() => seen().downloadInstallFile());
+  expect(downloadBlob).not.toHaveBeenCalled();
+  expect(seen().error).toBe("Invalid enrollment code.");
+});
+
 const options = {
   projectId: "project",
   environmentId: "env",

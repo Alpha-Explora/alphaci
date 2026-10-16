@@ -1,6 +1,5 @@
 import type { EnrollmentReceipt } from "./host-types";
-const bashQuote = (value: string) => "'" + value.replaceAll("'", "'\\''") + "'";
-const psQuote = (value: string) => "'" + value.replaceAll("'", "''") + "'";
+import { bashQuote, psQuote } from "./shell-quote";
 export function enrollmentInstructions(receipt: EnrollmentReceipt) {
   const { url, sha256 } = receipt.installer;
   if (!/^[0-9a-f]{64}$/.test(sha256))

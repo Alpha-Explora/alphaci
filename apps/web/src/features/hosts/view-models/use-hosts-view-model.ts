@@ -1,6 +1,8 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
+import { downloadBlob } from "@/shared/browser/download-blob";
 import { createHostEnrollment, listHosts, revokeHost } from "../data/hosts-api";
+import { enrollmentInstallFile } from "../model/enrollment-install-file";
 import {
   enrollmentProgress,
   type EnrollmentReceipt,
@@ -122,6 +124,25 @@ export function useHostsViewModel(
       }
     });
   }
+  /** Saves the install file for the enrollment on screen. The code goes only into that file. */
+  function downloadInstallFile() {
+    if (!receipt || !enrolled) return;
+    try {
+      const file = enrollmentInstallFile(
+        receipt,
+        enrolled.platform,
+        enrolled.name,
+      );
+      downloadBlob(
+        file.filename,
+        new Blob([file.contents], { type: file.mimeType }),
+      );
+    } catch (cause) {
+      setError(
+        cause instanceof Error ? cause.message : "Could not build the install file.",
+      );
+    }
+  }
   async function perform(action: () => Promise<void>) {
     pending.current = true;
     setBusy(true);
@@ -156,6 +177,7 @@ export function useHostsViewModel(
     expired: progress === "expired",
     enroll,
     revoke,
+    downloadInstallFile,
     startAdding: () => {
       setAdding(true);
       setConfirmation(null);
