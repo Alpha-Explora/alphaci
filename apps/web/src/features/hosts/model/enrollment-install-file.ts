@@ -14,7 +14,8 @@ const ENROLLMENT_CODE = /^[A-Za-z0-9_-]{43}$/;
  * A self-contained installer for one enrollment. It downloads and checks the
  * agent archive, then gives the one-time code to the installer by file path.
  * The code lives only in the script body, never on a command line. The machine
- * name is used for the file name alone.
+ * name is used for the file name alone. Each file deletes itself after a
+ * successful run.
  */
 export function enrollmentInstallFile(
   receipt: EnrollmentReceipt,
@@ -69,7 +70,7 @@ function fileSlug(name: string) {
 function ubuntuScript({ url, sha256, apiUrl, code, replace }: InstallFacts) {
   return [
     "#!/usr/bin/env bash",
-    "# AlphaCI installer for this machine. It contains a one-time enrollment code: keep it private and delete it after the install succeeds.",
+    "# AlphaCI installer for this machine. It contains a one-time enrollment code. It deletes itself after a successful install; keep it private until then.",
     "set -euo pipefail",
     "work=$(mktemp -d)",
     `trap 'rm -rf "$work"' EXIT`,
@@ -86,6 +87,9 @@ function ubuntuScript({ url, sha256, apiUrl, code, replace }: InstallFacts) {
     "CODE",
     ")",
     `sudo env ALPHACI_ENROLL_CODE_FILE="$code_file" bash "$work/agent/install.sh" --enroll ${bashQuote(apiUrl)}${replace ? " --replace" : ""}`,
+    // Reached only when the install succeeded (set -e stops the script first), so a
+    // failed run keeps this file for a rerun.
+    'rm -f -- "$0"',
     "",
   ].join("\n");
 }
@@ -93,43 +97,66 @@ function ubuntuScript({ url, sha256, apiUrl, code, replace }: InstallFacts) {
 function windowsScript({ url, sha256, apiUrl, code, replace }: InstallFacts) {
   return [
     "@echo off",
-    "rem AlphaCI installer for this machine. It contains a one-time enrollment code: keep it private and delete it after the install succeeds.",
+    "rem AlphaCI installer for this machine. It contains a one-time enrollment code. It deletes itself after a successful install; keep it private until then.",
     "setlocal",
     // The path reaches PowerShell through the environment, never inside a quoted
     // command, so an apostrophe in the folder name (O'Brien) cannot break a command.
     'set "ALPHACI_INSTALL_FILE=%~f0"',
-    "rem Installing needs administrator rights. Relaunch this same file elevated.",
-    "net session >nul 2>&1",
+    // fltmc only succeeds in an elevated window, so it is the administrator check.
+    "fltmc >nul 2>&1",
+    "if not errorlevel 1 goto :run",
+    // The relaunched copy carries the marker. If it still lacks rights, stop here
+    // instead of relaunching again. Every exit is at top level: a nested exit /b
+    // inside a block does not reliably return its code.
+    'if "%~1"=="--elevated" goto :no_admin',
+    `powershell -NoProfile -ExecutionPolicy Bypass -Command "Start-Process -FilePath $env:ALPHACI_INSTALL_FILE -ArgumentList '--elevated' -Verb RunAs"`,
     "if errorlevel 1 (",
-    `  powershell -NoProfile -ExecutionPolicy Bypass -Command "Start-Process -FilePath $env:ALPHACI_INSTALL_FILE -Verb RunAs"`,
-    "  exit /b",
+    "  echo The administrator prompt was declined or failed. Nothing was changed.",
+    "  pause",
     ")",
-    // The code is written without a line break, so the file holds exactly the code.
-    'set "ALPHACI_ENROLL_CODE_PATH=%TEMP%\\alphaci-enroll-%RANDOM%%RANDOM%.txt"',
-    `<nul set /p "=${code}">"%ALPHACI_ENROLL_CODE_PATH%"`,
-    // The PowerShell steps below the label are read from this file, so the code
-    // and the URLs never appear on a command line.
-    `powershell -NoProfile -ExecutionPolicy Bypass -Command "$t=[IO.File]::ReadAllText($env:ALPHACI_INSTALL_FILE); & ([scriptblock]::Create($t.Substring($t.LastIndexOf(':__POWERSHELL__')+15)))"`,
-    'set "ALPHACI_RESULT=%ERRORLEVEL%"',
-    'del /q "%ALPHACI_ENROLL_CODE_PATH%" 2>nul',
+    "exit /b",
+    ":no_admin",
+    "echo AlphaCI needs administrator rights, and this window did not get them. Nothing was changed. Run the file again as an administrator.",
     "echo.",
     "pause",
-    "exit /b %ALPHACI_RESULT%",
+    "exit /b 1",
+    ":run",
+    // The PowerShell steps below the label are read from this file, so the code and
+    // the URLs never appear on a command line.
+    `powershell -NoProfile -ExecutionPolicy Bypass -Command "$t=[IO.File]::ReadAllText($env:ALPHACI_INSTALL_FILE); & ([scriptblock]::Create($t.Substring($t.LastIndexOf(':__POWERSHELL__')+15)))"`,
+    'set "ALPHACI_RESULT=%ERRORLEVEL%"',
+    "echo.",
+    "pause",
+    'if not "%ALPHACI_RESULT%"=="0" exit /b %ALPHACI_RESULT%',
+    // Success only: (goto) ends the script first, so the file is no longer in use
+    // when del runs. A failed run exits above and keeps the file for a rerun.
+    "rem Success: remove this file. (goto) ends the script first, so nothing holds it open.",
+    '(goto) 2>nul & del "%~f0"',
     ":__POWERSHELL__",
+    `$enrollCode = '${code}'`,
     "$ErrorActionPreference = 'Stop'",
     "$ProgressPreference = 'SilentlyContinue'",
-    "$enrollCodeFile = $env:ALPHACI_ENROLL_CODE_PATH",
+    "$enrollCodeFile = Join-Path $env:TEMP ('alphaci-enroll-' + [guid]::NewGuid() + '.txt')",
     "$archive = Join-Path $env:TEMP ('alphaci-agent-' + [guid]::NewGuid() + '.tar.gz')",
     "$directory = Join-Path $env:TEMP ('alphaci-agent-' + [guid]::NewGuid())",
     "try {",
+    "  # The installer reads the code file and deletes it. Only this user may touch it.",
+    "  # WA is needed: Remove-Item fails with read and delete alone, even though",
+    "  # [IO.File]::Delete works. WA does not allow writing the file's data.",
+    "  [IO.File]::WriteAllText($enrollCodeFile, $enrollCode)",
+    "  $sid = [Security.Principal.WindowsIdentity]::GetCurrent().User.Value",
+    '  icacls $enrollCodeFile /inheritance:r /grant:r "*${sid}:(R,WA,D)" | Out-Null',
+    "  if ($LASTEXITCODE -ne 0) { throw 'Could not restrict the enrollment code file.' }",
     `  Invoke-WebRequest -Uri ${psQuote(url)} -OutFile $archive`,
     `  if ((Get-FileHash -LiteralPath $archive -Algorithm SHA256).Hash.ToLowerInvariant() -ne ${psQuote(sha256)}) { throw 'Installer checksum mismatch. Nothing was executed.' }`,
     "  New-Item -ItemType Directory -Path $directory | Out-Null",
-    "  tar -xzf $archive -C $directory",
+    // Full path: a GNU tar earlier on PATH reads "C:" in -C as a host name.
+    '  & "$env:SystemRoot\\System32\\tar.exe" -xzf $archive -C $directory',
     "  if ($LASTEXITCODE -ne 0) { throw 'Archive extraction failed.' }",
     "  Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass -Force",
     `  & (Join-Path $directory 'windows/Install-AlphaCIHost.ps1') -Distro Ubuntu -ClientSubnets LocalSubnet -ApiUrl ${psQuote(apiUrl)}${replace ? " -ReplaceCredential" : ""} -OnlyWhenSignedIn -EnrollCodeFile $enrollCodeFile`,
     "} finally {",
+    "  Remove-Item -LiteralPath $enrollCodeFile -Force -ErrorAction SilentlyContinue",
     "  Remove-Item -LiteralPath $archive -Force -ErrorAction SilentlyContinue",
     "  Remove-Item -LiteralPath $directory -Recurse -Force -ErrorAction SilentlyContinue",
     "}",

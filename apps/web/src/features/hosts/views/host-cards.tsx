@@ -218,7 +218,9 @@ export function EnrollmentCard({ vm }: { vm: HostsVm }) {
             </button>
             <p className="hosts-muted">
               The file contains this machine&apos;s one-time code. Keep it
-              private, and delete it after the install succeeds.
+              private: copy it with <code>scp -p</code>, or run{" "}
+              <code>chmod 600</code> on it. It deletes itself after a successful
+              install. Delete any other copy once you have used it.
             </p>
           </div>
           <p className="hosts-muted">
