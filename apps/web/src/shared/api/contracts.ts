@@ -868,9 +868,10 @@ export interface SetupProjectRequest extends GenerateWorkflowRequest {
    */
   environments?: Array<{
     hostAssignment?: {
-      machineId: string;
+      /** Omitted: the workspace's only connected machine. */
+      machineId?: string;
       requestId: string;
-      config: OnpremAssignmentConfig;
+      config: OnpremAssignmentRequestConfig;
     };
     slug: string;
     displayName: string;
@@ -1003,6 +1004,7 @@ export interface MicroservicesConfig {
   frontend: MicroserviceSlotConfig;
 }
 
+/** A stored assignment: AlphaCI allocated every host port on the machine. */
 export interface OnpremAssignmentConfig {
   ports: Array<{
     slot: "frontend" | "backend";
@@ -1011,6 +1013,12 @@ export interface OnpremAssignmentConfig {
   }>;
   health: Array<{ slot: "frontend" | "backend"; path: string | null }>;
   ingress: { mode: "direct" | "configured"; publicUrl: string | null };
+}
+/** What a client asks for: host ports are chosen by the server. */
+export interface OnpremAssignmentRequestConfig {
+  ports: Array<{ slot: "frontend" | "backend"; containerPort: number }>;
+  health: OnpremAssignmentConfig["health"];
+  ingress: OnpremAssignmentConfig["ingress"];
 }
 export interface CreateProjectRequest {
   repoName: string;
